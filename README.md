@@ -1,7 +1,6 @@
 # gitterm
 terminal ui (tui) frontend for git written in rust
 
-test
 # todo
 
 * [x] show files that changes
@@ -13,3 +12,9 @@ test
 * [ ] support committing
 * [ ] support push/pull
 * [ ] log view
+
+# resources
+
+* https://docs.rs/git2/0.13.0/git2/
+* https://libgit2.org
+* https://docs.rs/tui/0.8.0/tui/
