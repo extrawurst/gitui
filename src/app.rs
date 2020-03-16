@@ -9,12 +9,35 @@ use tui::{
     Frame,
 };
 
+#[derive(Copy,Clone)]
+pub enum DiffLineType {
+    None,
+    Header,
+    Add,
+    Delete,
+}
+
+impl Default for DiffLineType {
+    fn default() -> Self {
+        DiffLineType::None
+    }
+}
+
+#[derive(Default)]
+pub struct DiffLine {
+    content: String,
+    line_type: DiffLineType,
+}
+
+#[derive(Default)]
+pub struct Diff(Vec<DiffLine>);
+
 #[derive(Default)]
 pub struct App {
     status_items: Vec<String>,
     index_items: Vec<String>,
     status_select: Option<usize>,
-    diff: String,
+    diff: Diff,
     offset: u16,
     do_quit: bool,
 }
@@ -41,12 +64,14 @@ impl App {
         let statuses = repo.statuses(None).unwrap();
 
         self.status_items = Vec::new();
-        self.index_items= Vec::new();
+        self.index_items = Vec::new();
 
         for e in statuses.iter() {
             let status: Status = e.status();
-            if status.is_ignored() {continue;}
-            
+            if status.is_ignored() {
+                continue;
+            }
+
             if status.is_index_new() || status.is_index_modified() {
                 self.index_items
                     .push(format!("{} ({:?})", e.path().unwrap().to_string(), status))
@@ -68,7 +93,7 @@ impl App {
     }
 
     ///
-    pub fn get_diff(&mut self) -> String {
+    pub fn get_diff(&mut self) -> Diff {
         let repo = Repository::init("./").unwrap();
 
         if repo.is_bare() {
@@ -77,16 +102,27 @@ impl App {
 
         let diff = repo.diff_index_to_workdir(None, None).unwrap();
 
-        let mut res = String::new();
+        let mut res = Vec::new();
 
         diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
-            let content = String::from_utf8_lossy(line.content());
-            res.push_str(content.chars().as_str());
+            let line_type = match line.origin() {
+                'H' => DiffLineType::Header,
+                '<'|'-' => DiffLineType::Delete,
+                '>'|'+' => DiffLineType::Add,
+                _ => DiffLineType::None,
+            };
+
+            let diff_line = DiffLine {
+                content: String::from_utf8_lossy(line.content()).to_string(),
+                line_type,
+            };
+
+            res.push(diff_line);
             true
         })
         .unwrap();
 
-        res
+        Diff(res)
     }
 
     ///
@@ -117,9 +153,29 @@ impl App {
             None,
         );
 
-        Paragraph::new([Text::raw(self.diff.clone())].iter())
+        let txt = self
+            .diff
+            .0
+            .iter()
+            .map(|e:&DiffLine| {
+                let content = e.content.clone();
+                match e.line_type {
+                    DiffLineType::Delete => Text::Styled(
+                        content.into(),
+                        Style::default().fg(Color::White).bg(Color::Red),
+                    ),
+                    DiffLineType::Add => Text::Styled(
+                        content.into(),
+                        Style::default().fg(Color::White).bg(Color::Green),
+                    ),
+                    _ => Text::Raw(content.into()),
+                }
+            })
+            .collect::<Vec<_>>();
+
+        Paragraph::new(txt.iter())
             .block(Block::default().title("Diff").borders(Borders::ALL))
-            .style(Style::default().fg(Color::White).bg(Color::Black))
+            // .style(Style::default().fg(Color::White).bg(Color::Black))
             .alignment(Alignment::Left)
             .scroll(self.offset)
             .render(f, chunks[1]);
