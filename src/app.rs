@@ -1,6 +1,9 @@
 use crate::git_utils;
+use crate::git_utils::Diff;
+use crate::git_utils::DiffLine;
 use crossterm::event::{Event, KeyCode};
-use git2::{DiffFormat, DiffOptions, Repository, Status};
+use git2::{Repository, Status};
+use git_utils::DiffLineType;
 use std::cmp;
 use std::path::Path;
 use tui::{
@@ -10,29 +13,6 @@ use tui::{
     widgets::{Block, Borders, Paragraph, SelectableList, Text, Widget},
     Frame,
 };
-
-#[derive(Copy, Clone, PartialEq)]
-pub enum DiffLineType {
-    None,
-    Header,
-    Add,
-    Delete,
-}
-
-impl Default for DiffLineType {
-    fn default() -> Self {
-        DiffLineType::None
-    }
-}
-
-#[derive(Default, PartialEq)]
-pub struct DiffLine {
-    content: String,
-    line_type: DiffLineType,
-}
-
-#[derive(Default, PartialEq)]
-pub struct Diff(Vec<DiffLine>);
 
 #[derive(Default)]
 pub struct App {
@@ -94,7 +74,7 @@ impl App {
     ///
     fn update_diff(&mut self) {
         let new_diff = match self.status_select {
-            Some(i) => get_diff(Path::new(self.status_items[i].as_str())),
+            Some(i) => git_utils::get_diff(Path::new(self.status_items[i].as_str())),
             None => Diff::default(),
         };
 
@@ -146,6 +126,13 @@ impl App {
                     DiffLineType::Add => Text::Styled(
                         content.into(),
                         Style::default().fg(Color::White).bg(Color::Green),
+                    ),
+                    DiffLineType::Header => Text::Styled(
+                        content.into(),
+                        Style::default()
+                            .fg(Color::Black)
+                            .bg(Color::Gray)
+                            .modifier(Modifier::BOLD),
                     ),
                     _ => Text::Raw(content.into()),
                 }
@@ -218,43 +205,4 @@ fn draw_list<B: Backend, T: AsRef<str>>(
         .highlight_style(Style::default().modifier(Modifier::BOLD))
         .highlight_symbol(">")
         .render(f, r);
-}
-
-///
-fn get_diff(p: &Path) -> Diff {
-    let repo = Repository::init("./").unwrap();
-
-    if repo.is_bare() {
-        panic!("bare repo")
-    }
-
-    let mut opt = DiffOptions::new();
-    opt.pathspec(p);
-
-    let diff = repo
-        .diff_index_to_workdir(None, Some(&mut opt))
-        .unwrap();
-
-    let mut res = Vec::new();
-
-    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
-
-        let line_type = match line.origin() {
-            'H' => DiffLineType::Header,
-            '<' | '-' => DiffLineType::Delete,
-            '>' | '+' => DiffLineType::Add,
-            _ => DiffLineType::None,
-        };
-
-        let diff_line = DiffLine {
-            content: String::from_utf8_lossy(line.content()).to_string(),
-            line_type,
-        };
-
-        res.push(diff_line);
-        true
-    })
-    .unwrap();
-
-    Diff(res)
 }

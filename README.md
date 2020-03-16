@@ -7,6 +7,7 @@ terminal ui (tui) frontend for git written in rust
 * [x] show files on index
 * [x] colorize diff
 * [x] only show diff of selected file
+* [ ] change detection
 * [ ] allow selecting/diff index items
 * [ ] allow scrolling diff
 * [ ] support staging/unstaging
