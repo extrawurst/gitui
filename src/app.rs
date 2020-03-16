@@ -1,8 +1,8 @@
+use crate::git_status::StatusLists;
 use crate::git_utils;
 use crate::git_utils::Diff;
 use crate::git_utils::DiffLine;
 use crossterm::event::{Event, KeyCode};
-use git2::{Repository, Status};
 use git_utils::DiffLineType;
 use std::cmp;
 use std::path::Path;
@@ -16,8 +16,7 @@ use tui::{
 
 #[derive(Default)]
 pub struct App {
-    status_items: Vec<String>,
-    index_items: Vec<String>,
+    status: StatusLists,
     status_select: Option<usize>,
     diff: Diff,
     offset: u16,
@@ -32,41 +31,19 @@ impl App {
 }
 
 impl App {
-    //
-    pub fn fetch_status(&mut self) {
-        let repo = match Repository::init("./") {
-            Ok(repo) => repo,
-            Err(e) => panic!("failed to init: {}", e),
-        };
+    ///
+    fn fetch_status(&mut self) {
+        let new_status = StatusLists::new();
 
-        if repo.is_bare() {
-            panic!("bare repo")
-        }
+        if self.status != new_status {
+            self.status = new_status;
 
-        let statuses = repo.statuses(None).unwrap();
-
-        self.status_items = Vec::new();
-        self.index_items = Vec::new();
-
-        for e in statuses.iter() {
-            let status: Status = e.status();
-            if status.is_ignored() {
-                continue;
-            }
-
-            if git_utils::on_index(&status) {
-                self.index_items
-                    .push(format!("{} ({:?})", e.path().unwrap().to_string(), status))
+            self.status_select = if self.status.wt_items.len() > 0 {
+                Some(0)
             } else {
-                self.status_items.push(e.path().unwrap().to_string())
-            }
+                None
+            };
         }
-
-        self.status_select = if self.status_items.len() > 0 {
-            Some(0)
-        } else {
-            None
-        };
 
         self.update_diff();
     }
@@ -74,7 +51,7 @@ impl App {
     ///
     fn update_diff(&mut self) {
         let new_diff = match self.status_select {
-            Some(i) => git_utils::get_diff(Path::new(self.status_items[i].as_str())),
+            Some(i) => git_utils::get_diff(Path::new(self.status.wt_items[i].path.as_str())),
             None => Diff::default(),
         };
 
@@ -100,7 +77,7 @@ impl App {
             f,
             left_chunks[0],
             "Status".to_string(),
-            self.status_items.as_slice(),
+            self.status.wt_items_pathlist().as_slice(),
             self.status_select,
         );
 
@@ -108,7 +85,7 @@ impl App {
             f,
             left_chunks[1],
             "Index".to_string(),
-            self.index_items.as_slice(),
+            self.status.index_items_pathlist().as_slice(),
             None,
         );
 
@@ -173,8 +150,12 @@ impl App {
         }
     }
 
+    pub fn update(&mut self) {
+        self.fetch_status();
+    }
+
     fn input(&mut self, delta: i32) {
-        let items_len = self.status_items.len();
+        let items_len = self.status.wt_items.len();
         if items_len > 0 {
             if let Some(i) = self.status_select {
                 let mut i = i as i32;

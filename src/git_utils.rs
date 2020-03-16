@@ -1,6 +1,7 @@
-use git2::{DiffFormat, DiffOptions, Repository, Status};
+use git2::{DiffFormat, DiffOptions, Repository};
 use std::path::Path;
 
+///
 #[derive(Copy, Clone, PartialEq)]
 pub enum DiffLineType {
     None,
@@ -15,22 +16,20 @@ impl Default for DiffLineType {
     }
 }
 
+///
 #[derive(Default, PartialEq)]
 pub struct DiffLine {
     pub content: String,
     pub line_type: DiffLineType,
 }
 
+///
 #[derive(Default, PartialEq)]
 pub struct Diff(pub Vec<DiffLine>);
 
 ///
 pub fn get_diff(p: &Path) -> Diff {
-    let repo = Repository::init("./").unwrap();
-
-    if repo.is_bare() {
-        panic!("bare repo")
-    }
+    let repo = repo();
 
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
@@ -72,6 +71,12 @@ pub fn get_diff(p: &Path) -> Diff {
 }
 
 ///
-pub fn on_index(s: &Status) -> bool {
-    s.is_index_new() || s.is_index_modified()
+pub fn repo() -> Repository {
+    let repo = Repository::init("./").unwrap();
+
+    if repo.is_bare() {
+        panic!("bare repo")
+    }
+
+    repo
 }

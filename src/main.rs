@@ -1,15 +1,16 @@
 mod app;
-mod poll;
+mod git_status;
 mod git_utils;
+mod poll;
 
 use app::App;
 use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand, Result,
 };
+use poll::PollResult;
 use std::{io, time::Duration};
 use tui::{backend::CrosstermBackend, Terminal};
-use poll::PollResult;
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
@@ -22,9 +23,10 @@ fn main() -> Result<()> {
     terminal.clear()?;
 
     let mut app = App::default();
-    app.fetch_status();
 
     loop {
+        app.update();
+
         terminal.draw(|mut f| app.draw(&mut f))?;
 
         if let PollResult::Event(e) = poll::poll(Duration::from_millis(200)) {
