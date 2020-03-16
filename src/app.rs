@@ -1,6 +1,7 @@
 use crossterm::event::{Event, KeyCode};
 use git2::{DiffFormat, Repository, Status};
 use std::cmp;
+use std::path::Path;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -9,7 +10,7 @@ use tui::{
     Frame,
 };
 
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone,PartialEq)]
 pub enum DiffLineType {
     None,
     Header,
@@ -23,13 +24,13 @@ impl Default for DiffLineType {
     }
 }
 
-#[derive(Default)]
+#[derive(Default,PartialEq)]
 pub struct DiffLine {
     content: String,
     line_type: DiffLineType,
 }
 
-#[derive(Default)]
+#[derive(Default,PartialEq)]
 pub struct Diff(Vec<DiffLine>);
 
 #[derive(Default)]
@@ -78,8 +79,7 @@ impl App {
             }
 
             if status.is_wt_new() || status.is_wt_modified() {
-                self.status_items
-                    .push(format!("{} ({:?})", e.path().unwrap().to_string(), status))
+                self.status_items.push(e.path().unwrap().to_string())
             }
         }
 
@@ -89,40 +89,20 @@ impl App {
             None
         };
 
-        self.diff = self.get_diff();
+        self.update_diff();
     }
 
     ///
-    pub fn get_diff(&mut self) -> Diff {
-        let repo = Repository::init("./").unwrap();
+    fn update_diff(&mut self) {
+        let new_diff=match self.status_select {
+            Some(i) => get_diff(Path::new(self.status_items[i].as_str())),
+            None => Diff::default(),
+        };
 
-        if repo.is_bare() {
-            panic!("bare repo")
+        if new_diff != self.diff {
+            self.diff = new_diff;
+            self.offset = 0;
         }
-
-        let diff = repo.diff_index_to_workdir(None, None).unwrap();
-
-        let mut res = Vec::new();
-
-        diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
-            let line_type = match line.origin() {
-                'H' => DiffLineType::Header,
-                '<'|'-' => DiffLineType::Delete,
-                '>'|'+' => DiffLineType::Add,
-                _ => DiffLineType::None,
-            };
-
-            let diff_line = DiffLine {
-                content: String::from_utf8_lossy(line.content()).to_string(),
-                line_type,
-            };
-
-            res.push(diff_line);
-            true
-        })
-        .unwrap();
-
-        Diff(res)
     }
 
     ///
@@ -157,7 +137,7 @@ impl App {
             .diff
             .0
             .iter()
-            .map(|e:&DiffLine| {
+            .map(|e: &DiffLine| {
                 let content = e.content.clone();
                 match e.line_type {
                     DiffLineType::Delete => Text::Styled(
@@ -175,7 +155,6 @@ impl App {
 
         Paragraph::new(txt.iter())
             .block(Block::default().title("Diff").borders(Borders::ALL))
-            // .style(Style::default().fg(Color::White).bg(Color::Black))
             .alignment(Alignment::Left)
             .scroll(self.offset)
             .render(f, chunks[1]);
@@ -183,7 +162,7 @@ impl App {
 
     ///
     pub fn event(&mut self, ev: Event) {
-        if ev == Event::Key(KeyCode::Esc.into()) {
+        if ev == Event::Key(KeyCode::Esc.into()) || ev == Event::Key(KeyCode::Char('q').into()) {
             self.do_quit = true;
         }
 
@@ -208,26 +187,6 @@ impl App {
         }
     }
 
-    // fn index_add(&mut self) {
-    //     let repo = Repository::init("./").unwrap();
-
-    //     let status = repo.statuses(None).unwrap();
-
-    //     let index = repo.index().unwrap();
-    //     index.add(entry)
-
-    //     self.status_items = status
-    //         .iter()
-    //         .map(|e| e.path().unwrap().to_string())
-    //         .collect();
-
-    //     self.status_select = if self.status_items.len() > 0 {
-    //         Some(0)
-    //     } else {
-    //         None
-    //     };
-    // }
-
     fn input(&mut self, delta: i32) {
         let items_len = self.status_items.len();
         if items_len > 0 {
@@ -240,6 +199,8 @@ impl App {
                 self.status_select = Some(i as usize);
             }
         }
+
+        self.update_diff();
     }
 }
 
@@ -258,4 +219,44 @@ fn draw_list<B: Backend, T: AsRef<str>>(
         .highlight_style(Style::default().modifier(Modifier::BOLD))
         .highlight_symbol(">")
         .render(f, r);
+}
+
+///
+fn get_diff(p: &Path) -> Diff {
+    let repo = Repository::init("./").unwrap();
+
+    if repo.is_bare() {
+        panic!("bare repo")
+    }
+
+    let diff = repo.diff_index_to_workdir(None, None).unwrap();
+
+    let mut res = Vec::new();
+
+    diff.print(DiffFormat::Patch, |delta, _hunk, line| {
+        if p != delta.old_file().path().unwrap() {
+            return true;
+        }
+        if p != delta.new_file().path().unwrap() {
+            return true;
+        }
+
+        let line_type = match line.origin() {
+            'H' => DiffLineType::Header,
+            '<' | '-' => DiffLineType::Delete,
+            '>' | '+' => DiffLineType::Add,
+            _ => DiffLineType::None,
+        };
+
+        let diff_line = DiffLine {
+            content: String::from_utf8_lossy(line.content()).to_string(),
+            line_type,
+        };
+
+        res.push(diff_line);
+        true
+    })
+    .unwrap();
+
+    Diff(res)
 }
