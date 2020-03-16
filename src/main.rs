@@ -1,5 +1,6 @@
 mod app;
 mod poll;
+mod git_utils;
 
 use app::App;
 use crossterm::{

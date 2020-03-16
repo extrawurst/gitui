@@ -1,5 +1,6 @@
+use crate::git_utils;
 use crossterm::event::{Event, KeyCode};
-use git2::{DiffFormat, Repository, Status};
+use git2::{DiffFormat, DiffOptions, Repository, Status};
 use std::cmp;
 use std::path::Path;
 use tui::{
@@ -10,7 +11,7 @@ use tui::{
     Frame,
 };
 
-#[derive(Copy, Clone,PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum DiffLineType {
     None,
     Header,
@@ -24,13 +25,13 @@ impl Default for DiffLineType {
     }
 }
 
-#[derive(Default,PartialEq)]
+#[derive(Default, PartialEq)]
 pub struct DiffLine {
     content: String,
     line_type: DiffLineType,
 }
 
-#[derive(Default,PartialEq)]
+#[derive(Default, PartialEq)]
 pub struct Diff(Vec<DiffLine>);
 
 #[derive(Default)]
@@ -73,12 +74,10 @@ impl App {
                 continue;
             }
 
-            if status.is_index_new() || status.is_index_modified() {
+            if git_utils::on_index(&status) {
                 self.index_items
                     .push(format!("{} ({:?})", e.path().unwrap().to_string(), status))
-            }
-
-            if status.is_wt_new() || status.is_wt_modified() {
+            } else {
                 self.status_items.push(e.path().unwrap().to_string())
             }
         }
@@ -94,7 +93,7 @@ impl App {
 
     ///
     fn update_diff(&mut self) {
-        let new_diff=match self.status_select {
+        let new_diff = match self.status_select {
             Some(i) => get_diff(Path::new(self.status_items[i].as_str())),
             None => Diff::default(),
         };
@@ -229,17 +228,16 @@ fn get_diff(p: &Path) -> Diff {
         panic!("bare repo")
     }
 
-    let diff = repo.diff_index_to_workdir(None, None).unwrap();
+    let mut opt = DiffOptions::new();
+    opt.pathspec(p);
+
+    let diff = repo
+        .diff_index_to_workdir(None, Some(&mut opt))
+        .unwrap();
 
     let mut res = Vec::new();
 
-    diff.print(DiffFormat::Patch, |delta, _hunk, line| {
-        if p != delta.old_file().path().unwrap() {
-            return true;
-        }
-        if p != delta.new_file().path().unwrap() {
-            return true;
-        }
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
 
         let line_type = match line.origin() {
             'H' => DiffLineType::Header,
