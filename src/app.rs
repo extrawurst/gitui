@@ -260,6 +260,7 @@ impl App {
         .unwrap();
 
         self.show_popup = false;
+        self.commit_msg.clear();
     }
 
     fn index_add(&mut self) {
