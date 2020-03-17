@@ -148,17 +148,21 @@ impl App {
         // commands
         {
             let t1 = Text::Styled(
-                Cow::from("Commit "),
+                Cow::from("Commit [c]"),
+                Style::default()
+                    .fg(if self.index_empty() {
+                        Color::DarkGray
+                    } else {
+                        Color::White
+                    })
+                    .bg(Color::Blue),
+            );
+            let splitter = Text::Styled(Cow::from(" "), Style::default().bg(Color::Black));
+            let t2 = Text::Styled(
+                Cow::from("Help [h]"),
                 Style::default().fg(Color::White).bg(Color::Blue),
             );
-            let t2 = Text::Styled(
-                Cow::from("Help"),
-                Style::default()
-                    .fg(Color::Red)
-                    .bg(Color::Blue)
-                    .modifier(Modifier::BOLD),
-            );
-            Paragraph::new(vec![t1, t2].iter())
+            Paragraph::new(vec![t1, splitter, t2].iter())
                 .alignment(Alignment::Left)
                 .render(f, chunks_main[2]);
         }
@@ -167,7 +171,7 @@ impl App {
             let txt = if self.commit_msg.len() > 0 {
                 [Text::Raw(Cow::from(self.commit_msg.clone()))]
             } else {
-                [Text::Raw(Cow::from("type commit message here.."))]
+                [Text::Raw(Cow::from("type commit message.."))]
             };
 
             Clear::new(
