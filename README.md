@@ -10,7 +10,7 @@ terminal ui (tui) frontend for git written in rust
 * [x] change detection
 * [x] allow scrolling diff
 * [x] support staging
-* [ ] show added files on working dir changes
+* [x] show added files on working dir changes
 * [ ] allow selecting/diff index items
 * [ ] support unstaging
 * [ ] support committing

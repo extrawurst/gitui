@@ -56,7 +56,9 @@ impl StatusLists {
         let mut res = Vec::new();
 
         let statuses = repo
-            .statuses(Some(StatusOptions::default().show(show)))
+            .statuses(Some(
+                StatusOptions::default().show(show).include_untracked(true),
+            ))
             .unwrap();
 
         for e in statuses.iter() {
