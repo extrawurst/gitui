@@ -160,7 +160,19 @@ impl App {
         self.fetch_status();
     }
 
-    fn index_add(&mut self) {}
+    fn index_add(&mut self) {
+        if let Some(i) = self.status_select {
+            let repo = git_utils::repo();
+
+            let mut index = repo.index().unwrap();
+
+            let path = Path::new(self.status.wt_items[i].path.as_str());
+            index.update_all(path, None).unwrap();
+            index.write().unwrap();
+
+            self.update();
+        }
+    }
 
     fn scroll(&mut self, inc: bool) {
         if inc {
