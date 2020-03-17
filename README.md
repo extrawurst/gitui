@@ -1,9 +1,11 @@
 # gitterm
 terminal ui (tui) frontend for git written in rust
 
+motivation
+
 # todo
 
-* [x] show files that changes
+* [x] show files that changed
 * [x] show files on index
 * [x] colorize diff
 * [x] only show diff of selected file
@@ -11,7 +13,7 @@ terminal ui (tui) frontend for git written in rust
 * [x] allow scrolling diff
 * [x] support staging
 * [x] show added files on working dir changes
-* [ ] support committing
+* [x] support committing
 * [ ] allow selecting/diff index items
 * [ ] support unstaging
 * [ ] polling in thread
@@ -19,7 +21,7 @@ terminal ui (tui) frontend for git written in rust
 
 # resources
 
-* https://docs.rs/git2/0.13.0/git2/
+* https://docs.rs/git2/
 * https://libgit2.org
-* https://docs.rs/tui/0.8.0/tui/
-* https://docs.rs/crossterm/0.16.0/crossterm/
+* https://docs.rs/tui/
+* https://docs.rs/crossterm/

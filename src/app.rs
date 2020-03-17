@@ -21,6 +21,7 @@ pub struct App {
     offset: u16,
     do_quit: bool,
     show_popup: bool,
+    commit_msg: String,
 }
 
 impl App {
@@ -163,16 +164,16 @@ impl App {
         }
 
         if self.show_popup {
-            let txt = [Text::Raw(
-                "test lorem ipsum dolorem test lorem ipsum dolorem"
-                    .to_string()
-                    .into(),
-            )];
+            let txt = if self.commit_msg.len() > 0 {
+                [Text::Raw(Cow::from(self.commit_msg.clone()))]
+            } else {
+                [Text::Raw(Cow::from("type commit message here.."))]
+            };
 
             Clear::new(
                 Paragraph::new(txt.iter())
-                    .block(Block::default().title("Popup").borders(Borders::ALL))
-                    .alignment(Alignment::Center),
+                    .block(Block::default().title("Commit").borders(Borders::ALL))
+                    .alignment(Alignment::Left),
             )
             .render(f, Rect::new(20, 0, 100, 10));
         }
@@ -180,42 +181,85 @@ impl App {
 
     ///
     pub fn event(&mut self, ev: Event) {
-        if ev == Event::Key(KeyCode::Esc.into()) || ev == Event::Key(KeyCode::Char('q').into()) {
-            self.do_quit = true;
-        }
+        if !self.show_popup {
+            if ev == Event::Key(KeyCode::Esc.into()) || ev == Event::Key(KeyCode::Char('q').into())
+            {
+                self.do_quit = true;
+            }
 
-        if ev == Event::Key(KeyCode::Char('d').into()) {
-            self.show_popup = !self.show_popup;
-        }
+            if ev == Event::Key(KeyCode::Up.into()) {
+                self.input(-1);
+            }
+            if ev == Event::Key(KeyCode::Down.into()) {
+                self.input(1);
+            }
 
-        if ev == Event::Key(KeyCode::Up.into()) {
-            self.input(-1);
-        }
-        if ev == Event::Key(KeyCode::Down.into()) {
-            self.input(1);
-        }
+            if ev == Event::Key(KeyCode::PageDown.into()) {
+                self.scroll(true);
+            }
+            if ev == Event::Key(KeyCode::PageUp.into()) {
+                self.scroll(false);
+            }
+            if let Event::Mouse(MouseEvent::ScrollDown(_, _, _)) = ev {
+                self.scroll(true);
+            }
+            if let Event::Mouse(MouseEvent::ScrollUp(_, _, _)) = ev {
+                self.scroll(false);
+            }
 
-        if ev == Event::Key(KeyCode::PageDown.into()) {
-            self.scroll(true);
-        }
-        if ev == Event::Key(KeyCode::PageUp.into()) {
-            self.scroll(false);
-        }
-        if let Event::Mouse(MouseEvent::ScrollDown(_, _, _)) = ev {
-            self.scroll(true);
-        }
-        if let Event::Mouse(MouseEvent::ScrollUp(_, _, _)) = ev {
-            self.scroll(false);
-        }
+            if ev == Event::Key(KeyCode::Enter.into()) {
+                self.index_add();
+            }
 
-        if ev == Event::Key(KeyCode::Enter.into()) {
-            self.index_add();
+            if ev == Event::Key(KeyCode::Char('c').into()) {
+                self.show_popup = !self.show_popup;
+            }
+        } else {
+            if let Event::Key(e) = ev {
+                match e.code {
+                    KeyCode::Char(c) => self.commit_msg.push(c),
+                    KeyCode::Enter if self.commit_msg.len() > 0 => self.commit(),
+                    KeyCode::Backspace if self.commit_msg.len() > 0 => {
+                        self.commit_msg.pop().unwrap();
+                        ()
+                    }
+                    _ => (),
+                };
+            }
+
+            if ev == Event::Key(KeyCode::Esc.into()) || ev == Event::Key(KeyCode::Char('q').into())
+            {
+                self.show_popup = false;
+            }
         }
     }
 
     ///
     pub fn update(&mut self) {
         self.fetch_status();
+    }
+
+    fn commit(&mut self) {
+        let repo = git_utils::repo();
+        let signature = repo.signature().unwrap();
+
+        let reference = repo.head().unwrap();
+        let mut index = repo.index().unwrap();
+        let tree_id = index.write_tree().unwrap();
+        let tree = repo.find_tree(tree_id).unwrap();
+        let parent = repo.find_commit(reference.target().unwrap()).unwrap();
+
+        repo.commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            self.commit_msg.as_str(),
+            &tree,
+            &[&parent],
+        )
+        .unwrap();
+
+        self.show_popup = false;
     }
 
     fn index_add(&mut self) {
