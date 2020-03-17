@@ -15,7 +15,6 @@ terminal ui (tui) frontend for git written in rust
 * [ ] allow selecting/diff index items
 * [ ] support unstaging
 * [ ] polling in thread
-* [ ] support push/pull
 * [ ] log view
 
 # resources
