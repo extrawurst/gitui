@@ -246,25 +246,7 @@ impl App {
     }
 
     fn commit(&mut self) {
-        let repo = git_utils::repo();
-
-        let signature = repo.signature().unwrap();
-        let reference = repo.head().unwrap();
-        let mut index = repo.index().unwrap();
-        let tree_id = index.write_tree().unwrap();
-
-        let tree = repo.find_tree(tree_id).unwrap();
-        let parent = repo.find_commit(reference.target().unwrap()).unwrap();
-
-        repo.commit(
-            Some("HEAD"),
-            &signature,
-            &signature,
-            self.commit_msg.as_str(),
-            &tree,
-            &[&parent],
-        )
-        .unwrap();
+        git_utils::commit(&self.commit_msg);
 
         self.show_popup = false;
         self.commit_msg.clear();
