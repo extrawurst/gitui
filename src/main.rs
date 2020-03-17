@@ -5,6 +5,7 @@ mod poll;
 
 use app::App;
 use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand, Result,
 };
@@ -14,7 +15,9 @@ use tui::{backend::CrosstermBackend, Terminal};
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
-    io::stdout().execute(EnterAlternateScreen)?;
+    io::stdout()
+        .execute(EnterAlternateScreen)?
+        .execute(EnableMouseCapture)?;
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
@@ -29,8 +32,12 @@ fn main() -> Result<()> {
 
         terminal.draw(|mut f| app.draw(&mut f))?;
 
-        if let PollResult::Event(e) = poll::poll(Duration::from_millis(200)) {
-            app.event(e);
+        loop {
+            if let PollResult::Event(e) = poll::poll(Duration::from_millis(10)) {
+                app.event(e);
+            } else {
+                break;
+            }
         }
 
         if app.is_quit() {
@@ -38,7 +45,9 @@ fn main() -> Result<()> {
         }
     }
 
-    io::stdout().execute(LeaveAlternateScreen)?;
+    io::stdout()
+        .execute(LeaveAlternateScreen)?
+        .execute(DisableMouseCapture)?;
     disable_raw_mode()?;
     Ok(())
 }

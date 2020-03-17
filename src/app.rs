@@ -2,7 +2,7 @@ use crate::git_status::StatusLists;
 use crate::git_utils;
 use crate::git_utils::Diff;
 use crate::git_utils::DiffLine;
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::{Event, KeyCode, MouseEvent};
 use git_utils::DiffLineType;
 use std::cmp;
 use std::path::Path;
@@ -76,17 +76,19 @@ impl App {
         draw_list(
             f,
             left_chunks[0],
-            "Status".to_string(),
+            "Status [S]".to_string(),
             self.status.wt_items_pathlist().as_slice(),
             self.status_select,
+            true,
         );
 
         draw_list(
             f,
             left_chunks[1],
-            "Index".to_string(),
+            "Index [I]".to_string(),
             self.status.index_items_pathlist().as_slice(),
             None,
+            false,
         );
 
         let txt = self
@@ -117,7 +119,7 @@ impl App {
             .collect::<Vec<_>>();
 
         Paragraph::new(txt.iter())
-            .block(Block::default().title("Diff").borders(Borders::ALL))
+            .block(Block::default().title("Diff [D]").borders(Borders::ALL))
             .alignment(Alignment::Left)
             .scroll(self.offset)
             .render(f, chunks[1]);
@@ -137,21 +139,35 @@ impl App {
         }
 
         if ev == Event::Key(KeyCode::PageDown.into()) {
-            self.offset += 1;
+            self.scroll(true);
         }
         if ev == Event::Key(KeyCode::PageUp.into()) {
-            if self.offset > 0 {
-                self.offset -= 1;
-            }
+            self.scroll(false);
+        }
+        if let Event::Mouse(MouseEvent::ScrollDown(_, _, _)) = ev {
+            self.scroll(true);
+        }
+        if let Event::Mouse(MouseEvent::ScrollUp(_, _, _)) = ev {
+            self.scroll(false);
         }
 
         if ev == Event::Key(KeyCode::Enter.into()) {
-            // self.index_add();
+            self.index_add();
         }
     }
 
     pub fn update(&mut self) {
         self.fetch_status();
+    }
+
+    fn index_add(&mut self) {}
+
+    fn scroll(&mut self, inc: bool) {
+        if inc {
+            self.offset = self.offset.checked_add(1).unwrap_or(self.offset);
+        } else {
+            self.offset = self.offset.checked_sub(1).unwrap_or(0);
+        }
     }
 
     fn input(&mut self, delta: i32) {
@@ -177,9 +193,22 @@ fn draw_list<B: Backend, T: AsRef<str>>(
     title: String,
     items: &[T],
     select: Option<usize>,
+    selected: bool,
 ) {
+    let mut style_border = Style::default();
+    let mut style_title = Style::default();
+    if selected {
+        style_border = style_border.fg(Color::Red);
+        style_title = style_title.modifier(Modifier::BOLD);
+    }
     SelectableList::default()
-        .block(Block::default().title(title.as_str()).borders(Borders::ALL))
+        .block(
+            Block::default()
+                .title(title.as_str())
+                .borders(Borders::ALL)
+                .title_style(style_title)
+                .border_style(style_border),
+        )
         .items(items)
         .select(select)
         .style(Style::default().fg(Color::White))

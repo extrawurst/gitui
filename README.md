@@ -8,9 +8,9 @@ terminal ui (tui) frontend for git written in rust
 * [x] colorize diff
 * [x] only show diff of selected file
 * [x] change detection
+* [x] allow scrolling diff
 * [ ] show added files on working dir changes
 * [ ] allow selecting/diff index items
-* [ ] allow scrolling diff
 * [ ] support staging/unstaging
 * [ ] support committing
 * [ ] support push/pull
@@ -21,3 +21,4 @@ terminal ui (tui) frontend for git written in rust
 * https://docs.rs/git2/0.13.0/git2/
 * https://libgit2.org
 * https://docs.rs/tui/0.8.0/tui/
+* https://docs.rs/crossterm/0.16.0/crossterm/
