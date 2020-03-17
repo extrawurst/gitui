@@ -1,4 +1,5 @@
 mod app;
+mod clear;
 mod git_status;
 mod git_utils;
 mod poll;

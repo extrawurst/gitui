@@ -1,3 +1,4 @@
+use crate::clear::Clear;
 use crate::git_status::StatusLists;
 use crate::git_utils;
 use crate::git_utils::Diff;
@@ -21,6 +22,7 @@ pub struct App {
     diff: Diff,
     offset: u16,
     do_quit: bool,
+    show_popup: bool,
 }
 
 impl App {
@@ -123,12 +125,31 @@ impl App {
             .alignment(Alignment::Left)
             .scroll(self.offset)
             .render(f, chunks[1]);
+
+        if self.show_popup {
+            let txt = [Text::Raw(
+                "test lorem ipsum dolorem test lorem ipsum dolorem"
+                    .to_string()
+                    .into(),
+            )];
+
+            Clear::new(
+                Paragraph::new(txt.iter())
+                    .block(Block::default().title("Popup").borders(Borders::ALL))
+                    .alignment(Alignment::Center),
+            )
+            .render(f, Rect::new(20, 0, 100, 10));
+        }
     }
 
     ///
     pub fn event(&mut self, ev: Event) {
         if ev == Event::Key(KeyCode::Esc.into()) || ev == Event::Key(KeyCode::Char('q').into()) {
             self.do_quit = true;
+        }
+
+        if ev == Event::Key(KeyCode::Char('d').into()) {
+            self.show_popup = !self.show_popup;
         }
 
         if ev == Event::Key(KeyCode::Up.into()) {
