@@ -1,17 +1,15 @@
-use crate::clear::Clear;
-use crate::git_status::StatusLists;
-use crate::git_utils;
-use crate::git_utils::Diff;
-use crate::git_utils::DiffLine;
+use crate::{
+    clear::Clear,
+    git_status::StatusLists,
+    git_utils::{self, Diff, DiffLine, DiffLineType},
+};
 use crossterm::event::{Event, KeyCode, MouseEvent};
-use git_utils::DiffLineType;
-use std::cmp;
-use std::path::Path;
+use std::{cmp, path::Path};
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Paragraph, SelectableList, Text, Widget},
+    widgets::{Block, Borders, Paragraph, SelectableList, Tabs, Text, Widget},
     Frame,
 };
 
@@ -65,10 +63,23 @@ impl App {
 
     ///
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>) {
+        let chunks_tabs = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(2), Constraint::Min(2)].as_ref())
+            .split(f.size());
+
+        Tabs::default()
+            .block(Block::default().borders(Borders::BOTTOM))
+            .titles(&["Status", "Log", "Misc"])
+            .style(Style::default().fg(Color::White))
+            .highlight_style(Style::default().fg(Color::Yellow))
+            .divider("  |  ")
+            .render(f, chunks_tabs[0]);
+
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-            .split(f.size());
+            .split(chunks_tabs[1]);
 
         let left_chunks = Layout::default()
             .direction(Direction::Vertical)

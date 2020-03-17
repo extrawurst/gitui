@@ -11,9 +11,9 @@ terminal ui (tui) frontend for git written in rust
 * [x] allow scrolling diff
 * [x] support staging
 * [x] show added files on working dir changes
+* [ ] support committing
 * [ ] allow selecting/diff index items
 * [ ] support unstaging
-* [ ] support committing
 * [ ] polling in thread
 * [ ] support push/pull
 * [ ] log view
