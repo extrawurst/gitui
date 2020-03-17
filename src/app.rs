@@ -143,6 +143,7 @@ impl App {
             .block(Block::default().title("Diff [d]").borders(Borders::ALL))
             .alignment(Alignment::Left)
             .scroll(self.offset)
+            .wrap(true)
             .render(f, chunks[1]);
 
         // commands
