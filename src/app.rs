@@ -177,6 +177,7 @@ impl App {
         }
     }
 
+    ///
     pub fn update(&mut self) {
         self.fetch_status();
     }
@@ -188,7 +189,7 @@ impl App {
             let mut index = repo.index().unwrap();
 
             let path = Path::new(self.status.wt_items[i].path.as_str());
-            index.update_all(path, None).unwrap();
+            index.add_path(path).unwrap();
             index.write().unwrap();
 
             self.update();
