@@ -78,7 +78,7 @@ impl App {
 
         Tabs::default()
             .block(Block::default().borders(Borders::BOTTOM))
-            .titles(&["Status", "Log", "Misc"])
+            .titles(&["Status", "Log", "Stash", "Misc"])
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().fg(Color::Yellow))
             .divider("  |  ")
@@ -97,7 +97,7 @@ impl App {
         draw_list(
             f,
             left_chunks[0],
-            "Status [S]".to_string(),
+            "Status [s]".to_string(),
             self.status.wt_items_pathlist().as_slice(),
             self.status_select,
             true,
@@ -106,7 +106,7 @@ impl App {
         draw_list(
             f,
             left_chunks[1],
-            "Index [I]".to_string(),
+            "Index [i]".to_string(),
             self.status.index_items_pathlist().as_slice(),
             None,
             false,
@@ -140,7 +140,7 @@ impl App {
             .collect::<Vec<_>>();
 
         Paragraph::new(txt.iter())
-            .block(Block::default().title("Diff [D]").borders(Borders::ALL))
+            .block(Block::default().title("Diff [d]").borders(Borders::ALL))
             .alignment(Alignment::Left)
             .scroll(self.offset)
             .render(f, chunks[1]);
