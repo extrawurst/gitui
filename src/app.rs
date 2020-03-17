@@ -212,7 +212,9 @@ impl App {
             }
 
             if ev == Event::Key(KeyCode::Char('c').into()) {
-                self.show_popup = !self.show_popup;
+                if !self.index_empty() {
+                    self.show_popup = true;
+                }
             }
         } else {
             if let Event::Key(e) = ev {
@@ -239,13 +241,18 @@ impl App {
         self.fetch_status();
     }
 
+    fn index_empty(&self) -> bool {
+        self.status.index_items.len() == 0
+    }
+
     fn commit(&mut self) {
         let repo = git_utils::repo();
-        let signature = repo.signature().unwrap();
 
+        let signature = repo.signature().unwrap();
         let reference = repo.head().unwrap();
         let mut index = repo.index().unwrap();
         let tree_id = index.write_tree().unwrap();
+
         let tree = repo.find_tree(tree_id).unwrap();
         let parent = repo.find_commit(reference.target().unwrap()).unwrap();
 
