@@ -4,7 +4,7 @@ use crate::{
     git_utils::{self, Diff, DiffLine, DiffLineType},
 };
 use crossterm::event::{Event, KeyCode, MouseEvent};
-use std::{cmp, path::Path};
+use std::{borrow::Cow, cmp, path::Path};
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -63,9 +63,16 @@ impl App {
 
     ///
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>) {
-        let chunks_tabs = Layout::default()
+        let chunks_main = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(2), Constraint::Min(2)].as_ref())
+            .constraints(
+                [
+                    Constraint::Length(2),
+                    Constraint::Min(2),
+                    Constraint::Length(1),
+                ]
+                .as_ref(),
+            )
             .split(f.size());
 
         Tabs::default()
@@ -74,12 +81,12 @@ impl App {
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().fg(Color::Yellow))
             .divider("  |  ")
-            .render(f, chunks_tabs[0]);
+            .render(f, chunks_main[0]);
 
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-            .split(chunks_tabs[1]);
+            .split(chunks_main[1]);
 
         let left_chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -136,6 +143,24 @@ impl App {
             .alignment(Alignment::Left)
             .scroll(self.offset)
             .render(f, chunks[1]);
+
+        // commands
+        {
+            let t1 = Text::Styled(
+                Cow::from("Commit "),
+                Style::default().fg(Color::White).bg(Color::Blue),
+            );
+            let t2 = Text::Styled(
+                Cow::from("Help"),
+                Style::default()
+                    .fg(Color::Red)
+                    .bg(Color::Blue)
+                    .modifier(Modifier::BOLD),
+            );
+            Paragraph::new(vec![t1, t2].iter())
+                .alignment(Alignment::Left)
+                .render(f, chunks_main[2]);
+        }
 
         if self.show_popup {
             let txt = [Text::Raw(
