@@ -121,11 +121,11 @@ impl App {
                 match e.line_type {
                     DiffLineType::Delete => Text::Styled(
                         content.into(),
-                        Style::default().fg(Color::White).bg(Color::Red),
+                        Style::default().fg(Color::Red).bg(Color::Black),
                     ),
                     DiffLineType::Add => Text::Styled(
                         content.into(),
-                        Style::default().fg(Color::White).bg(Color::Green),
+                        Style::default().fg(Color::Green).bg(Color::Black),
                     ),
                     DiffLineType::Header => Text::Styled(
                         content.into(),
@@ -143,7 +143,6 @@ impl App {
             .block(Block::default().title("Diff [d]").borders(Borders::ALL))
             .alignment(Alignment::Left)
             .scroll(self.offset)
-            .wrap(true)
             .render(f, chunks[1]);
 
         // commands
@@ -172,7 +171,10 @@ impl App {
             let txt = if self.commit_msg.len() > 0 {
                 [Text::Raw(Cow::from(self.commit_msg.clone()))]
             } else {
-                [Text::Raw(Cow::from("type commit message.."))]
+                [Text::Styled(
+                    Cow::from("type commit message.."),
+                    Style::default().fg(Color::DarkGray),
+                )]
             };
 
             Clear::new(
