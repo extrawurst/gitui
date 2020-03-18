@@ -147,6 +147,7 @@ impl App {
 
         // commands
         {
+            let splitter = Text::Styled(Cow::from(" "), Style::default().bg(Color::Black));
             let t1 = Text::Styled(
                 Cow::from("Commit [c]"),
                 Style::default()
@@ -157,12 +158,15 @@ impl App {
                     })
                     .bg(Color::Blue),
             );
-            let splitter = Text::Styled(Cow::from(" "), Style::default().bg(Color::Black));
             let t2 = Text::Styled(
                 Cow::from("Help [h]"),
                 Style::default().fg(Color::White).bg(Color::Blue),
             );
-            Paragraph::new(vec![t1, splitter, t2].iter())
+            let t3 = Text::Styled(
+                Cow::from("Quit [q]"),
+                Style::default().fg(Color::White).bg(Color::Blue),
+            );
+            Paragraph::new(vec![t1, splitter.clone(), t2, splitter.clone(), t3].iter())
                 .alignment(Alignment::Left)
                 .render(f, chunks_main[2]);
         }
