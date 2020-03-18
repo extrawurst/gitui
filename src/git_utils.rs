@@ -164,8 +164,6 @@ pub fn stage_add(path: &Path) -> bool {
 pub fn stage_reset(path: &Path) -> bool {
     let repo = repo();
 
-    let mut index = repo.index().unwrap();
-
     let reference = repo.head().unwrap();
     let obj = repo
         .find_object(

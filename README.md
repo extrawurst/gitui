@@ -13,7 +13,7 @@ Over the last 2 years my go to GUI tool for this was [fork](https://git-fork.com
 * [x] stage files
 * [x] inspect diffs
 * [x] commit
-* [ ] allow selecting/diff index items
+* [x] allow selecting/diff index items
 * [ ] support unstaging
 * [ ] polling in thread
 * [ ] log view
