@@ -20,7 +20,6 @@ Over the last 2 years my go to GUI tool for this was [fork](https://git-fork.com
 * [x] show added files on working dir changes
 * [x] support committing
 * [x] popup centered
-* [ ] crash: renamed files cannot be added to index
 * [ ] allow selecting/diff index items
 * [ ] support unstaging
 * [ ] polling in thread

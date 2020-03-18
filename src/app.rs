@@ -4,6 +4,7 @@ use crate::{
     git_utils::{self, Diff, DiffLine, DiffLineType},
 };
 use crossterm::event::{Event, KeyCode, MouseEvent};
+use git2::IndexAddOption;
 use std::{borrow::Cow, cmp, path::Path};
 use tui::{
     backend::Backend,
@@ -270,13 +271,9 @@ impl App {
             let mut index = repo.index().unwrap();
 
             let path = Path::new(self.status.wt_items[i].path.as_str());
-            if path.is_file() {
-                if let Ok(_) = index.add_path(path) {
-                    index.write().unwrap();
-                    self.update();
-                }
-            } else {
-                unimplemented!("can only add files");
+            if let Ok(_) = index.add_all(path, IndexAddOption::DISABLE_PATHSPEC_MATCH, None) {
+                index.write().unwrap();
+                self.update();
             }
         }
     }

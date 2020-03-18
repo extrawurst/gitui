@@ -60,6 +60,7 @@ impl StatusLists {
                 StatusOptions::default()
                     .show(show)
                     .include_untracked(true)
+                    .renames_head_to_index(true)
                     .recurse_untracked_dirs(true),
             ))
             .unwrap();
