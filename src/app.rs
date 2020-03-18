@@ -1,30 +1,32 @@
 use crate::{
-    components::{commit::CommitComponent, CommandInfo, Component},
+    components::{
+        CommandInfo, CommitComponent, Component, IndexComponent,
+    },
     git_status::StatusLists,
     git_utils::{self, Diff, DiffLine, DiffLineType},
+    tui_utils,
 };
 use crossterm::event::{Event, KeyCode, MouseEvent};
 use git2::IndexAddOption;
 use itertools::Itertools;
-use std::{borrow::Cow, cmp, path::Path};
+use std::{borrow::Cow, path::Path};
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{
-        Block, Borders, Paragraph, SelectableList, Tabs, Text, Widget,
-    },
+    widgets::{Block, Borders, Paragraph, Tabs, Text, Widget},
     Frame,
 };
 
 #[derive(Default)]
 pub struct App {
     status: StatusLists,
-    status_select: Option<usize>,
     diff: Diff,
     offset: u16,
     do_quit: bool,
     commit: CommitComponent,
+    index: IndexComponent,
+    // index_wt: IndexComponent,
 }
 
 impl App {
@@ -41,23 +43,15 @@ impl App {
 
         if self.status != new_status {
             self.status = new_status;
-
-            self.status_select = if self.status.wt_items.len() > 0 {
-                Some(0)
-            } else {
-                None
-            };
         }
-
-        self.update_diff();
     }
 
     ///
     fn update_diff(&mut self) {
-        let new_diff = match self.status_select {
-            Some(i) => git_utils::get_diff(Path::new(
-                self.status.wt_items[i].path.as_str(),
-            )),
+        let new_diff = match self.index.selection() {
+            Some(i) => {
+                git_utils::get_diff(Path::new(i.path.as_str()))
+            }
             None => Diff::default(),
         };
 
@@ -111,16 +105,9 @@ impl App {
             )
             .split(chunks[0]);
 
-        draw_list(
-            f,
-            left_chunks[0],
-            "Status [s]".to_string(),
-            self.status.wt_items_pathlist().as_slice(),
-            self.status_select,
-            true,
-        );
+        self.index.draw(f, left_chunks[0]);
 
-        draw_list(
+        tui_utils::draw_list(
             f,
             left_chunks[1],
             "Index [i]".to_string(),
@@ -171,6 +158,7 @@ impl App {
             .render(f, chunks[1]);
 
         let mut cmds = self.commit.commands();
+        cmds.extend(self.index.commands());
         cmds.extend(self.commands());
 
         self.draw_commands(f, chunks_main[2], cmds);
@@ -180,16 +168,10 @@ impl App {
 
     fn commands(&self) -> Vec<CommandInfo> {
         if !self.commit.is_visible() {
-            vec![
-                CommandInfo {
-                    name: "Scroll [↑↓]".to_string(),
-                    enabled: true,
-                },
-                CommandInfo {
-                    name: "Quit [esc,q]".to_string(),
-                    enabled: true,
-                },
-            ]
+            vec![CommandInfo {
+                name: "Quit [esc,q]".to_string(),
+                enabled: true,
+            }]
         } else {
             Vec::new()
         }
@@ -201,18 +183,15 @@ impl App {
             return;
         }
 
+        if self.index.event(ev) {
+            return;
+        }
+
         if !self.commit.is_visible() {
             if ev == Event::Key(KeyCode::Esc.into())
                 || ev == Event::Key(KeyCode::Char('q').into())
             {
                 self.do_quit = true;
-            }
-
-            if ev == Event::Key(KeyCode::Up.into()) {
-                self.input(-1);
-            }
-            if ev == Event::Key(KeyCode::Down.into()) {
-                self.input(1);
             }
 
             if ev == Event::Key(KeyCode::PageDown.into()) {
@@ -273,16 +252,17 @@ impl App {
     ///
     pub fn update(&mut self) {
         self.fetch_status();
+        self.index.update();
+        self.update_diff();
     }
 
     fn index_add(&mut self) {
-        if let Some(i) = self.status_select {
+        if let Some(i) = self.index.selection() {
             let repo = git_utils::repo();
 
             let mut index = repo.index().unwrap();
 
-            let path =
-                Path::new(self.status.wt_items[i].path.as_str());
+            let path = Path::new(i.path.as_str());
 
             let cb = &mut |p: &Path, _matched_spec: &[u8]| -> i32 {
                 if p == path {
@@ -312,50 +292,4 @@ impl App {
             self.offset = self.offset.checked_sub(1).unwrap_or(0);
         }
     }
-
-    fn input(&mut self, delta: i32) {
-        let items_len = self.status.wt_items.len();
-        if items_len > 0 {
-            if let Some(i) = self.status_select {
-                let mut i = i as i32;
-
-                i = cmp::min(i + delta, (items_len - 1) as i32);
-                i = cmp::max(i, 0);
-
-                self.status_select = Some(i as usize);
-            }
-        }
-
-        self.update_diff();
-    }
-}
-
-fn draw_list<B: Backend, T: AsRef<str>>(
-    f: &mut Frame<B>,
-    r: Rect,
-    title: String,
-    items: &[T],
-    select: Option<usize>,
-    selected: bool,
-) {
-    let mut style_border = Style::default();
-    let mut style_title = Style::default();
-    if selected {
-        style_border = style_border.fg(Color::Red);
-        style_title = style_title.modifier(Modifier::BOLD);
-    }
-    SelectableList::default()
-        .block(
-            Block::default()
-                .title(title.as_str())
-                .borders(Borders::ALL)
-                .title_style(style_title)
-                .border_style(style_border),
-        )
-        .items(items)
-        .select(select)
-        .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().modifier(Modifier::BOLD))
-        .highlight_symbol(">")
-        .render(f, r);
 }

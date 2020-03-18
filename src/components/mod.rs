@@ -1,7 +1,10 @@
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
-pub mod commit;
+mod commit;
+mod index;
+pub use commit::CommitComponent;
+pub use index::IndexComponent;
 
 ///
 pub struct CommandInfo {

@@ -1,8 +1,7 @@
 use crate::git_utils;
-use git2::Repository;
 use git2::{Status, StatusOptions, StatusShow};
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum StatusItemType {
     New,
     Modified,
@@ -27,7 +26,7 @@ impl From<Status> for StatusItemType {
     }
 }
 
-#[derive(Default, PartialEq)]
+#[derive(Default, PartialEq, Clone)]
 pub struct StatusItem {
     pub path: String,
     pub status: Option<StatusItemType>,
@@ -44,53 +43,49 @@ impl StatusLists {
     pub fn new() -> Self {
         let mut res = Self::default();
 
-        let repo = git_utils::repo();
-
-        res.wt_items = Self::get(&repo, StatusShow::Workdir);
-        res.index_items = Self::get(&repo, StatusShow::Index);
+        res.wt_items = get_index(StatusShow::Workdir);
+        res.index_items = get_index(StatusShow::Index);
 
         res
     }
 
-    fn get(repo: &Repository, show: StatusShow) -> Vec<StatusItem> {
-        let mut res = Vec::new();
-
-        let statuses = repo
-            .statuses(Some(
-                StatusOptions::default()
-                    .show(show)
-                    .include_untracked(true)
-                    .renames_head_to_index(true)
-                    .recurse_untracked_dirs(true),
-            ))
-            .unwrap();
-
-        for e in statuses.iter() {
-            let status: Status = e.status();
-
-            let path = if let Some(diff) = e.head_to_index() {
-                String::from(
-                    diff.new_file().path().unwrap().to_str().unwrap(),
-                )
-            } else {
-                e.path().unwrap().to_string()
-            };
-
-            res.push(StatusItem {
-                path,
-                status: Some(StatusItemType::from(status)),
-            });
-        }
-
-        res
-    }
-
-    ///
-    pub fn wt_items_pathlist(&self) -> Vec<String> {
-        self.wt_items.iter().map(|e| e.path.clone()).collect()
-    }
     ///
     pub fn index_items_pathlist(&self) -> Vec<String> {
         self.index_items.iter().map(|e| e.path.clone()).collect()
     }
+}
+
+pub fn get_index(show: StatusShow) -> Vec<StatusItem> {
+    let repo = git_utils::repo();
+
+    let mut res = Vec::new();
+
+    let statuses = repo
+        .statuses(Some(
+            StatusOptions::default()
+                .show(show)
+                .include_untracked(true)
+                .renames_head_to_index(true)
+                .recurse_untracked_dirs(true),
+        ))
+        .unwrap();
+
+    for e in statuses.iter() {
+        let status: Status = e.status();
+
+        let path = if let Some(diff) = e.head_to_index() {
+            String::from(
+                diff.new_file().path().unwrap().to_str().unwrap(),
+            )
+        } else {
+            e.path().unwrap().to_string()
+        };
+
+        res.push(StatusItem {
+            path,
+            status: Some(StatusItemType::from(status)),
+        });
+    }
+
+    res
 }
