@@ -10,16 +10,9 @@ Over the last 2 years my go to GUI tool for this was [fork](https://git-fork.com
 
 # todo
 
-* [x] show files that changed
-* [x] show files on index
-* [x] colorize diff
-* [x] only show diff of selected file
-* [x] change detection
-* [x] allow scrolling diff
-* [x] support staging
-* [x] show added files on working dir changes
-* [x] support committing
-* [x] popup centered
+* [x] stage files
+* [x] inspect diffs
+* [x] commit
 * [ ] allow selecting/diff index items
 * [ ] support unstaging
 * [ ] polling in thread
