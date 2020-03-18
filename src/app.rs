@@ -186,7 +186,7 @@ impl App {
                     .block(Block::default().title("Commit").borders(Borders::ALL))
                     .alignment(Alignment::Left),
             )
-            .render(f, Rect::new(20, 0, 100, 10));
+            .render(f, git_utils::centered_rect(60, 20, f.size()));
         }
     }
 
