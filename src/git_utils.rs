@@ -1,4 +1,4 @@
-use git2::{DiffFormat, DiffOptions, Repository};
+use git2::{DiffFormat, DiffOptions, Repository, StatusOptions, StatusShow};
 use std::path::Path;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
@@ -131,4 +131,15 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
             .as_ref(),
         )
         .split(popup_layout[1])[1]
+}
+
+///
+pub fn index_empty() -> bool {
+    let repo = repo();
+
+    let statuses = repo
+        .statuses(Some(StatusOptions::default().show(StatusShow::Index)))
+        .unwrap();
+
+    statuses.is_empty()
 }

@@ -1,10 +1,12 @@
+use crate::commit::CommandInfo;
+use crate::commit::{UICommit, UIElement};
 use crate::{
-    clear::Clear,
     git_status::StatusLists,
     git_utils::{self, Diff, DiffLine, DiffLineType},
 };
 use crossterm::event::{Event, KeyCode, MouseEvent};
 use git2::IndexAddOption;
+use itertools::Itertools;
 use std::{borrow::Cow, cmp, path::Path};
 use tui::{
     backend::Backend,
@@ -21,8 +23,7 @@ pub struct App {
     diff: Diff,
     offset: u16,
     do_quit: bool,
-    show_popup: bool,
-    commit_msg: String,
+    commit: UICommit,
 }
 
 impl App {
@@ -146,54 +147,38 @@ impl App {
             .scroll(self.offset)
             .render(f, chunks[1]);
 
-        // commands
-        {
-            let splitter = Text::Styled(Cow::from(" "), Style::default().bg(Color::Black));
-            let t1 = Text::Styled(
-                Cow::from("Commit [c]"),
-                Style::default()
-                    .fg(if self.index_empty() {
-                        Color::DarkGray
-                    } else {
-                        Color::White
-                    })
-                    .bg(Color::Blue),
-            );
-            let t2 = Text::Styled(
-                Cow::from("Help [h]"),
-                Style::default().fg(Color::White).bg(Color::Blue),
-            );
-            let t3 = Text::Styled(
-                Cow::from("Quit [q]"),
-                Style::default().fg(Color::White).bg(Color::Blue),
-            );
-            Paragraph::new(vec![t1, splitter.clone(), t2, splitter.clone(), t3].iter())
-                .alignment(Alignment::Left)
-                .render(f, chunks_main[2]);
-        }
+        let mut cmds = self.commit.commands();
+        cmds.extend(self.commands());
 
-        if self.show_popup {
-            let txt = if self.commit_msg.len() > 0 {
-                [Text::Raw(Cow::from(self.commit_msg.clone()))]
-            } else {
-                [Text::Styled(
-                    Cow::from("type commit message.."),
-                    Style::default().fg(Color::DarkGray),
-                )]
-            };
+        self.draw_commands(f, chunks_main[2], cmds);
 
-            Clear::new(
-                Paragraph::new(txt.iter())
-                    .block(Block::default().title("Commit").borders(Borders::ALL))
-                    .alignment(Alignment::Left),
-            )
-            .render(f, git_utils::centered_rect(60, 20, f.size()));
+        self.commit.draw(f, f.size());
+    }
+
+    fn commands(&self) -> Vec<CommandInfo> {
+        if !self.commit.is_visible() {
+            vec![
+                CommandInfo {
+                    name: "Scroll [↑↓]".to_string(),
+                    enabled: true,
+                },
+                CommandInfo {
+                    name: "Quit [esc,q]".to_string(),
+                    enabled: true,
+                },
+            ]
+        } else {
+            Vec::new()
         }
     }
 
     ///
     pub fn event(&mut self, ev: Event) {
-        if !self.show_popup {
+        if self.commit.event(ev) {
+            return;
+        }
+
+        if !self.commit.is_visible() {
             if ev == Event::Key(KeyCode::Esc.into()) || ev == Event::Key(KeyCode::Char('q').into())
             {
                 self.do_quit = true;
@@ -222,46 +207,37 @@ impl App {
             if ev == Event::Key(KeyCode::Enter.into()) {
                 self.index_add();
             }
-
-            if ev == Event::Key(KeyCode::Char('c').into()) {
-                if !self.index_empty() {
-                    self.show_popup = true;
-                }
-            }
-        } else {
-            if let Event::Key(e) = ev {
-                match e.code {
-                    KeyCode::Char(c) => self.commit_msg.push(c),
-                    KeyCode::Enter if self.commit_msg.len() > 0 => self.commit(),
-                    KeyCode::Backspace if self.commit_msg.len() > 0 => {
-                        self.commit_msg.pop().unwrap();
-                        ()
-                    }
-                    _ => (),
-                };
-            }
-
-            if ev == Event::Key(KeyCode::Esc.into()) || ev == Event::Key(KeyCode::Char('q').into())
-            {
-                self.show_popup = false;
-            }
         }
+    }
+
+    fn draw_commands<B: Backend>(&self, f: &mut Frame<B>, r: Rect, cmds: Vec<CommandInfo>) {
+        let splitter = Text::Styled(Cow::from(" "), Style::default().bg(Color::Black));
+
+        let style_enabled = Style::default().fg(Color::White).bg(Color::Blue);
+
+        let style_disabled = Style::default().fg(Color::DarkGray).bg(Color::Blue);
+        let texts = cmds
+            .iter()
+            .map(|c| {
+                Text::Styled(
+                    Cow::from(c.name.clone()),
+                    if c.enabled {
+                        style_enabled
+                    } else {
+                        style_disabled
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+
+        Paragraph::new(texts.iter().intersperse(&splitter))
+            .alignment(Alignment::Left)
+            .render(f, r);
     }
 
     ///
     pub fn update(&mut self) {
         self.fetch_status();
-    }
-
-    fn index_empty(&self) -> bool {
-        self.status.index_items.len() == 0
-    }
-
-    fn commit(&mut self) {
-        git_utils::commit(&self.commit_msg);
-
-        self.show_popup = false;
-        self.commit_msg.clear();
     }
 
     fn index_add(&mut self) {

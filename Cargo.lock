@@ -141,6 +141,7 @@ version = "0.1.0"
 dependencies = [
  "crossterm 0.15.0",
  "git2",
+ "itertools 0.9.0",
  "tui",
 ]
 
@@ -169,6 +170,15 @@ name = "itertools"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
 dependencies = [
  "either",
 ]
@@ -420,7 +430,7 @@ dependencies = [
  "cassowary",
  "crossterm 0.14.2",
  "either",
- "itertools",
+ "itertools 0.8.2",
  "log",
  "unicode-segmentation",
  "unicode-width",

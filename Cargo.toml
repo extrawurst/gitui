@@ -10,4 +10,5 @@ edition = "2018"
 [dependencies]
 git2 = "0.10"
 crossterm = "0.15"
+itertools = "0.9"
 tui = { version = "0.8", default-features = false, features = ['crossterm'] }
