@@ -10,12 +10,12 @@ Over the last 2 years my go to GUI tool for this was [fork](https://git-fork.com
 
 # todo
 
-* [x] stage files
+* [x] (un)stage files
 * [x] inspect diffs
 * [x] commit
-* [x] allow selecting/diff index items
-* [ ] support unstaging
-* [ ] polling in thread
+* [ ] reset changes in status
+* [ ] input polling in thread
+* [ ] file watcher instead of polling git
 * [ ] log view
 
 # resources (quick links)
