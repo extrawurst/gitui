@@ -67,12 +67,18 @@ impl StatusLists {
 
         for e in statuses.iter() {
             let status: Status = e.status();
-            if status.is_ignored() {
-                continue;
-            }
+            // if status.is_ignored() {
+            //     continue;
+            // }
+
+            let path = if let Some(diff) = e.head_to_index() {
+                String::from(diff.new_file().path().unwrap().to_str().unwrap())
+            } else {
+                e.path().unwrap().to_string()
+            };
 
             res.push(StatusItem {
-                path: e.path().unwrap().to_string(),
+                path,
                 status: Some(StatusItemType::from(status)),
             });
         }
