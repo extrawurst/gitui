@@ -2,6 +2,9 @@
 name = "gitterm"
 version = "0.1.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
+description = "blazing fast terminal-ui for git"
+license="MIT"
+homepage="https://github.com/Extrawurst/gitterm"
 edition = "2018"
 
 [dependencies]
