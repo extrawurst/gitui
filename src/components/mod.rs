@@ -21,9 +21,11 @@ pub trait Component {
     ///
     fn event(&mut self, ev: Event) -> bool;
     ///
-    fn is_visible(&self) -> bool;
+    fn is_visible(&self) -> bool {
+        true
+    }
     ///
-    fn hide(&mut self);
+    fn hide(&mut self) {}
     ///
-    fn show(&mut self);
+    fn show(&mut self) {}
 }

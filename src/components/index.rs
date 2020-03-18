@@ -11,8 +11,6 @@ use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct IndexComponent {
     items: Vec<StatusItem>,
-    // focused: bool,
-    visible: bool,
     index_type: StatusShow,
     selection: Option<usize>,
 }
@@ -22,7 +20,6 @@ impl Default for IndexComponent {
     fn default() -> Self {
         Self {
             items: Vec::new(),
-            visible: false,
             index_type: StatusShow::Workdir,
             selection: None,
         }
@@ -110,17 +107,5 @@ impl Component for IndexComponent {
         }
 
         false
-    }
-
-    fn is_visible(&self) -> bool {
-        self.visible
-    }
-
-    fn hide(&mut self) {
-        self.visible = false
-    }
-
-    fn show(&mut self) {
-        self.visible = true
     }
 }
