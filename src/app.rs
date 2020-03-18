@@ -270,10 +270,14 @@ impl App {
             let mut index = repo.index().unwrap();
 
             let path = Path::new(self.status.wt_items[i].path.as_str());
-            index.add_path(path).unwrap();
-            index.write().unwrap();
-
-            self.update();
+            if path.is_file() {
+                if let Ok(_) = index.add_path(path) {
+                    index.write().unwrap();
+                    self.update();
+                }
+            } else {
+                unimplemented!("can only add files");
+            }
         }
     }
 

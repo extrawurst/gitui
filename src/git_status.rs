@@ -57,7 +57,10 @@ impl StatusLists {
 
         let statuses = repo
             .statuses(Some(
-                StatusOptions::default().show(show).include_untracked(true),
+                StatusOptions::default()
+                    .show(show)
+                    .include_untracked(true)
+                    .recurse_untracked_dirs(true),
             ))
             .unwrap();
 
