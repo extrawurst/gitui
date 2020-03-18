@@ -1,3 +1,4 @@
+use super::{CommandInfo, Component};
 use crate::{clear::Clear, git_utils, tui_utils};
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
@@ -9,36 +10,14 @@ use tui::{
     Frame,
 };
 
-///
-pub struct CommandInfo {
-    pub name: String,
-    pub enabled: bool,
-}
-
-///
-pub trait UIElement {
-    ///
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, rect: Rect);
-    ///
-    fn commands(&self) -> Vec<CommandInfo>;
-    ///
-    fn event(&mut self, ev: Event) -> bool;
-    ///
-    fn is_visible(&self) -> bool;
-    ///
-    fn hide(&mut self);
-    ///
-    fn show(&mut self);
-}
-
 #[derive(Default)]
-pub struct UICommit {
+pub struct CommitComponent {
     msg: String,
     // focused: bool,
     visible: bool,
 }
 
-impl UIElement for UICommit {
+impl Component for CommitComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
             let txt = if self.msg.len() > 0 {
@@ -131,7 +110,7 @@ impl UIElement for UICommit {
     }
 }
 
-impl UICommit {
+impl CommitComponent {
     fn commit(&mut self) {
         git_utils::commit(&self.msg);
         self.msg.clear();

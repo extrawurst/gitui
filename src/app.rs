@@ -1,6 +1,5 @@
-use crate::commit::CommandInfo;
-use crate::commit::{UICommit, UIElement};
 use crate::{
+    components::{commit::CommitComponent, CommandInfo, Component},
     git_status::StatusLists,
     git_utils::{self, Diff, DiffLine, DiffLineType},
 };
@@ -25,7 +24,7 @@ pub struct App {
     diff: Diff,
     offset: u16,
     do_quit: bool,
-    commit: UICommit,
+    commit: CommitComponent,
 }
 
 impl App {

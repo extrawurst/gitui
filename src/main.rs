@@ -1,6 +1,6 @@
 mod app;
 mod clear;
-mod commit;
+mod components;
 mod git_status;
 mod git_utils;
 mod poll;
