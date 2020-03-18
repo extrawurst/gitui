@@ -4,6 +4,7 @@ mod commit;
 mod git_status;
 mod git_utils;
 mod poll;
+mod tui_utils;
 
 use app::App;
 use crossterm::{

@@ -1,9 +1,9 @@
-use crate::{clear::Clear, git_utils};
+use crate::{clear::Clear, git_utils, tui_utils};
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
-use tui::backend::Backend;
-use tui::layout::{Alignment, Rect};
 use tui::{
+    backend::Backend,
+    layout::{Alignment, Rect},
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Text, Widget},
     Frame,
@@ -55,7 +55,7 @@ impl UIElement for UICommit {
                     .block(Block::default().title("Commit").borders(Borders::ALL))
                     .alignment(Alignment::Left),
             )
-            .render(f, git_utils::centered_rect(60, 20, f.size()));
+            .render(f, tui_utils::centered_rect(60, 20, f.size()));
         }
     }
 
