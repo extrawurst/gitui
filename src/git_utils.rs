@@ -1,5 +1,6 @@
 use git2::{
-    DiffFormat, DiffOptions, Repository, StatusOptions, StatusShow,
+    DiffFormat, DiffOptions, IndexAddOption, ObjectType, Repository,
+    StatusOptions, StatusShow,
 };
 use std::path::Path;
 
@@ -133,4 +134,49 @@ pub fn index_empty() -> bool {
         .unwrap();
 
     statuses.is_empty()
+}
+
+pub fn stage_add(path: &Path) -> bool {
+    let repo = repo();
+
+    let mut index = repo.index().unwrap();
+
+    let cb = &mut |p: &Path, _matched_spec: &[u8]| -> i32 {
+        if p == path {
+            0
+        } else {
+            1
+        }
+    };
+    let cb = Some(cb as &mut git2::IndexMatchedPath);
+
+    let flags = IndexAddOption::DISABLE_PATHSPEC_MATCH
+        | IndexAddOption::CHECK_PATHSPEC;
+
+    if let Ok(_) = index.add_all(path, flags, cb) {
+        index.write().unwrap();
+        return true;
+    }
+
+    false
+}
+
+pub fn stage_reset(path: &Path) -> bool {
+    let repo = repo();
+
+    let mut index = repo.index().unwrap();
+
+    let reference = repo.head().unwrap();
+    let obj = repo
+        .find_object(
+            reference.target().unwrap(),
+            Some(ObjectType::Commit),
+        )
+        .unwrap();
+
+    if let Ok(_) = repo.reset_default(Some(&obj), &[path]) {
+        return true;
+    }
+
+    false
 }

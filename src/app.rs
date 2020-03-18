@@ -5,7 +5,7 @@ use crate::{
     git_utils::{self, Diff, DiffLine, DiffLineType},
 };
 use crossterm::event::{Event, KeyCode, MouseEvent};
-use git2::{IndexAddOption, StatusShow};
+use git2::StatusShow;
 use itertools::Itertools;
 use std::{borrow::Cow, path::Path};
 use tui::{
@@ -226,7 +226,7 @@ impl App {
             }
 
             if ev == Event::Key(KeyCode::Enter.into()) {
-                self.index_add();
+                self.index_add_remove();
             }
         }
     }
@@ -273,31 +273,20 @@ impl App {
         self.update_diff();
     }
 
-    fn index_add(&mut self) {
+    fn index_add_remove(&mut self) {
         if self.index_wd.focused() {
             if let Some(i) = self.index_wd.selection() {
-                let repo = git_utils::repo();
-
-                let mut index = repo.index().unwrap();
-
                 let path = Path::new(i.path.as_str());
 
-                let cb =
-                    &mut |p: &Path, _matched_spec: &[u8]| -> i32 {
-                        if p == path {
-                            0
-                        } else {
-                            1
-                        }
-                    };
+                if git_utils::stage_add(path) {
+                    self.update();
+                }
+            }
+        } else {
+            if let Some(i) = self.index.selection() {
+                let path = Path::new(i.path.as_str());
 
-                if let Ok(_) = index.add_all(
-                    path,
-                    IndexAddOption::DISABLE_PATHSPEC_MATCH
-                        | IndexAddOption::CHECK_PATHSPEC,
-                    Some(cb as &mut git2::IndexMatchedPath),
-                ) {
-                    index.write().unwrap();
+                if git_utils::stage_reset(path) {
                     self.update();
                 }
             }
