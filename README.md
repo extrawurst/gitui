@@ -33,3 +33,4 @@ Over the last 2 years my go to GUI tool for this was [fork](https://git-fork.com
 
 # alternatives
 
+* https://github.com/jesseduffield/lazygit
