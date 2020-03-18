@@ -12,7 +12,9 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Paragraph, SelectableList, Tabs, Text, Widget},
+    widgets::{
+        Block, Borders, Paragraph, SelectableList, Tabs, Text, Widget,
+    },
     Frame,
 };
 
@@ -54,7 +56,9 @@ impl App {
     ///
     fn update_diff(&mut self) {
         let new_diff = match self.status_select {
-            Some(i) => git_utils::get_diff(Path::new(self.status.wt_items[i].path.as_str())),
+            Some(i) => git_utils::get_diff(Path::new(
+                self.status.wt_items[i].path.as_str(),
+            )),
             None => Diff::default(),
         };
 
@@ -88,12 +92,24 @@ impl App {
 
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .constraints(
+                [
+                    Constraint::Percentage(50),
+                    Constraint::Percentage(50),
+                ]
+                .as_ref(),
+            )
             .split(chunks_main[1]);
 
         let left_chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .constraints(
+                [
+                    Constraint::Percentage(50),
+                    Constraint::Percentage(50),
+                ]
+                .as_ref(),
+            )
             .split(chunks[0]);
 
         draw_list(
@@ -123,11 +139,15 @@ impl App {
                 match e.line_type {
                     DiffLineType::Delete => Text::Styled(
                         content.into(),
-                        Style::default().fg(Color::Red).bg(Color::Black),
+                        Style::default()
+                            .fg(Color::Red)
+                            .bg(Color::Black),
                     ),
                     DiffLineType::Add => Text::Styled(
                         content.into(),
-                        Style::default().fg(Color::Green).bg(Color::Black),
+                        Style::default()
+                            .fg(Color::Green)
+                            .bg(Color::Black),
                     ),
                     DiffLineType::Header => Text::Styled(
                         content.into(),
@@ -142,7 +162,11 @@ impl App {
             .collect::<Vec<_>>();
 
         Paragraph::new(txt.iter())
-            .block(Block::default().title("Diff [d]").borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title("Diff [d]")
+                    .borders(Borders::ALL),
+            )
             .alignment(Alignment::Left)
             .scroll(self.offset)
             .render(f, chunks[1]);
@@ -179,7 +203,8 @@ impl App {
         }
 
         if !self.commit.is_visible() {
-            if ev == Event::Key(KeyCode::Esc.into()) || ev == Event::Key(KeyCode::Char('q').into())
+            if ev == Event::Key(KeyCode::Esc.into())
+                || ev == Event::Key(KeyCode::Char('q').into())
             {
                 self.do_quit = true;
             }
@@ -197,7 +222,8 @@ impl App {
             if ev == Event::Key(KeyCode::PageUp.into()) {
                 self.scroll(false);
             }
-            if let Event::Mouse(MouseEvent::ScrollDown(_, _, _)) = ev {
+            if let Event::Mouse(MouseEvent::ScrollDown(_, _, _)) = ev
+            {
                 self.scroll(true);
             }
             if let Event::Mouse(MouseEvent::ScrollUp(_, _, _)) = ev {
@@ -210,12 +236,22 @@ impl App {
         }
     }
 
-    fn draw_commands<B: Backend>(&self, f: &mut Frame<B>, r: Rect, cmds: Vec<CommandInfo>) {
-        let splitter = Text::Styled(Cow::from(" "), Style::default().bg(Color::Black));
+    fn draw_commands<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        r: Rect,
+        cmds: Vec<CommandInfo>,
+    ) {
+        let splitter = Text::Styled(
+            Cow::from(" "),
+            Style::default().bg(Color::Black),
+        );
 
-        let style_enabled = Style::default().fg(Color::White).bg(Color::Blue);
+        let style_enabled =
+            Style::default().fg(Color::White).bg(Color::Blue);
 
-        let style_disabled = Style::default().fg(Color::DarkGray).bg(Color::Blue);
+        let style_disabled =
+            Style::default().fg(Color::DarkGray).bg(Color::Blue);
         let texts = cmds
             .iter()
             .map(|c| {
@@ -246,7 +282,8 @@ impl App {
 
             let mut index = repo.index().unwrap();
 
-            let path = Path::new(self.status.wt_items[i].path.as_str());
+            let path =
+                Path::new(self.status.wt_items[i].path.as_str());
 
             let cb = &mut |p: &Path, _matched_spec: &[u8]| -> i32 {
                 if p == path {
@@ -258,7 +295,8 @@ impl App {
 
             if let Ok(_) = index.add_all(
                 path,
-                IndexAddOption::DISABLE_PATHSPEC_MATCH | IndexAddOption::CHECK_PATHSPEC,
+                IndexAddOption::DISABLE_PATHSPEC_MATCH
+                    | IndexAddOption::CHECK_PATHSPEC,
                 Some(cb as &mut git2::IndexMatchedPath),
             ) {
                 index.write().unwrap();
@@ -269,7 +307,8 @@ impl App {
 
     fn scroll(&mut self, inc: bool) {
         if inc {
-            self.offset = self.offset.checked_add(1).unwrap_or(self.offset);
+            self.offset =
+                self.offset.checked_add(1).unwrap_or(self.offset);
         } else {
             self.offset = self.offset.checked_sub(1).unwrap_or(0);
         }

@@ -69,7 +69,9 @@ impl StatusLists {
             let status: Status = e.status();
 
             let path = if let Some(diff) = e.head_to_index() {
-                String::from(diff.new_file().path().unwrap().to_str().unwrap())
+                String::from(
+                    diff.new_file().path().unwrap().to_str().unwrap(),
+                )
             } else {
                 e.path().unwrap().to_string()
             };

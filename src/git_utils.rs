@@ -1,4 +1,6 @@
-use git2::{DiffFormat, DiffOptions, Repository, StatusOptions, StatusShow};
+use git2::{
+    DiffFormat, DiffOptions, Repository, StatusOptions, StatusShow,
+};
 use std::path::Path;
 
 ///
@@ -34,7 +36,8 @@ pub fn get_diff(p: &Path) -> Diff {
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
 
-    let diff = repo.diff_index_to_workdir(None, Some(&mut opt)).unwrap();
+    let diff =
+        repo.diff_index_to_workdir(None, Some(&mut opt)).unwrap();
 
     let mut res = Vec::new();
 
@@ -50,7 +53,8 @@ pub fn get_diff(p: &Path) -> Diff {
             };
 
             let diff_line = DiffLine {
-                content: String::from_utf8_lossy(line.content()).to_string(),
+                content: String::from_utf8_lossy(line.content())
+                    .to_string(),
                 line_type,
             };
 
@@ -91,7 +95,8 @@ pub fn commit(msg: &String) {
     let tree_id = index.write_tree().unwrap();
 
     let tree = repo.find_tree(tree_id).unwrap();
-    let parent = repo.find_commit(reference.target().unwrap()).unwrap();
+    let parent =
+        repo.find_commit(reference.target().unwrap()).unwrap();
 
     repo.commit(
         Some("HEAD"),
@@ -109,7 +114,9 @@ pub fn index_empty() -> bool {
     let repo = repo();
 
     let statuses = repo
-        .statuses(Some(StatusOptions::default().show(StatusShow::Index)))
+        .statuses(Some(
+            StatusOptions::default().show(StatusShow::Index),
+        ))
         .unwrap();
 
     statuses.is_empty()

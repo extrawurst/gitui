@@ -9,7 +9,10 @@ mod tui_utils;
 use app::App;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{
+        disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
     ExecutableCommand, Result,
 };
 use poll::PollResult;
@@ -36,7 +39,9 @@ fn main() -> Result<()> {
         terminal.draw(|mut f| app.draw(&mut f))?;
 
         loop {
-            if let PollResult::Event(e) = poll::poll(Duration::from_millis(10)) {
+            if let PollResult::Event(e) =
+                poll::poll(Duration::from_millis(10))
+            {
                 app.event(e);
             } else {
                 break;

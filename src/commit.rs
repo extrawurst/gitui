@@ -52,7 +52,11 @@ impl UIElement for UICommit {
 
             Clear::new(
                 Paragraph::new(txt.iter())
-                    .block(Block::default().title("Commit").borders(Borders::ALL))
+                    .block(
+                        Block::default()
+                            .title("Commit")
+                            .borders(Borders::ALL),
+                    )
                     .alignment(Alignment::Left),
             )
             .render(f, tui_utils::centered_rect(60, 20, f.size()));
