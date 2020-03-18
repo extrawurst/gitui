@@ -1,7 +1,7 @@
 use crossterm::event::{self, Event};
 use std::time::Duration;
 
-///
+/// as
 pub enum PollResult {
     Timeout,
     Event(Event),
