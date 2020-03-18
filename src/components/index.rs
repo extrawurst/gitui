@@ -9,24 +9,30 @@ use git2::StatusShow;
 use std::cmp;
 use tui::{backend::Backend, layout::Rect, Frame};
 
+///
 pub struct IndexComponent {
+    title: String,
     items: Vec<StatusItem>,
     index_type: StatusShow,
     selection: Option<usize>,
-}
-
-impl Default for IndexComponent {
-    ///
-    fn default() -> Self {
-        Self {
-            items: Vec::new(),
-            index_type: StatusShow::Workdir,
-            selection: None,
-        }
-    }
+    focused: bool,
 }
 
 impl IndexComponent {
+    ///
+    pub fn new(
+        title: &str,
+        index_type: StatusShow,
+        focus: bool,
+    ) -> Self {
+        Self {
+            title: title.to_string(),
+            items: Vec::new(),
+            index_type,
+            selection: None,
+            focused: focus,
+        }
+    }
     ///
     pub fn update(&mut self) {
         let new_status = git_status::get_index(self.index_type);
@@ -67,45 +73,60 @@ impl Component for IndexComponent {
         tui_utils::draw_list(
             f,
             r,
-            "Status [s]".to_string(),
+            self.title.to_string(),
             self.items
                 .iter()
                 .map(|e| e.path.clone())
                 .collect::<Vec<_>>()
                 .as_slice(),
-            self.selection,
-            true,
+            if self.focused { self.selection } else { None },
+            self.focused,
         );
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
-        vec![
-            CommandInfo {
-                name: "Scroll [↑↓]".to_string(),
-                enabled: self.items.len() > 0,
-            },
-            CommandInfo {
-                name: "Stage File [enter]".to_string(),
-                enabled: self.selection.is_some(),
-            },
-        ]
+        if self.focused {
+            return vec![
+                CommandInfo {
+                    name: "Scroll [↑↓]".to_string(),
+                    enabled: self.items.len() > 0,
+                },
+                CommandInfo {
+                    name: "Stage File [enter]".to_string(),
+                    enabled: self.selection.is_some(),
+                },
+            ];
+        }
+
+        Vec::new()
     }
 
     fn event(&mut self, ev: Event) -> bool {
-        if let Event::Key(e) = ev {
-            return match e.code {
-                KeyCode::Down => {
-                    self.move_selection(1);
-                    true
-                }
-                KeyCode::Up => {
-                    self.move_selection(-1);
-                    true
-                }
-                _ => false,
-            };
+        if self.focused {
+            if let Event::Key(e) = ev {
+                return match e.code {
+                    KeyCode::Down => {
+                        self.move_selection(1);
+                        true
+                    }
+                    KeyCode::Up => {
+                        self.move_selection(-1);
+                        true
+                    }
+                    _ => false,
+                };
+            }
         }
 
         false
+    }
+
+    ///
+    fn focused(&self) -> bool {
+        self.focused
+    }
+    ///
+    fn focus(&mut self, focus: bool) {
+        self.focused = focus
     }
 }

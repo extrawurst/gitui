@@ -31,7 +31,7 @@ fn main() -> Result<()> {
 
     terminal.clear()?;
 
-    let mut app = App::default();
+    let mut app = App::new();
 
     loop {
         app.update();

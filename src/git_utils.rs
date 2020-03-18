@@ -30,14 +30,28 @@ pub struct DiffLine {
 pub struct Diff(pub Vec<DiffLine>);
 
 ///
-pub fn get_diff(p: &Path) -> Diff {
+pub fn get_diff(p: &Path, stage: bool) -> Diff {
     let repo = repo();
 
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
 
-    let diff =
-        repo.diff_index_to_workdir(None, Some(&mut opt)).unwrap();
+    let diff = if !stage {
+        // diff against stage
+        repo.diff_index_to_workdir(None, Some(&mut opt)).unwrap()
+    } else {
+        // diff against head
+        let ref_head = repo.head().unwrap();
+        let parent =
+            repo.find_commit(ref_head.target().unwrap()).unwrap();
+        let tree = parent.tree().unwrap();
+        repo.diff_tree_to_index(
+            Some(&tree),
+            Some(&repo.index().unwrap()),
+            Some(&mut opt),
+        )
+        .unwrap()
+    };
 
     let mut res = Vec::new();
 
@@ -93,7 +107,6 @@ pub fn commit(msg: &String) {
     let reference = repo.head().unwrap();
     let mut index = repo.index().unwrap();
     let tree_id = index.write_tree().unwrap();
-
     let tree = repo.find_tree(tree_id).unwrap();
     let parent =
         repo.find_commit(reference.target().unwrap()).unwrap();

@@ -2,12 +2,10 @@ use crate::{
     components::{
         CommandInfo, CommitComponent, Component, IndexComponent,
     },
-    git_status::StatusLists,
     git_utils::{self, Diff, DiffLine, DiffLineType},
-    tui_utils,
 };
 use crossterm::event::{Event, KeyCode, MouseEvent};
-use git2::IndexAddOption;
+use git2::{IndexAddOption, StatusShow};
 use itertools::Itertools;
 use std::{borrow::Cow, path::Path};
 use tui::{
@@ -18,18 +16,35 @@ use tui::{
     Frame,
 };
 
-#[derive(Default)]
 pub struct App {
-    status: StatusLists,
     diff: Diff,
     offset: u16,
     do_quit: bool,
     commit: CommitComponent,
     index: IndexComponent,
-    // index_wt: IndexComponent,
+    index_wd: IndexComponent,
 }
 
 impl App {
+    ///
+    pub fn new() -> Self {
+        Self {
+            diff: Diff::default(),
+            offset: 0,
+            do_quit: false,
+            commit: CommitComponent::default(),
+            index_wd: IndexComponent::new(
+                "Status [s]",
+                StatusShow::Workdir,
+                true,
+            ),
+            index: IndexComponent::new(
+                "Index [i]",
+                StatusShow::Index,
+                false,
+            ),
+        }
+    }
     ///
     pub fn is_quit(&self) -> bool {
         self.do_quit
@@ -38,20 +53,18 @@ impl App {
 
 impl App {
     ///
-    fn fetch_status(&mut self) {
-        let new_status = StatusLists::new();
-
-        if self.status != new_status {
-            self.status = new_status;
-        }
-    }
-
-    ///
     fn update_diff(&mut self) {
-        let new_diff = match self.index.selection() {
-            Some(i) => {
-                git_utils::get_diff(Path::new(i.path.as_str()))
-            }
+        let (idx, is_stage) = if self.index.focused() {
+            (&self.index, true)
+        } else {
+            (&self.index_wd, false)
+        };
+
+        let new_diff = match idx.selection() {
+            Some(i) => git_utils::get_diff(
+                Path::new(i.path.as_str()),
+                is_stage,
+            ),
             None => Diff::default(),
         };
 
@@ -105,16 +118,8 @@ impl App {
             )
             .split(chunks[0]);
 
-        self.index.draw(f, left_chunks[0]);
-
-        tui_utils::draw_list(
-            f,
-            left_chunks[1],
-            "Index [i]".to_string(),
-            self.status.index_items_pathlist().as_slice(),
-            None,
-            false,
-        );
+        self.index_wd.draw(f, left_chunks[0]);
+        self.index.draw(f, left_chunks[1]);
 
         let txt = self
             .diff
@@ -159,6 +164,7 @@ impl App {
 
         let mut cmds = self.commit.commands();
         cmds.extend(self.index.commands());
+        cmds.extend(self.index_wd.commands());
         cmds.extend(self.commands());
 
         self.draw_commands(f, chunks_main[2], cmds);
@@ -186,12 +192,23 @@ impl App {
         if self.index.event(ev) {
             return;
         }
+        if self.index_wd.event(ev) {
+            return;
+        }
 
         if !self.commit.is_visible() {
             if ev == Event::Key(KeyCode::Esc.into())
                 || ev == Event::Key(KeyCode::Char('q').into())
             {
                 self.do_quit = true;
+            }
+
+            if ev == Event::Key(KeyCode::Char('s').into()) {
+                self.index_wd.focus(true);
+                self.index.focus(false);
+            } else if ev == Event::Key(KeyCode::Char('i').into()) {
+                self.index.focus(true);
+                self.index_wd.focus(false);
             }
 
             if ev == Event::Key(KeyCode::PageDown.into()) {
@@ -251,35 +268,38 @@ impl App {
 
     ///
     pub fn update(&mut self) {
-        self.fetch_status();
         self.index.update();
+        self.index_wd.update();
         self.update_diff();
     }
 
     fn index_add(&mut self) {
-        if let Some(i) = self.index.selection() {
-            let repo = git_utils::repo();
+        if self.index_wd.focused() {
+            if let Some(i) = self.index_wd.selection() {
+                let repo = git_utils::repo();
 
-            let mut index = repo.index().unwrap();
+                let mut index = repo.index().unwrap();
 
-            let path = Path::new(i.path.as_str());
+                let path = Path::new(i.path.as_str());
 
-            let cb = &mut |p: &Path, _matched_spec: &[u8]| -> i32 {
-                if p == path {
-                    0
-                } else {
-                    1
+                let cb =
+                    &mut |p: &Path, _matched_spec: &[u8]| -> i32 {
+                        if p == path {
+                            0
+                        } else {
+                            1
+                        }
+                    };
+
+                if let Ok(_) = index.add_all(
+                    path,
+                    IndexAddOption::DISABLE_PATHSPEC_MATCH
+                        | IndexAddOption::CHECK_PATHSPEC,
+                    Some(cb as &mut git2::IndexMatchedPath),
+                ) {
+                    index.write().unwrap();
+                    self.update();
                 }
-            };
-
-            if let Ok(_) = index.add_all(
-                path,
-                IndexAddOption::DISABLE_PATHSPEC_MATCH
-                    | IndexAddOption::CHECK_PATHSPEC,
-                Some(cb as &mut git2::IndexMatchedPath),
-            ) {
-                index.write().unwrap();
-                self.update();
             }
         }
     }

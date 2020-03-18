@@ -32,29 +32,6 @@ pub struct StatusItem {
     pub status: Option<StatusItemType>,
 }
 
-#[derive(Default, PartialEq)]
-pub struct StatusLists {
-    pub wt_items: Vec<StatusItem>,
-    pub index_items: Vec<StatusItem>,
-}
-
-impl StatusLists {
-    ///
-    pub fn new() -> Self {
-        let mut res = Self::default();
-
-        res.wt_items = get_index(StatusShow::Workdir);
-        res.index_items = get_index(StatusShow::Index);
-
-        res
-    }
-
-    ///
-    pub fn index_items_pathlist(&self) -> Vec<String> {
-        self.index_items.iter().map(|e| e.path.clone()).collect()
-    }
-}
-
 pub fn get_index(show: StatusShow) -> Vec<StatusItem> {
     let repo = git_utils::repo();
 

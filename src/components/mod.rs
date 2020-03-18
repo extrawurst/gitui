@@ -21,6 +21,12 @@ pub trait Component {
     ///
     fn event(&mut self, ev: Event) -> bool;
     ///
+    fn focused(&self) -> bool {
+        false
+    }
+    ///
+    fn focus(&mut self, _focus: bool) {}
+    ///
     fn is_visible(&self) -> bool {
         true
     }
