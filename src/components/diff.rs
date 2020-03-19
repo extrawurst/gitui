@@ -1,6 +1,7 @@
 use crate::{
     components::{CommandInfo, Component},
     git_utils::{Diff, DiffLine, DiffLineType},
+    strings,
 };
 use crossterm::event::{Event, KeyCode};
 use tui::{
@@ -85,7 +86,7 @@ impl Component for DiffComponent {
         Paragraph::new(txt.iter())
             .block(
                 Block::default()
-                    .title("Diff [d]")
+                    .title(strings::DIFF_TITLE)
                     .borders(Borders::ALL)
                     .border_style(style_border)
                     .title_style(style_title),
@@ -98,7 +99,7 @@ impl Component for DiffComponent {
     fn commands(&self) -> Vec<CommandInfo> {
         if self.focused {
             return vec![CommandInfo {
-                name: "Scroll [↑↓]".to_string(),
+                name: strings::DIFF_CMD_SCROLL.to_string(),
                 enabled: self.can_scroll(),
             }];
         }

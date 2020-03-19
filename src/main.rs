@@ -3,7 +3,9 @@ mod clear;
 mod components;
 mod git_status;
 mod git_utils;
+mod keys;
 mod poll;
+mod strings;
 mod tui_utils;
 
 use crate::{app::App, poll::QueueEvent};

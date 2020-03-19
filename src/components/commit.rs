@@ -1,5 +1,5 @@
 use super::{CommandInfo, Component};
-use crate::{clear::Clear, git_utils, tui_utils};
+use crate::{clear::Clear, git_utils, strings, tui_utils};
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
 use tui::{
@@ -24,7 +24,7 @@ impl Component for CommitComponent {
                 [Text::Raw(Cow::from(self.msg.clone()))]
             } else {
                 [Text::Styled(
-                    Cow::from("type commit message.."),
+                    Cow::from(strings::COMMIT_MSG),
                     Style::default().fg(Color::DarkGray),
                 )]
             };
@@ -33,7 +33,7 @@ impl Component for CommitComponent {
                 Paragraph::new(txt.iter())
                     .block(
                         Block::default()
-                            .title("Commit")
+                            .title(strings::COMMIT_TITLE)
                             .borders(Borders::ALL),
                     )
                     .alignment(Alignment::Left),
@@ -45,17 +45,17 @@ impl Component for CommitComponent {
     fn commands(&self) -> Vec<CommandInfo> {
         if !self.visible {
             vec![CommandInfo {
-                name: "Commit [c]".to_string(),
+                name: strings::COMMIT_CMD_OPEN.to_string(),
                 enabled: !git_utils::index_empty(),
             }]
         } else {
             vec![
                 CommandInfo {
-                    name: "Commit [enter]".to_string(),
+                    name: strings::COMMIT_CMD_ENTER.to_string(),
                     enabled: self.can_commit(),
                 },
                 CommandInfo {
-                    name: "Close [esc]".to_string(),
+                    name: strings::COMMIT_CMD_CLOSE.to_string(),
                     enabled: true,
                 },
             ]

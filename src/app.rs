@@ -4,6 +4,7 @@ use crate::{
         IndexComponent,
     },
     git_utils::{self, Diff},
+    keys, strings,
 };
 use crossterm::event::{Event, KeyCode};
 use git2::StatusShow;
@@ -51,12 +52,12 @@ impl App {
             do_quit: false,
             commit: CommitComponent::default(),
             index_wd: IndexComponent::new(
-                "Status [s]",
+                strings::TITLE_STATUS,
                 StatusShow::Workdir,
                 true,
             ),
             index: IndexComponent::new(
-                "Index [i]",
+                strings::TITLE_INDEX,
                 StatusShow::Index,
                 false,
             ),
@@ -80,10 +81,10 @@ impl App {
 
         Tabs::default()
             .block(Block::default().borders(Borders::BOTTOM))
-            .titles(&["Status" /*"Branches", "Stash", "Misc"*/])
+            .titles(&[strings::TAB_STATUS])
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().fg(Color::Yellow))
-            .divider("  |  ")
+            .divider(strings::TAB_DIVIDER)
             .render(f, chunks_main[0]);
 
         let chunks = Layout::default()
@@ -148,15 +149,11 @@ impl App {
                 self.do_quit = true;
             }
 
-            if ev == Event::Key(KeyCode::Tab.into()) {
-                self.toggle_focus();
-            }
-
-            if ev == Event::Key(KeyCode::Char('s').into()) {
+            if ev == Event::Key(keys::FOCUS_STATUS) {
                 self.switch_focus(Focus::Status);
-            } else if ev == Event::Key(KeyCode::Char('i').into()) {
+            } else if ev == Event::Key(keys::FOCUS_STAGE) {
                 self.switch_focus(Focus::Stage);
-            } else if ev == Event::Key(KeyCode::Char('d').into()) {
+            } else if ev == Event::Key(keys::FOCUS_DIFF) {
                 self.switch_focus(Focus::Diff);
             }
 
@@ -210,26 +207,26 @@ impl App {
                 let some_selection =
                     self.index_wd.selection().is_some();
                 res.push(CommandInfo {
-                    name: "Stage File [enter]".to_string(),
+                    name: strings::CMD_STATUS_STAGE.to_string(),
                     enabled: some_selection,
                 });
                 res.push(CommandInfo {
-                    name: "Reset File [D]".to_string(),
+                    name: strings::CMD_STATUS_RESET.to_string(),
                     enabled: some_selection,
                 });
             } else if self.index.focused() {
                 res.push(CommandInfo {
-                    name: "Unstage File [enter]".to_string(),
+                    name: strings::CMD_STATUS_UNSTAGE.to_string(),
                     enabled: self.index.selection().is_some(),
                 });
             }
 
             res.push(CommandInfo {
-                name: "Next [tab]".to_string(),
+                name: strings::CMD_STATUS_NEXT.to_string(),
                 enabled: true,
             });
             res.push(CommandInfo {
-                name: "Quit [esc,q]".to_string(),
+                name: strings::CMD_STATUS_QUIT.to_string(),
                 enabled: true,
             });
         }
@@ -244,7 +241,7 @@ impl App {
         cmds: Vec<CommandInfo>,
     ) {
         let splitter = Text::Styled(
-            Cow::from(" "),
+            Cow::from(strings::CMD_SPLITTER),
             Style::default().bg(Color::Black),
         );
 
@@ -270,14 +267,6 @@ impl App {
         Paragraph::new(texts.iter().intersperse(&splitter))
             .alignment(Alignment::Left)
             .render(f, r);
-    }
-
-    fn toggle_focus(&mut self) {
-        self.switch_focus(match self.focus {
-            Focus::Status => Focus::Diff,
-            Focus::Diff => Focus::Stage,
-            Focus::Stage => Focus::Status,
-        });
     }
 
     fn switch_focus(&mut self, f: Focus) {
