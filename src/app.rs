@@ -222,10 +222,6 @@ impl App {
             }
 
             res.push(CommandInfo {
-                name: strings::CMD_STATUS_NEXT.to_string(),
-                enabled: true,
-            });
-            res.push(CommandInfo {
                 name: strings::CMD_STATUS_QUIT.to_string(),
                 enabled: true,
             });

@@ -86,7 +86,7 @@ impl Component for DiffComponent {
         Paragraph::new(txt.iter())
             .block(
                 Block::default()
-                    .title(strings::DIFF_TITLE)
+                    .title(strings::TITLE_DIFF)
                     .borders(Borders::ALL)
                     .border_style(style_border)
                     .title_style(style_title),
