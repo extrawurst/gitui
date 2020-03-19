@@ -103,7 +103,7 @@ impl App {
 
         Tabs::default()
             .block(Block::default().borders(Borders::BOTTOM))
-            .titles(&["Status", "Branches", "Stash", "Misc"])
+            .titles(&["Status" /*"Branches", "Stash", "Misc"*/])
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().fg(Color::Yellow))
             .divider("  |  ")
