@@ -15,6 +15,7 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 * [x] inspect diffs
 * [x] commit
 * [x] [input polling in thread](assets/perf_compare.jpg)
+* [ ] highlight current file being diffed
 * [ ] support non-root git folder wd
 * [ ] show content of new files
 * [ ] indicate file status (modified,added,removed)
@@ -22,6 +23,7 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 * [ ] use [notify](https://crates.io/crates/notify) to watch git
 * [ ] log view
 * [ ] stashing support
+* [ ] (un)staging selected hunks
 
 # resources (quick links)
 
