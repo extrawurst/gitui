@@ -86,16 +86,10 @@ impl Component for IndexComponent {
 
     fn commands(&self) -> Vec<CommandInfo> {
         if self.focused {
-            return vec![
-                CommandInfo {
-                    name: "Scroll [↑↓]".to_string(),
-                    enabled: self.items.len() > 0,
-                },
-                CommandInfo {
-                    name: "Stage File [enter]".to_string(),
-                    enabled: self.selection.is_some(),
-                },
-            ];
+            return vec![CommandInfo {
+                name: "Scroll [↑↓]".to_string(),
+                enabled: self.items.len() > 0,
+            }];
         }
 
         Vec::new()

@@ -1,6 +1,6 @@
 use git2::{
-    DiffFormat, DiffOptions, IndexAddOption, ObjectType, Repository,
-    StatusOptions, StatusShow,
+    build::CheckoutBuilder, DiffFormat, DiffOptions, IndexAddOption,
+    ObjectType, Repository, StatusOptions, StatusShow,
 };
 use std::path::Path;
 
@@ -173,6 +173,19 @@ pub fn stage_reset(path: &Path) -> bool {
         .unwrap();
 
     if let Ok(_) = repo.reset_default(Some(&obj), &[path]) {
+        return true;
+    }
+
+    false
+}
+
+pub fn index_reset(path: &Path) -> bool {
+    let repo = repo();
+
+    let mut checkout_opts = CheckoutBuilder::new();
+    checkout_opts.path(&path).force();
+
+    if let Ok(_) = repo.checkout_head(Some(&mut checkout_opts)) {
         return true;
     }
 

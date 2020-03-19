@@ -13,7 +13,6 @@ Over the last 2 years my go to GUI tool for this was [fork](https://git-fork.com
 * [x] (un)stage files
 * [x] inspect diffs
 * [x] commit
-* [ ] reset changes in status
 * [ ] input polling in thread
 * [ ] file watcher instead of polling git
 * [ ] log view

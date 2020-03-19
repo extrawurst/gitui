@@ -173,14 +173,33 @@ impl App {
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
+        let mut res = Vec::new();
         if !self.commit.is_visible() {
-            vec![CommandInfo {
+            if self.index_wd.focused() {
+                let some_selection =
+                    self.index_wd.selection().is_some();
+                res.push(CommandInfo {
+                    name: "Stage File [enter]".to_string(),
+                    enabled: some_selection,
+                });
+                res.push(CommandInfo {
+                    name: "Reset File [D]".to_string(),
+                    enabled: some_selection,
+                });
+            } else if self.index.focused() {
+                res.push(CommandInfo {
+                    name: "Unstage File [enter]".to_string(),
+                    enabled: self.index.selection().is_some(),
+                });
+            }
+
+            res.push(CommandInfo {
                 name: "Quit [esc,q]".to_string(),
                 enabled: true,
-            }]
-        } else {
-            Vec::new()
+            });
         }
+
+        res
     }
 
     ///
@@ -225,8 +244,14 @@ impl App {
                 self.scroll(false);
             }
 
-            if ev == Event::Key(KeyCode::Enter.into()) {
-                self.index_add_remove();
+            if let Event::Key(e) = ev {
+                if e.code == KeyCode::Enter {
+                    self.index_add_remove();
+                }
+            }
+
+            if ev == Event::Key(KeyCode::Char('D').into()) {
+                self.index_reset();
             }
         }
     }
@@ -287,6 +312,18 @@ impl App {
                 let path = Path::new(i.path.as_str());
 
                 if git_utils::stage_reset(path) {
+                    self.update();
+                }
+            }
+        }
+    }
+
+    fn index_reset(&mut self) {
+        if self.index_wd.focused() {
+            if let Some(i) = self.index_wd.selection() {
+                let path = Path::new(i.path.as_str());
+
+                if git_utils::index_reset(path) {
                     self.update();
                 }
             }
