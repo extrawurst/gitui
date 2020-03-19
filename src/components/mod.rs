@@ -2,8 +2,10 @@ use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 mod commit;
+mod diff;
 mod index;
 pub use commit::CommitComponent;
+pub use diff::DiffComponent;
 pub use index::IndexComponent;
 
 ///

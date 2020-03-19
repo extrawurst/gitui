@@ -1,36 +1,52 @@
 use crate::{
     components::{
-        CommandInfo, CommitComponent, Component, IndexComponent,
+        CommandInfo, CommitComponent, Component, DiffComponent,
+        IndexComponent,
     },
-    git_utils::{self, Diff, DiffLine, DiffLineType},
+    git_utils::{self, Diff},
 };
-use crossterm::event::{Event, KeyCode, MouseEvent};
+use crossterm::event::{Event, KeyCode};
 use git2::StatusShow;
 use itertools::Itertools;
 use std::{borrow::Cow, path::Path};
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Tabs, Text, Widget},
     Frame,
 };
 
+///
+enum DiffTarget {
+    Stage,
+    WorkingDir,
+}
+
+///
+#[derive(PartialEq)]
+enum Focus {
+    Status,
+    Diff,
+    Stage,
+}
+
 pub struct App {
-    diff: Diff,
-    offset: u16,
+    focus: Focus,
+    diff_target: DiffTarget,
     do_quit: bool,
     commit: CommitComponent,
     index: IndexComponent,
     index_wd: IndexComponent,
+    diff: DiffComponent,
 }
 
 impl App {
     ///
     pub fn new() -> Self {
         Self {
-            diff: Diff::default(),
-            offset: 0,
+            focus: Focus::Status,
+            diff_target: DiffTarget::WorkingDir,
             do_quit: false,
             commit: CommitComponent::default(),
             index_wd: IndexComponent::new(
@@ -43,6 +59,7 @@ impl App {
                 StatusShow::Index,
                 false,
             ),
+            diff: DiffComponent::default(),
         }
     }
     ///
@@ -54,10 +71,9 @@ impl App {
 impl App {
     ///
     fn update_diff(&mut self) {
-        let (idx, is_stage) = if self.index.focused() {
-            (&self.index, true)
-        } else {
-            (&self.index_wd, false)
+        let (idx, is_stage) = match self.diff_target {
+            DiffTarget::Stage => (&self.index, true),
+            DiffTarget::WorkingDir => (&self.index_wd, false),
         };
 
         let new_diff = match idx.selection() {
@@ -68,10 +84,7 @@ impl App {
             None => Diff::default(),
         };
 
-        if new_diff != self.diff {
-            self.diff = new_diff;
-            self.offset = 0;
-        }
+        self.diff.update(new_diff);
     }
 
     ///
@@ -90,7 +103,7 @@ impl App {
 
         Tabs::default()
             .block(Block::default().borders(Borders::BOTTOM))
-            .titles(&["Status", "Log", "Stash", "Misc"])
+            .titles(&["Status", "Branches", "Stash", "Misc"])
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().fg(Color::Yellow))
             .divider("  |  ")
@@ -120,52 +133,13 @@ impl App {
 
         self.index_wd.draw(f, left_chunks[0]);
         self.index.draw(f, left_chunks[1]);
-
-        let txt = self
-            .diff
-            .0
-            .iter()
-            .map(|e: &DiffLine| {
-                let content = e.content.clone();
-                match e.line_type {
-                    DiffLineType::Delete => Text::Styled(
-                        content.into(),
-                        Style::default()
-                            .fg(Color::Red)
-                            .bg(Color::Black),
-                    ),
-                    DiffLineType::Add => Text::Styled(
-                        content.into(),
-                        Style::default()
-                            .fg(Color::Green)
-                            .bg(Color::Black),
-                    ),
-                    DiffLineType::Header => Text::Styled(
-                        content.into(),
-                        Style::default()
-                            .fg(Color::Black)
-                            .bg(Color::Gray)
-                            .modifier(Modifier::BOLD),
-                    ),
-                    _ => Text::Raw(content.into()),
-                }
-            })
-            .collect::<Vec<_>>();
-
-        Paragraph::new(txt.iter())
-            .block(
-                Block::default()
-                    .title("Diff [d]")
-                    .borders(Borders::ALL),
-            )
-            .alignment(Alignment::Left)
-            .scroll(self.offset)
-            .render(f, chunks[1]);
+        self.diff.draw(f, chunks[1]);
 
         let mut cmds = self.commit.commands();
         if !self.commit.is_visible() {
             cmds.extend(self.index.commands());
             cmds.extend(self.index_wd.commands());
+            cmds.extend(self.diff.commands());
         }
         cmds.extend(self.commands());
 
@@ -217,6 +191,9 @@ impl App {
             if self.index_wd.event(ev) {
                 return;
             }
+            if self.diff.event(ev) {
+                return;
+            }
 
             if ev == Event::Key(KeyCode::Esc.into())
                 || ev == Event::Key(KeyCode::Char('q').into())
@@ -224,26 +201,16 @@ impl App {
                 self.do_quit = true;
             }
 
-            if ev == Event::Key(KeyCode::Char('s').into()) {
-                self.index_wd.focus(true);
-                self.index.focus(false);
-            } else if ev == Event::Key(KeyCode::Char('i').into()) {
-                self.index.focus(true);
-                self.index_wd.focus(false);
+            if ev == Event::Key(KeyCode::Tab.into()) {
+                self.toggle_focus();
             }
 
-            if ev == Event::Key(KeyCode::PageDown.into()) {
-                self.scroll(true);
-            }
-            if ev == Event::Key(KeyCode::PageUp.into()) {
-                self.scroll(false);
-            }
-            if let Event::Mouse(MouseEvent::ScrollDown(_, _, _)) = ev
-            {
-                self.scroll(true);
-            }
-            if let Event::Mouse(MouseEvent::ScrollUp(_, _, _)) = ev {
-                self.scroll(false);
+            if ev == Event::Key(KeyCode::Char('s').into()) {
+                self.switch_focus(Focus::Status);
+            } else if ev == Event::Key(KeyCode::Char('i').into()) {
+                self.switch_focus(Focus::Stage);
+            } else if ev == Event::Key(KeyCode::Char('d').into()) {
+                self.switch_focus(Focus::Diff);
             }
 
             if let Event::Key(e) = ev {
@@ -300,6 +267,40 @@ impl App {
         self.update_diff();
     }
 
+    fn toggle_focus(&mut self) {
+        self.switch_focus(match self.focus {
+            Focus::Status => Focus::Diff,
+            Focus::Diff => Focus::Stage,
+            Focus::Stage => Focus::Status,
+        });
+    }
+
+    fn switch_focus(&mut self, f: Focus) {
+        if self.focus != f {
+            self.focus = f;
+
+            match self.focus {
+                Focus::Status => {
+                    self.diff_target = DiffTarget::WorkingDir;
+                    self.index_wd.focus(true);
+                    self.index.focus(false);
+                    self.diff.focus(false);
+                }
+                Focus::Stage => {
+                    self.diff_target = DiffTarget::Stage;
+                    self.index.focus(true);
+                    self.index_wd.focus(false);
+                    self.diff.focus(false);
+                }
+                Focus::Diff => {
+                    self.index.focus(false);
+                    self.index_wd.focus(false);
+                    self.diff.focus(true);
+                }
+            };
+        }
+    }
+
     fn index_add_remove(&mut self) {
         if self.index_wd.focused() {
             if let Some(i) = self.index_wd.selection() {
@@ -329,15 +330,6 @@ impl App {
                     self.update();
                 }
             }
-        }
-    }
-
-    fn scroll(&mut self, inc: bool) {
-        if inc {
-            self.offset =
-                self.offset.checked_add(1).unwrap_or(self.offset);
-        } else {
-            self.offset = self.offset.checked_sub(1).unwrap_or(0);
         }
     }
 }
