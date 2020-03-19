@@ -170,6 +170,10 @@ impl App {
             }
 
             res.push(CommandInfo {
+                name: "Next [tab]".to_string(),
+                enabled: true,
+            });
+            res.push(CommandInfo {
                 name: "Quit [esc,q]".to_string(),
                 enabled: true,
             });
