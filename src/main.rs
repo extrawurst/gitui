@@ -6,7 +6,7 @@ mod git_utils;
 mod poll;
 mod tui_utils;
 
-use app::App;
+use crate::{app::App, poll::QueueEvent};
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{
@@ -15,8 +15,7 @@ use crossterm::{
     },
     ExecutableCommand, Result,
 };
-use poll::PollResult;
-use std::{io, time::Duration};
+use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
 fn main() -> Result<()> {
@@ -33,18 +32,17 @@ fn main() -> Result<()> {
 
     let mut app = App::new();
 
+    let receiver = poll::start_polling_thread();
+
     loop {
         app.update();
 
         terminal.draw(|mut f| app.draw(&mut f))?;
 
-        loop {
-            if let PollResult::Event(e) =
-                poll::poll(Duration::from_millis(10))
-            {
-                app.event(e);
-            } else {
-                break;
+        let events = receiver.recv().unwrap();
+        for e in events {
+            if let QueueEvent::Event(ev) = e {
+                app.event(ev);
             }
         }
 
