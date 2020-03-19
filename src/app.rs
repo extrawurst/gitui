@@ -41,6 +41,7 @@ pub struct App {
     diff: DiffComponent,
 }
 
+// public interface
 impl App {
     ///
     pub fn new() -> Self {
@@ -61,30 +62,6 @@ impl App {
             ),
             diff: DiffComponent::default(),
         }
-    }
-    ///
-    pub fn is_quit(&self) -> bool {
-        self.do_quit
-    }
-}
-
-impl App {
-    ///
-    fn update_diff(&mut self) {
-        let (idx, is_stage) = match self.diff_target {
-            DiffTarget::Stage => (&self.index, true),
-            DiffTarget::WorkingDir => (&self.index_wd, false),
-        };
-
-        let new_diff = match idx.selection() {
-            Some(i) => git_utils::get_diff(
-                Path::new(i.path.as_str()),
-                is_stage,
-            ),
-            None => Diff::default(),
-        };
-
-        self.diff.update(new_diff);
     }
 
     ///
@@ -148,40 +125,6 @@ impl App {
         self.commit.draw(f, f.size());
     }
 
-    fn commands(&self) -> Vec<CommandInfo> {
-        let mut res = Vec::new();
-        if !self.commit.is_visible() {
-            if self.index_wd.focused() {
-                let some_selection =
-                    self.index_wd.selection().is_some();
-                res.push(CommandInfo {
-                    name: "Stage File [enter]".to_string(),
-                    enabled: some_selection,
-                });
-                res.push(CommandInfo {
-                    name: "Reset File [D]".to_string(),
-                    enabled: some_selection,
-                });
-            } else if self.index.focused() {
-                res.push(CommandInfo {
-                    name: "Unstage File [enter]".to_string(),
-                    enabled: self.index.selection().is_some(),
-                });
-            }
-
-            res.push(CommandInfo {
-                name: "Next [tab]".to_string(),
-                enabled: true,
-            });
-            res.push(CommandInfo {
-                name: "Quit [esc,q]".to_string(),
-                enabled: true,
-            });
-        }
-
-        res
-    }
-
     ///
     pub fn event(&mut self, ev: Event) {
         if self.commit.event(ev) {
@@ -229,6 +172,71 @@ impl App {
         }
     }
 
+    ///
+    pub fn update(&mut self) {
+        self.index.update();
+        self.index_wd.update();
+        self.update_diff();
+    }
+
+    ///
+    pub fn is_quit(&self) -> bool {
+        self.do_quit
+    }
+}
+
+impl App {
+    fn update_diff(&mut self) {
+        let (idx, is_stage) = match self.diff_target {
+            DiffTarget::Stage => (&self.index, true),
+            DiffTarget::WorkingDir => (&self.index_wd, false),
+        };
+
+        let new_diff = match idx.selection() {
+            Some(i) => git_utils::get_diff(
+                Path::new(i.path.as_str()),
+                is_stage,
+            ),
+            None => Diff::default(),
+        };
+
+        self.diff.update(new_diff);
+    }
+
+    fn commands(&self) -> Vec<CommandInfo> {
+        let mut res = Vec::new();
+        if !self.commit.is_visible() {
+            if self.index_wd.focused() {
+                let some_selection =
+                    self.index_wd.selection().is_some();
+                res.push(CommandInfo {
+                    name: "Stage File [enter]".to_string(),
+                    enabled: some_selection,
+                });
+                res.push(CommandInfo {
+                    name: "Reset File [D]".to_string(),
+                    enabled: some_selection,
+                });
+            } else if self.index.focused() {
+                res.push(CommandInfo {
+                    name: "Unstage File [enter]".to_string(),
+                    enabled: self.index.selection().is_some(),
+                });
+            }
+
+            res.push(CommandInfo {
+                name: "Next [tab]".to_string(),
+                enabled: true,
+            });
+            res.push(CommandInfo {
+                name: "Quit [esc,q]".to_string(),
+                enabled: true,
+            });
+        }
+
+        res
+    }
+
     fn draw_commands<B: Backend>(
         &self,
         f: &mut Frame<B>,
@@ -262,13 +270,6 @@ impl App {
         Paragraph::new(texts.iter().intersperse(&splitter))
             .alignment(Alignment::Left)
             .render(f, r);
-    }
-
-    ///
-    pub fn update(&mut self) {
-        self.index.update();
-        self.index_wd.update();
-        self.update_diff();
     }
 
     fn toggle_focus(&mut self) {
