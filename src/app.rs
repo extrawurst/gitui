@@ -19,6 +19,7 @@ use tui::{
 };
 
 ///
+#[derive(PartialEq)]
 enum DiffTarget {
     Stage,
     WorkingDir,
@@ -271,24 +272,29 @@ impl App {
 
             match self.focus {
                 Focus::Status => {
-                    self.diff_target = DiffTarget::WorkingDir;
-                    self.index_wd.focus(true);
-                    self.index.focus(false);
+                    self.set_diff_target(DiffTarget::WorkingDir);
                     self.diff.focus(false);
                 }
                 Focus::Stage => {
-                    self.diff_target = DiffTarget::Stage;
-                    self.index.focus(true);
-                    self.index_wd.focus(false);
+                    self.set_diff_target(DiffTarget::Stage);
                     self.diff.focus(false);
                 }
                 Focus::Diff => {
                     self.index.focus(false);
                     self.index_wd.focus(false);
+
                     self.diff.focus(true);
                 }
             };
         }
+    }
+
+    fn set_diff_target(&mut self, target: DiffTarget) {
+        self.diff_target = target;
+        let is_stage = self.diff_target == DiffTarget::Stage;
+
+        self.index_wd.focus_select(!is_stage);
+        self.index.focus_select(is_stage);
     }
 
     fn index_add_remove(&mut self) {

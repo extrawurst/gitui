@@ -16,6 +16,7 @@ pub struct IndexComponent {
     index_type: StatusShow,
     selection: Option<usize>,
     focused: bool,
+    show_selection: bool,
 }
 
 impl IndexComponent {
@@ -31,6 +32,7 @@ impl IndexComponent {
             index_type,
             selection: None,
             focused: focus,
+            show_selection: focus,
         }
     }
     ///
@@ -51,6 +53,11 @@ impl IndexComponent {
             None => None,
             Some(i) => Some(self.items[i].clone()),
         }
+    }
+
+    pub fn focus_select(&mut self, focus: bool) {
+        self.focus(focus);
+        self.show_selection = focus;
     }
 
     fn move_selection(&mut self, delta: i32) {
@@ -79,7 +86,11 @@ impl Component for IndexComponent {
                 .map(|e| e.path.clone())
                 .collect::<Vec<_>>()
                 .as_slice(),
-            if self.focused { self.selection } else { None },
+            if self.show_selection {
+                self.selection
+            } else {
+                None
+            },
             self.focused,
         );
     }
