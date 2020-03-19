@@ -49,7 +49,7 @@ pub fn draw_list<B: Backend, T: AsRef<str>>(
     let mut style_border = Style::default();
     let mut style_title = Style::default();
     if selected {
-        style_border = style_border.fg(Color::Red);
+        style_border = style_border.fg(Color::Green);
         style_title = style_title.modifier(Modifier::BOLD);
     }
     SelectableList::default()
