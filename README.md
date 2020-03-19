@@ -16,6 +16,7 @@ Over the last 2 years my go to GUI tool for this was [fork](https://git-fork.com
 * [x] [input polling in thread](assets/perf_compare.jpg)
 * [ ] show content of new files
 * [ ] indicate file status (modified,added,removed)
+* [ ] discard untracked files (remove)
 * [ ] use [notify](https://crates.io/crates/notify) to watch git
 * [ ] log view
 
