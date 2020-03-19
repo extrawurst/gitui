@@ -30,16 +30,16 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
         let mut batch = Vec::new();
 
         loop {
-            let timeout = if batch.len() > 0 {
-                MIN_POLL_DURATION
-            } else {
+            let timeout = if batch.is_empty() {
                 MAX_POLL_DURATION
+            } else {
+                MIN_POLL_DURATION
             };
             if let Some(e) = poll(timeout) {
                 batch.push(QueueEvent::Event(e));
             }
 
-            if batch.len() > 0
+            if !batch.is_empty()
                 && last_send.elapsed() > MAX_BATCHING_DURATION
             {
                 tx1.send(batch).unwrap();
@@ -60,7 +60,6 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
 ///
 fn poll(dur: Duration) -> Option<Event> {
     if event::poll(dur).unwrap() {
-        // It's guaranteed that read() wont block if `poll` returns `Ok(true)`
         let event = event::read().unwrap();
         Some(event)
     } else {
