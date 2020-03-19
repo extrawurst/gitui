@@ -14,6 +14,7 @@ Over the last 2 years my go to GUI tool for this was [fork](https://git-fork.com
 * [x] inspect diffs
 * [x] commit
 * [x] [input polling in thread](assets/perf_compare.jpg)
+* [ ] allow focus on diff to scroll
 * [ ] show content of new files
 * [ ] indicate file status (modified,added,removed)
 * [ ] discard untracked files (remove)
