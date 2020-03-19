@@ -163,8 +163,10 @@ impl App {
             .render(f, chunks[1]);
 
         let mut cmds = self.commit.commands();
-        cmds.extend(self.index.commands());
-        cmds.extend(self.index_wd.commands());
+        if !self.commit.is_visible() {
+            cmds.extend(self.index.commands());
+            cmds.extend(self.index_wd.commands());
+        }
         cmds.extend(self.commands());
 
         self.draw_commands(f, chunks_main[2], cmds);
@@ -208,14 +210,14 @@ impl App {
             return;
         }
 
-        if self.index.event(ev) {
-            return;
-        }
-        if self.index_wd.event(ev) {
-            return;
-        }
-
         if !self.commit.is_visible() {
+            if self.index.event(ev) {
+                return;
+            }
+            if self.index_wd.event(ev) {
+                return;
+            }
+
             if ev == Event::Key(KeyCode::Esc.into())
                 || ev == Event::Key(KeyCode::Char('q').into())
             {

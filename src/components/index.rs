@@ -88,7 +88,7 @@ impl Component for IndexComponent {
         if self.focused {
             return vec![CommandInfo {
                 name: "Scroll [↑↓]".to_string(),
-                enabled: self.items.len() > 0,
+                enabled: self.items.len() > 1,
             }];
         }
 
