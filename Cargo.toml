@@ -11,4 +11,7 @@ edition = "2018"
 git2 = "0.10"
 crossterm = "0.15"
 itertools = "0.9"
+log = "0.4"
+simplelog = "0.7"
+dirs = "2.0"
 tui = { version = "0.8", default-features = false, features = ['crossterm'] }

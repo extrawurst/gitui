@@ -18,10 +18,12 @@ use crossterm::{
     },
     ExecutableCommand, Result,
 };
-use std::io;
+use simplelog::*;
+use std::{env, fs, fs::File, io};
 use tui::{backend::CrosstermBackend, Terminal};
 
 fn main() -> Result<()> {
+    setup_logging();
     enable_raw_mode()?;
     io::stdout()
         .execute(EnterAlternateScreen)?
@@ -59,4 +61,19 @@ fn main() -> Result<()> {
         .execute(DisableMouseCapture)?;
     disable_raw_mode()?;
     Ok(())
+}
+
+fn setup_logging() {
+    if env::var("GITUI_LOGGING").is_ok() {
+        let mut path = dirs::home_dir().unwrap();
+        path.push(".gitui");
+        path.push("gitui.log");
+        fs::create_dir(path.parent().unwrap()).unwrap_or_default();
+
+        let _ = WriteLogger::init(
+            LevelFilter::Trace,
+            Config::default(),
+            File::create(path).unwrap(),
+        );
+    }
 }

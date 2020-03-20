@@ -9,6 +9,7 @@ use crate::{
 use crossterm::event::Event;
 use git2::StatusShow;
 use itertools::Itertools;
+use log::trace;
 use std::{borrow::Cow, path::Path};
 use tui::{
     backend::Backend,
@@ -136,6 +137,7 @@ impl App {
 
     ///
     pub fn event(&mut self, ev: Event) {
+        trace!("event: {:?}", ev);
         if self.commit.event(ev) {
             return;
         }
@@ -189,6 +191,7 @@ impl App {
 
     ///
     pub fn update(&mut self) {
+        trace!("update");
         self.index.update();
         self.index_wd.update();
         self.update_diff();
