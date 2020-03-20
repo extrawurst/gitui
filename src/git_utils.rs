@@ -1,6 +1,7 @@
 use git2::{
     build::CheckoutBuilder, DiffFormat, DiffOptions, IndexAddOption,
-    ObjectType, Repository, StatusOptions, StatusShow,
+    ObjectType, Repository, RepositoryOpenFlags, StatusOptions,
+    StatusShow,
 };
 use std::path::Path;
 
@@ -91,7 +92,12 @@ pub fn get_diff(p: &Path, stage: bool) -> Diff {
 
 ///
 pub fn repo() -> Repository {
-    let repo = Repository::init("./").unwrap();
+    let repo = Repository::open_ext(
+        "./",
+        RepositoryOpenFlags::empty(),
+        Vec::<&Path>::new(),
+    )
+    .unwrap();
 
     if repo.is_bare() {
         panic!("bare repo")
