@@ -11,6 +11,14 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 
 ## installation
 
+For the time being this product is considered alpha and not production ready, therefore I do not distribute binary versions yet, however feel free to build `gitui` and let me know what you think!
+
+### requirements
+
+install `rust`/`cargo`: https://www.rust-lang.org/tools/install
+
+### build from source
+
 the simplest way to start playing around with `gitui` is to have `cargo` install it locally:
 
 ```
