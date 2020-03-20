@@ -9,13 +9,26 @@ I do most of my git usage in a terminal but I frequently found myself using git 
 
 Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was not bloated, snappy and free. Unfortunately the *free* part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast & simple terminal tool myself to copy the fork features i am using the most.
 
+## installation
+
+the simplest way to start playing around with `gitui` is to have `cargo` install it locally:
+
+```
+cargo install --path "."
+```
+
+after that you can go to your git repo and run it:
+
+```
+gitui
+```
+
 # todo
 
 * [x] (un)stage files
 * [x] inspect diffs
 * [x] commit
 * [x] [input polling in thread](assets/perf_compare.jpg)
-* [ ] ←→ to switch between index/diff
 * [ ] support non-root git folder wd
 * [ ] show content of new files
 * [ ] discard untracked files (remove)
