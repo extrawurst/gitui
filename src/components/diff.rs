@@ -31,6 +31,11 @@ impl DiffComponent {
         self.current_path.clone()
     }
     ///
+    pub fn clear(&mut self) {
+        self.current_path.clear();
+        self.diff = Diff::default();
+    }
+    ///
     pub fn update(&mut self, path: String, diff: Diff) {
         self.current_path = path;
         if diff != self.diff {

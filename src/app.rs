@@ -138,6 +138,7 @@ impl App {
     pub fn event(&mut self, ev: Event) {
         trace!("event: {:?}", ev);
         if self.commit.event(ev) {
+            self.update_diff();
             return;
         }
 
@@ -221,6 +222,8 @@ impl App {
                     ),
                 );
             }
+        } else {
+            self.diff.clear();
         }
     }
 
