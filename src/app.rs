@@ -91,10 +91,17 @@ impl App {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(
-                [
-                    Constraint::Percentage(50),
-                    Constraint::Percentage(50),
-                ]
+                if self.focus == Focus::Diff {
+                    [
+                        Constraint::Percentage(30),
+                        Constraint::Percentage(70),
+                    ]
+                } else {
+                    [
+                        Constraint::Percentage(50),
+                        Constraint::Percentage(50),
+                    ]
+                }
                 .as_ref(),
             )
             .split(chunks_main[1]);
