@@ -37,6 +37,8 @@ gitui
 * [x] inspect diffs
 * [x] commit
 * [x] [input polling in thread](assets/perf_compare.jpg)
+* [ ] debug log view
+* [ ] only ask git when necessary. maybe in a worker thread?
 * [ ] show content of new files
 * [ ] discard untracked files (remove)
 * [ ] use [notify](https://crates.io/crates/notify) to watch git
