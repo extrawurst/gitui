@@ -154,8 +154,13 @@ impl App {
                 self.switch_focus(Focus::Status);
             } else if ev == Event::Key(keys::FOCUS_STAGE) {
                 self.switch_focus(Focus::Stage);
-            } else if ev == Event::Key(keys::FOCUS_DIFF) {
+            } else if ev == Event::Key(keys::FOCUS_RIGHT) {
                 self.switch_focus(Focus::Diff);
+            } else if ev == Event::Key(keys::FOCUS_LEFT) {
+                self.switch_focus(match self.diff_target {
+                    DiffTarget::Stage => Focus::Stage,
+                    DiffTarget::WorkingDir => Focus::Status,
+                });
             }
 
             if let Event::Key(e) = ev {
@@ -222,6 +227,14 @@ impl App {
                 });
             }
 
+            res.push(CommandInfo {
+                name: if self.focus == Focus::Diff {
+                    strings::CMD_STATUS_LEFT.to_string()
+                } else {
+                    strings::CMD_STATUS_RIGHT.to_string()
+                },
+                enabled: true,
+            });
             res.push(CommandInfo {
                 name: strings::CMD_STATUS_QUIT.to_string(),
                 enabled: true,
