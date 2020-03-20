@@ -3,8 +3,7 @@ use crate::{
         CommandInfo, CommitComponent, Component, DiffComponent,
         IndexComponent,
     },
-    git_utils::{self, Diff},
-    keys, strings,
+    git_utils, keys, strings,
 };
 use crossterm::event::Event;
 use git2::StatusShow;
@@ -210,15 +209,19 @@ impl App {
             DiffTarget::WorkingDir => (&self.index_wd, false),
         };
 
-        let new_diff = match idx.selection() {
-            Some(i) => git_utils::get_diff(
-                Path::new(i.path.as_str()),
-                is_stage,
-            ),
-            None => Diff::default(),
-        };
+        if let Some(i) = idx.selection() {
+            let path = i.path;
 
-        self.diff.update(new_diff);
+            if self.diff.path() != path {
+                self.diff.update(
+                    path.clone(),
+                    git_utils::get_diff(
+                        Path::new(path.as_str()),
+                        is_stage,
+                    ),
+                );
+            }
+        }
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
