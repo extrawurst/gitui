@@ -143,11 +143,11 @@ impl App {
 
         if !self.commit.is_visible() {
             if self.index.event(ev) {
-                self.update();
+                self.update_diff();
                 return;
             }
             if self.index_wd.event(ev) {
-                self.update();
+                self.update_diff();
                 return;
             }
             if self.diff.event(ev) {
@@ -318,7 +318,7 @@ impl App {
                 }
             };
 
-            self.update();
+            self.update_diff();
         }
     }
 
