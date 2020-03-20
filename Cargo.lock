@@ -143,7 +143,6 @@ dependencies = [
  "git2",
  "itertools 0.9.0",
  "tui",
- "unicode-width",
 ]
 
 [[package]]

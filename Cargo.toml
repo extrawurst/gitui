@@ -11,5 +11,4 @@ edition = "2018"
 git2 = "0.10"
 crossterm = "0.15"
 itertools = "0.9"
-unicode-width = "0.1"
 tui = { version = "0.8", default-features = false, features = ['crossterm'] }
