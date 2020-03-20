@@ -142,9 +142,11 @@ impl App {
 
         if !self.commit.is_visible() {
             if self.index.event(ev) {
+                self.update();
                 return;
             }
             if self.index_wd.event(ev) {
+                self.update();
                 return;
             }
             if self.diff.event(ev) {
@@ -172,9 +174,13 @@ impl App {
                         })
                     }
                     keys::STATUS_STAGE_FILE => {
-                        self.index_add_remove()
+                        self.index_add_remove();
+                        self.update();
                     }
-                    keys::STATUS_RESET_FILE => self.index_reset(),
+                    keys::STATUS_RESET_FILE => {
+                        self.index_reset();
+                        self.update();
+                    }
                     _ => (),
                 };
             }
@@ -305,6 +311,8 @@ impl App {
                     self.diff.focus(true);
                 }
             };
+
+            self.update();
         }
     }
 

@@ -9,13 +9,13 @@ use std::{
 #[derive(Clone)]
 pub enum QueueEvent {
     Tick,
-    Event(Event),
+    InputEvent(Event),
 }
 
 static MAX_POLL_DURATION: Duration = Duration::from_secs(2);
 static MIN_POLL_DURATION: Duration = Duration::from_millis(5);
 static MAX_BATCHING_DURATION: Duration = Duration::from_millis(25);
-static TICK_DURATION: Duration = Duration::from_secs(2);
+static TICK_DURATION: Duration = Duration::from_secs(5);
 
 /// we run 2 threads feeding us with update events.
 ///
@@ -36,7 +36,7 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
                 MIN_POLL_DURATION
             };
             if let Some(e) = poll(timeout) {
-                batch.push(QueueEvent::Event(e));
+                batch.push(QueueEvent::InputEvent(e));
             }
 
             if !batch.is_empty()

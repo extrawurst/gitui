@@ -38,16 +38,16 @@ fn main() -> Result<()> {
     let receiver = poll::start_polling_thread();
 
     loop {
-        app.update();
-
-        terminal.draw(|mut f| app.draw(&mut f))?;
-
         let events = receiver.recv().unwrap();
         for e in events {
-            if let QueueEvent::Event(ev) = e {
+            if let QueueEvent::InputEvent(ev) = e {
                 app.event(ev);
+            } else {
+                app.update();
             }
         }
+
+        terminal.draw(|mut f| app.draw(&mut f))?;
 
         if app.is_quit() {
             break;
