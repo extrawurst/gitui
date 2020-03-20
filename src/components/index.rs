@@ -6,8 +6,15 @@ use crate::{
 };
 use crossterm::event::{Event, KeyCode};
 use git2::StatusShow;
-use std::cmp;
-use tui::{backend::Backend, layout::Rect, Frame};
+use git_status::StatusItemType;
+use std::{borrow::Cow, cmp};
+use tui::{
+    backend::Backend,
+    layout::Rect,
+    style::{Color, Modifier, Style},
+    widgets::Text,
+    Frame,
+};
 
 ///
 pub struct IndexComponent {
@@ -55,6 +62,7 @@ impl IndexComponent {
         }
     }
 
+    ///
     pub fn focus_select(&mut self, focus: bool) {
         self.focus(focus);
         self.show_selection = focus;
@@ -77,15 +85,37 @@ impl IndexComponent {
 
 impl Component for IndexComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+        let item_to_text = |idx: usize, i: &StatusItem| -> Text {
+            let selected = self.show_selection
+                && self.selection.map_or(false, |e| e == idx);
+            let txt = if selected {
+                format!("> {}", i.path)
+            } else {
+                format!("  {}", i.path)
+            };
+            let mut style = Style::default().fg(
+                match i.status.unwrap_or(StatusItemType::Modified) {
+                    StatusItemType::Modified => Color::LightYellow,
+                    StatusItemType::New => Color::LightGreen,
+                    StatusItemType::Deleted => Color::LightRed,
+                    _ => Color::White,
+                },
+            );
+            if selected {
+                style = style.modifier(Modifier::BOLD); //.fg(Color::White);
+            }
+
+            Text::Styled(Cow::from(txt), style)
+        };
+
         tui_utils::draw_list(
             f,
             r,
-            self.title.to_string(),
+            &self.title.to_string(),
             self.items
                 .iter()
-                .map(|e| e.path.clone())
-                .collect::<Vec<_>>()
-                .as_slice(),
+                .enumerate()
+                .map(|(idx, e)| item_to_text(idx, e)),
             if self.show_selection {
                 self.selection
             } else {

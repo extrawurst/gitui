@@ -1,10 +1,12 @@
+use crate::tui_scrolllist;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::{
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, SelectableList, Widget},
+    widgets::{Block, Borders, Text, Widget},
     Frame,
 };
+use tui_scrolllist::ScrollableList;
 
 /// use layouts to create a rects that
 /// centers inside `r` and sizes `percent_x`/`percent_x` of `r`
@@ -38,21 +40,23 @@ pub fn centered_rect(
         .split(popup_layout[1])[1]
 }
 
-pub fn draw_list<B: Backend, T: AsRef<str>>(
+pub fn draw_list<'b, B: Backend, L>(
     f: &mut Frame<B>,
     r: Rect,
-    title: String,
-    items: &[T],
+    title: &'b String,
+    items: L,
     select: Option<usize>,
     selected: bool,
-) {
+) where
+    L: Iterator<Item = Text<'b>>,
+{
     let mut style_border = Style::default();
     let mut style_title = Style::default();
     if selected {
         style_border = style_border.fg(Color::Green);
         style_title = style_title.modifier(Modifier::BOLD);
     }
-    SelectableList::default()
+    ScrollableList::new(items)
         .block(
             Block::default()
                 .title(title.as_str())
@@ -60,10 +64,7 @@ pub fn draw_list<B: Backend, T: AsRef<str>>(
                 .title_style(style_title)
                 .border_style(style_border),
         )
-        .items(items)
-        .select(select)
+        .scroll(select.unwrap_or_default())
         .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().modifier(Modifier::BOLD))
-        .highlight_symbol(">")
         .render(f, r);
 }

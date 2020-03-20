@@ -6,6 +6,7 @@ mod git_utils;
 mod keys;
 mod poll;
 mod strings;
+mod tui_scrolllist;
 mod tui_utils;
 
 use crate::{app::App, poll::QueueEvent};
