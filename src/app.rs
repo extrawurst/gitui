@@ -6,7 +6,7 @@ use crate::{
     git_utils::{self, Diff},
     keys, strings,
 };
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 use git2::StatusShow;
 use itertools::Itertools;
 use std::{borrow::Cow, path::Path};
@@ -144,33 +144,32 @@ impl App {
                 return;
             }
 
-            if ev == Event::Key(KeyCode::Esc.into())
-                || ev == Event::Key(KeyCode::Char('q').into())
-            {
-                self.do_quit = true;
-            }
-
-            if ev == Event::Key(keys::FOCUS_STATUS) {
-                self.switch_focus(Focus::Status);
-            } else if ev == Event::Key(keys::FOCUS_STAGE) {
-                self.switch_focus(Focus::Stage);
-            } else if ev == Event::Key(keys::FOCUS_RIGHT) {
-                self.switch_focus(Focus::Diff);
-            } else if ev == Event::Key(keys::FOCUS_LEFT) {
-                self.switch_focus(match self.diff_target {
-                    DiffTarget::Stage => Focus::Stage,
-                    DiffTarget::WorkingDir => Focus::Status,
-                });
-            }
-
-            if let Event::Key(e) = ev {
-                if e.code == KeyCode::Enter {
-                    self.index_add_remove();
-                }
-            }
-
-            if ev == Event::Key(KeyCode::Char('D').into()) {
-                self.index_reset();
+            if let Event::Key(k) = ev {
+                match k {
+                    keys::EXIT_1 | keys::EXIT_2 => {
+                        self.do_quit = true
+                    }
+                    keys::FOCUS_STATUS => {
+                        self.switch_focus(Focus::Status)
+                    }
+                    keys::FOCUS_STAGE => {
+                        self.switch_focus(Focus::Stage)
+                    }
+                    keys::FOCUS_RIGHT => {
+                        self.switch_focus(Focus::Diff)
+                    }
+                    keys::FOCUS_LEFT => {
+                        self.switch_focus(match self.diff_target {
+                            DiffTarget::Stage => Focus::Stage,
+                            DiffTarget::WorkingDir => Focus::Status,
+                        })
+                    }
+                    keys::STATUS_STAGE_FILE => {
+                        self.index_add_remove()
+                    }
+                    keys::STATUS_RESET_FILE => self.index_reset(),
+                    _ => (),
+                };
             }
         }
     }
@@ -311,7 +310,7 @@ impl App {
     }
 
     fn index_add_remove(&mut self) {
-        if self.index_wd.focused() {
+        if self.diff_target == DiffTarget::WorkingDir {
             if let Some(i) = self.index_wd.selection() {
                 let path = Path::new(i.path.as_str());
 

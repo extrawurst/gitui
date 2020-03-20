@@ -7,7 +7,11 @@ const fn no_mod(code: KeyCode) -> KeyEvent {
     }
 }
 
-pub static FOCUS_STATUS: KeyEvent = no_mod(KeyCode::Char('1'));
-pub static FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('2'));
-pub static FOCUS_RIGHT: KeyEvent = no_mod(KeyCode::Right);
-pub static FOCUS_LEFT: KeyEvent = no_mod(KeyCode::Left);
+pub const FOCUS_STATUS: KeyEvent = no_mod(KeyCode::Char('1'));
+pub const FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('2'));
+pub const FOCUS_RIGHT: KeyEvent = no_mod(KeyCode::Right);
+pub const FOCUS_LEFT: KeyEvent = no_mod(KeyCode::Left);
+pub const STATUS_RESET_FILE: KeyEvent = no_mod(KeyCode::Char('D'));
+pub const STATUS_STAGE_FILE: KeyEvent = no_mod(KeyCode::Enter);
+pub const EXIT_1: KeyEvent = no_mod(KeyCode::Esc);
+pub const EXIT_2: KeyEvent = no_mod(KeyCode::Char('q'));
