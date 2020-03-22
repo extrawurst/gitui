@@ -1,8 +1,6 @@
-use git2::{
-    DiffFormat, DiffOptions, Repository, RepositoryOpenFlags,
-};
+use crate::utils;
+use git2::{DiffFormat, DiffOptions};
 use scopetime::scope_time;
-use std::path::Path;
 
 ///
 #[derive(Copy, Clone, PartialEq)]
@@ -34,7 +32,7 @@ pub struct Diff(pub Vec<DiffLine>);
 pub fn get_diff(p: String, stage: bool) -> Diff {
     scope_time!("get_diff");
 
-    let repo = repo();
+    let repo = utils::repo();
 
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
@@ -89,20 +87,4 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
     .unwrap();
 
     Diff(res)
-}
-
-///
-pub fn repo() -> Repository {
-    let repo = Repository::open_ext(
-        "./",
-        RepositoryOpenFlags::empty(),
-        Vec::<&Path>::new(),
-    )
-    .unwrap();
-
-    if repo.is_bare() {
-        panic!("bare repo")
-    }
-
-    repo
 }
