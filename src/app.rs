@@ -5,7 +5,7 @@ use crate::{
     },
     keys, strings,
 };
-use asyncgit::{AsyncDiff, StatusType};
+use asyncgit::{sync, AsyncDiff, StatusType};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -353,7 +353,7 @@ impl App {
             if let Some(i) = self.index_wd.selection() {
                 let path = Path::new(i.path.as_str());
 
-                if asyncgit::stage_add(path) {
+                if sync::stage_add(path) {
                     self.update();
                 }
             }
@@ -361,7 +361,7 @@ impl App {
             if let Some(i) = self.index.selection() {
                 let path = Path::new(i.path.as_str());
 
-                if asyncgit::stage_reset(path) {
+                if sync::stage_reset(path) {
                     self.update();
                 }
             }
@@ -373,7 +373,7 @@ impl App {
             if let Some(i) = self.index_wd.selection() {
                 let path = Path::new(i.path.as_str());
 
-                if asyncgit::index_reset(path) {
+                if sync::index_reset(path) {
                     self.update();
                 }
             }

@@ -1,8 +1,7 @@
-use crate::utils;
+use crate::sync::utils;
 use git2::{Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 
-///
 #[derive(PartialEq, Copy, Clone)]
 pub enum StatusItemType {
     New,

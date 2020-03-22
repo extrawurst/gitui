@@ -1,4 +1,4 @@
-use crate::utils;
+use super::utils;
 use git2::{DiffFormat, DiffOptions};
 use scopetime::scope_time;
 

@@ -1,6 +1,6 @@
 use crate::components::{CommandInfo, Component};
 use crate::ui;
-use asyncgit::{StatusItem, StatusItemType, StatusType};
+use asyncgit::{sync, StatusItem, StatusItemType, StatusType};
 use crossterm::event::{Event, KeyCode};
 use std::{borrow::Cow, cmp};
 use tui::{
@@ -39,7 +39,7 @@ impl IndexComponent {
     }
     ///
     pub fn update(&mut self) {
-        let new_status = asyncgit::get_index(self.index_type.into());
+        let new_status = sync::get_index(self.index_type.into());
 
         if self.items != new_status {
             self.items = new_status;

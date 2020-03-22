@@ -1,17 +1,15 @@
-mod diff;
-mod status;
-mod utils;
+pub mod sync;
 
-pub use crate::{
-    diff::{get_diff, Diff, DiffLine, DiffLineType},
-    status::{get_index, StatusItem, StatusItemType, StatusType},
-    utils::{commit, index_reset, stage_add, stage_reset},
-};
 use crossbeam_channel::Sender;
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
     sync::{Arc, Mutex},
+};
+use sync::diff::get_diff;
+pub use sync::{
+    diff::{Diff, DiffLine, DiffLineType},
+    status::{StatusItem, StatusItemType, StatusType},
 };
 
 #[derive(Default, Hash)]
