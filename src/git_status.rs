@@ -38,8 +38,6 @@ pub fn get_index(show: StatusShow) -> Vec<StatusItem> {
 
     let repo = git_utils::repo();
 
-    let mut res = Vec::new();
-
     let statuses = repo
         .statuses(Some(
             StatusOptions::default()
@@ -49,6 +47,8 @@ pub fn get_index(show: StatusShow) -> Vec<StatusItem> {
                 .recurse_untracked_dirs(true),
         ))
         .unwrap();
+
+    let mut res = Vec::with_capacity(statuses.len());
 
     for e in statuses.iter() {
         let status: Status = e.status();
