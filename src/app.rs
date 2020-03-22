@@ -137,8 +137,10 @@ impl App {
     ///
     pub fn event(&mut self, ev: Event) {
         trace!("event: {:?}", ev);
-        if self.commit.event(ev) {
-            self.update_diff();
+        if self.commit.is_visible() && self.commit.event(ev) {
+            if !self.commit.is_visible() {
+                self.update();
+            }
             return;
         }
 
@@ -182,6 +184,9 @@ impl App {
                     keys::STATUS_RESET_FILE => {
                         self.index_reset();
                         self.update();
+                    }
+                    keys::OPEN_COMMIT if !self.index.is_empty() => {
+                        self.commit.show();
                     }
                     _ => (),
                 };

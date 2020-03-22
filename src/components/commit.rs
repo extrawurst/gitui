@@ -60,35 +60,26 @@ impl Component for CommitComponent {
     }
 
     fn event(&mut self, ev: Event) -> bool {
-        if self.visible {
-            if let Event::Key(e) = ev {
-                return match e.code {
-                    KeyCode::Esc => {
-                        self.hide();
-                        true
-                    }
-                    KeyCode::Char(c) => {
-                        self.msg.push(c);
-                        true
-                    }
-                    KeyCode::Enter if self.can_commit() => {
-                        self.commit();
-                        true
-                    }
-                    KeyCode::Backspace if self.msg.len() > 0 => {
-                        self.msg.pop().unwrap();
-                        true
-                    }
-                    _ => false,
-                };
-            }
-        } else {
-            if ev == Event::Key(KeyCode::Char('c').into()) {
-                if !git_utils::index_empty() {
-                    self.show();
-                    return true;
+        if let Event::Key(e) = ev {
+            return match e.code {
+                KeyCode::Esc => {
+                    self.hide();
+                    true
                 }
-            }
+                KeyCode::Char(c) => {
+                    self.msg.push(c);
+                    true
+                }
+                KeyCode::Enter if self.can_commit() => {
+                    self.commit();
+                    true
+                }
+                KeyCode::Backspace if self.msg.len() > 0 => {
+                    self.msg.pop().unwrap();
+                    true
+                }
+                _ => false,
+            };
         }
 
         false

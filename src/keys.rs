@@ -15,3 +15,4 @@ pub const STATUS_RESET_FILE: KeyEvent = no_mod(KeyCode::Char('D'));
 pub const STATUS_STAGE_FILE: KeyEvent = no_mod(KeyCode::Enter);
 pub const EXIT_1: KeyEvent = no_mod(KeyCode::Esc);
 pub const EXIT_2: KeyEvent = no_mod(KeyCode::Char('q'));
+pub const OPEN_COMMIT: KeyEvent = no_mod(KeyCode::Char('c'));

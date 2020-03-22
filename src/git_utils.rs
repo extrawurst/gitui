@@ -1,7 +1,6 @@
 use git2::{
     build::CheckoutBuilder, DiffFormat, DiffOptions, IndexAddOption,
-    ObjectType, Repository, RepositoryOpenFlags, StatusOptions,
-    StatusShow,
+    ObjectType, Repository, RepositoryOpenFlags,
 };
 use scopetime::scope_time;
 use std::path::Path;
@@ -132,21 +131,6 @@ pub fn commit(msg: &String) {
         &[&parent],
     )
     .unwrap();
-}
-
-///
-pub fn index_empty() -> bool {
-    scope_time!("index_empty");
-
-    let repo = repo();
-
-    let statuses = repo
-        .statuses(Some(
-            StatusOptions::default().show(StatusShow::Index),
-        ))
-        .unwrap();
-
-    statuses.is_empty()
 }
 
 pub fn stage_add(path: &Path) -> bool {
