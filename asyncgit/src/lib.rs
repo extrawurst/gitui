@@ -52,7 +52,7 @@ impl AsyncDiff {
 
         let arc_clone = Arc::clone(&self.current);
         let sender = self.sender.clone();
-        rayon::spawn(move || {
+        rayon_core::spawn(move || {
             let res = get_diff(file_path.clone(), stage);
             let mut notify = false;
             {

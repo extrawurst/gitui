@@ -25,7 +25,7 @@ dependencies = [
  "crossbeam-channel",
  "git2",
  "log",
- "rayon",
+ "rayon-core",
  "scopetime",
 ]
 
@@ -580,17 +580,6 @@ name = "pkg-config"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
-
-[[package]]
-name = "rayon"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db6ce3297f9c85e16621bb8cca38a06779ffc31bb8184e1be4bed2be4678a098"
-dependencies = [
- "crossbeam-deque",
- "either",
- "rayon-core",
-]
 
 [[package]]
 name = "rayon-core"
