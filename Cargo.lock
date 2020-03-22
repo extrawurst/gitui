@@ -290,7 +290,6 @@ dependencies = [
  "crossbeam-channel",
  "crossterm 0.15.0",
  "dirs",
- "git2",
  "itertools 0.9.0",
  "log",
  "scopetime",

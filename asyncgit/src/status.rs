@@ -1,7 +1,8 @@
-use crate::git_utils;
+use crate::utils;
 use git2::{Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 
+///
 #[derive(PartialEq, Copy, Clone)]
 pub enum StatusItemType {
     New,
@@ -27,21 +28,39 @@ impl From<Status> for StatusItemType {
     }
 }
 
+///
 #[derive(Default, PartialEq, Clone)]
 pub struct StatusItem {
     pub path: String,
     pub status: Option<StatusItemType>,
 }
 
-pub fn get_index(show: StatusShow) -> Vec<StatusItem> {
+///
+#[derive(Copy, Clone)]
+pub enum StatusType {
+    WorkingDir,
+    Stage,
+}
+
+impl Into<StatusShow> for StatusType {
+    fn into(self) -> StatusShow {
+        match self {
+            StatusType::WorkingDir => StatusShow::Workdir,
+            StatusType::Stage => StatusShow::Index,
+        }
+    }
+}
+
+///
+pub fn get_index(status_type: StatusType) -> Vec<StatusItem> {
     scope_time!("get_index");
 
-    let repo = git_utils::repo();
+    let repo = utils::repo();
 
     let statuses = repo
         .statuses(Some(
             StatusOptions::default()
-                .show(show)
+                .show(status_type.into())
                 .include_untracked(true)
                 .renames_head_to_index(true)
                 .recurse_untracked_dirs(true),

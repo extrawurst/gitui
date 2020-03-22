@@ -1,7 +1,5 @@
 mod app;
 mod components;
-mod git_status;
-mod git_utils;
 mod keys;
 mod poll;
 mod strings;

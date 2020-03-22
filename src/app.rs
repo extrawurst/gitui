@@ -3,12 +3,11 @@ use crate::{
         CommandInfo, CommitComponent, Component, DiffComponent,
         IndexComponent,
     },
-    git_utils, keys, strings,
+    keys, strings,
 };
-use asyncgit::AsyncDiff;
+use asyncgit::{AsyncDiff, StatusType};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use git2::StatusShow;
 use itertools::Itertools;
 use log::trace;
 use std::{borrow::Cow, path::Path};
@@ -57,12 +56,12 @@ impl App {
             commit: CommitComponent::default(),
             index_wd: IndexComponent::new(
                 strings::TITLE_STATUS,
-                StatusShow::Workdir,
+                StatusType::WorkingDir,
                 true,
             ),
             index: IndexComponent::new(
                 strings::TITLE_INDEX,
-                StatusShow::Index,
+                StatusType::Stage,
                 false,
             ),
             diff: DiffComponent::default(),
@@ -354,7 +353,7 @@ impl App {
             if let Some(i) = self.index_wd.selection() {
                 let path = Path::new(i.path.as_str());
 
-                if git_utils::stage_add(path) {
+                if asyncgit::stage_add(path) {
                     self.update();
                 }
             }
@@ -362,7 +361,7 @@ impl App {
             if let Some(i) = self.index.selection() {
                 let path = Path::new(i.path.as_str());
 
-                if git_utils::stage_reset(path) {
+                if asyncgit::stage_reset(path) {
                     self.update();
                 }
             }
@@ -374,7 +373,7 @@ impl App {
             if let Some(i) = self.index_wd.selection() {
                 let path = Path::new(i.path.as_str());
 
-                if git_utils::index_reset(path) {
+                if asyncgit::index_reset(path) {
                     self.update();
                 }
             }

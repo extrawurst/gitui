@@ -46,6 +46,7 @@ pub fn commit(msg: &String) {
     .unwrap();
 }
 
+///
 pub fn stage_add(path: &Path) -> bool {
     scope_time!("stage_add");
 
@@ -73,6 +74,7 @@ pub fn stage_add(path: &Path) -> bool {
     false
 }
 
+///
 pub fn stage_reset(path: &Path) -> bool {
     scope_time!("stage_reset");
 
@@ -93,6 +95,7 @@ pub fn stage_reset(path: &Path) -> bool {
     false
 }
 
+///
 pub fn index_reset(path: &Path) -> bool {
     scope_time!("index_reset");
 

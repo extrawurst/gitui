@@ -1,7 +1,13 @@
 mod diff;
+mod status;
+mod utils;
 
+pub use crate::{
+    diff::{get_diff, Diff, DiffLine, DiffLineType},
+    status::{get_index, StatusItem, StatusItemType, StatusType},
+    utils::{commit, index_reset, stage_add, stage_reset},
+};
 use crossbeam_channel::Sender;
-pub use diff::{get_diff, Diff, DiffLine, DiffLineType};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},

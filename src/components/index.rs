@@ -1,10 +1,7 @@
 use crate::components::{CommandInfo, Component};
-use crate::{
-    git_status::{self, StatusItem, StatusItemType},
-    ui,
-};
+use crate::ui;
+use asyncgit::{StatusItem, StatusItemType, StatusType};
 use crossterm::event::{Event, KeyCode};
-use git2::StatusShow;
 use std::{borrow::Cow, cmp};
 use tui::{
     backend::Backend,
@@ -18,7 +15,7 @@ use tui::{
 pub struct IndexComponent {
     title: String,
     items: Vec<StatusItem>,
-    index_type: StatusShow,
+    index_type: StatusType,
     selection: Option<usize>,
     focused: bool,
     show_selection: bool,
@@ -28,7 +25,7 @@ impl IndexComponent {
     ///
     pub fn new(
         title: &str,
-        index_type: StatusShow,
+        index_type: StatusType,
         focus: bool,
     ) -> Self {
         Self {
@@ -42,7 +39,7 @@ impl IndexComponent {
     }
     ///
     pub fn update(&mut self) {
-        let new_status = git_status::get_index(self.index_type);
+        let new_status = asyncgit::get_index(self.index_type.into());
 
         if self.items != new_status {
             self.items = new_status;
