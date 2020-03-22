@@ -18,6 +18,7 @@ use crossterm::{
     },
     ExecutableCommand, Result,
 };
+use scopetime::scope_time;
 use simplelog::*;
 use std::{env, fs, fs::File, io};
 use tui::{backend::CrosstermBackend, Terminal};
@@ -41,18 +42,22 @@ fn main() -> Result<()> {
 
     loop {
         let events = receiver.recv().unwrap();
-        for e in events {
-            if let QueueEvent::InputEvent(ev) = e {
-                app.event(ev);
-            } else {
-                app.update();
+        {
+            scope_time!("loop");
+
+            for e in events {
+                if let QueueEvent::InputEvent(ev) = e {
+                    app.event(ev);
+                } else {
+                    app.update();
+                }
             }
-        }
 
-        terminal.draw(|mut f| app.draw(&mut f))?;
+            terminal.draw(|mut f| app.draw(&mut f))?;
 
-        if app.is_quit() {
-            break;
+            if app.is_quit() {
+                break;
+            }
         }
     }
 

@@ -14,4 +14,9 @@ itertools = "0.9"
 log = "0.4"
 simplelog = "0.7"
 dirs = "2.0"
-tui = { version = "0.8", default-features = false, features = ['crossterm'] }
+scopetime = { path = "./scopetime" }
+tui = { version = "0.8", default-features=false, features = ['crossterm'] }
+
+[features]
+default=[]
+timing=["scopetime/enabled"]

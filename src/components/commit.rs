@@ -44,10 +44,7 @@ impl Component for CommitComponent {
 
     fn commands(&self) -> Vec<CommandInfo> {
         if !self.visible {
-            vec![CommandInfo {
-                name: strings::COMMIT_CMD_OPEN.to_string(),
-                enabled: !git_utils::index_empty(),
-            }]
+            vec![]
         } else {
             vec![
                 CommandInfo {

@@ -191,7 +191,8 @@ impl App {
 
     ///
     pub fn update(&mut self) {
-        trace!("update");
+        trace!("app::update");
+
         self.index.update();
         self.index_wd.update();
         self.update_diff();
@@ -230,6 +231,11 @@ impl App {
     fn commands(&self) -> Vec<CommandInfo> {
         let mut res = Vec::new();
         if !self.commit.is_visible() {
+            res.push(CommandInfo {
+                name: strings::COMMIT_CMD_OPEN.to_string(),
+                enabled: !self.index.is_empty(),
+            });
+
             if self.index_wd.focused() {
                 let some_selection =
                     self.index_wd.selection().is_some();

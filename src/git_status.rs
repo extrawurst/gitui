@@ -1,5 +1,6 @@
 use crate::git_utils;
 use git2::{Status, StatusOptions, StatusShow};
+use scopetime::scope_time;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum StatusItemType {
@@ -33,6 +34,8 @@ pub struct StatusItem {
 }
 
 pub fn get_index(show: StatusShow) -> Vec<StatusItem> {
+    scope_time!("get_index");
+
     let repo = git_utils::repo();
 
     let mut res = Vec::new();

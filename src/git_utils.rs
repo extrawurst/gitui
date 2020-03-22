@@ -3,6 +3,7 @@ use git2::{
     ObjectType, Repository, RepositoryOpenFlags, StatusOptions,
     StatusShow,
 };
+use scopetime::scope_time;
 use std::path::Path;
 
 ///
@@ -33,6 +34,8 @@ pub struct Diff(pub Vec<DiffLine>);
 
 ///
 pub fn get_diff(p: &Path, stage: bool) -> Diff {
+    scope_time!("get_diff");
+
     let repo = repo();
 
     let mut opt = DiffOptions::new();
@@ -108,6 +111,8 @@ pub fn repo() -> Repository {
 
 ///
 pub fn commit(msg: &String) {
+    scope_time!("commit");
+
     let repo = repo();
 
     let signature = repo.signature().unwrap();
@@ -131,6 +136,8 @@ pub fn commit(msg: &String) {
 
 ///
 pub fn index_empty() -> bool {
+    scope_time!("index_empty");
+
     let repo = repo();
 
     let statuses = repo
@@ -143,6 +150,8 @@ pub fn index_empty() -> bool {
 }
 
 pub fn stage_add(path: &Path) -> bool {
+    scope_time!("stage_add");
+
     let repo = repo();
 
     let mut index = repo.index().unwrap();
@@ -168,6 +177,8 @@ pub fn stage_add(path: &Path) -> bool {
 }
 
 pub fn stage_reset(path: &Path) -> bool {
+    scope_time!("stage_reset");
+
     let repo = repo();
 
     let reference = repo.head().unwrap();
@@ -186,6 +197,8 @@ pub fn stage_reset(path: &Path) -> bool {
 }
 
 pub fn index_reset(path: &Path) -> bool {
+    scope_time!("index_reset");
+
     let repo = repo();
 
     let mut checkout_opts = CheckoutBuilder::new();

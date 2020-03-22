@@ -1,12 +1,10 @@
-use crate::components::CommandInfo;
-use crate::components::Component;
+use crate::components::{CommandInfo, Component};
 use crate::{
-    git_status::{self, StatusItem},
+    git_status::{self, StatusItem, StatusItemType},
     tui_utils,
 };
 use crossterm::event::{Event, KeyCode};
 use git2::StatusShow;
-use git_status::StatusItemType;
 use std::{borrow::Cow, cmp};
 use tui::{
     backend::Backend,
@@ -66,6 +64,11 @@ impl IndexComponent {
     pub fn focus_select(&mut self, focus: bool) {
         self.focus(focus);
         self.show_selection = focus;
+    }
+
+    ///
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
     }
 
     fn move_selection(&mut self, delta: i32) {
