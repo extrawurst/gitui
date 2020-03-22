@@ -5,6 +5,8 @@ use crate::{
     },
     git_utils, keys, strings,
 };
+use asyncgit::AsyncDiff;
+use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use git2::StatusShow;
 use itertools::Itertools;
@@ -41,12 +43,13 @@ pub struct App {
     index: IndexComponent,
     index_wd: IndexComponent,
     diff: DiffComponent,
+    async_diff: AsyncDiff,
 }
 
 // public interface
 impl App {
     ///
-    pub fn new() -> Self {
+    pub fn new(sender: Sender<()>) -> Self {
         Self {
             focus: Focus::Status,
             diff_target: DiffTarget::WorkingDir,
@@ -63,6 +66,7 @@ impl App {
                 false,
             ),
             diff: DiffComponent::default(),
+            async_diff: AsyncDiff::new(sender),
         }
     }
 
@@ -137,6 +141,7 @@ impl App {
     ///
     pub fn event(&mut self, ev: Event) {
         trace!("event: {:?}", ev);
+
         if self.commit.is_visible() && self.commit.event(ev) {
             if !self.commit.is_visible() {
                 self.update();
@@ -210,7 +215,7 @@ impl App {
 }
 
 impl App {
-    fn update_diff(&mut self) {
+    pub fn update_diff(&mut self) {
         let (idx, is_stage) = match self.diff_target {
             DiffTarget::Stage => (&self.index, true),
             DiffTarget::WorkingDir => (&self.index_wd, false),
@@ -220,13 +225,13 @@ impl App {
             let path = i.path;
 
             if self.diff.path() != path {
-                self.diff.update(
-                    path.clone(),
-                    git_utils::get_diff(
-                        Path::new(path.as_str()),
-                        is_stage,
-                    ),
-                );
+                if let Some(diff) =
+                    self.async_diff.request(path.clone(), is_stage)
+                {
+                    self.diff.update(path.clone(), diff);
+                } else {
+                    self.diff.clear();
+                }
             }
         } else {
             self.diff.clear();

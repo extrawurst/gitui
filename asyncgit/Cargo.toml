@@ -1,0 +1,12 @@
+[package]
+name = "asyncgit"
+version = "0.1.0"
+authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+git2 = "0.10"
+rayon = "1.3"
+crossbeam-channel = "0.4"
+log = "0.4"
+scopetime = { path = "../scopetime" }

@@ -1,6 +1,6 @@
+use crossbeam_channel::{unbounded, Receiver};
 use crossterm::event::{self, Event};
 use std::{
-    sync::mpsc::{self, Receiver},
     thread::{self, sleep},
     time::{Duration, Instant},
 };
@@ -9,6 +9,7 @@ use std::{
 #[derive(Clone)]
 pub enum QueueEvent {
     Tick,
+    AsyncEvent,
     InputEvent(Event),
 }
 
@@ -22,7 +23,7 @@ static TICK_DURATION: Duration = Duration::from_secs(5);
 /// Thread 1:
 ///     We will
 pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
-    let (tx, rx) = mpsc::channel();
+    let (tx, rx) = unbounded();
 
     let tx1 = tx.clone();
     thread::spawn(move || {

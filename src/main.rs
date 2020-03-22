@@ -8,6 +8,7 @@ mod strings;
 mod ui;
 
 use crate::{app::App, poll::QueueEvent};
+use crossbeam_channel::{select, unbounded};
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{
@@ -34,20 +35,29 @@ fn main() -> Result<()> {
 
     terminal.clear()?;
 
-    let mut app = App::new();
+    let (tx, rx) = unbounded();
+
+    let mut app = App::new(tx);
 
     let receiver = poll::start_polling_thread();
 
+    app.update();
+
     loop {
-        let events = receiver.recv().unwrap();
+        let mut events: Vec<QueueEvent> = Vec::new();
+        select! {
+            recv(receiver) -> inputs => events = inputs.unwrap(),
+            recv(rx) -> _ => events.push(QueueEvent::AsyncEvent),
+        }
+
         {
             scope_time!("loop");
 
             for e in events {
-                if let QueueEvent::InputEvent(ev) = e {
-                    app.event(ev);
-                } else {
-                    app.update();
+                match e {
+                    QueueEvent::InputEvent(ev) => app.event(ev),
+                    QueueEvent::Tick => app.update(),
+                    QueueEvent::AsyncEvent => app.update_diff(),
                 }
             }
 

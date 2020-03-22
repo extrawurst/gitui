@@ -1,8 +1,8 @@
 use crate::{
     components::{CommandInfo, Component},
-    git_utils::{Diff, DiffLine, DiffLineType},
     strings,
 };
+use asyncgit::{Diff, DiffLine, DiffLineType};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     backend::Backend,
