@@ -1,5 +1,5 @@
 use super::{CommandInfo, Component};
-use crate::{clear::Clear, git_utils, strings, tui_utils};
+use crate::{git_utils, strings, ui};
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
 use tui::{
@@ -29,7 +29,7 @@ impl Component for CommitComponent {
                 )]
             };
 
-            Clear::new(
+            ui::Clear::new(
                 Paragraph::new(txt.iter())
                     .block(
                         Block::default()
@@ -38,7 +38,7 @@ impl Component for CommitComponent {
                     )
                     .alignment(Alignment::Left),
             )
-            .render(f, tui_utils::centered_rect(60, 20, f.size()));
+            .render(f, ui::centered_rect(60, 20, f.size()));
         }
     }
 

@@ -1,13 +1,11 @@
 mod app;
-mod clear;
 mod components;
 mod git_status;
 mod git_utils;
 mod keys;
 mod poll;
 mod strings;
-mod tui_scrolllist;
-mod tui_utils;
+mod ui;
 
 use crate::{app::App, poll::QueueEvent};
 use crossterm::{

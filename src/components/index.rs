@@ -1,7 +1,7 @@
 use crate::components::{CommandInfo, Component};
 use crate::{
     git_status::{self, StatusItem, StatusItemType},
-    tui_utils,
+    ui,
 };
 use crossterm::event::{Event, KeyCode};
 use git2::StatusShow;
@@ -111,7 +111,7 @@ impl Component for IndexComponent {
             Text::Styled(Cow::from(txt), style)
         };
 
-        tui_utils::draw_list(
+        ui::draw_list(
             f,
             r,
             &self.title.to_string(),

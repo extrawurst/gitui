@@ -1,4 +1,8 @@
-use crate::tui_scrolllist;
+mod clear;
+mod scrolllist;
+
+pub use clear::Clear;
+use scrolllist::ScrollableList;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::{
@@ -6,7 +10,6 @@ use tui::{
     widgets::{Block, Borders, Text, Widget},
     Frame,
 };
-use tui_scrolllist::ScrollableList;
 
 /// use layouts to create a rects that
 /// centers inside `r` and sizes `percent_x`/`percent_x` of `r`
