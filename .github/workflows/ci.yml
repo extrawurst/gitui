@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  schedule:
+    - cron: '0 2 * * *' # run at 2 AM UTC
   push:
     branches: [ master ]
   pull_request:
@@ -13,7 +15,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
-    
+
     steps:
     - uses: actions/checkout@v2
     - name: Build
