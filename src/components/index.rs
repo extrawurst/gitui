@@ -38,8 +38,12 @@ impl IndexComponent {
         if hash(&self.items) != hash(list) {
             self.items = list.clone();
 
-            self.selection =
-                if self.items.len() > 0 { Some(0) } else { None };
+            let old_selection = self.selection.unwrap_or_default();
+            self.selection = if self.items.len() > 0 {
+                Some(cmp::min(old_selection, self.items.len() - 1))
+            } else {
+                None
+            };
         }
     }
 
