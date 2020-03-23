@@ -1,7 +1,5 @@
 use super::utils;
-use git2::{
-    Delta, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
-};
+use git2::{Delta, DiffDelta, DiffFormat, DiffOptions, Patch};
 use scopetime::scope_time;
 use std::fs;
 
