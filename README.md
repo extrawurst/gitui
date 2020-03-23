@@ -42,13 +42,6 @@ gitui
 * [ ] discard untracked files (remove)
 * [ ] (un)staging selected hunks
 
-# resources (quick links)
-
-* https://docs.rs/git2/
-* https://libgit2.org
-* https://docs.rs/tui/
-* https://docs.rs/crossterm/
-
 # alternatives
 
 * https://github.com/jesseduffield/lazygit
