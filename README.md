@@ -10,6 +10,14 @@ blazing fast terminal-ui for git written in rust
 ![img](assets/main.jpg)
 ![img](assets/demo.gif)
 
+## features
+
+* inspect changes
+* (un)stage files
+* commit
+* async [input polling](assets/perf_compare.jpg) and 
+* async git API for fluid control
+
 ## motivation
 
 I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index/commit, diff, stash and log.
@@ -38,15 +46,12 @@ after that you can go to your git repo and run it:
 gitui
 ```
 
-# todo
+# todo for 0.1 (first release)
 
-* [x] (un)stage files
-* [x] inspect diffs
-* [x] commit
-* [x] [input polling in thread](assets/perf_compare.jpg)
-* [x] async git API for fluid control
 * [ ] discard untracked files (remove)
 * [ ] (un)staging selected hunks
+* [ ] publish as homebrew-tap
+* [ ] release on crates.io
 
 # alternatives
 
