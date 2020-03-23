@@ -1,8 +1,10 @@
 use std::iter::Iterator;
-use tui::buffer::Buffer;
-use tui::layout::Rect;
-use tui::style::Style;
-use tui::widgets::{Block, List, Text, Widget};
+use tui::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Style,
+    widgets::{Block, List, Text, Widget},
+};
 
 ///
 pub struct ScrollableList<'b, L>

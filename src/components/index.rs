@@ -1,5 +1,7 @@
-use crate::components::{CommandInfo, Component};
-use crate::ui;
+use crate::{
+    components::{CommandInfo, Component},
+    ui,
+};
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::{Event, KeyCode};
 use std::{borrow::Cow, cmp};

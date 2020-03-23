@@ -3,9 +3,9 @@ mod scrolllist;
 
 pub use clear::Clear;
 use scrolllist::ScrollableList;
-use tui::backend::Backend;
-use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::{
+    backend::Backend,
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, Text, Widget},
     Frame,

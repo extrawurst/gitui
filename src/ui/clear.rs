@@ -1,6 +1,4 @@
-use tui::buffer::Buffer;
-use tui::layout::Rect;
-use tui::widgets::Widget;
+use tui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 pub struct Clear<T: Widget>(T);
 
