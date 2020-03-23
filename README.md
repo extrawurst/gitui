@@ -38,7 +38,6 @@ gitui
 * [x] commit
 * [x] [input polling in thread](assets/perf_compare.jpg)
 * [x] async git API for fluid control
-* [ ] show content of new unstaged files 
 * [ ] discard untracked files (remove)
 * [ ] (un)staging selected hunks
 
