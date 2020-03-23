@@ -33,19 +33,19 @@ fn main() -> Result<()> {
 
     terminal.clear()?;
 
-    let (tx, rx) = unbounded();
+    let (tx_git, rx_git) = unbounded();
 
-    let mut app = App::new(tx);
+    let mut app = App::new(tx_git);
 
-    let receiver = poll::start_polling_thread();
+    let rx_input = poll::start_polling_thread();
 
     app.update();
 
     loop {
         let mut events: Vec<QueueEvent> = Vec::new();
         select! {
-            recv(receiver) -> inputs => events = inputs.unwrap(),
-            recv(rx) -> _ => events.push(QueueEvent::AsyncEvent),
+            recv(rx_input) -> inputs => events.append(&mut inputs.unwrap()),
+            recv(rx_git) -> ev => events.push(QueueEvent::GitEvent(ev.unwrap())),
         }
 
         {
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
                 match e {
                     QueueEvent::InputEvent(ev) => app.event(ev),
                     QueueEvent::Tick => app.update(),
-                    QueueEvent::AsyncEvent => app.update_diff(),
+                    QueueEvent::GitEvent(ev) => app.update_git(ev),
                 }
             }
 

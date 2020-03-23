@@ -2,7 +2,7 @@ use crate::sync::utils;
 use git2::{Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(Copy, Clone, Hash)]
 pub enum StatusItemType {
     New,
     Modified,
@@ -28,7 +28,7 @@ impl From<Status> for StatusItemType {
 }
 
 ///
-#[derive(Default, PartialEq, Clone)]
+#[derive(Default, Clone, Hash)]
 pub struct StatusItem {
     pub path: String,
     pub status: Option<StatusItemType>,

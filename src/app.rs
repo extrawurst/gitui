@@ -5,7 +5,9 @@ use crate::{
     },
     keys, strings,
 };
-use asyncgit::{sync, AsyncDiff, StatusType};
+use asyncgit::{
+    current_tick, sync, AsyncDiff, AsyncNotification, AsyncStatus,
+};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -43,12 +45,13 @@ pub struct App {
     index_wd: IndexComponent,
     diff: DiffComponent,
     async_diff: AsyncDiff,
+    async_status: AsyncStatus,
 }
 
 // public interface
 impl App {
     ///
-    pub fn new(sender: Sender<()>) -> Self {
+    pub fn new(sender: Sender<AsyncNotification>) -> Self {
         Self {
             focus: Focus::Status,
             diff_target: DiffTarget::WorkingDir,
@@ -56,16 +59,12 @@ impl App {
             commit: CommitComponent::default(),
             index_wd: IndexComponent::new(
                 strings::TITLE_STATUS,
-                StatusType::WorkingDir,
                 true,
             ),
-            index: IndexComponent::new(
-                strings::TITLE_INDEX,
-                StatusType::Stage,
-                false,
-            ),
+            index: IndexComponent::new(strings::TITLE_INDEX, false),
             diff: DiffComponent::default(),
-            async_diff: AsyncDiff::new(sender),
+            async_diff: AsyncDiff::new(sender.clone()),
+            async_status: AsyncStatus::new(sender),
         }
     }
 
@@ -200,10 +199,27 @@ impl App {
 
     ///
     pub fn update(&mut self) {
-        trace!("app::update");
+        trace!("update");
 
-        self.index.update();
-        self.index_wd.update();
+        self.update_diff();
+
+        self.async_status.fetch(current_tick());
+    }
+
+    ///
+    pub fn update_git(&mut self, ev: AsyncNotification) {
+        trace!("update_git: {:?}", ev);
+        match ev {
+            AsyncNotification::Diff => self.update_diff(),
+            AsyncNotification::Status => self.update_status(),
+        }
+    }
+
+    ///
+    pub fn update_status(&mut self) {
+        let status = self.async_status.last();
+        self.index.update(&status.stage);
+        self.index_wd.update(&status.work_dir);
         self.update_diff();
     }
 

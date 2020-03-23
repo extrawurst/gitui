@@ -1,3 +1,4 @@
+use asyncgit::AsyncNotification;
 use crossbeam_channel::{unbounded, Receiver};
 use crossterm::event::{self, Event};
 use std::{
@@ -6,10 +7,10 @@ use std::{
 };
 
 ///
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum QueueEvent {
     Tick,
-    AsyncEvent,
+    GitEvent(AsyncNotification),
     InputEvent(Event),
 }
 

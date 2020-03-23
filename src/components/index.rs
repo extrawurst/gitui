@@ -1,6 +1,6 @@
 use crate::components::{CommandInfo, Component};
 use crate::ui;
-use asyncgit::{sync, StatusItem, StatusItemType, StatusType};
+use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::{Event, KeyCode};
 use std::{borrow::Cow, cmp};
 use tui::{
@@ -15,7 +15,6 @@ use tui::{
 pub struct IndexComponent {
     title: String,
     items: Vec<StatusItem>,
-    index_type: StatusType,
     selection: Option<usize>,
     focused: bool,
     show_selection: bool,
@@ -23,26 +22,21 @@ pub struct IndexComponent {
 
 impl IndexComponent {
     ///
-    pub fn new(
-        title: &str,
-        index_type: StatusType,
-        focus: bool,
-    ) -> Self {
+    pub fn new(title: &str, focus: bool) -> Self {
         Self {
             title: title.to_string(),
             items: Vec::new(),
-            index_type,
+
             selection: None,
             focused: focus,
             show_selection: focus,
         }
     }
-    ///
-    pub fn update(&mut self) {
-        let new_status = sync::get_index(self.index_type.into());
 
-        if self.items != new_status {
-            self.items = new_status;
+    ///
+    pub fn update(&mut self, list: &Vec<StatusItem>) {
+        if hash(&self.items) != hash(list) {
+            self.items = list.clone();
 
             self.selection =
                 if self.items.len() > 0 { Some(0) } else { None };

@@ -37,7 +37,7 @@ gitui
 * [x] inspect diffs
 * [x] commit
 * [x] [input polling in thread](assets/perf_compare.jpg)
-* [ ] put libgit calls in threadpool
+* [x] async git API for fluid control
 * [ ] show content of new unstaged files 
 * [ ] discard untracked files (remove)
 * [ ] (un)staging selected hunks

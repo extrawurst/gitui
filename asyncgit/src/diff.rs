@@ -1,8 +1,8 @@
-use crate::{sync, Diff};
+use crate::{hash, sync, AsyncNotification, Diff};
 use crossbeam_channel::Sender;
+use log::trace;
 use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
+    hash::Hash,
     sync::{Arc, Mutex},
 };
 
@@ -13,12 +13,12 @@ struct Request<R, A>(R, Option<A>);
 
 pub struct AsyncDiff {
     current: Arc<Mutex<Request<u64, Diff>>>,
-    sender: Sender<()>,
+    sender: Sender<AsyncNotification>,
 }
 
 impl AsyncDiff {
     ///
-    pub fn new(sender: Sender<()>) -> Self {
+    pub fn new(sender: Sender<AsyncNotification>) -> Self {
         Self {
             current: Arc::new(Mutex::new(Request(0, None))),
             sender,
@@ -31,11 +31,11 @@ impl AsyncDiff {
         file_path: String,
         stage: bool,
     ) -> Option<Diff> {
+        trace!("request");
+
         let request = DiffRequest(file_path.clone(), stage);
 
-        let mut hasher = DefaultHasher::new();
-        request.hash(&mut hasher);
-        let hash = hasher.finish();
+        let hash = hash(&request);
 
         {
             let mut current = self.current.lock().unwrap();
@@ -62,7 +62,7 @@ impl AsyncDiff {
             }
 
             if notify {
-                sender.send(()).unwrap();
+                sender.send(AsyncNotification::Diff).unwrap();
             }
         });
 
