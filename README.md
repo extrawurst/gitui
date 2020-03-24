@@ -40,29 +40,24 @@ install `rust`/`cargo`: https://www.rust-lang.org/tools/install
 
 ### cargo install
 
+the simplest way to start playing around with `gitui` is to have `cargo` build/install it:
+
 ```
 cargo install gitui
 ```
 
-### build/install from source
+### diagnostics:
 
-the simplest way to start playing around with `gitui` is to have `cargo` install it locally:
-
+to enable logging to `~/.gitui/gitui.log`:
 ```
-cargo install --path "."
-```
-
-after that you can go to your git repo and run it:
-
-```
-gitui
+GITUI_LOGGING=true gitui
 ```
 
 # todo for 0.1 (first release)
 
-* [ ] fix: dont show scroll option when any popup open
 * [ ] fix: diff is not updated when changed
 * [ ] better help command 
+* [ ] -> fix: dont show scroll option when any popup open
 * [ ] confirm destructive commands (revert/reset)
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
