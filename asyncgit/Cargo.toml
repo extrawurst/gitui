@@ -13,7 +13,7 @@ git2 = "0.10"
 rayon-core = "1.7"
 crossbeam-channel = "0.4"
 log = "0.4"
-scopetime = { path = "../scopetime" }
+scopetime = { path = "../scopetime", version="0.1" }
 
 [dev-dependencies]
 tempfile = "3.1"
