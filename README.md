@@ -50,6 +50,8 @@ gitui
 
 # todo for 0.1 (first release)
 
+* [ ] fix: diff is not updated when changed
+* [ ] fix: diff is updated when some hunks of the same file where diffed in unstaged before
 * [ ] help command
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
