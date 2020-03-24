@@ -5,6 +5,7 @@ authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 license = "MIT"
 homepage = "https://gitui.org"
+readme = "README.md"
 edition = "2018"
 exclude = ["assets/*"]
 

@@ -6,6 +6,7 @@ edition = "2018"
 description = "log runtime of arbitrary scope"
 homepage = "https://gitui.org"
 license = "MIT"
+readme = "README.md"
 
 [dependencies]
 log = "0.4"
