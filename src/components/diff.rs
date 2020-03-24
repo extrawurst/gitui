@@ -18,7 +18,7 @@ pub struct DiffComponent {
     diff: Diff,
     scroll: u16,
     focused: bool,
-    current_path: String,
+    current: (String, bool),
 }
 
 impl DiffComponent {
@@ -27,17 +27,18 @@ impl DiffComponent {
         self.diff.0.len() > 1
     }
     ///
-    pub fn path(&self) -> String {
-        self.current_path.clone()
+    pub fn current(&self) -> (String, bool) {
+        self.current.clone()
     }
     ///
     pub fn clear(&mut self) {
-        self.current_path.clear();
+        self.current.0.clear();
         self.diff = Diff::default();
     }
     ///
-    pub fn update(&mut self, path: String, diff: Diff) {
-        self.current_path = path;
+    pub fn update(&mut self, path: String, stage: bool, diff: Diff) {
+        self.current = (path, stage);
+
         if diff != self.diff {
             self.diff = diff;
             self.scroll = 0;

@@ -241,11 +241,11 @@ impl App {
         if let Some(i) = idx.selection() {
             let path = i.path;
 
-            if self.diff.path() != path {
+            if self.diff.current() != (path.clone(), is_stage) {
                 if let Some(diff) =
                     self.git_diff.request(path.clone(), is_stage)
                 {
-                    self.diff.update(path.clone(), diff);
+                    self.diff.update(path.clone(), is_stage, diff);
                 } else {
                     self.diff.clear();
                 }
