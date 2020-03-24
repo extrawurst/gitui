@@ -43,6 +43,19 @@ pub fn centered_rect(
         .split(popup_layout[1])[1]
 }
 
+pub fn centered_rect_absolute(
+    width: u16,
+    height: u16,
+    r: Rect,
+) -> Rect {
+    Rect::new(
+        (r.width - width) / 2,
+        (r.height - height) / 2,
+        width,
+        height,
+    )
+}
+
 pub fn draw_list<'b, B: Backend, L>(
     f: &mut Frame<B>,
     r: Rect,

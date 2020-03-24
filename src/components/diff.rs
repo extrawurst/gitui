@@ -108,14 +108,11 @@ impl Component for DiffComponent {
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
-        if self.focused {
-            return vec![CommandInfo {
-                name: strings::DIFF_CMD_SCROLL.to_string(),
-                enabled: self.can_scroll(),
-            }];
-        }
-
-        Vec::new()
+        vec![CommandInfo::new(
+            strings::CMD_SCROLL,
+            self.can_scroll(),
+            self.focused,
+        )]
     }
 
     fn event(&mut self, ev: Event) -> bool {

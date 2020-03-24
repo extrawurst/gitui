@@ -1,6 +1,6 @@
 use crate::{
     components::{CommandInfo, Component},
-    ui,
+    strings, ui,
 };
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::{Event, KeyCode};
@@ -126,14 +126,11 @@ impl Component for IndexComponent {
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
-        if self.focused {
-            return vec![CommandInfo {
-                name: "Scroll [↑↓]".to_string(),
-                enabled: self.items.len() > 1,
-            }];
-        }
-
-        Vec::new()
+        vec![CommandInfo::new(
+            strings::CMD_SCROLL,
+            self.items.len() > 1,
+            self.focused,
+        )]
     }
 
     fn event(&mut self, ev: Event) -> bool {

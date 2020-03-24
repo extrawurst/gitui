@@ -44,20 +44,18 @@ impl Component for CommitComponent {
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
-        if !self.visible {
-            vec![]
-        } else {
-            vec![
-                CommandInfo {
-                    name: strings::COMMIT_CMD_ENTER.to_string(),
-                    enabled: self.can_commit(),
-                },
-                CommandInfo {
-                    name: strings::COMMIT_CMD_CLOSE.to_string(),
-                    enabled: true,
-                },
-            ]
-        }
+        vec![
+            CommandInfo::new(
+                strings::COMMIT_CMD_ENTER,
+                self.can_commit(),
+                self.visible,
+            ),
+            CommandInfo::new(
+                strings::COMMIT_CMD_CLOSE,
+                true,
+                self.visible,
+            ),
+        ]
     }
 
     fn event(&mut self, ev: Event) -> bool {

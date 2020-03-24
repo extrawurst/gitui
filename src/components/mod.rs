@@ -1,18 +1,16 @@
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
+mod command;
 mod commit;
 mod diff;
+mod help;
 mod index;
+pub use command::CommandInfo;
 pub use commit::CommitComponent;
 pub use diff::DiffComponent;
+pub use help::HelpComponent;
 pub use index::IndexComponent;
-
-///
-pub struct CommandInfo {
-    pub name: String,
-    pub enabled: bool,
-}
 
 ///
 pub trait Component {

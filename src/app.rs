@@ -1,7 +1,7 @@
 use crate::{
     components::{
         CommandInfo, CommitComponent, Component, DiffComponent,
-        IndexComponent,
+        HelpComponent, IndexComponent,
     },
     keys, strings,
 };
@@ -42,6 +42,7 @@ pub struct App {
     diff_target: DiffTarget,
     do_quit: bool,
     commit: CommitComponent,
+    help: HelpComponent,
     index: IndexComponent,
     index_wd: IndexComponent,
     diff: DiffComponent,
@@ -58,6 +59,7 @@ impl App {
             diff_target: DiffTarget::WorkingDir,
             do_quit: false,
             commit: CommitComponent::default(),
+            help: HelpComponent::default(),
             index_wd: IndexComponent::new(
                 strings::TITLE_STATUS,
                 true,
@@ -124,17 +126,10 @@ impl App {
         self.index.draw(f, left_chunks[1]);
         self.diff.draw(f, chunks[1]);
 
-        let mut cmds = self.commit.commands();
-        if !self.commit.is_visible() {
-            cmds.extend(self.index.commands());
-            cmds.extend(self.index_wd.commands());
-            cmds.extend(self.diff.commands());
-        }
-        cmds.extend(self.commands());
-
-        self.draw_commands(f, chunks_main[2], cmds);
+        self.draw_commands(f, chunks_main[2], self.commands());
 
         self.commit.draw(f, f.size());
+        self.help.draw(f, f.size());
     }
 
     ///
@@ -145,6 +140,9 @@ impl App {
             if !self.commit.is_visible() {
                 self.update();
             }
+            return;
+        } else if self.help.is_visible() {
+            self.help.event(ev);
             return;
         }
 
@@ -169,6 +167,7 @@ impl App {
                     keys::FOCUS_STATUS => {
                         self.switch_focus(Focus::Status)
                     }
+                    keys::OPEN_HELP => self.help.show(),
                     keys::FOCUS_STAGE => {
                         self.switch_focus(Focus::Stage)
                     }
@@ -222,6 +221,7 @@ impl App {
         self.index.update(&status.stage);
         self.index_wd.update(&status.work_dir);
         self.update_diff();
+        self.help.set_cmds(self.commands());
     }
 
     ///
@@ -230,8 +230,9 @@ impl App {
     }
 }
 
+// private impls
 impl App {
-    pub fn update_diff(&mut self) {
+    fn update_diff(&mut self) {
         let (idx, is_stage) = match self.diff_target {
             DiffTarget::Stage => (&self.index, true),
             DiffTarget::WorkingDir => (&self.index_wd, false),
@@ -255,43 +256,88 @@ impl App {
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
-        let mut res = Vec::new();
-        if !self.commit.is_visible() {
-            res.push(CommandInfo {
-                name: strings::COMMIT_CMD_OPEN.to_string(),
-                enabled: !self.index.is_empty(),
-            });
+        let mut res = self.commit.commands();
+        res.extend(self.help.commands());
 
-            if self.index_wd.focused() {
+        res.extend(self.index.commands());
+        res.extend(self.index_wd.commands());
+        res.extend(self.diff.commands());
+
+        {
+            let main_cmds_available =
+                !self.commit.is_visible() && !self.help.is_visible();
+
+            res.push(CommandInfo::new(
+                strings::COMMIT_CMD_OPEN,
+                !self.index.is_empty(),
+                main_cmds_available,
+            ));
+
+            {
+                let main_cmds_index_wd_focused_availale =
+                    main_cmds_available && self.index_wd.focused();
+
                 let some_selection =
                     self.index_wd.selection().is_some();
-                res.push(CommandInfo {
-                    name: strings::CMD_STATUS_STAGE.to_string(),
-                    enabled: some_selection,
-                });
-                res.push(CommandInfo {
-                    name: strings::CMD_STATUS_RESET.to_string(),
-                    enabled: some_selection,
-                });
-            } else if self.index.focused() {
-                res.push(CommandInfo {
-                    name: strings::CMD_STATUS_UNSTAGE.to_string(),
-                    enabled: self.index.selection().is_some(),
-                });
+                res.push(CommandInfo::new(
+                    strings::CMD_STATUS_STAGE,
+                    some_selection,
+                    main_cmds_index_wd_focused_availale,
+                ));
+                res.push(CommandInfo::new(
+                    strings::CMD_STATUS_RESET,
+                    some_selection,
+                    main_cmds_index_wd_focused_availale,
+                ));
+
+                res.push(CommandInfo::new(
+                    strings::CMD_STATUS_UNSTAGE,
+                    self.index.selection().is_some(),
+                    main_cmds_available && self.index.focused(),
+                ));
             }
 
-            res.push(CommandInfo {
-                name: if self.focus == Focus::Diff {
-                    strings::CMD_STATUS_LEFT.to_string()
-                } else {
-                    strings::CMD_STATUS_RIGHT.to_string()
-                },
-                enabled: true,
-            });
-            res.push(CommandInfo {
-                name: strings::CMD_STATUS_QUIT.to_string(),
-                enabled: true,
-            });
+            {
+                let focus_on_stage = self.focus == Focus::Stage;
+                let focus_not_diff = self.focus != Focus::Diff;
+                res.push(CommandInfo::new_hidden(
+                    strings::CMD_STATUS_FOCUS_UNSTAGED,
+                    true,
+                    main_cmds_available
+                        && focus_on_stage
+                        && !focus_not_diff,
+                ));
+                res.push(CommandInfo::new_hidden(
+                    strings::CMD_STATUS_FOCUS_STAGED,
+                    true,
+                    main_cmds_available
+                        && !focus_on_stage
+                        && !focus_not_diff,
+                ));
+            }
+            {
+                let focus_on_diff = self.focus == Focus::Diff;
+                res.push(CommandInfo::new(
+                    strings::CMD_STATUS_LEFT,
+                    true,
+                    main_cmds_available && focus_on_diff,
+                ));
+                res.push(CommandInfo::new(
+                    strings::CMD_STATUS_RIGHT,
+                    true,
+                    main_cmds_available && !focus_on_diff,
+                ));
+            }
+            res.push(CommandInfo::new(
+                strings::CMD_STATUS_HELP,
+                true,
+                main_cmds_available,
+            ));
+            res.push(CommandInfo::new(
+                strings::CMD_STATUS_QUIT,
+                true,
+                main_cmds_available,
+            ));
         }
 
         res
@@ -315,15 +361,19 @@ impl App {
             Style::default().fg(Color::DarkGray).bg(Color::Blue);
         let texts = cmds
             .iter()
-            .map(|c| {
-                Text::Styled(
-                    Cow::from(c.name.clone()),
-                    if c.enabled {
-                        style_enabled
-                    } else {
-                        style_disabled
-                    },
-                )
+            .filter_map(|c| {
+                if c.show_in_quickbar() {
+                    Some(Text::Styled(
+                        Cow::from(c.name.clone()),
+                        if c.enabled {
+                            style_enabled
+                        } else {
+                            style_disabled
+                        },
+                    ))
+                } else {
+                    None
+                }
             })
             .collect::<Vec<_>>();
 
