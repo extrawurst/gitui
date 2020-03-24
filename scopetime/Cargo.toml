@@ -7,6 +7,7 @@ description = "log runtime of arbitrary scope"
 homepage = "https://gitui.org"
 license = "MIT"
 readme = "README.md"
+categories = ["development-tools::profiling"]
 
 [dependencies]
 log = "0.4"
