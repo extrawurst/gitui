@@ -36,6 +36,7 @@ enum Focus {
     Stage,
 }
 
+///
 pub struct App {
     focus: Focus,
     diff_target: DiffTarget,
@@ -44,8 +45,8 @@ pub struct App {
     index: IndexComponent,
     index_wd: IndexComponent,
     diff: DiffComponent,
-    async_diff: AsyncDiff,
-    async_status: AsyncStatus,
+    git_diff: AsyncDiff,
+    git_status: AsyncStatus,
 }
 
 // public interface
@@ -63,8 +64,8 @@ impl App {
             ),
             index: IndexComponent::new(strings::TITLE_INDEX, false),
             diff: DiffComponent::default(),
-            async_diff: AsyncDiff::new(sender.clone()),
-            async_status: AsyncStatus::new(sender),
+            git_diff: AsyncDiff::new(sender.clone()),
+            git_status: AsyncStatus::new(sender),
         }
     }
 
@@ -203,7 +204,7 @@ impl App {
 
         self.update_diff();
 
-        self.async_status.fetch(current_tick());
+        self.git_status.fetch(current_tick());
     }
 
     ///
@@ -217,7 +218,7 @@ impl App {
 
     ///
     pub fn update_status(&mut self) {
-        let status = self.async_status.last();
+        let status = self.git_status.last();
         self.index.update(&status.stage);
         self.index_wd.update(&status.work_dir);
         self.update_diff();
@@ -241,7 +242,7 @@ impl App {
 
             if self.diff.path() != path {
                 if let Some(diff) =
-                    self.async_diff.request(path.clone(), is_stage)
+                    self.git_diff.request(path.clone(), is_stage)
                 {
                     self.diff.update(path.clone(), diff);
                 } else {
