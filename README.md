@@ -14,7 +14,8 @@ blazing fast terminal-ui for git written in rust
 
 * inspect changes
 * (un)stage files
-* commit
+* revert/reset files
+* commit changes
 * async [input polling](assets/perf_compare.jpg) and 
 * async git API for fluid control
 
@@ -48,7 +49,6 @@ gitui
 
 # todo for 0.1 (first release)
 
-* [ ] discard untracked files (remove)
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
 * [ ] release on crates.io

@@ -102,6 +102,7 @@ pub fn index_reset(path: &Path) -> bool {
     let repo = repo();
 
     let mut checkout_opts = CheckoutBuilder::new();
+    checkout_opts.remove_untracked(true);
     checkout_opts.path(&path).force();
 
     if let Ok(_) = repo.checkout_head(Some(&mut checkout_opts)) {
