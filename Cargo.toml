@@ -18,8 +18,8 @@ log = "0.4"
 simplelog = "0.7"
 dirs = "2.0"
 crossbeam-channel = "0.4"
-scopetime = { path = "./scopetime" }
-asyncgit = { path = "./asyncgit" }
+scopetime = { path = "./scopetime", version="0.1"}
+asyncgit = { path = "./asyncgit", version="0.1"}
 
 [features]
 default=[]
