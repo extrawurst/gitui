@@ -6,6 +6,7 @@ edition = "2018"
 description = "allow using git2 in a asynchronous context"
 homepage = "https://gitui.org"
 readme = "README.md"
+license = "MIT"
 categories = ["concurrency","asynchronous"]
 
 [dependencies]

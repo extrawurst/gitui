@@ -3,10 +3,10 @@ name = "gitui"
 version = "0.1.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
-license = "MIT"
 edition = "2018"
 homepage = "https://gitui.org"
 readme = "README.md"
+license = "MIT"
 categories = ["command-line-utilities"]
 exclude = ["assets/*"]
 
