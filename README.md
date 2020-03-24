@@ -53,6 +53,7 @@ gitui
 * [ ] fix: diff is not updated when changed
 * [ ] fix: diff is updated when some hunks of the same file where diffed in unstaged before
 * [ ] help command
+* [ ] confirm destructive commands (revert/reset)
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
 * [ ] release on crates.io
