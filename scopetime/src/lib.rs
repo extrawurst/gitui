@@ -1,3 +1,4 @@
+#[deny(unsafe_code)]
 use log::trace;
 use std::time::Instant;
 
