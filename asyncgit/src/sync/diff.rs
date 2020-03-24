@@ -1,14 +1,20 @@
+//! sync git api for fetching a diff
+
 use super::utils;
 use git2::{Delta, DiffDelta, DiffFormat, DiffOptions, Patch};
 use scopetime::scope_time;
 use std::fs;
 
 ///
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Hash)]
 pub enum DiffLineType {
+    ///
     None,
+    ///
     Header,
+    ///
     Add,
+    ///
     Delete,
 }
 
@@ -19,14 +25,16 @@ impl Default for DiffLineType {
 }
 
 ///
-#[derive(Default, PartialEq, Clone)]
+#[derive(Default, Clone, Hash)]
 pub struct DiffLine {
+    ///
     pub content: String,
+    ///
     pub line_type: DiffLineType,
 }
 
 ///
-#[derive(Default, PartialEq, Clone)]
+#[derive(Default, Clone, Hash)]
 pub struct Diff(pub Vec<DiffLine>);
 
 ///

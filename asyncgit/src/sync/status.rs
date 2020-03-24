@@ -1,13 +1,21 @@
+//! sync git api for fetching a status
+
 use crate::sync::utils;
 use git2::{Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 
+///
 #[derive(Copy, Clone, Hash)]
 pub enum StatusItemType {
+    ///
     New,
+    ///
     Modified,
+    ///
     Deleted,
+    ///
     Renamed,
+    ///
     Typechange,
 }
 
@@ -30,14 +38,18 @@ impl From<Status> for StatusItemType {
 ///
 #[derive(Default, Clone, Hash)]
 pub struct StatusItem {
+    ///
     pub path: String,
+    ///
     pub status: Option<StatusItemType>,
 }
 
 ///
 #[derive(Copy, Clone)]
 pub enum StatusType {
+    ///
     WorkingDir,
+    ///
     Stage,
 }
 

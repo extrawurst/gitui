@@ -1,3 +1,5 @@
+//! sync git api
+
 pub mod diff;
 pub mod status;
 pub mod utils;

@@ -1,3 +1,5 @@
+//! sync git api (various methods)
+
 use git2::{
     build::CheckoutBuilder, IndexAddOption, ObjectType, Repository,
     RepositoryOpenFlags,

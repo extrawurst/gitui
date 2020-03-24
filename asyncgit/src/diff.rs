@@ -11,6 +11,7 @@ struct DiffRequest(String, bool);
 
 struct Request<R, A>(R, Option<A>);
 
+///
 pub struct AsyncDiff {
     current: Arc<Mutex<Request<u64, Diff>>>,
     sender: Sender<AsyncNotification>,
