@@ -46,7 +46,6 @@ impl<'a> Drop for ScopeTimeLog<'a> {
 #[macro_export]
 macro_rules! scope_time {
     ($target:literal) => {
-        //TODO: add module_path!() aswell?
         #[allow(unused_variables)]
         let time = $crate::ScopeTimeLog::new(
             module_path!(),
