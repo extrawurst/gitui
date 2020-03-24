@@ -34,7 +34,13 @@ For the time being this product is considered alpha and not production ready, th
 
 install `rust`/`cargo`: https://www.rust-lang.org/tools/install
 
-### build from source
+### cargo install
+
+```
+cargo install gitui
+```
+
+### build/install from source
 
 the simplest way to start playing around with `gitui` is to have `cargo` install it locally:
 
@@ -56,7 +62,6 @@ gitui
 * [ ] confirm destructive commands (revert/reset)
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
-* [ ] release on crates.io
 
 # alternatives
 
