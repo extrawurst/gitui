@@ -10,3 +10,6 @@ rayon-core = "1.7"
 crossbeam-channel = "0.4"
 log = "0.4"
 scopetime = { path = "../scopetime" }
+
+[dev-dependencies]
+tempfile = "3.1"

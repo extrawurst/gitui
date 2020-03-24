@@ -40,6 +40,7 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
 
     let diff = if !stage {
         opt.include_untracked(true);
+        opt.recurse_untracked_dirs(true);
         repo.diff_index_to_workdir(None, Some(&mut opt)).unwrap()
     } else {
         // diff against head
@@ -130,4 +131,69 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
     }
 
     Diff(res)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::sync::status::{get_index, StatusType};
+    use git2::Repository;
+    use std::env;
+    use std::{
+        fs::{self, File},
+        io::Write,
+    };
+    // use std::path::Path;
+    use super::get_diff;
+    use tempfile::TempDir;
+
+    pub fn repo_init() -> (TempDir, Repository) {
+        let td = TempDir::new().unwrap();
+        let repo = Repository::init(td.path()).unwrap();
+        {
+            let mut config = repo.config().unwrap();
+            config.set_str("user.name", "name").unwrap();
+            config.set_str("user.email", "email").unwrap();
+
+            let mut index = repo.index().unwrap();
+            let id = index.write_tree().unwrap();
+
+            let tree = repo.find_tree(id).unwrap();
+            let sig = repo.signature().unwrap();
+            repo.commit(
+                Some("HEAD"),
+                &sig,
+                &sig,
+                "initial",
+                &tree,
+                &[],
+            )
+            .unwrap();
+        }
+        (td, repo)
+    }
+
+    #[test]
+    fn test_untracked_subfolder() {
+        let (_td, repo) = repo_init();
+        let root = repo.path().parent().unwrap();
+
+        assert!(env::set_current_dir(&root).is_ok());
+
+        let res = get_index(StatusType::WorkingDir);
+        assert_eq!(res.len(), 0);
+
+        fs::create_dir(&root.join("foo")).unwrap();
+        File::create(&root.join("foo/bar.txt"))
+            .unwrap()
+            .write_all(b"test\nfoo")
+            .unwrap();
+
+        let res = get_index(StatusType::WorkingDir);
+        assert_eq!(res.len(), 1);
+
+        let diff = get_diff("foo/bar.txt".to_string(), false);
+
+        assert_eq!(diff.0.len(), 4);
+        assert_eq!(diff.0[1].content, "test\n");
+    }
 }

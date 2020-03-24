@@ -6,6 +6,7 @@ description = "blazing fast terminal-ui for git"
 license = "MIT"
 homepage = "https://gitui.org"
 edition = "2018"
+exclude = ["assets/*"]
 
 [dependencies]
 crossterm = "0.15"
@@ -21,3 +22,9 @@ asyncgit = { path = "./asyncgit" }
 [features]
 default=[]
 timing=["scopetime/enabled"]
+
+[workspace]
+members=[
+    "asyncgit",
+    "scopetime",
+]

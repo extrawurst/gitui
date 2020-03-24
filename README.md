@@ -50,11 +50,10 @@ gitui
 
 # todo for 0.1 (first release)
 
-* [ ] fix: no diff of untracked file in a subdir
-* [ ] fix: dont show scrol option when any popup open
+* [ ] fix: dont show scroll option when any popup open
 * [ ] fix: diff is not updated when changed
 * [ ] fix: diff is updated when some hunks of the same file where diffed in unstaged before
-* [ ] help command
+* [ ] better help command 
 * [ ] confirm destructive commands (revert/reset)
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
