@@ -4,9 +4,18 @@
 
 This crate is part of the [gitui](http://gitui.org) project and can be used to annotate arbitrary scopes to `trace` their execution times via `log`:
 
+in your crate:
+```
+[dependencies]
+scopetime = "0.1"
+```
+
+in your code:
 ```rust
 fn foo(){
     scope_time!("foo");
+
+    // ... do something u wanna measure
 }
 ```
 
