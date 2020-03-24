@@ -12,6 +12,7 @@ blazing fast terminal-ui for git written in rust
 
 ## features
 
+* fast key only control
 * inspect changes
 * (un)stage files
 * revert/reset files
@@ -49,6 +50,7 @@ gitui
 
 # todo for 0.1 (first release)
 
+* [ ] help command
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
 * [ ] release on crates.io
