@@ -1,4 +1,8 @@
-#[deny(unsafe_code)]
+//! simple macro to insert a scope based runtime measure that logs the result
+
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
+
 use log::trace;
 use std::time::Instant;
 
@@ -43,6 +47,7 @@ impl<'a> Drop for ScopeTimeLog<'a> {
     }
 }
 
+///
 #[cfg(feature = "enabled")]
 #[macro_export]
 macro_rules! scope_time {
@@ -57,6 +62,7 @@ macro_rules! scope_time {
     };
 }
 
+#[doc(hidden)]
 #[cfg(not(feature = "enabled"))]
 #[macro_export]
 macro_rules! scope_time {
