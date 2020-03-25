@@ -7,6 +7,7 @@ use crate::{
 };
 use asyncgit::{
     current_tick, sync, AsyncDiff, AsyncNotification, AsyncStatus,
+    DiffParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -201,8 +202,7 @@ impl App {
     pub fn update(&mut self) {
         trace!("update");
 
-        self.update_diff();
-
+        self.git_diff.refresh();
         self.git_status.fetch(current_tick());
     }
 
@@ -213,15 +213,6 @@ impl App {
             AsyncNotification::Diff => self.update_diff(),
             AsyncNotification::Status => self.update_status(),
         }
-    }
-
-    ///
-    pub fn update_status(&mut self) {
-        let status = self.git_status.last();
-        self.index.update(&status.stage);
-        self.index_wd.update(&status.work_dir);
-        self.update_diff();
-        self.help.set_cmds(self.commands());
     }
 
     ///
@@ -240,19 +231,36 @@ impl App {
 
         if let Some(i) = idx.selection() {
             let path = i.path;
+            let diff_params = DiffParams(path.clone(), is_stage);
 
             if self.diff.current() != (path.clone(), is_stage) {
-                if let Some(diff) =
-                    self.git_diff.request(path.clone(), is_stage)
+                // we dont show the right diff right now, so we need to request
+                if let Some(diff) = self.git_diff.request(diff_params)
                 {
                     self.diff.update(path.clone(), is_stage, diff);
                 } else {
                     self.diff.clear();
                 }
+            } else {
+                // we are already showing a diff of the right file
+                // maybe the diff changed (outside file change)
+                if let Some(last) = self.git_diff.last() {
+                    self.diff.update(path.clone(), is_stage, last);
+                }
             }
         } else {
             self.diff.clear();
         }
+    }
+
+    fn update_status(&mut self) {
+        let status = self.git_status.last();
+        self.index.update(&status.stage);
+        self.index_wd.update(&status.work_dir);
+
+        self.update_diff();
+
+        self.help.set_cmds(self.commands());
     }
 
     fn commands(&self) -> Vec<CommandInfo> {

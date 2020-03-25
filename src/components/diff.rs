@@ -2,7 +2,7 @@ use crate::{
     components::{CommandInfo, Component},
     strings,
 };
-use asyncgit::{Diff, DiffLine, DiffLineType};
+use asyncgit::{hash, Diff, DiffLine, DiffLineType};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     backend::Backend,
@@ -19,6 +19,7 @@ pub struct DiffComponent {
     scroll: u16,
     focused: bool,
     current: (String, bool),
+    current_hash: u64,
 }
 
 impl DiffComponent {
@@ -28,7 +29,7 @@ impl DiffComponent {
     }
     ///
     pub fn current(&self) -> (String, bool) {
-        self.current.clone()
+        (self.current.0.clone(), self.current.1)
     }
     ///
     pub fn clear(&mut self) {
@@ -36,10 +37,17 @@ impl DiffComponent {
         self.diff = Diff::default();
     }
     ///
-    pub fn update(&mut self, path: String, stage: bool, diff: Diff) {
-        self.current = (path, stage);
+    pub fn update(
+        &mut self,
+        path: String,
+        is_stage: bool,
+        diff: Diff,
+    ) {
+        let hash = hash(&diff);
 
-        if diff != self.diff {
+        if self.current_hash != hash {
+            self.current = (path, is_stage);
+            self.current_hash = hash;
             self.diff = diff;
             self.scroll = 0;
         }

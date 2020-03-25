@@ -7,7 +7,7 @@ mod status;
 pub mod sync;
 
 pub use crate::{
-    diff::AsyncDiff,
+    diff::{AsyncDiff, DiffParams},
     status::AsyncStatus,
     sync::{
         diff::{Diff, DiffLine, DiffLineType},
