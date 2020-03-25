@@ -62,6 +62,7 @@ GITUI_LOGGING=true gitui
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
 
-# alternatives
+# inspiration
 
 * https://github.com/jesseduffield/lazygit
+* https://github.com/git-up/GitUp (would be nice to comeup with a way to have the map view available in a terminal tool)
