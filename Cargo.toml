@@ -4,11 +4,23 @@ version = "0.1.1"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
+exclude = ["assets/*"]
 homepage = "https://gitui.org"
 readme = "README.md"
 license = "MIT"
 categories = ["command-line-utilities"]
-exclude = ["assets/*"]
+keywords = [
+	"git",
+    "gui",
+	"cli",
+	"terminal",
+    "ui",
+	"text",
+	"linux",
+    "windows",
+    "macos",
+    "binary",
+]
 
 [dependencies]
 crossterm = "0.15"
