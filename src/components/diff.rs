@@ -2,7 +2,9 @@ use crate::{
     components::{CommandInfo, Component},
     strings,
 };
-use asyncgit::{hash, Diff, DiffLine, DiffLineType};
+use asyncgit::{
+    hash, sync::diff::Hunk, Diff, DiffLine, DiffLineType,
+};
 use crossterm::event::{Event, KeyCode};
 use tui::{
     backend::Backend,
@@ -69,7 +71,9 @@ impl Component for DiffComponent {
             .diff
             .0
             .iter()
-            .map(|e: &DiffLine| {
+            .map(|h: &Hunk| h.0.clone())
+            .flatten()
+            .map(|e: DiffLine| {
                 let content = e.content.clone();
                 match e.line_type {
                     DiffLineType::Delete => Text::Styled(

@@ -1,7 +1,9 @@
 //! sync git api for fetching a diff
 
 use super::utils;
-use git2::{Delta, DiffDelta, DiffFormat, DiffOptions, Patch};
+use git2::{
+    Delta, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
+};
 use scopetime::scope_time;
 use std::fs;
 
@@ -34,8 +36,32 @@ pub struct DiffLine {
 }
 
 ///
+#[derive(Default, Clone, Copy, PartialEq)]
+struct HunkHeader {
+    old_start: u32,
+    old_lines: u32,
+    new_start: u32,
+    new_lines: u32,
+}
+
+impl From<DiffHunk<'_>> for HunkHeader {
+    fn from(h: DiffHunk) -> Self {
+        Self {
+            old_start: h.old_start(),
+            old_lines: h.old_lines(),
+            new_start: h.new_start(),
+            new_lines: h.new_lines(),
+        }
+    }
+}
+
+///
 #[derive(Default, Clone, Hash)]
-pub struct Diff(pub Vec<DiffLine>);
+pub struct Hunk(pub Vec<DiffLine>);
+
+///
+#[derive(Default, Clone, Hash)]
+pub struct Diff(pub Vec<Hunk>);
 
 ///
 pub fn get_diff(p: String, stage: bool) -> Diff {
@@ -64,13 +90,25 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
         .unwrap()
     };
 
-    let mut res = Vec::new();
+    let mut res: Diff = Diff::default();
+    let mut current_lines = Vec::new();
+    let mut current_hunk: Option<HunkHeader> = None;
 
-    let mut put = |line: git2::DiffLine| {
-        let origin = line.origin();
+    let mut put = |hunk: Option<DiffHunk>, line: git2::DiffLine| {
+        if let Some(hunk) = hunk {
+            let hunk_header = HunkHeader::from(hunk);
 
-        if origin != 'F' {
-            let line_type = match origin {
+            match current_hunk {
+                None => current_hunk = Some(hunk_header),
+                Some(h) if h != hunk_header => {
+                    res.0.push(Hunk(current_lines.clone()));
+                    current_lines.clear();
+                    current_hunk = Some(hunk_header)
+                }
+                _ => (),
+            }
+
+            let line_type = match line.origin() {
                 'H' => DiffLineType::Header,
                 '<' | '-' => DiffLineType::Delete,
                 '>' | '+' => DiffLineType::Add,
@@ -83,14 +121,7 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
                 line_type,
             };
 
-            if line_type == DiffLineType::Header && res.len() > 0 {
-                res.push(DiffLine {
-                    content: "\n".to_string(),
-                    line_type: DiffLineType::None,
-                });
-            }
-
-            res.push(diff_line);
+            current_lines.push(diff_line);
         }
     };
 
@@ -113,8 +144,8 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
             .unwrap();
 
             patch
-                .print(&mut |_delta, _hunk, line: git2::DiffLine| {
-                    put(line);
+                .print(&mut |_delta, hunk:Option<DiffHunk>, line: git2::DiffLine| {
+                    put(hunk,line);
                     true
                 })
                 .unwrap();
@@ -130,28 +161,35 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
     if !new_file_diff {
         diff.print(
             DiffFormat::Patch,
-            |_, _, line: git2::DiffLine| {
-                put(line);
+            |_, hunk, line: git2::DiffLine| {
+                put(hunk, line);
                 true
             },
         )
         .unwrap();
     }
 
-    Diff(res)
+    if !current_lines.is_empty() {
+        res.0.push(Hunk(current_lines))
+    }
+
+    res
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::sync::status::{get_index, StatusType};
+    use super::get_diff;
+    use crate::sync::{
+        stage_add,
+        status::{get_index, StatusType},
+    };
     use git2::Repository;
     use std::env;
     use std::{
         fs::{self, File},
         io::Write,
+        path::Path,
     };
-    // use std::path::Path;
-    use super::get_diff;
     use tempfile::TempDir;
 
     pub fn repo_init() -> (TempDir, Repository) {
@@ -201,7 +239,78 @@ mod tests {
 
         let diff = get_diff("foo/bar.txt".to_string(), false);
 
-        assert_eq!(diff.0.len(), 4);
-        assert_eq!(diff.0[1].content, "test\n");
+        assert_eq!(diff.0.len(), 1);
+        assert_eq!(diff.0[0].0[1].content, "test\n");
+    }
+
+    static HUNK_A: &str = r"
+1   start
+2
+3
+4
+5
+6   middle
+7
+8
+9
+0
+1   end";
+
+    static HUNK_B: &str = r"
+1   start
+2   newa
+3
+4
+5
+6   middle
+7
+8
+9
+0   newb
+1   end";
+
+    #[test]
+    fn test_hunks() {
+        let (_td, repo) = repo_init();
+        let root = repo.path().parent().unwrap();
+
+        //TODO: this makes the test not threading safe
+        assert!(env::set_current_dir(&root).is_ok());
+
+        let res = get_index(StatusType::WorkingDir);
+        assert_eq!(res.len(), 0);
+
+        let file_path = root.join("bar.txt");
+
+        {
+            File::create(&file_path)
+                .unwrap()
+                .write_all(HUNK_A.as_bytes())
+                .unwrap();
+        }
+
+        let res = get_index(StatusType::WorkingDir);
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].path, "bar.txt");
+
+        let res = stage_add(Path::new("bar.txt"));
+        assert_eq!(res, true);
+        assert_eq!(get_index(StatusType::Stage).len(), 1);
+        assert_eq!(get_index(StatusType::WorkingDir).len(), 0);
+
+        // overwrite with next content
+        {
+            File::create(&file_path)
+                .unwrap()
+                .write_all(HUNK_B.as_bytes())
+                .unwrap();
+        }
+
+        assert_eq!(get_index(StatusType::Stage).len(), 1);
+        assert_eq!(get_index(StatusType::WorkingDir).len(), 1);
+
+        let res = get_diff("bar.txt".to_string(), false);
+
+        assert_eq!(res.0.len(), 2)
     }
 }
