@@ -39,6 +39,11 @@ fn main() -> Result<()> {
 
     let rx_input = poll::start_polling_thread();
 
+    rayon_core::ThreadPoolBuilder::new()
+        .panic_handler(|e| panic!(e))
+        .build_global()
+        .unwrap();
+
     app.update();
 
     loop {

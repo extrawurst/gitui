@@ -293,6 +293,7 @@ dependencies = [
  "dirs",
  "itertools 0.9.0",
  "log",
+ "rayon-core",
  "scopetime",
  "simplelog",
  "tui",
