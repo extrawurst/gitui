@@ -1,6 +1,6 @@
 [package]
 name = "asyncgit"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 edition = "2018"
 description = "allow using git2 in a asynchronous context"
@@ -14,7 +14,7 @@ git2 = "0.10"
 rayon-core = "1.7"
 crossbeam-channel = "0.4"
 log = "0.4"
-scopetime = { path = "../scopetime", version="0.1" }
+scopetime = { path = "../scopetime", version = "0.1" }
 
 [dev-dependencies]
 tempfile = "3.1"
