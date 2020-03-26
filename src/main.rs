@@ -8,7 +8,6 @@ mod ui;
 use crate::{app::App, poll::QueueEvent};
 use crossbeam_channel::{select, unbounded};
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{
         disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
         LeaveAlternateScreen,
@@ -23,9 +22,7 @@ use tui::{backend::CrosstermBackend, Terminal};
 fn main() -> Result<()> {
     setup_logging();
     enable_raw_mode()?;
-    io::stdout()
-        .execute(EnterAlternateScreen)?
-        .execute(EnableMouseCapture)?;
+    io::stdout().execute(EnterAlternateScreen)?;
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
@@ -72,9 +69,7 @@ fn main() -> Result<()> {
         }
     }
 
-    io::stdout()
-        .execute(LeaveAlternateScreen)?
-        .execute(DisableMouseCapture)?;
+    io::stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
 }
