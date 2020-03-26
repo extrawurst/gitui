@@ -181,9 +181,9 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "207a948d1b4ff59e5aec9bb9426cc4fd3d17b719e5c7b74e27f0a60c4cc2d095"
+checksum = "b8a3223215bc00c666d6be730e88aef245ad4a4f837e87a16c347e8acf701643"
 dependencies = [
  "bitflags",
  "crossterm_winapi 0.6.1",
@@ -289,7 +289,7 @@ version = "0.1.1"
 dependencies = [
  "asyncgit",
  "crossbeam-channel",
- "crossterm 0.15.0",
+ "crossterm 0.16.0",
  "dirs",
  "itertools 0.9.0",
  "log",
