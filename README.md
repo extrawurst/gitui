@@ -1,12 +1,13 @@
 # gitui
 
-[![Latest Version][s1]][l1] ![CI](https://github.com/extrawurst/gitui/workflows/CI/badge.svg)  [![MIT][s2]][l2] 
+![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![LOC][s3]][l3]
 
+[s0]: https://github.com/extrawurst/gitui/workflows/CI/badge.svg
 [s1]: https://img.shields.io/crates/v/gitui.svg
 [l1]: https://crates.io/crates/gitui
-
 [s2]: https://img.shields.io/badge/license-MIT-blue.svg
-[l2]: LICENSE
+[s3]: https://tokei.rs/b1/github/extrawurst/gitui
+[l3]: https://github.com/extrawurst/gitui
 
 blazing fast terminal-ui for git written in rust
 
