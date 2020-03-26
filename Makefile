@@ -7,7 +7,7 @@ test:
 
 clippy:
 	cargo clean
-	cargo clippy --all-targets --all-features -- -D warnings
+	cargo clippy --all-features
 
 install:
 	cargo install --path "."

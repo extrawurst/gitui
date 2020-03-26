@@ -2,6 +2,8 @@
 
 #![forbid(unsafe_code)]
 #![forbid(missing_docs)]
+#![deny(clippy::all)]
+#![warn(clippy::pedantic)]
 
 mod diff;
 mod status;
