@@ -14,6 +14,7 @@ use crossterm::{
     },
     ExecutableCommand, Result,
 };
+use log::error;
 use scopetime::scope_time;
 use simplelog::*;
 use std::{env, fs, fs::File, io};
@@ -34,12 +35,15 @@ fn main() -> Result<()> {
 
     let mut app = App::new(tx_git);
 
-    let rx_input = poll::start_polling_thread();
-
     rayon_core::ThreadPoolBuilder::new()
-        .panic_handler(|e| panic!(e))
+        .panic_handler(|e| {
+            error!("thread panic: {:?}", e);
+            panic!(e)
+        })
         .build_global()
         .unwrap();
+
+    let rx_input = poll::start_polling_thread();
 
     app.update();
 

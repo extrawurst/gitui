@@ -2,7 +2,7 @@ use asyncgit::AsyncNotification;
 use crossbeam_channel::{unbounded, Receiver};
 use crossterm::event::{self, Event};
 use std::{
-    thread::{self, sleep},
+    thread::sleep,
     time::{Duration, Instant},
 };
 
@@ -27,7 +27,7 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
     let (tx, rx) = unbounded();
 
     let tx1 = tx.clone();
-    thread::spawn(move || {
+    rayon_core::spawn(move || {
         let mut last_send = Instant::now();
         let mut batch = Vec::new();
 
@@ -51,7 +51,7 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
         }
     });
 
-    thread::spawn(move || loop {
+    rayon_core::spawn(move || loop {
         tx.send(vec![QueueEvent::Tick]).unwrap();
         sleep(TICK_DURATION);
     });
