@@ -24,7 +24,7 @@ pub trait Component {
     fn focused(&self) -> bool {
         false
     }
-    ///
+    /// focus/unfocus this component depending on param
     fn focus(&mut self, _focus: bool) {}
     ///
     fn is_visible(&self) -> bool {
