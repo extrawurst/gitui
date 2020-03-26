@@ -127,7 +127,7 @@ impl App {
         self.index.draw(f, left_chunks[1]);
         self.diff.draw(f, chunks[1]);
 
-        self.draw_commands(f, chunks_main[2], self.commands());
+        Self::draw_commands(f, chunks_main[2], self.commands());
 
         self.commit.draw(f, f.size());
         self.help.draw(f, f.size());
@@ -352,7 +352,6 @@ impl App {
     }
 
     fn draw_commands<B: Backend>(
-        &self,
         f: &mut Frame<B>,
         r: Rect,
         cmds: Vec<CommandInfo>,
