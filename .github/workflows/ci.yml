@@ -23,7 +23,4 @@ jobs:
     - name: Run tests
       run: cargo test --workspace -- --test-threads=1
     - name: Run clippy
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-features
+      run: cargo clippy
