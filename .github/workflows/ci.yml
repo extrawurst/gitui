@@ -17,14 +17,14 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
     - name: Build
+      uses: actions/checkout@v2
       run: cargo build --verbose
     - name: Run tests
+      uses: actions/checkout@v2
       run: cargo test --workspace -- --test-threads=1
     - name: Run clippy
-    - run: rustup component add clippy
-    - uses: actions-rs/clippy-check@v1
+      uses: actions-rs/clippy-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         args: --all-features
