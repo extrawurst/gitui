@@ -41,7 +41,7 @@ impl IndexComponent {
             self.items = list.clone();
 
             let old_selection = self.selection.unwrap_or_default();
-            self.selection = if self.items.len() > 0 {
+            self.selection = if !self.items.is_empty() {
                 Some(cmp::min(old_selection, self.items.len() - 1))
             } else {
                 None

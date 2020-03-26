@@ -40,7 +40,7 @@ impl AsyncDiff {
     pub fn last(&mut self) -> Option<Diff> {
         let last = self.last.lock().unwrap();
         if let Some(res) = last.clone() {
-            Some(res.result.clone())
+            Some(res.result)
         } else {
             None
         }
@@ -90,8 +90,8 @@ impl AsyncDiff {
                 let mut last = arc_last.lock().unwrap();
                 *last = Some(LastResult {
                     result: res,
-                    hash: hash,
-                    params: params,
+                    hash,
+                    params,
                 });
             }
 
@@ -104,11 +104,7 @@ impl AsyncDiff {
     }
 
     fn get_last_param(&self) -> Option<DiffParams> {
-        self.last
-            .lock()
-            .unwrap()
-            .clone()
-            .map_or(None, |e| Some(e.params))
+        self.last.lock().unwrap().clone().map(|e| e.params)
     }
 
     fn clear_current(&mut self) {

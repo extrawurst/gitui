@@ -59,7 +59,7 @@ pub fn centered_rect_absolute(
 pub fn draw_list<'b, B: Backend, L>(
     f: &mut Frame<B>,
     r: Rect,
-    title: &'b String,
+    title: &'b str,
     items: L,
     select: Option<usize>,
     selected: bool,
@@ -75,7 +75,7 @@ pub fn draw_list<'b, B: Backend, L>(
     ScrollableList::new(items)
         .block(
             Block::default()
-                .title(title.as_str())
+                .title(title)
                 .borders(Borders::ALL)
                 .title_style(style_title)
                 .border_style(style_border),

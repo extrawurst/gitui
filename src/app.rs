@@ -237,7 +237,7 @@ impl App {
                 // we dont show the right diff right now, so we need to request
                 if let Some(diff) = self.git_diff.request(diff_params)
                 {
-                    self.diff.update(path.clone(), is_stage, diff);
+                    self.diff.update(path, is_stage, diff);
                 } else {
                     self.diff.clear();
                 }
@@ -245,7 +245,7 @@ impl App {
                 // we are already showing a diff of the right file
                 // maybe the diff changed (outside file change)
                 if let Some(last) = self.git_diff.last() {
-                    self.diff.update(path.clone(), is_stage, last);
+                    self.diff.update(path, is_stage, last);
                 }
             }
         } else {
@@ -432,13 +432,11 @@ impl App {
                     self.update();
                 }
             }
-        } else {
-            if let Some(i) = self.index.selection() {
-                let path = Path::new(i.path.as_str());
+        } else if let Some(i) = self.index.selection() {
+            let path = Path::new(i.path.as_str());
 
-                if sync::stage_reset(path) {
-                    self.update();
-                }
+            if sync::stage_reset(path) {
+                self.update();
             }
         }
     }

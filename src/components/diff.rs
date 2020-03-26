@@ -60,14 +60,14 @@ impl DiffComponent {
             self.scroll =
                 self.scroll.checked_add(1).unwrap_or(self.scroll);
         } else {
-            self.scroll = self.scroll.checked_sub(1).unwrap_or(0);
+            self.scroll = self.scroll.saturating_sub(1);
         }
     }
 
     fn get_text(&self, width: u16, height: u16) -> Vec<Text> {
         let selection = self.scroll;
         let height_d2 = height / 2;
-        let min = self.scroll.checked_sub(height_d2).unwrap_or(0);
+        let min = self.scroll.saturating_sub(height_d2);
         let max = min + height;
 
         let mut res = Vec::new();

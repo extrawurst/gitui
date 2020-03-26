@@ -24,7 +24,7 @@ pub fn repo() -> Repository {
 }
 
 ///
-pub fn commit(msg: &String) {
+pub fn commit(msg: &str) {
     scope_time!("commit");
 
     let repo = repo();
@@ -41,7 +41,7 @@ pub fn commit(msg: &String) {
         Some("HEAD"),
         &signature,
         &signature,
-        msg.as_str(),
+        msg,
         &tree,
         &[&parent],
     )
@@ -68,7 +68,7 @@ pub fn stage_add(path: &Path) -> bool {
     let flags = IndexAddOption::DISABLE_PATHSPEC_MATCH
         | IndexAddOption::CHECK_PATHSPEC;
 
-    if let Ok(_) = index.add_all(path, flags, cb) {
+    if index.add_all(path, flags, cb).is_ok() {
         index.write().unwrap();
         return true;
     }
@@ -90,7 +90,7 @@ pub fn stage_reset(path: &Path) -> bool {
         )
         .unwrap();
 
-    if let Ok(_) = repo.reset_default(Some(&obj), &[path]) {
+    if repo.reset_default(Some(&obj), &[path]).is_ok() {
         return true;
     }
 
@@ -107,7 +107,7 @@ pub fn index_reset(path: &Path) -> bool {
     checkout_opts.remove_untracked(true);
     checkout_opts.path(&path).force();
 
-    if let Ok(_) = repo.checkout_head(Some(&mut checkout_opts)) {
+    if repo.checkout_head(Some(&mut checkout_opts)).is_ok() {
         return true;
     }
 

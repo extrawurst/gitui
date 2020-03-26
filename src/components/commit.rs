@@ -21,7 +21,7 @@ pub struct CommitComponent {
 impl Component for CommitComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
-            let txt = if self.msg.len() > 0 {
+            let txt = if !self.msg.is_empty() {
                 [Text::Raw(Cow::from(self.msg.clone()))]
             } else {
                 [Text::Styled(
@@ -73,7 +73,7 @@ impl Component for CommitComponent {
                     self.commit();
                     true
                 }
-                KeyCode::Backspace if self.msg.len() > 0 => {
+                KeyCode::Backspace if !self.msg.is_empty() => {
                     self.msg.pop().unwrap();
                     true
                 }
@@ -106,6 +106,6 @@ impl CommitComponent {
     }
 
     fn can_commit(&self) -> bool {
-        self.msg.len() > 0
+        !self.msg.is_empty()
     }
 }
