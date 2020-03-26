@@ -2,14 +2,14 @@ use crate::{
     components::{CommandInfo, Component},
     strings,
 };
-use asyncgit::{
-    hash, sync::diff::Hunk, Diff, DiffLine, DiffLineType,
-};
+use asyncgit::{hash, Diff, DiffLine, DiffLineType};
 use crossterm::event::{Event, KeyCode};
+use std::borrow::Cow;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
+    symbols,
     widgets::{Block, Borders, Paragraph, Text, Widget},
     Frame,
 };
@@ -54,7 +54,7 @@ impl DiffComponent {
             self.scroll = 0;
         }
     }
-    ///
+
     fn scroll(&mut self, inc: bool) {
         if inc {
             self.scroll =
@@ -63,43 +63,155 @@ impl DiffComponent {
             self.scroll = self.scroll.checked_sub(1).unwrap_or(0);
         }
     }
+
+    fn get_text(&self, width: u16, height: u16) -> Vec<Text> {
+        let selection = self.scroll;
+        let height_d2 = height / 2;
+        let min = self.scroll.checked_sub(height_d2).unwrap_or(0);
+        let max = min + height;
+
+        let mut res = Vec::new();
+        let mut line_cursor = 0u16;
+        let mut lines_added = 0u16;
+
+        for hunk in self.diff.0.iter() {
+            if lines_added >= height {
+                break;
+            }
+
+            let hunk_len = hunk.0.len() as u16;
+            let hunk_min = line_cursor;
+            let hunk_max = line_cursor + hunk_len;
+
+            if Self::hunk_visible(hunk_min, hunk_max, min, max) {
+                let hunk_selected =
+                    hunk_min <= selection && hunk_max > selection;
+                for (i, line) in hunk.0.iter().enumerate() {
+                    if line_cursor >= min {
+                        Self::add_line(
+                            &mut res,
+                            width,
+                            line,
+                            selection == line_cursor,
+                            hunk_selected,
+                            i == hunk_len as usize - 1,
+                        );
+                        lines_added += 1;
+                    }
+
+                    line_cursor += 1;
+                }
+            } else {
+                line_cursor += hunk_len;
+            }
+        }
+        res
+    }
+
+    fn add_line(
+        text: &mut Vec<Text>,
+        width: u16,
+        line: &DiffLine,
+        selected: bool,
+        selected_hunk: bool,
+        end_of_hunk: bool,
+    ) {
+        let select_color = Color::Rgb(0, 0, 100);
+        let style_default = Style::default().bg(if selected {
+            select_color
+        } else {
+            Color::Reset
+        });
+
+        {
+            let style = Style::default()
+                .bg(if selected || selected_hunk {
+                    select_color
+                } else {
+                    Color::Reset
+                })
+                .fg(Color::DarkGray);
+            if !end_of_hunk {
+                text.push(match line.line_type {
+                    DiffLineType::Header => Text::Styled(
+                        Cow::from(symbols::line::TOP_LEFT),
+                        style,
+                    ),
+                    _ => Text::Styled(
+                        Cow::from(symbols::line::VERTICAL),
+                        style,
+                    ),
+                });
+            } else {
+                text.push(Text::Styled(
+                    Cow::from(symbols::line::BOTTOM_LEFT),
+                    style,
+                ));
+            }
+        }
+
+        let style_delete = Style::default()
+            .fg(Color::Red)
+            .bg(if selected { select_color } else { Color::Reset });
+        let style_add = Style::default()
+            .fg(Color::Green)
+            .bg(if selected { select_color } else { Color::Reset });
+        let style_header = Style::default()
+            .fg(Color::Rgb(0, 0, 0))
+            .bg(if selected {
+                select_color
+            } else {
+                Color::DarkGray
+            })
+            .modifier(Modifier::BOLD);
+
+        let filled = if selected {
+            format!(
+                "{:w$}\n",
+                line.content.trim_end(),
+                w = width as usize
+            )
+        } else {
+            line.content.clone()
+        };
+        let content = Cow::from(filled);
+
+        text.push(match line.line_type {
+            DiffLineType::Delete => {
+                Text::Styled(content, style_delete)
+            }
+            DiffLineType::Add => Text::Styled(content, style_add),
+            DiffLineType::Header => {
+                Text::Styled(content, style_header)
+            }
+            _ => Text::Styled(content, style_default),
+        });
+    }
+
+    fn hunk_visible(
+        hunk_min: u16,
+        hunk_max: u16,
+        min: u16,
+        max: u16,
+    ) -> bool {
+        // full overlap
+        if hunk_min <= min && hunk_max >= max {
+            return true;
+        }
+
+        // partly overlap
+        if (hunk_min >= min && hunk_min <= max)
+            || (hunk_max >= min && hunk_max <= max)
+        {
+            return true;
+        }
+
+        false
+    }
 }
 
 impl Component for DiffComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-        let txt = self
-            .diff
-            .0
-            .iter()
-            .map(|h: &Hunk| h.0.clone())
-            .flatten()
-            .map(|e: DiffLine| {
-                let content = e.content.clone();
-                match e.line_type {
-                    DiffLineType::Delete => Text::Styled(
-                        content.into(),
-                        Style::default()
-                            .fg(Color::Red)
-                            .bg(Color::Black),
-                    ),
-                    DiffLineType::Add => Text::Styled(
-                        content.into(),
-                        Style::default()
-                            .fg(Color::Green)
-                            .bg(Color::Black),
-                    ),
-                    DiffLineType::Header => Text::Styled(
-                        content.into(),
-                        Style::default()
-                            .fg(Color::Black)
-                            .bg(Color::Gray)
-                            .modifier(Modifier::BOLD),
-                    ),
-                    _ => Text::Raw(content.into()),
-                }
-            })
-            .collect::<Vec<_>>();
-
         let mut style_border = Style::default();
         let mut style_title = Style::default();
         if self.focused {
@@ -107,7 +219,7 @@ impl Component for DiffComponent {
             style_title = style_title.modifier(Modifier::BOLD);
         }
 
-        Paragraph::new(txt.iter())
+        Paragraph::new(self.get_text(r.width, r.height).iter())
             .block(
                 Block::default()
                     .title(strings::TITLE_DIFF)
@@ -116,7 +228,6 @@ impl Component for DiffComponent {
                     .title_style(style_title),
             )
             .alignment(Alignment::Left)
-            .scroll(self.scroll)
             .render(f, r);
     }
 
@@ -131,19 +242,6 @@ impl Component for DiffComponent {
     fn event(&mut self, ev: Event) -> bool {
         if self.focused {
             if let Event::Key(e) = ev {
-                // if ev == Event::Key(KeyCode::PageDown.into()) {
-                //     self.scroll(true);
-                // }
-                // if ev == Event::Key(KeyCode::PageUp.into()) {
-                //     self.scroll(false);
-                // }
-                // if let Event::Mouse(MouseEvent::ScrollDown(_, _, _)) = ev
-                // {
-                //     self.scroll(true);
-                // }
-                // if let Event::Mouse(MouseEvent::ScrollUp(_, _, _)) = ev {
-                //     self.scroll(false);
-                // }
                 return match e.code {
                     KeyCode::Down => {
                         self.scroll(true);
@@ -161,11 +259,10 @@ impl Component for DiffComponent {
         false
     }
 
-    ///
     fn focused(&self) -> bool {
         self.focused
     }
-    ///
+
     fn focus(&mut self, focus: bool) {
         self.focused = focus
     }
