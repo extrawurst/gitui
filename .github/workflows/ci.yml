@@ -23,4 +23,4 @@ jobs:
     - name: Run tests
       run: cargo test --workspace -- --test-threads=1
     - name: Run clippy
-      run: cargo clippy
+      run: cargo clean && cargo clippy
