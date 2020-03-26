@@ -19,10 +19,7 @@ static MIN_POLL_DURATION: Duration = Duration::from_millis(5);
 static MAX_BATCHING_DURATION: Duration = Duration::from_millis(25);
 static TICK_DURATION: Duration = Duration::from_secs(5);
 
-/// we run 2 threads feeding us with update events.
 ///
-/// Thread 1:
-///     We will
 pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
     let (tx, rx) = unbounded();
 

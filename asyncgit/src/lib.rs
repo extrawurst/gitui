@@ -1,7 +1,8 @@
 //! asyncgit
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
+#![forbid(missing_docs)]
+
 mod diff;
 mod status;
 pub mod sync;

@@ -1,7 +1,7 @@
 //! simple macro to insert a scope based runtime measure that logs the result
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
+#![forbid(missing_docs)]
 
 use log::trace;
 use std::time::Instant;
