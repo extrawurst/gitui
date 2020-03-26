@@ -17,11 +17,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+    - uses: actions/checkout@v2
     - name: Build
-      uses: actions/checkout@v2
       run: cargo build --verbose
     - name: Run tests
-      uses: actions/checkout@v2
       run: cargo test --workspace -- --test-threads=1
     - name: Run clippy
       uses: actions-rs/clippy-check@v1
