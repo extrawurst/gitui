@@ -51,7 +51,13 @@ pub fn index_reset_at(repo_path: &str, path: &Path) -> bool {
             .output()
     };
 
-    output.is_ok()
+    if let Ok(out) = output {
+        dbg!(String::from_utf8(out.stderr.clone()).unwrap());
+        String::from_utf8(out.stderr).unwrap()
+            == "Updated 1 path from the index\n".to_string()
+    } else {
+        false
+    }
 
     //------------------------------------
     //TODO: why is this broken with libgit2 ???
