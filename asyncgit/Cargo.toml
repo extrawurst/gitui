@@ -10,7 +10,7 @@ license = "MIT"
 categories = ["concurrency","asynchronous"]
 
 [dependencies]
-git2 = "0.10"
+git2 = "0.13"
 rayon-core = "1.7"
 crossbeam-channel = "0.4"
 log = "0.4"

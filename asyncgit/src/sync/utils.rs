@@ -1,16 +1,19 @@
 //! sync git api (various methods)
 
-use git2::{
-    build::CheckoutBuilder, IndexAddOption, ObjectType, Repository,
-    RepositoryOpenFlags,
-};
+use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::path::Path;
 
+//TODO: get rid of this
 ///
 pub fn repo() -> Repository {
+    repo_at("./")
+}
+
+///
+pub fn repo_at(repo_path: &str) -> Repository {
     let repo = Repository::open_ext(
-        "./",
+        repo_path,
         RepositoryOpenFlags::empty(),
         Vec::<&Path>::new(),
     )
@@ -50,9 +53,14 @@ pub fn commit(msg: &str) {
 
 ///
 pub fn stage_add(path: &Path) -> bool {
+    stage_add_at("./", path)
+}
+
+///
+pub fn stage_add_at(repo_path: &str, path: &Path) -> bool {
     scope_time!("stage_add");
 
-    let repo = repo();
+    let repo = repo_at(repo_path);
 
     let mut index = repo.index().unwrap();
 
@@ -70,44 +78,6 @@ pub fn stage_add(path: &Path) -> bool {
 
     if index.add_all(path, flags, cb).is_ok() {
         index.write().unwrap();
-        return true;
-    }
-
-    false
-}
-
-///
-pub fn stage_reset(path: &Path) -> bool {
-    scope_time!("stage_reset");
-
-    let repo = repo();
-
-    let reference = repo.head().unwrap();
-    let obj = repo
-        .find_object(
-            reference.target().unwrap(),
-            Some(ObjectType::Commit),
-        )
-        .unwrap();
-
-    if repo.reset_default(Some(&obj), &[path]).is_ok() {
-        return true;
-    }
-
-    false
-}
-
-///
-pub fn index_reset(path: &Path) -> bool {
-    scope_time!("index_reset");
-
-    let repo = repo();
-
-    let mut checkout_opts = CheckoutBuilder::new();
-    checkout_opts.remove_untracked(true);
-    checkout_opts.path(&path).force();
-
-    if repo.checkout_head(Some(&mut checkout_opts)).is_ok() {
         return true;
     }
 
