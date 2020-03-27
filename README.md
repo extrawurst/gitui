@@ -20,6 +20,7 @@ blazing fast terminal-ui for git written in rust
 * (un)stage files
 * revert/reset files
 * commit changes
+* scalable ui layout
 * async [input polling](assets/perf_compare.jpg) and 
 * async git API for fluid control
 
