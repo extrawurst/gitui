@@ -36,7 +36,7 @@ pub fn index_reset(path: &Path) -> bool {
 
 ///
 pub fn index_reset_at(repo_path: &str, path: &Path) -> bool {
-    let cmd = format!("git checkout {:?}", path);
+    let cmd = format!("git checkout {}", path.to_str().unwrap());
 
     let output = if cfg!(target_os = "windows") {
         Command::new("cmd")
