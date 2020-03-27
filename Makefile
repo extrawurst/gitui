@@ -9,6 +9,10 @@ clippy:
 	cargo clean
 	cargo clippy --all-features
 
+clippy-pedantic:
+	cargo clean
+	cargo clippy --all-features -- -W clippy::pedantic
+
 install:
 	cargo install --path "."
 

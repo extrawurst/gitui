@@ -72,11 +72,7 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
 
-    let diff = if !stage {
-        opt.include_untracked(true);
-        opt.recurse_untracked_dirs(true);
-        repo.diff_index_to_workdir(None, Some(&mut opt)).unwrap()
-    } else {
+    let diff = if stage {
         // diff against head
         let ref_head = repo.head().unwrap();
         let parent =
@@ -88,6 +84,10 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
             Some(&mut opt),
         )
         .unwrap()
+    } else {
+        opt.include_untracked(true);
+        opt.recurse_untracked_dirs(true);
+        repo.diff_index_to_workdir(None, Some(&mut opt)).unwrap()
     };
 
     let mut res: Diff = Diff::default();

@@ -127,7 +127,11 @@ impl App {
         self.index.draw(f, left_chunks[1]);
         self.diff.draw(f, chunks[1]);
 
-        Self::draw_commands(f, chunks_main[2], self.commands());
+        Self::draw_commands(
+            f,
+            chunks_main[2],
+            self.commands().as_slice(),
+        );
 
         self.commit.draw(f, f.size());
         self.help.draw(f, f.size());
@@ -233,19 +237,19 @@ impl App {
             let path = i.path;
             let diff_params = DiffParams(path.clone(), is_stage);
 
-            if self.diff.current() != (path.clone(), is_stage) {
+            if self.diff.current() == (path.clone(), is_stage) {
+                // we are already showing a diff of the right file
+                // maybe the diff changed (outside file change)
+                if let Some(last) = self.git_diff.last() {
+                    self.diff.update(path, is_stage, last);
+                }
+            } else {
                 // we dont show the right diff right now, so we need to request
                 if let Some(diff) = self.git_diff.request(diff_params)
                 {
                     self.diff.update(path, is_stage, diff);
                 } else {
                     self.diff.clear();
-                }
-            } else {
-                // we are already showing a diff of the right file
-                // maybe the diff changed (outside file change)
-                if let Some(last) = self.git_diff.last() {
-                    self.diff.update(path, is_stage, last);
                 }
             }
         } else {
@@ -354,7 +358,7 @@ impl App {
     fn draw_commands<B: Backend>(
         f: &mut Frame<B>,
         r: Rect,
-        cmds: Vec<CommandInfo>,
+        cmds: &[CommandInfo],
     ) {
         let splitter = Text::Styled(
             Cow::from(strings::CMD_SPLITTER),

@@ -29,7 +29,7 @@ where
             block: None,
             items,
             scroll: 0,
-            style: Default::default(),
+            style: Style::default(),
         }
     }
 

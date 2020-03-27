@@ -21,13 +21,13 @@ pub struct CommitComponent {
 impl Component for CommitComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
-            let txt = if !self.msg.is_empty() {
-                [Text::Raw(Cow::from(self.msg.clone()))]
-            } else {
+            let txt = if self.msg.is_empty() {
                 [Text::Styled(
                     Cow::from(strings::COMMIT_MSG),
                     Style::default().fg(Color::DarkGray),
                 )]
+            } else {
+                [Text::Raw(Cow::from(self.msg.clone()))]
             };
 
             ui::Clear::new(

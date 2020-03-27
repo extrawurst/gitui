@@ -71,10 +71,10 @@ impl DiffComponent {
         let max = min + height;
 
         let mut res = Vec::new();
-        let mut line_cursor = 0u16;
-        let mut lines_added = 0u16;
+        let mut line_cursor = 0_u16;
+        let mut lines_added = 0_u16;
 
-        for hunk in self.diff.0.iter() {
+        for hunk in &self.diff.0 {
             if lines_added >= height {
                 break;
             }
@@ -131,7 +131,12 @@ impl DiffComponent {
                     Color::Reset
                 })
                 .fg(Color::DarkGray);
-            if !end_of_hunk {
+            if end_of_hunk {
+                text.push(Text::Styled(
+                    Cow::from(symbols::line::BOTTOM_LEFT),
+                    style,
+                ));
+            } else {
                 text.push(match line.line_type {
                     DiffLineType::Header => Text::Styled(
                         Cow::from(symbols::line::TOP_LEFT),
@@ -142,11 +147,6 @@ impl DiffComponent {
                         style,
                     ),
                 });
-            } else {
-                text.push(Text::Styled(
-                    Cow::from(symbols::line::BOTTOM_LEFT),
-                    style,
-                ));
             }
         }
 

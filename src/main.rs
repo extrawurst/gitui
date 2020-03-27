@@ -1,5 +1,4 @@
 #![deny(clippy::all)]
-#![warn(clippy::pedantic)]
 
 mod app;
 mod components;
