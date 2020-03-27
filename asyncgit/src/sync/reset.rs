@@ -54,7 +54,7 @@ pub fn index_reset_at(repo_path: &str, path: &Path) -> bool {
     if let Ok(out) = output {
         dbg!(String::from_utf8(out.stderr.clone()).unwrap());
         String::from_utf8(out.stderr).unwrap()
-            == "Updated 1 path from the index\n".to_string()
+            == "Updated 1 path from the index\n"
     } else {
         false
     }
