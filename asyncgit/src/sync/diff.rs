@@ -61,7 +61,7 @@ pub struct Hunk(pub Vec<DiffLine>);
 
 ///
 #[derive(Default, Clone, Hash)]
-pub struct Diff(pub Vec<Hunk>);
+pub struct Diff(pub Vec<Hunk>, pub u16);
 
 ///
 pub fn get_diff(p: String, stage: bool) -> Diff {
@@ -94,6 +94,11 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
     let mut current_lines = Vec::new();
     let mut current_hunk: Option<HunkHeader> = None;
 
+    let mut adder = |lines: &Vec<DiffLine>| {
+        res.0.push(Hunk(lines.clone()));
+        res.1 += lines.len() as u16;
+    };
+
     let mut put = |hunk: Option<DiffHunk>, line: git2::DiffLine| {
         if let Some(hunk) = hunk {
             let hunk_header = HunkHeader::from(hunk);
@@ -101,7 +106,7 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
             match current_hunk {
                 None => current_hunk = Some(hunk_header),
                 Some(h) if h != hunk_header => {
-                    res.0.push(Hunk(current_lines.clone()));
+                    adder(&current_lines);
                     current_lines.clear();
                     current_hunk = Some(hunk_header)
                 }
@@ -170,7 +175,7 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
     }
 
     if !current_lines.is_empty() {
-        res.0.push(Hunk(current_lines))
+        adder(&current_lines);
     }
 
     res

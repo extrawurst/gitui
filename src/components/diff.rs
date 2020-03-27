@@ -4,7 +4,7 @@ use crate::{
 };
 use asyncgit::{hash, Diff, DiffLine, DiffLineType};
 use crossterm::event::{Event, KeyCode};
-use std::borrow::Cow;
+use std::{borrow::Cow, cmp};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -27,7 +27,7 @@ pub struct DiffComponent {
 impl DiffComponent {
     ///
     fn can_scroll(&self) -> bool {
-        self.diff.0.len() > 1
+        self.diff.1 > 1
     }
     ///
     pub fn current(&self) -> (String, bool) {
@@ -57,8 +57,10 @@ impl DiffComponent {
 
     fn scroll(&mut self, inc: bool) {
         if inc {
-            self.scroll =
-                self.scroll.checked_add(1).unwrap_or(self.scroll);
+            self.scroll = cmp::min(
+                self.diff.1.saturating_sub(1),
+                self.scroll.saturating_add(1),
+            );
         } else {
             self.scroll = self.scroll.saturating_sub(1);
         }
