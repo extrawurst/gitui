@@ -55,7 +55,6 @@ GITUI_LOGGING=true gitui
 
 # todo for 0.1 (first release)
 
-* [ ] fix: diff broken at end of file
 * [ ] fix: reset unstaged file also resets staged hunks
 * [ ] better help command 
 * [ ] -> fix: dont show scroll option when any popup open
@@ -68,3 +67,6 @@ GITUI_LOGGING=true gitui
 * https://github.com/jesseduffield/lazygit
 * https://github.com/jonas/tig
 * https://github.com/git-up/GitUp (would be nice to comeup with a way to have the map view available in a terminal tool)
+
+
+asdad

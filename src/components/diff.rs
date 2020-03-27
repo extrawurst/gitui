@@ -133,6 +133,7 @@ impl DiffComponent {
                     Color::Reset
                 })
                 .fg(Color::DarkGray);
+
             if end_of_hunk {
                 text.push(Text::Styled(
                     Cow::from(symbols::line::BOTTOM_LEFT),
@@ -170,11 +171,15 @@ impl DiffComponent {
         let filled = if selected {
             format!(
                 "{:w$}\n",
-                line.content.trim_end(),
+                line.content.trim_matches('\n'),
                 w = width as usize
             )
         } else {
-            line.content.clone()
+            if line.content.matches('\n').count() == 1 {
+                line.content.clone()
+            } else {
+                format!("{}\n", line.content.trim_matches('\n'))
+            }
         };
         let content = Cow::from(filled);
 
