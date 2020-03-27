@@ -32,7 +32,7 @@ pub enum AsyncNotification {
 }
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait
-pub fn hash<T: Hash>(v: &T) -> u64 {
+pub fn hash<T: Hash + ?Sized>(v: &T) -> u64 {
     let mut hasher = DefaultHasher::new();
     v.hash(&mut hasher);
     hasher.finish()

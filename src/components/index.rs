@@ -36,9 +36,9 @@ impl IndexComponent {
     }
 
     ///
-    pub fn update(&mut self, list: &Vec<StatusItem>) {
+    pub fn update(&mut self, list: &[StatusItem]) {
         if hash(&self.items) != hash(list) {
-            self.items = list.clone();
+            self.items = list.to_owned();
 
             let old_selection = self.selection.unwrap_or_default();
             self.selection = if self.items.is_empty() {
