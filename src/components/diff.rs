@@ -169,17 +169,18 @@ impl DiffComponent {
             .modifier(Modifier::BOLD);
 
         let filled = if selected {
+            // selected line
             format!(
                 "{:w$}\n",
                 line.content.trim_matches('\n'),
                 w = width as usize
             )
+        } else if line.content.matches('\n').count() == 1 {
+            // regular line, no selection (cheapest)
+            line.content.clone()
         } else {
-            if line.content.matches('\n').count() == 1 {
-                line.content.clone()
-            } else {
-                format!("{}\n", line.content.trim_matches('\n'))
-            }
+            // weird eof missing eol line
+            format!("{}\n", line.content.trim_matches('\n'))
         };
         let content = Cow::from(filled);
 
