@@ -138,8 +138,7 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> Diff {
             let newfile_path =
                 repo_path.join(delta.new_file().path().unwrap());
 
-            let newfile_content =
-                fs::read_to_string(&newfile_path).unwrap();
+            let newfile_content = new_file_content(&newfile_path);
 
             let mut patch = Patch::from_buffers(
                 &[],
@@ -181,6 +180,20 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> Diff {
     }
 
     res
+}
+
+fn new_file_content(path: &Path) -> String {
+    if let Ok(meta) = fs::symlink_metadata(path) {
+        if meta.file_type().is_symlink() {
+            fs::read_link(path).unwrap().to_str().unwrap().to_string()
+        } else {
+            "file not found".to_string()
+        }
+    } else if let Ok(content) = fs::read_to_string(path) {
+        content
+    } else {
+        "file not found".to_string()
+    }
 }
 
 #[cfg(test)]
