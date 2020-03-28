@@ -55,6 +55,7 @@ GITUI_LOGGING=true gitui
 
 # todo for 0.1 (first release)
 
+* [ ] panic on exit (thread sending error)
 * [ ] better help command 
 * [ ] -> fix: dont show scroll option when any popup open
 * [ ] confirm destructive commands (revert/reset)
