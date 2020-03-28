@@ -33,8 +33,6 @@ pub fn reset_workdir(repo_path: &str, path: &Path) -> bool {
     // Note: early out for removing untracked files, due to bug in checkout_head code:
     // see https://github.com/libgit2/libgit2/issues/5089
     if let Ok(status) = repo.status_file(&path) {
-        dbg!(status);
-
         let removed_file_wd = if status == Status::WT_NEW
             || (status == Status::WT_MODIFIED | Status::INDEX_NEW)
         {
