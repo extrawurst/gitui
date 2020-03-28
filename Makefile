@@ -1,4 +1,6 @@
 
+.PHONY: test
+
 debug:
 	GITUI_LOGGING=true cargo run --features=timing
 
