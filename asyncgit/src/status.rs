@@ -76,7 +76,9 @@ impl AsyncStatus {
             }
 
             if notify {
-                sender.send(AsyncNotification::Status).unwrap();
+                sender
+                    .send(AsyncNotification::Status)
+                    .expect("error sending status");
             }
         });
 

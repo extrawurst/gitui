@@ -96,7 +96,9 @@ impl AsyncDiff {
             }
 
             if notify {
-                sender.send(AsyncNotification::Diff).unwrap();
+                sender
+                    .send(AsyncNotification::Diff)
+                    .expect("error sending diff");
             }
         });
 
