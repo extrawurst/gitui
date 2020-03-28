@@ -41,7 +41,7 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
             if !batch.is_empty()
                 && last_send.elapsed() > MAX_BATCHING_DURATION
             {
-                tx1.send(batch).unwrap();
+                tx1.send(batch).expect("send input event failed");
                 batch = Vec::new();
                 last_send = Instant::now();
             }
@@ -49,7 +49,8 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
     });
 
     rayon_core::spawn(move || loop {
-        tx.send(vec![QueueEvent::Tick]).unwrap();
+        tx.send(vec![QueueEvent::Tick])
+            .expect("send tick event failed");
         sleep(TICK_DURATION);
     });
 
