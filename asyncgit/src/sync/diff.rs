@@ -185,15 +185,19 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> Diff {
 fn new_file_content(path: &Path) -> String {
     if let Ok(meta) = fs::symlink_metadata(path) {
         if meta.file_type().is_symlink() {
-            fs::read_link(path).unwrap().to_str().unwrap().to_string()
-        } else {
-            "file not found".to_string()
+            return fs::read_link(path)
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string();
+        } else if meta.file_type().is_file() {
+            if let Ok(content) = fs::read_to_string(path) {
+                return content;
+            }
         }
-    } else if let Ok(content) = fs::read_to_string(path) {
-        content
-    } else {
-        "file not found".to_string()
     }
+
+    "file not found".to_string()
 }
 
 #[cfg(test)]
