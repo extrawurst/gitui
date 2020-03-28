@@ -1,4 +1,4 @@
-use crate::{hash, sync, AsyncNotification, Diff};
+use crate::{hash, sync, AsyncNotification, Diff, CWD};
 use crossbeam_channel::Sender;
 use log::trace;
 use std::{
@@ -76,7 +76,7 @@ impl AsyncDiff {
         let sender = self.sender.clone();
         rayon_core::spawn(move || {
             let res =
-                sync::diff::get_diff(params.0.clone(), params.1);
+                sync::diff::get_diff(CWD, params.0.clone(), params.1);
             let mut notify = false;
             {
                 let mut current = arc_current.lock().unwrap();

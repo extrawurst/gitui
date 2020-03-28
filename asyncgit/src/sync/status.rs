@@ -63,18 +63,13 @@ impl Into<StatusShow> for StatusType {
 }
 
 ///
-pub fn get_index(status_type: StatusType) -> Vec<StatusItem> {
-    get_index_at("./", status_type)
-}
-
-///
-pub fn get_index_at(
+pub fn get_status(
     repo_path: &str,
     status_type: StatusType,
 ) -> Vec<StatusItem> {
     scope_time!("get_index");
 
-    let repo = utils::repo_at(repo_path);
+    let repo = utils::repo(repo_path);
 
     let statuses = repo
         .statuses(Some(

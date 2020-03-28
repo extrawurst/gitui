@@ -1,4 +1,4 @@
-use crate::{hash, sync, AsyncNotification, StatusItem};
+use crate::{hash, sync, AsyncNotification, StatusItem, CWD};
 use crossbeam_channel::Sender;
 use log::trace;
 use std::{
@@ -85,8 +85,8 @@ impl AsyncStatus {
 
     fn get_status() -> Status {
         let work_dir =
-            sync::status::get_index(StatusType::WorkingDir);
-        let stage = sync::status::get_index(StatusType::Stage);
+            sync::status::get_status(CWD, StatusType::WorkingDir);
+        let stage = sync::status::get_status(CWD, StatusType::Stage);
 
         Status { stage, work_dir }
     }

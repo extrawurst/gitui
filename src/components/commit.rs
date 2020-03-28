@@ -1,6 +1,6 @@
 use super::{CommandInfo, Component};
 use crate::{strings, ui};
-use asyncgit::sync;
+use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
 use tui::{
@@ -99,7 +99,7 @@ impl Component for CommitComponent {
 
 impl CommitComponent {
     fn commit(&mut self) {
-        sync::commit(&self.msg);
+        sync::commit(CWD, &self.msg);
         self.msg.clear();
 
         self.hide();

@@ -5,7 +5,7 @@ use git2::{
     Delta, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
 };
 use scopetime::scope_time;
-use std::fs;
+use std::{fs, path::Path};
 
 ///
 #[derive(Copy, Clone, PartialEq, Hash)]
@@ -64,10 +64,10 @@ pub struct Hunk(pub Vec<DiffLine>);
 pub struct Diff(pub Vec<Hunk>, pub u16);
 
 ///
-pub fn get_diff(p: String, stage: bool) -> Diff {
+pub fn get_diff(repo_path: &str, p: String, stage: bool) -> Diff {
     scope_time!("get_diff");
 
-    let repo = utils::repo();
+    let repo = utils::repo(repo_path);
 
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
@@ -134,16 +134,18 @@ pub fn get_diff(p: String, stage: bool) -> Diff {
         let delta: DiffDelta = diff.deltas().next().unwrap();
 
         if delta.status() == Delta::Untracked {
-            let newfile_path = delta.new_file().path().unwrap();
+            let repo_path = Path::new(repo_path);
+            let newfile_path =
+                repo_path.join(delta.new_file().path().unwrap());
 
             let newfile_content =
-                fs::read_to_string(newfile_path).unwrap();
+                fs::read_to_string(&newfile_path).unwrap();
 
             let mut patch = Patch::from_buffers(
                 &[],
                 None,
                 newfile_content.as_bytes(),
-                Some(newfile_path),
+                Some(&newfile_path),
                 Some(&mut opt),
             )
             .unwrap();
@@ -186,51 +188,22 @@ mod tests {
     use super::get_diff;
     use crate::sync::{
         stage_add,
-        status::{get_index, StatusType},
+        status::{get_status, StatusType},
+        tests::repo_init,
     };
-    use git2::Repository;
-    use std::env;
     use std::{
         fs::{self, File},
         io::Write,
         path::Path,
     };
-    use tempfile::TempDir;
-
-    pub fn repo_init() -> (TempDir, Repository) {
-        let td = TempDir::new().unwrap();
-        let repo = Repository::init(td.path()).unwrap();
-        {
-            let mut config = repo.config().unwrap();
-            config.set_str("user.name", "name").unwrap();
-            config.set_str("user.email", "email").unwrap();
-
-            let mut index = repo.index().unwrap();
-            let id = index.write_tree().unwrap();
-
-            let tree = repo.find_tree(id).unwrap();
-            let sig = repo.signature().unwrap();
-            repo.commit(
-                Some("HEAD"),
-                &sig,
-                &sig,
-                "initial",
-                &tree,
-                &[],
-            )
-            .unwrap();
-        }
-        (td, repo)
-    }
 
     #[test]
     fn test_untracked_subfolder() {
         let (_td, repo) = repo_init();
         let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
 
-        assert!(env::set_current_dir(&root).is_ok());
-
-        let res = get_index(StatusType::WorkingDir);
+        let res = get_status(repo_path, StatusType::WorkingDir);
         assert_eq!(res.len(), 0);
 
         fs::create_dir(&root.join("foo")).unwrap();
@@ -239,10 +212,11 @@ mod tests {
             .write_all(b"test\nfoo")
             .unwrap();
 
-        let res = get_index(StatusType::WorkingDir);
+        let res = get_status(repo_path, StatusType::WorkingDir);
         assert_eq!(res.len(), 1);
 
-        let diff = get_diff("foo/bar.txt".to_string(), false);
+        let diff =
+            get_diff(repo_path, "foo/bar.txt".to_string(), false);
 
         assert_eq!(diff.0.len(), 1);
         assert_eq!(diff.0[0].0[1].content, "test\n");
@@ -278,11 +252,9 @@ mod tests {
     fn test_hunks() {
         let (_td, repo) = repo_init();
         let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
 
-        //TODO: this makes the test not threading safe
-        assert!(env::set_current_dir(&root).is_ok());
-
-        let res = get_index(StatusType::WorkingDir);
+        let res = get_status(repo_path, StatusType::WorkingDir);
         assert_eq!(res.len(), 0);
 
         let file_path = root.join("bar.txt");
@@ -294,14 +266,17 @@ mod tests {
                 .unwrap();
         }
 
-        let res = get_index(StatusType::WorkingDir);
+        let res = get_status(repo_path, StatusType::WorkingDir);
         assert_eq!(res.len(), 1);
         assert_eq!(res[0].path, "bar.txt");
 
-        let res = stage_add(Path::new("bar.txt"));
+        let res = stage_add(repo_path, Path::new("bar.txt"));
         assert_eq!(res, true);
-        assert_eq!(get_index(StatusType::Stage).len(), 1);
-        assert_eq!(get_index(StatusType::WorkingDir).len(), 0);
+        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+        assert_eq!(
+            get_status(repo_path, StatusType::WorkingDir).len(),
+            0
+        );
 
         // overwrite with next content
         {
@@ -311,10 +286,13 @@ mod tests {
                 .unwrap();
         }
 
-        assert_eq!(get_index(StatusType::Stage).len(), 1);
-        assert_eq!(get_index(StatusType::WorkingDir).len(), 1);
+        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+        assert_eq!(
+            get_status(repo_path, StatusType::WorkingDir).len(),
+            1
+        );
 
-        let res = get_diff("bar.txt".to_string(), false);
+        let res = get_diff(repo_path, "bar.txt".to_string(), false);
 
         assert_eq!(res.0.len(), 2)
     }

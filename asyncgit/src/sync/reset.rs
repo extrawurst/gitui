@@ -1,18 +1,13 @@
-use super::utils::repo_at;
-use git2::ObjectType;
+use super::utils::repo;
+use git2::{build::CheckoutBuilder, ObjectType};
 use scopetime::scope_time;
-use std::{path::Path, process::Command};
+use std::path::Path;
 
 ///
-pub fn stage_reset(path: &Path) -> bool {
-    stage_reset_at("./", path)
-}
+pub fn reset_stage(repo_path: &str, path: &Path) -> bool {
+    scope_time!("reset_stage");
 
-///
-pub fn stage_reset_at(repo_path: &str, path: &Path) -> bool {
-    scope_time!("stage_reset_at");
-
-    let repo = repo_at(repo_path);
+    let repo = repo(repo_path);
 
     let reference = repo.head().unwrap();
     let obj = repo
@@ -30,94 +25,41 @@ pub fn stage_reset_at(repo_path: &str, path: &Path) -> bool {
 }
 
 ///
-pub fn index_reset(path: &Path) -> bool {
-    index_reset_at("./", path)
-}
+pub fn reset_workdir(repo_path: &str, path: &Path) -> bool {
+    scope_time!("reset_workdir");
 
-///
-pub fn index_reset_at(repo_path: &str, path: &Path) -> bool {
-    let cmd = format!("git checkout {}", path.to_str().unwrap());
+    let repo = repo(repo_path);
 
-    let output = if cfg!(target_os = "windows") {
-        Command::new("cmd")
-            .args(&["/C", cmd.as_str()])
-            .current_dir(repo_path)
-            .output()
-    } else {
-        Command::new("sh")
-            .arg("-c")
-            .arg(cmd.as_str())
-            .current_dir(repo_path)
-            .output()
-    };
+    let mut checkout_opts = CheckoutBuilder::new();
+    checkout_opts
+        .remove_untracked(true)
+        .force()
+        .update_index(false)
+        .path(&path);
 
-    if let Ok(out) = output {
-        // dbg!(String::from_utf8(out.stderr.clone()).unwrap());
-        String::from_utf8(out.stderr).unwrap()
-            == "Updated 1 path from the index\n"
-    } else {
-        false
-    }
+    //first reset working dir file
+    repo.checkout_head(Some(&mut checkout_opts)).unwrap();
 
-    //------------------------------------
-    //TODO: why is this broken with libgit2 ???
-    //------------------------------------
+    let mut checkout_opts = CheckoutBuilder::new();
+    checkout_opts
+        .update_index(true) // windows: needs this to be true WTF?!
+        .path(&path);
 
-    // scope_time!("index_reset");
+    // now reset staged changes back to working dir
+    repo.checkout_index(None, Some(&mut checkout_opts)).unwrap();
 
-    // let repo = repo_at(repo_path);
-
-    // let mut checkout_opts = CheckoutBuilder::new();
-    // checkout_opts
-    //     .remove_untracked(true)
-    //     .force()
-    //     .update_index(false)
-    //     .allow_conflicts(true)
-    //     .path(&path);
-
-    // if repo.checkout_head(Some(&mut checkout_opts)).is_ok() {
-    //     return true;
-    // }
-
-    // false
+    true
 }
 
 #[cfg(test)]
 mod tests {
-    use super::index_reset_at;
+    use super::reset_workdir;
     use crate::sync::{
-        status::{get_index_at, StatusType},
-        utils::stage_add_at,
+        status::{get_status, StatusType},
+        tests::{debug_cmd_print, repo_init},
+        utils::stage_add,
     };
-    use git2::Repository;
     use std::{fs::File, io::Write, path::Path};
-    use tempfile::TempDir;
-
-    pub fn repo_init() -> (TempDir, Repository) {
-        let td = TempDir::new().unwrap();
-        let repo = Repository::init(td.path()).unwrap();
-        {
-            let mut config = repo.config().unwrap();
-            config.set_str("user.name", "name").unwrap();
-            config.set_str("user.email", "email").unwrap();
-
-            let mut index = repo.index().unwrap();
-            let id = index.write_tree().unwrap();
-
-            let tree = repo.find_tree(id).unwrap();
-            let sig = repo.signature().unwrap();
-            repo.commit(
-                Some("HEAD"),
-                &sig,
-                &sig,
-                "initial",
-                &tree,
-                &[],
-            )
-            .unwrap();
-        }
-        (td, repo)
-    }
 
     static HUNK_A: &str = r"
 1   start
@@ -151,7 +93,7 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let res = get_index_at(repo_path, StatusType::WorkingDir);
+        let res = get_status(repo_path, StatusType::WorkingDir);
         assert_eq!(res.len(), 0);
 
         let file_path = root.join("bar.txt");
@@ -163,7 +105,11 @@ mod tests {
                 .unwrap();
         }
 
-        stage_add_at(repo_path, Path::new("bar.txt"));
+        debug_cmd_print(repo_path, "git status");
+
+        stage_add(repo_path, Path::new("bar.txt"));
+
+        debug_cmd_print(repo_path, "git status");
 
         // overwrite with next content
         {
@@ -173,24 +119,22 @@ mod tests {
                 .unwrap();
         }
 
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
         assert_eq!(
-            get_index_at(repo_path, StatusType::Stage).len(),
-            1
-        );
-        assert_eq!(
-            get_index_at(repo_path, StatusType::WorkingDir).len(),
+            get_status(repo_path, StatusType::WorkingDir).len(),
             1
         );
 
-        let res = index_reset_at(repo_path, Path::new("bar.txt"));
+        let res = reset_workdir(repo_path, Path::new("bar.txt"));
         assert_eq!(res, true);
 
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
         assert_eq!(
-            get_index_at(repo_path, StatusType::Stage).len(),
-            1
-        );
-        assert_eq!(
-            get_index_at(repo_path, StatusType::WorkingDir).len(),
+            get_status(repo_path, StatusType::WorkingDir).len(),
             0
         );
     }

@@ -4,14 +4,8 @@ use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::path::Path;
 
-//TODO: get rid of this
 ///
-pub fn repo() -> Repository {
-    repo_at("./")
-}
-
-///
-pub fn repo_at(repo_path: &str) -> Repository {
+pub fn repo(repo_path: &str) -> Repository {
     let repo = Repository::open_ext(
         repo_path,
         RepositoryOpenFlags::empty(),
@@ -27,10 +21,10 @@ pub fn repo_at(repo_path: &str) -> Repository {
 }
 
 ///
-pub fn commit(msg: &str) {
+pub fn commit(repo_path: &str, msg: &str) {
     scope_time!("commit");
 
-    let repo = repo();
+    let repo = repo(repo_path);
 
     let signature = repo.signature().unwrap();
     let reference = repo.head().unwrap();
@@ -52,15 +46,10 @@ pub fn commit(msg: &str) {
 }
 
 ///
-pub fn stage_add(path: &Path) -> bool {
-    stage_add_at("./", path)
-}
-
-///
-pub fn stage_add_at(repo_path: &str, path: &Path) -> bool {
+pub fn stage_add(repo_path: &str, path: &Path) -> bool {
     scope_time!("stage_add");
 
-    let repo = repo_at(repo_path);
+    let repo = repo(repo_path);
 
     let mut index = repo.index().unwrap();
 

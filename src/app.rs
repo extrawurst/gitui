@@ -7,7 +7,7 @@ use crate::{
 };
 use asyncgit::{
     current_tick, sync, AsyncDiff, AsyncNotification, AsyncStatus,
-    DiffParams,
+    DiffParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -431,14 +431,14 @@ impl App {
             if let Some(i) = self.index_wd.selection() {
                 let path = Path::new(i.path.as_str());
 
-                if sync::stage_add(path) {
+                if sync::stage_add(CWD, path) {
                     self.update();
                 }
             }
         } else if let Some(i) = self.index.selection() {
             let path = Path::new(i.path.as_str());
 
-            if sync::stage_reset(path) {
+            if sync::reset_stage(CWD, path) {
                 self.update();
             }
         }
@@ -449,7 +449,7 @@ impl App {
             if let Some(i) = self.index_wd.selection() {
                 let path = Path::new(i.path.as_str());
 
-                if sync::index_reset(path) {
+                if sync::reset_workdir(CWD, path) {
                     self.update();
                 }
             }
