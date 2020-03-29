@@ -195,4 +195,52 @@ mod tests {
             0
         );
     }
+
+    #[test]
+    fn test_reset_untracked_in_subdir_and_index() {
+        let (_td, repo) = repo_init();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+        let file = "foo/bar.txt";
+
+        {
+            fs::create_dir(&root.join("foo")).unwrap();
+            File::create(&root.join(file))
+                .unwrap()
+                .write_all(b"test\nfoo")
+                .unwrap();
+        }
+
+        debug_cmd_print(repo_path, "git status");
+
+        debug_cmd_print(repo_path, "git add .");
+
+        debug_cmd_print(repo_path, "git status");
+
+        {
+            File::create(&root.join(file))
+                .unwrap()
+                .write_all(b"test\nfoo\nnewend")
+                .unwrap();
+        }
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+        assert_eq!(
+            get_status(repo_path, StatusType::WorkingDir).len(),
+            1
+        );
+
+        let res = reset_workdir(repo_path, Path::new(file));
+        assert_eq!(res, true);
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(
+            get_status(repo_path, StatusType::WorkingDir).len(),
+            0
+        );
+        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+    }
 }
