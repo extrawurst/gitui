@@ -24,3 +24,7 @@ jobs:
       run: cargo test --workspace
     - name: Run clippy
       run: cargo clean && cargo clippy --all-features
+    - name: Security audit
+      uses: actions-rs/audit-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
