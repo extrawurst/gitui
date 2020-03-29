@@ -15,10 +15,10 @@ blazing fast terminal-ui for git written in rust
 
 ## features
 
-* fast key only control
+* fast and intuitive key only control
+* context based help (**no** need to remember any hot-key)
 * inspect changes
-* (un)stage files
-* revert/reset files
+* (un)stage files, revert/reset files
 * commit changes
 * scalable ui layout
 * async [input polling](assets/perf_compare.jpg) and 
