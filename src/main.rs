@@ -1,4 +1,6 @@
 #![deny(clippy::all)]
+//TODO: the crossbeam::select macro uses unsafe :(
+// #![forbid(unsafe_code)]
 
 mod app;
 mod components;
