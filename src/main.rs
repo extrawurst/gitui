@@ -10,6 +10,7 @@ mod strings;
 mod ui;
 
 use crate::{app::App, poll::QueueEvent};
+use backtrace::Backtrace;
 use crossbeam_channel::{select, unbounded};
 use crossterm::{
     terminal::{
@@ -19,15 +20,20 @@ use crossterm::{
     ExecutableCommand, Result,
 };
 use log::error;
+use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::*;
-use std::{env, fs, fs::File, io};
+use std::{env, fs, fs::File, io, panic};
 use tui::{backend::CrosstermBackend, Terminal};
 
 fn main() -> Result<()> {
     setup_logging();
     enable_raw_mode()?;
     io::stdout().execute(EnterAlternateScreen)?;
+    defer! {
+        io::stdout().execute(LeaveAlternateScreen).unwrap();
+        disable_raw_mode().unwrap();
+    }
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
@@ -39,13 +45,7 @@ fn main() -> Result<()> {
 
     let mut app = App::new(tx_git);
 
-    rayon_core::ThreadPoolBuilder::new()
-        .panic_handler(|e| {
-            error!("thread panic: {:?}", e);
-            panic!(e)
-        })
-        .build_global()
-        .unwrap();
+    set_panic_handlers();
 
     let rx_input = poll::start_polling_thread();
 
@@ -77,8 +77,6 @@ fn main() -> Result<()> {
         }
     }
 
-    io::stdout().execute(LeaveAlternateScreen)?;
-    disable_raw_mode()?;
     Ok(())
 }
 
@@ -95,4 +93,21 @@ fn setup_logging() {
             File::create(path).unwrap(),
         );
     }
+}
+
+fn set_panic_handlers() {
+    // regular panic handler
+    panic::set_hook(Box::new(|e| {
+        let backtrace = Backtrace::new();
+        error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+    }));
+
+    // threadpool panic handler
+    rayon_core::ThreadPoolBuilder::new()
+        .panic_handler(|e| {
+            error!("thread panic: {:?}", e);
+            panic!(e)
+        })
+        .build_global()
+        .unwrap();
 }

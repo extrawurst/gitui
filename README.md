@@ -56,7 +56,6 @@ GITUI_LOGGING=true gitui
 # todo for 0.1 (first release)
 
 * [ ] fix audit warnings: https://github.com/Drakulix/simplelog.rs/issues/54
-* [ ] prevent panicking from messing terminal up
 * [ ] panic on exit (thread sending error)
 * [ ] better help command 
 * [ ] -> fix: dont show scroll option when any popup open
