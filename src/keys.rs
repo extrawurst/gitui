@@ -7,7 +7,7 @@ const fn no_mod(code: KeyCode) -> KeyEvent {
     }
 }
 
-pub const FOCUS_STATUS: KeyEvent = no_mod(KeyCode::Char('1'));
+pub const FOCUS_WORKDIR: KeyEvent = no_mod(KeyCode::Char('1'));
 pub const FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('2'));
 pub const FOCUS_RIGHT: KeyEvent = no_mod(KeyCode::Right);
 pub const FOCUS_LEFT: KeyEvent = no_mod(KeyCode::Left);

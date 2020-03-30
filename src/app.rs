@@ -32,7 +32,7 @@ enum DiffTarget {
 ///
 #[derive(PartialEq)]
 enum Focus {
-    Status,
+    WorkDir,
     Diff,
     Stage,
 }
@@ -56,7 +56,7 @@ impl App {
     ///
     pub fn new(sender: Sender<AsyncNotification>) -> Self {
         Self {
-            focus: Focus::Status,
+            focus: Focus::WorkDir,
             diff_target: DiffTarget::WorkingDir,
             do_quit: false,
             commit: CommitComponent::default(),
@@ -169,10 +169,9 @@ impl App {
                     keys::EXIT_1 | keys::EXIT_2 => {
                         self.do_quit = true
                     }
-                    keys::FOCUS_STATUS => {
-                        self.switch_focus(Focus::Status)
+                    keys::FOCUS_WORKDIR => {
+                        self.switch_focus(Focus::WorkDir)
                     }
-                    keys::OPEN_HELP => self.help.show(),
                     keys::FOCUS_STAGE => {
                         self.switch_focus(Focus::Stage)
                     }
@@ -182,9 +181,10 @@ impl App {
                     keys::FOCUS_LEFT => {
                         self.switch_focus(match self.diff_target {
                             DiffTarget::Stage => Focus::Stage,
-                            DiffTarget::WorkingDir => Focus::Status,
+                            DiffTarget::WorkingDir => Focus::WorkDir,
                         })
                     }
+                    keys::OPEN_HELP => self.help.show(),
                     keys::STATUS_STAGE_FILE => {
                         self.index_add_remove();
                         self.update();
@@ -398,7 +398,7 @@ impl App {
             self.focus = f;
 
             match self.focus {
-                Focus::Status => {
+                Focus::WorkDir => {
                     self.set_diff_target(DiffTarget::WorkingDir);
                     self.diff.focus(false);
                 }
