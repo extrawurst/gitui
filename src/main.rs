@@ -1,6 +1,5 @@
 #![deny(clippy::all)]
-//TODO: the crossbeam::select macro uses unsafe :(
-// #![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 
 mod app;
 mod components;
@@ -10,8 +9,9 @@ mod strings;
 mod ui;
 
 use crate::{app::App, poll::QueueEvent};
+use asyncgit::AsyncNotification;
 use backtrace::Backtrace;
-use crossbeam_channel::{select, tick, unbounded};
+use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
     terminal::{
         disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
@@ -24,7 +24,12 @@ use log::error;
 use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::*;
-use std::{env, fs, fs::File, io, panic, time::Duration};
+use std::{
+    env, fs,
+    fs::File,
+    io, panic,
+    time::{Duration, Instant},
+};
 use tui::{backend::CrosstermBackend, Terminal};
 
 static TICK_INTERVAL: Duration = Duration::from_secs(5);
@@ -54,12 +59,8 @@ fn main() -> Result<()> {
     app.update();
 
     loop {
-        let mut events: Vec<QueueEvent> = Vec::new();
-        select! {
-            recv(rx_input) -> inputs => events.append(&mut inputs.unwrap()),
-            recv(rx_git) -> ev => events.push(QueueEvent::GitEvent(ev.unwrap())),
-            recv(ticker) -> _ => events.push(QueueEvent::Tick),
-        }
+        let events: Vec<QueueEvent> =
+            select_event(&rx_input, &rx_git, &ticker);
 
         {
             scope_time!("loop");
@@ -81,6 +82,37 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn select_event(
+    rx_input: &Receiver<Vec<QueueEvent>>,
+    rx_git: &Receiver<AsyncNotification>,
+    rx_ticker: &Receiver<Instant>,
+) -> Vec<QueueEvent> {
+    let mut events: Vec<QueueEvent> = Vec::new();
+
+    let mut sel = Select::new();
+
+    sel.recv(rx_input);
+    sel.recv(rx_git);
+    sel.recv(rx_ticker);
+
+    let oper = sel.select();
+    let index = oper.index();
+
+    match index {
+        0 => oper.recv(rx_input).map(|inputs| events.extend(inputs)),
+        1 => oper
+            .recv(rx_git)
+            .map(|ev| events.push(QueueEvent::GitEvent(ev))),
+        2 => oper
+            .recv(rx_ticker)
+            .map(|_| events.push(QueueEvent::Tick)),
+        _ => Ok(()),
+    }
+    .unwrap();
+
+    events
 }
 
 fn start_terminal<W: Write>(
