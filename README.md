@@ -1,6 +1,6 @@
-# gitui
+<img align="left" width="120px" src="assets/logo.png" />
 
-![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![LOC][s3]][l3]
+# gitui
 
 ![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![LOC][s3]][l3] [![UNSAFE][s4]][l4]
 
