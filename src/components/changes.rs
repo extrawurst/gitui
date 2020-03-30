@@ -14,7 +14,7 @@ use tui::{
 };
 
 ///
-pub struct IndexComponent {
+pub struct ChangesComponent {
     title: String,
     items: Vec<StatusItem>,
     selection: Option<usize>,
@@ -22,7 +22,7 @@ pub struct IndexComponent {
     show_selection: bool,
 }
 
-impl IndexComponent {
+impl ChangesComponent {
     ///
     pub fn new(title: &str, focus: bool) -> Self {
         Self {
@@ -83,7 +83,7 @@ impl IndexComponent {
     }
 }
 
-impl Component for IndexComponent {
+impl Component for ChangesComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
         let item_to_text = |idx: usize, i: &StatusItem| -> Text {
             let selected = self.show_selection

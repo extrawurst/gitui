@@ -1,7 +1,7 @@
 use crate::{
     components::{
-        CommandInfo, CommitComponent, Component, DiffComponent,
-        HelpComponent, IndexComponent,
+        ChangesComponent, CommandInfo, CommitComponent, Component,
+        DiffComponent, HelpComponent,
     },
     keys, strings,
 };
@@ -44,8 +44,8 @@ pub struct App {
     do_quit: bool,
     commit: CommitComponent,
     help: HelpComponent,
-    index: IndexComponent,
-    index_wd: IndexComponent,
+    index: ChangesComponent,
+    index_wd: ChangesComponent,
     diff: DiffComponent,
     git_diff: AsyncDiff,
     git_status: AsyncStatus,
@@ -61,11 +61,11 @@ impl App {
             do_quit: false,
             commit: CommitComponent::default(),
             help: HelpComponent::default(),
-            index_wd: IndexComponent::new(
+            index_wd: ChangesComponent::new(
                 strings::TITLE_STATUS,
                 true,
             ),
-            index: IndexComponent::new(strings::TITLE_INDEX, false),
+            index: ChangesComponent::new(strings::TITLE_INDEX, false),
             diff: DiffComponent::default(),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status: AsyncStatus::new(sender),

@@ -6,7 +6,7 @@ mod command;
 mod commit;
 mod diff;
 mod help;
-pub use changes::IndexComponent;
+pub use changes::ChangesComponent;
 pub use command::CommandInfo;
 pub use commit::CommitComponent;
 pub use diff::DiffComponent;
