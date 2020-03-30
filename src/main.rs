@@ -19,6 +19,7 @@ use crossterm::{
     },
     ExecutableCommand, Result,
 };
+use io::Write;
 use log::error;
 use scopeguard::defer;
 use scopetime::scope_time;
@@ -28,6 +29,7 @@ use tui::{backend::CrosstermBackend, Terminal};
 
 fn main() -> Result<()> {
     setup_logging();
+
     enable_raw_mode()?;
     io::stdout().execute(EnterAlternateScreen)?;
     defer! {
@@ -35,11 +37,7 @@ fn main() -> Result<()> {
         disable_raw_mode().unwrap();
     }
 
-    let backend = CrosstermBackend::new(io::stdout());
-    let mut terminal = Terminal::new(backend)?;
-    terminal.hide_cursor()?;
-
-    terminal.clear()?;
+    let mut terminal = start_terminal(io::stdout())?;
 
     let (tx_git, rx_git) = unbounded();
 
@@ -78,6 +76,17 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn start_terminal<W: Write>(
+    buf: W,
+) -> io::Result<Terminal<CrosstermBackend<W>>> {
+    let backend = CrosstermBackend::new(buf);
+    let mut terminal = Terminal::new(backend)?;
+    terminal.hide_cursor()?;
+    terminal.clear()?;
+
+    Ok(terminal)
 }
 
 fn setup_logging() {
