@@ -19,7 +19,6 @@ static MAX_BATCHING_DURATION: Duration = Duration::from_millis(25);
 pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
     let (tx, rx) = unbounded();
 
-    let tx1 = tx.clone();
     rayon_core::spawn(move || {
         let mut last_send = Instant::now();
         let mut batch = Vec::new();
@@ -37,7 +36,7 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
             if !batch.is_empty()
                 && last_send.elapsed() > MAX_BATCHING_DURATION
             {
-                tx1.send(batch).expect("send input event failed");
+                tx.send(batch).expect("send input event failed");
                 batch = Vec::new();
                 last_send = Instant::now();
             }
