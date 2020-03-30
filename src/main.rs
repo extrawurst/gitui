@@ -108,6 +108,7 @@ fn set_panic_handlers() {
             error!("thread panic: {:?}", e);
             panic!(e)
         })
+        .num_threads(4)
         .build_global()
         .unwrap();
 }
