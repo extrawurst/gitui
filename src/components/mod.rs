@@ -1,16 +1,16 @@
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
+mod changes;
 mod command;
 mod commit;
 mod diff;
 mod help;
-mod index;
+pub use changes::IndexComponent;
 pub use command::CommandInfo;
 pub use commit::CommitComponent;
 pub use diff::DiffComponent;
 pub use help::HelpComponent;
-pub use index::IndexComponent;
 
 ///
 pub trait Component {
