@@ -45,28 +45,14 @@ pub fn reset_workdir(repo_path: &str, path: &Path) -> bool {
             return removed_file_wd;
         }
 
-        if status != Status::WT_MODIFIED | Status::INDEX_NEW {
-            let mut checkout_opts = CheckoutBuilder::new();
-            checkout_opts
-                .remove_untracked(true)
-                .force()
-                .update_index(false)
-                .path(&path);
-
-            //first reset working dir file
-            repo.checkout_head(Some(&mut checkout_opts)).unwrap();
-        }
-
         let mut checkout_opts = CheckoutBuilder::new();
         checkout_opts
             .update_index(true) // windows: needs this to be true WTF?!
             .allow_conflicts(true)
+            .force()
             .path(&path);
 
-        // now reset staged changes back to working dir
-        repo.checkout_index(None, Some(&mut checkout_opts)).unwrap();
-
-        true
+        repo.checkout_index(None, Some(&mut checkout_opts)).is_ok()
     } else {
         false
     }
