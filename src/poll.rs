@@ -1,10 +1,7 @@
 use asyncgit::AsyncNotification;
 use crossbeam_channel::{unbounded, Receiver};
 use crossterm::event::{self, Event};
-use std::{
-    thread::sleep,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 ///
 #[derive(Clone, Copy)]
@@ -17,7 +14,6 @@ pub enum QueueEvent {
 static MAX_POLL_DURATION: Duration = Duration::from_secs(2);
 static MIN_POLL_DURATION: Duration = Duration::from_millis(5);
 static MAX_BATCHING_DURATION: Duration = Duration::from_millis(25);
-static TICK_DURATION: Duration = Duration::from_secs(5);
 
 ///
 pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
@@ -46,12 +42,6 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
                 last_send = Instant::now();
             }
         }
-    });
-
-    rayon_core::spawn(move || loop {
-        tx.send(vec![QueueEvent::Tick])
-            .expect("send tick event failed");
-        sleep(TICK_DURATION);
     });
 
     rx

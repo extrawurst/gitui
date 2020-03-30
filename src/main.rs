@@ -11,7 +11,7 @@ mod ui;
 
 use crate::{app::App, poll::QueueEvent};
 use backtrace::Backtrace;
-use crossbeam_channel::{select, unbounded};
+use crossbeam_channel::{select, tick, unbounded};
 use crossterm::{
     terminal::{
         disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
@@ -24,8 +24,10 @@ use log::error;
 use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::*;
-use std::{env, fs, fs::File, io, panic};
+use std::{env, fs, fs::File, io, panic, time::Duration};
 use tui::{backend::CrosstermBackend, Terminal};
+
+static TICK_INTERVAL: Duration = Duration::from_secs(5);
 
 fn main() -> Result<()> {
     setup_logging();
@@ -47,6 +49,8 @@ fn main() -> Result<()> {
 
     let rx_input = poll::start_polling_thread();
 
+    let ticker = tick(TICK_INTERVAL);
+
     app.update();
 
     loop {
@@ -54,6 +58,7 @@ fn main() -> Result<()> {
         select! {
             recv(rx_input) -> inputs => events.append(&mut inputs.unwrap()),
             recv(rx_git) -> ev => events.push(QueueEvent::GitEvent(ev.unwrap())),
+            recv(ticker) -> _ => events.push(QueueEvent::Tick),
         }
 
         {
@@ -111,7 +116,7 @@ fn set_panic_handlers() {
         error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
     }));
 
-    // threadpool panic handler
+    // global threadpool
     rayon_core::ThreadPoolBuilder::new()
         .panic_handler(|e| {
             error!("thread panic: {:?}", e);
