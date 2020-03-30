@@ -271,14 +271,16 @@ impl App {
         let mut res = self.commit.commands();
         res.extend(self.help.commands());
 
-        res.extend(self.index.commands());
-        res.extend(self.index_wd.commands());
-        res.extend(self.diff.commands());
+        let main_cmds_available =
+            !self.commit.is_visible() && !self.help.is_visible();
+
+        if main_cmds_available {
+            res.extend(self.index.commands());
+            res.extend(self.index_wd.commands());
+            res.extend(self.diff.commands());
+        }
 
         {
-            let main_cmds_available =
-                !self.commit.is_visible() && !self.help.is_visible();
-
             res.push(CommandInfo::new(
                 strings::COMMIT_CMD_OPEN,
                 !self.index.is_empty(),

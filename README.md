@@ -55,7 +55,6 @@ GITUI_LOGGING=true gitui
 # todo for 0.1 (first release)
 
 * [ ] better help command 
-* [ ] -> fix: dont show scroll option when any popup open
 * [ ] confirm destructive commands (revert/reset)
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
