@@ -1,9 +1,10 @@
 <div align="center">
 <img src="assets/logo.png" />
 <h1>gitui</h1>
-</div>
 
 ![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![LOC][s3]][l3] [![UNSAFE][s4]][l4]
+
+</div>
 
 [s0]: https://github.com/extrawurst/gitui/workflows/CI/badge.svg
 [s1]: https://img.shields.io/crates/v/gitui.svg
