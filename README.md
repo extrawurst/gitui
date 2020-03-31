@@ -1,5 +1,5 @@
 <div align="center">
-<img width="100px" src="assets/logo.png" />
+<img src="assets/logo.png" />
 <h1>gitui</h1>
 </div>
 
