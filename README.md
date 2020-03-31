@@ -1,6 +1,7 @@
-<img align="left" width="120px" src="assets/logo.png" />
-
-# gitui
+<div align="center">
+<img width="100px" src="assets/logo.png" />
+<h1>gitui</h1>
+</div>
 
 ![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![LOC][s3]][l3] [![UNSAFE][s4]][l4]
 
