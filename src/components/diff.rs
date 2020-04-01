@@ -1,3 +1,4 @@
+use super::{DrawableComponent, EventUpdate};
 use crate::{
     components::{CommandInfo, Component},
     strings,
@@ -218,7 +219,7 @@ impl DiffComponent {
     }
 }
 
-impl Component for DiffComponent {
+impl DrawableComponent for DiffComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
         let mut style_border = Style::default().fg(Color::DarkGray);
         let mut style_title = Style::default();
@@ -238,7 +239,9 @@ impl Component for DiffComponent {
             .alignment(Alignment::Left)
             .render(f, r);
     }
+}
 
+impl Component for DiffComponent {
     fn commands(&self) -> Vec<CommandInfo> {
         vec![CommandInfo::new(
             strings::CMD_SCROLL,
@@ -247,24 +250,24 @@ impl Component for DiffComponent {
         )]
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
         if self.focused {
             if let Event::Key(e) = ev {
                 return match e.code {
                     KeyCode::Down => {
                         self.scroll(true);
-                        true
+                        Some(EventUpdate::None)
                     }
                     KeyCode::Up => {
                         self.scroll(false);
-                        true
+                        Some(EventUpdate::None)
                     }
-                    _ => false,
+                    _ => None,
                 };
             }
         }
 
-        false
+        None
     }
 
     fn focused(&self) -> bool {

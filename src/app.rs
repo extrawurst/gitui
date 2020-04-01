@@ -1,7 +1,7 @@
 use crate::{
     components::{
         ChangesComponent, CommandInfo, CommitComponent, Component,
-        DiffComponent, HelpComponent,
+        DiffComponent, DrawableComponent, EventUpdate, HelpComponent,
     },
     keys, strings,
 };
@@ -141,64 +141,47 @@ impl App {
     pub fn event(&mut self, ev: Event) {
         trace!("event: {:?}", ev);
 
-        if self.commit.is_visible() && self.commit.event(ev) {
-            if !self.commit.is_visible() {
-                self.update();
+        if let Some(e) =
+            Self::event_pump(ev, self.components().as_mut_slice())
+        {
+            match e {
+                EventUpdate::Changes => self.update(),
+                EventUpdate::Diff => self.update_diff(),
+                _ => (),
             }
-            return;
-        } else if self.help.is_visible() {
-            self.help.event(ev);
+
             return;
         }
 
-        if !self.commit.is_visible() {
-            if self.index.event(ev) {
-                self.update_diff();
-                return;
-            }
-            if self.index_wd.event(ev) {
-                self.update_diff();
-                return;
-            }
-            if self.diff.event(ev) {
-                return;
-            }
-
-            if let Event::Key(k) = ev {
-                match k {
-                    keys::EXIT_1 | keys::EXIT_2 => {
-                        self.do_quit = true
-                    }
-                    keys::FOCUS_WORKDIR => {
-                        self.switch_focus(Focus::WorkDir)
-                    }
-                    keys::FOCUS_STAGE => {
-                        self.switch_focus(Focus::Stage)
-                    }
-                    keys::FOCUS_RIGHT => {
-                        self.switch_focus(Focus::Diff)
-                    }
-                    keys::FOCUS_LEFT => {
-                        self.switch_focus(match self.diff_target {
-                            DiffTarget::Stage => Focus::Stage,
-                            DiffTarget::WorkingDir => Focus::WorkDir,
-                        })
-                    }
-                    keys::OPEN_HELP => self.help.show(),
-                    keys::STATUS_STAGE_FILE => {
-                        self.index_add_remove();
+        if let Event::Key(k) = ev {
+            match k {
+                keys::EXIT_1 | keys::EXIT_2 => self.do_quit = true,
+                keys::FOCUS_WORKDIR => {
+                    self.switch_focus(Focus::WorkDir)
+                }
+                keys::FOCUS_STAGE => self.switch_focus(Focus::Stage),
+                keys::FOCUS_RIGHT => self.switch_focus(Focus::Diff),
+                keys::FOCUS_LEFT => {
+                    self.switch_focus(match self.diff_target {
+                        DiffTarget::Stage => Focus::Stage,
+                        DiffTarget::WorkingDir => Focus::WorkDir,
+                    })
+                }
+                keys::OPEN_HELP => self.help.show(),
+                keys::STATUS_STAGE_FILE => {
+                    if self.index_add_remove() {
                         self.update();
                     }
-                    keys::STATUS_RESET_FILE => {
-                        self.index_reset();
-                        self.update();
-                    }
-                    keys::OPEN_COMMIT if !self.index.is_empty() => {
-                        self.commit.show();
-                    }
-                    _ => (),
-                };
-            }
+                }
+                keys::STATUS_RESET_FILE => {
+                    self.index_reset();
+                    self.update();
+                }
+                keys::OPEN_COMMIT if !self.index.is_empty() => {
+                    self.commit.show();
+                }
+                _ => (),
+            };
         }
     }
 
@@ -357,6 +340,29 @@ impl App {
         res
     }
 
+    fn components(&mut self) -> Vec<&mut dyn Component> {
+        vec![
+            &mut self.help,
+            &mut self.commit,
+            &mut self.index,
+            &mut self.index_wd,
+            &mut self.diff,
+        ]
+    }
+
+    fn event_pump(
+        ev: Event,
+        components: &mut [&mut dyn Component],
+    ) -> Option<EventUpdate> {
+        for c in components {
+            if let Some(u) = c.event(ev) {
+                return Some(u);
+            }
+        }
+
+        None
+    }
+
     fn draw_commands<B: Backend>(
         f: &mut Frame<B>,
         r: Rect,
@@ -428,22 +434,20 @@ impl App {
         self.index.focus_select(is_stage);
     }
 
-    fn index_add_remove(&mut self) {
+    fn index_add_remove(&mut self) -> bool {
         if self.diff_target == DiffTarget::WorkingDir {
             if let Some(i) = self.index_wd.selection() {
                 let path = Path::new(i.path.as_str());
 
-                if sync::stage_add(CWD, path) {
-                    self.update();
-                }
+                return sync::stage_add(CWD, path);
             }
         } else if let Some(i) = self.index.selection() {
             let path = Path::new(i.path.as_str());
 
-            if sync::reset_stage(CWD, path) {
-                self.update();
-            }
+            return sync::reset_stage(CWD, path);
         }
+
+        false
     }
 
     fn index_reset(&mut self) {

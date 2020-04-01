@@ -1,3 +1,4 @@
+use super::{DrawableComponent, EventUpdate};
 use crate::{
     components::{CommandInfo, Component},
     strings, ui,
@@ -83,7 +84,7 @@ impl ChangesComponent {
     }
 }
 
-impl Component for ChangesComponent {
+impl DrawableComponent for ChangesComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
         let item_to_text = |idx: usize, i: &StatusItem| -> Text {
             let selected = self.show_selection
@@ -124,7 +125,9 @@ impl Component for ChangesComponent {
             self.focused,
         );
     }
+}
 
+impl Component for ChangesComponent {
     fn commands(&self) -> Vec<CommandInfo> {
         vec![CommandInfo::new(
             strings::CMD_SCROLL,
@@ -133,31 +136,29 @@ impl Component for ChangesComponent {
         )]
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
         if self.focused {
             if let Event::Key(e) = ev {
                 return match e.code {
                     KeyCode::Down => {
                         self.move_selection(1);
-                        true
+                        Some(EventUpdate::Diff)
                     }
                     KeyCode::Up => {
                         self.move_selection(-1);
-                        true
+                        Some(EventUpdate::Diff)
                     }
-                    _ => false,
+                    _ => None,
                 };
             }
         }
 
-        false
+        None
     }
 
-    ///
     fn focused(&self) -> bool {
         self.focused
     }
-    ///
     fn focus(&mut self, focus: bool) {
         self.focused = focus
     }

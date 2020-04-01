@@ -13,13 +13,22 @@ pub use diff::DiffComponent;
 pub use help::HelpComponent;
 
 ///
-pub trait Component {
+pub enum EventUpdate {
+    None,
+    Changes,
+    Diff,
+}
+
+pub trait DrawableComponent {
     ///
     fn draw<B: Backend>(&self, f: &mut Frame<B>, rect: Rect);
+}
+///
+pub trait Component {
     ///
     fn commands(&self) -> Vec<CommandInfo>;
     ///
-    fn event(&mut self, ev: Event) -> bool;
+    fn event(&mut self, ev: Event) -> Option<EventUpdate>;
     ///
     fn focused(&self) -> bool {
         false

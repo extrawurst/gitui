@@ -1,4 +1,4 @@
-use super::{CommandInfo, Component};
+use super::{CommandInfo, Component, DrawableComponent, EventUpdate};
 use crate::{strings, ui};
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
@@ -15,7 +15,7 @@ pub struct HelpComponent {
     visible: bool,
 }
 
-impl Component for HelpComponent {
+impl DrawableComponent for HelpComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
             let txt = self
@@ -41,7 +41,9 @@ impl Component for HelpComponent {
             .render(f, ui::centered_rect_absolute(60, 20, f.size()));
         }
     }
+}
 
+impl Component for HelpComponent {
     fn commands(&self) -> Vec<CommandInfo> {
         vec![CommandInfo::new(
             strings::COMMIT_CMD_CLOSE,
@@ -50,18 +52,20 @@ impl Component for HelpComponent {
         )]
     }
 
-    fn event(&mut self, ev: Event) -> bool {
-        if let Event::Key(e) = ev {
-            return match e.code {
-                KeyCode::Esc => {
-                    self.hide();
-                    true
-                }
-                _ => false,
-            };
-        }
+    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
+        if self.visible {
+            if let Event::Key(e) = ev {
+                match e.code {
+                    KeyCode::Esc => {
+                        self.hide();
+                    }
+                    _ => (),
+                };
 
-        false
+                return Some(EventUpdate::None);
+            }
+        }
+        None
     }
 
     fn is_visible(&self) -> bool {

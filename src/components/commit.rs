@@ -1,4 +1,4 @@
-use super::{CommandInfo, Component};
+use super::{CommandInfo, Component, DrawableComponent, EventUpdate};
 use crate::{strings, ui};
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
@@ -18,7 +18,7 @@ pub struct CommitComponent {
     visible: bool,
 }
 
-impl Component for CommitComponent {
+impl DrawableComponent for CommitComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
             let txt = if self.msg.is_empty() {
@@ -42,7 +42,9 @@ impl Component for CommitComponent {
             .render(f, ui::centered_rect(60, 20, f.size()));
         }
     }
+}
 
+impl Component for CommitComponent {
     fn commands(&self) -> Vec<CommandInfo> {
         vec![
             CommandInfo::new(
@@ -58,30 +60,31 @@ impl Component for CommitComponent {
         ]
     }
 
-    fn event(&mut self, ev: Event) -> bool {
-        if let Event::Key(e) = ev {
-            return match e.code {
-                KeyCode::Esc => {
-                    self.hide();
-                    true
-                }
-                KeyCode::Char(c) => {
-                    self.msg.push(c);
-                    true
-                }
-                KeyCode::Enter if self.can_commit() => {
-                    self.commit();
-                    true
-                }
-                KeyCode::Backspace if !self.msg.is_empty() => {
-                    self.msg.pop().unwrap();
-                    true
-                }
-                _ => false,
-            };
+    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
+        if self.visible {
+            if let Event::Key(e) = ev {
+                return Some(match e.code {
+                    KeyCode::Esc => {
+                        self.hide();
+                        EventUpdate::None
+                    }
+                    KeyCode::Char(c) => {
+                        self.msg.push(c);
+                        EventUpdate::None
+                    }
+                    KeyCode::Enter if self.can_commit() => {
+                        self.commit();
+                        EventUpdate::Changes
+                    }
+                    KeyCode::Backspace if !self.msg.is_empty() => {
+                        self.msg.pop().unwrap();
+                        EventUpdate::None
+                    }
+                    _ => EventUpdate::None,
+                });
+            }
         }
-
-        false
+        None
     }
 
     fn is_visible(&self) -> bool {
