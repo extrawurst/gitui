@@ -18,7 +18,7 @@ keywords = [
 ]
 
 [dependencies]
-crossterm = "0.16"
+crossterm = "0.17"
 tui = { version = "0.8", default-features=false, features = ['crossterm'] }
 itertools = "0.9"
 rayon-core = "1.7"
