@@ -59,6 +59,12 @@ impl Component for HelpComponent {
                     KeyCode::Esc => {
                         self.hide();
                     }
+                    KeyCode::Up => {
+                        //
+                    }
+                    KeyCode::Down => {
+                        //
+                    }
                     _ => (),
                 };
 
