@@ -66,10 +66,10 @@ pub fn draw_list<'b, B: Backend, L>(
 ) where
     L: Iterator<Item = Text<'b>>,
 {
-    let mut style_border = Style::default();
+    let mut style_border = Style::default().fg(Color::DarkGray);
     let mut style_title = Style::default();
     if selected {
-        style_border = style_border.fg(Color::Green);
+        style_border = style_border.fg(Color::Gray);
         style_title = style_title.modifier(Modifier::BOLD);
     }
     ScrollableList::new(items)

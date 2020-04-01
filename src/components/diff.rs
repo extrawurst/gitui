@@ -220,10 +220,10 @@ impl DiffComponent {
 
 impl Component for DiffComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-        let mut style_border = Style::default();
+        let mut style_border = Style::default().fg(Color::DarkGray);
         let mut style_title = Style::default();
         if self.focused {
-            style_border = style_border.fg(Color::Green);
+            style_border = style_border.fg(Color::Gray);
             style_title = style_title.modifier(Modifier::BOLD);
         }
 
