@@ -1,5 +1,7 @@
-#![deny(clippy::all)]
 #![forbid(unsafe_code)]
+#![deny(clippy::all)]
+// #![warn(clippy::cargo)]
+#![deny(clippy::cast_possible_wrap)]
 
 mod app;
 mod components;

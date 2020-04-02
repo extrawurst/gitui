@@ -5,7 +5,12 @@ use crate::{
 };
 use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
-use std::{borrow::Cow, cmp, path::Path};
+use std::{
+    borrow::Cow,
+    cmp,
+    convert::{From, TryFrom},
+    path::Path,
+};
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -79,12 +84,14 @@ impl ChangesComponent {
         let items_len = self.items.len();
         if items_len > 0 {
             if let Some(i) = self.selection {
-                let mut i = i as i32;
+                if let Ok(mut i) = i32::try_from(i) {
+                    if let Ok(max) = i32::try_from(items_len) {
+                        i = cmp::min(i + delta, max - 1);
+                        i = cmp::max(i, 0);
 
-                i = cmp::min(i + delta, (items_len - 1) as i32);
-                i = cmp::max(i, 0);
-
-                self.selection = Some(i as usize);
+                        self.selection = Some(i as usize);
+                    }
+                }
             }
         }
     }
