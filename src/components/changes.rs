@@ -1,11 +1,11 @@
 use super::{DrawableComponent, EventUpdate};
 use crate::{
     components::{CommandInfo, Component},
-    strings, ui,
+    keys, strings, ui,
 };
-use asyncgit::{hash, StatusItem, StatusItemType};
-use crossterm::event::{Event, KeyCode};
-use std::{borrow::Cow, cmp};
+use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
+use crossterm::event::Event;
+use std::{borrow::Cow, cmp, path::Path};
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -21,11 +21,16 @@ pub struct ChangesComponent {
     selection: Option<usize>,
     focused: bool,
     show_selection: bool,
+    is_working_dir: bool,
 }
 
 impl ChangesComponent {
     ///
-    pub fn new(title: &str, focus: bool) -> Self {
+    pub fn new(
+        title: &str,
+        focus: bool,
+        is_working_dir: bool,
+    ) -> Self {
         Self {
             title: title.to_string(),
             items: Vec::new(),
@@ -33,6 +38,7 @@ impl ChangesComponent {
             selection: None,
             focused: focus,
             show_selection: focus,
+            is_working_dir,
         }
     }
 
@@ -81,6 +87,33 @@ impl ChangesComponent {
                 self.selection = Some(i as usize);
             }
         }
+    }
+
+    fn index_add_remove(&mut self) -> bool {
+        if let Some(i) = self.selection() {
+            if self.is_working_dir {
+                let path = Path::new(i.path.as_str());
+
+                return sync::stage_add(CWD, path);
+            } else {
+                let path = Path::new(i.path.as_str());
+
+                return sync::reset_stage(CWD, path);
+            }
+        }
+
+        false
+    }
+
+    fn index_reset(&mut self) -> bool {
+        if let Some(i) = self.selection() {
+            let path = Path::new(i.path.as_str());
+
+            if sync::reset_workdir(CWD, path) {
+                return true;
+            }
+        }
+        false
     }
 }
 
@@ -139,12 +172,26 @@ impl Component for ChangesComponent {
     fn event(&mut self, ev: Event) -> Option<EventUpdate> {
         if self.focused {
             if let Event::Key(e) = ev {
-                return match e.code {
-                    KeyCode::Down => {
+                return match e {
+                    keys::STATUS_STAGE_FILE => {
+                        if self.index_add_remove() {
+                            Some(EventUpdate::Changes)
+                        } else {
+                            Some(EventUpdate::None)
+                        }
+                    }
+                    keys::STATUS_RESET_FILE => {
+                        if self.index_reset() {
+                            Some(EventUpdate::Changes)
+                        } else {
+                            Some(EventUpdate::None)
+                        }
+                    }
+                    keys::MOVE_DOWN => {
                         self.move_selection(1);
                         Some(EventUpdate::Diff)
                     }
-                    KeyCode::Up => {
+                    keys::MOVE_UP => {
                         self.move_selection(-1);
                         Some(EventUpdate::Diff)
                     }

@@ -6,14 +6,14 @@ use crate::{
     keys, strings,
 };
 use asyncgit::{
-    current_tick, sync, AsyncDiff, AsyncNotification, AsyncStatus,
-    DiffParams, CWD,
+    current_tick, AsyncDiff, AsyncNotification, AsyncStatus,
+    DiffParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
 use log::trace;
-use std::{borrow::Cow, path::Path};
+use std::borrow::Cow;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -64,8 +64,13 @@ impl App {
             index_wd: ChangesComponent::new(
                 strings::TITLE_STATUS,
                 true,
+                true,
             ),
-            index: ChangesComponent::new(strings::TITLE_INDEX, false),
+            index: ChangesComponent::new(
+                strings::TITLE_INDEX,
+                false,
+                false,
+            ),
             diff: DiffComponent::default(),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status: AsyncStatus::new(sender),
@@ -166,17 +171,6 @@ impl App {
                         DiffTarget::Stage => Focus::Stage,
                         DiffTarget::WorkingDir => Focus::WorkDir,
                     })
-                }
-                //TODO: move down
-                keys::STATUS_STAGE_FILE => {
-                    if self.index_add_remove() {
-                        self.update();
-                    }
-                }
-                //TODO: move down
-                keys::STATUS_RESET_FILE => {
-                    self.index_reset();
-                    self.update();
                 }
                 //TODO: move down
                 keys::OPEN_COMMIT if !self.index.is_empty() => {
@@ -434,33 +428,5 @@ impl App {
 
         self.index_wd.focus_select(!is_stage);
         self.index.focus_select(is_stage);
-    }
-
-    fn index_add_remove(&mut self) -> bool {
-        if self.diff_target == DiffTarget::WorkingDir {
-            if let Some(i) = self.index_wd.selection() {
-                let path = Path::new(i.path.as_str());
-
-                return sync::stage_add(CWD, path);
-            }
-        } else if let Some(i) = self.index.selection() {
-            let path = Path::new(i.path.as_str());
-
-            return sync::reset_stage(CWD, path);
-        }
-
-        false
-    }
-
-    fn index_reset(&mut self) {
-        if self.index_wd.focused() {
-            if let Some(i) = self.index_wd.selection() {
-                let path = Path::new(i.path.as_str());
-
-                if sync::reset_workdir(CWD, path) {
-                    self.update();
-                }
-            }
-        }
     }
 }
