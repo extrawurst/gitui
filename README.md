@@ -1,5 +1,5 @@
 <div align="center">
-<img src="assets/logo.png" />
+<img width="400px" src="assets/logo2.png" />
 <h1>gitui</h1>
 
 ![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![LOC][s3]][l3] [![UNSAFE][s4]][l4]
