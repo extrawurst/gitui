@@ -5,7 +5,7 @@ use crate::{
 };
 use asyncgit::{hash, Diff, DiffLine, DiffLineType};
 use crossterm::event::{Event, KeyCode};
-use std::{borrow::Cow, cmp};
+use std::{borrow::Cow, cmp, convert::TryFrom};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -82,7 +82,7 @@ impl DiffComponent {
                 break;
             }
 
-            let hunk_len = hunk.0.len() as u16;
+            let hunk_len = u16::try_from(hunk.0.len()).unwrap();
             let hunk_min = line_cursor;
             let hunk_max = line_cursor + hunk_len;
 

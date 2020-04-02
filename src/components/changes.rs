@@ -89,7 +89,9 @@ impl ChangesComponent {
                         i = cmp::min(i + delta, max - 1);
                         i = cmp::max(i, 0);
 
-                        self.selection = Some(i as usize);
+                        if let Ok(i) = usize::try_from(i) {
+                            self.selection = Some(i);
+                        }
                     }
                 }
             }

@@ -12,10 +12,10 @@ pub static CMD_STATUS_UNSTAGE: &str = "Unstage File [enter]";
 pub static CMD_STATUS_RESET: &str = "Reset File [D]";
 pub static CMD_STATUS_QUIT: &str = "Quit [esc,q]";
 pub static CMD_STATUS_HELP: &str = "Help [h]";
-pub static CMD_STATUS_LEFT: &str = "Back [←]";
-pub static CMD_STATUS_RIGHT: &str = "Diff [→]";
+pub static CMD_STATUS_LEFT: &str = "Back [\u{2190}]"; //←
+pub static CMD_STATUS_RIGHT: &str = "Diff [\u{2192}]"; //→
 pub static CMD_SPLITTER: &str = " ";
-pub static CMD_SCROLL: &str = "Scroll [↑↓]";
+pub static CMD_SCROLL: &str = "Scroll [\u{2191}\u{2193}]"; //↑↓
 
 pub static COMMIT_TITLE: &str = "Commit";
 pub static COMMIT_MSG: &str = "type commit message..";
