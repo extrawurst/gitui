@@ -1,6 +1,6 @@
 use super::{CommandInfo, Component, DrawableComponent, EventUpdate};
-use crate::{strings, ui};
-use crossterm::event::{Event, KeyCode};
+use crate::{keys, strings, ui};
+use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
     backend::Backend,
@@ -55,23 +55,18 @@ impl Component for HelpComponent {
     fn event(&mut self, ev: Event) -> Option<EventUpdate> {
         if self.visible {
             if let Event::Key(e) = ev {
-                match e.code {
-                    KeyCode::Esc => {
-                        self.hide();
-                    }
-                    KeyCode::Up => {
-                        //
-                    }
-                    KeyCode::Down => {
-                        //
-                    }
-                    _ => (),
-                };
-
-                return Some(EventUpdate::None);
+                if let keys::EXIT_POPUP = e {
+                    self.hide();
+                }
             }
+
+            Some(EventUpdate::None)
+        } else if let Event::Key(keys::OPEN_HELP) = ev {
+            self.show();
+            Some(EventUpdate::None)
+        } else {
+            None
         }
-        None
     }
 
     fn is_visible(&self) -> bool {

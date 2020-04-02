@@ -167,16 +167,18 @@ impl App {
                         DiffTarget::WorkingDir => Focus::WorkDir,
                     })
                 }
-                keys::OPEN_HELP => self.help.show(),
+                //TODO: move down
                 keys::STATUS_STAGE_FILE => {
                     if self.index_add_remove() {
                         self.update();
                     }
                 }
+                //TODO: move down
                 keys::STATUS_RESET_FILE => {
                     self.index_reset();
                     self.update();
                 }
+                //TODO: move down
                 keys::OPEN_COMMIT if !self.index.is_empty() => {
                     self.commit.show();
                 }
@@ -342,8 +344,8 @@ impl App {
 
     fn components(&mut self) -> Vec<&mut dyn Component> {
         vec![
-            &mut self.help,
             &mut self.commit,
+            &mut self.help,
             &mut self.index,
             &mut self.index_wd,
             &mut self.diff,
