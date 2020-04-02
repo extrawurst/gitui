@@ -172,10 +172,6 @@ impl App {
                         DiffTarget::WorkingDir => Focus::WorkDir,
                     })
                 }
-                //TODO: move down
-                keys::OPEN_COMMIT if !self.index.is_empty() => {
-                    self.commit.show();
-                }
                 _ => (),
             };
         }
@@ -187,6 +183,7 @@ impl App {
 
         self.git_diff.refresh();
         self.git_status.fetch(current_tick());
+        self.commit.set_stage_empty(self.index.is_empty());
     }
 
     ///

@@ -1,5 +1,5 @@
 use super::{CommandInfo, Component, DrawableComponent, EventUpdate};
-use crate::{strings, ui};
+use crate::{keys, strings, ui};
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
@@ -16,6 +16,7 @@ pub struct CommitComponent {
     msg: String,
     // focused: bool,
     visible: bool,
+    stage_empty: bool,
 }
 
 impl DrawableComponent for CommitComponent {
@@ -83,6 +84,15 @@ impl Component for CommitComponent {
                     _ => EventUpdate::None,
                 });
             }
+        } else {
+            if let Event::Key(e) = ev {
+                if let keys::OPEN_COMMIT = e {
+                    if !self.stage_empty {
+                        self.show();
+                        return Some(EventUpdate::Changes);
+                    }
+                }
+            }
         }
         None
     }
@@ -110,5 +120,10 @@ impl CommitComponent {
 
     fn can_commit(&self) -> bool {
         !self.msg.is_empty()
+    }
+
+    ///
+    pub fn set_stage_empty(&mut self, empty: bool) {
+        self.stage_empty = empty;
     }
 }
