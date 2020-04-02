@@ -239,6 +239,7 @@ impl App {
     fn update_commands(&mut self) {
         self.help.set_cmds(self.commands(true));
         self.current_commands = self.commands(false);
+        self.current_commands.sort_by_key(|e| e.order);
     }
 
     fn update_status(&mut self) {
@@ -269,20 +270,26 @@ impl App {
             {
                 let focus_on_stage = self.focus == Focus::Stage;
                 let focus_not_diff = self.focus != Focus::Diff;
-                res.push(CommandInfo::new_hidden(
-                    strings::CMD_STATUS_FOCUS_UNSTAGED,
-                    true,
-                    main_cmds_available
-                        && focus_on_stage
-                        && !focus_not_diff,
-                ));
-                res.push(CommandInfo::new_hidden(
-                    strings::CMD_STATUS_FOCUS_STAGED,
-                    true,
-                    main_cmds_available
-                        && !focus_on_stage
-                        && !focus_not_diff,
-                ));
+                res.push(
+                    CommandInfo::new(
+                        strings::CMD_STATUS_FOCUS_UNSTAGED,
+                        true,
+                        main_cmds_available
+                            && focus_on_stage
+                            && !focus_not_diff,
+                    )
+                    .hidden(),
+                );
+                res.push(
+                    CommandInfo::new(
+                        strings::CMD_STATUS_FOCUS_STAGED,
+                        true,
+                        main_cmds_available
+                            && !focus_on_stage
+                            && !focus_not_diff,
+                    )
+                    .hidden(),
+                );
             }
             {
                 let focus_on_diff = self.focus == Focus::Diff;
@@ -298,11 +305,14 @@ impl App {
                 ));
             }
 
-            res.push(CommandInfo::new(
-                strings::CMD_STATUS_QUIT,
-                true,
-                main_cmds_available,
-            ));
+            res.push(
+                CommandInfo::new(
+                    strings::CMD_STATUS_QUIT,
+                    true,
+                    main_cmds_available,
+                )
+                .order(100),
+            );
         }
 
         res

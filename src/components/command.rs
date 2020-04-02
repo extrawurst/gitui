@@ -10,6 +10,8 @@ pub struct CommandInfo {
     pub quick_bar: bool,
     /// available in current app state
     pub available: bool,
+    /// used to order commands in quickbar
+    pub order: i8,
 }
 
 impl CommandInfo {
@@ -20,20 +22,20 @@ impl CommandInfo {
             enabled,
             quick_bar: true,
             available,
+            order: 0,
         }
     }
     ///
-    pub fn new_hidden(
-        name: &str,
-        enabled: bool,
-        available: bool,
-    ) -> Self {
-        Self {
-            name: name.to_string(),
-            enabled,
-            quick_bar: false,
-            available,
-        }
+    pub fn order(self, order: i8) -> Self {
+        let mut res = self;
+        res.order = order;
+        res
+    }
+    ///
+    pub fn hidden(self) -> Self {
+        let mut res = self;
+        res.quick_bar = false;
+        res
     }
     ///
     pub fn print(&self, out: &mut String) {

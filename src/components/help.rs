@@ -56,11 +56,14 @@ impl Component for HelpComponent {
             out.clear();
         }
 
-        out.push(CommandInfo::new(
-            strings::CMD_STATUS_HELP,
-            true,
-            !self.visible,
-        ));
+        out.push(
+            CommandInfo::new(
+                strings::CMD_STATUS_HELP,
+                true,
+                !self.visible,
+            )
+            .order(99),
+        );
 
         out.push(CommandInfo::new(
             strings::COMMIT_CMD_CLOSE,
