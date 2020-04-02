@@ -84,13 +84,11 @@ impl Component for CommitComponent {
                     _ => EventUpdate::None,
                 });
             }
-        } else {
-            if let Event::Key(e) = ev {
-                if let keys::OPEN_COMMIT = e {
-                    if !self.stage_empty {
-                        self.show();
-                        return Some(EventUpdate::Changes);
-                    }
+        } else if let Event::Key(e) = ev {
+            if let keys::OPEN_COMMIT = e {
+                if !self.stage_empty {
+                    self.show();
+                    return Some(EventUpdate::Changes);
                 }
             }
         }
