@@ -1,4 +1,4 @@
-use super::{DrawableComponent, EventUpdate};
+use super::{CommandBlocking, DrawableComponent, EventUpdate};
 use crate::{
     components::{CommandInfo, Component},
     strings,
@@ -242,12 +242,17 @@ impl DrawableComponent for DiffComponent {
 }
 
 impl Component for DiffComponent {
-    fn commands(&self) -> Vec<CommandInfo> {
-        vec![CommandInfo::new(
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+    ) -> CommandBlocking {
+        out.push(CommandInfo::new(
             strings::CMD_SCROLL,
             self.can_scroll(),
             self.focused,
-        )]
+        ));
+
+        CommandBlocking::PassingOn
     }
 
     fn event(&mut self, ev: Event) -> Option<EventUpdate> {

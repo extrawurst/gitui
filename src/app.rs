@@ -1,7 +1,8 @@
 use crate::{
     components::{
-        ChangesComponent, CommandInfo, CommitComponent, Component,
-        DiffComponent, DrawableComponent, EventUpdate, HelpComponent,
+        ChangesComponent, CommandBlocking, CommandInfo,
+        CommitComponent, Component, DiffComponent, DrawableComponent,
+        EventUpdate, HelpComponent,
     },
     keys, strings,
 };
@@ -49,6 +50,7 @@ pub struct App {
     diff: DiffComponent,
     git_diff: AsyncDiff,
     git_status: AsyncStatus,
+    current_commands: Vec<CommandInfo>,
 }
 
 // public interface
@@ -74,6 +76,7 @@ impl App {
             diff: DiffComponent::default(),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status: AsyncStatus::new(sender),
+            current_commands: Vec::new(),
         }
     }
 
@@ -135,7 +138,7 @@ impl App {
         Self::draw_commands(
             f,
             chunks_main[2],
-            self.commands().as_slice(),
+            self.current_commands.as_slice(),
         );
 
         self.commit.draw(f, f.size());
@@ -147,10 +150,11 @@ impl App {
         trace!("event: {:?}", ev);
 
         if let Some(e) =
-            Self::event_pump(ev, self.components().as_mut_slice())
+            Self::event_pump(ev, self.components_mut().as_mut_slice())
         {
             match e {
-                EventUpdate::Changes => self.update(),
+                EventUpdate::All => self.update(),
+                EventUpdate::Commands => self.update_commands(),
                 EventUpdate::Diff => self.update_diff(),
                 _ => (),
             }
@@ -183,7 +187,6 @@ impl App {
 
         self.git_diff.refresh();
         self.git_status.fetch(current_tick());
-        self.commit.set_stage_empty(self.index.is_empty());
     }
 
     ///
@@ -233,60 +236,36 @@ impl App {
         }
     }
 
+    fn update_commands(&mut self) {
+        self.help.set_cmds(self.commands(true));
+        self.current_commands = self.commands(false);
+    }
+
     fn update_status(&mut self) {
         let status = self.git_status.last();
         self.index.update(&status.stage);
         self.index_wd.update(&status.work_dir);
 
         self.update_diff();
-
-        self.help.set_cmds(self.commands());
+        self.commit.set_stage_empty(self.index.is_empty());
+        self.update_commands();
     }
 
-    fn commands(&self) -> Vec<CommandInfo> {
-        let mut res = self.commit.commands();
-        res.extend(self.help.commands());
+    fn commands(&self, force_all: bool) -> Vec<CommandInfo> {
+        let mut res = Vec::new();
+
+        for c in self.components() {
+            if c.commands(&mut res) != CommandBlocking::PassingOn
+                && !force_all
+            {
+                break;
+            }
+        }
 
         let main_cmds_available =
             !self.commit.is_visible() && !self.help.is_visible();
 
-        if main_cmds_available {
-            res.extend(self.index.commands());
-            res.extend(self.index_wd.commands());
-            res.extend(self.diff.commands());
-        }
-
         {
-            res.push(CommandInfo::new(
-                strings::COMMIT_CMD_OPEN,
-                !self.index.is_empty(),
-                main_cmds_available,
-            ));
-
-            {
-                let main_cmds_index_wd_focused_availale =
-                    main_cmds_available && self.index_wd.focused();
-
-                let some_selection =
-                    self.index_wd.selection().is_some();
-                res.push(CommandInfo::new(
-                    strings::CMD_STATUS_STAGE,
-                    some_selection,
-                    main_cmds_index_wd_focused_availale,
-                ));
-                res.push(CommandInfo::new(
-                    strings::CMD_STATUS_RESET,
-                    some_selection,
-                    main_cmds_index_wd_focused_availale,
-                ));
-
-                res.push(CommandInfo::new(
-                    strings::CMD_STATUS_UNSTAGE,
-                    self.index.selection().is_some(),
-                    main_cmds_available && self.index.focused(),
-                ));
-            }
-
             {
                 let focus_on_stage = self.focus == Focus::Stage;
                 let focus_not_diff = self.focus != Focus::Diff;
@@ -318,11 +297,7 @@ impl App {
                     main_cmds_available && !focus_on_diff,
                 ));
             }
-            res.push(CommandInfo::new(
-                strings::CMD_STATUS_HELP,
-                true,
-                main_cmds_available,
-            ));
+
             res.push(CommandInfo::new(
                 strings::CMD_STATUS_QUIT,
                 true,
@@ -333,7 +308,17 @@ impl App {
         res
     }
 
-    fn components(&mut self) -> Vec<&mut dyn Component> {
+    fn components(&self) -> Vec<&dyn Component> {
+        vec![
+            &self.commit,
+            &self.help,
+            &self.index,
+            &self.index_wd,
+            &self.diff,
+        ]
+    }
+
+    fn components_mut(&mut self) -> Vec<&mut dyn Component> {
         vec![
             &mut self.commit,
             &mut self.help,
@@ -415,7 +400,7 @@ impl App {
                 }
             };
 
-            self.update_diff();
+            self.update();
         }
     }
 

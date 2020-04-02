@@ -1,4 +1,7 @@
-use super::{CommandInfo, Component, DrawableComponent, EventUpdate};
+use super::{
+    visibility_blocking, CommandBlocking, CommandInfo, Component,
+    DrawableComponent, EventUpdate,
+};
 use crate::{keys, strings, ui};
 use crossterm::event::Event;
 use std::borrow::Cow;
@@ -44,12 +47,28 @@ impl DrawableComponent for HelpComponent {
 }
 
 impl Component for HelpComponent {
-    fn commands(&self) -> Vec<CommandInfo> {
-        vec![CommandInfo::new(
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+    ) -> CommandBlocking {
+        // only if help is open we have no other commands available
+        if self.visible {
+            out.clear();
+        }
+
+        out.push(CommandInfo::new(
+            strings::CMD_STATUS_HELP,
+            true,
+            !self.visible,
+        ));
+
+        out.push(CommandInfo::new(
             strings::COMMIT_CMD_CLOSE,
             true,
             self.visible,
-        )]
+        ));
+
+        visibility_blocking(self)
     }
 
     fn event(&mut self, ev: Event) -> Option<EventUpdate> {
@@ -60,10 +79,10 @@ impl Component for HelpComponent {
                 }
             }
 
-            Some(EventUpdate::None)
+            Some(EventUpdate::Commands)
         } else if let Event::Key(keys::OPEN_HELP) = ev {
             self.show();
-            Some(EventUpdate::None)
+            Some(EventUpdate::Commands)
         } else {
             None
         }

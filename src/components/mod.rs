@@ -15,8 +15,27 @@ pub use help::HelpComponent;
 ///
 pub enum EventUpdate {
     None,
-    Changes,
+    All,
     Diff,
+    Commands,
+}
+
+///
+#[derive(PartialEq)]
+pub enum CommandBlocking {
+    Blocking,
+    PassingOn,
+}
+
+///
+pub fn visibility_blocking<T: Component>(
+    comp: &T,
+) -> CommandBlocking {
+    if comp.is_visible() {
+        CommandBlocking::Blocking
+    } else {
+        CommandBlocking::PassingOn
+    }
 }
 
 pub trait DrawableComponent {
@@ -26,7 +45,8 @@ pub trait DrawableComponent {
 ///
 pub trait Component {
     ///
-    fn commands(&self) -> Vec<CommandInfo>;
+    fn commands(&self, out: &mut Vec<CommandInfo>)
+        -> CommandBlocking;
     ///
     fn event(&mut self, ev: Event) -> Option<EventUpdate>;
     ///

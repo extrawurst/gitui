@@ -1,4 +1,4 @@
-use super::{DrawableComponent, EventUpdate};
+use super::{CommandBlocking, DrawableComponent, EventUpdate};
 use crate::{
     components::{CommandInfo, Component},
     keys, strings, ui,
@@ -161,12 +161,37 @@ impl DrawableComponent for ChangesComponent {
 }
 
 impl Component for ChangesComponent {
-    fn commands(&self) -> Vec<CommandInfo> {
-        vec![CommandInfo::new(
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+    ) -> CommandBlocking {
+        let some_selection = self.selection().is_some();
+        if self.is_working_dir {
+            out.push(CommandInfo::new(
+                strings::CMD_STATUS_STAGE,
+                some_selection,
+                self.focused,
+            ));
+            out.push(CommandInfo::new(
+                strings::CMD_STATUS_RESET,
+                some_selection,
+                self.focused,
+            ));
+        } else {
+            out.push(CommandInfo::new(
+                strings::CMD_STATUS_UNSTAGE,
+                some_selection,
+                self.focused,
+            ));
+        }
+
+        out.push(CommandInfo::new(
             strings::CMD_SCROLL,
             self.items.len() > 1,
             self.focused,
-        )]
+        ));
+
+        CommandBlocking::PassingOn
     }
 
     fn event(&mut self, ev: Event) -> Option<EventUpdate> {
@@ -175,14 +200,14 @@ impl Component for ChangesComponent {
                 return match e {
                     keys::STATUS_STAGE_FILE => {
                         if self.index_add_remove() {
-                            Some(EventUpdate::Changes)
+                            Some(EventUpdate::All)
                         } else {
                             Some(EventUpdate::None)
                         }
                     }
                     keys::STATUS_RESET_FILE => {
                         if self.index_reset() {
-                            Some(EventUpdate::Changes)
+                            Some(EventUpdate::All)
                         } else {
                             Some(EventUpdate::None)
                         }

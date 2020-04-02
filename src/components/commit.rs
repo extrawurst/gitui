@@ -1,4 +1,7 @@
-use super::{CommandInfo, Component, DrawableComponent, EventUpdate};
+use super::{
+    visibility_blocking, CommandBlocking, CommandInfo, Component,
+    DrawableComponent, EventUpdate,
+};
 use crate::{keys, strings, ui};
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
@@ -46,19 +49,26 @@ impl DrawableComponent for CommitComponent {
 }
 
 impl Component for CommitComponent {
-    fn commands(&self) -> Vec<CommandInfo> {
-        vec![
-            CommandInfo::new(
-                strings::COMMIT_CMD_ENTER,
-                self.can_commit(),
-                self.visible,
-            ),
-            CommandInfo::new(
-                strings::COMMIT_CMD_CLOSE,
-                true,
-                self.visible,
-            ),
-        ]
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+    ) -> CommandBlocking {
+        out.push(CommandInfo::new(
+            strings::COMMIT_CMD_OPEN,
+            !self.stage_empty,
+            !self.visible,
+        ));
+        out.push(CommandInfo::new(
+            strings::COMMIT_CMD_ENTER,
+            self.can_commit(),
+            self.visible,
+        ));
+        out.push(CommandInfo::new(
+            strings::COMMIT_CMD_CLOSE,
+            true,
+            self.visible,
+        ));
+        visibility_blocking(self)
     }
 
     fn event(&mut self, ev: Event) -> Option<EventUpdate> {
@@ -67,19 +77,19 @@ impl Component for CommitComponent {
                 return Some(match e.code {
                     KeyCode::Esc => {
                         self.hide();
-                        EventUpdate::None
+                        EventUpdate::Commands
                     }
                     KeyCode::Char(c) => {
                         self.msg.push(c);
-                        EventUpdate::None
+                        EventUpdate::Commands
                     }
                     KeyCode::Enter if self.can_commit() => {
                         self.commit();
-                        EventUpdate::Changes
+                        EventUpdate::All
                     }
                     KeyCode::Backspace if !self.msg.is_empty() => {
                         self.msg.pop().unwrap();
-                        EventUpdate::None
+                        EventUpdate::Commands
                     }
                     _ => EventUpdate::None,
                 });
@@ -88,7 +98,7 @@ impl Component for CommitComponent {
             if let keys::OPEN_COMMIT = e {
                 if !self.stage_empty {
                     self.show();
-                    return Some(EventUpdate::Changes);
+                    return Some(EventUpdate::All);
                 }
             }
         }
