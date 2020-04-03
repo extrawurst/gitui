@@ -2,7 +2,7 @@ use crate::{
     components::{
         ChangesComponent, CommandBlocking, CommandInfo,
         CommitComponent, Component, DiffComponent, DrawableComponent,
-        EventUpdate, HelpComponent,
+        EventUpdate, HelpComponent, ResetComponent,
     },
     keys,
     queue::{InternalEvent, Queue},
@@ -46,6 +46,7 @@ pub struct App {
     focus: Focus,
     diff_target: DiffTarget,
     do_quit: bool,
+    reset: ResetComponent,
     commit: CommitComponent,
     help: HelpComponent,
     index: ChangesComponent,
@@ -66,6 +67,7 @@ impl App {
             focus: Focus::WorkDir,
             diff_target: DiffTarget::WorkingDir,
             do_quit: false,
+            reset: ResetComponent::new(queue.clone()),
             commit: CommitComponent::default(),
             help: HelpComponent::default(),
             index_wd: ChangesComponent::new(
@@ -151,6 +153,7 @@ impl App {
 
         self.commit.draw(f, f.size());
         self.help.draw(f, f.size());
+        self.reset.draw(f, f.size());
     }
 
     ///
@@ -277,6 +280,10 @@ impl App {
                     self.update();
                 }
             }
+            InternalEvent::ConfirmResetFile(p) => {
+                self.reset.open_for_path(p);
+                self.update_commands();
+            }
         };
     }
 
@@ -292,8 +299,9 @@ impl App {
             }
         }
 
-        let main_cmds_available =
-            !self.commit.is_visible() && !self.help.is_visible();
+        let main_cmds_available = !self.commit.is_visible()
+            && !self.help.is_visible()
+            && !self.reset.is_visible();
 
         {
             {
@@ -349,6 +357,7 @@ impl App {
 
     fn components(&self) -> Vec<&dyn Component> {
         vec![
+            &self.reset,
             &self.commit,
             &self.help,
             &self.index,
@@ -359,6 +368,7 @@ impl App {
 
     fn components_mut(&mut self) -> Vec<&mut dyn Component> {
         vec![
+            &mut self.reset,
             &mut self.commit,
             &mut self.help,
             &mut self.index,

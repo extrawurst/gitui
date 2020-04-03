@@ -6,10 +6,11 @@ pub static TAB_STATUS: &str = "Status";
 pub static TAB_DIVIDER: &str = "  |  ";
 
 pub static CMD_SPLITTER: &str = " ";
-// pub static CMD_SCROLL: &str = "Scroll [\u{2191}\u{2193}]"; //↑↓
 
 pub static COMMIT_TITLE: &str = "Commit";
 pub static COMMIT_MSG: &str = "type commit message..";
+pub static RESET_TITLE: &str = "Reset";
+pub static RESET_MSG: &str = "confirm file reset?";
 
 pub static HELP_TITLE: &str = "Help";
 
@@ -96,6 +97,12 @@ pub mod commands {
     pub static QUIT: CommandText = CommandText::new(
         "Quit [esc,q]",
         "quit gitui application",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static RESET_CONFIRM: CommandText = CommandText::new(
+        "Confirm [enter]",
+        "resets the file in question",
         CMD_GROUP_GENERAL,
     );
 }

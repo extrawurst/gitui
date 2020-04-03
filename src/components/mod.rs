@@ -6,11 +6,13 @@ mod command;
 mod commit;
 mod diff;
 mod help;
+mod reset;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
 pub use diff::DiffComponent;
 pub use help::HelpComponent;
+pub use reset::ResetComponent;
 
 ///
 pub enum EventUpdate {
