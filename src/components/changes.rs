@@ -124,7 +124,7 @@ impl ChangesComponent {
         if let Some(i) = self.selection() {
             self.queue
                 .borrow_mut()
-                .push_back(InternalEvent::ResetFile(i.path.clone()));
+                .push_back(InternalEvent::ResetFile(i.path));
 
             return true;
         }
