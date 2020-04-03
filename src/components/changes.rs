@@ -1,7 +1,9 @@
 use super::{CommandBlocking, DrawableComponent, EventUpdate};
 use crate::{
     components::{CommandInfo, Component},
-    keys, strings, ui,
+    keys,
+    queue::{InternalEvent, Queue},
+    strings, ui,
 };
 use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
@@ -28,6 +30,7 @@ pub struct ChangesComponent {
     focused: bool,
     show_selection: bool,
     is_working_dir: bool,
+    queue: Queue,
 }
 
 impl ChangesComponent {
@@ -36,6 +39,7 @@ impl ChangesComponent {
         title: &str,
         focus: bool,
         is_working_dir: bool,
+        queue: Queue,
     ) -> Self {
         Self {
             title: title.to_string(),
@@ -45,6 +49,7 @@ impl ChangesComponent {
             focused: focus,
             show_selection: focus,
             is_working_dir,
+            queue,
         }
     }
 
@@ -115,13 +120,13 @@ impl ChangesComponent {
         false
     }
 
-    fn reset_workdir(&mut self) -> bool {
+    fn dispatch_reset_workdir(&mut self) -> bool {
         if let Some(i) = self.selection() {
-            let path = Path::new(i.path.as_str());
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::ResetFile(i.path.clone()));
 
-            if sync::reset_workdir(CWD, path) {
-                return true;
-            }
+            return true;
         }
         false
     }
@@ -217,10 +222,10 @@ impl Component for ChangesComponent {
                         }
                     }
                     keys::STATUS_RESET_FILE => {
-                        if self.reset_workdir() {
-                            Some(EventUpdate::All)
-                        } else {
+                        if self.dispatch_reset_workdir() {
                             Some(EventUpdate::None)
+                        } else {
+                            None
                         }
                     }
                     keys::MOVE_DOWN => {

@@ -7,6 +7,7 @@ mod app;
 mod components;
 mod keys;
 mod poll;
+mod queue;
 mod strings;
 mod ui;
 

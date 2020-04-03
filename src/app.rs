@@ -4,17 +4,19 @@ use crate::{
         CommitComponent, Component, DiffComponent, DrawableComponent,
         EventUpdate, HelpComponent,
     },
-    keys, strings,
+    keys,
+    queue::{InternalEvent, Queue},
+    strings,
 };
 use asyncgit::{
-    current_tick, AsyncDiff, AsyncNotification, AsyncStatus,
-    DiffParams,
+    current_tick, sync, AsyncDiff, AsyncNotification, AsyncStatus,
+    DiffParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
 use log::trace;
-use std::borrow::Cow;
+use std::{borrow::Cow, path::Path};
 use strings::commands;
 use tui::{
     backend::Backend,
@@ -52,12 +54,14 @@ pub struct App {
     git_diff: AsyncDiff,
     git_status: AsyncStatus,
     current_commands: Vec<CommandInfo>,
+    queue: Queue,
 }
 
 // public interface
 impl App {
     ///
     pub fn new(sender: Sender<AsyncNotification>) -> Self {
+        let queue = Queue::default();
         Self {
             focus: Focus::WorkDir,
             diff_target: DiffTarget::WorkingDir,
@@ -68,16 +72,19 @@ impl App {
                 strings::TITLE_STATUS,
                 true,
                 true,
+                queue.clone(),
             ),
             index: ChangesComponent::new(
                 strings::TITLE_INDEX,
                 false,
                 false,
+                queue.clone(),
             ),
             diff: DiffComponent::default(),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status: AsyncStatus::new(sender),
             current_commands: Vec::new(),
+            queue,
         }
     }
 
@@ -159,11 +166,7 @@ impl App {
                 EventUpdate::Diff => self.update_diff(),
                 _ => (),
             }
-
-            return;
-        }
-
-        if let Event::Key(k) = ev {
+        } else if let Event::Key(k) = ev {
             match k {
                 keys::EXIT_1 | keys::EXIT_2 => self.do_quit = true,
                 keys::FOCUS_WORKDIR => {
@@ -180,6 +183,8 @@ impl App {
                 _ => (),
             };
         }
+
+        self.process_queue();
     }
 
     ///
@@ -251,6 +256,28 @@ impl App {
         self.update_diff();
         self.commit.set_stage_empty(self.index.is_empty());
         self.update_commands();
+    }
+
+    fn process_queue(&mut self) {
+        loop {
+            let front = self.queue.borrow_mut().pop_front();
+            if let Some(e) = front {
+                self.process_internal_event(&e);
+            } else {
+                break;
+            }
+        }
+        self.queue.borrow_mut().clear();
+    }
+
+    fn process_internal_event(&mut self, ev: &InternalEvent) {
+        match ev {
+            InternalEvent::ResetFile(p) => {
+                if sync::reset_workdir(CWD, Path::new(p.as_str())) {
+                    self.update();
+                }
+            }
+        };
     }
 
     fn commands(&self, force_all: bool) -> Vec<CommandInfo> {
