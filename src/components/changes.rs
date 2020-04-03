@@ -115,7 +115,7 @@ impl ChangesComponent {
         false
     }
 
-    fn index_reset(&mut self) -> bool {
+    fn reset_workdir(&mut self) -> bool {
         if let Some(i) = self.selection() {
             let path = Path::new(i.path.as_str());
 
@@ -217,7 +217,7 @@ impl Component for ChangesComponent {
                         }
                     }
                     keys::STATUS_RESET_FILE => {
-                        if self.index_reset() {
+                        if self.reset_workdir() {
                             Some(EventUpdate::All)
                         } else {
                             Some(EventUpdate::None)
