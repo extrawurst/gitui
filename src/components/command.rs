@@ -1,13 +1,28 @@
 ///
+#[derive(Copy, Clone)]
+pub struct CommandText {
+    ///
+    pub name: &'static str,
+    ///
+    pub desc: &'static str,
+    ///
+    pub group: &'static str,
+}
+
+impl CommandText {
+    pub const fn new(
+        name: &'static str,
+        desc: &'static str,
+        group: &'static str,
+    ) -> Self {
+        Self { name, desc, group }
+    }
+}
+
+///
 pub struct CommandInfo {
     ///
-    pub name: String,
-    ///
-    pub group: String,
-    ///
-    pub desc: String,
-    ///
-    // pub keys:
+    pub text: CommandText,
     /// available but not active in the context
     pub enabled: bool,
     /// will show up in the quick bar
@@ -20,16 +35,13 @@ pub struct CommandInfo {
 
 impl CommandInfo {
     ///
-    pub fn new(
-        name: &str,
-        group: &str,
+    pub fn new_new(
+        text: CommandText,
         enabled: bool,
         available: bool,
     ) -> Self {
         Self {
-            name: name.to_string(),
-            group: group.to_string(),
-            desc: String::default(),
+            text,
             enabled,
             quick_bar: true,
             available,
@@ -43,12 +55,6 @@ impl CommandInfo {
         res
     }
     ///
-    pub fn desc(self, txt: &str) -> Self {
-        let mut res = self;
-        res.desc = txt.to_string();
-        res
-    }
-    ///
     pub fn hidden(self) -> Self {
         let mut res = self;
         res.quick_bar = false;
@@ -56,7 +62,7 @@ impl CommandInfo {
     }
     ///
     pub fn print(&self, out: &mut String) {
-        out.push_str(self.name.as_str());
+        out.push_str(self.text.name);
     }
     ///
     pub fn show_in_quickbar(&self) -> bool {

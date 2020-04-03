@@ -7,7 +7,7 @@ mod commit;
 mod diff;
 mod help;
 pub use changes::ChangesComponent;
-pub use command::CommandInfo;
+pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
 pub use diff::DiffComponent;
 pub use help::HelpComponent;
@@ -45,8 +45,11 @@ pub trait DrawableComponent {
 ///
 pub trait Component {
     ///
-    fn commands(&self, out: &mut Vec<CommandInfo>)
-        -> CommandBlocking;
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) -> CommandBlocking;
     ///
     fn event(&mut self, ev: Event) -> Option<EventUpdate>;
     ///

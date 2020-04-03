@@ -7,6 +7,7 @@ use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
 use std::{borrow::Cow, cmp, convert::TryFrom};
+use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -58,33 +59,30 @@ impl Component for HelpComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
+        force_all: bool,
     ) -> CommandBlocking {
         // only if help is open we have no other commands available
-        if self.visible {
+        if self.visible && !force_all {
             out.clear();
         }
 
         out.push(
-            CommandInfo::new(
-                strings::CMD_STATUS_HELP,
-                strings::CMD_GROUP_GENERAL,
+            CommandInfo::new_new(
+                commands::HELP_OPEN,
                 true,
                 !self.visible,
             )
-            .desc("open this help screen")
             .order(99),
         );
 
-        out.push(CommandInfo::new(
-            strings::CMD_SCROLL,
-            strings::CMD_GROUP_GENERAL,
+        out.push(CommandInfo::new_new(
+            commands::SCROLL,
             true,
             self.visible,
         ));
 
-        out.push(CommandInfo::new(
-            strings::COMMIT_CMD_CLOSE,
-            strings::CMD_GROUP_GENERAL,
+        out.push(CommandInfo::new_new(
+            commands::CLOSE_POPUP,
             true,
             self.visible,
         ));
@@ -129,7 +127,7 @@ impl HelpComponent {
     ///
     pub fn set_cmds(&mut self, cmds: Vec<CommandInfo>) {
         self.cmds = cmds;
-        self.cmds.sort_by_key(|e| hash(&e.group));
+        self.cmds.sort_by_key(|e| hash(&e.text.group));
     }
 
     fn move_selection(&mut self, inc: bool) {
@@ -154,7 +152,7 @@ impl HelpComponent {
         let mut selected_line = 0_u16;
 
         for (key, group) in
-            &self.cmds.iter().group_by(|e| e.group.clone())
+            &self.cmds.iter().group_by(|e| e.text.group.clone())
         {
             txt.push(Text::Styled(
                 Cow::from(format!(" {}\n", key)),
@@ -182,7 +180,8 @@ impl HelpComponent {
 
                         if is_selected {
                             out.push_str(
-                                format!("  {}\n", e.desc).as_str(),
+                                format!("  {}\n", e.text.desc)
+                                    .as_str(),
                             );
                         }
 

@@ -15,6 +15,7 @@ use crossterm::event::Event;
 use itertools::Itertools;
 use log::trace;
 use std::borrow::Cow;
+use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -256,7 +257,8 @@ impl App {
         let mut res = Vec::new();
 
         for c in self.components() {
-            if c.commands(&mut res) != CommandBlocking::PassingOn
+            if c.commands(&mut res, force_all)
+                != CommandBlocking::PassingOn
                 && !force_all
             {
                 break;
@@ -271,9 +273,8 @@ impl App {
                 let focus_on_stage = self.focus == Focus::Stage;
                 let focus_not_diff = self.focus != Focus::Diff;
                 res.push(
-                    CommandInfo::new(
-                        strings::CMD_STATUS_FOCUS_UNSTAGED,
-                        strings::CMD_GROUP_GENERAL,
+                    CommandInfo::new_new(
+                        commands::STATUS_FOCUS_UNSTAGED,
                         true,
                         main_cmds_available
                             && focus_on_stage
@@ -282,9 +283,8 @@ impl App {
                     .hidden(),
                 );
                 res.push(
-                    CommandInfo::new(
-                        strings::CMD_STATUS_FOCUS_STAGED,
-                        strings::CMD_GROUP_GENERAL,
+                    CommandInfo::new_new(
+                        commands::STATUS_FOCUS_STAGED,
                         true,
                         main_cmds_available
                             && !focus_on_stage
@@ -295,24 +295,21 @@ impl App {
             }
             {
                 let focus_on_diff = self.focus == Focus::Diff;
-                res.push(CommandInfo::new(
-                    strings::CMD_STATUS_LEFT,
-                    strings::CMD_GROUP_GENERAL,
+                res.push(CommandInfo::new_new(
+                    commands::STATUS_FOCUS_LEFT,
                     true,
                     main_cmds_available && focus_on_diff,
                 ));
-                res.push(CommandInfo::new(
-                    strings::CMD_STATUS_RIGHT,
-                    strings::CMD_GROUP_GENERAL,
+                res.push(CommandInfo::new_new(
+                    commands::STATUS_FOCUS_RIGHT,
                     true,
                     main_cmds_available && !focus_on_diff,
                 ));
             }
 
             res.push(
-                CommandInfo::new(
-                    strings::CMD_STATUS_QUIT,
-                    strings::CMD_GROUP_GENERAL,
+                CommandInfo::new_new(
+                    commands::QUIT,
                     true,
                     main_cmds_available,
                 )
@@ -376,7 +373,7 @@ impl App {
             .filter_map(|c| {
                 if c.show_in_quickbar() {
                     Some(Text::Styled(
-                        Cow::from(c.name.clone()),
+                        Cow::from(c.text.name.clone()),
                         if c.enabled {
                             style_enabled
                         } else {

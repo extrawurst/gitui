@@ -11,6 +11,7 @@ use std::{
     convert::{From, TryFrom},
     path::Path,
 };
+use strings::commands;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -173,33 +174,30 @@ impl Component for ChangesComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
+        _force_all: bool,
     ) -> CommandBlocking {
         let some_selection = self.selection().is_some();
         if self.is_working_dir {
-            out.push(CommandInfo::new(
-                strings::CMD_STATUS_STAGE,
-                strings::CMD_GROUP_CHANGES,
+            out.push(CommandInfo::new_new(
+                commands::STAGE_FILE,
                 some_selection,
                 self.focused,
             ));
-            out.push(CommandInfo::new(
-                strings::CMD_STATUS_RESET,
-                strings::CMD_GROUP_CHANGES,
+            out.push(CommandInfo::new_new(
+                commands::RESET_FILE,
                 some_selection,
                 self.focused,
             ));
         } else {
-            out.push(CommandInfo::new(
-                strings::CMD_STATUS_UNSTAGE,
-                strings::CMD_GROUP_CHANGES,
+            out.push(CommandInfo::new_new(
+                commands::UNSTAGE_FILE,
                 some_selection,
                 self.focused,
             ));
         }
 
-        out.push(CommandInfo::new(
-            strings::CMD_SCROLL,
-            strings::CMD_GROUP_GENERAL,
+        out.push(CommandInfo::new_new(
+            commands::SCROLL,
             self.items.len() > 1,
             self.focused,
         ));

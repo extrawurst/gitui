@@ -6,6 +6,7 @@ use crate::{
 use asyncgit::{hash, Diff, DiffLine, DiffLineType};
 use crossterm::event::{Event, KeyCode};
 use std::{borrow::Cow, cmp, convert::TryFrom};
+use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -245,10 +246,10 @@ impl Component for DiffComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
+        _force_all: bool,
     ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            strings::CMD_SCROLL,
-            strings::CMD_GROUP_DIFF,
+        out.push(CommandInfo::new_new(
+            commands::SCROLL,
             self.can_scroll(),
             self.focused,
         ));

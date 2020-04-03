@@ -5,27 +5,97 @@ pub static TITLE_INDEX: &str = "Staged Changes [2]";
 pub static TAB_STATUS: &str = "Status";
 pub static TAB_DIVIDER: &str = "  |  ";
 
-pub static CMD_GROUP_GENERAL: &str = "General";
-pub static CMD_GROUP_DIFF: &str = "Diff";
-pub static CMD_GROUP_CHANGES: &str = "Changes";
-pub static CMD_GROUP_COMMIT: &str = "Commit";
-
-pub static CMD_STATUS_FOCUS_UNSTAGED: &str = "Unstaged [1]";
-pub static CMD_STATUS_FOCUS_STAGED: &str = "Staged [2]";
-pub static CMD_STATUS_STAGE: &str = "Stage File [enter]";
-pub static CMD_STATUS_UNSTAGE: &str = "Unstage File [enter]";
-pub static CMD_STATUS_RESET: &str = "Reset File [D]";
-pub static CMD_STATUS_QUIT: &str = "Quit [esc,q]";
-pub static CMD_STATUS_HELP: &str = "Help [h]";
-pub static CMD_STATUS_LEFT: &str = "Back [\u{2190}]"; //←
-pub static CMD_STATUS_RIGHT: &str = "Diff [\u{2192}]"; //→
 pub static CMD_SPLITTER: &str = " ";
-pub static CMD_SCROLL: &str = "Scroll [\u{2191}\u{2193}]"; //↑↓
+// pub static CMD_SCROLL: &str = "Scroll [\u{2191}\u{2193}]"; //↑↓
 
 pub static COMMIT_TITLE: &str = "Commit";
 pub static COMMIT_MSG: &str = "type commit message..";
-pub static COMMIT_CMD_OPEN: &str = "Commit [c]";
-pub static COMMIT_CMD_ENTER: &str = "Commit [enter]";
-pub static COMMIT_CMD_CLOSE: &str = "Close [esc]";
 
 pub static HELP_TITLE: &str = "Help";
+
+pub mod commands {
+    use crate::components::CommandText;
+
+    static CMD_GROUP_GENERAL: &str = "General";
+    static CMD_GROUP_CHANGES: &str = "Changes";
+    static CMD_GROUP_COMMIT: &str = "Commit";
+
+    ///
+    pub static HELP_OPEN: CommandText = CommandText::new(
+        "Help [h]",
+        "open this help screen",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static SCROLL: CommandText = CommandText::new(
+        "Scroll [\u{2191}\u{2193}]",
+        "scroll up or down in focused view",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static CLOSE_POPUP: CommandText = CommandText::new(
+        "Close [esc]",
+        "close popup",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static COMMIT_OPEN: CommandText = CommandText::new(
+        "Commit [c]",
+        "open commit view (available in non-empty stage)",
+        CMD_GROUP_COMMIT,
+    );
+    ///
+    pub static COMMIT_ENTER: CommandText = CommandText::new(
+        "Commit [enter]",
+        "commit (available when commit message is non-empty)",
+        CMD_GROUP_COMMIT,
+    );
+    ///
+    pub static STAGE_FILE: CommandText = CommandText::new(
+        "Stage File [enter]",
+        "stage currently selected file",
+        CMD_GROUP_CHANGES,
+    );
+    ///
+    pub static UNSTAGE_FILE: CommandText = CommandText::new(
+        "Unstage File [enter]",
+        "remove currently selected file from stage",
+        CMD_GROUP_CHANGES,
+    );
+    ///
+    pub static RESET_FILE: CommandText = CommandText::new(
+        "Reset File [D]",
+        "revert changes in selected file",
+        CMD_GROUP_CHANGES,
+    );
+    ///
+    pub static STATUS_FOCUS_UNSTAGED: CommandText = CommandText::new(
+        "Unstaged [1]",
+        "view changes in working dir",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static STATUS_FOCUS_STAGED: CommandText = CommandText::new(
+        "Staged [2]",
+        "view staged changes",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static STATUS_FOCUS_LEFT: CommandText = CommandText::new(
+        "Back [\u{2190}]", //←
+        "view staged changes",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static STATUS_FOCUS_RIGHT: CommandText = CommandText::new(
+        "Diff [\u{2192}]", //→
+        "inspect file diff",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static QUIT: CommandText = CommandText::new(
+        "Quit [esc,q]",
+        "quit gitui application",
+        CMD_GROUP_GENERAL,
+    );
+}

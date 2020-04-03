@@ -6,6 +6,7 @@ use crate::{keys, strings, ui};
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
+use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -17,7 +18,6 @@ use tui::{
 #[derive(Default)]
 pub struct CommitComponent {
     msg: String,
-    // focused: bool,
     visible: bool,
     stage_empty: bool,
 }
@@ -52,22 +52,20 @@ impl Component for CommitComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
+        _force_all: bool,
     ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            strings::COMMIT_CMD_OPEN,
-            strings::CMD_GROUP_COMMIT,
+        out.push(CommandInfo::new_new(
+            commands::COMMIT_OPEN,
             !self.stage_empty,
             !self.visible,
         ));
-        out.push(CommandInfo::new(
-            strings::COMMIT_CMD_ENTER,
-            strings::CMD_GROUP_COMMIT,
+        out.push(CommandInfo::new_new(
+            commands::COMMIT_ENTER,
             self.can_commit(),
             self.visible,
         ));
-        out.push(CommandInfo::new(
-            strings::COMMIT_CMD_CLOSE,
-            strings::CMD_GROUP_COMMIT,
+        out.push(CommandInfo::new_new(
+            commands::CLOSE_POPUP,
             true,
             self.visible,
         ));
