@@ -54,17 +54,17 @@ impl Component for CommitComponent {
         out: &mut Vec<CommandInfo>,
         _force_all: bool,
     ) -> CommandBlocking {
-        out.push(CommandInfo::new_new(
+        out.push(CommandInfo::new(
             commands::COMMIT_OPEN,
             !self.stage_empty,
             !self.visible,
         ));
-        out.push(CommandInfo::new_new(
+        out.push(CommandInfo::new(
             commands::COMMIT_ENTER,
             self.can_commit(),
             self.visible,
         ));
-        out.push(CommandInfo::new_new(
+        out.push(CommandInfo::new(
             commands::CLOSE_POPUP,
             true,
             self.visible,

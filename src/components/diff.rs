@@ -248,7 +248,7 @@ impl Component for DiffComponent {
         out: &mut Vec<CommandInfo>,
         _force_all: bool,
     ) -> CommandBlocking {
-        out.push(CommandInfo::new_new(
+        out.push(CommandInfo::new(
             commands::SCROLL,
             self.can_scroll(),
             self.focused,

@@ -273,7 +273,7 @@ impl App {
                 let focus_on_stage = self.focus == Focus::Stage;
                 let focus_not_diff = self.focus != Focus::Diff;
                 res.push(
-                    CommandInfo::new_new(
+                    CommandInfo::new(
                         commands::STATUS_FOCUS_UNSTAGED,
                         true,
                         main_cmds_available
@@ -283,7 +283,7 @@ impl App {
                     .hidden(),
                 );
                 res.push(
-                    CommandInfo::new_new(
+                    CommandInfo::new(
                         commands::STATUS_FOCUS_STAGED,
                         true,
                         main_cmds_available
@@ -295,12 +295,12 @@ impl App {
             }
             {
                 let focus_on_diff = self.focus == Focus::Diff;
-                res.push(CommandInfo::new_new(
+                res.push(CommandInfo::new(
                     commands::STATUS_FOCUS_LEFT,
                     true,
                     main_cmds_available && focus_on_diff,
                 ));
-                res.push(CommandInfo::new_new(
+                res.push(CommandInfo::new(
                     commands::STATUS_FOCUS_RIGHT,
                     true,
                     main_cmds_available && !focus_on_diff,
@@ -308,7 +308,7 @@ impl App {
             }
 
             res.push(
-                CommandInfo::new_new(
+                CommandInfo::new(
                     commands::QUIT,
                     true,
                     main_cmds_available,

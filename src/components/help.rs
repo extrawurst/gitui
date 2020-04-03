@@ -67,7 +67,7 @@ impl Component for HelpComponent {
         }
 
         out.push(
-            CommandInfo::new_new(
+            CommandInfo::new(
                 commands::HELP_OPEN,
                 true,
                 !self.visible,
@@ -75,13 +75,13 @@ impl Component for HelpComponent {
             .order(99),
         );
 
-        out.push(CommandInfo::new_new(
+        out.push(CommandInfo::new(
             commands::SCROLL,
             true,
             self.visible,
         ));
 
-        out.push(CommandInfo::new_new(
+        out.push(CommandInfo::new(
             commands::CLOSE_POPUP,
             true,
             self.visible,

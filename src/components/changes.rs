@@ -178,25 +178,25 @@ impl Component for ChangesComponent {
     ) -> CommandBlocking {
         let some_selection = self.selection().is_some();
         if self.is_working_dir {
-            out.push(CommandInfo::new_new(
+            out.push(CommandInfo::new(
                 commands::STAGE_FILE,
                 some_selection,
                 self.focused,
             ));
-            out.push(CommandInfo::new_new(
+            out.push(CommandInfo::new(
                 commands::RESET_FILE,
                 some_selection,
                 self.focused,
             ));
         } else {
-            out.push(CommandInfo::new_new(
+            out.push(CommandInfo::new(
                 commands::UNSTAGE_FILE,
                 some_selection,
                 self.focused,
             ));
         }
 
-        out.push(CommandInfo::new_new(
+        out.push(CommandInfo::new(
             commands::SCROLL,
             self.items.len() > 1,
             self.focused,

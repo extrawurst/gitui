@@ -35,7 +35,7 @@ pub struct CommandInfo {
 
 impl CommandInfo {
     ///
-    pub fn new_new(
+    pub fn new(
         text: CommandText,
         enabled: bool,
         available: bool,
