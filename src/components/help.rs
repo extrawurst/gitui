@@ -127,6 +127,8 @@ impl HelpComponent {
     ///
     pub fn set_cmds(&mut self, cmds: Vec<CommandInfo>) {
         self.cmds = cmds;
+        self.cmds.sort_by_key(|e| e.text);
+        self.cmds.dedup_by_key(|e| e.text);
         self.cmds.sort_by_key(|e| hash(&e.text.group));
     }
 
@@ -162,6 +164,7 @@ impl HelpComponent {
             txt.extend(
                 group
                     .into_iter()
+                    .sorted_by_key(|e| e.order)
                     .map(|e| {
                         let is_selected = self.selection == processed;
                         if is_selected {

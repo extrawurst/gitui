@@ -1,5 +1,5 @@
 ///
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub struct CommandText {
     ///
     pub name: &'static str,

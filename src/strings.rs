@@ -35,7 +35,7 @@ pub mod commands {
     ///
     pub static CLOSE_POPUP: CommandText = CommandText::new(
         "Close [esc]",
-        "close popup",
+        "close overlay (e.g commit, help)",
         CMD_GROUP_GENERAL,
     );
     ///
@@ -90,7 +90,7 @@ pub mod commands {
     pub static STATUS_FOCUS_RIGHT: CommandText = CommandText::new(
         "Diff [\u{2192}]", //→
         "inspect file diff",
-        CMD_GROUP_GENERAL,
+        CMD_GROUP_CHANGES,
     );
     ///
     pub static QUIT: CommandText = CommandText::new(
