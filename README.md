@@ -1,10 +1,8 @@
-<div align="center">
-<img width="400px" src="assets/logo2.png" />
-<h1>gitui</h1>
+<h1 align="center">
+<img width="400px" src="assets/logo2.png" alt="gitui"/>
 
 ![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![LOC][s3]][l3] [![UNSAFE][s4]][l4]
-
-</div>
+</h1>
 
 [s0]: https://github.com/extrawurst/gitui/workflows/CI/badge.svg
 [s1]: https://img.shields.io/crates/v/gitui.svg
@@ -60,7 +58,6 @@ GITUI_LOGGING=true gitui
 
 # todo for 0.1 (first release)
 
-* [ ] better help command 
 * [ ] confirm destructive commands (revert/reset)
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
