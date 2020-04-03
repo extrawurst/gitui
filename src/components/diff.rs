@@ -39,6 +39,7 @@ impl DiffComponent {
     pub fn clear(&mut self) {
         self.current.0.clear();
         self.diff = Diff::default();
+        self.current_hash = 0;
     }
     ///
     pub fn update(

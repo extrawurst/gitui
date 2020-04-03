@@ -439,7 +439,7 @@ impl App {
                 }
             };
 
-            self.update();
+            self.update_diff();
         }
     }
 
