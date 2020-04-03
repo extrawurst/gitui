@@ -58,7 +58,6 @@ GITUI_LOGGING=true gitui
 
 # todo for 0.1 (first release)
 
-* [ ] fix: run in non-git folder -> crash
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
 

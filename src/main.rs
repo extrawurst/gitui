@@ -40,6 +40,11 @@ static TICK_INTERVAL: Duration = Duration::from_secs(5);
 fn main() -> Result<()> {
     setup_logging();
 
+    if invalid_path() {
+        eprintln!("invalid git path");
+        return Ok(());
+    }
+
     enable_raw_mode()?;
     io::stdout().execute(EnterAlternateScreen)?;
     defer! {
@@ -85,6 +90,10 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn invalid_path() -> bool {
+    !asyncgit::is_repo(asyncgit::CWD)
 }
 
 fn select_event(

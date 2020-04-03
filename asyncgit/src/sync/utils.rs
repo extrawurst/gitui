@@ -5,6 +5,16 @@ use scopetime::scope_time;
 use std::path::Path;
 
 ///
+pub fn is_repo(repo_path: &str) -> bool {
+    Repository::open_ext(
+        repo_path,
+        RepositoryOpenFlags::empty(),
+        Vec::<&Path>::new(),
+    )
+    .is_ok()
+}
+
+///
 pub fn repo(repo_path: &str) -> Repository {
     let repo = Repository::open_ext(
         repo_path,

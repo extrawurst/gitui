@@ -14,6 +14,7 @@ pub use crate::{
     sync::{
         diff::{Diff, DiffLine, DiffLineType},
         status::{StatusItem, StatusItemType},
+        utils::is_repo,
     },
 };
 use std::{
