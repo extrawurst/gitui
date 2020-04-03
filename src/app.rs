@@ -373,7 +373,7 @@ impl App {
             .filter_map(|c| {
                 if c.show_in_quickbar() {
                     Some(Text::Styled(
-                        Cow::from(c.text.name.clone()),
+                        Cow::from(c.text.name),
                         if c.enabled {
                             style_enabled
                         } else {

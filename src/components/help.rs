@@ -154,7 +154,7 @@ impl HelpComponent {
         let mut selected_line = 0_u16;
 
         for (key, group) in
-            &self.cmds.iter().group_by(|e| e.text.group.clone())
+            &self.cmds.iter().group_by(|e| e.text.group)
         {
             txt.push(Text::Styled(
                 Cow::from(format!(" {}\n", key)),
@@ -163,7 +163,6 @@ impl HelpComponent {
 
             txt.extend(
                 group
-                    .into_iter()
                     .sorted_by_key(|e| e.order)
                     .map(|e| {
                         let is_selected = self.selection == processed;
