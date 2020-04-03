@@ -273,6 +273,7 @@ impl App {
                 res.push(
                     CommandInfo::new(
                         strings::CMD_STATUS_FOCUS_UNSTAGED,
+                        strings::CMD_GROUP_GENERAL,
                         true,
                         main_cmds_available
                             && focus_on_stage
@@ -283,6 +284,7 @@ impl App {
                 res.push(
                     CommandInfo::new(
                         strings::CMD_STATUS_FOCUS_STAGED,
+                        strings::CMD_GROUP_GENERAL,
                         true,
                         main_cmds_available
                             && !focus_on_stage
@@ -295,11 +297,13 @@ impl App {
                 let focus_on_diff = self.focus == Focus::Diff;
                 res.push(CommandInfo::new(
                     strings::CMD_STATUS_LEFT,
+                    strings::CMD_GROUP_GENERAL,
                     true,
                     main_cmds_available && focus_on_diff,
                 ));
                 res.push(CommandInfo::new(
                     strings::CMD_STATUS_RIGHT,
+                    strings::CMD_GROUP_GENERAL,
                     true,
                     main_cmds_available && !focus_on_diff,
                 ));
@@ -308,6 +312,7 @@ impl App {
             res.push(
                 CommandInfo::new(
                     strings::CMD_STATUS_QUIT,
+                    strings::CMD_GROUP_GENERAL,
                     true,
                     main_cmds_available,
                 )

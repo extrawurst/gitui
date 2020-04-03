@@ -5,6 +5,11 @@ pub static TITLE_INDEX: &str = "Staged Changes [2]";
 pub static TAB_STATUS: &str = "Status";
 pub static TAB_DIVIDER: &str = "  |  ";
 
+pub static CMD_GROUP_GENERAL: &str = "General";
+pub static CMD_GROUP_DIFF: &str = "Diff";
+pub static CMD_GROUP_CHANGES: &str = "Changes";
+pub static CMD_GROUP_COMMIT: &str = "Commit";
+
 pub static CMD_STATUS_FOCUS_UNSTAGED: &str = "Unstaged [1]";
 pub static CMD_STATUS_FOCUS_STAGED: &str = "Staged [2]";
 pub static CMD_STATUS_STAGE: &str = "Stage File [enter]";

@@ -55,16 +55,19 @@ impl Component for CommitComponent {
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
             strings::COMMIT_CMD_OPEN,
+            strings::CMD_GROUP_COMMIT,
             !self.stage_empty,
             !self.visible,
         ));
         out.push(CommandInfo::new(
             strings::COMMIT_CMD_ENTER,
+            strings::CMD_GROUP_COMMIT,
             self.can_commit(),
             self.visible,
         ));
         out.push(CommandInfo::new(
             strings::COMMIT_CMD_CLOSE,
+            strings::CMD_GROUP_COMMIT,
             true,
             self.visible,
         ));

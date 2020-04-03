@@ -248,6 +248,7 @@ impl Component for DiffComponent {
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
             strings::CMD_SCROLL,
+            strings::CMD_GROUP_DIFF,
             self.can_scroll(),
             self.focused,
         ));

@@ -178,17 +178,20 @@ impl Component for ChangesComponent {
         if self.is_working_dir {
             out.push(CommandInfo::new(
                 strings::CMD_STATUS_STAGE,
+                strings::CMD_GROUP_CHANGES,
                 some_selection,
                 self.focused,
             ));
             out.push(CommandInfo::new(
                 strings::CMD_STATUS_RESET,
+                strings::CMD_GROUP_CHANGES,
                 some_selection,
                 self.focused,
             ));
         } else {
             out.push(CommandInfo::new(
                 strings::CMD_STATUS_UNSTAGE,
+                strings::CMD_GROUP_CHANGES,
                 some_selection,
                 self.focused,
             ));
@@ -196,6 +199,7 @@ impl Component for ChangesComponent {
 
         out.push(CommandInfo::new(
             strings::CMD_SCROLL,
+            strings::CMD_GROUP_GENERAL,
             self.items.len() > 1,
             self.focused,
         ));

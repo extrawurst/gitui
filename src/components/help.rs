@@ -3,11 +3,14 @@ use super::{
     DrawableComponent, EventUpdate,
 };
 use crate::{keys, strings, ui};
+use asyncgit::hash;
 use crossterm::event::Event;
-use std::borrow::Cow;
+use itertools::Itertools;
+use std::{borrow::Cow, cmp, convert::TryFrom};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
+    style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Text, Widget},
     Frame,
 };
@@ -16,21 +19,22 @@ use tui::{
 pub struct HelpComponent {
     cmds: Vec<CommandInfo>,
     visible: bool,
+    selection: u16,
 }
 
 impl DrawableComponent for HelpComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
-            let txt = self
-                .cmds
-                .iter()
-                .map(|e| {
-                    let mut out = String::new();
-                    e.print(&mut out);
-                    out.push('\n');
-                    Text::Raw(Cow::from(out))
-                })
-                .collect::<Vec<_>>();
+            let (txt, selected_line) = self.get_text();
+
+            let height = 24;
+            let scroll_threshold = height / 3;
+
+            let scroll = if selected_line > scroll_threshold {
+                self.selection - scroll_threshold
+            } else {
+                0
+            };
 
             ui::Clear::new(
                 Paragraph::new(txt.iter())
@@ -39,9 +43,13 @@ impl DrawableComponent for HelpComponent {
                             .title(strings::HELP_TITLE)
                             .borders(Borders::ALL),
                     )
+                    .scroll(scroll)
                     .alignment(Alignment::Left),
             )
-            .render(f, ui::centered_rect_absolute(60, 20, f.size()));
+            .render(
+                f,
+                ui::centered_rect_absolute(65, height, f.size()),
+            );
         }
     }
 }
@@ -59,14 +67,24 @@ impl Component for HelpComponent {
         out.push(
             CommandInfo::new(
                 strings::CMD_STATUS_HELP,
+                strings::CMD_GROUP_GENERAL,
                 true,
                 !self.visible,
             )
+            .desc("open this help screen")
             .order(99),
         );
 
         out.push(CommandInfo::new(
+            strings::CMD_SCROLL,
+            strings::CMD_GROUP_GENERAL,
+            true,
+            self.visible,
+        ));
+
+        out.push(CommandInfo::new(
             strings::COMMIT_CMD_CLOSE,
+            strings::CMD_GROUP_GENERAL,
             true,
             self.visible,
         ));
@@ -77,8 +95,11 @@ impl Component for HelpComponent {
     fn event(&mut self, ev: Event) -> Option<EventUpdate> {
         if self.visible {
             if let Event::Key(e) = ev {
-                if let keys::EXIT_POPUP = e {
-                    self.hide();
+                match e {
+                    keys::EXIT_POPUP => self.hide(),
+                    keys::MOVE_DOWN => self.move_selection(true),
+                    keys::MOVE_UP => self.move_selection(false),
+                    _ => (),
                 }
             }
 
@@ -108,5 +129,75 @@ impl HelpComponent {
     ///
     pub fn set_cmds(&mut self, cmds: Vec<CommandInfo>) {
         self.cmds = cmds;
+        self.cmds.sort_by_key(|e| hash(&e.group));
+    }
+
+    fn move_selection(&mut self, inc: bool) {
+        let mut new_selection = self.selection;
+
+        new_selection = if inc {
+            new_selection.saturating_add(1)
+        } else {
+            new_selection.saturating_sub(1)
+        };
+        new_selection = cmp::max(new_selection, 0);
+
+        if let Ok(max) = u16::try_from(self.cmds.len() - 1) {
+            self.selection = cmp::min(new_selection, max);
+        }
+    }
+
+    fn get_text<'a>(&self) -> (Vec<Text<'a>>, u16) {
+        let mut txt = Vec::new();
+
+        let mut processed = 0_u16;
+        let mut selected_line = 0_u16;
+
+        for (key, group) in
+            &self.cmds.iter().group_by(|e| e.group.clone())
+        {
+            txt.push(Text::Styled(
+                Cow::from(format!(" {}\n", key)),
+                Style::default().fg(Color::Black).bg(Color::Gray),
+            ));
+
+            txt.extend(
+                group
+                    .into_iter()
+                    .map(|e| {
+                        let is_selected = self.selection == processed;
+                        if is_selected {
+                            selected_line = processed;
+                        }
+                        processed += 1;
+
+                        let mut out = String::from(if is_selected {
+                            ">"
+                        } else {
+                            " "
+                        });
+
+                        e.print(&mut out);
+                        out.push('\n');
+
+                        if is_selected {
+                            out.push_str(
+                                format!("  {}\n", e.desc).as_str(),
+                            );
+                        }
+
+                        let style = if is_selected {
+                            Style::default().fg(Color::Yellow)
+                        } else {
+                            Style::default()
+                        };
+
+                        Text::Styled(Cow::from(out), style)
+                    })
+                    .collect::<Vec<_>>(),
+            );
+        }
+
+        (txt, selected_line)
     }
 }

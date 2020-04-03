@@ -3,6 +3,10 @@ pub struct CommandInfo {
     ///
     pub name: String,
     ///
+    pub group: String,
+    ///
+    pub desc: String,
+    ///
     // pub keys:
     /// available but not active in the context
     pub enabled: bool,
@@ -16,9 +20,16 @@ pub struct CommandInfo {
 
 impl CommandInfo {
     ///
-    pub fn new(name: &str, enabled: bool, available: bool) -> Self {
+    pub fn new(
+        name: &str,
+        group: &str,
+        enabled: bool,
+        available: bool,
+    ) -> Self {
         Self {
             name: name.to_string(),
+            group: group.to_string(),
+            desc: String::default(),
             enabled,
             quick_bar: true,
             available,
@@ -29,6 +40,12 @@ impl CommandInfo {
     pub fn order(self, order: i8) -> Self {
         let mut res = self;
         res.order = order;
+        res
+    }
+    ///
+    pub fn desc(self, txt: &str) -> Self {
+        let mut res = self;
+        res.desc = txt.to_string();
         res
     }
     ///
