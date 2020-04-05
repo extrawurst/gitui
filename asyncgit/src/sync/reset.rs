@@ -9,19 +9,20 @@ pub fn reset_stage(repo_path: &str, path: &Path) -> bool {
 
     let repo = repo(repo_path);
 
-    let reference = repo.head().unwrap();
-    let obj = repo
-        .find_object(
-            reference.target().unwrap(),
-            Some(ObjectType::Commit),
-        )
-        .unwrap();
+    let head = repo.head();
 
-    if repo.reset_default(Some(&obj), &[path]).is_ok() {
-        return true;
+    if let Ok(reference) = head {
+        let obj = repo
+            .find_object(
+                reference.target().unwrap(),
+                Some(ObjectType::Commit),
+            )
+            .unwrap();
+
+        repo.reset_default(Some(&obj), &[path]).is_ok()
+    } else {
+        repo.reset_default(None, &[path]).is_ok()
     }
-
-    false
 }
 
 ///
@@ -60,10 +61,10 @@ pub fn reset_workdir(repo_path: &str, path: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::reset_workdir;
+    use super::{reset_stage, reset_workdir};
     use crate::sync::{
         status::{get_status, StatusType},
-        tests::{debug_cmd_print, repo_init},
+        tests::{debug_cmd_print, repo_init, repo_init_empty},
         utils::stage_add,
     };
     use std::{
@@ -228,5 +229,22 @@ mod tests {
             0
         );
         assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+    }
+
+    #[test]
+    fn unstage_in_empty_repo() {
+        let file_path = Path::new("foo.txt");
+        let (_td, repo) = repo_init_empty();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))
+            .unwrap()
+            .write_all(b"test\nfoo")
+            .unwrap();
+
+        assert_eq!(stage_add(repo_path, file_path), true);
+
+        assert_eq!(reset_stage(repo_path, file_path), true);
     }
 }
