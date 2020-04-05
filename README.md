@@ -58,7 +58,6 @@ GITUI_LOGGING=true gitui
 
 # todo for 0.1 (first release)
 
-* [ ] fix crashes on empty git repos (unstaging,committing?)
 * [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
 

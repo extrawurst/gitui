@@ -37,12 +37,19 @@ pub fn commit(repo_path: &str, msg: &str) {
     let repo = repo(repo_path);
 
     let signature = repo.signature().unwrap();
-    let reference = repo.head().unwrap();
     let mut index = repo.index().unwrap();
     let tree_id = index.write_tree().unwrap();
     let tree = repo.find_tree(tree_id).unwrap();
-    let parent =
-        repo.find_commit(reference.target().unwrap()).unwrap();
+
+    let parents = if let Ok(reference) = repo.head() {
+        let parent =
+            repo.find_commit(reference.target().unwrap()).unwrap();
+        vec![parent]
+    } else {
+        Vec::new()
+    };
+
+    let parents = parents.iter().collect::<Vec<_>>();
 
     repo.commit(
         Some("HEAD"),
@@ -50,7 +57,7 @@ pub fn commit(repo_path: &str, msg: &str) {
         &signature,
         msg,
         &tree,
-        &[&parent],
+        parents.as_slice(),
     )
     .unwrap();
 }
@@ -89,7 +96,7 @@ mod tests {
     use crate::sync::{
         stage_add,
         status::{get_status, StatusType},
-        tests::repo_init,
+        tests::{repo_init, repo_init_empty},
     };
     use std::{fs::File, io::Write, path::Path};
 
@@ -120,5 +127,22 @@ mod tests {
 
         assert_eq!(status_count(StatusType::Stage), 0);
         assert_eq!(status_count(StatusType::WorkingDir), 0);
+    }
+
+    #[test]
+    fn test_commit_in_empty_repo() {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))
+            .unwrap()
+            .write_all(b"test\nfoo")
+            .unwrap();
+
+        assert_eq!(stage_add(repo_path, file_path), true);
+
+        commit(repo_path, "commit msg");
     }
 }
