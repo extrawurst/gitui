@@ -74,16 +74,24 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> Diff {
 
     let diff = if stage {
         // diff against head
-        let ref_head = repo.head().unwrap();
-        let parent =
-            repo.find_commit(ref_head.target().unwrap()).unwrap();
-        let tree = parent.tree().unwrap();
-        repo.diff_tree_to_index(
-            Some(&tree),
-            Some(&repo.index().unwrap()),
-            Some(&mut opt),
-        )
-        .unwrap()
+        if let Ok(ref_head) = repo.head() {
+            let parent =
+                repo.find_commit(ref_head.target().unwrap()).unwrap();
+            let tree = parent.tree().unwrap();
+            repo.diff_tree_to_index(
+                Some(&tree),
+                Some(&repo.index().unwrap()),
+                Some(&mut opt),
+            )
+            .unwrap()
+        } else {
+            repo.diff_tree_to_index(
+                None,
+                Some(&repo.index().unwrap()),
+                Some(&mut opt),
+            )
+            .unwrap()
+        }
     } else {
         opt.include_untracked(true);
         opt.recurse_untracked_dirs(true);
@@ -206,7 +214,7 @@ mod tests {
     use crate::sync::{
         stage_add,
         status::{get_status, StatusType},
-        tests::repo_init,
+        tests::{repo_init, repo_init_empty},
     };
     use std::{
         fs::{self, File},
@@ -237,6 +245,32 @@ mod tests {
 
         assert_eq!(diff.0.len(), 1);
         assert_eq!(diff.0[0].0[1].content, "test\n");
+    }
+
+    #[test]
+    fn test_empty_repo() {
+        let file_path = Path::new("foo.txt");
+        let (_td, repo) = repo_init_empty();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let res = get_status(repo_path, StatusType::WorkingDir);
+        assert_eq!(res.len(), 0);
+
+        File::create(&root.join(file_path))
+            .unwrap()
+            .write_all(b"test\nfoo")
+            .unwrap();
+
+        assert_eq!(stage_add(repo_path, file_path), true);
+
+        let diff = get_diff(
+            repo_path,
+            String::from(file_path.to_str().unwrap()),
+            true,
+        );
+
+        assert_eq!(diff.0.len(), 1);
     }
 
     static HUNK_A: &str = r"

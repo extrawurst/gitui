@@ -14,6 +14,18 @@ mod tests {
     use std::process::Command;
     use tempfile::TempDir;
 
+    ///
+    pub fn repo_init_empty() -> (TempDir, Repository) {
+        let td = TempDir::new().unwrap();
+        let repo = Repository::init(td.path()).unwrap();
+        {
+            let mut config = repo.config().unwrap();
+            config.set_str("user.name", "name").unwrap();
+            config.set_str("user.email", "email").unwrap();
+        }
+        (td, repo)
+    }
+
     pub fn repo_init() -> (TempDir, Repository) {
         let td = TempDir::new().unwrap();
         let repo = Repository::init(td.path()).unwrap();
