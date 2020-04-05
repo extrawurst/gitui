@@ -450,6 +450,7 @@ impl App {
             };
 
             self.update_diff();
+            self.update_commands();
         }
     }
 
