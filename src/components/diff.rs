@@ -1,9 +1,10 @@
 use super::{CommandBlocking, DrawableComponent, EventUpdate};
 use crate::{
     components::{CommandInfo, Component},
+    queue::{InternalEvent, Queue},
     strings,
 };
-use asyncgit::{hash, Diff, DiffLine, DiffLineType};
+use asyncgit::{hash, DiffLine, DiffLineType, FileDiff};
 use crossterm::event::{Event, KeyCode};
 use std::{borrow::Cow, cmp, convert::TryFrom};
 use strings::commands;
@@ -16,57 +17,113 @@ use tui::{
     Frame,
 };
 
-///
 #[derive(Default)]
+struct Current {
+    path: String,
+    is_stage: bool,
+    hash: u64,
+}
+
+///
 pub struct DiffComponent {
-    diff: Diff,
+    diff: FileDiff,
     scroll: u16,
     focused: bool,
-    current: (String, bool),
-    current_hash: u64,
+    current: Current,
+    selected_hunk: Option<u16>,
+    queue: Queue,
 }
 
 impl DiffComponent {
     ///
+    pub fn new(queue: Queue) -> Self {
+        Self {
+            focused: false,
+            queue,
+            current: Current::default(),
+            selected_hunk: None,
+            diff: FileDiff::default(),
+            scroll: 0,
+        }
+    }
+    ///
     fn can_scroll(&self) -> bool {
-        self.diff.1 > 1
+        self.diff.lines > 1
     }
     ///
     pub fn current(&self) -> (String, bool) {
-        (self.current.0.clone(), self.current.1)
+        (self.current.path.clone(), self.current.is_stage)
     }
     ///
     pub fn clear(&mut self) {
-        self.current.0.clear();
-        self.diff = Diff::default();
-        self.current_hash = 0;
+        self.current = Current::default();
+        self.diff = FileDiff::default();
+        self.scroll = 0;
+
+        self.selected_hunk =
+            Self::find_selected_hunk(&self.diff, self.scroll);
     }
     ///
     pub fn update(
         &mut self,
         path: String,
         is_stage: bool,
-        diff: Diff,
+        diff: FileDiff,
     ) {
         let hash = hash(&diff);
 
-        if self.current_hash != hash {
-            self.current = (path, is_stage);
-            self.current_hash = hash;
+        if self.current.hash != hash {
+            self.current = Current {
+                path,
+                is_stage,
+                hash,
+            };
             self.diff = diff;
             self.scroll = 0;
+
+            self.selected_hunk =
+                Self::find_selected_hunk(&self.diff, self.scroll);
         }
     }
 
     fn scroll(&mut self, inc: bool) {
+        let old = self.scroll;
         if inc {
             self.scroll = cmp::min(
-                self.diff.1.saturating_sub(1),
+                self.diff.lines.saturating_sub(1),
                 self.scroll.saturating_add(1),
             );
         } else {
             self.scroll = self.scroll.saturating_sub(1);
         }
+
+        if old != self.scroll {
+            self.selected_hunk =
+                Self::find_selected_hunk(&self.diff, self.scroll);
+        }
+    }
+
+    fn find_selected_hunk(
+        diff: &FileDiff,
+        line_selected: u16,
+    ) -> Option<u16> {
+        let mut line_cursor = 0_u16;
+        for (i, hunk) in diff.hunks.iter().enumerate() {
+            let hunk_len = u16::try_from(hunk.lines.len()).unwrap();
+            let hunk_min = line_cursor;
+            let hunk_max = line_cursor + hunk_len;
+
+            let hunk_selected =
+                hunk_min <= line_selected && hunk_max > line_selected;
+
+            if hunk_selected {
+                return Some(u16::try_from(i).unwrap());
+            }
+
+            line_cursor += hunk_len;
+        }
+
+        None
     }
 
     fn get_text(&self, width: u16, height: u16) -> Vec<Text> {
@@ -79,19 +136,21 @@ impl DiffComponent {
         let mut line_cursor = 0_u16;
         let mut lines_added = 0_u16;
 
-        for hunk in &self.diff.0 {
+        for (i, hunk) in self.diff.hunks.iter().enumerate() {
+            let hunk_selected = self
+                .selected_hunk
+                .map_or(false, |s| s == u16::try_from(i).unwrap());
+
             if lines_added >= height {
                 break;
             }
 
-            let hunk_len = u16::try_from(hunk.0.len()).unwrap();
+            let hunk_len = u16::try_from(hunk.lines.len()).unwrap();
             let hunk_min = line_cursor;
             let hunk_max = line_cursor + hunk_len;
 
             if Self::hunk_visible(hunk_min, hunk_max, min, max) {
-                let hunk_selected =
-                    hunk_min <= selection && hunk_max > selection;
-                for (i, line) in hunk.0.iter().enumerate() {
+                for (i, line) in hunk.lines.iter().enumerate() {
                     if line_cursor >= min {
                         Self::add_line(
                             &mut res,
@@ -219,6 +278,17 @@ impl DiffComponent {
 
         false
     }
+
+    fn add_hunk(&self) {
+        if let Some(hunk) = self.selected_hunk {
+            let hash = self.diff.hunks
+                [usize::try_from(hunk).unwrap()]
+            .header_hash;
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::AddHunk(hash));
+        }
+    }
 }
 
 impl DrawableComponent for DiffComponent {
@@ -255,6 +325,18 @@ impl Component for DiffComponent {
             self.focused,
         ));
 
+        let cmd_text = if self.current.is_stage {
+            commands::DIFF_HUNK_ADD
+        } else {
+            commands::DIFF_HUNK_REMOVE
+        };
+
+        out.push(CommandInfo::new(
+            cmd_text,
+            self.selected_hunk.is_some(),
+            self.focused,
+        ));
+
         CommandBlocking::PassingOn
     }
 
@@ -268,6 +350,10 @@ impl Component for DiffComponent {
                     }
                     KeyCode::Up => {
                         self.scroll(false);
+                        Some(EventUpdate::None)
+                    }
+                    KeyCode::Enter => {
+                        self.add_hunk();
                         Some(EventUpdate::None)
                     }
                     _ => None,

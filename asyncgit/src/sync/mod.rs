@@ -1,10 +1,12 @@
 //! sync git api
 
 pub mod diff;
+mod hunks;
 mod reset;
 pub mod status;
 pub mod utils;
 
+pub use hunks::{revert_hunk, stage_hunk};
 pub use reset::{reset_stage, reset_workdir};
 pub use utils::{commit, stage_add};
 

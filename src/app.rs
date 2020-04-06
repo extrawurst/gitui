@@ -82,7 +82,7 @@ impl App {
                 false,
                 queue.clone(),
             ),
-            diff: DiffComponent::default(),
+            diff: DiffComponent::new(queue.clone()),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status: AsyncStatus::new(sender),
             current_commands: Vec::new(),
@@ -216,13 +216,7 @@ impl App {
 // private impls
 impl App {
     fn update_diff(&mut self) {
-        let (idx, is_stage) = match self.diff_target {
-            DiffTarget::Stage => (&self.index, true),
-            DiffTarget::WorkingDir => (&self.index_wd, false),
-        };
-
-        if let Some(i) = idx.selection() {
-            let path = i.path;
+        if let Some((path, is_stage)) = self.selected_path() {
             let diff_params = DiffParams(path.clone(), is_stage);
 
             if self.diff.current() == (path.clone(), is_stage) {
@@ -242,6 +236,19 @@ impl App {
             }
         } else {
             self.diff.clear();
+        }
+    }
+
+    fn selected_path(&self) -> Option<(String, bool)> {
+        let (idx, is_stage) = match self.diff_target {
+            DiffTarget::Stage => (&self.index, true),
+            DiffTarget::WorkingDir => (&self.index_wd, false),
+        };
+
+        if let Some(i) = idx.selection() {
+            Some((i.path, is_stage))
+        } else {
+            None
         }
     }
 
@@ -283,6 +290,17 @@ impl App {
             InternalEvent::ConfirmResetFile(p) => {
                 self.reset.open_for_path(p);
                 self.update_commands();
+            }
+            InternalEvent::AddHunk(hash) => {
+                if let Some((path, is_stage)) = self.selected_path() {
+                    if is_stage {
+                        if sync::revert_hunk(CWD, path, *hash) {
+                            self.update();
+                        }
+                    } else if sync::stage_hunk(CWD, path, *hash) {
+                        self.update();
+                    }
+                }
             }
         };
     }

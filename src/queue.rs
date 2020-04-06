@@ -6,6 +6,8 @@ pub enum InternalEvent {
     ConfirmResetFile(String),
     ///
     ResetFile(String),
+    ///
+    AddHunk(u64),
 }
 
 ///
