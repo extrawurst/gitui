@@ -12,7 +12,7 @@ pub use crate::{
     diff::{AsyncDiff, DiffParams},
     status::AsyncStatus,
     sync::{
-        diff::{Diff, DiffLine, DiffLineType},
+        diff::{DiffLine, DiffLineType, FileDiff},
         status::{StatusItem, StatusItemType},
         utils::is_repo,
     },

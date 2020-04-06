@@ -1,4 +1,4 @@
-use crate::{hash, sync, AsyncNotification, Diff, CWD};
+use crate::{hash, sync, AsyncNotification, FileDiff, CWD};
 use crossbeam_channel::Sender;
 use log::trace;
 use std::{
@@ -21,8 +21,8 @@ struct LastResult<P, R> {
 
 ///
 pub struct AsyncDiff {
-    current: Arc<Mutex<Request<u64, Diff>>>,
-    last: Arc<Mutex<Option<LastResult<DiffParams, Diff>>>>,
+    current: Arc<Mutex<Request<u64, FileDiff>>>,
+    last: Arc<Mutex<Option<LastResult<DiffParams, FileDiff>>>>,
     sender: Sender<AsyncNotification>,
 }
 
@@ -37,7 +37,7 @@ impl AsyncDiff {
     }
 
     ///
-    pub fn last(&mut self) -> Option<Diff> {
+    pub fn last(&mut self) -> Option<FileDiff> {
         let last = self.last.lock().unwrap();
         if let Some(res) = last.clone() {
             Some(res.result)
@@ -55,7 +55,10 @@ impl AsyncDiff {
     }
 
     ///
-    pub fn request(&mut self, params: DiffParams) -> Option<Diff> {
+    pub fn request(
+        &mut self,
+        params: DiffParams,
+    ) -> Option<FileDiff> {
         trace!("request");
 
         let hash = hash(&params);

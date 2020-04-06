@@ -56,10 +56,8 @@ to enable logging to `~/.gitui/gitui.log`:
 GITUI_LOGGING=true gitui
 ```
 
-# todo for 0.1 (first release)
+# todo for 0.2 (first release)
 
-* [ ] make staging/unstaging async
-* [ ] (un)staging selected hunks
 * [ ] publish as homebrew-tap
 
 # inspiration

@@ -18,6 +18,7 @@ pub mod commands {
     use crate::components::CommandText;
 
     static CMD_GROUP_GENERAL: &str = "General";
+    static CMD_GROUP_DIFF: &str = "Diff";
     static CMD_GROUP_CHANGES: &str = "Changes";
     static CMD_GROUP_COMMIT: &str = "Commit";
 
@@ -32,6 +33,18 @@ pub mod commands {
         "Scroll [\u{2191}\u{2193}]",
         "scroll up or down in focused view",
         CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static DIFF_HUNK_ADD: CommandText = CommandText::new(
+        "Add hunk [enter]",
+        "adds selected hunk to stage",
+        CMD_GROUP_DIFF,
+    );
+    ///
+    pub static DIFF_HUNK_REMOVE: CommandText = CommandText::new(
+        "Remove hunk [enter]",
+        "removes selected hunk from stage",
+        CMD_GROUP_DIFF,
     );
     ///
     pub static CLOSE_POPUP: CommandText = CommandText::new(

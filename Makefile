@@ -4,6 +4,9 @@
 debug:
 	GITUI_LOGGING=true cargo run --features=timing
 
+build-release:
+	cargo build --release
+
 test:
 	cargo test --workspace
 

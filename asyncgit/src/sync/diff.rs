@@ -1,8 +1,10 @@
 //! sync git api for fetching a diff
 
 use super::utils;
+use crate::hash;
 use git2::{
-    Delta, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
+    Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
+    Repository,
 };
 use scopetime::scope_time;
 use std::{fs, path::Path};
@@ -35,9 +37,8 @@ pub struct DiffLine {
     pub line_type: DiffLineType,
 }
 
-///
-#[derive(Default, Clone, Copy, PartialEq)]
-struct HunkHeader {
+#[derive(Debug, Default, Clone, Copy, PartialEq, Hash)]
+pub(crate) struct HunkHeader {
     old_start: u32,
     old_lines: u32,
     new_start: u32,
@@ -57,20 +58,31 @@ impl From<DiffHunk<'_>> for HunkHeader {
 
 ///
 #[derive(Default, Clone, Hash)]
-pub struct Hunk(pub Vec<DiffLine>);
+pub struct Hunk {
+    ///
+    pub header_hash: u64,
+    ///
+    pub lines: Vec<DiffLine>,
+}
 
 ///
 #[derive(Default, Clone, Hash)]
-pub struct Diff(pub Vec<Hunk>, pub u16);
+pub struct FileDiff {
+    /// list of hunks
+    pub hunks: Vec<Hunk>,
+    /// lines total summed up over hunks
+    pub lines: u16,
+}
 
-///
-pub fn get_diff(repo_path: &str, p: String, stage: bool) -> Diff {
-    scope_time!("get_diff");
-
-    let repo = utils::repo(repo_path);
-
+pub(crate) fn get_diff_raw<'a>(
+    repo: &'a Repository,
+    p: &str,
+    stage: bool,
+    reverse: bool,
+) -> (Diff<'a>, DiffOptions) {
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
+    opt.reverse(reverse);
 
     let diff = if stage {
         // diff against head
@@ -98,13 +110,27 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> Diff {
         repo.diff_index_to_workdir(None, Some(&mut opt)).unwrap()
     };
 
-    let mut res: Diff = Diff::default();
+    (diff, opt)
+}
+
+///
+pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
+    scope_time!("get_diff");
+
+    let repo = utils::repo(repo_path);
+
+    let (diff, mut opt) = get_diff_raw(&repo, &p, stage, false);
+
+    let mut res: FileDiff = FileDiff::default();
     let mut current_lines = Vec::new();
     let mut current_hunk: Option<HunkHeader> = None;
 
-    let mut adder = |lines: &Vec<DiffLine>| {
-        res.0.push(Hunk(lines.clone()));
-        res.1 += lines.len() as u16;
+    let mut adder = |header: &HunkHeader, lines: &Vec<DiffLine>| {
+        res.hunks.push(Hunk {
+            header_hash: hash(header),
+            lines: lines.clone(),
+        });
+        res.lines += lines.len() as u16;
     };
 
     let mut put = |hunk: Option<DiffHunk>, line: git2::DiffLine| {
@@ -114,7 +140,7 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> Diff {
             match current_hunk {
                 None => current_hunk = Some(hunk_header),
                 Some(h) if h != hunk_header => {
-                    adder(&current_lines);
+                    adder(&h, &current_lines);
                     current_lines.clear();
                     current_hunk = Some(hunk_header)
                 }
@@ -184,7 +210,7 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> Diff {
     }
 
     if !current_lines.is_empty() {
-        adder(&current_lines);
+        adder(&current_hunk.unwrap(), &current_lines);
     }
 
     res
@@ -243,8 +269,8 @@ mod tests {
         let diff =
             get_diff(repo_path, "foo/bar.txt".to_string(), false);
 
-        assert_eq!(diff.0.len(), 1);
-        assert_eq!(diff.0[0].0[1].content, "test\n");
+        assert_eq!(diff.hunks.len(), 1);
+        assert_eq!(diff.hunks[0].lines[1].content, "test\n");
     }
 
     #[test]
@@ -270,7 +296,7 @@ mod tests {
             true,
         );
 
-        assert_eq!(diff.0.len(), 1);
+        assert_eq!(diff.hunks.len(), 1);
     }
 
     static HUNK_A: &str = r"
@@ -345,6 +371,6 @@ mod tests {
 
         let res = get_diff(repo_path, "bar.txt".to_string(), false);
 
-        assert_eq!(res.0.len(), 2)
+        assert_eq!(res.hunks.len(), 2)
     }
 }
