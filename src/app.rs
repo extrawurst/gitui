@@ -294,7 +294,7 @@ impl App {
             InternalEvent::AddHunk(hash) => {
                 if let Some((path, is_stage)) = self.selected_path() {
                     if is_stage {
-                        if sync::revert_hunk(CWD, path, *hash) {
+                        if sync::unstage_hunk(CWD, path, *hash) {
                             self.update();
                         }
                     } else if sync::stage_hunk(CWD, path, *hash) {

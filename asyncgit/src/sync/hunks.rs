@@ -56,7 +56,7 @@ fn find_hunk_index(diff: &Diff, hunk_hash: u64) -> Option<usize> {
 }
 
 ///
-pub fn revert_hunk(
+pub fn unstage_hunk(
     repo_path: &str,
     file_path: String,
     hunk_hash: u64,
