@@ -6,7 +6,7 @@ mod reset;
 pub mod status;
 pub mod utils;
 
-pub use hunks::{revert_hunk, stage_hunk};
+pub use hunks::{stage_hunk, unstage_hunk};
 pub use reset::{reset_stage, reset_workdir};
 pub use utils::{commit, stage_add};
 
