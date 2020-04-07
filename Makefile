@@ -6,6 +6,8 @@ debug:
 
 build-release:
 	cargo build --release
+	strip target/release/gitui
+	ls -lisah target/release/gitui
 
 test:
 	cargo test --workspace

@@ -40,3 +40,8 @@ members=[
     "asyncgit",
     "scopetime",
 ]
+
+[profile.release]
+lto = true 
+opt-level = 'z'  # Optimize for size.
+codegen-units = 1
