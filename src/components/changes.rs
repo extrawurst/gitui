@@ -222,7 +222,9 @@ impl Component for ChangesComponent {
                         }
                     }
                     keys::STATUS_RESET_FILE => {
-                        if self.dispatch_reset_workdir() {
+                        if self.is_working_dir
+                            && self.dispatch_reset_workdir()
+                        {
                             Some(EventUpdate::None)
                         } else {
                             None
