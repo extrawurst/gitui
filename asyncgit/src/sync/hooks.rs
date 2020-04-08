@@ -108,6 +108,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn test_hooks_commit_msg_ok() {
         let (_td, repo) = repo_init();
         let root = repo.path().parent().unwrap();
@@ -138,6 +139,7 @@ exit 0
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn test_hooks_commit_msg() {
         let (_td, repo) = repo_init();
         let root = repo.path().parent().unwrap();
