@@ -65,3 +65,5 @@ GITUI_LOGGING=true gitui
 * https://github.com/jesseduffield/lazygit
 * https://github.com/jonas/tig
 * https://github.com/git-up/GitUp (would be nice to comeup with a way to have the map view available in a terminal tool)
+
+test
