@@ -58,6 +58,8 @@ GITUI_LOGGING=true gitui
 
 # todo for 0.2 (first release)
 
+* [ ] support commit-msg hook
+* [ ] support post-commit hook
 * [ ] publish as homebrew-tap
 
 # inspiration
