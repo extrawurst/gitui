@@ -26,14 +26,12 @@ pub fn hooks_commit_msg(
 
         let res = run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path]);
 
-        if let HookResult::NotOk(e) = res {
-            let mut file = file.reopen().unwrap();
-            msg.clear();
-            file.read_to_string(msg).unwrap();
-            HookResult::NotOk(e)
-        } else {
-            HookResult::Ok
-        }
+        // load possibly altered msg
+        let mut file = file.reopen().unwrap();
+        msg.clear();
+        file.read_to_string(msg).unwrap();
+
+        res
     } else {
         HookResult::Ok
     }
@@ -169,6 +167,37 @@ exit 1
             HookResult::NotOk(String::from("rejected\n"))
         );
 
+        assert_eq!(msg, String::from("msg\n"));
+    }
+
+    #[test]
+    #[cfg(not(windows))]
+    fn test_commit_msg_no_block_but_alter() {
+        let (_td, repo) = repo_init();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let hook = b"
+#!/bin/sh
+echo 'msg' > $1
+exit 0
+        ";
+
+        File::create(&root.join(HOOK_COMMIT_MSG))
+            .unwrap()
+            .write_all(hook)
+            .unwrap();
+
+        Command::new("chmod")
+            .args(&["+x", HOOK_COMMIT_MSG])
+            .current_dir(root)
+            .output()
+            .unwrap();
+
+        let mut msg = String::from("test");
+        let res = hooks_commit_msg(repo_path, &mut msg);
+
+        assert_eq!(res, HookResult::Ok);
         assert_eq!(msg, String::from("msg\n"));
     }
 }
