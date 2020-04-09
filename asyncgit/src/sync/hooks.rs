@@ -24,8 +24,6 @@ pub fn hooks_commit_msg(
 
         let file_path = file.path().to_str().unwrap();
 
-        dbg!(&file_path);
-
         let res = run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path]);
 
         if let HookResult::NotOk(e) = res {
