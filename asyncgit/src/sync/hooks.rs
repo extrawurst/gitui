@@ -103,6 +103,19 @@ mod tests {
         assert_eq!(res, HookResult::Ok);
     }
 
+    fn create_hook(path: &Path, hook_path: &str, hook_script: &[u8]) {
+        File::create(&path.join(hook_path))
+            .unwrap()
+            .write_all(hook_script)
+            .unwrap();
+
+        Command::new("chmod")
+            .args(&["+x", hook_path])
+            .current_dir(path)
+            .output()
+            .unwrap();
+    }
+
     #[test]
     #[cfg(not(windows))]
     fn test_hooks_commit_msg_ok() {
@@ -115,16 +128,7 @@ mod tests {
 exit 0
         ";
 
-        File::create(&root.join(HOOK_COMMIT_MSG))
-            .unwrap()
-            .write_all(hook)
-            .unwrap();
-
-        Command::new("chmod")
-            .args(&["+x", HOOK_COMMIT_MSG])
-            .current_dir(root)
-            .output()
-            .unwrap();
+        create_hook(root, HOOK_COMMIT_MSG, hook);
 
         let mut msg = String::from("test");
         let res = hooks_commit_msg(repo_path, &mut msg);
@@ -148,16 +152,7 @@ echo 'rejected'
 exit 1
         ";
 
-        File::create(&root.join(HOOK_COMMIT_MSG))
-            .unwrap()
-            .write_all(hook)
-            .unwrap();
-
-        Command::new("chmod")
-            .args(&["+x", HOOK_COMMIT_MSG])
-            .current_dir(root)
-            .output()
-            .unwrap();
+        create_hook(root, HOOK_COMMIT_MSG, hook);
 
         let mut msg = String::from("test");
         let res = hooks_commit_msg(repo_path, &mut msg);
@@ -183,16 +178,7 @@ echo 'msg' > $1
 exit 0
         ";
 
-        File::create(&root.join(HOOK_COMMIT_MSG))
-            .unwrap()
-            .write_all(hook)
-            .unwrap();
-
-        Command::new("chmod")
-            .args(&["+x", HOOK_COMMIT_MSG])
-            .current_dir(root)
-            .output()
-            .unwrap();
+        create_hook(root, HOOK_COMMIT_MSG, hook);
 
         let mut msg = String::from("test");
         let res = hooks_commit_msg(repo_path, &mut msg);
