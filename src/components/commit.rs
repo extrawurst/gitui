@@ -5,8 +5,10 @@ use super::{
 use crate::{keys, strings, ui};
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
+use log::error;
 use std::borrow::Cow;
 use strings::commands;
+use sync::HookResult;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -121,7 +123,18 @@ impl Component for CommitComponent {
 
 impl CommitComponent {
     fn commit(&mut self) {
+        if let HookResult::NotOk(e) =
+            sync::hooks_commit_msg(CWD, &mut self.msg)
+        {
+            error!("commit-msg hook error: {}", e);
+            return;
+        }
+
         sync::commit(CWD, &self.msg);
+        if let HookResult::NotOk(e) = sync::hooks_post_commit(CWD) {
+            error!("post-commit hook error: {}", e);
+        }
+
         self.msg.clear();
 
         self.hide();

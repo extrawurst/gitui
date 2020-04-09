@@ -21,7 +21,7 @@ blazing fast terminal-ui for git written in rust
 
 * fast and intuitive key only control
 * context based help (**no** need to remember any hot-key)
-* inspect/commit changes
+* inspect/commit changes (incl. hooks: commit-msg/post-commit)
 * (un)stage files, revert/reset files
 * scalable ui layout
 * async [input polling](assets/perf_compare.jpg) and 
@@ -58,8 +58,7 @@ GITUI_LOGGING=true gitui
 
 # todo for 0.2 (first release)
 
-* [ ] support commit-msg hook
-* [ ] support post-commit hook
+* [ ] visualize commit-msg hook result
 * [ ] publish as homebrew-tap
 
 # inspiration
