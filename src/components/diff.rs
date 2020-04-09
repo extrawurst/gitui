@@ -244,7 +244,8 @@ impl DiffComponent {
             // weird eof missing eol line
             format!("{}\n", line.content.trim_matches('\n'))
         };
-        let content = Cow::from(filled);
+        //TODO: allow customize tabsize
+        let content = Cow::from(filled.replace("\t", "  "));
 
         text.push(match line.line_type {
             DiffLineType::Delete => {
