@@ -15,25 +15,39 @@ blazing fast terminal-ui for git written in rust
 
 ![img](assets/demo.gif)
 
-## features
+# features
 
 * fast and intuitive key only control
 * context based help (**no** need to remember any hot-key)
-* inspect/commit changes (incl. hooks: commit-msg/post-commit)
-* (un)stage files, revert/reset files
+* inspect/commit changes (incl. hooks: *commit-msg*/*post-commit*)
+* (un)stage files/hunks, revert/reset files/hunk
 * scalable ui layout
 * async [input polling](assets/perf_compare.jpg) and 
 * async git API for fluid control
 
-## motivation
+# known limitations
+
+* hooks don't work on windows
+* [core.hooksPath](https://git-scm.com/docs/githooks) config not supported
+* revert/reset hunk in working dir
+
+# motivation
 
 I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index/commit, diff, stash and log.
 
 Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was not bloated, snappy and free. Unfortunately the *free* part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast & simple terminal tool myself to copy the fork features i am using the most.
 
-## installation
+# installation
 
-For the time being this product is considered alpha and not production ready, therefore I do not distribute binary versions yet, however feel free to build `gitui` and let me know what you think!
+For the time being this product is considered alpha and **not** production ready.
+
+## homebrew
+
+```
+brew install extrawurst/tap/gitui
+```
+
+## install from source
 
 ### requirements
 
@@ -47,16 +61,12 @@ the simplest way to start playing around with `gitui` is to have `cargo` build/i
 cargo install gitui
 ```
 
-### diagnostics:
+# diagnostics:
 
 to enable logging to `~/.gitui/gitui.log`:
 ```
 GITUI_LOGGING=true gitui
 ```
-
-# todo for 0.2 (first release)
-
-* [ ] publish as homebrew-tap
 
 # inspiration
 
