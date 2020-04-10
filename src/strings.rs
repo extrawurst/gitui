@@ -7,6 +7,7 @@ pub static TAB_DIVIDER: &str = "  |  ";
 
 pub static CMD_SPLITTER: &str = " ";
 
+pub static MSG_TITLE: &str = "Info";
 pub static COMMIT_TITLE: &str = "Commit";
 pub static COMMIT_MSG: &str = "type commit message..";
 pub static RESET_TITLE: &str = "Reset";
@@ -52,6 +53,13 @@ pub mod commands {
         "close overlay (e.g commit, help)",
         CMD_GROUP_GENERAL,
     );
+    ///
+    pub static CLOSE_MSG: CommandText = CommandText::new(
+        "Close [enter]",
+        "close msg popup (e.g msg)",
+        CMD_GROUP_GENERAL,
+    )
+    .hide_help();
     ///
     pub static COMMIT_OPEN: CommandText = CommandText::new(
         "Commit [c]",

@@ -126,7 +126,10 @@ impl Component for HelpComponent {
 impl HelpComponent {
     ///
     pub fn set_cmds(&mut self, cmds: Vec<CommandInfo>) {
-        self.cmds = cmds;
+        self.cmds = cmds
+            .into_iter()
+            .filter(|e| !e.text.hide_help)
+            .collect::<Vec<_>>();
         self.cmds.sort_by_key(|e| e.text);
         self.cmds.dedup_by_key(|e| e.text);
         self.cmds.sort_by_key(|e| hash(&e.text.group));

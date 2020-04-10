@@ -16,6 +16,7 @@ pub const STATUS_STAGE_FILE: KeyEvent = no_mod(KeyCode::Enter);
 pub const EXIT_1: KeyEvent = no_mod(KeyCode::Esc);
 pub const EXIT_POPUP: KeyEvent = no_mod(KeyCode::Esc);
 pub const EXIT_2: KeyEvent = no_mod(KeyCode::Char('q'));
+pub const CLOSE_MSG: KeyEvent = no_mod(KeyCode::Enter);
 pub const OPEN_COMMIT: KeyEvent = no_mod(KeyCode::Char('c'));
 pub const OPEN_HELP: KeyEvent = no_mod(KeyCode::Char('h'));
 pub const MOVE_UP: KeyEvent = no_mod(KeyCode::Up);

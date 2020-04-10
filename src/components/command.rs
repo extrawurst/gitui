@@ -7,15 +7,29 @@ pub struct CommandText {
     pub desc: &'static str,
     ///
     pub group: &'static str,
+    ///
+    pub hide_help: bool,
 }
 
 impl CommandText {
+    ///
     pub const fn new(
         name: &'static str,
         desc: &'static str,
         group: &'static str,
     ) -> Self {
-        Self { name, desc, group }
+        Self {
+            name,
+            desc,
+            group,
+            hide_help: false,
+        }
+    }
+    ///
+    pub const fn hide_help(self) -> Self {
+        let mut tmp = self;
+        tmp.hide_help = true;
+        tmp
     }
 }
 

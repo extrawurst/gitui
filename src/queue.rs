@@ -8,6 +8,8 @@ pub enum InternalEvent {
     ResetFile(String),
     ///
     AddHunk(u64),
+    ///
+    ShowMsg(String),
 }
 
 ///

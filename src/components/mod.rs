@@ -6,12 +6,14 @@ mod command;
 mod commit;
 mod diff;
 mod help;
+mod msg;
 mod reset;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
 pub use diff::DiffComponent;
 pub use help::HelpComponent;
+pub use msg::MsgComponent;
 pub use reset::ResetComponent;
 
 ///

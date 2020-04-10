@@ -2,7 +2,7 @@ use crate::{
     components::{
         ChangesComponent, CommandBlocking, CommandInfo,
         CommitComponent, Component, DiffComponent, DrawableComponent,
-        EventUpdate, HelpComponent, ResetComponent,
+        EventUpdate, HelpComponent, MsgComponent, ResetComponent,
     },
     keys,
     queue::{InternalEvent, Queue},
@@ -52,6 +52,7 @@ pub struct App {
     index: ChangesComponent,
     index_wd: ChangesComponent,
     diff: DiffComponent,
+    msg: MsgComponent,
     git_diff: AsyncDiff,
     git_status: AsyncStatus,
     current_commands: Vec<CommandInfo>,
@@ -68,7 +69,7 @@ impl App {
             diff_target: DiffTarget::WorkingDir,
             do_quit: false,
             reset: ResetComponent::new(queue.clone()),
-            commit: CommitComponent::default(),
+            commit: CommitComponent::new(queue.clone()),
             help: HelpComponent::default(),
             index_wd: ChangesComponent::new(
                 strings::TITLE_STATUS,
@@ -83,6 +84,7 @@ impl App {
                 queue.clone(),
             ),
             diff: DiffComponent::new(queue.clone()),
+            msg: MsgComponent::default(),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status: AsyncStatus::new(sender),
             current_commands: Vec::new(),
@@ -152,8 +154,9 @@ impl App {
         );
 
         self.commit.draw(f, f.size());
-        self.help.draw(f, f.size());
         self.reset.draw(f, f.size());
+        self.help.draw(f, f.size());
+        self.msg.draw(f, f.size());
     }
 
     ///
@@ -302,6 +305,10 @@ impl App {
                     }
                 }
             }
+            InternalEvent::ShowMsg(msg) => {
+                self.msg.show_msg(msg);
+                self.update();
+            }
         };
     }
 
@@ -317,9 +324,11 @@ impl App {
             }
         }
 
+        //TODO: use a new popups_list call for this
         let main_cmds_available = !self.commit.is_visible()
             && !self.help.is_visible()
-            && !self.reset.is_visible();
+            && !self.reset.is_visible()
+            && !self.msg.is_visible();
 
         {
             {
@@ -375,6 +384,7 @@ impl App {
 
     fn components(&self) -> Vec<&dyn Component> {
         vec![
+            &self.msg,
             &self.reset,
             &self.commit,
             &self.help,
@@ -386,6 +396,7 @@ impl App {
 
     fn components_mut(&mut self) -> Vec<&mut dyn Component> {
         vec![
+            &mut self.msg,
             &mut self.reset,
             &mut self.commit,
             &mut self.help,

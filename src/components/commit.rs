@@ -2,7 +2,11 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent, EventUpdate,
 };
-use crate::{keys, strings, ui};
+use crate::{
+    keys,
+    queue::{InternalEvent, Queue},
+    strings, ui,
+};
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
 use log::error;
@@ -17,11 +21,11 @@ use tui::{
     Frame,
 };
 
-#[derive(Default)]
 pub struct CommitComponent {
     msg: String,
     visible: bool,
     stage_empty: bool,
+    queue: Queue,
 }
 
 impl DrawableComponent for CommitComponent {
@@ -122,17 +126,39 @@ impl Component for CommitComponent {
 }
 
 impl CommitComponent {
+    ///
+    pub fn new(queue: Queue) -> Self {
+        Self {
+            queue,
+            msg: String::default(),
+            stage_empty: true,
+            visible: false,
+        }
+    }
+
     fn commit(&mut self) {
         if let HookResult::NotOk(e) =
             sync::hooks_commit_msg(CWD, &mut self.msg)
         {
             error!("commit-msg hook error: {}", e);
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ShowMsg(format!(
+                    "commit-msg hook error:\n{}",
+                    e
+                )),
+            );
             return;
         }
 
         sync::commit(CWD, &self.msg);
         if let HookResult::NotOk(e) = sync::hooks_post_commit(CWD) {
             error!("post-commit hook error: {}", e);
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ShowMsg(format!(
+                    "post-commit hook error:\n{}",
+                    e
+                )),
+            );
         }
 
         self.msg.clear();

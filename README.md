@@ -56,7 +56,6 @@ GITUI_LOGGING=true gitui
 
 # todo for 0.2 (first release)
 
-* [ ] visualize commit-msg hook result
 * [ ] publish as homebrew-tap
 
 # inspiration
