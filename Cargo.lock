@@ -308,7 +308,7 @@ dependencies = [
 
 [[package]]
 name = "gitui"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "asyncgit",
  "backtrace",
