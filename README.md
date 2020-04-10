@@ -27,7 +27,7 @@ blazing fast terminal-ui for git written in rust
 
 # known limitations
 
-* hooks don't work on windows
+* hooks don't work on windows (see #14)
 * [core.hooksPath](https://git-scm.com/docs/githooks) config not supported
 * revert/reset hunk in working dir
 
