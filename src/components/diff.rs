@@ -222,12 +222,8 @@ impl DiffComponent {
             .fg(Color::Green)
             .bg(if selected { select_color } else { Color::Reset });
         let style_header = Style::default()
-            .fg(Color::Rgb(0, 0, 0))
-            .bg(if selected {
-                select_color
-            } else {
-                Color::DarkGray
-            })
+            .fg(Color::White)
+            .bg(if selected { select_color } else { Color::Reset })
             .modifier(Modifier::BOLD);
 
         let filled = if selected {
