@@ -32,7 +32,7 @@ pub enum AsyncNotification {
     Diff,
 }
 
-///
+/// current working director `./`
 pub static CWD: &str = "./";
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait
