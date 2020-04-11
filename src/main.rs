@@ -33,7 +33,10 @@ use std::{
     io, panic,
     time::{Duration, Instant},
 };
-use tui::{backend::CrosstermBackend, Terminal};
+use tui::{
+    backend::{Backend, CrosstermBackend},
+    Terminal,
+};
 
 static TICK_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -65,6 +68,7 @@ fn main() -> Result<()> {
     let ticker = tick(TICK_INTERVAL);
 
     app.update();
+    draw(&mut terminal, &mut app)?;
 
     loop {
         let events: Vec<QueueEvent> =
@@ -81,7 +85,7 @@ fn main() -> Result<()> {
                 }
             }
 
-            terminal.draw(|mut f| app.draw(&mut f))?;
+            draw(&mut terminal, &mut app)?;
 
             if app.is_quit() {
                 break;
@@ -90,6 +94,13 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn draw<B: Backend>(
+    terminal: &mut Terminal<B>,
+    app: &mut App,
+) -> io::Result<()> {
+    terminal.draw(|mut f| app.draw(&mut f))
 }
 
 fn invalid_path() -> bool {
