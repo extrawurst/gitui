@@ -322,10 +322,7 @@ impl App {
         }
 
         //TODO: use a new popups_list call for this
-        let main_cmds_available = !self.commit.is_visible()
-            && !self.help.is_visible()
-            && !self.reset.is_visible()
-            && !self.msg.is_visible();
+        let main_cmds_available = !self.any_popup_visible();
 
         {
             {
@@ -414,6 +411,13 @@ impl App {
         }
 
         None
+    }
+
+    fn any_popup_visible(&self) -> bool {
+        self.commit.is_visible()
+            || self.help.is_visible()
+            || self.reset.is_visible()
+            || self.msg.is_visible()
     }
 
     fn draw_popups<B: Backend>(&self, f: &mut Frame<B>) {
