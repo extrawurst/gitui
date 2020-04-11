@@ -153,10 +153,7 @@ impl App {
             self.current_commands.as_slice(),
         );
 
-        self.commit.draw(f, f.size());
-        self.reset.draw(f, f.size());
-        self.help.draw(f, f.size());
-        self.msg.draw(f, f.size());
+        self.draw_popups(f);
     }
 
     ///
@@ -417,6 +414,15 @@ impl App {
         }
 
         None
+    }
+
+    fn draw_popups<B: Backend>(&self, f: &mut Frame<B>) {
+        let size = f.size();
+
+        self.commit.draw(f, size);
+        self.reset.draw(f, size);
+        self.help.draw(f, size);
+        self.msg.draw(f, size);
     }
 
     fn draw_commands<B: Backend>(
