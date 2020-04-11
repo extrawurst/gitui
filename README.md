@@ -13,7 +13,7 @@
 
 blazing fast terminal-ui for git written in rust
 
-![img](assets/demo.gif)
+![](assets/demo.gif)
 
 # features
 
