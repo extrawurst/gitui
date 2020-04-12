@@ -489,7 +489,9 @@ impl App {
     }
 
     fn switch_focus(&mut self, f: Focus) -> NeedsUpdate {
-        if self.focus != f {
+        if self.focus == f {
+            NeedsUpdate::empty()
+        } else {
             self.focus = f;
 
             match self.focus {
@@ -510,8 +512,6 @@ impl App {
             };
 
             NeedsUpdate::DIFF | NeedsUpdate::COMMANDS
-        } else {
-            NeedsUpdate::empty()
         }
     }
 
