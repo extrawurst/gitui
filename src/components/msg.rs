@@ -1,6 +1,6 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, EventUpdate,
+    DrawableComponent,
 };
 use crate::{keys, strings, ui};
 use crossterm::event::Event;
@@ -54,7 +54,7 @@ impl Component for MsgComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
+    fn event(&mut self, ev: Event) -> bool {
         if self.visible {
             if let Event::Key(e) = ev {
                 if let keys::CLOSE_MSG = e {
@@ -62,9 +62,9 @@ impl Component for MsgComponent {
                 }
             }
 
-            Some(EventUpdate::Commands)
+            true
         } else {
-            None
+            false
         }
     }
 

@@ -1,8 +1,8 @@
-use super::{CommandBlocking, DrawableComponent, EventUpdate};
+use super::{CommandBlocking, DrawableComponent};
 use crate::{
     components::{CommandInfo, Component},
     keys,
-    queue::{InternalEvent, Queue},
+    queue::{InternalEvent, NeedsUpdate, Queue},
     strings, ui,
 };
 use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
@@ -86,7 +86,7 @@ impl ChangesComponent {
         self.items.is_empty()
     }
 
-    fn move_selection(&mut self, delta: i32) {
+    fn move_selection(&mut self, delta: i32) -> bool {
         let items_len = self.items.len();
         if items_len > 0 {
             if let Some(i) = self.selection {
@@ -97,11 +97,18 @@ impl ChangesComponent {
 
                         if let Ok(i) = usize::try_from(i) {
                             self.selection = Some(i);
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::Update(
+                                    NeedsUpdate::DIFF,
+                                ),
+                            );
+                            return true;
                         }
                     }
                 }
             }
         }
+        false
     }
 
     fn index_add_remove(&mut self) -> bool {
@@ -210,40 +217,32 @@ impl Component for ChangesComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
+    fn event(&mut self, ev: Event) -> bool {
         if self.focused {
             if let Event::Key(e) = ev {
                 return match e {
                     keys::STATUS_STAGE_FILE => {
                         if self.index_add_remove() {
-                            Some(EventUpdate::All)
-                        } else {
-                            Some(EventUpdate::None)
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::Update(
+                                    NeedsUpdate::ALL,
+                                ),
+                            );
                         }
+                        true
                     }
                     keys::STATUS_RESET_FILE => {
-                        if self.is_working_dir
+                        self.is_working_dir
                             && self.dispatch_reset_workdir()
-                        {
-                            Some(EventUpdate::None)
-                        } else {
-                            None
-                        }
                     }
-                    keys::MOVE_DOWN => {
-                        self.move_selection(1);
-                        Some(EventUpdate::Diff)
-                    }
-                    keys::MOVE_UP => {
-                        self.move_selection(-1);
-                        Some(EventUpdate::Diff)
-                    }
-                    _ => None,
+                    keys::MOVE_DOWN => self.move_selection(1),
+                    keys::MOVE_UP => self.move_selection(-1),
+                    _ => false,
                 };
             }
         }
 
-        None
+        false
     }
 
     fn focused(&self) -> bool {

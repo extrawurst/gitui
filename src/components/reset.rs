@@ -1,6 +1,6 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, EventUpdate,
+    DrawableComponent,
 };
 use crate::{
     queue::{InternalEvent, Queue},
@@ -18,6 +18,7 @@ use tui::{
     Frame,
 };
 
+///
 pub struct ResetComponent {
     path: String,
     visible: bool,
@@ -67,24 +68,24 @@ impl Component for ResetComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
+    fn event(&mut self, ev: Event) -> bool {
         if self.visible {
             if let Event::Key(e) = ev {
-                return Some(match e.code {
+                return match e.code {
                     KeyCode::Esc => {
                         self.hide();
-                        EventUpdate::Commands
+                        true
                     }
                     KeyCode::Enter => {
                         self.confirm();
-                        EventUpdate::None
+                        true
                     }
 
-                    _ => EventUpdate::None,
-                });
+                    _ => false,
+                };
             }
         }
-        None
+        false
     }
 
     fn is_visible(&self) -> bool {

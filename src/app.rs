@@ -2,11 +2,10 @@ use crate::{
     components::{
         ChangesComponent, CommandBlocking, CommandInfo,
         CommitComponent, Component, DiffComponent, DrawableComponent,
-        EventUpdate, HelpComponent, MsgComponent, NeedsUpdate,
-        ResetComponent,
+        HelpComponent, MsgComponent, ResetComponent,
     },
     keys,
-    queue::{InternalEvent, Queue},
+    queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
 };
 use asyncgit::{
@@ -163,17 +162,9 @@ impl App {
 
         let mut flags = NeedsUpdate::empty();
 
-        if let Some(e) =
-            Self::event_pump(ev, self.components_mut().as_mut_slice())
+        if Self::event_pump(ev, self.components_mut().as_mut_slice())
         {
-            match e {
-                EventUpdate::All => flags.insert(NeedsUpdate::ALL),
-                EventUpdate::Commands => {
-                    flags.insert(NeedsUpdate::COMMANDS)
-                }
-                EventUpdate::Diff => flags.insert(NeedsUpdate::DIFF),
-                _ => (),
-            }
+            flags.insert(NeedsUpdate::COMMANDS);
         } else if let Event::Key(k) = ev {
             let new_flags = match k {
                 keys::EXIT_1 | keys::EXIT_2 => {
@@ -202,12 +193,12 @@ impl App {
 
         if flags.contains(NeedsUpdate::ALL) {
             self.update();
-        } else {
-            if flags.contains(NeedsUpdate::DIFF) {
-                self.update_diff();
-            } else if flags.contains(NeedsUpdate::COMMANDS) {
-                self.update_commands();
-            }
+        }
+        if flags.contains(NeedsUpdate::DIFF) {
+            self.update_diff();
+        }
+        if flags.contains(NeedsUpdate::COMMANDS) {
+            self.update_commands();
         }
     }
 
@@ -334,6 +325,7 @@ impl App {
                 self.msg.show_msg(msg);
                 flags.insert(NeedsUpdate::ALL);
             }
+            InternalEvent::Update(u) => flags.insert(*u),
         };
 
         flags
@@ -432,14 +424,14 @@ impl App {
     fn event_pump(
         ev: Event,
         components: &mut [&mut dyn Component],
-    ) -> Option<EventUpdate> {
+    ) -> bool {
         for c in components {
-            if let Some(u) = c.event(ev) {
-                return Some(u);
+            if c.event(ev) {
+                return true;
             }
         }
 
-        None
+        false
     }
 
     fn any_popup_visible(&self) -> bool {

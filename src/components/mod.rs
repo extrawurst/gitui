@@ -8,7 +8,6 @@ mod diff;
 mod help;
 mod msg;
 mod reset;
-use bitflags::bitflags;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
@@ -16,26 +15,6 @@ pub use diff::DiffComponent;
 pub use help::HelpComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
-
-///
-pub enum EventUpdate {
-    None,
-    All,
-    Diff,
-    Commands,
-}
-
-bitflags! {
-    ///
-    pub struct NeedsUpdate: u32 {
-        ///
-        const ALL = 0b001;
-        ///
-        const DIFF = 0b010;
-        ///
-        const COMMANDS = 0b100;
-    }
-}
 
 ///
 #[derive(PartialEq)]
@@ -61,7 +40,7 @@ pub trait DrawableComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, rect: Rect);
 }
 
-///
+/// base component trait
 pub trait Component {
     ///
     fn commands(
@@ -69,8 +48,10 @@ pub trait Component {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking;
-    ///
-    fn event(&mut self, ev: Event) -> Option<EventUpdate>;
+
+    /// returns true if event propagation needs to end (event was consumed)
+    fn event(&mut self, ev: Event) -> bool;
+
     ///
     fn focused(&self) -> bool {
         false

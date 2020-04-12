@@ -1,6 +1,6 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, EventUpdate,
+    DrawableComponent,
 };
 use crate::{keys, strings, ui, version::Version};
 use asyncgit::hash;
@@ -111,7 +111,7 @@ impl Component for HelpComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
+    fn event(&mut self, ev: Event) -> bool {
         if self.visible {
             if let Event::Key(e) = ev {
                 match e {
@@ -122,12 +122,12 @@ impl Component for HelpComponent {
                 }
             }
 
-            Some(EventUpdate::Commands)
+            true
         } else if let Event::Key(keys::OPEN_HELP) = ev {
             self.show();
-            Some(EventUpdate::Commands)
+            true
         } else {
-            None
+            false
         }
     }
 

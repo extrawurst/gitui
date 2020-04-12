@@ -1,4 +1,4 @@
-use super::{CommandBlocking, DrawableComponent, EventUpdate};
+use super::{CommandBlocking, DrawableComponent};
 use crate::{
     components::{CommandInfo, Component},
     queue::{InternalEvent, Queue},
@@ -337,28 +337,28 @@ impl Component for DiffComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
+    fn event(&mut self, ev: Event) -> bool {
         if self.focused {
             if let Event::Key(e) = ev {
                 return match e.code {
                     KeyCode::Down => {
                         self.scroll(true);
-                        Some(EventUpdate::None)
+                        true
                     }
                     KeyCode::Up => {
                         self.scroll(false);
-                        Some(EventUpdate::None)
+                        true
                     }
                     KeyCode::Enter => {
                         self.add_hunk();
-                        Some(EventUpdate::None)
+                        true
                     }
-                    _ => None,
+                    _ => false,
                 };
             }
         }
 
-        None
+        false
     }
 
     fn focused(&self) -> bool {

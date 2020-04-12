@@ -1,10 +1,10 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, EventUpdate,
+    DrawableComponent,
 };
 use crate::{
     keys,
-    queue::{InternalEvent, Queue},
+    queue::{InternalEvent, NeedsUpdate, Queue},
     strings, ui,
 };
 use asyncgit::{sync, CWD};
@@ -78,38 +78,35 @@ impl Component for CommitComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Option<EventUpdate> {
+    fn event(&mut self, ev: Event) -> bool {
         if self.visible {
             if let Event::Key(e) = ev {
-                return Some(match e.code {
+                match e.code {
                     KeyCode::Esc => {
                         self.hide();
-                        EventUpdate::Commands
                     }
                     KeyCode::Char(c) => {
                         self.msg.push(c);
-                        EventUpdate::Commands
                     }
                     KeyCode::Enter if self.can_commit() => {
                         self.commit();
-                        EventUpdate::All
                     }
                     KeyCode::Backspace if !self.msg.is_empty() => {
                         self.msg.pop().unwrap();
-                        EventUpdate::Commands
                     }
-                    _ => EventUpdate::None,
-                });
+                    _ => (),
+                };
+                return true;
             }
         } else if let Event::Key(e) = ev {
             if let keys::OPEN_COMMIT = e {
                 if !self.stage_empty {
                     self.show();
-                    return Some(EventUpdate::All);
+                    return true;
                 }
             }
         }
-        None
+        false
     }
 
     fn is_visible(&self) -> bool {
@@ -162,8 +159,11 @@ impl CommitComponent {
         }
 
         self.msg.clear();
-
         self.hide();
+
+        self.queue
+            .borrow_mut()
+            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
     }
 
     fn can_commit(&self) -> bool {
