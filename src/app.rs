@@ -2,7 +2,8 @@ use crate::{
     components::{
         ChangesComponent, CommandBlocking, CommandInfo,
         CommitComponent, Component, DiffComponent, DrawableComponent,
-        EventUpdate, HelpComponent, MsgComponent, ResetComponent,
+        EventUpdate, HelpComponent, MsgComponent, NeedsUpdate,
+        ResetComponent,
     },
     keys,
     queue::{InternalEvent, Queue},
@@ -160,18 +161,25 @@ impl App {
     pub fn event(&mut self, ev: Event) {
         trace!("event: {:?}", ev);
 
+        let mut flags = NeedsUpdate::empty();
+
         if let Some(e) =
             Self::event_pump(ev, self.components_mut().as_mut_slice())
         {
             match e {
-                EventUpdate::All => self.update(),
-                EventUpdate::Commands => self.update_commands(),
-                EventUpdate::Diff => self.update_diff(),
+                EventUpdate::All => flags.insert(NeedsUpdate::ALL),
+                EventUpdate::Commands => {
+                    flags.insert(NeedsUpdate::COMMANDS)
+                }
+                EventUpdate::Diff => flags.insert(NeedsUpdate::DIFF),
                 _ => (),
             }
         } else if let Event::Key(k) = ev {
-            match k {
-                keys::EXIT_1 | keys::EXIT_2 => self.do_quit = true,
+            let new_flags = match k {
+                keys::EXIT_1 | keys::EXIT_2 => {
+                    self.do_quit = true;
+                    NeedsUpdate::empty()
+                }
                 keys::FOCUS_WORKDIR => {
                     self.switch_focus(Focus::WorkDir)
                 }
@@ -183,11 +191,24 @@ impl App {
                         DiffTarget::WorkingDir => Focus::WorkDir,
                     })
                 }
-                _ => (),
+                _ => NeedsUpdate::empty(),
             };
+
+            flags.insert(new_flags);
         }
 
-        self.process_queue();
+        let new_flags = self.process_queue();
+        flags.insert(new_flags);
+
+        if flags.contains(NeedsUpdate::ALL) {
+            self.update();
+        } else {
+            if flags.contains(NeedsUpdate::DIFF) {
+                self.update_diff();
+            } else if flags.contains(NeedsUpdate::COMMANDS) {
+                self.update_commands();
+            }
+        }
     }
 
     ///
@@ -268,45 +289,54 @@ impl App {
         self.update_commands();
     }
 
-    fn process_queue(&mut self) {
+    fn process_queue(&mut self) -> NeedsUpdate {
+        let mut flags = NeedsUpdate::empty();
         loop {
             let front = self.queue.borrow_mut().pop_front();
             if let Some(e) = front {
-                self.process_internal_event(&e);
+                flags.insert(self.process_internal_event(&e));
             } else {
                 break;
             }
         }
         self.queue.borrow_mut().clear();
+
+        flags
     }
 
-    fn process_internal_event(&mut self, ev: &InternalEvent) {
+    fn process_internal_event(
+        &mut self,
+        ev: &InternalEvent,
+    ) -> NeedsUpdate {
+        let mut flags = NeedsUpdate::empty();
         match ev {
             InternalEvent::ResetFile(p) => {
                 if sync::reset_workdir(CWD, Path::new(p.as_str())) {
-                    self.update();
+                    flags.insert(NeedsUpdate::ALL);
                 }
             }
             InternalEvent::ConfirmResetFile(p) => {
                 self.reset.open_for_path(p);
-                self.update_commands();
+                flags.insert(NeedsUpdate::COMMANDS);
             }
             InternalEvent::AddHunk(hash) => {
                 if let Some((path, is_stage)) = self.selected_path() {
                     if is_stage {
                         if sync::unstage_hunk(CWD, path, *hash) {
-                            self.update();
+                            flags.insert(NeedsUpdate::ALL);
                         }
                     } else if sync::stage_hunk(CWD, path, *hash) {
-                        self.update();
+                        flags.insert(NeedsUpdate::ALL);
                     }
                 }
             }
             InternalEvent::ShowMsg(msg) => {
                 self.msg.show_msg(msg);
-                self.update();
+                flags.insert(NeedsUpdate::ALL);
             }
         };
+
+        flags
     }
 
     fn commands(&self, force_all: bool) -> Vec<CommandInfo> {
@@ -466,7 +496,7 @@ impl App {
             .render(f, r);
     }
 
-    fn switch_focus(&mut self, f: Focus) {
+    fn switch_focus(&mut self, f: Focus) -> NeedsUpdate {
         if self.focus != f {
             self.focus = f;
 
@@ -487,8 +517,9 @@ impl App {
                 }
             };
 
-            self.update_diff();
-            self.update_commands();
+            NeedsUpdate::DIFF | NeedsUpdate::COMMANDS
+        } else {
+            NeedsUpdate::empty()
         }
     }
 

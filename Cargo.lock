@@ -312,6 +312,7 @@ version = "0.1.4"
 dependencies = [
  "asyncgit",
  "backtrace",
+ "bitflags",
  "crossbeam-channel",
  "crossterm 0.16.0",
  "dirs",
