@@ -10,6 +10,7 @@ mod poll;
 mod queue;
 mod strings;
 mod ui;
+mod version;
 
 use crate::{app::App, poll::QueueEvent};
 use asyncgit::AsyncNotification;

@@ -2,7 +2,7 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent, EventUpdate,
 };
-use crate::{keys, strings, ui};
+use crate::{keys, strings, ui, version::Version};
 use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -10,12 +10,13 @@ use std::{borrow::Cow, cmp, convert::TryFrom};
 use strings::commands;
 use tui::{
     backend::Backend,
-    layout::{Alignment, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Text, Widget},
     Frame,
 };
 
+///
 #[derive(Default)]
 pub struct HelpComponent {
     cmds: Vec<CommandInfo>,
@@ -37,20 +38,40 @@ impl DrawableComponent for HelpComponent {
                 0
             };
 
+            let area =
+                ui::centered_rect_absolute(65, height, f.size());
+
             ui::Clear::new(
-                Paragraph::new(txt.iter())
-                    .block(
-                        Block::default()
-                            .title(strings::HELP_TITLE)
-                            .borders(Borders::ALL),
-                    )
-                    .scroll(scroll)
-                    .alignment(Alignment::Left),
+                Block::default()
+                    .title(strings::HELP_TITLE)
+                    .borders(Borders::ALL),
             )
-            .render(
-                f,
-                ui::centered_rect_absolute(65, height, f.size()),
-            );
+            .render(f, area);
+
+            let chunks = Layout::default()
+                .vertical_margin(1)
+                .horizontal_margin(1)
+                .direction(Direction::Vertical)
+                .constraints(
+                    [Constraint::Min(1), Constraint::Length(1)]
+                        .as_ref(),
+                )
+                .split(area);
+
+            Paragraph::new(txt.iter())
+                .scroll(scroll)
+                .alignment(Alignment::Left)
+                .render(f, chunks[0]);
+
+            Paragraph::new(
+                vec![Text::Raw(Cow::from(format!(
+                    "gitui {}",
+                    Version::new(),
+                )))]
+                .iter(),
+            )
+            .alignment(Alignment::Right)
+            .render(f, chunks[1]);
         }
     }
 }
