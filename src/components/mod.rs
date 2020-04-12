@@ -42,10 +42,12 @@ pub fn visibility_blocking<T: Component>(
     }
 }
 
+///
 pub trait DrawableComponent {
     ///
     fn draw<B: Backend>(&self, f: &mut Frame<B>, rect: Rect);
 }
+
 ///
 pub trait Component {
     ///
