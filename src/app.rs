@@ -321,7 +321,6 @@ impl App {
             }
         }
 
-        //TODO: use a new popups_list call for this
         let main_cmds_available = !self.any_popup_visible();
 
         {
