@@ -1,6 +1,6 @@
 use std::{env, fmt};
 
-///
+/// version type
 #[derive(Default)]
 pub struct Version {
     major: u32,
