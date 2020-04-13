@@ -1,0 +1,58 @@
+name: CD
+
+on:
+  push:
+    branches: [ '*' ]
+  # push:
+  #  tags:
+  #    - '*'
+
+jobs:
+  release-osx:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    # - name: Build
+    #   run: cargo build
+    # - name: Run tests
+    #   run: make test
+    # - name: Run clippy
+    #   run: make clippy
+    - name: Build Release
+      run: make build-release
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: true
+
+    - name: Set SHA
+      id: shasum
+      run: |
+        echo ::set-output name=sha::"$(shasum -a 256 ./target/gitui-mac.tar.gz | awk '{printf $1}')"
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+        asset_path: ./target/gitui-mac.tar.gz
+        asset_name: gitui-mac.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Bump Brew
+      env: 
+        HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.BREW_TOKEN }}
+      run: |
+        brew tap extrawurst/tap
+        brew bump-formula-pr -f --version=v0.2.0 --no-browse --no-audit \
+        --sha256=${{ steps.shasum.outputs.sha }} \
+        --url="https://github.com/extrawurst/gitui/releases/download/refs%2Fheads%2Fcd-pipeline/gitui-mac.tar.gz" \
+        extrawurst/tap/gitui
