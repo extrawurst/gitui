@@ -34,7 +34,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        release_name: ${{ github.ref }}
         draft: false
         prerelease: true
 
@@ -55,5 +55,5 @@ jobs:
         brew tap extrawurst/tap
         brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
         --sha256=${{ steps.shasum.outputs.sha }} \
-        --url="https://github.com/extrawurst/gitui/releases/download/${{ github.ref }}/gitui-mac.tar.gz" \
+        --url="https://github.com/extrawurst/gitui/releases/download/${{ steps.get_version.outputs.version }}/gitui-mac.tar.gz" \
         extrawurst/tap/gitui
