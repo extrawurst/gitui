@@ -2,22 +2,20 @@ name: CD
 
 on:
   push:
-    branches: [ '*' ]
-  # push:
-  #  tags:
-  #    - '*'
+   tags:
+     - '*'
 
 jobs:
   release-osx:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
-    # - name: Build
-    #   run: cargo build
-    # - name: Run tests
-    #   run: make test
-    # - name: Run clippy
-    #   run: make clippy
+    - name: Build
+      run: cargo build
+    - name: Run tests
+      run: make test
+    - name: Run clippy
+      run: make clippy
     - name: Build Release
       run: make build-release
 
@@ -52,7 +50,7 @@ jobs:
         HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.BREW_TOKEN }}
       run: |
         brew tap extrawurst/tap
-        brew bump-formula-pr -f --version=v0.2.0 --no-browse --no-audit \
+        brew bump-formula-pr -f --version=${{ github.ref }} --no-browse --no-audit \
         --sha256=${{ steps.shasum.outputs.sha }} \
-        --url="https://github.com/extrawurst/gitui/releases/download/refs%2Fheads%2Fcd-pipeline/gitui-mac.tar.gz" \
+        --url="https://github.com/extrawurst/gitui/releases/download/${{ github.ref }}/gitui-mac.tar.gz" \
         extrawurst/tap/gitui
