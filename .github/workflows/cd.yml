@@ -10,6 +10,9 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Get version
+      id: get_version
+      run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
     - name: Build
       run: cargo build
     - name: Run tests
@@ -50,7 +53,7 @@ jobs:
         HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.BREW_TOKEN }}
       run: |
         brew tap extrawurst/tap
-        brew bump-formula-pr -f --version=${{ github.ref }} --no-browse --no-audit \
+        brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
         --sha256=${{ steps.shasum.outputs.sha }} \
         --url="https://github.com/extrawurst/gitui/releases/download/${{ github.ref }}/gitui-mac.tar.gz" \
         extrawurst/tap/gitui
