@@ -19,6 +19,11 @@ jobs:
     - name: Build Release
       run: make build-release
 
+    - name: Set SHA
+      id: shasum
+      run: |
+        echo ::set-output name=sha::"$(shasum -a 256 ./target/gitui-mac.tar.gz | awk '{printf $1}')"
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -29,11 +34,6 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: true
-
-    - name: Set SHA
-      id: shasum
-      run: |
-        echo ::set-output name=sha::"$(shasum -a 256 ./target/gitui-mac.tar.gz | awk '{printf $1}')"
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
