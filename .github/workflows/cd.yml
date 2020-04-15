@@ -38,10 +38,10 @@ jobs:
         echo ::set-output name=sha::"$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')"
 
     - name: Release
-      id: create_release
       uses: softprops/action-gh-release@v1
       with:
         #body: 'changelog '
+        prerelease: true
         files: |
           ./release/*.tar.gz
       env:
