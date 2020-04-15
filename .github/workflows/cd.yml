@@ -37,38 +37,15 @@ jobs:
       run: |
         echo ::set-output name=sha::"$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')"
 
-    - name: Create Release
+    - name: Release
       id: create_release
-      uses: actions/create-release@v1
+      uses: softprops/action-gh-release@v1
+      with:
+        #body: 'changelog '
+        files: |
+          ./release/*.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: ${{ github.ref }}
-        draft: false
-        prerelease: true
-
-    - name: Upload Release Asset
-      if: matrix.os == 'macos-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} 
-        asset_path: ./release/gitui-mac.tar.gz
-        asset_name: gitui-mac.tar.gz
-        asset_content_type: application/gzip
-    
-    - name: Upload Release Asset
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} 
-        asset_path: ./release/gitui-linux.tar.gz
-        asset_name: gitui-linux.tar.gz
-        asset_content_type: application/gzip
 
     - name: Bump Brew
       if: matrix.os == 'macos-latest'
