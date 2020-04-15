@@ -13,17 +13,20 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable]
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
-    - name: Build
+    - name: Build Debug
       run: cargo build
     - name: Run tests
       run: make test
     - name: Run clippy
       run: make clippy
+    - name: Build Release
+      run: make build-release
     - name: Security audit
       uses: actions-rs/audit-check@v1
       with:

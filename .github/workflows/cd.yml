@@ -6,8 +6,12 @@ on:
      - '*'
 
 jobs:
-  release-osx:
-    runs-on: macos-latest
+  release:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [stable]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
     - name: Get version
@@ -19,13 +23,19 @@ jobs:
       run: make test
     - name: Run clippy
       run: make clippy
-    - name: Build Release
-      run: make build-release
+      
+    - name: Build Release Mac
+      if: matrix.os == 'macos-latest'
+      run: make release-mac
+    - name: Build Release Linux
+      if: matrix.os == 'ubuntu-latest'
+      run: make release-linux
 
     - name: Set SHA
+      if: matrix.os == 'macos-latest'
       id: shasum
       run: |
-        echo ::set-output name=sha::"$(shasum -a 256 ./target/gitui-mac.tar.gz | awk '{printf $1}')"
+        echo ::set-output name=sha::"$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')"
 
     - name: Create Release
       id: create_release
@@ -39,16 +49,29 @@ jobs:
         prerelease: true
 
     - name: Upload Release Asset
+      if: matrix.os == 'macos-latest'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: ./target/gitui-mac.tar.gz
+        upload_url: ${{ steps.create_release.outputs.upload_url }} 
+        asset_path: ./release/gitui-mac.tar.gz
         asset_name: gitui-mac.tar.gz
+        asset_content_type: application/gzip
+    
+    - name: Upload Release Asset
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} 
+        asset_path: ./release/gitui-linux.tar.gz
+        asset_name: gitui-linux.tar.gz
         asset_content_type: application/gzip
 
     - name: Bump Brew
+      if: matrix.os == 'macos-latest'
       env: 
         HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.BREW_TOKEN }}
       run: |

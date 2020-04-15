@@ -6,11 +6,16 @@ debug:
 
 build-release:
 	cargo build --release
+
+release-mac: build-release
 	strip target/release/gitui
-	ls -lisah target/release/gitui
-	tar -C ./target/release/ -czvf ./target/gitui-mac.tar.gz ./gitui
-	ls -lisah ./target/gitui-mac.tar.gz
-	shasum -a 256 ./target/gitui-mac.tar.gz | awk '{printf $1}'
+	mkdir -p release
+	tar -C ./target/release/ -czvf ./release/gitui-mac.tar.gz ./gitui
+
+release-linux: build-release
+	strip target/release/gitui
+	mkdir -p release
+	tar -C ./target/release/ -czvf ./release/gitui-linux.tar.gz ./gitui
 
 test:
 	cargo test --workspace
