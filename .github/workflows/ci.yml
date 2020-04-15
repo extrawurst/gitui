@@ -27,10 +27,6 @@ jobs:
       run: make clippy
     - name: Build Release
       run: make build-release
-    - name: Security audit
-      uses: actions-rs/audit-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
 
   rustfmt:
     name: Rustfmt
@@ -40,3 +36,12 @@ jobs:
     - name: Install Rust
       run: rustup update stable && rustup default stable && rustup component add rustfmt
     - run: cargo fmt -- --check
+
+  sec:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/audit-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
