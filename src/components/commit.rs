@@ -17,7 +17,7 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
     style::{Color, Style},
-    widgets::{Block, Borders, Paragraph, Text, Widget},
+    widgets::{Block, Borders, Paragraph, Text},
     Frame,
 };
 
@@ -40,16 +40,18 @@ impl DrawableComponent for CommitComponent {
                 [Text::Raw(Cow::from(self.msg.clone()))]
             };
 
-            ui::Clear::new(
-                Paragraph::new(txt.iter())
-                    .block(
-                        Block::default()
-                            .title(strings::COMMIT_TITLE)
-                            .borders(Borders::ALL),
-                    )
-                    .alignment(Alignment::Left),
-            )
-            .render(f, ui::centered_rect(60, 20, f.size()));
+            f.render_widget(
+                ui::Clear::new(
+                    Paragraph::new(txt.iter())
+                        .block(
+                            Block::default()
+                                .title(strings::COMMIT_TITLE)
+                                .borders(Borders::ALL),
+                        )
+                        .alignment(Alignment::Left),
+                ),
+                ui::centered_rect(60, 20, f.size()),
+            );
         }
     }
 }

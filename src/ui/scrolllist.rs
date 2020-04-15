@@ -53,9 +53,9 @@ impl<'b, L> Widget for ScrollableList<'b, L>
 where
     L: Iterator<Item = Text<'b>>,
 {
-    fn draw(&mut self, area: Rect, buf: &mut Buffer) {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let list_area = match self.block {
-            Some(ref mut b) => b.inner(area),
+            Some(b) => b.inner(area),
             None => area,
         };
 
@@ -68,9 +68,9 @@ where
         };
 
         // Render items
-        List::new(self.items.by_ref().skip(offset as usize))
+        List::new(self.items.skip(offset as usize))
             .block(self.block.unwrap_or_default())
             .style(self.style)
-            .draw(area, buf);
+            .render(area, buf);
     }
 }

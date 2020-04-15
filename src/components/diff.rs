@@ -13,7 +13,7 @@ use tui::{
     layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
     symbols,
-    widgets::{Block, Borders, Paragraph, Text, Widget},
+    widgets::{Block, Borders, Paragraph, Text},
     Frame,
 };
 
@@ -297,16 +297,18 @@ impl DrawableComponent for DiffComponent {
             style_title = style_title.modifier(Modifier::BOLD);
         }
 
-        Paragraph::new(self.get_text(r.width, r.height).iter())
-            .block(
-                Block::default()
-                    .title(strings::TITLE_DIFF)
-                    .borders(Borders::ALL)
-                    .border_style(style_border)
-                    .title_style(style_title),
-            )
-            .alignment(Alignment::Left)
-            .render(f, r);
+        f.render_widget(
+            Paragraph::new(self.get_text(r.width, r.height).iter())
+                .block(
+                    Block::default()
+                        .title(strings::TITLE_DIFF)
+                        .borders(Borders::ALL)
+                        .border_style(style_border)
+                        .title_style(style_title),
+                )
+                .alignment(Alignment::Left),
+            r,
+        );
     }
 }
 

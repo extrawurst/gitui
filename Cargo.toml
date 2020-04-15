@@ -18,8 +18,8 @@ keywords = [
 ]
 
 [dependencies]
-crossterm = "0.16"
-tui = { version = "0.8", default-features=false, features = ['crossterm'] }
+crossterm = "0.17"
+tui = { version = "0.9", default-features=false, features = ['crossterm'] }
 itertools = "0.9"
 rayon-core = "1.7"
 log = "0.4"

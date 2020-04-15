@@ -22,7 +22,7 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, Borders, Paragraph, Tabs, Text, Widget},
+    widgets::{Block, Borders, Paragraph, Tabs, Text},
     Frame,
 };
 
@@ -106,13 +106,15 @@ impl App {
             )
             .split(f.size());
 
-        Tabs::default()
-            .block(Block::default().borders(Borders::BOTTOM))
-            .titles(&[strings::TAB_STATUS])
-            .style(Style::default().fg(Color::White))
-            .highlight_style(Style::default().fg(Color::Yellow))
-            .divider(strings::TAB_DIVIDER)
-            .render(f, chunks_main[0]);
+        f.render_widget(
+            Tabs::default()
+                .block(Block::default().borders(Borders::BOTTOM))
+                .titles(&[strings::TAB_STATUS])
+                .style(Style::default().fg(Color::White))
+                .highlight_style(Style::default().fg(Color::Yellow))
+                .divider(strings::TAB_DIVIDER),
+            chunks_main[0],
+        );
 
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -483,9 +485,14 @@ impl App {
             })
             .collect::<Vec<_>>();
 
-        Paragraph::new(texts.iter().intersperse(&splitter))
-            .alignment(Alignment::Left)
-            .render(f, r);
+        // let paragraph =
+        //     Paragraph::new(texts.iter().intersperse(&splitter))
+        //         .alignment(Alignment::Left);
+        f.render_widget(
+            Paragraph::new(texts.iter().intersperse(&splitter))
+                .alignment(Alignment::Left),
+            r,
+        );
     }
 
     fn switch_focus(&mut self, f: Focus) -> NeedsUpdate {

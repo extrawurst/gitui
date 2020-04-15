@@ -9,7 +9,7 @@ impl<T: Widget> Clear<T> {
 }
 
 impl<T: Widget> Widget for Clear<T> {
-    fn draw(&mut self, area: Rect, buf: &mut Buffer) {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         if area.width < 2 || area.height < 2 {
             return;
         }
@@ -20,6 +20,6 @@ impl<T: Widget> Widget for Clear<T> {
             }
         }
 
-        self.0.draw(area, buf);
+        self.0.render(area, buf);
     }
 }

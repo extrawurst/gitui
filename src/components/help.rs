@@ -12,7 +12,7 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, Borders, Paragraph, Text, Widget},
+    widgets::{Block, Borders, Paragraph, Text},
     Frame,
 };
 
@@ -41,12 +41,14 @@ impl DrawableComponent for HelpComponent {
             let area =
                 ui::centered_rect_absolute(65, height, f.size());
 
-            ui::Clear::new(
-                Block::default()
-                    .title(strings::HELP_TITLE)
-                    .borders(Borders::ALL),
-            )
-            .render(f, area);
+            f.render_widget(
+                ui::Clear::new(
+                    Block::default()
+                        .title(strings::HELP_TITLE)
+                        .borders(Borders::ALL),
+                ),
+                area,
+            );
 
             let chunks = Layout::default()
                 .vertical_margin(1)
@@ -58,20 +60,24 @@ impl DrawableComponent for HelpComponent {
                 )
                 .split(area);
 
-            Paragraph::new(txt.iter())
-                .scroll(scroll)
-                .alignment(Alignment::Left)
-                .render(f, chunks[0]);
+            f.render_widget(
+                Paragraph::new(txt.iter())
+                    .scroll(scroll)
+                    .alignment(Alignment::Left),
+                chunks[0],
+            );
 
-            Paragraph::new(
-                vec![Text::Raw(Cow::from(format!(
-                    "gitui {}",
-                    Version::new(),
-                )))]
-                .iter(),
-            )
-            .alignment(Alignment::Right)
-            .render(f, chunks[1]);
+            f.render_widget(
+                Paragraph::new(
+                    vec![Text::Raw(Cow::from(format!(
+                        "gitui {}",
+                        Version::new(),
+                    )))]
+                    .iter(),
+                )
+                .alignment(Alignment::Right),
+                chunks[1],
+            );
         }
     }
 }

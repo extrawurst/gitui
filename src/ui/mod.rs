@@ -7,7 +7,7 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Text, Widget},
+    widgets::{Block, Borders, Text},
     Frame,
 };
 
@@ -72,7 +72,7 @@ pub fn draw_list<'b, B: Backend, L>(
         style_border = style_border.fg(Color::Gray);
         style_title = style_title.modifier(Modifier::BOLD);
     }
-    ScrollableList::new(items)
+    let list = ScrollableList::new(items)
         .block(
             Block::default()
                 .title(title)
@@ -81,6 +81,7 @@ pub fn draw_list<'b, B: Backend, L>(
                 .border_style(style_border),
         )
         .scroll(select.unwrap_or_default())
-        .style(Style::default().fg(Color::White))
-        .render(f, r);
+        .style(Style::default().fg(Color::White));
+    // .render(f, r);
+    f.render_widget(list, r)
 }
