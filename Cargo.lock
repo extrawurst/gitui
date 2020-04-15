@@ -188,12 +188,12 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.14.2"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5750773d74a7dc612eac2ded3f55e9cdeeaa072210cd17c0192aedb48adb3618"
+checksum = "b8a3223215bc00c666d6be730e88aef245ad4a4f837e87a16c347e8acf701643"
 dependencies = [
  "bitflags",
- "crossterm_winapi 0.5.1",
+ "crossterm_winapi",
  "lazy_static",
  "libc",
  "mio",
@@ -204,26 +204,17 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.16.0"
+version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8a3223215bc00c666d6be730e88aef245ad4a4f837e87a16c347e8acf701643"
+checksum = "ccdd8ef63a44e821956c6a276eca0faaa889d6a067dfcdbd5bfe85dce3a1d250"
 dependencies = [
  "bitflags",
- "crossterm_winapi 0.6.1",
+ "crossterm_winapi",
  "lazy_static",
  "libc",
  "mio",
  "parking_lot",
  "signal-hook",
- "winapi 0.3.8",
-]
-
-[[package]]
-name = "crossterm_winapi"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8777c700901e2d5b50c406f736ed6b8f9e43645c7e104ddb74f8bc42b8ae62f6"
-dependencies = [
  "winapi 0.3.8",
 ]
 
@@ -316,7 +307,7 @@ dependencies = [
  "crossbeam-channel",
  "crossterm 0.16.0",
  "dirs",
- "itertools 0.9.0",
+ "itertools",
  "log",
  "rayon-core",
  "scopeguard",
@@ -361,15 +352,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "302d553b8abc8187beb7d663e34c065ac4570b273bc9511a50e940e99409c577"
 dependencies = [
  "winapi 0.3.8",
-]
-
-[[package]]
-name = "itertools"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
-dependencies = [
- "either",
 ]
 
 [[package]]
@@ -804,16 +786,15 @@ dependencies = [
 
 [[package]]
 name = "tui"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b871b61f4c4b81e630215cd12e0ec29953d4545898e21a9e023b7520a74a9f9"
+checksum = "0a77b392f2666ec0335d2bb38dd80af792d64c2b2aa3c471db9e89335419d2fa"
 dependencies = [
  "bitflags",
  "cassowary",
- "crossterm 0.14.2",
+ "crossterm 0.17.3",
  "either",
- "itertools 0.8.2",
- "log",
+ "itertools",
  "unicode-segmentation",
  "unicode-width",
 ]
