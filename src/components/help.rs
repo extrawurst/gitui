@@ -12,7 +12,7 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, Borders, Paragraph, Text},
+    widgets::{Block, Borders, Clear, Paragraph, Text},
     Frame,
 };
 
@@ -41,12 +41,11 @@ impl DrawableComponent for HelpComponent {
             let area =
                 ui::centered_rect_absolute(65, height, f.size());
 
+            f.render_widget(Clear, area);
             f.render_widget(
-                ui::Clear::new(
-                    Block::default()
-                        .title(strings::HELP_TITLE)
-                        .borders(Borders::ALL),
-                ),
+                Block::default()
+                    .title(strings::HELP_TITLE)
+                    .borders(Borders::ALL),
                 area,
             );
 

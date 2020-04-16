@@ -9,7 +9,7 @@ use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, Borders, Paragraph, Text},
+    widgets::{Block, Borders, Clear, Paragraph, Text},
     Frame,
 };
 
@@ -24,18 +24,18 @@ impl DrawableComponent for MsgComponent {
         if self.visible {
             let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
 
+            let area = ui::centered_rect_absolute(65, 25, f.size());
+            f.render_widget(Clear, area);
             f.render_widget(
-                ui::Clear::new(
-                    Paragraph::new(txt.iter())
-                        .block(
-                            Block::default()
-                                .title(strings::MSG_TITLE)
-                                .borders(Borders::ALL),
-                        )
-                        .wrap(true)
-                        .alignment(Alignment::Left),
-                ),
-                ui::centered_rect_absolute(65, 25, f.size()),
+                Paragraph::new(txt.iter())
+                    .block(
+                        Block::default()
+                            .title(strings::MSG_TITLE)
+                            .borders(Borders::ALL),
+                    )
+                    .wrap(true)
+                    .alignment(Alignment::Left),
+                area,
             );
         }
     }

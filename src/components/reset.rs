@@ -14,7 +14,7 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
     style::{Color, Style},
-    widgets::{Block, Borders, Paragraph, Text},
+    widgets::{Block, Borders, Clear, Paragraph, Text},
     Frame,
 };
 
@@ -34,17 +34,17 @@ impl DrawableComponent for ResetComponent {
                 Style::default().fg(Color::Red),
             ));
 
+            let area = ui::centered_rect(30, 20, f.size());
+            f.render_widget(Clear, area);
             f.render_widget(
-                ui::Clear::new(
-                    Paragraph::new(txt.iter())
-                        .block(
-                            Block::default()
-                                .title(strings::RESET_TITLE)
-                                .borders(Borders::ALL),
-                        )
-                        .alignment(Alignment::Left),
-                ),
-                ui::centered_rect(30, 20, f.size()),
+                Paragraph::new(txt.iter())
+                    .block(
+                        Block::default()
+                            .title(strings::RESET_TITLE)
+                            .borders(Borders::ALL),
+                    )
+                    .alignment(Alignment::Left),
+                area,
             );
         }
     }

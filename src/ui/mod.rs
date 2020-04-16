@@ -1,7 +1,5 @@
-mod clear;
 mod scrolllist;
 
-pub use clear::Clear;
 use scrolllist::ScrollableList;
 use tui::{
     backend::Backend,
