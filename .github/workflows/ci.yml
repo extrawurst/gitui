@@ -28,6 +28,20 @@ jobs:
     - name: Build Release
       run: make build-release
 
+  build-linux-musl:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup MUSL
+      run: |
+        rustup target add x86_64-unknown-linux-musl
+        sudo apt-get -qq install musl-tools
+    - name: Build Debug
+      run: cargo build --target=x86_64-unknown-linux-musl
+    - name: Build Release
+      run: |
+        cargo build --release --target=x86_64-unknown-linux-musl
+
   rustfmt:
     name: Rustfmt
     runs-on: ubuntu-latest

@@ -23,13 +23,19 @@ jobs:
       run: make test
     - name: Run clippy
       run: make clippy
+
+    - name: Setup MUSL
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        rustup target add x86_64-unknown-linux-musl
+        sudo apt-get -qq install musl-tools
       
     - name: Build Release Mac
       if: matrix.os == 'macos-latest'
       run: make release-mac
     - name: Build Release Linux
       if: matrix.os == 'ubuntu-latest'
-      run: make release-linux
+      run: make release-linux-musl
 
     - name: Set SHA
       if: matrix.os == 'macos-latest'
@@ -44,6 +50,7 @@ jobs:
         prerelease: true
         files: |
           ./release/*.tar.gz
+          ./release/*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

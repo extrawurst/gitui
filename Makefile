@@ -1,5 +1,5 @@
 
-.PHONY: test
+.PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
 debug:
 	GITUI_LOGGING=true cargo run --features=timing
@@ -12,10 +12,11 @@ release-mac: build-release
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-mac.tar.gz ./gitui
 
-release-linux: build-release
-	strip target/release/gitui
+release-linux-musl: 
+	cargo build --release --target=x86_64-unknown-linux-musl
+	strip target/x86_64-unknown-linux-musl/release/gitui
 	mkdir -p release
-	tar -C ./target/release/ -czvf ./release/gitui-linux.tar.gz ./gitui
+	tar -C ./target/x86_64-unknown-linux-musl/release/ -czvf ./release/gitui-linux-musl.tar.gz ./gitui
 
 test:
 	cargo test --workspace
