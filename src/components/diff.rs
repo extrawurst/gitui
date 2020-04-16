@@ -226,19 +226,15 @@ impl DiffComponent {
             .bg(if selected { select_color } else { Color::Reset })
             .modifier(Modifier::BOLD);
 
+        let trimmed =
+            line.content.trim_matches(|c| c == '\n' || c == '\r');
+
         let filled = if selected {
             // selected line
-            format!(
-                "{:w$}\n",
-                line.content.trim_matches('\n'),
-                w = width as usize
-            )
-        } else if line.content.matches('\n').count() == 1 {
-            // regular line, no selection (cheapest)
-            line.content.clone()
+            format!("{:w$}\n", trimmed, w = width as usize)
         } else {
             // weird eof missing eol line
-            format!("{}\n", line.content.trim_matches('\n'))
+            format!("{}\n", trimmed)
         };
         //TODO: allow customize tabsize
         let content = Cow::from(filled.replace("\t", "  "));
@@ -369,5 +365,35 @@ impl Component for DiffComponent {
 
     fn focus(&mut self, focus: bool) {
         self.focused = focus
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lineendings() {
+        let mut text = Vec::new();
+
+        DiffComponent::add_line(
+            &mut text,
+            10,
+            &DiffLine {
+                content: String::from("line 1\r\n"),
+                line_type: DiffLineType::None,
+            },
+            false,
+            false,
+            false,
+        );
+
+        assert_eq!(text.len(), 2);
+
+        if let Text::Styled(c, _) = &text[1] {
+            assert_eq!(c, "line 1\n");
+        } else {
+            panic!("err")
+        }
     }
 }
