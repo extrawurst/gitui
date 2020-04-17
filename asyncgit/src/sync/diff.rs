@@ -9,16 +9,16 @@ use git2::{
 use scopetime::scope_time;
 use std::{fs, path::Path};
 
-///
+/// type of diff of a single line
 #[derive(Copy, Clone, PartialEq, Hash)]
 pub enum DiffLineType {
-    ///
+    /// just surrounding line, no change
     None,
-    ///
+    /// header of the hunk
     Header,
-    ///
+    /// line added
     Add,
-    ///
+    /// line deleted
     Delete,
 }
 
@@ -56,16 +56,16 @@ impl From<DiffHunk<'_>> for HunkHeader {
     }
 }
 
-///
+/// single diff hunk
 #[derive(Default, Clone, Hash)]
 pub struct Hunk {
-    ///
+    /// hash of the hunk header
     pub header_hash: u64,
-    ///
+    /// list of `DiffLine`s
     pub lines: Vec<DiffLine>,
 }
 
-///
+/// collection of hunks, sum of all diff lines
 #[derive(Default, Clone, Hash)]
 pub struct FileDiff {
     /// list of hunks
