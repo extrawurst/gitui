@@ -1,6 +1,6 @@
 //! sync git api (various methods)
 
-use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
+use git2::{Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -70,19 +70,7 @@ pub fn stage_add(repo_path: &str, path: &Path) -> bool {
 
     let mut index = repo.index().unwrap();
 
-    let cb = &mut |p: &Path, _matched_spec: &[u8]| -> i32 {
-        if p == path {
-            0
-        } else {
-            1
-        }
-    };
-    let cb = Some(cb as &mut git2::IndexMatchedPath);
-
-    let flags = IndexAddOption::DISABLE_PATHSPEC_MATCH
-        | IndexAddOption::CHECK_PATHSPEC;
-
-    if index.add_all(path, flags, cb).is_ok() {
+    if index.add_path(path).is_ok() {
         index.write().unwrap();
         return true;
     }
