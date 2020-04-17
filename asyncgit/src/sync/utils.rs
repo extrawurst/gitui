@@ -145,4 +145,43 @@ mod tests {
 
         commit(repo_path, "commit msg");
     }
+
+    #[test]
+    fn test_stage_add_smoke() {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert_eq!(stage_add(repo_path, file_path), false);
+    }
+
+    #[test]
+    fn test_staging_one_file() {
+        let file_path = Path::new("file1.txt");
+        let (_td, repo) = repo_init();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let status_count = |s: StatusType| -> usize {
+            get_status(repo_path, s).len()
+        };
+
+        File::create(&root.join(file_path))
+            .unwrap()
+            .write_all(b"test file1 content")
+            .unwrap();
+
+        File::create(&root.join(Path::new("file2.txt")))
+            .unwrap()
+            .write_all(b"test file2 content")
+            .unwrap();
+
+        assert_eq!(status_count(StatusType::WorkingDir), 2);
+
+        assert_eq!(stage_add(repo_path, file_path), true);
+
+        assert_eq!(status_count(StatusType::WorkingDir), 1);
+        assert_eq!(status_count(StatusType::Stage), 1);
+    }
 }
