@@ -61,12 +61,11 @@ impl AsyncStatus {
         rayon_core::spawn(move || {
             let res = Self::get_status();
             trace!("status fetched: {}", hash(&res));
-            let mut notify = false;
+
             {
                 let mut current = arc_current.lock().unwrap();
                 if current.0 == hash_request {
                     current.1 = Some(res.clone());
-                    notify = true;
                 }
             }
 
@@ -75,11 +74,9 @@ impl AsyncStatus {
                 *last = res;
             }
 
-            if notify {
-                sender
-                    .send(AsyncNotification::Status)
-                    .expect("error sending status");
-            }
+            sender
+                .send(AsyncNotification::Status)
+                .expect("error sending status");
         });
 
         None
