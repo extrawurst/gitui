@@ -485,9 +485,6 @@ impl App {
             })
             .collect::<Vec<_>>();
 
-        // let paragraph =
-        //     Paragraph::new(texts.iter().intersperse(&splitter))
-        //         .alignment(Alignment::Left);
         f.render_widget(
             Paragraph::new(texts.iter().intersperse(&splitter))
                 .alignment(Alignment::Left),
