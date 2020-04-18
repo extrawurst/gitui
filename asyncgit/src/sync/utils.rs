@@ -62,7 +62,7 @@ pub fn commit(repo_path: &str, msg: &str) {
     .unwrap();
 }
 
-///
+/// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
 pub fn stage_add(repo_path: &str, path: &Path) -> bool {
     scope_time!("stage_add");
 
@@ -78,6 +78,22 @@ pub fn stage_add(repo_path: &str, path: &Path) -> bool {
     false
 }
 
+/// stage a removed file
+pub fn stage_addremoved(repo_path: &str, path: &Path) -> bool {
+    scope_time!("stage_addremoved");
+
+    let repo = repo(repo_path);
+
+    let mut index = repo.index().unwrap();
+
+    if index.remove_path(path).is_ok() {
+        index.write().unwrap();
+        return true;
+    }
+
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -86,7 +102,11 @@ mod tests {
         status::{get_status, StatusType},
         tests::{repo_init, repo_init_empty},
     };
-    use std::{fs::File, io::Write, path::Path};
+    use std::{
+        fs::{remove_file, File},
+        io::Write,
+        path::Path,
+    };
 
     #[test]
     fn test_commit() {
@@ -170,6 +190,40 @@ mod tests {
         assert_eq!(stage_add(repo_path, file_path), true);
 
         assert_eq!(status_count(StatusType::WorkingDir), 1);
+        assert_eq!(status_count(StatusType::Stage), 1);
+    }
+
+    #[test]
+    fn test_staging_deleted_file() {
+        let file_path = Path::new("file1.txt");
+        let (_td, repo) = repo_init();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let status_count = |s: StatusType| -> usize {
+            get_status(repo_path, s).len()
+        };
+
+        let full_path = &root.join(file_path);
+
+        File::create(full_path)
+            .unwrap()
+            .write_all(b"test file1 content")
+            .unwrap();
+
+        assert_eq!(stage_add(repo_path, file_path), true);
+
+        commit(repo_path, "commit msg");
+
+        // delete the file now
+        assert_eq!(remove_file(full_path).is_ok(), true);
+
+        // deleted file in diff now
+        assert_eq!(status_count(StatusType::WorkingDir), 1);
+
+        assert_eq!(stage_addremoved(repo_path, file_path), true);
+
+        assert_eq!(status_count(StatusType::WorkingDir), 0);
         assert_eq!(status_count(StatusType::Stage), 1);
     }
 }

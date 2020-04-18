@@ -114,9 +114,15 @@ impl ChangesComponent {
     fn index_add_remove(&mut self) -> bool {
         if let Some(i) = self.selection() {
             if self.is_working_dir {
-                let path = Path::new(i.path.as_str());
-
-                return sync::stage_add(CWD, path);
+                if let Some(status) = i.status {
+                    let path = Path::new(i.path.as_str());
+                    return match status {
+                        StatusItemType::Deleted => {
+                            sync::stage_addremoved(CWD, path)
+                        }
+                        _ => sync::stage_add(CWD, path),
+                    };
+                }
             } else {
                 let path = Path::new(i.path.as_str());
 
