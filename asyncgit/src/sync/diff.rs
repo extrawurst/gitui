@@ -118,6 +118,7 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
     scope_time!("get_diff");
 
     let repo = utils::repo(repo_path);
+    let repo_path = repo.path().parent().unwrap();
 
     let (diff, mut opt) = get_diff_raw(&repo, &p, stage, false);
 
@@ -168,7 +169,6 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
         let delta: DiffDelta = diff.deltas().next().unwrap();
 
         if delta.status() == Delta::Untracked {
-            let repo_path = Path::new(repo_path);
             let newfile_path =
                 repo_path.join(delta.new_file().path().unwrap());
 
@@ -372,5 +372,28 @@ mod tests {
         let res = get_diff(repo_path, "bar.txt".to_string(), false);
 
         assert_eq!(res.hunks.len(), 2)
+    }
+
+    #[test]
+    fn test_diff_newfile_in_sub_dir_current_dir() {
+        let file_path = Path::new("foo/foo.txt");
+        let (_td, repo) = repo_init_empty();
+        let root = repo.path().parent().unwrap();
+
+        let sub_path = root.join("foo/");
+
+        fs::create_dir_all(&sub_path).unwrap();
+        File::create(&root.join(file_path))
+            .unwrap()
+            .write_all(b"test")
+            .unwrap();
+
+        let diff = get_diff(
+            sub_path.to_str().unwrap(),
+            String::from(file_path.to_str().unwrap()),
+            false,
+        );
+
+        assert_eq!(diff.hunks[0].lines[1].content, "test");
     }
 }
