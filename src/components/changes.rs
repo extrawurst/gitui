@@ -164,7 +164,7 @@ impl DrawableComponent for ChangesComponent {
                 },
             );
             if selected {
-                style = style.modifier(Modifier::BOLD); //.fg(Color::White);
+                style = style.modifier(Modifier::BOLD);
             }
 
             Text::Styled(Cow::from(txt), style)
