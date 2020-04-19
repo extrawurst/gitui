@@ -14,7 +14,7 @@ release-mac: build-release
 
 release-win: build-release
 	mkdir -p release
-	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui
+	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
 
 release-linux-musl: 
 	cargo build --release --target=x86_64-unknown-linux-musl
