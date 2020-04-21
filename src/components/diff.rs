@@ -321,9 +321,9 @@ impl Component for DiffComponent {
         ));
 
         let cmd_text = if self.current.is_stage {
-            commands::DIFF_HUNK_ADD
-        } else {
             commands::DIFF_HUNK_REMOVE
+        } else {
+            commands::DIFF_HUNK_ADD
         };
 
         out.push(CommandInfo::new(
