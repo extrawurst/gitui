@@ -63,10 +63,15 @@ cargo install gitui
 
 # diagnostics:
 
-to enable logging to `~/.gitui/gitui.log`:
+to enable logging:
 ```
 GITUI_LOGGING=true gitui
 ```
+
+this will log to:
+* `$HOME/Library/Caches/gitui/gitui.log` (mac)
+* `$XDG_CACHE_HOME/gitui/gitui.log` (linux using `XDG`) 
+* `$HOME/.cache/gitui/gitui.log` (linux)
 
 # inspiration
 

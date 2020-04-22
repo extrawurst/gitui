@@ -152,8 +152,8 @@ fn start_terminal<W: Write>(
 
 fn setup_logging() {
     if env::var("GITUI_LOGGING").is_ok() {
-        let mut path = dirs::home_dir().unwrap();
-        path.push(".gitui");
+        let mut path = dirs::cache_dir().unwrap();
+        path.push("gitui");
         path.push("gitui.log");
         fs::create_dir(path.parent().unwrap()).unwrap_or_default();
 
