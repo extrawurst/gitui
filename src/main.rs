@@ -27,7 +27,7 @@ use io::Write;
 use log::error;
 use scopeguard::defer;
 use scopetime::scope_time;
-use simplelog::*;
+use simplelog::{Config, LevelFilter, WriteLogger};
 use std::{
     env, fs,
     fs::File,
