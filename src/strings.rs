@@ -30,6 +30,12 @@ pub mod commands {
         CMD_GROUP_GENERAL,
     );
     ///
+    pub static NAVIGATE_TREE: CommandText = CommandText::new(
+        "Nav [\u{2190}\u{2191}\u{2192}\u{2193}]",
+        "navigate tree view",
+        CMD_GROUP_GENERAL,
+    );
+    ///
     pub static SCROLL: CommandText = CommandText::new(
         "Scroll [\u{2191}\u{2193}]",
         "scroll up or down in focused view",

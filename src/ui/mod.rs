@@ -80,6 +80,5 @@ pub fn draw_list<'b, B: Backend, L>(
         )
         .scroll(select.unwrap_or_default())
         .style(Style::default().fg(Color::White));
-    // .render(f, r);
     f.render_widget(list, r)
 }

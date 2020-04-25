@@ -155,7 +155,7 @@ fn setup_logging() {
         let mut path = dirs::cache_dir().unwrap();
         path.push("gitui");
         path.push("gitui.log");
-        fs::create_dir(path.parent().unwrap()).unwrap_or_default();
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
 
         let _ = WriteLogger::init(
             LevelFilter::Trace,
