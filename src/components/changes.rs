@@ -149,6 +149,8 @@ impl ChangesComponent {
         width: u16,
         selected: bool,
     ) -> Option<Text> {
+        let select_color = Color::Rgb(0, 0, 100);
+
         let indent_str = if item.info.indent == 0 {
             String::from("")
         } else {
@@ -193,7 +195,7 @@ impl ChangesComponent {
                 );
 
                 if selected {
-                    style = style.bg(Color::Blue);
+                    style = style.bg(select_color);
                 }
 
                 Some(Text::Styled(Cow::from(txt), style))
@@ -221,7 +223,7 @@ impl ChangesComponent {
                 let mut style = Style::default();
 
                 if selected {
-                    style = style.bg(Color::Blue);
+                    style = style.bg(select_color);
                 }
 
                 Some(Text::Styled(Cow::from(txt), style))
