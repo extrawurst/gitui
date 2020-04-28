@@ -240,7 +240,7 @@ mod tests {
     use crate::sync::{
         stage_add_file,
         status::{get_status, StatusType},
-        tests::{repo_init, repo_init_empty},
+        tests::{get_statuses, repo_init, repo_init_empty},
     };
     use std::{
         fs::{self, File},
@@ -280,15 +280,18 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let res = get_status(repo_path, StatusType::WorkingDir);
-        assert_eq!(res.len(), 0);
+        assert_eq!(get_statuses(repo_path), (0, 0));
 
         File::create(&root.join(file_path))
             .unwrap()
             .write_all(b"test\nfoo")
             .unwrap();
 
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
         assert_eq!(stage_add_file(repo_path, file_path), true);
+
+        assert_eq!(get_statuses(repo_path), (0, 1));
 
         let diff = get_diff(
             repo_path,
@@ -331,8 +334,7 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let res = get_status(repo_path, StatusType::WorkingDir);
-        assert_eq!(res.len(), 0);
+        assert_eq!(get_statuses(repo_path), (0, 0));
 
         let file_path = root.join("bar.txt");
 
@@ -349,11 +351,7 @@ mod tests {
 
         let res = stage_add_file(repo_path, Path::new("bar.txt"));
         assert_eq!(res, true);
-        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            0
-        );
+        assert_eq!(get_statuses(repo_path), (0, 1));
 
         // overwrite with next content
         {
@@ -363,11 +361,7 @@ mod tests {
                 .unwrap();
         }
 
-        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            1
-        );
+        assert_eq!(get_statuses(repo_path), (1, 1));
 
         let res = get_diff(repo_path, "bar.txt".to_string(), false);
 

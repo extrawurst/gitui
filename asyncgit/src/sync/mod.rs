@@ -18,6 +18,7 @@ pub use utils::{
 
 #[cfg(test)]
 mod tests {
+    use super::status::{get_status, StatusType};
     use git2::Repository;
     use std::process::Command;
     use tempfile::TempDir;
@@ -34,6 +35,7 @@ mod tests {
         (td, repo)
     }
 
+    ///
     pub fn repo_init() -> (TempDir, Repository) {
         let td = TempDir::new().unwrap();
         let repo = Repository::init(td.path()).unwrap();
@@ -58,6 +60,14 @@ mod tests {
             .unwrap();
         }
         (td, repo)
+    }
+
+    /// helper returning amount of files with changes in the (wd,stage)
+    pub fn get_statuses(repo_path: &str) -> (usize, usize) {
+        (
+            get_status(repo_path, StatusType::WorkingDir).len(),
+            get_status(repo_path, StatusType::Stage).len(),
+        )
     }
 
     ///

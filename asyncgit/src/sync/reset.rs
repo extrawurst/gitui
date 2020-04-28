@@ -83,7 +83,9 @@ mod tests {
     };
     use crate::sync::{
         status::{get_status, StatusType},
-        tests::{debug_cmd_print, repo_init, repo_init_empty},
+        tests::{
+            debug_cmd_print, get_statuses, repo_init, repo_init_empty,
+        },
         utils::{commit, stage_add_all, stage_add_file},
     };
     use std::{
@@ -152,22 +154,14 @@ mod tests {
 
         debug_cmd_print(repo_path, "git status");
 
-        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            1
-        );
+        assert_eq!(get_statuses(repo_path), (1, 1));
 
         let res = reset_workdir_file(repo_path, "bar.txt");
         assert_eq!(res, true);
 
         debug_cmd_print(repo_path, "git status");
 
-        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            0
-        );
+        assert_eq!(get_statuses(repo_path), (0, 1));
     }
 
     #[test]
@@ -186,20 +180,14 @@ mod tests {
 
         debug_cmd_print(repo_path, "git status");
 
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            1
-        );
+        assert_eq!(get_statuses(repo_path), (1, 0));
 
         let res = reset_workdir_file(repo_path, "foo/bar.txt");
         assert_eq!(res, true);
 
         debug_cmd_print(repo_path, "git status");
 
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            0
-        );
+        assert_eq!(get_statuses(repo_path), (0, 0));
     }
 
     #[test]
@@ -233,21 +221,15 @@ mod tests {
                 .write_all(b"file3\nadded line")?;
         }
 
+        assert_eq!(get_statuses(repo_path), (5, 0));
+
         stage_add_file(repo_path, Path::new("foo/file5.txt"));
 
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            4
-        );
-        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+        assert_eq!(get_statuses(repo_path), (4, 1));
 
         assert!(reset_workdir_folder(repo_path, "foo"));
 
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            1
-        );
-        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+        assert_eq!(get_statuses(repo_path), (1, 1));
 
         Ok(())
     }
@@ -282,22 +264,14 @@ mod tests {
 
         debug_cmd_print(repo_path, "git status");
 
-        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            1
-        );
+        assert_eq!(get_statuses(repo_path), (1, 1));
 
         let res = reset_workdir_file(repo_path, file);
         assert_eq!(res, true);
 
         debug_cmd_print(repo_path, "git status");
 
-        assert_eq!(
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            0
-        );
-        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+        assert_eq!(get_statuses(repo_path), (0, 1));
     }
 
     #[test]
@@ -312,8 +286,14 @@ mod tests {
             .write_all(b"test\nfoo")
             .unwrap();
 
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
         assert_eq!(stage_add_file(repo_path, file_path), true);
 
+        assert_eq!(get_statuses(repo_path), (0, 1));
+
         assert_eq!(reset_stage(repo_path, file_path), true);
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
     }
 }
