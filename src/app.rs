@@ -2,7 +2,8 @@ use crate::{
     components::{
         ChangesComponent, CommandBlocking, CommandInfo,
         CommitComponent, Component, DiffComponent, DrawableComponent,
-        HelpComponent, MsgComponent, ResetComponent,
+        FileTreeItemKind, HelpComponent, MsgComponent,
+        ResetComponent,
     },
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
@@ -177,7 +178,9 @@ impl App {
                     self.switch_focus(Focus::WorkDir)
                 }
                 keys::FOCUS_STAGE => self.switch_focus(Focus::Stage),
-                keys::FOCUS_RIGHT => self.switch_focus(Focus::Diff),
+                keys::FOCUS_RIGHT if self.can_focus_diff() => {
+                    self.switch_focus(Focus::Diff)
+                }
                 keys::FOCUS_LEFT => {
                     self.switch_focus(match self.diff_target {
                         DiffTarget::Stage => Focus::Stage,
@@ -225,6 +228,14 @@ impl App {
     pub fn is_quit(&self) -> bool {
         self.do_quit
     }
+
+    fn can_focus_diff(&self) -> bool {
+        match self.focus {
+            Focus::WorkDir => self.index_wd.is_file_seleted(),
+            Focus::Stage => self.index.is_file_seleted(),
+            _ => false,
+        }
+    }
 }
 
 // private impls
@@ -259,11 +270,12 @@ impl App {
             DiffTarget::WorkingDir => (&self.index_wd, false),
         };
 
-        if let Some(i) = idx.selection() {
-            Some((i.path, is_stage))
-        } else {
-            None
+        if let Some(item) = idx.selection() {
+            if let FileTreeItemKind::File(i) = item.kind {
+                return Some((i.path, is_stage));
+            }
         }
+        None
     }
 
     fn update_commands(&mut self) {
@@ -381,7 +393,7 @@ impl App {
                 ));
                 res.push(CommandInfo::new(
                     commands::STATUS_FOCUS_RIGHT,
-                    true,
+                    self.can_focus_diff(),
                     main_cmds_available && !focus_on_diff,
                 ));
             }

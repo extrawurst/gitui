@@ -6,6 +6,7 @@ description = "blazing fast terminal-ui for git"
 edition = "2018"
 exclude = [".github/*",".vscode/*"]
 homepage = "https://github.com/extrawurst/gitui"
+repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
 license = "MIT"
 categories = ["command-line-utilities"]
@@ -28,6 +29,7 @@ dirs = "2.0"
 crossbeam-channel = "0.4"
 scopeguard = "1.1"
 bitflags = "1.2"
+maplit = "1.0"
 backtrace = { version = "0.3" }
 scopetime = { path = "./scopetime", version = "0.1" }
 asyncgit = { path = "./asyncgit", version = "0.1" }

@@ -5,7 +5,7 @@ use git2::{Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 
 ///
-#[derive(Copy, Clone, Hash)]
+#[derive(Copy, Clone, Hash, PartialEq, Debug)]
 pub enum StatusItemType {
     ///
     New,
@@ -36,7 +36,7 @@ impl From<Status> for StatusItemType {
 }
 
 ///
-#[derive(Default, Clone, Hash)]
+#[derive(Default, Clone, Hash, PartialEq, Debug)]
 pub struct StatusItem {
     ///
     pub path: String,

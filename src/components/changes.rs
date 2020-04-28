@@ -1,4 +1,8 @@
-use super::{CommandBlocking, DrawableComponent};
+use super::{
+    filetree::{FileTreeItem, FileTreeItemKind},
+    statustree::{MoveSelection, StatusTree},
+    CommandBlocking, DrawableComponent,
+};
 use crate::{
     components::{CommandInfo, Component},
     keys,
@@ -7,17 +11,13 @@ use crate::{
 };
 use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
-use std::{
-    borrow::Cow,
-    cmp,
-    convert::{From, TryFrom},
-    path::Path,
-};
+use log::trace;
+use std::{borrow::Cow, convert::From, path::Path};
 use strings::commands;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     widgets::Text,
     Frame,
 };
@@ -25,8 +25,8 @@ use tui::{
 ///
 pub struct ChangesComponent {
     title: String,
-    items: Vec<StatusItem>,
-    selection: Option<usize>,
+    tree: StatusTree,
+    current_hash: u64,
     focused: bool,
     show_selection: bool,
     is_working_dir: bool,
@@ -43,9 +43,8 @@ impl ChangesComponent {
     ) -> Self {
         Self {
             title: title.to_string(),
-            items: Vec::new(),
-
-            selection: None,
+            tree: StatusTree::default(),
+            current_hash: 0,
             focused: focus,
             show_selection: focus,
             is_working_dir,
@@ -55,24 +54,16 @@ impl ChangesComponent {
 
     ///
     pub fn update(&mut self, list: &[StatusItem]) {
-        if hash(&self.items) != hash(list) {
-            self.items = list.to_owned();
-
-            let old_selection = self.selection.unwrap_or_default();
-            self.selection = if self.items.is_empty() {
-                None
-            } else {
-                Some(cmp::min(old_selection, self.items.len() - 1))
-            };
+        let new_hash = hash(list);
+        if self.current_hash != new_hash {
+            self.tree.update(list);
+            self.current_hash = new_hash;
         }
     }
 
     ///
-    pub fn selection(&self) -> Option<StatusItem> {
-        match self.selection {
-            None => None,
-            Some(i) => Some(self.items[i].clone()),
-        }
+    pub fn selection(&self) -> Option<FileTreeItem> {
+        self.tree.selected_item()
     }
 
     ///
@@ -81,52 +72,56 @@ impl ChangesComponent {
         self.show_selection = focus;
     }
 
-    ///
+    /// returns true if list is empty
     pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
+        self.tree.is_empty()
     }
 
-    fn move_selection(&mut self, delta: i32) -> bool {
-        let items_len = self.items.len();
-        if items_len > 0 {
-            if let Some(i) = self.selection {
-                if let Ok(mut i) = i32::try_from(i) {
-                    if let Ok(max) = i32::try_from(items_len) {
-                        i = cmp::min(i + delta, max - 1);
-                        i = cmp::max(i, 0);
-
-                        if let Ok(i) = usize::try_from(i) {
-                            self.selection = Some(i);
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::Update(
-                                    NeedsUpdate::DIFF,
-                                ),
-                            );
-                            return true;
-                        }
-                    }
-                }
+    ///
+    pub fn is_file_seleted(&self) -> bool {
+        if let Some(item) = self.tree.selected_item() {
+            match item.kind {
+                FileTreeItemKind::File(_) => true,
+                _ => false,
             }
+        } else {
+            false
         }
-        false
+    }
+
+    fn move_selection(&mut self, dir: MoveSelection) -> bool {
+        let changed = self.tree.move_selection(dir);
+
+        if changed {
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::Update(NeedsUpdate::DIFF));
+        }
+
+        changed
     }
 
     fn index_add_remove(&mut self) -> bool {
-        if let Some(i) = self.selection() {
-            if self.is_working_dir {
-                if let Some(status) = i.status {
+        if let Some(tree_item) = self.selection() {
+            if let FileTreeItemKind::File(i) = tree_item.kind {
+                if self.is_working_dir {
+                    if let Some(status) = i.status {
+                        let path = Path::new(i.path.as_str());
+                        return match status {
+                            StatusItemType::Deleted => {
+                                sync::stage_addremoved(CWD, path)
+                            }
+                            _ => sync::stage_add(CWD, path),
+                        };
+                    }
+                } else {
                     let path = Path::new(i.path.as_str());
-                    return match status {
-                        StatusItemType::Deleted => {
-                            sync::stage_addremoved(CWD, path)
-                        }
-                        _ => sync::stage_add(CWD, path),
-                    };
+
+                    return sync::reset_stage(CWD, path);
                 }
             } else {
-                let path = Path::new(i.path.as_str());
-
-                return sync::reset_stage(CWD, path);
+                //TODO:
+                trace!("tbd");
             }
         }
 
@@ -134,55 +129,148 @@ impl ChangesComponent {
     }
 
     fn dispatch_reset_workdir(&mut self) -> bool {
-        if let Some(i) = self.selection() {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::ConfirmResetFile(i.path));
+        if let Some(tree_item) = self.selection() {
+            if let FileTreeItemKind::File(i) = tree_item.kind {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ConfirmResetFile(i.path),
+                );
 
-            return true;
+                return true;
+            } else {
+                //TODO:
+                trace!("tbd");
+            }
         }
         false
+    }
+
+    fn item_to_text(
+        item: &FileTreeItem,
+        width: u16,
+        selected: bool,
+    ) -> Option<Text> {
+        let select_color = Color::Rgb(0, 0, 100);
+
+        let indent_str = if item.info.indent == 0 {
+            String::from("")
+        } else {
+            format!("{:w$}", " ", w = (item.info.indent as usize) * 2)
+        };
+
+        if !item.info.visible {
+            return None;
+        }
+
+        match &item.kind {
+            FileTreeItemKind::File(status_item) => {
+                let file = Path::new(&status_item.path)
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap();
+
+                let txt = if selected {
+                    format!(
+                        "{}{:w$}",
+                        indent_str,
+                        file,
+                        w = width as usize
+                    )
+                } else {
+                    format!("{}{}", indent_str, file)
+                };
+
+                let mut style = Style::default().fg(
+                    match status_item
+                        .status
+                        .unwrap_or(StatusItemType::Modified)
+                    {
+                        StatusItemType::Modified => {
+                            Color::LightYellow
+                        }
+                        StatusItemType::New => Color::LightGreen,
+                        StatusItemType::Deleted => Color::LightRed,
+                        _ => Color::White,
+                    },
+                );
+
+                if selected {
+                    style = style.bg(select_color);
+                }
+
+                Some(Text::Styled(Cow::from(txt), style))
+            }
+
+            FileTreeItemKind::Path(path_collapsed) => {
+                let collapse_char =
+                    if path_collapsed.0 { '▸' } else { '▾' };
+
+                let txt = if selected {
+                    format!(
+                        "{}{}{:w$}",
+                        indent_str,
+                        collapse_char,
+                        item.info.path,
+                        w = width as usize
+                    )
+                } else {
+                    format!(
+                        "{}{}{}",
+                        indent_str, collapse_char, item.info.path,
+                    )
+                };
+
+                let mut style = Style::default();
+
+                if selected {
+                    style = style.bg(select_color);
+                }
+
+                Some(Text::Styled(Cow::from(txt), style))
+            }
+        }
     }
 }
 
 impl DrawableComponent for ChangesComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-        let item_to_text = |idx: usize, i: &StatusItem| -> Text {
-            let selected = self.show_selection
-                && self.selection.map_or(false, |e| e == idx);
-            let txt = if selected {
-                format!("> {}", i.path)
-            } else {
-                format!("  {}", i.path)
-            };
-            let mut style = Style::default().fg(
-                match i.status.unwrap_or(StatusItemType::Modified) {
-                    StatusItemType::Modified => Color::LightYellow,
-                    StatusItemType::New => Color::LightGreen,
-                    StatusItemType::Deleted => Color::LightRed,
-                    _ => Color::White,
+        let selection_offset =
+            self.tree.tree.items().iter().enumerate().fold(
+                0,
+                |acc, (idx, e)| {
+                    let visible = e.info.visible;
+                    let index_above_select =
+                        idx < self.tree.selection.unwrap_or(0);
+
+                    if !visible && index_above_select {
+                        acc + 1
+                    } else {
+                        acc
+                    }
                 },
             );
-            if selected {
-                style = style.modifier(Modifier::BOLD);
-            }
 
-            Text::Styled(Cow::from(txt), style)
-        };
+        let items =
+            self.tree.tree.items().iter().enumerate().filter_map(
+                |(idx, e)| {
+                    Self::item_to_text(
+                        e,
+                        r.width,
+                        self.show_selection
+                            && self
+                                .tree
+                                .selection
+                                .map_or(false, |e| e == idx),
+                    )
+                },
+            );
 
         ui::draw_list(
             f,
             r,
             &self.title.to_string(),
-            self.items
-                .iter()
-                .enumerate()
-                .map(|(idx, e)| item_to_text(idx, e)),
-            if self.show_selection {
-                self.selection
-            } else {
-                None
-            },
+            items,
+            self.tree.selection.map(|idx| idx - selection_offset),
             self.focused,
         );
     }
@@ -194,7 +282,8 @@ impl Component for ChangesComponent {
         out: &mut Vec<CommandInfo>,
         _force_all: bool,
     ) -> CommandBlocking {
-        let some_selection = self.selection().is_some();
+        let some_selection =
+            self.selection().is_some() && self.is_file_seleted();
         if self.is_working_dir {
             out.push(CommandInfo::new(
                 commands::STAGE_FILE,
@@ -215,8 +304,8 @@ impl Component for ChangesComponent {
         }
 
         out.push(CommandInfo::new(
-            commands::SCROLL,
-            self.items.len() > 1,
+            commands::NAVIGATE_TREE,
+            !self.is_empty(),
             self.focused,
         ));
 
@@ -242,8 +331,18 @@ impl Component for ChangesComponent {
                         self.is_working_dir
                             && self.dispatch_reset_workdir()
                     }
-                    keys::MOVE_DOWN => self.move_selection(1),
-                    keys::MOVE_UP => self.move_selection(-1),
+                    keys::MOVE_DOWN => {
+                        self.move_selection(MoveSelection::Down)
+                    }
+                    keys::MOVE_UP => {
+                        self.move_selection(MoveSelection::Up)
+                    }
+                    keys::MOVE_LEFT => {
+                        self.move_selection(MoveSelection::Left)
+                    }
+                    keys::MOVE_RIGHT => {
+                        self.move_selection(MoveSelection::Right)
+                    }
                     _ => false,
                 };
             }
