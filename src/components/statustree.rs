@@ -2,7 +2,7 @@ use super::filetree::{
     FileTreeItem, FileTreeItemKind, FileTreeItems, PathCollapsed,
 };
 use asyncgit::StatusItem;
-use std::{cmp, collections::BTreeSet, path::Path};
+use std::{cmp, collections::BTreeSet};
 
 ///
 #[derive(Default)]
@@ -193,7 +193,8 @@ impl StatusTree {
         if collapsed)
         {
             SelectionChange::new(
-                self.find_parent_index(&item_path, current_selection),
+                self.tree
+                    .find_parent_index(&item_path, current_selection),
                 false,
             )
         } else if matches!(item_kind,  FileTreeItemKind::Path(PathCollapsed(collapsed))
@@ -290,27 +291,6 @@ impl StatusTree {
             }
         }
     }
-
-    fn find_parent_index(
-        &self,
-        path: &str,
-        current_index: usize,
-    ) -> usize {
-        let path = Path::new(path);
-
-        if let Some(path) = path.parent() {
-            for i in (0..=current_index).rev() {
-                let item = self.tree.items().get(i).unwrap();
-                let item_path = &item.info.full_path;
-                //TODO: use parameter path here
-                if item_path.ends_with(path.to_str().unwrap()) {
-                    return i;
-                }
-            }
-        }
-
-        0
-    }
 }
 
 #[cfg(test)]
@@ -351,27 +331,6 @@ mod tests {
         assert!(res.move_selection(MoveSelection::Left));
 
         assert_eq!(res.selection, Some(0));
-    }
-
-    #[test]
-    fn test_select_parent() {
-        let items = string_vec_to_status(&[
-            "a/b/c", //
-            "a/b/d", //
-        ]);
-
-        //0 a/
-        //1   b/
-        //2     c
-        //3     d
-
-        let mut res = StatusTree::default();
-        res.update(&items);
-
-        assert_eq!(
-            res.find_parent_index(&String::from("a/b/c"), 3),
-            1
-        );
     }
 
     #[test]
