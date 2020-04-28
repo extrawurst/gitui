@@ -11,7 +11,7 @@ license = "MIT"
 categories = ["concurrency","asynchronous"]
 
 [dependencies]
-git2 = { version = "0.13.4", default-features = false }
+git2 = { version = "0.13.5", default-features = false }
 rayon-core = "1.7"
 crossbeam-channel = "0.4"
 log = "0.4"
