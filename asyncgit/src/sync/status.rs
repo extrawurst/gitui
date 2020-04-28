@@ -3,6 +3,7 @@
 use crate::sync::utils;
 use git2::{Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
+use std::path::Path;
 
 ///
 #[derive(Copy, Clone, Hash, PartialEq, Debug)]
@@ -99,6 +100,10 @@ pub fn get_status(
             status: Some(StatusItemType::from(status)),
         });
     }
+
+    res.sort_by(|a, b| {
+        Path::new(a.path.as_str()).cmp(Path::new(b.path.as_str()))
+    });
 
     res
 }

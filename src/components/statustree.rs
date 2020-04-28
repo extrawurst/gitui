@@ -340,7 +340,7 @@ mod tests {
 
         assert_eq!(res.selection, Some(0));
 
-        res.update(&string_vec_to_status(&["b", "a"]));
+        res.update(&string_vec_to_status(&["a", "b"]));
 
         assert_eq!(res.selection, Some(1));
     }

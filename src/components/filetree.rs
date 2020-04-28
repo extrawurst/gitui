@@ -1,6 +1,6 @@
 use asyncgit::StatusItem;
 use std::{
-    collections::{BTreeSet, BinaryHeap},
+    collections::BTreeSet,
     convert::TryFrom,
     ops::{Index, IndexMut},
     path::Path,
@@ -122,23 +122,25 @@ impl FileTreeItems {
         list: &[StatusItem],
         collapsed: &BTreeSet<&String>,
     ) -> Self {
-        let mut nodes = BinaryHeap::with_capacity(list.len());
+        let mut nodes = Vec::with_capacity(list.len());
         let mut paths_added = BTreeSet::new();
 
         for e in list {
-            let item_path = Path::new(&e.path);
+            {
+                let item_path = Path::new(&e.path);
 
-            FileTreeItems::push_dirs(
-                item_path,
-                &mut nodes,
-                &mut paths_added,
-                &collapsed,
-            );
+                FileTreeItems::push_dirs(
+                    item_path,
+                    &mut nodes,
+                    &mut paths_added,
+                    &collapsed,
+                );
+            }
 
-            nodes.push(FileTreeItem::new_file(e));
+            nodes.push(FileTreeItem::new_file(&e));
         }
 
-        Self(nodes.into_sorted_vec())
+        Self(nodes)
     }
 
     ///
@@ -173,11 +175,15 @@ impl FileTreeItems {
 
     fn push_dirs<'a>(
         item_path: &'a Path,
-        nodes: &mut BinaryHeap<FileTreeItem>,
+        nodes: &mut Vec<FileTreeItem>,
         paths_added: &mut BTreeSet<&'a Path>,
         collapsed: &BTreeSet<&String>,
     ) {
-        for c in item_path.ancestors().skip(1) {
+        let mut ancestors =
+            { item_path.ancestors().skip(1).collect::<Vec<_>>() };
+        ancestors.reverse();
+
+        for c in &ancestors {
             if c.parent().is_some() {
                 let path_string = String::from(c.to_str().unwrap());
                 if !paths_added.contains(c) {
@@ -288,6 +294,24 @@ mod tests {
         assert_eq!(res.next(), Some((0, "a")));
         assert_eq!(res.next(), Some((1, "b")));
         assert_eq!(res.next(), Some((2, "file.txt")));
+    }
+
+    #[test]
+    fn test_indent_folder_file_name() {
+        let items = string_vec_to_status(&[
+            "a/b",   //
+            "a.txt", //
+        ]);
+
+        let list = FileTreeItems::new(&items, &BTreeSet::new());
+        let mut res = list
+            .0
+            .iter()
+            .map(|i| (i.info.indent, i.info.path.as_str()));
+
+        assert_eq!(res.next(), Some((0, "a")));
+        assert_eq!(res.next(), Some((1, "b")));
+        assert_eq!(res.next(), Some((0, "a.txt")));
     }
 
     #[test]
