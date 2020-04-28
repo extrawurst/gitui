@@ -11,6 +11,7 @@ use crate::{
 };
 use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
+use log::trace;
 use std::{borrow::Cow, convert::From, path::Path};
 use strings::commands;
 use tui::{
@@ -119,7 +120,8 @@ impl ChangesComponent {
                     return sync::reset_stage(CWD, path);
                 }
             } else {
-                todo!()
+                //TODO:
+                trace!("tbd");
             }
         }
 
@@ -135,7 +137,8 @@ impl ChangesComponent {
 
                 return true;
             } else {
-                todo!()
+                //TODO:
+                trace!("tbd");
             }
         }
         false
@@ -277,7 +280,8 @@ impl Component for ChangesComponent {
         out: &mut Vec<CommandInfo>,
         _force_all: bool,
     ) -> CommandBlocking {
-        let some_selection = self.selection().is_some();
+        let some_selection =
+            self.selection().is_some() && self.is_file_seleted();
         if self.is_working_dir {
             out.push(CommandInfo::new(
                 commands::STAGE_FILE,
