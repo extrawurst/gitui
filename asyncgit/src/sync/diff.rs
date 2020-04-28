@@ -238,7 +238,7 @@ fn new_file_content(path: &Path) -> String {
 mod tests {
     use super::get_diff;
     use crate::sync::{
-        stage_add,
+        stage_add_file,
         status::{get_status, StatusType},
         tests::{repo_init, repo_init_empty},
     };
@@ -288,7 +288,7 @@ mod tests {
             .write_all(b"test\nfoo")
             .unwrap();
 
-        assert_eq!(stage_add(repo_path, file_path), true);
+        assert_eq!(stage_add_file(repo_path, file_path), true);
 
         let diff = get_diff(
             repo_path,
@@ -347,7 +347,7 @@ mod tests {
         assert_eq!(res.len(), 1);
         assert_eq!(res[0].path, "bar.txt");
 
-        let res = stage_add(repo_path, Path::new("bar.txt"));
+        let res = stage_add_file(repo_path, Path::new("bar.txt"));
         assert_eq!(res, true);
         assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
         assert_eq!(

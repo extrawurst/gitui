@@ -3,7 +3,7 @@ use super::{
     DrawableComponent,
 };
 use crate::{
-    queue::{InternalEvent, Queue},
+    queue::{InternalEvent, Queue, ResetItem},
     strings, ui,
 };
 
@@ -20,7 +20,7 @@ use tui::{
 
 ///
 pub struct ResetComponent {
-    path: String,
+    target: Option<ResetItem>,
     visible: bool,
     queue: Queue,
 }
@@ -107,21 +107,24 @@ impl ResetComponent {
     ///
     pub fn new(queue: Queue) -> Self {
         Self {
-            path: String::default(),
+            target: None,
             visible: false,
             queue,
         }
     }
     ///
-    pub fn open_for_path(&mut self, path: &str) {
-        self.path = path.to_string();
+    pub fn open_for_path(&mut self, item: ResetItem) {
+        self.target = Some(item);
         self.show();
     }
     ///
     pub fn confirm(&mut self) {
+        if let Some(target) = self.target.take() {
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::ResetItem(target));
+        }
+
         self.hide();
-        self.queue
-            .borrow_mut()
-            .push_back(InternalEvent::ResetFile(self.path.clone()));
     }
 }

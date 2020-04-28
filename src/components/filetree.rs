@@ -151,17 +151,37 @@ impl FileTreeItems {
         self.0.len()
     }
 
-    fn push_dirs(
-        item_path: &Path,
+    ///
+    pub(crate) fn find_parent_index(
+        &self,
+        path: &str,
+        index: usize,
+    ) -> usize {
+        if let Some(parent_path) = Path::new(path).parent() {
+            let parent_path = parent_path.to_str().unwrap();
+            for i in (0..=index).rev() {
+                let item = &self.0[i];
+                let item_path = &item.info.full_path;
+                if item_path == parent_path {
+                    return i;
+                }
+            }
+        }
+
+        0
+    }
+
+    fn push_dirs<'a>(
+        item_path: &'a Path,
         nodes: &mut BinaryHeap<FileTreeItem>,
-        paths_added: &mut BTreeSet<String>, //TODO: use a ref string here
+        paths_added: &mut BTreeSet<&'a Path>,
         collapsed: &BTreeSet<&String>,
     ) {
         for c in item_path.ancestors().skip(1) {
             if c.parent().is_some() {
                 let path_string = String::from(c.to_str().unwrap());
-                if !paths_added.contains(&path_string) {
-                    paths_added.insert(path_string.clone());
+                if !paths_added.contains(c) {
+                    paths_added.insert(c);
                     let is_collapsed =
                         collapsed.contains(&path_string);
                     nodes.push(FileTreeItem::new_path(
@@ -290,6 +310,27 @@ mod tests {
                 items[0].path.clone(),
                 items[1].path.clone()
             ]
+        );
+    }
+
+    #[test]
+    fn test_find_parent() {
+        //0 a/
+        //1   b/
+        //2     c
+        //3     d
+
+        let res = FileTreeItems::new(
+            &string_vec_to_status(&[
+                "a/b/c", //
+                "a/b/d", //
+            ]),
+            &BTreeSet::new(),
+        );
+
+        assert_eq!(
+            res.find_parent_index(&String::from("a/b/c"), 3),
+            1
         );
     }
 }

@@ -6,12 +6,11 @@ use super::{
 use crate::{
     components::{CommandInfo, Component},
     keys,
-    queue::{InternalEvent, NeedsUpdate, Queue},
+    queue::{InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings, ui,
 };
 use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
-use log::trace;
 use std::{borrow::Cow, convert::From, path::Path};
 use strings::commands;
 use tui::{
@@ -103,25 +102,28 @@ impl ChangesComponent {
 
     fn index_add_remove(&mut self) -> bool {
         if let Some(tree_item) = self.selection() {
-            if let FileTreeItemKind::File(i) = tree_item.kind {
-                if self.is_working_dir {
+            if self.is_working_dir {
+                if let FileTreeItemKind::File(i) = tree_item.kind {
                     if let Some(status) = i.status {
                         let path = Path::new(i.path.as_str());
                         return match status {
                             StatusItemType::Deleted => {
                                 sync::stage_addremoved(CWD, path)
                             }
-                            _ => sync::stage_add(CWD, path),
+                            _ => sync::stage_add_file(CWD, path),
                         };
                     }
                 } else {
-                    let path = Path::new(i.path.as_str());
-
-                    return sync::reset_stage(CWD, path);
+                    //TODO: check if we can handle the one file case with it aswell
+                    return sync::stage_add_all(
+                        CWD,
+                        tree_item.info.full_path.as_str(),
+                    );
                 }
             } else {
-                //TODO:
-                trace!("tbd");
+                let path =
+                    Path::new(tree_item.info.full_path.as_str());
+                return sync::reset_stage(CWD, path);
             }
         }
 
@@ -130,16 +132,16 @@ impl ChangesComponent {
 
     fn dispatch_reset_workdir(&mut self) -> bool {
         if let Some(tree_item) = self.selection() {
-            if let FileTreeItemKind::File(i) = tree_item.kind {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ConfirmResetFile(i.path),
-                );
+            let is_folder =
+                matches!(tree_item.kind, FileTreeItemKind::Path(_));
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ConfirmResetItem(ResetItem {
+                    path: tree_item.info.full_path,
+                    is_folder,
+                }),
+            );
 
-                return true;
-            } else {
-                //TODO:
-                trace!("tbd");
-            }
+            return true;
         }
         false
     }
@@ -282,22 +284,22 @@ impl Component for ChangesComponent {
         out: &mut Vec<CommandInfo>,
         _force_all: bool,
     ) -> CommandBlocking {
-        let some_selection =
-            self.selection().is_some() && self.is_file_seleted();
+        let some_selection = self.selection().is_some();
+
         if self.is_working_dir {
             out.push(CommandInfo::new(
-                commands::STAGE_FILE,
+                commands::STAGE_ITEM,
                 some_selection,
                 self.focused,
             ));
             out.push(CommandInfo::new(
-                commands::RESET_FILE,
+                commands::RESET_ITEM,
                 some_selection,
                 self.focused,
             ));
         } else {
             out.push(CommandInfo::new(
-                commands::UNSTAGE_FILE,
+                commands::UNSTAGE_ITEM,
                 some_selection,
                 self.focused,
             ));

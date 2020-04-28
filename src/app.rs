@@ -17,7 +17,7 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
 use log::trace;
-use std::{borrow::Cow, path::Path};
+use std::borrow::Cow;
 use strings::commands;
 use tui::{
     backend::Backend,
@@ -299,7 +299,7 @@ impl App {
         loop {
             let front = self.queue.borrow_mut().pop_front();
             if let Some(e) = front {
-                flags.insert(self.process_internal_event(&e));
+                flags.insert(self.process_internal_event(e));
             } else {
                 break;
             }
@@ -311,35 +311,45 @@ impl App {
 
     fn process_internal_event(
         &mut self,
-        ev: &InternalEvent,
+        ev: InternalEvent,
     ) -> NeedsUpdate {
         let mut flags = NeedsUpdate::empty();
         match ev {
-            InternalEvent::ResetFile(p) => {
-                if sync::reset_workdir(CWD, Path::new(p.as_str())) {
+            InternalEvent::ResetItem(reset_item) => {
+                if reset_item.is_folder {
+                    if sync::reset_workdir_folder(
+                        CWD,
+                        reset_item.path.as_str(),
+                    ) {
+                        flags.insert(NeedsUpdate::ALL);
+                    }
+                } else if sync::reset_workdir_file(
+                    CWD,
+                    reset_item.path.as_str(),
+                ) {
                     flags.insert(NeedsUpdate::ALL);
                 }
             }
-            InternalEvent::ConfirmResetFile(p) => {
-                self.reset.open_for_path(p);
+            InternalEvent::ConfirmResetItem(reset_item) => {
+                self.reset.open_for_path(reset_item);
                 flags.insert(NeedsUpdate::COMMANDS);
             }
             InternalEvent::AddHunk(hash) => {
                 if let Some((path, is_stage)) = self.selected_path() {
                     if is_stage {
-                        if sync::unstage_hunk(CWD, path, *hash) {
+                        if sync::unstage_hunk(CWD, path, hash) {
                             flags.insert(NeedsUpdate::ALL);
                         }
-                    } else if sync::stage_hunk(CWD, path, *hash) {
+                    } else if sync::stage_hunk(CWD, path, hash) {
                         flags.insert(NeedsUpdate::ALL);
                     }
                 }
             }
             InternalEvent::ShowMsg(msg) => {
-                self.msg.show_msg(msg);
+                self.msg.show_msg(msg.as_str());
                 flags.insert(NeedsUpdate::ALL);
             }
-            InternalEvent::Update(u) => flags.insert(*u),
+            InternalEvent::Update(u) => flags.insert(u),
         };
 
         flags

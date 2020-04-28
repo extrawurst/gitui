@@ -79,21 +79,21 @@ pub mod commands {
         CMD_GROUP_COMMIT,
     );
     ///
-    pub static STAGE_FILE: CommandText = CommandText::new(
-        "Stage File [enter]",
-        "stage currently selected file",
+    pub static STAGE_ITEM: CommandText = CommandText::new(
+        "Stage Item [enter]",
+        "stage currently selected file or entire path",
         CMD_GROUP_CHANGES,
     );
     ///
-    pub static UNSTAGE_FILE: CommandText = CommandText::new(
-        "Unstage File [enter]",
-        "remove currently selected file from stage",
+    pub static UNSTAGE_ITEM: CommandText = CommandText::new(
+        "Unstage Item [enter]",
+        "unstage currently selected file or entire path",
         CMD_GROUP_CHANGES,
     );
     ///
-    pub static RESET_FILE: CommandText = CommandText::new(
-        "Reset File [D]",
-        "revert changes in selected file",
+    pub static RESET_ITEM: CommandText = CommandText::new(
+        "Reset Item [D]",
+        "revert changes in selected file or entire path",
         CMD_GROUP_CHANGES,
     );
     ///

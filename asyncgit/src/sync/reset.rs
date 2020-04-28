@@ -26,14 +26,14 @@ pub fn reset_stage(repo_path: &str, path: &Path) -> bool {
 }
 
 ///
-pub fn reset_workdir(repo_path: &str, path: &Path) -> bool {
-    scope_time!("reset_workdir");
+pub fn reset_workdir_file(repo_path: &str, path: &str) -> bool {
+    scope_time!("reset_workdir_file");
 
     let repo = repo(repo_path);
 
     // Note: early out for removing untracked files, due to bug in checkout_head code:
     // see https://github.com/libgit2/libgit2/issues/5089
-    if let Ok(status) = repo.status_file(&path) {
+    if let Ok(status) = repo.status_file(Path::new(path)) {
         let removed_file_wd = if status == Status::WT_NEW
             || (status == Status::WT_MODIFIED | Status::INDEX_NEW)
         {
@@ -51,7 +51,7 @@ pub fn reset_workdir(repo_path: &str, path: &Path) -> bool {
             .update_index(true) // windows: needs this to be true WTF?!
             .allow_conflicts(true)
             .force()
-            .path(&path);
+            .path(path);
 
         repo.checkout_index(None, Some(&mut checkout_opts)).is_ok()
     } else {
@@ -59,17 +59,36 @@ pub fn reset_workdir(repo_path: &str, path: &Path) -> bool {
     }
 }
 
+///
+pub fn reset_workdir_folder(repo_path: &str, path: &str) -> bool {
+    scope_time!("reset_workdir_folder");
+
+    let repo = repo(repo_path);
+
+    let mut checkout_opts = CheckoutBuilder::new();
+    checkout_opts
+        .update_index(true) // windows: needs this to be true WTF?!
+        .allow_conflicts(true)
+        .remove_untracked(true)
+        .force()
+        .path(path);
+
+    repo.checkout_index(None, Some(&mut checkout_opts)).is_ok()
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{reset_stage, reset_workdir};
+    use super::{
+        reset_stage, reset_workdir_file, reset_workdir_folder,
+    };
     use crate::sync::{
         status::{get_status, StatusType},
         tests::{debug_cmd_print, repo_init, repo_init_empty},
-        utils::stage_add,
+        utils::{commit, stage_add_all, stage_add_file},
     };
     use std::{
         fs::{self, File},
-        io::Write,
+        io::{Error, Write},
         path::Path,
     };
 
@@ -119,7 +138,7 @@ mod tests {
 
         debug_cmd_print(repo_path, "git status");
 
-        stage_add(repo_path, Path::new("bar.txt"));
+        stage_add_file(repo_path, Path::new("bar.txt"));
 
         debug_cmd_print(repo_path, "git status");
 
@@ -139,7 +158,7 @@ mod tests {
             1
         );
 
-        let res = reset_workdir(repo_path, Path::new("bar.txt"));
+        let res = reset_workdir_file(repo_path, "bar.txt");
         assert_eq!(res, true);
 
         debug_cmd_print(repo_path, "git status");
@@ -172,7 +191,7 @@ mod tests {
             1
         );
 
-        let res = reset_workdir(repo_path, Path::new("foo/bar.txt"));
+        let res = reset_workdir_file(repo_path, "foo/bar.txt");
         assert_eq!(res, true);
 
         debug_cmd_print(repo_path, "git status");
@@ -181,6 +200,56 @@ mod tests {
             get_status(repo_path, StatusType::WorkingDir).len(),
             0
         );
+    }
+
+    #[test]
+    fn test_reset_folder() -> Result<(), Error> {
+        let (_td, repo) = repo_init();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        {
+            fs::create_dir(&root.join("foo"))?;
+            File::create(&root.join("foo/file1.txt"))?
+                .write_all(b"file1")?;
+            File::create(&root.join("foo/file2.txt"))?
+                .write_all(b"file1")?;
+            File::create(&root.join("file3.txt"))?
+                .write_all(b"file3")?;
+        }
+
+        assert!(stage_add_all(repo_path, "*"));
+        commit(repo_path, "msg");
+
+        {
+            File::create(&root.join("foo/file1.txt"))?
+                .write_all(b"file1\nadded line")?;
+            fs::remove_file(&root.join("foo/file2.txt"))?;
+            File::create(&root.join("foo/file4.txt"))?
+                .write_all(b"file4")?;
+            File::create(&root.join("foo/file5.txt"))?
+                .write_all(b"file5")?;
+            File::create(&root.join("file3.txt"))?
+                .write_all(b"file3\nadded line")?;
+        }
+
+        stage_add_file(repo_path, Path::new("foo/file5.txt"));
+
+        assert_eq!(
+            get_status(repo_path, StatusType::WorkingDir).len(),
+            4
+        );
+        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+
+        assert!(reset_workdir_folder(repo_path, "foo"));
+
+        assert_eq!(
+            get_status(repo_path, StatusType::WorkingDir).len(),
+            1
+        );
+        assert_eq!(get_status(repo_path, StatusType::Stage).len(), 1);
+
+        Ok(())
     }
 
     #[test]
@@ -219,7 +288,7 @@ mod tests {
             1
         );
 
-        let res = reset_workdir(repo_path, Path::new(file));
+        let res = reset_workdir_file(repo_path, file);
         assert_eq!(res, true);
 
         debug_cmd_print(repo_path, "git status");
@@ -243,7 +312,7 @@ mod tests {
             .write_all(b"test\nfoo")
             .unwrap();
 
-        assert_eq!(stage_add(repo_path, file_path), true);
+        assert_eq!(stage_add_file(repo_path, file_path), true);
 
         assert_eq!(reset_stage(repo_path, file_path), true);
     }

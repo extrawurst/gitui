@@ -1,6 +1,6 @@
 //! sync git api (various methods)
 
-use git2::{Repository, RepositoryOpenFlags};
+use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -63,14 +63,33 @@ pub fn commit(repo_path: &str, msg: &str) {
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
-pub fn stage_add(repo_path: &str, path: &Path) -> bool {
-    scope_time!("stage_add");
+pub fn stage_add_file(repo_path: &str, path: &Path) -> bool {
+    scope_time!("stage_add_file");
 
     let repo = repo(repo_path);
 
     let mut index = repo.index().unwrap();
 
     if index.add_path(path).is_ok() {
+        index.write().unwrap();
+        return true;
+    }
+
+    false
+}
+
+/// like `stage_add_file` but uses a pattern to match/glob multiple files/folders
+pub fn stage_add_all(repo_path: &str, pattern: &str) -> bool {
+    scope_time!("stage_add_all");
+
+    let repo = repo(repo_path);
+
+    let mut index = repo.index().unwrap();
+
+    if index
+        .add_all(vec![pattern], IndexAddOption::DEFAULT, None)
+        .is_ok()
+    {
         index.write().unwrap();
         return true;
     }
@@ -98,13 +117,12 @@ pub fn stage_addremoved(repo_path: &str, path: &Path) -> bool {
 mod tests {
     use super::*;
     use crate::sync::{
-        stage_add,
         status::{get_status, StatusType},
         tests::{repo_init, repo_init_empty},
     };
     use std::{
-        fs::{remove_file, File},
-        io::Write,
+        fs::{self, remove_file, File},
+        io::{Error, Write},
         path::Path,
     };
 
@@ -126,7 +144,7 @@ mod tests {
 
         assert_eq!(status_count(StatusType::WorkingDir), 1);
 
-        assert_eq!(stage_add(repo_path, file_path), true);
+        assert_eq!(stage_add_file(repo_path, file_path), true);
 
         assert_eq!(status_count(StatusType::WorkingDir), 0);
         assert_eq!(status_count(StatusType::Stage), 1);
@@ -149,7 +167,7 @@ mod tests {
             .write_all(b"test\nfoo")
             .unwrap();
 
-        assert_eq!(stage_add(repo_path, file_path), true);
+        assert_eq!(stage_add_file(repo_path, file_path), true);
 
         commit(repo_path, "commit msg");
     }
@@ -161,7 +179,7 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        assert_eq!(stage_add(repo_path, file_path), false);
+        assert_eq!(stage_add_file(repo_path, file_path), false);
     }
 
     #[test]
@@ -187,10 +205,38 @@ mod tests {
 
         assert_eq!(status_count(StatusType::WorkingDir), 2);
 
-        assert_eq!(stage_add(repo_path, file_path), true);
+        assert_eq!(stage_add_file(repo_path, file_path), true);
 
         assert_eq!(status_count(StatusType::WorkingDir), 1);
         assert_eq!(status_count(StatusType::Stage), 1);
+    }
+
+    #[test]
+    fn test_staging_folder() -> Result<(), Error> {
+        let (_td, repo) = repo_init();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let status_count = |s: StatusType| -> usize {
+            get_status(repo_path, s).len()
+        };
+
+        fs::create_dir_all(&root.join("a/d"))?;
+        File::create(&root.join(Path::new("a/d/f1.txt")))?
+            .write_all(b"foo")?;
+        File::create(&root.join(Path::new("a/d/f2.txt")))?
+            .write_all(b"foo")?;
+        File::create(&root.join(Path::new("a/f3.txt")))?
+            .write_all(b"foo")?;
+
+        assert_eq!(status_count(StatusType::WorkingDir), 3);
+
+        assert_eq!(stage_add_all(repo_path, "a/d"), true);
+
+        assert_eq!(status_count(StatusType::WorkingDir), 1);
+        assert_eq!(status_count(StatusType::Stage), 2);
+
+        Ok(())
     }
 
     #[test]
@@ -211,7 +257,7 @@ mod tests {
             .write_all(b"test file1 content")
             .unwrap();
 
-        assert_eq!(stage_add(repo_path, file_path), true);
+        assert_eq!(stage_add_file(repo_path, file_path), true);
 
         commit(repo_path, "commit msg");
 

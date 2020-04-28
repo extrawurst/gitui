@@ -13,12 +13,20 @@ bitflags! {
     }
 }
 
+/// data of item that is supposed to be reset
+pub struct ResetItem {
+    /// path to the item (folder/file)
+    pub path: String,
+    /// are talking about a folder here? otherwise it's a single file
+    pub is_folder: bool,
+}
+
 ///
 pub enum InternalEvent {
     ///
-    ConfirmResetFile(String),
+    ConfirmResetItem(ResetItem),
     ///
-    ResetFile(String),
+    ResetItem(ResetItem),
     ///
     AddHunk(u64),
     ///
