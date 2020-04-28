@@ -41,7 +41,11 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 
 For the time being this product is considered alpha and **not** production ready.
 
-## homebrew
+## release binaries
+
+see [releases](https://github.com/extrawurst/gitui/releases)
+
+## homebrew (macos)
 
 ```
 brew install extrawurst/tap/gitui
