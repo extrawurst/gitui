@@ -118,7 +118,7 @@ mod tests {
     use super::*;
     use crate::sync::{
         status::{get_status, StatusType},
-        tests::{repo_init, repo_init_empty},
+        tests::{get_statuses, repo_init, repo_init_empty},
     };
     use std::{
         fs::{self, remove_file, File},
@@ -133,26 +133,20 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).len()
-        };
-
         File::create(&root.join(file_path))
             .unwrap()
             .write_all(b"test\nfoo")
             .unwrap();
 
-        assert_eq!(status_count(StatusType::WorkingDir), 1);
+        assert_eq!(get_statuses(repo_path), (1, 0));
 
         assert_eq!(stage_add_file(repo_path, file_path), true);
 
-        assert_eq!(status_count(StatusType::WorkingDir), 0);
-        assert_eq!(status_count(StatusType::Stage), 1);
+        assert_eq!(get_statuses(repo_path), (0, 1));
 
         commit(repo_path, "commit msg");
 
-        assert_eq!(status_count(StatusType::Stage), 0);
-        assert_eq!(status_count(StatusType::WorkingDir), 0);
+        assert_eq!(get_statuses(repo_path), (0, 0));
     }
 
     #[test]
@@ -162,14 +156,22 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
+        assert_eq!(get_statuses(repo_path), (0, 0));
+
         File::create(&root.join(file_path))
             .unwrap()
             .write_all(b"test\nfoo")
             .unwrap();
 
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
         assert_eq!(stage_add_file(repo_path, file_path), true);
 
+        assert_eq!(get_statuses(repo_path), (0, 1));
+
         commit(repo_path, "commit msg");
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
     }
 
     #[test]
@@ -189,10 +191,6 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).len()
-        };
-
         File::create(&root.join(file_path))
             .unwrap()
             .write_all(b"test file1 content")
@@ -203,12 +201,11 @@ mod tests {
             .write_all(b"test file2 content")
             .unwrap();
 
-        assert_eq!(status_count(StatusType::WorkingDir), 2);
+        assert_eq!(get_statuses(repo_path), (2, 0));
 
         assert_eq!(stage_add_file(repo_path, file_path), true);
 
-        assert_eq!(status_count(StatusType::WorkingDir), 1);
-        assert_eq!(status_count(StatusType::Stage), 1);
+        assert_eq!(get_statuses(repo_path), (1, 1));
     }
 
     #[test]
