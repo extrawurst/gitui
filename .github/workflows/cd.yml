@@ -22,7 +22,9 @@ jobs:
     - name: Run tests
       run: make test
     - name: Run clippy
-      run: make clippy
+      run: |
+        rustup component add clippy
+        make clippy
 
     - name: Setup MUSL
       if: matrix.os == 'ubuntu-latest'
