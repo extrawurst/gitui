@@ -231,7 +231,7 @@ impl App {
 
     ///
     pub fn any_work_pending(&self) -> bool {
-        self.git_diff.is_pending()
+        self.git_diff.is_pending() || self.git_status.is_pending()
     }
 }
 

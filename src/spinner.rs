@@ -10,12 +10,13 @@ pub struct Spinner {
 }
 
 impl Spinner {
-    ///
+    /// increment spinner graphic by one
     pub fn update(&mut self) {
         self.idx += 1;
         self.idx %= SPINNER_CHARS.len();
     }
 
+    /// draws or removes spinner char depending on `pending` state
     pub fn draw<B: Backend>(
         &self,
         terminal: &mut Terminal<B>,

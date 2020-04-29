@@ -3,7 +3,10 @@ use crossbeam_channel::Sender;
 use log::trace;
 use std::{
     hash::Hash,
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex,
+    },
 };
 use sync::status::StatusType;
 
@@ -20,6 +23,7 @@ pub struct AsyncStatus {
     current: Arc<Mutex<Request<u64, Status>>>,
     last: Arc<Mutex<Status>>,
     sender: Sender<AsyncNotification>,
+    pending: Arc<AtomicUsize>,
 }
 
 impl AsyncStatus {
@@ -29,6 +33,7 @@ impl AsyncStatus {
             current: Arc::new(Mutex::new(Request(0, None))),
             last: Arc::new(Mutex::new(Status::default())),
             sender,
+            pending: Arc::new(AtomicUsize::new(0)),
         }
     }
 
@@ -36,6 +41,11 @@ impl AsyncStatus {
     pub fn last(&mut self) -> Status {
         let last = self.last.lock().unwrap();
         last.clone()
+    }
+
+    ///
+    pub fn is_pending(&self) -> bool {
+        self.pending.load(Ordering::Relaxed) > 0
     }
 
     ///
@@ -58,7 +68,10 @@ impl AsyncStatus {
         let arc_current = Arc::clone(&self.current);
         let arc_last = Arc::clone(&self.last);
         let sender = self.sender.clone();
+        let arc_pending = Arc::clone(&self.pending);
         rayon_core::spawn(move || {
+            arc_pending.fetch_add(1, Ordering::Relaxed);
+
             let res = Self::get_status();
             trace!("status fetched: {}", hash(&res));
 
@@ -73,6 +86,8 @@ impl AsyncStatus {
                 let mut last = arc_last.lock().unwrap();
                 *last = res;
             }
+
+            arc_pending.fetch_sub(1, Ordering::Relaxed);
 
             sender
                 .send(AsyncNotification::Status)
