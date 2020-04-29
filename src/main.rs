@@ -8,6 +8,7 @@ mod components;
 mod keys;
 mod poll;
 mod queue;
+mod spinner;
 mod strings;
 mod ui;
 mod version;
@@ -28,6 +29,7 @@ use log::error;
 use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
+use spinner::Spinner;
 use std::{
     env, fs,
     fs::File,
@@ -40,6 +42,7 @@ use tui::{
 };
 
 static TICK_INTERVAL: Duration = Duration::from_secs(5);
+static SPINNER_INTERVAL: Duration = Duration::from_millis(50);
 
 fn main() -> Result<()> {
     setup_logging();
@@ -65,28 +68,44 @@ fn main() -> Result<()> {
     set_panic_handlers();
 
     let rx_input = poll::start_polling_thread();
-
     let ticker = tick(TICK_INTERVAL);
+    let spinner_ticker = tick(SPINNER_INTERVAL);
 
     app.update();
     draw(&mut terminal, &mut app)?;
 
+    let mut spinner = Spinner::default();
+
     loop {
-        let events: Vec<QueueEvent> =
-            select_event(&rx_input, &rx_git, &ticker);
+        let events: Vec<QueueEvent> = select_event(
+            &rx_input,
+            &rx_git,
+            &ticker,
+            &spinner_ticker,
+        );
 
         {
             scope_time!("loop");
+
+            let mut needs_draw = true;
 
             for e in events {
                 match e {
                     QueueEvent::InputEvent(ev) => app.event(ev),
                     QueueEvent::Tick => app.update(),
                     QueueEvent::GitEvent(ev) => app.update_git(ev),
+                    QueueEvent::SpinnerUpdate => {
+                        needs_draw = false;
+                        spinner.update()
+                    }
                 }
             }
 
-            draw(&mut terminal, &mut app)?;
+            if needs_draw {
+                draw(&mut terminal, &mut app)?;
+            }
+
+            spinner.draw(&mut terminal, app.any_work_pending())?;
 
             if app.is_quit() {
                 break;
@@ -112,6 +131,7 @@ fn select_event(
     rx_input: &Receiver<Vec<QueueEvent>>,
     rx_git: &Receiver<AsyncNotification>,
     rx_ticker: &Receiver<Instant>,
+    rx_spinner: &Receiver<Instant>,
 ) -> Vec<QueueEvent> {
     let mut events: Vec<QueueEvent> = Vec::new();
 
@@ -120,6 +140,7 @@ fn select_event(
     sel.recv(rx_input);
     sel.recv(rx_git);
     sel.recv(rx_ticker);
+    sel.recv(rx_spinner);
 
     let oper = sel.select();
     let index = oper.index();
@@ -132,7 +153,10 @@ fn select_event(
         2 => oper
             .recv(rx_ticker)
             .map(|_| events.push(QueueEvent::Tick)),
-        _ => Ok(()),
+        3 => oper
+            .recv(rx_spinner)
+            .map(|_| events.push(QueueEvent::SpinnerUpdate)),
+        _ => panic!("unknown select source"),
     }
     .unwrap();
 
