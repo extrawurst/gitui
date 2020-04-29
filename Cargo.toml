@@ -32,7 +32,7 @@ bitflags = "1.2"
 maplit = "1.0"
 backtrace = { version = "0.3" }
 scopetime = { path = "./scopetime", version = "0.1" }
-asyncgit = { path = "./asyncgit", version = ">=0.1" }
+asyncgit = { path = "./asyncgit", version = "0.2" }
 
 [features]
 default=[]
