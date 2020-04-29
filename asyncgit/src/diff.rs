@@ -3,7 +3,10 @@ use crossbeam_channel::Sender;
 use log::trace;
 use std::{
     hash::Hash,
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex,
+    },
 };
 
 ///
@@ -24,6 +27,7 @@ pub struct AsyncDiff {
     current: Arc<Mutex<Request<u64, FileDiff>>>,
     last: Arc<Mutex<Option<LastResult<DiffParams, FileDiff>>>>,
     sender: Sender<AsyncNotification>,
+    pending: Arc<AtomicUsize>,
 }
 
 impl AsyncDiff {
@@ -33,6 +37,7 @@ impl AsyncDiff {
             current: Arc::new(Mutex::new(Request(0, None))),
             last: Arc::new(Mutex::new(None)),
             sender,
+            pending: Arc::new(AtomicUsize::new(0)),
         }
     }
 
@@ -52,6 +57,11 @@ impl AsyncDiff {
             self.clear_current();
             self.request(param);
         }
+    }
+
+    ///
+    pub fn is_pending(&self) -> bool {
+        self.pending.load(Ordering::Relaxed) > 0
     }
 
     ///
@@ -77,7 +87,10 @@ impl AsyncDiff {
         let arc_current = Arc::clone(&self.current);
         let arc_last = Arc::clone(&self.last);
         let sender = self.sender.clone();
+        let arc_pending = Arc::clone(&self.pending);
         rayon_core::spawn(move || {
+            arc_pending.fetch_add(1, Ordering::Relaxed);
+
             let res =
                 sync::diff::get_diff(CWD, params.0.clone(), params.1);
             let mut notify = false;
@@ -97,6 +110,8 @@ impl AsyncDiff {
                     params,
                 });
             }
+
+            arc_pending.fetch_sub(1, Ordering::Relaxed);
 
             if notify {
                 sender

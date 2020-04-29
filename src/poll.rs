@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 #[derive(Clone, Copy)]
 pub enum QueueEvent {
     Tick,
+    SpinnerUpdate,
     GitEvent(AsyncNotification),
     InputEvent(Event),
 }

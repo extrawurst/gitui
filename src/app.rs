@@ -229,12 +229,9 @@ impl App {
         self.do_quit
     }
 
-    fn can_focus_diff(&self) -> bool {
-        match self.focus {
-            Focus::WorkDir => self.index_wd.is_file_seleted(),
-            Focus::Stage => self.index.is_file_seleted(),
-            _ => false,
-        }
+    ///
+    pub fn any_work_pending(&self) -> bool {
+        self.git_diff.is_pending()
     }
 }
 
@@ -276,6 +273,14 @@ impl App {
             }
         }
         None
+    }
+
+    fn can_focus_diff(&self) -> bool {
+        match self.focus {
+            Focus::WorkDir => self.index_wd.is_file_seleted(),
+            Focus::Stage => self.index.is_file_seleted(),
+            _ => false,
+        }
     }
 
     fn update_commands(&mut self) {
