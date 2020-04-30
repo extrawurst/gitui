@@ -67,6 +67,18 @@ pub mod commands {
     )
     .hide_help();
     ///
+    pub static SELECT_STAGING: CommandText = CommandText::new(
+        "Focus Staging [2]",
+        "focus/select staging area",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static SELECT_UNSTAGED: CommandText = CommandText::new(
+        "Focus Unstaged [1]",
+        "focus/select unstaged area",
+        CMD_GROUP_GENERAL,
+    );
+    ///
     pub static COMMIT_OPEN: CommandText = CommandText::new(
         "Commit [c]",
         "open commit view (available in non-empty stage)",

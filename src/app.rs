@@ -138,10 +138,17 @@ impl App {
         let left_chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
-                [
-                    Constraint::Percentage(50),
-                    Constraint::Percentage(50),
-                ]
+                if self.diff_target == DiffTarget::WorkingDir {
+                    [
+                        Constraint::Percentage(60),
+                        Constraint::Percentage(40),
+                    ]
+                } else {
+                    [
+                        Constraint::Percentage(40),
+                        Constraint::Percentage(60),
+                    ]
+                }
                 .as_ref(),
             )
             .split(chunks[0]);
@@ -186,6 +193,13 @@ impl App {
                         DiffTarget::Stage => Focus::Stage,
                         DiffTarget::WorkingDir => Focus::WorkDir,
                     })
+                }
+                keys::OPEN_COMMIT
+                    if !self.index.is_empty()
+                        && self.offer_open_commit_cmd() =>
+                {
+                    self.commit.show();
+                    NeedsUpdate::COMMANDS
                 }
                 _ => NeedsUpdate::empty(),
             };
@@ -295,7 +309,6 @@ impl App {
         self.index_wd.update(&status.work_dir);
 
         self.update_diff();
-        self.commit.set_stage_empty(self.index.is_empty());
         self.update_commands();
     }
 
@@ -415,6 +428,33 @@ impl App {
 
             res.push(
                 CommandInfo::new(
+                    commands::COMMIT_OPEN,
+                    !self.index.is_empty(),
+                    self.offer_open_commit_cmd(),
+                )
+                .order(-1),
+            );
+
+            res.push(
+                CommandInfo::new(
+                    commands::SELECT_STAGING,
+                    true,
+                    self.focus == Focus::WorkDir,
+                )
+                .order(-2),
+            );
+
+            res.push(
+                CommandInfo::new(
+                    commands::SELECT_UNSTAGED,
+                    true,
+                    self.focus == Focus::Stage,
+                )
+                .order(-2),
+            );
+
+            res.push(
+                CommandInfo::new(
                     commands::QUIT,
                     true,
                     main_cmds_available,
@@ -424,6 +464,11 @@ impl App {
         }
 
         res
+    }
+
+    fn offer_open_commit_cmd(&self) -> bool {
+        !self.commit.is_visible()
+            && self.diff_target == DiffTarget::Stage
     }
 
     fn components(&self) -> Vec<&dyn Component> {

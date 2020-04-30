@@ -3,7 +3,6 @@ use super::{
     DrawableComponent,
 };
 use crate::{
-    keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings, ui,
 };
@@ -24,7 +23,6 @@ use tui::{
 pub struct CommitComponent {
     msg: String,
     visible: bool,
-    stage_empty: bool,
     queue: Queue,
 }
 
@@ -63,11 +61,6 @@ impl Component for CommitComponent {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            commands::COMMIT_OPEN,
-            !self.stage_empty,
-            !self.visible,
-        ));
-        out.push(CommandInfo::new(
             commands::COMMIT_ENTER,
             self.can_commit(),
             self.visible,
@@ -100,13 +93,6 @@ impl Component for CommitComponent {
                 };
                 return true;
             }
-        } else if let Event::Key(e) = ev {
-            if let keys::OPEN_COMMIT = e {
-                if !self.stage_empty {
-                    self.show();
-                    return true;
-                }
-            }
         }
         false
     }
@@ -130,7 +116,6 @@ impl CommitComponent {
         Self {
             queue,
             msg: String::default(),
-            stage_empty: true,
             visible: false,
         }
     }
@@ -170,10 +155,5 @@ impl CommitComponent {
 
     fn can_commit(&self) -> bool {
         !self.msg.is_empty()
-    }
-
-    ///
-    pub fn set_stage_empty(&mut self, empty: bool) {
-        self.stage_empty = empty;
     }
 }
