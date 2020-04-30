@@ -68,7 +68,7 @@ pub mod commands {
     .hide_help();
     ///
     pub static SELECT_STAGING: CommandText = CommandText::new(
-        "Focus Staging [2]",
+        "Focus Stage [2]",
         "focus/select staging area",
         CMD_GROUP_GENERAL,
     );
