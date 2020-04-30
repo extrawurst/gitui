@@ -42,6 +42,24 @@ enum Focus {
     Stage,
 }
 
+/// allows generating code to make sure
+/// we always enumerate all components in both getter functions
+macro_rules! components {
+    ($self:ident, [$($element:ident),+]) => {
+        fn components(& $self) -> Vec<&dyn Component> {
+            vec![
+                $(&$self.$element,)+
+            ]
+        }
+
+        fn components_mut(&mut $self) -> Vec<&mut dyn Component> {
+            vec![
+                $(&mut $self.$element,)+
+            ]
+        }
+    };
+}
+
 ///
 pub struct App {
     focus: Focus,
@@ -251,6 +269,11 @@ impl App {
 
 // private impls
 impl App {
+    components!(
+        self,
+        [msg, reset, commit, help, index, index_wd, diff]
+    );
+
     fn update_diff(&mut self) {
         if let Some((path, is_stage)) = self.selected_path() {
             let diff_params = DiffParams(path.clone(), is_stage);
@@ -469,30 +492,6 @@ impl App {
     fn offer_open_commit_cmd(&self) -> bool {
         !self.commit.is_visible()
             && self.diff_target == DiffTarget::Stage
-    }
-
-    fn components(&self) -> Vec<&dyn Component> {
-        vec![
-            &self.msg,
-            &self.reset,
-            &self.commit,
-            &self.help,
-            &self.index,
-            &self.index_wd,
-            &self.diff,
-        ]
-    }
-
-    fn components_mut(&mut self) -> Vec<&mut dyn Component> {
-        vec![
-            &mut self.msg,
-            &mut self.reset,
-            &mut self.commit,
-            &mut self.help,
-            &mut self.index,
-            &mut self.index_wd,
-            &mut self.diff,
-        ]
     }
 
     fn event_pump(
