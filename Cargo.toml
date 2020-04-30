@@ -11,10 +11,10 @@ readme = "README.md"
 license = "MIT"
 categories = ["command-line-utilities"]
 keywords = [
-	"git",
+    "git",
     "gui",
-	"cli",
-	"terminal",
+    "cli",
+    "terminal",
     "ui",
 ]
 
