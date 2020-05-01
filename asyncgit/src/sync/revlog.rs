@@ -7,9 +7,22 @@ use scopetime::scope_time;
 
 ///
 pub struct LogEntry {
-    message: String,
-    time: i64,
-    author: String,
+    pub message: String,
+    pub time: i64,
+    pub author: String,
+}
+
+///
+pub fn get_log_len(repo_path: &str) -> Result<usize, Error> {
+    scope_time!("get_log_len");
+
+    let repo = repo(repo_path);
+
+    let mut walk = repo.revwalk()?;
+    // start at head
+    walk.push_head()?;
+
+    Ok(walk.count())
 }
 
 ///
@@ -19,6 +32,7 @@ pub fn get_log(repo_path: &str) -> Result<Vec<LogEntry>, Error> {
     let repo = repo(repo_path);
 
     let mut walk = repo.revwalk()?;
+    // start at head
     walk.push_head()?;
 
     let revwalk = walk.filter_map(|id| {
@@ -34,10 +48,22 @@ pub fn get_log(repo_path: &str) -> Result<Vec<LogEntry>, Error> {
     });
 
     let res = revwalk
-        .map(|c: Commit| LogEntry {
-            message: String::from(c.message().unwrap()),
-            author: String::from(c.author().name().unwrap()),
-            time: c.time().seconds(),
+        .map(|c: Commit| {
+            let message = if let Some(msg) = c.message() {
+                String::from(msg)
+            } else {
+                String::from("<unknown>")
+            };
+            let author = if let Some(name) = c.author().name() {
+                String::from(name)
+            } else {
+                String::from("<unknown>")
+            };
+            LogEntry {
+                message,
+                author,
+                time: c.time().seconds(),
+            }
         })
         .collect::<Vec<_>>();
 
@@ -70,10 +96,13 @@ mod tests {
         stage_add_file(repo_path, file_path);
         commit(repo_path, "commit2");
 
+        assert_eq!(get_log_len(repo_path), Ok(2));
+
         let res = get_log(repo_path).unwrap();
 
         assert_eq!(res.len(), 2);
         assert_eq!(res[0].message.as_str(), "commit2");
+        assert_eq!(res[0].author.as_str(), "name");
         assert_eq!(res[1].message.as_str(), "commit1");
 
         Ok(())

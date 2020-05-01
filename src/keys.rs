@@ -14,6 +14,7 @@ const fn with_mod(
     KeyEvent { code, modifiers }
 }
 
+pub const LOG_TEST: KeyEvent = no_mod(KeyCode::Char('l'));
 pub const FOCUS_WORKDIR: KeyEvent = no_mod(KeyCode::Char('1'));
 pub const FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('2'));
 pub const FOCUS_RIGHT: KeyEvent = no_mod(KeyCode::Right);

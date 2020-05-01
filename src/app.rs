@@ -16,7 +16,7 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
-use log::trace;
+use log::{debug, trace};
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
@@ -218,6 +218,11 @@ impl App {
                 {
                     self.commit.show();
                     NeedsUpdate::COMMANDS
+                }
+                keys::LOG_TEST => {
+                    let log_len = sync::get_log_len(CWD).unwrap();
+                    debug!("log_len: {}", log_len);
+                    NeedsUpdate::empty()
                 }
                 _ => NeedsUpdate::empty(),
             };
