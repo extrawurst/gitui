@@ -3,6 +3,7 @@
 pub mod diff;
 mod hooks;
 mod hunks;
+mod log;
 mod reset;
 pub mod status;
 pub mod utils;
