@@ -10,7 +10,7 @@ use std::{
 };
 
 ///
-#[derive(Default, Hash, Clone)]
+#[derive(Default, Hash, Clone, PartialEq)]
 pub struct DiffParams(pub String, pub bool);
 
 struct Request<R, A>(R, Option<A>);
@@ -42,10 +42,10 @@ impl AsyncDiff {
     }
 
     ///
-    pub fn last(&mut self) -> Option<FileDiff> {
+    pub fn last(&mut self) -> Option<(DiffParams, FileDiff)> {
         let last = self.last.lock().unwrap();
         if let Some(res) = last.clone() {
-            Some(res.result)
+            Some((res.params, res.result))
         } else {
             None
         }

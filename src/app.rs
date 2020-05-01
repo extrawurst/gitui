@@ -281,8 +281,10 @@ impl App {
             if self.diff.current() == (path.clone(), is_stage) {
                 // we are already showing a diff of the right file
                 // maybe the diff changed (outside file change)
-                if let Some(last) = self.git_diff.last() {
-                    self.diff.update(path, is_stage, last);
+                if let Some((params, last)) = self.git_diff.last() {
+                    if params == diff_params {
+                        self.diff.update(path, is_stage, last);
+                    }
                 }
             } else {
                 // we dont show the right diff right now, so we need to request
