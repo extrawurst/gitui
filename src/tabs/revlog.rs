@@ -7,11 +7,13 @@ use tui::{
 };
 
 #[derive(Default)]
-pub struct Revlog {}
+pub struct Revlog {
+    test: String,
+}
 
 impl Revlog {
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
-        let txt = vec![Text::Raw(Cow::from("test"))];
+        let txt = vec![Text::Raw(Cow::from(self.test.as_str()))];
         f.render_widget(
             Paragraph::new(txt.iter())
                 .block(
