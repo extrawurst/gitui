@@ -3,10 +3,9 @@
 use super::utils;
 use crate::hash;
 use git2::{
-    Delta, Diff, DiffDelta, DiffFlags, DiffFormat, DiffHunk,
-    DiffOptions, Patch, Repository,
+    Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
+    Repository,
 };
-use log::debug;
 use scopetime::scope_time;
 use std::{fs, path::Path};
 
@@ -173,13 +172,8 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
             let newfile_path =
                 repo_path.join(delta.new_file().path().unwrap());
 
-            let newfile_content =
-                if delta.flags().contains(DiffFlags::NOT_BINARY) {
-                    new_file_content(&newfile_path)
-                        .unwrap_or(String::from("file not found"))
-                } else {
-                    String::from("binary file")
-                };
+            let newfile_content = new_file_content(&newfile_path)
+                .unwrap_or(String::from("file not found"));
 
             let mut patch = Patch::from_buffers(
                 &[],
@@ -232,11 +226,11 @@ fn new_file_content(path: &Path) -> Option<String> {
         } else if meta.file_type().is_file() {
             if let Ok(content) = fs::read_to_string(path) {
                 return Some(content);
+            } else {
+                return Some(String::from("no text file"));
             }
         }
     }
-
-    debug!("could not read: {:?}", path);
 
     None
 }
