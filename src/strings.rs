@@ -3,6 +3,7 @@ pub static TITLE_DIFF: &str = "Diff";
 pub static TITLE_INDEX: &str = "Staged Changes [2]";
 
 pub static TAB_STATUS: &str = "Status";
+pub static TAB_LOG: &str = "Log";
 pub static TAB_DIVIDER: &str = "  |  ";
 
 pub static CMD_SPLITTER: &str = " ";

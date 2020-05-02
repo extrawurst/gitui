@@ -10,6 +10,7 @@ mod poll;
 mod queue;
 mod spinner;
 mod strings;
+mod tabs;
 mod ui;
 mod version;
 

@@ -8,6 +8,7 @@ use crate::{
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
+    tabs::Revlog,
 };
 use asyncgit::{
     current_tick, sync, AsyncDiff, AsyncNotification, AsyncStatus,
@@ -16,7 +17,7 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
-use log::{debug, trace};
+use log::trace;
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
@@ -75,6 +76,8 @@ pub struct App {
     git_diff: AsyncDiff,
     git_status: AsyncStatus,
     current_commands: Vec<CommandInfo>,
+    tab: usize,
+    revlog: Revlog,
     queue: Queue,
 }
 
@@ -107,6 +110,8 @@ impl App {
             git_diff: AsyncDiff::new(sender.clone()),
             git_status: AsyncStatus::new(sender),
             current_commands: Vec::new(),
+            tab: 0,
+            revlog: Revlog::default(),
             queue,
         }
     }
@@ -128,52 +133,19 @@ impl App {
         f.render_widget(
             Tabs::default()
                 .block(Block::default().borders(Borders::BOTTOM))
-                .titles(&[strings::TAB_STATUS])
+                .titles(&[strings::TAB_STATUS, strings::TAB_LOG])
                 .style(Style::default().fg(Color::White))
                 .highlight_style(Style::default().fg(Color::Yellow))
-                .divider(strings::TAB_DIVIDER),
+                .divider(strings::TAB_DIVIDER)
+                .select(self.tab),
             chunks_main[0],
         );
 
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                if self.focus == Focus::Diff {
-                    [
-                        Constraint::Percentage(30),
-                        Constraint::Percentage(70),
-                    ]
-                } else {
-                    [
-                        Constraint::Percentage(50),
-                        Constraint::Percentage(50),
-                    ]
-                }
-                .as_ref(),
-            )
-            .split(chunks_main[1]);
-
-        let left_chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                if self.diff_target == DiffTarget::WorkingDir {
-                    [
-                        Constraint::Percentage(60),
-                        Constraint::Percentage(40),
-                    ]
-                } else {
-                    [
-                        Constraint::Percentage(40),
-                        Constraint::Percentage(60),
-                    ]
-                }
-                .as_ref(),
-            )
-            .split(chunks[0]);
-
-        self.index_wd.draw(f, left_chunks[0]);
-        self.index.draw(f, left_chunks[1]);
-        self.diff.draw(f, chunks[1]);
+        if self.tab == 0 {
+            self.draw_status_tab(f, chunks_main[1]);
+        } else {
+            self.revlog.draw(f, chunks_main[1]);
+        }
 
         Self::draw_commands(
             f,
@@ -219,9 +191,11 @@ impl App {
                     self.commit.show();
                     NeedsUpdate::COMMANDS
                 }
-                keys::LOG_TEST => {
-                    let log_len = sync::get_log_len(CWD).unwrap();
-                    debug!("log_len: {}", log_len);
+                keys::TAB_TOGGLE => {
+                    self.tab += 1;
+                    self.tab %= 2;
+                    // let log_len = sync::get_log_len(CWD).unwrap();
+                    // debug!("log_len: {}", log_len);
                     NeedsUpdate::empty()
                 }
                 _ => NeedsUpdate::empty(),
@@ -528,6 +502,52 @@ impl App {
         self.reset.draw(f, size);
         self.help.draw(f, size);
         self.msg.draw(f, size);
+    }
+
+    fn draw_status_tab<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        area: Rect,
+    ) {
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                if self.focus == Focus::Diff {
+                    [
+                        Constraint::Percentage(30),
+                        Constraint::Percentage(70),
+                    ]
+                } else {
+                    [
+                        Constraint::Percentage(50),
+                        Constraint::Percentage(50),
+                    ]
+                }
+                .as_ref(),
+            )
+            .split(area);
+
+        let left_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                if self.diff_target == DiffTarget::WorkingDir {
+                    [
+                        Constraint::Percentage(60),
+                        Constraint::Percentage(40),
+                    ]
+                } else {
+                    [
+                        Constraint::Percentage(40),
+                        Constraint::Percentage(60),
+                    ]
+                }
+                .as_ref(),
+            )
+            .split(chunks[0]);
+
+        self.index_wd.draw(f, left_chunks[0]);
+        self.index.draw(f, left_chunks[1]);
+        self.diff.draw(f, chunks[1]);
     }
 
     fn draw_commands<B: Backend>(
