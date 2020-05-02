@@ -166,7 +166,7 @@ impl ChangesComponent {
         match &item.kind {
             FileTreeItemKind::File(status_item) => {
                 let status_char =
-                    Self::item_status_char(&status_item.status);
+                    Self::item_status_char(status_item.status);
                 let file = Path::new(&status_item.path)
                     .file_name()
                     .unwrap()
@@ -182,7 +182,7 @@ impl ChangesComponent {
                         w = width as usize
                     )
                 } else {
-                    format!("{} {}{}", status_char, indent_str, file) //M + - R
+                    format!("{} {}{}", status_char, indent_str, file)
                 };
 
                 let mut style =
@@ -239,7 +239,7 @@ impl ChangesComponent {
         }
     }
 
-    fn item_status_char(item_type: &Option<StatusItemType>) -> char {
+    fn item_status_char(item_type: Option<StatusItemType>) -> char {
         if let Some(item_type) = item_type {
             match item_type {
                 StatusItemType::Modified => 'M',
