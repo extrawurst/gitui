@@ -165,6 +165,8 @@ impl ChangesComponent {
 
         match &item.kind {
             FileTreeItemKind::File(status_item) => {
+                let status_char =
+                    Self::item_status_char(&status_item.status);
                 let file = Path::new(&status_item.path)
                     .file_name()
                     .unwrap()
@@ -173,28 +175,22 @@ impl ChangesComponent {
 
                 let txt = if selected {
                     format!(
-                        "{}{:w$}",
+                        "{} {}{:w$}",
+                        status_char,
                         indent_str,
                         file,
                         w = width as usize
                     )
                 } else {
-                    format!("{}{}", indent_str, file)
+                    format!("{} {}{}", status_char, indent_str, file) //M + - R
                 };
 
-                let mut style = Style::default().fg(
-                    match status_item
-                        .status
-                        .unwrap_or(StatusItemType::Modified)
-                    {
-                        StatusItemType::Modified => {
-                            Color::LightYellow
-                        }
-                        StatusItemType::New => Color::LightGreen,
-                        StatusItemType::Deleted => Color::LightRed,
-                        _ => Color::White,
-                    },
-                );
+                let mut style =
+                    Style::default().fg(Self::item_color(
+                        status_item
+                            .status
+                            .unwrap_or(StatusItemType::Modified),
+                    ));
 
                 if selected {
                     style = style.bg(select_color);
@@ -209,7 +205,7 @@ impl ChangesComponent {
 
                 let txt = if selected {
                     format!(
-                        "{}{}{:w$}",
+                        "  {}{}{:w$}",
                         indent_str,
                         collapse_char,
                         item.info.path,
@@ -217,7 +213,7 @@ impl ChangesComponent {
                     )
                 } else {
                     format!(
-                        "{}{}{}",
+                        "  {}{}{}",
                         indent_str, collapse_char, item.info.path,
                     )
                 };
@@ -230,6 +226,30 @@ impl ChangesComponent {
 
                 Some(Text::Styled(Cow::from(txt), style))
             }
+        }
+    }
+
+    fn item_color(item_type: StatusItemType) -> Color {
+        match item_type {
+            StatusItemType::Modified => Color::LightYellow,
+            StatusItemType::New => Color::LightGreen,
+            StatusItemType::Deleted => Color::LightRed,
+            StatusItemType::Renamed => Color::LightMagenta,
+            _ => Color::White,
+        }
+    }
+
+    fn item_status_char(item_type: &Option<StatusItemType>) -> char {
+        if let Some(item_type) = item_type {
+            match item_type {
+                StatusItemType::Modified => 'M',
+                StatusItemType::New => '+',
+                StatusItemType::Deleted => '-',
+                StatusItemType::Renamed => 'R',
+                _ => ' ',
+            }
+        } else {
+            ' '
         }
     }
 }
