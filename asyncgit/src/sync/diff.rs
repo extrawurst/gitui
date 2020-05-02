@@ -3,9 +3,10 @@
 use super::utils;
 use crate::hash;
 use git2::{
-    Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
-    Repository,
+    Delta, Diff, DiffDelta, DiffFlags, DiffFormat, DiffHunk,
+    DiffOptions, Patch, Repository,
 };
+use log::debug;
 use scopetime::scope_time;
 use std::{fs, path::Path};
 
@@ -172,7 +173,13 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
             let newfile_path =
                 repo_path.join(delta.new_file().path().unwrap());
 
-            let newfile_content = new_file_content(&newfile_path);
+            let newfile_content =
+                if delta.flags().contains(DiffFlags::NOT_BINARY) {
+                    new_file_content(&newfile_path)
+                        .unwrap_or(String::from("file not found"))
+                } else {
+                    String::from("binary file")
+                };
 
             let mut patch = Patch::from_buffers(
                 &[],
@@ -216,22 +223,22 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
     res
 }
 
-fn new_file_content(path: &Path) -> String {
+fn new_file_content(path: &Path) -> Option<String> {
     if let Ok(meta) = fs::symlink_metadata(path) {
         if meta.file_type().is_symlink() {
-            return fs::read_link(path)
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string();
+            if let Ok(path) = fs::read_link(path) {
+                return Some(path.to_str()?.to_string());
+            }
         } else if meta.file_type().is_file() {
             if let Ok(content) = fs::read_to_string(path) {
-                return content;
+                return Some(content);
             }
         }
     }
 
-    "file not found".to_string()
+    debug!("could not read: {:?}", path);
+
+    None
 }
 
 #[cfg(test)]
