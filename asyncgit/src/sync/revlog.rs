@@ -13,20 +13,10 @@ pub struct LogEntry {
 }
 
 ///
-pub fn get_log_len(repo_path: &str) -> Result<usize, Error> {
-    scope_time!("get_log_len");
-
-    let repo = repo(repo_path);
-
-    let mut walk = repo.revwalk()?;
-    // start at head
-    walk.push_head()?;
-
-    Ok(walk.count())
-}
-
-///
-pub fn get_log(repo_path: &str) -> Result<Vec<LogEntry>, Error> {
+pub fn get_log(
+    repo_path: &str,
+    limit: usize,
+) -> Result<Vec<LogEntry>, Error> {
     scope_time!("get_log");
 
     let repo = repo(repo_path);
@@ -35,25 +25,23 @@ pub fn get_log(repo_path: &str) -> Result<Vec<LogEntry>, Error> {
     // start at head
     walk.push_head()?;
 
-    let revwalk = walk.filter_map(|id| {
-        if let Ok(id) = id {
-            let commit = repo.find_commit(id);
+    let revwalk = walk
+        .filter_map(|id| {
+            if let Ok(id) = id {
+                let commit = repo.find_commit(id);
 
-            if let Ok(commit) = commit {
-                return Some(commit);
+                if let Ok(commit) = commit {
+                    return Some(commit);
+                }
             }
-        }
 
-        None
-    });
+            None
+        })
+        .take(limit);
 
     let res = revwalk
         .map(|c: Commit| {
-            let message = if let Some(msg) = c.message() {
-                String::from(msg)
-            } else {
-                String::from("<unknown>")
-            };
+            let message = get_message(&c);
             let author = if let Some(name) = c.author().name() {
                 String::from(name)
             } else {
@@ -68,6 +56,22 @@ pub fn get_log(repo_path: &str) -> Result<Vec<LogEntry>, Error> {
         .collect::<Vec<_>>();
 
     Ok(res)
+}
+
+fn get_message(c: &Commit) -> String {
+    if let Some(msg) = c.message() {
+        limit_str(msg, 50)
+    } else {
+        String::from("<unknown>")
+    }
+}
+
+fn limit_str(s: &str, limit: usize) -> String {
+    if let Some(first) = s.lines().next() {
+        first.chars().take(limit).collect::<String>()
+    } else {
+        String::new()
+    }
 }
 
 #[cfg(test)]
@@ -96,9 +100,7 @@ mod tests {
         stage_add_file(repo_path, file_path);
         commit(repo_path, "commit2");
 
-        assert_eq!(get_log_len(repo_path), Ok(2));
-
-        let res = get_log(repo_path).unwrap();
+        let res = get_log(repo_path, 100).unwrap();
 
         assert_eq!(res.len(), 2);
         assert_eq!(res[0].message.as_str(), "commit2");

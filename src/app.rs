@@ -111,7 +111,7 @@ impl App {
             git_status: AsyncStatus::new(sender),
             current_commands: Vec::new(),
             tab: 0,
-            revlog: Revlog::default(),
+            revlog: Revlog::new(),
             queue,
         }
     }
