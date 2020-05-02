@@ -173,7 +173,7 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
                 repo_path.join(delta.new_file().path().unwrap());
 
             let newfile_content = new_file_content(&newfile_path)
-                .unwrap_or(String::from("file not found"));
+                .unwrap_or_else(|| String::from("file not found"));
 
             let mut patch = Patch::from_buffers(
                 &[],
