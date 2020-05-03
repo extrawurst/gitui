@@ -6,7 +6,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
-use sync::{utils::repo, Revlog};
+use sync::{utils::repo, LogWalker};
 
 ///
 pub struct AsyncLog {
@@ -52,10 +52,10 @@ impl AsyncLog {
 
                 let mut entries = Vec::with_capacity(LIMIT_COUNT);
                 let r = repo(CWD);
-                let mut revlog = Revlog::new(&r);
+                let mut walker = LogWalker::new(&r);
                 loop {
                     entries.clear();
-                    revlog.read(&mut entries, LIMIT_COUNT);
+                    walker.read(&mut entries, LIMIT_COUNT);
 
                     let is_done = entries.len() <= 1;
 

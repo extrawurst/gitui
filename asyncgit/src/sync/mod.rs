@@ -3,17 +3,17 @@
 pub mod diff;
 mod hooks;
 mod hunks;
+mod logwalker;
 mod reset;
-mod revlog;
 pub mod status;
 pub mod utils;
 
 pub use hooks::{hooks_commit_msg, hooks_post_commit, HookResult};
 pub use hunks::{stage_hunk, unstage_hunk};
+pub use logwalker::LogWalker;
 pub use reset::{
     reset_stage, reset_workdir_file, reset_workdir_folder,
 };
-pub use revlog::Revlog;
 pub use utils::{
     commit, stage_add_all, stage_add_file, stage_addremoved,
 };

@@ -60,12 +60,12 @@ pub fn get_log(
 }
 
 ///
-pub struct Revlog<'a> {
+pub struct LogWalker<'a> {
     repo: &'a Repository,
     revwalk: Option<Revwalk<'a>>,
 }
 
-impl<'a> Revlog<'a> {
+impl<'a> LogWalker<'a> {
     ///
     pub fn new(repo: &'a Repository) -> Self {
         Self {
@@ -179,7 +179,7 @@ mod tests {
         commit(repo_path, "commit2");
 
         let mut items = Vec::new();
-        let mut walk = Revlog::new(&repo);
+        let mut walk = LogWalker::new(&repo);
         walk.read(&mut items, 1);
 
         assert_eq!(items.len(), 1);
@@ -188,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn test_revlog() -> Result<(), Error> {
+    fn test_logwalker() -> Result<(), Error> {
         let file_path = Path::new("foo");
         let (_td, repo) = repo_init_empty();
         let root = repo.path().parent().unwrap();
@@ -202,7 +202,7 @@ mod tests {
         commit(repo_path, "commit2");
 
         let mut items = Vec::new();
-        let mut walk = Revlog::new(&repo);
+        let mut walk = LogWalker::new(&repo);
         walk.read(&mut items, 100);
 
         assert_eq!(items.len(), 2);
