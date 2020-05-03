@@ -37,4 +37,4 @@ install:
 	cargo install --path "."
 
 install-debug:
-	cargo install --features=timing --path "."
+	cargo install --features=timing --path "." --offline
