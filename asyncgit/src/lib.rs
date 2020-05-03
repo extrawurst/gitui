@@ -5,11 +5,13 @@
 #![deny(clippy::all)]
 
 mod diff;
+mod revlog;
 mod status;
 pub mod sync;
 
 pub use crate::{
     diff::{AsyncDiff, DiffParams},
+    revlog::AsyncLog,
     status::AsyncStatus,
     sync::{
         diff::{DiffLine, DiffLineType, FileDiff},
@@ -30,6 +32,8 @@ pub enum AsyncNotification {
     Status,
     ///
     Diff,
+    ///
+    Log,
 }
 
 /// current working director `./`

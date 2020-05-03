@@ -13,7 +13,7 @@ pub use hunks::{stage_hunk, unstage_hunk};
 pub use reset::{
     reset_stage, reset_workdir_file, reset_workdir_folder,
 };
-pub use revlog::get_log;
+pub use revlog::Revlog;
 pub use utils::{
     commit, stage_add_all, stage_add_file, stage_addremoved,
 };

@@ -1,4 +1,6 @@
-use asyncgit::{sync, CWD};
+use asyncgit::{AsyncLog, AsyncNotification};
+use crossbeam_channel::Sender;
+use log::debug;
 use std::borrow::Cow;
 use tui::{
     backend::Backend,
@@ -20,6 +22,7 @@ pub struct LogChunk {
 
 pub struct Revlog {
     chunk: LogChunk,
+    git_log: AsyncLog,
 }
 
 const STYLE_TIME: Style = Style::new().fg(Color::Blue);
@@ -28,18 +31,12 @@ const STYLE_MSG: Style = Style::new().fg(Color::Reset);
 
 impl Revlog {
     ///
-    pub fn new() -> Self {
-        let items = sync::get_log(CWD, 100)
-            .unwrap()
-            .iter()
-            .map(|e| LogEntry {
-                author: e.author.clone(),
-                msg: e.message.clone(),
-                time: format!("{}", e.time),
-            })
-            .collect::<Vec<_>>();
+    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+        let mut git_log = AsyncLog::new(sender.clone());
+        git_log.fetch();
         Self {
-            chunk: LogChunk { items },
+            chunk: LogChunk { items: Vec::new() },
+            git_log,
         }
     }
 
@@ -60,6 +57,20 @@ impl Revlog {
                 )
                 .alignment(Alignment::Left),
             area,
+        );
+    }
+
+    ///
+    pub fn any_work_pending(&self) -> bool {
+        self.git_log.is_pending()
+    }
+
+    ///
+    pub fn update(&mut self) {
+        debug!(
+            "log: {} ({})",
+            self.git_log.count(),
+            self.git_log.is_pending()
         );
     }
 

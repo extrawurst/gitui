@@ -60,13 +60,13 @@ fn main() -> Result<()> {
         disable_raw_mode().unwrap();
     }
 
+    set_panic_handlers();
+
     let mut terminal = start_terminal(io::stdout())?;
 
     let (tx_git, rx_git) = unbounded();
 
-    let mut app = App::new(tx_git);
-
-    set_panic_handlers();
+    let mut app = App::new(&tx_git);
 
     let rx_input = poll::start_polling_thread();
     let ticker = tick(TICK_INTERVAL);

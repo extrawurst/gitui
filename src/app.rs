@@ -84,7 +84,7 @@ pub struct App {
 // public interface
 impl App {
     ///
-    pub fn new(sender: Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         let queue = Queue::default();
         Self {
             focus: Focus::WorkDir,
@@ -108,10 +108,10 @@ impl App {
             diff: DiffComponent::new(queue.clone()),
             msg: MsgComponent::default(),
             git_diff: AsyncDiff::new(sender.clone()),
-            git_status: AsyncStatus::new(sender),
+            git_status: AsyncStatus::new(sender.clone()),
             current_commands: Vec::new(),
             tab: 0,
-            revlog: Revlog::new(),
+            revlog: Revlog::new(&sender),
             queue,
         }
     }
@@ -232,6 +232,7 @@ impl App {
         match ev {
             AsyncNotification::Diff => self.update_diff(),
             AsyncNotification::Status => self.update_status(),
+            AsyncNotification::Log => self.revlog.update(),
         }
     }
 
@@ -242,7 +243,9 @@ impl App {
 
     ///
     pub fn any_work_pending(&self) -> bool {
-        self.git_diff.is_pending() || self.git_status.is_pending()
+        self.git_diff.is_pending()
+            || self.git_status.is_pending()
+            || self.revlog.any_work_pending()
     }
 }
 
