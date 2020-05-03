@@ -1,6 +1,6 @@
 //! sync git api (various methods)
 
-use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
+use git2::{IndexAddOption, Oid, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -31,7 +31,7 @@ pub fn repo(repo_path: &str) -> Repository {
 }
 
 /// this does not run any git hooks
-pub fn commit(repo_path: &str, msg: &str) {
+pub fn commit(repo_path: &str, msg: &str) -> Oid {
     scope_time!("commit");
 
     let repo = repo(repo_path);
@@ -59,7 +59,7 @@ pub fn commit(repo_path: &str, msg: &str) {
         &tree,
         parents.as_slice(),
     )
-    .unwrap();
+    .unwrap()
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)

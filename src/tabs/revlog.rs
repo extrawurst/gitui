@@ -1,6 +1,5 @@
-use asyncgit::{AsyncLog, AsyncNotification};
+use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
-use log::debug;
 use std::borrow::Cow;
 use tui::{
     backend::Backend,
@@ -16,12 +15,8 @@ pub struct LogEntry {
     msg: String,
 }
 
-pub struct LogChunk {
-    items: Vec<LogEntry>,
-}
-
 pub struct Revlog {
-    chunk: LogChunk,
+    items: Vec<LogEntry>,
     git_log: AsyncLog,
 }
 
@@ -35,7 +30,7 @@ impl Revlog {
         let mut git_log = AsyncLog::new(sender.clone());
         git_log.fetch();
         Self {
-            chunk: LogChunk { items: Vec::new() },
+            items: Vec::new(),
             git_log,
         }
     }
@@ -44,7 +39,7 @@ impl Revlog {
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
         let mut txt = Vec::new();
 
-        for e in &self.chunk.items {
+        for e in &self.items {
             Self::add_entry(e, &mut txt);
         }
 
@@ -67,11 +62,25 @@ impl Revlog {
 
     ///
     pub fn update(&mut self) {
-        debug!(
-            "log: {} ({})",
-            self.git_log.count(),
-            self.git_log.is_pending()
-        );
+        let commits =
+            sync::get_commits_info(CWD, self.git_log.get_slice(1000));
+
+        if let Ok(commits) = commits {
+            self.items = commits
+                .iter()
+                .map(|c| LogEntry {
+                    author: c.author.clone(),
+                    msg: c.message.clone(),
+                    time: format!("{}", c.time),
+                })
+                .collect::<Vec<_>>();
+        }
+
+        // debug!(
+        //     "log: {} ({})",
+        //     self.git_log.count(),
+        //     self.git_log.is_pending()
+        // );
     }
 
     fn add_entry<'a>(e: &'a LogEntry, txt: &mut Vec<Text<'a>>) {

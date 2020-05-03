@@ -2,9 +2,12 @@ use crate::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use git2::Oid;
 use scopetime::scope_time;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Mutex,
+use std::{
+    iter::FromIterator,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
 };
 use sync::{utils::repo, LogWalker};
 
@@ -30,6 +33,13 @@ impl AsyncLog {
     ///
     pub fn count(&mut self) -> usize {
         self.current.lock().unwrap().len()
+    }
+
+    ///
+    pub fn get_slice(&self, limit: usize) -> Vec<Oid> {
+        let list = self.current.lock().unwrap();
+        let max = limit.min(list.len());
+        Vec::from_iter(list[0..max].iter().cloned())
     }
 
     ///
