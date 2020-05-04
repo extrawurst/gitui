@@ -1,5 +1,4 @@
-use git2::{Oid, Repository, Revwalk};
-use log::debug;
+use git2::{Error, Oid, Repository, Revwalk};
 
 ///
 pub struct LogWalker<'a> {
@@ -21,21 +20,24 @@ impl<'a> LogWalker<'a> {
         &mut self,
         out: &mut Vec<Oid>,
         limit: usize,
-    ) -> usize {
+    ) -> Result<usize, Error> {
         let mut count = 0_usize;
 
         if self.revwalk.is_none() {
-            let walk = self.repo.revwalk().unwrap();
+            let mut walk = self.repo.revwalk()?;
+            walk.push_head()?;
             self.revwalk = Some(walk);
-            if let Some(ref mut walk) = self.revwalk {
-                walk.push_head().unwrap();
+
+            if let Ok(head) = self.repo.head() {
+                if let Some(id) = head.target() {
+                    out.push(id);
+                }
             }
         }
 
-        if let Some(walk) = &mut self.revwalk {
+        if let Some(ref mut walk) = self.revwalk {
             for id in walk {
                 if let Ok(id) = id {
-                    // if repo.find_commit(id).is_ok()
                     {
                         out.push(id);
                         count += 1;
@@ -48,9 +50,7 @@ impl<'a> LogWalker<'a> {
             }
         }
 
-        debug!("done walk: {}", count);
-
-        count
+        Ok(count)
     }
 }
 
@@ -82,7 +82,7 @@ mod tests {
 
         let mut items = Vec::new();
         let mut walk = LogWalker::new(&repo);
-        walk.read(&mut items, 1);
+        walk.read(&mut items, 1).unwrap();
 
         assert_eq!(items.len(), 1);
 
@@ -105,12 +105,12 @@ mod tests {
 
         let mut items = Vec::new();
         let mut walk = LogWalker::new(&repo);
-        walk.read(&mut items, 100);
+        walk.read(&mut items, 100).unwrap();
 
         assert_eq!(items.len(), 2);
 
         let mut items = Vec::new();
-        walk.read(&mut items, 100);
+        walk.read(&mut items, 100).unwrap();
 
         assert_eq!(items.len(), 0);
 

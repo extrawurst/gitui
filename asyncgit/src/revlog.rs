@@ -72,16 +72,16 @@ impl AsyncLog {
                 let mut walker = LogWalker::new(&r);
                 loop {
                     entries.clear();
-                    walker.read(&mut entries, LIMIT_COUNT);
+                    let res_is_err = walker
+                        .read(&mut entries, LIMIT_COUNT)
+                        .is_err();
 
-                    let is_done = entries.len() <= 1;
-
-                    {
+                    if !res_is_err {
                         let mut current = arc_current.lock().unwrap();
                         current.extend(entries.iter());
                     }
 
-                    if is_done {
+                    if res_is_err || entries.len() <= 1 {
                         break;
                     } else {
                         Self::notify(&sender);
