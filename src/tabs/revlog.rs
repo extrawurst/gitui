@@ -1,5 +1,6 @@
 use crate::keys;
 use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
+use chrono::prelude::*;
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp};
@@ -115,11 +116,21 @@ impl Revlog {
             );
 
             if let Ok(commits) = commits {
-                self.items.extend(commits.iter().map(|c| LogEntry {
-                    author: c.author.clone(),
-                    msg: c.message.clone(),
-                    time: format!("{}", c.time),
-                    hash: c.hash[0..7].to_string(),
+                self.items.extend(commits.iter().map(|c| {
+                    let time = DateTime::<Local>::from(
+                        DateTime::<Utc>::from_utc(
+                            NaiveDateTime::from_timestamp(c.time, 0),
+                            Utc,
+                        ),
+                    );
+                    LogEntry {
+                        author: c.author.clone(),
+                        msg: c.message.clone(),
+                        time: time
+                            .format("%Y-%m-%d %H:%M:%S")
+                            .to_string(),
+                        hash: c.hash[0..7].to_string(),
+                    }
                 }));
             }
         }
