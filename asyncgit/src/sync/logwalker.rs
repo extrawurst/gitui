@@ -28,9 +28,11 @@ impl<'a> LogWalker<'a> {
             walk.push_head()?;
             self.revwalk = Some(walk);
 
+            // add head oid
             if let Ok(head) = self.repo.head() {
                 if let Some(id) = head.target() {
                     out.push(id);
+                    count += 1;
                 }
             }
         }
@@ -38,13 +40,11 @@ impl<'a> LogWalker<'a> {
         if let Some(ref mut walk) = self.revwalk {
             for id in walk {
                 if let Ok(id) = id {
-                    {
-                        out.push(id);
-                        count += 1;
+                    out.push(id);
+                    count += 1;
 
-                        if count == limit {
-                            break;
-                        }
+                    if count == limit {
+                        break;
                     }
                 }
             }
