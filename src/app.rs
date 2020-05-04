@@ -162,8 +162,13 @@ impl App {
 
         let mut flags = NeedsUpdate::empty();
 
-        if Self::event_pump(ev, self.components_mut().as_mut_slice())
-        {
+        let event_used = if self.tab == 0 {
+            Self::event_pump(ev, self.components_mut().as_mut_slice())
+        } else {
+            self.revlog.event(ev)
+        };
+
+        if event_used {
             flags.insert(NeedsUpdate::COMMANDS);
         } else if let Event::Key(k) = ev {
             let new_flags = match k {
@@ -194,8 +199,6 @@ impl App {
                 keys::TAB_TOGGLE => {
                     self.tab += 1;
                     self.tab %= 2;
-                    // let log_len = sync::get_log_len(CWD).unwrap();
-                    // debug!("log_len: {}", log_len);
                     NeedsUpdate::empty()
                 }
                 _ => NeedsUpdate::empty(),
