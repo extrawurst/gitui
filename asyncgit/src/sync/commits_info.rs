@@ -10,6 +10,8 @@ pub struct CommitInfo {
     pub time: i64,
     ///
     pub author: String,
+    ///
+    pub hash: String,
 }
 
 ///
@@ -35,6 +37,7 @@ pub fn get_commits_info(
                 message,
                 author,
                 time: c.time().seconds(),
+                hash: c.id().to_string(),
             }
         })
         .collect::<Vec<_>>();

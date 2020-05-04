@@ -15,6 +15,7 @@ struct LogEntry {
     time: String,
     author: String,
     msg: String,
+    hash: String,
 }
 
 ///
@@ -26,9 +27,14 @@ pub struct Revlog {
 }
 
 const COLOR_SELECTION_BG: Color = Color::Blue;
+
+const STYLE_HASH: Style = Style::new().fg(Color::Magenta);
 const STYLE_TIME: Style = Style::new().fg(Color::Blue);
 const STYLE_AUTHOR: Style = Style::new().fg(Color::Green);
 const STYLE_MSG: Style = Style::new().fg(Color::Reset);
+
+const STYLE_HASH_SELECTED: Style =
+    Style::new().fg(Color::Magenta).bg(COLOR_SELECTION_BG);
 const STYLE_TIME_SELECTED: Style =
     Style::new().fg(Color::White).bg(COLOR_SELECTION_BG);
 const STYLE_AUTHOR_SELECTED: Style =
@@ -36,7 +42,7 @@ const STYLE_AUTHOR_SELECTED: Style =
 const STYLE_MSG_SELECTED: Style =
     Style::new().fg(Color::Reset).bg(COLOR_SELECTION_BG);
 
-static ELEMENTS_PER_LINE: usize = 6;
+static ELEMENTS_PER_LINE: usize = 8;
 static SLICE_SIZE: usize = 300;
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 
@@ -113,6 +119,7 @@ impl Revlog {
                     author: c.author.clone(),
                     msg: c.message.clone(),
                     time: format!("{}", c.time),
+                    hash: c.hash[0..7].to_string(),
                 }));
             }
         }
@@ -166,6 +173,15 @@ impl Revlog {
             Text::Raw(splitter_txt)
         };
 
+        txt.push(Text::Styled(
+            Cow::from(e.hash.as_str()),
+            if selected {
+                STYLE_HASH_SELECTED
+            } else {
+                STYLE_HASH
+            },
+        ));
+        txt.push(splitter.clone());
         txt.push(Text::Styled(
             Cow::from(e.time.as_str()),
             if selected {
