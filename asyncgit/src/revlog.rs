@@ -40,12 +40,13 @@ impl AsyncLog {
     pub fn get_slice(
         &self,
         start_index: usize,
-        limit: usize,
+        amount: usize,
     ) -> Vec<Oid> {
         let list = self.current.lock().unwrap();
         let list_len = list.len();
         let min = start_index.min(list_len);
-        let max = limit.min(list_len);
+        let max = min + amount;
+        let max = max.min(list_len);
         debug!("get_slice: {}..{}", min, max);
         Vec::from_iter(list[min..max].iter().cloned())
     }

@@ -2,7 +2,6 @@ use crate::keys;
 use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use log::debug;
 use std::borrow::Cow;
 use tui::{
     backend::Backend,
@@ -30,7 +29,8 @@ const STYLE_AUTHOR: Style = Style::new().fg(Color::Green);
 const STYLE_MSG: Style = Style::new().fg(Color::Reset);
 
 static ELEMENTS_PER_LINE: usize = 6;
-static SLICE_SIZE: usize = 500;
+static SLICE_SIZE: usize = 300;
+static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 
 impl Revlog {
     ///
@@ -71,20 +71,28 @@ impl Revlog {
 
     ///
     pub fn update(&mut self) {
-        let commits = sync::get_commits_info(
-            CWD,
-            self.git_log.get_slice(0, SLICE_SIZE),
-        );
+        let max_idx = if self.items.is_empty() {
+            0
+        } else {
+            self.items.len() - 1
+        };
 
-        if let Ok(commits) = commits {
-            self.items = commits
-                .iter()
-                .map(|c| LogEntry {
+        let requires_more_data = max_idx.saturating_sub(self.scroll)
+            < SLICE_OFFSET_RELOAD_THRESHOLD;
+
+        if requires_more_data {
+            let commits = sync::get_commits_info(
+                CWD,
+                self.git_log.get_slice(max_idx + 1, SLICE_SIZE),
+            );
+
+            if let Ok(commits) = commits {
+                self.items.extend(commits.iter().map(|c| LogEntry {
                     author: c.author.clone(),
                     msg: c.message.clone(),
                     time: format!("{}", c.time),
-                })
-                .collect::<Vec<_>>();
+                }));
+            }
         }
     }
 
@@ -113,8 +121,6 @@ impl Revlog {
         } else {
             self.scroll = self.scroll.saturating_add(1);
         }
-
-        debug!("move_selection: {}", self.scroll);
 
         self.update();
     }
