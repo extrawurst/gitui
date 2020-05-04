@@ -2,7 +2,7 @@ use crate::keys;
 use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::borrow::Cow;
+use std::{borrow::Cow, cmp};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -20,6 +20,7 @@ struct LogEntry {
 ///
 pub struct Revlog {
     selection: usize,
+    selection_max: usize,
     items: Vec<LogEntry>,
     git_log: AsyncLog,
 }
@@ -48,6 +49,7 @@ impl Revlog {
             items: Vec::new(),
             git_log,
             selection: 0,
+            selection_max: 0,
         }
     }
 
@@ -63,13 +65,19 @@ impl Revlog {
             Self::add_entry(e, idx == selection, &mut txt);
         }
 
+        let title =
+            format!("log {}/{}", selection, self.selection_max);
         f.render_widget(
             Paragraph::new(
                 txt.iter()
                     .skip(min * ELEMENTS_PER_LINE)
                     .take(height * ELEMENTS_PER_LINE),
             )
-            .block(Block::default().borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(title.as_str()),
+            )
             .alignment(Alignment::Left),
             area,
         );
@@ -91,6 +99,8 @@ impl Revlog {
         let requires_more_data = max_idx
             .saturating_sub(self.selection)
             < SLICE_OFFSET_RELOAD_THRESHOLD;
+
+        self.selection_max = self.git_log.count().saturating_sub(1);
 
         if requires_more_data {
             let commits = sync::get_commits_info(
@@ -134,6 +144,8 @@ impl Revlog {
             self.selection = self.selection.saturating_add(1);
         }
 
+        self.selection = cmp::min(self.selection, self.selection_max);
+
         self.update();
     }
 
@@ -143,6 +155,7 @@ impl Revlog {
         txt: &mut Vec<Text<'a>>,
     ) {
         let count_before = txt.len();
+
         let splitter_txt = Cow::from(" ");
         let splitter = if selected {
             Text::Styled(
