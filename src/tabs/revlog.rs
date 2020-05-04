@@ -19,14 +19,21 @@ struct LogEntry {
 
 ///
 pub struct Revlog {
-    scroll: usize,
+    selection: usize,
     items: Vec<LogEntry>,
     git_log: AsyncLog,
 }
 
+const COLOR_SELECTION_BG: Color = Color::Blue;
 const STYLE_TIME: Style = Style::new().fg(Color::Blue);
 const STYLE_AUTHOR: Style = Style::new().fg(Color::Green);
 const STYLE_MSG: Style = Style::new().fg(Color::Reset);
+const STYLE_TIME_SELECTED: Style =
+    Style::new().fg(Color::White).bg(COLOR_SELECTION_BG);
+const STYLE_AUTHOR_SELECTED: Style =
+    Style::new().fg(Color::Green).bg(COLOR_SELECTION_BG);
+const STYLE_MSG_SELECTED: Style =
+    Style::new().fg(Color::Reset).bg(COLOR_SELECTION_BG);
 
 static ELEMENTS_PER_LINE: usize = 6;
 static SLICE_SIZE: usize = 300;
@@ -40,23 +47,27 @@ impl Revlog {
         Self {
             items: Vec::new(),
             git_log,
-            scroll: 0,
+            selection: 0,
         }
     }
 
     ///
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
-        let mut txt = Vec::new();
+        let height = area.height as usize;
+        let selection = self.selection;
+        let height_d2 = height as usize / 2;
+        let min = selection.saturating_sub(height_d2);
 
-        for e in &self.items {
-            Self::add_entry(e, &mut txt);
+        let mut txt = Vec::new();
+        for (idx, e) in self.items.iter().enumerate() {
+            Self::add_entry(e, idx == selection, &mut txt);
         }
 
         f.render_widget(
             Paragraph::new(
                 txt.iter()
-                    .skip(self.scroll * ELEMENTS_PER_LINE)
-                    .take(area.height as usize * ELEMENTS_PER_LINE),
+                    .skip(min * ELEMENTS_PER_LINE)
+                    .take(height * ELEMENTS_PER_LINE),
             )
             .block(Block::default().borders(Borders::ALL))
             .alignment(Alignment::Left),
@@ -77,7 +88,8 @@ impl Revlog {
             self.items.len() - 1
         };
 
-        let requires_more_data = max_idx.saturating_sub(self.scroll)
+        let requires_more_data = max_idx
+            .saturating_sub(self.selection)
             < SLICE_OFFSET_RELOAD_THRESHOLD;
 
         if requires_more_data {
@@ -117,28 +129,56 @@ impl Revlog {
 
     fn move_selection(&mut self, up: bool) {
         if up {
-            self.scroll = self.scroll.saturating_sub(1);
+            self.selection = self.selection.saturating_sub(1);
         } else {
-            self.scroll = self.scroll.saturating_add(1);
+            self.selection = self.selection.saturating_add(1);
         }
 
         self.update();
     }
 
-    fn add_entry<'a>(e: &'a LogEntry, txt: &mut Vec<Text<'a>>) {
+    fn add_entry<'a>(
+        e: &'a LogEntry,
+        selected: bool,
+        txt: &mut Vec<Text<'a>>,
+    ) {
         let count_before = txt.len();
+        let splitter_txt = Cow::from(" ");
+        let splitter = if selected {
+            Text::Styled(
+                splitter_txt,
+                Style::new().bg(COLOR_SELECTION_BG),
+            )
+        } else {
+            Text::Raw(splitter_txt)
+        };
 
         txt.push(Text::Styled(
             Cow::from(e.time.as_str()),
-            STYLE_TIME,
+            if selected {
+                STYLE_TIME_SELECTED
+            } else {
+                STYLE_TIME
+            },
         ));
-        txt.push(Text::Raw(Cow::from(" ")));
+        txt.push(splitter.clone());
         txt.push(Text::Styled(
             Cow::from(e.author.as_str()),
-            STYLE_AUTHOR,
+            if selected {
+                STYLE_AUTHOR_SELECTED
+            } else {
+                STYLE_AUTHOR
+            },
         ));
-        txt.push(Text::Raw(Cow::from(" ")));
-        txt.push(Text::Styled(Cow::from(e.msg.as_str()), STYLE_MSG));
+        txt.push(splitter);
+        txt.push(Text::Styled(
+            Cow::from(e.msg.as_str()),
+            if selected {
+                STYLE_MSG_SELECTED
+            } else {
+                STYLE_MSG
+            },
+        ));
         txt.push(Text::Raw(Cow::from("\n")));
 
         assert_eq!(txt.len() - count_before, ELEMENTS_PER_LINE);

@@ -1,7 +1,6 @@
 use crate::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use git2::Oid;
-use log::debug;
 use scopetime::scope_time;
 use std::{
     iter::FromIterator,
@@ -47,7 +46,6 @@ impl AsyncLog {
         let min = start_index.min(list_len);
         let max = min + amount;
         let max = max.min(list_len);
-        debug!("get_slice: {}..{}", min, max);
         Vec::from_iter(list[min..max].iter().cloned())
     }
 
