@@ -1,4 +1,8 @@
-use crate::keys;
+use crate::{
+    components::{CommandBlocking, CommandInfo, Component},
+    keys,
+    strings::commands,
+};
 use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
 use chrono::prelude::*;
 use crossbeam_channel::Sender;
@@ -25,6 +29,8 @@ pub struct Revlog {
     selection_max: usize,
     items: Vec<LogEntry>,
     git_log: AsyncLog,
+    visible: bool,
+    first_open_done: bool,
 }
 
 const COLOR_SELECTION_BG: Color = Color::Blue;
@@ -50,13 +56,13 @@ static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 impl Revlog {
     ///
     pub fn new(sender: &Sender<AsyncNotification>) -> Self {
-        let mut git_log = AsyncLog::new(sender.clone());
-        git_log.fetch();
         Self {
             items: Vec::new(),
-            git_log,
+            git_log: AsyncLog::new(sender.clone()),
             selection: 0,
             selection_max: 0,
+            visible: false,
+            first_open_done: false,
         }
     }
 
@@ -136,25 +142,6 @@ impl Revlog {
         }
     }
 
-    ///
-    pub fn event(&mut self, ev: Event) -> bool {
-        if let Event::Key(k) = ev {
-            return match k {
-                keys::MOVE_UP => {
-                    self.move_selection(true);
-                    true
-                }
-                keys::MOVE_DOWN => {
-                    self.move_selection(false);
-                    true
-                }
-                _ => false,
-            };
-        }
-
-        false
-    }
-
     fn move_selection(&mut self, up: bool) {
         if up {
             self.selection = self.selection.saturating_sub(1);
@@ -222,5 +209,56 @@ impl Revlog {
         txt.push(Text::Raw(Cow::from("\n")));
 
         assert_eq!(txt.len() - count_before, ELEMENTS_PER_LINE);
+    }
+}
+
+impl Component for Revlog {
+    fn event(&mut self, ev: Event) -> bool {
+        if let Event::Key(k) = ev {
+            return match k {
+                keys::MOVE_UP => {
+                    self.move_selection(true);
+                    true
+                }
+                keys::MOVE_DOWN => {
+                    self.move_selection(false);
+                    true
+                }
+                _ => false,
+            };
+        }
+
+        false
+    }
+
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) -> CommandBlocking {
+        out.push(CommandInfo::new(
+            commands::SCROLL,
+            self.visible,
+            self.visible || force_all,
+        ));
+
+        CommandBlocking::PassingOn
+    }
+
+    fn is_visible(&self) -> bool {
+        self.visible
+    }
+
+    fn hide(&mut self) {
+        self.visible = false;
+    }
+
+    fn show(&mut self) {
+        self.visible = true;
+
+        if !self.first_open_done {
+            self.first_open_done = true;
+            self.git_log.fetch();
+        }
     }
 }

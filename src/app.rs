@@ -197,9 +197,8 @@ impl App {
                     NeedsUpdate::COMMANDS
                 }
                 keys::TAB_TOGGLE => {
-                    self.tab += 1;
-                    self.tab %= 2;
-                    NeedsUpdate::empty()
+                    self.toggle_tabs();
+                    NeedsUpdate::COMMANDS
                 }
                 _ => NeedsUpdate::empty(),
             };
@@ -299,6 +298,17 @@ impl App {
         None
     }
 
+    fn toggle_tabs(&mut self) {
+        self.tab += 1;
+        self.tab %= 2;
+
+        if self.tab == 1 {
+            self.revlog.show();
+        } else {
+            self.revlog.hide();
+        }
+    }
+
     fn can_focus_diff(&self) -> bool {
         match self.focus {
             Focus::WorkDir => self.index_wd.is_file_seleted(),
@@ -386,92 +396,33 @@ impl App {
     fn commands(&self, force_all: bool) -> Vec<CommandInfo> {
         let mut res = Vec::new();
 
-        for c in self.components() {
-            if c.commands(&mut res, force_all)
-                != CommandBlocking::PassingOn
-                && !force_all
-            {
-                break;
+        if self.revlog.is_visible() {
+            self.revlog.commands(&mut res, force_all);
+        } else {
+            for c in self.components() {
+                if c.commands(&mut res, force_all)
+                    != CommandBlocking::PassingOn
+                    && !force_all
+                {
+                    break;
+                }
             }
+
+            //TODO: move into status tab component
+            self.add_commands_status_tab(
+                &mut res,
+                !self.any_popup_visible(),
+            );
         }
 
-        let main_cmds_available = !self.any_popup_visible();
-
-        {
-            {
-                let focus_on_stage = self.focus == Focus::Stage;
-                let focus_not_diff = self.focus != Focus::Diff;
-                res.push(
-                    CommandInfo::new(
-                        commands::STATUS_FOCUS_UNSTAGED,
-                        true,
-                        main_cmds_available
-                            && focus_on_stage
-                            && !focus_not_diff,
-                    )
-                    .hidden(),
-                );
-                res.push(
-                    CommandInfo::new(
-                        commands::STATUS_FOCUS_STAGED,
-                        true,
-                        main_cmds_available
-                            && !focus_on_stage
-                            && !focus_not_diff,
-                    )
-                    .hidden(),
-                );
-            }
-            {
-                let focus_on_diff = self.focus == Focus::Diff;
-                res.push(CommandInfo::new(
-                    commands::STATUS_FOCUS_LEFT,
-                    true,
-                    main_cmds_available && focus_on_diff,
-                ));
-                res.push(CommandInfo::new(
-                    commands::STATUS_FOCUS_RIGHT,
-                    self.can_focus_diff(),
-                    main_cmds_available && !focus_on_diff,
-                ));
-            }
-
-            res.push(
-                CommandInfo::new(
-                    commands::COMMIT_OPEN,
-                    !self.index.is_empty(),
-                    self.offer_open_commit_cmd(),
-                )
-                .order(-1),
-            );
-
-            res.push(
-                CommandInfo::new(
-                    commands::SELECT_STAGING,
-                    true,
-                    self.focus == Focus::WorkDir,
-                )
-                .order(-2),
-            );
-
-            res.push(
-                CommandInfo::new(
-                    commands::SELECT_UNSTAGED,
-                    true,
-                    self.focus == Focus::Stage,
-                )
-                .order(-2),
-            );
-
-            res.push(
-                CommandInfo::new(
-                    commands::QUIT,
-                    true,
-                    main_cmds_available,
-                )
-                .order(100),
-            );
-        }
+        res.push(
+            CommandInfo::new(
+                commands::QUIT,
+                true,
+                !self.any_popup_visible(),
+            )
+            .order(100),
+        );
 
         res
     }
@@ -492,6 +443,78 @@ impl App {
         }
 
         false
+    }
+
+    fn add_commands_status_tab(
+        &self,
+        res: &mut Vec<CommandInfo>,
+        main_cmds_available: bool,
+    ) {
+        if !self.revlog.is_visible() {
+            let focus_on_stage = self.focus == Focus::Stage;
+            let focus_not_diff = self.focus != Focus::Diff;
+
+            res.push(
+                CommandInfo::new(
+                    commands::STATUS_FOCUS_UNSTAGED,
+                    true,
+                    main_cmds_available
+                        && focus_on_stage
+                        && !focus_not_diff,
+                )
+                .hidden(),
+            );
+            res.push(
+                CommandInfo::new(
+                    commands::STATUS_FOCUS_STAGED,
+                    true,
+                    main_cmds_available
+                        && !focus_on_stage
+                        && !focus_not_diff,
+                )
+                .hidden(),
+            );
+        }
+        {
+            let focus_on_diff = self.focus == Focus::Diff;
+            res.push(CommandInfo::new(
+                commands::STATUS_FOCUS_LEFT,
+                true,
+                main_cmds_available && focus_on_diff,
+            ));
+            res.push(CommandInfo::new(
+                commands::STATUS_FOCUS_RIGHT,
+                self.can_focus_diff(),
+                main_cmds_available && !focus_on_diff,
+            ));
+        }
+
+        res.push(
+            CommandInfo::new(
+                commands::COMMIT_OPEN,
+                !self.index.is_empty(),
+                self.offer_open_commit_cmd(),
+            )
+            .order(-1),
+        );
+
+        res.push(
+            CommandInfo::new(
+                commands::SELECT_STAGING,
+                true,
+                self.focus == Focus::WorkDir,
+            )
+            .order(-2),
+        );
+
+        res.push(
+            CommandInfo::new(
+                commands::SELECT_UNSTAGED,
+                true,
+                self.focus == Focus::Stage,
+            )
+            .order(-2),
+        );
     }
 
     fn any_popup_visible(&self) -> bool {
