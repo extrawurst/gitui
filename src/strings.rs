@@ -3,6 +3,7 @@ pub static TITLE_DIFF: &str = "Diff";
 pub static TITLE_INDEX: &str = "Staged Changes [2]";
 
 pub static TAB_STATUS: &str = "Status";
+pub static TAB_LOG: &str = "Log";
 pub static TAB_DIVIDER: &str = "  |  ";
 
 pub static CMD_SPLITTER: &str = " ";
@@ -73,6 +74,12 @@ pub mod commands {
         CMD_GROUP_GENERAL,
     );
     ///
+    pub static SELECT_STATUS: CommandText = CommandText::new(
+        "Focus Files [1,2]",
+        "focus/select file tree of staged or unstaged files",
+        CMD_GROUP_GENERAL,
+    );
+    ///
     pub static SELECT_UNSTAGED: CommandText = CommandText::new(
         "Focus Unstaged [1]",
         "focus/select unstaged area",
@@ -108,18 +115,7 @@ pub mod commands {
         "revert changes in selected file or entire path",
         CMD_GROUP_CHANGES,
     );
-    ///
-    pub static STATUS_FOCUS_UNSTAGED: CommandText = CommandText::new(
-        "Unstaged [1]",
-        "view changes in working dir",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static STATUS_FOCUS_STAGED: CommandText = CommandText::new(
-        "Staged [2]",
-        "view staged changes",
-        CMD_GROUP_GENERAL,
-    );
+
     ///
     pub static STATUS_FOCUS_LEFT: CommandText = CommandText::new(
         "Back [\u{2190}]", //←

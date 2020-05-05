@@ -286,6 +286,7 @@ dependencies = [
  "asyncgit",
  "backtrace",
  "bitflags",
+ "chrono",
  "crossbeam-channel",
  "crossterm",
  "dirs",

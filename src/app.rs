@@ -8,6 +8,7 @@ use crate::{
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
+    tabs::Revlog,
 };
 use asyncgit::{
     current_tick, sync, AsyncDiff, AsyncNotification, AsyncStatus,
@@ -75,13 +76,15 @@ pub struct App {
     git_diff: AsyncDiff,
     git_status: AsyncStatus,
     current_commands: Vec<CommandInfo>,
+    tab: usize,
+    revlog: Revlog,
     queue: Queue,
 }
 
 // public interface
 impl App {
     ///
-    pub fn new(sender: Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         let queue = Queue::default();
         Self {
             focus: Focus::WorkDir,
@@ -105,8 +108,10 @@ impl App {
             diff: DiffComponent::new(queue.clone()),
             msg: MsgComponent::default(),
             git_diff: AsyncDiff::new(sender.clone()),
-            git_status: AsyncStatus::new(sender),
+            git_status: AsyncStatus::new(sender.clone()),
             current_commands: Vec::new(),
+            tab: 0,
+            revlog: Revlog::new(&sender),
             queue,
         }
     }
@@ -128,52 +133,19 @@ impl App {
         f.render_widget(
             Tabs::default()
                 .block(Block::default().borders(Borders::BOTTOM))
-                .titles(&[strings::TAB_STATUS])
+                .titles(&[strings::TAB_STATUS, strings::TAB_LOG])
                 .style(Style::default().fg(Color::White))
                 .highlight_style(Style::default().fg(Color::Yellow))
-                .divider(strings::TAB_DIVIDER),
+                .divider(strings::TAB_DIVIDER)
+                .select(self.tab),
             chunks_main[0],
         );
 
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                if self.focus == Focus::Diff {
-                    [
-                        Constraint::Percentage(30),
-                        Constraint::Percentage(70),
-                    ]
-                } else {
-                    [
-                        Constraint::Percentage(50),
-                        Constraint::Percentage(50),
-                    ]
-                }
-                .as_ref(),
-            )
-            .split(chunks_main[1]);
-
-        let left_chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                if self.diff_target == DiffTarget::WorkingDir {
-                    [
-                        Constraint::Percentage(60),
-                        Constraint::Percentage(40),
-                    ]
-                } else {
-                    [
-                        Constraint::Percentage(40),
-                        Constraint::Percentage(60),
-                    ]
-                }
-                .as_ref(),
-            )
-            .split(chunks[0]);
-
-        self.index_wd.draw(f, left_chunks[0]);
-        self.index.draw(f, left_chunks[1]);
-        self.diff.draw(f, chunks[1]);
+        if self.tab == 0 {
+            self.draw_status_tab(f, chunks_main[1]);
+        } else {
+            self.revlog.draw(f, chunks_main[1]);
+        }
 
         Self::draw_commands(
             f,
@@ -190,8 +162,13 @@ impl App {
 
         let mut flags = NeedsUpdate::empty();
 
-        if Self::event_pump(ev, self.components_mut().as_mut_slice())
-        {
+        let event_used = if self.tab == 0 {
+            Self::event_pump(ev, self.components_mut().as_mut_slice())
+        } else {
+            self.revlog.event(ev)
+        };
+
+        if event_used {
             flags.insert(NeedsUpdate::COMMANDS);
         } else if let Event::Key(k) = ev {
             let new_flags = match k {
@@ -217,6 +194,10 @@ impl App {
                         && self.offer_open_commit_cmd() =>
                 {
                     self.commit.show();
+                    NeedsUpdate::COMMANDS
+                }
+                keys::TAB_TOGGLE => {
+                    self.toggle_tabs();
                     NeedsUpdate::COMMANDS
                 }
                 _ => NeedsUpdate::empty(),
@@ -253,6 +234,7 @@ impl App {
         match ev {
             AsyncNotification::Diff => self.update_diff(),
             AsyncNotification::Status => self.update_status(),
+            AsyncNotification::Log => self.revlog.update(),
         }
     }
 
@@ -263,7 +245,9 @@ impl App {
 
     ///
     pub fn any_work_pending(&self) -> bool {
-        self.git_diff.is_pending() || self.git_status.is_pending()
+        self.git_diff.is_pending()
+            || self.git_status.is_pending()
+            || self.revlog.any_work_pending()
     }
 }
 
@@ -312,6 +296,17 @@ impl App {
             }
         }
         None
+    }
+
+    fn toggle_tabs(&mut self) {
+        self.tab += 1;
+        self.tab %= 2;
+
+        if self.tab == 1 {
+            self.revlog.show();
+        } else {
+            self.revlog.hide();
+        }
     }
 
     fn can_focus_diff(&self) -> bool {
@@ -401,92 +396,33 @@ impl App {
     fn commands(&self, force_all: bool) -> Vec<CommandInfo> {
         let mut res = Vec::new();
 
-        for c in self.components() {
-            if c.commands(&mut res, force_all)
-                != CommandBlocking::PassingOn
-                && !force_all
-            {
-                break;
+        if self.revlog.is_visible() {
+            self.revlog.commands(&mut res, force_all);
+        } else {
+            for c in self.components() {
+                if c.commands(&mut res, force_all)
+                    != CommandBlocking::PassingOn
+                    && !force_all
+                {
+                    break;
+                }
             }
+
+            //TODO: move into status tab component
+            self.add_commands_status_tab(
+                &mut res,
+                !self.any_popup_visible(),
+            );
         }
 
-        let main_cmds_available = !self.any_popup_visible();
-
-        {
-            {
-                let focus_on_stage = self.focus == Focus::Stage;
-                let focus_not_diff = self.focus != Focus::Diff;
-                res.push(
-                    CommandInfo::new(
-                        commands::STATUS_FOCUS_UNSTAGED,
-                        true,
-                        main_cmds_available
-                            && focus_on_stage
-                            && !focus_not_diff,
-                    )
-                    .hidden(),
-                );
-                res.push(
-                    CommandInfo::new(
-                        commands::STATUS_FOCUS_STAGED,
-                        true,
-                        main_cmds_available
-                            && !focus_on_stage
-                            && !focus_not_diff,
-                    )
-                    .hidden(),
-                );
-            }
-            {
-                let focus_on_diff = self.focus == Focus::Diff;
-                res.push(CommandInfo::new(
-                    commands::STATUS_FOCUS_LEFT,
-                    true,
-                    main_cmds_available && focus_on_diff,
-                ));
-                res.push(CommandInfo::new(
-                    commands::STATUS_FOCUS_RIGHT,
-                    self.can_focus_diff(),
-                    main_cmds_available && !focus_on_diff,
-                ));
-            }
-
-            res.push(
-                CommandInfo::new(
-                    commands::COMMIT_OPEN,
-                    !self.index.is_empty(),
-                    self.offer_open_commit_cmd(),
-                )
-                .order(-1),
-            );
-
-            res.push(
-                CommandInfo::new(
-                    commands::SELECT_STAGING,
-                    true,
-                    self.focus == Focus::WorkDir,
-                )
-                .order(-2),
-            );
-
-            res.push(
-                CommandInfo::new(
-                    commands::SELECT_UNSTAGED,
-                    true,
-                    self.focus == Focus::Stage,
-                )
-                .order(-2),
-            );
-
-            res.push(
-                CommandInfo::new(
-                    commands::QUIT,
-                    true,
-                    main_cmds_available,
-                )
-                .order(100),
-            );
-        }
+        res.push(
+            CommandInfo::new(
+                commands::QUIT,
+                true,
+                !self.any_popup_visible(),
+            )
+            .order(100),
+        );
 
         res
     }
@@ -509,6 +445,62 @@ impl App {
         false
     }
 
+    fn add_commands_status_tab(
+        &self,
+        res: &mut Vec<CommandInfo>,
+        main_cmds_available: bool,
+    ) {
+        {
+            let focus_on_diff = self.focus == Focus::Diff;
+            res.push(CommandInfo::new(
+                commands::STATUS_FOCUS_LEFT,
+                true,
+                main_cmds_available && focus_on_diff,
+            ));
+            res.push(CommandInfo::new(
+                commands::STATUS_FOCUS_RIGHT,
+                self.can_focus_diff(),
+                main_cmds_available && !focus_on_diff,
+            ));
+        }
+
+        res.push(
+            CommandInfo::new(
+                commands::COMMIT_OPEN,
+                !self.index.is_empty(),
+                main_cmds_available && self.offer_open_commit_cmd(),
+            )
+            .order(-1),
+        );
+
+        res.push(
+            CommandInfo::new(
+                commands::SELECT_STATUS,
+                true,
+                main_cmds_available && self.focus == Focus::Diff,
+            )
+            .hidden(),
+        );
+
+        res.push(
+            CommandInfo::new(
+                commands::SELECT_STAGING,
+                true,
+                main_cmds_available && self.focus == Focus::WorkDir,
+            )
+            .order(-2),
+        );
+
+        res.push(
+            CommandInfo::new(
+                commands::SELECT_UNSTAGED,
+                true,
+                main_cmds_available && self.focus == Focus::Stage,
+            )
+            .order(-2),
+        );
+    }
+
     fn any_popup_visible(&self) -> bool {
         self.commit.is_visible()
             || self.help.is_visible()
@@ -523,6 +515,52 @@ impl App {
         self.reset.draw(f, size);
         self.help.draw(f, size);
         self.msg.draw(f, size);
+    }
+
+    fn draw_status_tab<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        area: Rect,
+    ) {
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                if self.focus == Focus::Diff {
+                    [
+                        Constraint::Percentage(30),
+                        Constraint::Percentage(70),
+                    ]
+                } else {
+                    [
+                        Constraint::Percentage(50),
+                        Constraint::Percentage(50),
+                    ]
+                }
+                .as_ref(),
+            )
+            .split(area);
+
+        let left_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                if self.diff_target == DiffTarget::WorkingDir {
+                    [
+                        Constraint::Percentage(60),
+                        Constraint::Percentage(40),
+                    ]
+                } else {
+                    [
+                        Constraint::Percentage(40),
+                        Constraint::Percentage(60),
+                    ]
+                }
+                .as_ref(),
+            )
+            .split(chunks[0]);
+
+        self.index_wd.draw(f, left_chunks[0]);
+        self.index.draw(f, left_chunks[1]);
+        self.diff.draw(f, chunks[1]);
     }
 
     fn draw_commands<B: Backend>(
