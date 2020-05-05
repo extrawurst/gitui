@@ -7,7 +7,7 @@ use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
 use chrono::prelude::*;
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::{borrow::Cow, cmp, time::Instant};
+use std::{borrow::Cow, cmp, convert::TryFrom, time::Instant};
 use sync::CommitInfo;
 use tui::{
     backend::Backend,
@@ -81,7 +81,7 @@ impl Revlog {
             selection_max: 0,
             visible: false,
             first_open_done: false,
-            scroll_state: (Instant::now(), 0f32),
+            scroll_state: (Instant::now(), 0_f32),
         }
     }
 
@@ -146,7 +146,10 @@ impl Revlog {
     fn move_selection(&mut self, up: bool) {
         self.update_scroll_speed();
 
-        let speed_int = (self.scroll_state.1 as usize).max(1);
+        #[allow(clippy::cast_possible_truncation)]
+        let speed_int = usize::try_from(self.scroll_state.1 as i64)
+            .unwrap()
+            .max(1);
 
         if up {
             self.selection = self.selection.saturating_sub(speed_int);
@@ -160,6 +163,11 @@ impl Revlog {
     }
 
     fn update_scroll_speed(&mut self) {
+        const REPEATED_SCROLL_THRESHOLD_MILLIS: u128 = 300;
+        const SCROLL_SPEED_START: f32 = 0.1_f32;
+        const SCROLL_SPEED_MAX: f32 = 10_f32;
+        const SCROLL_SPEED_MULTIPLIER: f32 = 1.05_f32;
+
         let now = Instant::now();
 
         let since_last_scroll =
@@ -167,13 +175,15 @@ impl Revlog {
 
         self.scroll_state.0 = now;
 
-        let speed = if since_last_scroll.as_millis() < 300 {
-            self.scroll_state.1 * 1.05
+        let speed = if since_last_scroll.as_millis()
+            < REPEATED_SCROLL_THRESHOLD_MILLIS
+        {
+            self.scroll_state.1 * SCROLL_SPEED_MULTIPLIER
         } else {
-            0.1f32
+            SCROLL_SPEED_START
         };
 
-        self.scroll_state.1 = speed.min(10f32);
+        self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
     }
 
     fn add_entry<'a>(
