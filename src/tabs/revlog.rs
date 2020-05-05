@@ -8,6 +8,7 @@ use chrono::prelude::*;
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp};
+use sync::CommitInfo;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -21,6 +22,22 @@ struct LogEntry {
     author: String,
     msg: String,
     hash: String,
+}
+
+impl From<&CommitInfo> for LogEntry {
+    fn from(c: &CommitInfo) -> Self {
+        let time =
+            DateTime::<Local>::from(DateTime::<Utc>::from_utc(
+                NaiveDateTime::from_timestamp(c.time, 0),
+                Utc,
+            ));
+        Self {
+            author: c.author.clone(),
+            msg: c.message.clone(),
+            time: time.format("%Y-%m-%d %H:%M:%S").to_string(),
+            hash: c.hash[0..7].to_string(),
+        }
+    }
 }
 
 ///
@@ -79,7 +96,8 @@ impl Revlog {
         }
 
         let title =
-            format!("log {}/{}", selection, self.selection_max);
+            format!("commit {}/{}", selection, self.selection_max);
+
         f.render_widget(
             Paragraph::new(
                 txt.iter()
@@ -122,22 +140,9 @@ impl Revlog {
             );
 
             if let Ok(commits) = commits {
-                self.items.extend(commits.iter().map(|c| {
-                    let time = DateTime::<Local>::from(
-                        DateTime::<Utc>::from_utc(
-                            NaiveDateTime::from_timestamp(c.time, 0),
-                            Utc,
-                        ),
-                    );
-                    LogEntry {
-                        author: c.author.clone(),
-                        msg: c.message.clone(),
-                        time: time
-                            .format("%Y-%m-%d %H:%M:%S")
-                            .to_string(),
-                        hash: c.hash[0..7].to_string(),
-                    }
-                }));
+                self.items.extend(
+                    commits.iter().map(|c| LogEntry::from(c)),
+                );
             }
         }
     }
