@@ -121,13 +121,9 @@ impl Revlog {
 
     ///
     pub fn update(&mut self) {
-        let max_idx = if self.items.is_empty() {
-            0
-        } else {
-            self.items.len() - 1
-        };
+        let next_idx = self.items.len();
 
-        let requires_more_data = max_idx
+        let requires_more_data = next_idx
             .saturating_sub(self.selection)
             < SLICE_OFFSET_RELOAD_THRESHOLD;
 
@@ -136,7 +132,7 @@ impl Revlog {
         if requires_more_data {
             let commits = sync::get_commits_info(
                 CWD,
-                self.git_log.get_slice(max_idx + 1, SLICE_SIZE),
+                &self.git_log.get_slice(next_idx, SLICE_SIZE),
             );
 
             if let Ok(commits) = commits {

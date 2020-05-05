@@ -3,6 +3,7 @@ use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
 
 ///
+#[derive(Debug)]
 pub struct CommitInfo {
     ///
     pub message: String,
@@ -17,7 +18,7 @@ pub struct CommitInfo {
 ///
 pub fn get_commits_info(
     repo_path: &str,
-    ids: Vec<Oid>,
+    ids: &Vec<Oid>,
 ) -> Result<Vec<CommitInfo>, Error> {
     scope_time!("get_commits_info");
 
@@ -88,7 +89,7 @@ mod tests {
         stage_add_file(repo_path, file_path);
         let c2 = commit(repo_path, "commit2");
 
-        let res = get_commits_info(repo_path, vec![c2, c1]).unwrap();
+        let res = get_commits_info(repo_path, &vec![c2, c1]).unwrap();
 
         assert_eq!(res.len(), 2);
         assert_eq!(res[0].message.as_str(), "commit2");

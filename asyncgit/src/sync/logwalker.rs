@@ -27,11 +27,6 @@ impl<'a> LogWalker<'a> {
             let mut walk = self.repo.revwalk()?;
             walk.push_head()?;
             self.revwalk = Some(walk);
-
-            if let Some(id) = self.repo.head()?.target() {
-                out.push(id);
-                count += 1;
-            }
         }
 
         if let Some(ref mut walk) = self.revwalk {
@@ -55,7 +50,8 @@ impl<'a> LogWalker<'a> {
 mod tests {
     use super::*;
     use crate::sync::{
-        commit, stage_add_file, tests::repo_init_empty,
+        commit, get_commits_info, stage_add_file,
+        tests::repo_init_empty,
     };
     use std::{
         fs::File,
@@ -75,13 +71,14 @@ mod tests {
         commit(repo_path, "commit1");
         File::create(&root.join(file_path))?.write_all(b"a")?;
         stage_add_file(repo_path, file_path);
-        commit(repo_path, "commit2");
+        let oid2 = commit(repo_path, "commit2");
 
         let mut items = Vec::new();
         let mut walk = LogWalker::new(&repo);
         walk.read(&mut items, 1).unwrap();
 
         assert_eq!(items.len(), 1);
+        assert_eq!(items[0], oid2);
 
         Ok(())
     }
@@ -98,13 +95,17 @@ mod tests {
         commit(repo_path, "commit1");
         File::create(&root.join(file_path))?.write_all(b"a")?;
         stage_add_file(repo_path, file_path);
-        commit(repo_path, "commit2");
+        let oid2 = commit(repo_path, "commit2");
 
         let mut items = Vec::new();
         let mut walk = LogWalker::new(&repo);
         walk.read(&mut items, 100).unwrap();
 
+        let info = get_commits_info(repo_path, &items).unwrap();
+        dbg!(&info);
+
         assert_eq!(items.len(), 2);
+        assert_eq!(items[0], oid2);
 
         let mut items = Vec::new();
         walk.read(&mut items, 100).unwrap();
