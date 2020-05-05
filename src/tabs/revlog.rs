@@ -7,7 +7,7 @@ use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
 use chrono::prelude::*;
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::{borrow::Cow, cmp};
+use std::{borrow::Cow, cmp, time::Instant};
 use sync::CommitInfo;
 use tui::{
     backend::Backend,
@@ -40,16 +40,6 @@ impl From<&CommitInfo> for LogEntry {
     }
 }
 
-///
-pub struct Revlog {
-    selection: usize,
-    selection_max: usize,
-    items: Vec<LogEntry>,
-    git_log: AsyncLog,
-    visible: bool,
-    first_open_done: bool,
-}
-
 const COLOR_SELECTION_BG: Color = Color::Blue;
 
 const STYLE_HASH: Style = Style::new().fg(Color::Magenta);
@@ -67,8 +57,19 @@ const STYLE_MSG_SELECTED: Style =
     Style::new().fg(Color::Reset).bg(COLOR_SELECTION_BG);
 
 static ELEMENTS_PER_LINE: usize = 8;
-static SLICE_SIZE: usize = 300;
+static SLICE_SIZE: usize = 1000;
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
+
+///
+pub struct Revlog {
+    selection: usize,
+    selection_max: usize,
+    items: Vec<LogEntry>,
+    git_log: AsyncLog,
+    visible: bool,
+    first_open_done: bool,
+    scroll_state: (Instant, f32),
+}
 
 impl Revlog {
     ///
@@ -80,6 +81,7 @@ impl Revlog {
             selection_max: 0,
             visible: false,
             first_open_done: false,
+            scroll_state: (Instant::now(), 0f32),
         }
     }
 
@@ -142,15 +144,36 @@ impl Revlog {
     }
 
     fn move_selection(&mut self, up: bool) {
+        self.update_scroll_speed();
+
+        let speed_int = (self.scroll_state.1 as usize).max(1);
+
         if up {
-            self.selection = self.selection.saturating_sub(1);
+            self.selection = self.selection.saturating_sub(speed_int);
         } else {
-            self.selection = self.selection.saturating_add(1);
+            self.selection = self.selection.saturating_add(speed_int);
         }
 
         self.selection = cmp::min(self.selection, self.selection_max);
 
         self.update();
+    }
+
+    fn update_scroll_speed(&mut self) {
+        let now = Instant::now();
+
+        let since_last_scroll =
+            now.duration_since(self.scroll_state.0);
+
+        self.scroll_state.0 = now;
+
+        let speed = if since_last_scroll.as_millis() < 300 {
+            self.scroll_state.1 * 1.05
+        } else {
+            0.1f32
+        };
+
+        self.scroll_state.1 = speed.min(10f32);
     }
 
     fn add_entry<'a>(
