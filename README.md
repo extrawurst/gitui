@@ -21,6 +21,7 @@ blazing fast terminal-ui for git written in rust
 * context based help (**no** need to remember any hot-key)
 * inspect/commit changes (incl. hooks: *commit-msg*/*post-commit*)
 * (un)stage files/hunks, revert/reset files/hunk
+* browse commit log
 * scalable ui layout
 * async [input polling](assets/perf_compare.jpg) and 
 * async git API for fluid control
