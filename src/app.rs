@@ -450,31 +450,6 @@ impl App {
         res: &mut Vec<CommandInfo>,
         main_cmds_available: bool,
     ) {
-        if !self.revlog.is_visible() {
-            let focus_on_stage = self.focus == Focus::Stage;
-            let focus_not_diff = self.focus != Focus::Diff;
-
-            res.push(
-                CommandInfo::new(
-                    commands::STATUS_FOCUS_UNSTAGED,
-                    true,
-                    main_cmds_available
-                        && focus_on_stage
-                        && !focus_not_diff,
-                )
-                .hidden(),
-            );
-            res.push(
-                CommandInfo::new(
-                    commands::STATUS_FOCUS_STAGED,
-                    true,
-                    main_cmds_available
-                        && !focus_on_stage
-                        && !focus_not_diff,
-                )
-                .hidden(),
-            );
-        }
         {
             let focus_on_diff = self.focus == Focus::Diff;
             res.push(CommandInfo::new(
@@ -493,16 +468,25 @@ impl App {
             CommandInfo::new(
                 commands::COMMIT_OPEN,
                 !self.index.is_empty(),
-                self.offer_open_commit_cmd(),
+                main_cmds_available && self.offer_open_commit_cmd(),
             )
             .order(-1),
         );
 
         res.push(
             CommandInfo::new(
+                commands::SELECT_STATUS,
+                true,
+                main_cmds_available && self.focus == Focus::Diff,
+            )
+            .hidden(),
+        );
+
+        res.push(
+            CommandInfo::new(
                 commands::SELECT_STAGING,
                 true,
-                self.focus == Focus::WorkDir,
+                main_cmds_available && self.focus == Focus::WorkDir,
             )
             .order(-2),
         );
@@ -511,7 +495,7 @@ impl App {
             CommandInfo::new(
                 commands::SELECT_UNSTAGED,
                 true,
-                self.focus == Focus::Stage,
+                main_cmds_available && self.focus == Focus::Stage,
             )
             .order(-2),
         );
