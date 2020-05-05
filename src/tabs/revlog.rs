@@ -136,9 +136,7 @@ impl Revlog {
             );
 
             if let Ok(commits) = commits {
-                self.items.extend(
-                    commits.iter().map(|c| LogEntry::from(c)),
-                );
+                self.items.extend(commits.iter().map(LogEntry::from));
             }
         }
     }

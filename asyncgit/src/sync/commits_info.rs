@@ -18,7 +18,7 @@ pub struct CommitInfo {
 ///
 pub fn get_commits_info(
     repo_path: &str,
-    ids: &Vec<Oid>,
+    ids: &[Oid],
 ) -> Result<Vec<CommitInfo>, Error> {
     scope_time!("get_commits_info");
 
