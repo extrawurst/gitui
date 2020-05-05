@@ -1,6 +1,8 @@
 //! sync git api (various methods)
 
-use git2::{IndexAddOption, Oid, Repository, RepositoryOpenFlags};
+use git2::{
+    Error, IndexAddOption, Oid, Repository, RepositoryOpenFlags,
+};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -31,19 +33,18 @@ pub fn repo(repo_path: &str) -> Repository {
 }
 
 /// this does not run any git hooks
-pub fn commit(repo_path: &str, msg: &str) -> Oid {
+pub fn commit(repo_path: &str, msg: &str) -> Result<Oid, Error> {
     scope_time!("commit");
 
     let repo = repo(repo_path);
 
-    let signature = repo.signature().unwrap();
-    let mut index = repo.index().unwrap();
-    let tree_id = index.write_tree().unwrap();
-    let tree = repo.find_tree(tree_id).unwrap();
+    let signature = repo.signature()?;
+    let mut index = repo.index()?;
+    let tree_id = index.write_tree()?;
+    let tree = repo.find_tree(tree_id)?;
 
     let parents = if let Ok(reference) = repo.head() {
-        let parent =
-            repo.find_commit(reference.target().unwrap()).unwrap();
+        let parent = repo.find_commit(reference.target().unwrap())?;
         vec![parent]
     } else {
         Vec::new()
@@ -59,7 +60,6 @@ pub fn commit(repo_path: &str, msg: &str) -> Oid {
         &tree,
         parents.as_slice(),
     )
-    .unwrap()
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
@@ -144,7 +144,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
-        commit(repo_path, "commit msg");
+        commit(repo_path, "commit msg").unwrap();
 
         assert_eq!(get_statuses(repo_path), (0, 0));
     }
@@ -169,7 +169,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
-        commit(repo_path, "commit msg");
+        commit(repo_path, "commit msg").unwrap();
 
         assert_eq!(get_statuses(repo_path), (0, 0));
     }
@@ -256,7 +256,7 @@ mod tests {
 
         assert_eq!(stage_add_file(repo_path, file_path), true);
 
-        commit(repo_path, "commit msg");
+        commit(repo_path, "commit msg").unwrap();
 
         // delete the file now
         assert_eq!(remove_file(full_path).is_ok(), true);

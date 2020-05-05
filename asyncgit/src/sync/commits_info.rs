@@ -84,10 +84,10 @@ mod tests {
 
         File::create(&root.join(file_path))?.write_all(b"a")?;
         stage_add_file(repo_path, file_path);
-        let c1 = commit(repo_path, "commit1");
+        let c1 = commit(repo_path, "commit1").unwrap();
         File::create(&root.join(file_path))?.write_all(b"a")?;
         stage_add_file(repo_path, file_path);
-        let c2 = commit(repo_path, "commit2");
+        let c2 = commit(repo_path, "commit2").unwrap();
 
         let res = get_commits_info(repo_path, &vec![c2, c1]).unwrap();
 

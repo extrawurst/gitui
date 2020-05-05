@@ -68,10 +68,10 @@ mod tests {
 
         File::create(&root.join(file_path))?.write_all(b"a")?;
         stage_add_file(repo_path, file_path);
-        commit(repo_path, "commit1");
+        commit(repo_path, "commit1").unwrap();
         File::create(&root.join(file_path))?.write_all(b"a")?;
         stage_add_file(repo_path, file_path);
-        let oid2 = commit(repo_path, "commit2");
+        let oid2 = commit(repo_path, "commit2").unwrap();
 
         let mut items = Vec::new();
         let mut walk = LogWalker::new(&repo);
@@ -92,10 +92,10 @@ mod tests {
 
         File::create(&root.join(file_path))?.write_all(b"a")?;
         stage_add_file(repo_path, file_path);
-        commit(repo_path, "commit1");
+        commit(repo_path, "commit1").unwrap();
         File::create(&root.join(file_path))?.write_all(b"a")?;
         stage_add_file(repo_path, file_path);
-        let oid2 = commit(repo_path, "commit2");
+        let oid2 = commit(repo_path, "commit2").unwrap();
 
         let mut items = Vec::new();
         let mut walk = LogWalker::new(&repo);

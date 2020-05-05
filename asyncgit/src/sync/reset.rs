@@ -207,7 +207,7 @@ mod tests {
         }
 
         assert!(stage_add_all(repo_path, "*"));
-        commit(repo_path, "msg");
+        commit(repo_path, "msg").unwrap();
 
         {
             File::create(&root.join("foo/file1.txt"))?

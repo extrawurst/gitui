@@ -134,7 +134,7 @@ impl CommitComponent {
             return;
         }
 
-        sync::commit(CWD, &self.msg);
+        sync::commit(CWD, &self.msg).unwrap();
         if let HookResult::NotOk(e) = sync::hooks_post_commit(CWD) {
             error!("post-commit hook error: {}", e);
             self.queue.borrow_mut().push_back(
