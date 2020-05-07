@@ -3,14 +3,14 @@
 use super::utils;
 use crate::hash;
 use git2::{
-    Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
-    Repository,
+    Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Error,
+    Patch, Repository,
 };
 use scopetime::scope_time;
 use std::{fs, path::Path};
 
 /// type of diff of a single line
-#[derive(Copy, Clone, PartialEq, Hash)]
+#[derive(Copy, Clone, PartialEq, Hash, Debug)]
 pub enum DiffLineType {
     /// just surrounding line, no change
     None,
@@ -29,7 +29,7 @@ impl Default for DiffLineType {
 }
 
 ///
-#[derive(Default, Clone, Hash)]
+#[derive(Default, Clone, Hash, Debug)]
 pub struct DiffLine {
     ///
     pub content: String,
@@ -57,7 +57,7 @@ impl From<DiffHunk<'_>> for HunkHeader {
 }
 
 /// single diff hunk
-#[derive(Default, Clone, Hash)]
+#[derive(Default, Clone, Hash, Debug)]
 pub struct Hunk {
     /// hash of the hunk header
     pub header_hash: u64,
@@ -66,7 +66,7 @@ pub struct Hunk {
 }
 
 /// collection of hunks, sum of all diff lines
-#[derive(Default, Clone, Hash)]
+#[derive(Default, Clone, Hash, Debug)]
 pub struct FileDiff {
     /// list of hunks
     pub hunks: Vec<Hunk>,
@@ -79,7 +79,7 @@ pub(crate) fn get_diff_raw<'a>(
     p: &str,
     stage: bool,
     reverse: bool,
-) -> (Diff<'a>, DiffOptions) {
+) -> Result<Diff<'a>, Error> {
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
     opt.reverse(reverse);
@@ -88,31 +88,30 @@ pub(crate) fn get_diff_raw<'a>(
         // diff against head
         if let Ok(ref_head) = repo.head() {
             let parent =
-                repo.find_commit(ref_head.target().unwrap()).unwrap();
-            let tree = parent.tree().unwrap();
+                repo.find_commit(ref_head.target().unwrap())?;
+            let tree = parent.tree()?;
             repo.diff_tree_to_index(
                 Some(&tree),
-                Some(&repo.index().unwrap()),
+                Some(&repo.index()?),
                 Some(&mut opt),
-            )
-            .unwrap()
+            )?
         } else {
             repo.diff_tree_to_index(
                 None,
-                Some(&repo.index().unwrap()),
+                Some(&repo.index()?),
                 Some(&mut opt),
-            )
-            .unwrap()
+            )?
         }
     } else {
         opt.include_untracked(true);
         opt.recurse_untracked_dirs(true);
-        repo.diff_index_to_workdir(None, Some(&mut opt)).unwrap()
+        repo.diff_index_to_workdir(None, Some(&mut opt))?
     };
 
-    (diff, opt)
+    Ok(diff)
 }
 
+//TODO: return Option
 ///
 pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
     scope_time!("get_diff");
@@ -120,7 +119,7 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
     let repo = utils::repo(repo_path);
     let repo_path = repo.path().parent().unwrap();
 
-    let (diff, mut opt) = get_diff_raw(&repo, &p, stage, false);
+    let diff = get_diff_raw(&repo, &p, stage, false).unwrap();
 
     let mut res: FileDiff = FileDiff::default();
     let mut current_lines = Vec::new();
@@ -172,26 +171,29 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
             let newfile_path =
                 repo_path.join(delta.new_file().path().unwrap());
 
-            let newfile_content = new_file_content(&newfile_path)
-                .unwrap_or_else(|| String::from("file not found"));
-
-            let mut patch = Patch::from_buffers(
-                &[],
-                None,
-                newfile_content.as_bytes(),
-                Some(&newfile_path),
-                Some(&mut opt),
-            )
-            .unwrap();
-
-            patch
-                .print(&mut |_delta, hunk:Option<DiffHunk>, line: git2::DiffLine| {
-                    put(hunk,line);
-                    true
-                })
+            if let Some(newfile_content) =
+                new_file_content(&newfile_path)
+            {
+                let mut patch = Patch::from_buffers(
+                    &[],
+                    None,
+                    newfile_content.as_bytes(),
+                    Some(&newfile_path),
+                    None,
+                )
                 .unwrap();
 
-            true
+                patch
+                    .print(&mut |_delta, hunk:Option<DiffHunk>, line: git2::DiffLine| {
+                        put(hunk,line);
+                        true
+                    })
+                    .unwrap();
+
+                true
+            } else {
+                false
+            }
         } else {
             false
         }
@@ -226,8 +228,6 @@ fn new_file_content(path: &Path) -> Option<String> {
         } else if meta.file_type().is_file() {
             if let Ok(content) = fs::read_to_string(path) {
                 return Some(content);
-            } else {
-                return Some(String::from("no text file"));
             }
         }
     }
@@ -245,7 +245,7 @@ mod tests {
     };
     use std::{
         fs::{self, File},
-        io::Write,
+        io::{Error, Write},
         path::Path,
     };
 
@@ -390,5 +390,27 @@ mod tests {
         );
 
         assert_eq!(diff.hunks[0].lines[1].content, "test");
+    }
+
+    #[test]
+    fn test_diff_new_binary_file_using_invalid_utf8(
+    ) -> Result<(), Error> {
+        let file_path = Path::new("bar");
+        let (_td, repo) = repo_init_empty();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?
+            .write_all(b"\xc3\x28")?;
+
+        let diff = get_diff(
+            repo_path,
+            String::from(file_path.to_str().unwrap()),
+            false,
+        );
+
+        assert_eq!(diff.hunks.len(), 0);
+
+        Ok(())
     }
 }

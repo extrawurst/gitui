@@ -17,7 +17,7 @@ pub fn stage_hunk(
 
     let repo = repo(repo_path);
 
-    let (diff, _) = get_diff_raw(&repo, &file_path, false, false);
+    let diff = get_diff_raw(&repo, &file_path, false, false).unwrap();
 
     let mut opt = ApplyOptions::new();
     opt.hunk_callback(|hunk| {
@@ -65,7 +65,7 @@ pub fn unstage_hunk(
 
     let repo = repo(repo_path);
 
-    let (diff, _) = get_diff_raw(&repo, &file_path, true, false);
+    let diff = get_diff_raw(&repo, &file_path, true, false).unwrap();
     let diff_count_positive = diff.deltas().len();
 
     let hunk_index = find_hunk_index(&diff, hunk_hash);
@@ -75,7 +75,7 @@ pub fn unstage_hunk(
         return false;
     }
 
-    let (diff, _) = get_diff_raw(&repo, &file_path, true, true);
+    let diff = get_diff_raw(&repo, &file_path, true, true).unwrap();
 
     assert_eq!(diff.deltas().len(), diff_count_positive);
 
