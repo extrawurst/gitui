@@ -293,11 +293,13 @@ impl DrawableComponent for DiffComponent {
             style_title = style_title.modifier(Modifier::BOLD);
         }
 
+        let title =
+            format!("{}{}", strings::TITLE_DIFF, self.current.path);
         f.render_widget(
             Paragraph::new(self.get_text(r.width, r.height).iter())
                 .block(
                     Block::default()
-                        .title(strings::TITLE_DIFF)
+                        .title(title.as_str())
                         .borders(Borders::ALL)
                         .border_style(style_border)
                         .title_style(style_title),

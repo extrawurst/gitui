@@ -1,5 +1,5 @@
 pub static TITLE_STATUS: &str = "Unstaged Changes [1]";
-pub static TITLE_DIFF: &str = "Diff";
+pub static TITLE_DIFF: &str = "Diff: ";
 pub static TITLE_INDEX: &str = "Staged Changes [2]";
 
 pub static TAB_STATUS: &str = "Status";
