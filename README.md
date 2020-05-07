@@ -1,7 +1,7 @@
 <h1 align="center">
 <img width="400px" src="assets/logo.png" />
 
-![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3]
+![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4]
 </h1>
 
 [s0]: https://github.com/extrawurst/gitui/workflows/CI/badge.svg
@@ -10,6 +10,8 @@
 [s2]: https://img.shields.io/badge/license-MIT-blue.svg
 [s3]: https://img.shields.io/badge/unsafe-forbidden-success.svg
 [l3]: https://github.com/rust-secure-code/safety-dance/
+[s4]: https://img.shields.io/badge/itch.io-ok-green
+[l4]: https://extrawurst.itch.io/gitui
 
 blazing fast terminal-ui for git written in rust
 
