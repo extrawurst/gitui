@@ -348,8 +348,7 @@ impl Component for ChangesComponent {
                         }
                         true
                     }
-                    keys::STATUS_RESET_FILE_1
-                    | keys::STATUS_RESET_FILE_2 => {
+                    keys::STATUS_RESET_FILE => {
                         self.is_working_dir
                             && self.dispatch_reset_workdir()
                     }
