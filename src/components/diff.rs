@@ -5,7 +5,7 @@ use crate::{
     strings,
 };
 use asyncgit::{hash, DiffLine, DiffLineType, FileDiff};
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::{Event, KeyCode, KeyModifiers};
 use std::{borrow::Cow, cmp, convert::TryFrom};
 use strings::commands;
 use tui::{
@@ -22,6 +22,13 @@ struct Current {
     path: String,
     is_stage: bool,
     hash: u64,
+}
+
+enum ScrollType {
+    Up,
+    Down,
+    Home,
+    End,
 }
 
 ///
@@ -86,15 +93,25 @@ impl DiffComponent {
         }
     }
 
-    fn scroll(&mut self, inc: bool) {
+    fn scroll(&mut self, scroll: ScrollType) {
         let old = self.scroll;
-        if inc {
-            self.scroll = cmp::min(
-                self.diff.lines.saturating_sub(1),
-                self.scroll.saturating_add(1),
-            );
-        } else {
-            self.scroll = self.scroll.saturating_sub(1);
+
+        let scroll_max = self.diff.lines.saturating_sub(1);
+
+        match scroll {
+            ScrollType::Down => {
+                self.scroll = cmp::min(
+                    scroll_max,
+                    self.scroll.saturating_add(1),
+                );
+            }
+
+            ScrollType::Up => {
+                self.scroll = self.scroll.saturating_sub(1);
+            }
+
+            ScrollType::Home => self.scroll = 0,
+            ScrollType::End => self.scroll = scroll_max,
         }
 
         if old != self.scroll {
@@ -322,6 +339,15 @@ impl Component for DiffComponent {
             self.focused,
         ));
 
+        out.push(
+            CommandInfo::new(
+                commands::DIFF_HOME_END,
+                self.can_scroll(),
+                self.focused,
+            )
+            .hidden(),
+        );
+
         let cmd_text = if self.current.is_stage {
             commands::DIFF_HUNK_REMOVE
         } else {
@@ -340,13 +366,23 @@ impl Component for DiffComponent {
     fn event(&mut self, ev: Event) -> bool {
         if self.focused {
             if let Event::Key(e) = ev {
+                let has_shift =
+                    e.modifiers.contains(KeyModifiers::SHIFT);
                 return match e.code {
-                    KeyCode::Down => {
-                        self.scroll(true);
+                    KeyCode::Down if !has_shift => {
+                        self.scroll(ScrollType::Down);
                         true
                     }
-                    KeyCode::Up => {
-                        self.scroll(false);
+                    KeyCode::End | KeyCode::Down if has_shift => {
+                        self.scroll(ScrollType::End);
+                        true
+                    }
+                    KeyCode::Home | KeyCode::Up if has_shift => {
+                        self.scroll(ScrollType::Home);
+                        true
+                    }
+                    KeyCode::Up if !has_shift => {
+                        self.scroll(ScrollType::Up);
                         true
                     }
                     KeyCode::Enter => {

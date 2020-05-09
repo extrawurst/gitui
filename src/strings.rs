@@ -43,6 +43,12 @@ pub mod commands {
         CMD_GROUP_GENERAL,
     );
     ///
+    pub static DIFF_HOME_END: CommandText = CommandText::new(
+        "Scroll [Home,End]",
+        "scroll to top or bottom",
+        CMD_GROUP_DIFF,
+    );
+    ///
     pub static DIFF_HUNK_ADD: CommandText = CommandText::new(
         "Add hunk [enter]",
         "adds selected hunk to stage",
