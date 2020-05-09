@@ -44,8 +44,8 @@ pub mod commands {
     );
     ///
     pub static DIFF_HOME_END: CommandText = CommandText::new(
-        "Scroll [Home,End]",
-        "scroll to top or bottom",
+        "Jump up/down [home,end,shift+up,shift+down]",
+        "scroll to top or bottom of diff",
         CMD_GROUP_DIFF,
     );
     ///
