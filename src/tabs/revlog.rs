@@ -8,7 +8,7 @@ use chrono::prelude::*;
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp, convert::TryFrom, time::Instant};
-use sync::CommitInfo;
+use sync::{CommitInfo, Tags};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -24,29 +24,32 @@ struct LogEntry {
     hash: String,
 }
 
-impl From<&CommitInfo> for LogEntry {
-    fn from(c: &CommitInfo) -> Self {
+impl From<CommitInfo> for LogEntry {
+    fn from(c: CommitInfo) -> Self {
         let time =
             DateTime::<Local>::from(DateTime::<Utc>::from_utc(
                 NaiveDateTime::from_timestamp(c.time, 0),
                 Utc,
             ));
         Self {
-            author: c.author.clone(),
-            msg: c.message.clone(),
+            author: c.author,
+            msg: c.message,
             time: time.format("%Y-%m-%d %H:%M:%S").to_string(),
-            hash: c.hash[0..7].to_string(),
+            hash: c.hash,
         }
     }
 }
 
 const COLOR_SELECTION_BG: Color = Color::Blue;
 
+const STYLE_TAG: Style = Style::new().fg(Color::Yellow);
 const STYLE_HASH: Style = Style::new().fg(Color::Magenta);
 const STYLE_TIME: Style = Style::new().fg(Color::Blue);
 const STYLE_AUTHOR: Style = Style::new().fg(Color::Green);
 const STYLE_MSG: Style = Style::new().fg(Color::Reset);
 
+const STYLE_TAG_SELECTED: Style =
+    Style::new().fg(Color::Yellow).bg(COLOR_SELECTION_BG);
 const STYLE_HASH_SELECTED: Style =
     Style::new().fg(Color::Magenta).bg(COLOR_SELECTION_BG);
 const STYLE_TIME_SELECTED: Style =
@@ -56,7 +59,7 @@ const STYLE_AUTHOR_SELECTED: Style =
 const STYLE_MSG_SELECTED: Style =
     Style::new().fg(Color::Reset).bg(COLOR_SELECTION_BG);
 
-static ELEMENTS_PER_LINE: usize = 8;
+static ELEMENTS_PER_LINE: usize = 10;
 static SLICE_SIZE: usize = 1000;
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 
@@ -69,6 +72,7 @@ pub struct Revlog {
     visible: bool,
     first_open_done: bool,
     scroll_state: (Instant, f32),
+    tags: Tags,
 }
 
 impl Revlog {
@@ -82,6 +86,7 @@ impl Revlog {
             visible: false,
             first_open_done: false,
             scroll_state: (Instant::now(), 0_f32),
+            tags: Tags::new(),
         }
     }
 
@@ -94,7 +99,12 @@ impl Revlog {
 
         let mut txt = Vec::new();
         for (idx, e) in self.items.iter().enumerate() {
-            Self::add_entry(e, idx == selection, &mut txt);
+            let tag = if let Some(tag_name) = self.tags.get(&e.hash) {
+                tag_name.as_str()
+            } else {
+                ""
+            };
+            Self::add_entry(e, idx == selection, &mut txt, tag);
         }
 
         let title =
@@ -138,8 +148,13 @@ impl Revlog {
             );
 
             if let Ok(commits) = commits {
-                self.items.extend(commits.iter().map(LogEntry::from));
+                self.items
+                    .extend(commits.into_iter().map(LogEntry::from));
             }
+        }
+
+        if self.tags.is_empty() {
+            self.tags = sync::get_tags(CWD).unwrap();
         }
     }
 
@@ -190,6 +205,7 @@ impl Revlog {
         e: &'a LogEntry,
         selected: bool,
         txt: &mut Vec<Text<'a>>,
+        tag: &'a str,
     ) {
         let count_before = txt.len();
 
@@ -204,7 +220,7 @@ impl Revlog {
         };
 
         txt.push(Text::Styled(
-            Cow::from(e.hash.as_str()),
+            Cow::from(&e.hash[0..7]),
             if selected {
                 STYLE_HASH_SELECTED
             } else {
@@ -227,6 +243,19 @@ impl Revlog {
                 STYLE_AUTHOR_SELECTED
             } else {
                 STYLE_AUTHOR
+            },
+        ));
+        txt.push(splitter.clone());
+        txt.push(Text::Styled(
+            Cow::from(if tag.is_empty() {
+                String::from("")
+            } else {
+                format!(" {}", tag)
+            }),
+            if selected {
+                STYLE_TAG_SELECTED
+            } else {
+                STYLE_TAG
             },
         ));
         txt.push(splitter);

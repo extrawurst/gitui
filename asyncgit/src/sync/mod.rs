@@ -7,6 +7,7 @@ mod hunks;
 mod logwalker;
 mod reset;
 pub mod status;
+mod tags;
 pub mod utils;
 
 pub use commits_info::{get_commits_info, CommitInfo};
@@ -16,6 +17,7 @@ pub use logwalker::LogWalker;
 pub use reset::{
     reset_stage, reset_workdir_file, reset_workdir_folder,
 };
+pub use tags::{get_tags, Tags};
 pub use utils::{
     commit, stage_add_all, stage_add_file, stage_addremoved,
 };
