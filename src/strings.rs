@@ -25,6 +25,12 @@ pub mod commands {
     static CMD_GROUP_COMMIT: &str = "Commit";
 
     ///
+    pub static TOGGLE_TABS: CommandText = CommandText::new(
+        "Tabs [tabs]",
+        "switch top level tabs",
+        CMD_GROUP_GENERAL,
+    );
+    ///
     pub static HELP_OPEN: CommandText = CommandText::new(
         "Help [h]",
         "open this help screen",

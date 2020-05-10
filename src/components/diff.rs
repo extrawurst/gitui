@@ -350,16 +350,15 @@ impl Component for DiffComponent {
             .hidden(),
         );
 
-        let cmd_text = if self.current.is_stage {
-            commands::DIFF_HUNK_REMOVE
-        } else {
-            commands::DIFF_HUNK_ADD
-        };
-
         out.push(CommandInfo::new(
-            cmd_text,
+            commands::DIFF_HUNK_REMOVE,
             self.selected_hunk.is_some(),
-            self.focused,
+            self.focused && self.current.is_stage,
+        ));
+        out.push(CommandInfo::new(
+            commands::DIFF_HUNK_ADD,
+            self.selected_hunk.is_some(),
+            self.focused && !self.current.is_stage,
         ));
 
         CommandBlocking::PassingOn

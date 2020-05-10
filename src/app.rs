@@ -417,6 +417,15 @@ impl App {
 
         res.push(
             CommandInfo::new(
+                commands::TOGGLE_TABS,
+                true,
+                !self.any_popup_visible(),
+            )
+            .hidden(),
+        );
+
+        res.push(
+            CommandInfo::new(
                 commands::QUIT,
                 true,
                 !self.any_popup_visible(),
