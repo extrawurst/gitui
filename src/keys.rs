@@ -28,10 +28,14 @@ pub const OPEN_HELP: KeyEvent = no_mod(KeyCode::Char('h'));
 pub const MOVE_LEFT: KeyEvent = no_mod(KeyCode::Left);
 pub const MOVE_RIGHT: KeyEvent = no_mod(KeyCode::Right);
 pub const HOME: KeyEvent = no_mod(KeyCode::Home);
+pub const END: KeyEvent = no_mod(KeyCode::End);
 pub const MOVE_UP: KeyEvent = no_mod(KeyCode::Up);
 pub const MOVE_DOWN: KeyEvent = no_mod(KeyCode::Down);
 pub const SHIFT_UP: KeyEvent =
     with_mod(KeyCode::Up, KeyModifiers::SHIFT);
+pub const SHIFT_DOWN: KeyEvent =
+    with_mod(KeyCode::Down, KeyModifiers::SHIFT);
+pub const ENTER: KeyEvent = no_mod(KeyCode::Enter);
 pub const STATUS_STAGE_FILE: KeyEvent = no_mod(KeyCode::Enter);
 pub const STATUS_RESET_FILE: KeyEvent =
     with_mod(KeyCode::Char('D'), KeyModifiers::SHIFT);

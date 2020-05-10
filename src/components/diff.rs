@@ -1,11 +1,12 @@
 use super::{CommandBlocking, DrawableComponent};
 use crate::{
     components::{CommandInfo, Component},
+    keys,
     queue::{InternalEvent, Queue},
     strings,
 };
 use asyncgit::{hash, DiffLine, DiffLineType, FileDiff};
-use crossterm::event::{Event, KeyCode, KeyModifiers};
+use crossterm::event::Event;
 use std::{borrow::Cow, cmp, convert::TryFrom};
 use strings::commands;
 use tui::{
@@ -367,34 +368,26 @@ impl Component for DiffComponent {
     fn event(&mut self, ev: Event) -> bool {
         if self.focused {
             if let Event::Key(e) = ev {
-                let has_shift =
-                    e.modifiers.contains(KeyModifiers::SHIFT);
-                return match e.code {
-                    KeyCode::Down if !has_shift => {
+                return match e {
+                    keys::MOVE_DOWN => {
                         self.scroll(ScrollType::Down);
                         true
                     }
-                    KeyCode::Down if has_shift => {
+                    keys::SHIFT_DOWN | keys::END => {
                         self.scroll(ScrollType::End);
                         true
                     }
-                    KeyCode::End => {
-                        self.scroll(ScrollType::End);
-                        true
-                    }
-                    KeyCode::Up if has_shift => {
+
+                    keys::HOME | keys::SHIFT_UP => {
                         self.scroll(ScrollType::Home);
                         true
                     }
-                    KeyCode::Home => {
-                        self.scroll(ScrollType::Home);
-                        true
-                    }
-                    KeyCode::Up if !has_shift => {
+
+                    keys::MOVE_UP => {
                         self.scroll(ScrollType::Up);
                         true
                     }
-                    KeyCode::Enter => {
+                    keys::ENTER => {
                         self.add_hunk();
                         true
                     }
