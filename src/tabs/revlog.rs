@@ -1,5 +1,7 @@
 use crate::{
-    components::{CommandBlocking, CommandInfo, Component},
+    components::{
+        CommandBlocking, CommandInfo, Component, ScrollType,
+    },
     keys,
     strings::commands,
 };
@@ -158,7 +160,7 @@ impl Revlog {
         }
     }
 
-    fn move_selection(&mut self, up: bool) {
+    fn move_selection(&mut self, scroll: ScrollType) {
         self.update_scroll_speed();
 
         #[allow(clippy::cast_possible_truncation)]
@@ -166,11 +168,16 @@ impl Revlog {
             .unwrap()
             .max(1);
 
-        if up {
-            self.selection = self.selection.saturating_sub(speed_int);
-        } else {
-            self.selection = self.selection.saturating_add(speed_int);
-        }
+        self.selection = match scroll {
+            ScrollType::Up => {
+                self.selection.saturating_sub(speed_int)
+            }
+            ScrollType::Down => {
+                self.selection.saturating_add(speed_int)
+            }
+            ScrollType::Home => 0,
+            _ => self.selection,
+        };
 
         self.selection = cmp::min(self.selection, self.selection_max);
 
@@ -278,11 +285,15 @@ impl Component for Revlog {
         if let Event::Key(k) = ev {
             return match k {
                 keys::MOVE_UP => {
-                    self.move_selection(true);
+                    self.move_selection(ScrollType::Up);
                     true
                 }
                 keys::MOVE_DOWN => {
-                    self.move_selection(false);
+                    self.move_selection(ScrollType::Down);
+                    true
+                }
+                keys::SHIFT_UP | keys::HOME => {
+                    self.move_selection(ScrollType::Home);
                     true
                 }
                 _ => false,

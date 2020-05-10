@@ -1,4 +1,4 @@
-use super::{CommandBlocking, DrawableComponent};
+use super::{CommandBlocking, DrawableComponent, ScrollType};
 use crate::{
     components::{CommandInfo, Component},
     keys,
@@ -23,14 +23,6 @@ struct Current {
     path: String,
     is_stage: bool,
     hash: u64,
-}
-
-#[derive(Copy, Clone)]
-enum ScrollType {
-    Up,
-    Down,
-    Home,
-    End,
 }
 
 ///

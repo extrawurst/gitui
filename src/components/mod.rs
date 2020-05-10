@@ -19,6 +19,14 @@ pub use help::HelpComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
 
+#[derive(Copy, Clone)]
+pub enum ScrollType {
+    Up,
+    Down,
+    Home,
+    End,
+}
+
 ///
 #[derive(PartialEq)]
 pub enum CommandBlocking {

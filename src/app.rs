@@ -298,11 +298,8 @@ impl App {
 
     fn check_quit(&mut self, ev: Event) {
         if let Event::Key(e) = ev {
-            match e {
-                keys::EXIT => {
-                    self.do_quit = true;
-                }
-                _ => (),
+            if let keys::EXIT = e {
+                self.do_quit = true;
             }
         }
     }
