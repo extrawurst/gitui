@@ -19,6 +19,7 @@ pub enum MoveSelection {
     Left,
     Right,
     Home,
+    End,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -73,6 +74,7 @@ impl StatusTree {
                     self.selection_right(selection)
                 }
                 MoveSelection::Home => SelectionChange::new(0, false),
+                MoveSelection::End => self.selection_end(),
             };
 
             let changed_index =
@@ -157,6 +159,27 @@ impl StatusTree {
                 new_index = current_index;
                 break;
             }
+        }
+
+        SelectionChange::new(new_index, false)
+    }
+
+    fn selection_end(&self) -> SelectionChange {
+        let items_max = self.tree.len().saturating_sub(1);
+
+        let mut new_index = items_max;
+
+        loop {
+            if self.is_visible_index(new_index) {
+                break;
+            }
+
+            if new_index == 0 {
+                break;
+            }
+
+            new_index = new_index.saturating_sub(1);
+            new_index = cmp::min(new_index, items_max);
         }
 
         SelectionChange::new(new_index, false)

@@ -99,11 +99,9 @@ impl DiffComponent {
                     self.scroll.saturating_add(1),
                 );
             }
-
             ScrollType::Up => {
                 self.scroll = self.scroll.saturating_sub(1);
             }
-
             ScrollType::Home => self.scroll = 0,
             ScrollType::End => self.scroll = scroll_max,
         }
