@@ -18,8 +18,10 @@ pub enum MoveSelection {
     Down,
     Left,
     Right,
+    Home,
 }
 
+#[derive(Copy, Clone, Debug)]
 struct SelectionChange {
     new_index: usize,
     changes: bool,
@@ -70,13 +72,15 @@ impl StatusTree {
                 MoveSelection::Right => {
                     self.selection_right(selection)
                 }
+                MoveSelection::Home => SelectionChange::new(0, false),
             };
 
-            let changed = selection_change.new_index != selection;
+            let changed_index =
+                selection_change.new_index != selection;
 
             self.selection = Some(selection_change.new_index);
 
-            changed || selection_change.changes
+            changed_index || selection_change.changes
         } else {
             false
         }

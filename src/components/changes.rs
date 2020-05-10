@@ -358,6 +358,12 @@ impl Component for ChangesComponent {
                     keys::MOVE_UP => {
                         self.move_selection(MoveSelection::Up)
                     }
+                    keys::HOME => {
+                        self.move_selection(MoveSelection::Home)
+                    }
+                    keys::SHIFT_UP => {
+                        self.move_selection(MoveSelection::Home)
+                    }
                     keys::MOVE_LEFT => {
                         self.move_selection(MoveSelection::Left)
                     }

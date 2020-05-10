@@ -374,11 +374,19 @@ impl Component for DiffComponent {
                         self.scroll(ScrollType::Down);
                         true
                     }
-                    KeyCode::End | KeyCode::Down if has_shift => {
+                    KeyCode::Down if has_shift => {
                         self.scroll(ScrollType::End);
                         true
                     }
-                    KeyCode::Home | KeyCode::Up if has_shift => {
+                    KeyCode::End => {
+                        self.scroll(ScrollType::End);
+                        true
+                    }
+                    KeyCode::Up if has_shift => {
+                        self.scroll(ScrollType::Home);
+                        true
+                    }
+                    KeyCode::Home => {
                         self.scroll(ScrollType::Home);
                         true
                     }
