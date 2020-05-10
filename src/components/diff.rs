@@ -24,6 +24,7 @@ struct Current {
     hash: u64,
 }
 
+#[derive(Copy, Clone)]
 enum ScrollType {
     Up,
     Down,
