@@ -172,10 +172,6 @@ impl App {
             flags.insert(NeedsUpdate::COMMANDS);
         } else if let Event::Key(k) = ev {
             let new_flags = match k {
-                keys::EXIT => {
-                    self.do_quit = true;
-                    NeedsUpdate::empty()
-                }
                 keys::FOCUS_WORKDIR => {
                     self.switch_focus(Focus::WorkDir)
                 }
@@ -205,6 +201,8 @@ impl App {
 
             flags.insert(new_flags);
         }
+
+        self.check_quit(ev);
 
         let new_flags = self.process_queue();
         flags.insert(new_flags);
@@ -296,6 +294,17 @@ impl App {
             }
         }
         None
+    }
+
+    fn check_quit(&mut self, ev: Event) {
+        if let Event::Key(e) = ev {
+            match e {
+                keys::EXIT => {
+                    self.do_quit = true;
+                }
+                _ => (),
+            }
+        }
     }
 
     fn toggle_tabs(&mut self) {
