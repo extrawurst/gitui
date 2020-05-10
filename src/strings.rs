@@ -136,7 +136,7 @@ pub mod commands {
     );
     ///
     pub static QUIT: CommandText = CommandText::new(
-        "Quit [esc,q]",
+        "Quit [ctrl+c]",
         "quit gitui application",
         CMD_GROUP_GENERAL,
     );

@@ -172,7 +172,7 @@ impl App {
             flags.insert(NeedsUpdate::COMMANDS);
         } else if let Event::Key(k) = ev {
             let new_flags = match k {
-                keys::EXIT_1 | keys::EXIT_2 => {
+                keys::EXIT => {
                     self.do_quit = true;
                     NeedsUpdate::empty()
                 }
