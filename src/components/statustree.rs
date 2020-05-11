@@ -68,7 +68,6 @@ impl StatusTree {
                 MoveSelection::Down => {
                     self.selection_updown(selection, false)
                 }
-
                 MoveSelection::Left => self.selection_left(selection),
                 MoveSelection::Right => {
                     self.selection_right(selection)

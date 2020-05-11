@@ -19,6 +19,7 @@ use tui::{
     Frame,
 };
 
+#[derive(Default)]
 struct LogEntry {
     time: String,
     author: String,
@@ -62,14 +63,49 @@ const STYLE_MSG_SELECTED: Style =
     Style::new().fg(Color::Reset).bg(COLOR_SELECTION_BG);
 
 static ELEMENTS_PER_LINE: usize = 10;
-static SLICE_SIZE: usize = 1000;
+static SLICE_SIZE: usize = 1200;
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
+
+///
+#[derive(Default)]
+struct ItemBatch {
+    index_offset: usize,
+    items: Vec<LogEntry>,
+}
+
+impl ItemBatch {
+    fn last_idx(&self) -> usize {
+        self.index_offset + self.items.len()
+    }
+
+    fn set_items(
+        &mut self,
+        start_index: usize,
+        commits: Vec<CommitInfo>,
+    ) {
+        self.items.clear();
+        self.items.extend(commits.into_iter().map(LogEntry::from));
+        self.index_offset = start_index;
+    }
+
+    fn needs_data(&self, idx: usize, idx_max: usize) -> bool {
+        let want_min =
+            idx.saturating_sub(SLICE_OFFSET_RELOAD_THRESHOLD);
+        let want_max = idx
+            .saturating_add(SLICE_OFFSET_RELOAD_THRESHOLD)
+            .min(idx_max);
+
+        let needs_data_top = want_min < self.index_offset;
+        let needs_data_bottom = want_max > self.last_idx();
+        needs_data_bottom || needs_data_top
+    }
+}
 
 ///
 pub struct Revlog {
     selection: usize,
     selection_max: usize,
-    items: Vec<LogEntry>,
+    items: ItemBatch,
     git_log: AsyncLog,
     visible: bool,
     first_open_done: bool,
@@ -81,7 +117,7 @@ impl Revlog {
     ///
     pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         Self {
-            items: Vec::new(),
+            items: ItemBatch::default(),
             git_log: AsyncLog::new(sender.clone()),
             selection: 0,
             selection_max: 0,
@@ -95,12 +131,13 @@ impl Revlog {
     ///
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
         let height = area.height as usize;
-        let selection = self.selection;
+        let selection =
+            self.selection.saturating_sub(self.items.index_offset);
         let height_d2 = height as usize / 2;
         let min = selection.saturating_sub(height_d2);
 
         let mut txt = Vec::new();
-        for (idx, e) in self.items.iter().enumerate() {
+        for (idx, e) in self.items.items.iter().enumerate() {
             let tag = if let Some(tag_name) = self.tags.get(&e.hash) {
                 tag_name.as_str()
             } else {
@@ -109,8 +146,10 @@ impl Revlog {
             Self::add_entry(e, idx == selection, &mut txt, tag);
         }
 
-        let title =
-            format!("commit {}/{}", selection, self.selection_max);
+        let title = format!(
+            "commit {}/{}",
+            self.selection, self.selection_max
+        );
 
         f.render_widget(
             Paragraph::new(
@@ -135,28 +174,27 @@ impl Revlog {
 
     ///
     pub fn update(&mut self) {
-        let next_idx = self.items.len();
-
-        let requires_more_data = next_idx
-            .saturating_sub(self.selection)
-            < SLICE_OFFSET_RELOAD_THRESHOLD;
-
         self.selection_max = self.git_log.count().saturating_sub(1);
 
-        if requires_more_data {
-            let commits = sync::get_commits_info(
-                CWD,
-                &self.git_log.get_slice(next_idx, SLICE_SIZE),
-            );
-
-            if let Ok(commits) = commits {
-                self.items
-                    .extend(commits.into_iter().map(LogEntry::from));
-            }
+        if self.items.needs_data(self.selection, self.selection_max) {
+            self.fetch_commits();
         }
 
         if self.tags.is_empty() {
             self.tags = sync::get_tags(CWD).unwrap();
+        }
+    }
+
+    fn fetch_commits(&mut self) {
+        let want_min = self.selection.saturating_sub(SLICE_SIZE / 2);
+
+        let commits = sync::get_commits_info(
+            CWD,
+            &self.git_log.get_slice(want_min, SLICE_SIZE),
+        );
+
+        if let Ok(commits) = commits {
+            self.items.set_items(want_min, commits);
         }
     }
 
@@ -176,7 +214,7 @@ impl Revlog {
                 self.selection.saturating_add(speed_int)
             }
             ScrollType::Home => 0,
-            _ => self.selection,
+            ScrollType::End => self.selection_max,
         };
 
         self.selection = cmp::min(self.selection, self.selection_max);
@@ -294,6 +332,10 @@ impl Component for Revlog {
                 }
                 keys::SHIFT_UP | keys::HOME => {
                     self.move_selection(ScrollType::Home);
+                    true
+                }
+                keys::SHIFT_DOWN | keys::END => {
+                    self.move_selection(ScrollType::End);
                     true
                 }
                 _ => false,
