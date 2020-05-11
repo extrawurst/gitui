@@ -104,6 +104,8 @@ impl DiffComponent {
             }
             ScrollType::Home => self.scroll = 0,
             ScrollType::End => self.scroll = scroll_max,
+            //TODO:
+            _ => (),
         }
 
         if old != self.scroll {

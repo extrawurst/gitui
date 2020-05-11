@@ -59,7 +59,7 @@ impl App {
     }
 
     ///
-    pub fn draw<B: Backend>(&self, f: &mut Frame<B>) {
+    pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
         let chunks_main = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
@@ -86,6 +86,7 @@ impl App {
         if self.tab == 0 {
             self.status_tab.draw(f, chunks_main[1]);
         } else {
+            self.revlog.prepare_draw(chunks_main[1]);
             self.revlog.draw(f, chunks_main[1]);
         }
 

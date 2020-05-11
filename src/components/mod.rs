@@ -57,6 +57,8 @@ pub enum ScrollType {
     Down,
     Home,
     End,
+    PageUp,
+    PageDown,
 }
 
 ///

@@ -31,6 +31,8 @@ pub const HOME: KeyEvent = no_mod(KeyCode::Home);
 pub const END: KeyEvent = no_mod(KeyCode::End);
 pub const MOVE_UP: KeyEvent = no_mod(KeyCode::Up);
 pub const MOVE_DOWN: KeyEvent = no_mod(KeyCode::Down);
+pub const PAGE_DOWN: KeyEvent = no_mod(KeyCode::PageDown);
+pub const PAGE_UP: KeyEvent = no_mod(KeyCode::PageUp);
 pub const SHIFT_UP: KeyEvent =
     with_mod(KeyCode::Up, KeyModifiers::SHIFT);
 pub const SHIFT_DOWN: KeyEvent =

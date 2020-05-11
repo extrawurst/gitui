@@ -53,6 +53,7 @@ pub struct Revlog {
     first_open_done: bool,
     scroll_state: (Instant, f32),
     tags: Tags,
+    current_height: u16,
 }
 
 impl Revlog {
@@ -67,7 +68,13 @@ impl Revlog {
             first_open_done: false,
             scroll_state: (Instant::now(), 0_f32),
             tags: Tags::new(),
+            current_height: 0,
         }
+    }
+
+    ///
+    pub fn prepare_draw(&mut self, area: Rect) {
+        self.current_height = area.height.saturating_sub(2);
     }
 
     ///
@@ -155,6 +162,12 @@ impl Revlog {
             ScrollType::Down => {
                 self.selection.saturating_add(speed_int)
             }
+            ScrollType::PageUp => self.selection.saturating_sub(
+                usize::from(self.current_height).saturating_sub(1),
+            ),
+            ScrollType::PageDown => self.selection.saturating_add(
+                usize::from(self.current_height).saturating_sub(1),
+            ),
             ScrollType::Home => 0,
             ScrollType::End => self.selection_max,
         };
@@ -279,6 +292,14 @@ impl Component for Revlog {
                     }
                     keys::SHIFT_DOWN | keys::END => {
                         self.move_selection(ScrollType::End);
+                        true
+                    }
+                    keys::PAGE_UP => {
+                        self.move_selection(ScrollType::PageUp);
+                        true
+                    }
+                    keys::PAGE_DOWN => {
+                        self.move_selection(ScrollType::PageDown);
                         true
                     }
                     _ => false,
