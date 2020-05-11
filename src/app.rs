@@ -1,19 +1,16 @@
 use crate::{
+    accessors,
     components::{
-        ChangesComponent, CommandBlocking, CommandInfo,
-        CommitComponent, Component, DiffComponent, DrawableComponent,
-        FileTreeItemKind, HelpComponent, MsgComponent,
+        event_pump, CommandBlocking, CommandInfo, CommitComponent,
+        Component, DrawableComponent, HelpComponent, MsgComponent,
         ResetComponent,
     },
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
-    tabs::Revlog,
+    tabs::{Revlog, Status},
 };
-use asyncgit::{
-    current_tick, sync, AsyncDiff, AsyncNotification, AsyncStatus,
-    DiffParams, CWD,
-};
+use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -29,55 +26,16 @@ use tui::{
 };
 
 ///
-#[derive(PartialEq)]
-enum DiffTarget {
-    Stage,
-    WorkingDir,
-}
-
-///
-#[derive(PartialEq)]
-enum Focus {
-    WorkDir,
-    Diff,
-    Stage,
-}
-
-/// allows generating code to make sure
-/// we always enumerate all components in both getter functions
-macro_rules! components {
-    ($self:ident, [$($element:ident),+]) => {
-        fn components(& $self) -> Vec<&dyn Component> {
-            vec![
-                $(&$self.$element,)+
-            ]
-        }
-
-        fn components_mut(&mut $self) -> Vec<&mut dyn Component> {
-            vec![
-                $(&mut $self.$element,)+
-            ]
-        }
-    };
-}
-
-///
 pub struct App {
-    focus: Focus,
-    diff_target: DiffTarget,
     do_quit: bool,
+    help: HelpComponent,
+    msg: MsgComponent,
     reset: ResetComponent,
     commit: CommitComponent,
-    help: HelpComponent,
-    index: ChangesComponent,
-    index_wd: ChangesComponent,
-    diff: DiffComponent,
-    msg: MsgComponent,
-    git_diff: AsyncDiff,
-    git_status: AsyncStatus,
     current_commands: Vec<CommandInfo>,
     tab: usize,
     revlog: Revlog,
+    status_tab: Status,
     queue: Queue,
 }
 
@@ -87,31 +45,15 @@ impl App {
     pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         let queue = Queue::default();
         Self {
-            focus: Focus::WorkDir,
-            diff_target: DiffTarget::WorkingDir,
-            do_quit: false,
             reset: ResetComponent::new(queue.clone()),
             commit: CommitComponent::new(queue.clone()),
-            help: HelpComponent::default(),
-            index_wd: ChangesComponent::new(
-                strings::TITLE_STATUS,
-                true,
-                true,
-                queue.clone(),
-            ),
-            index: ChangesComponent::new(
-                strings::TITLE_INDEX,
-                false,
-                false,
-                queue.clone(),
-            ),
-            diff: DiffComponent::new(queue.clone()),
-            msg: MsgComponent::default(),
-            git_diff: AsyncDiff::new(sender.clone()),
-            git_status: AsyncStatus::new(sender.clone()),
+            do_quit: false,
             current_commands: Vec::new(),
+            help: HelpComponent::default(),
+            msg: MsgComponent::default(),
             tab: 0,
             revlog: Revlog::new(&sender),
+            status_tab: Status::new(&sender, &queue),
             queue,
         }
     }
@@ -142,7 +84,7 @@ impl App {
         );
 
         if self.tab == 0 {
-            self.draw_status_tab(f, chunks_main[1]);
+            self.status_tab.draw(f, chunks_main[1]);
         } else {
             self.revlog.draw(f, chunks_main[1]);
         }
@@ -162,40 +104,23 @@ impl App {
 
         let mut flags = NeedsUpdate::empty();
 
-        let event_used = if self.tab == 0 {
-            Self::event_pump(ev, self.components_mut().as_mut_slice())
-        } else {
-            self.revlog.event(ev)
-        };
-
-        if event_used {
+        if event_pump(ev, self.components_mut().as_mut_slice()) {
             flags.insert(NeedsUpdate::COMMANDS);
         } else if let Event::Key(k) = ev {
             let new_flags = match k {
-                keys::FOCUS_WORKDIR => {
-                    self.switch_focus(Focus::WorkDir)
-                }
-                keys::FOCUS_STAGE => self.switch_focus(Focus::Stage),
-                keys::FOCUS_RIGHT if self.can_focus_diff() => {
-                    self.switch_focus(Focus::Diff)
-                }
-                keys::FOCUS_LEFT => {
-                    self.switch_focus(match self.diff_target {
-                        DiffTarget::Stage => Focus::Stage,
-                        DiffTarget::WorkingDir => Focus::WorkDir,
-                    })
-                }
+                //TODO: move into status tab
                 keys::OPEN_COMMIT
-                    if !self.index.is_empty()
-                        && self.offer_open_commit_cmd() =>
+                    if self.status_tab.offer_open_commit_cmd() =>
                 {
                     self.commit.show();
                     NeedsUpdate::COMMANDS
                 }
+
                 keys::TAB_TOGGLE => {
                     self.toggle_tabs();
                     NeedsUpdate::COMMANDS
                 }
+
                 _ => NeedsUpdate::empty(),
             };
 
@@ -211,28 +136,31 @@ impl App {
             self.update();
         }
         if flags.contains(NeedsUpdate::DIFF) {
-            self.update_diff();
+            self.status_tab.update_diff();
         }
         if flags.contains(NeedsUpdate::COMMANDS) {
             self.update_commands();
         }
     }
 
+    //TODO: do we need this?
     ///
     pub fn update(&mut self) {
         trace!("update");
-
-        self.git_diff.refresh();
-        self.git_status.fetch(current_tick());
+        self.status_tab.update();
     }
 
     ///
     pub fn update_git(&mut self, ev: AsyncNotification) {
         trace!("update_git: {:?}", ev);
+
+        self.status_tab.update_git(ev);
+
         match ev {
-            AsyncNotification::Diff => self.update_diff(),
-            AsyncNotification::Status => self.update_status(),
+            AsyncNotification::Diff => (),
             AsyncNotification::Log => self.revlog.update(),
+            //TODO: is that needed?
+            AsyncNotification::Status => self.update_commands(),
         }
     }
 
@@ -243,58 +171,14 @@ impl App {
 
     ///
     pub fn any_work_pending(&self) -> bool {
-        self.git_diff.is_pending()
-            || self.git_status.is_pending()
+        self.status_tab.anything_pending()
             || self.revlog.any_work_pending()
     }
 }
 
 // private impls
 impl App {
-    components!(
-        self,
-        [msg, reset, commit, help, index, index_wd, diff]
-    );
-
-    fn update_diff(&mut self) {
-        if let Some((path, is_stage)) = self.selected_path() {
-            let diff_params = DiffParams(path.clone(), is_stage);
-
-            if self.diff.current() == (path.clone(), is_stage) {
-                // we are already showing a diff of the right file
-                // maybe the diff changed (outside file change)
-                if let Some((params, last)) = self.git_diff.last() {
-                    if params == diff_params {
-                        self.diff.update(path, is_stage, last);
-                    }
-                }
-            } else {
-                // we dont show the right diff right now, so we need to request
-                if let Some(diff) = self.git_diff.request(diff_params)
-                {
-                    self.diff.update(path, is_stage, diff);
-                } else {
-                    self.diff.clear();
-                }
-            }
-        } else {
-            self.diff.clear();
-        }
-    }
-
-    fn selected_path(&self) -> Option<(String, bool)> {
-        let (idx, is_stage) = match self.diff_target {
-            DiffTarget::Stage => (&self.index, true),
-            DiffTarget::WorkingDir => (&self.index_wd, false),
-        };
-
-        if let Some(item) = idx.selection() {
-            if let FileTreeItemKind::File(i) = item.kind {
-                return Some((i.path, is_stage));
-            }
-        }
-        None
-    }
+    accessors!(self, [msg, reset, commit, help, revlog, status_tab]);
 
     fn check_quit(&mut self, ev: Event) {
         if let Event::Key(e) = ev {
@@ -309,17 +193,11 @@ impl App {
         self.tab %= 2;
 
         if self.tab == 1 {
+            self.status_tab.hide();
             self.revlog.show();
         } else {
+            self.status_tab.show();
             self.revlog.hide();
-        }
-    }
-
-    fn can_focus_diff(&self) -> bool {
-        match self.focus {
-            Focus::WorkDir => self.index_wd.is_file_seleted(),
-            Focus::Stage => self.index.is_file_seleted(),
-            _ => false,
         }
     }
 
@@ -327,15 +205,6 @@ impl App {
         self.help.set_cmds(self.commands(true));
         self.current_commands = self.commands(false);
         self.current_commands.sort_by_key(|e| e.order);
-    }
-
-    fn update_status(&mut self) {
-        let status = self.git_status.last();
-        self.index.update(&status.stage);
-        self.index_wd.update(&status.work_dir);
-
-        self.update_diff();
-        self.update_commands();
     }
 
     fn process_queue(&mut self) -> NeedsUpdate {
@@ -379,7 +248,9 @@ impl App {
                 flags.insert(NeedsUpdate::COMMANDS);
             }
             InternalEvent::AddHunk(hash) => {
-                if let Some((path, is_stage)) = self.selected_path() {
+                if let Some((path, is_stage)) =
+                    self.status_tab.selected_path()
+                {
                     if is_stage {
                         if sync::unstage_hunk(CWD, path, hash) {
                             flags.insert(NeedsUpdate::ALL);
@@ -402,23 +273,13 @@ impl App {
     fn commands(&self, force_all: bool) -> Vec<CommandInfo> {
         let mut res = Vec::new();
 
-        if self.revlog.is_visible() {
-            self.revlog.commands(&mut res, force_all);
-        } else {
-            for c in self.components() {
-                if c.commands(&mut res, force_all)
-                    != CommandBlocking::PassingOn
-                    && !force_all
-                {
-                    break;
-                }
+        for c in self.components() {
+            if c.commands(&mut res, force_all)
+                != CommandBlocking::PassingOn
+                && !force_all
+            {
+                break;
             }
-
-            //TODO: move into status tab component
-            self.add_commands_status_tab(
-                &mut res,
-                !self.any_popup_visible(),
-            );
         }
 
         res.push(
@@ -442,80 +303,6 @@ impl App {
         res
     }
 
-    fn offer_open_commit_cmd(&self) -> bool {
-        !self.commit.is_visible()
-            && self.diff_target == DiffTarget::Stage
-    }
-
-    fn event_pump(
-        ev: Event,
-        components: &mut [&mut dyn Component],
-    ) -> bool {
-        for c in components {
-            if c.event(ev) {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    fn add_commands_status_tab(
-        &self,
-        res: &mut Vec<CommandInfo>,
-        main_cmds_available: bool,
-    ) {
-        {
-            let focus_on_diff = self.focus == Focus::Diff;
-            res.push(CommandInfo::new(
-                commands::STATUS_FOCUS_LEFT,
-                true,
-                main_cmds_available && focus_on_diff,
-            ));
-            res.push(CommandInfo::new(
-                commands::STATUS_FOCUS_RIGHT,
-                self.can_focus_diff(),
-                main_cmds_available && !focus_on_diff,
-            ));
-        }
-
-        res.push(
-            CommandInfo::new(
-                commands::COMMIT_OPEN,
-                !self.index.is_empty(),
-                main_cmds_available && self.offer_open_commit_cmd(),
-            )
-            .order(-1),
-        );
-
-        res.push(
-            CommandInfo::new(
-                commands::SELECT_STATUS,
-                true,
-                main_cmds_available && self.focus == Focus::Diff,
-            )
-            .hidden(),
-        );
-
-        res.push(
-            CommandInfo::new(
-                commands::SELECT_STAGING,
-                true,
-                main_cmds_available && self.focus == Focus::WorkDir,
-            )
-            .order(-2),
-        );
-
-        res.push(
-            CommandInfo::new(
-                commands::SELECT_UNSTAGED,
-                true,
-                main_cmds_available && self.focus == Focus::Stage,
-            )
-            .order(-2),
-        );
-    }
-
     fn any_popup_visible(&self) -> bool {
         self.commit.is_visible()
             || self.help.is_visible()
@@ -530,52 +317,6 @@ impl App {
         self.reset.draw(f, size);
         self.help.draw(f, size);
         self.msg.draw(f, size);
-    }
-
-    fn draw_status_tab<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        area: Rect,
-    ) {
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                if self.focus == Focus::Diff {
-                    [
-                        Constraint::Percentage(30),
-                        Constraint::Percentage(70),
-                    ]
-                } else {
-                    [
-                        Constraint::Percentage(50),
-                        Constraint::Percentage(50),
-                    ]
-                }
-                .as_ref(),
-            )
-            .split(area);
-
-        let left_chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                if self.diff_target == DiffTarget::WorkingDir {
-                    [
-                        Constraint::Percentage(60),
-                        Constraint::Percentage(40),
-                    ]
-                } else {
-                    [
-                        Constraint::Percentage(40),
-                        Constraint::Percentage(60),
-                    ]
-                }
-                .as_ref(),
-            )
-            .split(chunks[0]);
-
-        self.index_wd.draw(f, left_chunks[0]);
-        self.index.draw(f, left_chunks[1]);
-        self.diff.draw(f, chunks[1]);
     }
 
     fn draw_commands<B: Backend>(
@@ -616,40 +357,5 @@ impl App {
                 .alignment(Alignment::Left),
             r,
         );
-    }
-
-    fn switch_focus(&mut self, f: Focus) -> NeedsUpdate {
-        if self.focus == f {
-            NeedsUpdate::empty()
-        } else {
-            self.focus = f;
-
-            match self.focus {
-                Focus::WorkDir => {
-                    self.set_diff_target(DiffTarget::WorkingDir);
-                    self.diff.focus(false);
-                }
-                Focus::Stage => {
-                    self.set_diff_target(DiffTarget::Stage);
-                    self.diff.focus(false);
-                }
-                Focus::Diff => {
-                    self.index.focus(false);
-                    self.index_wd.focus(false);
-
-                    self.diff.focus(true);
-                }
-            };
-
-            NeedsUpdate::DIFF | NeedsUpdate::COMMANDS
-        }
-    }
-
-    fn set_diff_target(&mut self, target: DiffTarget) {
-        self.diff_target = target;
-        let is_stage = self.diff_target == DiffTarget::Stage;
-
-        self.index_wd.focus_select(!is_stage);
-        self.index.focus_select(is_stage);
     }
 }

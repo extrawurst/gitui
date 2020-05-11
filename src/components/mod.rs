@@ -19,6 +19,38 @@ pub use help::HelpComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
 
+/// allows generating code to make sure
+/// we always enumerate all components in both getter functions
+#[macro_export]
+macro_rules! accessors {
+    ($self:ident, [$($element:ident),+]) => {
+        fn components(& $self) -> Vec<&dyn Component> {
+            vec![
+                $(&$self.$element,)+
+            ]
+        }
+
+        fn components_mut(&mut $self) -> Vec<&mut dyn Component> {
+            vec![
+                $(&mut $self.$element,)+
+            ]
+        }
+    };
+}
+
+pub fn event_pump(
+    ev: Event,
+    components: &mut [&mut dyn Component],
+) -> bool {
+    for c in components {
+        if c.event(ev) {
+            return true;
+        }
+    }
+
+    false
+}
+
 #[derive(Copy, Clone)]
 pub enum ScrollType {
     Up,
