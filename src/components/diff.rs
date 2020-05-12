@@ -29,6 +29,7 @@ struct Current {
 pub struct DiffComponent {
     diff: FileDiff,
     scroll: u16,
+    current_height: u16,
     focused: bool,
     current: Current,
     selected_hunk: Option<u16>,
@@ -45,6 +46,7 @@ impl DiffComponent {
             selected_hunk: None,
             diff: FileDiff::default(),
             scroll: 0,
+            current_height: 0,
         }
     }
     ///
@@ -92,21 +94,20 @@ impl DiffComponent {
 
         let scroll_max = self.diff.lines.saturating_sub(1);
 
-        match scroll {
-            ScrollType::Down => {
-                self.scroll = cmp::min(
-                    scroll_max,
-                    self.scroll.saturating_add(1),
-                );
-            }
-            ScrollType::Up => {
-                self.scroll = self.scroll.saturating_sub(1);
-            }
-            ScrollType::Home => self.scroll = 0,
-            ScrollType::End => self.scroll = scroll_max,
-            ScrollType::PageDown => (),
-            ScrollType::PageUp => (),
-        }
+        self.scroll = match scroll {
+            ScrollType::Down => self.scroll.saturating_add(1),
+            ScrollType::Up => self.scroll.saturating_sub(1),
+            ScrollType::Home => 0,
+            ScrollType::End => scroll_max,
+            ScrollType::PageDown => self.scroll.saturating_add(
+                self.current_height.saturating_sub(1),
+            ),
+            ScrollType::PageUp => self.scroll.saturating_sub(
+                self.current_height.saturating_sub(1),
+            ),
+        };
+
+        self.scroll = cmp::min(scroll_max, self.scroll);
 
         if old != self.scroll {
             self.selected_hunk =
@@ -297,6 +298,7 @@ impl DiffComponent {
 
 impl DrawableComponent for DiffComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, r: Rect) {
+        self.current_height = r.height.saturating_sub(2);
         let mut style_border = Style::default().fg(Color::DarkGray);
         let mut style_title = Style::default();
         if self.focused {
@@ -368,14 +370,20 @@ impl Component for DiffComponent {
                         self.scroll(ScrollType::End);
                         true
                     }
-
                     keys::HOME | keys::SHIFT_UP => {
                         self.scroll(ScrollType::Home);
                         true
                     }
-
                     keys::MOVE_UP => {
                         self.scroll(ScrollType::Up);
+                        true
+                    }
+                    keys::PAGE_UP => {
+                        self.scroll(ScrollType::PageUp);
+                        true
+                    }
+                    keys::PAGE_DOWN => {
+                        self.scroll(ScrollType::PageDown);
                         true
                     }
                     keys::ENTER => {
