@@ -25,7 +25,7 @@ pub struct HelpComponent {
 }
 
 impl DrawableComponent for HelpComponent {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
             let (txt, selected_line) = self.get_text();
 

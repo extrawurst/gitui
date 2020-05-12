@@ -26,7 +26,7 @@ pub struct ResetComponent {
 }
 
 impl DrawableComponent for ResetComponent {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
             let mut txt = Vec::new();
             txt.push(Text::Styled(

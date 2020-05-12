@@ -2,7 +2,8 @@ mod utils;
 
 use crate::{
     components::{
-        CommandBlocking, CommandInfo, Component, ScrollType,
+        CommandBlocking, CommandInfo, Component, DrawableComponent,
+        ScrollType,
     },
     keys,
     strings::commands,
@@ -70,50 +71,6 @@ impl Revlog {
             tags: Tags::new(),
             current_height: 0,
         }
-    }
-
-    ///
-    pub fn prepare_draw(&mut self, area: Rect) {
-        self.current_height = area.height.saturating_sub(2);
-    }
-
-    ///
-    pub fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
-        let height = area.height as usize;
-        let selection =
-            self.selection.saturating_sub(self.items.index_offset);
-        let height_d2 = height as usize / 2;
-        let min = selection.saturating_sub(height_d2);
-
-        let mut txt = Vec::new();
-        for (idx, e) in self.items.items.iter().enumerate() {
-            let tag = if let Some(tag_name) = self.tags.get(&e.hash) {
-                tag_name.as_str()
-            } else {
-                ""
-            };
-            Self::add_entry(e, idx == selection, &mut txt, tag);
-        }
-
-        let title = format!(
-            "commit {}/{}",
-            self.selection, self.selection_max
-        );
-
-        f.render_widget(
-            Paragraph::new(
-                txt.iter()
-                    .skip(min * ELEMENTS_PER_LINE)
-                    .take(height * ELEMENTS_PER_LINE),
-            )
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(title.as_str()),
-            )
-            .alignment(Alignment::Left),
-            area,
-        );
     }
 
     ///
@@ -270,6 +227,48 @@ impl Revlog {
         txt.push(Text::Raw(Cow::from("\n")));
 
         assert_eq!(txt.len() - count_before, ELEMENTS_PER_LINE);
+    }
+}
+
+impl DrawableComponent for Revlog {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect) {
+        self.current_height = area.height.saturating_sub(2);
+
+        let height = area.height as usize;
+        let selection =
+            self.selection.saturating_sub(self.items.index_offset);
+        let height_d2 = height as usize / 2;
+        let min = selection.saturating_sub(height_d2);
+
+        let mut txt = Vec::new();
+        for (idx, e) in self.items.items.iter().enumerate() {
+            let tag = if let Some(tag_name) = self.tags.get(&e.hash) {
+                tag_name.as_str()
+            } else {
+                ""
+            };
+            Self::add_entry(e, idx == selection, &mut txt, tag);
+        }
+
+        let title = format!(
+            "commit {}/{}",
+            self.selection, self.selection_max
+        );
+
+        f.render_widget(
+            Paragraph::new(
+                txt.iter()
+                    .skip(min * ELEMENTS_PER_LINE)
+                    .take(height * ELEMENTS_PER_LINE),
+            )
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(title.as_str()),
+            )
+            .alignment(Alignment::Left),
+            area,
+        );
     }
 }
 

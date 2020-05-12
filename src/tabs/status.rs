@@ -46,7 +46,7 @@ pub struct Status {
 
 impl DrawableComponent for Status {
     fn draw<B: tui::backend::Backend>(
-        &self,
+        &mut self,
         f: &mut tui::Frame<B>,
         rect: tui::layout::Rect,
     ) {

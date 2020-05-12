@@ -20,7 +20,7 @@ pub struct MsgComponent {
 }
 
 impl DrawableComponent for MsgComponent {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
             let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
 

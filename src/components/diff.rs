@@ -104,8 +104,8 @@ impl DiffComponent {
             }
             ScrollType::Home => self.scroll = 0,
             ScrollType::End => self.scroll = scroll_max,
-            //TODO:
-            _ => (),
+            ScrollType::PageDown => (),
+            ScrollType::PageUp => (),
         }
 
         if old != self.scroll {
@@ -296,7 +296,7 @@ impl DiffComponent {
 }
 
 impl DrawableComponent for DiffComponent {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, r: Rect) {
         let mut style_border = Style::default().fg(Color::DarkGray);
         let mut style_title = Style::default();
         if self.focused {

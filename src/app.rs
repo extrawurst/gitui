@@ -86,7 +86,6 @@ impl App {
         if self.tab == 0 {
             self.status_tab.draw(f, chunks_main[1]);
         } else {
-            self.revlog.prepare_draw(chunks_main[1]);
             self.revlog.draw(f, chunks_main[1]);
         }
 
@@ -311,7 +310,7 @@ impl App {
             || self.msg.is_visible()
     }
 
-    fn draw_popups<B: Backend>(&self, f: &mut Frame<B>) {
+    fn draw_popups<B: Backend>(&mut self, f: &mut Frame<B>) {
         let size = f.size();
 
         self.commit.draw(f, size);

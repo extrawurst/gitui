@@ -255,7 +255,7 @@ impl ChangesComponent {
 }
 
 impl DrawableComponent for ChangesComponent {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, r: Rect) {
         let selection_offset =
             self.tree.tree.items().iter().enumerate().fold(
                 0,

@@ -27,7 +27,7 @@ pub struct CommitComponent {
 }
 
 impl DrawableComponent for CommitComponent {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, _rect: Rect) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
             let txt = if self.msg.is_empty() {
                 [Text::Styled(
