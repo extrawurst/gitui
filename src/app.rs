@@ -20,7 +20,7 @@ use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     widgets::{Block, Borders, Paragraph, Tabs, Text},
     Frame,
 };
@@ -72,16 +72,7 @@ impl App {
             )
             .split(f.size());
 
-        f.render_widget(
-            Tabs::default()
-                .block(Block::default().borders(Borders::BOTTOM))
-                .titles(&[strings::TAB_STATUS, strings::TAB_LOG])
-                .style(Style::default().fg(Color::White))
-                .highlight_style(Style::default().fg(Color::Yellow))
-                .divider(strings::TAB_DIVIDER)
-                .select(self.tab),
-            chunks_main[0],
-        );
+        self.draw_tabs(f, chunks_main[0]);
 
         if self.tab == 0 {
             self.status_tab.draw(f, chunks_main[1]);
@@ -310,6 +301,23 @@ impl App {
         self.reset.draw(f, size);
         self.help.draw(f, size);
         self.msg.draw(f, size);
+    }
+
+    fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+        f.render_widget(
+            Tabs::default()
+                .block(Block::default().borders(Borders::BOTTOM))
+                .titles(&[strings::TAB_STATUS, strings::TAB_LOG])
+                .style(Style::default().fg(Color::White))
+                .highlight_style(
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .modifier(Modifier::UNDERLINED),
+                )
+                .divider(strings::TAB_DIVIDER)
+                .select(self.tab),
+            r,
+        );
     }
 
     fn draw_commands<B: Backend>(
