@@ -302,7 +302,7 @@ impl Component for ChangesComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
-        _force_all: bool,
+        force_all: bool,
     ) -> CommandBlocking {
         let some_selection = self.selection().is_some();
 
@@ -323,6 +323,14 @@ impl Component for ChangesComponent {
                 some_selection,
                 self.focused,
             ));
+            out.push(
+                CommandInfo::new(
+                    commands::COMMIT_OPEN,
+                    !self.is_empty(),
+                    self.focused || force_all,
+                )
+                .order(-1),
+            );
         }
 
         out.push(CommandInfo::new(
@@ -338,6 +346,15 @@ impl Component for ChangesComponent {
         if self.focused {
             if let Event::Key(e) = ev {
                 return match e {
+                    keys::OPEN_COMMIT
+                        if !self.is_working_dir
+                            && !self.is_empty() =>
+                    {
+                        self.queue
+                            .borrow_mut()
+                            .push_back(InternalEvent::OpenCommit);
+                        true
+                    }
                     keys::STATUS_STAGE_FILE => {
                         if self.index_add_remove() {
                             self.queue.borrow_mut().push_back(
@@ -348,9 +365,10 @@ impl Component for ChangesComponent {
                         }
                         true
                     }
-                    keys::STATUS_RESET_FILE => {
-                        self.is_working_dir
-                            && self.dispatch_reset_workdir()
+                    keys::STATUS_RESET_FILE
+                        if self.is_working_dir =>
+                    {
+                        self.dispatch_reset_workdir()
                     }
                     keys::MOVE_DOWN => {
                         self.move_selection(MoveSelection::Down)

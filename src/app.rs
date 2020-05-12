@@ -108,14 +108,6 @@ impl App {
             flags.insert(NeedsUpdate::COMMANDS);
         } else if let Event::Key(k) = ev {
             let new_flags = match k {
-                //TODO: move into status tab
-                keys::OPEN_COMMIT
-                    if self.status_tab.offer_open_commit_cmd() =>
-                {
-                    self.commit.show();
-                    NeedsUpdate::COMMANDS
-                }
-
                 keys::TAB_TOGGLE => {
                     self.toggle_tabs();
                     NeedsUpdate::COMMANDS
@@ -265,6 +257,7 @@ impl App {
                 flags.insert(NeedsUpdate::ALL);
             }
             InternalEvent::Update(u) => flags.insert(u),
+            InternalEvent::OpenCommit => self.commit.show(),
         };
 
         flags

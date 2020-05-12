@@ -33,6 +33,8 @@ pub enum InternalEvent {
     ShowMsg(String),
     ///
     Update(NeedsUpdate),
+    ///
+    OpenCommit,
 }
 
 ///

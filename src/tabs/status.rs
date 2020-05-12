@@ -130,13 +130,6 @@ impl Status {
         }
     }
 
-    //TODO: unpub
-    pub fn offer_open_commit_cmd(&self) -> bool {
-        self.visible
-            && self.diff_target == DiffTarget::Stage
-            && !self.index.is_empty()
-    }
-
     fn switch_focus(&mut self, f: Focus) -> bool {
         if self.focus != f {
             self.focus = f;
@@ -272,16 +265,6 @@ impl Component for Status {
                 (self.visible && !focus_on_diff) || force_all,
             ));
         }
-
-        out.push(
-            CommandInfo::new(
-                commands::COMMIT_OPEN,
-                !self.index.is_empty(),
-                (self.visible && self.offer_open_commit_cmd())
-                    || force_all,
-            )
-            .order(-1),
-        );
 
         out.push(
             CommandInfo::new(

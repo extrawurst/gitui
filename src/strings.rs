@@ -14,7 +14,7 @@ pub static COMMIT_MSG: &str = "type commit message..";
 pub static RESET_TITLE: &str = "Reset";
 pub static RESET_MSG: &str = "confirm file reset?";
 
-pub static HELP_TITLE: &str = "Help";
+pub static HELP_TITLE: &str = "Help: all commands";
 
 pub mod commands {
     use crate::components::CommandText;
@@ -100,7 +100,7 @@ pub mod commands {
     ///
     pub static COMMIT_OPEN: CommandText = CommandText::new(
         "Commit [c]",
-        "open commit view (available in non-empty stage)",
+        "open commit popup (available in non-empty stage)",
         CMD_GROUP_COMMIT,
     );
     ///
