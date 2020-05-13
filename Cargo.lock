@@ -745,9 +745,9 @@ dependencies = [
 
 [[package]]
 name = "tui"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89e8ecff008935939a4cf834c6e96e6cfb60f65f7d2e009027125f4df492a8d6"
+checksum = "c25eac88406f384894aa6db56ac0378c767254ee5829824ce5b0fc8fd24d5778"
 dependencies = [
  "bitflags",
  "cassowary",
