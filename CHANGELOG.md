@@ -13,17 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.3] - 2020-05-12
 ### Added
-- support more navigation keys: home/end/pageUp/pageDown (#43)
+- support more navigation keys: home/end/pageUp/pageDown (https://github.com/extrawurst/gitui/issues/43)
 - highlight current tab a bit better
 
 ## [0.2.2] - 2020-05-10
 ### Added
-- show tags in commit log (#47)
-- support home/end key in diff (#43)
+- show tags in commit log (https://github.com/extrawurst/gitui/issues/47)
+- support home/end key in diff (https://github.com/extrawurst/gitui/issues/43)
 
 ### Changed
 - close application shortcut is now the standard `ctrl+c`
-- some diff improvements (#42)
+- some diff improvements (https://github.com/extrawurst/gitui/issues/42)
 
 ### Fixed
-- document tab key to switch tabs (#48)
+- document tab key to switch tabs (https://github.com/extrawurst/gitui/issues/48)
