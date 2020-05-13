@@ -1,0 +1,21 @@
+name: changestest
+
+on:
+  push:
+    branches: [ '*' ]
+
+jobs:  
+  log-test:
+    name: Changelog Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Extract release notes
+      id: extract_release_notes
+      uses: ffurrer2/extract-release-notes@v1
+      with:
+        release_notes_file: ./release-notes.txt
+    - uses: actions/upload-artifact@v1
+      with:
+        name: release-notes
+        path: ./release-notes.txt
