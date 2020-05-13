@@ -112,6 +112,9 @@ impl Revlog {
             .unwrap()
             .max(1);
 
+        let page_offset =
+            usize::from(self.current_height).saturating_sub(1);
+
         self.selection = match scroll {
             ScrollType::Up => {
                 self.selection.saturating_sub(speed_int)
@@ -119,12 +122,12 @@ impl Revlog {
             ScrollType::Down => {
                 self.selection.saturating_add(speed_int)
             }
-            ScrollType::PageUp => self.selection.saturating_sub(
-                usize::from(self.current_height).saturating_sub(1),
-            ),
-            ScrollType::PageDown => self.selection.saturating_add(
-                usize::from(self.current_height).saturating_sub(1),
-            ),
+            ScrollType::PageUp => {
+                self.selection.saturating_sub(page_offset)
+            }
+            ScrollType::PageDown => {
+                self.selection.saturating_add(page_offset)
+            }
             ScrollType::Home => 0,
             ScrollType::End => self.selection_max,
         };
