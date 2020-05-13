@@ -48,10 +48,13 @@ jobs:
       run: |
         echo ::set-output name=sha::"$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')"
 
+    - name: Extract release notes
+      id: release_notes
+      uses: ffurrer2/extract-release-notes@v1
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        #body: 'changelog '
+        body: ${{ steps.release_notes.outputs.release_notes }}
         prerelease: true
         files: |
           ./release/*.tar.gz
