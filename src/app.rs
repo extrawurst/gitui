@@ -93,6 +93,10 @@ impl App {
     pub fn event(&mut self, ev: Event) {
         trace!("event: {:?}", ev);
 
+        if self.check_quit(ev) {
+            return;
+        }
+
         let mut flags = NeedsUpdate::empty();
 
         if event_pump(ev, self.components_mut().as_mut_slice()) {
@@ -109,8 +113,6 @@ impl App {
 
             flags.insert(new_flags);
         }
-
-        self.check_quit(ev);
 
         let new_flags = self.process_queue();
         flags.insert(new_flags);
@@ -163,12 +165,14 @@ impl App {
 impl App {
     accessors!(self, [msg, reset, commit, help, revlog, status_tab]);
 
-    fn check_quit(&mut self, ev: Event) {
+    fn check_quit(&mut self, ev: Event) -> bool {
         if let Event::Key(e) = ev {
             if let keys::EXIT = e {
                 self.do_quit = true;
+                return true;
             }
         }
+        false
     }
 
     fn toggle_tabs(&mut self) {

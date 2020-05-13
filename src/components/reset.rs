@@ -7,7 +7,7 @@ use crate::{
     strings, ui,
 };
 
-use crossterm::event::{Event, KeyCode, KeyModifiers};
+use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
@@ -74,13 +74,6 @@ impl Component for ResetComponent {
         if self.visible {
             if let Event::Key(e) = ev {
                 return match e.code {
-                    KeyCode::Char(c) => {
-                        // ignore and early out on ctrl+c
-                        !(c == 'c'
-                            && e.modifiers
-                                .contains(KeyModifiers::CONTROL))
-                    }
-
                     KeyCode::Esc => {
                         self.hide();
                         true

@@ -7,7 +7,7 @@ use crate::{
     strings, ui,
 };
 use asyncgit::{sync, CWD};
-use crossterm::event::{Event, KeyCode, KeyModifiers};
+use crossterm::event::{Event, KeyCode};
 use log::error;
 use std::borrow::Cow;
 use strings::commands;
@@ -76,17 +76,11 @@ impl Component for CommitComponent {
     fn event(&mut self, ev: Event) -> bool {
         if self.visible {
             if let Event::Key(e) = ev {
-                let has_ctrl =
-                    e.modifiers.contains(KeyModifiers::CONTROL);
                 match e.code {
                     KeyCode::Esc => {
                         self.hide();
                     }
                     KeyCode::Char(c) => {
-                        // ignore and early out on ctrl+c
-                        if c == 'c' && has_ctrl {
-                            return false;
-                        }
                         self.msg.push(c);
                     }
                     KeyCode::Enter if self.can_commit() => {
