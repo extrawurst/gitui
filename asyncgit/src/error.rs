@@ -6,14 +6,14 @@ pub enum Error {
     Generic(String),
 
     #[error("io error")]
-    Io {
-        #[from]
-        source: std::io::Error,
-    },
+    Io(#[from] std::io::Error),
 
     #[error("git error")]
-    Git {
+    Git(#[from] git2::Error),
+
+    #[error("encoding error.")]
+    Encoding {
         #[from]
-        source: git2::Error,
+        source: std::string::FromUtf8Error,
     },
 }
