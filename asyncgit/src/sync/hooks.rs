@@ -1,3 +1,4 @@
+use crate::error::Error;
 use is_executable::IsExecutable;
 use scopetime::scope_time;
 use std::{
@@ -14,26 +15,28 @@ const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
 pub fn hooks_commit_msg(
     repo_path: &str,
     msg: &mut String,
-) -> HookResult {
+) -> Result<HookResult, Error> {
     scope_time!("hooks_commit_msg");
 
     if hook_runable(repo_path, HOOK_COMMIT_MSG) {
-        let mut file = NamedTempFile::new().unwrap();
+        let mut file = NamedTempFile::new()?;
 
-        write!(file, "{}", msg).unwrap();
+        write!(file, "{}", msg)?;
 
-        let file_path = file.path().to_str().unwrap();
+        let file_path = file.path().to_str().ok_or_else(|| {
+            Error::Generic("can't get temp file's path".to_string())
+        })?;
 
         let res = run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path]);
 
         // load possibly altered msg
-        let mut file = file.reopen().unwrap();
+        let mut file = file.reopen()?;
         msg.clear();
-        file.read_to_string(msg).unwrap();
+        file.read_to_string(msg)?;
 
-        res
+        Ok(res)
     } else {
-        HookResult::Ok
+        Ok(HookResult::Ok)
     }
 }
 
@@ -94,7 +97,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let mut msg = String::from("test");
-        let res = hooks_commit_msg(repo_path, &mut msg);
+        let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
 
         assert_eq!(res, HookResult::Ok);
 

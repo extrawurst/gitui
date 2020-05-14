@@ -122,7 +122,7 @@ impl CommitComponent {
 
     fn commit(&mut self) {
         if let HookResult::NotOk(e) =
-            sync::hooks_commit_msg(CWD, &mut self.msg)
+            sync::hooks_commit_msg(CWD, &mut self.msg).unwrap()
         {
             error!("commit-msg hook error: {}", e);
             self.queue.borrow_mut().push_back(
