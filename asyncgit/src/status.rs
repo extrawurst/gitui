@@ -75,20 +75,12 @@ impl AsyncStatus {
         rayon_core::spawn(move || {
             arc_pending.fetch_add(1, Ordering::Relaxed);
 
-            let res = Self::get_status().unwrap();
-            trace!("status fetched: {}", hash(&res));
-
-            {
-                let mut current = arc_current.lock().unwrap();
-                if current.0 == hash_request {
-                    current.1 = Some(res.clone());
-                }
-            }
-
-            {
-                let mut last = arc_last.lock().unwrap();
-                *last = res;
-            }
+            AsyncStatus::fetch_helper(
+                hash_request,
+                arc_current,
+                arc_last,
+            )
+            .expect("failed to fetch status");
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
@@ -98,6 +90,29 @@ impl AsyncStatus {
         });
 
         Ok(None)
+    }
+
+    fn fetch_helper(
+        hash_request: u64,
+        arc_current: Arc<Mutex<Request<u64, Status>>>,
+        arc_last: Arc<Mutex<Status>>,
+    ) -> Returns<()> {
+        let res = Self::get_status()?;
+        trace!("status fetched: {}", hash(&res));
+
+        {
+            let mut current = arc_current.lock()?;
+            if current.0 == hash_request {
+                current.1 = Some(res.clone());
+            }
+        }
+
+        {
+            let mut last = arc_last.lock()?;
+            *last = res;
+        }
+
+        Ok(())
     }
 
     fn get_status() -> Result<Status, Error> {

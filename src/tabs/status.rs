@@ -183,7 +183,7 @@ impl Status {
 
     ///
     pub fn update(&mut self) {
-        self.git_diff.refresh();
+        self.git_diff.refresh().unwrap();
         self.git_status.fetch(current_tick().unwrap()).unwrap();
     }
 
@@ -226,7 +226,8 @@ impl Status {
                 }
             } else {
                 // we dont show the right diff right now, so we need to request
-                if let Some(diff) = self.git_diff.request(diff_params)
+                if let Some(diff) =
+                    self.git_diff.request(diff_params).unwrap()
                 {
                     self.diff.update(path, is_stage, diff);
                 } else {

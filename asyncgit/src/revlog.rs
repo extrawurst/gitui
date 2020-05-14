@@ -58,47 +58,54 @@ impl AsyncLog {
     ///
     pub fn fetch(&mut self) -> Returns<()> {
         if !self.is_pending() {
-            self.clear();
+            self.clear()?;
 
             let arc_current = Arc::clone(&self.current);
             let sender = self.sender.clone();
             let arc_pending = Arc::clone(&self.pending);
+
             rayon_core::spawn(move || {
-                arc_pending.store(true, Ordering::Relaxed);
-
                 scope_time!("async::revlog");
-
-                let mut entries = Vec::with_capacity(LIMIT_COUNT);
-                let r = repo(CWD).unwrap();
-                let mut walker = LogWalker::new(&r);
-                loop {
-                    entries.clear();
-                    let res_is_err = walker
-                        .read(&mut entries, LIMIT_COUNT)
-                        .is_err();
-
-                    if !res_is_err {
-                        let mut current = arc_current.lock().unwrap();
-                        current.extend(entries.iter());
-                    }
-
-                    if res_is_err || entries.len() <= 1 {
-                        break;
-                    } else {
-                        Self::notify(&sender);
-                    }
-                }
-
+                arc_pending.store(true, Ordering::Relaxed);
+                AsyncLog::fetch_helper(arc_current, &sender)
+                    .expect("failed to fetch");
                 arc_pending.store(false, Ordering::Relaxed);
-
                 Self::notify(&sender);
             });
         }
         Ok(())
     }
 
-    fn clear(&mut self) {
-        self.current.lock().unwrap().clear();
+    fn fetch_helper(
+        arc_current: Arc<Mutex<Vec<Oid>>>,
+        sender: &Sender<AsyncNotification>,
+    ) -> Returns<()> {
+        let mut entries = Vec::with_capacity(LIMIT_COUNT);
+        let r = repo(CWD)?;
+        let mut walker = LogWalker::new(&r);
+        loop {
+            entries.clear();
+            let res_is_err =
+                walker.read(&mut entries, LIMIT_COUNT).is_err();
+
+            if !res_is_err {
+                let mut current = arc_current.lock()?;
+                current.extend(entries.iter());
+            }
+
+            if res_is_err || entries.len() <= 1 {
+                break;
+            } else {
+                Self::notify(&sender);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn clear(&mut self) -> Returns<()> {
+        self.current.lock()?.clear();
+        Ok(())
     }
 
     fn notify(sender: &Sender<AsyncNotification>) {

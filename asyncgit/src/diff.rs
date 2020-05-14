@@ -1,3 +1,4 @@
+use crate::error::Returns;
 use crate::{
     error::Error, hash, sync, AsyncNotification, FileDiff, CWD,
 };
@@ -47,12 +48,7 @@ impl AsyncDiff {
     pub fn last(
         &mut self,
     ) -> Result<Option<(DiffParams, FileDiff)>, Error> {
-        let last = self.last.lock().or_else(|x| {
-            Err(Error::Generic(format!(
-                "failed to get last changes:{}",
-                x
-            )))
-        })?;
+        let last = self.last.lock()?;
 
         Ok(match last.clone() {
             Some(res) => Some((res.params, res.result)),
@@ -61,11 +57,12 @@ impl AsyncDiff {
     }
 
     ///
-    pub fn refresh(&mut self) {
+    pub fn refresh(&mut self) -> Returns<()> {
         if let Ok(Some(param)) = self.get_last_param() {
-            self.clear_current();
-            self.request(param);
+            self.clear_current()?;
+            self.request(param)?;
         }
+        Ok(())
     }
 
     ///
@@ -77,16 +74,16 @@ impl AsyncDiff {
     pub fn request(
         &mut self,
         params: DiffParams,
-    ) -> Option<FileDiff> {
+    ) -> Returns<Option<FileDiff>> {
         trace!("request");
 
         let hash = hash(&params);
 
         {
-            let mut current = self.current.lock().unwrap();
+            let mut current = self.current.lock()?;
 
             if current.0 == hash {
-                return current.1.clone();
+                return Ok(current.1.clone());
             }
 
             current.0 = hash;
@@ -100,51 +97,66 @@ impl AsyncDiff {
         rayon_core::spawn(move || {
             arc_pending.fetch_add(1, Ordering::Relaxed);
 
-            let res =
-                sync::diff::get_diff(CWD, params.0.clone(), params.1)
-                    .unwrap();
-            let mut notify = false;
-            {
-                let mut current = arc_current.lock().unwrap();
-                if current.0 == hash {
-                    current.1 = Some(res.clone());
-                    notify = true;
-                }
-            }
-
-            {
-                let mut last = arc_last.lock().unwrap();
-                *last = Some(LastResult {
-                    result: res,
-                    hash,
-                    params,
-                });
-            }
+            let notify = AsyncDiff::get_diff_helper(
+                params,
+                arc_last,
+                arc_current,
+                hash,
+            )
+            .expect("error getting diff");
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
             if notify {
-                sender
+                let _ = sender
                     .send(AsyncNotification::Diff)
                     .expect("error sending diff");
             }
         });
 
-        None
+        Ok(None)
     }
 
-    fn get_last_param(&self) -> Result<Option<DiffParams>, Error> {
-        Ok(self
-            .last
-            .lock()
-            .map_err(|_| Error::Generic("".to_string()))?
-            .clone()
-            .map(|e| e.params))
+    fn get_diff_helper(
+        params: DiffParams,
+        arc_last: Arc<
+            Mutex<Option<LastResult<DiffParams, FileDiff>>>,
+        >,
+        arc_current: Arc<Mutex<Request<u64, FileDiff>>>,
+        hash: u64,
+    ) -> Returns<bool> {
+        let res =
+            sync::diff::get_diff(CWD, params.0.clone(), params.1)?;
+
+        let mut notify = false;
+        {
+            let mut current = arc_current.lock()?;
+            if current.0 == hash {
+                current.1 = Some(res.clone());
+                notify = true;
+            }
+        }
+
+        {
+            let mut last = arc_last.lock()?;
+            *last = Some(LastResult {
+                result: res,
+                hash,
+                params,
+            });
+        }
+
+        Ok(notify)
     }
 
-    fn clear_current(&mut self) {
-        let mut current = self.current.lock().unwrap();
+    fn get_last_param(&self) -> Returns<Option<DiffParams>> {
+        Ok(self.last.lock()?.clone().map(|e| e.params))
+    }
+
+    fn clear_current(&mut self) -> Returns<()> {
+        let mut current = self.current.lock()?;
         current.0 = 0;
         current.1 = None;
+        Ok(())
     }
 }
