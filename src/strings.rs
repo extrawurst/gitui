@@ -26,7 +26,7 @@ pub mod commands {
 
     ///
     pub static TOGGLE_TABS: CommandText = CommandText::new(
-        "Tabs [tabs]",
+        "Tabs [tab]",
         "switch top level tabs",
         CMD_GROUP_GENERAL,
     );
