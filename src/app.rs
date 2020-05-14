@@ -331,7 +331,7 @@ impl App {
     ) {
         let splitter = Text::Styled(
             Cow::from(strings::CMD_SPLITTER),
-            Style::default().bg(Color::Black),
+            Style::default(),
         );
 
         let style_enabled =
