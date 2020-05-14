@@ -92,7 +92,8 @@ impl AsyncDiff {
             arc_pending.fetch_add(1, Ordering::Relaxed);
 
             let res =
-                sync::diff::get_diff(CWD, params.0.clone(), params.1);
+                sync::diff::get_diff(CWD, params.0.clone(), params.1)
+                    .unwrap();
             let mut notify = false;
             {
                 let mut current = arc_current.lock().unwrap();

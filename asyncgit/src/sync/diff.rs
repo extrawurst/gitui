@@ -1,10 +1,10 @@
 //! sync git api for fetching a diff
 
 use super::utils;
-use crate::hash;
+use crate::{error::Error, hash};
 use git2::{
-    Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Error,
-    Patch, Repository,
+    Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
+    Repository,
 };
 use scopetime::scope_time;
 use std::{fs, path::Path};
@@ -87,8 +87,15 @@ pub(crate) fn get_diff_raw<'a>(
     let diff = if stage {
         // diff against head
         if let Ok(ref_head) = repo.head() {
-            let parent =
-                repo.find_commit(ref_head.target().unwrap())?;
+            let parent = repo.find_commit(
+                ref_head.target().ok_or_else(|| {
+                    let name = ref_head.name().unwrap_or("??");
+                    Error::Generic(
+                        format!("can not find the target of symbolic references: {}", name)
+                    )
+                })?,
+            )?;
+
             let tree = parent.tree()?;
             repo.diff_tree_to_index(
                 Some(&tree),
@@ -113,13 +120,21 @@ pub(crate) fn get_diff_raw<'a>(
 
 //TODO: return Option
 ///
-pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
+pub fn get_diff(
+    repo_path: &str,
+    p: String,
+    stage: bool,
+) -> Result<FileDiff, Error> {
     scope_time!("get_diff");
 
     let repo = utils::repo(repo_path);
-    let repo_path = repo.path().parent().unwrap();
-
-    let diff = get_diff_raw(&repo, &p, stage, false).unwrap();
+    let repo_path = repo.path().parent().ok_or_else(|| {
+        Error::Generic(
+            "repositories located at root are not supported."
+                .to_string(),
+        )
+    })?;
+    let diff = get_diff_raw(&repo, &p, stage, false)?;
 
     let mut res: FileDiff = FileDiff::default();
     let mut current_lines = Vec::new();
@@ -165,11 +180,18 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
     };
 
     let new_file_diff = if diff.deltas().len() == 1 {
+        // it's safe to unwrap here because we check first that diff.deltas has a single element.
         let delta: DiffDelta = diff.deltas().next().unwrap();
 
         if delta.status() == Delta::Untracked {
-            let newfile_path =
-                repo_path.join(delta.new_file().path().unwrap());
+            let relative_path =
+                delta.new_file().path().ok_or_else(|| {
+                    Error::Generic(
+                        "new file path is unspecified.".to_string(),
+                    )
+                })?;
+
+            let newfile_path = repo_path.join(relative_path);
 
             if let Some(newfile_content) =
                 new_file_content(&newfile_path)
@@ -180,15 +202,13 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
                     newfile_content.as_bytes(),
                     Some(&newfile_path),
                     None,
-                )
-                .unwrap();
+                )?;
 
                 patch
                     .print(&mut |_delta, hunk:Option<DiffHunk>, line: git2::DiffLine| {
                         put(hunk,line);
                         true
-                    })
-                    .unwrap();
+                    })?;
 
                 true
             } else {
@@ -208,15 +228,14 @@ pub fn get_diff(repo_path: &str, p: String, stage: bool) -> FileDiff {
                 put(hunk, line);
                 true
             },
-        )
-        .unwrap();
+        )?;
     }
 
     if !current_lines.is_empty() {
         adder(&current_hunk.unwrap(), &current_lines);
     }
 
-    res
+    Ok(res)
 }
 
 fn new_file_content(path: &Path) -> Option<String> {
@@ -268,7 +287,8 @@ mod tests {
         assert_eq!(res.len(), 1);
 
         let diff =
-            get_diff(repo_path, "foo/bar.txt".to_string(), false);
+            get_diff(repo_path, "foo/bar.txt".to_string(), false)
+                .unwrap();
 
         assert_eq!(diff.hunks.len(), 1);
         assert_eq!(diff.hunks[0].lines[1].content, "test\n");
@@ -298,7 +318,8 @@ mod tests {
             repo_path,
             String::from(file_path.to_str().unwrap()),
             true,
-        );
+        )
+        .unwrap();
 
         assert_eq!(diff.hunks.len(), 1);
     }
@@ -364,7 +385,8 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
-        let res = get_diff(repo_path, "bar.txt".to_string(), false);
+        let res = get_diff(repo_path, "bar.txt".to_string(), false)
+            .unwrap();
 
         assert_eq!(res.hunks.len(), 2)
     }
@@ -387,7 +409,8 @@ mod tests {
             sub_path.to_str().unwrap(),
             String::from(file_path.to_str().unwrap()),
             false,
-        );
+        )
+        .unwrap();
 
         assert_eq!(diff.hunks[0].lines[1].content, "test");
     }
@@ -407,7 +430,8 @@ mod tests {
             repo_path,
             String::from(file_path.to_str().unwrap()),
             false,
-        );
+        )
+        .unwrap();
 
         assert_eq!(diff.hunks.len(), 0);
 
