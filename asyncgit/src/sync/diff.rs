@@ -118,7 +118,6 @@ pub(crate) fn get_diff_raw<'a>(
     Ok(diff)
 }
 
-//TODO: return Option
 ///
 pub fn get_diff(
     repo_path: &str,

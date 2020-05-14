@@ -16,7 +16,4 @@ pub enum Error {
         #[from]
         source: git2::Error,
     },
-
-    #[error(transparent)]
-    Other(#[from] Box<dyn std::error::Error>),
 }
