@@ -134,7 +134,7 @@ exit 0
         create_hook(root, HOOK_COMMIT_MSG, hook);
 
         let mut msg = String::from("test");
-        let res = hooks_commit_msg(repo_path, &mut msg);
+        let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
 
         assert_eq!(res, HookResult::Ok);
 
@@ -158,7 +158,7 @@ exit 1
         create_hook(root, HOOK_COMMIT_MSG, hook);
 
         let mut msg = String::from("test");
-        let res = hooks_commit_msg(repo_path, &mut msg);
+        let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
 
         assert_eq!(
             res,
@@ -184,7 +184,7 @@ exit 0
         create_hook(root, HOOK_COMMIT_MSG, hook);
 
         let mut msg = String::from("test");
-        let res = hooks_commit_msg(repo_path, &mut msg);
+        let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
 
         assert_eq!(res, HookResult::Ok);
         assert_eq!(msg, String::from("msg\n"));
