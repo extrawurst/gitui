@@ -49,7 +49,7 @@ fn main() -> Result<()> {
     setup_logging();
 
     if invalid_path() {
-        eprintln!("invalid git path");
+        eprintln!("invalid git path\nplease run gitui inside of a git repository");
         return Ok(());
     }
 
