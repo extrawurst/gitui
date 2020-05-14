@@ -1,6 +1,6 @@
 //! sync git api for fetching a status
 
-use crate::sync::utils;
+use crate::{error::Error, sync::utils};
 use git2::{Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 use std::path::Path;
@@ -67,32 +67,35 @@ impl Into<StatusShow> for StatusType {
 pub fn get_status(
     repo_path: &str,
     status_type: StatusType,
-) -> Vec<StatusItem> {
+) -> Result<Vec<StatusItem>, Error> {
     scope_time!("get_index");
 
-    let repo = utils::repo(repo_path);
+    let repo = utils::repo(repo_path)?;
 
-    let statuses = repo
-        .statuses(Some(
-            StatusOptions::default()
-                .show(status_type.into())
-                .include_untracked(true)
-                .renames_head_to_index(true)
-                .recurse_untracked_dirs(true),
-        ))
-        .unwrap();
+    let statuses = repo.statuses(Some(
+        StatusOptions::default()
+            .show(status_type.into())
+            .include_untracked(true)
+            .renames_head_to_index(true)
+            .recurse_untracked_dirs(true),
+    ))?;
 
     let mut res = Vec::with_capacity(statuses.len());
 
     for e in statuses.iter() {
         let status: Status = e.status();
 
-        let path = if let Some(diff) = e.head_to_index() {
-            String::from(
-                diff.new_file().path().unwrap().to_str().unwrap(),
-            )
-        } else {
-            e.path().unwrap().to_string()
+        let path = match e.head_to_index() {
+            Some(diff) => diff
+                .new_file()
+                .path()
+                .and_then(|x| x.to_str())
+                .map(String::from)
+                .ok_or_else(|| Error::Generic("".to_string()))?,
+            None => e
+                .path()
+                .map(String::from)
+                .ok_or_else(|| Error::Generic("".to_string()))?,
         };
 
         res.push(StatusItem {
@@ -105,5 +108,5 @@ pub fn get_status(
         Path::new(a.path.as_str()).cmp(Path::new(b.path.as_str()))
     });
 
-    res
+    Ok(res)
 }

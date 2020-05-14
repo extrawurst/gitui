@@ -1,4 +1,5 @@
 use super::utils::repo;
+use crate::error::Returns;
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
 
@@ -19,10 +20,10 @@ pub struct CommitInfo {
 pub fn get_commits_info(
     repo_path: &str,
     ids: &[Oid],
-) -> Result<Vec<CommitInfo>, Error> {
+) -> Returns<Vec<CommitInfo>> {
     scope_time!("get_commits_info");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
     let commits = ids
         .iter()
@@ -82,15 +83,15 @@ mod tests {
     #[test]
     fn test_log() -> Result<(), Error> {
         let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         let c1 = commit(repo_path, "commit1").unwrap();
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         let c2 = commit(repo_path, "commit2").unwrap();
 
         let res = get_commits_info(repo_path, &vec![c2, c1]).unwrap();

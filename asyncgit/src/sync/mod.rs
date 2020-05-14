@@ -25,36 +25,37 @@ pub use utils::{
 #[cfg(test)]
 mod tests {
     use super::status::{get_status, StatusType};
+    use crate::error::Error;
     use git2::Repository;
     use std::process::Command;
     use tempfile::TempDir;
 
     ///
-    pub fn repo_init_empty() -> (TempDir, Repository) {
-        let td = TempDir::new().unwrap();
-        let repo = Repository::init(td.path()).unwrap();
+    pub fn repo_init_empty() -> Result<(TempDir, Repository), Error> {
+        let td = TempDir::new()?;
+        let repo = Repository::init(td.path())?;
         {
-            let mut config = repo.config().unwrap();
-            config.set_str("user.name", "name").unwrap();
-            config.set_str("user.email", "email").unwrap();
+            let mut config = repo.config()?;
+            config.set_str("user.name", "name")?;
+            config.set_str("user.email", "email")?;
         }
-        (td, repo)
+        Ok((td, repo))
     }
 
     ///
-    pub fn repo_init() -> (TempDir, Repository) {
-        let td = TempDir::new().unwrap();
-        let repo = Repository::init(td.path()).unwrap();
+    pub fn repo_init() -> Result<(TempDir, Repository), Error> {
+        let td = TempDir::new()?;
+        let repo = Repository::init(td.path())?;
         {
-            let mut config = repo.config().unwrap();
-            config.set_str("user.name", "name").unwrap();
-            config.set_str("user.email", "email").unwrap();
+            let mut config = repo.config()?;
+            config.set_str("user.name", "name")?;
+            config.set_str("user.email", "email")?;
 
-            let mut index = repo.index().unwrap();
-            let id = index.write_tree().unwrap();
+            let mut index = repo.index()?;
+            let id = index.write_tree()?;
 
-            let tree = repo.find_tree(id).unwrap();
-            let sig = repo.signature().unwrap();
+            let tree = repo.find_tree(id)?;
+            let sig = repo.signature()?;
             repo.commit(
                 Some("HEAD"),
                 &sig,
@@ -62,43 +63,48 @@ mod tests {
                 "initial",
                 &tree,
                 &[],
-            )
-            .unwrap();
+            )?;
         }
-        (td, repo)
+        Ok((td, repo))
     }
 
     /// helper returning amount of files with changes in the (wd,stage)
-    pub fn get_statuses(repo_path: &str) -> (usize, usize) {
-        (
-            get_status(repo_path, StatusType::WorkingDir).len(),
-            get_status(repo_path, StatusType::Stage).len(),
-        )
+    pub fn get_statuses(
+        repo_path: &str,
+    ) -> Result<(usize, usize), Error> {
+        Ok((
+            get_status(repo_path, StatusType::WorkingDir)?.len(),
+            get_status(repo_path, StatusType::Stage)?.len(),
+        ))
     }
 
     ///
-    pub fn debug_cmd_print(path: &str, cmd: &str) {
-        eprintln!("\n----\n{}", debug_cmd(path, cmd))
+    pub fn debug_cmd_print(
+        path: &str,
+        cmd: &str,
+    ) -> Result<(), Error> {
+        let cmd = debug_cmd(path, cmd)?;
+        eprintln!("\n----\n{}", cmd);
+        Ok(())
     }
 
-    fn debug_cmd(path: &str, cmd: &str) -> String {
+    fn debug_cmd(path: &str, cmd: &str) -> Result<String, Error> {
         let output = if cfg!(target_os = "windows") {
             Command::new("cmd")
                 .args(&["/C", cmd])
                 .current_dir(path)
-                .output()
+                .output()?
         } else {
             Command::new("sh")
                 .arg("-c")
                 .arg(cmd)
                 .current_dir(path)
-                .output()
+                .output()?
         };
 
-        let output = output.unwrap();
-        let stdout = String::from_utf8(output.stdout).unwrap();
-        let stderr = String::from_utf8(output.stderr).unwrap();
-        format!(
+        let stdout = String::from_utf8(output.stdout)?;
+        let stderr = String::from_utf8(output.stderr)?;
+        Ok(format!(
             "{}{}",
             if stdout.is_empty() {
                 String::new()
@@ -110,6 +116,6 @@ mod tests {
             } else {
                 format!("err:\n{}", stderr)
             }
-        )
+        ))
     }
 }

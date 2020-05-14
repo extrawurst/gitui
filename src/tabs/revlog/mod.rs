@@ -80,7 +80,8 @@ impl Revlog {
 
     ///
     pub fn update(&mut self) {
-        self.selection_max = self.git_log.count().saturating_sub(1);
+        self.selection_max =
+            self.git_log.count().unwrap().saturating_sub(1);
 
         if self.items.needs_data(self.selection, self.selection_max) {
             self.fetch_commits();
@@ -96,7 +97,7 @@ impl Revlog {
 
         let commits = sync::get_commits_info(
             CWD,
-            &self.git_log.get_slice(want_min, SLICE_SIZE),
+            &self.git_log.get_slice(want_min, SLICE_SIZE).unwrap(),
         );
 
         if let Ok(commits) = commits {
@@ -343,7 +344,7 @@ impl Component for Revlog {
 
         if !self.first_open_done {
             self.first_open_done = true;
-            self.git_log.fetch();
+            self.git_log.fetch().unwrap();
         }
     }
 }

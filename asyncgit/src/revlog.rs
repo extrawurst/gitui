@@ -1,3 +1,4 @@
+use crate::error::Returns;
 use crate::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use git2::Oid;
@@ -31,8 +32,8 @@ impl AsyncLog {
     }
 
     ///
-    pub fn count(&mut self) -> usize {
-        self.current.lock().unwrap().len()
+    pub fn count(&mut self) -> Returns<usize> {
+        Ok(self.current.lock()?.len())
     }
 
     ///
@@ -40,13 +41,13 @@ impl AsyncLog {
         &self,
         start_index: usize,
         amount: usize,
-    ) -> Vec<Oid> {
-        let list = self.current.lock().unwrap();
+    ) -> Returns<Vec<Oid>> {
+        let list = self.current.lock()?;
         let list_len = list.len();
         let min = start_index.min(list_len);
         let max = min + amount;
         let max = max.min(list_len);
-        Vec::from_iter(list[min..max].iter().cloned())
+        Ok(Vec::from_iter(list[min..max].iter().cloned()))
     }
 
     ///
@@ -55,7 +56,7 @@ impl AsyncLog {
     }
 
     ///
-    pub fn fetch(&mut self) {
+    pub fn fetch(&mut self) -> Returns<()> {
         if !self.is_pending() {
             self.clear();
 
@@ -68,7 +69,7 @@ impl AsyncLog {
                 scope_time!("async::revlog");
 
                 let mut entries = Vec::with_capacity(LIMIT_COUNT);
-                let r = repo(CWD);
+                let r = repo(CWD).unwrap();
                 let mut walker = LogWalker::new(&r);
                 loop {
                     entries.clear();
@@ -93,6 +94,7 @@ impl AsyncLog {
                 Self::notify(&sender);
             });
         }
+        Ok(())
     }
 
     fn clear(&mut self) {

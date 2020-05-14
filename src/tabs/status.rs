@@ -184,7 +184,7 @@ impl Status {
     ///
     pub fn update(&mut self) {
         self.git_diff.refresh();
-        self.git_status.fetch(current_tick());
+        self.git_status.fetch(current_tick().unwrap()).unwrap();
     }
 
     ///
@@ -202,7 +202,7 @@ impl Status {
     }
 
     fn update_status(&mut self) {
-        let status = self.git_status.last();
+        let status = self.git_status.last().unwrap();
         self.index.update(&status.stage);
         self.index_wd.update(&status.work_dir);
 
@@ -217,7 +217,9 @@ impl Status {
             if self.diff.current() == (path.clone(), is_stage) {
                 // we are already showing a diff of the right file
                 // maybe the diff changed (outside file change)
-                if let Some((params, last)) = self.git_diff.last() {
+                if let Some((params, last)) =
+                    self.git_diff.last().unwrap()
+                {
                     if params == diff_params {
                         self.diff.update(path, is_stage, last);
                     }

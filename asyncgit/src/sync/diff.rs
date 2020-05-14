@@ -126,7 +126,7 @@ pub fn get_diff(
 ) -> Result<FileDiff, Error> {
     scope_time!("get_diff");
 
-    let repo = utils::repo(repo_path);
+    let repo = utils::repo(repo_path)?;
     let repo_path = repo.path().parent().ok_or_else(|| {
         Error::Generic(
             "repositories located at root are not supported."
@@ -269,11 +269,12 @@ mod tests {
 
     #[test]
     fn test_untracked_subfolder() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let res = get_status(repo_path, StatusType::WorkingDir);
+        let res =
+            get_status(repo_path, StatusType::WorkingDir).unwrap();
         assert_eq!(res.len(), 0);
 
         fs::create_dir(&root.join("foo")).unwrap();
@@ -282,7 +283,8 @@ mod tests {
             .write_all(b"test\nfoo")
             .unwrap();
 
-        let res = get_status(repo_path, StatusType::WorkingDir);
+        let res =
+            get_status(repo_path, StatusType::WorkingDir).unwrap();
         assert_eq!(res.len(), 1);
 
         let diff =
@@ -296,22 +298,25 @@ mod tests {
     #[test]
     fn test_empty_repo() {
         let file_path = Path::new("foo.txt");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        assert_eq!(get_statuses(repo_path), (0, 0));
+        assert_eq!(get_statuses(repo_path).unwrap(), (0, 0));
 
         File::create(&root.join(file_path))
             .unwrap()
             .write_all(b"test\nfoo")
             .unwrap();
 
-        assert_eq!(get_statuses(repo_path), (1, 0));
+        assert_eq!(get_statuses(repo_path).unwrap(), (1, 0));
 
-        assert_eq!(stage_add_file(repo_path, file_path), true);
+        assert_eq!(
+            stage_add_file(repo_path, file_path).unwrap(),
+            true
+        );
 
-        assert_eq!(get_statuses(repo_path), (0, 1));
+        assert_eq!(get_statuses(repo_path).unwrap(), (0, 1));
 
         let diff = get_diff(
             repo_path,
@@ -351,11 +356,11 @@ mod tests {
 
     #[test]
     fn test_hunks() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        assert_eq!(get_statuses(repo_path), (0, 0));
+        assert_eq!(get_statuses(repo_path).unwrap(), (0, 0));
 
         let file_path = root.join("bar.txt");
 
@@ -366,13 +371,15 @@ mod tests {
                 .unwrap();
         }
 
-        let res = get_status(repo_path, StatusType::WorkingDir);
+        let res =
+            get_status(repo_path, StatusType::WorkingDir).unwrap();
         assert_eq!(res.len(), 1);
         assert_eq!(res[0].path, "bar.txt");
 
-        let res = stage_add_file(repo_path, Path::new("bar.txt"));
+        let res =
+            stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
         assert_eq!(res, true);
-        assert_eq!(get_statuses(repo_path), (0, 1));
+        assert_eq!(get_statuses(repo_path).unwrap(), (0, 1));
 
         // overwrite with next content
         {
@@ -382,7 +389,7 @@ mod tests {
                 .unwrap();
         }
 
-        assert_eq!(get_statuses(repo_path), (1, 1));
+        assert_eq!(get_statuses(repo_path).unwrap(), (1, 1));
 
         let res = get_diff(repo_path, "bar.txt".to_string(), false)
             .unwrap();
@@ -393,7 +400,7 @@ mod tests {
     #[test]
     fn test_diff_newfile_in_sub_dir_current_dir() {
         let file_path = Path::new("foo/foo.txt");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
 
         let sub_path = root.join("foo/");
@@ -418,7 +425,7 @@ mod tests {
     fn test_diff_new_binary_file_using_invalid_utf8(
     ) -> Result<(), Error> {
         let file_path = Path::new("bar");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 

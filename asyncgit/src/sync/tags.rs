@@ -1,5 +1,5 @@
 use super::utils::repo;
-use git2::Error;
+use crate::error::Returns;
 use scopetime::scope_time;
 use std::collections::HashMap;
 
@@ -7,12 +7,12 @@ use std::collections::HashMap;
 pub type Tags = HashMap<String, String>;
 
 /// returns `Tags` type filled with all tags found in repo
-pub fn get_tags(repo_path: &str) -> Result<Tags, Error> {
+pub fn get_tags(repo_path: &str) -> Returns<Tags> {
     scope_time!("get_tags");
 
     let mut res = Tags::new();
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
     for name in repo.tag_names(None)?.iter() {
         if let Some(name) = name {

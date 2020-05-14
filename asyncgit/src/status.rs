@@ -1,4 +1,7 @@
-use crate::{hash, sync, AsyncNotification, StatusItem, CWD};
+use crate::{
+    error::{Error, Returns},
+    hash, sync, AsyncNotification, StatusItem, CWD,
+};
 use crossbeam_channel::Sender;
 use log::trace;
 use std::{
@@ -38,9 +41,9 @@ impl AsyncStatus {
     }
 
     ///
-    pub fn last(&mut self) -> Status {
-        let last = self.last.lock().unwrap();
-        last.clone()
+    pub fn last(&mut self) -> Returns<Status> {
+        let last = self.last.lock()?;
+        Ok(last.clone())
     }
 
     ///
@@ -49,16 +52,16 @@ impl AsyncStatus {
     }
 
     ///
-    pub fn fetch(&mut self, request: u64) -> Option<Status> {
+    pub fn fetch(&mut self, request: u64) -> Returns<Option<Status>> {
         let hash_request = hash(&request);
 
         trace!("request: {} [hash: {}]", request, hash_request);
 
         {
-            let mut current = self.current.lock().unwrap();
+            let mut current = self.current.lock()?;
 
             if current.0 == hash_request {
-                return current.1.clone();
+                return Ok(current.1.clone());
             }
 
             current.0 = hash_request;
@@ -72,7 +75,7 @@ impl AsyncStatus {
         rayon_core::spawn(move || {
             arc_pending.fetch_add(1, Ordering::Relaxed);
 
-            let res = Self::get_status();
+            let res = Self::get_status().unwrap();
             trace!("status fetched: {}", hash(&res));
 
             {
@@ -94,14 +97,14 @@ impl AsyncStatus {
                 .expect("error sending status");
         });
 
-        None
+        Ok(None)
     }
 
-    fn get_status() -> Status {
+    fn get_status() -> Result<Status, Error> {
         let work_dir =
-            sync::status::get_status(CWD, StatusType::WorkingDir);
-        let stage = sync::status::get_status(CWD, StatusType::Stage);
+            sync::status::get_status(CWD, StatusType::WorkingDir)?;
+        let stage = sync::status::get_status(CWD, StatusType::Stage)?;
 
-        Status { stage, work_dir }
+        Ok(Status { stage, work_dir })
     }
 }

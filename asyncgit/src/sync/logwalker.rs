@@ -62,15 +62,15 @@ mod tests {
     #[test]
     fn test_limit() -> Result<(), Error> {
         let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         commit(repo_path, "commit1").unwrap();
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         let oid2 = commit(repo_path, "commit2").unwrap();
 
         let mut items = Vec::new();
@@ -86,15 +86,15 @@ mod tests {
     #[test]
     fn test_logwalker() -> Result<(), Error> {
         let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         commit(repo_path, "commit1").unwrap();
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         let oid2 = commit(repo_path, "commit2").unwrap();
 
         let mut items = Vec::new();

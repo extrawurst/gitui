@@ -1,4 +1,6 @@
-use crate::{hash, sync, AsyncNotification, FileDiff, CWD};
+use crate::{
+    error::Error, hash, sync, AsyncNotification, FileDiff, CWD,
+};
 use crossbeam_channel::Sender;
 use log::trace;
 use std::{
@@ -42,18 +44,25 @@ impl AsyncDiff {
     }
 
     ///
-    pub fn last(&mut self) -> Option<(DiffParams, FileDiff)> {
-        let last = self.last.lock().unwrap();
-        if let Some(res) = last.clone() {
-            Some((res.params, res.result))
-        } else {
-            None
-        }
+    pub fn last(
+        &mut self,
+    ) -> Result<Option<(DiffParams, FileDiff)>, Error> {
+        let last = self.last.lock().or_else(|x| {
+            Err(Error::Generic(format!(
+                "failed to get last changes:{}",
+                x
+            )))
+        })?;
+
+        Ok(match last.clone() {
+            Some(res) => Some((res.params, res.result)),
+            None => None,
+        })
     }
 
     ///
     pub fn refresh(&mut self) {
-        if let Some(param) = self.get_last_param() {
+        if let Ok(Some(param)) = self.get_last_param() {
             self.clear_current();
             self.request(param);
         }
@@ -124,8 +133,13 @@ impl AsyncDiff {
         None
     }
 
-    fn get_last_param(&self) -> Option<DiffParams> {
-        self.last.lock().unwrap().clone().map(|e| e.params)
+    fn get_last_param(&self) -> Result<Option<DiffParams>, Error> {
+        Ok(self
+            .last
+            .lock()
+            .map_err(|_| Error::Generic("".to_string()))?
+            .clone()
+            .map(|e| e.params))
     }
 
     fn clear_current(&mut self) {

@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::{Error, Returns};
 use is_executable::IsExecutable;
 use scopetime::scope_time;
 use std::{
@@ -27,7 +27,8 @@ pub fn hooks_commit_msg(
             Error::Generic("can't get temp file's path".to_string())
         })?;
 
-        let res = run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path]);
+        let res =
+            run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path])?;
 
         // load possibly altered msg
         let mut file = file.reopen()?;
@@ -41,13 +42,13 @@ pub fn hooks_commit_msg(
 }
 
 ///
-pub fn hooks_post_commit(repo_path: &str) -> HookResult {
+pub fn hooks_post_commit(repo_path: &str) -> Returns<HookResult> {
     scope_time!("hooks_post_commit");
 
     if hook_runable(repo_path, HOOK_POST_COMMIT) {
-        run_hook(repo_path, HOOK_POST_COMMIT, &[])
+        Ok(run_hook(repo_path, HOOK_POST_COMMIT, &[])?)
     } else {
-        HookResult::Ok
+        Ok(HookResult::Ok)
     }
 }
 
@@ -67,20 +68,24 @@ pub enum HookResult {
     NotOk(String),
 }
 
-fn run_hook(path: &str, cmd: &str, args: &[&str]) -> HookResult {
+fn run_hook(
+    path: &str,
+    cmd: &str,
+    args: &[&str],
+) -> Returns<HookResult> {
     let output =
         Command::new(cmd).args(args).current_dir(path).output();
 
     let output = output.expect("general hook error");
 
     if output.status.success() {
-        HookResult::Ok
+        Ok(HookResult::Ok)
     } else {
-        let err = String::from_utf8(output.stderr).unwrap();
-        let out = String::from_utf8(output.stdout).unwrap();
+        let err = String::from_utf8(output.stderr)?;
+        let out = String::from_utf8(output.stdout)?;
         let formatted = format!("{}{}", out, err);
 
-        HookResult::NotOk(formatted)
+        Ok(HookResult::NotOk(formatted))
     }
 }
 
@@ -92,7 +97,7 @@ mod tests {
 
     #[test]
     fn test_smoke() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -101,7 +106,7 @@ mod tests {
 
         assert_eq!(res, HookResult::Ok);
 
-        let res = hooks_post_commit(repo_path);
+        let res = hooks_post_commit(repo_path).unwrap();
 
         assert_eq!(res, HookResult::Ok);
     }

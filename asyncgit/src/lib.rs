@@ -20,6 +20,7 @@ pub use crate::{
         utils::is_repo,
     },
 };
+use error::{Error, Returns};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -48,9 +49,11 @@ pub fn hash<T: Hash + ?Sized>(v: &T) -> u64 {
 }
 
 /// helper function to return the current tick since unix epoch
-pub fn current_tick() -> u64 {
-    SystemTime::now()
+pub fn current_tick() -> Returns<u64> {
+    Ok(SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64
+        .map_err(|_| {
+            Error::Generic("can't get system time".to_string())
+        })?
+        .as_millis() as u64)
 }
