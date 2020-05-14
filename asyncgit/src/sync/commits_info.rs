@@ -24,7 +24,11 @@ pub fn get_commits_info(
 
     let repo = repo(repo_path);
 
-    let commits = ids.iter().map(|id| repo.find_commit(*id).unwrap());
+    let commits = ids
+        .iter()
+        .map(|id| repo.find_commit(*id))
+        .collect::<Result<Vec<Commit>, Error>>()?
+        .into_iter();
 
     let res = commits
         .map(|c: Commit| {
