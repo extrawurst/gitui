@@ -2,7 +2,8 @@ use super::{
     diff::{get_diff_raw, HunkHeader},
     utils::repo,
 };
-use crate::hash;
+use crate::error::Result;
+use crate::{error::Error, hash};
 use git2::{ApplyLocation, ApplyOptions, Diff};
 use log::error;
 use scopetime::scope_time;
@@ -12,12 +13,12 @@ pub fn stage_hunk(
     repo_path: &str,
     file_path: String,
     hunk_hash: u64,
-) -> bool {
+) -> Result<()> {
     scope_time!("stage_hunk");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
-    let diff = get_diff_raw(&repo, &file_path, false, false).unwrap();
+    let diff = get_diff_raw(&repo, &file_path, false, false)?;
 
     let mut opt = ApplyOptions::new();
     opt.hunk_callback(|hunk| {
@@ -25,8 +26,9 @@ pub fn stage_hunk(
         hash(&header) == hunk_hash
     });
 
-    repo.apply(&diff, ApplyLocation::Index, Some(&mut opt))
-        .is_ok()
+    repo.apply(&diff, ApplyLocation::Index, Some(&mut opt))?;
+
+    Ok(())
 }
 
 fn find_hunk_index(diff: &Diff, hunk_hash: u64) -> Option<usize> {
@@ -60,22 +62,22 @@ pub fn unstage_hunk(
     repo_path: &str,
     file_path: String,
     hunk_hash: u64,
-) -> bool {
+) -> Result<bool> {
     scope_time!("revert_hunk");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
-    let diff = get_diff_raw(&repo, &file_path, true, false).unwrap();
+    let diff = get_diff_raw(&repo, &file_path, true, false)?;
     let diff_count_positive = diff.deltas().len();
 
     let hunk_index = find_hunk_index(&diff, hunk_hash);
 
     if hunk_index.is_none() {
         error!("hunk not found");
-        return false;
+        return Err(Error::Generic("hunk not found".to_string()));
     }
 
-    let diff = get_diff_raw(&repo, &file_path, true, true).unwrap();
+    let diff = get_diff_raw(&repo, &file_path, true, true)?;
 
     assert_eq!(diff.deltas().len(), diff_count_positive);
 
@@ -100,9 +102,9 @@ pub fn unstage_hunk(
             .is_err()
         {
             error!("apply failed");
-            return false;
+            return Err(Error::Generic("apply failed".to_string()));
         }
     }
 
-    count == 1
+    Ok(count == 1)
 }

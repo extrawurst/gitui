@@ -1,69 +1,75 @@
 use super::utils::repo;
+use crate::error::{Error, Result};
 use git2::{build::CheckoutBuilder, ObjectType, Status};
 use scopetime::scope_time;
 use std::{fs, path::Path};
 
 ///
-pub fn reset_stage(repo_path: &str, path: &Path) -> bool {
+pub fn reset_stage(repo_path: &str, path: &Path) -> Result<()> {
     scope_time!("reset_stage");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
     let head = repo.head();
 
     if let Ok(reference) = head {
-        let obj = repo
-            .find_object(
-                reference.target().unwrap(),
-                Some(ObjectType::Commit),
-            )
-            .unwrap();
+        let obj = repo.find_object(
+            reference.target().ok_or_else(|| {
+                Error::Generic(
+                    "can't get reference to symbolic reference,"
+                        .to_string(),
+                )
+            })?,
+            Some(ObjectType::Commit),
+        )?;
 
-        repo.reset_default(Some(&obj), &[path]).is_ok()
+        repo.reset_default(Some(&obj), &[path])?;
     } else {
-        repo.reset_default(None, &[path]).is_ok()
+        repo.reset_default(None, &[path])?;
     }
+
+    Ok(())
 }
 
 ///
-pub fn reset_workdir_file(repo_path: &str, path: &str) -> bool {
+pub fn reset_workdir_file(repo_path: &str, path: &str) -> Result<()> {
     scope_time!("reset_workdir_file");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
     // Note: early out for removing untracked files, due to bug in checkout_head code:
     // see https://github.com/libgit2/libgit2/issues/5089
-    if let Ok(status) = repo.status_file(Path::new(path)) {
-        let removed_file_wd = if status == Status::WT_NEW
-            || (status == Status::WT_MODIFIED | Status::INDEX_NEW)
-        {
-            fs::remove_file(Path::new(repo_path).join(path)).is_ok()
-        } else {
-            false
-        };
+    let status = repo.status_file(Path::new(path))?;
 
-        if status == Status::WT_NEW {
-            return removed_file_wd;
-        }
+    if status == Status::WT_NEW
+        || (status == Status::WT_MODIFIED | Status::INDEX_NEW)
+    {
+        fs::remove_file(Path::new(repo_path).join(path))?;
+    };
 
-        let mut checkout_opts = CheckoutBuilder::new();
-        checkout_opts
-            .update_index(true) // windows: needs this to be true WTF?!
-            .allow_conflicts(true)
-            .force()
-            .path(path);
-
-        repo.checkout_index(None, Some(&mut checkout_opts)).is_ok()
-    } else {
-        false
+    if status == Status::WT_NEW {
+        return Ok(());
     }
+
+    let mut checkout_opts = CheckoutBuilder::new();
+    checkout_opts
+        .update_index(true) // windows: needs this to be true WTF?!
+        .allow_conflicts(true)
+        .force()
+        .path(path);
+
+    repo.checkout_index(None, Some(&mut checkout_opts))?;
+    Ok(())
 }
 
 ///
-pub fn reset_workdir_folder(repo_path: &str, path: &str) -> bool {
+pub fn reset_workdir_folder(
+    repo_path: &str,
+    path: &str,
+) -> Result<()> {
     scope_time!("reset_workdir_folder");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
     let mut checkout_opts = CheckoutBuilder::new();
     checkout_opts
@@ -73,7 +79,8 @@ pub fn reset_workdir_folder(repo_path: &str, path: &str) -> bool {
         .force()
         .path(path);
 
-    repo.checkout_index(None, Some(&mut checkout_opts)).is_ok()
+    repo.checkout_index(None, Some(&mut checkout_opts))?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -81,6 +88,7 @@ mod tests {
     use super::{
         reset_stage, reset_workdir_file, reset_workdir_folder,
     };
+    use crate::error::Result;
     use crate::sync::{
         status::{get_status, StatusType},
         tests::{
@@ -90,7 +98,7 @@ mod tests {
     };
     use std::{
         fs::{self, File},
-        io::{Error, Write},
+        io::Write,
         path::Path,
     };
 
@@ -122,11 +130,12 @@ mod tests {
 
     #[test]
     fn test_reset_only_unstaged() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let res = get_status(repo_path, StatusType::WorkingDir);
+        let res =
+            get_status(repo_path, StatusType::WorkingDir).unwrap();
         assert_eq!(res.len(), 0);
 
         let file_path = root.join("bar.txt");
@@ -140,7 +149,7 @@ mod tests {
 
         debug_cmd_print(repo_path, "git status");
 
-        stage_add_file(repo_path, Path::new("bar.txt"));
+        stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
 
         debug_cmd_print(repo_path, "git status");
 
@@ -156,8 +165,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
-        let res = reset_workdir_file(repo_path, "bar.txt");
-        assert_eq!(res, true);
+        reset_workdir_file(repo_path, "bar.txt").unwrap();
 
         debug_cmd_print(repo_path, "git status");
 
@@ -166,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_reset_untracked_in_subdir() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -182,8 +190,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
-        let res = reset_workdir_file(repo_path, "foo/bar.txt");
-        assert_eq!(res, true);
+        reset_workdir_file(repo_path, "foo/bar.txt").unwrap();
 
         debug_cmd_print(repo_path, "git status");
 
@@ -191,8 +198,8 @@ mod tests {
     }
 
     #[test]
-    fn test_reset_folder() -> Result<(), Error> {
-        let (_td, repo) = repo_init();
+    fn test_reset_folder() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -206,7 +213,7 @@ mod tests {
                 .write_all(b"file3")?;
         }
 
-        assert!(stage_add_all(repo_path, "*"));
+        assert!(stage_add_all(repo_path, "*").unwrap());
         commit(repo_path, "msg").unwrap();
 
         {
@@ -223,11 +230,12 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (5, 0));
 
-        stage_add_file(repo_path, Path::new("foo/file5.txt"));
+        stage_add_file(repo_path, Path::new("foo/file5.txt"))
+            .unwrap();
 
         assert_eq!(get_statuses(repo_path), (4, 1));
 
-        assert!(reset_workdir_folder(repo_path, "foo"));
+        reset_workdir_folder(repo_path, "foo").unwrap();
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
@@ -236,7 +244,7 @@ mod tests {
 
     #[test]
     fn test_reset_untracked_in_subdir_and_index() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
         let file = "foo/bar.txt";
@@ -266,8 +274,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
-        let res = reset_workdir_file(repo_path, file);
-        assert_eq!(res, true);
+        reset_workdir_file(repo_path, file).unwrap();
 
         debug_cmd_print(repo_path, "git status");
 
@@ -277,7 +284,7 @@ mod tests {
     #[test]
     fn unstage_in_empty_repo() {
         let file_path = Path::new("foo.txt");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -288,11 +295,14 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
-        assert_eq!(stage_add_file(repo_path, file_path), true);
+        assert_eq!(
+            stage_add_file(repo_path, file_path).unwrap(),
+            true
+        );
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
-        assert_eq!(reset_stage(repo_path, file_path), true);
+        reset_stage(repo_path, file_path).unwrap();
 
         assert_eq!(get_statuses(repo_path), (1, 0));
     }

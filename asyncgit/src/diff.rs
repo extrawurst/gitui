@@ -1,3 +1,4 @@
+use crate::error::Result;
 use crate::{hash, sync, AsyncNotification, FileDiff, CWD};
 use crossbeam_channel::Sender;
 use log::trace;
@@ -42,21 +43,22 @@ impl AsyncDiff {
     }
 
     ///
-    pub fn last(&mut self) -> Option<(DiffParams, FileDiff)> {
-        let last = self.last.lock().unwrap();
-        if let Some(res) = last.clone() {
-            Some((res.params, res.result))
-        } else {
-            None
-        }
+    pub fn last(&mut self) -> Result<Option<(DiffParams, FileDiff)>> {
+        let last = self.last.lock()?;
+
+        Ok(match last.clone() {
+            Some(res) => Some((res.params, res.result)),
+            None => None,
+        })
     }
 
     ///
-    pub fn refresh(&mut self) {
-        if let Some(param) = self.get_last_param() {
-            self.clear_current();
-            self.request(param);
+    pub fn refresh(&mut self) -> Result<()> {
+        if let Ok(Some(param)) = self.get_last_param() {
+            self.clear_current()?;
+            self.request(param)?;
         }
+        Ok(())
     }
 
     ///
@@ -68,16 +70,16 @@ impl AsyncDiff {
     pub fn request(
         &mut self,
         params: DiffParams,
-    ) -> Option<FileDiff> {
+    ) -> Result<Option<FileDiff>> {
         trace!("request");
 
         let hash = hash(&params);
 
         {
-            let mut current = self.current.lock().unwrap();
+            let mut current = self.current.lock()?;
 
             if current.0 == hash {
-                return current.1.clone();
+                return Ok(current.1.clone());
             }
 
             current.0 = hash;
@@ -91,25 +93,13 @@ impl AsyncDiff {
         rayon_core::spawn(move || {
             arc_pending.fetch_add(1, Ordering::Relaxed);
 
-            let res =
-                sync::diff::get_diff(CWD, params.0.clone(), params.1);
-            let mut notify = false;
-            {
-                let mut current = arc_current.lock().unwrap();
-                if current.0 == hash {
-                    current.1 = Some(res.clone());
-                    notify = true;
-                }
-            }
-
-            {
-                let mut last = arc_last.lock().unwrap();
-                *last = Some(LastResult {
-                    result: res,
-                    hash,
-                    params,
-                });
-            }
+            let notify = AsyncDiff::get_diff_helper(
+                params,
+                arc_last,
+                arc_current,
+                hash,
+            )
+            .expect("error getting diff");
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
@@ -120,16 +110,49 @@ impl AsyncDiff {
             }
         });
 
-        None
+        Ok(None)
     }
 
-    fn get_last_param(&self) -> Option<DiffParams> {
-        self.last.lock().unwrap().clone().map(|e| e.params)
+    fn get_diff_helper(
+        params: DiffParams,
+        arc_last: Arc<
+            Mutex<Option<LastResult<DiffParams, FileDiff>>>,
+        >,
+        arc_current: Arc<Mutex<Request<u64, FileDiff>>>,
+        hash: u64,
+    ) -> Result<bool> {
+        let res =
+            sync::diff::get_diff(CWD, params.0.clone(), params.1)?;
+
+        let mut notify = false;
+        {
+            let mut current = arc_current.lock()?;
+            if current.0 == hash {
+                current.1 = Some(res.clone());
+                notify = true;
+            }
+        }
+
+        {
+            let mut last = arc_last.lock()?;
+            *last = Some(LastResult {
+                result: res,
+                hash,
+                params,
+            });
+        }
+
+        Ok(notify)
     }
 
-    fn clear_current(&mut self) {
-        let mut current = self.current.lock().unwrap();
+    fn get_last_param(&self) -> Result<Option<DiffParams>> {
+        Ok(self.last.lock()?.clone().map(|e| e.params))
+    }
+
+    fn clear_current(&mut self) -> Result<()> {
+        let mut current = self.current.lock()?;
         current.0 = 0;
         current.1 = None;
+        Ok(())
     }
 }

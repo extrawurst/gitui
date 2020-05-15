@@ -18,3 +18,4 @@ log = "0.4"
 is_executable = "0.1"
 scopetime = { path = "../scopetime", version = "0.1" }
 tempfile = "3.1"
+thiserror = "1.0"

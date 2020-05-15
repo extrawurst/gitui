@@ -1,4 +1,6 @@
-use crate::{hash, sync, AsyncNotification, StatusItem, CWD};
+use crate::{
+    error::Result, hash, sync, AsyncNotification, StatusItem, CWD,
+};
 use crossbeam_channel::Sender;
 use log::trace;
 use std::{
@@ -38,9 +40,9 @@ impl AsyncStatus {
     }
 
     ///
-    pub fn last(&mut self) -> Status {
-        let last = self.last.lock().unwrap();
-        last.clone()
+    pub fn last(&mut self) -> Result<Status> {
+        let last = self.last.lock()?;
+        Ok(last.clone())
     }
 
     ///
@@ -49,16 +51,16 @@ impl AsyncStatus {
     }
 
     ///
-    pub fn fetch(&mut self, request: u64) -> Option<Status> {
+    pub fn fetch(&mut self, request: u64) -> Result<Option<Status>> {
         let hash_request = hash(&request);
 
         trace!("request: {} [hash: {}]", request, hash_request);
 
         {
-            let mut current = self.current.lock().unwrap();
+            let mut current = self.current.lock()?;
 
             if current.0 == hash_request {
-                return current.1.clone();
+                return Ok(current.1.clone());
             }
 
             current.0 = hash_request;
@@ -72,20 +74,12 @@ impl AsyncStatus {
         rayon_core::spawn(move || {
             arc_pending.fetch_add(1, Ordering::Relaxed);
 
-            let res = Self::get_status();
-            trace!("status fetched: {}", hash(&res));
-
-            {
-                let mut current = arc_current.lock().unwrap();
-                if current.0 == hash_request {
-                    current.1 = Some(res.clone());
-                }
-            }
-
-            {
-                let mut last = arc_last.lock().unwrap();
-                *last = res;
-            }
+            AsyncStatus::fetch_helper(
+                hash_request,
+                arc_current,
+                arc_last,
+            )
+            .expect("failed to fetch status");
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
@@ -94,14 +88,37 @@ impl AsyncStatus {
                 .expect("error sending status");
         });
 
-        None
+        Ok(None)
     }
 
-    fn get_status() -> Status {
-        let work_dir =
-            sync::status::get_status(CWD, StatusType::WorkingDir);
-        let stage = sync::status::get_status(CWD, StatusType::Stage);
+    fn fetch_helper(
+        hash_request: u64,
+        arc_current: Arc<Mutex<Request<u64, Status>>>,
+        arc_last: Arc<Mutex<Status>>,
+    ) -> Result<()> {
+        let res = Self::get_status()?;
+        trace!("status fetched: {}", hash(&res));
 
-        Status { stage, work_dir }
+        {
+            let mut current = arc_current.lock()?;
+            if current.0 == hash_request {
+                current.1 = Some(res.clone());
+            }
+        }
+
+        {
+            let mut last = arc_last.lock()?;
+            *last = res;
+        }
+
+        Ok(())
+    }
+
+    fn get_status() -> Result<Status> {
+        let work_dir =
+            sync::status::get_status(CWD, StatusType::WorkingDir)?;
+        let stage = sync::status::get_status(CWD, StatusType::Stage)?;
+
+        Ok(Status { stage, work_dir })
     }
 }

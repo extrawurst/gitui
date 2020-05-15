@@ -1,3 +1,4 @@
+use crate::error::{Error, Result};
 use is_executable::IsExecutable;
 use scopetime::scope_time;
 use std::{
@@ -14,37 +15,42 @@ const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
 pub fn hooks_commit_msg(
     repo_path: &str,
     msg: &mut String,
-) -> HookResult {
+) -> Result<HookResult> {
     scope_time!("hooks_commit_msg");
 
     if hook_runable(repo_path, HOOK_COMMIT_MSG) {
-        let mut file = NamedTempFile::new().unwrap();
+        let mut file = NamedTempFile::new()?;
 
-        write!(file, "{}", msg).unwrap();
+        write!(file, "{}", msg)?;
 
-        let file_path = file.path().to_str().unwrap();
+        let file_path = file.path().to_str().ok_or_else(|| {
+            Error::Generic(
+                "temp file path contains invalid unicode sequences."
+                    .to_string(),
+            )
+        })?;
 
         let res = run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path]);
 
         // load possibly altered msg
-        let mut file = file.reopen().unwrap();
+        let mut file = file.reopen()?;
         msg.clear();
-        file.read_to_string(msg).unwrap();
+        file.read_to_string(msg)?;
 
-        res
+        Ok(res)
     } else {
-        HookResult::Ok
+        Ok(HookResult::Ok)
     }
 }
 
 ///
-pub fn hooks_post_commit(repo_path: &str) -> HookResult {
+pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
     scope_time!("hooks_post_commit");
 
     if hook_runable(repo_path, HOOK_POST_COMMIT) {
-        run_hook(repo_path, HOOK_POST_COMMIT, &[])
+        Ok(run_hook(repo_path, HOOK_POST_COMMIT, &[]))
     } else {
-        HookResult::Ok
+        Ok(HookResult::Ok)
     }
 }
 
@@ -65,19 +71,19 @@ pub enum HookResult {
 }
 
 fn run_hook(path: &str, cmd: &str, args: &[&str]) -> HookResult {
-    let output =
-        Command::new(cmd).args(args).current_dir(path).output();
+    match Command::new(cmd).args(args).current_dir(path).output() {
+        Ok(output) => {
+            if output.status.success() {
+                HookResult::Ok
+            } else {
+                let err = String::from_utf8_lossy(&output.stderr);
+                let out = String::from_utf8_lossy(&output.stdout);
+                let formatted = format!("{}{}", out, err);
 
-    let output = output.expect("general hook error");
-
-    if output.status.success() {
-        HookResult::Ok
-    } else {
-        let err = String::from_utf8(output.stderr).unwrap();
-        let out = String::from_utf8(output.stdout).unwrap();
-        let formatted = format!("{}{}", out, err);
-
-        HookResult::NotOk(formatted)
+                HookResult::NotOk(formatted)
+            }
+        }
+        Err(e) => HookResult::NotOk(format!("{}", e)),
     }
 }
 
@@ -89,16 +95,16 @@ mod tests {
 
     #[test]
     fn test_smoke() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let mut msg = String::from("test");
-        let res = hooks_commit_msg(repo_path, &mut msg);
+        let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
 
         assert_eq!(res, HookResult::Ok);
 
-        let res = hooks_post_commit(repo_path);
+        let res = hooks_post_commit(repo_path).unwrap();
 
         assert_eq!(res, HookResult::Ok);
     }
@@ -119,7 +125,7 @@ mod tests {
     #[test]
     #[cfg(not(windows))]
     fn test_hooks_commit_msg_ok() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -131,7 +137,7 @@ exit 0
         create_hook(root, HOOK_COMMIT_MSG, hook);
 
         let mut msg = String::from("test");
-        let res = hooks_commit_msg(repo_path, &mut msg);
+        let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
 
         assert_eq!(res, HookResult::Ok);
 
@@ -141,7 +147,7 @@ exit 0
     #[test]
     #[cfg(not(windows))]
     fn test_hooks_commit_msg() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -155,7 +161,7 @@ exit 1
         create_hook(root, HOOK_COMMIT_MSG, hook);
 
         let mut msg = String::from("test");
-        let res = hooks_commit_msg(repo_path, &mut msg);
+        let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
 
         assert_eq!(
             res,
@@ -168,7 +174,7 @@ exit 1
     #[test]
     #[cfg(not(windows))]
     fn test_commit_msg_no_block_but_alter() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -181,7 +187,7 @@ exit 0
         create_hook(root, HOOK_COMMIT_MSG, hook);
 
         let mut msg = String::from("test");
-        let res = hooks_commit_msg(repo_path, &mut msg);
+        let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
 
         assert_eq!(res, HookResult::Ok);
         assert_eq!(msg, String::from("msg\n"));

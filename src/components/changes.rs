@@ -109,8 +109,10 @@ impl ChangesComponent {
                         return match status {
                             StatusItemType::Deleted => {
                                 sync::stage_addremoved(CWD, path)
+                                    .unwrap()
                             }
-                            _ => sync::stage_add_file(CWD, path),
+                            _ => sync::stage_add_file(CWD, path)
+                                .unwrap(),
                         };
                     }
                 } else {
@@ -118,12 +120,14 @@ impl ChangesComponent {
                     return sync::stage_add_all(
                         CWD,
                         tree_item.info.full_path.as_str(),
-                    );
+                    )
+                    .unwrap();
                 }
             } else {
                 let path =
                     Path::new(tree_item.info.full_path.as_str());
-                return sync::reset_stage(CWD, path);
+                sync::reset_stage(CWD, path).unwrap();
+                return true;
             }
         }
 

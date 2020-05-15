@@ -5,6 +5,7 @@
 #![deny(clippy::all)]
 
 mod diff;
+mod error;
 mod revlog;
 mod status;
 pub mod sync;

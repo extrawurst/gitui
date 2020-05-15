@@ -1,4 +1,5 @@
 use super::utils::repo;
+use crate::error::Result;
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
 
@@ -19,12 +20,16 @@ pub struct CommitInfo {
 pub fn get_commits_info(
     repo_path: &str,
     ids: &[Oid],
-) -> Result<Vec<CommitInfo>, Error> {
+) -> Result<Vec<CommitInfo>> {
     scope_time!("get_commits_info");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
-    let commits = ids.iter().map(|id| repo.find_commit(*id).unwrap());
+    let commits = ids
+        .iter()
+        .map(|id| repo.find_commit(*id))
+        .collect::<std::result::Result<Vec<Commit>, Error>>()?
+        .into_iter();
 
     let res = commits
         .map(|c: Commit| {
@@ -66,27 +71,24 @@ fn limit_str(s: &str, limit: usize) -> String {
 mod tests {
 
     use super::get_commits_info;
+    use crate::error::Result;
     use crate::sync::{
         commit, stage_add_file, tests::repo_init_empty,
     };
-    use std::{
-        fs::File,
-        io::{Error, Write},
-        path::Path,
-    };
+    use std::{fs::File, io::Write, path::Path};
 
     #[test]
-    fn test_log() -> Result<(), Error> {
+    fn test_log() -> Result<()> {
         let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         let c1 = commit(repo_path, "commit1").unwrap();
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         let c2 = commit(repo_path, "commit2").unwrap();
 
         let res = get_commits_info(repo_path, &vec![c2, c1]).unwrap();

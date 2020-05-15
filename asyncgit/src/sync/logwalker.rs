@@ -1,4 +1,5 @@
-use git2::{Error, Oid, Repository, Revwalk};
+use crate::error::Result;
+use git2::{Oid, Repository, Revwalk};
 
 ///
 pub struct LogWalker<'a> {
@@ -20,7 +21,7 @@ impl<'a> LogWalker<'a> {
         &mut self,
         out: &mut Vec<Oid>,
         limit: usize,
-    ) -> Result<usize, Error> {
+    ) -> Result<usize> {
         let mut count = 0_usize;
 
         if self.revwalk.is_none() {
@@ -53,24 +54,20 @@ mod tests {
         commit, get_commits_info, stage_add_file,
         tests::repo_init_empty,
     };
-    use std::{
-        fs::File,
-        io::{Error, Write},
-        path::Path,
-    };
+    use std::{fs::File, io::Write, path::Path};
 
     #[test]
-    fn test_limit() -> Result<(), Error> {
+    fn test_limit() -> Result<()> {
         let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         commit(repo_path, "commit1").unwrap();
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         let oid2 = commit(repo_path, "commit2").unwrap();
 
         let mut items = Vec::new();
@@ -84,17 +81,17 @@ mod tests {
     }
 
     #[test]
-    fn test_logwalker() -> Result<(), Error> {
+    fn test_logwalker() -> Result<()> {
         let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         commit(repo_path, "commit1").unwrap();
         File::create(&root.join(file_path))?.write_all(b"a")?;
-        stage_add_file(repo_path, file_path);
+        stage_add_file(repo_path, file_path).unwrap();
         let oid2 = commit(repo_path, "commit2").unwrap();
 
         let mut items = Vec::new();

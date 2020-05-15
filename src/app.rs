@@ -220,13 +220,17 @@ impl App {
                     if sync::reset_workdir_folder(
                         CWD,
                         reset_item.path.as_str(),
-                    ) {
+                    )
+                    .is_ok()
+                    {
                         flags.insert(NeedsUpdate::ALL);
                     }
                 } else if sync::reset_workdir_file(
                     CWD,
                     reset_item.path.as_str(),
-                ) {
+                )
+                .is_ok()
+                {
                     flags.insert(NeedsUpdate::ALL);
                 }
             }
@@ -239,10 +243,14 @@ impl App {
                     self.status_tab.selected_path()
                 {
                     if is_stage {
-                        if sync::unstage_hunk(CWD, path, hash) {
+                        if sync::unstage_hunk(CWD, path, hash)
+                            .unwrap()
+                        {
                             flags.insert(NeedsUpdate::ALL);
                         }
-                    } else if sync::stage_hunk(CWD, path, hash) {
+                    } else if sync::stage_hunk(CWD, path, hash)
+                        .is_ok()
+                    {
                         flags.insert(NeedsUpdate::ALL);
                     }
                 }

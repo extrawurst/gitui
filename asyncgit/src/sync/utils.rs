@@ -1,8 +1,7 @@
 //! sync git api (various methods)
 
-use git2::{
-    Error, IndexAddOption, Oid, Repository, RepositoryOpenFlags,
-};
+use crate::error::{Error, Result};
+use git2::{IndexAddOption, Oid, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -17,26 +16,25 @@ pub fn is_repo(repo_path: &str) -> bool {
 }
 
 ///
-pub fn repo(repo_path: &str) -> Repository {
+pub fn repo(repo_path: &str) -> Result<Repository> {
     let repo = Repository::open_ext(
         repo_path,
         RepositoryOpenFlags::empty(),
         Vec::<&Path>::new(),
-    )
-    .unwrap();
+    )?;
 
     if repo.is_bare() {
         panic!("bare repo")
     }
 
-    repo
+    Ok(repo)
 }
 
 /// this does not run any git hooks
-pub fn commit(repo_path: &str, msg: &str) -> Result<Oid, Error> {
+pub fn commit(repo_path: &str, msg: &str) -> Result<Oid> {
     scope_time!("commit");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
     let signature = repo.signature()?;
     let mut index = repo.index()?;
@@ -44,7 +42,14 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<Oid, Error> {
     let tree = repo.find_tree(tree_id)?;
 
     let parents = if let Ok(reference) = repo.head() {
-        let parent = repo.find_commit(reference.target().unwrap())?;
+        let parent = repo.find_commit(
+            reference.target().ok_or_else(|| {
+                Error::Generic(
+                    "failed to get the target for reference"
+                        .to_string(),
+                )
+            })?,
+        )?;
         vec![parent]
     } else {
         Vec::new()
@@ -52,65 +57,68 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<Oid, Error> {
 
     let parents = parents.iter().collect::<Vec<_>>();
 
-    repo.commit(
+    Ok(repo.commit(
         Some("HEAD"),
         &signature,
         &signature,
         msg,
         &tree,
         parents.as_slice(),
-    )
+    )?)
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
-pub fn stage_add_file(repo_path: &str, path: &Path) -> bool {
+pub fn stage_add_file(repo_path: &str, path: &Path) -> Result<bool> {
     scope_time!("stage_add_file");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
-    let mut index = repo.index().unwrap();
+    let mut index = repo.index()?;
 
     if index.add_path(path).is_ok() {
-        index.write().unwrap();
-        return true;
+        index.write()?;
+        return Ok(true);
     }
 
-    false
+    Ok(false)
 }
 
 /// like `stage_add_file` but uses a pattern to match/glob multiple files/folders
-pub fn stage_add_all(repo_path: &str, pattern: &str) -> bool {
+pub fn stage_add_all(repo_path: &str, pattern: &str) -> Result<bool> {
     scope_time!("stage_add_all");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
-    let mut index = repo.index().unwrap();
+    let mut index = repo.index()?;
 
     if index
         .add_all(vec![pattern], IndexAddOption::DEFAULT, None)
         .is_ok()
     {
-        index.write().unwrap();
-        return true;
+        index.write()?;
+        return Ok(true);
     }
 
-    false
+    Ok(false)
 }
 
 /// stage a removed file
-pub fn stage_addremoved(repo_path: &str, path: &Path) -> bool {
+pub fn stage_addremoved(
+    repo_path: &str,
+    path: &Path,
+) -> Result<bool> {
     scope_time!("stage_addremoved");
 
-    let repo = repo(repo_path);
+    let repo = repo(repo_path)?;
 
-    let mut index = repo.index().unwrap();
+    let mut index = repo.index()?;
 
     if index.remove_path(path).is_ok() {
-        index.write().unwrap();
-        return true;
+        index.write()?;
+        return Ok(true);
     }
 
-    false
+    Ok(false)
 }
 
 #[cfg(test)]
@@ -122,14 +130,14 @@ mod tests {
     };
     use std::{
         fs::{self, remove_file, File},
-        io::{Error, Write},
+        io::Write,
         path::Path,
     };
 
     #[test]
     fn test_commit() {
         let file_path = Path::new("foo");
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -140,7 +148,10 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
-        assert_eq!(stage_add_file(repo_path, file_path), true);
+        assert_eq!(
+            stage_add_file(repo_path, file_path).unwrap(),
+            true
+        );
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
@@ -152,7 +163,7 @@ mod tests {
     #[test]
     fn test_commit_in_empty_repo() {
         let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -165,7 +176,10 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
-        assert_eq!(stage_add_file(repo_path, file_path), true);
+        assert_eq!(
+            stage_add_file(repo_path, file_path).unwrap(),
+            true
+        );
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
@@ -177,17 +191,20 @@ mod tests {
     #[test]
     fn test_stage_add_smoke() {
         let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty();
+        let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        assert_eq!(stage_add_file(repo_path, file_path), false);
+        assert_eq!(
+            stage_add_file(repo_path, file_path).unwrap(),
+            false
+        );
     }
 
     #[test]
     fn test_staging_one_file() {
         let file_path = Path::new("file1.txt");
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -203,19 +220,22 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (2, 0));
 
-        assert_eq!(stage_add_file(repo_path, file_path), true);
+        assert_eq!(
+            stage_add_file(repo_path, file_path).unwrap(),
+            true
+        );
 
         assert_eq!(get_statuses(repo_path), (1, 1));
     }
 
     #[test]
-    fn test_staging_folder() -> Result<(), Error> {
-        let (_td, repo) = repo_init();
+    fn test_staging_folder() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).len()
+            get_status(repo_path, s).unwrap().len()
         };
 
         fs::create_dir_all(&root.join("a/d"))?;
@@ -228,7 +248,7 @@ mod tests {
 
         assert_eq!(status_count(StatusType::WorkingDir), 3);
 
-        assert_eq!(stage_add_all(repo_path, "a/d"), true);
+        assert_eq!(stage_add_all(repo_path, "a/d").unwrap(), true);
 
         assert_eq!(status_count(StatusType::WorkingDir), 1);
         assert_eq!(status_count(StatusType::Stage), 2);
@@ -239,12 +259,12 @@ mod tests {
     #[test]
     fn test_staging_deleted_file() {
         let file_path = Path::new("file1.txt");
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).len()
+            get_status(repo_path, s).unwrap().len()
         };
 
         let full_path = &root.join(file_path);
@@ -254,7 +274,10 @@ mod tests {
             .write_all(b"test file1 content")
             .unwrap();
 
-        assert_eq!(stage_add_file(repo_path, file_path), true);
+        assert_eq!(
+            stage_add_file(repo_path, file_path).unwrap(),
+            true
+        );
 
         commit(repo_path, "commit msg").unwrap();
 
@@ -264,7 +287,10 @@ mod tests {
         // deleted file in diff now
         assert_eq!(status_count(StatusType::WorkingDir), 1);
 
-        assert_eq!(stage_addremoved(repo_path, file_path), true);
+        assert_eq!(
+            stage_addremoved(repo_path, file_path).unwrap(),
+            true
+        );
 
         assert_eq!(status_count(StatusType::WorkingDir), 0);
         assert_eq!(status_count(StatusType::Stage), 1);
