@@ -24,7 +24,10 @@ pub fn hooks_commit_msg(
         write!(file, "{}", msg)?;
 
         let file_path = file.path().to_str().ok_or_else(|| {
-            Error::Generic("can't get temp file's path".to_string())
+            Error::Generic(
+                "temp file path contains invalid unicode sequences."
+                    .to_string(),
+            )
         })?;
 
         let res =
