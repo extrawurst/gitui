@@ -126,7 +126,8 @@ impl ChangesComponent {
             } else {
                 let path =
                     Path::new(tree_item.info.full_path.as_str());
-                return sync::reset_stage(CWD, path).unwrap();
+                sync::reset_stage(CWD, path).unwrap();
+                return true;
             }
         }
 
