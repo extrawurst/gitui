@@ -10,9 +10,6 @@ pub enum Error {
 
     #[error("git error:{0}")]
     Git(#[from] git2::Error),
-
-    #[error("encoding error:{0}")]
-    Encoding(#[from] std::string::FromUtf8Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
