@@ -108,7 +108,7 @@ impl AsyncDiff {
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
             if notify {
-                let _ = sender
+                sender
                     .send(AsyncNotification::Diff)
                     .expect("error sending diff");
             }
