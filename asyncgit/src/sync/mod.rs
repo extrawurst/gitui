@@ -80,27 +80,29 @@ mod tests {
 
     ///
     pub fn debug_cmd_print(path: &str, cmd: &str) {
-        let cmd = debug_cmd(path, cmd).unwrap();
+        let cmd = debug_cmd(path, cmd);
         eprintln!("\n----\n{}", cmd);
     }
 
-    fn debug_cmd(path: &str, cmd: &str) -> Result<String> {
+    fn debug_cmd(path: &str, cmd: &str) -> String {
         let output = if cfg!(target_os = "windows") {
             Command::new("cmd")
                 .args(&["/C", cmd])
                 .current_dir(path)
-                .output()?
+                .output()
+                .unwrap()
         } else {
             Command::new("sh")
                 .arg("-c")
                 .arg(cmd)
                 .current_dir(path)
-                .output()?
+                .output()
+                .unwrap()
         };
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Ok(format!(
+        format!(
             "{}{}",
             if stdout.is_empty() {
                 String::new()
@@ -112,6 +114,6 @@ mod tests {
             } else {
                 format!("err:\n{}", stderr)
             }
-        ))
+        )
     }
 }
