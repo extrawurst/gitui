@@ -79,10 +79,9 @@ mod tests {
     }
 
     ///
-    pub fn debug_cmd_print(path: &str, cmd: &str) -> Result<()> {
-        let cmd = debug_cmd(path, cmd)?;
+    pub fn debug_cmd_print(path: &str, cmd: &str) {
+        let cmd = debug_cmd(path, cmd).unwrap();
         eprintln!("\n----\n{}", cmd);
-        Ok(())
     }
 
     fn debug_cmd(path: &str, cmd: &str) -> Result<String> {

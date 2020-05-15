@@ -147,11 +147,11 @@ mod tests {
                 .unwrap();
         }
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
         stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
         // overwrite with next content
         {
@@ -161,13 +161,13 @@ mod tests {
                 .unwrap();
         }
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
         reset_workdir_file(repo_path, "bar.txt").unwrap();
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
         assert_eq!(get_statuses(repo_path), (0, 1));
     }
@@ -186,13 +186,13 @@ mod tests {
                 .unwrap();
         }
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
         reset_workdir_file(repo_path, "foo/bar.txt").unwrap();
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
         assert_eq!(get_statuses(repo_path), (0, 0));
     }
@@ -257,11 +257,11 @@ mod tests {
                 .unwrap();
         }
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
-        debug_cmd_print(repo_path, "git add .").unwrap();
+        debug_cmd_print(repo_path, "git add .");
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
         {
             File::create(&root.join(file))
@@ -270,13 +270,13 @@ mod tests {
                 .unwrap();
         }
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
         reset_workdir_file(repo_path, file).unwrap();
 
-        debug_cmd_print(repo_path, "git status").unwrap();
+        debug_cmd_print(repo_path, "git status");
 
         assert_eq!(get_statuses(repo_path), (0, 1));
     }
