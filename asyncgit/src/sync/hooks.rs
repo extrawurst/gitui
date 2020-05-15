@@ -71,19 +71,19 @@ pub enum HookResult {
 }
 
 fn run_hook(path: &str, cmd: &str, args: &[&str]) -> HookResult {
-    let output =
-        Command::new(cmd).args(args).current_dir(path).output();
+    match Command::new(cmd).args(args).current_dir(path).output() {
+        Ok(output) => {
+            if output.status.success() {
+                HookResult::Ok
+            } else {
+                let err = String::from_utf8_lossy(&output.stderr);
+                let out = String::from_utf8_lossy(&output.stdout);
+                let formatted = format!("{}{}", out, err);
 
-    let output = output.expect("general hook error");
-
-    if output.status.success() {
-        HookResult::Ok
-    } else {
-        let err = String::from_utf8_lossy(&output.stderr);
-        let out = String::from_utf8_lossy(&output.stdout);
-        let formatted = format!("{}{}", out, err);
-
-        HookResult::NotOk(formatted)
+                HookResult::NotOk(formatted)
+            }
+        }
+        Err(e) => HookResult::NotOk(format!("{}", e)),
     }
 }
 
