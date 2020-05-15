@@ -13,7 +13,7 @@ pub fn stage_hunk(
     repo_path: &str,
     file_path: String,
     hunk_hash: u64,
-) -> Result<bool> {
+) -> Result<()> {
     scope_time!("stage_hunk");
 
     let repo = repo(repo_path)?;
@@ -28,7 +28,7 @@ pub fn stage_hunk(
 
     repo.apply(&diff, ApplyLocation::Index, Some(&mut opt))?;
 
-    Ok(true)
+    Ok(())
 }
 
 fn find_hunk_index(diff: &Diff, hunk_hash: u64) -> Option<usize> {

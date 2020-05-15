@@ -248,8 +248,8 @@ impl App {
                         {
                             flags.insert(NeedsUpdate::ALL);
                         }
-                    } else if sync::stage_hunk(CWD, path, hash)
-                        .unwrap()
+                    } else if let Ok(()) =
+                        sync::stage_hunk(CWD, path, hash)
                     {
                         flags.insert(NeedsUpdate::ALL);
                     }
