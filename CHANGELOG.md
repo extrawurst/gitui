@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - introduced proper changelog
 
 ### Changed
-- introduce propper error handling in `asyncgit` [@MCord] ([#53](https://github.com/extrawurst/gitui/issues/53))
+- introduce propper error handling in `asyncgit` [[@MCord](https://github.com/MCord)] ([#53](https://github.com/extrawurst/gitui/issues/53))
 - better error message when trying to run outside of a valid git repo ([#56](https://github.com/extrawurst/gitui/issues/56))
 - improve ctrl+c handling so it is checked first and no component needs to worry of blocking it
 
