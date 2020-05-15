@@ -313,10 +313,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
-        assert_eq!(
-            stage_add_file(repo_path, file_path).unwrap(),
-            true
-        );
+        stage_add_file(repo_path, file_path).unwrap();
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
@@ -378,9 +375,7 @@ mod tests {
         assert_eq!(res.len(), 1);
         assert_eq!(res[0].path, "bar.txt");
 
-        let res =
-            stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
-        assert_eq!(res, true);
+        stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
         assert_eq!(get_statuses(repo_path), (0, 1));
 
         // overwrite with next content

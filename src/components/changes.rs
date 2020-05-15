@@ -109,10 +109,10 @@ impl ChangesComponent {
                         return match status {
                             StatusItemType::Deleted => {
                                 sync::stage_addremoved(CWD, path)
-                                    .unwrap()
+                                    .is_ok()
                             }
                             _ => sync::stage_add_file(CWD, path)
-                                .unwrap(),
+                                .is_ok(),
                         };
                     }
                 } else {
@@ -121,7 +121,7 @@ impl ChangesComponent {
                         CWD,
                         tree_item.info.full_path.as_str(),
                     )
-                    .unwrap();
+                    .is_ok();
                 }
             } else {
                 let path =

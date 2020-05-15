@@ -213,7 +213,7 @@ mod tests {
                 .write_all(b"file3")?;
         }
 
-        assert!(stage_add_all(repo_path, "*").unwrap());
+        stage_add_all(repo_path, "*").unwrap();
         commit(repo_path, "msg").unwrap();
 
         {
@@ -295,10 +295,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
-        assert_eq!(
-            stage_add_file(repo_path, file_path).unwrap(),
-            true
-        );
+        stage_add_file(repo_path, file_path).unwrap();
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
