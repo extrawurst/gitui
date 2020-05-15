@@ -98,7 +98,7 @@ mod tests {
         let mut walk = LogWalker::new(&repo);
         walk.read(&mut items, 100).unwrap();
 
-        let info = get_commits_info(repo_path, &items).unwrap();
+        let info = get_commits_info(repo_path, &items, 50).unwrap();
         dbg!(&info);
 
         assert_eq!(items.len(), 2);

@@ -54,7 +54,7 @@ pub struct Revlog {
     first_open_done: bool,
     scroll_state: (Instant, f32),
     tags: Tags,
-    current_height: u16,
+    current_size: (u16, u16),
 }
 
 impl Revlog {
@@ -69,7 +69,7 @@ impl Revlog {
             first_open_done: false,
             scroll_state: (Instant::now(), 0_f32),
             tags: Tags::new(),
-            current_height: 0,
+            current_size: (0, 0),
         }
     }
 
@@ -98,6 +98,7 @@ impl Revlog {
         let commits = sync::get_commits_info(
             CWD,
             &self.git_log.get_slice(want_min, SLICE_SIZE).unwrap(),
+            self.current_size.0.into(),
         );
 
         if let Ok(commits) = commits {
@@ -114,7 +115,7 @@ impl Revlog {
             .max(1);
 
         let page_offset =
-            usize::from(self.current_height).saturating_sub(1);
+            usize::from(self.current_size.1).saturating_sub(1);
 
         self.selection = match scroll {
             ScrollType::Up => {
@@ -236,7 +237,10 @@ impl Revlog {
 
 impl DrawableComponent for Revlog {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect) {
-        self.current_height = area.height.saturating_sub(2);
+        self.current_size = (
+            area.width.saturating_sub(2),
+            area.height.saturating_sub(2),
+        );
 
         let height = area.height as usize;
         let selection =

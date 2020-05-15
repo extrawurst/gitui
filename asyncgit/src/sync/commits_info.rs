@@ -20,6 +20,7 @@ pub struct CommitInfo {
 pub fn get_commits_info(
     repo_path: &str,
     ids: &[Oid],
+    message_length_limit: usize,
 ) -> Result<Vec<CommitInfo>> {
     scope_time!("get_commits_info");
 
@@ -33,7 +34,7 @@ pub fn get_commits_info(
 
     let res = commits
         .map(|c: Commit| {
-            let message = get_message(&c);
+            let message = get_message(&c, message_length_limit);
             let author = if let Some(name) = c.author().name() {
                 String::from(name)
             } else {
@@ -51,9 +52,9 @@ pub fn get_commits_info(
     Ok(res)
 }
 
-fn get_message(c: &Commit) -> String {
+fn get_message(c: &Commit, message_length_limit: usize) -> String {
     if let Some(msg) = c.message() {
-        limit_str(msg, 50)
+        limit_str(msg, message_length_limit)
     } else {
         String::from("<unknown>")
     }
@@ -91,7 +92,8 @@ mod tests {
         stage_add_file(repo_path, file_path).unwrap();
         let c2 = commit(repo_path, "commit2").unwrap();
 
-        let res = get_commits_info(repo_path, &vec![c2, c1]).unwrap();
+        let res =
+            get_commits_info(repo_path, &vec![c2, c1], 50).unwrap();
 
         assert_eq!(res.len(), 2);
         assert_eq!(res[0].message.as_str(), "commit2");
