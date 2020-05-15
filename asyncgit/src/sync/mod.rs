@@ -25,13 +25,13 @@ pub use utils::{
 #[cfg(test)]
 mod tests {
     use super::status::{get_status, StatusType};
-    use crate::error::Error;
+    use crate::error::Returns;
     use git2::Repository;
     use std::process::Command;
     use tempfile::TempDir;
 
     ///
-    pub fn repo_init_empty() -> Result<(TempDir, Repository), Error> {
+    pub fn repo_init_empty() -> Returns<(TempDir, Repository)> {
         let td = TempDir::new()?;
         let repo = Repository::init(td.path())?;
         {
@@ -43,7 +43,7 @@ mod tests {
     }
 
     ///
-    pub fn repo_init() -> Result<(TempDir, Repository), Error> {
+    pub fn repo_init() -> Returns<(TempDir, Repository)> {
         let td = TempDir::new()?;
         let repo = Repository::init(td.path())?;
         {
@@ -69,9 +69,7 @@ mod tests {
     }
 
     /// helper returning amount of files with changes in the (wd,stage)
-    pub fn get_statuses(
-        repo_path: &str,
-    ) -> Result<(usize, usize), Error> {
+    pub fn get_statuses(repo_path: &str) -> Returns<(usize, usize)> {
         Ok((
             get_status(repo_path, StatusType::WorkingDir)?.len(),
             get_status(repo_path, StatusType::Stage)?.len(),
@@ -79,16 +77,13 @@ mod tests {
     }
 
     ///
-    pub fn debug_cmd_print(
-        path: &str,
-        cmd: &str,
-    ) -> Result<(), Error> {
+    pub fn debug_cmd_print(path: &str, cmd: &str) -> Returns<()> {
         let cmd = debug_cmd(path, cmd)?;
         eprintln!("\n----\n{}", cmd);
         Ok(())
     }
 
-    fn debug_cmd(path: &str, cmd: &str) -> Result<String, Error> {
+    fn debug_cmd(path: &str, cmd: &str) -> Returns<String> {
         let output = if cfg!(target_os = "windows") {
             Command::new("cmd")
                 .args(&["/C", cmd])

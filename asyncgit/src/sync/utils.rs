@@ -133,7 +133,7 @@ mod tests {
     };
     use std::{
         fs::{self, remove_file, File},
-        io::{Error, Write},
+        io::Write,
         path::Path,
     };
 
@@ -232,7 +232,7 @@ mod tests {
     }
 
     #[test]
-    fn test_staging_folder() -> Result<(), Error> {
+    fn test_staging_folder() -> Returns<()> {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();

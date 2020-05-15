@@ -71,17 +71,14 @@ fn limit_str(s: &str, limit: usize) -> String {
 mod tests {
 
     use super::get_commits_info;
+    use crate::error::Returns;
     use crate::sync::{
         commit, stage_add_file, tests::repo_init_empty,
     };
-    use std::{
-        fs::File,
-        io::{Error, Write},
-        path::Path,
-    };
+    use std::{fs::File, io::Write, path::Path};
 
     #[test]
-    fn test_log() -> Result<(), Error> {
+    fn test_log() -> Returns<()> {
         let file_path = Path::new("foo");
         let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();

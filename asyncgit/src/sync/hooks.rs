@@ -15,7 +15,7 @@ const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
 pub fn hooks_commit_msg(
     repo_path: &str,
     msg: &mut String,
-) -> Result<HookResult, Error> {
+) -> Returns<HookResult> {
     scope_time!("hooks_commit_msg");
 
     if hook_runable(repo_path, HOOK_COMMIT_MSG) {

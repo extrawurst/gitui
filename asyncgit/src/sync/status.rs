@@ -1,5 +1,6 @@
 //! sync git api for fetching a status
 
+use crate::error::Returns;
 use crate::{error::Error, sync::utils};
 use git2::{Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
@@ -67,7 +68,7 @@ impl Into<StatusShow> for StatusType {
 pub fn get_status(
     repo_path: &str,
     status_type: StatusType,
-) -> Result<Vec<StatusItem>, Error> {
+) -> Returns<Vec<StatusItem>> {
     scope_time!("get_index");
 
     let repo = utils::repo(repo_path)?;

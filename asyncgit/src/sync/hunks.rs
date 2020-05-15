@@ -2,6 +2,7 @@ use super::{
     diff::{get_diff_raw, HunkHeader},
     utils::repo,
 };
+use crate::error::Returns;
 use crate::{error::Error, hash};
 use git2::{ApplyLocation, ApplyOptions, Diff};
 use log::error;
@@ -12,7 +13,7 @@ pub fn stage_hunk(
     repo_path: &str,
     file_path: String,
     hunk_hash: u64,
-) -> Result<bool, Error> {
+) -> Returns<bool> {
     scope_time!("stage_hunk");
 
     let repo = repo(repo_path)?;
@@ -61,7 +62,7 @@ pub fn unstage_hunk(
     repo_path: &str,
     file_path: String,
     hunk_hash: u64,
-) -> Result<bool, Error> {
+) -> Returns<bool> {
     scope_time!("revert_hunk");
 
     let repo = repo(repo_path)?;

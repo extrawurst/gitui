@@ -97,6 +97,7 @@ mod tests {
     use super::{
         reset_stage, reset_workdir_file, reset_workdir_folder,
     };
+    use crate::error::Returns;
     use crate::sync::{
         status::{get_status, StatusType},
         tests::{
@@ -106,7 +107,7 @@ mod tests {
     };
     use std::{
         fs::{self, File},
-        io::{Error, Write},
+        io::Write,
         path::Path,
     };
 
@@ -209,7 +210,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reset_folder() -> Result<(), Error> {
+    fn test_reset_folder() -> Returns<()> {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();

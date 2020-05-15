@@ -1,7 +1,5 @@
 use crate::error::Returns;
-use crate::{
-    error::Error, hash, sync, AsyncNotification, FileDiff, CWD,
-};
+use crate::{hash, sync, AsyncNotification, FileDiff, CWD};
 use crossbeam_channel::Sender;
 use log::trace;
 use std::{
@@ -47,7 +45,7 @@ impl AsyncDiff {
     ///
     pub fn last(
         &mut self,
-    ) -> Result<Option<(DiffParams, FileDiff)>, Error> {
+    ) -> Returns<Option<(DiffParams, FileDiff)>> {
         let last = self.last.lock()?;
 
         Ok(match last.clone() {
