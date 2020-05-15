@@ -304,21 +304,21 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        assert_eq!(get_statuses(repo_path).unwrap(), (0, 0));
+        assert_eq!(get_statuses(repo_path), (0, 0));
 
         File::create(&root.join(file_path))
             .unwrap()
             .write_all(b"test\nfoo")
             .unwrap();
 
-        assert_eq!(get_statuses(repo_path).unwrap(), (1, 0));
+        assert_eq!(get_statuses(repo_path), (1, 0));
 
         assert_eq!(
             stage_add_file(repo_path, file_path).unwrap(),
             true
         );
 
-        assert_eq!(get_statuses(repo_path).unwrap(), (0, 1));
+        assert_eq!(get_statuses(repo_path), (0, 1));
 
         let diff = get_diff(
             repo_path,
@@ -362,7 +362,7 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        assert_eq!(get_statuses(repo_path).unwrap(), (0, 0));
+        assert_eq!(get_statuses(repo_path), (0, 0));
 
         let file_path = root.join("bar.txt");
 
@@ -381,7 +381,7 @@ mod tests {
         let res =
             stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
         assert_eq!(res, true);
-        assert_eq!(get_statuses(repo_path).unwrap(), (0, 1));
+        assert_eq!(get_statuses(repo_path), (0, 1));
 
         // overwrite with next content
         {
@@ -391,7 +391,7 @@ mod tests {
                 .unwrap();
         }
 
-        assert_eq!(get_statuses(repo_path).unwrap(), (1, 1));
+        assert_eq!(get_statuses(repo_path), (1, 1));
 
         let res = get_diff(repo_path, "bar.txt".to_string(), false)
             .unwrap();

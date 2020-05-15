@@ -30,8 +30,7 @@ pub fn hooks_commit_msg(
             )
         })?;
 
-        let res =
-            run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path])?;
+        let res = run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path]);
 
         // load possibly altered msg
         let mut file = file.reopen()?;
@@ -49,7 +48,7 @@ pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
     scope_time!("hooks_post_commit");
 
     if hook_runable(repo_path, HOOK_POST_COMMIT) {
-        Ok(run_hook(repo_path, HOOK_POST_COMMIT, &[])?)
+        Ok(run_hook(repo_path, HOOK_POST_COMMIT, &[]))
     } else {
         Ok(HookResult::Ok)
     }
@@ -71,24 +70,20 @@ pub enum HookResult {
     NotOk(String),
 }
 
-fn run_hook(
-    path: &str,
-    cmd: &str,
-    args: &[&str],
-) -> Result<HookResult> {
+fn run_hook(path: &str, cmd: &str, args: &[&str]) -> HookResult {
     let output =
         Command::new(cmd).args(args).current_dir(path).output();
 
     let output = output.expect("general hook error");
 
     if output.status.success() {
-        Ok(HookResult::Ok)
+        HookResult::Ok
     } else {
         let err = String::from_utf8_lossy(&output.stderr);
         let out = String::from_utf8_lossy(&output.stdout);
         let formatted = format!("{}{}", out, err);
 
-        Ok(HookResult::NotOk(formatted))
+        HookResult::NotOk(formatted)
     }
 }
 
