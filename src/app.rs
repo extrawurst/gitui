@@ -217,16 +217,20 @@ impl App {
         match ev {
             InternalEvent::ResetItem(reset_item) => {
                 if reset_item.is_folder {
-                    if let Ok(()) = sync::reset_workdir_folder(
+                    if sync::reset_workdir_folder(
                         CWD,
                         reset_item.path.as_str(),
-                    ) {
+                    )
+                    .is_ok()
+                    {
                         flags.insert(NeedsUpdate::ALL);
                     }
-                } else if let Ok(()) = sync::reset_workdir_file(
+                } else if sync::reset_workdir_file(
                     CWD,
                     reset_item.path.as_str(),
-                ) {
+                )
+                .is_ok()
+                {
                     flags.insert(NeedsUpdate::ALL);
                 }
             }
@@ -244,8 +248,8 @@ impl App {
                         {
                             flags.insert(NeedsUpdate::ALL);
                         }
-                    } else if let Ok(()) =
-                        sync::stage_hunk(CWD, path, hash)
+                    } else if sync::stage_hunk(CWD, path, hash)
+                        .is_ok()
                     {
                         flags.insert(NeedsUpdate::ALL);
                     }
