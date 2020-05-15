@@ -1,5 +1,5 @@
 use super::utils::repo;
-use crate::error::Returns;
+use crate::error::Result;
 use scopetime::scope_time;
 use std::collections::HashMap;
 
@@ -7,7 +7,7 @@ use std::collections::HashMap;
 pub type Tags = HashMap<String, String>;
 
 /// returns `Tags` type filled with all tags found in repo
-pub fn get_tags(repo_path: &str) -> Returns<Tags> {
+pub fn get_tags(repo_path: &str) -> Result<Tags> {
     scope_time!("get_tags");
 
     let mut res = Tags::new();

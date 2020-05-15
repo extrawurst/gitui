@@ -1,7 +1,7 @@
 //! sync git api for fetching a diff
 
 use super::utils;
-use crate::error::Returns;
+use crate::error::Result;
 use crate::{error::Error, hash};
 use git2::{
     Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
@@ -80,7 +80,7 @@ pub(crate) fn get_diff_raw<'a>(
     p: &str,
     stage: bool,
     reverse: bool,
-) -> Returns<Diff<'a>> {
+) -> Result<Diff<'a>> {
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
     opt.reverse(reverse);
@@ -124,7 +124,7 @@ pub fn get_diff(
     repo_path: &str,
     p: String,
     stage: bool,
-) -> Returns<FileDiff> {
+) -> Result<FileDiff> {
     scope_time!("get_diff");
 
     let repo = utils::repo(repo_path)?;
@@ -257,7 +257,7 @@ fn new_file_content(path: &Path) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::get_diff;
-    use crate::error::Returns;
+    use crate::error::Result;
     use crate::sync::{
         stage_add_file,
         status::{get_status, StatusType},
@@ -424,7 +424,7 @@ mod tests {
     }
 
     #[test]
-    fn test_diff_new_binary_file_using_invalid_utf8() -> Returns<()> {
+    fn test_diff_new_binary_file_using_invalid_utf8() -> Result<()> {
         let file_path = Path::new("bar");
         let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();

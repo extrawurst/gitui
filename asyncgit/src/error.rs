@@ -13,20 +13,9 @@ pub enum Error {
 
     #[error("encoding error:{0}")]
     Encoding(#[from] std::string::FromUtf8Error),
-
-    #[error("unspecified error:{0}")]
-    Unspecified(Box<dyn std::error::Error>),
 }
 
-pub type Returns<T> = std::result::Result<T, Error>;
-
-// impl From<&dyn std::error::Error> for Error {
-//     fn from(error: &dyn std::error::Error) -> Self {
-//         let e = error.clone().to_owned();
-//         let b = Box::new(e);
-//         Error::Unspecified(b)
-//     }
-// }
+pub type Result<T> = std::result::Result<T, Error>;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(error: std::sync::PoisonError<T>) -> Self {

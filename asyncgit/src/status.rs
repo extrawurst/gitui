@@ -1,5 +1,5 @@
 use crate::{
-    error::Returns, hash, sync, AsyncNotification, StatusItem, CWD,
+    error::Result, hash, sync, AsyncNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
 use log::trace;
@@ -40,7 +40,7 @@ impl AsyncStatus {
     }
 
     ///
-    pub fn last(&mut self) -> Returns<Status> {
+    pub fn last(&mut self) -> Result<Status> {
         let last = self.last.lock()?;
         Ok(last.clone())
     }
@@ -51,7 +51,7 @@ impl AsyncStatus {
     }
 
     ///
-    pub fn fetch(&mut self, request: u64) -> Returns<Option<Status>> {
+    pub fn fetch(&mut self, request: u64) -> Result<Option<Status>> {
         let hash_request = hash(&request);
 
         trace!("request: {} [hash: {}]", request, hash_request);
@@ -95,7 +95,7 @@ impl AsyncStatus {
         hash_request: u64,
         arc_current: Arc<Mutex<Request<u64, Status>>>,
         arc_last: Arc<Mutex<Status>>,
-    ) -> Returns<()> {
+    ) -> Result<()> {
         let res = Self::get_status()?;
         trace!("status fetched: {}", hash(&res));
 
@@ -114,7 +114,7 @@ impl AsyncStatus {
         Ok(())
     }
 
-    fn get_status() -> Returns<Status> {
+    fn get_status() -> Result<Status> {
         let work_dir =
             sync::status::get_status(CWD, StatusType::WorkingDir)?;
         let stage = sync::status::get_status(CWD, StatusType::Stage)?;

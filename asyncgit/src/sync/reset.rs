@@ -1,11 +1,11 @@
 use super::utils::repo;
-use crate::error::{Error, Returns};
+use crate::error::{Error, Result};
 use git2::{build::CheckoutBuilder, ObjectType, Status};
 use scopetime::scope_time;
 use std::{fs, path::Path};
 
 ///
-pub fn reset_stage(repo_path: &str, path: &Path) -> Returns<bool> {
+pub fn reset_stage(repo_path: &str, path: &Path) -> Result<bool> {
     scope_time!("reset_stage");
 
     let repo = repo(repo_path)?;
@@ -35,7 +35,7 @@ pub fn reset_stage(repo_path: &str, path: &Path) -> Returns<bool> {
 pub fn reset_workdir_file(
     repo_path: &str,
     path: &str,
-) -> Returns<bool> {
+) -> Result<bool> {
     scope_time!("reset_workdir_file");
 
     let repo = repo(repo_path)?;
@@ -75,7 +75,7 @@ pub fn reset_workdir_file(
 pub fn reset_workdir_folder(
     repo_path: &str,
     path: &str,
-) -> Returns<bool> {
+) -> Result<bool> {
     scope_time!("reset_workdir_folder");
 
     let repo = repo(repo_path)?;
@@ -97,7 +97,7 @@ mod tests {
     use super::{
         reset_stage, reset_workdir_file, reset_workdir_folder,
     };
-    use crate::error::Returns;
+    use crate::error::Result;
     use crate::sync::{
         status::{get_status, StatusType},
         tests::{
@@ -210,7 +210,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reset_folder() -> Returns<()> {
+    fn test_reset_folder() -> Result<()> {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();

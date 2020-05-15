@@ -1,4 +1,4 @@
-use crate::error::Returns;
+use crate::error::Result;
 use crate::{hash, sync, AsyncNotification, FileDiff, CWD};
 use crossbeam_channel::Sender;
 use log::trace;
@@ -43,9 +43,7 @@ impl AsyncDiff {
     }
 
     ///
-    pub fn last(
-        &mut self,
-    ) -> Returns<Option<(DiffParams, FileDiff)>> {
+    pub fn last(&mut self) -> Result<Option<(DiffParams, FileDiff)>> {
         let last = self.last.lock()?;
 
         Ok(match last.clone() {
@@ -55,7 +53,7 @@ impl AsyncDiff {
     }
 
     ///
-    pub fn refresh(&mut self) -> Returns<()> {
+    pub fn refresh(&mut self) -> Result<()> {
         if let Ok(Some(param)) = self.get_last_param() {
             self.clear_current()?;
             self.request(param)?;
@@ -72,7 +70,7 @@ impl AsyncDiff {
     pub fn request(
         &mut self,
         params: DiffParams,
-    ) -> Returns<Option<FileDiff>> {
+    ) -> Result<Option<FileDiff>> {
         trace!("request");
 
         let hash = hash(&params);
@@ -122,7 +120,7 @@ impl AsyncDiff {
         >,
         arc_current: Arc<Mutex<Request<u64, FileDiff>>>,
         hash: u64,
-    ) -> Returns<bool> {
+    ) -> Result<bool> {
         let res =
             sync::diff::get_diff(CWD, params.0.clone(), params.1)?;
 
@@ -147,11 +145,11 @@ impl AsyncDiff {
         Ok(notify)
     }
 
-    fn get_last_param(&self) -> Returns<Option<DiffParams>> {
+    fn get_last_param(&self) -> Result<Option<DiffParams>> {
         Ok(self.last.lock()?.clone().map(|e| e.params))
     }
 
-    fn clear_current(&mut self) -> Returns<()> {
+    fn clear_current(&mut self) -> Result<()> {
         let mut current = self.current.lock()?;
         current.0 = 0;
         current.1 = None;

@@ -1,5 +1,5 @@
 use super::utils::repo;
-use crate::error::Returns;
+use crate::error::Result;
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
 
@@ -20,7 +20,7 @@ pub struct CommitInfo {
 pub fn get_commits_info(
     repo_path: &str,
     ids: &[Oid],
-) -> Returns<Vec<CommitInfo>> {
+) -> Result<Vec<CommitInfo>> {
     scope_time!("get_commits_info");
 
     let repo = repo(repo_path)?;
@@ -28,7 +28,7 @@ pub fn get_commits_info(
     let commits = ids
         .iter()
         .map(|id| repo.find_commit(*id))
-        .collect::<Result<Vec<Commit>, Error>>()?
+        .collect::<std::result::Result<Vec<Commit>, Error>>()?
         .into_iter();
 
     let res = commits
@@ -71,14 +71,14 @@ fn limit_str(s: &str, limit: usize) -> String {
 mod tests {
 
     use super::get_commits_info;
-    use crate::error::Returns;
+    use crate::error::Result;
     use crate::sync::{
         commit, stage_add_file, tests::repo_init_empty,
     };
     use std::{fs::File, io::Write, path::Path};
 
     #[test]
-    fn test_log() -> Returns<()> {
+    fn test_log() -> Result<()> {
         let file_path = Path::new("foo");
         let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();

@@ -1,4 +1,4 @@
-use crate::error::Returns;
+use crate::error::Result;
 use git2::{Oid, Repository, Revwalk};
 
 ///
@@ -21,7 +21,7 @@ impl<'a> LogWalker<'a> {
         &mut self,
         out: &mut Vec<Oid>,
         limit: usize,
-    ) -> Returns<usize> {
+    ) -> Result<usize> {
         let mut count = 0_usize;
 
         if self.revwalk.is_none() {
@@ -57,7 +57,7 @@ mod tests {
     use std::{fs::File, io::Write, path::Path};
 
     #[test]
-    fn test_limit() -> Returns<()> {
+    fn test_limit() -> Result<()> {
         let file_path = Path::new("foo");
         let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
@@ -81,7 +81,7 @@ mod tests {
     }
 
     #[test]
-    fn test_logwalker() -> Returns<()> {
+    fn test_logwalker() -> Result<()> {
         let file_path = Path::new("foo");
         let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();

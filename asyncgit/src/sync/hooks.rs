@@ -1,4 +1,4 @@
-use crate::error::{Error, Returns};
+use crate::error::{Error, Result};
 use is_executable::IsExecutable;
 use scopetime::scope_time;
 use std::{
@@ -15,7 +15,7 @@ const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
 pub fn hooks_commit_msg(
     repo_path: &str,
     msg: &mut String,
-) -> Returns<HookResult> {
+) -> Result<HookResult> {
     scope_time!("hooks_commit_msg");
 
     if hook_runable(repo_path, HOOK_COMMIT_MSG) {
@@ -42,7 +42,7 @@ pub fn hooks_commit_msg(
 }
 
 ///
-pub fn hooks_post_commit(repo_path: &str) -> Returns<HookResult> {
+pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
     scope_time!("hooks_post_commit");
 
     if hook_runable(repo_path, HOOK_POST_COMMIT) {
@@ -72,7 +72,7 @@ fn run_hook(
     path: &str,
     cmd: &str,
     args: &[&str],
-) -> Returns<HookResult> {
+) -> Result<HookResult> {
     let output =
         Command::new(cmd).args(args).current_dir(path).output();
 

@@ -1,6 +1,6 @@
 //! sync git api (various methods)
 
-use crate::error::{Error, Returns};
+use crate::error::{Error, Result};
 use git2::{IndexAddOption, Oid, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::path::Path;
@@ -16,7 +16,7 @@ pub fn is_repo(repo_path: &str) -> bool {
 }
 
 ///
-pub fn repo(repo_path: &str) -> Returns<Repository> {
+pub fn repo(repo_path: &str) -> Result<Repository> {
     let repo = Repository::open_ext(
         repo_path,
         RepositoryOpenFlags::empty(),
@@ -31,7 +31,7 @@ pub fn repo(repo_path: &str) -> Returns<Repository> {
 }
 
 /// this does not run any git hooks
-pub fn commit(repo_path: &str, msg: &str) -> Returns<Oid> {
+pub fn commit(repo_path: &str, msg: &str) -> Result<Oid> {
     scope_time!("commit");
 
     let repo = repo(repo_path)?;
@@ -68,7 +68,7 @@ pub fn commit(repo_path: &str, msg: &str) -> Returns<Oid> {
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
-pub fn stage_add_file(repo_path: &str, path: &Path) -> Returns<bool> {
+pub fn stage_add_file(repo_path: &str, path: &Path) -> Result<bool> {
     scope_time!("stage_add_file");
 
     let repo = repo(repo_path)?;
@@ -84,10 +84,7 @@ pub fn stage_add_file(repo_path: &str, path: &Path) -> Returns<bool> {
 }
 
 /// like `stage_add_file` but uses a pattern to match/glob multiple files/folders
-pub fn stage_add_all(
-    repo_path: &str,
-    pattern: &str,
-) -> Returns<bool> {
+pub fn stage_add_all(repo_path: &str, pattern: &str) -> Result<bool> {
     scope_time!("stage_add_all");
 
     let repo = repo(repo_path)?;
@@ -109,7 +106,7 @@ pub fn stage_add_all(
 pub fn stage_addremoved(
     repo_path: &str,
     path: &Path,
-) -> Returns<bool> {
+) -> Result<bool> {
     scope_time!("stage_addremoved");
 
     let repo = repo(repo_path)?;
@@ -232,7 +229,7 @@ mod tests {
     }
 
     #[test]
-    fn test_staging_folder() -> Returns<()> {
+    fn test_staging_folder() -> Result<()> {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
