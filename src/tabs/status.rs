@@ -184,7 +184,7 @@ impl Status {
     ///
     pub fn update(&mut self) {
         self.git_diff.refresh().unwrap();
-        self.git_status.fetch(current_tick().unwrap()).unwrap();
+        self.git_status.fetch(current_tick()).unwrap();
     }
 
     ///
