@@ -92,11 +92,18 @@ pub fn get_status(
                 .path()
                 .and_then(|x| x.to_str())
                 .map(String::from)
-                .ok_or_else(|| Error::Generic("".to_string()))?,
-            None => e
-                .path()
-                .map(String::from)
-                .ok_or_else(|| Error::Generic("".to_string()))?,
+                .ok_or_else(|| {
+                    Error::Generic(
+                        "failed to get path to diff's new file."
+                            .to_string(),
+                    )
+                })?,
+            None => e.path().map(String::from).ok_or_else(|| {
+                Error::Generic(
+                    "failed to get the path to indexed file."
+                        .to_string(),
+                )
+            })?,
         };
 
         res.push(StatusItem {
