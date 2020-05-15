@@ -127,7 +127,7 @@ mod tests {
     #[test]
     #[cfg(not(windows))]
     fn test_hooks_commit_msg_ok() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -149,7 +149,7 @@ exit 0
     #[test]
     #[cfg(not(windows))]
     fn test_hooks_commit_msg() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
@@ -176,7 +176,7 @@ exit 1
     #[test]
     #[cfg(not(windows))]
     fn test_commit_msg_no_block_but_alter() {
-        let (_td, repo) = repo_init();
+        let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
