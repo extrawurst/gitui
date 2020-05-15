@@ -225,12 +225,10 @@ impl App {
                     {
                         flags.insert(NeedsUpdate::ALL);
                     }
-                } else if sync::reset_workdir_file(
+                } else if let Ok(()) = sync::reset_workdir_file(
                     CWD,
                     reset_item.path.as_str(),
-                )
-                .unwrap()
-                {
+                ) {
                     flags.insert(NeedsUpdate::ALL);
                 }
             }

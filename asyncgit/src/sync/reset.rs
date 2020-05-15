@@ -32,43 +32,34 @@ pub fn reset_stage(repo_path: &str, path: &Path) -> Result<()> {
 }
 
 ///
-pub fn reset_workdir_file(
-    repo_path: &str,
-    path: &str,
-) -> Result<bool> {
+pub fn reset_workdir_file(repo_path: &str, path: &str) -> Result<()> {
     scope_time!("reset_workdir_file");
 
     let repo = repo(repo_path)?;
 
     // Note: early out for removing untracked files, due to bug in checkout_head code:
     // see https://github.com/libgit2/libgit2/issues/5089
-    if let Ok(status) = repo.status_file(Path::new(path)) {
-        let removed_file_wd = if status == Status::WT_NEW
-            || (status == Status::WT_MODIFIED | Status::INDEX_NEW)
-        {
-            Ok(fs::remove_file(Path::new(repo_path).join(path))
-                .is_ok())
-        } else {
-            Ok(false)
-        };
+    let status = repo.status_file(Path::new(path))?;
 
-        if status == Status::WT_NEW {
-            return removed_file_wd;
-        }
+    if status == Status::WT_NEW
+        || (status == Status::WT_MODIFIED | Status::INDEX_NEW)
+    {
+        fs::remove_file(Path::new(repo_path).join(path))?;
+    };
 
-        let mut checkout_opts = CheckoutBuilder::new();
-        checkout_opts
-            .update_index(true) // windows: needs this to be true WTF?!
-            .allow_conflicts(true)
-            .force()
-            .path(path);
-
-        Ok(repo
-            .checkout_index(None, Some(&mut checkout_opts))
-            .is_ok())
-    } else {
-        Ok(false)
+    if status == Status::WT_NEW {
+        return Ok(());
     }
+
+    let mut checkout_opts = CheckoutBuilder::new();
+    checkout_opts
+        .update_index(true) // windows: needs this to be true WTF?!
+        .allow_conflicts(true)
+        .force()
+        .path(path);
+
+    repo.checkout_index(None, Some(&mut checkout_opts))?;
+    Ok(())
 }
 
 ///
@@ -174,8 +165,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path).unwrap(), (1, 1));
 
-        let res = reset_workdir_file(repo_path, "bar.txt").unwrap();
-        assert_eq!(res, true);
+        reset_workdir_file(repo_path, "bar.txt").unwrap();
 
         debug_cmd_print(repo_path, "git status").unwrap();
 
@@ -200,9 +190,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path).unwrap(), (1, 0));
 
-        let res =
-            reset_workdir_file(repo_path, "foo/bar.txt").unwrap();
-        assert_eq!(res, true);
+        reset_workdir_file(repo_path, "foo/bar.txt").unwrap();
 
         debug_cmd_print(repo_path, "git status").unwrap();
 
@@ -286,8 +274,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path).unwrap(), (1, 1));
 
-        let res = reset_workdir_file(repo_path, file).unwrap();
-        assert_eq!(res, true);
+        reset_workdir_file(repo_path, file).unwrap();
 
         debug_cmd_print(repo_path, "git status").unwrap();
 
