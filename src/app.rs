@@ -217,12 +217,10 @@ impl App {
         match ev {
             InternalEvent::ResetItem(reset_item) => {
                 if reset_item.is_folder {
-                    if sync::reset_workdir_folder(
+                    if let Ok(()) = sync::reset_workdir_folder(
                         CWD,
                         reset_item.path.as_str(),
-                    )
-                    .unwrap()
-                    {
+                    ) {
                         flags.insert(NeedsUpdate::ALL);
                     }
                 } else if let Ok(()) = sync::reset_workdir_file(

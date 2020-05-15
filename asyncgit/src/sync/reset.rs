@@ -66,7 +66,7 @@ pub fn reset_workdir_file(repo_path: &str, path: &str) -> Result<()> {
 pub fn reset_workdir_folder(
     repo_path: &str,
     path: &str,
-) -> Result<bool> {
+) -> Result<()> {
     scope_time!("reset_workdir_folder");
 
     let repo = repo(repo_path)?;
@@ -80,7 +80,7 @@ pub fn reset_workdir_folder(
         .path(path);
 
     repo.checkout_index(None, Some(&mut checkout_opts))?;
-    Ok(true)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -235,7 +235,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path).unwrap(), (4, 1));
 
-        assert!(reset_workdir_folder(repo_path, "foo").unwrap());
+        reset_workdir_folder(repo_path, "foo").unwrap();
 
         assert_eq!(get_statuses(repo_path).unwrap(), (1, 1));
 
