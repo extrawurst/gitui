@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.4] - 2020-05-16
+## [0.2.5] - 2020-05-16
 ### Added
 - introduced proper changelog
 - hook support on windows [[@MCord](https://github.com/MCord)] ([#14](https://github.com/extrawurst/gitui/issues/14))
