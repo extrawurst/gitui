@@ -26,7 +26,7 @@ test:
 	cargo test --workspace
 
 clippy:
-	cargo clean
+	cargo clean -p gitui -p asyncgit -p scopetime
 	cargo clippy --all-features
 
 clippy-pedantic:
