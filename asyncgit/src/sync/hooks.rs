@@ -1,6 +1,6 @@
 use crate::error::{Error, Result};
-use is_executable::IsExecutable;
 use scopetime::scope_time;
+use std::path::PathBuf;
 use std::{
     io::{Read, Write},
     path::Path,
@@ -58,7 +58,7 @@ fn hook_runable(path: &str, hook: &str) -> bool {
     let path = Path::new(path);
     let path = path.join(hook);
 
-    path.exists() && path.is_executable()
+    path.exists() && is_executable(path)
 }
 
 ///
@@ -71,19 +71,38 @@ pub enum HookResult {
 }
 
 fn run_hook(path: &str, cmd: &str, args: &[&str]) -> HookResult {
-    match Command::new(cmd).args(args).current_dir(path).output() {
-        Ok(output) => {
-            if output.status.success() {
-                HookResult::Ok
-            } else {
-                let err = String::from_utf8_lossy(&output.stderr);
-                let out = String::from_utf8_lossy(&output.stdout);
-                let formatted = format!("{}{}", out, err);
+    let mut bash_args = vec![cmd.to_string()];
+    bash_args.extend_from_slice(
+        &args
+            .iter()
+            .map(|x| (*x).to_string())
+            .collect::<Vec<String>>(),
+    );
 
-                HookResult::NotOk(formatted)
-            }
-        }
-        Err(e) => HookResult::NotOk(format!("{}", e)),
+    #[cfg(windows)]
+    {
+        bash_args = bash_args
+            .iter()
+            .map(|x| map_windows_path_for_bash(x.as_str()))
+            .collect();
+    }
+
+    print!("running bash with {:?}", bash_args);
+    let output = Command::new("bash")
+        .args(bash_args.iter().map(|x| x.replace('\\', "/")))
+        .current_dir(path)
+        .output();
+
+    let output = output.expect("general hook error");
+
+    if output.status.success() {
+        HookResult::Ok
+    } else {
+        let err = String::from_utf8(output.stderr).unwrap();
+        let out = String::from_utf8(output.stdout).unwrap();
+        let formatted = format!("{}{}", out, err);
+
+        HookResult::NotOk(formatted)
     }
 }
 
@@ -115,15 +134,17 @@ mod tests {
             .write_all(hook_script)
             .unwrap();
 
-        Command::new("chmod")
-            .args(&["+x", hook_path])
-            .current_dir(path)
-            .output()
-            .unwrap();
+        #[cfg(not(windows))]
+        {
+            Command::new("chmod")
+                .args(&["+x", hook_path])
+                .current_dir(path)
+                .output()
+                .unwrap();
+        }
     }
 
     #[test]
-    #[cfg(not(windows))]
     fn test_hooks_commit_msg_ok() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
@@ -145,7 +166,6 @@ exit 0
     }
 
     #[test]
-    #[cfg(not(windows))]
     fn test_hooks_commit_msg() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
@@ -172,7 +192,6 @@ exit 1
     }
 
     #[test]
-    #[cfg(not(windows))]
     fn test_commit_msg_no_block_but_alter() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
@@ -191,5 +210,34 @@ exit 0
 
         assert_eq!(res, HookResult::Ok);
         assert_eq!(msg, String::from("msg\n"));
+    }
+}
+
+#[cfg(not(windows))]
+fn is_executable(path: PathBuf) -> bool {
+    use is_executable::IsExecutable;
+    path.is_executable()
+}
+
+#[cfg(windows)]
+/// windows does not consider bash scripts to be executable so we consider everything
+/// to be executable (which is not far from the truth for windows platform.)
+fn is_executable(_: PathBuf) -> bool {
+    true
+}
+
+#[cfg(windows)]
+/// git for windows provides a bash implementation to be used along with git.
+/// this function maps file paths form windows path form like `C:\Users\Guest` to
+/// `/mnt/c/Users/Guest` so that scripts on windows file system can be used from bash.
+fn map_windows_path_for_bash(path: &str) -> String {
+    let mut chars = path.chars();
+    match (chars.next(), chars.next(), chars.as_str()) {
+        (Some(drive), Some(':'), rest) => format!(
+            "/mnt/{}/{}",
+            drive.to_lowercase(),
+            rest.replace('\\', "/")
+        ),
+        _ => path.to_string(),
     }
 }
