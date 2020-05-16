@@ -232,12 +232,15 @@ fn is_executable(_: PathBuf) -> bool {
 /// `/mnt/c/Users/Guest` so that scripts on windows file system can be used from bash.
 fn map_windows_path_for_bash(path: &str) -> String {
     let mut chars = path.chars();
-    match (chars.next(), chars.next(), chars.as_str()) {
+    let mapped = match (chars.next(), chars.next(), chars.as_str()) {
         (Some(drive), Some(':'), rest) => format!(
             "/mnt/{}{}",
             drive.to_lowercase(),
             rest.replace('\\', "/")
         ),
         _ => path.to_string(),
-    }
+    };
+
+    print!("mapped windows path {:?} to {:?}", path, mapped);
+    mapped
 }
