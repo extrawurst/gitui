@@ -26,6 +26,7 @@ jobs:
     - name: Run clippy
       run: |
         rustup component add clippy
+        cargo clean
         make clippy
     - name: Build Release
       run: make build-release
