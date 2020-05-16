@@ -47,10 +47,10 @@ pub fn centered_rect_absolute(
     r: Rect,
 ) -> Rect {
     Rect::new(
-        (r.width - width) / 2,
-        (r.height - height) / 2,
-        width,
-        height,
+        (r.width.saturating_sub(width)) / 2,
+        (r.height.saturating_sub(height)) / 2,
+        width.min(r.width),
+        height.min(r.height),
     )
 }
 
