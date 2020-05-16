@@ -212,8 +212,14 @@ exit 0
 
 #[cfg(not(windows))]
 fn is_executable(path: PathBuf) -> bool {
-    use is_executable::IsExecutable;
-    path.is_executable()
+    use std::os::unix::fs::PermissionsExt;
+    let metadata = match path.metadata() {
+        Ok(metadata) => metadata,
+        Err(_) => return false,
+    };
+
+    let permissions = metadata.permissions();
+    permissions.mode() & 0o111 != 0
 }
 
 #[cfg(windows)]
