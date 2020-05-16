@@ -95,8 +95,8 @@ fn run_hook(
     if output.status.success() {
         HookResult::Ok
     } else {
-        let err = String::from_utf8(output.stderr).unwrap();
-        let out = String::from_utf8(output.stdout).unwrap();
+        let err = String::from_utf8_lossy(&output.stderr);
+        let out = String::from_utf8_lossy(&output.stdout);
         let formatted = format!("{}{}", out, err);
 
         HookResult::NotOk(formatted)
