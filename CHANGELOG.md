@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - introduced proper changelog
+- hook support on windows ([#14](https://github.com/extrawurst/gitui/issues/14))
 
 ### Changed
 - show longer commit messages in log view

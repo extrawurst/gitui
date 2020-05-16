@@ -1,17 +1,21 @@
-use crate::error::{Error, Result};
-use is_executable::IsExecutable;
+use crate::error::Result;
 use scopetime::scope_time;
+use std::fs::File;
+use std::path::PathBuf;
 use std::{
     io::{Read, Write},
     path::Path,
     process::Command,
 };
-use tempfile::NamedTempFile;
 
 const HOOK_POST_COMMIT: &str = ".git/hooks/post-commit";
 const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
+const HOOK_COMMIT_MSG_TEMP_FILE: &str = ".git/COMMIT_EDITMSG";
 
-///
+/// this hook is documented here https://git-scm.com/docs/githooks#_commit_msg
+/// we use the same convention as other git clients to create a temp file containing
+/// the commit message at `.git/COMMIT_EDITMSG` and pass it's relative path as the only
+/// parameter to the hook script.
 pub fn hooks_commit_msg(
     repo_path: &str,
     msg: &mut String,
@@ -19,23 +23,19 @@ pub fn hooks_commit_msg(
     scope_time!("hooks_commit_msg");
 
     if hook_runable(repo_path, HOOK_COMMIT_MSG) {
-        let mut file = NamedTempFile::new()?;
+        let temp_file =
+            Path::new(repo_path).join(HOOK_COMMIT_MSG_TEMP_FILE);
+        File::create(&temp_file)?.write_all(msg.as_bytes())?;
 
-        write!(file, "{}", msg)?;
-
-        let file_path = file.path().to_str().ok_or_else(|| {
-            Error::Generic(
-                "temp file path contains invalid unicode sequences."
-                    .to_string(),
-            )
-        })?;
-
-        let res = run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path]);
+        let res = run_hook(
+            repo_path,
+            HOOK_COMMIT_MSG,
+            &[HOOK_COMMIT_MSG_TEMP_FILE],
+        );
 
         // load possibly altered msg
-        let mut file = file.reopen()?;
         msg.clear();
-        file.read_to_string(msg)?;
+        File::open(temp_file)?.read_to_string(msg)?;
 
         Ok(res)
     } else {
@@ -58,7 +58,7 @@ fn hook_runable(path: &str, hook: &str) -> bool {
     let path = Path::new(path);
     let path = path.join(hook);
 
-    path.exists() && path.is_executable()
+    path.exists() && is_executable(path)
 }
 
 ///
@@ -70,20 +70,36 @@ pub enum HookResult {
     NotOk(String),
 }
 
-fn run_hook(path: &str, cmd: &str, args: &[&str]) -> HookResult {
-    match Command::new(cmd).args(args).current_dir(path).output() {
-        Ok(output) => {
-            if output.status.success() {
-                HookResult::Ok
-            } else {
-                let err = String::from_utf8_lossy(&output.stderr);
-                let out = String::from_utf8_lossy(&output.stdout);
-                let formatted = format!("{}{}", out, err);
+/// this function calls hook scripts based on conventions documented here
+/// https://git-scm.com/docs/githooks
+fn run_hook(
+    path: &str,
+    hook_script: &str,
+    args: &[&str],
+) -> HookResult {
+    let mut bash_args = vec![hook_script.to_string()];
+    bash_args.extend_from_slice(
+        &args
+            .iter()
+            .map(|x| (*x).to_string())
+            .collect::<Vec<String>>(),
+    );
 
-                HookResult::NotOk(formatted)
-            }
-        }
-        Err(e) => HookResult::NotOk(format!("{}", e)),
+    let output = Command::new("bash")
+        .args(bash_args)
+        .current_dir(path)
+        .output();
+
+    let output = output.expect("general hook error");
+
+    if output.status.success() {
+        HookResult::Ok
+    } else {
+        let err = String::from_utf8_lossy(&output.stderr);
+        let out = String::from_utf8_lossy(&output.stdout);
+        let formatted = format!("{}{}", out, err);
+
+        HookResult::NotOk(formatted)
     }
 }
 
@@ -115,15 +131,17 @@ mod tests {
             .write_all(hook_script)
             .unwrap();
 
-        Command::new("chmod")
-            .args(&["+x", hook_path])
-            .current_dir(path)
-            .output()
-            .unwrap();
+        #[cfg(not(windows))]
+        {
+            Command::new("chmod")
+                .args(&["+x", hook_path])
+                .current_dir(path)
+                .output()
+                .unwrap();
+        }
     }
 
     #[test]
-    #[cfg(not(windows))]
     fn test_hooks_commit_msg_ok() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
@@ -145,7 +163,6 @@ exit 0
     }
 
     #[test]
-    #[cfg(not(windows))]
     fn test_hooks_commit_msg() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
@@ -172,7 +189,6 @@ exit 1
     }
 
     #[test]
-    #[cfg(not(windows))]
     fn test_commit_msg_no_block_but_alter() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
@@ -192,4 +208,23 @@ exit 0
         assert_eq!(res, HookResult::Ok);
         assert_eq!(msg, String::from("msg\n"));
     }
+}
+
+#[cfg(not(windows))]
+fn is_executable(path: PathBuf) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    let metadata = match path.metadata() {
+        Ok(metadata) => metadata,
+        Err(_) => return false,
+    };
+
+    let permissions = metadata.permissions();
+    permissions.mode() & 0o111 != 0
+}
+
+#[cfg(windows)]
+/// windows does not consider bash scripts to be executable so we consider everything
+/// to be executable (which is not far from the truth for windows platform.)
+fn is_executable(_: PathBuf) -> bool {
+    true
 }
