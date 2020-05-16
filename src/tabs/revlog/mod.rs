@@ -167,7 +167,7 @@ impl Revlog {
         e: &'a LogEntry,
         selected: bool,
         txt: &mut Vec<Text<'a>>,
-        tag: &'a str,
+        tags: Option<String>,
     ) {
         let count_before = txt.len();
 
@@ -209,10 +209,10 @@ impl Revlog {
         ));
         txt.push(splitter.clone());
         txt.push(Text::Styled(
-            Cow::from(if tag.is_empty() {
-                String::from("")
+            Cow::from(if let Some(tags) = tags {
+                format!(" {}", tags)
             } else {
-                format!(" {}", tag)
+                String::from("")
             }),
             if selected {
                 STYLE_TAG_SELECTED
@@ -250,10 +250,10 @@ impl DrawableComponent for Revlog {
 
         let mut txt = Vec::new();
         for (idx, e) in self.items.items.iter().enumerate() {
-            let tag = if let Some(tag_name) = self.tags.get(&e.hash) {
-                tag_name.as_str()
+            let tag = if let Some(tags) = self.tags.get(&e.hash) {
+                Some(tags.join(" "))
             } else {
-                ""
+                None
             };
             Self::add_entry(e, idx == selection, &mut txt, tag);
         }
