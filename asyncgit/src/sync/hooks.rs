@@ -1,17 +1,21 @@
-use crate::error::{Error, Result};
+use crate::error::Result;
 use scopetime::scope_time;
+use std::fs::File;
 use std::path::PathBuf;
 use std::{
     io::{Read, Write},
     path::Path,
     process::Command,
 };
-use tempfile::NamedTempFile;
 
 const HOOK_POST_COMMIT: &str = ".git/hooks/post-commit";
 const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
+const HOOK_COMMIT_MSG_TEMP_FILE: &str = ".git/COMMIT_EDITMSG";
 
-///
+/// this hook is documented here https://git-scm.com/docs/githooks#_commit_msg
+/// we use the same convention as other git clients to create a temp file containing
+/// the commit message at `.git/COMMIT_EDITMSG` and pass it's relative path as the only
+/// parameter to the hook script.
 pub fn hooks_commit_msg(
     repo_path: &str,
     msg: &mut String,
@@ -19,23 +23,19 @@ pub fn hooks_commit_msg(
     scope_time!("hooks_commit_msg");
 
     if hook_runable(repo_path, HOOK_COMMIT_MSG) {
-        let mut file = NamedTempFile::new()?;
+        let temp_file =
+            Path::new(repo_path).join(HOOK_COMMIT_MSG_TEMP_FILE);
+        File::create(&temp_file)?.write_all(msg.as_bytes())?;
 
-        write!(file, "{}", msg)?;
-
-        let file_path = file.path().to_str().ok_or_else(|| {
-            Error::Generic(
-                "temp file path contains invalid unicode sequences."
-                    .to_string(),
-            )
-        })?;
-
-        let res = run_hook(repo_path, HOOK_COMMIT_MSG, &[&file_path]);
+        let res = run_hook(
+            repo_path,
+            HOOK_COMMIT_MSG,
+            &[HOOK_COMMIT_MSG_TEMP_FILE],
+        );
 
         // load possibly altered msg
-        let mut file = file.reopen()?;
         msg.clear();
-        file.read_to_string(msg)?;
+        File::open(temp_file)?.read_to_string(msg)?;
 
         Ok(res)
     } else {
@@ -70,8 +70,14 @@ pub enum HookResult {
     NotOk(String),
 }
 
-fn run_hook(path: &str, cmd: &str, args: &[&str]) -> HookResult {
-    let mut bash_args = vec![cmd.to_string()];
+/// this function calls hook scripts based on conventions documented here
+/// https://git-scm.com/docs/githooks
+fn run_hook(
+    path: &str,
+    hook_script: &str,
+    args: &[&str],
+) -> HookResult {
+    let mut bash_args = vec![hook_script.to_string()];
     bash_args.extend_from_slice(
         &args
             .iter()
@@ -79,17 +85,8 @@ fn run_hook(path: &str, cmd: &str, args: &[&str]) -> HookResult {
             .collect::<Vec<String>>(),
     );
 
-    #[cfg(windows)]
-    {
-        bash_args = bash_args
-            .iter()
-            .map(|x| map_windows_path_for_bash(x.as_str()))
-            .collect();
-    }
-
-    print!("running bash with {:?}", bash_args);
     let output = Command::new("bash")
-        .args(bash_args.iter().map(|x| x.replace('\\', "/")))
+        .args(bash_args)
         .current_dir(path)
         .output();
 
@@ -224,23 +221,4 @@ fn is_executable(path: PathBuf) -> bool {
 /// to be executable (which is not far from the truth for windows platform.)
 fn is_executable(_: PathBuf) -> bool {
     true
-}
-
-#[cfg(windows)]
-/// git for windows provides a bash implementation to be used along with git.
-/// this function maps file paths form windows path form like `C:\Users\Guest` to
-/// `/mnt/c/Users/Guest` so that scripts on windows file system can be used from bash.
-fn map_windows_path_for_bash(path: &str) -> String {
-    let mut chars = path.chars();
-    let mapped = match (chars.next(), chars.next(), chars.as_str()) {
-        (Some(drive), Some(':'), rest) => format!(
-            "/mnt/{}{}",
-            drive.to_lowercase(),
-            rest.replace('\\', "/")
-        ),
-        _ => path.to_string(),
-    };
-
-    print!("mapped windows path {:?} to {:?}", path, mapped);
-    mapped
 }
