@@ -19,6 +19,8 @@ pub use help::HelpComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
 
+/// creates accessors for a list of components
+///
 /// allows generating code to make sure
 /// we always enumerate all components in both getter functions
 #[macro_export]
