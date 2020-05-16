@@ -234,7 +234,7 @@ fn map_windows_path_for_bash(path: &str) -> String {
     let mut chars = path.chars();
     match (chars.next(), chars.next(), chars.as_str()) {
         (Some(drive), Some(':'), rest) => format!(
-            "/mnt/{}/{}",
+            "/mnt/{}{}",
             drive.to_lowercase(),
             rest.replace('\\', "/")
         ),
