@@ -140,9 +140,9 @@ impl DiffComponent {
 
     fn get_text(&self, width: u16, height: u16) -> Vec<Text> {
         let selection = self.scroll;
-        let height_d2 = height / 2;
-        let min = self.scroll.saturating_sub(height_d2);
-        let max = min + height;
+        let min =
+            self.current_height * (self.scroll / self.current_height);
+        let max = min + self.current_height;
 
         let mut res = Vec::new();
         let mut line_cursor = 0_u16;
