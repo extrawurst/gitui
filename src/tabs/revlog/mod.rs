@@ -242,11 +242,10 @@ impl DrawableComponent for Revlog {
             area.height.saturating_sub(2),
         );
 
-        let height = area.height as usize;
+        let current_height = self.current_size.1 as usize;
         let selection =
             self.selection.saturating_sub(self.items.index_offset);
-        let height_d2 = height as usize / 2;
-        let min = selection.saturating_sub(height_d2);
+        let min = current_height * (self.selection / current_height);
 
         let mut txt = Vec::new();
         for (idx, e) in self.items.items.iter().enumerate() {
@@ -267,7 +266,7 @@ impl DrawableComponent for Revlog {
             Paragraph::new(
                 txt.iter()
                     .skip(min * ELEMENTS_PER_LINE)
-                    .take(height * ELEMENTS_PER_LINE),
+                    .take(current_height * ELEMENTS_PER_LINE),
             )
             .block(
                 Block::default()
