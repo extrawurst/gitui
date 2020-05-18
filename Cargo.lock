@@ -29,7 +29,7 @@ checksum = "cff77d8686867eceff3105329d4698d96c2391c176d5d03adc90c7389162b5b8"
 
 [[package]]
 name = "asyncgit"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "crossbeam-channel",
  "git2",
@@ -287,7 +287,7 @@ dependencies = [
 
 [[package]]
 name = "gitui"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "asyncgit",
  "backtrace",

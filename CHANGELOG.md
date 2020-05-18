@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2020-05-18
 ### Fixed
 - fix crash help in small window size ([#63](https://github.com/extrawurst/gitui/issues/63))
 
