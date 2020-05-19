@@ -18,10 +18,11 @@ use itertools::Itertools;
 use log::trace;
 use std::borrow::Cow;
 use strings::commands;
-use tui::{style::Style, 
+use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::Modifier,
+    style::Style,
     widgets::{Block, Borders, Paragraph, Tabs, Text},
     Frame,
 };
