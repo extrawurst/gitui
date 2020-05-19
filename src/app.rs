@@ -56,7 +56,7 @@ impl App {
             do_quit: false,
             current_commands: Vec::new(),
             help: HelpComponent::new(theme),
-            msg: MsgComponent::new(),
+            msg: MsgComponent::default(),
             tab: 0,
             revlog: Revlog::new(&sender, theme),
             status_tab: Status::new(&sender, &queue, theme),

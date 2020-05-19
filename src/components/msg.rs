@@ -14,6 +14,7 @@ use tui::{
     Frame,
 };
 
+#[derive(Default)]
 pub struct MsgComponent {
     msg: String,
     visible: bool,
@@ -82,12 +83,5 @@ impl MsgComponent {
     pub fn show_msg(&mut self, msg: &str) {
         self.msg = msg.to_string();
         self.show();
-    }
-
-    pub fn new() -> Self {
-        Self {
-            msg: "".to_string(),
-            visible: false,
-        }
     }
 }

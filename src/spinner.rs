@@ -2,6 +2,8 @@ use std::io;
 use tui::{backend::Backend, buffer::Cell, Terminal};
 
 static SPINNER_CHARS: &[char] = &['|', '/', '-', '\\'];
+
+///
 #[derive(Default)]
 pub struct Spinner {
     idx: usize,
