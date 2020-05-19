@@ -22,6 +22,28 @@ pub struct Theme {
     table_colors: [ColorDef; 3],
 }
 
+pub const DARK_THEME: Theme = Theme {
+    selected_tab: ColorDef::Yellow,
+    command_background: ColorDef::Rgb(0, 0, 100),
+    command_disabled: ColorDef::Gray,
+    diff_line_add: ColorDef::Green,
+    diff_line_delete: ColorDef::Red,
+    diff_file_added: ColorDef::LightGreen,
+    diff_file_removed: ColorDef::LightRed,
+    diff_file_moved: ColorDef::LightMagenta,
+    diff_file_modified: ColorDef::Yellow,
+    table_colors: [
+        ColorDef::Magenta,
+        ColorDef::Blue,
+        ColorDef::Green,
+    ],
+};
+
+pub const LIGHT_THEME: Theme = Theme {
+    command_background: ColorDef::LightBlue,
+    ..DARK_THEME
+};
+
 #[derive(Copy, Clone, Debug)]
 pub enum Mode {
     Dark,
@@ -29,26 +51,6 @@ pub enum Mode {
 }
 
 impl Theme {
-    #[cfg(test)]
-    pub const fn empty() -> Self {
-        Self {
-            selected_tab: ColorDef::Reset,
-            command_background: ColorDef::Reset,
-            command_disabled: ColorDef::Reset,
-            diff_line_add: ColorDef::Reset,
-            diff_line_delete: ColorDef::Reset,
-            diff_file_added: ColorDef::Reset,
-            diff_file_removed: ColorDef::Reset,
-            diff_file_moved: ColorDef::Reset,
-            diff_file_modified: ColorDef::Reset,
-            table_colors: [
-                ColorDef::Reset,
-                ColorDef::Reset,
-                ColorDef::Reset,
-            ],
-        }
-    }
-
     pub fn block(&self, focus: bool) -> Style {
         if focus {
             Style::default()
@@ -185,14 +187,8 @@ impl Theme {
             x
         } else {
             let default_theme: Theme = match &mode {
-                Mode::Dark => from_bytes(include_bytes!(
-                    "../../assets/themes/dark.ron"
-                ))
-                .unwrap_or_default(),
-                Mode::Light => from_bytes(include_bytes!(
-                    "../../assets/themes/light.ron"
-                ))
-                .unwrap_or_default(),
+                Mode::Dark => DARK_THEME,
+                Mode::Light => LIGHT_THEME,
             };
 
             default_theme.save(mode).unwrap_or_default();
@@ -202,7 +198,7 @@ impl Theme {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-enum ColorDef {
+pub enum ColorDef {
     Reset,
     Black,
     Red,
@@ -253,23 +249,5 @@ impl From<ColorDef> for Color {
             ColorDef::Rgb(a, b, c) => Color::Rgb(a, b, c),
             ColorDef::Indexed(x) => Color::Indexed(x),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::ui::style::Theme;
-    use ron::de::from_bytes;
-
-    #[test]
-    fn verify_theme_files() {
-        from_bytes::<Theme>(include_bytes!(
-            "../../assets/themes/dark.ron"
-        ))
-        .unwrap();
-        from_bytes::<Theme>(include_bytes!(
-            "../../assets/themes/light.ron"
-        ))
-        .unwrap();
     }
 }
