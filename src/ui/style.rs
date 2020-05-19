@@ -8,37 +8,50 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use tui::style::{Color, Modifier, Style};
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct Theme {
-    selected_tab: ColorDef,
-    command_foreground: ColorDef,
-    command_background: ColorDef,
-    command_disabled: ColorDef,
-    diff_line_add: ColorDef,
-    diff_line_delete: ColorDef,
-    diff_file_added: ColorDef,
-    diff_file_removed: ColorDef,
-    diff_file_moved: ColorDef,
-    diff_file_modified: ColorDef,
-    table_colors: [ColorDef; 3],
+    #[serde(with = "ColorDef")]
+    selected_tab: Color,
+    #[serde(with = "ColorDef")]
+    command_foreground: Color,
+    #[serde(with = "ColorDef")]
+    command_background: Color,
+    #[serde(with = "ColorDef")]
+    command_disabled: Color,
+    #[serde(with = "ColorDef")]
+    diff_line_add: Color,
+    #[serde(with = "ColorDef")]
+    diff_line_delete: Color,
+    #[serde(with = "ColorDef")]
+    diff_file_added: Color,
+    #[serde(with = "ColorDef")]
+    diff_file_removed: Color,
+    #[serde(with = "ColorDef")]
+    diff_file_moved: Color,
+    #[serde(with = "ColorDef")]
+    diff_file_modified: Color,
+    #[serde(with = "ColorDef")]
+    commit_hash: Color,
+    #[serde(with = "ColorDef")]
+    commit_time: Color,
+    #[serde(with = "ColorDef")]
+    commit_author: Color,
 }
 
 pub const DARK_THEME: Theme = Theme {
-    selected_tab: ColorDef::Yellow,
-    command_foreground: ColorDef::White,
-    command_background: ColorDef::Rgb(0, 0, 100),
-    command_disabled: ColorDef::DarkGray,
-    diff_line_add: ColorDef::Green,
-    diff_line_delete: ColorDef::Red,
-    diff_file_added: ColorDef::LightGreen,
-    diff_file_removed: ColorDef::LightRed,
-    diff_file_moved: ColorDef::LightMagenta,
-    diff_file_modified: ColorDef::Yellow,
-    table_colors: [
-        ColorDef::Magenta,
-        ColorDef::Blue,
-        ColorDef::Green,
-    ],
+    selected_tab: Color::Yellow,
+    command_foreground: Color::White,
+    command_background: Color::Rgb(0, 0, 100),
+    command_disabled: Color::DarkGray,
+    diff_line_add: Color::Green,
+    diff_line_delete: Color::Red,
+    diff_file_added: Color::LightGreen,
+    diff_file_removed: Color::LightRed,
+    diff_file_moved: Color::LightMagenta,
+    diff_file_modified: Color::Yellow,
+    commit_hash: Color::Magenta,
+    commit_time: Color::Blue,
+    commit_author: Color::Green,
 };
 
 impl Theme {
@@ -46,13 +59,13 @@ impl Theme {
         if focus {
             Style::default()
         } else {
-            Style::default().fg(self.command_disabled.into())
+            Style::default().fg(self.command_disabled)
         }
     }
 
     pub fn tab(&self, selected: bool) -> Style {
         if selected {
-            Style::default().fg(self.selected_tab.into())
+            Style::default().fg(self.selected_tab)
         } else {
             Style::default()
         }
@@ -60,12 +73,10 @@ impl Theme {
 
     pub fn text(&self, enabled: bool, selected: bool) -> Style {
         match (enabled, selected) {
-            (false, _) => {
-                Style::default().fg(self.command_disabled.into())
-            }
+            (false, _) => Style::default().fg(self.command_disabled),
             (true, false) => Style::default(),
             (true, true) => {
-                Style::default().bg(self.command_background.into())
+                Style::default().bg(self.command_background)
             }
         }
     }
@@ -73,16 +84,16 @@ impl Theme {
     pub fn item(&self, typ: StatusItemType, selected: bool) -> Style {
         let style = match typ {
             StatusItemType::New => {
-                Style::default().fg(self.diff_file_added.into())
+                Style::default().fg(self.diff_file_added)
             }
             StatusItemType::Modified => {
-                Style::default().fg(self.diff_file_modified.into())
+                Style::default().fg(self.diff_file_modified)
             }
             StatusItemType::Deleted => {
-                Style::default().fg(self.diff_file_removed.into())
+                Style::default().fg(self.diff_file_removed)
             }
             StatusItemType::Renamed => {
-                Style::default().fg(self.diff_file_moved.into())
+                Style::default().fg(self.diff_file_moved)
             }
             _ => Style::default(),
         };
@@ -92,7 +103,7 @@ impl Theme {
 
     fn apply_select(&self, style: Style, selected: bool) -> Style {
         if selected {
-            style.bg(self.command_background.into())
+            style.bg(self.command_background)
         } else {
             style
         }
@@ -105,10 +116,10 @@ impl Theme {
     ) -> Style {
         let style = match typ {
             DiffLineType::Add => {
-                Style::default().fg(self.diff_line_add.into())
+                Style::default().fg(self.diff_line_add)
             }
             DiffLineType::Delete => {
-                Style::default().fg(self.diff_line_delete.into())
+                Style::default().fg(self.diff_line_delete)
             }
             DiffLineType::Header => {
                 Style::default().modifier(Modifier::BOLD)
@@ -120,21 +131,33 @@ impl Theme {
     }
 
     pub fn text_danger(&self) -> Style {
-        Style::default().fg(self.diff_file_removed.into())
+        Style::default().fg(self.diff_file_removed)
     }
 
     pub fn toolbar(&self, enabled: bool) -> Style {
         if enabled {
-            Style::default().fg(self.command_foreground.into())
+            Style::default().fg(self.command_foreground)
         } else {
-            Style::default().fg(self.command_disabled.into())
+            Style::default().fg(self.command_disabled)
         }
-        .bg(self.command_background.into())
+        .bg(self.command_background)
     }
 
-    pub fn table(&self, column: usize, selected: bool) -> Style {
+    pub fn commit_hash(&self, selected: bool) -> Style {
         self.apply_select(
-            Style::default().fg(self.table_colors[column].into()),
+            Style::default().fg(self.commit_hash),
+            selected,
+        )
+    }
+    pub fn commit_time(&self, selected: bool) -> Style {
+        self.apply_select(
+            Style::default().fg(self.commit_time),
+            selected,
+        )
+    }
+    pub fn commit_author(&self, selected: bool) -> Style {
+        self.apply_select(
+            Style::default().fg(self.commit_author),
             selected,
         )
     }
@@ -182,7 +205,8 @@ impl Theme {
 /// we duplicate the Color definition from `tui` crate to implement Serde serialisation
 /// this enum can be removed once [tui-#292](https://github.com/fdehau/tui-rs/issues/292) is resolved
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-pub enum ColorDef {
+#[serde(remote = "Color")]
+enum ColorDef {
     Reset,
     Black,
     Red,
@@ -202,36 +226,4 @@ pub enum ColorDef {
     White,
     Rgb(u8, u8, u8),
     Indexed(u8),
-}
-
-impl Default for ColorDef {
-    fn default() -> Self {
-        ColorDef::Reset
-    }
-}
-
-impl From<ColorDef> for Color {
-    fn from(def: ColorDef) -> Self {
-        match def {
-            ColorDef::Reset => Color::Reset,
-            ColorDef::Black => Color::Black,
-            ColorDef::Red => Color::Red,
-            ColorDef::Green => Color::Green,
-            ColorDef::Yellow => Color::Yellow,
-            ColorDef::Blue => Color::Blue,
-            ColorDef::Magenta => Color::Magenta,
-            ColorDef::Cyan => Color::Cyan,
-            ColorDef::Gray => Color::Gray,
-            ColorDef::DarkGray => Color::DarkGray,
-            ColorDef::LightRed => Color::LightRed,
-            ColorDef::LightGreen => Color::LightGreen,
-            ColorDef::LightYellow => Color::LightYellow,
-            ColorDef::LightBlue => Color::LightBlue,
-            ColorDef::LightMagenta => Color::LightMagenta,
-            ColorDef::LightCyan => Color::LightCyan,
-            ColorDef::White => Color::White,
-            ColorDef::Rgb(a, b, c) => Color::Rgb(a, b, c),
-            ColorDef::Indexed(x) => Color::Indexed(x),
-        }
-    }
 }

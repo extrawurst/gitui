@@ -166,17 +166,17 @@ impl Revlog {
 
         txt.push(Text::Styled(
             Cow::from(&e.hash[0..7]),
-            theme.table(0, selected),
+            theme.commit_hash(selected),
         ));
         txt.push(splitter.clone());
         txt.push(Text::Styled(
             Cow::from(e.time.as_str()),
-            theme.table(1, selected),
+            theme.commit_time(selected),
         ));
         txt.push(splitter.clone());
         txt.push(Text::Styled(
             Cow::from(e.author.as_str()),
-            theme.table(2, selected),
+            theme.commit_author(selected),
         ));
         txt.push(splitter.clone());
         txt.push(Text::Styled(
