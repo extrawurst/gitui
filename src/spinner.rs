@@ -2,7 +2,7 @@ use std::io;
 use tui::{backend::Backend, buffer::Cell, Terminal};
 
 static SPINNER_CHARS: &[char] = &['|', '/', '-', '\\'];
-
+#[derive(Default)]
 pub struct Spinner {
     idx: usize,
 }
@@ -12,10 +12,6 @@ impl Spinner {
     pub fn update(&mut self) {
         self.idx += 1;
         self.idx %= SPINNER_CHARS.len();
-    }
-
-    pub fn new() -> Self {
-        Self { idx: 0 }
     }
 
     /// draws or removes spinner char depending on `pending` state

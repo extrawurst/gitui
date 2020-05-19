@@ -82,7 +82,7 @@ fn main() -> Result<()> {
     app.update();
     draw(&mut terminal, &mut app)?;
 
-    let mut spinner = Spinner::new();
+    let mut spinner = Spinner::default();
 
     loop {
         let events: Vec<QueueEvent> = select_event(
