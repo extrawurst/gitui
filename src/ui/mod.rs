@@ -2,7 +2,7 @@ mod scrolllist;
 pub(crate) mod style;
 use crate::ui::style::Theme;
 use scrolllist::ScrollableList;
-use tui::style::{Modifier, Style};
+use tui::style::Modifier;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -82,9 +82,9 @@ pub fn draw_list<'b, B: Backend, L>(
     L: Iterator<Item = Text<'b>>,
 {
     let style = if selected {
-        Style::default().modifier(Modifier::BOLD)
+        theme.block(selected).modifier(Modifier::BOLD)
     } else {
-        Style::default()
+        theme.block(selected)
     };
 
     let list = ScrollableList::new(items)

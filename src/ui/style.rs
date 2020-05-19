@@ -11,6 +11,7 @@ use tui::style::{Color, Modifier, Style};
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Copy)]
 pub struct Theme {
     selected_tab: ColorDef,
+    command_foreground: ColorDef,
     command_background: ColorDef,
     command_disabled: ColorDef,
     diff_line_add: ColorDef,
@@ -24,8 +25,9 @@ pub struct Theme {
 
 pub const DARK_THEME: Theme = Theme {
     selected_tab: ColorDef::Yellow,
+    command_foreground: ColorDef::White,
     command_background: ColorDef::Rgb(0, 0, 100),
-    command_disabled: ColorDef::Gray,
+    command_disabled: ColorDef::DarkGray,
     diff_line_add: ColorDef::Green,
     diff_line_delete: ColorDef::Red,
     diff_file_added: ColorDef::LightGreen,
@@ -134,12 +136,11 @@ impl Theme {
 
     pub fn toolbar(&self, enabled: bool) -> Style {
         if enabled {
-            Style::default().bg(self.command_background.into())
+            Style::default().fg(self.command_foreground.into())
         } else {
-            Style::default()
-                .bg(self.command_background.into())
-                .fg(self.command_disabled.into())
+            Style::default().fg(self.command_disabled.into())
         }
+        .bg(self.command_background.into())
     }
 
     pub fn table(&self, column: usize, selected: bool) -> Style {

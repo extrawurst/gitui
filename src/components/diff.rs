@@ -14,7 +14,7 @@ use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    style::{Modifier, Style},
+    style::Modifier,
     symbols,
     widgets::{Block, Borders, Paragraph, Text},
     Frame,
@@ -285,7 +285,9 @@ impl DrawableComponent for DiffComponent {
                         .borders(Borders::ALL)
                         .border_style(self.theme.block(self.focused))
                         .title_style(
-                            Style::default().modifier(Modifier::BOLD),
+                            self.theme
+                                .text(self.focused, false)
+                                .modifier(Modifier::BOLD),
                         ),
                 )
                 .alignment(Alignment::Left),
