@@ -197,6 +197,8 @@ impl Theme {
     }
 }
 
+/// we duplicate the Color definition from `tui` crate to implement Serde serialisation
+/// this enum can be removed once [tui-#292](https://github.com/fdehau/tui-rs/issues/292) is resolved
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub enum ColorDef {
     Reset,
