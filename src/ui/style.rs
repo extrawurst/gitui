@@ -104,9 +104,10 @@ impl Theme {
     }
 
     pub fn diff_hunk_marker(&self, selected: bool) -> Style {
-        match selected {
-            false => Style::default().fg(self.disabled_fg),
-            true => Style::default().bg(self.selection_bg),
+        if selected {
+            Style::default().bg(self.selection_bg)
+        } else {
+            Style::default().fg(self.disabled_fg)
         }
     }
 
