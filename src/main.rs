@@ -14,7 +14,6 @@ mod tabs;
 mod ui;
 mod version;
 
-use crate::ui::style::Mode;
 use crate::{app::App, poll::QueueEvent};
 use asyncgit::AsyncNotification;
 use backtrace::Backtrace;
@@ -68,12 +67,7 @@ fn main() -> Result<()> {
 
     let (tx_git, rx_git) = unbounded();
 
-    let mode = match env::var("GITUI_LIGHT") {
-        Ok(_) => Mode::Light,
-        _ => Mode::Dark,
-    };
-
-    let mut app = App::new(&tx_git, mode);
+    let mut app = App::new(&tx_git);
 
     let rx_input = poll::start_polling_thread();
     let ticker = tick(TICK_INTERVAL);

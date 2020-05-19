@@ -1,4 +1,4 @@
-use crate::ui::style::{Mode, Theme};
+use crate::ui::style::Theme;
 use crate::{
     accessors,
     components::{
@@ -45,13 +45,10 @@ pub struct App {
 // public interface
 impl App {
     ///
-    pub fn new(
-        sender: &Sender<AsyncNotification>,
-        mode: Mode,
-    ) -> Self {
+    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         let queue = Queue::default();
 
-        let theme = Theme::init(mode);
+        let theme = Theme::init();
 
         Self {
             reset: ResetComponent::new(queue.clone(), theme),

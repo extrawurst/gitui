@@ -41,17 +41,6 @@ pub const DARK_THEME: Theme = Theme {
     ],
 };
 
-pub const LIGHT_THEME: Theme = Theme {
-    command_background: ColorDef::LightBlue,
-    ..DARK_THEME
-};
-
-#[derive(Copy, Clone, Debug)]
-pub enum Mode {
-    Dark,
-    Light,
-}
-
 impl Theme {
     pub fn block(&self, focus: bool) -> Style {
         if focus {
@@ -150,8 +139,8 @@ impl Theme {
         )
     }
 
-    fn save(&self, mode: Mode) -> Result<(), std::io::Error> {
-        let theme_file = Self::get_theme_file(mode);
+    fn save(&self) -> Result<(), std::io::Error> {
+        let theme_file = Self::get_theme_file();
         let mut file = File::create(theme_file)?;
         let data = to_string_pretty(self, PrettyConfig::default())
             .map_err(|_| std::io::Error::from_raw_os_error(100))?;
@@ -159,12 +148,9 @@ impl Theme {
         Ok(())
     }
 
-    fn get_theme_file(mode: Mode) -> PathBuf {
+    fn get_theme_file() -> PathBuf {
         let app_home = get_app_config_path();
-        match mode {
-            Mode::Dark => app_home.join("dark.ron"),
-            Mode::Light => app_home.join("light.ron"),
-        }
+        app_home.join("theme.ron")
     }
 
     fn read_file(
@@ -183,17 +169,12 @@ impl Theme {
         }
     }
 
-    pub fn init(mode: Mode) -> Theme {
-        if let Ok(x) = Theme::read_file(Theme::get_theme_file(mode)) {
+    pub fn init() -> Theme {
+        if let Ok(x) = Theme::read_file(Theme::get_theme_file()) {
             x
         } else {
-            let default_theme: Theme = match &mode {
-                Mode::Dark => DARK_THEME,
-                Mode::Light => LIGHT_THEME,
-            };
-
-            default_theme.save(mode).unwrap_or_default();
-            default_theme
+            DARK_THEME.save().unwrap_or_default();
+            DARK_THEME
         }
     }
 }
