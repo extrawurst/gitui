@@ -154,12 +154,12 @@ impl Component for HelpComponent {
 }
 
 impl HelpComponent {
-    pub fn new(theme: Theme) -> Self {
+    pub fn new(theme: &Theme) -> Self {
         Self {
             cmds: vec![],
             visible: false,
             selection: 0,
-            theme,
+            theme: *theme,
         }
     }
     ///

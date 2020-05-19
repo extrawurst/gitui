@@ -44,7 +44,7 @@ impl Revlog {
     ///
     pub fn new(
         sender: &Sender<AsyncNotification>,
-        theme: Theme,
+        theme: &Theme,
     ) -> Self {
         Self {
             items: ItemBatch::default(),
@@ -57,7 +57,7 @@ impl Revlog {
             tags: Tags::new(),
             current_size: (0, 0),
             scroll_top: 0,
-            theme,
+            theme: *theme,
         }
     }
 
@@ -156,7 +156,7 @@ impl Revlog {
         selected: bool,
         txt: &mut Vec<Text<'a>>,
         tags: Option<String>,
-        theme: Theme,
+        theme: &Theme,
     ) {
         let count_before = txt.len();
 
@@ -213,7 +213,7 @@ impl Revlog {
                 idx == selection,
                 &mut txt,
                 tag,
-                self.theme,
+                &self.theme,
             );
         }
 

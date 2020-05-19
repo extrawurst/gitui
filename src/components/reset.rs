@@ -102,12 +102,12 @@ impl Component for ResetComponent {
 
 impl ResetComponent {
     ///
-    pub fn new(queue: Queue, theme: Theme) -> Self {
+    pub fn new(queue: Queue, theme: &Theme) -> Self {
         Self {
             target: None,
             visible: false,
             queue,
-            theme,
+            theme: *theme,
         }
     }
     ///

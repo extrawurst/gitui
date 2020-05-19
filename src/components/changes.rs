@@ -35,7 +35,7 @@ impl ChangesComponent {
         focus: bool,
         is_working_dir: bool,
         queue: Queue,
-        theme: Theme,
+        theme: &Theme,
     ) -> Self {
         Self {
             title: title.to_string(),
@@ -45,7 +45,7 @@ impl ChangesComponent {
             show_selection: focus,
             is_working_dir,
             queue,
-            theme,
+            theme: *theme,
         }
     }
 

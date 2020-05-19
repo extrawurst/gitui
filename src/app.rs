@@ -51,15 +51,15 @@ impl App {
         let theme = Theme::init();
 
         Self {
-            reset: ResetComponent::new(queue.clone(), theme),
-            commit: CommitComponent::new(queue.clone(), theme),
+            reset: ResetComponent::new(queue.clone(), &theme),
+            commit: CommitComponent::new(queue.clone(), &theme),
             do_quit: false,
             current_commands: Vec::new(),
-            help: HelpComponent::new(theme),
+            help: HelpComponent::new(&theme),
             msg: MsgComponent::default(),
             tab: 0,
-            revlog: Revlog::new(&sender, theme),
-            status_tab: Status::new(&sender, &queue, theme),
+            revlog: Revlog::new(&sender, &theme),
+            status_tab: Status::new(&sender, &queue, &theme),
             queue,
             theme,
         }

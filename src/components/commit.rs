@@ -112,12 +112,12 @@ impl Component for CommitComponent {
 
 impl CommitComponent {
     ///
-    pub fn new(queue: Queue, theme: Theme) -> Self {
+    pub fn new(queue: Queue, theme: &Theme) -> Self {
         Self {
             queue,
             msg: String::default(),
             visible: false,
-            theme,
+            theme: *theme,
         }
     }
 

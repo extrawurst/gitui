@@ -41,7 +41,7 @@ pub struct DiffComponent {
 
 impl DiffComponent {
     ///
-    pub fn new(queue: Queue, theme: Theme) -> Self {
+    pub fn new(queue: Queue, theme: &Theme) -> Self {
         Self {
             focused: false,
             queue,
@@ -50,7 +50,7 @@ impl DiffComponent {
             diff: FileDiff::default(),
             scroll: 0,
             current_height: 0,
-            theme,
+            theme: *theme,
         }
     }
     ///

@@ -100,7 +100,7 @@ impl Status {
     pub fn new(
         sender: &Sender<AsyncNotification>,
         queue: &Queue,
-        theme: Theme,
+        theme: &Theme,
     ) -> Self {
         Self {
             visible: true,
