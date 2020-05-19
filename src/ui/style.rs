@@ -71,7 +71,9 @@ impl Theme {
         match (enabled, selected) {
             (false, _) => Style::default().fg(self.disabled_fg),
             (true, false) => Style::default(),
-            (true, true) => Style::default().bg(self.selection_bg),
+            (true, true) => Style::default()
+                .fg(self.command_fg)
+                .bg(self.selection_bg),
         }
     }
 
@@ -123,10 +125,14 @@ impl Theme {
             DiffLineType::Delete => {
                 Style::default().fg(self.diff_line_delete)
             }
-            DiffLineType::Header => {
-                Style::default().modifier(Modifier::BOLD)
-            }
-            _ => Style::default(),
+            DiffLineType::Header => Style::default()
+                .fg(self.disabled_fg)
+                .modifier(Modifier::BOLD),
+            _ => Style::default().fg(if selected {
+                self.command_fg
+            } else {
+                Color::Reset
+            }),
         };
 
         self.apply_select(style, selected)
@@ -217,7 +223,7 @@ impl Default for Theme {
             diff_file_added: Color::LightGreen,
             diff_file_removed: Color::LightRed,
             diff_file_moved: Color::LightMagenta,
-            diff_file_modified: Color::LightYellow,
+            diff_file_modified: Color::Yellow,
             commit_hash: Color::Magenta,
             commit_time: Color::Blue,
             commit_author: Color::Green,

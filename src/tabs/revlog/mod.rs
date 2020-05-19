@@ -159,6 +159,7 @@ impl Revlog {
         theme: &Theme,
     ) {
         let count_before = txt.len();
+        txt.reserve(ELEMENTS_PER_LINE);
 
         let splitter_txt = Cow::from(" ");
         let splitter =
