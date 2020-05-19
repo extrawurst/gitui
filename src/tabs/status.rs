@@ -246,58 +246,60 @@ impl Component for Status {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
-        for c in self.components() {
-            if c.commands(out, force_all)
-                != CommandBlocking::PassingOn
-                && !force_all
-            {
-                break;
+        if self.visible {
+            for c in self.components() {
+                if c.commands(out, force_all)
+                    != CommandBlocking::PassingOn
+                    && !force_all
+                {
+                    break;
+                }
             }
+
+            {
+                let focus_on_diff = self.focus == Focus::Diff;
+                out.push(CommandInfo::new(
+                    commands::STATUS_FOCUS_LEFT,
+                    true,
+                    (self.visible && focus_on_diff) || force_all,
+                ));
+                out.push(CommandInfo::new(
+                    commands::STATUS_FOCUS_RIGHT,
+                    self.can_focus_diff(),
+                    (self.visible && !focus_on_diff) || force_all,
+                ));
+            }
+
+            out.push(
+                CommandInfo::new(
+                    commands::SELECT_STATUS,
+                    true,
+                    (self.visible && self.focus == Focus::Diff)
+                        || force_all,
+                )
+                .hidden(),
+            );
+
+            out.push(
+                CommandInfo::new(
+                    commands::SELECT_STAGING,
+                    true,
+                    (self.visible && self.focus == Focus::WorkDir)
+                        || force_all,
+                )
+                .order(-2),
+            );
+
+            out.push(
+                CommandInfo::new(
+                    commands::SELECT_UNSTAGED,
+                    true,
+                    (self.visible && self.focus == Focus::Stage)
+                        || force_all,
+                )
+                .order(-2),
+            );
         }
-
-        {
-            let focus_on_diff = self.focus == Focus::Diff;
-            out.push(CommandInfo::new(
-                commands::STATUS_FOCUS_LEFT,
-                true,
-                (self.visible && focus_on_diff) || force_all,
-            ));
-            out.push(CommandInfo::new(
-                commands::STATUS_FOCUS_RIGHT,
-                self.can_focus_diff(),
-                (self.visible && !focus_on_diff) || force_all,
-            ));
-        }
-
-        out.push(
-            CommandInfo::new(
-                commands::SELECT_STATUS,
-                true,
-                (self.visible && self.focus == Focus::Diff)
-                    || force_all,
-            )
-            .hidden(),
-        );
-
-        out.push(
-            CommandInfo::new(
-                commands::SELECT_STAGING,
-                true,
-                (self.visible && self.focus == Focus::WorkDir)
-                    || force_all,
-            )
-            .order(-2),
-        );
-
-        out.push(
-            CommandInfo::new(
-                commands::SELECT_UNSTAGED,
-                true,
-                (self.visible && self.focus == Focus::Stage)
-                    || force_all,
-            )
-            .order(-2),
-        );
 
         if self.visible {
             CommandBlocking::Blocking
