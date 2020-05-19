@@ -3,12 +3,12 @@ use super::{
     statustree::{MoveSelection, StatusTree},
     CommandBlocking, DrawableComponent,
 };
-use crate::ui::style::Theme;
 use crate::{
     components::{CommandInfo, Component},
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings, ui,
+    ui::style::Theme,
 };
 use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;

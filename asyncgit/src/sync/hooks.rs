@@ -1,10 +1,10 @@
 use crate::error::Result;
 use scopetime::scope_time;
-use std::fs::File;
-use std::path::PathBuf;
 use std::{
+    fs::File,
     io::{Read, Write},
     path::Path,
+    path::PathBuf,
     process::Command,
 };
 

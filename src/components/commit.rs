@@ -2,11 +2,11 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::components::dialog_paragraph;
-use crate::ui::style::Theme;
 use crate::{
+    components::dialog_paragraph,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings, ui,
+    ui::style::Theme,
 };
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
@@ -14,10 +14,10 @@ use log::error;
 use std::borrow::Cow;
 use strings::commands;
 use sync::HookResult;
-use tui::style::Style;
 use tui::{
     backend::Backend,
     layout::Rect,
+    style::Style,
     widgets::{Clear, Text},
     Frame,
 };

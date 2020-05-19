@@ -1,11 +1,15 @@
 use crate::get_app_config_path;
 use asyncgit::{DiffLineType, StatusItemType};
-use ron::de::from_bytes;
-use ron::ser::{to_string_pretty, PrettyConfig};
+use ron::{
+    de::from_bytes,
+    ser::{to_string_pretty, PrettyConfig},
+};
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::{
+    fs::File,
+    io::{Read, Write},
+};
 use tui::style::{Color, Modifier, Style};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]

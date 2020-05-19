@@ -1,8 +1,7 @@
 //! sync git api for fetching a diff
 
 use super::utils;
-use crate::error::Result;
-use crate::{error::Error, hash};
+use crate::{error::Error, error::Result, hash};
 use git2::{
     Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
     Repository,

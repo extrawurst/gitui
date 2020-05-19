@@ -1,5 +1,6 @@
 use crate::{
-    error::Result, hash, sync, AsyncNotification, StatusItem, CWD,
+    error::Result, hash, sync, sync::status::StatusType,
+    AsyncNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
 use log::trace;
@@ -10,7 +11,6 @@ use std::{
         Arc, Mutex,
     },
 };
-use sync::status::StatusType;
 
 #[derive(Default, Hash, Clone)]
 pub struct Status {

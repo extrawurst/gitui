@@ -25,17 +25,17 @@ use crossterm::{
     },
     ExecutableCommand, Result,
 };
-use io::Write;
 use log::error;
 use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
 use spinner::Spinner;
-use std::path::PathBuf;
 use std::{
     env, fs,
     fs::File,
-    io, panic,
+    io::{self, Write},
+    panic,
+    path::PathBuf,
     time::{Duration, Instant},
 };
 use tui::{

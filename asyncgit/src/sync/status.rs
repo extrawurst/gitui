@@ -1,7 +1,6 @@
 //! sync git api for fetching a status
 
-use crate::error::Result;
-use crate::{error::Error, sync::utils};
+use crate::{error::Error, error::Result, sync::utils};
 use git2::{Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 use std::path::Path;

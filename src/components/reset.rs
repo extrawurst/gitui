@@ -3,12 +3,11 @@ use super::{
     DrawableComponent,
 };
 use crate::{
+    components::dialog_paragraph,
     queue::{InternalEvent, Queue, ResetItem},
     strings, ui,
+    ui::style::Theme,
 };
-
-use crate::components::dialog_paragraph;
-use crate::ui::style::Theme;
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
 use strings::commands;

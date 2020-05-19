@@ -1,6 +1,3 @@
-use crossterm::event::Event;
-use tui::{backend::Backend, layout::Rect, Frame};
-
 mod changes;
 mod command;
 mod commit;
@@ -18,8 +15,15 @@ pub use filetree::FileTreeItemKind;
 pub use help::HelpComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
-use tui::layout::Alignment;
-use tui::widgets::{Block, Borders, Paragraph, Text};
+
+use crossterm::event::Event;
+use tui::{
+    backend::Backend,
+    layout::Alignment,
+    layout::Rect,
+    widgets::{Block, Borders, Paragraph, Text},
+    Frame,
+};
 
 /// creates accessors for a list of components
 ///

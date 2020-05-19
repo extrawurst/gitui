@@ -1,4 +1,3 @@
-use crate::ui::style::Theme;
 use crate::{
     accessors,
     components::{
@@ -10,6 +9,7 @@ use crate::{
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
     tabs::{Revlog, Status},
+    ui::style::Theme,
 };
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
@@ -18,8 +18,7 @@ use itertools::Itertools;
 use log::trace;
 use std::borrow::Cow;
 use strings::commands;
-use tui::style::Style;
-use tui::{
+use tui::{style::Style, 
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::Modifier,

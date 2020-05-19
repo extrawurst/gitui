@@ -1,6 +1,5 @@
 mod utils;
 
-use crate::ui::style::Theme;
 use crate::{
     components::{
         CommandBlocking, CommandInfo, Component, DrawableComponent,
@@ -9,6 +8,7 @@ use crate::{
     keys,
     strings::commands,
     ui::calc_scroll_top,
+    ui::style::Theme,
 };
 use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
 use crossbeam_channel::Sender;

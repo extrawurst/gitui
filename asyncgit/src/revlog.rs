@@ -1,5 +1,4 @@
-use crate::error::Result;
-use crate::{sync, AsyncNotification, CWD};
+use crate::{error::Result, sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use git2::Oid;
 use scopetime::scope_time;

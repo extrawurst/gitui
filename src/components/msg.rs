@@ -2,8 +2,7 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::components::dialog_paragraph;
-use crate::{keys, strings, ui};
+use crate::{components::dialog_paragraph, keys, strings, ui};
 use crossterm::event::Event;
 use std::borrow::Cow;
 use strings::commands;

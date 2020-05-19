@@ -1,5 +1,6 @@
-use crate::error::Result;
-use crate::{hash, sync, AsyncNotification, FileDiff, CWD};
+use crate::{
+    error::Result, hash, sync, AsyncNotification, FileDiff, CWD,
+};
 use crossbeam_channel::Sender;
 use log::trace;
 use std::{

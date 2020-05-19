@@ -2,10 +2,10 @@ mod scrolllist;
 pub(crate) mod style;
 use crate::ui::style::Theme;
 use scrolllist::ScrollableList;
-use tui::style::Modifier;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
+    style::Modifier,
     widgets::{Block, Borders, Text},
     Frame,
 };

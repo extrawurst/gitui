@@ -1,4 +1,3 @@
-use crate::ui::style::Theme;
 use crate::{
     accessors,
     components::{
@@ -9,6 +8,7 @@ use crate::{
     keys,
     queue::Queue,
     strings,
+    ui::style::Theme,
 };
 use asyncgit::{
     current_tick, AsyncDiff, AsyncNotification, AsyncStatus,

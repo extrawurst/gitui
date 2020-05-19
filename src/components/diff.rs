@@ -1,16 +1,15 @@
 use super::{CommandBlocking, DrawableComponent, ScrollType};
-use crate::ui::style::Theme;
 use crate::{
     components::{CommandInfo, Component},
     keys,
     queue::{InternalEvent, Queue},
     strings,
+    ui::style::Theme,
 };
 use asyncgit::{hash, DiffLine, DiffLineType, FileDiff};
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp, convert::TryFrom};
 use strings::commands;
-
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
