@@ -397,7 +397,7 @@ mod tests {
             false,
             false,
             false,
-            crate::ui::style::DARK_THEME,
+            Theme::default(),
         );
 
         assert_eq!(text.len(), 2);

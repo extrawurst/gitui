@@ -38,22 +38,6 @@ pub struct Theme {
     commit_author: Color,
 }
 
-pub const DARK_THEME: Theme = Theme {
-    selected_tab: Color::Yellow,
-    command_foreground: Color::White,
-    command_background: Color::Rgb(0, 0, 100),
-    command_disabled: Color::DarkGray,
-    diff_line_add: Color::Green,
-    diff_line_delete: Color::Red,
-    diff_file_added: Color::LightGreen,
-    diff_file_removed: Color::LightRed,
-    diff_file_moved: Color::LightMagenta,
-    diff_file_modified: Color::Yellow,
-    commit_hash: Color::Magenta,
-    commit_time: Color::Blue,
-    commit_author: Color::Green,
-};
-
 impl Theme {
     pub fn block(&self, focus: bool) -> Style {
         if focus {
@@ -196,8 +180,29 @@ impl Theme {
         if let Ok(x) = Theme::read_file(Theme::get_theme_file()) {
             x
         } else {
-            DARK_THEME.save().unwrap_or_default();
-            DARK_THEME
+            let res = Self::default();
+            res.save().unwrap_or_default();
+            res
+        }
+    }
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            selected_tab: Color::Yellow,
+            command_foreground: Color::White,
+            command_background: Color::Rgb(0, 0, 100),
+            command_disabled: Color::DarkGray,
+            diff_line_add: Color::Green,
+            diff_line_delete: Color::Red,
+            diff_file_added: Color::LightGreen,
+            diff_file_removed: Color::LightRed,
+            diff_file_moved: Color::LightMagenta,
+            diff_file_modified: Color::Yellow,
+            commit_hash: Color::Magenta,
+            commit_time: Color::Blue,
+            commit_author: Color::Green,
         }
     }
 }
