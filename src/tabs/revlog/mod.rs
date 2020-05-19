@@ -7,6 +7,7 @@ use crate::{
     },
     keys,
     strings::commands,
+    ui::calc_scroll_top,
 };
 use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
@@ -55,6 +56,7 @@ pub struct Revlog {
     scroll_state: (Instant, f32),
     tags: Tags,
     current_size: (u16, u16),
+    scroll_top: usize,
 }
 
 impl Revlog {
@@ -70,6 +72,7 @@ impl Revlog {
             scroll_state: (Instant::now(), 0_f32),
             tags: Tags::new(),
             current_size: (0, 0),
+            scroll_top: 0,
         }
     }
 
@@ -233,22 +236,12 @@ impl Revlog {
 
         assert_eq!(txt.len() - count_before, ELEMENTS_PER_LINE);
     }
-}
 
-impl DrawableComponent for Revlog {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect) {
-        self.current_size = (
-            area.width.saturating_sub(2),
-            area.height.saturating_sub(2),
-        );
-
-        let height = area.height as usize;
-        let selection =
-            self.selection.saturating_sub(self.items.index_offset);
-        let height_d2 = height as usize / 2;
-        let min = selection.saturating_sub(height_d2);
+    fn get_text(&self) -> Vec<Text> {
+        let selection = self.relative_selection();
 
         let mut txt = Vec::new();
+
         for (idx, e) in self.items.items.iter().enumerate() {
             let tag = if let Some(tags) = self.tags.get(&e.hash) {
                 Some(tags.join(" "))
@@ -258,16 +251,41 @@ impl DrawableComponent for Revlog {
             Self::add_entry(e, idx == selection, &mut txt, tag);
         }
 
+        txt
+    }
+
+    fn relative_selection(&self) -> usize {
+        self.selection.saturating_sub(self.items.index_offset)
+    }
+}
+
+impl DrawableComponent for Revlog {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect) {
+        self.current_size = (
+            area.width.saturating_sub(2),
+            area.height.saturating_sub(2),
+        );
+
+        let height_in_lines = self.current_size.1 as usize;
+        let selection = self.relative_selection();
+
+        self.scroll_top = calc_scroll_top(
+            self.scroll_top,
+            height_in_lines,
+            selection,
+        );
+
         let title = format!(
             "commit {}/{}",
-            self.selection, self.selection_max
+            self.selection, self.selection_max,
         );
 
         f.render_widget(
             Paragraph::new(
-                txt.iter()
-                    .skip(min * ELEMENTS_PER_LINE)
-                    .take(height * ELEMENTS_PER_LINE),
+                self.get_text()
+                    .iter()
+                    .skip(self.scroll_top * ELEMENTS_PER_LINE)
+                    .take(height_in_lines * ELEMENTS_PER_LINE),
             )
             .block(
                 Block::default()

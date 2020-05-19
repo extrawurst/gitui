@@ -9,6 +9,21 @@ use tui::{
     Frame,
 };
 
+/// return the scroll position (line) necessary to have the `selection` in view if it is not already
+pub fn calc_scroll_top(
+    current_top: usize,
+    height_in_lines: usize,
+    selection: usize,
+) -> usize {
+    if current_top + height_in_lines <= selection {
+        selection.saturating_sub(height_in_lines) + 1
+    } else if current_top > selection {
+        selection
+    } else {
+        current_top
+    }
+}
+
 /// use layouts to create a rects that
 /// centers inside `r` and sizes `percent_x`/`percent_x` of `r`
 pub fn centered_rect(
