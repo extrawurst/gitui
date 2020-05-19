@@ -39,7 +39,7 @@ pub struct App {
     revlog: Revlog,
     status_tab: Status,
     queue: Queue,
-    pub theme: Theme,
+    theme: Theme,
 }
 
 // public interface
