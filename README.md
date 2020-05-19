@@ -82,16 +82,10 @@ this will log to:
 
 # color theme
 
-two different color themes are supported for light and dark mode. to change the colors you have to modify files in 
-[Ron format](https://github.com/ron-rs/ron) located at git config path (same as log paths). the list of valid 
+to change the colors of the program you have to modify `theme.ron` file
+[Ron format](https://github.com/ron-rs/ron) located at config path (same as log paths). the list of valid 
 colors can be found in [ColorDef](./src/ui/style.rs#ColorDef) struct. note that rgb colors might not be available 
 on some platforms.
-
-to enable light mode:
-```
-GITUI_LIGHT=true gitui
-```
-
 
 # inspiration
 
