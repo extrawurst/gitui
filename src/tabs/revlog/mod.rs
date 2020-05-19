@@ -265,24 +265,6 @@ impl DrawableComponent for Revlog {
 }
 
 impl Component for Revlog {
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
-    ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            commands::SCROLL,
-            self.visible,
-            self.visible || force_all,
-        ));
-
-        if self.visible {
-            CommandBlocking::Blocking
-        } else {
-            CommandBlocking::PassingOn
-        }
-    }
-
     fn event(&mut self, ev: Event) -> bool {
         if self.visible {
             if let Event::Key(k) = ev {
@@ -317,6 +299,24 @@ impl Component for Revlog {
         }
 
         false
+    }
+
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) -> CommandBlocking {
+        out.push(CommandInfo::new(
+            commands::SCROLL,
+            self.visible,
+            self.visible || force_all,
+        ));
+
+        if self.visible {
+            CommandBlocking::Blocking
+        } else {
+            CommandBlocking::PassingOn
+        }
     }
 
     fn is_visible(&self) -> bool {
