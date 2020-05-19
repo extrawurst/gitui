@@ -185,7 +185,7 @@ impl Revlog {
             } else {
                 String::from("")
             }),
-            theme.tab(true),
+            theme.tab(true).bg(theme.text(true, selected).bg),
         ));
         txt.push(splitter);
         txt.push(Text::Styled(
