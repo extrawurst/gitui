@@ -5,7 +5,6 @@ use scrolllist::ScrollableList;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
-    style::Modifier,
     widgets::{Block, Borders, Text},
     Frame,
 };
@@ -81,18 +80,12 @@ pub fn draw_list<'b, B: Backend, L>(
 ) where
     L: Iterator<Item = Text<'b>>,
 {
-    let style = if selected {
-        theme.block(selected).modifier(Modifier::BOLD)
-    } else {
-        theme.block(selected)
-    };
-
     let list = ScrollableList::new(items)
         .block(
             Block::default()
                 .title(title)
                 .borders(Borders::ALL)
-                .title_style(style)
+                .title_style(theme.title(selected))
                 .border_style(theme.block(selected)),
         )
         .scroll(select.unwrap_or_default());

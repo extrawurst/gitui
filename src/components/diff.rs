@@ -13,7 +13,6 @@ use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    style::Modifier,
     symbols,
     widgets::{Block, Borders, Paragraph, Text},
     Frame,
@@ -198,7 +197,7 @@ impl DiffComponent {
         theme: Theme,
     ) {
         {
-            let style = theme.text(false, selected || selected_hunk);
+            let style = theme.diff_hunk_marker(selected_hunk);
 
             if end_of_hunk {
                 text.push(Text::Styled(
@@ -283,11 +282,7 @@ impl DrawableComponent for DiffComponent {
                         .title(title.as_str())
                         .borders(Borders::ALL)
                         .border_style(self.theme.block(self.focused))
-                        .title_style(
-                            self.theme
-                                .text(self.focused, false)
-                                .modifier(Modifier::BOLD),
-                        ),
+                        .title_style(self.theme.title(self.focused)),
                 )
                 .alignment(Alignment::Left),
             r,

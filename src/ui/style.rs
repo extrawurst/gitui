@@ -17,11 +17,11 @@ pub struct Theme {
     #[serde(with = "ColorDef")]
     selected_tab: Color,
     #[serde(with = "ColorDef")]
-    command_foreground: Color,
+    command_fg: Color,
     #[serde(with = "ColorDef")]
-    command_background: Color,
+    selection_bg: Color,
     #[serde(with = "ColorDef")]
-    command_disabled: Color,
+    disabled_fg: Color,
     #[serde(with = "ColorDef")]
     diff_line_add: Color,
     #[serde(with = "ColorDef")]
@@ -47,7 +47,15 @@ impl Theme {
         if focus {
             Style::default()
         } else {
-            Style::default().fg(self.command_disabled)
+            Style::default().fg(self.disabled_fg)
+        }
+    }
+
+    pub fn title(&self, focused: bool) -> Style {
+        if focused {
+            Style::default().modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(self.disabled_fg)
         }
     }
 
@@ -61,11 +69,9 @@ impl Theme {
 
     pub fn text(&self, enabled: bool, selected: bool) -> Style {
         match (enabled, selected) {
-            (false, _) => Style::default().fg(self.command_disabled),
+            (false, _) => Style::default().fg(self.disabled_fg),
             (true, false) => Style::default(),
-            (true, true) => {
-                Style::default().bg(self.command_background)
-            }
+            (true, true) => Style::default().bg(self.selection_bg),
         }
     }
 
@@ -91,9 +97,16 @@ impl Theme {
 
     fn apply_select(&self, style: Style, selected: bool) -> Style {
         if selected {
-            style.bg(self.command_background)
+            style.bg(self.selection_bg)
         } else {
             style
+        }
+    }
+
+    pub fn diff_hunk_marker(&self, selected: bool) -> Style {
+        match selected {
+            false => Style::default().fg(self.disabled_fg),
+            true => Style::default().bg(self.selection_bg),
         }
     }
 
@@ -124,11 +137,11 @@ impl Theme {
 
     pub fn toolbar(&self, enabled: bool) -> Style {
         if enabled {
-            Style::default().fg(self.command_foreground)
+            Style::default().fg(self.command_fg)
         } else {
-            Style::default().fg(self.command_disabled)
+            Style::default().fg(self.disabled_fg)
         }
-        .bg(self.command_background)
+        .bg(self.selection_bg)
     }
 
     pub fn commit_hash(&self, selected: bool) -> Style {
@@ -195,15 +208,15 @@ impl Default for Theme {
     fn default() -> Self {
         Self {
             selected_tab: Color::Yellow,
-            command_foreground: Color::White,
-            command_background: Color::Rgb(0, 0, 100),
-            command_disabled: Color::DarkGray,
+            command_fg: Color::White,
+            selection_bg: Color::Rgb(0, 0, 100),
+            disabled_fg: Color::DarkGray,
             diff_line_add: Color::Green,
             diff_line_delete: Color::Red,
             diff_file_added: Color::LightGreen,
             diff_file_removed: Color::LightRed,
             diff_file_moved: Color::LightMagenta,
-            diff_file_modified: Color::Yellow,
+            diff_file_modified: Color::LightYellow,
             commit_hash: Color::Magenta,
             commit_time: Color::Blue,
             commit_author: Color::Green,
