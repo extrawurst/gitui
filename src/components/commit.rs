@@ -2,6 +2,8 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
+use crate::components::dialog_paragraph;
+use crate::ui::style::Theme;
 use crate::{
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings, ui,
@@ -12,11 +14,11 @@ use log::error;
 use std::borrow::Cow;
 use strings::commands;
 use sync::HookResult;
+use tui::style::Style;
 use tui::{
     backend::Backend,
-    layout::{Alignment, Rect},
-    style::{Color, Style},
-    widgets::{Block, Borders, Clear, Paragraph, Text},
+    layout::Rect,
+    widgets::{Clear, Text},
     Frame,
 };
 
@@ -24,6 +26,7 @@ pub struct CommitComponent {
     msg: String,
     visible: bool,
     queue: Queue,
+    theme: Theme,
 }
 
 impl DrawableComponent for CommitComponent {
@@ -32,22 +35,19 @@ impl DrawableComponent for CommitComponent {
             let txt = if self.msg.is_empty() {
                 [Text::Styled(
                     Cow::from(strings::COMMIT_MSG),
-                    Style::default().fg(Color::DarkGray),
+                    self.theme.text(false, false),
                 )]
             } else {
-                [Text::Raw(Cow::from(self.msg.clone()))]
+                [Text::Styled(
+                    Cow::from(self.msg.clone()),
+                    Style::default(),
+                )]
             };
 
             let area = ui::centered_rect(60, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                Paragraph::new(txt.iter())
-                    .block(
-                        Block::default()
-                            .title(strings::COMMIT_TITLE)
-                            .borders(Borders::ALL),
-                    )
-                    .alignment(Alignment::Left),
+                dialog_paragraph(strings::COMMIT_TITLE, txt.iter()),
                 area,
             );
         }
@@ -112,11 +112,12 @@ impl Component for CommitComponent {
 
 impl CommitComponent {
     ///
-    pub fn new(queue: Queue) -> Self {
+    pub fn new(queue: Queue, theme: Theme) -> Self {
         Self {
             queue,
             msg: String::default(),
             visible: false,
+            theme,
         }
     }
 

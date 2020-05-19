@@ -1,4 +1,5 @@
 use super::{CommandBlocking, DrawableComponent, ScrollType};
+use crate::ui::style::Theme;
 use crate::{
     components::{CommandInfo, Component},
     keys,
@@ -9,10 +10,11 @@ use asyncgit::{hash, DiffLine, DiffLineType, FileDiff};
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp, convert::TryFrom};
 use strings::commands;
+
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     symbols,
     widgets::{Block, Borders, Paragraph, Text},
     Frame,
@@ -34,11 +36,12 @@ pub struct DiffComponent {
     current: Current,
     selected_hunk: Option<u16>,
     queue: Queue,
+    theme: Theme,
 }
 
 impl DiffComponent {
     ///
-    pub fn new(queue: Queue) -> Self {
+    pub fn new(queue: Queue, theme: Theme) -> Self {
         Self {
             focused: false,
             queue,
@@ -47,6 +50,7 @@ impl DiffComponent {
             diff: FileDiff::default(),
             scroll: 0,
             current_height: 0,
+            theme,
         }
     }
     ///
@@ -171,6 +175,7 @@ impl DiffComponent {
                             selection == line_cursor,
                             hunk_selected,
                             i == hunk_len as usize - 1,
+                            self.theme,
                         );
                         lines_added += 1;
                     }
@@ -191,22 +196,10 @@ impl DiffComponent {
         selected: bool,
         selected_hunk: bool,
         end_of_hunk: bool,
+        theme: Theme,
     ) {
-        let select_color = Color::Rgb(0, 0, 100);
-        let style_default = Style::default().bg(if selected {
-            select_color
-        } else {
-            Color::Reset
-        });
-
         {
-            let style = Style::default()
-                .bg(if selected || selected_hunk {
-                    select_color
-                } else {
-                    Color::Reset
-                })
-                .fg(Color::DarkGray);
+            let style = theme.text(false, selected || selected_hunk);
 
             if end_of_hunk {
                 text.push(Text::Styled(
@@ -227,17 +220,6 @@ impl DiffComponent {
             }
         }
 
-        let style_delete = Style::default()
-            .fg(Color::Red)
-            .bg(if selected { select_color } else { Color::Reset });
-        let style_add = Style::default()
-            .fg(Color::Green)
-            .bg(if selected { select_color } else { Color::Reset });
-        let style_header = Style::default()
-            .fg(Color::White)
-            .bg(if selected { select_color } else { Color::Reset })
-            .modifier(Modifier::BOLD);
-
         let trimmed =
             line.content.trim_matches(|c| c == '\n' || c == '\r');
 
@@ -251,16 +233,10 @@ impl DiffComponent {
         //TODO: allow customize tabsize
         let content = Cow::from(filled.replace("\t", "  "));
 
-        text.push(match line.line_type {
-            DiffLineType::Delete => {
-                Text::Styled(content, style_delete)
-            }
-            DiffLineType::Add => Text::Styled(content, style_add),
-            DiffLineType::Header => {
-                Text::Styled(content, style_header)
-            }
-            _ => Text::Styled(content, style_default),
-        });
+        text.push(Text::Styled(
+            content,
+            theme.diff_line(line.line_type, selected),
+        ));
     }
 
     fn hunk_visible(
@@ -299,13 +275,6 @@ impl DiffComponent {
 impl DrawableComponent for DiffComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, r: Rect) {
         self.current_height = r.height.saturating_sub(2);
-        let mut style_border = Style::default().fg(Color::DarkGray);
-        let mut style_title = Style::default();
-        if self.focused {
-            style_border = style_border.fg(Color::Gray);
-            style_title = style_title.modifier(Modifier::BOLD);
-        }
-
         let title =
             format!("{}{}", strings::TITLE_DIFF, self.current.path);
         f.render_widget(
@@ -314,8 +283,10 @@ impl DrawableComponent for DiffComponent {
                     Block::default()
                         .title(title.as_str())
                         .borders(Borders::ALL)
-                        .border_style(style_border)
-                        .title_style(style_title),
+                        .border_style(self.theme.block(self.focused))
+                        .title_style(
+                            Style::default().modifier(Modifier::BOLD),
+                        ),
                 )
                 .alignment(Alignment::Left),
             r,
@@ -414,7 +385,6 @@ mod tests {
     #[test]
     fn test_lineendings() {
         let mut text = Vec::new();
-
         DiffComponent::add_line(
             &mut text,
             10,
@@ -425,6 +395,7 @@ mod tests {
             false,
             false,
             false,
+            Theme::empty(),
         );
 
         assert_eq!(text.len(), 2);

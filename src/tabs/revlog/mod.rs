@@ -1,5 +1,6 @@
 mod utils;
 
+use crate::ui::style::Theme;
 use crate::{
     components::{
         CommandBlocking, CommandInfo, Component, DrawableComponent,
@@ -17,34 +18,13 @@ use sync::Tags;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Text},
     Frame,
 };
 use utils::{ItemBatch, LogEntry};
 
-const COLOR_SELECTION_BG: Color = Color::Blue;
-
-const STYLE_TAG: Style = Style::new().fg(Color::Yellow);
-const STYLE_HASH: Style = Style::new().fg(Color::Magenta);
-const STYLE_TIME: Style = Style::new().fg(Color::Blue);
-const STYLE_AUTHOR: Style = Style::new().fg(Color::Green);
-const STYLE_MSG: Style = Style::new().fg(Color::Reset);
-
-const STYLE_TAG_SELECTED: Style =
-    Style::new().fg(Color::Yellow).bg(COLOR_SELECTION_BG);
-const STYLE_HASH_SELECTED: Style =
-    Style::new().fg(Color::Magenta).bg(COLOR_SELECTION_BG);
-const STYLE_TIME_SELECTED: Style =
-    Style::new().fg(Color::White).bg(COLOR_SELECTION_BG);
-const STYLE_AUTHOR_SELECTED: Style =
-    Style::new().fg(Color::Green).bg(COLOR_SELECTION_BG);
-const STYLE_MSG_SELECTED: Style =
-    Style::new().fg(Color::Reset).bg(COLOR_SELECTION_BG);
-
 static ELEMENTS_PER_LINE: usize = 10;
 static SLICE_SIZE: usize = 1200;
-
 ///
 pub struct Revlog {
     selection: usize,
@@ -57,11 +37,15 @@ pub struct Revlog {
     tags: Tags,
     current_size: (u16, u16),
     scroll_top: usize,
+    theme: Theme,
 }
 
 impl Revlog {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(
+        sender: &Sender<AsyncNotification>,
+        theme: Theme,
+    ) -> Self {
         Self {
             items: ItemBatch::default(),
             git_log: AsyncLog::new(sender.clone()),
@@ -73,6 +57,7 @@ impl Revlog {
             tags: Tags::new(),
             current_size: (0, 0),
             scroll_top: 0,
+            theme,
         }
     }
 
@@ -171,44 +156,27 @@ impl Revlog {
         selected: bool,
         txt: &mut Vec<Text<'a>>,
         tags: Option<String>,
+        theme: Theme,
     ) {
         let count_before = txt.len();
 
         let splitter_txt = Cow::from(" ");
-        let splitter = if selected {
-            Text::Styled(
-                splitter_txt,
-                Style::new().bg(COLOR_SELECTION_BG),
-            )
-        } else {
-            Text::Raw(splitter_txt)
-        };
+        let splitter =
+            Text::Styled(splitter_txt, theme.text(true, selected));
 
         txt.push(Text::Styled(
             Cow::from(&e.hash[0..7]),
-            if selected {
-                STYLE_HASH_SELECTED
-            } else {
-                STYLE_HASH
-            },
+            theme.table(0, selected),
         ));
         txt.push(splitter.clone());
         txt.push(Text::Styled(
             Cow::from(e.time.as_str()),
-            if selected {
-                STYLE_TIME_SELECTED
-            } else {
-                STYLE_TIME
-            },
+            theme.table(1, selected),
         ));
         txt.push(splitter.clone());
         txt.push(Text::Styled(
             Cow::from(e.author.as_str()),
-            if selected {
-                STYLE_AUTHOR_SELECTED
-            } else {
-                STYLE_AUTHOR
-            },
+            theme.table(2, selected),
         ));
         txt.push(splitter.clone());
         txt.push(Text::Styled(
@@ -217,20 +185,12 @@ impl Revlog {
             } else {
                 String::from("")
             }),
-            if selected {
-                STYLE_TAG_SELECTED
-            } else {
-                STYLE_TAG
-            },
+            theme.tab(true),
         ));
         txt.push(splitter);
         txt.push(Text::Styled(
             Cow::from(e.msg.as_str()),
-            if selected {
-                STYLE_MSG_SELECTED
-            } else {
-                STYLE_MSG
-            },
+            theme.text(true, selected),
         ));
         txt.push(Text::Raw(Cow::from("\n")));
 
@@ -248,7 +208,13 @@ impl Revlog {
             } else {
                 None
             };
-            Self::add_entry(e, idx == selection, &mut txt, tag);
+            Self::add_entry(
+                e,
+                idx == selection,
+                &mut txt,
+                tag,
+                self.theme,
+            );
         }
 
         txt
@@ -299,6 +265,24 @@ impl DrawableComponent for Revlog {
 }
 
 impl Component for Revlog {
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) -> CommandBlocking {
+        out.push(CommandInfo::new(
+            commands::SCROLL,
+            self.visible,
+            self.visible || force_all,
+        ));
+
+        if self.visible {
+            CommandBlocking::Blocking
+        } else {
+            CommandBlocking::PassingOn
+        }
+    }
+
     fn event(&mut self, ev: Event) -> bool {
         if self.visible {
             if let Event::Key(k) = ev {
@@ -333,24 +317,6 @@ impl Component for Revlog {
         }
 
         false
-    }
-
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
-    ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            commands::SCROLL,
-            self.visible,
-            self.visible || force_all,
-        ));
-
-        if self.visible {
-            CommandBlocking::Blocking
-        } else {
-            CommandBlocking::PassingOn
-        }
     }
 
     fn is_visible(&self) -> bool {

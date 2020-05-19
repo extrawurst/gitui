@@ -14,6 +14,7 @@ mod tabs;
 mod ui;
 mod version;
 
+use crate::ui::style::Mode;
 use crate::{app::App, poll::QueueEvent};
 use asyncgit::AsyncNotification;
 use backtrace::Backtrace;
@@ -31,6 +32,7 @@ use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
 use spinner::Spinner;
+use std::path::PathBuf;
 use std::{
     env, fs,
     fs::File,
@@ -66,7 +68,12 @@ fn main() -> Result<()> {
 
     let (tx_git, rx_git) = unbounded();
 
-    let mut app = App::new(&tx_git);
+    let mode = match env::var("GITUI_LIGHT") {
+        Ok(_) => Mode::Light,
+        _ => Mode::Dark,
+    };
+
+    let mut app = App::new(&tx_git, mode);
 
     let rx_input = poll::start_polling_thread();
     let ticker = tick(TICK_INTERVAL);
@@ -75,7 +82,7 @@ fn main() -> Result<()> {
     app.update();
     draw(&mut terminal, &mut app)?;
 
-    let mut spinner = Spinner::default();
+    let mut spinner = Spinner::new();
 
     loop {
         let events: Vec<QueueEvent> = select_event(
@@ -175,12 +182,18 @@ fn start_terminal<W: Write>(
     Ok(terminal)
 }
 
+#[must_use]
+pub fn get_app_config_path() -> PathBuf {
+    let mut path = dirs::cache_dir().unwrap();
+    path.push("gitui");
+    fs::create_dir_all(&path).unwrap();
+    path
+}
+
 fn setup_logging() {
     if env::var("GITUI_LOGGING").is_ok() {
-        let mut path = dirs::cache_dir().unwrap();
-        path.push("gitui");
+        let mut path = get_app_config_path();
         path.push("gitui.log");
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
 
         let _ = WriteLogger::init(
             LevelFilter::Trace,

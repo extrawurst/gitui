@@ -1,3 +1,4 @@
+use crate::ui::style::{Mode, Theme};
 use crate::{
     accessors,
     components::{
@@ -17,10 +18,11 @@ use itertools::Itertools;
 use log::trace;
 use std::borrow::Cow;
 use strings::commands;
+use tui::style::Style;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::Modifier,
     widgets::{Block, Borders, Paragraph, Tabs, Text},
     Frame,
 };
@@ -37,24 +39,32 @@ pub struct App {
     revlog: Revlog,
     status_tab: Status,
     queue: Queue,
+    pub theme: Theme,
 }
 
 // public interface
 impl App {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(
+        sender: &Sender<AsyncNotification>,
+        mode: Mode,
+    ) -> Self {
         let queue = Queue::default();
+
+        let theme = Theme::init(mode);
+
         Self {
-            reset: ResetComponent::new(queue.clone()),
-            commit: CommitComponent::new(queue.clone()),
+            reset: ResetComponent::new(queue.clone(), theme),
+            commit: CommitComponent::new(queue.clone(), theme),
             do_quit: false,
             current_commands: Vec::new(),
-            help: HelpComponent::default(),
-            msg: MsgComponent::default(),
+            help: HelpComponent::new(theme),
+            msg: MsgComponent::new(),
             tab: 0,
-            revlog: Revlog::new(&sender),
-            status_tab: Status::new(&sender, &queue),
+            revlog: Revlog::new(&sender, theme),
+            status_tab: Status::new(&sender, &queue, theme),
             queue,
+            theme,
         }
     }
 
@@ -84,6 +94,7 @@ impl App {
             f,
             chunks_main[2],
             self.current_commands.as_slice(),
+            self.theme,
         );
 
         self.draw_popups(f);
@@ -320,10 +331,9 @@ impl App {
             Tabs::default()
                 .block(Block::default().borders(Borders::BOTTOM))
                 .titles(&[strings::TAB_STATUS, strings::TAB_LOG])
-                .style(Style::default().fg(Color::White))
                 .highlight_style(
-                    Style::default()
-                        .fg(Color::Yellow)
+                    self.theme
+                        .tab(true)
                         .modifier(Modifier::UNDERLINED),
                 )
                 .divider(strings::TAB_DIVIDER)
@@ -336,28 +346,20 @@ impl App {
         f: &mut Frame<B>,
         r: Rect,
         cmds: &[CommandInfo],
+        theme: Theme,
     ) {
         let splitter = Text::Styled(
             Cow::from(strings::CMD_SPLITTER),
             Style::default(),
         );
 
-        let style_enabled =
-            Style::default().fg(Color::White).bg(Color::Blue);
-
-        let style_disabled =
-            Style::default().fg(Color::DarkGray).bg(Color::Blue);
         let texts = cmds
             .iter()
             .filter_map(|c| {
                 if c.show_in_quickbar() {
                     Some(Text::Styled(
                         Cow::from(c.text.name),
-                        if c.enabled {
-                            style_enabled
-                        } else {
-                            style_disabled
-                        },
+                        theme.toolbar(c.enabled),
                     ))
                 } else {
                     None

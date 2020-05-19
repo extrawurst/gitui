@@ -31,8 +31,10 @@ scopeguard = "1.1"
 bitflags = "1.2"
 chrono = "0.4"
 backtrace = { version = "0.3" }
+ron = "0.5.1"
 scopetime = { path = "./scopetime", version = "0.1" }
 asyncgit = { path = "./asyncgit", version = "0.2" }
+serde = "1.0.110"
 
 [features]
 default=[]
@@ -45,6 +47,6 @@ members=[
 ]
 
 [profile.release]
-lto = true 
+lto = true
 opt-level = 'z'  # Optimize for size.
 codegen-units = 1

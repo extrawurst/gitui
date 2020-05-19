@@ -7,14 +7,15 @@ use crate::{
     strings, ui,
 };
 
+use crate::components::dialog_paragraph;
+use crate::ui::style::Theme;
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
     backend::Backend,
-    layout::{Alignment, Rect},
-    style::{Color, Style},
-    widgets::{Block, Borders, Clear, Paragraph, Text},
+    layout::Rect,
+    widgets::{Clear, Text},
     Frame,
 };
 
@@ -23,6 +24,7 @@ pub struct ResetComponent {
     target: Option<ResetItem>,
     visible: bool,
     queue: Queue,
+    theme: Theme,
 }
 
 impl DrawableComponent for ResetComponent {
@@ -31,19 +33,13 @@ impl DrawableComponent for ResetComponent {
             let mut txt = Vec::new();
             txt.push(Text::Styled(
                 Cow::from(strings::RESET_MSG),
-                Style::default().fg(Color::Red),
+                self.theme.text_danger(),
             ));
 
             let area = ui::centered_rect(30, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                Paragraph::new(txt.iter())
-                    .block(
-                        Block::default()
-                            .title(strings::RESET_TITLE)
-                            .borders(Borders::ALL),
-                    )
-                    .alignment(Alignment::Left),
+                dialog_paragraph(strings::RESET_TITLE, txt.iter()),
                 area,
             );
         }
@@ -106,11 +102,12 @@ impl Component for ResetComponent {
 
 impl ResetComponent {
     ///
-    pub fn new(queue: Queue) -> Self {
+    pub fn new(queue: Queue, theme: Theme) -> Self {
         Self {
             target: None,
             visible: false,
             queue,
+            theme,
         }
     }
     ///
