@@ -2,14 +2,15 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
+use crate::components::dialog_paragraph;
 use crate::{keys, strings, ui};
 use crossterm::event::Event;
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
     backend::Backend,
-    layout::{Alignment, Rect},
-    widgets::{Block, Borders, Clear, Paragraph, Text},
+    layout::Rect,
+    widgets::{Clear, Text},
     Frame,
 };
 
@@ -27,14 +28,8 @@ impl DrawableComponent for MsgComponent {
             let area = ui::centered_rect_absolute(65, 25, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                Paragraph::new(txt.iter())
-                    .block(
-                        Block::default()
-                            .title(strings::MSG_TITLE)
-                            .borders(Borders::ALL),
-                    )
-                    .wrap(true)
-                    .alignment(Alignment::Left),
+                dialog_paragraph(strings::MSG_TITLE, txt.iter())
+                    .wrap(true),
                 area,
             );
         }

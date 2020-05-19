@@ -31,6 +31,7 @@ use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
 use spinner::Spinner;
+use std::path::PathBuf;
 use std::{
     env, fs,
     fs::File,
@@ -175,12 +176,18 @@ fn start_terminal<W: Write>(
     Ok(terminal)
 }
 
+#[must_use]
+pub fn get_app_config_path() -> PathBuf {
+    let mut path = dirs::cache_dir().unwrap();
+    path.push("gitui");
+    fs::create_dir_all(&path).unwrap();
+    path
+}
+
 fn setup_logging() {
     if env::var("GITUI_LOGGING").is_ok() {
-        let mut path = dirs::cache_dir().unwrap();
-        path.push("gitui");
+        let mut path = get_app_config_path();
         path.push("gitui.log");
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
 
         let _ = WriteLogger::init(
             LevelFilter::Trace,

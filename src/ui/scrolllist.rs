@@ -38,11 +38,6 @@ where
         self
     }
 
-    pub fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-
     pub fn scroll(mut self, index: usize) -> Self {
         self.scroll = index;
         self

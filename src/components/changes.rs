@@ -3,6 +3,7 @@ use super::{
     statustree::{MoveSelection, StatusTree},
     CommandBlocking, DrawableComponent,
 };
+use crate::ui::style::Theme;
 use crate::{
     components::{CommandInfo, Component},
     keys,
@@ -13,13 +14,7 @@ use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
 use std::{borrow::Cow, convert::From, path::Path};
 use strings::commands;
-use tui::{
-    backend::Backend,
-    layout::Rect,
-    style::{Color, Style},
-    widgets::Text,
-    Frame,
-};
+use tui::{backend::Backend, layout::Rect, widgets::Text, Frame};
 
 ///
 pub struct ChangesComponent {
@@ -30,6 +25,7 @@ pub struct ChangesComponent {
     show_selection: bool,
     is_working_dir: bool,
     queue: Queue,
+    theme: Theme,
 }
 
 impl ChangesComponent {
@@ -39,6 +35,7 @@ impl ChangesComponent {
         focus: bool,
         is_working_dir: bool,
         queue: Queue,
+        theme: Theme,
     ) -> Self {
         Self {
             title: title.to_string(),
@@ -48,6 +45,7 @@ impl ChangesComponent {
             show_selection: focus,
             is_working_dir,
             queue,
+            theme,
         }
     }
 
@@ -154,9 +152,8 @@ impl ChangesComponent {
         item: &FileTreeItem,
         width: u16,
         selected: bool,
+        theme: Theme,
     ) -> Option<Text> {
-        let select_color = Color::Rgb(0, 0, 100);
-
         let indent_str = if item.info.indent == 0 {
             String::from("")
         } else {
@@ -189,18 +186,14 @@ impl ChangesComponent {
                     format!("{} {}{}", status_char, indent_str, file)
                 };
 
-                let mut style =
-                    Style::default().fg(Self::item_color(
-                        status_item
-                            .status
-                            .unwrap_or(StatusItemType::Modified),
-                    ));
+                let status = status_item
+                    .status
+                    .unwrap_or(StatusItemType::Modified);
 
-                if selected {
-                    style = style.bg(select_color);
-                }
-
-                Some(Text::Styled(Cow::from(txt), style))
+                Some(Text::Styled(
+                    Cow::from(txt),
+                    theme.item(status, selected),
+                ))
             }
 
             FileTreeItemKind::Path(path_collapsed) => {
@@ -222,24 +215,11 @@ impl ChangesComponent {
                     )
                 };
 
-                let mut style = Style::default();
-
-                if selected {
-                    style = style.bg(select_color);
-                }
-
-                Some(Text::Styled(Cow::from(txt), style))
+                Some(Text::Styled(
+                    Cow::from(txt),
+                    theme.text(true, selected),
+                ))
             }
-        }
-    }
-
-    fn item_color(item_type: StatusItemType) -> Color {
-        match item_type {
-            StatusItemType::Modified => Color::LightYellow,
-            StatusItemType::New => Color::LightGreen,
-            StatusItemType::Deleted => Color::LightRed,
-            StatusItemType::Renamed => Color::LightMagenta,
-            _ => Color::White,
         }
     }
 
@@ -287,6 +267,7 @@ impl DrawableComponent for ChangesComponent {
                                 .tree
                                 .selection
                                 .map_or(false, |e| e == idx),
+                        self.theme,
                     )
                 },
             );
@@ -298,6 +279,7 @@ impl DrawableComponent for ChangesComponent {
             items,
             self.tree.selection.map(|idx| idx - selection_offset),
             self.focused,
+            self.theme,
         );
     }
 }

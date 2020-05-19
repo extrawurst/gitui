@@ -1,3 +1,4 @@
+use crate::ui::style::Theme;
 use crate::{
     accessors,
     components::{
@@ -99,6 +100,7 @@ impl Status {
     pub fn new(
         sender: &Sender<AsyncNotification>,
         queue: &Queue,
+        theme: Theme,
     ) -> Self {
         Self {
             visible: true,
@@ -109,14 +111,16 @@ impl Status {
                 true,
                 true,
                 queue.clone(),
+                theme,
             ),
             index: ChangesComponent::new(
                 strings::TITLE_INDEX,
                 false,
                 false,
                 queue.clone(),
+                theme,
             ),
-            diff: DiffComponent::new(queue.clone()),
+            diff: DiffComponent::new(queue.clone(), theme),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status: AsyncStatus::new(sender.clone()),
         }

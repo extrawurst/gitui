@@ -1,10 +1,11 @@
 mod scrolllist;
-
+pub(crate) mod style;
+use crate::ui::style::Theme;
 use scrolllist::ScrollableList;
+use tui::style::Modifier;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
     widgets::{Block, Borders, Text},
     Frame,
 };
@@ -76,24 +77,24 @@ pub fn draw_list<'b, B: Backend, L>(
     items: L,
     select: Option<usize>,
     selected: bool,
+    theme: Theme,
 ) where
     L: Iterator<Item = Text<'b>>,
 {
-    let mut style_border = Style::default().fg(Color::DarkGray);
-    let mut style_title = Style::default();
-    if selected {
-        style_border = style_border.fg(Color::Gray);
-        style_title = style_title.modifier(Modifier::BOLD);
-    }
+    let style = if selected {
+        theme.block(selected).modifier(Modifier::BOLD)
+    } else {
+        theme.block(selected)
+    };
+
     let list = ScrollableList::new(items)
         .block(
             Block::default()
                 .title(title)
                 .borders(Borders::ALL)
-                .title_style(style_title)
-                .border_style(style_border),
+                .title_style(style)
+                .border_style(theme.block(selected)),
         )
-        .scroll(select.unwrap_or_default())
-        .style(Style::default().fg(Color::White));
+        .scroll(select.unwrap_or_default());
     f.render_widget(list, r)
 }

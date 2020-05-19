@@ -18,6 +18,8 @@ pub use filetree::FileTreeItemKind;
 pub use help::HelpComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
+use tui::layout::Alignment;
+use tui::widgets::{Block, Borders, Paragraph, Text};
 
 /// creates accessors for a list of components
 ///
@@ -113,4 +115,16 @@ pub trait Component {
     fn hide(&mut self) {}
     ///
     fn show(&mut self) {}
+}
+
+fn dialog_paragraph<'a, 't, T>(
+    title: &'a str,
+    content: T,
+) -> Paragraph<'a, 't, T>
+where
+    T: Iterator<Item = &'t Text<'t>>,
+{
+    Paragraph::new(content)
+        .block(Block::default().title(title).borders(Borders::ALL))
+        .alignment(Alignment::Left)
 }

@@ -2,26 +2,27 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
+use crate::ui::style::Theme;
 use crate::{keys, strings, ui, version::Version};
 use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
 use std::{borrow::Cow, cmp, convert::TryFrom};
 use strings::commands;
+use tui::style::{Modifier, Style};
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
     widgets::{Block, Borders, Clear, Paragraph, Text},
     Frame,
 };
 
 ///
-#[derive(Default)]
 pub struct HelpComponent {
     cmds: Vec<CommandInfo>,
     visible: bool,
     selection: u16,
+    theme: Theme,
 }
 
 impl DrawableComponent for HelpComponent {
@@ -68,10 +69,13 @@ impl DrawableComponent for HelpComponent {
 
             f.render_widget(
                 Paragraph::new(
-                    vec![Text::Raw(Cow::from(format!(
-                        "gitui {}",
-                        Version::new(),
-                    )))]
+                    vec![Text::Styled(
+                        Cow::from(format!(
+                            "gitui {}",
+                            Version::new(),
+                        )),
+                        Style::default(),
+                    )]
                     .iter(),
                 )
                 .alignment(Alignment::Right),
@@ -150,6 +154,14 @@ impl Component for HelpComponent {
 }
 
 impl HelpComponent {
+    pub fn new(theme: Theme) -> Self {
+        Self {
+            cmds: vec![],
+            visible: false,
+            selection: 0,
+            theme,
+        }
+    }
     ///
     pub fn set_cmds(&mut self, cmds: Vec<CommandInfo>) {
         self.cmds = cmds
@@ -187,7 +199,7 @@ impl HelpComponent {
         {
             txt.push(Text::Styled(
                 Cow::from(format!(" {}\n", key)),
-                Style::default().fg(Color::Black).bg(Color::Gray),
+                Style::default().modifier(Modifier::REVERSED),
             ));
 
             txt.extend(
@@ -216,13 +228,10 @@ impl HelpComponent {
                             );
                         }
 
-                        let style = if is_selected {
-                            Style::default().fg(Color::Yellow)
-                        } else {
-                            Style::default()
-                        };
-
-                        Text::Styled(Cow::from(out), style)
+                        Text::Styled(
+                            Cow::from(out),
+                            self.theme.text(true, is_selected),
+                        )
                     })
                     .collect::<Vec<_>>(),
             );
