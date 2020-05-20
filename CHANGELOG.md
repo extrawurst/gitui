@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+![](assets/light-theme.png)
+
 ### Added
 - support color themes and light mode [[@MCord](https://github.com/MCord)] ([#28](https://github.com/extrawurst/gitui/issues/28))
 

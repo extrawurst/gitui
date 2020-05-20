@@ -82,10 +82,10 @@ this will log to:
 
 # color theme
 
-to change the colors of the program you have to modify `theme.ron` file
-[Ron format](https://github.com/ron-rs/ron) located at config path (same as log paths). the list of valid 
-colors can be found in [ColorDef](./src/ui/style.rs#ColorDef) struct. note that rgb colors might not be available 
-on some platforms.
+![](assets/light-theme.png)
+
+In general `gitui` should automatically work on `dark` and `light` terminal themes.
+However you can customize everything to your liking: [see THEMES.md](THEMES.md)
 
 # inspiration
 
