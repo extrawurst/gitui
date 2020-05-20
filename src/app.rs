@@ -137,10 +137,11 @@ impl App {
     }
 
     //TODO: do we need this?
-    ///
+    /// forward ticking to components that require it
     pub fn update(&mut self) {
         trace!("update");
         self.status_tab.update();
+        self.revlog.update();
     }
 
     ///
