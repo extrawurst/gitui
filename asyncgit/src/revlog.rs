@@ -80,24 +80,22 @@ impl AsyncLog {
 
     ///
     pub fn fetch(&mut self) -> Result<()> {
-        if !self.is_pending() {
-            if self.head_changed()? {
-                self.clear()?;
+        if !self.is_pending() && self.head_changed()? {
+            self.clear()?;
 
-                let arc_current = Arc::clone(&self.current);
-                let sender = self.sender.clone();
-                let arc_pending = Arc::clone(&self.pending);
+            let arc_current = Arc::clone(&self.current);
+            let sender = self.sender.clone();
+            let arc_pending = Arc::clone(&self.pending);
 
-                rayon_core::spawn(move || {
-                    scope_time!("async::revlog");
+            rayon_core::spawn(move || {
+                scope_time!("async::revlog");
 
-                    arc_pending.store(true, Ordering::Relaxed);
-                    AsyncLog::fetch_helper(arc_current, &sender)
-                        .expect("failed to fetch");
-                    arc_pending.store(false, Ordering::Relaxed);
-                    Self::notify(&sender);
-                });
-            }
+                arc_pending.store(true, Ordering::Relaxed);
+                AsyncLog::fetch_helper(arc_current, &sender)
+                    .expect("failed to fetch");
+                arc_pending.store(false, Ordering::Relaxed);
+                Self::notify(&sender);
+            });
         }
         Ok(())
     }
