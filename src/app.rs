@@ -328,6 +328,7 @@ impl App {
             Tabs::default()
                 .block(Block::default().borders(Borders::BOTTOM))
                 .titles(&[strings::TAB_STATUS, strings::TAB_LOG])
+                .style(Style::default())
                 .highlight_style(
                     self.theme
                         .tab(true)
