@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2020-05-20
+
 ### Added
 - support color themes and light mode [[@MCord](https://github.com/MCord)] ([#28](https://github.com/extrawurst/gitui/issues/28))
 
