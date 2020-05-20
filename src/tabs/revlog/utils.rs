@@ -57,7 +57,7 @@ impl ItemBatch {
             .min(idx_max);
 
         let needs_data_top = want_min < self.index_offset;
-        let needs_data_bottom = want_max > self.last_idx();
+        let needs_data_bottom = want_max >= self.last_idx();
         needs_data_bottom || needs_data_top
     }
 }

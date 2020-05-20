@@ -28,7 +28,7 @@ static SLICE_SIZE: usize = 1200;
 ///
 pub struct Revlog {
     selection: usize,
-    selection_max: usize,
+    count_total: usize,
     items: ItemBatch,
     git_log: AsyncLog,
     visible: bool,
@@ -50,7 +50,7 @@ impl Revlog {
             items: ItemBatch::default(),
             git_log: AsyncLog::new(sender.clone()),
             selection: 0,
-            selection_max: 0,
+            count_total: 0,
             visible: false,
             first_open_done: false,
             scroll_state: (Instant::now(), 0_f32),
@@ -66,12 +66,16 @@ impl Revlog {
         self.git_log.is_pending()
     }
 
+    fn selection_max(&self) -> usize {
+        self.count_total.saturating_sub(1)
+    }
+
     ///
     pub fn update(&mut self) {
-        self.selection_max =
-            self.git_log.count().unwrap().saturating_sub(1);
+        self.count_total = self.git_log.count().unwrap();
 
-        if self.items.needs_data(self.selection, self.selection_max) {
+        if self.items.needs_data(self.selection, self.selection_max())
+        {
             self.fetch_commits();
         }
 
@@ -119,10 +123,11 @@ impl Revlog {
                 self.selection.saturating_add(page_offset)
             }
             ScrollType::Home => 0,
-            ScrollType::End => self.selection_max,
+            ScrollType::End => self.selection_max(),
         };
 
-        self.selection = cmp::min(self.selection, self.selection_max);
+        self.selection =
+            cmp::min(self.selection, self.selection_max());
 
         self.update();
     }
@@ -244,7 +249,8 @@ impl DrawableComponent for Revlog {
 
         let title = format!(
             "commit {}/{}",
-            self.selection, self.selection_max,
+            self.count_total.saturating_sub(self.selection),
+            self.count_total,
         );
 
         f.render_widget(
