@@ -40,6 +40,8 @@ pub struct Theme {
     commit_time: Color,
     #[serde(with = "ColorDef")]
     commit_author: Color,
+    #[serde(with = "ColorDef")]
+    danger_fg: Color,
 }
 
 impl Theme {
@@ -139,7 +141,7 @@ impl Theme {
     }
 
     pub fn text_danger(&self) -> Style {
-        Style::default().fg(self.diff_line_delete)
+        Style::default().fg(self.danger_fg)
     }
 
     pub fn toolbar(&self, enabled: bool) -> Style {
@@ -227,6 +229,7 @@ impl Default for Theme {
             commit_hash: Color::Magenta,
             commit_time: Color::Blue,
             commit_author: Color::Green,
+            danger_fg: Color::Red,
         }
     }
 }
