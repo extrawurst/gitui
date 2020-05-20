@@ -135,7 +135,17 @@ impl CommitComponent {
             return;
         }
 
-        sync::commit(CWD, &self.msg).unwrap();
+        if let Err(e) = sync::commit(CWD, &self.msg) {
+            error!("commit error: {}", &e);
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ShowMsg(format!(
+                    "commit failed:\n{}",
+                    &e
+                )),
+            );
+            return;
+        }
+
         if let HookResult::NotOk(e) =
             sync::hooks_post_commit(CWD).unwrap()
         {
