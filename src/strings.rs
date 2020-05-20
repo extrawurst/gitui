@@ -164,4 +164,18 @@ pub mod commands {
         "creates a new stash",
         CMD_GROUP_STASHING,
     );
+    ///
+    pub static STASHING_TOGGLE_INDEXED: CommandText =
+        CommandText::new(
+            "Toggle Staged [i]",
+            "toggle including staged files into stash",
+            CMD_GROUP_STASHING,
+        );
+    ///
+    pub static STASHING_TOGGLE_UNTRACKED: CommandText =
+        CommandText::new(
+            "Toggle Untracked [u]",
+            "toggle including untracked files into stash",
+            CMD_GROUP_STASHING,
+        );
 }

@@ -46,12 +46,20 @@ pub struct StatusItem {
 }
 
 ///
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash, PartialEq)]
 pub enum StatusType {
     ///
     WorkingDir,
     ///
     Stage,
+    ///
+    Both,
+}
+
+impl Default for StatusType {
+    fn default() -> Self {
+        StatusType::WorkingDir
+    }
 }
 
 impl Into<StatusShow> for StatusType {
@@ -59,23 +67,33 @@ impl Into<StatusShow> for StatusType {
         match self {
             StatusType::WorkingDir => StatusShow::Workdir,
             StatusType::Stage => StatusShow::Index,
+            StatusType::Both => StatusShow::IndexAndWorkdir,
         }
     }
 }
 
-///
+/// TODO: migrate
 pub fn get_status(
     repo_path: &str,
     status_type: StatusType,
 ) -> Result<Vec<StatusItem>> {
-    scope_time!("get_index");
+    get_status_new(repo_path, status_type, true)
+}
+
+/// TODO: migrate
+pub fn get_status_new(
+    repo_path: &str,
+    status_type: StatusType,
+    include_untracked: bool,
+) -> Result<Vec<StatusItem>> {
+    scope_time!("get_status");
 
     let repo = utils::repo(repo_path)?;
 
     let statuses = repo.statuses(Some(
         StatusOptions::default()
             .show(status_type.into())
-            .include_untracked(true)
+            .include_untracked(include_untracked)
             .renames_head_to_index(true)
             .recurse_untracked_dirs(true),
     ))?;

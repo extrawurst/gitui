@@ -8,12 +8,14 @@ mod diff;
 mod error;
 mod revlog;
 mod status;
+mod status2;
 pub mod sync;
 
 pub use crate::{
     diff::{AsyncDiff, DiffParams},
     revlog::AsyncLog,
     status::AsyncStatus,
+    status2::{AsyncStatus2, StatusParams},
     sync::{
         diff::{DiffLine, DiffLineType, FileDiff},
         status::{StatusItem, StatusItemType},

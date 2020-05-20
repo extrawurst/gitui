@@ -3,11 +3,17 @@ use crate::{
         ChangesComponent, CommandBlocking, CommandInfo, Component,
         DrawableComponent,
     },
+    keys,
     queue::Queue,
     strings,
     ui::style::Theme,
 };
-use asyncgit::AsyncNotification;
+use asyncgit::{
+    sync::status::StatusType, AsyncNotification, AsyncStatus2,
+    StatusParams,
+};
+use crossbeam_channel::Sender;
+use crossterm::event::Event;
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
@@ -25,19 +31,20 @@ pub struct Stashing {
     options: Options,
     index: ChangesComponent,
     theme: Theme,
+    git_status: AsyncStatus2,
 }
 
 impl Stashing {
     ///
     pub fn new(
-        // sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncNotification>,
         queue: &Queue,
         theme: &Theme,
     ) -> Self {
         Self {
             visible: false,
             options: Options {
-                stash_indexed: false,
+                stash_indexed: true,
                 stash_untracked: true,
             },
             index: ChangesComponent::new(
@@ -48,23 +55,39 @@ impl Stashing {
                 theme,
             ),
             theme: *theme,
+            git_status: AsyncStatus2::new(sender.clone()),
         }
     }
 
     ///
-    #[allow(clippy::unused_self)]
-    pub fn update(&mut self) {}
+    pub fn update(&mut self) {
+        let status_type = if self.options.stash_indexed {
+            StatusType::Both
+        } else {
+            StatusType::WorkingDir
+        };
 
-    ///
-    #[allow(clippy::unused_self)]
-    pub fn anything_pending(&self) -> bool {
-        false
+        self.git_status
+            .fetch(StatusParams::new(
+                status_type,
+                self.options.stash_untracked,
+            ))
+            .unwrap();
     }
 
     ///
-    #[allow(clippy::unused_self)]
-    pub fn update_git(&mut self, _ev: AsyncNotification) {
-        //
+    pub fn anything_pending(&self) -> bool {
+        self.git_status.is_pending()
+    }
+
+    ///
+    pub fn update_git(&mut self, ev: AsyncNotification) {
+        if self.visible {
+            if let AsyncNotification::Status = ev {
+                let status = self.git_status.last().unwrap();
+                self.index.update(&status.items);
+            }
+        }
     }
 
     fn get_option_text(&self) -> Vec<Text> {
@@ -138,8 +161,20 @@ impl Component for Stashing {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
+        self.index.commands(out, force_all);
+
         out.push(CommandInfo::new(
             commands::STASHING_SAVE,
+            self.visible && !self.index.is_empty(),
+            self.visible || force_all,
+        ));
+        out.push(CommandInfo::new(
+            commands::STASHING_TOGGLE_INDEXED,
+            self.visible,
+            self.visible || force_all,
+        ));
+        out.push(CommandInfo::new(
+            commands::STASHING_TOGGLE_UNTRACKED,
             self.visible,
             self.visible || force_all,
         ));
@@ -151,9 +186,35 @@ impl Component for Stashing {
         }
     }
 
-    fn event(&mut self, _ev: crossterm::event::Event) -> bool {
+    fn event(&mut self, ev: crossterm::event::Event) -> bool {
         if self.visible {
-            //
+            let conusmed = self.index.event(ev);
+
+            if conusmed {
+                return true;
+            }
+
+            if let Event::Key(k) = ev {
+                return match k {
+                    keys::STASHING_SAVE if !self.index.is_empty() => {
+                        //
+                        true
+                    }
+                    keys::STASHING_TOGGLE_INDEX => {
+                        self.options.stash_indexed =
+                            !self.options.stash_indexed;
+                        self.update();
+                        true
+                    }
+                    keys::STASHING_TOGGLE_UNTRACKED => {
+                        self.options.stash_untracked =
+                            !self.options.stash_untracked;
+                        self.update();
+                        true
+                    }
+                    _ => false,
+                };
+            }
         }
 
         false
@@ -168,6 +229,7 @@ impl Component for Stashing {
     }
 
     fn show(&mut self) {
+        self.update();
         self.visible = true;
     }
 }

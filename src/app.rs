@@ -61,7 +61,7 @@ impl App {
             tab: 0,
             revlog: Revlog::new(&sender, &theme),
             status_tab: Status::new(&sender, &queue, &theme),
-            stashing_tab: Stashing::new(&queue, &theme),
+            stashing_tab: Stashing::new(&sender, &queue, &theme),
             queue,
             theme,
         }
