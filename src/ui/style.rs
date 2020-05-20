@@ -107,6 +107,14 @@ impl Theme {
         }
     }
 
+    pub fn option(&self, on: bool) -> Style {
+        if on {
+            Style::default().fg(self.diff_line_add)
+        } else {
+            Style::default().fg(self.diff_line_delete)
+        }
+    }
+
     pub fn diff_hunk_marker(&self, selected: bool) -> Style {
         if selected {
             Style::default().bg(self.selection_bg)

@@ -3,6 +3,7 @@ pub static TITLE_DIFF: &str = "Diff: ";
 pub static TITLE_INDEX: &str = "Staged Changes [2]";
 
 pub static TAB_STATUS: &str = "Status";
+pub static TAB_STASHING: &str = "Stashing";
 pub static TAB_LOG: &str = "Log";
 pub static TAB_DIVIDER: &str = "  |  ";
 
@@ -16,6 +17,9 @@ pub static RESET_MSG: &str = "confirm file reset?";
 
 pub static HELP_TITLE: &str = "Help: all commands";
 
+pub static STASHING_FILES_TITLE: &str = "Files to Stash";
+pub static STASHING_OPTIONS_TITLE: &str = "Options";
+
 pub mod commands {
     use crate::components::CommandText;
 
@@ -23,6 +27,7 @@ pub mod commands {
     static CMD_GROUP_DIFF: &str = "Diff";
     static CMD_GROUP_CHANGES: &str = "Changes";
     static CMD_GROUP_COMMIT: &str = "Commit";
+    static CMD_GROUP_STASHING: &str = "Stashing";
 
     ///
     pub static TOGGLE_TABS: CommandText = CommandText::new(
@@ -151,5 +156,12 @@ pub mod commands {
         "Confirm [enter]",
         "resets the file in question",
         CMD_GROUP_GENERAL,
+    );
+
+    ///
+    pub static STASHING_SAVE: CommandText = CommandText::new(
+        "Save [s]",
+        "creates a new stash",
+        CMD_GROUP_STASHING,
     );
 }

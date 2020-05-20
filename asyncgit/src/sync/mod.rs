@@ -6,6 +6,7 @@ mod hooks;
 mod hunks;
 mod logwalker;
 mod reset;
+mod stash;
 pub mod status;
 mod tags;
 pub mod utils;
