@@ -68,7 +68,7 @@ the simplest way to start playing around with `gitui` is to have `cargo` build/i
 cargo install gitui
 ```
 
-# diagnostics:
+# diagnostics
 
 to enable logging:
 ```
