@@ -127,7 +127,7 @@ impl CommitComponent {
         {
             error!("commit-msg hook error: {}", e);
             self.queue.borrow_mut().push_back(
-                InternalEvent::ShowMsg(format!(
+                InternalEvent::ShowErrorMsg(format!(
                     "commit-msg hook error:\n{}",
                     e
                 )),
@@ -138,7 +138,7 @@ impl CommitComponent {
         if let Err(e) = sync::commit(CWD, &self.msg) {
             error!("commit error: {}", &e);
             self.queue.borrow_mut().push_back(
-                InternalEvent::ShowMsg(format!(
+                InternalEvent::ShowErrorMsg(format!(
                     "commit failed:\n{}",
                     &e
                 )),
@@ -151,7 +151,7 @@ impl CommitComponent {
         {
             error!("post-commit hook error: {}", e);
             self.queue.borrow_mut().push_back(
-                InternalEvent::ShowMsg(format!(
+                InternalEvent::ShowErrorMsg(format!(
                     "post-commit hook error:\n{}",
                     e
                 )),

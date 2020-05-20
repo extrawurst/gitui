@@ -2,36 +2,45 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{components::dialog_paragraph, keys, strings, ui};
+use crate::{keys, strings, ui};
 use crossterm::event::Event;
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
     backend::Backend,
-    layout::Rect,
-    widgets::{Clear, Text},
+    layout::{Alignment, Rect},
+    widgets::{Block, Borders, Clear, Paragraph, Text},
     Frame,
 };
+use ui::style::Theme;
 
-#[derive(Default)]
 pub struct MsgComponent {
     msg: String,
     visible: bool,
+    theme: Theme,
 }
 
 impl DrawableComponent for MsgComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
-        if self.visible {
-            let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
-
-            let area = ui::centered_rect_absolute(65, 25, f.size());
-            f.render_widget(Clear, area);
-            f.render_widget(
-                dialog_paragraph(strings::MSG_TITLE, txt.iter())
-                    .wrap(true),
-                area,
-            );
+        if !self.visible {
+            return;
         }
+        let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
+
+        let area = ui::centered_rect_absolute(65, 25, f.size());
+        f.render_widget(Clear, area);
+        f.render_widget(
+            Paragraph::new(txt.iter())
+                .block(
+                    Block::default()
+                        .title(strings::MSG_TITLE_ERROR)
+                        .title_style(self.theme.text_danger())
+                        .borders(Borders::ALL),
+                )
+                .alignment(Alignment::Left)
+                .wrap(true),
+            area,
+        );
     }
 }
 
@@ -78,6 +87,13 @@ impl Component for MsgComponent {
 }
 
 impl MsgComponent {
+    pub fn new(theme: &Theme) -> Self {
+        Self {
+            msg: String::new(),
+            visible: false,
+            theme: *theme,
+        }
+    }
     ///
     pub fn show_msg(&mut self, msg: &str) {
         self.msg = msg.to_string();

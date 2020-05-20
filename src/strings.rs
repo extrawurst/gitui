@@ -8,7 +8,7 @@ pub static TAB_DIVIDER: &str = "  |  ";
 
 pub static CMD_SPLITTER: &str = " ";
 
-pub static MSG_TITLE: &str = "Info";
+pub static MSG_TITLE_ERROR: &str = "Error";
 pub static COMMIT_TITLE: &str = "Commit";
 pub static COMMIT_MSG: &str = "type commit message..";
 pub static RESET_TITLE: &str = "Reset";

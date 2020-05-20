@@ -139,7 +139,7 @@ impl Theme {
     }
 
     pub fn text_danger(&self) -> Style {
-        Style::default().fg(self.diff_file_removed)
+        Style::default().fg(self.diff_line_delete)
     }
 
     pub fn toolbar(&self, enabled: bool) -> Style {

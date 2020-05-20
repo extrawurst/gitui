@@ -30,7 +30,7 @@ pub enum InternalEvent {
     ///
     AddHunk(u64),
     ///
-    ShowMsg(String),
+    ShowErrorMsg(String),
     ///
     Update(NeedsUpdate),
     ///

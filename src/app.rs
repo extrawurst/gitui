@@ -56,7 +56,7 @@ impl App {
             do_quit: false,
             current_commands: Vec::new(),
             help: HelpComponent::new(&theme),
-            msg: MsgComponent::default(),
+            msg: MsgComponent::new(&theme),
             tab: 0,
             revlog: Revlog::new(&sender, &theme),
             status_tab: Status::new(&sender, &queue, &theme),
@@ -263,7 +263,7 @@ impl App {
                     }
                 }
             }
-            InternalEvent::ShowMsg(msg) => {
+            InternalEvent::ShowErrorMsg(msg) => {
                 self.msg.show_msg(msg.as_str());
                 flags.insert(NeedsUpdate::ALL);
             }
