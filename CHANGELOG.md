@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- log tab refreshes when head changes ([#78](https://github.com/extrawurst/gitui/issues/78))
+
 ## [0.3.0] - 2020-05-20
 
 ### Added

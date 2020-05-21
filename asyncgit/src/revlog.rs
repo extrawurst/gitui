@@ -1,6 +1,11 @@
-use crate::{error::Result, sync, AsyncNotification, CWD};
+use crate::{
+    error::Result,
+    sync::{utils::repo, LogWalker},
+    AsyncNotification, CWD,
+};
 use crossbeam_channel::Sender;
 use git2::Oid;
+use log::debug;
 use scopetime::scope_time;
 use std::{
     iter::FromIterator,
@@ -9,7 +14,6 @@ use std::{
         Arc, Mutex,
     },
 };
-use sync::{utils::repo, LogWalker};
 
 ///
 pub struct AsyncLog {
@@ -55,8 +59,28 @@ impl AsyncLog {
     }
 
     ///
+    fn current_head(&self) -> Result<Oid> {
+        Ok(self.current.lock()?.first().map_or(Oid::zero(), |f| *f))
+    }
+
+    ///
+    fn head_changed(&self) -> Result<bool> {
+        if let Ok(head) = repo(CWD)?.head() {
+            if let Some(head) = head.target() {
+                debug!(
+                    "repo head vs current log head: {} vs. {}",
+                    head,
+                    self.current_head()?
+                );
+                return Ok(head != self.current_head()?);
+            }
+        }
+        Ok(false)
+    }
+
+    ///
     pub fn fetch(&mut self) -> Result<()> {
-        if !self.is_pending() {
+        if !self.is_pending() && self.head_changed()? {
             self.clear()?;
 
             let arc_current = Arc::clone(&self.current);
@@ -65,6 +89,7 @@ impl AsyncLog {
 
             rayon_core::spawn(move || {
                 scope_time!("async::revlog");
+
                 arc_pending.store(true, Ordering::Relaxed);
                 AsyncLog::fetch_helper(arc_current, &sender)
                     .expect("failed to fetch");

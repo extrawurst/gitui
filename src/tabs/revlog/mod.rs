@@ -72,9 +72,15 @@ impl Revlog {
 
     ///
     pub fn update(&mut self) {
+        if self.visible {
+            self.git_log.fetch().unwrap();
+        }
+
+        let old_total = self.count_total;
         self.count_total = self.git_log.count().unwrap();
 
         if self.items.needs_data(self.selection, self.selection_max())
+            || old_total != self.count_total
         {
             self.fetch_commits();
         }
