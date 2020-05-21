@@ -58,6 +58,7 @@ brew install extrawurst/tap/gitui
 ### requirements
 
 install `rust`/`cargo`: https://www.rust-lang.org/tools/install
+
 min rust version: `1.42`
 
 ### cargo install
