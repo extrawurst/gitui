@@ -27,19 +27,13 @@ pub struct HelpComponent {
 impl DrawableComponent for HelpComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
         if self.visible {
-            let (txt, selected_line) = self.get_text();
-
-            let height = 24;
-            let scroll_threshold = height / 3;
-
-            let scroll = if selected_line > scroll_threshold {
-                self.selection - scroll_threshold
-            } else {
-                0
-            };
+            const SIZE: (u16, u16) = (65, 24);
+            let scroll_threshold = SIZE.1 / 3;
+            let scroll =
+                self.selection.saturating_sub(scroll_threshold);
 
             let area =
-                ui::centered_rect_absolute(65, height, f.size());
+                ui::centered_rect_absolute(SIZE.0, SIZE.1, f.size());
 
             f.render_widget(Clear, area);
             f.render_widget(
@@ -60,7 +54,7 @@ impl DrawableComponent for HelpComponent {
                 .split(area);
 
             f.render_widget(
-                Paragraph::new(txt.iter())
+                Paragraph::new(self.get_text().iter())
                     .scroll(scroll)
                     .alignment(Alignment::Left),
                 chunks[0],
@@ -182,16 +176,17 @@ impl HelpComponent {
         };
         new_selection = cmp::max(new_selection, 0);
 
-        if let Ok(max) = u16::try_from(self.cmds.len() - 1) {
+        if let Ok(max) =
+            u16::try_from(self.cmds.len().saturating_sub(1))
+        {
             self.selection = cmp::min(new_selection, max);
         }
     }
 
-    fn get_text<'a>(&self) -> (Vec<Text<'a>>, u16) {
+    fn get_text<'a>(&self) -> Vec<Text<'a>> {
         let mut txt = Vec::new();
 
         let mut processed = 0_u16;
-        let mut selected_line = 0_u16;
 
         for (key, group) in
             &self.cmds.iter().group_by(|e| e.text.group)
@@ -206,9 +201,7 @@ impl HelpComponent {
                     .sorted_by_key(|e| e.order)
                     .map(|e| {
                         let is_selected = self.selection == processed;
-                        if is_selected {
-                            selected_line = processed;
-                        }
+
                         processed += 1;
 
                         let mut out = String::from(if is_selected {
@@ -236,6 +229,6 @@ impl HelpComponent {
             );
         }
 
-        (txt, selected_line)
+        txt
     }
 }
