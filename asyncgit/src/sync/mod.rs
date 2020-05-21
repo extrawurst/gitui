@@ -6,6 +6,7 @@ mod hooks;
 mod hunks;
 mod logwalker;
 mod reset;
+mod stash;
 pub mod status;
 mod tags;
 pub mod utils;
@@ -17,6 +18,7 @@ pub use logwalker::LogWalker;
 pub use reset::{
     reset_stage, reset_workdir_file, reset_workdir_folder,
 };
+pub use stash::stash_save;
 pub use tags::{get_tags, Tags};
 pub use utils::{
     commit, stage_add_all, stage_add_file, stage_addremoved,

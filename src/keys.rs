@@ -41,3 +41,8 @@ pub const ENTER: KeyEvent = no_mod(KeyCode::Enter);
 pub const STATUS_STAGE_FILE: KeyEvent = no_mod(KeyCode::Enter);
 pub const STATUS_RESET_FILE: KeyEvent =
     with_mod(KeyCode::Char('D'), KeyModifiers::SHIFT);
+pub const STASHING_SAVE: KeyEvent = no_mod(KeyCode::Char('s'));
+pub const STASHING_TOGGLE_UNTRACKED: KeyEvent =
+    no_mod(KeyCode::Char('u'));
+pub const STASHING_TOGGLE_INDEX: KeyEvent =
+    no_mod(KeyCode::Char('i'));
