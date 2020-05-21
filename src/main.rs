@@ -54,11 +54,9 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    enable_raw_mode()?;
-    io::stdout().execute(EnterAlternateScreen)?;
+    setup_terminal()?;
     defer! {
-        io::stdout().execute(LeaveAlternateScreen).unwrap();
-        disable_raw_mode().unwrap();
+        shutdown_terminal().expect("shutdown failed");
     }
 
     set_panic_handlers();
@@ -115,6 +113,18 @@ fn main() -> Result<()> {
         }
     }
 
+    Ok(())
+}
+
+fn setup_terminal() -> Result<()> {
+    enable_raw_mode()?;
+    io::stdout().execute(EnterAlternateScreen)?;
+    Ok(())
+}
+
+fn shutdown_terminal() -> Result<()> {
+    io::stdout().execute(LeaveAlternateScreen)?;
+    disable_raw_mode()?;
     Ok(())
 }
 
@@ -202,6 +212,8 @@ fn set_panic_handlers() {
     panic::set_hook(Box::new(|e| {
         let backtrace = Backtrace::new();
         error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+        shutdown_terminal().expect("shutdown failed inside panic");
+        eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
     }));
 
     // global threadpool
