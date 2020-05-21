@@ -2,19 +2,18 @@ mod changes;
 mod command;
 mod commit;
 mod diff;
-mod filetree;
 mod help;
 mod msg;
 mod reset;
-mod statustree;
+mod utils;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
 pub use diff::DiffComponent;
-pub use filetree::FileTreeItemKind;
 pub use help::HelpComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
+pub use utils::filetree::FileTreeItemKind;
 
 use crossterm::event::Event;
 use tui::{

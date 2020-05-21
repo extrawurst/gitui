@@ -1,6 +1,8 @@
 use super::{
-    filetree::{FileTreeItem, FileTreeItemKind},
-    statustree::{MoveSelection, StatusTree},
+    utils::{
+        filetree::{FileTreeItem, FileTreeItemKind},
+        statustree::{MoveSelection, StatusTree},
+    },
     CommandBlocking, DrawableComponent,
 };
 use crate::{
