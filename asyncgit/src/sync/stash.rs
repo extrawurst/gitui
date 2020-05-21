@@ -34,17 +34,29 @@ pub fn get_stashes(repo_path: &str) -> Result<StashItems> {
     Ok(StashItems(list))
 }
 
-// private just for testing right now
-fn stash_save(repo_path: &str, message: &str) -> Result<()> {
+///
+pub fn stash_save(
+    repo_path: &str,
+    message: Option<&str>,
+    include_untracked: bool,
+    keep_index: bool,
+) -> Result<()> {
     scope_time!("stash_save");
 
     let mut repo = repo(repo_path)?;
 
     let sig = repo.signature()?;
 
-    let options = StashFlags::INCLUDE_UNTRACKED;
+    let mut options = StashFlags::DEFAULT;
 
-    repo.stash_save(&sig, message, Some(options))?;
+    if include_untracked {
+        options.insert(StashFlags::INCLUDE_UNTRACKED);
+    }
+    if keep_index {
+        options.insert(StashFlags::KEEP_INDEX)
+    }
+
+    repo.stash_save2(&sig, message, Some(options))?;
 
     Ok(())
 }
@@ -61,7 +73,10 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        assert_eq!(stash_save(repo_path, "").is_ok(), false);
+        assert_eq!(
+            stash_save(repo_path, None, true, false).is_ok(),
+            false
+        );
 
         assert_eq!(
             get_stashes(repo_path).unwrap().0.is_empty(),
@@ -80,7 +95,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
-        stash_save(repo_path, "stashname")?;
+        stash_save(repo_path, None, true, false)?;
 
         assert_eq!(get_statuses(repo_path), (0, 0));
 
@@ -96,7 +111,7 @@ mod tests {
         File::create(&root.join("foo.txt"))?
             .write_all(b"test\nfoo")?;
 
-        stash_save(repo_path, "foo")?;
+        stash_save(repo_path, Some("foo"), true, false)?;
 
         let res = get_stashes(repo_path)?;
 

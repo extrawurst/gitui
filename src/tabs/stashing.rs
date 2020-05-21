@@ -4,13 +4,13 @@ use crate::{
         FileTreeComponent,
     },
     keys,
-    queue::Queue,
+    queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
     ui::style::Theme,
 };
 use asyncgit::{
-    sync::status::StatusType, AsyncNotification, AsyncStatus2,
-    StatusParams,
+    sync::{self, status::StatusType},
+    AsyncNotification, AsyncStatus2, StatusParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -32,6 +32,7 @@ pub struct Stashing {
     index: FileTreeComponent,
     theme: Theme,
     git_status: AsyncStatus2,
+    queue: Queue,
 }
 
 impl Stashing {
@@ -55,6 +56,7 @@ impl Stashing {
             ),
             theme: *theme,
             git_status: AsyncStatus2::new(sender.clone()),
+            queue: queue.clone(),
         }
     }
 
@@ -196,7 +198,20 @@ impl Component for Stashing {
             if let Event::Key(k) = ev {
                 return match k {
                     keys::STASHING_SAVE if !self.index.is_empty() => {
-                        //
+                        if sync::stash_save(
+                            CWD,
+                            None,
+                            self.options.stash_untracked,
+                            !self.options.stash_indexed,
+                        )
+                        .is_ok()
+                        {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::Update(
+                                    NeedsUpdate::ALL,
+                                ),
+                            );
+                        }
                         true
                     }
                     keys::STASHING_TOGGLE_INDEX => {
