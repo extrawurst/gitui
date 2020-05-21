@@ -1,7 +1,7 @@
 use crate::{
     components::{
-        ChangesComponent, CommandBlocking, CommandInfo, Component,
-        DrawableComponent,
+        CommandBlocking, CommandInfo, Component, DrawableComponent,
+        FileTreeComponent,
     },
     keys,
     queue::Queue,
@@ -29,7 +29,7 @@ struct Options {
 pub struct Stashing {
     visible: bool,
     options: Options,
-    index: ChangesComponent,
+    index: FileTreeComponent,
     theme: Theme,
     git_status: AsyncStatus2,
 }
@@ -47,9 +47,8 @@ impl Stashing {
                 stash_indexed: true,
                 stash_untracked: true,
             },
-            index: ChangesComponent::new(
+            index: FileTreeComponent::new(
                 strings::STASHING_FILES_TITLE,
-                true,
                 true,
                 queue.clone(),
                 theme,
