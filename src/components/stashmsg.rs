@@ -57,7 +57,7 @@ impl Component for StashMsgComponent {
                             Some(self.input.get_text().as_str())
                         },
                         self.options.stash_untracked,
-                        !self.options.stash_indexed,
+                        self.options.keep_index,
                     )
                     .is_ok()
                     {

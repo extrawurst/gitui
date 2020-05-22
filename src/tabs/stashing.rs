@@ -26,7 +26,7 @@ use tui::{
 #[derive(Default, Clone, Copy)]
 pub struct StashingOptions {
     pub stash_untracked: bool,
-    pub stash_indexed: bool,
+    pub keep_index: bool,
 }
 
 pub struct Stashing {
@@ -56,7 +56,7 @@ impl Stashing {
             ),
             visible: false,
             options: StashingOptions {
-                stash_indexed: true,
+                keep_index: false,
                 stash_untracked: true,
             },
             theme: *theme,
@@ -67,15 +67,9 @@ impl Stashing {
 
     ///
     pub fn update(&mut self) {
-        let status_type = if self.options.stash_indexed {
-            StatusType::Both
-        } else {
-            StatusType::WorkingDir
-        };
-
         self.git_status
             .fetch(StatusParams::new(
-                status_type,
+                StatusType::Both,
                 self.options.stash_untracked,
             ))
             .unwrap();
@@ -115,13 +109,13 @@ impl Stashing {
             bracket_close.clone(),
             Text::Raw(Cow::from(" stash untracked\n")),
             bracket_open,
-            if self.options.stash_indexed {
+            if self.options.keep_index {
                 option_on.clone()
             } else {
                 option_off.clone()
             },
             bracket_close,
-            Text::Raw(Cow::from(" stash staged")),
+            Text::Raw(Cow::from(" keep index")),
         ]
     }
 }
@@ -206,8 +200,8 @@ impl Component for Stashing {
                         true
                     }
                     keys::STASHING_TOGGLE_INDEX => {
-                        self.options.stash_indexed =
-                            !self.options.stash_indexed;
+                        self.options.keep_index =
+                            !self.options.keep_index;
                         self.update();
                         true
                     }
