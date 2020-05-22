@@ -25,12 +25,14 @@ release-linux-musl:
 test:
 	cargo test --workspace
 
-clippy:
+check:
+	cargo fmt -- --check
 	cargo clean -p gitui -p asyncgit -p scopetime
 	cargo clippy --all-features
 
-clippy-pedantic:
-	cargo clean
+check-pedantic:
+	cargo fmt -- --check
+	cargo clean -p gitui -p asyncgit -p scopetime
 	cargo clippy --all-features -- -W clippy::pedantic
 
 install:
