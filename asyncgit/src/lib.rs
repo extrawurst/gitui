@@ -12,7 +12,7 @@ pub mod sync;
 
 pub use crate::{
     diff::{AsyncDiff, DiffParams},
-    revlog::AsyncLog,
+    revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
     sync::{
         diff::{DiffLine, DiffLineType, FileDiff},

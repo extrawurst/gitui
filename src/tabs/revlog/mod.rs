@@ -10,7 +10,7 @@ use crate::{
     ui::calc_scroll_top,
     ui::style::Theme,
 };
-use asyncgit::{sync, AsyncLog, AsyncNotification, CWD};
+use asyncgit::{sync, AsyncLog, AsyncNotification, CWD, FetchStatus};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp, convert::TryFrom, time::Instant};
@@ -32,7 +32,6 @@ pub struct Revlog {
     items: ItemBatch,
     git_log: AsyncLog,
     visible: bool,
-    first_open_done: bool,
     scroll_state: (Instant, f32),
     tags: Tags,
     current_size: (u16, u16),
@@ -52,7 +51,6 @@ impl Revlog {
             selection: 0,
             count_total: 0,
             visible: false,
-            first_open_done: false,
             scroll_state: (Instant::now(), 0_f32),
             tags: Tags::new(),
             current_size: (0, 0),
@@ -73,20 +71,22 @@ impl Revlog {
     ///
     pub fn update(&mut self) {
         if self.visible {
-            self.git_log.fetch().unwrap();
-        }
+            let log_changed =
+                self.git_log.fetch().unwrap() == FetchStatus::Started;
 
-        let old_total = self.count_total;
-        self.count_total = self.git_log.count().unwrap();
+            self.count_total = self.git_log.count().unwrap();
 
-        if self.items.needs_data(self.selection, self.selection_max())
-            || old_total != self.count_total
-        {
-            self.fetch_commits();
-        }
+            if self
+                .items
+                .needs_data(self.selection, self.selection_max())
+                || log_changed
+            {
+                self.fetch_commits();
+            }
 
-        if self.tags.is_empty() {
-            self.tags = sync::get_tags(CWD).unwrap();
+            if self.tags.is_empty() {
+                self.tags = sync::get_tags(CWD).unwrap();
+            }
         }
     }
 
@@ -340,14 +340,11 @@ impl Component for Revlog {
 
     fn hide(&mut self) {
         self.visible = false;
+        self.git_log.set_background();
     }
 
     fn show(&mut self) {
         self.visible = true;
-
-        if !self.first_open_done {
-            self.first_open_done = true;
-            self.git_log.fetch().unwrap();
-        }
+        self.git_log.fetch().unwrap();
     }
 }

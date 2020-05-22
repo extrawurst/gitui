@@ -13,16 +13,32 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
     },
+    thread,
+    time::Duration,
 };
+
+///
+#[derive(PartialEq)]
+pub enum FetchStatus {
+    /// previous fetch still running
+    Pending,
+    /// no change expected
+    NoChange,
+    /// new walk was started
+    Started,
+}
 
 ///
 pub struct AsyncLog {
     current: Arc<Mutex<Vec<Oid>>>,
     sender: Sender<AsyncNotification>,
     pending: Arc<AtomicBool>,
+    background: Arc<AtomicBool>,
 }
 
-static LIMIT_COUNT: usize = 1000;
+static LIMIT_COUNT: usize = 3000;
+static SLEEP_FOREGROUND: Duration = Duration::from_millis(2);
+static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
 impl AsyncLog {
     ///
@@ -31,6 +47,7 @@ impl AsyncLog {
             current: Arc::new(Mutex::new(Vec::new())),
             sender,
             pending: Arc::new(AtomicBool::new(false)),
+            background: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -59,6 +76,11 @@ impl AsyncLog {
     }
 
     ///
+    pub fn set_background(&mut self) {
+        self.background.store(true, Ordering::Relaxed)
+    }
+
+    ///
     fn current_head(&self) -> Result<Oid> {
         Ok(self.current.lock()?.first().map_or(Oid::zero(), |f| *f))
     }
@@ -79,29 +101,44 @@ impl AsyncLog {
     }
 
     ///
-    pub fn fetch(&mut self) -> Result<()> {
-        if !self.is_pending() && self.head_changed()? {
-            self.clear()?;
+    pub fn fetch(&mut self) -> Result<FetchStatus> {
+        self.background.store(false, Ordering::Relaxed);
 
-            let arc_current = Arc::clone(&self.current);
-            let sender = self.sender.clone();
-            let arc_pending = Arc::clone(&self.pending);
-
-            rayon_core::spawn(move || {
-                scope_time!("async::revlog");
-
-                arc_pending.store(true, Ordering::Relaxed);
-                AsyncLog::fetch_helper(arc_current, &sender)
-                    .expect("failed to fetch");
-                arc_pending.store(false, Ordering::Relaxed);
-                Self::notify(&sender);
-            });
+        if self.is_pending() {
+            return Ok(FetchStatus::Pending);
         }
-        Ok(())
+
+        if !self.head_changed()? {
+            return Ok(FetchStatus::NoChange);
+        }
+
+        self.clear()?;
+
+        let arc_current = Arc::clone(&self.current);
+        let sender = self.sender.clone();
+        let arc_pending = Arc::clone(&self.pending);
+        let arc_background = Arc::clone(&self.background);
+
+        rayon_core::spawn(move || {
+            scope_time!("async::revlog");
+
+            arc_pending.store(true, Ordering::Relaxed);
+            AsyncLog::fetch_helper(
+                arc_current,
+                arc_background,
+                &sender,
+            )
+            .expect("failed to fetch");
+            arc_pending.store(false, Ordering::Relaxed);
+            Self::notify(&sender);
+        });
+
+        Ok(FetchStatus::Started)
     }
 
     fn fetch_helper(
         arc_current: Arc<Mutex<Vec<Oid>>>,
+        arc_background: Arc<AtomicBool>,
         sender: &Sender<AsyncNotification>,
     ) -> Result<()> {
         let mut entries = Vec::with_capacity(LIMIT_COUNT);
@@ -121,6 +158,14 @@ impl AsyncLog {
                 break;
             } else {
                 Self::notify(&sender);
+
+                let sleep_duration =
+                    if arc_background.load(Ordering::Relaxed) {
+                        SLEEP_BACKGROUND
+                    } else {
+                        SLEEP_FOREGROUND
+                    };
+                thread::sleep(sleep_duration);
             }
         }
 
