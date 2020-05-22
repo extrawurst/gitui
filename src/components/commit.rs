@@ -80,7 +80,11 @@ impl CommitComponent {
     pub fn new(queue: Queue, theme: &Theme) -> Self {
         Self {
             queue,
-            input: TextInputComponent::new(theme),
+            input: TextInputComponent::new(
+                theme,
+                strings::COMMIT_TITLE,
+                strings::COMMIT_MSG,
+            ),
         }
     }
 

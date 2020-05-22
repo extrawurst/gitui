@@ -96,7 +96,11 @@ impl StashMsgComponent {
         Self {
             options: StashingOptions::default(),
             queue,
-            input: TextInputComponent::new(theme),
+            input: TextInputComponent::new(
+                theme,
+                strings::STASH_POPUP_TITLE,
+                strings::STASH_POPUP_MSG,
+            ),
         }
     }
 }

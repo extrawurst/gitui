@@ -18,6 +18,8 @@ use tui::{
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
 pub struct TextInputComponent {
+    title: String,
+    default_msg: String,
     msg: String,
     visible: bool,
     theme: Theme,
@@ -25,11 +27,17 @@ pub struct TextInputComponent {
 
 impl TextInputComponent {
     ///
-    pub fn new(theme: &Theme) -> Self {
+    pub fn new(
+        theme: &Theme,
+        title: &str,
+        default_msg: &str,
+    ) -> Self {
         Self {
             msg: String::default(),
             visible: false,
             theme: *theme,
+            title: title.to_string(),
+            default_msg: default_msg.to_string(),
         }
     }
 
@@ -49,7 +57,7 @@ impl DrawableComponent for TextInputComponent {
         if self.visible {
             let txt = if self.msg.is_empty() {
                 [Text::Styled(
-                    Cow::from(strings::COMMIT_MSG),
+                    Cow::from(self.default_msg.as_str()),
                     self.theme.text(false, false),
                 )]
             } else {
@@ -62,7 +70,7 @@ impl DrawableComponent for TextInputComponent {
             let area = ui::centered_rect(60, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                dialog_paragraph(strings::COMMIT_TITLE, txt.iter()),
+                dialog_paragraph(self.title.as_str(), txt.iter()),
                 area,
             );
         }

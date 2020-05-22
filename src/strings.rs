@@ -12,6 +12,8 @@ pub static CMD_SPLITTER: &str = " ";
 pub static MSG_TITLE_ERROR: &str = "Error";
 pub static COMMIT_TITLE: &str = "Commit";
 pub static COMMIT_MSG: &str = "type commit message..";
+pub static STASH_POPUP_TITLE: &str = "Stash";
+pub static STASH_POPUP_MSG: &str = "type name (optional)";
 pub static RESET_TITLE: &str = "Reset";
 pub static RESET_MSG: &str = "confirm file reset?";
 
