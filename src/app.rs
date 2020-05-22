@@ -3,7 +3,7 @@ use crate::{
     components::{
         event_pump, CommandBlocking, CommandInfo, CommitComponent,
         Component, DrawableComponent, HelpComponent, MsgComponent,
-        ResetComponent,
+        ResetComponent, StashMsgComponent,
     },
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
@@ -34,6 +34,7 @@ pub struct App {
     msg: MsgComponent,
     reset: ResetComponent,
     commit: CommitComponent,
+    stashmsg_popup: StashMsgComponent,
     current_commands: Vec<CommandInfo>,
     tab: usize,
     revlog: Revlog,
@@ -54,6 +55,10 @@ impl App {
         Self {
             reset: ResetComponent::new(queue.clone(), &theme),
             commit: CommitComponent::new(queue.clone(), &theme),
+            stashmsg_popup: StashMsgComponent::new(
+                queue.clone(),
+                &theme,
+            ),
             do_quit: false,
             current_commands: Vec::new(),
             help: HelpComponent::new(&theme),
@@ -181,7 +186,16 @@ impl App {
 impl App {
     accessors!(
         self,
-        [msg, reset, commit, help, revlog, status_tab, stashing_tab]
+        [
+            msg,
+            reset,
+            commit,
+            stashmsg_popup,
+            help,
+            revlog,
+            status_tab,
+            stashing_tab
+        ]
     );
 
     fn check_quit(&mut self, ev: Event) -> bool {
@@ -292,6 +306,9 @@ impl App {
             }
             InternalEvent::Update(u) => flags.insert(u),
             InternalEvent::OpenCommit => self.commit.show(),
+            InternalEvent::PopupStashing(_opts) => {
+                self.stashmsg_popup.show()
+            }
         };
 
         flags
@@ -341,6 +358,7 @@ impl App {
         let size = f.size();
 
         self.commit.draw(f, size);
+        self.stashmsg_popup.draw(f, size);
         self.reset.draw(f, size);
         self.help.draw(f, size);
         self.msg.draw(f, size);

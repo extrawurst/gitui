@@ -6,6 +6,7 @@ mod filetree;
 mod help;
 mod msg;
 mod reset;
+mod stashmsg;
 mod textinput;
 mod utils;
 pub use changes::ChangesComponent;
@@ -16,6 +17,7 @@ pub use filetree::FileTreeComponent;
 pub use help::HelpComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
+pub use stashmsg::StashMsgComponent;
 pub use utils::filetree::FileTreeItemKind;
 
 use crossterm::event::Event;

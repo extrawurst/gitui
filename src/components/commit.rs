@@ -29,16 +29,13 @@ impl Component for CommitComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
-        _force_all: bool,
+        force_all: bool,
     ) -> CommandBlocking {
+        self.input.commands(out, force_all);
+
         out.push(CommandInfo::new(
             commands::COMMIT_ENTER,
             self.can_commit(),
-            self.is_visible(),
-        ));
-        out.push(CommandInfo::new(
-            commands::CLOSE_POPUP,
-            true,
             self.is_visible(),
         ));
         visibility_blocking(self)

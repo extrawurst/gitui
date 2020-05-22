@@ -75,11 +75,14 @@ impl Component for TextInputComponent {
         out: &mut Vec<CommandInfo>,
         _force_all: bool,
     ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            commands::CLOSE_POPUP,
-            true,
-            self.visible,
-        ));
+        out.push(
+            CommandInfo::new(
+                commands::CLOSE_POPUP,
+                true,
+                self.visible,
+            )
+            .order(1),
+        );
         visibility_blocking(self)
     }
 

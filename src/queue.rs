@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use crate::tabs::StashingOptions;
 
 bitflags! {
     /// flags defining what part of the app need to update
@@ -35,6 +36,8 @@ pub enum InternalEvent {
     Update(NeedsUpdate),
     ///
     OpenCommit,
+    ///
+    PopupStashing(StashingOptions),
 }
 
 ///

@@ -1,17 +1,18 @@
 use crate::{
     accessors,
     components::{
-        command_pump, event_pump, CommandBlocking, CommandInfo,
-        Component, DrawableComponent, FileTreeComponent,
+        command_pump, event_pump, visibility_blocking,
+        CommandBlocking, CommandInfo, Component, DrawableComponent,
+        FileTreeComponent,
     },
     keys,
-    queue::{InternalEvent, NeedsUpdate, Queue},
+    queue::{InternalEvent, Queue},
     strings,
     ui::style::Theme,
 };
 use asyncgit::{
-    sync::{self, status::StatusType},
-    AsyncNotification, AsyncStatus, StatusParams, CWD,
+    sync::status::StatusType, AsyncNotification, AsyncStatus,
+    StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -22,15 +23,16 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Text},
 };
 
-struct Options {
-    stash_untracked: bool,
-    stash_indexed: bool,
+#[derive(Default, Clone, Copy)]
+pub struct StashingOptions {
+    pub stash_untracked: bool,
+    pub stash_indexed: bool,
 }
 
 pub struct Stashing {
-    visible: bool,
-    options: Options,
     index: FileTreeComponent,
+    visible: bool,
+    options: StashingOptions,
     theme: Theme,
     git_status: AsyncStatus,
     queue: Queue,
@@ -46,17 +48,17 @@ impl Stashing {
         theme: &Theme,
     ) -> Self {
         Self {
-            visible: false,
-            options: Options {
-                stash_indexed: true,
-                stash_untracked: true,
-            },
             index: FileTreeComponent::new(
                 strings::STASHING_FILES_TITLE,
                 true,
                 queue.clone(),
                 theme,
             ),
+            visible: false,
+            options: StashingOptions {
+                stash_indexed: true,
+                stash_untracked: true,
+            },
             theme: *theme,
             git_status: AsyncStatus::new(sender.clone()),
             queue: queue.clone(),
@@ -144,8 +146,6 @@ impl DrawableComponent for Stashing {
             )
             .split(chunks[1]);
 
-        self.index.draw(f, chunks[0]);
-
         f.render_widget(
             Paragraph::new(self.get_option_text().iter())
                 .block(
@@ -156,6 +156,8 @@ impl DrawableComponent for Stashing {
                 .alignment(Alignment::Left),
             right_chunks[0],
         );
+
+        self.index.draw(f, chunks[0]);
     }
 }
 
@@ -183,11 +185,7 @@ impl Component for Stashing {
             self.visible || force_all,
         ));
 
-        if self.visible {
-            CommandBlocking::Blocking
-        } else {
-            CommandBlocking::PassingOn
-        }
+        visibility_blocking(self)
     }
 
     fn event(&mut self, ev: crossterm::event::Event) -> bool {
@@ -199,20 +197,12 @@ impl Component for Stashing {
             if let Event::Key(k) = ev {
                 return match k {
                     keys::STASHING_SAVE if !self.index.is_empty() => {
-                        if sync::stash_save(
-                            CWD,
-                            None,
-                            self.options.stash_untracked,
-                            !self.options.stash_indexed,
-                        )
-                        .is_ok()
-                        {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::Update(
-                                    NeedsUpdate::ALL,
-                                ),
-                            );
-                        }
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::PopupStashing(
+                                self.options,
+                            ),
+                        );
+
                         true
                     }
                     keys::STASHING_TOGGLE_INDEX => {

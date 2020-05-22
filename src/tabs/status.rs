@@ -14,7 +14,7 @@ use asyncgit::{
     sync::status::StatusType, AsyncDiff, AsyncNotification,
     AsyncStatus, DiffParams, StatusParams,
 };
-use components::command_pump;
+use components::{command_pump, visibility_blocking};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use strings::commands;
@@ -314,11 +314,7 @@ impl Component for Status {
             );
         }
 
-        if self.visible {
-            CommandBlocking::Blocking
-        } else {
-            CommandBlocking::PassingOn
-        }
+        visibility_blocking(self)
     }
 
     fn event(&mut self, ev: crossterm::event::Event) -> bool {

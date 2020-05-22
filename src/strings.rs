@@ -161,7 +161,7 @@ pub mod commands {
     ///
     pub static STASHING_SAVE: CommandText = CommandText::new(
         "Save [s]",
-        "creates a new stash",
+        "opens stash name input popup",
         CMD_GROUP_STASHING,
     );
     ///
@@ -178,4 +178,10 @@ pub mod commands {
             "toggle including untracked files into stash",
             CMD_GROUP_STASHING,
         );
+    ///
+    pub static STASHING_CONFIRM_MSG: CommandText = CommandText::new(
+        "Stash [enter]",
+        "save files to stash",
+        CMD_GROUP_STASHING,
+    );
 }
