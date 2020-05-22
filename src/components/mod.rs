@@ -6,6 +6,7 @@ mod filetree;
 mod help;
 mod msg;
 mod reset;
+mod textinput;
 mod utils;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};

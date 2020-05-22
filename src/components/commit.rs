@@ -1,56 +1,27 @@
 use super::{
-    visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent,
+    textinput::TextInputComponent, visibility_blocking,
+    CommandBlocking, CommandInfo, Component, DrawableComponent,
 };
 use crate::{
-    components::dialog_paragraph,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings, ui,
+    strings,
     ui::style::Theme,
 };
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
 use log::error;
-use std::borrow::Cow;
 use strings::commands;
 use sync::HookResult;
-use tui::{
-    backend::Backend,
-    layout::Rect,
-    style::Style,
-    widgets::{Clear, Text},
-    Frame,
-};
+use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct CommitComponent {
-    msg: String,
-    visible: bool,
+    input: TextInputComponent,
     queue: Queue,
-    theme: Theme,
 }
 
 impl DrawableComponent for CommitComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
-        if self.visible {
-            let txt = if self.msg.is_empty() {
-                [Text::Styled(
-                    Cow::from(strings::COMMIT_MSG),
-                    self.theme.text(false, false),
-                )]
-            } else {
-                [Text::Styled(
-                    Cow::from(self.msg.clone()),
-                    Style::default(),
-                )]
-            };
-
-            let area = ui::centered_rect(60, 20, f.size());
-            f.render_widget(Clear, area);
-            f.render_widget(
-                dialog_paragraph(strings::COMMIT_TITLE, txt.iter()),
-                area,
-            );
-        }
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, rect: Rect) {
+        self.input.draw(f, rect)
     }
 }
 
@@ -63,34 +34,31 @@ impl Component for CommitComponent {
         out.push(CommandInfo::new(
             commands::COMMIT_ENTER,
             self.can_commit(),
-            self.visible,
+            self.is_visible(),
         ));
         out.push(CommandInfo::new(
             commands::CLOSE_POPUP,
             true,
-            self.visible,
+            self.is_visible(),
         ));
         visibility_blocking(self)
     }
 
     fn event(&mut self, ev: Event) -> bool {
-        if self.visible {
+        if self.is_visible() {
+            if self.input.event(ev) {
+                return true;
+            }
+
             if let Event::Key(e) = ev {
                 match e.code {
-                    KeyCode::Esc => {
-                        self.hide();
-                    }
-                    KeyCode::Char(c) => {
-                        self.msg.push(c);
-                    }
                     KeyCode::Enter if self.can_commit() => {
                         self.commit();
                     }
-                    KeyCode::Backspace if !self.msg.is_empty() => {
-                        self.msg.pop().unwrap();
-                    }
                     _ => (),
                 };
+
+                // stop key event propagation
                 return true;
             }
         }
@@ -98,15 +66,15 @@ impl Component for CommitComponent {
     }
 
     fn is_visible(&self) -> bool {
-        self.visible
+        self.input.is_visible()
     }
 
     fn hide(&mut self) {
-        self.visible = false
+        self.input.hide()
     }
 
     fn show(&mut self) {
-        self.visible = true
+        self.input.show()
     }
 }
 
@@ -115,15 +83,14 @@ impl CommitComponent {
     pub fn new(queue: Queue, theme: &Theme) -> Self {
         Self {
             queue,
-            msg: String::default(),
-            visible: false,
-            theme: *theme,
+            input: TextInputComponent::new(theme),
         }
     }
 
     fn commit(&mut self) {
+        let mut msg = self.input.get_text().clone();
         if let HookResult::NotOk(e) =
-            sync::hooks_commit_msg(CWD, &mut self.msg).unwrap()
+            sync::hooks_commit_msg(CWD, &mut msg).unwrap()
         {
             error!("commit-msg hook error: {}", e);
             self.queue.borrow_mut().push_back(
@@ -135,7 +102,7 @@ impl CommitComponent {
             return;
         }
 
-        if let Err(e) = sync::commit(CWD, &self.msg) {
+        if let Err(e) = sync::commit(CWD, &msg) {
             error!("commit error: {}", &e);
             self.queue.borrow_mut().push_back(
                 InternalEvent::ShowErrorMsg(format!(
@@ -158,7 +125,7 @@ impl CommitComponent {
             );
         }
 
-        self.msg.clear();
+        self.input.clear();
         self.hide();
 
         self.queue
@@ -167,6 +134,6 @@ impl CommitComponent {
     }
 
     fn can_commit(&self) -> bool {
-        !self.msg.is_empty()
+        !self.input.get_text().is_empty()
     }
 }
