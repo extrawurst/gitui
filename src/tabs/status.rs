@@ -190,13 +190,18 @@ impl Status {
 
     ///
     pub fn update(&mut self) {
-        self.git_diff.refresh().unwrap();
-        self.git_status_workdir
-            .fetch(StatusParams::new(StatusType::WorkingDir, true))
-            .unwrap();
-        self.git_status_stage
-            .fetch(StatusParams::new(StatusType::Stage, true))
-            .unwrap();
+        if self.is_visible() {
+            self.git_diff.refresh().unwrap();
+            self.git_status_workdir
+                .fetch(StatusParams::new(
+                    StatusType::WorkingDir,
+                    true,
+                ))
+                .unwrap();
+            self.git_status_stage
+                .fetch(StatusParams::new(StatusType::Stage, true))
+                .unwrap();
+        }
     }
 
     ///

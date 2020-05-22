@@ -67,12 +67,14 @@ impl Stashing {
 
     ///
     pub fn update(&mut self) {
-        self.git_status
-            .fetch(StatusParams::new(
-                StatusType::Both,
-                self.options.stash_untracked,
-            ))
-            .unwrap();
+        if self.visible {
+            self.git_status
+                .fetch(StatusParams::new(
+                    StatusType::Both,
+                    self.options.stash_untracked,
+                ))
+                .unwrap();
+        }
     }
 
     ///
@@ -228,7 +230,7 @@ impl Component for Stashing {
     }
 
     fn show(&mut self) {
-        self.update();
         self.visible = true;
+        self.update();
     }
 }
