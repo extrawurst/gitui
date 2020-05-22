@@ -32,9 +32,9 @@ crossbeam-channel = "0.4"
 scopeguard = "1.1"
 bitflags = "1.2"
 chrono = "0.4"
-backtrace = { version = "0.3" }
-ron = "0.6.0"
-serde = "1.0.110"
+backtrace = "0.3"
+ron = "0.6"
+serde = "1.0"
 
 [features]
 default=[]
