@@ -269,7 +269,9 @@ impl DrawableComponent for Revlog {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(title.as_str()),
+                    .title(title.as_str())
+                    .border_style(self.theme.block(true))
+                    .title_style(self.theme.title(true)),
             )
             .alignment(Alignment::Left),
             area,
