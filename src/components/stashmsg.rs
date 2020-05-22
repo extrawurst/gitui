@@ -61,6 +61,9 @@ impl Component for StashMsgComponent {
                     )
                     .is_ok()
                     {
+                        self.input.clear();
+                        self.hide();
+
                         self.queue.borrow_mut().push_back(
                             InternalEvent::Update(NeedsUpdate::ALL),
                         );
