@@ -48,6 +48,7 @@ macro_rules! accessors {
     };
 }
 
+/// returns `true` if event was consumed
 pub fn event_pump(
     ev: Event,
     components: &mut [&mut dyn Component],
@@ -59,6 +60,23 @@ pub fn event_pump(
     }
 
     false
+}
+
+/// helper fn to simplify delegating command
+/// gathering down into child components
+/// see `event_pump`,`accessors`
+pub fn command_pump(
+    out: &mut Vec<CommandInfo>,
+    force_all: bool,
+    components: &[&dyn Component],
+) {
+    for c in components {
+        if c.commands(out, force_all) != CommandBlocking::PassingOn
+            && !force_all
+        {
+            break;
+        }
+    }
 }
 
 #[derive(Copy, Clone)]

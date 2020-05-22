@@ -1,7 +1,8 @@
 use crate::{
+    accessors,
     components::{
-        CommandBlocking, CommandInfo, Component, DrawableComponent,
-        FileTreeComponent,
+        command_pump, event_pump, CommandBlocking, CommandInfo,
+        Component, DrawableComponent, FileTreeComponent,
     },
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
@@ -36,6 +37,8 @@ pub struct Stashing {
 }
 
 impl Stashing {
+    accessors!(self, [index]);
+
     ///
     pub fn new(
         sender: &Sender<AsyncNotification>,
@@ -162,7 +165,7 @@ impl Component for Stashing {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
-        self.index.commands(out, force_all);
+        command_pump(out, force_all, self.components().as_slice());
 
         out.push(CommandInfo::new(
             commands::STASHING_SAVE,
@@ -189,9 +192,7 @@ impl Component for Stashing {
 
     fn event(&mut self, ev: crossterm::event::Event) -> bool {
         if self.visible {
-            let conusmed = self.index.event(ev);
-
-            if conusmed {
+            if event_pump(ev, self.components_mut().as_mut_slice()) {
                 return true;
             }
 

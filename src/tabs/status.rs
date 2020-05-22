@@ -1,8 +1,8 @@
 use crate::{
     accessors,
     components::{
-        event_pump, ChangesComponent, CommandBlocking, CommandInfo,
-        Component, DiffComponent, DrawableComponent,
+        self, event_pump, ChangesComponent, CommandBlocking,
+        CommandInfo, Component, DiffComponent, DrawableComponent,
         FileTreeItemKind,
     },
     keys,
@@ -14,6 +14,7 @@ use asyncgit::{
     sync::status::StatusType, AsyncDiff, AsyncNotification,
     AsyncStatus, DiffParams, StatusParams,
 };
+use components::command_pump;
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use strings::commands;
@@ -262,14 +263,11 @@ impl Component for Status {
         force_all: bool,
     ) -> CommandBlocking {
         if self.visible {
-            for c in self.components() {
-                if c.commands(out, force_all)
-                    != CommandBlocking::PassingOn
-                    && !force_all
-                {
-                    break;
-                }
-            }
+            command_pump(
+                out,
+                force_all,
+                self.components().as_slice(),
+            );
 
             {
                 let focus_on_diff = self.focus == Focus::Diff;
@@ -325,10 +323,7 @@ impl Component for Status {
 
     fn event(&mut self, ev: crossterm::event::Event) -> bool {
         if self.visible {
-            let conusmed =
-                event_pump(ev, self.components_mut().as_mut_slice());
-
-            if conusmed {
+            if event_pump(ev, self.components_mut().as_mut_slice()) {
                 return true;
             }
 
