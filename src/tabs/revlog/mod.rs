@@ -10,7 +10,7 @@ use crate::{
     ui::calc_scroll_top,
     ui::style::Theme,
 };
-use asyncgit::{sync, AsyncLog, AsyncNotification, CWD, FetchStatus};
+use asyncgit::{sync, AsyncLog, AsyncNotification, FetchStatus, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp, convert::TryFrom, time::Instant};
