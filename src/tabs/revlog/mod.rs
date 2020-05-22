@@ -6,7 +6,7 @@ use crate::{
         ScrollType,
     },
     keys,
-    strings::commands,
+    strings::{self, commands},
     ui::calc_scroll_top,
     ui::style::Theme,
 };
@@ -254,7 +254,8 @@ impl DrawableComponent for Revlog {
         );
 
         let title = format!(
-            "commit {}/{}",
+            "{} {}/{}",
+            strings::LOG_TITLE,
             self.count_total.saturating_sub(self.selection),
             self.count_total,
         );

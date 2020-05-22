@@ -17,6 +17,8 @@ pub static STASH_POPUP_MSG: &str = "type name (optional)";
 pub static RESET_TITLE: &str = "Reset";
 pub static RESET_MSG: &str = "confirm file reset?";
 
+pub static LOG_TITLE: &str = "Commit";
+
 pub static HELP_TITLE: &str = "Help: all commands";
 
 pub static STASHING_FILES_TITLE: &str = "Files to Stash";
