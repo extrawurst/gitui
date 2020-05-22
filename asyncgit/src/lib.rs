@@ -8,14 +8,12 @@ mod diff;
 mod error;
 mod revlog;
 mod status;
-mod status2;
 pub mod sync;
 
 pub use crate::{
     diff::{AsyncDiff, DiffParams},
     revlog::AsyncLog,
-    status::AsyncStatus,
-    status2::{AsyncStatus2, StatusParams},
+    status::{AsyncStatus, StatusParams},
     sync::{
         diff::{DiffLine, DiffLineType, FileDiff},
         status::{StatusItem, StatusItemType},
@@ -25,7 +23,6 @@ pub use crate::{
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 /// this type is used to communicate events back through the channel
@@ -47,12 +44,4 @@ pub fn hash<T: Hash + ?Sized>(v: &T) -> u64 {
     let mut hasher = DefaultHasher::new();
     v.hash(&mut hasher);
     hasher.finish()
-}
-
-/// helper function to return the current tick since unix epoch
-pub fn current_tick() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64
 }

@@ -11,8 +11,8 @@ use crate::{
     ui::style::Theme,
 };
 use asyncgit::{
-    current_tick, AsyncDiff, AsyncNotification, AsyncStatus,
-    DiffParams,
+    sync::status::StatusType, AsyncDiff, AsyncNotification,
+    AsyncStatus, DiffParams, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -42,7 +42,8 @@ pub struct Status {
     index_wd: ChangesComponent,
     diff: DiffComponent,
     git_diff: AsyncDiff,
-    git_status: AsyncStatus,
+    git_status_workdir: AsyncStatus,
+    git_status_stage: AsyncStatus,
 }
 
 impl DrawableComponent for Status {
@@ -122,7 +123,8 @@ impl Status {
             ),
             diff: DiffComponent::new(queue.clone(), theme),
             git_diff: AsyncDiff::new(sender.clone()),
-            git_status: AsyncStatus::new(sender.clone()),
+            git_status_workdir: AsyncStatus::new(sender.clone()),
+            git_status_stage: AsyncStatus::new(sender.clone()),
         }
     }
 
@@ -188,12 +190,19 @@ impl Status {
     ///
     pub fn update(&mut self) {
         self.git_diff.refresh().unwrap();
-        self.git_status.fetch(current_tick()).unwrap();
+        self.git_status_workdir
+            .fetch(StatusParams::new(StatusType::WorkingDir, true))
+            .unwrap();
+        self.git_status_stage
+            .fetch(StatusParams::new(StatusType::Stage, true))
+            .unwrap();
     }
 
     ///
     pub fn anything_pending(&self) -> bool {
-        self.git_diff.is_pending() || self.git_status.is_pending()
+        self.git_diff.is_pending()
+            || self.git_status_stage.is_pending()
+            || self.git_status_workdir.is_pending()
     }
 
     ///
@@ -206,9 +215,11 @@ impl Status {
     }
 
     fn update_status(&mut self) {
-        let status = self.git_status.last().unwrap();
-        self.index.update(&status.stage);
-        self.index_wd.update(&status.work_dir);
+        let status = self.git_status_stage.last().unwrap();
+        self.index.update(&status.items);
+
+        let status = self.git_status_workdir.last().unwrap();
+        self.index_wd.update(&status.items);
 
         self.update_diff();
     }

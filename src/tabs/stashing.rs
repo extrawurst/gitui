@@ -10,7 +10,7 @@ use crate::{
 };
 use asyncgit::{
     sync::{self, status::StatusType},
-    AsyncNotification, AsyncStatus2, StatusParams, CWD,
+    AsyncNotification, AsyncStatus, StatusParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -31,7 +31,7 @@ pub struct Stashing {
     options: Options,
     index: FileTreeComponent,
     theme: Theme,
-    git_status: AsyncStatus2,
+    git_status: AsyncStatus,
     queue: Queue,
 }
 
@@ -55,7 +55,7 @@ impl Stashing {
                 theme,
             ),
             theme: *theme,
-            git_status: AsyncStatus2::new(sender.clone()),
+            git_status: AsyncStatus::new(sender.clone()),
             queue: queue.clone(),
         }
     }
