@@ -1,10 +1,10 @@
-#![allow(dead_code)]
 use super::utils::repo;
 use crate::error::Result;
 use git2::{Oid, StashFlags};
 use scopetime::scope_time;
 
 ///
+#[allow(dead_code)]
 pub struct StashItem {
     pub msg: String,
     index: usize,
@@ -12,9 +12,11 @@ pub struct StashItem {
 }
 
 ///
+#[allow(dead_code)]
 pub struct StashItems(Vec<StashItem>);
 
 ///
+#[allow(dead_code)]
 pub fn get_stashes(repo_path: &str) -> Result<StashItems> {
     scope_time!("get_stashes");
 
