@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
-// #![warn(clippy::cargo)]
+#![deny(clippy::cargo)]
+//TODO: remove once crossterm upgraded to current mio:
+//https://github.com/crossterm-rs/crossterm/issues/432
+#![allow(clippy::cargo::multiple_crate_versions)]
 #![deny(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
