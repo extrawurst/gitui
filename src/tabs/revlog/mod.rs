@@ -23,7 +23,6 @@ use tui::{
 };
 use utils::{ItemBatch, LogEntry};
 
-static ELEMENTS_PER_LINE: usize = 10;
 static SLICE_SIZE: usize = 1200;
 ///
 pub struct Revlog {
@@ -169,7 +168,8 @@ impl Revlog {
         tags: Option<String>,
         theme: &Theme,
     ) {
-        let count_before = txt.len();
+        const ELEMENTS_PER_LINE: usize = 10;
+
         txt.reserve(ELEMENTS_PER_LINE);
 
         let splitter_txt = Cow::from(" ");
@@ -205,16 +205,21 @@ impl Revlog {
             theme.text(true, selected),
         ));
         txt.push(Text::Raw(Cow::from("\n")));
-
-        assert_eq!(txt.len() - count_before, ELEMENTS_PER_LINE);
     }
 
-    fn get_text(&self) -> Vec<Text> {
+    fn get_text(&self, height: usize) -> Vec<Text> {
         let selection = self.relative_selection();
 
         let mut txt = Vec::new();
 
-        for (idx, e) in self.items.items.iter().enumerate() {
+        for (idx, e) in self
+            .items
+            .items
+            .iter()
+            .skip(self.scroll_top)
+            .take(height)
+            .enumerate()
+        {
             let tag = if let Some(tags) = self.tags.get(&e.hash) {
                 Some(tags.join(" "))
             } else {
@@ -222,7 +227,7 @@ impl Revlog {
             };
             Self::add_entry(
                 e,
-                idx == selection,
+                idx + self.scroll_top == selection,
                 &mut txt,
                 tag,
                 &self.theme,
@@ -261,20 +266,15 @@ impl DrawableComponent for Revlog {
         );
 
         f.render_widget(
-            Paragraph::new(
-                self.get_text()
-                    .iter()
-                    .skip(self.scroll_top * ELEMENTS_PER_LINE)
-                    .take(height_in_lines * ELEMENTS_PER_LINE),
-            )
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(title.as_str())
-                    .border_style(self.theme.block(true))
-                    .title_style(self.theme.title(true)),
-            )
-            .alignment(Alignment::Left),
+            Paragraph::new(self.get_text(height_in_lines).iter())
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(title.as_str())
+                        .border_style(self.theme.block(true))
+                        .title_style(self.theme.title(true)),
+                )
+                .alignment(Alignment::Left),
             area,
         );
     }
