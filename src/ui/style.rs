@@ -1,4 +1,5 @@
 use crate::get_app_config_path;
+use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
 use ron::{
     de::from_bytes,
@@ -180,44 +181,41 @@ impl Theme {
         )
     }
 
-    fn save(&self) -> Result<(), std::io::Error> {
-        let theme_file = Self::get_theme_file();
+    fn save(&self) -> Result<()> {
+        let theme_file = Self::get_theme_file()?;
         let mut file = File::create(theme_file)?;
-        let data = to_string_pretty(self, PrettyConfig::default())
-            .map_err(|_| std::io::Error::from_raw_os_error(100))?;
+        let data = to_string_pretty(self, PrettyConfig::default())?;
         file.write_all(data.as_bytes())?;
         Ok(())
     }
 
-    fn get_theme_file() -> PathBuf {
-        let app_home = get_app_config_path();
-        app_home.join("theme.ron")
+    fn get_theme_file() -> Result<PathBuf> {
+        let app_home = get_app_config_path()?;
+        Ok(app_home.join("theme.ron"))
     }
 
-    fn read_file(
-        theme_file: PathBuf,
-    ) -> Result<Theme, std::io::Error> {
-        if theme_file.exists() {
-            let mut f = File::open(theme_file)?;
-            let mut buffer = Vec::new();
-            f.read_to_end(&mut buffer)?;
+    fn read_file(theme_file: PathBuf) -> Result<Theme> {
+        let mut f = File::open(theme_file)?;
+        let mut buffer = Vec::new();
+        f.read_to_end(&mut buffer)?;
+        Ok(from_bytes(&buffer)?)
+    }
 
-            Ok(from_bytes(&buffer).map_err(|_| {
-                std::io::Error::from_raw_os_error(100)
-            })?)
+    fn init_internal() -> Result<Theme> {
+        let file = Theme::get_theme_file()?;
+        if file.exists() {
+            Ok(Theme::read_file(file)?)
         } else {
-            Err(std::io::Error::from_raw_os_error(100))
+            let def = Theme::default();
+            if def.save().is_err() {
+                log::warn!("failed to store default theme to disk.")
+            }
+            Ok(def)
         }
     }
 
     pub fn init() -> Theme {
-        if let Ok(x) = Theme::read_file(Theme::get_theme_file()) {
-            x
-        } else {
-            let res = Self::default();
-            res.save().unwrap_or_default();
-            res
-        }
+        Theme::init_internal().unwrap_or_default()
     }
 }
 

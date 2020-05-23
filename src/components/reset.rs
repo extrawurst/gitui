@@ -8,6 +8,7 @@ use crate::{
     strings, ui,
     ui::style::Theme,
 };
+use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
 use strings::commands;
@@ -27,7 +28,11 @@ pub struct ResetComponent {
 }
 
 impl DrawableComponent for ResetComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        _rect: Rect,
+    ) -> Result<()> {
         if self.visible {
             let mut txt = Vec::new();
             txt.push(Text::Styled(
@@ -42,6 +47,8 @@ impl DrawableComponent for ResetComponent {
                 area,
             );
         }
+
+        Ok(())
     }
 }
 
@@ -65,25 +72,26 @@ impl Component for ResetComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
                 return match e.code {
                     KeyCode::Esc => {
                         self.hide();
-                        true
+                        Ok(true)
                     }
 
                     KeyCode::Enter => {
                         self.confirm();
-                        true
+                        Ok(true)
                     }
 
-                    _ => true,
+                    _ => Ok(true),
                 };
             }
         }
-        false
+
+        Ok(false)
     }
 
     fn is_visible(&self) -> bool {
@@ -94,8 +102,10 @@ impl Component for ResetComponent {
         self.visible = false
     }
 
-    fn show(&mut self) {
-        self.visible = true
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+
+        Ok(())
     }
 }
 
@@ -110,9 +120,11 @@ impl ResetComponent {
         }
     }
     ///
-    pub fn open_for_path(&mut self, item: ResetItem) {
+    pub fn open_for_path(&mut self, item: ResetItem) -> Result<()> {
         self.target = Some(item);
-        self.show();
+        self.show()?;
+
+        Ok(())
     }
     ///
     pub fn confirm(&mut self) {

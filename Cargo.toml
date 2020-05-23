@@ -35,6 +35,7 @@ chrono = "0.4"
 backtrace = "0.3"
 ron = "0.6"
 serde = "1.0"
+anyhow = "1.0.31"
 
 [features]
 default=[]

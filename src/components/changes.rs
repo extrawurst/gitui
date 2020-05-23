@@ -10,6 +10,7 @@ use crate::{
     strings,
     ui::style::Theme,
 };
+use anyhow::Result;
 use asyncgit::{sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
 use std::path::Path;
@@ -45,8 +46,10 @@ impl ChangesComponent {
     }
 
     ///
-    pub fn update(&mut self, list: &[StatusItem]) {
-        self.files.update(list)
+    pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
+        self.files.update(list)?;
+
+        Ok(())
     }
 
     ///
@@ -69,38 +72,39 @@ impl ChangesComponent {
         self.files.is_file_seleted()
     }
 
-    fn index_add_remove(&mut self) -> bool {
+    fn index_add_remove(&mut self) -> Result<bool> {
         if let Some(tree_item) = self.selection() {
             if self.is_working_dir {
                 if let FileTreeItemKind::File(i) = tree_item.kind {
                     if let Some(status) = i.status {
                         let path = Path::new(i.path.as_str());
-                        return match status {
+                        match status {
                             StatusItemType::Deleted => {
-                                sync::stage_addremoved(CWD, path)
-                                    .is_ok()
+                                sync::stage_addremoved(CWD, path)?
                             }
-                            _ => sync::stage_add_file(CWD, path)
-                                .is_ok(),
+                            _ => sync::stage_add_file(CWD, path)?,
                         };
+
+                        return Ok(true);
                     }
                 } else {
                     //TODO: check if we can handle the one file case with it aswell
-                    return sync::stage_add_all(
+                    sync::stage_add_all(
                         CWD,
                         tree_item.info.full_path.as_str(),
-                    )
-                    .is_ok();
+                    )?;
+
+                    return Ok(true);
                 }
             } else {
                 let path =
                     Path::new(tree_item.info.full_path.as_str());
-                sync::reset_stage(CWD, path).unwrap();
-                return true;
+                sync::reset_stage(CWD, path)?;
+                return Ok(true);
             }
         }
 
-        false
+        Ok(false)
     }
 
     fn dispatch_reset_workdir(&mut self) -> bool {
@@ -121,8 +125,14 @@ impl ChangesComponent {
 }
 
 impl DrawableComponent for ChangesComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, r: Rect) {
-        self.files.draw(f, r)
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        r: Rect,
+    ) -> Result<()> {
+        self.files.draw(f, r)?;
+
+        Ok(())
     }
 }
 
@@ -166,9 +176,9 @@ impl Component for ChangesComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> bool {
-        if self.files.event(ev) {
-            return true;
+    fn event(&mut self, ev: Event) -> Result<bool> {
+        if self.files.event(ev)? {
+            return Ok(true);
         }
 
         if self.focused() {
@@ -181,29 +191,29 @@ impl Component for ChangesComponent {
                         self.queue
                             .borrow_mut()
                             .push_back(InternalEvent::OpenCommit);
-                        true
+                        Ok(true)
                     }
                     keys::STATUS_STAGE_FILE => {
-                        if self.index_add_remove() {
+                        if self.index_add_remove()? {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::Update(
                                     NeedsUpdate::ALL,
                                 ),
                             );
                         }
-                        true
+                        Ok(true)
                     }
                     keys::STATUS_RESET_FILE
                         if self.is_working_dir =>
                     {
-                        self.dispatch_reset_workdir()
+                        Ok(self.dispatch_reset_workdir())
                     }
-                    _ => false,
+                    _ => Ok(false),
                 };
             }
         }
 
-        false
+        Ok(false)
     }
 
     fn focused(&self) -> bool {

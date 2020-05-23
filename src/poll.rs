@@ -30,7 +30,9 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
             } else {
                 MIN_POLL_DURATION
             };
-            if let Some(e) = poll(timeout) {
+            if let Some(e) =
+                poll(timeout).expect("failed to pull events.")
+            {
                 batch.push(QueueEvent::InputEvent(e));
             }
 
@@ -48,11 +50,10 @@ pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
 }
 
 ///
-fn poll(dur: Duration) -> Option<Event> {
-    if event::poll(dur).unwrap() {
-        let event = event::read().unwrap();
-        Some(event)
+fn poll(dur: Duration) -> anyhow::Result<Option<Event>> {
+    if event::poll(dur)? {
+        Ok(Some(event::read()?))
     } else {
-        None
+        Ok(None)
     }
 }

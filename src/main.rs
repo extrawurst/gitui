@@ -4,7 +4,9 @@
 //https://github.com/crossterm-rs/crossterm/issues/432
 #![allow(clippy::cargo::multiple_crate_versions)]
 #![deny(clippy::pedantic)]
+#![deny(clippy::result_unwrap_used)]
 #![allow(clippy::module_name_repetitions)]
+use anyhow::{anyhow, Result};
 
 mod app;
 mod components;
@@ -26,7 +28,7 @@ use crossterm::{
         disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
         LeaveAlternateScreen,
     },
-    ExecutableCommand, Result,
+    ExecutableCommand,
 };
 use log::error;
 use scopeguard::defer;
@@ -50,7 +52,7 @@ static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(50);
 
 fn main() -> Result<()> {
-    setup_logging();
+    setup_logging()?;
 
     if invalid_path() {
         eprintln!("invalid git path\nplease run gitui inside of a git repository");
@@ -62,7 +64,7 @@ fn main() -> Result<()> {
         shutdown_terminal().expect("shutdown failed");
     }
 
-    set_panic_handlers();
+    set_panic_handlers()?;
 
     let mut terminal = start_terminal(io::stdout())?;
 
@@ -74,7 +76,7 @@ fn main() -> Result<()> {
     let ticker = tick(TICK_INTERVAL);
     let spinner_ticker = tick(SPINNER_INTERVAL);
 
-    app.update();
+    app.update()?;
     draw(&mut terminal, &mut app)?;
 
     let mut spinner = Spinner::default();
@@ -85,7 +87,7 @@ fn main() -> Result<()> {
             &rx_git,
             &ticker,
             &spinner_ticker,
-        );
+        )?;
 
         {
             scope_time!("loop");
@@ -94,9 +96,9 @@ fn main() -> Result<()> {
 
             for e in events {
                 match e {
-                    QueueEvent::InputEvent(ev) => app.event(ev),
-                    QueueEvent::Tick => app.update(),
-                    QueueEvent::GitEvent(ev) => app.update_git(ev),
+                    QueueEvent::InputEvent(ev) => app.event(ev)?,
+                    QueueEvent::Tick => app.update()?,
+                    QueueEvent::GitEvent(ev) => app.update_git(ev)?,
                     QueueEvent::SpinnerUpdate => {
                         needs_draw = false;
                         spinner.update()
@@ -135,7 +137,11 @@ fn draw<B: Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
 ) -> io::Result<()> {
-    terminal.draw(|mut f| app.draw(&mut f))
+    terminal.draw(|mut f| {
+        if let Err(e) = app.draw(&mut f) {
+            log::error!("failed to draw: {:?}", e)
+        }
+    })
 }
 
 fn invalid_path() -> bool {
@@ -147,7 +153,7 @@ fn select_event(
     rx_git: &Receiver<AsyncNotification>,
     rx_ticker: &Receiver<Instant>,
     rx_spinner: &Receiver<Instant>,
-) -> Vec<QueueEvent> {
+) -> Result<Vec<QueueEvent>> {
     let mut events: Vec<QueueEvent> = Vec::new();
 
     let mut sel = Select::new();
@@ -172,10 +178,9 @@ fn select_event(
             .recv(rx_spinner)
             .map(|_| events.push(QueueEvent::SpinnerUpdate)),
         _ => panic!("unknown select source"),
-    }
-    .unwrap();
+    }?;
 
-    events
+    Ok(events)
 }
 
 fn start_terminal<W: Write>(
@@ -189,28 +194,31 @@ fn start_terminal<W: Write>(
     Ok(terminal)
 }
 
-#[must_use]
-pub fn get_app_config_path() -> PathBuf {
-    let mut path = dirs::cache_dir().unwrap();
+fn get_app_config_path() -> Result<PathBuf> {
+    let mut path = dirs::cache_dir()
+        .ok_or_else(|| anyhow!("failed to find os cache dir."))?;
+
     path.push("gitui");
-    fs::create_dir_all(&path).unwrap();
-    path
+    fs::create_dir_all(&path)?;
+    Ok(path)
 }
 
-fn setup_logging() {
+fn setup_logging() -> Result<()> {
     if env::var("GITUI_LOGGING").is_ok() {
-        let mut path = get_app_config_path();
+        let mut path = get_app_config_path()?;
         path.push("gitui.log");
 
         let _ = WriteLogger::init(
             LevelFilter::Trace,
             Config::default(),
-            File::create(path).unwrap(),
+            File::create(path)?,
         );
     }
+
+    Ok(())
 }
 
-fn set_panic_handlers() {
+fn set_panic_handlers() -> Result<()> {
     // regular panic handler
     panic::set_hook(Box::new(|e| {
         let backtrace = Backtrace::new();
@@ -220,12 +228,11 @@ fn set_panic_handlers() {
     }));
 
     // global threadpool
-    rayon_core::ThreadPoolBuilder::new()
+    Ok(rayon_core::ThreadPoolBuilder::new()
         .panic_handler(|e| {
             error!("thread panic: {:?}", e);
             panic!(e)
         })
         .num_threads(4)
-        .build_global()
-        .unwrap();
+        .build_global()?)
 }

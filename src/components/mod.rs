@@ -9,9 +9,11 @@ mod reset;
 mod stashmsg;
 mod textinput;
 mod utils;
+use anyhow::Result;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
+use crossterm::event::Event;
 pub use diff::DiffComponent;
 pub use filetree::FileTreeComponent;
 pub use help::HelpComponent;
@@ -20,7 +22,6 @@ pub use reset::ResetComponent;
 pub use stashmsg::StashMsgComponent;
 pub use utils::filetree::FileTreeItemKind;
 
-use crossterm::event::Event;
 use tui::{
     backend::Backend,
     layout::Alignment,
@@ -54,14 +55,14 @@ macro_rules! accessors {
 pub fn event_pump(
     ev: Event,
     components: &mut [&mut dyn Component],
-) -> bool {
+) -> Result<bool> {
     for c in components {
-        if c.event(ev) {
-            return true;
+        if c.event(ev)? {
+            return Ok(true);
         }
     }
 
-    false
+    Ok(false)
 }
 
 /// helper fn to simplify delegating command
@@ -112,7 +113,11 @@ pub fn visibility_blocking<T: Component>(
 ///
 pub trait DrawableComponent {
     ///
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, rect: Rect);
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        rect: Rect,
+    ) -> Result<()>;
 }
 
 /// base component trait
@@ -125,7 +130,7 @@ pub trait Component {
     ) -> CommandBlocking;
 
     /// returns true if event propagation needs to end (event was consumed)
-    fn event(&mut self, ev: Event) -> bool;
+    fn event(&mut self, ev: Event) -> Result<bool>;
 
     ///
     fn focused(&self) -> bool {
@@ -140,7 +145,9 @@ pub trait Component {
     ///
     fn hide(&mut self) {}
     ///
-    fn show(&mut self) {}
+    fn show(&mut self) -> Result<()> {
+        Ok(())
+    }
 }
 
 fn dialog_paragraph<'a, 't, T>(

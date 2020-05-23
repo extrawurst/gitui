@@ -1,6 +1,7 @@
 use super::filetree::{
     FileTreeItem, FileTreeItemKind, FileTreeItems, PathCollapsed,
 };
+use anyhow::Result;
 use asyncgit::StatusItem;
 use std::{cmp, collections::BTreeSet};
 
@@ -35,14 +36,14 @@ impl SelectionChange {
 
 impl StatusTree {
     /// update tree with a new list, try to retain selection and collapse states
-    pub fn update(&mut self, list: &[StatusItem]) {
+    pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
         let last_collapsed = self.all_collapsed();
 
         let last_selection =
             self.selected_item().map(|e| e.info.full_path);
         let last_selection_index = self.selection.unwrap_or(0);
 
-        self.tree = FileTreeItems::new(list, &last_collapsed);
+        self.tree = FileTreeItems::new(list, &last_collapsed)?;
         self.selection =
             if let Some(ref last_selection) = last_selection {
                 self.find_last_selection(
@@ -56,6 +57,8 @@ impl StatusTree {
             };
 
         self.update_visibility(None, 0, true);
+
+        Ok(())
     }
 
     ///
@@ -348,7 +351,7 @@ mod tests {
         ]);
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         assert!(res.move_selection(MoveSelection::Down));
 
@@ -362,11 +365,11 @@ mod tests {
     #[test]
     fn test_keep_selected_item() {
         let mut res = StatusTree::default();
-        res.update(&string_vec_to_status(&["b"]));
+        res.update(&string_vec_to_status(&["b"])).unwrap();
 
         assert_eq!(res.selection, Some(0));
 
-        res.update(&string_vec_to_status(&["a", "b"]));
+        res.update(&string_vec_to_status(&["a", "b"])).unwrap();
 
         assert_eq!(res.selection, Some(1));
     }
@@ -374,10 +377,10 @@ mod tests {
     #[test]
     fn test_keep_selected_index() {
         let mut res = StatusTree::default();
-        res.update(&string_vec_to_status(&["a", "b"]));
+        res.update(&string_vec_to_status(&["a", "b"])).unwrap();
         res.selection = Some(1);
 
-        res.update(&string_vec_to_status(&["d", "c", "a"]));
+        res.update(&string_vec_to_status(&["d", "c", "a"])).unwrap();
         assert_eq!(res.selection, Some(1));
     }
 
@@ -387,7 +390,8 @@ mod tests {
         res.update(&string_vec_to_status(&[
             "a/b", //
             "c",
-        ]));
+        ]))
+        .unwrap();
 
         res.collapse("a", 0);
 
@@ -409,7 +413,8 @@ mod tests {
             "a/b", //
             "c",   //
             "d",
-        ]));
+        ]))
+        .unwrap();
 
         assert_eq!(
             res.all_collapsed().iter().collect::<Vec<_>>(),
@@ -440,7 +445,7 @@ mod tests {
         //3   d
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         res.collapse(&String::from("a/b"), 1);
 
@@ -485,7 +490,7 @@ mod tests {
         //4     d
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         res.collapse(&String::from("b"), 1);
         res.collapse(&String::from("a"), 0);
@@ -528,7 +533,7 @@ mod tests {
         //3   c
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         res.collapse(&String::from("a"), 0);
 
@@ -558,7 +563,7 @@ mod tests {
         //3   d
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         res.collapse(&String::from("a/b"), 1);
 
@@ -616,7 +621,7 @@ mod tests {
         //3   d
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
         res.collapse(&String::from("a/b"), 1);
         res.selection = Some(1);
 

@@ -16,6 +16,8 @@ use tui::{
     Frame,
 };
 
+use anyhow::Result;
+
 ///
 pub struct HelpComponent {
     cmds: Vec<CommandInfo>,
@@ -25,7 +27,11 @@ pub struct HelpComponent {
 }
 
 impl DrawableComponent for HelpComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        _rect: Rect,
+    ) -> Result<()> {
         if self.visible {
             const SIZE: (u16, u16) = (65, 24);
             let scroll_threshold = SIZE.1 / 3;
@@ -75,6 +81,8 @@ impl DrawableComponent for HelpComponent {
                 chunks[1],
             );
         }
+
+        Ok(())
     }
 }
 
@@ -113,7 +121,7 @@ impl Component for HelpComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
                 match e {
@@ -124,12 +132,12 @@ impl Component for HelpComponent {
                 }
             }
 
-            true
+            Ok(true)
         } else if let Event::Key(keys::OPEN_HELP) = ev {
-            self.show();
-            true
+            self.show()?;
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
@@ -141,8 +149,10 @@ impl Component for HelpComponent {
         self.visible = false
     }
 
-    fn show(&mut self) {
-        self.visible = true
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+
+        Ok(())
     }
 }
 

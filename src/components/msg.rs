@@ -20,10 +20,16 @@ pub struct MsgComponent {
     theme: Theme,
 }
 
+use anyhow::Result;
+
 impl DrawableComponent for MsgComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        _rect: Rect,
+    ) -> Result<()> {
         if !self.visible {
-            return;
+            return Ok(());
         }
         let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
 
@@ -41,6 +47,8 @@ impl DrawableComponent for MsgComponent {
                 .wrap(true),
             area,
         );
+
+        Ok(())
     }
 }
 
@@ -59,17 +67,16 @@ impl Component for MsgComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if let keys::CLOSE_MSG = e {
                     self.hide();
                 }
             }
-
-            true
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
@@ -81,8 +88,10 @@ impl Component for MsgComponent {
         self.visible = false
     }
 
-    fn show(&mut self) {
-        self.visible = true
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+
+        Ok(())
     }
 }
 
@@ -95,8 +104,10 @@ impl MsgComponent {
         }
     }
     ///
-    pub fn show_msg(&mut self, msg: &str) {
+    pub fn show_msg(&mut self, msg: &str) -> Result<()> {
         self.msg = msg.to_string();
-        self.show();
+        self.show()?;
+
+        Ok(())
     }
 }
