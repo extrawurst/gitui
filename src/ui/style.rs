@@ -235,7 +235,7 @@ impl Default for Theme {
             diff_file_moved: Color::LightMagenta,
             diff_file_modified: Color::Yellow,
             commit_hash: Color::Magenta,
-            commit_time: Color::Blue,
+            commit_time: Color::Rgb(110, 110, 255),
             commit_author: Color::Green,
             danger_fg: Color::Red,
         }
