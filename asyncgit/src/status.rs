@@ -2,7 +2,6 @@ use crate::{
     error::Result, hash, sync, AsyncNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
-use log::trace;
 use std::{
     hash::Hash,
     sync::{
@@ -86,7 +85,7 @@ impl AsyncStatus {
     ) -> Result<Option<Status>> {
         let hash_request = hash(&params);
 
-        trace!("request: [hash: {}]", hash_request);
+        log::trace!("request: [hash: {}]", hash_request);
 
         {
             let mut current = self.current.lock()?;
@@ -135,7 +134,7 @@ impl AsyncStatus {
         arc_last: Arc<Mutex<Status>>,
     ) -> Result<()> {
         let res = Self::get_status(status_type, include_untracked)?;
-        trace!("status fetched: {}", hash(&res));
+        log::trace!("status fetched: {}", hash(&res));
 
         {
             let mut current = arc_current.lock()?;

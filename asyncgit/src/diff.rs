@@ -2,7 +2,6 @@ use crate::{
     error::Result, hash, sync, AsyncNotification, FileDiff, CWD,
 };
 use crossbeam_channel::Sender;
-use log::trace;
 use std::{
     hash::Hash,
     sync::{
@@ -72,7 +71,7 @@ impl AsyncDiff {
         &mut self,
         params: DiffParams,
     ) -> Result<Option<FileDiff>> {
-        trace!("request");
+        log::trace!("request");
 
         let hash = hash(&params);
 

@@ -16,7 +16,6 @@ use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
-use log::trace;
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
@@ -113,7 +112,7 @@ impl App {
 
     ///
     pub fn event(&mut self, ev: Event) -> Result<()> {
-        trace!("event: {:?}", ev);
+        log::trace!("event: {:?}", ev);
 
         if self.check_quit(ev) {
             return Ok(());
@@ -155,7 +154,7 @@ impl App {
     //TODO: do we need this?
     /// forward ticking to components that require it
     pub fn update(&mut self) -> Result<()> {
-        trace!("update");
+        log::trace!("update");
         self.status_tab.update()?;
         self.revlog.update()?;
         self.stashing_tab.update()?;
@@ -168,7 +167,7 @@ impl App {
         &mut self,
         ev: AsyncNotification,
     ) -> Result<()> {
-        trace!("update_git: {:?}", ev);
+        log::trace!("update_git: {:?}", ev);
 
         self.status_tab.update_git(ev)?;
         self.stashing_tab.update_git(ev)?;

@@ -10,7 +10,6 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
-use log::error;
 use strings::commands;
 use sync::HookResult;
 use tui::{backend::Backend, layout::Rect, Frame};
@@ -104,7 +103,7 @@ impl CommitComponent {
         if let HookResult::NotOk(e) =
             sync::hooks_commit_msg(CWD, &mut msg)?
         {
-            error!("commit-msg hook error: {}", e);
+            log::error!("commit-msg hook error: {}", e);
             self.queue.borrow_mut().push_back(
                 InternalEvent::ShowErrorMsg(format!(
                     "commit-msg hook error:\n{}",
@@ -115,7 +114,7 @@ impl CommitComponent {
         }
 
         if let Err(e) = sync::commit(CWD, &msg) {
-            error!("commit error: {}", &e);
+            log::error!("commit error: {}", &e);
             self.queue.borrow_mut().push_back(
                 InternalEvent::ShowErrorMsg(format!(
                     "commit failed:\n{}",
@@ -126,7 +125,7 @@ impl CommitComponent {
         }
 
         if let HookResult::NotOk(e) = sync::hooks_post_commit(CWD)? {
-            error!("post-commit hook error: {}", e);
+            log::error!("post-commit hook error: {}", e);
             self.queue.borrow_mut().push_back(
                 InternalEvent::ShowErrorMsg(format!(
                     "post-commit hook error:\n{}",

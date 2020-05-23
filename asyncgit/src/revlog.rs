@@ -5,7 +5,6 @@ use crate::{
 };
 use crossbeam_channel::Sender;
 use git2::Oid;
-use log::debug;
 use scopetime::scope_time;
 use std::{
     iter::FromIterator,
@@ -89,11 +88,6 @@ impl AsyncLog {
     fn head_changed(&self) -> Result<bool> {
         if let Ok(head) = repo(CWD)?.head() {
             if let Some(head) = head.target() {
-                debug!(
-                    "repo head vs current log head: {} vs. {}",
-                    head,
-                    self.current_head()?
-                );
                 return Ok(head != self.current_head()?);
             }
         }

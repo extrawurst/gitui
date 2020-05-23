@@ -4,7 +4,6 @@
 #![forbid(missing_docs)]
 #![deny(clippy::result_unwrap_used)]
 
-use log::trace;
 use std::time::Instant;
 
 ///
@@ -37,7 +36,7 @@ impl<'a> ScopeTimeLog<'a> {
 
 impl<'a> Drop for ScopeTimeLog<'a> {
     fn drop(&mut self) {
-        trace!(
+        log::trace!(
             "scopetime: {:?} ms [{}::{}] @{}:{}",
             self.time.elapsed().as_millis(),
             self.mod_path,

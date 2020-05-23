@@ -4,7 +4,6 @@ use super::{
 };
 use crate::{error::Error, error::Result, hash};
 use git2::{ApplyLocation, ApplyOptions, Diff};
-use log::error;
 use scopetime::scope_time;
 
 ///
@@ -72,7 +71,6 @@ pub fn unstage_hunk(
     let hunk_index = find_hunk_index(&diff, hunk_hash);
 
     if hunk_index.is_none() {
-        error!("hunk not found");
         return Err(Error::Generic("hunk not found".to_string()));
     }
 
@@ -100,7 +98,6 @@ pub fn unstage_hunk(
             .apply(&diff, ApplyLocation::Index, Some(&mut opt))
             .is_err()
         {
-            error!("apply failed");
             return Err(Error::Generic("apply failed".to_string()));
         }
     }
