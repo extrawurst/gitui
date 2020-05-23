@@ -200,9 +200,9 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.17.4"
+version = "0.17.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a880035bfe4707e344da9acf50cc94d003fe337f50afd94c8722c1bb4e0a933"
+checksum = "9851d20b9809e561297ec3ca85d7cba3a57507fe8d01d07ba7b52469e1c89a11"
 dependencies = [
  "bitflags",
  "crossterm_winapi",
@@ -573,9 +573,9 @@ checksum = "237a5ed80e274dbc66f86bd59c1e25edc039660be53194b5fe0a482e0f2612ea"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.15"
+version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70a50b9351bfa8d65a7d93ce712dc63d2fd15ddbf2c36990fc7cac344859c04f"
+checksum = "beea5df443f6a414bca639a5e577bc8cfb21f7455ff4512bcfd64cf1e6785771"
 dependencies = [
  "unicode-xid",
 ]
