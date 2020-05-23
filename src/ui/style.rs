@@ -1,7 +1,6 @@
 use crate::get_app_config_path;
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
-use log::warn;
 use ron::{
     de::from_bytes,
     ser::{to_string_pretty, PrettyConfig},
