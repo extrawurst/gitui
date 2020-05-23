@@ -5,8 +5,8 @@
 #![allow(clippy::cargo::multiple_crate_versions)]
 #![deny(clippy::pedantic)]
 #![deny(clippy::result_unwrap_used)]
+#![deny(clippy::panic)]
 #![allow(clippy::module_name_repetitions)]
-use anyhow::{anyhow, Result};
 
 mod app;
 mod components;
@@ -20,6 +20,7 @@ mod ui;
 mod version;
 
 use crate::{app::App, poll::QueueEvent};
+use anyhow::{anyhow, Result};
 use asyncgit::AsyncNotification;
 use backtrace::Backtrace;
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
@@ -30,7 +31,6 @@ use crossterm::{
     },
     ExecutableCommand,
 };
-use log::error;
 use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
@@ -41,6 +41,7 @@ use std::{
     io::{self, Write},
     panic,
     path::PathBuf,
+    process,
     time::{Duration, Instant},
 };
 use tui::{
@@ -177,7 +178,7 @@ fn select_event(
         3 => oper
             .recv(rx_spinner)
             .map(|_| events.push(QueueEvent::SpinnerUpdate)),
-        _ => panic!("unknown select source"),
+        _ => return Err(anyhow!("unknown select source")),
     }?;
 
     Ok(events)
@@ -222,17 +223,23 @@ fn set_panic_handlers() -> Result<()> {
     // regular panic handler
     panic::set_hook(Box::new(|e| {
         let backtrace = Backtrace::new();
-        error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+        log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
         shutdown_terminal().expect("shutdown failed inside panic");
         eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
     }));
 
     // global threadpool
-    Ok(rayon_core::ThreadPoolBuilder::new()
+    rayon_core::ThreadPoolBuilder::new()
         .panic_handler(|e| {
-            error!("thread panic: {:?}", e);
-            panic!(e)
+            let backtrace = Backtrace::new();
+            log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+            shutdown_terminal()
+                .expect("shutdown failed inside panic");
+            eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+            process::abort();
         })
         .num_threads(4)
-        .build_global()?)
+        .build_global()?;
+
+    Ok(())
 }

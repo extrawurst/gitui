@@ -11,7 +11,7 @@ use crate::{
     tabs::{Revlog, Stashing, Status},
     ui::style::Theme,
 };
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -96,7 +96,7 @@ impl App {
             0 => self.status_tab.draw(f, chunks_main[1])?,
             1 => self.revlog.draw(f, chunks_main[1])?,
             2 => self.stashing_tab.draw(f, chunks_main[1])?,
-            _ => panic!("unknown tab"),
+            _ => return Err(anyhow!("unknown tab")),
         };
 
         Self::draw_commands(
