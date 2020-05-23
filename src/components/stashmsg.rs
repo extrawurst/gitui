@@ -8,6 +8,7 @@ use crate::{
     tabs::StashingOptions,
     ui::style::Theme,
 };
+use anyhow::Result;
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
 use strings::commands;
@@ -20,8 +21,14 @@ pub struct StashMsgComponent {
 }
 
 impl DrawableComponent for StashMsgComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, rect: Rect) {
-        self.input.draw(f, rect)
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        rect: Rect,
+    ) -> Result<()> {
+        self.input.draw(f, rect)?;
+
+        Ok(())
     }
 }
 
@@ -41,10 +48,10 @@ impl Component for StashMsgComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.is_visible() {
-            if self.input.event(ev) {
-                return true;
+            if self.input.event(ev)? {
+                return Ok(true);
             }
 
             if let Event::Key(e) = ev {
@@ -71,10 +78,10 @@ impl Component for StashMsgComponent {
                 }
 
                 // stop key event propagation
-                return true;
+                return Ok(true);
             }
         }
-        false
+        Ok(false)
     }
 
     fn is_visible(&self) -> bool {
@@ -85,8 +92,10 @@ impl Component for StashMsgComponent {
         self.input.hide()
     }
 
-    fn show(&mut self) {
-        self.input.show()
+    fn show(&mut self) -> Result<()> {
+        self.input.show()?;
+
+        Ok(())
     }
 }
 

@@ -10,6 +10,7 @@ use crate::{
     strings,
     ui::style::Theme,
 };
+use anyhow::Result;
 use asyncgit::{
     sync::status::StatusType, AsyncDiff, AsyncNotification,
     AsyncStatus, DiffParams, StatusParams,
@@ -52,7 +53,7 @@ impl DrawableComponent for Status {
         &mut self,
         f: &mut tui::Frame<B>,
         rect: tui::layout::Rect,
-    ) {
+    ) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(
@@ -89,9 +90,11 @@ impl DrawableComponent for Status {
             )
             .split(chunks[0]);
 
-        self.index_wd.draw(f, left_chunks[0]);
-        self.index.draw(f, left_chunks[1]);
-        self.diff.draw(f, chunks[1]);
+        self.index_wd.draw(f, left_chunks[0])?;
+        self.index.draw(f, left_chunks[1])?;
+        self.diff.draw(f, chunks[1])?;
+
+        Ok(())
     }
 }
 
@@ -137,7 +140,7 @@ impl Status {
         }
     }
 
-    fn switch_focus(&mut self, f: Focus) -> bool {
+    fn switch_focus(&mut self, f: Focus) -> Result<bool> {
         if self.focus != f {
             self.focus = f;
 
@@ -158,12 +161,12 @@ impl Status {
                 }
             };
 
-            self.update_diff();
+            self.update_diff()?;
 
-            return true;
+            return Ok(true);
         }
 
-        false
+        Ok(false)
     }
 
     fn set_diff_target(&mut self, target: DiffTarget) {
@@ -189,19 +192,18 @@ impl Status {
     }
 
     ///
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Result<()> {
         if self.is_visible() {
-            self.git_diff.refresh().unwrap();
-            self.git_status_workdir
-                .fetch(StatusParams::new(
-                    StatusType::WorkingDir,
-                    true,
-                ))
-                .unwrap();
+            self.git_diff.refresh()?;
+            self.git_status_workdir.fetch(StatusParams::new(
+                StatusType::WorkingDir,
+                true,
+            ))?;
             self.git_status_stage
-                .fetch(StatusParams::new(StatusType::Stage, true))
-                .unwrap();
+                .fetch(StatusParams::new(StatusType::Stage, true))?;
         }
+
+        Ok(())
     }
 
     ///
@@ -212,52 +214,59 @@ impl Status {
     }
 
     ///
-    pub fn update_git(&mut self, ev: AsyncNotification) {
+    pub fn update_git(
+        &mut self,
+        ev: AsyncNotification,
+    ) -> Result<()> {
         match ev {
-            AsyncNotification::Diff => self.update_diff(),
-            AsyncNotification::Status => self.update_status(),
+            AsyncNotification::Diff => self.update_diff()?,
+            AsyncNotification::Status => self.update_status()?,
             _ => (),
         }
+
+        Ok(())
     }
 
-    fn update_status(&mut self) {
-        let status = self.git_status_stage.last().unwrap();
-        self.index.update(&status.items);
+    fn update_status(&mut self) -> Result<()> {
+        let status = self.git_status_stage.last()?;
+        self.index.update(&status.items)?;
 
-        let status = self.git_status_workdir.last().unwrap();
-        self.index_wd.update(&status.items);
+        let status = self.git_status_workdir.last()?;
+        self.index_wd.update(&status.items)?;
 
-        self.update_diff();
+        self.update_diff()?;
+
+        Ok(())
     }
 
     ///
-    pub fn update_diff(&mut self) {
+    pub fn update_diff(&mut self) -> Result<()> {
         if let Some((path, is_stage)) = self.selected_path() {
             let diff_params = DiffParams(path.clone(), is_stage);
 
             if self.diff.current() == (path.clone(), is_stage) {
                 // we are already showing a diff of the right file
                 // maybe the diff changed (outside file change)
-                if let Some((params, last)) =
-                    self.git_diff.last().unwrap()
-                {
+                if let Some((params, last)) = self.git_diff.last()? {
                     if params == diff_params {
-                        self.diff.update(path, is_stage, last);
+                        self.diff.update(path, is_stage, last)?;
                     }
                 }
             } else {
                 // we dont show the right diff right now, so we need to request
                 if let Some(diff) =
-                    self.git_diff.request(diff_params).unwrap()
+                    self.git_diff.request(diff_params)?
                 {
-                    self.diff.update(path, is_stage, diff);
+                    self.diff.update(path, is_stage, diff)?;
                 } else {
-                    self.diff.clear();
+                    self.diff.clear()?;
                 }
             }
         } else {
-            self.diff.clear();
+            self.diff.clear()?;
         }
+
+        Ok(())
     }
 }
 
@@ -322,10 +331,10 @@ impl Component for Status {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: crossterm::event::Event) -> bool {
+    fn event(&mut self, ev: crossterm::event::Event) -> Result<bool> {
         if self.visible {
-            if event_pump(ev, self.components_mut().as_mut_slice()) {
-                return true;
+            if event_pump(ev, self.components_mut().as_mut_slice())? {
+                return Ok(true);
             }
 
             if let Event::Key(k) = ev {
@@ -345,12 +354,12 @@ impl Component for Status {
                             DiffTarget::WorkingDir => Focus::WorkDir,
                         })
                     }
-                    _ => false,
+                    _ => Ok(false),
                 };
             }
         }
 
-        false
+        Ok(false)
     }
 
     fn is_visible(&self) -> bool {
@@ -361,7 +370,9 @@ impl Component for Status {
         self.visible = false;
     }
 
-    fn show(&mut self) {
+    fn show(&mut self) -> Result<()> {
         self.visible = true;
+
+        Ok(())
     }
 }

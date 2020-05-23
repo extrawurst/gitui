@@ -10,6 +10,7 @@ use crate::{
     ui::calc_scroll_top,
     ui::style::Theme,
 };
+use anyhow::Result;
 use asyncgit::{sync, AsyncLog, AsyncNotification, FetchStatus, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -68,48 +69,51 @@ impl Revlog {
     }
 
     ///
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Result<()> {
         if self.visible {
             let log_changed =
-                self.git_log.fetch().unwrap() == FetchStatus::Started;
+                self.git_log.fetch()? == FetchStatus::Started;
 
-            self.count_total = self.git_log.count().unwrap();
+            self.count_total = self.git_log.count()?;
 
             if self
                 .items
                 .needs_data(self.selection, self.selection_max())
                 || log_changed
             {
-                self.fetch_commits();
+                self.fetch_commits()?;
             }
 
             if self.tags.is_empty() {
-                self.tags = sync::get_tags(CWD).unwrap();
+                self.tags = sync::get_tags(CWD)?;
             }
         }
+
+        Ok(())
     }
 
-    fn fetch_commits(&mut self) {
+    fn fetch_commits(&mut self) -> Result<()> {
         let want_min = self.selection.saturating_sub(SLICE_SIZE / 2);
 
         let commits = sync::get_commits_info(
             CWD,
-            &self.git_log.get_slice(want_min, SLICE_SIZE).unwrap(),
+            &self.git_log.get_slice(want_min, SLICE_SIZE)?,
             self.current_size.0.into(),
         );
 
         if let Ok(commits) = commits {
             self.items.set_items(want_min, commits);
         }
+
+        Ok(())
     }
 
-    fn move_selection(&mut self, scroll: ScrollType) {
+    fn move_selection(&mut self, scroll: ScrollType) -> Result<()> {
         self.update_scroll_speed();
 
         #[allow(clippy::cast_possible_truncation)]
-        let speed_int = usize::try_from(self.scroll_state.1 as i64)
-            .unwrap()
-            .max(1);
+        let speed_int =
+            usize::try_from(self.scroll_state.1 as i64)?.max(1);
 
         let page_offset =
             usize::from(self.current_size.1).saturating_sub(1);
@@ -134,7 +138,9 @@ impl Revlog {
         self.selection =
             cmp::min(self.selection, self.selection_max());
 
-        self.update();
+        self.update()?;
+
+        Ok(())
     }
 
     fn update_scroll_speed(&mut self) {
@@ -242,7 +248,11 @@ impl Revlog {
 }
 
 impl DrawableComponent for Revlog {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Rect,
+    ) -> Result<()> {
         self.current_size = (
             area.width.saturating_sub(2),
             area.height.saturating_sub(2),
@@ -276,44 +286,46 @@ impl DrawableComponent for Revlog {
                 .alignment(Alignment::Left),
             area,
         );
+
+        Ok(())
     }
 }
 
 impl Component for Revlog {
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(k) = ev {
                 return match k {
                     keys::MOVE_UP => {
-                        self.move_selection(ScrollType::Up);
-                        true
+                        self.move_selection(ScrollType::Up)?;
+                        Ok(true)
                     }
                     keys::MOVE_DOWN => {
-                        self.move_selection(ScrollType::Down);
-                        true
+                        self.move_selection(ScrollType::Down)?;
+                        Ok(true)
                     }
                     keys::SHIFT_UP | keys::HOME => {
-                        self.move_selection(ScrollType::Home);
-                        true
+                        self.move_selection(ScrollType::Home)?;
+                        Ok(true)
                     }
                     keys::SHIFT_DOWN | keys::END => {
-                        self.move_selection(ScrollType::End);
-                        true
+                        self.move_selection(ScrollType::End)?;
+                        Ok(true)
                     }
                     keys::PAGE_UP => {
-                        self.move_selection(ScrollType::PageUp);
-                        true
+                        self.move_selection(ScrollType::PageUp)?;
+                        Ok(true)
                     }
                     keys::PAGE_DOWN => {
-                        self.move_selection(ScrollType::PageDown);
-                        true
+                        self.move_selection(ScrollType::PageDown)?;
+                        Ok(true)
                     }
-                    _ => false,
+                    _ => Ok(false),
                 };
             }
         }
 
-        false
+        Ok(false)
     }
 
     fn commands(
@@ -343,9 +355,11 @@ impl Component for Revlog {
         self.git_log.set_background();
     }
 
-    fn show(&mut self) {
+    fn show(&mut self) -> Result<()> {
         self.visible = true;
         self.items.clear();
-        self.update();
+        self.update()?;
+
+        Ok(())
     }
 }

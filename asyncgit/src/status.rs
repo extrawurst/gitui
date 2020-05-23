@@ -16,7 +16,7 @@ use sync::status::StatusType;
 fn current_tick() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .expect("time before unix epoch!")
         .as_millis() as u64
 }
 

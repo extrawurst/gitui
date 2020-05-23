@@ -7,6 +7,7 @@ use crate::{
     strings,
     ui::style::Theme,
 };
+use anyhow::Result;
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
 use log::error;
@@ -20,8 +21,14 @@ pub struct CommitComponent {
 }
 
 impl DrawableComponent for CommitComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, rect: Rect) {
-        self.input.draw(f, rect)
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        rect: Rect,
+    ) -> Result<()> {
+        self.input.draw(f, rect)?;
+
+        Ok(())
     }
 }
 
@@ -41,25 +48,27 @@ impl Component for CommitComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.is_visible() {
-            if self.input.event(ev) {
-                return true;
+            if self.input.event(ev)? {
+                return Ok(true);
             }
 
             if let Event::Key(e) = ev {
                 match e.code {
                     KeyCode::Enter if self.can_commit() => {
-                        self.commit();
+                        self.commit()?;
                     }
+
                     _ => (),
                 };
 
                 // stop key event propagation
-                return true;
+                return Ok(true);
             }
         }
-        false
+
+        Ok(false)
     }
 
     fn is_visible(&self) -> bool {
@@ -70,8 +79,10 @@ impl Component for CommitComponent {
         self.input.hide()
     }
 
-    fn show(&mut self) {
-        self.input.show()
+    fn show(&mut self) -> Result<()> {
+        self.input.show()?;
+
+        Ok(())
     }
 }
 
@@ -88,10 +99,10 @@ impl CommitComponent {
         }
     }
 
-    fn commit(&mut self) {
+    fn commit(&mut self) -> Result<()> {
         let mut msg = self.input.get_text().clone();
         if let HookResult::NotOk(e) =
-            sync::hooks_commit_msg(CWD, &mut msg).unwrap()
+            sync::hooks_commit_msg(CWD, &mut msg)?
         {
             error!("commit-msg hook error: {}", e);
             self.queue.borrow_mut().push_back(
@@ -100,7 +111,7 @@ impl CommitComponent {
                     e
                 )),
             );
-            return;
+            return Ok(());
         }
 
         if let Err(e) = sync::commit(CWD, &msg) {
@@ -111,12 +122,10 @@ impl CommitComponent {
                     &e
                 )),
             );
-            return;
+            return Ok(());
         }
 
-        if let HookResult::NotOk(e) =
-            sync::hooks_post_commit(CWD).unwrap()
-        {
+        if let HookResult::NotOk(e) = sync::hooks_post_commit(CWD)? {
             error!("post-commit hook error: {}", e);
             self.queue.borrow_mut().push_back(
                 InternalEvent::ShowErrorMsg(format!(
@@ -132,6 +141,8 @@ impl CommitComponent {
         self.queue
             .borrow_mut()
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
     }
 
     fn can_commit(&self) -> bool {

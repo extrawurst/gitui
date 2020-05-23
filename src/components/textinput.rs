@@ -5,6 +5,7 @@ use super::{
 use crate::{
     components::dialog_paragraph, strings, ui, ui::style::Theme,
 };
+use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
 use strings::commands;
@@ -53,7 +54,11 @@ impl TextInputComponent {
 }
 
 impl DrawableComponent for TextInputComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        _rect: Rect,
+    ) -> Result<()> {
         if self.visible {
             let txt = if self.msg.is_empty() {
                 [Text::Styled(
@@ -74,6 +79,8 @@ impl DrawableComponent for TextInputComponent {
                 area,
             );
         }
+
+        Ok(())
     }
 }
 
@@ -94,27 +101,27 @@ impl Component for TextInputComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
                 match e.code {
                     KeyCode::Esc => {
                         self.hide();
-                        return true;
+                        return Ok(true);
                     }
                     KeyCode::Char(c) => {
                         self.msg.push(c);
-                        return true;
+                        return Ok(true);
                     }
                     KeyCode::Backspace => {
                         self.msg.pop();
-                        return true;
+                        return Ok(true);
                     }
                     _ => (),
                 };
             }
         }
-        false
+        Ok(false)
     }
 
     fn is_visible(&self) -> bool {
@@ -125,7 +132,9 @@ impl Component for TextInputComponent {
         self.visible = false
     }
 
-    fn show(&mut self) {
-        self.visible = true
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+
+        Ok(())
     }
 }

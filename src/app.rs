@@ -11,6 +11,7 @@ use crate::{
     tabs::{Revlog, Stashing, Status},
     ui::style::Theme,
 };
+use anyhow::Result;
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -26,7 +27,6 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Tabs, Text},
     Frame,
 };
-
 ///
 pub struct App {
     do_quit: bool,
@@ -73,7 +73,10 @@ impl App {
     }
 
     ///
-    pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
+    pub fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+    ) -> Result<()> {
         let chunks_main = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
@@ -90,9 +93,9 @@ impl App {
 
         //TODO: macro because of generic draw call
         match self.tab {
-            0 => self.status_tab.draw(f, chunks_main[1]),
-            1 => self.revlog.draw(f, chunks_main[1]),
-            2 => self.stashing_tab.draw(f, chunks_main[1]),
+            0 => self.status_tab.draw(f, chunks_main[1])?,
+            1 => self.revlog.draw(f, chunks_main[1])?,
+            2 => self.stashing_tab.draw(f, chunks_main[1])?,
             _ => panic!("unknown tab"),
         };
 
@@ -103,25 +106,27 @@ impl App {
             self.theme,
         );
 
-        self.draw_popups(f);
+        self.draw_popups(f)?;
+
+        Ok(())
     }
 
     ///
-    pub fn event(&mut self, ev: Event) {
+    pub fn event(&mut self, ev: Event) -> Result<()> {
         trace!("event: {:?}", ev);
 
         if self.check_quit(ev) {
-            return;
+            return Ok(());
         }
 
         let mut flags = NeedsUpdate::empty();
 
-        if event_pump(ev, self.components_mut().as_mut_slice()) {
+        if event_pump(ev, self.components_mut().as_mut_slice())? {
             flags.insert(NeedsUpdate::COMMANDS);
         } else if let Event::Key(k) = ev {
             let new_flags = match k {
                 keys::TAB_TOGGLE => {
-                    self.toggle_tabs();
+                    self.toggle_tabs()?;
                     NeedsUpdate::COMMANDS
                 }
 
@@ -131,42 +136,51 @@ impl App {
             flags.insert(new_flags);
         }
 
-        let new_flags = self.process_queue();
+        let new_flags = self.process_queue()?;
         flags.insert(new_flags);
 
         if flags.contains(NeedsUpdate::ALL) {
-            self.update();
+            self.update()?;
         }
         if flags.contains(NeedsUpdate::DIFF) {
-            self.status_tab.update_diff();
+            self.status_tab.update_diff()?;
         }
         if flags.contains(NeedsUpdate::COMMANDS) {
             self.update_commands();
         }
+
+        Ok(())
     }
 
     //TODO: do we need this?
     /// forward ticking to components that require it
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Result<()> {
         trace!("update");
-        self.status_tab.update();
-        self.revlog.update();
-        self.stashing_tab.update();
+        self.status_tab.update()?;
+        self.revlog.update()?;
+        self.stashing_tab.update()?;
+
+        Ok(())
     }
 
     ///
-    pub fn update_git(&mut self, ev: AsyncNotification) {
+    pub fn update_git(
+        &mut self,
+        ev: AsyncNotification,
+    ) -> Result<()> {
         trace!("update_git: {:?}", ev);
 
-        self.status_tab.update_git(ev);
-        self.stashing_tab.update_git(ev);
+        self.status_tab.update_git(ev)?;
+        self.stashing_tab.update_git(ev)?;
 
         match ev {
             AsyncNotification::Diff => (),
-            AsyncNotification::Log => self.revlog.update(),
+            AsyncNotification::Log => self.revlog.update()?,
             //TODO: is that needed?
             AsyncNotification::Status => self.update_commands(),
         }
+
+        Ok(())
     }
 
     ///
@@ -216,7 +230,7 @@ impl App {
         ]
     }
 
-    fn toggle_tabs(&mut self) {
+    fn toggle_tabs(&mut self) -> Result<()> {
         let mut new_tab = self.tab + 1;
         {
             let tabs = self.get_tabs();
@@ -224,13 +238,15 @@ impl App {
 
             for (i, t) in tabs.into_iter().enumerate() {
                 if new_tab == i {
-                    t.show();
+                    t.show()?;
                 } else {
                     t.hide();
                 }
             }
         }
         self.tab = new_tab;
+
+        Ok(())
     }
 
     fn update_commands(&mut self) {
@@ -239,25 +255,25 @@ impl App {
         self.current_commands.sort_by_key(|e| e.order);
     }
 
-    fn process_queue(&mut self) -> NeedsUpdate {
+    fn process_queue(&mut self) -> Result<NeedsUpdate> {
         let mut flags = NeedsUpdate::empty();
         loop {
             let front = self.queue.borrow_mut().pop_front();
             if let Some(e) = front {
-                flags.insert(self.process_internal_event(e));
+                flags.insert(self.process_internal_event(e)?);
             } else {
                 break;
             }
         }
         self.queue.borrow_mut().clear();
 
-        flags
+        Ok(flags)
     }
 
     fn process_internal_event(
         &mut self,
         ev: InternalEvent,
-    ) -> NeedsUpdate {
+    ) -> Result<NeedsUpdate> {
         let mut flags = NeedsUpdate::empty();
         match ev {
             InternalEvent::ResetItem(reset_item) => {
@@ -280,7 +296,7 @@ impl App {
                 }
             }
             InternalEvent::ConfirmResetItem(reset_item) => {
-                self.reset.open_for_path(reset_item);
+                self.reset.open_for_path(reset_item)?;
                 flags.insert(NeedsUpdate::COMMANDS);
             }
             InternalEvent::AddHunk(hash) => {
@@ -288,9 +304,7 @@ impl App {
                     self.status_tab.selected_path()
                 {
                     if is_stage {
-                        if sync::unstage_hunk(CWD, path, hash)
-                            .unwrap()
-                        {
+                        if sync::unstage_hunk(CWD, path, hash)? {
                             flags.insert(NeedsUpdate::ALL);
                         }
                     } else if sync::stage_hunk(CWD, path, hash)
@@ -301,17 +315,17 @@ impl App {
                 }
             }
             InternalEvent::ShowErrorMsg(msg) => {
-                self.msg.show_msg(msg.as_str());
+                self.msg.show_msg(msg.as_str())?;
                 flags.insert(NeedsUpdate::ALL);
             }
             InternalEvent::Update(u) => flags.insert(u),
-            InternalEvent::OpenCommit => self.commit.show(),
+            InternalEvent::OpenCommit => self.commit.show()?,
             InternalEvent::PopupStashing(_opts) => {
-                self.stashmsg_popup.show()
+                self.stashmsg_popup.show()?
             }
         };
 
-        flags
+        Ok(flags)
     }
 
     fn commands(&self, force_all: bool) -> Vec<CommandInfo> {
@@ -354,14 +368,19 @@ impl App {
             || self.msg.is_visible()
     }
 
-    fn draw_popups<B: Backend>(&mut self, f: &mut Frame<B>) {
+    fn draw_popups<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+    ) -> Result<()> {
         let size = f.size();
 
-        self.commit.draw(f, size);
-        self.stashmsg_popup.draw(f, size);
-        self.reset.draw(f, size);
-        self.help.draw(f, size);
-        self.msg.draw(f, size);
+        self.commit.draw(f, size)?;
+        self.stashmsg_popup.draw(f, size)?;
+        self.reset.draw(f, size)?;
+        self.help.draw(f, size)?;
+        self.msg.draw(f, size)?;
+
+        Ok(())
     }
 
     fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {

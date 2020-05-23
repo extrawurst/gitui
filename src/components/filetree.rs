@@ -12,6 +12,8 @@ use crate::{
     strings, ui,
     ui::style::Theme,
 };
+
+use anyhow::Result;
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::Event;
 use std::{borrow::Cow, convert::From, path::Path};
@@ -49,12 +51,14 @@ impl FileTreeComponent {
     }
 
     ///
-    pub fn update(&mut self, list: &[StatusItem]) {
+    pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
         let new_hash = hash(list);
         if self.current_hash != new_hash {
-            self.tree.update(list);
+            self.tree.update(list)?;
             self.current_hash = new_hash;
         }
+
+        Ok(())
     }
 
     ///
@@ -119,9 +123,8 @@ impl FileTreeComponent {
                     Self::item_status_char(status_item.status);
                 let file = Path::new(&status_item.path)
                     .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap();
+                    .and_then(std::ffi::OsStr::to_str)
+                    .expect("invalid path.");
 
                 let txt = if selected {
                     format!(
@@ -188,7 +191,11 @@ impl FileTreeComponent {
 }
 
 impl DrawableComponent for FileTreeComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, r: Rect) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        r: Rect,
+    ) -> Result<()> {
         let selection_offset =
             self.tree.tree.items().iter().enumerate().fold(
                 0,
@@ -230,6 +237,8 @@ impl DrawableComponent for FileTreeComponent {
             self.focused,
             self.theme,
         );
+
+        Ok(())
     }
 }
 
@@ -248,34 +257,34 @@ impl Component for FileTreeComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = ev {
                 return match e {
                     keys::MOVE_DOWN => {
-                        self.move_selection(MoveSelection::Down)
+                        Ok(self.move_selection(MoveSelection::Down))
                     }
                     keys::MOVE_UP => {
-                        self.move_selection(MoveSelection::Up)
+                        Ok(self.move_selection(MoveSelection::Up))
                     }
                     keys::HOME | keys::SHIFT_UP => {
-                        self.move_selection(MoveSelection::Home)
+                        Ok(self.move_selection(MoveSelection::Home))
                     }
                     keys::END | keys::SHIFT_DOWN => {
-                        self.move_selection(MoveSelection::End)
+                        Ok(self.move_selection(MoveSelection::End))
                     }
                     keys::MOVE_LEFT => {
-                        self.move_selection(MoveSelection::Left)
+                        Ok(self.move_selection(MoveSelection::Left))
                     }
                     keys::MOVE_RIGHT => {
-                        self.move_selection(MoveSelection::Right)
+                        Ok(self.move_selection(MoveSelection::Right))
                     }
-                    _ => false,
+                    _ => Ok(false),
                 };
             }
         }
 
-        false
+        Ok(false)
     }
 
     fn focused(&self) -> bool {

@@ -6,6 +6,9 @@ use std::{
     path::Path,
 };
 
+use anyhow::Result;
+use std::ffi::OsStr;
+
 /// holds the information shared among all `FileTreeItem` in a `FileTree`
 #[derive(Debug, Clone)]
 pub struct TreeItemInfo {
@@ -49,19 +52,29 @@ pub struct FileTreeItem {
 }
 
 impl FileTreeItem {
-    fn new_file(item: &StatusItem) -> Self {
+    fn new_file(item: &StatusItem) -> Result<Self> {
         let item_path = Path::new(&item.path);
         let indent = u8::try_from(
             item_path.ancestors().count().saturating_sub(2),
-        )
-        .unwrap();
-        let path = String::from(
-            item_path.file_name().unwrap().to_str().unwrap(),
-        );
+        )?;
 
-        Self {
-            info: TreeItemInfo::new(indent, path, item.path.clone()),
-            kind: FileTreeItemKind::File(item.clone()),
+        let name = item_path
+            .file_name()
+            .map(OsStr::to_string_lossy)
+            .map(|x| x.to_string());
+
+        match name {
+            Some(path) => Ok(Self {
+                info: TreeItemInfo::new(
+                    indent,
+                    path,
+                    item.path.clone(),
+                ),
+                kind: FileTreeItemKind::File(item.clone()),
+            }),
+            None => {
+                Err(anyhow::anyhow!("invalid file name {:?}", item))
+            }
         }
     }
 
@@ -69,22 +82,27 @@ impl FileTreeItem {
         path: &Path,
         path_string: String,
         collapsed: bool,
-    ) -> Self {
+    ) -> Result<Self> {
         let indent =
-            u8::try_from(path.ancestors().count().saturating_sub(2))
-                .unwrap();
-        let path = String::from(
-            path.components()
-                .last()
-                .unwrap()
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-        );
+            u8::try_from(path.ancestors().count().saturating_sub(2))?;
 
-        Self {
-            info: TreeItemInfo::new(indent, path, path_string),
-            kind: FileTreeItemKind::Path(PathCollapsed(collapsed)),
+        match path
+            .components()
+            .last()
+            .map(std::path::Component::as_os_str)
+            .map(OsStr::to_string_lossy)
+            .map(String::from)
+        {
+            Some(path) => Ok(Self {
+                info: TreeItemInfo::new(indent, path, path_string),
+                kind: FileTreeItemKind::Path(PathCollapsed(
+                    collapsed,
+                )),
+            }),
+
+            None => Err(anyhow::anyhow!(
+                "failed to create item from path"
+            )),
         }
     }
 }
@@ -121,7 +139,7 @@ impl FileTreeItems {
     pub(crate) fn new(
         list: &[StatusItem],
         collapsed: &BTreeSet<&String>,
-    ) -> Self {
+    ) -> Result<Self> {
         let mut nodes = Vec::with_capacity(list.len());
         let mut paths_added = BTreeSet::new();
 
@@ -134,13 +152,13 @@ impl FileTreeItems {
                     &mut nodes,
                     &mut paths_added,
                     &collapsed,
-                );
+                )?;
             }
 
-            nodes.push(FileTreeItem::new_file(&e));
+            nodes.push(FileTreeItem::new_file(&e)?);
         }
 
-        Self(nodes)
+        Ok(Self(nodes))
     }
 
     ///
@@ -178,7 +196,7 @@ impl FileTreeItems {
         nodes: &mut Vec<FileTreeItem>,
         paths_added: &mut BTreeSet<&'a Path>,
         collapsed: &BTreeSet<&String>,
-    ) {
+    ) -> Result<()> {
         let mut ancestors =
             { item_path.ancestors().skip(1).collect::<Vec<_>>() };
         ancestors.reverse();
@@ -194,10 +212,12 @@ impl FileTreeItems {
                         c,
                         path_string,
                         is_collapsed,
-                    ));
+                    )?);
                 }
             }
         }
+
+        Ok(())
     }
 }
 
@@ -235,7 +255,8 @@ mod tests {
             "file.txt", //
         ]);
 
-        let res = FileTreeItems::new(&items, &BTreeSet::new());
+        let res =
+            FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
 
         assert_eq!(
             res.0,
@@ -255,7 +276,8 @@ mod tests {
             "file2.txt", //
         ]);
 
-        let res = FileTreeItems::new(&items, &BTreeSet::new());
+        let res =
+            FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
 
         assert_eq!(res.0.len(), 2);
         assert_eq!(res.0[1].info.path, items[1].path);
@@ -268,6 +290,7 @@ mod tests {
         ]);
 
         let res = FileTreeItems::new(&items, &BTreeSet::new())
+            .unwrap()
             .0
             .iter()
             .map(|i| i.info.full_path.clone())
@@ -285,7 +308,8 @@ mod tests {
             "a/b/file.txt", //
         ]);
 
-        let list = FileTreeItems::new(&items, &BTreeSet::new());
+        let list =
+            FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
         let mut res = list
             .0
             .iter()
@@ -303,7 +327,8 @@ mod tests {
             "a.txt", //
         ]);
 
-        let list = FileTreeItems::new(&items, &BTreeSet::new());
+        let list =
+            FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
         let mut res = list
             .0
             .iter()
@@ -322,6 +347,7 @@ mod tests {
         ]);
 
         let res = FileTreeItems::new(&items, &BTreeSet::new())
+            .unwrap()
             .0
             .iter()
             .map(|i| i.info.full_path.clone())
@@ -350,7 +376,8 @@ mod tests {
                 "a/b/d", //
             ]),
             &BTreeSet::new(),
-        );
+        )
+        .unwrap();
 
         assert_eq!(
             res.find_parent_index(&String::from("a/b/c"), 3),

@@ -10,6 +10,7 @@ use crate::{
     strings,
     ui::style::Theme,
 };
+use anyhow::Result;
 use asyncgit::{
     sync::status::StatusType, AsyncNotification, AsyncStatus,
     StatusParams,
@@ -66,15 +67,15 @@ impl Stashing {
     }
 
     ///
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Result<()> {
         if self.visible {
-            self.git_status
-                .fetch(StatusParams::new(
-                    StatusType::Both,
-                    self.options.stash_untracked,
-                ))
-                .unwrap();
+            self.git_status.fetch(StatusParams::new(
+                StatusType::Both,
+                self.options.stash_untracked,
+            ))?;
         }
+
+        Ok(())
     }
 
     ///
@@ -83,13 +84,18 @@ impl Stashing {
     }
 
     ///
-    pub fn update_git(&mut self, ev: AsyncNotification) {
+    pub fn update_git(
+        &mut self,
+        ev: AsyncNotification,
+    ) -> Result<()> {
         if self.visible {
             if let AsyncNotification::Status = ev {
-                let status = self.git_status.last().unwrap();
-                self.index.update(&status.items);
+                let status = self.git_status.last()?;
+                self.index.update(&status.items)?;
             }
         }
+
+        Ok(())
     }
 
     fn get_option_text(&self) -> Vec<Text> {
@@ -127,7 +133,7 @@ impl DrawableComponent for Stashing {
         &mut self,
         f: &mut tui::Frame<B>,
         rect: tui::layout::Rect,
-    ) {
+    ) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(
@@ -153,7 +159,9 @@ impl DrawableComponent for Stashing {
             right_chunks[0],
         );
 
-        self.index.draw(f, chunks[0]);
+        self.index.draw(f, chunks[0])?;
+
+        Ok(())
     }
 }
 
@@ -184,10 +192,10 @@ impl Component for Stashing {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: crossterm::event::Event) -> bool {
+    fn event(&mut self, ev: crossterm::event::Event) -> Result<bool> {
         if self.visible {
-            if event_pump(ev, self.components_mut().as_mut_slice()) {
-                return true;
+            if event_pump(ev, self.components_mut().as_mut_slice())? {
+                return Ok(true);
             }
 
             if let Event::Key(k) = ev {
@@ -199,26 +207,26 @@ impl Component for Stashing {
                             ),
                         );
 
-                        true
+                        Ok(true)
                     }
                     keys::STASHING_TOGGLE_INDEX => {
                         self.options.keep_index =
                             !self.options.keep_index;
-                        self.update();
-                        true
+                        self.update()?;
+                        Ok(true)
                     }
                     keys::STASHING_TOGGLE_UNTRACKED => {
                         self.options.stash_untracked =
                             !self.options.stash_untracked;
-                        self.update();
-                        true
+                        self.update()?;
+                        Ok(true)
                     }
-                    _ => false,
+                    _ => Ok(false),
                 };
             }
         }
 
-        false
+        Ok(false)
     }
 
     fn is_visible(&self) -> bool {
@@ -229,8 +237,9 @@ impl Component for Stashing {
         self.visible = false;
     }
 
-    fn show(&mut self) {
+    fn show(&mut self) -> Result<()> {
         self.visible = true;
-        self.update();
+        self.update()?;
+        Ok(())
     }
 }
