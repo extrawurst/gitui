@@ -214,7 +214,6 @@ impl Revlog {
 
         for (idx, e) in self
             .items
-            .items
             .iter()
             .skip(self.scroll_top)
             .take(height)
@@ -238,7 +237,7 @@ impl Revlog {
     }
 
     fn relative_selection(&self) -> usize {
-        self.selection.saturating_sub(self.items.index_offset)
+        self.selection.saturating_sub(self.items.index_offset())
     }
 }
 
@@ -346,6 +345,7 @@ impl Component for Revlog {
 
     fn show(&mut self) {
         self.visible = true;
-        self.git_log.fetch().unwrap();
+        self.items.clear();
+        self.update();
     }
 }

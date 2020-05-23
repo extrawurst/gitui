@@ -1,5 +1,6 @@
 use asyncgit::sync::CommitInfo;
 use chrono::prelude::*;
+use std::slice::Iter;
 
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 
@@ -30,8 +31,8 @@ impl From<CommitInfo> for LogEntry {
 ///
 #[derive(Default)]
 pub(super) struct ItemBatch {
-    pub index_offset: usize,
-    pub items: Vec<LogEntry>,
+    index_offset: usize,
+    items: Vec<LogEntry>,
 }
 
 impl ItemBatch {
@@ -39,6 +40,22 @@ impl ItemBatch {
         self.index_offset + self.items.len()
     }
 
+    ///
+    pub fn index_offset(&self) -> usize {
+        self.index_offset
+    }
+
+    /// shortcut to get an `Iter` of our internal items
+    pub fn iter(&self) -> Iter<'_, LogEntry> {
+        self.items.iter()
+    }
+
+    /// clear curent list of items
+    pub fn clear(&mut self) {
+        self.items.clear();
+    }
+
+    /// insert new batch of items
     pub fn set_items(
         &mut self,
         start_index: usize,
@@ -49,6 +66,7 @@ impl ItemBatch {
         self.index_offset = start_index;
     }
 
+    /// returns `true` if we should fetch updated list of items
     pub fn needs_data(&self, idx: usize, idx_max: usize) -> bool {
         let want_min =
             idx.saturating_sub(SLICE_OFFSET_RELOAD_THRESHOLD);
