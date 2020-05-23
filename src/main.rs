@@ -139,7 +139,7 @@ fn draw<B: Backend>(
 ) -> io::Result<()> {
     terminal.draw(|mut f| {
         if let Err(e) = app.draw(&mut f) {
-            log::warn!("failed to draw: {:?}", e)
+            log::error!("failed to draw: {:?}", e)
         }
     })
 }

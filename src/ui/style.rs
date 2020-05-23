@@ -209,7 +209,7 @@ impl Theme {
         } else {
             let def = Theme::default();
             if def.save().is_err() {
-                warn!("failed to store default theme to disk.")
+                log::warn!("failed to store default theme to disk.")
             }
             Ok(def)
         }
