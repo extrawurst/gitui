@@ -24,7 +24,7 @@ pub fn repo(repo_path: &str) -> Result<Repository> {
     )?;
 
     if repo.is_bare() {
-        panic!("bare repo")
+        return Err(Error::Generic("bare repo".to_string()));
     }
 
     Ok(repo)

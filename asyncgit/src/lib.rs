@@ -4,6 +4,7 @@
 #![forbid(missing_docs)]
 #![deny(clippy::all)]
 #![deny(clippy::result_unwrap_used)]
+#![deny(clippy::panic)]
 
 mod diff;
 mod error;
