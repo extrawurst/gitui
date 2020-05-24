@@ -24,7 +24,9 @@ use tui::{
 };
 use utils::{ItemBatch, LogEntry};
 
-static SLICE_SIZE: usize = 1200;
+const SLICE_SIZE: usize = 1200;
+const ELEMENTS_PER_LINE: usize = 10;
+
 ///
 pub struct Revlog {
     selection: usize,
@@ -174,8 +176,6 @@ impl Revlog {
         tags: Option<String>,
         theme: &Theme,
     ) {
-        const ELEMENTS_PER_LINE: usize = 10;
-
         txt.reserve(ELEMENTS_PER_LINE);
 
         let splitter_txt = Cow::from(" ");
@@ -229,7 +229,7 @@ impl Revlog {
     fn get_text(&self, height: usize) -> Vec<Text> {
         let selection = self.relative_selection();
 
-        let mut txt = Vec::with_capacity(height);
+        let mut txt = Vec::with_capacity(height * ELEMENTS_PER_LINE);
 
         for (idx, e) in self
             .items
