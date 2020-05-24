@@ -372,6 +372,7 @@ impl Component for Status {
 
     fn show(&mut self) -> Result<()> {
         self.visible = true;
+        self.update()?;
 
         Ok(())
     }
