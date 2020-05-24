@@ -182,21 +182,31 @@ impl Revlog {
         let splitter =
             Text::Styled(splitter_txt, theme.text(true, selected));
 
+        // commit hash
         txt.push(Text::Styled(
             Cow::from(&e.hash[0..7]),
             theme.commit_hash(selected),
         ));
+
         txt.push(splitter.clone());
+
+        // commit timestamp
         txt.push(Text::Styled(
             Cow::from(e.time.as_str()),
             theme.commit_time(selected),
         ));
+
         txt.push(splitter.clone());
+
+        // commit author
         txt.push(Text::Styled(
             Cow::from(e.author.as_str()),
             theme.commit_author(selected),
         ));
+
         txt.push(splitter.clone());
+
+        // commit tags
         txt.push(Text::Styled(
             Cow::from(if let Some(tags) = tags {
                 format!(" {}", tags)
@@ -205,7 +215,10 @@ impl Revlog {
             }),
             theme.tab(true).bg(theme.text(true, selected).bg),
         ));
+
         txt.push(splitter);
+
+        // commit msg
         txt.push(Text::Styled(
             Cow::from(e.msg.as_str()),
             theme.text(true, selected),
@@ -216,7 +229,7 @@ impl Revlog {
     fn get_text(&self, height: usize) -> Vec<Text> {
         let selection = self.relative_selection();
 
-        let mut txt = Vec::new();
+        let mut txt = Vec::with_capacity(height);
 
         for (idx, e) in self
             .items
@@ -230,6 +243,7 @@ impl Revlog {
             } else {
                 None
             };
+
             Self::add_entry(
                 e,
                 idx + self.scroll_top == selection,
