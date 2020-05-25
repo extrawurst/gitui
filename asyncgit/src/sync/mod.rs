@@ -11,14 +11,14 @@ pub mod status;
 mod tags;
 pub mod utils;
 
-pub use commits_info::{get_commits_info, CommitInfo};
+pub use commits_info::{get_commits_info, CommitId, CommitInfo};
 pub use hooks::{hooks_commit_msg, hooks_post_commit, HookResult};
 pub use hunks::{stage_hunk, unstage_hunk};
 pub use logwalker::LogWalker;
 pub use reset::{
     reset_stage, reset_workdir_file, reset_workdir_folder,
 };
-pub use stash::stash_save;
+pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use tags::{get_tags, Tags};
 pub use utils::{
     commit, stage_add_all, stage_add_file, stage_addremoved,

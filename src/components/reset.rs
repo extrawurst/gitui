@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     components::dialog_paragraph,
-    queue::{InternalEvent, Queue, ResetItem},
+    queue::{Action, InternalEvent, Queue},
     strings, ui,
     ui::style::Theme,
 };
@@ -21,7 +21,7 @@ use tui::{
 
 ///
 pub struct ResetComponent {
-    target: Option<ResetItem>,
+    target: Option<Action>,
     visible: bool,
     queue: Queue,
     theme: Theme,
@@ -34,16 +34,17 @@ impl DrawableComponent for ResetComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let mut txt = Vec::new();
-            txt.push(Text::Styled(
-                Cow::from(strings::RESET_MSG),
+            let (title, msg) = self.get_text();
+
+            let txt = vec![Text::Styled(
+                Cow::from(msg),
                 self.theme.text_danger(),
-            ));
+            )];
 
             let area = ui::centered_rect(30, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                dialog_paragraph(strings::RESET_TITLE, txt.iter()),
+                dialog_paragraph(title, txt.iter()),
                 area,
             );
         }
@@ -120,20 +121,37 @@ impl ResetComponent {
         }
     }
     ///
-    pub fn open_for_path(&mut self, item: ResetItem) -> Result<()> {
-        self.target = Some(item);
+    pub fn open(&mut self, a: Action) -> Result<()> {
+        self.target = Some(a);
         self.show()?;
 
         Ok(())
     }
     ///
     pub fn confirm(&mut self) {
-        if let Some(target) = self.target.take() {
+        if let Some(a) = self.target.take() {
             self.queue
                 .borrow_mut()
-                .push_back(InternalEvent::ResetItem(target));
+                .push_back(InternalEvent::ConfirmedAction(a));
         }
 
         self.hide();
+    }
+
+    fn get_text(&self) -> (&str, &str) {
+        if let Some(ref a) = self.target {
+            return match a {
+                Action::Reset(_) => (
+                    strings::CONFIRM_TITLE_RESET,
+                    strings::CONFIRM_MSG_RESET,
+                ),
+                Action::StashDrop(_) => (
+                    strings::CONFIRM_TITLE_STASHDROP,
+                    strings::CONFIRM_MSG_STASHDROP,
+                ),
+            };
+        }
+
+        ("", "")
     }
 }

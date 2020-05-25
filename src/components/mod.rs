@@ -1,6 +1,7 @@
 mod changes;
 mod command;
 mod commit;
+mod commitlist;
 mod diff;
 mod filetree;
 mod help;
@@ -13,6 +14,7 @@ use anyhow::Result;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
+pub use commitlist::CommitList;
 use crossterm::event::Event;
 pub use diff::DiffComponent;
 pub use filetree::FileTreeComponent;

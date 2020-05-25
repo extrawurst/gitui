@@ -1,4 +1,5 @@
 use crate::tabs::StashingOptions;
+use asyncgit::sync::CommitId;
 use bitflags::bitflags;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
@@ -23,11 +24,17 @@ pub struct ResetItem {
 }
 
 ///
+pub enum Action {
+    Reset(ResetItem),
+    StashDrop(CommitId),
+}
+
+///
 pub enum InternalEvent {
     ///
-    ConfirmResetItem(ResetItem),
+    ConfirmAction(Action),
     ///
-    ResetItem(ResetItem),
+    ConfirmedAction(Action),
     ///
     AddHunk(u64),
     ///
@@ -38,6 +45,8 @@ pub enum InternalEvent {
     OpenCommit,
     ///
     PopupStashing(StashingOptions),
+    ///
+    TabSwitch,
 }
 
 ///

@@ -1,15 +1,15 @@
-use asyncgit::sync::CommitInfo;
+use asyncgit::sync::{CommitId, CommitInfo};
 use chrono::prelude::*;
 use std::slice::Iter;
 
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 
-#[derive(Default)]
-pub(super) struct LogEntry {
+pub struct LogEntry {
     pub time: String,
     pub author: String,
     pub msg: String,
-    pub hash: String,
+    pub hash_short: String,
+    pub id: CommitId,
 }
 
 impl From<CommitInfo> for LogEntry {
@@ -19,18 +19,22 @@ impl From<CommitInfo> for LogEntry {
                 NaiveDateTime::from_timestamp(c.time, 0),
                 Utc,
             ));
+
+        let hash = c.id.to_string().chars().take(7).collect();
+
         Self {
             author: c.author,
             msg: c.message,
             time: time.format("%Y-%m-%d %H:%M:%S").to_string(),
-            hash: c.hash,
+            hash_short: hash,
+            id: c.id,
         }
     }
 }
 
 ///
 #[derive(Default)]
-pub(super) struct ItemBatch {
+pub struct ItemBatch {
     index_offset: usize,
     items: Vec<LogEntry>,
 }

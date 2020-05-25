@@ -3,6 +3,28 @@ use crate::error::Result;
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
 
+/// identifies a single commit
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct CommitId(Oid);
+
+impl CommitId {
+    /// create new CommitId
+    pub fn new(id: Oid) -> Self {
+        Self(id)
+    }
+
+    ///
+    pub(crate) fn get_oid(self) -> Oid {
+        self.0
+    }
+}
+
+impl ToString for CommitId {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 ///
 #[derive(Debug)]
 pub struct CommitInfo {
@@ -13,7 +35,7 @@ pub struct CommitInfo {
     ///
     pub author: String,
     ///
-    pub hash: String,
+    pub id: CommitId,
 }
 
 ///
@@ -44,7 +66,7 @@ pub fn get_commits_info(
                 message,
                 author,
                 time: c.time().seconds(),
-                hash: c.id().to_string(),
+                id: CommitId(c.id()),
             }
         })
         .collect::<Vec<_>>();

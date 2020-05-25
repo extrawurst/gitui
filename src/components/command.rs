@@ -41,6 +41,7 @@ pub struct CommandInfo {
     pub enabled: bool,
     /// will show up in the quick bar
     pub quick_bar: bool,
+
     /// available in current app state
     pub available: bool,
     /// used to order commands in quickbar

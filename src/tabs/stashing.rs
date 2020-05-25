@@ -24,7 +24,7 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Text},
 };
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct StashingOptions {
     pub stash_untracked: bool,
     pub keep_index: bool,
@@ -171,23 +171,29 @@ impl Component for Stashing {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
-        command_pump(out, force_all, self.components().as_slice());
+        if self.visible || force_all {
+            command_pump(
+                out,
+                force_all,
+                self.components().as_slice(),
+            );
 
-        out.push(CommandInfo::new(
-            commands::STASHING_SAVE,
-            self.visible && !self.index.is_empty(),
-            self.visible || force_all,
-        ));
-        out.push(CommandInfo::new(
-            commands::STASHING_TOGGLE_INDEXED,
-            self.visible,
-            self.visible || force_all,
-        ));
-        out.push(CommandInfo::new(
-            commands::STASHING_TOGGLE_UNTRACKED,
-            self.visible,
-            self.visible || force_all,
-        ));
+            out.push(CommandInfo::new(
+                commands::STASHING_SAVE,
+                self.visible && !self.index.is_empty(),
+                self.visible || force_all,
+            ));
+            out.push(CommandInfo::new(
+                commands::STASHING_TOGGLE_INDEXED,
+                self.visible,
+                self.visible || force_all,
+            ));
+            out.push(CommandInfo::new(
+                commands::STASHING_TOGGLE_UNTRACKED,
+                self.visible,
+                self.visible || force_all,
+            ));
+        }
 
         visibility_blocking(self)
     }

@@ -6,14 +6,15 @@ use crate::{
         FileTreeItemKind,
     },
     keys,
-    queue::Queue,
+    queue::{Queue, ResetItem},
     strings,
     ui::style::Theme,
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::status::StatusType, AsyncDiff, AsyncNotification,
-    AsyncStatus, DiffParams, StatusParams,
+    sync::{self, status::StatusType},
+    AsyncDiff, AsyncNotification, AsyncStatus, DiffParams,
+    StatusParams, CWD,
 };
 use components::{command_pump, visibility_blocking};
 use crossbeam_channel::Sender;
@@ -267,6 +268,16 @@ impl Status {
         }
 
         Ok(())
+    }
+
+    /// called after confirmation
+    pub fn reset(item: &ResetItem) -> bool {
+        if item.is_folder {
+            sync::reset_workdir_folder(CWD, item.path.as_str())
+                .is_ok()
+        } else {
+            sync::reset_workdir_file(CWD, item.path.as_str()).is_ok()
+        }
     }
 }
 

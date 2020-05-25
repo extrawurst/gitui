@@ -56,7 +56,7 @@ impl Component for StashMsgComponent {
 
             if let Event::Key(e) = ev {
                 if let KeyCode::Enter = e.code {
-                    if sync::stash_save(
+                    match sync::stash_save(
                         CWD,
                         if self.input.get_text().is_empty() {
                             None
@@ -65,15 +65,31 @@ impl Component for StashMsgComponent {
                         },
                         self.options.stash_untracked,
                         self.options.keep_index,
-                    )
-                    .is_ok()
-                    {
-                        self.input.clear();
-                        self.hide();
+                    ) {
+                        Ok(()) => {
+                            self.input.clear();
+                            self.hide();
 
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::Update(NeedsUpdate::ALL),
-                        );
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::Update(
+                                    NeedsUpdate::ALL,
+                                ),
+                            );
+                        }
+                        Err(e) => {
+                            self.hide();
+                            log::error!(
+                                "e: {} (options: {:?})",
+                                e,
+                                self.options
+                            );
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::ShowErrorMsg(format!(
+                                    "stash error:\n{}\noptions:\n{:?}",
+                                    e, self.options
+                                )),
+                            );
+                        }
                     }
                 }
 
@@ -111,5 +127,10 @@ impl StashMsgComponent {
                 strings::STASH_POPUP_MSG,
             ),
         }
+    }
+
+    ///
+    pub fn options(&mut self, options: StashingOptions) {
+        self.options = options;
     }
 }

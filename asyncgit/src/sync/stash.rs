@@ -1,39 +1,71 @@
-use super::utils::repo;
-use crate::error::Result;
-use git2::{Oid, StashFlags};
+use super::{utils::repo, CommitId};
+use crate::error::{Error, Result};
+use git2::{Oid, Repository, StashFlags};
 use scopetime::scope_time;
 
 ///
-#[allow(dead_code)]
-pub struct StashItem {
-    pub msg: String,
-    index: usize,
-    id: Oid,
-}
-
-///
-#[allow(dead_code)]
-pub struct StashItems(Vec<StashItem>);
-
-///
-#[allow(dead_code)]
-pub fn get_stashes(repo_path: &str) -> Result<StashItems> {
+pub fn get_stashes(repo_path: &str) -> Result<Vec<Oid>> {
     scope_time!("get_stashes");
 
     let mut repo = repo(repo_path)?;
 
     let mut list = Vec::new();
 
-    repo.stash_foreach(|index, msg, id| {
-        list.push(StashItem {
-            msg: msg.to_string(),
-            index,
-            id: *id,
-        });
+    repo.stash_foreach(|_index, _msg, id| {
+        list.push(*id);
         true
     })?;
 
-    Ok(StashItems(list))
+    Ok(list)
+}
+
+///
+pub fn stash_drop(repo_path: &str, stash_id: CommitId) -> Result<()> {
+    scope_time!("stash_drop");
+
+    let mut repo = repo(repo_path)?;
+
+    let index = get_stash_index(&mut repo, stash_id.get_oid())?;
+
+    repo.stash_drop(index)?;
+
+    Ok(())
+}
+
+///
+pub fn stash_apply(
+    repo_path: &str,
+    stash_id: CommitId,
+) -> Result<()> {
+    scope_time!("stash_apply");
+
+    let mut repo = repo(repo_path)?;
+
+    let index = get_stash_index(&mut repo, stash_id.get_oid())?;
+
+    repo.stash_apply(index, None)?;
+
+    Ok(())
+}
+
+fn get_stash_index(
+    repo: &mut Repository,
+    stash_id: Oid,
+) -> Result<usize> {
+    let mut idx = None;
+
+    repo.stash_foreach(|index, _msg, id| {
+        if *id == stash_id {
+            idx = Some(index);
+            false
+        } else {
+            true
+        }
+    })?;
+
+    idx.ok_or_else(|| {
+        Error::Generic("stash commit not found".to_string())
+    })
 }
 
 ///
@@ -66,7 +98,10 @@ pub fn stash_save(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sync::tests::{get_statuses, repo_init};
+    use crate::sync::{
+        get_commits_info,
+        tests::{get_statuses, repo_init},
+    };
     use std::{fs::File, io::Write};
 
     #[test]
@@ -80,10 +115,7 @@ mod tests {
             false
         );
 
-        assert_eq!(
-            get_stashes(repo_path).unwrap().0.is_empty(),
-            true
-        );
+        assert_eq!(get_stashes(repo_path).unwrap().is_empty(), true);
     }
 
     #[test]
@@ -117,9 +149,28 @@ mod tests {
 
         let res = get_stashes(repo_path)?;
 
-        assert_eq!(res.0.len(), 1);
-        assert_eq!(res.0[0].msg, "On master: foo");
-        assert_eq!(res.0[0].index, 0);
+        assert_eq!(res.len(), 1);
+
+        let infos =
+            get_commits_info(repo_path, &[res[0]], 100).unwrap();
+
+        assert_eq!(infos[0].message, "On master: foo");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_stash_nothing_untracked() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join("foo.txt"))?
+            .write_all(b"test\nfoo")?;
+
+        assert!(
+            stash_save(repo_path, Some("foo"), false, false).is_err()
+        );
 
         Ok(())
     }

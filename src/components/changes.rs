@@ -6,7 +6,7 @@ use super::{
 use crate::{
     components::{CommandInfo, Component},
     keys,
-    queue::{InternalEvent, NeedsUpdate, Queue, ResetItem},
+    queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings,
     ui::style::Theme,
 };
@@ -112,10 +112,12 @@ impl ChangesComponent {
             let is_folder =
                 matches!(tree_item.kind, FileTreeItemKind::Path(_));
             self.queue.borrow_mut().push_back(
-                InternalEvent::ConfirmResetItem(ResetItem {
-                    path: tree_item.info.full_path,
-                    is_folder,
-                }),
+                InternalEvent::ConfirmAction(Action::Reset(
+                    ResetItem {
+                        path: tree_item.info.full_path,
+                        is_folder,
+                    },
+                )),
             );
 
             return true;

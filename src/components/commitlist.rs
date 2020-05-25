@@ -1,18 +1,16 @@
-mod utils;
-
+use super::utils::logitems::{ItemBatch, LogEntry};
 use crate::{
     components::{
         CommandBlocking, CommandInfo, Component, DrawableComponent,
         ScrollType,
     },
     keys,
-    strings::{self, commands},
+    strings::commands,
     ui::calc_scroll_top,
     ui::style::Theme,
 };
 use anyhow::Result;
-use asyncgit::{sync, AsyncLog, AsyncNotification, FetchStatus, CWD};
-use crossbeam_channel::Sender;
+use asyncgit::sync;
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp, convert::TryFrom, time::Instant};
 use sync::Tags;
@@ -22,18 +20,15 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Text},
     Frame,
 };
-use utils::{ItemBatch, LogEntry};
 
-const SLICE_SIZE: usize = 1200;
 const ELEMENTS_PER_LINE: usize = 10;
 
 ///
-pub struct Revlog {
+pub struct CommitList {
+    title: String,
     selection: usize,
     count_total: usize,
     items: ItemBatch,
-    git_log: AsyncLog,
-    visible: bool,
     scroll_state: (Instant, f32),
     tags: Tags,
     current_size: (u16, u16),
@@ -41,76 +36,63 @@ pub struct Revlog {
     theme: Theme,
 }
 
-impl Revlog {
+impl CommitList {
     ///
-    pub fn new(
-        sender: &Sender<AsyncNotification>,
-        theme: &Theme,
-    ) -> Self {
+    pub fn new(title: &str, theme: &Theme) -> Self {
         Self {
             items: ItemBatch::default(),
-            git_log: AsyncLog::new(sender.clone()),
             selection: 0,
             count_total: 0,
-            visible: false,
             scroll_state: (Instant::now(), 0_f32),
             tags: Tags::new(),
             current_size: (0, 0),
             scroll_top: 0,
             theme: *theme,
+            title: String::from(title),
         }
     }
 
     ///
-    pub fn any_work_pending(&self) -> bool {
-        self.git_log.is_pending()
+    pub fn items(&mut self) -> &mut ItemBatch {
+        &mut self.items
     }
 
-    fn selection_max(&self) -> usize {
+    ///
+    pub fn selection(&self) -> usize {
+        self.selection
+    }
+
+    ///
+    pub fn current_size(&self) -> (u16, u16) {
+        self.current_size
+    }
+
+    ///
+    pub fn set_count_total(&mut self, total: usize) {
+        self.count_total = total;
+    }
+
+    ///
+    pub fn selection_max(&self) -> usize {
         self.count_total.saturating_sub(1)
     }
 
     ///
-    pub fn update(&mut self) -> Result<()> {
-        if self.visible {
-            let log_changed =
-                self.git_log.fetch()? == FetchStatus::Started;
-
-            self.count_total = self.git_log.count()?;
-
-            if self
-                .items
-                .needs_data(self.selection, self.selection_max())
-                || log_changed
-            {
-                self.fetch_commits()?;
-            }
-
-            if self.tags.is_empty() {
-                self.tags = sync::get_tags(CWD)?;
-            }
-        }
-
-        Ok(())
+    pub fn tags(&self) -> &Tags {
+        &self.tags
     }
 
-    fn fetch_commits(&mut self) -> Result<()> {
-        let want_min = self.selection.saturating_sub(SLICE_SIZE / 2);
-
-        let commits = sync::get_commits_info(
-            CWD,
-            &self.git_log.get_slice(want_min, SLICE_SIZE)?,
-            self.current_size.0.into(),
-        );
-
-        if let Ok(commits) = commits {
-            self.items.set_items(want_min, commits);
-        }
-
-        Ok(())
+    ///
+    pub fn set_tags(&mut self, tags: Tags) {
+        self.tags = tags;
     }
 
-    fn move_selection(&mut self, scroll: ScrollType) -> Result<()> {
+    ///
+    pub fn selected_entry(&self) -> Option<&LogEntry> {
+        self.items.iter().nth(self.selection)
+    }
+
+    fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
         self.update_scroll_speed();
 
         #[allow(clippy::cast_possible_truncation)]
@@ -120,7 +102,7 @@ impl Revlog {
         let page_offset =
             usize::from(self.current_size.1).saturating_sub(1);
 
-        self.selection = match scroll {
+        let new_selection = match scroll {
             ScrollType::Up => {
                 self.selection.saturating_sub(speed_int)
             }
@@ -137,12 +119,14 @@ impl Revlog {
             ScrollType::End => self.selection_max(),
         };
 
-        self.selection =
-            cmp::min(self.selection, self.selection_max());
+        let new_selection =
+            cmp::min(new_selection, self.selection_max());
 
-        self.update()?;
+        let needs_update = new_selection != self.selection;
 
-        Ok(())
+        self.selection = new_selection;
+
+        Ok(needs_update)
     }
 
     fn update_scroll_speed(&mut self) {
@@ -184,7 +168,7 @@ impl Revlog {
 
         // commit hash
         txt.push(Text::Styled(
-            Cow::from(&e.hash[0..7]),
+            Cow::from(e.hash_short.as_str()),
             theme.commit_hash(selected),
         ));
 
@@ -238,7 +222,7 @@ impl Revlog {
             .take(height)
             .enumerate()
         {
-            let tag = if let Some(tags) = self.tags.get(&e.hash) {
+            let tag = if let Some(tags) = self.tags.get(&e.id) {
                 Some(tags.join(" "))
             } else {
                 None
@@ -261,7 +245,7 @@ impl Revlog {
     }
 }
 
-impl DrawableComponent for Revlog {
+impl DrawableComponent for CommitList {
     fn draw<B: Backend>(
         &mut self,
         f: &mut Frame<B>,
@@ -283,7 +267,7 @@ impl DrawableComponent for Revlog {
 
         let title = format!(
             "{} {}/{}",
-            strings::LOG_TITLE,
+            self.title,
             self.count_total.saturating_sub(self.selection),
             self.count_total,
         );
@@ -305,38 +289,32 @@ impl DrawableComponent for Revlog {
     }
 }
 
-impl Component for Revlog {
+impl Component for CommitList {
     fn event(&mut self, ev: Event) -> Result<bool> {
-        if self.visible {
-            if let Event::Key(k) = ev {
-                return match k {
-                    keys::MOVE_UP => {
-                        self.move_selection(ScrollType::Up)?;
-                        Ok(true)
-                    }
-                    keys::MOVE_DOWN => {
-                        self.move_selection(ScrollType::Down)?;
-                        Ok(true)
-                    }
-                    keys::SHIFT_UP | keys::HOME => {
-                        self.move_selection(ScrollType::Home)?;
-                        Ok(true)
-                    }
-                    keys::SHIFT_DOWN | keys::END => {
-                        self.move_selection(ScrollType::End)?;
-                        Ok(true)
-                    }
-                    keys::PAGE_UP => {
-                        self.move_selection(ScrollType::PageUp)?;
-                        Ok(true)
-                    }
-                    keys::PAGE_DOWN => {
-                        self.move_selection(ScrollType::PageDown)?;
-                        Ok(true)
-                    }
-                    _ => Ok(false),
-                };
-            }
+        if let Event::Key(k) = ev {
+            let selection_changed = match k {
+                keys::MOVE_UP => {
+                    self.move_selection(ScrollType::Up)?
+                }
+                keys::MOVE_DOWN => {
+                    self.move_selection(ScrollType::Down)?
+                }
+                keys::SHIFT_UP | keys::HOME => {
+                    self.move_selection(ScrollType::Home)?
+                }
+                keys::SHIFT_DOWN | keys::END => {
+                    self.move_selection(ScrollType::End)?
+                }
+                keys::PAGE_UP => {
+                    self.move_selection(ScrollType::PageUp)?
+                }
+                keys::PAGE_DOWN => {
+                    self.move_selection(ScrollType::PageDown)?
+                }
+                _ => false,
+            };
+
+            return Ok(selection_changed);
         }
 
         Ok(false)
@@ -345,35 +323,13 @@ impl Component for Revlog {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
-        force_all: bool,
+        _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
             commands::SCROLL,
-            self.visible,
-            self.visible || force_all,
+            self.selected_entry().is_some(),
+            true,
         ));
-
-        if self.visible {
-            CommandBlocking::Blocking
-        } else {
-            CommandBlocking::PassingOn
-        }
-    }
-
-    fn is_visible(&self) -> bool {
-        self.visible
-    }
-
-    fn hide(&mut self) {
-        self.visible = false;
-        self.git_log.set_background();
-    }
-
-    fn show(&mut self) -> Result<()> {
-        self.visible = true;
-        self.items.clear();
-        self.update()?;
-
-        Ok(())
+        CommandBlocking::PassingOn
     }
 }

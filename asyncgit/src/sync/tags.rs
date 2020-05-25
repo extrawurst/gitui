@@ -1,17 +1,17 @@
-use super::utils::repo;
+use super::{utils::repo, CommitId};
 use crate::error::Result;
 use scopetime::scope_time;
 use std::collections::HashMap;
 
 /// hashmap of tag target commit hash to tag names
-pub type Tags = HashMap<String, Vec<String>>;
+pub type Tags = HashMap<CommitId, Vec<String>>;
 
 /// returns `Tags` type filled with all tags found in repo
 pub fn get_tags(repo_path: &str) -> Result<Tags> {
     scope_time!("get_tags");
 
     let mut res = Tags::new();
-    let mut adder = |key: String, value: String| {
+    let mut adder = |key, value: String| {
         if let Some(key) = res.get_mut(&key) {
             key.push(value)
         } else {
@@ -26,9 +26,8 @@ pub fn get_tags(repo_path: &str) -> Result<Tags> {
             let obj = repo.revparse_single(name)?;
 
             if let Some(tag) = obj.as_tag() {
-                let target_hash = tag.target_id().to_string();
                 let tag_name = String::from(name);
-                adder(target_hash, tag_name);
+                adder(CommitId::new(tag.target_id()), tag_name);
             }
         }
     }
@@ -70,7 +69,7 @@ mod tests {
         repo.tag("b", &target, &sig, "", false).unwrap();
 
         assert_eq!(
-            get_tags(repo_path).unwrap()[&head_id.to_string()],
+            get_tags(repo_path).unwrap()[&CommitId::new(head_id)],
             vec!["a", "b"]
         );
     }

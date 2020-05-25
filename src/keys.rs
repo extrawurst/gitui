@@ -46,3 +46,6 @@ pub const STASHING_TOGGLE_UNTRACKED: KeyEvent =
     no_mod(KeyCode::Char('u'));
 pub const STASHING_TOGGLE_INDEX: KeyEvent =
     no_mod(KeyCode::Char('i'));
+pub const STASH_APPLY: KeyEvent = no_mod(KeyCode::Enter);
+pub const STASH_DROP: KeyEvent =
+    with_mod(KeyCode::Char('D'), KeyModifiers::SHIFT);

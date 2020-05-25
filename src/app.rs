@@ -6,9 +6,9 @@ use crate::{
         ResetComponent, StashMsgComponent,
     },
     keys,
-    queue::{InternalEvent, NeedsUpdate, Queue},
+    queue::{Action, InternalEvent, NeedsUpdate, Queue},
     strings,
-    tabs::{Revlog, Stashing, Status},
+    tabs::{Revlog, StashList, Stashing, Status},
     ui::style::Theme,
 };
 use anyhow::{anyhow, Result};
@@ -39,6 +39,7 @@ pub struct App {
     revlog: Revlog,
     status_tab: Status,
     stashing_tab: Stashing,
+    stashlist_tab: StashList,
     queue: Queue,
     theme: Theme,
 }
@@ -66,6 +67,7 @@ impl App {
             revlog: Revlog::new(&sender, &theme),
             status_tab: Status::new(&sender, &queue, &theme),
             stashing_tab: Stashing::new(&sender, &queue, &theme),
+            stashlist_tab: StashList::new(&queue, &theme),
             queue,
             theme,
         }
@@ -95,6 +97,7 @@ impl App {
             0 => self.status_tab.draw(f, chunks_main[1])?,
             1 => self.revlog.draw(f, chunks_main[1])?,
             2 => self.stashing_tab.draw(f, chunks_main[1])?,
+            3 => self.stashlist_tab.draw(f, chunks_main[1])?,
             _ => return Err(anyhow!("unknown tab")),
         };
 
@@ -158,6 +161,7 @@ impl App {
         self.status_tab.update()?;
         self.revlog.update()?;
         self.stashing_tab.update()?;
+        self.stashlist_tab.update()?;
 
         Ok(())
     }
@@ -207,7 +211,8 @@ impl App {
             help,
             revlog,
             status_tab,
-            stashing_tab
+            stashing_tab,
+            stashlist_tab
         ]
     );
 
@@ -226,6 +231,7 @@ impl App {
             &mut self.status_tab,
             &mut self.revlog,
             &mut self.stashing_tab,
+            &mut self.stashlist_tab,
         ]
     }
 
@@ -234,16 +240,21 @@ impl App {
         {
             let tabs = self.get_tabs();
             new_tab %= tabs.len();
+        }
+        self.set_tab(new_tab)
+    }
 
-            for (i, t) in tabs.into_iter().enumerate() {
-                if new_tab == i {
-                    t.show()?;
-                } else {
-                    t.hide();
-                }
+    fn set_tab(&mut self, tab: usize) -> Result<()> {
+        let tabs = self.get_tabs();
+        for (i, t) in tabs.into_iter().enumerate() {
+            if tab == i {
+                t.show()?;
+            } else {
+                t.hide();
             }
         }
-        self.tab = new_tab;
+
+        self.tab = tab;
 
         Ok(())
     }
@@ -275,27 +286,20 @@ impl App {
     ) -> Result<NeedsUpdate> {
         let mut flags = NeedsUpdate::empty();
         match ev {
-            InternalEvent::ResetItem(reset_item) => {
-                if reset_item.is_folder {
-                    if sync::reset_workdir_folder(
-                        CWD,
-                        reset_item.path.as_str(),
-                    )
-                    .is_ok()
-                    {
+            InternalEvent::ConfirmedAction(action) => match action {
+                Action::Reset(r) => {
+                    if Status::reset(&r) {
                         flags.insert(NeedsUpdate::ALL);
                     }
-                } else if sync::reset_workdir_file(
-                    CWD,
-                    reset_item.path.as_str(),
-                )
-                .is_ok()
-                {
-                    flags.insert(NeedsUpdate::ALL);
                 }
-            }
-            InternalEvent::ConfirmResetItem(reset_item) => {
-                self.reset.open_for_path(reset_item)?;
+                Action::StashDrop(s) => {
+                    if StashList::drop(s) {
+                        flags.insert(NeedsUpdate::ALL);
+                    }
+                }
+            },
+            InternalEvent::ConfirmAction(action) => {
+                self.reset.open(action)?;
                 flags.insert(NeedsUpdate::COMMANDS);
             }
             InternalEvent::AddHunk(hash) => {
@@ -315,13 +319,16 @@ impl App {
             }
             InternalEvent::ShowErrorMsg(msg) => {
                 self.msg.show_msg(msg.as_str())?;
-                flags.insert(NeedsUpdate::ALL);
+                flags
+                    .insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
             }
             InternalEvent::Update(u) => flags.insert(u),
             InternalEvent::OpenCommit => self.commit.show()?,
-            InternalEvent::PopupStashing(_opts) => {
+            InternalEvent::PopupStashing(opts) => {
+                self.stashmsg_popup.options(opts);
                 self.stashmsg_popup.show()?
             }
+            InternalEvent::TabSwitch => self.set_tab(0)?,
         };
 
         Ok(flags)
@@ -382,6 +389,7 @@ impl App {
         Ok(())
     }
 
+    //TODO: make this dynamic
     fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
         f.render_widget(
             Tabs::default()
@@ -390,6 +398,7 @@ impl App {
                     strings::TAB_STATUS,
                     strings::TAB_LOG,
                     strings::TAB_STASHING,
+                    "Stashes",
                 ])
                 .style(Style::default())
                 .highlight_style(
