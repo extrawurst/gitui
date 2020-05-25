@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- stashing support ([#3](https://github.com/extrawurst/gitui/issues/3))
+- stashing support (save,apply,drop) ([#3](https://github.com/extrawurst/gitui/issues/3))
 
 ### Changed
 - log tab refreshes when head changes ([#78](https://github.com/extrawurst/gitui/issues/78))
