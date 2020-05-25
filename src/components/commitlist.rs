@@ -89,7 +89,9 @@ impl CommitList {
 
     ///
     pub fn selected_entry(&self) -> Option<&LogEntry> {
-        self.items.iter().nth(self.selection)
+        self.items.iter().nth(
+            self.selection.saturating_sub(self.items.index_offset()),
+        )
     }
 
     fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
