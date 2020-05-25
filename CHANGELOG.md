@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - log tab refreshes when head changes ([#78](https://github.com/extrawurst/gitui/issues/78))
 - performance optimization of the log tab in big repos
 - more readable default color for the commit hash in the log tab
-- more error/panic resiliance (`unwrap`/`panic` denied by clippy now) 
+- more error/panic resiliance (`unwrap`/`panic` denied by clippy now) [[@MCord](https://github.com/MCord)] ([#77](https://github.com/extrawurst/gitui/issues/77))
 
 ### Fixes
 - panic on small terminal width ([#72](https://github.com/extrawurst/gitui/issues/72))
