@@ -23,6 +23,10 @@ use crate::{app::App, poll::QueueEvent};
 use anyhow::{anyhow, Result};
 use asyncgit::AsyncNotification;
 use backtrace::Backtrace;
+use clap::{
+    crate_authors, crate_description, crate_name, crate_version,
+    App as ClapApp, Arg,
+};
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
     terminal::{
@@ -53,7 +57,7 @@ static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(50);
 
 fn main() -> Result<()> {
-    setup_logging()?;
+    process_cmdline()?;
 
     if invalid_path() {
         eprintln!("invalid git path\nplease run gitui inside of a git repository");
@@ -205,15 +209,35 @@ fn get_app_config_path() -> Result<PathBuf> {
 }
 
 fn setup_logging() -> Result<()> {
-    if env::var("GITUI_LOGGING").is_ok() {
-        let mut path = get_app_config_path()?;
-        path.push("gitui.log");
+    let mut path = get_app_config_path()?;
+    path.push("gitui.log");
 
-        let _ = WriteLogger::init(
-            LevelFilter::Trace,
-            Config::default(),
-            File::create(path)?,
+    let _ = WriteLogger::init(
+        LevelFilter::Trace,
+        Config::default(),
+        File::create(path)?,
+    );
+
+    Ok(())
+}
+
+fn process_cmdline() -> Result<()> {
+    let app = ClapApp::new(crate_name!())
+        .author(crate_authors!())
+        .version(crate_version!())
+        .about(crate_description!())
+        .arg(
+            Arg::with_name("gitui-logging")
+                .help("Stores logging output into a cache directory")
+                .short("l")
+                .long("gitui-logging")
+                .takes_value(false)
+                .required(false),
         );
+
+    let arg_matches = app.get_matches();
+    if arg_matches.is_present("gitui-logging") {
+        setup_logging()?;
     }
 
     Ok(())
