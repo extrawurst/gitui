@@ -128,7 +128,11 @@ impl App {
         } else if let Event::Key(k) = ev {
             let new_flags = match k {
                 keys::TAB_TOGGLE => {
-                    self.toggle_tabs()?;
+                    self.toggle_tabs(false)?;
+                    NeedsUpdate::COMMANDS
+                }
+                keys::TAB_TOGGLE_REVERSE => {
+                    self.toggle_tabs(true)?;
                     NeedsUpdate::COMMANDS
                 }
 
@@ -235,12 +239,14 @@ impl App {
         ]
     }
 
-    fn toggle_tabs(&mut self) -> Result<()> {
-        let mut new_tab = self.tab + 1;
-        {
-            let tabs = self.get_tabs();
-            new_tab %= tabs.len();
-        }
+    fn toggle_tabs(&mut self, reverse: bool) -> Result<()> {
+        let tabs_len = self.get_tabs().len();
+        let new_tab = if reverse {
+            self.tab.wrapping_sub(1).min(tabs_len.saturating_sub(1))
+        } else {
+            self.tab.saturating_add(1) % tabs_len
+        };
+
         self.set_tab(new_tab)
     }
 

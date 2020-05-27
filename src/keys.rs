@@ -15,6 +15,7 @@ const fn with_mod(
 }
 
 pub const TAB_TOGGLE: KeyEvent = no_mod(KeyCode::Tab);
+pub const TAB_TOGGLE_REVERSE: KeyEvent = no_mod(KeyCode::BackTab);
 pub const FOCUS_WORKDIR: KeyEvent = no_mod(KeyCode::Char('1'));
 pub const FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('2'));
 pub const FOCUS_RIGHT: KeyEvent = no_mod(KeyCode::Right);
