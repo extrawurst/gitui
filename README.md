@@ -29,6 +29,14 @@ blazing fast terminal-ui for git written in rust
 * async [input polling](assets/perf_compare.jpg) and 
 * async git API for fluid control
 
+# benchmarks
+
+For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) I compared *lazygit*,*tig* and *gitui* parsing the entire linux git repository:
+
+![](assets/compare.png)
+
+presentation slides: https://github.com/extrawurst/gitui-presentation
+
 # known limitations
 
 * [core.hooksPath](https://git-scm.com/docs/githooks) config not supported
