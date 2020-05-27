@@ -31,9 +31,15 @@ blazing fast terminal-ui for git written in rust
 
 # benchmarks
 
-For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) I compared *lazygit*,*tig* and *gitui* parsing the entire linux git repository:
+For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) I compared *lazygit*,*tig* and *gitui* parsing the entire linux git repository (~900k commits):
 
-![](assets/compare.png)
+||lazygit|tig|**gitui**|
+|--|--|--|--|
+|time| 57s | 4m 20s |**24s**
+| mem |2.6 gb|1.3 gb| **170 mb** 
+| binary | 16 mb | **600 kb** | 1.4 mb
+| freezes  | yes | soso | **no** 
+| crashes  | sometimes | no | **no** 
 
 presentation slides: https://github.com/extrawurst/gitui-presentation
 
