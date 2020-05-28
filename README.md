@@ -58,15 +58,21 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 
 For the time being this product is considered alpha and **not** production ready.
 
-## release binaries
+## Fedora
 
-see [releases](https://github.com/extrawurst/gitui/releases)
+```sh
+sudo dnf install gitui
+```
 
 ## homebrew (macos)
 
 ```
 brew install extrawurst/tap/gitui
 ```
+
+## release binaries
+
+see [releases](https://github.com/extrawurst/gitui/releases)
 
 ## install from source
 
