@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - support reverse tabbing using shift+tab ([#92](https://github.com/extrawurst/gitui/issues/92))
 - switch to using cmd line args instead of `ENV` (`-l` for logging and `--version`) **please convert your GITUI_LOGGING usage** [[@shenek](https://github.com/shenek)] ([#88](https://github.com/extrawurst/gitui/issues/88))
-- added missing LICENSE.md files in sub-crates [@ignatenkobrain] ([#94](https://github.com/extrawurst/gitui/pull/94))
+- added missing LICENSE.md files in sub-crates [[@ignatenkobrain](https://github.com/ignatenkobrain)] ([#94](https://github.com/extrawurst/gitui/pull/94))
 
 ## [0.4.0] - 2020-05-25
 
