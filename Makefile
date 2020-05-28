@@ -2,7 +2,7 @@
 .PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
 debug:
-	GITUI_LOGGING=true cargo run --features=timing
+	cargo run --features=timing -- -l
 
 build-release:
 	cargo build --release

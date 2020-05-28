@@ -227,16 +227,14 @@ fn process_cmdline() -> Result<()> {
         .version(crate_version!())
         .about(crate_description!())
         .arg(
-            Arg::with_name("gitui-logging")
+            Arg::with_name("logging")
                 .help("Stores logging output into a cache directory")
                 .short("l")
-                .long("gitui-logging")
-                .takes_value(false)
-                .required(false),
+                .long("logging"),
         );
 
     let arg_matches = app.get_matches();
-    if arg_matches.is_present("gitui-logging") {
+    if arg_matches.is_present("logging") {
         setup_logging()?;
     }
 

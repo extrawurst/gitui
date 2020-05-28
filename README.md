@@ -88,7 +88,7 @@ cargo install gitui
 
 to enable logging:
 ```
-GITUI_LOGGING=true gitui
+gitui -l
 ```
 
 this will log to:
