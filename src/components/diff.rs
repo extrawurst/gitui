@@ -8,7 +8,7 @@ use crate::{
 };
 use asyncgit::{hash, DiffLine, DiffLineType, FileDiff};
 use crossterm::event::Event;
-use std::{borrow::Cow, cmp, convert::TryFrom};
+use std::{borrow::Cow, cmp};
 use strings::commands;
 use tui::{
     backend::Backend,
@@ -30,11 +30,11 @@ struct Current {
 ///
 pub struct DiffComponent {
     diff: FileDiff,
-    scroll: u16,
+    scroll: usize,
     current_height: u16,
     focused: bool,
     current: Current,
-    selected_hunk: Option<u16>,
+    selected_hunk: Option<usize>,
     queue: Queue,
     theme: Theme,
 }
@@ -100,7 +100,7 @@ impl DiffComponent {
     fn scroll(&mut self, scroll: ScrollType) -> Result<()> {
         let old = self.scroll;
 
-        let scroll_max = self.diff.lines.saturating_sub(1);
+        let scroll_max = self.diff.lines.saturating_sub(1) as usize;
 
         self.scroll = match scroll {
             ScrollType::Down => self.scroll.saturating_add(1),
@@ -108,10 +108,10 @@ impl DiffComponent {
             ScrollType::Home => 0,
             ScrollType::End => scroll_max,
             ScrollType::PageDown => self.scroll.saturating_add(
-                self.current_height.saturating_sub(1),
+                self.current_height.saturating_sub(1) as usize,
             ),
             ScrollType::PageUp => self.scroll.saturating_sub(
-                self.current_height.saturating_sub(1),
+                self.current_height.saturating_sub(1) as usize,
             ),
         };
 
@@ -127,11 +127,11 @@ impl DiffComponent {
 
     fn find_selected_hunk(
         diff: &FileDiff,
-        line_selected: u16,
-    ) -> Result<Option<u16>> {
-        let mut line_cursor = 0_u16;
+        line_selected: usize,
+    ) -> Result<Option<usize>> {
+        let mut line_cursor = 0_usize;
         for (i, hunk) in diff.hunks.iter().enumerate() {
-            let hunk_len = u16::try_from(hunk.lines.len())?;
+            let hunk_len = hunk.lines.len();
             let hunk_min = line_cursor;
             let hunk_max = line_cursor + hunk_len;
 
@@ -139,7 +139,7 @@ impl DiffComponent {
                 hunk_min <= line_selected && hunk_max > line_selected;
 
             if hunk_selected {
-                return Ok(Some(u16::try_from(i)?));
+                return Ok(Some(i));
             }
 
             line_cursor += hunk_len;
@@ -150,25 +150,23 @@ impl DiffComponent {
 
     fn get_text(&self, width: u16, height: u16) -> Result<Vec<Text>> {
         let selection = self.scroll;
-        let height_d2 = height / 2;
+        let height_d2 = (height / 2) as usize;
         let min = self.scroll.saturating_sub(height_d2);
-        let max = min + height;
+        let max = min + height as usize;
 
         let mut res = Vec::new();
-        let mut line_cursor = 0_u16;
-        let mut lines_added = 0_u16;
+        let mut line_cursor = 0_usize;
+        let mut lines_added = 0_usize;
 
         for (i, hunk) in self.diff.hunks.iter().enumerate() {
             let hunk_selected =
-                self.selected_hunk.map_or(false, |s| {
-                    s == u16::try_from(i).unwrap_or_default()
-                });
+                self.selected_hunk.map_or(false, |s| s == i);
 
-            if lines_added >= height {
+            if lines_added >= height as usize {
                 break;
             }
 
-            let hunk_len = u16::try_from(hunk.lines.len())?;
+            let hunk_len = hunk.lines.len();
             let hunk_min = line_cursor;
             let hunk_max = line_cursor + hunk_len;
 
@@ -193,6 +191,7 @@ impl DiffComponent {
                 line_cursor += hunk_len;
             }
         }
+
         Ok(res)
     }
 
@@ -247,10 +246,10 @@ impl DiffComponent {
     }
 
     fn hunk_visible(
-        hunk_min: u16,
-        hunk_max: u16,
-        min: u16,
-        max: u16,
+        hunk_min: usize,
+        hunk_max: usize,
+        min: usize,
+        max: usize,
     ) -> bool {
         // full overlap
         if hunk_min <= min && hunk_max >= max {
@@ -269,7 +268,7 @@ impl DiffComponent {
 
     fn add_hunk(&self) -> Result<()> {
         if let Some(hunk) = self.selected_hunk {
-            let hash = self.diff.hunks[usize::from(hunk)].header_hash;
+            let hash = self.diff.hunks[hunk].header_hash;
             self.queue
                 .borrow_mut()
                 .push_back(InternalEvent::AddHunk(hash));
