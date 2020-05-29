@@ -172,7 +172,7 @@ impl DiffComponent {
 
             if Self::hunk_visible(hunk_min, hunk_max, min, max) {
                 for (i, line) in hunk.lines.iter().enumerate() {
-                    if line_cursor >= min {
+                    if line_cursor >= min && line_cursor <= max {
                         Self::add_line(
                             &mut res,
                             width,

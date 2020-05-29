@@ -71,7 +71,7 @@ pub struct FileDiff {
     /// list of hunks
     pub hunks: Vec<Hunk>,
     /// lines total summed up over hunks
-    pub lines: u16,
+    pub lines: usize,
 }
 
 pub(crate) fn get_diff_raw<'a>(
@@ -144,7 +144,7 @@ pub fn get_diff(
             header_hash: hash(header),
             lines: lines.clone(),
         });
-        res.lines += lines.len() as u16;
+        res.lines += lines.len();
     };
 
     let mut put = |hunk: Option<DiffHunk>, line: git2::DiffLine| {
