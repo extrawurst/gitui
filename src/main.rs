@@ -59,8 +59,8 @@ static SPINNER_INTERVAL: Duration = Duration::from_millis(50);
 fn main() -> Result<()> {
     process_cmdline()?;
 
-    if invalid_path() {
-        eprintln!("invalid git path\nplease run gitui inside of a git repository");
+    if !valid_path()? {
+        eprintln!("invalid git path\nplease run gitui inside of a valid git (non-bare) repository");
         return Ok(());
     }
 
@@ -149,8 +149,9 @@ fn draw<B: Backend>(
     })
 }
 
-fn invalid_path() -> bool {
-    !asyncgit::is_repo(asyncgit::CWD)
+fn valid_path() -> Result<bool> {
+    Ok(asyncgit::sync::is_repo(asyncgit::CWD)
+        && !asyncgit::sync::is_bare_repo(asyncgit::CWD)?)
 }
 
 fn select_event(

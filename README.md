@@ -45,6 +45,7 @@ presentation slides: https://github.com/extrawurst/gitui-presentation
 
 # known limitations
 
+* no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server)
 * [core.hooksPath](https://git-scm.com/docs/githooks) config not supported
 * revert/reset hunk in working dir (see [#11](https://github.com/extrawurst/gitui/issues/11))
 

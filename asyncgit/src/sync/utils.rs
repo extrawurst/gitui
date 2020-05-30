@@ -15,6 +15,17 @@ pub fn is_repo(repo_path: &str) -> bool {
     .is_ok()
 }
 
+/// checks if the git repo at path `repo_path` is a bare repo
+pub fn is_bare_repo(repo_path: &str) -> Result<bool> {
+    let repo = Repository::open_ext(
+        repo_path,
+        RepositoryOpenFlags::empty(),
+        Vec::<&Path>::new(),
+    )?;
+
+    Ok(repo.is_bare())
+}
+
 ///
 pub fn repo(repo_path: &str) -> Result<Repository> {
     let repo = Repository::open_ext(
