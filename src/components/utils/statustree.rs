@@ -29,7 +29,7 @@ struct SelectionChange {
     changes: bool,
 }
 impl SelectionChange {
-    fn new(new_index: usize, changes: bool) -> Self {
+    const fn new(new_index: usize, changes: bool) -> Self {
         Self { new_index, changes }
     }
 }

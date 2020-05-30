@@ -4,6 +4,7 @@
 //https://github.com/crossterm-rs/crossterm/issues/432
 #![allow(clippy::cargo::multiple_crate_versions)]
 #![deny(clippy::pedantic)]
+#![deny(clippy::nursery)]
 #![deny(clippy::result_unwrap_used)]
 #![deny(clippy::panic)]
 #![allow(clippy::module_name_repetitions)]

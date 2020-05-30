@@ -48,7 +48,7 @@ impl TextInputComponent {
     }
 
     ///
-    pub fn get_text(&self) -> &String {
+    pub const fn get_text(&self) -> &String {
         &self.msg
     }
 }

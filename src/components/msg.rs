@@ -96,7 +96,7 @@ impl Component for MsgComponent {
 }
 
 impl MsgComponent {
-    pub fn new(theme: &Theme) -> Self {
+    pub const fn new(theme: &Theme) -> Self {
         Self {
             msg: String::new(),
             visible: false,

@@ -23,7 +23,11 @@ pub struct TreeItemInfo {
 }
 
 impl TreeItemInfo {
-    fn new(indent: u8, path: String, full_path: String) -> Self {
+    const fn new(
+        indent: u8,
+        path: String,
+        full_path: String,
+    ) -> Self {
         Self {
             indent,
             visible: true,
@@ -147,22 +151,22 @@ impl FileTreeItems {
             {
                 let item_path = Path::new(&e.path);
 
-                FileTreeItems::push_dirs(
+                Self::push_dirs(
                     item_path,
                     &mut nodes,
                     &mut paths_added,
-                    &collapsed,
+                    collapsed,
                 )?;
             }
 
-            nodes.push(FileTreeItem::new_file(&e)?);
+            nodes.push(FileTreeItem::new_file(e)?);
         }
 
         Ok(Self(nodes))
     }
 
     ///
-    pub(crate) fn items(&self) -> &Vec<FileTreeItem> {
+    pub(crate) const fn items(&self) -> &Vec<FileTreeItem> {
         &self.0
     }
 
