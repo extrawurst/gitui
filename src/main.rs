@@ -60,7 +60,7 @@ fn main() -> Result<()> {
     process_cmdline()?;
 
     if !valid_path()? {
-        eprintln!("invalid git path\nplease run gitui inside of a valid git (non-bare) repository");
+        eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
         return Ok(());
     }
 
