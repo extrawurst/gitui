@@ -58,12 +58,12 @@ impl CommitList {
     }
 
     ///
-    pub fn selection(&self) -> usize {
+    pub const fn selection(&self) -> usize {
         self.selection
     }
 
     ///
-    pub fn current_size(&self) -> (u16, u16) {
+    pub const fn current_size(&self) -> (u16, u16) {
         self.current_size
     }
 
@@ -73,12 +73,13 @@ impl CommitList {
     }
 
     ///
+    #[allow(clippy::missing_const_for_fn)]
     pub fn selection_max(&self) -> usize {
         self.count_total.saturating_sub(1)
     }
 
     ///
-    pub fn tags(&self) -> &Tags {
+    pub const fn tags(&self) -> &Tags {
         &self.tags
     }
 
@@ -242,6 +243,7 @@ impl CommitList {
         txt
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     fn relative_selection(&self) -> usize {
         self.selection.saturating_sub(self.items.index_offset())
     }

@@ -54,7 +54,7 @@ impl DiffComponent {
         }
     }
     ///
-    fn can_scroll(&self) -> bool {
+    const fn can_scroll(&self) -> bool {
         self.diff.lines > 1
     }
     ///

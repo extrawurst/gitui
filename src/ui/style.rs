@@ -194,19 +194,19 @@ impl Theme {
         Ok(app_home.join("theme.ron"))
     }
 
-    fn read_file(theme_file: PathBuf) -> Result<Theme> {
+    fn read_file(theme_file: PathBuf) -> Result<Self> {
         let mut f = File::open(theme_file)?;
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer)?;
         Ok(from_bytes(&buffer)?)
     }
 
-    fn init_internal() -> Result<Theme> {
-        let file = Theme::get_theme_file()?;
+    fn init_internal() -> Result<Self> {
+        let file = Self::get_theme_file()?;
         if file.exists() {
-            Ok(Theme::read_file(file)?)
+            Ok(Self::read_file(file)?)
         } else {
-            let def = Theme::default();
+            let def = Self::default();
             if def.save().is_err() {
                 log::warn!("failed to store default theme to disk.")
             }
@@ -214,8 +214,8 @@ impl Theme {
         }
     }
 
-    pub fn init() -> Theme {
-        Theme::init_internal().unwrap_or_default()
+    pub fn init() -> Self {
+        Self::init_internal().unwrap_or_default()
     }
 }
 

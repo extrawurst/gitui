@@ -63,9 +63,9 @@ impl App {
             help: HelpComponent::new(&theme),
             msg: MsgComponent::new(&theme),
             tab: 0,
-            revlog: Revlog::new(&sender, &theme),
-            status_tab: Status::new(&sender, &queue, &theme),
-            stashing_tab: Stashing::new(&sender, &queue, &theme),
+            revlog: Revlog::new(sender, &theme),
+            status_tab: Status::new(sender, &queue, &theme),
+            stashing_tab: Stashing::new(sender, &queue, &theme),
             stashlist_tab: StashList::new(&queue, &theme),
             queue,
             theme,
@@ -193,7 +193,7 @@ impl App {
     }
 
     ///
-    pub fn is_quit(&self) -> bool {
+    pub const fn is_quit(&self) -> bool {
         self.do_quit
     }
 

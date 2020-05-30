@@ -4,6 +4,7 @@
 //https://github.com/crossterm-rs/crossterm/issues/432
 #![allow(clippy::cargo::multiple_crate_versions)]
 #![deny(clippy::pedantic)]
+#![deny(clippy::nursery)]
 #![deny(clippy::result_unwrap_used)]
 #![deny(clippy::panic)]
 #![allow(clippy::module_name_repetitions)]
@@ -61,7 +62,7 @@ fn main() -> Result<()> {
     process_cmdline()?;
 
     if !valid_path()? {
-        eprintln!("invalid git path\nplease run gitui inside of a valid git (non-bare) repository");
+        eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
         return Ok(());
     }
 
