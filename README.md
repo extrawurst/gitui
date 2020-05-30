@@ -58,6 +58,16 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 
 For the time being this product is considered alpha and **not** production ready.
 
+## Arch Linux
+
+There is an [AUR package for `gitui`](https://aur.archlinux.org/packages/gitui/):
+
+```sh
+git clone https://aur.archlinux.org/gitui.git
+cd gitui
+makepkg -si
+```
+
 ## Fedora
 
 ```sh
