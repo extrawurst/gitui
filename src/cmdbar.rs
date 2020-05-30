@@ -8,27 +8,59 @@ use tui::{
     widgets::{Paragraph, Text},
     Frame,
 };
+use unicode_width::UnicodeWidthStr;
 
-/// helper to be used while drawing
-pub struct CommandBar<'a> {
-    cmds: &'a [CommandInfo],
-    theme: Theme,
+struct Command {
+    txt: String,
+    enabled: bool,
 }
 
-impl<'a> CommandBar<'a> {
+/// helper to be used while drawing
+pub struct CommandBar {
+    cmds: Vec<Command>,
+    theme: Theme,
+    max_height: u16,
+}
+
+impl CommandBar {
     pub fn new(
-        cmds: &'a [CommandInfo],
+        cmds: &[CommandInfo],
         theme: &Theme,
-        _width: u16,
+        width: u16,
     ) -> Self {
+        let cmds = cmds
+            .iter()
+            .filter_map(|c| {
+                if c.show_in_quickbar() {
+                    Some(Command {
+                        txt: c.text.name.to_string(),
+                        enabled: c.enabled,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let text_len = cmds
+            .iter()
+            .map(|c| UnicodeWidthStr::width(c.txt.as_str()))
+            .fold1(|a, b| a + b)
+            .unwrap_or(1)
+            + (cmds.len().saturating_sub(1));
+
+        let max_height =
+            if text_len > width as usize { 3 } else { 1 };
+
         Self {
             cmds,
-            theme: theme.clone(),
+            theme: *theme,
+            max_height,
         }
     }
 
-    pub fn height(&self) -> u16 {
-        1
+    pub const fn height(&self) -> u16 {
+        self.max_height
     }
 
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
@@ -40,21 +72,18 @@ impl<'a> CommandBar<'a> {
         let texts = self
             .cmds
             .iter()
-            .filter_map(|c| {
-                if c.show_in_quickbar() {
-                    Some(Text::Styled(
-                        Cow::from(c.text.name),
-                        self.theme.toolbar(c.enabled),
-                    ))
-                } else {
-                    None
-                }
+            .map(|c| {
+                Text::Styled(
+                    Cow::from(c.txt.as_str()),
+                    self.theme.toolbar(c.enabled),
+                )
             })
             .collect::<Vec<_>>();
 
         f.render_widget(
             Paragraph::new(texts.iter().intersperse(&splitter))
-                .alignment(Alignment::Left),
+                .alignment(Alignment::Left)
+                .wrap(true),
             r,
         );
     }
