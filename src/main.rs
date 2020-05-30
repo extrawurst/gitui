@@ -9,6 +9,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 mod app;
+mod cmdbar;
 mod components;
 mod keys;
 mod poll;

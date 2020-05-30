@@ -1,5 +1,6 @@
 use crate::{
     accessors,
+    cmdbar::CommandBar,
     components::{
         event_pump, CommandBlocking, CommandInfo, CommitComponent,
         Component, DrawableComponent, HelpComponent, MsgComponent,
@@ -15,15 +16,13 @@ use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use itertools::Itertools;
-use std::borrow::Cow;
 use strings::commands;
 use tui::{
     backend::Backend,
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::Modifier,
     style::Style,
-    widgets::{Block, Borders, Paragraph, Tabs, Text},
+    widgets::{Block, Borders, Tabs},
     Frame,
 };
 ///
@@ -78,17 +77,27 @@ impl App {
         &mut self,
         f: &mut Frame<B>,
     ) -> Result<()> {
+        let fsize = f.size();
+
+        let cmdbar = CommandBar::new(
+            self.current_commands.as_slice(),
+            &self.theme,
+            fsize.width,
+        );
+
         let chunks_main = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
                 [
                     Constraint::Length(2),
                     Constraint::Min(2),
-                    Constraint::Length(1),
+                    Constraint::Length(cmdbar.height()),
                 ]
                 .as_ref(),
             )
-            .split(f.size());
+            .split(fsize);
+
+        cmdbar.draw(f, chunks_main[2]);
 
         self.draw_tabs(f, chunks_main[0]);
 
@@ -100,13 +109,6 @@ impl App {
             3 => self.stashlist_tab.draw(f, chunks_main[1])?,
             _ => return Err(anyhow!("unknown tab")),
         };
-
-        Self::draw_commands(
-            f,
-            chunks_main[2],
-            self.current_commands.as_slice(),
-            self.theme,
-        );
 
         self.draw_popups(f)?;
 
@@ -414,38 +416,6 @@ impl App {
                 )
                 .divider(strings::TAB_DIVIDER)
                 .select(self.tab),
-            r,
-        );
-    }
-
-    fn draw_commands<B: Backend>(
-        f: &mut Frame<B>,
-        r: Rect,
-        cmds: &[CommandInfo],
-        theme: Theme,
-    ) {
-        let splitter = Text::Styled(
-            Cow::from(strings::CMD_SPLITTER),
-            Style::default(),
-        );
-
-        let texts = cmds
-            .iter()
-            .filter_map(|c| {
-                if c.show_in_quickbar() {
-                    Some(Text::Styled(
-                        Cow::from(c.text.name),
-                        theme.toolbar(c.enabled),
-                    ))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        f.render_widget(
-            Paragraph::new(texts.iter().intersperse(&splitter))
-                .alignment(Alignment::Left),
             r,
         );
     }

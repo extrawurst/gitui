@@ -63,7 +63,7 @@ pub mod commands {
     );
     ///
     pub static DIFF_HOME_END: CommandText = CommandText::new(
-        "Jump up/down [home,end,shift+up,shift+down]",
+        "Jump up/down [home,end,\u{11014}up,\u{2191}down]",
         "scroll to top or bottom of diff",
         CMD_GROUP_DIFF,
     );
@@ -155,7 +155,7 @@ pub mod commands {
     );
     ///
     pub static QUIT: CommandText = CommandText::new(
-        "Quit [ctrl+c]",
+        "Quit [^c]",
         "quit gitui application",
         CMD_GROUP_GENERAL,
     );
