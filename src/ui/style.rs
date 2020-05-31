@@ -22,6 +22,8 @@ pub struct Theme {
     #[serde(with = "ColorDef")]
     selection_bg: Color,
     #[serde(with = "ColorDef")]
+    cmdbar_extra_lines_bg: Color,
+    #[serde(with = "ColorDef")]
     disabled_fg: Color,
     #[serde(with = "ColorDef")]
     diff_line_add: Color,
@@ -153,13 +155,17 @@ impl Theme {
         Style::default().fg(self.danger_fg)
     }
 
-    pub fn toolbar(&self, enabled: bool) -> Style {
+    pub fn commandbar(&self, enabled: bool, line: usize) -> Style {
         if enabled {
             Style::default().fg(self.command_fg)
         } else {
             Style::default().fg(self.disabled_fg)
         }
-        .bg(self.selection_bg)
+        .bg(if line == 0 {
+            self.selection_bg
+        } else {
+            self.cmdbar_extra_lines_bg
+        })
     }
 
     pub fn commit_hash(&self, selected: bool) -> Style {
@@ -225,6 +231,7 @@ impl Default for Theme {
             selected_tab: Color::Yellow,
             command_fg: Color::White,
             selection_bg: Color::Rgb(0, 0, 100),
+            cmdbar_extra_lines_bg: Color::Rgb(0, 0, 80),
             disabled_fg: Color::DarkGray,
             diff_line_add: Color::Green,
             diff_line_delete: Color::Red,
