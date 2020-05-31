@@ -33,7 +33,7 @@ pub struct App {
     reset: ResetComponent,
     commit: CommitComponent,
     stashmsg_popup: StashMsgComponent,
-    current_commands: Vec<CommandInfo>,
+    cmdbar: CommandBar,
     tab: usize,
     revlog: Revlog,
     status_tab: Status,
@@ -59,7 +59,7 @@ impl App {
                 &theme,
             ),
             do_quit: false,
-            current_commands: Vec::new(),
+            cmdbar: CommandBar::new(&theme),
             help: HelpComponent::new(&theme),
             msg: MsgComponent::new(&theme),
             tab: 0,
@@ -79,11 +79,7 @@ impl App {
     ) -> Result<()> {
         let fsize = f.size();
 
-        let cmdbar = CommandBar::new(
-            self.current_commands.as_slice(),
-            &self.theme,
-            fsize.width,
-        );
+        self.cmdbar.refresh_width(fsize.width);
 
         let chunks_main = Layout::default()
             .direction(Direction::Vertical)
@@ -91,13 +87,13 @@ impl App {
                 [
                     Constraint::Length(2),
                     Constraint::Min(2),
-                    Constraint::Length(cmdbar.height()),
+                    Constraint::Length(self.cmdbar.height()),
                 ]
                 .as_ref(),
             )
             .split(fsize);
 
-        cmdbar.draw(f, chunks_main[2]);
+        self.cmdbar.draw(f, chunks_main[2]);
 
         self.draw_tabs(f, chunks_main[0]);
 
@@ -269,8 +265,7 @@ impl App {
 
     fn update_commands(&mut self) {
         self.help.set_cmds(self.commands(true));
-        self.current_commands = self.commands(false);
-        self.current_commands.sort_by_key(|e| e.order);
+        self.cmdbar.set_cmds(self.commands(false));
     }
 
     fn process_queue(&mut self) -> Result<NeedsUpdate> {
