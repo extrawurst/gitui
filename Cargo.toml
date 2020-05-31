@@ -22,12 +22,12 @@ keywords = [
 scopetime = { path = "./scopetime", version = "0.1" }
 asyncgit = { path = "./asyncgit", version = "0.4" }
 crossterm = "0.17"
-clap = "2.33"
-tui = { version = "0.9", default-features=false, features = ['crossterm'] }
+clap = { version = "2.33", default-features = false }
+tui = { version = "0.9", default-features = false, features = ['crossterm'] }
 itertools = "0.9"
 rayon-core = "1.7"
 log = "0.4"
-simplelog = { version = "0.8", default-features=false }
+simplelog = { version = "0.8", default-features = false }
 dirs = "2.0"
 crossbeam-channel = "0.4"
 scopeguard = "1.1"
