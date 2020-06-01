@@ -330,6 +330,7 @@ dependencies = [
  "serde",
  "simplelog",
  "tui",
+ "unicode-width",
 ]
 
 [[package]]
