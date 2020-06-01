@@ -20,13 +20,6 @@ struct Command {
     line: usize,
 }
 
-#[derive(Copy, Clone, PartialEq)]
-enum State {
-    NotExpandable,
-    NotExpanded,
-    Expanded,
-}
-
 /// helper to be used while drawing
 pub struct CommandBar {
     draw_list: Vec<DrawListEntry>,
@@ -34,10 +27,11 @@ pub struct CommandBar {
     theme: Theme,
     lines: u16,
     width: u16,
-    state: State,
+    expandable: bool,
+    expanded: bool,
 }
 
-const MORE_WIDTH: u16 = 12;
+const MORE_WIDTH: u16 = 11;
 
 impl CommandBar {
     pub const fn new(theme: &Theme) -> Self {
@@ -47,7 +41,8 @@ impl CommandBar {
             theme: *theme,
             lines: 0,
             width: 0,
-            state: State::NotExpandable,
+            expandable: false,
+            expanded: false,
         }
     }
 
@@ -105,16 +100,7 @@ impl CommandBar {
             }));
         }
 
-        let can_expand = lines > 1;
-
-        if can_expand {
-            self.state = match self.state {
-                State::Expanded | State::NotExpanded => self.state,
-                State::NotExpandable => State::NotExpanded,
-            }
-        } else {
-            self.state = State::NotExpandable;
-        }
+        self.expandable = lines > 1;
 
         self.lines = lines;
     }
@@ -129,17 +115,16 @@ impl CommandBar {
     }
 
     pub fn height(&self) -> u16 {
-        match self.state {
-            State::Expanded => self.lines,
-            _ => 1_u16,
+        if self.expandable && self.expanded {
+            self.lines
+        } else {
+            1_u16
         }
     }
 
     pub fn toggle_more(&mut self) {
-        self.state = match self.state {
-            State::NotExpanded => State::Expanded,
-            State::Expanded => State::NotExpanded,
-            State::NotExpandable => State::NotExpandable,
+        if self.expandable {
+            self.expanded = !self.expanded;
         }
     }
 
@@ -166,9 +151,7 @@ impl CommandBar {
             r,
         );
 
-        if self.state == State::NotExpanded
-            || self.state == State::Expanded
-        {
+        if self.expandable {
             let r = Rect::new(
                 r.width.saturating_sub(MORE_WIDTH),
                 r.y + r.height.saturating_sub(1),
@@ -176,10 +159,9 @@ impl CommandBar {
                 1,
             );
 
-            let expanded = self.state == State::Expanded;
             f.render_widget(
                 Paragraph::new(
-                    vec![Text::Raw(Cow::from(if expanded {
+                    vec![Text::Raw(Cow::from(if self.expanded {
                         "less [.]"
                     } else {
                         "more [.]"
