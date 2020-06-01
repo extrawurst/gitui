@@ -20,6 +20,13 @@ struct Command {
     line: usize,
 }
 
+#[derive(Copy, Clone, PartialEq)]
+enum State {
+    NotExpandable,
+    NotExpanded,
+    Expanded,
+}
+
 /// helper to be used while drawing
 pub struct CommandBar {
     draw_list: Vec<DrawListEntry>,
@@ -27,7 +34,10 @@ pub struct CommandBar {
     theme: Theme,
     lines: u16,
     width: u16,
+    state: State,
 }
+
+const MORE_WIDTH: u16 = 12;
 
 impl CommandBar {
     pub const fn new(theme: &Theme) -> Self {
@@ -37,6 +47,7 @@ impl CommandBar {
             theme: *theme,
             lines: 0,
             width: 0,
+            state: State::NotExpandable,
         }
     }
 
@@ -47,8 +58,29 @@ impl CommandBar {
         }
     }
 
+    fn is_multiline(&self, width: u16) -> bool {
+        let mut line_width = 0_usize;
+        for c in &self.cmd_infos {
+            let entry_w = UnicodeWidthStr::width(c.text.name);
+
+            if line_width + entry_w > width as usize {
+                return true;
+            }
+
+            line_width += entry_w + 1;
+        }
+
+        false
+    }
+
     fn refresh_list(&mut self, width: u16) {
         self.draw_list.clear();
+
+        let width = if self.is_multiline(width) {
+            width.saturating_sub(MORE_WIDTH)
+        } else {
+            width
+        };
 
         let mut line_width = 0_usize;
         let mut lines = 1_u16;
@@ -73,6 +105,17 @@ impl CommandBar {
             }));
         }
 
+        let can_expand = lines > 1;
+
+        if can_expand {
+            self.state = match self.state {
+                State::Expanded | State::NotExpanded => self.state,
+                State::NotExpandable => State::NotExpanded,
+            }
+        } else {
+            self.state = State::NotExpandable;
+        }
+
         self.lines = lines;
     }
 
@@ -85,8 +128,19 @@ impl CommandBar {
         self.refresh_list(self.width);
     }
 
-    pub const fn height(&self) -> u16 {
-        self.lines
+    pub fn height(&self) -> u16 {
+        match self.state {
+            State::Expanded => self.lines,
+            _ => 1_u16,
+        }
+    }
+
+    pub fn toggle_more(&mut self) {
+        self.state = match self.state {
+            State::NotExpanded => State::Expanded,
+            State::Expanded => State::NotExpanded,
+            State::NotExpandable => State::NotExpandable,
+        }
     }
 
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
@@ -111,5 +165,30 @@ impl CommandBar {
             Paragraph::new(texts.iter()).alignment(Alignment::Left),
             r,
         );
+
+        if self.state == State::NotExpanded
+            || self.state == State::Expanded
+        {
+            let r = Rect::new(
+                r.width.saturating_sub(MORE_WIDTH),
+                r.y + r.height.saturating_sub(1),
+                MORE_WIDTH,
+                1,
+            );
+
+            let expanded = self.state == State::Expanded;
+            f.render_widget(
+                Paragraph::new(
+                    vec![Text::Raw(Cow::from(if expanded {
+                        "less [.]"
+                    } else {
+                        "more [.]"
+                    }))]
+                    .iter(),
+                )
+                .alignment(Alignment::Right),
+                r,
+            );
+        }
     }
 }

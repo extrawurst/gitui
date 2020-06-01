@@ -133,6 +133,10 @@ impl App {
                     self.toggle_tabs(true)?;
                     NeedsUpdate::COMMANDS
                 }
+                keys::CMD_BAR_TOGGLE => {
+                    self.cmdbar.toggle_more();
+                    NeedsUpdate::empty()
+                }
 
                 _ => NeedsUpdate::empty(),
             };
