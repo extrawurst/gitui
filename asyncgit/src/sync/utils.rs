@@ -41,6 +41,11 @@ pub fn repo(repo_path: &str) -> Result<Repository> {
     Ok(repo)
 }
 
+///
+pub fn work_dir(repo: &Repository) -> &Path {
+    repo.workdir().expect("unable to query workdir")
+}
+
 /// this does not run any git hooks
 pub fn commit(repo_path: &str, msg: &str) -> Result<Oid> {
     scope_time!("commit");

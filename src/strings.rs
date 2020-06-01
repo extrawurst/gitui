@@ -140,6 +140,12 @@ pub mod commands {
         "revert changes in selected file or entire path",
         CMD_GROUP_CHANGES,
     );
+    ///
+    pub static IGNORE_ITEM: CommandText = CommandText::new(
+        "Ignore [i]",
+        "Add file or path to .gitignore",
+        CMD_GROUP_CHANGES,
+    );
 
     ///
     pub static STATUS_FOCUS_LEFT: CommandText = CommandText::new(

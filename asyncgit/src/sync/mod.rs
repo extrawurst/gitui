@@ -4,6 +4,7 @@ mod commits_info;
 pub mod diff;
 mod hooks;
 mod hunks;
+mod ignore;
 mod logwalker;
 mod reset;
 mod stash;
@@ -14,6 +15,7 @@ pub mod utils;
 pub use commits_info::{get_commits_info, CommitId, CommitInfo};
 pub use hooks::{hooks_commit_msg, hooks_post_commit, HookResult};
 pub use hunks::{stage_hunk, unstage_hunk};
+pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
 pub use reset::{
     reset_stage, reset_workdir_file, reset_workdir_folder,

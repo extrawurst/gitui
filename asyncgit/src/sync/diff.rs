@@ -8,6 +8,7 @@ use git2::{
 };
 use scopetime::scope_time;
 use std::{fs, path::Path};
+use utils::work_dir;
 
 /// type of diff of a single line
 #[derive(Copy, Clone, PartialEq, Hash, Debug)]
@@ -127,12 +128,7 @@ pub fn get_diff(
     scope_time!("get_diff");
 
     let repo = utils::repo(repo_path)?;
-    let repo_path = repo.path().parent().ok_or_else(|| {
-        Error::Generic(
-            "repositories located at root are not supported."
-                .to_string(),
-        )
-    })?;
+    let work_dir = work_dir(&repo);
     let diff = get_diff_raw(&repo, &p, stage, false)?;
 
     let mut res: FileDiff = FileDiff::default();
@@ -190,7 +186,7 @@ pub fn get_diff(
                     )
                 })?;
 
-            let newfile_path = repo_path.join(relative_path);
+            let newfile_path = work_dir.join(relative_path);
 
             if let Some(newfile_content) =
                 new_file_content(&newfile_path)

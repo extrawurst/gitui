@@ -124,6 +124,17 @@ impl ChangesComponent {
         }
         false
     }
+
+    fn add_to_ignore(&mut self) -> Result<bool> {
+        if let Some(tree_item) = self.selection() {
+            sync::add_to_ignore(CWD, tree_item.info.full_path)?;
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+            return Ok(true);
+        }
+        Ok(false)
+    }
 }
 
 impl DrawableComponent for ChangesComponent {
@@ -156,6 +167,11 @@ impl Component for ChangesComponent {
             ));
             out.push(CommandInfo::new(
                 commands::RESET_ITEM,
+                some_selection,
+                self.focused(),
+            ));
+            out.push(CommandInfo::new(
+                commands::IGNORE_ITEM,
                 some_selection,
                 self.focused(),
             ));
@@ -209,6 +225,13 @@ impl Component for ChangesComponent {
                         if self.is_working_dir =>
                     {
                         Ok(self.dispatch_reset_workdir())
+                    }
+
+                    keys::STATUS_IGNORE_FILE
+                        if self.is_working_dir
+                            && !self.is_empty() =>
+                    {
+                        Ok(self.add_to_ignore()?)
                     }
                     _ => Ok(false),
                 };
