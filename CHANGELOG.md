@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- support more commands allowing optional multiline commandbar ([#83](https://github.com/extrawurst/gitui/issues/83))
+
+![](assets/cmdbar.gif)
+
 ### Added
 - support reverse tabbing using shift+tab ([#92](https://github.com/extrawurst/gitui/issues/92))
 - switch to using cmd line args instead of `ENV` (`-l` for logging and `--version`) **please convert your GITUI_LOGGING usage** [[@shenek](https://github.com/shenek)] ([#88](https://github.com/extrawurst/gitui/issues/88))
