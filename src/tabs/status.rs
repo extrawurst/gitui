@@ -19,7 +19,7 @@ use asyncgit::{
 use components::{command_pump, visibility_blocking};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use strings::commands;
+use strings::{commands, order};
 use tui::layout::{Constraint, Direction, Layout};
 
 ///
@@ -326,7 +326,7 @@ impl Component for Status {
                 (self.visible && self.focus == Focus::WorkDir)
                     || force_all,
             )
-            .order(-2),
+            .order(order::NAV),
         );
 
         out.push(
@@ -336,7 +336,7 @@ impl Component for Status {
                 (self.visible && self.focus == Focus::Stage)
                     || force_all,
             )
-            .order(-2),
+            .order(order::NAV),
         );
 
         visibility_blocking(self)

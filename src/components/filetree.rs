@@ -17,7 +17,7 @@ use anyhow::Result;
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::Event;
 use std::{borrow::Cow, convert::From, path::Path};
-use strings::commands;
+use strings::{commands, order};
 use tui::{backend::Backend, layout::Rect, widgets::Text, Frame};
 
 ///
@@ -248,11 +248,14 @@ impl Component for FileTreeComponent {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            commands::NAVIGATE_TREE,
-            !self.is_empty(),
-            self.focused || force_all,
-        ));
+        out.push(
+            CommandInfo::new(
+                commands::NAVIGATE_TREE,
+                !self.is_empty(),
+                self.focused || force_all,
+            )
+            .order(order::NAV),
+        );
 
         CommandBlocking::PassingOn
     }

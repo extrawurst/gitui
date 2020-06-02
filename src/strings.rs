@@ -28,6 +28,10 @@ pub static HELP_TITLE: &str = "Help: all commands";
 pub static STASHING_FILES_TITLE: &str = "Files to Stash";
 pub static STASHING_OPTIONS_TITLE: &str = "Options";
 
+pub mod order {
+    pub static NAV: i8 = 1;
+}
+
 pub mod commands {
     use crate::components::CommandText;
 

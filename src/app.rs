@@ -16,7 +16,7 @@ use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
-use strings::commands;
+use strings::{commands, order};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -373,16 +373,22 @@ impl App {
             }
         }
 
-        res.push(CommandInfo::new(
-            commands::TOGGLE_TABS,
-            true,
-            !self.any_popup_visible(),
-        ));
-        res.push(CommandInfo::new(
-            commands::TOGGLE_TABS_DIRECT,
-            true,
-            !self.any_popup_visible(),
-        ));
+        res.push(
+            CommandInfo::new(
+                commands::TOGGLE_TABS,
+                true,
+                !self.any_popup_visible(),
+            )
+            .order(order::NAV),
+        );
+        res.push(
+            CommandInfo::new(
+                commands::TOGGLE_TABS_DIRECT,
+                true,
+                !self.any_popup_visible(),
+            )
+            .order(order::NAV),
+        );
 
         res.push(
             CommandInfo::new(
