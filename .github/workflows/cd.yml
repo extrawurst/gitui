@@ -56,7 +56,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         body: ${{ steps.release_notes.outputs.release_notes }}
-        prerelease: true
+        prerelease: false
         files: |
           ./release/*.tar.gz
           ./release/*.zip
