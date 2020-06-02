@@ -105,19 +105,19 @@ pub mod commands {
     .hide_help();
     ///
     pub static SELECT_STAGING: CommandText = CommandText::new(
-        "Focus Stage [s]",
+        "To stage [s]",
         "focus/select staging area",
         CMD_GROUP_GENERAL,
     );
     ///
     pub static SELECT_STATUS: CommandText = CommandText::new(
-        "Focus Files [1,2]",
+        "To files [1,2]",
         "focus/select file tree of staged or unstaged files",
         CMD_GROUP_GENERAL,
     );
     ///
     pub static SELECT_UNSTAGED: CommandText = CommandText::new(
-        "Focus Unstaged [w]",
+        "To unstaged [w]",
         "focus/select unstaged area",
         CMD_GROUP_GENERAL,
     );
