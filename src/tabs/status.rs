@@ -366,12 +366,16 @@ impl Component for Status {
                         })
                     }
                     keys::MOVE_DOWN
-                        if self.focus == Focus::WorkDir =>
+                        if self.focus == Focus::WorkDir
+                            && !self.index.is_empty() =>
                     {
                         self.switch_focus(Focus::Stage)
                     }
 
-                    keys::MOVE_UP if self.focus == Focus::Stage => {
+                    keys::MOVE_UP
+                        if self.focus == Focus::Stage
+                            && !self.index_wd.is_empty() =>
+                    {
                         self.switch_focus(Focus::WorkDir)
                     }
                     _ => Ok(false),
