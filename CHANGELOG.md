@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- changed hotkeys for selecting stage/workdir (**[w] / [s]** now to change between workdir and stage) and added hotkeys (`[1234]`) to switch to tabs directly ([#92](https://github.com/extrawurst/gitui/issues/92))
+
 ## [0.5.0] - 2020-06-01
 
 ### Changed

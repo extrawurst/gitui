@@ -15,7 +15,7 @@ use crate::{
 use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
-use crossterm::event::Event;
+use crossterm::event::{Event, KeyEvent};
 use strings::commands;
 use tui::{
     backend::Backend,
@@ -115,7 +115,7 @@ impl App {
     pub fn event(&mut self, ev: Event) -> Result<()> {
         log::trace!("event: {:?}", ev);
 
-        if self.check_quit(ev) {
+        if self.check_quit_key(ev) {
             return Ok(());
         }
 
@@ -133,6 +133,14 @@ impl App {
                     self.toggle_tabs(true)?;
                     NeedsUpdate::COMMANDS
                 }
+                keys::TAB_1
+                | keys::TAB_2
+                | keys::TAB_3
+                | keys::TAB_4 => {
+                    self.switch_tab(k)?;
+                    NeedsUpdate::COMMANDS
+                }
+
                 keys::CMD_BAR_TOGGLE => {
                     self.cmdbar.toggle_more();
                     NeedsUpdate::empty()
@@ -222,7 +230,7 @@ impl App {
         ]
     );
 
-    fn check_quit(&mut self, ev: Event) -> bool {
+    fn check_quit_key(&mut self, ev: Event) -> bool {
         if let Event::Key(e) = ev {
             if let keys::EXIT = e {
                 self.do_quit = true;
@@ -250,6 +258,18 @@ impl App {
         };
 
         self.set_tab(new_tab)
+    }
+
+    fn switch_tab(&mut self, k: KeyEvent) -> Result<()> {
+        match k {
+            keys::TAB_1 => self.set_tab(0)?,
+            keys::TAB_2 => self.set_tab(1)?,
+            keys::TAB_3 => self.set_tab(2)?,
+            keys::TAB_4 => self.set_tab(3)?,
+            _ => (),
+        }
+
+        Ok(())
     }
 
     fn set_tab(&mut self, tab: usize) -> Result<()> {
@@ -353,14 +373,16 @@ impl App {
             }
         }
 
-        res.push(
-            CommandInfo::new(
-                commands::TOGGLE_TABS,
-                true,
-                !self.any_popup_visible(),
-            )
-            .hidden(),
-        );
+        res.push(CommandInfo::new(
+            commands::TOGGLE_TABS,
+            true,
+            !self.any_popup_visible(),
+        ));
+        res.push(CommandInfo::new(
+            commands::TOGGLE_TABS_DIRECT,
+            true,
+            !self.any_popup_visible(),
+        ));
 
         res.push(
             CommandInfo::new(
@@ -405,7 +427,7 @@ impl App {
                     strings::TAB_STATUS,
                     strings::TAB_LOG,
                     strings::TAB_STASHING,
-                    "Stashes",
+                    strings::TAB_STASHES,
                 ])
                 .style(Style::default())
                 .highlight_style(

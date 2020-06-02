@@ -1,10 +1,11 @@
-pub static TITLE_STATUS: &str = "Unstaged Changes [1]";
+pub static TITLE_STATUS: &str = "Unstaged Changes [w]";
 pub static TITLE_DIFF: &str = "Diff: ";
-pub static TITLE_INDEX: &str = "Staged Changes [2]";
+pub static TITLE_INDEX: &str = "Staged Changes [s]";
 
-pub static TAB_STATUS: &str = "Status";
-pub static TAB_STASHING: &str = "Stashing";
-pub static TAB_LOG: &str = "Log";
+pub static TAB_STATUS: &str = "Status [1]";
+pub static TAB_LOG: &str = "Log [2]";
+pub static TAB_STASHING: &str = "Stashing [3]";
+pub static TAB_STASHES: &str = "Stashes [4]";
 pub static TAB_DIVIDER: &str = "  |  ";
 
 pub static CMD_SPLITTER: &str = " ";
@@ -39,8 +40,14 @@ pub mod commands {
 
     ///
     pub static TOGGLE_TABS: CommandText = CommandText::new(
-        "Tabs [tab]",
-        "switch top level tabs",
+        "Next [tab]",
+        "switch to next tab",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static TOGGLE_TABS_DIRECT: CommandText = CommandText::new(
+        "Tab [1234]",
+        "switch top level tabs directly",
         CMD_GROUP_GENERAL,
     );
     ///
@@ -94,7 +101,7 @@ pub mod commands {
     .hide_help();
     ///
     pub static SELECT_STAGING: CommandText = CommandText::new(
-        "Focus Stage [2]",
+        "Focus Stage [s]",
         "focus/select staging area",
         CMD_GROUP_GENERAL,
     );
@@ -106,7 +113,7 @@ pub mod commands {
     );
     ///
     pub static SELECT_UNSTAGED: CommandText = CommandText::new(
-        "Focus Unstaged [1]",
+        "Focus Unstaged [w]",
         "focus/select unstaged area",
         CMD_GROUP_GENERAL,
     );

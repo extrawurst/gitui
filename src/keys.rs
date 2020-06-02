@@ -14,10 +14,14 @@ const fn with_mod(
     KeyEvent { code, modifiers }
 }
 
+pub const TAB_1: KeyEvent = no_mod(KeyCode::Char('1'));
+pub const TAB_2: KeyEvent = no_mod(KeyCode::Char('2'));
+pub const TAB_3: KeyEvent = no_mod(KeyCode::Char('3'));
+pub const TAB_4: KeyEvent = no_mod(KeyCode::Char('4'));
 pub const TAB_TOGGLE: KeyEvent = no_mod(KeyCode::Tab);
 pub const TAB_TOGGLE_REVERSE: KeyEvent = no_mod(KeyCode::BackTab);
-pub const FOCUS_WORKDIR: KeyEvent = no_mod(KeyCode::Char('1'));
-pub const FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('2'));
+pub const FOCUS_WORKDIR: KeyEvent = no_mod(KeyCode::Char('w'));
+pub const FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('s'));
 pub const FOCUS_RIGHT: KeyEvent = no_mod(KeyCode::Right);
 pub const FOCUS_LEFT: KeyEvent = no_mod(KeyCode::Left);
 pub const EXIT: KeyEvent =
