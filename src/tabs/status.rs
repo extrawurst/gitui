@@ -365,6 +365,15 @@ impl Component for Status {
                             DiffTarget::WorkingDir => Focus::WorkDir,
                         })
                     }
+                    keys::MOVE_DOWN
+                        if self.focus == Focus::WorkDir =>
+                    {
+                        self.switch_focus(Focus::Stage)
+                    }
+
+                    keys::MOVE_UP if self.focus == Focus::Stage => {
+                        self.switch_focus(Focus::WorkDir)
+                    }
                     _ => Ok(false),
                 };
             }
