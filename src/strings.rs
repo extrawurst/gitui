@@ -140,9 +140,21 @@ pub mod commands {
         CMD_GROUP_CHANGES,
     );
     ///
+    pub static STAGE_ALL: CommandText = CommandText::new(
+        "Stage All [a]",
+        "stage all changes (in unstaged files)",
+        CMD_GROUP_CHANGES,
+    );
+    ///
     pub static UNSTAGE_ITEM: CommandText = CommandText::new(
         "Unstage Item [enter]",
         "unstage currently selected file or entire path",
+        CMD_GROUP_CHANGES,
+    );
+    ///
+    pub static UNSTAGE_ALL: CommandText = CommandText::new(
+        "Unstage all [a]",
+        "unstage all files (in staged files)",
         CMD_GROUP_CHANGES,
     );
     ///

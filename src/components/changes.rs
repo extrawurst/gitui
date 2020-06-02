@@ -97,14 +97,33 @@ impl ChangesComponent {
                     return Ok(true);
                 }
             } else {
-                let path =
-                    Path::new(tree_item.info.full_path.as_str());
+                let path = tree_item.info.full_path.as_str();
                 sync::reset_stage(CWD, path)?;
                 return Ok(true);
             }
         }
 
         Ok(false)
+    }
+
+    fn index_add_all(&mut self) -> Result<()> {
+        sync::stage_add_all(CWD, "*")?;
+
+        self.queue
+            .borrow_mut()
+            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
+    }
+
+    fn stage_remove_all(&mut self) -> Result<()> {
+        sync::reset_stage(CWD, "*")?;
+
+        self.queue
+            .borrow_mut()
+            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
     }
 
     fn dispatch_reset_workdir(&mut self) -> bool {
@@ -161,6 +180,11 @@ impl Component for ChangesComponent {
 
         if self.is_working_dir {
             out.push(CommandInfo::new(
+                commands::STAGE_ALL,
+                some_selection,
+                self.focused(),
+            ));
+            out.push(CommandInfo::new(
                 commands::STAGE_ITEM,
                 some_selection,
                 self.focused(),
@@ -178,6 +202,11 @@ impl Component for ChangesComponent {
         } else {
             out.push(CommandInfo::new(
                 commands::UNSTAGE_ITEM,
+                some_selection,
+                self.focused(),
+            ));
+            out.push(CommandInfo::new(
+                commands::UNSTAGE_ALL,
                 some_selection,
                 self.focused(),
             ));
@@ -221,6 +250,17 @@ impl Component for ChangesComponent {
                         }
                         Ok(true)
                     }
+
+                    keys::STATUS_STAGE_ALL if !self.is_empty() => {
+                        if self.is_working_dir {
+                            self.index_add_all()?;
+                        } else {
+                            self.stage_remove_all()?;
+                        }
+
+                        Ok(true)
+                    }
+
                     keys::STATUS_RESET_FILE
                         if self.is_working_dir =>
                     {

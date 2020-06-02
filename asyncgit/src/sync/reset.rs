@@ -5,7 +5,7 @@ use scopetime::scope_time;
 use std::{fs, path::Path};
 
 ///
-pub fn reset_stage(repo_path: &str, path: &Path) -> Result<()> {
+pub fn reset_stage(repo_path: &str, path: &str) -> Result<()> {
     scope_time!("reset_stage");
 
     let repo = repo(repo_path)?;
@@ -299,7 +299,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
-        reset_stage(repo_path, file_path).unwrap();
+        reset_stage(repo_path, file_path.to_str().unwrap()).unwrap();
 
         assert_eq!(get_statuses(repo_path), (1, 0));
     }
