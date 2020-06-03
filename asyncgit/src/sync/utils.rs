@@ -130,7 +130,9 @@ mod tests {
     use super::*;
     use crate::sync::{
         status::{get_status, StatusType},
-        tests::{get_statuses, repo_init, repo_init_empty},
+        tests::{
+            debug_cmd_print, get_statuses, repo_init, repo_init_empty,
+        },
     };
     use std::{
         fs::{self, remove_file, File},
@@ -283,5 +285,35 @@ mod tests {
 
         assert_eq!(status_count(StatusType::WorkingDir), 0);
         assert_eq!(status_count(StatusType::Stage), 1);
+    }
+
+    // see https://github.com/extrawurst/gitui/issues/108
+    #[test]
+    fn test_staging_sub_git_folder() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let status_count = |s: StatusType| -> usize {
+            get_status(repo_path, s).unwrap().len()
+        };
+
+        let sub = &root.join("sub");
+
+        fs::create_dir_all(sub)?;
+
+        debug_cmd_print(sub.to_str().unwrap(), "git init subgit");
+
+        File::create(sub.join("subgit/foo.txt"))
+            .unwrap()
+            .write_all(b"content")
+            .unwrap();
+
+        assert_eq!(status_count(StatusType::WorkingDir), 1);
+
+        //expect to fail
+        assert!(stage_add_all(repo_path, "sub").is_err());
+
+        Ok(())
     }
 }

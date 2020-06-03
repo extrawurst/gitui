@@ -17,6 +17,22 @@ use std::path::Path;
 use strings::commands;
 use tui::{backend::Backend, layout::Rect, Frame};
 
+/// macro to simplify running code that might return Err.
+/// It will show a popup in that case
+#[macro_export]
+macro_rules! try_or_popup {
+    ($self:ident, $msg:literal, $e:expr) => {
+        if let Err(err) = $e {
+            $self.queue.borrow_mut().push_back(
+                InternalEvent::ShowErrorMsg(format!(
+                    "{}\n{}",
+                    $msg, err
+                )),
+            );
+        }
+    };
+}
+
 ///
 pub struct ChangesComponent {
     files: FileTreeComponent,
@@ -241,19 +257,26 @@ impl Component for ChangesComponent {
                         Ok(true)
                     }
                     keys::STATUS_STAGE_FILE => {
-                        if self.index_add_remove()? {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::Update(
-                                    NeedsUpdate::ALL,
-                                ),
-                            );
-                        }
+                        try_or_popup!(
+                            self,
+                            "staging error:",
+                            self.index_add_remove()
+                        );
+
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::Update(NeedsUpdate::ALL),
+                        );
+
                         Ok(true)
                     }
 
                     keys::STATUS_STAGE_ALL if !self.is_empty() => {
                         if self.is_working_dir {
-                            self.index_add_all()?;
+                            try_or_popup!(
+                                self,
+                                "staging error:",
+                                self.index_add_all()
+                            );
                         } else {
                             self.stage_remove_all()?;
                         }

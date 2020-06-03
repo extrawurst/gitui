@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `arrow-up`/`down` on bottom/top of status file list switches focus ([#105](https://github.com/extrawurst/gitui/issues/105))
 - New `Stage all [a]`/`Unstage all [a]` in changes lists ([#82](https://github.com/extrawurst/gitui/issues/82))
 
+### Fixed
+- app closes when staging invalid file/path ([#108](https://github.com/extrawurst/gitui/issues/108))
+
 ## [0.5.0] - 2020-06-01
 
 ### Changed
