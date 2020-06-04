@@ -5,12 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- add `-d`, `--directory` options to set starting working directory
 
 ### Changed
 - changed hotkeys for selecting stage/workdir (**[w] / [s]** now to change between workdir and stage) and added hotkeys (`[1234]`) to switch to tabs directly ([#92](https://github.com/extrawurst/gitui/issues/92))
 - `arrow-up`/`down` on bottom/top of status file list switches focus ([#105](https://github.com/extrawurst/gitui/issues/105))
 - New `Stage all [a]`/`Unstage all [a]` in changes lists ([#82](https://github.com/extrawurst/gitui/issues/82))
+- add `-d`, `--directory` options to set working directory ([#73](https://github.com/extrawurst/gitui/issues/73))
 
 ### Fixed
 - app closes when staging invalid file/path ([#108](https://github.com/extrawurst/gitui/issues/108))
