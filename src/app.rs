@@ -129,7 +129,8 @@ impl App {
                     self.toggle_tabs(false)?;
                     NeedsUpdate::COMMANDS
                 }
-                keys::TAB_TOGGLE_REVERSE => {
+                keys::TAB_TOGGLE_REVERSE
+                | keys::TAB_TOGGLE_REVERSE_WINDOWS => {
                     self.toggle_tabs(true)?;
                     NeedsUpdate::COMMANDS
                 }

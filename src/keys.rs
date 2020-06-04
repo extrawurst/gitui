@@ -20,6 +20,7 @@ pub const TAB_3: KeyEvent = no_mod(KeyCode::Char('3'));
 pub const TAB_4: KeyEvent = no_mod(KeyCode::Char('4'));
 pub const TAB_TOGGLE: KeyEvent = no_mod(KeyCode::Tab);
 pub const TAB_TOGGLE_REVERSE: KeyEvent = no_mod(KeyCode::BackTab);
+pub const TAB_TOGGLE_REVERSE_WINDOWS: KeyEvent = with_mod(KeyCode::BackTab, KeyModifiers::SHIFT);
 pub const FOCUS_WORKDIR: KeyEvent = no_mod(KeyCode::Char('w'));
 pub const FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('s'));
 pub const FOCUS_RIGHT: KeyEvent = no_mod(KeyCode::Right);
