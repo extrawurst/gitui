@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - app closes when staging invalid file/path ([#108](https://github.com/extrawurst/gitui/issues/108))
+- `shift+tab` not working on windows [[@MCord](https://github.com/MCord)] ([#111](https://github.com/extrawurst/gitui/issues/111))
 
 ## [0.5.0] - 2020-06-01
 
