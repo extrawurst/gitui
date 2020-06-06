@@ -138,13 +138,9 @@ impl FileTreeComponent {
                     format!("{} {}{}", status_char, indent_str, file)
                 };
 
-                let status = status_item
-                    .status
-                    .unwrap_or(StatusItemType::Modified);
-
                 Some(Text::Styled(
                     Cow::from(txt),
-                    theme.item(status, selected),
+                    theme.item(status_item.status, selected),
                 ))
             }
 
@@ -175,17 +171,13 @@ impl FileTreeComponent {
         }
     }
 
-    fn item_status_char(item_type: Option<StatusItemType>) -> char {
-        if let Some(item_type) = item_type {
-            match item_type {
-                StatusItemType::Modified => 'M',
-                StatusItemType::New => '+',
-                StatusItemType::Deleted => '-',
-                StatusItemType::Renamed => 'R',
-                _ => ' ',
-            }
-        } else {
-            ' '
+    fn item_status_char(item_type: StatusItemType) -> char {
+        match item_type {
+            StatusItemType::Modified => 'M',
+            StatusItemType::New => '+',
+            StatusItemType::Deleted => '-',
+            StatusItemType::Renamed => 'R',
+            _ => ' ',
         }
     }
 }

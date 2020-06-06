@@ -28,6 +28,19 @@ pub static HELP_TITLE: &str = "Help: all commands";
 pub static STASHING_FILES_TITLE: &str = "Files to Stash";
 pub static STASHING_OPTIONS_TITLE: &str = "Options";
 
+pub mod commit {
+    pub static DETAILS_AUTHOR: &str = "Author: ";
+    pub static DETAILS_COMMITTER: &str = "Committer: ";
+    pub static DETAILS_SHA: &str = "SHA: ";
+    pub static DETAILS_DATE: &str = "Date: ";
+    pub static DETAILS_TAGS: &str = "Tags: ";
+
+    pub static DETAILS_INFO_TITLE: &str = "Info";
+    pub static DETAILS_MESSAGE_TITLE: &str = "Message";
+    pub static DETAILS_FILES_TITLE: &str = "Files:";
+    pub static DETAILS_FILES_LOADING_TITLE: &str = "Files: loading";
+}
+
 pub mod order {
     pub static NAV: i8 = 1;
 }
@@ -41,6 +54,7 @@ pub mod commands {
     static CMD_GROUP_COMMIT: &str = "Commit";
     static CMD_GROUP_STASHING: &str = "Stashing";
     static CMD_GROUP_STASHES: &str = "Stashes";
+    static CMD_GROUP_LOG: &str = "Log";
 
     ///
     pub static TOGGLE_TABS: CommandText = CommandText::new(
@@ -232,5 +246,12 @@ pub mod commands {
         "Drop [D]",
         "drop selected stash",
         CMD_GROUP_STASHES,
+    );
+
+    ///
+    pub static LOG_DETAILS_OPEN: CommandText = CommandText::new(
+        "Details [enter]",
+        "open details of selected commit",
+        CMD_GROUP_LOG,
     );
 }

@@ -1,7 +1,7 @@
 //! sync git api for fetching a status
 
 use crate::{error::Error, error::Result, sync::utils};
-use git2::{Status, StatusOptions, StatusShow};
+use git2::{Delta, Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -36,13 +36,25 @@ impl From<Status> for StatusItemType {
     }
 }
 
+impl From<Delta> for StatusItemType {
+    fn from(d: Delta) -> Self {
+        match d {
+            Delta::Added => StatusItemType::New,
+            Delta::Deleted => StatusItemType::Deleted,
+            Delta::Renamed => StatusItemType::Renamed,
+            Delta::Typechange => StatusItemType::Typechange,
+            _ => StatusItemType::Modified,
+        }
+    }
+}
+
 ///
-#[derive(Default, Clone, Hash, PartialEq, Debug)]
+#[derive(Clone, Hash, PartialEq, Debug)]
 pub struct StatusItem {
     ///
     pub path: String,
     ///
-    pub status: Option<StatusItemType>,
+    pub status: StatusItemType,
 }
 
 ///
@@ -125,7 +137,7 @@ pub fn get_status_new(
 
         res.push(StatusItem {
             path,
-            status: Some(StatusItemType::from(status)),
+            status: StatusItemType::from(status),
         });
     }
 

@@ -41,10 +41,10 @@ static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
 impl AsyncLog {
     ///
-    pub fn new(sender: Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         Self {
             current: Arc::new(Mutex::new(Vec::new())),
-            sender,
+            sender: sender.clone(),
             pending: Arc::new(AtomicBool::new(false)),
             background: Arc::new(AtomicBool::new(false)),
         }

@@ -13,19 +13,29 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        rust: [stable]
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        components: clippy
+
     - name: Build Debug
-      run: cargo build
+      run: |
+        rustc --version
+        cargo build
+
     - name: Run tests
       run: make test
+
     - name: Run clippy
       run: |
-        rustup component add clippy
         cargo clean
         make clippy
     - name: Build Release
@@ -35,9 +45,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        target: x86_64-unknown-linux-musl
+
     - name: Setup MUSL
       run: |
-        rustup target add x86_64-unknown-linux-musl
         sudo apt-get -qq install musl-tools
     - name: Build Debug
       run: cargo build --target=x86_64-unknown-linux-musl
@@ -51,7 +67,10 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Install Rust
-      run: rustup update stable && rustup default stable && rustup component add rustfmt
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt
     - run: cargo fmt -- --check
 
   sec:

@@ -60,3 +60,4 @@ pub const STASH_APPLY: KeyEvent = no_mod(KeyCode::Enter);
 pub const STASH_DROP: KeyEvent =
     with_mod(KeyCode::Char('D'), KeyModifiers::SHIFT);
 pub const CMD_BAR_TOGGLE: KeyEvent = no_mod(KeyCode::Char('.'));
+pub const LOG_COMMIT_DETAILS: KeyEvent = no_mod(KeyCode::Enter);

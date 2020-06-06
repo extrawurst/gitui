@@ -1,5 +1,7 @@
 //! sync git api
 
+mod commit_details;
+mod commit_files;
 mod commits_info;
 pub mod diff;
 mod hooks;
@@ -12,6 +14,8 @@ pub mod status;
 mod tags;
 pub mod utils;
 
+pub use commit_details::{get_commit_details, CommitDetails};
+pub use commit_files::get_commit_files;
 pub use commits_info::{get_commits_info, CommitId, CommitInfo};
 pub use hooks::{hooks_commit_msg, hooks_post_commit, HookResult};
 pub use hunks::{stage_hunk, unstage_hunk};

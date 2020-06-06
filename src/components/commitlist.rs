@@ -30,7 +30,7 @@ pub struct CommitList {
     count_total: usize,
     items: ItemBatch,
     scroll_state: (Instant, f32),
-    tags: Tags,
+    tags: Option<Tags>,
     current_size: (u16, u16),
     scroll_top: usize,
     theme: Theme,
@@ -44,7 +44,7 @@ impl CommitList {
             selection: 0,
             count_total: 0,
             scroll_state: (Instant::now(), 0_f32),
-            tags: Tags::new(),
+            tags: None,
             current_size: (0, 0),
             scroll_top: 0,
             theme: *theme,
@@ -79,13 +79,24 @@ impl CommitList {
     }
 
     ///
-    pub const fn tags(&self) -> &Tags {
-        &self.tags
+    pub fn tags(&self) -> Option<&Tags> {
+        self.tags.as_ref()
+    }
+
+    ///
+    pub fn has_tags(&self) -> bool {
+        self.tags.is_some()
+    }
+
+    ///
+    pub fn clear(&mut self) {
+        self.tags = None;
+        self.items.clear();
     }
 
     ///
     pub fn set_tags(&mut self, tags: Tags) {
-        self.tags = tags;
+        self.tags = Some(tags);
     }
 
     ///
@@ -225,7 +236,9 @@ impl CommitList {
             .take(height)
             .enumerate()
         {
-            let tag = if let Some(tags) = self.tags.get(&e.id) {
+            let tags = if let Some(tags) =
+                self.tags.as_ref().and_then(|t| t.get(&e.id))
+            {
                 Some(tags.join(" "))
             } else {
                 None
@@ -235,7 +248,7 @@ impl CommitList {
                 e,
                 idx + self.scroll_top == selection,
                 &mut txt,
-                tag,
+                tags,
                 &self.theme,
             );
         }

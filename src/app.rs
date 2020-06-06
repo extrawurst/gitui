@@ -190,12 +190,11 @@ impl App {
 
         self.status_tab.update_git(ev)?;
         self.stashing_tab.update_git(ev)?;
+        self.revlog.update_git(ev)?;
 
-        match ev {
-            AsyncNotification::Diff => (),
-            AsyncNotification::Log => self.revlog.update()?,
+        if let AsyncNotification::Status = ev {
             //TODO: is that needed?
-            AsyncNotification::Status => self.update_commands(),
+            self.update_commands()
         }
 
         Ok(())
