@@ -94,5 +94,5 @@ jobs:
         release_notes_file: ./release-notes.txt
     - uses: actions/upload-artifact@v1
       with:
-        name: current-release-notes
+        name: release-notes.txt
         path: ./release-notes.txt
