@@ -92,17 +92,15 @@ impl ChangesComponent {
         if let Some(tree_item) = self.selection() {
             if self.is_working_dir {
                 if let FileTreeItemKind::File(i) = tree_item.kind {
-                    if let Some(status) = i.status {
-                        let path = Path::new(i.path.as_str());
-                        match status {
-                            StatusItemType::Deleted => {
-                                sync::stage_addremoved(CWD, path)?
-                            }
-                            _ => sync::stage_add_file(CWD, path)?,
-                        };
+                    let path = Path::new(i.path.as_str());
+                    match i.status {
+                        StatusItemType::Deleted => {
+                            sync::stage_addremoved(CWD, path)?
+                        }
+                        _ => sync::stage_add_file(CWD, path)?,
+                    };
 
-                        return Ok(true);
-                    }
+                    return Ok(true);
                 } else {
                     //TODO: check if we can handle the one file case with it aswell
                     sync::stage_add_all(

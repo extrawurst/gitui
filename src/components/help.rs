@@ -157,7 +157,7 @@ impl Component for HelpComponent {
 }
 
 impl HelpComponent {
-    pub fn new(theme: &Theme) -> Self {
+    pub const fn new(theme: &Theme) -> Self {
         Self {
             cmds: vec![],
             visible: false,

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - New `Stage all [a]`/`Unstage all [a]` in changes lists ([#82](https://github.com/extrawurst/gitui/issues/82))
 - add `-d`, `--directory` options to set working directory ([#73](https://github.com/extrawurst/gitui/issues/73))
+- commit detail view in revlog ([#80](https://github.com/extrawurst/gitui/issues/80))
 
 ### Fixed
 - app closes when staging invalid file/path ([#108](https://github.com/extrawurst/gitui/issues/108))

@@ -6,6 +6,7 @@
 #![deny(clippy::result_unwrap_used)]
 #![deny(clippy::panic)]
 
+mod commit_files;
 mod diff;
 mod error;
 mod revlog;
@@ -13,6 +14,7 @@ mod status;
 pub mod sync;
 
 pub use crate::{
+    commit_files::AsyncCommitFiles,
     diff::{AsyncDiff, DiffParams},
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
@@ -27,7 +29,7 @@ use std::{
 };
 
 /// this type is used to communicate events back through the channel
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum AsyncNotification {
     ///
     Status,
@@ -35,6 +37,8 @@ pub enum AsyncNotification {
     Diff,
     ///
     Log,
+    ///
+    CommitFiles,
 }
 
 /// current working director `./`

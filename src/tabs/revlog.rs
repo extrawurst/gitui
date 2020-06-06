@@ -1,24 +1,32 @@
 use crate::{
     components::{
         visibility_blocking, CommandBlocking, CommandInfo,
-        CommitList, Component, DrawableComponent,
+        CommitDetailsComponent, CommitList, Component,
+        DrawableComponent,
     },
-    strings,
+    keys, strings,
     ui::style::Theme,
 };
 use anyhow::Result;
 use asyncgit::{sync, AsyncLog, AsyncNotification, FetchStatus, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{backend::Backend, layout::Rect, Frame};
+use strings::commands;
+use tui::{
+    backend::Backend,
+    layout::{Constraint, Direction, Layout, Rect},
+    Frame,
+};
 
 const SLICE_SIZE: usize = 1200;
 
 ///
 pub struct Revlog {
+    commit_details: CommitDetailsComponent,
     list: CommitList,
     git_log: AsyncLog,
     visible: bool,
+    details_open: bool,
 }
 
 impl Revlog {
@@ -28,15 +36,20 @@ impl Revlog {
         theme: &Theme,
     ) -> Self {
         Self {
+            commit_details: CommitDetailsComponent::new(
+                sender, theme,
+            ),
             list: CommitList::new(strings::LOG_TITLE, theme),
-            git_log: AsyncLog::new(sender.clone()),
+            git_log: AsyncLog::new(sender),
             visible: false,
+            details_open: false,
         }
     }
 
     ///
     pub fn any_work_pending(&self) -> bool {
         self.git_log.is_pending()
+            || self.commit_details.any_work_pending()
     }
 
     ///
@@ -55,8 +68,31 @@ impl Revlog {
                 self.fetch_commits()?;
             }
 
-            if self.list.tags().is_empty() {
+            if !self.list.has_tags() || log_changed {
                 self.list.set_tags(sync::get_tags(CWD)?);
+            }
+
+            if self.details_open {
+                self.commit_details.set_commit(
+                    self.list.selected_entry().map(|e| e.id),
+                    self.list.tags().expect("tags"),
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
+    ///
+    pub fn update_git(
+        &mut self,
+        ev: AsyncNotification,
+    ) -> Result<()> {
+        if self.visible {
+            match ev {
+                AsyncNotification::CommitFiles
+                | AsyncNotification::Log => self.update()?,
+                _ => (),
             }
         }
 
@@ -87,7 +123,23 @@ impl DrawableComponent for Revlog {
         f: &mut Frame<B>,
         area: Rect,
     ) -> Result<()> {
-        self.list.draw(f, area)?;
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    Constraint::Percentage(60),
+                    Constraint::Percentage(40),
+                ]
+                .as_ref(),
+            )
+            .split(area);
+
+        if self.details_open {
+            self.list.draw(f, chunks[0])?;
+            self.commit_details.draw(f, chunks[1])?;
+        } else {
+            self.list.draw(f, area)?;
+        }
 
         Ok(())
     }
@@ -96,13 +148,16 @@ impl DrawableComponent for Revlog {
 impl Component for Revlog {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
-            let needs_update = self.list.event(ev)?;
+            let event_used = self.list.event(ev)?;
 
-            if needs_update {
+            if event_used {
                 self.update()?;
+                return Ok(true);
+            } else if let Event::Key(keys::LOG_COMMIT_DETAILS) = ev {
+                self.details_open = !self.details_open;
+                self.update()?;
+                return Ok(true);
             }
-
-            return Ok(needs_update);
         }
 
         Ok(false)
@@ -116,6 +171,12 @@ impl Component for Revlog {
         if self.visible || force_all {
             self.list.commands(out, force_all);
         }
+
+        out.push(CommandInfo::new(
+            commands::LOG_DETAILS_OPEN,
+            true,
+            self.visible,
+        ));
 
         visibility_blocking(self)
     }
@@ -131,7 +192,7 @@ impl Component for Revlog {
 
     fn show(&mut self) -> Result<()> {
         self.visible = true;
-        self.list.items().clear();
+        self.list.clear();
         self.update()?;
 
         Ok(())

@@ -242,13 +242,14 @@ impl Index<usize> for FileTreeItems {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use asyncgit::StatusItemType;
 
     fn string_vec_to_status(items: &[&str]) -> Vec<StatusItem> {
         items
             .iter()
             .map(|a| StatusItem {
                 path: String::from(*a),
-                status: None,
+                status: StatusItemType::Modified,
             })
             .collect::<Vec<_>>()
     }

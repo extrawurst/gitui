@@ -45,7 +45,7 @@ presentation slides: https://github.com/extrawurst/gitui-presentation
 
 # known limitations
 
-* no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server)
+* no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 * [core.hooksPath](https://git-scm.com/docs/githooks) config not supported
 * revert/reset hunk in working dir (see [#11](https://github.com/extrawurst/gitui/issues/11))
 
@@ -89,9 +89,7 @@ see [releases](https://github.com/extrawurst/gitui/releases)
 
 ### requirements
 
-install `rust`/`cargo`: https://www.rust-lang.org/tools/install
-
-min rust version: `1.42`
+install **latest** `rust`/`cargo`: https://www.rust-lang.org/tools/install
 
 ### cargo install
 
