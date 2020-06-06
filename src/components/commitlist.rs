@@ -211,7 +211,7 @@ impl CommitList {
             } else {
                 String::from("")
             }),
-            theme.tab(true).bg(theme.text(true, selected).bg),
+            theme.tags(selected),
         ));
 
         txt.push(splitter);
