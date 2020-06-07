@@ -127,8 +127,7 @@ fn main() -> Result<()> {
                 }
             }
 
-            //TODO: disable input polling while external editor open
-            input.set_polling(!app.any_work_pending());
+            input.set_polling(app.set_polling());
 
             if needs_draw {
                 draw(&mut terminal, &app)?;
@@ -164,6 +163,10 @@ fn draw<B: Backend>(
     terminal: &mut Terminal<B>,
     app: &App,
 ) -> io::Result<()> {
+    if app.requires_redraw() {
+        terminal.resize(terminal.size()?)?;
+    }
+
     terminal.draw(|mut f| {
         if let Err(e) = app.draw(&mut f) {
             log::error!("failed to draw: {:?}", e)
