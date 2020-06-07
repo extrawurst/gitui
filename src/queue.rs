@@ -48,6 +48,8 @@ pub enum InternalEvent {
     TabSwitch,
     ///
     InspectCommit(CommitId),
+    ///
+    SuspendPolling,
 }
 
 ///

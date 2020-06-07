@@ -32,6 +32,8 @@ pub const EXIT: KeyEvent =
 pub const EXIT_POPUP: KeyEvent = no_mod(KeyCode::Esc);
 pub const CLOSE_MSG: KeyEvent = no_mod(KeyCode::Enter);
 pub const OPEN_COMMIT: KeyEvent = no_mod(KeyCode::Char('c'));
+pub const OPEN_COMMIT_EDITOR: KeyEvent =
+    with_mod(KeyCode::Char('C'), KeyModifiers::SHIFT);
 pub const OPEN_HELP: KeyEvent = no_mod(KeyCode::Char('h'));
 pub const MOVE_LEFT: KeyEvent = no_mod(KeyCode::Left);
 pub const MOVE_RIGHT: KeyEvent = no_mod(KeyCode::Right);

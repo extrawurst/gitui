@@ -1,3 +1,4 @@
+use crate::input::InputState;
 use crate::{
     accessors,
     cmdbar::CommandBar,
@@ -18,6 +19,7 @@ use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
+use std::cell::Cell;
 use std::{cell::RefCell, rc::Rc};
 use strings::{commands, order};
 use tui::{
@@ -28,6 +30,7 @@ use tui::{
     widgets::{Block, Borders, Tabs},
     Frame,
 };
+
 ///
 pub struct App {
     do_quit: bool,
@@ -45,6 +48,10 @@ pub struct App {
     stashlist_tab: StashList,
     queue: Queue,
     theme: SharedTheme,
+
+    // "Flags"
+    requires_redraw: Cell<bool>,
+    set_polling: bool,
 }
 
 // public interface
@@ -85,6 +92,8 @@ impl App {
             stashlist_tab: StashList::new(&queue, theme.clone()),
             queue,
             theme,
+            requires_redraw: Cell::new(false),
+            set_polling: true,
         }
     }
 
@@ -182,6 +191,17 @@ impl App {
             if flags.contains(NeedsUpdate::COMMANDS) {
                 self.update_commands();
             }
+        } else if let InputEvent::State(polling_state) = ev {
+            if let InputState::Paused = polling_state {
+                if let Err(e) = self.commit.show_editor() {
+                    let msg =
+                        format!("failed to launch editor:\n{}", e);
+                    log::error!("{}", msg.as_str());
+                    self.msg.show_msg(msg.as_str())?;
+                }
+                self.requires_redraw.set(true);
+                self.set_polling = true;
+            }
         }
 
         Ok(())
@@ -229,6 +249,21 @@ impl App {
             || self.revlog.any_work_pending()
             || self.stashing_tab.anything_pending()
             || self.inspect_commit_popup.any_work_pending()
+    }
+
+    ///
+    pub fn requires_redraw(&self) -> bool {
+        if self.requires_redraw.get() {
+            self.requires_redraw.set(false);
+            true
+        } else {
+            false
+        }
+    }
+
+    ///
+    pub const fn set_polling(&self) -> bool {
+        self.set_polling
     }
 }
 
@@ -314,6 +349,7 @@ impl App {
 
     fn process_queue(&mut self) -> Result<NeedsUpdate> {
         let mut flags = NeedsUpdate::empty();
+
         loop {
             let front = self.queue.borrow_mut().pop_front();
             if let Some(e) = front {
@@ -368,6 +404,9 @@ impl App {
             InternalEvent::InspectCommit(id) => {
                 self.inspect_commit_popup.open(id)?;
                 flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
+            }
+            InternalEvent::SuspendPolling => {
+                self.set_polling = false;
             }
         };
 

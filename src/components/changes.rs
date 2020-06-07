@@ -236,6 +236,11 @@ impl Component for ChangesComponent {
                 some_selection,
                 self.focused(),
             ));
+            out.push(CommandInfo::new(
+                commands::COMMIT_OPEN_EDITOR,
+                !self.is_empty(),
+                self.focused() || force_all,
+            ));
             out.push(
                 CommandInfo::new(
                     commands::COMMIT_OPEN,
@@ -264,6 +269,15 @@ impl Component for ChangesComponent {
                         self.queue
                             .borrow_mut()
                             .push_back(InternalEvent::OpenCommit);
+                        Ok(true)
+                    }
+                    keys::OPEN_COMMIT_EDITOR
+                        if !self.is_working_dir
+                            && !self.is_empty() =>
+                    {
+                        self.queue
+                            .borrow_mut()
+                            .push_back(InternalEvent::SuspendPolling);
                         Ok(true)
                     }
                     keys::STATUS_STAGE_FILE => {
