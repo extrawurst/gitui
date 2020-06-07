@@ -152,6 +152,16 @@ pub trait Component {
     fn show(&mut self) -> Result<()> {
         Ok(())
     }
+
+    ///
+    fn toggle_visible(&mut self) -> Result<()> {
+        if self.is_visible() {
+            self.hide();
+            Ok(())
+        } else {
+            self.show()
+        }
+    }
 }
 
 fn dialog_paragraph<'a, 't, T>(

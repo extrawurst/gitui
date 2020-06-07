@@ -1,6 +1,6 @@
 use super::{
-    dialog_paragraph, utils::time_to_string, DrawableComponent,
-    FileTreeComponent,
+    dialog_paragraph, utils::time_to_string, CommandBlocking,
+    CommandInfo, Component, DrawableComponent, FileTreeComponent,
 };
 use crate::{strings, ui::style::Theme};
 use anyhow::Result;
@@ -25,6 +25,7 @@ pub struct CommitDetailsComponent {
     file_tree: FileTreeComponent,
     theme: Theme,
     git_commit_files: AsyncCommitFiles,
+    visible: bool,
 }
 
 impl DrawableComponent for CommitDetailsComponent {
@@ -69,6 +70,37 @@ impl DrawableComponent for CommitDetailsComponent {
     }
 }
 
+impl Component for CommitDetailsComponent {
+    fn commands(
+        &self,
+        _out: &mut Vec<CommandInfo>,
+        _force_all: bool,
+    ) -> CommandBlocking {
+        unimplemented!()
+    }
+
+    fn event(
+        &mut self,
+        _ev: crossterm::event::Event,
+    ) -> Result<bool> {
+        unimplemented!()
+    }
+
+    ///
+    fn is_visible(&self) -> bool {
+        self.visible
+    }
+    ///
+    fn hide(&mut self) {
+        self.visible = false;
+    }
+    ///
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+        Ok(())
+    }
+}
+
 impl CommitDetailsComponent {
     ///
     pub fn new(
@@ -81,6 +113,7 @@ impl CommitDetailsComponent {
             tags: Vec::new(),
             git_commit_files: AsyncCommitFiles::new(sender),
             file_tree: FileTreeComponent::new("", false, None, theme),
+            visible: false,
         }
     }
 

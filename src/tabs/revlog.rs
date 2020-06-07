@@ -26,7 +26,6 @@ pub struct Revlog {
     list: CommitList,
     git_log: AsyncLog,
     visible: bool,
-    details_open: bool,
 }
 
 impl Revlog {
@@ -42,7 +41,6 @@ impl Revlog {
             list: CommitList::new(strings::LOG_TITLE, theme),
             git_log: AsyncLog::new(sender),
             visible: false,
-            details_open: false,
         }
     }
 
@@ -72,7 +70,7 @@ impl Revlog {
                 self.list.set_tags(sync::get_tags(CWD)?);
             }
 
-            if self.details_open {
+            if self.commit_details.is_visible() {
                 self.commit_details.set_commit(
                     self.list.selected_entry().map(|e| e.id),
                     self.list.tags().expect("tags"),
@@ -134,7 +132,7 @@ impl DrawableComponent for Revlog {
             )
             .split(area);
 
-        if self.details_open {
+        if self.commit_details.is_visible() {
             self.list.draw(f, chunks[0])?;
             self.commit_details.draw(f, chunks[1])?;
         } else {
@@ -154,7 +152,7 @@ impl Component for Revlog {
                 self.update()?;
                 return Ok(true);
             } else if let Event::Key(keys::LOG_COMMIT_DETAILS) = ev {
-                self.details_open = !self.details_open;
+                self.commit_details.toggle_visible()?;
                 self.update()?;
                 return Ok(true);
             }
