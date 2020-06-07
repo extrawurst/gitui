@@ -27,7 +27,7 @@ pub struct FileTreeComponent {
     current_hash: u64,
     focused: bool,
     show_selection: bool,
-    queue: Queue,
+    queue: Option<Queue>,
     theme: Theme,
 }
 
@@ -36,7 +36,7 @@ impl FileTreeComponent {
     pub fn new(
         title: &str,
         focus: bool,
-        queue: Queue,
+        queue: Option<Queue>,
         theme: &Theme,
     ) -> Self {
         Self {
@@ -78,6 +78,16 @@ impl FileTreeComponent {
     }
 
     ///
+    pub fn file_count(&self) -> usize {
+        self.tree.tree.len()
+    }
+
+    ///
+    pub fn set_title(&mut self, title: String) {
+        self.title = title;
+    }
+
+    ///
     pub fn is_file_seleted(&self) -> bool {
         if let Some(item) = self.tree.selected_item() {
             match item.kind {
@@ -93,9 +103,11 @@ impl FileTreeComponent {
         let changed = self.tree.move_selection(dir);
 
         if changed {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Update(NeedsUpdate::DIFF));
+            if let Some(ref queue) = self.queue {
+                queue.borrow_mut().push_back(InternalEvent::Update(
+                    NeedsUpdate::DIFF,
+                ));
+            }
         }
 
         changed

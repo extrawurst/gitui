@@ -1,11 +1,12 @@
 use super::{
     dialog_paragraph, utils::time_to_string, DrawableComponent,
+    FileTreeComponent,
 };
 use crate::{strings, ui::style::Theme};
 use anyhow::Result;
 use asyncgit::{
     sync::{self, CommitDetails, CommitId},
-    AsyncCommitFiles, AsyncNotification, StatusItem, CWD,
+    AsyncCommitFiles, AsyncNotification, CWD,
 };
 use crossbeam_channel::Sender;
 use std::borrow::Cow;
@@ -21,7 +22,7 @@ use tui::{
 pub struct CommitDetailsComponent {
     data: Option<CommitDetails>,
     tags: Vec<String>,
-    files: Option<Vec<StatusItem>>,
+    file_tree: FileTreeComponent,
     theme: Theme,
     git_commit_files: AsyncCommitFiles,
 }
@@ -61,27 +62,8 @@ impl DrawableComponent for CommitDetailsComponent {
             chunks[1],
         );
 
-        let files_loading = self.files.is_none();
-        let files_count = self.files.as_ref().map_or(0, Vec::len);
-
-        let txt = self
-            .files
-            .as_ref()
-            .map_or(vec![], |f| self.get_text_files(f));
-
-        let title = if files_loading {
-            strings::commit::DETAILS_FILES_LOADING_TITLE.to_string()
-        } else {
-            format!(
-                "{} {}",
-                strings::commit::DETAILS_FILES_TITLE,
-                files_count
-            )
-        };
-        f.render_widget(
-            dialog_paragraph(title.as_str(), txt.iter()),
-            chunks[2],
-        );
+        self.file_tree.set_title(self.get_files_title());
+        self.file_tree.draw(f, chunks[2])?;
 
         Ok(())
     }
@@ -97,8 +79,23 @@ impl CommitDetailsComponent {
             theme: *theme,
             data: None,
             tags: Vec::new(),
-            files: None,
             git_commit_files: AsyncCommitFiles::new(sender),
+            file_tree: FileTreeComponent::new("", false, None, theme),
+        }
+    }
+
+    fn get_files_title(&self) -> String {
+        let files_loading = self.git_commit_files.is_pending();
+        let files_count = self.file_tree.file_count();
+
+        if files_loading {
+            strings::commit::DETAILS_FILES_LOADING_TITLE.to_string()
+        } else {
+            format!(
+                "{} {}",
+                strings::commit::DETAILS_FILES_TITLE,
+                files_count
+            )
         }
     }
 
@@ -115,7 +112,6 @@ impl CommitDetailsComponent {
         };
 
         self.tags.clear();
-        self.files = None;
 
         if let Some(id) = id {
             if let Some(tags) = tags.get(&id) {
@@ -126,7 +122,7 @@ impl CommitDetailsComponent {
                 self.git_commit_files.current()?
             {
                 if fetched_id == id {
-                    self.files = Some(res);
+                    self.file_tree.update(res.as_slice())?;
                 } else {
                     self.git_commit_files.fetch(id)?;
                 }
@@ -159,25 +155,6 @@ impl CommitDetailsComponent {
             }
         }
         vec![]
-    }
-
-    fn get_text_files<'a>(
-        &self,
-        files: &'a [StatusItem],
-    ) -> Vec<Text<'a>> {
-        let new_line = Text::Raw(Cow::from("\n"));
-
-        let mut res = Vec::with_capacity(files.len());
-
-        for file in files {
-            res.push(Text::Styled(
-                Cow::from(file.path.as_str()),
-                self.theme.text(true, false),
-            ));
-            res.push(new_line.clone());
-        }
-
-        res
     }
 
     fn get_text_info(&self) -> Vec<Text> {

@@ -53,7 +53,7 @@ impl ChangesComponent {
             files: FileTreeComponent::new(
                 title,
                 focus,
-                queue.clone(),
+                Some(queue.clone()),
                 theme,
             ),
             is_working_dir,
