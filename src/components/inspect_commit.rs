@@ -136,9 +136,8 @@ impl InspectCommitComponent {
         ev: AsyncNotification,
     ) -> Result<()> {
         if self.is_visible() {
-            match ev {
-                AsyncNotification::CommitFiles => self.update()?,
-                _ => (),
+            if let AsyncNotification::CommitFiles = ev {
+                self.update()?
             }
         }
 
