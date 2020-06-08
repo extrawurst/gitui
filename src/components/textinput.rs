@@ -75,7 +75,12 @@ impl DrawableComponent for TextInputComponent {
             let area = ui::centered_rect(60, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                dialog_paragraph(self.title.as_str(), txt.iter()),
+                dialog_paragraph(
+                    self.title.as_str(),
+                    txt.iter(),
+                    &self.theme,
+                    true,
+                ),
                 area,
             );
         }

@@ -239,6 +239,8 @@ impl DrawableComponent for CommitDetailsComponent {
             dialog_paragraph(
                 strings::commit::DETAILS_INFO_TITLE,
                 self.get_text_info().iter(),
+                &self.theme,
+                false,
             ),
             chunks[0],
         );
@@ -247,6 +249,8 @@ impl DrawableComponent for CommitDetailsComponent {
             dialog_paragraph(
                 strings::commit::DETAILS_MESSAGE_TITLE,
                 self.get_text_message().iter(),
+                &self.theme,
+                false,
             )
             .wrap(true),
             chunks[1],

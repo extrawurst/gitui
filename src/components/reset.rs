@@ -44,7 +44,12 @@ impl DrawableComponent for ResetComponent {
             let area = ui::centered_rect(30, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                dialog_paragraph(title, txt.iter()),
+                dialog_paragraph(
+                    title,
+                    txt.iter(),
+                    &self.theme,
+                    true,
+                ),
                 area,
             );
         }

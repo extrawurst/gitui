@@ -89,7 +89,7 @@ impl FileTreeComponent {
 
     ///
     pub fn clear(&mut self) -> Result<()> {
-        self.tree.update(&vec![])
+        self.tree.update(&[])
     }
 
     ///

@@ -26,10 +26,10 @@ pub use reset::ResetComponent;
 pub use stashmsg::StashMsgComponent;
 pub use utils::filetree::FileTreeItemKind;
 
+use crate::ui::style::Theme;
 use tui::{
     backend::Backend,
-    layout::Alignment,
-    layout::Rect,
+    layout::{Alignment, Rect},
     widgets::{Block, Borders, Paragraph, Text},
     Frame,
 };
@@ -167,11 +167,19 @@ pub trait Component {
 fn dialog_paragraph<'a, 't, T>(
     title: &'a str,
     content: T,
+    theme: &Theme,
+    focused: bool,
 ) -> Paragraph<'a, 't, T>
 where
     T: Iterator<Item = &'t Text<'t>>,
 {
     Paragraph::new(content)
-        .block(Block::default().title(title).borders(Borders::ALL))
+        .block(
+            Block::default()
+                .title(title)
+                .borders(Borders::ALL)
+                .title_style(theme.title(focused))
+                .border_style(theme.block(focused)),
+        )
         .alignment(Alignment::Left)
 }
