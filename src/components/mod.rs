@@ -32,7 +32,7 @@ use crate::ui::style::Theme;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, Borders, Paragraph, Text},
+    widgets::{Block, BorderType, Borders, Paragraph, Text},
     Frame,
 };
 
@@ -180,6 +180,27 @@ where
             Block::default()
                 .title(title)
                 .borders(Borders::ALL)
+                .title_style(theme.title(focused))
+                .border_style(theme.block(focused)),
+        )
+        .alignment(Alignment::Left)
+}
+
+fn popup_paragraph<'a, 't, T>(
+    title: &'a str,
+    content: T,
+    theme: &Theme,
+    focused: bool,
+) -> Paragraph<'a, 't, T>
+where
+    T: Iterator<Item = &'t Text<'t>>,
+{
+    Paragraph::new(content)
+        .block(
+            Block::default()
+                .title(title)
+                .borders(Borders::ALL)
+                .border_type(BorderType::Thick)
                 .title_style(theme.title(focused))
                 .border_style(theme.block(focused)),
         )
