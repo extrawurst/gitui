@@ -12,7 +12,7 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    widgets::{Block, Borders, Clear, Paragraph, Text, BorderType},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
     Frame,
 };
 
