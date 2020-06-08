@@ -89,6 +89,7 @@ impl FileTreeComponent {
 
     ///
     pub fn clear(&mut self) -> Result<()> {
+        self.current_hash = 0;
         self.tree.update(&[])
     }
 
