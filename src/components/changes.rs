@@ -75,7 +75,8 @@ impl ChangesComponent {
 
     ///
     pub fn focus_select(&mut self, focus: bool) {
-        self.files.focus_select(focus)
+        self.files.focus(focus);
+        self.files.show_selection(focus);
     }
 
     /// returns true if list is empty

@@ -126,7 +126,7 @@ impl Status {
                 queue.clone(),
                 theme,
             ),
-            diff: DiffComponent::new(queue.clone(), theme),
+            diff: DiffComponent::new(Some(queue.clone()), theme),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status_workdir: AsyncStatus::new(sender.clone()),
             git_status_stage: AsyncStatus::new(sender.clone()),

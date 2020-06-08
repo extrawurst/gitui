@@ -1,6 +1,7 @@
 use crate::{
     components::{
-        dialog_paragraph, utils::time_to_string, DrawableComponent,
+        dialog_paragraph, utils::time_to_string, CommandBlocking,
+        CommandInfo, Component, DrawableComponent,
     },
     strings,
     ui::style::Theme,
@@ -10,6 +11,7 @@ use asyncgit::{
     sync::{self, CommitDetails},
     CWD,
 };
+use crossterm::event::Event;
 use std::borrow::Cow;
 use sync::{CommitId, Tags};
 use tui::{
@@ -209,5 +211,20 @@ impl DrawableComponent for DetailsComponent {
         );
 
         Ok(())
+    }
+}
+
+impl Component for DetailsComponent {
+    fn commands(
+        &self,
+        _out: &mut Vec<CommandInfo>,
+        _force_all: bool,
+    ) -> CommandBlocking {
+        // visibility_blocking(self)
+        CommandBlocking::PassingOn
+    }
+
+    fn event(&mut self, _ev: Event) -> Result<bool> {
+        Ok(false)
     }
 }

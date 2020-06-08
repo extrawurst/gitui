@@ -1,16 +1,17 @@
 mod details;
 
 use super::{
-    CommandBlocking, CommandInfo, Component, DrawableComponent,
-    FileTreeComponent,
+    command_pump, event_pump, CommandBlocking, CommandInfo,
+    Component, DrawableComponent, FileTreeComponent,
 };
-use crate::{strings, ui::style::Theme};
+use crate::{accessors, strings, ui::style::Theme};
 use anyhow::Result;
 use asyncgit::{
     sync::{CommitId, Tags},
     AsyncCommitFiles, AsyncNotification,
 };
 use crossbeam_channel::Sender;
+use crossterm::event::Event;
 use details::DetailsComponent;
 use tui::{
     backend::Backend,
@@ -26,6 +27,8 @@ pub struct CommitDetailsComponent {
 }
 
 impl CommitDetailsComponent {
+    accessors!(self, [details, file_tree]);
+
     ///
     pub fn new(
         sender: &Sender<AsyncNotification>,
@@ -116,30 +119,44 @@ impl DrawableComponent for CommitDetailsComponent {
 impl Component for CommitDetailsComponent {
     fn commands(
         &self,
-        _out: &mut Vec<CommandInfo>,
-        _force_all: bool,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
     ) -> CommandBlocking {
-        unimplemented!()
+        if self.visible || force_all {
+            command_pump(
+                out,
+                force_all,
+                self.components().as_slice(),
+            );
+        }
+
+        CommandBlocking::PassingOn
     }
 
-    fn event(
-        &mut self,
-        _ev: crossterm::event::Event,
-    ) -> Result<bool> {
-        unimplemented!()
+    fn event(&mut self, ev: Event) -> Result<bool> {
+        if event_pump(ev, self.components_mut().as_mut_slice())? {
+            return Ok(true);
+        }
+
+        Ok(false)
     }
 
-    ///
     fn is_visible(&self) -> bool {
         self.visible
     }
-    ///
     fn hide(&mut self) {
         self.visible = false;
     }
-    ///
     fn show(&mut self) -> Result<()> {
         self.visible = true;
         Ok(())
+    }
+
+    fn focused(&self) -> bool {
+        self.details.focused() || self.file_tree.focused()
+    }
+    fn focus(&mut self, focus: bool) {
+        self.file_tree.focus(focus);
+        self.file_tree.show_selection(true);
     }
 }

@@ -1,12 +1,13 @@
 use super::{
-    visibility_blocking, CommandBlocking, CommandInfo,
-    CommitDetailsComponent, Component, DrawableComponent,
+    command_pump, event_pump, visibility_blocking, CommandBlocking,
+    CommandInfo, CommitDetailsComponent, Component, DiffComponent,
+    DrawableComponent,
 };
-use crate::{strings, ui::style::Theme};
+use crate::{accessors, keys, strings, ui::style::Theme};
 use anyhow::Result;
 use asyncgit::{sync, AsyncNotification};
 use crossbeam_channel::Sender;
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 use strings::commands;
 use sync::{CommitId, Tags};
 use tui::{
@@ -18,6 +19,7 @@ use tui::{
 
 pub struct InspectCommitComponent {
     commit_id: Option<CommitId>,
+    diff: DiffComponent,
     details: CommitDetailsComponent,
     visible: bool,
 }
@@ -43,6 +45,7 @@ impl DrawableComponent for InspectCommitComponent {
             f.render_widget(Clear, rect);
 
             self.details.draw(f, chunks[0])?;
+            self.diff.draw(f, chunks[1])?;
         }
 
         Ok(())
@@ -53,13 +56,21 @@ impl Component for InspectCommitComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
-        _force_all: bool,
+        force_all: bool,
     ) -> CommandBlocking {
+        if self.is_visible() || force_all {
+            command_pump(
+                out,
+                force_all,
+                self.components().as_slice(),
+            );
+        }
+
         out.push(
             CommandInfo::new(
                 commands::CLOSE_POPUP,
                 true,
-                self.visible,
+                self.is_visible(),
             )
             .order(1),
         );
@@ -69,19 +80,31 @@ impl Component for InspectCommitComponent {
 
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.is_visible() {
-            // if self.input.event(ev)? {
-            //     return Ok(true);
-            // }
+            if event_pump(ev, self.components_mut().as_mut_slice())? {
+                return Ok(true);
+            }
 
             if let Event::Key(e) = ev {
-                if let KeyCode::Esc = e.code {
-                    self.hide();
+                match e {
+                    keys::EXIT_POPUP => {
+                        self.hide();
+                    }
+                    keys::FOCUS_RIGHT => {
+                        self.details.focus(false);
+                        self.diff.focus(true);
+                    }
+                    keys::FOCUS_LEFT => {
+                        self.details.focus(true);
+                        self.diff.focus(false);
+                    }
+                    _ => (),
                 }
 
                 // stop key event propagation
                 return Ok(true);
             }
         }
+
         Ok(false)
     }
 
@@ -93,20 +116,25 @@ impl Component for InspectCommitComponent {
     }
     fn show(&mut self) -> Result<()> {
         self.visible = true;
+        self.details.show()?;
+        self.details.focus(true);
         self.update()?;
         Ok(())
     }
 }
 
 impl InspectCommitComponent {
+    accessors!(self, [diff, details]);
+
     ///
     pub fn new(
         sender: &Sender<AsyncNotification>,
         theme: &Theme,
     ) -> Self {
         Self {
-            commit_id: None,
             details: CommitDetailsComponent::new(sender, theme),
+            diff: DiffComponent::new(None, theme),
+            commit_id: None,
             visible: false,
         }
     }
@@ -124,12 +152,6 @@ impl InspectCommitComponent {
         self.details.any_work_pending()
     }
 
-    fn update(&mut self) -> Result<()> {
-        self.details.set_commit(self.commit_id, &Tags::new())?;
-
-        Ok(())
-    }
-
     ///
     pub fn update_git(
         &mut self,
@@ -138,8 +160,16 @@ impl InspectCommitComponent {
         if self.is_visible() {
             if let AsyncNotification::CommitFiles = ev {
                 self.update()?
+            } else if let AsyncNotification::Diff = ev {
+                self.update()?
             }
         }
+
+        Ok(())
+    }
+
+    fn update(&mut self) -> Result<()> {
+        self.details.set_commit(self.commit_id, &Tags::new())?;
 
         Ok(())
     }

@@ -66,10 +66,8 @@ impl FileTreeComponent {
         self.tree.selected_item()
     }
 
-    ///
-    pub fn focus_select(&mut self, focus: bool) {
-        self.focus(focus);
-        self.show_selection = focus;
+    pub fn show_selection(&mut self, show: bool) {
+        self.show_selection = show;
     }
 
     /// returns true if list is empty
@@ -304,6 +302,6 @@ impl Component for FileTreeComponent {
         self.focused
     }
     fn focus(&mut self, focus: bool) {
-        self.focused = focus
+        self.focused = focus;
     }
 }
