@@ -1,8 +1,8 @@
 mod details;
 
 use super::{
-    dialog_paragraph, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, FileTreeComponent,
+    CommandBlocking, CommandInfo, Component, DrawableComponent,
+    FileTreeComponent,
 };
 use crate::{strings, ui::style::Theme};
 use anyhow::Result;
@@ -20,9 +20,8 @@ use tui::{
 
 pub struct CommitDetailsComponent {
     details: DetailsComponent,
-    tags: Vec<String>,
     file_tree: FileTreeComponent,
-    theme: Theme,
+    // theme: Theme,
     git_commit_files: AsyncCommitFiles,
     visible: bool,
 }
@@ -35,8 +34,7 @@ impl CommitDetailsComponent {
     ) -> Self {
         Self {
             details: DetailsComponent::new(theme),
-            theme: *theme,
-            tags: Vec::new(),
+            // theme: *theme,
             git_commit_files: AsyncCommitFiles::new(sender),
             file_tree: FileTreeComponent::new("", false, None, theme),
             visible: false,
@@ -64,7 +62,7 @@ impl CommitDetailsComponent {
         id: Option<CommitId>,
         tags: &Tags,
     ) -> Result<()> {
-        self.details.set_commit(id, tags);
+        self.details.set_commit(id, tags)?;
 
         if let Some(id) = id {
             if let Some((fetched_id, res)) =
