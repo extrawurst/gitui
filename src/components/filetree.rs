@@ -88,6 +88,11 @@ impl FileTreeComponent {
     }
 
     ///
+    pub fn clear(&mut self) -> Result<()> {
+        self.tree.update(&vec![])
+    }
+
+    ///
     pub fn is_file_seleted(&self) -> bool {
         if let Some(item) = self.tree.selected_item() {
             match item.kind {

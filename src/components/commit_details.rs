@@ -157,9 +157,11 @@ impl CommitDetailsComponent {
                 if fetched_id == id {
                     self.file_tree.update(res.as_slice())?;
                 } else {
+                    self.file_tree.clear()?;
                     self.git_commit_files.fetch(id)?;
                 }
             } else {
+                self.file_tree.clear()?;
                 self.git_commit_files.fetch(id)?;
             }
         }
