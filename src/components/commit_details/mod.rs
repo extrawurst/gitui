@@ -21,7 +21,6 @@ use tui::{
 pub struct CommitDetailsComponent {
     details: DetailsComponent,
     file_tree: FileTreeComponent,
-    // theme: Theme,
     git_commit_files: AsyncCommitFiles,
     visible: bool,
 }
@@ -34,7 +33,6 @@ impl CommitDetailsComponent {
     ) -> Self {
         Self {
             details: DetailsComponent::new(theme),
-            // theme: *theme,
             git_commit_files: AsyncCommitFiles::new(sender),
             file_tree: FileTreeComponent::new("", false, None, theme),
             visible: false,
@@ -80,6 +78,8 @@ impl CommitDetailsComponent {
             }
         }
 
+        self.file_tree.set_title(self.get_files_title());
+
         Ok(())
     }
 
@@ -107,8 +107,6 @@ impl DrawableComponent for CommitDetailsComponent {
             .split(rect);
 
         self.details.draw(f, chunks[0])?;
-
-        self.file_tree.set_title(self.get_files_title());
         self.file_tree.draw(f, chunks[1])?;
 
         Ok(())

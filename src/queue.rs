@@ -41,12 +41,14 @@ pub enum InternalEvent {
     ShowErrorMsg(String),
     ///
     Update(NeedsUpdate),
-    ///
+    /// open commit msg input
     OpenCommit,
     ///
     PopupStashing(StashingOptions),
     ///
     TabSwitch,
+    ///
+    InspectCommit(CommitId),
 }
 
 ///
