@@ -1,16 +1,17 @@
-use super::{
-    dialog_paragraph, utils::time_to_string, CommandBlocking,
-    CommandInfo, Component, DrawableComponent, FileTreeComponent,
+use crate::{
+    components::{
+        dialog_paragraph, utils::time_to_string, DrawableComponent,
+    },
+    strings,
+    ui::style::Theme,
 };
-use crate::{strings, ui::style::Theme};
 use anyhow::Result;
 use asyncgit::{
-    sync::{self, CommitDetails, CommitId},
-    AsyncCommitFiles, AsyncNotification, CWD,
+    sync::{self, CommitDetails},
+    CWD,
 };
-use crossbeam_channel::Sender;
 use std::borrow::Cow;
-use sync::Tags;
+use sync::{CommitId, Tags};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -19,77 +20,38 @@ use tui::{
     Frame,
 };
 
-pub struct CommitDetailsComponent {
+pub struct DetailsComponent {
     data: Option<CommitDetails>,
     tags: Vec<String>,
-    file_tree: FileTreeComponent,
     theme: Theme,
-    git_commit_files: AsyncCommitFiles,
-    visible: bool,
 }
 
-impl CommitDetailsComponent {
+impl DetailsComponent {
     ///
-    pub fn new(
-        sender: &Sender<AsyncNotification>,
-        theme: &Theme,
-    ) -> Self {
+    pub fn new(theme: &Theme) -> Self {
         Self {
-            theme: *theme,
             data: None,
             tags: Vec::new(),
-            git_commit_files: AsyncCommitFiles::new(sender),
-            file_tree: FileTreeComponent::new("", false, None, theme),
-            visible: false,
+            theme: *theme,
         }
     }
 
-    fn get_files_title(&self) -> String {
-        let files_loading = self.git_commit_files.is_pending();
-        let files_count = self.file_tree.file_count();
-
-        if files_loading {
-            strings::commit::DETAILS_FILES_LOADING_TITLE.to_string()
-        } else {
-            format!(
-                "{} {}",
-                strings::commit::DETAILS_FILES_TITLE,
-                files_count
-            )
-        }
-    }
-
-    ///
     pub fn set_commit(
         &mut self,
         id: Option<CommitId>,
         tags: &Tags,
     ) -> Result<()> {
+        self.tags.clear();
+
         self.data = if let Some(id) = id {
             sync::get_commit_details(CWD, id).ok()
         } else {
             None
         };
 
-        self.tags.clear();
-
         if let Some(id) = id {
             if let Some(tags) = tags.get(&id) {
                 self.tags.extend(tags.clone());
-            }
-
-            if let Some((fetched_id, res)) =
-                self.git_commit_files.current()?
-            {
-                if fetched_id == id {
-                    self.file_tree.update(res.as_slice())?;
-                } else {
-                    self.file_tree.clear()?;
-                    self.git_commit_files.fetch(id)?;
-                }
-            } else {
-                self.file_tree.clear()?;
-                self.git_commit_files.fetch(id)?;
             }
         }
 
@@ -210,14 +172,9 @@ impl CommitDetailsComponent {
             vec![]
         }
     }
-
-    ///
-    pub fn any_work_pending(&self) -> bool {
-        self.git_commit_files.is_pending()
-    }
 }
 
-impl DrawableComponent for CommitDetailsComponent {
+impl DrawableComponent for DetailsComponent {
     fn draw<B: Backend>(
         &mut self,
         f: &mut Frame<B>,
@@ -226,12 +183,7 @@ impl DrawableComponent for CommitDetailsComponent {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
-                [
-                    Constraint::Length(8),
-                    Constraint::Min(10),
-                    Constraint::Length(12),
-                ]
-                .as_ref(),
+                [Constraint::Length(8), Constraint::Min(10)].as_ref(),
             )
             .split(rect);
 
@@ -256,40 +208,6 @@ impl DrawableComponent for CommitDetailsComponent {
             chunks[1],
         );
 
-        self.file_tree.set_title(self.get_files_title());
-        self.file_tree.draw(f, chunks[2])?;
-
-        Ok(())
-    }
-}
-
-impl Component for CommitDetailsComponent {
-    fn commands(
-        &self,
-        _out: &mut Vec<CommandInfo>,
-        _force_all: bool,
-    ) -> CommandBlocking {
-        unimplemented!()
-    }
-
-    fn event(
-        &mut self,
-        _ev: crossterm::event::Event,
-    ) -> Result<bool> {
-        unimplemented!()
-    }
-
-    ///
-    fn is_visible(&self) -> bool {
-        self.visible
-    }
-    ///
-    fn hide(&mut self) {
-        self.visible = false;
-    }
-    ///
-    fn show(&mut self) -> Result<()> {
-        self.visible = true;
         Ok(())
     }
 }
