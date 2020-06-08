@@ -28,7 +28,7 @@ pub struct DetailsComponent {
 
 impl DetailsComponent {
     ///
-    pub fn new(theme: &Theme) -> Self {
+    pub const fn new(theme: &Theme) -> Self {
         Self {
             data: None,
             tags: Vec::new(),
