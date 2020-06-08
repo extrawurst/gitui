@@ -30,7 +30,7 @@ use tui::{
     backend::Backend,
     layout::Alignment,
     layout::Rect,
-    widgets::{Block, Borders, Paragraph, Text},
+    widgets::{Block, BorderType, Borders, Paragraph, Text},
     Frame,
 };
 
@@ -163,5 +163,22 @@ where
 {
     Paragraph::new(content)
         .block(Block::default().title(title).borders(Borders::ALL))
+        .alignment(Alignment::Left)
+}
+
+fn popup_paragraph<'a, 't, T>(
+    title: &'a str,
+    content: T,
+) -> Paragraph<'a, 't, T>
+where
+    T: Iterator<Item = &'t Text<'t>>,
+{
+    Paragraph::new(content)
+        .block(
+            Block::default()
+                .title(title)
+                .borders(Borders::ALL)
+                .border_type(BorderType::Thick),
+        )
         .alignment(Alignment::Left)
 }

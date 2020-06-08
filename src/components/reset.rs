@@ -1,9 +1,8 @@
-use super::{
-    visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent,
-};
 use crate::{
-    components::dialog_paragraph,
+    components::{
+        popup_paragraph, visibility_blocking, CommandBlocking,
+        CommandInfo, Component, DrawableComponent,
+    },
     queue::{Action, InternalEvent, Queue},
     strings, ui,
     ui::style::Theme,
@@ -43,10 +42,7 @@ impl DrawableComponent for ResetComponent {
 
             let area = ui::centered_rect(30, 20, f.size());
             f.render_widget(Clear, area);
-            f.render_widget(
-                dialog_paragraph(title, txt.iter()),
-                area,
-            );
+            f.render_widget(popup_paragraph(title, txt.iter()), area);
         }
 
         Ok(())
