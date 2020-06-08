@@ -1,5 +1,5 @@
 <h1 align="center">
-<img width="400px" src="assets/logo.png" />
+<img width="300px" src="assets/logo.png" />
 
 ![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4]
 </h1>
