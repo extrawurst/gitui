@@ -30,7 +30,7 @@ use tui::{
     backend::Backend,
     layout::Alignment,
     layout::Rect,
-    widgets::{Block, Borders, Paragraph, Text},
+    widgets::{Block, BorderType, Borders, Paragraph, Text},
     Frame,
 };
 

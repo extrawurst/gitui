@@ -2,18 +2,16 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{
-    components::dialog_paragraph, strings, ui, ui::style::Theme,
-};
+use crate::{strings, ui, ui::style::Theme};
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
     backend::Backend,
-    layout::Rect,
+    layout::{Alignment, Rect},
     style::Style,
-    widgets::{Clear, Text},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
     Frame,
 };
 
@@ -75,7 +73,14 @@ impl DrawableComponent for TextInputComponent {
             let area = ui::centered_rect(60, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                dialog_paragraph(self.title.as_str(), txt.iter()),
+                Paragraph::new(txt.iter())
+                    .block(
+                        Block::default()
+                            .title(self.title.as_str())
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Thick),
+                    )
+                    .alignment(Alignment::Left),
                 area,
             );
         }
