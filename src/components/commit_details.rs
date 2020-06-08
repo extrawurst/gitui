@@ -28,79 +28,6 @@ pub struct CommitDetailsComponent {
     visible: bool,
 }
 
-impl DrawableComponent for CommitDetailsComponent {
-    fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-        rect: Rect,
-    ) -> Result<()> {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Length(8),
-                    Constraint::Min(10),
-                    Constraint::Length(12),
-                ]
-                .as_ref(),
-            )
-            .split(rect);
-
-        f.render_widget(
-            dialog_paragraph(
-                strings::commit::DETAILS_INFO_TITLE,
-                self.get_text_info().iter(),
-            ),
-            chunks[0],
-        );
-
-        f.render_widget(
-            dialog_paragraph(
-                strings::commit::DETAILS_MESSAGE_TITLE,
-                self.get_text_message().iter(),
-            )
-            .wrap(true),
-            chunks[1],
-        );
-
-        self.file_tree.set_title(self.get_files_title());
-        self.file_tree.draw(f, chunks[2])?;
-
-        Ok(())
-    }
-}
-
-impl Component for CommitDetailsComponent {
-    fn commands(
-        &self,
-        _out: &mut Vec<CommandInfo>,
-        _force_all: bool,
-    ) -> CommandBlocking {
-        unimplemented!()
-    }
-
-    fn event(
-        &mut self,
-        _ev: crossterm::event::Event,
-    ) -> Result<bool> {
-        unimplemented!()
-    }
-
-    ///
-    fn is_visible(&self) -> bool {
-        self.visible
-    }
-    ///
-    fn hide(&mut self) {
-        self.visible = false;
-    }
-    ///
-    fn show(&mut self) -> Result<()> {
-        self.visible = true;
-        Ok(())
-    }
-}
-
 impl CommitDetailsComponent {
     ///
     pub fn new(
@@ -287,5 +214,78 @@ impl CommitDetailsComponent {
     ///
     pub fn any_work_pending(&self) -> bool {
         self.git_commit_files.is_pending()
+    }
+}
+
+impl DrawableComponent for CommitDetailsComponent {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        rect: Rect,
+    ) -> Result<()> {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Length(8),
+                    Constraint::Min(10),
+                    Constraint::Length(12),
+                ]
+                .as_ref(),
+            )
+            .split(rect);
+
+        f.render_widget(
+            dialog_paragraph(
+                strings::commit::DETAILS_INFO_TITLE,
+                self.get_text_info().iter(),
+            ),
+            chunks[0],
+        );
+
+        f.render_widget(
+            dialog_paragraph(
+                strings::commit::DETAILS_MESSAGE_TITLE,
+                self.get_text_message().iter(),
+            )
+            .wrap(true),
+            chunks[1],
+        );
+
+        self.file_tree.set_title(self.get_files_title());
+        self.file_tree.draw(f, chunks[2])?;
+
+        Ok(())
+    }
+}
+
+impl Component for CommitDetailsComponent {
+    fn commands(
+        &self,
+        _out: &mut Vec<CommandInfo>,
+        _force_all: bool,
+    ) -> CommandBlocking {
+        unimplemented!()
+    }
+
+    fn event(
+        &mut self,
+        _ev: crossterm::event::Event,
+    ) -> Result<bool> {
+        unimplemented!()
+    }
+
+    ///
+    fn is_visible(&self) -> bool {
+        self.visible
+    }
+    ///
+    fn hide(&mut self) {
+        self.visible = false;
+    }
+    ///
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+        Ok(())
     }
 }
