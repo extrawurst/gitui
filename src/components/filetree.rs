@@ -89,7 +89,7 @@ impl FileTreeComponent {
 
     ///
     pub fn file_count(&self) -> usize {
-        self.tree.tree.len()
+        self.tree.tree.file_count()
     }
 
     ///
