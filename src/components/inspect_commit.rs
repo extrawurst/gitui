@@ -33,12 +33,18 @@ impl DrawableComponent for InspectCommitComponent {
         rect: Rect,
     ) -> Result<()> {
         if self.is_visible() {
+            let percentages = if self.diff.focused() {
+                (30, 70)
+            } else {
+                (50, 50)
+            };
+
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints(
                     [
-                        Constraint::Percentage(50),
-                        Constraint::Percentage(50),
+                        Constraint::Percentage(percentages.0),
+                        Constraint::Percentage(percentages.1),
                     ]
                     .as_ref(),
                 )
