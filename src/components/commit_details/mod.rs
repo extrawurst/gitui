@@ -113,8 +113,8 @@ impl DrawableComponent for CommitDetailsComponent {
             .direction(Direction::Vertical)
             .constraints(
                 [
-                    Constraint::Percentage(70),
-                    Constraint::Percentage(30),
+                    Constraint::Percentage(60),
+                    Constraint::Percentage(40),
                 ]
                 .as_ref(),
             )
