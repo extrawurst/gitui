@@ -15,7 +15,7 @@ pub mod sync;
 
 pub use crate::{
     commit_files::AsyncCommitFiles,
-    diff::{AsyncDiff, DiffParams},
+    diff::{AsyncDiff, DiffParams, DiffType},
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
     sync::{

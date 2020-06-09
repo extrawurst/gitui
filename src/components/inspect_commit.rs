@@ -7,7 +7,9 @@ use crate::{
     accessors, keys, queue::Queue, strings, ui::style::Theme,
 };
 use anyhow::Result;
-use asyncgit::{sync, AsyncNotification, CWD};
+use asyncgit::{
+    sync, AsyncDiff, AsyncNotification, DiffParams, DiffType,
+};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use strings::commands;
@@ -23,6 +25,7 @@ pub struct InspectCommitComponent {
     commit_id: Option<CommitId>,
     diff: DiffComponent,
     details: CommitDetailsComponent,
+    git_diff: AsyncDiff,
     visible: bool,
 }
 
@@ -159,6 +162,7 @@ impl InspectCommitComponent {
             ),
             diff: DiffComponent::new(None, theme),
             commit_id: None,
+            git_diff: AsyncDiff::new(sender.clone()),
             visible: false,
         }
     }
@@ -173,7 +177,7 @@ impl InspectCommitComponent {
 
     ///
     pub fn any_work_pending(&self) -> bool {
-        self.details.any_work_pending()
+        self.git_diff.is_pending() || self.details.any_work_pending()
     }
 
     ///
@@ -185,7 +189,7 @@ impl InspectCommitComponent {
             if let AsyncNotification::CommitFiles = ev {
                 self.update()?
             } else if let AsyncNotification::Diff = ev {
-                self.update()?
+                self.update_diff()?
             }
         }
 
@@ -198,13 +202,21 @@ impl InspectCommitComponent {
             if let Some(id) = self.commit_id {
                 if let Some(f) = self.details.files().selection_file()
                 {
-                    self.diff.update(
-                        f.path.clone(),
-                        false,
-                        sync::get_diff_commit(CWD, id, f.path)?,
-                    )?;
+                    let diff_params = DiffParams {
+                        path: f.path.clone(),
+                        diff_type: DiffType::Commit(id),
+                    };
 
-                    return Ok(());
+                    if let Some((params, last)) =
+                        self.git_diff.last()?
+                    {
+                        if params == diff_params {
+                            self.diff.update(f.path, false, last)?;
+                            return Ok(());
+                        }
+                    }
+
+                    self.git_diff.request(diff_params)?;
                 }
             }
 

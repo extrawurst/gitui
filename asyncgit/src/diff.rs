@@ -9,10 +9,27 @@ use std::{
         Arc, Mutex,
     },
 };
+use sync::CommitId;
 
 ///
-#[derive(Default, Hash, Clone, PartialEq)]
-pub struct DiffParams(pub String, pub bool);
+#[derive(Hash, Clone, PartialEq)]
+pub enum DiffType {
+    /// diff in a given commit
+    Commit(CommitId),
+    /// diff against staged file
+    Stage,
+    /// diff against file in workdir
+    WorkDir,
+}
+
+///
+#[derive(Hash, Clone, PartialEq)]
+pub struct DiffParams {
+    /// path to the file to diff
+    pub path: String,
+    /// what kind of diff
+    pub diff_type: DiffType,
+}
 
 struct Request<R, A>(R, Option<A>);
 
@@ -121,8 +138,19 @@ impl AsyncDiff {
         arc_current: Arc<Mutex<Request<u64, FileDiff>>>,
         hash: u64,
     ) -> Result<bool> {
-        let res =
-            sync::diff::get_diff(CWD, params.0.clone(), params.1)?;
+        let res = match params.diff_type {
+            DiffType::Stage => {
+                sync::diff::get_diff(CWD, params.path.clone(), true)?
+            }
+            DiffType::WorkDir => {
+                sync::diff::get_diff(CWD, params.path.clone(), false)?
+            }
+            DiffType::Commit(id) => sync::diff::get_diff_commit(
+                CWD,
+                id,
+                params.path.clone(),
+            )?,
+        };
 
         let mut notify = false;
         {

@@ -13,7 +13,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     sync::{self, status::StatusType},
-    AsyncDiff, AsyncNotification, AsyncStatus, DiffParams,
+    AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
     StatusParams, CWD,
 };
 use components::{command_pump, visibility_blocking};
@@ -243,7 +243,16 @@ impl Status {
     ///
     pub fn update_diff(&mut self) -> Result<()> {
         if let Some((path, is_stage)) = self.selected_path() {
-            let diff_params = DiffParams(path.clone(), is_stage);
+            let diff_type = if is_stage {
+                DiffType::Stage
+            } else {
+                DiffType::WorkDir
+            };
+
+            let diff_params = DiffParams {
+                path: path.clone(),
+                diff_type,
+            };
 
             if self.diff.current() == (path.clone(), is_stage) {
                 // we are already showing a diff of the right file
