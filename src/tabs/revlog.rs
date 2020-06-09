@@ -4,7 +4,9 @@ use crate::{
         CommitDetailsComponent, CommitList, Component,
         DrawableComponent,
     },
-    keys, strings,
+    keys,
+    queue::{InternalEvent, Queue},
+    strings,
     ui::style::Theme,
 };
 use anyhow::Result;
@@ -12,6 +14,7 @@ use asyncgit::{sync, AsyncLog, AsyncNotification, FetchStatus, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use strings::commands;
+use sync::CommitId;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -25,24 +28,25 @@ pub struct Revlog {
     commit_details: CommitDetailsComponent,
     list: CommitList,
     git_log: AsyncLog,
+    queue: Queue,
     visible: bool,
-    details_open: bool,
 }
 
 impl Revlog {
     ///
     pub fn new(
+        queue: &Queue,
         sender: &Sender<AsyncNotification>,
         theme: &Theme,
     ) -> Self {
         Self {
+            queue: queue.clone(),
             commit_details: CommitDetailsComponent::new(
-                sender, theme,
+                queue, sender, theme,
             ),
             list: CommitList::new(strings::LOG_TITLE, theme),
             git_log: AsyncLog::new(sender),
             visible: false,
-            details_open: false,
         }
     }
 
@@ -72,9 +76,9 @@ impl Revlog {
                 self.list.set_tags(sync::get_tags(CWD)?);
             }
 
-            if self.details_open {
+            if self.commit_details.is_visible() {
                 self.commit_details.set_commit(
-                    self.list.selected_entry().map(|e| e.id),
+                    self.selected_commit(),
                     self.list.tags().expect("tags"),
                 )?;
             }
@@ -115,6 +119,10 @@ impl Revlog {
 
         Ok(())
     }
+
+    fn selected_commit(&self) -> Option<CommitId> {
+        self.list.selected_entry().map(|e| e.id)
+    }
 }
 
 impl DrawableComponent for Revlog {
@@ -134,7 +142,7 @@ impl DrawableComponent for Revlog {
             )
             .split(area);
 
-        if self.details_open {
+        if self.commit_details.is_visible() {
             self.list.draw(f, chunks[0])?;
             self.commit_details.draw(f, chunks[1])?;
         } else {
@@ -154,9 +162,18 @@ impl Component for Revlog {
                 self.update()?;
                 return Ok(true);
             } else if let Event::Key(keys::LOG_COMMIT_DETAILS) = ev {
-                self.details_open = !self.details_open;
+                self.commit_details.toggle_visible()?;
                 self.update()?;
                 return Ok(true);
+            } else if let Event::Key(keys::FOCUS_RIGHT) = ev {
+                return if let Some(id) = self.selected_commit() {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::InspectCommit(id));
+                    Ok(true)
+                } else {
+                    Ok(false)
+                };
             }
         }
 
@@ -173,9 +190,16 @@ impl Component for Revlog {
         }
 
         out.push(CommandInfo::new(
-            commands::LOG_DETAILS_OPEN,
+            commands::LOG_DETAILS_TOGGLE,
             true,
             self.visible,
+        ));
+
+        out.push(CommandInfo::new(
+            commands::LOG_DETAILS_OPEN,
+            true,
+            (self.visible && self.commit_details.is_visible())
+                || force_all,
         ));
 
         visibility_blocking(self)

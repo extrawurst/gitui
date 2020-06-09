@@ -27,7 +27,7 @@ pub struct FileTreeComponent {
     current_hash: u64,
     focused: bool,
     show_selection: bool,
-    queue: Queue,
+    queue: Option<Queue>,
     theme: Theme,
 }
 
@@ -36,7 +36,7 @@ impl FileTreeComponent {
     pub fn new(
         title: &str,
         focus: bool,
-        queue: Queue,
+        queue: Option<Queue>,
         theme: &Theme,
     ) -> Self {
         Self {
@@ -67,14 +67,40 @@ impl FileTreeComponent {
     }
 
     ///
-    pub fn focus_select(&mut self, focus: bool) {
-        self.focus(focus);
-        self.show_selection = focus;
+    pub fn selection_file(&self) -> Option<StatusItem> {
+        self.tree.selected_item().and_then(|f| {
+            if let FileTreeItemKind::File(f) = f.kind {
+                Some(f)
+            } else {
+                None
+            }
+        })
+    }
+
+    ///
+    pub fn show_selection(&mut self, show: bool) {
+        self.show_selection = show;
     }
 
     /// returns true if list is empty
     pub fn is_empty(&self) -> bool {
         self.tree.is_empty()
+    }
+
+    ///
+    pub fn file_count(&self) -> usize {
+        self.tree.tree.len()
+    }
+
+    ///
+    pub fn set_title(&mut self, title: String) {
+        self.title = title;
+    }
+
+    ///
+    pub fn clear(&mut self) -> Result<()> {
+        self.current_hash = 0;
+        self.tree.update(&[])
     }
 
     ///
@@ -93,9 +119,11 @@ impl FileTreeComponent {
         let changed = self.tree.move_selection(dir);
 
         if changed {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Update(NeedsUpdate::DIFF));
+            if let Some(ref queue) = self.queue {
+                queue.borrow_mut().push_back(InternalEvent::Update(
+                    NeedsUpdate::DIFF,
+                ));
+            }
         }
 
         changed
@@ -286,6 +314,6 @@ impl Component for FileTreeComponent {
         self.focused
     }
     fn focus(&mut self, focus: bool) {
-        self.focused = focus
+        self.focused = focus;
     }
 }

@@ -3,8 +3,9 @@ use crate::{
     cmdbar::CommandBar,
     components::{
         event_pump, CommandBlocking, CommandInfo, CommitComponent,
-        Component, DrawableComponent, HelpComponent, MsgComponent,
-        ResetComponent, StashMsgComponent,
+        Component, DrawableComponent, HelpComponent,
+        InspectCommitComponent, MsgComponent, ResetComponent,
+        StashMsgComponent,
     },
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
@@ -33,6 +34,7 @@ pub struct App {
     reset: ResetComponent,
     commit: CommitComponent,
     stashmsg_popup: StashMsgComponent,
+    inspect_commit_popup: InspectCommitComponent,
     cmdbar: CommandBar,
     tab: usize,
     revlog: Revlog,
@@ -58,12 +60,15 @@ impl App {
                 queue.clone(),
                 &theme,
             ),
+            inspect_commit_popup: InspectCommitComponent::new(
+                &queue, sender, &theme,
+            ),
             do_quit: false,
             cmdbar: CommandBar::new(&theme),
             help: HelpComponent::new(&theme),
             msg: MsgComponent::new(&theme),
             tab: 0,
-            revlog: Revlog::new(sender, &theme),
+            revlog: Revlog::new(&queue, sender, &theme),
             status_tab: Status::new(sender, &queue, &theme),
             stashing_tab: Stashing::new(sender, &queue, &theme),
             stashlist_tab: StashList::new(&queue, &theme),
@@ -159,8 +164,11 @@ impl App {
         if flags.contains(NeedsUpdate::ALL) {
             self.update()?;
         }
+        //TODO: make this a queue event?
+        //NOTE: set when any tree component changed selection
         if flags.contains(NeedsUpdate::DIFF) {
             self.status_tab.update_diff()?;
+            self.inspect_commit_popup.update_diff()?;
         }
         if flags.contains(NeedsUpdate::COMMANDS) {
             self.update_commands();
@@ -191,6 +199,7 @@ impl App {
         self.status_tab.update_git(ev)?;
         self.stashing_tab.update_git(ev)?;
         self.revlog.update_git(ev)?;
+        self.inspect_commit_popup.update_git(ev)?;
 
         if let AsyncNotification::Status = ev {
             //TODO: is that needed?
@@ -210,6 +219,7 @@ impl App {
         self.status_tab.anything_pending()
             || self.revlog.any_work_pending()
             || self.stashing_tab.anything_pending()
+            || self.inspect_commit_popup.any_work_pending()
     }
 }
 
@@ -222,6 +232,7 @@ impl App {
             reset,
             commit,
             stashmsg_popup,
+            inspect_commit_popup,
             help,
             revlog,
             status_tab,
@@ -356,6 +367,10 @@ impl App {
                 self.stashmsg_popup.show()?
             }
             InternalEvent::TabSwitch => self.set_tab(0)?,
+            InternalEvent::InspectCommit(id) => {
+                self.inspect_commit_popup.open(id)?;
+                flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
+            }
         };
 
         Ok(flags)
@@ -407,19 +422,31 @@ impl App {
             || self.help.is_visible()
             || self.reset.is_visible()
             || self.msg.is_visible()
+            || self.stashmsg_popup.is_visible()
+            || self.inspect_commit_popup.is_visible()
     }
 
     fn draw_popups<B: Backend>(
         &mut self,
         f: &mut Frame<B>,
     ) -> Result<()> {
-        let size = f.size();
+        let size = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Min(1),
+                    Constraint::Length(self.cmdbar.height()),
+                ]
+                .as_ref(),
+            )
+            .split(f.size())[0];
 
         self.commit.draw(f, size)?;
         self.stashmsg_popup.draw(f, size)?;
         self.reset.draw(f, size)?;
         self.help.draw(f, size)?;
         self.msg.draw(f, size)?;
+        self.inspect_commit_popup.draw(f, size)?;
 
         Ok(())
     }

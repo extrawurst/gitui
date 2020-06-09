@@ -1,6 +1,6 @@
 use super::{utils::repo, CommitId};
 use crate::{error::Result, StatusItem, StatusItemType};
-use git2::DiffDelta;
+use git2::{Diff, DiffDelta, DiffOptions, Repository};
 use scopetime::scope_time;
 
 /// get all files that are part of a commit
@@ -12,19 +12,7 @@ pub fn get_commit_files(
 
     let repo = repo(repo_path)?;
 
-    let commit = repo.find_commit(id.into())?;
-    let commit_tree = commit.tree()?;
-    let parent = if commit.parent_count() > 0 {
-        Some(repo.find_commit(commit.parent_id(0)?)?.tree()?)
-    } else {
-        None
-    };
-
-    let diff = repo.diff_tree_to_tree(
-        parent.as_ref(),
-        Some(&commit_tree),
-        None,
-    )?;
+    let diff = get_commit_diff(&repo, id, None)?;
 
     let mut res = Vec::new();
 
@@ -46,6 +34,37 @@ pub fn get_commit_files(
     )?;
 
     Ok(res)
+}
+
+///
+pub(crate) fn get_commit_diff(
+    repo: &Repository,
+    id: CommitId,
+    pathspec: Option<String>,
+) -> Result<Diff<'_>> {
+    // scope_time!("get_commit_diff");
+
+    let commit = repo.find_commit(id.into())?;
+    let commit_tree = commit.tree()?;
+    let parent = if commit.parent_count() > 0 {
+        Some(repo.find_commit(commit.parent_id(0)?)?.tree()?)
+    } else {
+        None
+    };
+
+    let mut opt = pathspec.map(|p| {
+        let mut opts = DiffOptions::new();
+        opts.pathspec(p);
+        opts
+    });
+
+    let diff = repo.diff_tree_to_tree(
+        parent.as_ref(),
+        Some(&commit_tree),
+        opt.as_mut(),
+    )?;
+
+    Ok(diff)
 }
 
 #[cfg(test)]

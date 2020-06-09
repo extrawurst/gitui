@@ -1,15 +1,19 @@
-use super::{
-    dialog_paragraph, utils::time_to_string, DrawableComponent,
+use crate::{
+    components::{
+        dialog_paragraph, utils::time_to_string, CommandBlocking,
+        CommandInfo, Component, DrawableComponent,
+    },
+    strings,
+    ui::style::Theme,
 };
-use crate::{strings, ui::style::Theme};
 use anyhow::Result;
 use asyncgit::{
-    sync::{self, CommitDetails, CommitId},
-    AsyncCommitFiles, AsyncNotification, StatusItem, CWD,
+    sync::{self, CommitDetails},
+    CWD,
 };
-use crossbeam_channel::Sender;
+use crossterm::event::Event;
 use std::borrow::Cow;
-use sync::Tags;
+use sync::{CommitId, Tags};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -18,120 +22,38 @@ use tui::{
     Frame,
 };
 
-pub struct CommitDetailsComponent {
+pub struct DetailsComponent {
     data: Option<CommitDetails>,
     tags: Vec<String>,
-    files: Option<Vec<StatusItem>>,
     theme: Theme,
-    git_commit_files: AsyncCommitFiles,
 }
 
-impl DrawableComponent for CommitDetailsComponent {
-    fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-        rect: Rect,
-    ) -> Result<()> {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Length(8),
-                    Constraint::Min(10),
-                    Constraint::Length(12),
-                ]
-                .as_ref(),
-            )
-            .split(rect);
-
-        f.render_widget(
-            dialog_paragraph(
-                strings::commit::DETAILS_INFO_TITLE,
-                self.get_text_info().iter(),
-            ),
-            chunks[0],
-        );
-
-        f.render_widget(
-            dialog_paragraph(
-                strings::commit::DETAILS_MESSAGE_TITLE,
-                self.get_text_message().iter(),
-            )
-            .wrap(true),
-            chunks[1],
-        );
-
-        let files_loading = self.files.is_none();
-        let files_count = self.files.as_ref().map_or(0, Vec::len);
-
-        let txt = self
-            .files
-            .as_ref()
-            .map_or(vec![], |f| self.get_text_files(f));
-
-        let title = if files_loading {
-            strings::commit::DETAILS_FILES_LOADING_TITLE.to_string()
-        } else {
-            format!(
-                "{} {}",
-                strings::commit::DETAILS_FILES_TITLE,
-                files_count
-            )
-        };
-        f.render_widget(
-            dialog_paragraph(title.as_str(), txt.iter()),
-            chunks[2],
-        );
-
-        Ok(())
-    }
-}
-
-impl CommitDetailsComponent {
+impl DetailsComponent {
     ///
-    pub fn new(
-        sender: &Sender<AsyncNotification>,
-        theme: &Theme,
-    ) -> Self {
+    pub const fn new(theme: &Theme) -> Self {
         Self {
-            theme: *theme,
             data: None,
             tags: Vec::new(),
-            files: None,
-            git_commit_files: AsyncCommitFiles::new(sender),
+            theme: *theme,
         }
     }
 
-    ///
     pub fn set_commit(
         &mut self,
         id: Option<CommitId>,
         tags: &Tags,
     ) -> Result<()> {
+        self.tags.clear();
+
         self.data = if let Some(id) = id {
             sync::get_commit_details(CWD, id).ok()
         } else {
             None
         };
 
-        self.tags.clear();
-        self.files = None;
-
         if let Some(id) = id {
             if let Some(tags) = tags.get(&id) {
                 self.tags.extend(tags.clone());
-            }
-
-            if let Some((fetched_id, res)) =
-                self.git_commit_files.current()?
-            {
-                if fetched_id == id {
-                    self.files = Some(res);
-                } else {
-                    self.git_commit_files.fetch(id)?;
-                }
-            } else {
-                self.git_commit_files.fetch(id)?;
             }
         }
 
@@ -159,25 +81,6 @@ impl CommitDetailsComponent {
             }
         }
         vec![]
-    }
-
-    fn get_text_files<'a>(
-        &self,
-        files: &'a [StatusItem],
-    ) -> Vec<Text<'a>> {
-        let new_line = Text::Raw(Cow::from("\n"));
-
-        let mut res = Vec::with_capacity(files.len());
-
-        for file in files {
-            res.push(Text::Styled(
-                Cow::from(file.path.as_str()),
-                self.theme.text(true, false),
-            ));
-            res.push(new_line.clone());
-        }
-
-        res
     }
 
     fn get_text_info(&self) -> Vec<Text> {
@@ -271,9 +174,57 @@ impl CommitDetailsComponent {
             vec![]
         }
     }
+}
 
-    ///
-    pub fn any_work_pending(&self) -> bool {
-        self.git_commit_files.is_pending()
+impl DrawableComponent for DetailsComponent {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        rect: Rect,
+    ) -> Result<()> {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [Constraint::Length(8), Constraint::Min(10)].as_ref(),
+            )
+            .split(rect);
+
+        f.render_widget(
+            dialog_paragraph(
+                strings::commit::DETAILS_INFO_TITLE,
+                self.get_text_info().iter(),
+                &self.theme,
+                false,
+            ),
+            chunks[0],
+        );
+
+        f.render_widget(
+            dialog_paragraph(
+                strings::commit::DETAILS_MESSAGE_TITLE,
+                self.get_text_message().iter(),
+                &self.theme,
+                false,
+            )
+            .wrap(true),
+            chunks[1],
+        );
+
+        Ok(())
+    }
+}
+
+impl Component for DetailsComponent {
+    fn commands(
+        &self,
+        _out: &mut Vec<CommandInfo>,
+        _force_all: bool,
+    ) -> CommandBlocking {
+        // visibility_blocking(self)
+        CommandBlocking::PassingOn
+    }
+
+    fn event(&mut self, _ev: Event) -> Result<bool> {
+        Ok(false)
     }
 }

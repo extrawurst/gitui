@@ -35,13 +35,13 @@ pub struct DiffComponent {
     focused: bool,
     current: Current,
     selected_hunk: Option<usize>,
-    queue: Queue,
+    queue: Option<Queue>,
     theme: Theme,
 }
 
 impl DiffComponent {
     ///
-    pub fn new(queue: Queue, theme: &Theme) -> Self {
+    pub fn new(queue: Option<Queue>, theme: &Theme) -> Self {
         Self {
             focused: false,
             queue,
@@ -270,11 +270,17 @@ impl DiffComponent {
         if let Some(hunk) = self.selected_hunk {
             let hash = self.diff.hunks[hunk].header_hash;
             self.queue
+                .as_ref()
+                .expect("try using queue in immutable diff")
                 .borrow_mut()
                 .push_back(InternalEvent::AddHunk(hash));
         }
 
         Ok(())
+    }
+
+    fn is_immutable(&self) -> bool {
+        self.queue.is_none()
     }
 }
 
@@ -325,16 +331,18 @@ impl Component for DiffComponent {
             .hidden(),
         );
 
-        out.push(CommandInfo::new(
-            commands::DIFF_HUNK_REMOVE,
-            self.selected_hunk.is_some(),
-            self.focused && self.current.is_stage,
-        ));
-        out.push(CommandInfo::new(
-            commands::DIFF_HUNK_ADD,
-            self.selected_hunk.is_some(),
-            self.focused && !self.current.is_stage,
-        ));
+        if !self.is_immutable() {
+            out.push(CommandInfo::new(
+                commands::DIFF_HUNK_REMOVE,
+                self.selected_hunk.is_some(),
+                self.focused && self.current.is_stage,
+            ));
+            out.push(CommandInfo::new(
+                commands::DIFF_HUNK_ADD,
+                self.selected_hunk.is_some(),
+                self.focused && !self.current.is_stage,
+            ));
+        }
 
         CommandBlocking::PassingOn
     }
@@ -367,7 +375,7 @@ impl Component for DiffComponent {
                         self.scroll(ScrollType::PageDown)?;
                         Ok(true)
                     }
-                    keys::ENTER => {
+                    keys::ENTER if !self.is_immutable() => {
                         self.add_hunk()?;
                         Ok(true)
                     }
@@ -382,7 +390,6 @@ impl Component for DiffComponent {
     fn focused(&self) -> bool {
         self.focused
     }
-
     fn focus(&mut self, focus: bool) {
         self.focused = focus
     }

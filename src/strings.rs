@@ -249,9 +249,15 @@ pub mod commands {
     );
 
     ///
-    pub static LOG_DETAILS_OPEN: CommandText = CommandText::new(
+    pub static LOG_DETAILS_TOGGLE: CommandText = CommandText::new(
         "Details [enter]",
         "open details of selected commit",
+        CMD_GROUP_LOG,
+    );
+    ///
+    pub static LOG_DETAILS_OPEN: CommandText = CommandText::new(
+        "Inspect [\u{2192}]", //→
+        "inspect selected commit in detail",
         CMD_GROUP_LOG,
     );
 }
