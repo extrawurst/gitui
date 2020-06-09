@@ -42,7 +42,7 @@ pub(crate) fn get_commit_diff(
     id: CommitId,
     pathspec: Option<String>,
 ) -> Result<Diff<'_>> {
-    scope_time!("get_commit_diff");
+    // scope_time!("get_commit_diff");
 
     let commit = repo.find_commit(id.into())?;
     let commit_tree = commit.tree()?;
