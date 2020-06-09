@@ -182,7 +182,7 @@ impl FileTreeItems {
     }
 
     ///
-    pub fn file_count(&self) -> usize {
+    pub const fn file_count(&self) -> usize {
         self.file_count
     }
 

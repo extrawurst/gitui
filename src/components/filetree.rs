@@ -88,7 +88,7 @@ impl FileTreeComponent {
     }
 
     ///
-    pub fn file_count(&self) -> usize {
+    pub const fn file_count(&self) -> usize {
         self.tree.tree.file_count()
     }
 
