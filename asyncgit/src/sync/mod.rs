@@ -17,6 +17,7 @@ pub mod utils;
 pub use commit_details::{get_commit_details, CommitDetails};
 pub use commit_files::get_commit_files;
 pub use commits_info::{get_commits_info, CommitId, CommitInfo};
+pub use diff::get_diff_commit;
 pub use hooks::{hooks_commit_msg, hooks_post_commit, HookResult};
 pub use hunks::{stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;

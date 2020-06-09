@@ -61,7 +61,7 @@ impl App {
                 &theme,
             ),
             inspect_commit_popup: InspectCommitComponent::new(
-                sender, &theme,
+                &queue, sender, &theme,
             ),
             do_quit: false,
             cmdbar: CommandBar::new(&theme),
@@ -164,8 +164,11 @@ impl App {
         if flags.contains(NeedsUpdate::ALL) {
             self.update()?;
         }
+        //TODO: make this a queue event?
+        //NOTE: set when any tree component changed selection
         if flags.contains(NeedsUpdate::DIFF) {
             self.status_tab.update_diff()?;
+            self.inspect_commit_popup.update_diff()?;
         }
         if flags.contains(NeedsUpdate::COMMANDS) {
             self.update_commands();

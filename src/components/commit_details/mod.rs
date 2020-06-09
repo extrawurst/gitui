@@ -4,7 +4,7 @@ use super::{
     command_pump, event_pump, CommandBlocking, CommandInfo,
     Component, DrawableComponent, FileTreeComponent,
 };
-use crate::{accessors, strings, ui::style::Theme};
+use crate::{accessors, queue::Queue, strings, ui::style::Theme};
 use anyhow::Result;
 use asyncgit::{
     sync::{CommitId, Tags},
@@ -31,13 +31,19 @@ impl CommitDetailsComponent {
 
     ///
     pub fn new(
+        queue: &Queue,
         sender: &Sender<AsyncNotification>,
         theme: &Theme,
     ) -> Self {
         Self {
             details: DetailsComponent::new(theme),
             git_commit_files: AsyncCommitFiles::new(sender),
-            file_tree: FileTreeComponent::new("", false, None, theme),
+            file_tree: FileTreeComponent::new(
+                "",
+                false,
+                Some(queue.clone()),
+                theme,
+            ),
             visible: false,
         }
     }
@@ -89,6 +95,11 @@ impl CommitDetailsComponent {
     ///
     pub fn any_work_pending(&self) -> bool {
         self.git_commit_files.is_pending()
+    }
+
+    ///
+    pub const fn files(&self) -> &FileTreeComponent {
+        &self.file_tree
     }
 }
 

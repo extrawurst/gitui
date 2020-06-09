@@ -66,6 +66,18 @@ impl FileTreeComponent {
         self.tree.selected_item()
     }
 
+    ///
+    pub fn selection_file(&self) -> Option<StatusItem> {
+        self.tree.selected_item().and_then(|f| {
+            if let FileTreeItemKind::File(f) = f.kind {
+                Some(f)
+            } else {
+                None
+            }
+        })
+    }
+
+    ///
     pub fn show_selection(&mut self, show: bool) {
         self.show_selection = show;
     }

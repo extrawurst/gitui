@@ -1,6 +1,6 @@
 //! sync git api for fetching a diff
 
-use super::utils;
+use super::{commit_files::get_commit_diff, utils, CommitId};
 use crate::{error::Error, error::Result, hash};
 use git2::{
     Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
@@ -81,6 +81,8 @@ pub(crate) fn get_diff_raw<'a>(
     stage: bool,
     reverse: bool,
 ) -> Result<Diff<'a>> {
+    // scope_time!("get_diff_raw");
+
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
     opt.reverse(reverse);
@@ -119,7 +121,7 @@ pub(crate) fn get_diff_raw<'a>(
     Ok(diff)
 }
 
-///
+/// returns diff of a specific file either in `stage` or workdir
 pub fn get_diff(
     repo_path: &str,
     p: String,
@@ -130,6 +132,32 @@ pub fn get_diff(
     let repo = utils::repo(repo_path)?;
     let work_dir = work_dir(&repo);
     let diff = get_diff_raw(&repo, &p, stage, false)?;
+
+    raw_diff_to_file_diff(&diff, work_dir)
+}
+
+/// returns diff of a specific file inside a commit
+/// see `get_commit_diff`
+pub fn get_diff_commit(
+    repo_path: &str,
+    id: CommitId,
+    p: String,
+) -> Result<FileDiff> {
+    scope_time!("get_diff_commit");
+
+    let repo = utils::repo(repo_path)?;
+    let work_dir = work_dir(&repo);
+    let diff = get_commit_diff(&repo, id, Some(p))?;
+
+    raw_diff_to_file_diff(&diff, work_dir)
+}
+
+///
+fn raw_diff_to_file_diff<'a>(
+    diff: &'a Diff,
+    work_dir: &Path,
+) -> Result<FileDiff> {
+    // scope_time!("raw_diff_to_file_diff");
 
     let mut res: FileDiff = FileDiff::default();
     let mut current_lines = Vec::new();

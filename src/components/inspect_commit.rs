@@ -3,9 +3,11 @@ use super::{
     CommandInfo, CommitDetailsComponent, Component, DiffComponent,
     DrawableComponent,
 };
-use crate::{accessors, keys, strings, ui::style::Theme};
+use crate::{
+    accessors, keys, queue::Queue, strings, ui::style::Theme,
+};
 use anyhow::Result;
-use asyncgit::{sync, AsyncNotification};
+use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use strings::commands;
@@ -89,11 +91,11 @@ impl Component for InspectCommitComponent {
                     keys::EXIT_POPUP => {
                         self.hide();
                     }
-                    keys::FOCUS_RIGHT => {
+                    keys::FOCUS_RIGHT if self.can_focus_diff() => {
                         self.details.focus(false);
                         self.diff.focus(true);
                     }
-                    keys::FOCUS_LEFT => {
+                    keys::FOCUS_LEFT if self.diff.focused() => {
                         self.details.focus(true);
                         self.diff.focus(false);
                     }
@@ -118,6 +120,7 @@ impl Component for InspectCommitComponent {
         self.visible = true;
         self.details.show()?;
         self.details.focus(true);
+        self.diff.focus(false);
         self.update()?;
         Ok(())
     }
@@ -128,11 +131,14 @@ impl InspectCommitComponent {
 
     ///
     pub fn new(
+        queue: &Queue,
         sender: &Sender<AsyncNotification>,
         theme: &Theme,
     ) -> Self {
         Self {
-            details: CommitDetailsComponent::new(sender, theme),
+            details: CommitDetailsComponent::new(
+                queue, sender, theme,
+            ),
             diff: DiffComponent::new(None, theme),
             commit_id: None,
             visible: false,
@@ -168,9 +174,36 @@ impl InspectCommitComponent {
         Ok(())
     }
 
-    fn update(&mut self) -> Result<()> {
-        self.details.set_commit(self.commit_id, &Tags::new())?;
+    /// called when any tree component changed selection
+    pub fn update_diff(&mut self) -> Result<()> {
+        if self.is_visible() {
+            if let Some(id) = self.commit_id {
+                if let Some(f) = self.details.files().selection_file()
+                {
+                    self.diff.update(
+                        f.path.clone(),
+                        false,
+                        sync::get_diff_commit(CWD, id, f.path)?,
+                    )?;
+
+                    return Ok(());
+                }
+            }
+
+            self.diff.clear()?;
+        }
 
         Ok(())
+    }
+
+    fn update(&mut self) -> Result<()> {
+        self.details.set_commit(self.commit_id, &Tags::new())?;
+        self.update_diff()?;
+
+        Ok(())
+    }
+
+    fn can_focus_diff(&self) -> bool {
+        self.details.files().selection_file().is_some()
     }
 }

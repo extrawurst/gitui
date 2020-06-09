@@ -42,7 +42,7 @@ impl Revlog {
         Self {
             queue: queue.clone(),
             commit_details: CommitDetailsComponent::new(
-                sender, theme,
+                queue, sender, theme,
             ),
             list: CommitList::new(strings::LOG_TITLE, theme),
             git_log: AsyncLog::new(sender),
