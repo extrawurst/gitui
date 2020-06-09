@@ -83,6 +83,18 @@ impl Component for InspectCommitComponent {
             .order(1),
         );
 
+        out.push(CommandInfo::new(
+            commands::DIFF_FOCUS_RIGHT,
+            self.can_focus_diff(),
+            (self.is_visible() && !self.diff.focused()) || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            commands::DIFF_FOCUS_LEFT,
+            true,
+            (self.is_visible() && self.diff.focused()) || force_all,
+        ));
+
         visibility_blocking(self)
     }
 

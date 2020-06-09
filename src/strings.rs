@@ -183,18 +183,17 @@ pub mod commands {
         "Add file or path to .gitignore",
         CMD_GROUP_CHANGES,
     );
-
     ///
-    pub static STATUS_FOCUS_LEFT: CommandText = CommandText::new(
+    pub static DIFF_FOCUS_LEFT: CommandText = CommandText::new(
         "Back [\u{2190}]", //←
-        "view staged changes",
+        "view and select changed files",
         CMD_GROUP_GENERAL,
     );
     ///
-    pub static STATUS_FOCUS_RIGHT: CommandText = CommandText::new(
+    pub static DIFF_FOCUS_RIGHT: CommandText = CommandText::new(
         "Diff [\u{2192}]", //→
         "inspect file diff",
-        CMD_GROUP_CHANGES,
+        CMD_GROUP_GENERAL,
     );
     ///
     pub static QUIT: CommandText = CommandText::new(

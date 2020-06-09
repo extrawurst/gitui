@@ -298,12 +298,12 @@ impl Component for Status {
         {
             let focus_on_diff = self.focus == Focus::Diff;
             out.push(CommandInfo::new(
-                commands::STATUS_FOCUS_LEFT,
+                commands::DIFF_FOCUS_LEFT,
                 true,
                 (self.visible && focus_on_diff) || force_all,
             ));
             out.push(CommandInfo::new(
-                commands::STATUS_FOCUS_RIGHT,
+                commands::DIFF_FOCUS_RIGHT,
                 self.can_focus_diff(),
                 (self.visible && !focus_on_diff) || force_all,
             ));

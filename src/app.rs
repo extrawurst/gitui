@@ -201,10 +201,9 @@ impl App {
         self.revlog.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
 
-        if let AsyncNotification::Status = ev {
-            //TODO: is that needed?
-            self.update_commands()
-        }
+        //TODO: better system for this
+        // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
+        self.update_commands();
 
         Ok(())
     }
