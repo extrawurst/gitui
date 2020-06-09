@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add `-d`, `--directory` options to set working directory ([#73](https://github.com/extrawurst/gitui/issues/73))
 - commit detail view in revlog ([#80](https://github.com/extrawurst/gitui/issues/80))
 
+![](assets/commit-details.gif)
+
 ### Fixed
 - app closes when staging invalid file/path ([#108](https://github.com/extrawurst/gitui/issues/108))
 - `shift+tab` not working on windows [[@MCord](https://github.com/MCord)] ([#111](https://github.com/extrawurst/gitui/issues/111))
