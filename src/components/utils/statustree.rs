@@ -199,11 +199,20 @@ impl StatusTree {
         let item_path =
             self.tree[current_selection].info.full_path.clone();
 
-        if matches!(item_kind,  FileTreeItemKind::Path(PathCollapsed(collapsed))
-        if collapsed)
-        {
-            self.expand(&item_path, current_selection);
-            return SelectionChange::new(current_selection, true);
+        match item_kind {
+            FileTreeItemKind::Path(PathCollapsed(collapsed))
+                if collapsed =>
+            {
+                self.expand(&item_path, current_selection);
+                return SelectionChange::new(current_selection, true);
+            }
+            FileTreeItemKind::Path(PathCollapsed(collapsed))
+                if !collapsed =>
+            {
+                return self
+                    .selection_updown(current_selection, false);
+            }
+            _ => (),
         }
 
         SelectionChange::new(current_selection, false)

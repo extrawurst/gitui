@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- file trees: `arrow-right` on expanded folder moves down into folder
+
 ## [0.6.0] - 2020-06-09
 
 ![](assets/commit-details.gif)
