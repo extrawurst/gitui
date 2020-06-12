@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - file trees: `arrow-right` on expanded folder moves down into folder
 
+### Fixed
+- reset file inside folder failed when running `gitui` in a subfolder too ([#118](https://github.com/extrawurst/gitui/issues/118))
+
 ## [0.6.0] - 2020-06-09
 
 ![](assets/commit-details.gif)

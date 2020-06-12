@@ -325,7 +325,7 @@ impl App {
         match ev {
             InternalEvent::ConfirmedAction(action) => match action {
                 Action::Reset(r) => {
-                    if Status::reset(&r) {
+                    if self.status_tab.reset(&r) {
                         flags.insert(NeedsUpdate::ALL);
                     }
                 }

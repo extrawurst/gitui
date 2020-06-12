@@ -6,7 +6,7 @@ use crate::{
         FileTreeItemKind,
     },
     keys,
-    queue::{Queue, ResetItem},
+    queue::{InternalEvent, Queue, ResetItem},
     strings,
     ui::style::Theme,
 };
@@ -47,6 +47,7 @@ pub struct Status {
     git_diff: AsyncDiff,
     git_status_workdir: AsyncStatus,
     git_status_stage: AsyncStatus,
+    queue: Queue,
 }
 
 impl DrawableComponent for Status {
@@ -109,6 +110,7 @@ impl Status {
         theme: &Theme,
     ) -> Self {
         Self {
+            queue: queue.clone(),
             visible: true,
             focus: Focus::WorkDir,
             diff_target: DiffTarget::WorkingDir,
@@ -280,13 +282,23 @@ impl Status {
     }
 
     /// called after confirmation
-    pub fn reset(item: &ResetItem) -> bool {
-        if item.is_folder {
+    pub fn reset(&mut self, item: &ResetItem) -> bool {
+        let res = if item.is_folder {
             sync::reset_workdir_folder(CWD, item.path.as_str())
-                .is_ok()
         } else {
-            sync::reset_workdir_file(CWD, item.path.as_str()).is_ok()
+            sync::reset_workdir_file(CWD, item.path.as_str())
+        };
+
+        if let Err(e) = &res {
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ShowErrorMsg(format!(
+                    "reset failed:\n{}",
+                    e
+                )),
+            );
         }
+
+        res.is_ok()
     }
 }
 

@@ -1,4 +1,4 @@
-use super::utils::repo;
+use super::utils::{repo, work_dir};
 use crate::error::{Error, Result};
 use git2::{build::CheckoutBuilder, ObjectType, Status};
 use scopetime::scope_time;
@@ -37,6 +37,8 @@ pub fn reset_workdir_file(repo_path: &str, path: &str) -> Result<()> {
 
     let repo = repo(repo_path)?;
 
+    let workdir = work_dir(&repo);
+
     // Note: early out for removing untracked files, due to bug in checkout_head code:
     // see https://github.com/libgit2/libgit2/issues/5089
     let status = repo.status_file(Path::new(path))?;
@@ -44,7 +46,7 @@ pub fn reset_workdir_file(repo_path: &str, path: &str) -> Result<()> {
     if status == Status::WT_NEW
         || (status == Status::WT_MODIFIED | Status::INDEX_NEW)
     {
-        fs::remove_file(Path::new(repo_path).join(path))?;
+        fs::remove_file(Path::new(workdir).join(path))?;
     };
 
     if status == Status::WT_NEW {
@@ -302,5 +304,34 @@ mod tests {
         reset_stage(repo_path, file_path.to_str().unwrap()).unwrap();
 
         assert_eq!(get_statuses(repo_path), (1, 0));
+    }
+
+    #[test]
+    fn test_reset_untracked_in_subdir_with_cwd_in_subdir() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        {
+            fs::create_dir(&root.join("foo")).unwrap();
+            File::create(&root.join("foo/bar.txt"))
+                .unwrap()
+                .write_all(b"test\nfoo")
+                .unwrap();
+        }
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        reset_workdir_file(
+            &root.join("foo").as_os_str().to_str().unwrap(),
+            "foo/bar.txt",
+        )
+        .unwrap();
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
     }
 }
