@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Commit Amend (`ctrl+a`) when in commit popup ([#89](https://github.com/extrawurst/gitui/issues/89))
+
 ### Changed
 - file trees: `arrow-right` on expanded folder moves down into folder
 - better scrolling in diff ([#52](https://github.com/extrawurst/gitui/issues/52))

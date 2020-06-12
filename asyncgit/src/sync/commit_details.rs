@@ -53,6 +53,15 @@ impl CommitMessage {
             }
         }
     }
+
+    ///
+    pub fn combine(self) -> String {
+        if let Some(body) = self.body {
+            format!("{}{}", self.subject, body)
+        } else {
+            self.subject
+        }
+    }
 }
 
 ///

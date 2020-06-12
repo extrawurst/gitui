@@ -3,19 +3,24 @@ use super::{
     CommandBlocking, CommandInfo, Component, DrawableComponent,
 };
 use crate::{
+    keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
     ui::style::Theme,
 };
 use anyhow::Result;
-use asyncgit::{sync, CWD};
-use crossterm::event::{Event, KeyCode};
+use asyncgit::{
+    sync::{self, CommitId},
+    CWD,
+};
+use crossterm::event::Event;
 use strings::commands;
 use sync::HookResult;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct CommitComponent {
     input: TextInputComponent,
+    amend: Option<CommitId>,
     queue: Queue,
 }
 
@@ -42,8 +47,15 @@ impl Component for CommitComponent {
         out.push(CommandInfo::new(
             commands::COMMIT_ENTER,
             self.can_commit(),
-            self.is_visible(),
+            self.is_visible() || force_all,
         ));
+
+        out.push(CommandInfo::new(
+            commands::COMMIT_AMEND,
+            self.can_amend(),
+            self.is_visible() || force_all,
+        ));
+
         visibility_blocking(self)
     }
 
@@ -54,9 +66,13 @@ impl Component for CommitComponent {
             }
 
             if let Event::Key(e) = ev {
-                match e.code {
-                    KeyCode::Enter if self.can_commit() => {
+                match e {
+                    keys::ENTER if self.can_commit() => {
                         self.commit()?;
+                    }
+
+                    keys::COMMIT_AMEND if self.can_amend() => {
+                        self.amend()?;
                     }
 
                     _ => (),
@@ -79,6 +95,10 @@ impl Component for CommitComponent {
     }
 
     fn show(&mut self) -> Result<()> {
+        self.amend = None;
+
+        self.input.clear();
+        self.input.set_title(strings::COMMIT_TITLE.into());
         self.input.show()?;
 
         Ok(())
@@ -90,9 +110,10 @@ impl CommitComponent {
     pub fn new(queue: Queue, theme: &Theme) -> Self {
         Self {
             queue,
+            amend: None,
             input: TextInputComponent::new(
                 theme,
-                strings::COMMIT_TITLE,
+                "",
                 strings::COMMIT_MSG,
             ),
         }
@@ -113,7 +134,12 @@ impl CommitComponent {
             return Ok(());
         }
 
-        if let Err(e) = sync::commit(CWD, &msg) {
+        let res = if let Some(amend) = self.amend {
+            sync::amend(CWD, amend, &msg)
+        } else {
+            sync::commit_new(CWD, &msg)
+        };
+        if let Err(e) = res {
             log::error!("commit error: {}", &e);
             self.queue.borrow_mut().push_back(
                 InternalEvent::ShowErrorMsg(format!(
@@ -134,7 +160,6 @@ impl CommitComponent {
             );
         }
 
-        self.input.clear();
         self.hide();
 
         self.queue
@@ -146,5 +171,26 @@ impl CommitComponent {
 
     fn can_commit(&self) -> bool {
         !self.input.get_text().is_empty()
+    }
+
+    fn can_amend(&self) -> bool {
+        self.amend.is_none()
+            && sync::get_head(CWD).is_ok()
+            && self.input.get_text().is_empty()
+    }
+
+    fn amend(&mut self) -> Result<()> {
+        let id = sync::get_head(CWD)?;
+        self.amend = Some(id);
+
+        let details = sync::get_commit_details(CWD, id)?;
+
+        self.input.set_title(strings::COMMIT_TITLE_AMEND.into());
+
+        if let Some(msg) = details.message {
+            self.input.set_text(msg.combine());
+        }
+
+        Ok(())
     }
 }

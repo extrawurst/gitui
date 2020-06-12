@@ -12,6 +12,7 @@ pub static CMD_SPLITTER: &str = " ";
 
 pub static MSG_TITLE_ERROR: &str = "Error";
 pub static COMMIT_TITLE: &str = "Commit";
+pub static COMMIT_TITLE_AMEND: &str = "Commit (Amend)";
 pub static COMMIT_MSG: &str = "type commit message..";
 pub static STASH_POPUP_TITLE: &str = "Stash";
 pub static STASH_POPUP_MSG: &str = "type name (optional)";
@@ -145,6 +146,12 @@ pub mod commands {
     pub static COMMIT_ENTER: CommandText = CommandText::new(
         "Commit [enter]",
         "commit (available when commit message is non-empty)",
+        CMD_GROUP_COMMIT,
+    );
+    ///
+    pub static COMMIT_AMEND: CommandText = CommandText::new(
+        "Amend [^a]",
+        "amend last commit",
         CMD_GROUP_COMMIT,
     );
     ///

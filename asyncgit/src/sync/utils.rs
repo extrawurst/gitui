@@ -1,5 +1,6 @@
 //! sync git api (various methods)
 
+use super::CommitId;
 use crate::error::{Error, Result};
 use git2::{IndexAddOption, Oid, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
@@ -44,6 +45,11 @@ pub fn repo(repo_path: &str) -> Result<Repository> {
 ///
 pub fn work_dir(repo: &Repository) -> &Path {
     repo.workdir().expect("unable to query workdir")
+}
+
+/// ditto
+pub fn commit_new(repo_path: &str, msg: &str) -> Result<CommitId> {
+    commit(repo_path, msg).map(CommitId::new)
 }
 
 /// this does not run any git hooks
