@@ -163,7 +163,11 @@ impl Component for TextInputComponent {
                         return Ok(true);
                     }
                     KeyCode::Backspace => {
-                        self.msg.pop();
+                        if 0 < self.cursor_position
+                            && self.cursor_position <= self.msg.len()
+                        {
+                            self.msg.remove(self.cursor_position - 1);
+                        }
                         self.decr_cursor(1);
                         return Ok(true);
                     }
