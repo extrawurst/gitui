@@ -2,7 +2,10 @@ use super::{
     diff::{get_diff_raw, HunkHeader},
     utils::repo,
 };
-use crate::{error::Error, error::Result, hash};
+use crate::{
+    error::{Error, Result},
+    hash,
+};
 use git2::{ApplyLocation, ApplyOptions, Diff};
 use scopetime::scope_time;
 

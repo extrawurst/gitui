@@ -27,6 +27,7 @@ const ELEMENTS_PER_LINE: usize = 10;
 pub struct CommitList {
     title: String,
     selection: usize,
+    branch: Option<String>,
     count_total: usize,
     items: ItemBatch,
     scroll_state: (Instant, f32),
@@ -42,6 +43,7 @@ impl CommitList {
         Self {
             items: ItemBatch::default(),
             selection: 0,
+            branch: None,
             count_total: 0,
             scroll_state: (Instant::now(), 0_f32),
             tags: None,
@@ -55,6 +57,11 @@ impl CommitList {
     ///
     pub fn items(&mut self) -> &mut ItemBatch {
         &mut self.items
+    }
+
+    ///
+    pub fn set_branch(&mut self, name: Option<String>) {
+        self.branch = name;
     }
 
     ///
@@ -282,11 +289,15 @@ impl DrawableComponent for CommitList {
             selection,
         );
 
+        let branch_post_fix =
+            self.branch.as_ref().map(|b| format!("- {{{}}}", b));
+
         let title = format!(
-            "{} {}/{}",
+            "{} {}/{} {}",
             self.title,
             self.count_total.saturating_sub(self.selection),
             self.count_total,
+            branch_post_fix.as_deref().unwrap_or(""),
         );
 
         f.render_widget(

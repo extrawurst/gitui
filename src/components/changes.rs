@@ -35,6 +35,7 @@ macro_rules! try_or_popup {
 
 ///
 pub struct ChangesComponent {
+    title: String,
     files: FileTreeComponent,
     is_working_dir: bool,
     queue: Queue,
@@ -50,6 +51,7 @@ impl ChangesComponent {
         theme: &Theme,
     ) -> Self {
         Self {
+            title: title.into(),
             files: FileTreeComponent::new(
                 title,
                 focus,
@@ -63,6 +65,15 @@ impl ChangesComponent {
 
     ///
     pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
+        if self.is_working_dir {
+            if let Ok(branch_name) = sync::get_branch_name(CWD) {
+                self.files.set_title(format!(
+                    "{} - {{{}}}",
+                    &self.title, branch_name,
+                ))
+            }
+        }
+
         self.files.update(list)?;
 
         Ok(())

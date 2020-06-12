@@ -76,6 +76,10 @@ impl Revlog {
                 self.list.set_tags(sync::get_tags(CWD)?);
             }
 
+            self.list.set_branch(
+                sync::get_branch_name(CWD).map(Some).unwrap_or(None),
+            );
+
             if self.commit_details.is_visible() {
                 self.commit_details.set_commit(
                     self.selected_commit(),

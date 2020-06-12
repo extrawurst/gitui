@@ -1,5 +1,6 @@
 //! sync git api
 
+mod branch;
 mod commit_details;
 mod commit_files;
 mod commits_info;
@@ -14,6 +15,7 @@ pub mod status;
 mod tags;
 pub mod utils;
 
+pub use branch::get_branch_name;
 pub use commit_details::{get_commit_details, CommitDetails};
 pub use commit_files::get_commit_files;
 pub use commits_info::{get_commits_info, CommitId, CommitInfo};

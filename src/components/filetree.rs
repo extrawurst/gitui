@@ -251,7 +251,7 @@ impl DrawableComponent for FileTreeComponent {
         ui::draw_list(
             f,
             r,
-            &self.title.to_string(),
+            self.title.as_str(),
             items,
             self.tree.selection.map(|idx| idx - selection_offset),
             self.focused,
