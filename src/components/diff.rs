@@ -4,7 +4,7 @@ use crate::{
     keys,
     queue::{InternalEvent, Queue},
     strings,
-    ui::style::Theme,
+    ui::{calc_scroll_top, style::Theme},
 };
 use asyncgit::{hash, DiffLine, DiffLineType, FileDiff};
 use crossterm::event::Event;
@@ -30,11 +30,12 @@ struct Current {
 ///
 pub struct DiffComponent {
     diff: FileDiff,
-    scroll: usize,
-    current_height: u16,
+    selection: usize,
+    selected_hunk: Option<usize>,
+    current_size: (u16, u16),
     focused: bool,
     current: Current,
-    selected_hunk: Option<usize>,
+    scroll_top: usize,
     queue: Option<Queue>,
     theme: Theme,
 }
@@ -48,8 +49,9 @@ impl DiffComponent {
             current: Current::default(),
             selected_hunk: None,
             diff: FileDiff::default(),
-            scroll: 0,
-            current_height: 0,
+            current_size: (0, 0),
+            selection: 0,
+            scroll_top: 0,
             theme: *theme,
         }
     }
@@ -65,10 +67,9 @@ impl DiffComponent {
     pub fn clear(&mut self) -> Result<()> {
         self.current = Current::default();
         self.diff = FileDiff::default();
-        self.scroll = 0;
-
-        self.selected_hunk =
-            Self::find_selected_hunk(&self.diff, self.scroll)?;
+        self.scroll_top = 0;
+        self.selection = 0;
+        self.selected_hunk = None;
 
         Ok(())
     }
@@ -88,38 +89,42 @@ impl DiffComponent {
                 hash,
             };
             self.diff = diff;
-            self.scroll = 0;
+            self.scroll_top = 0;
+            self.selection = 0;
 
             self.selected_hunk =
-                Self::find_selected_hunk(&self.diff, self.scroll)?;
+                Self::find_selected_hunk(&self.diff, self.selection)?;
         }
 
         Ok(())
     }
 
-    fn scroll(&mut self, scroll: ScrollType) -> Result<()> {
-        let old = self.scroll;
+    fn move_selection(
+        &mut self,
+        move_type: ScrollType,
+    ) -> Result<()> {
+        let old = self.selection;
 
-        let scroll_max = self.diff.lines.saturating_sub(1) as usize;
+        let max = self.diff.lines.saturating_sub(1) as usize;
 
-        self.scroll = match scroll {
-            ScrollType::Down => self.scroll.saturating_add(1),
-            ScrollType::Up => self.scroll.saturating_sub(1),
+        self.selection = match move_type {
+            ScrollType::Down => old.saturating_add(1),
+            ScrollType::Up => old.saturating_sub(1),
             ScrollType::Home => 0,
-            ScrollType::End => scroll_max,
-            ScrollType::PageDown => self.scroll.saturating_add(
-                self.current_height.saturating_sub(1) as usize,
+            ScrollType::End => max,
+            ScrollType::PageDown => self.selection.saturating_add(
+                self.current_size.1.saturating_sub(1) as usize,
             ),
-            ScrollType::PageUp => self.scroll.saturating_sub(
-                self.current_height.saturating_sub(1) as usize,
+            ScrollType::PageUp => self.selection.saturating_sub(
+                self.current_size.1.saturating_sub(1) as usize,
             ),
         };
 
-        self.scroll = cmp::min(scroll_max, self.scroll);
+        self.selection = cmp::min(max, self.selection);
 
-        if old != self.scroll {
+        if old != self.selection {
             self.selected_hunk =
-                Self::find_selected_hunk(&self.diff, self.scroll)?;
+                Self::find_selected_hunk(&self.diff, self.selection)?;
         }
 
         Ok(())
@@ -149,9 +154,9 @@ impl DiffComponent {
     }
 
     fn get_text(&self, width: u16, height: u16) -> Result<Vec<Text>> {
-        let selection = self.scroll;
-        let height_d2 = (height / 2) as usize;
-        let min = self.scroll.saturating_sub(height_d2);
+        let selection = self.selection;
+
+        let min = self.scroll_top;
         let max = min + height as usize;
 
         let mut res = Vec::new();
@@ -290,19 +295,29 @@ impl DrawableComponent for DiffComponent {
         f: &mut Frame<B>,
         r: Rect,
     ) -> Result<()> {
-        self.current_height = r.height.saturating_sub(2);
+        self.current_size =
+            (r.width.saturating_sub(2), r.height.saturating_sub(2));
+
+        self.scroll_top = calc_scroll_top(
+            self.scroll_top,
+            self.current_size.1 as usize,
+            self.selection,
+        );
+
         let title =
             format!("{}{}", strings::TITLE_DIFF, self.current.path);
         f.render_widget(
-            Paragraph::new(self.get_text(r.width, r.height)?.iter())
-                .block(
-                    Block::default()
-                        .title(title.as_str())
-                        .borders(Borders::ALL)
-                        .border_style(self.theme.block(self.focused))
-                        .title_style(self.theme.title(self.focused)),
-                )
-                .alignment(Alignment::Left),
+            Paragraph::new(
+                self.get_text(r.width, self.current_size.1)?.iter(),
+            )
+            .block(
+                Block::default()
+                    .title(title.as_str())
+                    .borders(Borders::ALL)
+                    .border_style(self.theme.block(self.focused))
+                    .title_style(self.theme.title(self.focused)),
+            )
+            .alignment(Alignment::Left),
             r,
         );
 
@@ -352,27 +367,27 @@ impl Component for DiffComponent {
             if let Event::Key(e) = ev {
                 return match e {
                     keys::MOVE_DOWN => {
-                        self.scroll(ScrollType::Down)?;
+                        self.move_selection(ScrollType::Down)?;
                         Ok(true)
                     }
                     keys::SHIFT_DOWN | keys::END => {
-                        self.scroll(ScrollType::End)?;
+                        self.move_selection(ScrollType::End)?;
                         Ok(true)
                     }
                     keys::HOME | keys::SHIFT_UP => {
-                        self.scroll(ScrollType::Home)?;
+                        self.move_selection(ScrollType::Home)?;
                         Ok(true)
                     }
                     keys::MOVE_UP => {
-                        self.scroll(ScrollType::Up)?;
+                        self.move_selection(ScrollType::Up)?;
                         Ok(true)
                     }
                     keys::PAGE_UP => {
-                        self.scroll(ScrollType::PageUp)?;
+                        self.move_selection(ScrollType::PageUp)?;
                         Ok(true)
                     }
                     keys::PAGE_DOWN => {
-                        self.scroll(ScrollType::PageDown)?;
+                        self.move_selection(ScrollType::PageDown)?;
                         Ok(true)
                     }
                     keys::ENTER if !self.is_immutable() => {
