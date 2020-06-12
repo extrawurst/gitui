@@ -283,22 +283,18 @@ impl Status {
 
     /// called after confirmation
     pub fn reset(&mut self, item: &ResetItem) -> bool {
-        let res = if item.is_folder {
-            sync::reset_workdir_folder(CWD, item.path.as_str())
-        } else {
-            sync::reset_workdir_file(CWD, item.path.as_str())
-        };
-
-        if let Err(e) = &res {
+        if let Err(e) = sync::reset_workdir(CWD, item.path.as_str()) {
             self.queue.borrow_mut().push_back(
                 InternalEvent::ShowErrorMsg(format!(
                     "reset failed:\n{}",
                     e
                 )),
             );
-        }
 
-        res.is_ok()
+            false
+        } else {
+            true
+        }
     }
 }
 

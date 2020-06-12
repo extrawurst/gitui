@@ -22,9 +22,7 @@ pub use hooks::{hooks_commit_msg, hooks_post_commit, HookResult};
 pub use hunks::{stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
-pub use reset::{
-    reset_stage, reset_workdir_file, reset_workdir_folder,
-};
+pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use tags::{get_tags, Tags};
 pub use utils::{
