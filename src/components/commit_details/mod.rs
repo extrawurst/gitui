@@ -48,11 +48,10 @@ impl CommitDetailsComponent {
         }
     }
 
-    fn get_files_title(&self) -> String {
-        let files_loading = self.git_commit_files.is_pending();
+    fn get_files_title(&self, loading: bool) -> String {
         let files_count = self.file_tree.file_count();
 
-        if files_loading {
+        if loading {
             strings::commit::DETAILS_FILES_LOADING_TITLE.to_string()
         } else {
             format!(
@@ -77,17 +76,18 @@ impl CommitDetailsComponent {
             {
                 if fetched_id == id {
                     self.file_tree.update(res.as_slice())?;
-                } else {
-                    self.file_tree.clear()?;
-                    self.git_commit_files.fetch(id)?;
-                }
-            } else {
-                self.file_tree.clear()?;
-                self.git_commit_files.fetch(id)?;
-            }
-        }
+                    self.file_tree
+                        .set_title(self.get_files_title(false));
 
-        self.file_tree.set_title(self.get_files_title());
+                    return Ok(());
+                }
+            }
+            self.file_tree.clear()?;
+            self.git_commit_files.fetch(id)?;
+            self.file_tree.set_title(self.get_files_title(true));
+        } else {
+            self.file_tree.set_title(self.get_files_title(false));
+        }
 
         Ok(())
     }

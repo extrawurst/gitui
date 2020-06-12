@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - reset file inside folder failed when running `gitui` in a subfolder too ([#118](https://github.com/extrawurst/gitui/issues/118))
 - selection could disappear into collapsed folder ([#120](https://github.com/extrawurst/gitui/issues/120))
+- `Files: loading` sometimes wrong ([#119](https://github.com/extrawurst/gitui/issues/119))
 
 ## [0.6.0] - 2020-06-09
 
