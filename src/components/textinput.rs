@@ -7,12 +7,11 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
-use std::borrow::Cow;
 use strings::commands;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::Style,
+    style::{Modifier, Style},
     widgets::{Clear, Text},
     Frame,
 };
@@ -24,6 +23,7 @@ pub struct TextInputComponent {
     msg: String,
     visible: bool,
     theme: Theme,
+    cursor_position: usize,
 }
 
 impl TextInputComponent {
@@ -39,6 +39,7 @@ impl TextInputComponent {
             theme: *theme,
             title: title.to_string(),
             default_msg: default_msg.to_string(),
+            cursor_position: 0,
         }
     }
 
@@ -51,6 +52,23 @@ impl TextInputComponent {
     pub const fn get_text(&self) -> &String {
         &self.msg
     }
+
+    fn incr_cursor(&mut self, amt: usize) {
+        self.cursor_position =
+            if self.cursor_position + amt > self.msg.len() {
+                self.msg.len()
+            } else {
+                self.cursor_position + amt
+            }
+    }
+
+    fn decr_cursor(&mut self, amt: usize) {
+        self.cursor_position = if amt > self.cursor_position {
+            0
+        } else {
+            self.cursor_position - amt
+        }
+    }
 }
 
 impl DrawableComponent for TextInputComponent {
@@ -60,16 +78,46 @@ impl DrawableComponent for TextInputComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let txt = if self.msg.is_empty() {
-                [Text::Styled(
-                    Cow::from(self.default_msg.as_str()),
+            let mut txt: Vec<tui::widgets::Text> = Vec::new();
+            if self.msg.is_empty() {
+                txt.push(Text::styled(
+                    self.default_msg.as_str(),
                     self.theme.text(false, false),
-                )]
+                ));
             } else {
-                [Text::Styled(
-                    Cow::from(self.msg.clone()),
-                    Style::default(),
-                )]
+                let len = self.msg.len();
+
+                // the portion of the text before the cursor is added
+                // if the cursor is not at the first character
+                if self.cursor_position > 0 {
+                    txt.push(Text::styled(
+                        &self.msg[..self.cursor_position],
+                        Style::default(),
+                    ));
+                }
+
+                txt.push(Text::styled(
+                    if self.cursor_position == len {
+                        // if the cursor is at the end of the text, a
+                        // trailing space is appended to underline
+                        " "
+                    } else {
+                        // otherwise the character the cursor is at is
+                        // underlined
+                        &self.msg[self.cursor_position
+                            ..self.cursor_position + 1]
+                    },
+                    Style::default().modifier(Modifier::UNDERLINED),
+                ));
+
+                // the final portion of the text is added if there is
+                // still remaining characters
+                if self.cursor_position < len - 1 {
+                    txt.push(Text::styled(
+                        &self.msg[self.cursor_position + 1..],
+                        Style::default(),
+                    ));
+                }
             };
 
             let area = ui::centered_rect(60, 20, f.size());
@@ -110,12 +158,20 @@ impl Component for TextInputComponent {
                         return Ok(true);
                     }
                     KeyCode::Char(c) => {
-                        self.msg.push(c);
+                        self.msg.insert(self.cursor_position, c);
+                        self.incr_cursor(1);
                         return Ok(true);
                     }
                     KeyCode::Backspace => {
                         self.msg.pop();
+                        self.decr_cursor(1);
                         return Ok(true);
+                    }
+                    KeyCode::Left => {
+                        self.decr_cursor(1);
+                    }
+                    KeyCode::Right => {
+                        self.incr_cursor(1);
                     }
                     _ => (),
                 };
