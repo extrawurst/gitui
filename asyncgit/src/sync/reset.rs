@@ -56,7 +56,6 @@ pub fn reset_workdir_file(repo_path: &str, path: &str) -> Result<()> {
     let mut checkout_opts = CheckoutBuilder::new();
     checkout_opts
         .update_index(true) // windows: needs this to be true WTF?!
-        .allow_conflicts(true)
         .force()
         .path(path);
 
@@ -76,7 +75,6 @@ pub fn reset_workdir_folder(
     let mut checkout_opts = CheckoutBuilder::new();
     checkout_opts
         .update_index(true) // windows: needs this to be true WTF?!
-        .allow_conflicts(true)
         .remove_untracked(true)
         .force()
         .path(path);
@@ -329,6 +327,31 @@ mod tests {
             "foo/bar.txt",
         )
         .unwrap();
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
+    }
+
+    #[test]
+    fn test_reset_untracked_subdir() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        {
+            fs::create_dir_all(&root.join("foo/bar")).unwrap();
+            File::create(&root.join("foo/bar/baz.txt"))
+                .unwrap()
+                .write_all(b"test\nfoo")
+                .unwrap();
+        }
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        reset_workdir_folder(repo_path, "foo/bar").unwrap();
 
         debug_cmd_print(repo_path, "git status");
 
