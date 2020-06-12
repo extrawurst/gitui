@@ -105,7 +105,7 @@ impl DrawableComponent for TextInputComponent {
                         // otherwise the character the cursor is at is
                         // underlined
                         &self.msg[self.cursor_position
-                            ..self.cursor_position + 1]
+                            ..=self.cursor_position]
                     },
                     Style::default().modifier(Modifier::UNDERLINED),
                 ));
