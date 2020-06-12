@@ -298,9 +298,7 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let res =
-            get_status(repo_path, StatusType::WorkingDir).unwrap();
-        assert_eq!(res.len(), 0);
+        assert_eq!(get_statuses(repo_path), (0, 0));
 
         fs::create_dir(&root.join("foo")).unwrap();
         File::create(&root.join("foo/bar.txt"))
@@ -308,9 +306,7 @@ mod tests {
             .write_all(b"test\nfoo")
             .unwrap();
 
-        let res =
-            get_status(repo_path, StatusType::WorkingDir).unwrap();
-        assert_eq!(res.len(), 1);
+        assert_eq!(get_statuses(repo_path), (1, 0));
 
         let diff =
             get_diff(repo_path, "foo/bar.txt".to_string(), false)
@@ -393,8 +389,8 @@ mod tests {
                 .unwrap();
         }
 
-        let res =
-            get_status(repo_path, StatusType::WorkingDir).unwrap();
+        let res = get_status(repo_path, StatusType::WorkingDir, true)
+            .unwrap();
         assert_eq!(res.len(), 1);
         assert_eq!(res[0].path, "bar.txt");
 

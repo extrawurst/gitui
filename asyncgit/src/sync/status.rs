@@ -84,16 +84,8 @@ impl Into<StatusShow> for StatusType {
     }
 }
 
-/// TODO: migrate
+///
 pub fn get_status(
-    repo_path: &str,
-    status_type: StatusType,
-) -> Result<Vec<StatusItem>> {
-    get_status_new(repo_path, status_type, true)
-}
-
-/// TODO: migrate
-pub fn get_status_new(
     repo_path: &str,
     status_type: StatusType,
     include_untracked: bool,

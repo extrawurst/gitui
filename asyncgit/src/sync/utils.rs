@@ -232,7 +232,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).unwrap().len()
+            get_status(repo_path, s, true).unwrap().len()
         };
 
         fs::create_dir_all(&root.join("a/d"))?;
@@ -261,7 +261,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).unwrap().len()
+            get_status(repo_path, s, true).unwrap().len()
         };
 
         let full_path = &root.join(file_path);
@@ -295,7 +295,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).unwrap().len()
+            get_status(repo_path, s, true).unwrap().len()
         };
 
         let sub = &root.join("sub");
