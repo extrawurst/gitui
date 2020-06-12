@@ -7,7 +7,7 @@ use crate::{
     ui::style::Theme,
 };
 use anyhow::Result;
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::{Event, KeyCode, KeyModifiers};
 use std::borrow::Cow;
 use strings::commands;
 use tui::{
@@ -51,6 +51,16 @@ impl TextInputComponent {
     ///
     pub const fn get_text(&self) -> &String {
         &self.msg
+    }
+
+    ///
+    pub fn set_text(&mut self, msg: String) {
+        self.msg = msg;
+    }
+
+    ///
+    pub fn set_title(&mut self, t: String) {
+        self.title = t;
     }
 }
 
@@ -110,12 +120,14 @@ impl Component for TextInputComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
+                let is_ctrl =
+                    e.modifiers.contains(KeyModifiers::CONTROL);
                 match e.code {
                     KeyCode::Esc => {
                         self.hide();
                         return Ok(true);
                     }
-                    KeyCode::Char(c) => {
+                    KeyCode::Char(c) if !is_ctrl => {
                         self.msg.push(c);
                         return Ok(true);
                     }
