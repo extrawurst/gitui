@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Inspect stash commit in detail ([#121](https://github.com/extrawurst/gitui/issues/121))
 - Commit Amend (`ctrl+a`) when in commit popup ([#89](https://github.com/extrawurst/gitui/issues/89))
 
 ![](assets/amend.gif)

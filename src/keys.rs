@@ -57,6 +57,7 @@ pub const STASHING_TOGGLE_UNTRACKED: KeyEvent =
 pub const STASHING_TOGGLE_INDEX: KeyEvent =
     no_mod(KeyCode::Char('i'));
 pub const STASH_APPLY: KeyEvent = no_mod(KeyCode::Enter);
+pub const STASH_OPEN: KeyEvent = no_mod(KeyCode::Right);
 pub const STASH_DROP: KeyEvent =
     with_mod(KeyCode::Char('D'), KeyModifiers::SHIFT);
 pub const CMD_BAR_TOGGLE: KeyEvent = no_mod(KeyCode::Char('.'));

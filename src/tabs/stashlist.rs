@@ -73,6 +73,14 @@ impl StashList {
         }
     }
 
+    fn inspect(&mut self) {
+        if let Some(e) = self.list.selected_entry() {
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::InspectCommit(e.id));
+        }
+    }
+
     ///
     pub fn drop(id: CommitId) -> bool {
         sync::stash_drop(CWD, id).is_ok()
@@ -112,6 +120,11 @@ impl Component for StashList {
                 selection_valid,
                 true,
             ));
+            out.push(CommandInfo::new(
+                commands::STASHLIST_INSPECT,
+                selection_valid,
+                true,
+            ));
         }
 
         visibility_blocking(self)
@@ -127,6 +140,7 @@ impl Component for StashList {
                 match k {
                     keys::STASH_APPLY => self.apply_stash(),
                     keys::STASH_DROP => self.drop_stash(),
+                    keys::STASH_OPEN => self.inspect(),
 
                     _ => (),
                 };

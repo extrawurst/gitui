@@ -253,6 +253,12 @@ pub mod commands {
         "drop selected stash",
         CMD_GROUP_STASHES,
     );
+    ///
+    pub static STASHLIST_INSPECT: CommandText = CommandText::new(
+        "Inspect [\u{2192}]", //→
+        "open stash commit details (allows to diff files)",
+        CMD_GROUP_STASHES,
+    );
 
     ///
     pub static LOG_DETAILS_TOGGLE: CommandText = CommandText::new(
