@@ -43,26 +43,50 @@ impl TextInputComponent {
         }
     }
 
-    ///
+    /// Clear the `msg`.
     pub fn clear(&mut self) {
         self.msg.clear();
     }
 
-    ///
+    /// Get the `msg`.
     pub const fn get_text(&self) -> &String {
         &self.msg
     }
 
-    fn incr_cursor(&mut self, amt: usize) {
-        self.cursor_position = self
-            .cursor_position
-            .saturating_add(amt)
-            .min(self.msg.len());
+    /// Move the cursor right one char.
+    fn incr_cursor(&mut self) {
+        if let Some(pos) = self.next_char_position() {
+            self.cursor_position = pos;
+        }
     }
 
-    fn decr_cursor(&mut self, amt: usize) {
-        self.cursor_position =
-            self.cursor_position.saturating_sub(amt);
+    /// Move the cursor left one char.
+    fn decr_cursor(&mut self) {
+        let mut new_pos: usize = 0;
+        for (bytes, _) in self.msg.char_indices() {
+            if bytes >= self.cursor_position {
+                break;
+            }
+            new_pos = bytes;
+        }
+        self.cursor_position = new_pos;
+    }
+
+    /// Get the position of the next char, or, if the cursor points
+    /// to the last char, the `msg.len()`.
+    /// Returns None when the cursor is already at `msg.len()`.
+    fn next_char_position(&self) -> Option<usize> {
+        let mut char_indices =
+            self.msg[self.cursor_position..].char_indices();
+        if char_indices.next().is_some() {
+            if let Some((bytes, _)) = char_indices.next() {
+                Some(self.cursor_position + bytes)
+            } else {
+                Some(self.msg.len())
+            }
+        } else {
+            None
+        }
     }
 }
 
@@ -80,8 +104,6 @@ impl DrawableComponent for TextInputComponent {
                     self.theme.text(false, false),
                 ));
             } else {
-                let len = self.msg.len();
-
                 // the portion of the text before the cursor is added
                 // if the cursor is not at the first character
                 if self.cursor_position > 0 {
@@ -92,26 +114,25 @@ impl DrawableComponent for TextInputComponent {
                 }
 
                 txt.push(Text::styled(
-                    if self.cursor_position == len {
-                        // if the cursor is at the end of the text, a
-                        // trailing space is appended to underline
-                        " "
+                    if let Some(pos) = self.next_char_position() {
+                        &self.msg[self.cursor_position..pos]
                     } else {
-                        // otherwise the character the cursor is at is
-                        // underlined
-                        &self.msg[self.cursor_position
-                            ..=self.cursor_position]
+                        // if the cursor is at the end of the msg
+                        // a whitespace is used to underline
+                        " "
                     },
                     Style::default().modifier(Modifier::UNDERLINED),
                 ));
 
                 // the final portion of the text is added if there is
                 // still remaining characters
-                if self.cursor_position < len - 1 {
-                    txt.push(Text::styled(
-                        &self.msg[self.cursor_position + 1..],
-                        Style::default(),
-                    ));
+                if let Some(pos) = self.next_char_position() {
+                    if pos < self.msg.len() {
+                        txt.push(Text::styled(
+                            &self.msg[pos..],
+                            Style::default(),
+                        ));
+                    }
                 }
             };
 
@@ -154,7 +175,7 @@ impl Component for TextInputComponent {
                     }
                     KeyCode::Char(c) => {
                         self.msg.insert(self.cursor_position, c);
-                        self.incr_cursor(1);
+                        self.incr_cursor();
                         return Ok(true);
                     }
                     KeyCode::Delete => {
@@ -164,20 +185,20 @@ impl Component for TextInputComponent {
                         return Ok(true);
                     }
                     KeyCode::Backspace => {
-                        if 0 < self.cursor_position
-                            && self.cursor_position <= self.msg.len()
-                        {
-                            self.msg.remove(self.cursor_position - 1);
+                        if self.cursor_position > 0 {
+                            self.decr_cursor();
+                            if self.cursor_position < self.msg.len() {
+                            }
+                            self.msg.remove(self.cursor_position);
                         }
-                        self.decr_cursor(1);
                         return Ok(true);
                     }
                     KeyCode::Left => {
-                        self.decr_cursor(1);
+                        self.decr_cursor();
                         return Ok(true);
                     }
                     KeyCode::Right => {
-                        self.incr_cursor(1);
+                        self.incr_cursor();
                         return Ok(true);
                     }
                     _ => (),
