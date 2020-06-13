@@ -54,20 +54,15 @@ impl TextInputComponent {
     }
 
     fn incr_cursor(&mut self, amt: usize) {
-        self.cursor_position =
-            if self.cursor_position + amt > self.msg.len() {
-                self.msg.len()
-            } else {
-                self.cursor_position + amt
-            }
+        self.cursor_position = self
+            .cursor_position
+            .saturating_add(amt)
+            .min(self.msg.len());
     }
 
     fn decr_cursor(&mut self, amt: usize) {
-        self.cursor_position = if amt > self.cursor_position {
-            0
-        } else {
-            self.cursor_position - amt
-        }
+        self.cursor_position =
+            self.cursor_position.saturating_sub(amt);
     }
 }
 
