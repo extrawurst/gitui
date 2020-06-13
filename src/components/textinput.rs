@@ -89,7 +89,7 @@ impl TextInputComponent {
             None
         }
     }
-  
+
     ///
     pub fn set_text(&mut self, msg: String) {
         self.msg = msg;
