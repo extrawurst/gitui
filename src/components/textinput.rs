@@ -201,6 +201,14 @@ impl Component for TextInputComponent {
                         self.incr_cursor();
                         return Ok(true);
                     }
+                    KeyCode::Home => {
+                        self.cursor_position = 0;
+                        return Ok(true);
+                    }
+                    KeyCode::End => {
+                        self.cursor_position = self.msg.len();
+                        return Ok(true);
+                    }
                     _ => (),
                 };
             }
