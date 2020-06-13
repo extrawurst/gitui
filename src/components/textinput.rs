@@ -168,9 +168,11 @@ impl Component for TextInputComponent {
                     }
                     KeyCode::Left => {
                         self.decr_cursor(1);
+                        return Ok(true);
                     }
                     KeyCode::Right => {
                         self.incr_cursor(1);
+                        return Ok(true);
                     }
                     _ => (),
                 };
