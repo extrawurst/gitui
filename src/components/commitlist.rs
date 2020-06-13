@@ -27,10 +27,11 @@ const ELEMENTS_PER_LINE: usize = 10;
 pub struct CommitList {
     title: String,
     selection: usize,
+    branch: Option<String>,
     count_total: usize,
     items: ItemBatch,
     scroll_state: (Instant, f32),
-    tags: Tags,
+    tags: Option<Tags>,
     current_size: (u16, u16),
     scroll_top: usize,
     theme: Theme,
@@ -42,9 +43,10 @@ impl CommitList {
         Self {
             items: ItemBatch::default(),
             selection: 0,
+            branch: None,
             count_total: 0,
             scroll_state: (Instant::now(), 0_f32),
-            tags: Tags::new(),
+            tags: None,
             current_size: (0, 0),
             scroll_top: 0,
             theme: *theme,
@@ -55,6 +57,11 @@ impl CommitList {
     ///
     pub fn items(&mut self) -> &mut ItemBatch {
         &mut self.items
+    }
+
+    ///
+    pub fn set_branch(&mut self, name: Option<String>) {
+        self.branch = name;
     }
 
     ///
@@ -79,13 +86,24 @@ impl CommitList {
     }
 
     ///
-    pub const fn tags(&self) -> &Tags {
-        &self.tags
+    pub fn tags(&self) -> Option<&Tags> {
+        self.tags.as_ref()
+    }
+
+    ///
+    pub fn has_tags(&self) -> bool {
+        self.tags.is_some()
+    }
+
+    ///
+    pub fn clear(&mut self) {
+        self.tags = None;
+        self.items.clear();
     }
 
     ///
     pub fn set_tags(&mut self, tags: Tags) {
-        self.tags = tags;
+        self.tags = Some(tags);
     }
 
     ///
@@ -200,7 +218,7 @@ impl CommitList {
             } else {
                 String::from("")
             }),
-            theme.tab(true).bg(theme.text(true, selected).bg),
+            theme.tags(selected),
         ));
 
         txt.push(splitter);
@@ -225,7 +243,9 @@ impl CommitList {
             .take(height)
             .enumerate()
         {
-            let tag = if let Some(tags) = self.tags.get(&e.id) {
+            let tags = if let Some(tags) =
+                self.tags.as_ref().and_then(|t| t.get(&e.id))
+            {
                 Some(tags.join(" "))
             } else {
                 None
@@ -235,7 +255,7 @@ impl CommitList {
                 e,
                 idx + self.scroll_top == selection,
                 &mut txt,
-                tag,
+                tags,
                 &self.theme,
             );
         }
@@ -269,11 +289,15 @@ impl DrawableComponent for CommitList {
             selection,
         );
 
+        let branch_post_fix =
+            self.branch.as_ref().map(|b| format!("- {{{}}}", b));
+
         let title = format!(
-            "{} {}/{}",
+            "{} {}/{} {}",
             self.title,
             self.count_total.saturating_sub(self.selection),
             self.count_total,
+            branch_post_fix.as_deref().unwrap_or(""),
         );
 
         f.render_widget(

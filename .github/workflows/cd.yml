@@ -10,20 +10,28 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [stable]
+  
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
     - name: Get version
       id: get_version
       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        components: clippy
+
     - name: Build
       run: cargo build
     - name: Run tests
       run: make test
     - name: Run clippy
       run: |
-        rustup component add clippy
+        cargo clean
         make clippy
 
     - name: Setup MUSL
@@ -56,7 +64,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         body: ${{ steps.release_notes.outputs.release_notes }}
-        prerelease: true
+        prerelease: false
         files: |
           ./release/*.tar.gz
           ./release/*.zip

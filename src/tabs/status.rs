@@ -6,20 +6,20 @@ use crate::{
         FileTreeItemKind,
     },
     keys,
-    queue::{Queue, ResetItem},
+    queue::{InternalEvent, Queue, ResetItem},
     strings,
     ui::style::Theme,
 };
 use anyhow::Result;
 use asyncgit::{
     sync::{self, status::StatusType},
-    AsyncDiff, AsyncNotification, AsyncStatus, DiffParams,
+    AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
     StatusParams, CWD,
 };
 use components::{command_pump, visibility_blocking};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use strings::commands;
+use strings::{commands, order};
 use tui::layout::{Constraint, Direction, Layout};
 
 ///
@@ -47,6 +47,7 @@ pub struct Status {
     git_diff: AsyncDiff,
     git_status_workdir: AsyncStatus,
     git_status_stage: AsyncStatus,
+    queue: Queue,
 }
 
 impl DrawableComponent for Status {
@@ -109,6 +110,7 @@ impl Status {
         theme: &Theme,
     ) -> Self {
         Self {
+            queue: queue.clone(),
             visible: true,
             focus: Focus::WorkDir,
             diff_target: DiffTarget::WorkingDir,
@@ -126,7 +128,7 @@ impl Status {
                 queue.clone(),
                 theme,
             ),
-            diff: DiffComponent::new(queue.clone(), theme),
+            diff: DiffComponent::new(Some(queue.clone()), theme),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status_workdir: AsyncStatus::new(sender.clone()),
             git_status_stage: AsyncStatus::new(sender.clone()),
@@ -243,7 +245,16 @@ impl Status {
     ///
     pub fn update_diff(&mut self) -> Result<()> {
         if let Some((path, is_stage)) = self.selected_path() {
-            let diff_params = DiffParams(path.clone(), is_stage);
+            let diff_type = if is_stage {
+                DiffType::Stage
+            } else {
+                DiffType::WorkDir
+            };
+
+            let diff_params = DiffParams {
+                path: path.clone(),
+                diff_type,
+            };
 
             if self.diff.current() == (path.clone(), is_stage) {
                 // we are already showing a diff of the right file
@@ -271,12 +282,18 @@ impl Status {
     }
 
     /// called after confirmation
-    pub fn reset(item: &ResetItem) -> bool {
-        if item.is_folder {
-            sync::reset_workdir_folder(CWD, item.path.as_str())
-                .is_ok()
+    pub fn reset(&mut self, item: &ResetItem) -> bool {
+        if let Err(e) = sync::reset_workdir(CWD, item.path.as_str()) {
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ShowErrorMsg(format!(
+                    "reset failed:\n{}",
+                    e
+                )),
+            );
+
+            false
         } else {
-            sync::reset_workdir_file(CWD, item.path.as_str()).is_ok()
+            true
         }
     }
 }
@@ -298,12 +315,12 @@ impl Component for Status {
         {
             let focus_on_diff = self.focus == Focus::Diff;
             out.push(CommandInfo::new(
-                commands::STATUS_FOCUS_LEFT,
+                commands::DIFF_FOCUS_LEFT,
                 true,
                 (self.visible && focus_on_diff) || force_all,
             ));
             out.push(CommandInfo::new(
-                commands::STATUS_FOCUS_RIGHT,
+                commands::DIFF_FOCUS_RIGHT,
                 self.can_focus_diff(),
                 (self.visible && !focus_on_diff) || force_all,
             ));
@@ -326,7 +343,7 @@ impl Component for Status {
                 (self.visible && self.focus == Focus::WorkDir)
                     || force_all,
             )
-            .order(-2),
+            .order(order::NAV),
         );
 
         out.push(
@@ -336,7 +353,7 @@ impl Component for Status {
                 (self.visible && self.focus == Focus::Stage)
                     || force_all,
             )
-            .order(-2),
+            .order(order::NAV),
         );
 
         visibility_blocking(self)
@@ -364,6 +381,19 @@ impl Component for Status {
                             DiffTarget::Stage => Focus::Stage,
                             DiffTarget::WorkingDir => Focus::WorkDir,
                         })
+                    }
+                    keys::MOVE_DOWN
+                        if self.focus == Focus::WorkDir
+                            && !self.index.is_empty() =>
+                    {
+                        self.switch_focus(Focus::Stage)
+                    }
+
+                    keys::MOVE_UP
+                        if self.focus == Focus::Stage
+                            && !self.index_wd.is_empty() =>
+                    {
+                        self.switch_focus(Focus::WorkDir)
                     }
                     _ => Ok(false),
                 };

@@ -25,6 +25,12 @@ impl ToString for CommitId {
     }
 }
 
+impl Into<Oid> for CommitId {
+    fn into(self) -> Oid {
+        self.0
+    }
+}
+
 ///
 #[derive(Debug)]
 pub struct CommitInfo {

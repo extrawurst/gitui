@@ -1,5 +1,5 @@
 mod scrolllist;
-pub(crate) mod style;
+pub mod style;
 use crate::ui::style::Theme;
 use scrolllist::ScrollableList;
 use tui::{

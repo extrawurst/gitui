@@ -3,8 +3,9 @@ use crate::{
     cmdbar::CommandBar,
     components::{
         event_pump, CommandBlocking, CommandInfo, CommitComponent,
-        Component, DrawableComponent, HelpComponent, MsgComponent,
-        ResetComponent, StashMsgComponent,
+        Component, DrawableComponent, HelpComponent,
+        InspectCommitComponent, MsgComponent, ResetComponent,
+        StashMsgComponent,
     },
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
@@ -15,8 +16,8 @@ use crate::{
 use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
-use crossterm::event::Event;
-use strings::commands;
+use crossterm::event::{Event, KeyEvent};
+use strings::{commands, order};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -33,6 +34,7 @@ pub struct App {
     reset: ResetComponent,
     commit: CommitComponent,
     stashmsg_popup: StashMsgComponent,
+    inspect_commit_popup: InspectCommitComponent,
     cmdbar: CommandBar,
     tab: usize,
     revlog: Revlog,
@@ -58,12 +60,15 @@ impl App {
                 queue.clone(),
                 &theme,
             ),
+            inspect_commit_popup: InspectCommitComponent::new(
+                &queue, sender, &theme,
+            ),
             do_quit: false,
             cmdbar: CommandBar::new(&theme),
             help: HelpComponent::new(&theme),
             msg: MsgComponent::new(&theme),
             tab: 0,
-            revlog: Revlog::new(sender, &theme),
+            revlog: Revlog::new(&queue, sender, &theme),
             status_tab: Status::new(sender, &queue, &theme),
             stashing_tab: Stashing::new(sender, &queue, &theme),
             stashlist_tab: StashList::new(&queue, &theme),
@@ -115,7 +120,7 @@ impl App {
     pub fn event(&mut self, ev: Event) -> Result<()> {
         log::trace!("event: {:?}", ev);
 
-        if self.check_quit(ev) {
+        if self.check_quit_key(ev) {
             return Ok(());
         }
 
@@ -129,10 +134,19 @@ impl App {
                     self.toggle_tabs(false)?;
                     NeedsUpdate::COMMANDS
                 }
-                keys::TAB_TOGGLE_REVERSE => {
+                keys::TAB_TOGGLE_REVERSE
+                | keys::TAB_TOGGLE_REVERSE_WINDOWS => {
                     self.toggle_tabs(true)?;
                     NeedsUpdate::COMMANDS
                 }
+                keys::TAB_1
+                | keys::TAB_2
+                | keys::TAB_3
+                | keys::TAB_4 => {
+                    self.switch_tab(k)?;
+                    NeedsUpdate::COMMANDS
+                }
+
                 keys::CMD_BAR_TOGGLE => {
                     self.cmdbar.toggle_more();
                     NeedsUpdate::empty()
@@ -150,8 +164,11 @@ impl App {
         if flags.contains(NeedsUpdate::ALL) {
             self.update()?;
         }
+        //TODO: make this a queue event?
+        //NOTE: set when any tree component changed selection
         if flags.contains(NeedsUpdate::DIFF) {
             self.status_tab.update_diff()?;
+            self.inspect_commit_popup.update_diff()?;
         }
         if flags.contains(NeedsUpdate::COMMANDS) {
             self.update_commands();
@@ -181,13 +198,12 @@ impl App {
 
         self.status_tab.update_git(ev)?;
         self.stashing_tab.update_git(ev)?;
+        self.revlog.update_git(ev)?;
+        self.inspect_commit_popup.update_git(ev)?;
 
-        match ev {
-            AsyncNotification::Diff => (),
-            AsyncNotification::Log => self.revlog.update()?,
-            //TODO: is that needed?
-            AsyncNotification::Status => self.update_commands(),
-        }
+        //TODO: better system for this
+        // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
+        self.update_commands();
 
         Ok(())
     }
@@ -202,6 +218,7 @@ impl App {
         self.status_tab.anything_pending()
             || self.revlog.any_work_pending()
             || self.stashing_tab.anything_pending()
+            || self.inspect_commit_popup.any_work_pending()
     }
 }
 
@@ -214,6 +231,7 @@ impl App {
             reset,
             commit,
             stashmsg_popup,
+            inspect_commit_popup,
             help,
             revlog,
             status_tab,
@@ -222,7 +240,7 @@ impl App {
         ]
     );
 
-    fn check_quit(&mut self, ev: Event) -> bool {
+    fn check_quit_key(&mut self, ev: Event) -> bool {
         if let Event::Key(e) = ev {
             if let keys::EXIT = e {
                 self.do_quit = true;
@@ -250,6 +268,18 @@ impl App {
         };
 
         self.set_tab(new_tab)
+    }
+
+    fn switch_tab(&mut self, k: KeyEvent) -> Result<()> {
+        match k {
+            keys::TAB_1 => self.set_tab(0)?,
+            keys::TAB_2 => self.set_tab(1)?,
+            keys::TAB_3 => self.set_tab(2)?,
+            keys::TAB_4 => self.set_tab(3)?,
+            _ => (),
+        }
+
+        Ok(())
     }
 
     fn set_tab(&mut self, tab: usize) -> Result<()> {
@@ -295,7 +325,7 @@ impl App {
         match ev {
             InternalEvent::ConfirmedAction(action) => match action {
                 Action::Reset(r) => {
-                    if Status::reset(&r) {
+                    if self.status_tab.reset(&r) {
                         flags.insert(NeedsUpdate::ALL);
                     }
                 }
@@ -336,6 +366,10 @@ impl App {
                 self.stashmsg_popup.show()?
             }
             InternalEvent::TabSwitch => self.set_tab(0)?,
+            InternalEvent::InspectCommit(id) => {
+                self.inspect_commit_popup.open(id)?;
+                flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
+            }
         };
 
         Ok(flags)
@@ -359,7 +393,15 @@ impl App {
                 true,
                 !self.any_popup_visible(),
             )
-            .hidden(),
+            .order(order::NAV),
+        );
+        res.push(
+            CommandInfo::new(
+                commands::TOGGLE_TABS_DIRECT,
+                true,
+                !self.any_popup_visible(),
+            )
+            .order(order::NAV),
         );
 
         res.push(
@@ -379,19 +421,31 @@ impl App {
             || self.help.is_visible()
             || self.reset.is_visible()
             || self.msg.is_visible()
+            || self.stashmsg_popup.is_visible()
+            || self.inspect_commit_popup.is_visible()
     }
 
     fn draw_popups<B: Backend>(
         &mut self,
         f: &mut Frame<B>,
     ) -> Result<()> {
-        let size = f.size();
+        let size = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Min(1),
+                    Constraint::Length(self.cmdbar.height()),
+                ]
+                .as_ref(),
+            )
+            .split(f.size())[0];
 
         self.commit.draw(f, size)?;
         self.stashmsg_popup.draw(f, size)?;
         self.reset.draw(f, size)?;
         self.help.draw(f, size)?;
         self.msg.draw(f, size)?;
+        self.inspect_commit_popup.draw(f, size)?;
 
         Ok(())
     }
@@ -405,7 +459,7 @@ impl App {
                     strings::TAB_STATUS,
                     strings::TAB_LOG,
                     strings::TAB_STASHING,
-                    "Stashes",
+                    strings::TAB_STASHES,
                 ])
                 .style(Style::default())
                 .highlight_style(

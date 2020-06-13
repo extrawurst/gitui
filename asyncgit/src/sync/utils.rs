@@ -1,5 +1,6 @@
 //! sync git api (various methods)
 
+use super::CommitId;
 use crate::error::{Error, Result};
 use git2::{IndexAddOption, Oid, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
@@ -44,6 +45,11 @@ pub fn repo(repo_path: &str) -> Result<Repository> {
 ///
 pub fn work_dir(repo: &Repository) -> &Path {
     repo.workdir().expect("unable to query workdir")
+}
+
+/// ditto
+pub fn commit_new(repo_path: &str, msg: &str) -> Result<CommitId> {
+    commit(repo_path, msg).map(CommitId::new)
 }
 
 /// this does not run any git hooks
@@ -130,7 +136,9 @@ mod tests {
     use super::*;
     use crate::sync::{
         status::{get_status, StatusType},
-        tests::{get_statuses, repo_init, repo_init_empty},
+        tests::{
+            debug_cmd_print, get_statuses, repo_init, repo_init_empty,
+        },
     };
     use std::{
         fs::{self, remove_file, File},
@@ -230,7 +238,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).unwrap().len()
+            get_status(repo_path, s, true).unwrap().len()
         };
 
         fs::create_dir_all(&root.join("a/d"))?;
@@ -259,7 +267,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).unwrap().len()
+            get_status(repo_path, s, true).unwrap().len()
         };
 
         let full_path = &root.join(file_path);
@@ -283,5 +291,35 @@ mod tests {
 
         assert_eq!(status_count(StatusType::WorkingDir), 0);
         assert_eq!(status_count(StatusType::Stage), 1);
+    }
+
+    // see https://github.com/extrawurst/gitui/issues/108
+    #[test]
+    fn test_staging_sub_git_folder() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let status_count = |s: StatusType| -> usize {
+            get_status(repo_path, s, true).unwrap().len()
+        };
+
+        let sub = &root.join("sub");
+
+        fs::create_dir_all(sub)?;
+
+        debug_cmd_print(sub.to_str().unwrap(), "git init subgit");
+
+        File::create(sub.join("subgit/foo.txt"))
+            .unwrap()
+            .write_all(b"content")
+            .unwrap();
+
+        assert_eq!(status_count(StatusType::WorkingDir), 1);
+
+        //expect to fail
+        assert!(stage_add_all(repo_path, "sub").is_err());
+
+        Ok(())
     }
 }

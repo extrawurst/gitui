@@ -156,7 +156,7 @@ impl AsyncStatus {
         include_untracked: bool,
     ) -> Result<Status> {
         Ok(Status {
-            items: sync::status::get_status_new(
+            items: sync::status::get_status(
                 CWD,
                 status_type,
                 include_untracked,

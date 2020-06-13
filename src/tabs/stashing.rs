@@ -52,7 +52,7 @@ impl Stashing {
             index: FileTreeComponent::new(
                 strings::STASHING_FILES_TITLE,
                 true,
-                queue.clone(),
+                Some(queue.clone()),
                 theme,
             ),
             visible: false,

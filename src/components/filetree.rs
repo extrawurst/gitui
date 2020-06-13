@@ -17,7 +17,7 @@ use anyhow::Result;
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::Event;
 use std::{borrow::Cow, convert::From, path::Path};
-use strings::commands;
+use strings::{commands, order};
 use tui::{backend::Backend, layout::Rect, widgets::Text, Frame};
 
 ///
@@ -27,7 +27,7 @@ pub struct FileTreeComponent {
     current_hash: u64,
     focused: bool,
     show_selection: bool,
-    queue: Queue,
+    queue: Option<Queue>,
     theme: Theme,
 }
 
@@ -36,7 +36,7 @@ impl FileTreeComponent {
     pub fn new(
         title: &str,
         focus: bool,
-        queue: Queue,
+        queue: Option<Queue>,
         theme: &Theme,
     ) -> Self {
         Self {
@@ -67,14 +67,40 @@ impl FileTreeComponent {
     }
 
     ///
-    pub fn focus_select(&mut self, focus: bool) {
-        self.focus(focus);
-        self.show_selection = focus;
+    pub fn selection_file(&self) -> Option<StatusItem> {
+        self.tree.selected_item().and_then(|f| {
+            if let FileTreeItemKind::File(f) = f.kind {
+                Some(f)
+            } else {
+                None
+            }
+        })
+    }
+
+    ///
+    pub fn show_selection(&mut self, show: bool) {
+        self.show_selection = show;
     }
 
     /// returns true if list is empty
     pub fn is_empty(&self) -> bool {
         self.tree.is_empty()
+    }
+
+    ///
+    pub const fn file_count(&self) -> usize {
+        self.tree.tree.file_count()
+    }
+
+    ///
+    pub fn set_title(&mut self, title: String) {
+        self.title = title;
+    }
+
+    ///
+    pub fn clear(&mut self) -> Result<()> {
+        self.current_hash = 0;
+        self.tree.update(&[])
     }
 
     ///
@@ -93,9 +119,11 @@ impl FileTreeComponent {
         let changed = self.tree.move_selection(dir);
 
         if changed {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Update(NeedsUpdate::DIFF));
+            if let Some(ref queue) = self.queue {
+                queue.borrow_mut().push_back(InternalEvent::Update(
+                    NeedsUpdate::DIFF,
+                ));
+            }
         }
 
         changed
@@ -138,13 +166,9 @@ impl FileTreeComponent {
                     format!("{} {}{}", status_char, indent_str, file)
                 };
 
-                let status = status_item
-                    .status
-                    .unwrap_or(StatusItemType::Modified);
-
                 Some(Text::Styled(
                     Cow::from(txt),
-                    theme.item(status, selected),
+                    theme.item(status_item.status, selected),
                 ))
             }
 
@@ -175,17 +199,13 @@ impl FileTreeComponent {
         }
     }
 
-    fn item_status_char(item_type: Option<StatusItemType>) -> char {
-        if let Some(item_type) = item_type {
-            match item_type {
-                StatusItemType::Modified => 'M',
-                StatusItemType::New => '+',
-                StatusItemType::Deleted => '-',
-                StatusItemType::Renamed => 'R',
-                _ => ' ',
-            }
-        } else {
-            ' '
+    fn item_status_char(item_type: StatusItemType) -> char {
+        match item_type {
+            StatusItemType::Modified => 'M',
+            StatusItemType::New => '+',
+            StatusItemType::Deleted => '-',
+            StatusItemType::Renamed => 'R',
+            _ => ' ',
         }
     }
 }
@@ -231,7 +251,7 @@ impl DrawableComponent for FileTreeComponent {
         ui::draw_list(
             f,
             r,
-            &self.title.to_string(),
+            self.title.as_str(),
             items,
             self.tree.selection.map(|idx| idx - selection_offset),
             self.focused,
@@ -248,11 +268,14 @@ impl Component for FileTreeComponent {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            commands::NAVIGATE_TREE,
-            !self.is_empty(),
-            self.focused || force_all,
-        ));
+        out.push(
+            CommandInfo::new(
+                commands::NAVIGATE_TREE,
+                !self.is_empty(),
+                self.focused || force_all,
+            )
+            .order(order::NAV),
+        );
 
         CommandBlocking::PassingOn
     }
@@ -291,6 +314,6 @@ impl Component for FileTreeComponent {
         self.focused
     }
     fn focus(&mut self, focus: bool) {
-        self.focused = focus
+        self.focused = focus;
     }
 }

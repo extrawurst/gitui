@@ -136,7 +136,10 @@ impl Ord for FileTreeItem {
 
 ///
 #[derive(Default)]
-pub struct FileTreeItems(Vec<FileTreeItem>);
+pub struct FileTreeItems {
+    items: Vec<FileTreeItem>,
+    file_count: usize,
+}
 
 impl FileTreeItems {
     ///
@@ -144,7 +147,7 @@ impl FileTreeItems {
         list: &[StatusItem],
         collapsed: &BTreeSet<&String>,
     ) -> Result<Self> {
-        let mut nodes = Vec::with_capacity(list.len());
+        let mut items = Vec::with_capacity(list.len());
         let mut paths_added = BTreeSet::new();
 
         for e in list {
@@ -153,26 +156,34 @@ impl FileTreeItems {
 
                 Self::push_dirs(
                     item_path,
-                    &mut nodes,
+                    &mut items,
                     &mut paths_added,
                     collapsed,
                 )?;
             }
 
-            nodes.push(FileTreeItem::new_file(e)?);
+            items.push(FileTreeItem::new_file(e)?);
         }
 
-        Ok(Self(nodes))
+        Ok(Self {
+            items,
+            file_count: list.len(),
+        })
     }
 
     ///
     pub(crate) const fn items(&self) -> &Vec<FileTreeItem> {
-        &self.0
+        &self.items
     }
 
     ///
     pub(crate) fn len(&self) -> usize {
-        self.0.len()
+        self.items.len()
+    }
+
+    ///
+    pub const fn file_count(&self) -> usize {
+        self.file_count
     }
 
     ///
@@ -184,7 +195,7 @@ impl FileTreeItems {
         if let Some(parent_path) = Path::new(path).parent() {
             let parent_path = parent_path.to_str().unwrap();
             for i in (0..=index).rev() {
-                let item = &self.0[i];
+                let item = &self.items[i];
                 let item_path = &item.info.full_path;
                 if item_path == parent_path {
                     return i;
@@ -227,7 +238,7 @@ impl FileTreeItems {
 
 impl IndexMut<usize> for FileTreeItems {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-        &mut self.0[idx]
+        &mut self.items[idx]
     }
 }
 
@@ -235,20 +246,21 @@ impl Index<usize> for FileTreeItems {
     type Output = FileTreeItem;
 
     fn index(&self, idx: usize) -> &Self::Output {
-        &self.0[idx]
+        &self.items[idx]
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use asyncgit::StatusItemType;
 
     fn string_vec_to_status(items: &[&str]) -> Vec<StatusItem> {
         items
             .iter()
             .map(|a| StatusItem {
                 path: String::from(*a),
-                status: None,
+                status: StatusItemType::Modified,
             })
             .collect::<Vec<_>>()
     }
@@ -263,7 +275,7 @@ mod tests {
             FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
 
         assert_eq!(
-            res.0,
+            res.items,
             vec![FileTreeItem {
                 info: TreeItemInfo {
                     path: items[0].path.clone(),
@@ -283,8 +295,8 @@ mod tests {
         let res =
             FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
 
-        assert_eq!(res.0.len(), 2);
-        assert_eq!(res.0[1].info.path, items[1].path);
+        assert_eq!(res.items.len(), 2);
+        assert_eq!(res.items[1].info.path, items[1].path);
     }
 
     #[test]
@@ -295,7 +307,7 @@ mod tests {
 
         let res = FileTreeItems::new(&items, &BTreeSet::new())
             .unwrap()
-            .0
+            .items
             .iter()
             .map(|i| i.info.full_path.clone())
             .collect::<Vec<_>>();
@@ -315,7 +327,7 @@ mod tests {
         let list =
             FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
         let mut res = list
-            .0
+            .items
             .iter()
             .map(|i| (i.info.indent, i.info.path.as_str()));
 
@@ -334,7 +346,7 @@ mod tests {
         let list =
             FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
         let mut res = list
-            .0
+            .items
             .iter()
             .map(|i| (i.info.indent, i.info.path.as_str()));
 
@@ -352,7 +364,7 @@ mod tests {
 
         let res = FileTreeItems::new(&items, &BTreeSet::new())
             .unwrap()
-            .0
+            .items
             .iter()
             .map(|i| i.info.full_path.clone())
             .collect::<Vec<_>>();

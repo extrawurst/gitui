@@ -6,6 +6,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Inspect stash commit in detail ([#121](https://github.com/extrawurst/gitui/issues/121))
+- Commit Amend (`ctrl+a`) when in commit popup ([#89](https://github.com/extrawurst/gitui/issues/89))
+
+![](assets/amend.gif)
+
+### Changed
+- file trees: `arrow-right` on expanded folder moves down into folder
+- better scrolling in diff ([#52](https://github.com/extrawurst/gitui/issues/52))
+- display current branch in status/log ([#115](https://github.com/extrawurst/gitui/issues/115))
+
+### Fixed
+- reset file inside folder failed when running `gitui` in a subfolder too ([#118](https://github.com/extrawurst/gitui/issues/118))
+- selection could disappear into collapsed folder ([#120](https://github.com/extrawurst/gitui/issues/120))
+- `Files: loading` sometimes wrong ([#119](https://github.com/extrawurst/gitui/issues/119))
+
+## [0.6.0] - 2020-06-09
+
+![](assets/commit-details.gif)
+
+### Changed
+- changed hotkeys for selecting stage/workdir (**Note:** use `[w]`/`[s]` to change between workdir and stage) and added hotkeys (`[1234]`) to switch to tabs directly ([#92](https://github.com/extrawurst/gitui/issues/92))
+- `arrow-up`/`down` on bottom/top of status file list switches focus ([#105](https://github.com/extrawurst/gitui/issues/105))
+- highlight tags in revlog better
+
+### Added
+- New `Stage all [a]`/`Unstage all [a]` in changes lists ([#82](https://github.com/extrawurst/gitui/issues/82))
+- add `-d`, `--directory` options to set working directory via program arg [[@alistaircarscadden](https://github.com/alistaircarscadden)] ([#73](https://github.com/extrawurst/gitui/issues/73))
+- commit detail view in revlog ([#80](https://github.com/extrawurst/gitui/issues/80))
+
+### Fixed
+- app closes when staging invalid file/path ([#108](https://github.com/extrawurst/gitui/issues/108))
+- `shift+tab` not working on windows [[@MCord](https://github.com/MCord)] ([#111](https://github.com/extrawurst/gitui/issues/111))
+
 ## [0.5.0] - 2020-06-01
 
 ### Changed

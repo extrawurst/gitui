@@ -72,6 +72,17 @@ impl Theme {
         }
     }
 
+    pub fn tags(&self, selected: bool) -> Style {
+        Style::default()
+            .fg(self.selected_tab)
+            .modifier(Modifier::BOLD)
+            .bg(if selected {
+                self.selection_bg
+            } else {
+                Color::Reset
+            })
+    }
+
     pub fn text(&self, enabled: bool, selected: bool) -> Style {
         match (enabled, selected) {
             (false, _) => Style::default().fg(self.disabled_fg),

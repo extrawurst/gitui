@@ -29,6 +29,7 @@ fmt:
 	cargo fmt -- --check
 
 clippy:
+	touch src/main.rs
 	cargo clean -p gitui -p asyncgit -p scopetime
 	cargo clippy --all-features
 

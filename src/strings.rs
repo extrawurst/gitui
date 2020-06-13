@@ -1,16 +1,18 @@
-pub static TITLE_STATUS: &str = "Unstaged Changes [1]";
+pub static TITLE_STATUS: &str = "Unstaged Changes [w]";
 pub static TITLE_DIFF: &str = "Diff: ";
-pub static TITLE_INDEX: &str = "Staged Changes [2]";
+pub static TITLE_INDEX: &str = "Staged Changes [s]";
 
-pub static TAB_STATUS: &str = "Status";
-pub static TAB_STASHING: &str = "Stashing";
-pub static TAB_LOG: &str = "Log";
+pub static TAB_STATUS: &str = "Status [1]";
+pub static TAB_LOG: &str = "Log [2]";
+pub static TAB_STASHING: &str = "Stashing [3]";
+pub static TAB_STASHES: &str = "Stashes [4]";
 pub static TAB_DIVIDER: &str = "  |  ";
 
 pub static CMD_SPLITTER: &str = " ";
 
 pub static MSG_TITLE_ERROR: &str = "Error";
 pub static COMMIT_TITLE: &str = "Commit";
+pub static COMMIT_TITLE_AMEND: &str = "Commit (Amend)";
 pub static COMMIT_MSG: &str = "type commit message..";
 pub static STASH_POPUP_TITLE: &str = "Stash";
 pub static STASH_POPUP_MSG: &str = "type name (optional)";
@@ -27,6 +29,23 @@ pub static HELP_TITLE: &str = "Help: all commands";
 pub static STASHING_FILES_TITLE: &str = "Files to Stash";
 pub static STASHING_OPTIONS_TITLE: &str = "Options";
 
+pub mod commit {
+    pub static DETAILS_AUTHOR: &str = "Author: ";
+    pub static DETAILS_COMMITTER: &str = "Committer: ";
+    pub static DETAILS_SHA: &str = "SHA: ";
+    pub static DETAILS_DATE: &str = "Date: ";
+    pub static DETAILS_TAGS: &str = "Tags: ";
+
+    pub static DETAILS_INFO_TITLE: &str = "Info";
+    pub static DETAILS_MESSAGE_TITLE: &str = "Message";
+    pub static DETAILS_FILES_TITLE: &str = "Files:";
+    pub static DETAILS_FILES_LOADING_TITLE: &str = "Files: loading";
+}
+
+pub mod order {
+    pub static NAV: i8 = 1;
+}
+
 pub mod commands {
     use crate::components::CommandText;
 
@@ -36,11 +55,18 @@ pub mod commands {
     static CMD_GROUP_COMMIT: &str = "Commit";
     static CMD_GROUP_STASHING: &str = "Stashing";
     static CMD_GROUP_STASHES: &str = "Stashes";
+    static CMD_GROUP_LOG: &str = "Log";
 
     ///
     pub static TOGGLE_TABS: CommandText = CommandText::new(
-        "Tabs [tab]",
-        "switch top level tabs",
+        "Next [tab]",
+        "switch to next tab",
+        CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static TOGGLE_TABS_DIRECT: CommandText = CommandText::new(
+        "Tab [1234]",
+        "switch top level tabs directly",
         CMD_GROUP_GENERAL,
     );
     ///
@@ -94,19 +120,19 @@ pub mod commands {
     .hide_help();
     ///
     pub static SELECT_STAGING: CommandText = CommandText::new(
-        "Focus Stage [2]",
+        "To stage [s]",
         "focus/select staging area",
         CMD_GROUP_GENERAL,
     );
     ///
     pub static SELECT_STATUS: CommandText = CommandText::new(
-        "Focus Files [1,2]",
+        "To files [1,2]",
         "focus/select file tree of staged or unstaged files",
         CMD_GROUP_GENERAL,
     );
     ///
     pub static SELECT_UNSTAGED: CommandText = CommandText::new(
-        "Focus Unstaged [1]",
+        "To unstaged [w]",
         "focus/select unstaged area",
         CMD_GROUP_GENERAL,
     );
@@ -123,15 +149,33 @@ pub mod commands {
         CMD_GROUP_COMMIT,
     );
     ///
+    pub static COMMIT_AMEND: CommandText = CommandText::new(
+        "Amend [^a]",
+        "amend last commit",
+        CMD_GROUP_COMMIT,
+    );
+    ///
     pub static STAGE_ITEM: CommandText = CommandText::new(
         "Stage Item [enter]",
         "stage currently selected file or entire path",
         CMD_GROUP_CHANGES,
     );
     ///
+    pub static STAGE_ALL: CommandText = CommandText::new(
+        "Stage All [a]",
+        "stage all changes (in unstaged files)",
+        CMD_GROUP_CHANGES,
+    );
+    ///
     pub static UNSTAGE_ITEM: CommandText = CommandText::new(
         "Unstage Item [enter]",
         "unstage currently selected file or entire path",
+        CMD_GROUP_CHANGES,
+    );
+    ///
+    pub static UNSTAGE_ALL: CommandText = CommandText::new(
+        "Unstage all [a]",
+        "unstage all files (in staged files)",
         CMD_GROUP_CHANGES,
     );
     ///
@@ -146,18 +190,17 @@ pub mod commands {
         "Add file or path to .gitignore",
         CMD_GROUP_CHANGES,
     );
-
     ///
-    pub static STATUS_FOCUS_LEFT: CommandText = CommandText::new(
+    pub static DIFF_FOCUS_LEFT: CommandText = CommandText::new(
         "Back [\u{2190}]", //←
-        "view staged changes",
+        "view and select changed files",
         CMD_GROUP_GENERAL,
     );
     ///
-    pub static STATUS_FOCUS_RIGHT: CommandText = CommandText::new(
+    pub static DIFF_FOCUS_RIGHT: CommandText = CommandText::new(
         "Diff [\u{2192}]", //→
         "inspect file diff",
-        CMD_GROUP_CHANGES,
+        CMD_GROUP_GENERAL,
     );
     ///
     pub static QUIT: CommandText = CommandText::new(
@@ -209,5 +252,24 @@ pub mod commands {
         "Drop [D]",
         "drop selected stash",
         CMD_GROUP_STASHES,
+    );
+    ///
+    pub static STASHLIST_INSPECT: CommandText = CommandText::new(
+        "Inspect [\u{2192}]", //→
+        "open stash commit details (allows to diff files)",
+        CMD_GROUP_STASHES,
+    );
+
+    ///
+    pub static LOG_DETAILS_TOGGLE: CommandText = CommandText::new(
+        "Details [enter]",
+        "open details of selected commit",
+        CMD_GROUP_LOG,
+    );
+    ///
+    pub static LOG_DETAILS_OPEN: CommandText = CommandText::new(
+        "Inspect [\u{2192}]", //→
+        "inspect selected commit in detail",
+        CMD_GROUP_LOG,
     );
 }

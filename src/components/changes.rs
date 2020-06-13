@@ -17,8 +17,25 @@ use std::path::Path;
 use strings::commands;
 use tui::{backend::Backend, layout::Rect, Frame};
 
+/// macro to simplify running code that might return Err.
+/// It will show a popup in that case
+#[macro_export]
+macro_rules! try_or_popup {
+    ($self:ident, $msg:literal, $e:expr) => {
+        if let Err(err) = $e {
+            $self.queue.borrow_mut().push_back(
+                InternalEvent::ShowErrorMsg(format!(
+                    "{}\n{}",
+                    $msg, err
+                )),
+            );
+        }
+    };
+}
+
 ///
 pub struct ChangesComponent {
+    title: String,
     files: FileTreeComponent,
     is_working_dir: bool,
     queue: Queue,
@@ -34,10 +51,11 @@ impl ChangesComponent {
         theme: &Theme,
     ) -> Self {
         Self {
+            title: title.into(),
             files: FileTreeComponent::new(
                 title,
                 focus,
-                queue.clone(),
+                Some(queue.clone()),
                 theme,
             ),
             is_working_dir,
@@ -47,6 +65,15 @@ impl ChangesComponent {
 
     ///
     pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
+        if self.is_working_dir {
+            if let Ok(branch_name) = sync::get_branch_name(CWD) {
+                self.files.set_title(format!(
+                    "{} - {{{}}}",
+                    &self.title, branch_name,
+                ))
+            }
+        }
+
         self.files.update(list)?;
 
         Ok(())
@@ -59,7 +86,8 @@ impl ChangesComponent {
 
     ///
     pub fn focus_select(&mut self, focus: bool) {
-        self.files.focus_select(focus)
+        self.files.focus(focus);
+        self.files.show_selection(focus);
     }
 
     /// returns true if list is empty
@@ -76,17 +104,15 @@ impl ChangesComponent {
         if let Some(tree_item) = self.selection() {
             if self.is_working_dir {
                 if let FileTreeItemKind::File(i) = tree_item.kind {
-                    if let Some(status) = i.status {
-                        let path = Path::new(i.path.as_str());
-                        match status {
-                            StatusItemType::Deleted => {
-                                sync::stage_addremoved(CWD, path)?
-                            }
-                            _ => sync::stage_add_file(CWD, path)?,
-                        };
+                    let path = Path::new(i.path.as_str());
+                    match i.status {
+                        StatusItemType::Deleted => {
+                            sync::stage_addremoved(CWD, path)?
+                        }
+                        _ => sync::stage_add_file(CWD, path)?,
+                    };
 
-                        return Ok(true);
-                    }
+                    return Ok(true);
                 } else {
                     //TODO: check if we can handle the one file case with it aswell
                     sync::stage_add_all(
@@ -97,14 +123,33 @@ impl ChangesComponent {
                     return Ok(true);
                 }
             } else {
-                let path =
-                    Path::new(tree_item.info.full_path.as_str());
+                let path = tree_item.info.full_path.as_str();
                 sync::reset_stage(CWD, path)?;
                 return Ok(true);
             }
         }
 
         Ok(false)
+    }
+
+    fn index_add_all(&mut self) -> Result<()> {
+        sync::stage_add_all(CWD, "*")?;
+
+        self.queue
+            .borrow_mut()
+            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
+    }
+
+    fn stage_remove_all(&mut self) -> Result<()> {
+        sync::reset_stage(CWD, "*")?;
+
+        self.queue
+            .borrow_mut()
+            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
     }
 
     fn dispatch_reset_workdir(&mut self) -> bool {
@@ -161,6 +206,11 @@ impl Component for ChangesComponent {
 
         if self.is_working_dir {
             out.push(CommandInfo::new(
+                commands::STAGE_ALL,
+                some_selection,
+                self.focused(),
+            ));
+            out.push(CommandInfo::new(
                 commands::STAGE_ITEM,
                 some_selection,
                 self.focused(),
@@ -178,6 +228,11 @@ impl Component for ChangesComponent {
         } else {
             out.push(CommandInfo::new(
                 commands::UNSTAGE_ITEM,
+                some_selection,
+                self.focused(),
+            ));
+            out.push(CommandInfo::new(
+                commands::UNSTAGE_ALL,
                 some_selection,
                 self.focused(),
             ));
@@ -212,15 +267,33 @@ impl Component for ChangesComponent {
                         Ok(true)
                     }
                     keys::STATUS_STAGE_FILE => {
-                        if self.index_add_remove()? {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::Update(
-                                    NeedsUpdate::ALL,
-                                ),
-                            );
-                        }
+                        try_or_popup!(
+                            self,
+                            "staging error:",
+                            self.index_add_remove()
+                        );
+
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::Update(NeedsUpdate::ALL),
+                        );
+
                         Ok(true)
                     }
+
+                    keys::STATUS_STAGE_ALL if !self.is_empty() => {
+                        if self.is_working_dir {
+                            try_or_popup!(
+                                self,
+                                "staging error:",
+                                self.index_add_all()
+                            );
+                        } else {
+                            self.stage_remove_all()?;
+                        }
+
+                        Ok(true)
+                    }
+
                     keys::STATUS_RESET_FILE
                         if self.is_working_dir =>
                     {

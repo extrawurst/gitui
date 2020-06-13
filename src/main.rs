@@ -234,11 +234,24 @@ fn process_cmdline() -> Result<()> {
                 .help("Stores logging output into a cache directory")
                 .short("l")
                 .long("logging"),
+        )
+        .arg(
+            Arg::with_name("directory")
+                .help("Set the working directory")
+                .short("d")
+                .long("directory")
+                .takes_value(true),
         );
 
     let arg_matches = app.get_matches();
     if arg_matches.is_present("logging") {
         setup_logging()?;
+    }
+
+    if arg_matches.is_present("directory") {
+        let directory =
+            arg_matches.value_of("directory").unwrap_or(".");
+        env::set_current_dir(directory)?;
     }
 
     Ok(())

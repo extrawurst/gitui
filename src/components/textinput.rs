@@ -1,12 +1,13 @@
-use super::{
-    visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent,
-};
 use crate::{
-    components::dialog_paragraph, strings, ui, ui::style::Theme,
+    components::{
+        popup_paragraph, visibility_blocking, CommandBlocking,
+        CommandInfo, Component, DrawableComponent,
+    },
+    strings, ui,
+    ui::style::Theme,
 };
 use anyhow::Result;
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::{Event, KeyCode, KeyModifiers};
 use strings::commands;
 use tui::{
     backend::Backend,
@@ -88,6 +89,16 @@ impl TextInputComponent {
             None
         }
     }
+  
+    ///
+    pub fn set_text(&mut self, msg: String) {
+        self.msg = msg;
+    }
+
+    ///
+    pub fn set_title(&mut self, t: String) {
+        self.title = t;
+    }
 }
 
 impl DrawableComponent for TextInputComponent {
@@ -139,7 +150,12 @@ impl DrawableComponent for TextInputComponent {
             let area = ui::centered_rect(60, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                dialog_paragraph(self.title.as_str(), txt.iter()),
+                popup_paragraph(
+                    self.title.as_str(),
+                    txt.iter(),
+                    &self.theme,
+                    true,
+                ),
                 area,
             );
         }
@@ -168,12 +184,14 @@ impl Component for TextInputComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
+                let is_ctrl =
+                    e.modifiers.contains(KeyModifiers::CONTROL);
                 match e.code {
                     KeyCode::Esc => {
                         self.hide();
                         return Ok(true);
                     }
-                    KeyCode::Char(c) => {
+                    KeyCode::Char(c) if !is_ctrl => {
                         self.msg.insert(self.cursor_position, c);
                         self.incr_cursor();
                         return Ok(true);

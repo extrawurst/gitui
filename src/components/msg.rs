@@ -9,7 +9,7 @@ use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, Borders, Clear, Paragraph, Text},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
     Frame,
 };
 use ui::style::Theme;
@@ -41,7 +41,8 @@ impl DrawableComponent for MsgComponent {
                     Block::default()
                         .title(strings::MSG_TITLE_ERROR)
                         .title_style(self.theme.text_danger())
-                        .borders(Borders::ALL),
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Thick),
                 )
                 .alignment(Alignment::Left)
                 .wrap(true),

@@ -1,5 +1,5 @@
 <h1 align="center">
-<img width="400px" src="assets/logo.png" />
+<img width="300px" src="assets/logo.png" />
 
 ![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4]
 </h1>
@@ -20,12 +20,12 @@ blazing fast terminal-ui for git written in rust
 # features
 
 * fast and intuitive key only control
-* context based help (**no** need to remember any hot-key)
-* inspect/commit changes (incl. hooks: *commit-msg*/*post-commit*)
+* context based help (**no** need to remember tons of hot-keys)
+* inspect/commit/amend changes (incl. hooks: *commit-msg*/*post-commit*)
 * (un)stage files/hunks, revert/reset files/hunk
-* stashing (save, apply, drop)
-* browse commit log
-* scalable ui layout
+* stashing (save, apply, drop, inspect content)
+* browse commit log, diff committed changes
+* scalable terminal ui layout
 * async [input polling](assets/perf_compare.jpg) and 
 * async git API for fluid control
 
@@ -45,7 +45,7 @@ presentation slides: https://github.com/extrawurst/gitui-presentation
 
 # known limitations
 
-* no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server)
+* no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 * [core.hooksPath](https://git-scm.com/docs/githooks) config not supported
 * revert/reset hunk in working dir (see [#11](https://github.com/extrawurst/gitui/issues/11))
 
@@ -89,9 +89,7 @@ see [releases](https://github.com/extrawurst/gitui/releases)
 
 ### requirements
 
-install `rust`/`cargo`: https://www.rust-lang.org/tools/install
-
-min rust version: `1.42`
+install **latest** `rust`/`cargo`: https://www.rust-lang.org/tools/install
 
 ### cargo install
 

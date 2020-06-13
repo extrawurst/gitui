@@ -1,10 +1,12 @@
 mod changes;
 mod command;
 mod commit;
+mod commit_details;
 mod commitlist;
 mod diff;
 mod filetree;
 mod help;
+mod inspect_commit;
 mod msg;
 mod reset;
 mod stashmsg;
@@ -14,21 +16,23 @@ use anyhow::Result;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
+pub use commit_details::CommitDetailsComponent;
 pub use commitlist::CommitList;
 use crossterm::event::Event;
 pub use diff::DiffComponent;
 pub use filetree::FileTreeComponent;
 pub use help::HelpComponent;
+pub use inspect_commit::InspectCommitComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
 pub use stashmsg::StashMsgComponent;
 pub use utils::filetree::FileTreeItemKind;
 
+use crate::ui::style::Theme;
 use tui::{
     backend::Backend,
-    layout::Alignment,
-    layout::Rect,
-    widgets::{Block, Borders, Paragraph, Text},
+    layout::{Alignment, Rect},
+    widgets::{Block, BorderType, Borders, Paragraph, Text},
     Frame,
 };
 
@@ -150,16 +154,55 @@ pub trait Component {
     fn show(&mut self) -> Result<()> {
         Ok(())
     }
+
+    ///
+    fn toggle_visible(&mut self) -> Result<()> {
+        if self.is_visible() {
+            self.hide();
+            Ok(())
+        } else {
+            self.show()
+        }
+    }
 }
 
 fn dialog_paragraph<'a, 't, T>(
     title: &'a str,
     content: T,
+    theme: &Theme,
+    focused: bool,
 ) -> Paragraph<'a, 't, T>
 where
     T: Iterator<Item = &'t Text<'t>>,
 {
     Paragraph::new(content)
-        .block(Block::default().title(title).borders(Borders::ALL))
+        .block(
+            Block::default()
+                .title(title)
+                .borders(Borders::ALL)
+                .title_style(theme.title(focused))
+                .border_style(theme.block(focused)),
+        )
+        .alignment(Alignment::Left)
+}
+
+fn popup_paragraph<'a, 't, T>(
+    title: &'a str,
+    content: T,
+    theme: &Theme,
+    focused: bool,
+) -> Paragraph<'a, 't, T>
+where
+    T: Iterator<Item = &'t Text<'t>>,
+{
+    Paragraph::new(content)
+        .block(
+            Block::default()
+                .title(title)
+                .borders(Borders::ALL)
+                .border_type(BorderType::Thick)
+                .title_style(theme.title(focused))
+                .border_style(theme.block(focused)),
+        )
         .alignment(Alignment::Left)
 }
