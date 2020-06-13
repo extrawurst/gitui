@@ -100,6 +100,12 @@ pub mod commands {
         CMD_GROUP_DIFF,
     );
     ///
+    pub static DIFF_HUNK_REVERT: CommandText = CommandText::new(
+        "Revert hunk [D]",
+        "reverts selected hunk",
+        CMD_GROUP_DIFF,
+    );
+    ///
     pub static DIFF_HUNK_REMOVE: CommandText = CommandText::new(
         "Remove hunk [enter]",
         "removes selected hunk from stage",

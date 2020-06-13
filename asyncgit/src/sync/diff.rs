@@ -91,6 +91,7 @@ pub(crate) fn get_diff_raw<'a>(
         // diff against head
         if let Ok(ref_head) = repo.head() {
             let parent = repo.find_commit(
+                //TODO: use new NoHead Error
                 ref_head.target().ok_or_else(|| {
                     let name = ref_head.name().unwrap_or("??");
                     Error::Generic(
