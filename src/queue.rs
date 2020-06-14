@@ -37,8 +37,6 @@ pub enum InternalEvent {
     ///
     ConfirmedAction(Action),
     ///
-    StageHunk(u64),
-    ///
     ShowErrorMsg(String),
     ///
     Update(NeedsUpdate),

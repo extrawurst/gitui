@@ -343,21 +343,6 @@ impl App {
                 self.reset.open(action)?;
                 flags.insert(NeedsUpdate::COMMANDS);
             }
-            InternalEvent::StageHunk(hash) => {
-                if let Some((path, is_stage)) =
-                    self.status_tab.selected_path()
-                {
-                    if is_stage {
-                        if sync::unstage_hunk(CWD, path, hash)? {
-                            flags.insert(NeedsUpdate::ALL);
-                        }
-                    } else if sync::stage_hunk(CWD, path, hash)
-                        .is_ok()
-                    {
-                        flags.insert(NeedsUpdate::ALL);
-                    }
-                }
-            }
             InternalEvent::ShowErrorMsg(msg) => {
                 self.msg.show_msg(msg.as_str())?;
                 flags

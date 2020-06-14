@@ -2,13 +2,13 @@ use super::{CommandBlocking, DrawableComponent, ScrollType};
 use crate::{
     components::{CommandInfo, Component},
     keys,
-    queue::{Action, InternalEvent, Queue, ResetItem},
+    queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings,
     ui::{calc_scroll_top, style::Theme},
 };
-use asyncgit::{hash, DiffLine, DiffLineType, FileDiff};
+use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use crossterm::event::Event;
-use std::{borrow::Cow, cmp};
+use std::{borrow::Cow, cmp, path::Path};
 use strings::commands;
 use tui::{
     backend::Backend,
@@ -271,17 +271,38 @@ impl DiffComponent {
         false
     }
 
-    fn add_hunk(&self) -> Result<()> {
+    fn unstage_hunk(&mut self) -> Result<()> {
         if let Some(hunk) = self.selected_hunk {
             let hash = self.diff.hunks[hunk].header_hash;
-            self.queue
-                .as_ref()
-                .expect("try using queue in immutable diff")
-                .borrow_mut()
-                .push_back(InternalEvent::StageHunk(hash));
+            sync::unstage_hunk(CWD, self.current.path.clone(), hash)?;
+            self.queue_update();
         }
 
         Ok(())
+    }
+
+    fn stage_hunk(&mut self) -> Result<()> {
+        if let Some(hunk) = self.selected_hunk {
+            let path = self.current.path.clone();
+            if self.diff.untracked {
+                sync::stage_add_file(CWD, Path::new(&path))?;
+            } else {
+                let hash = self.diff.hunks[hunk].header_hash;
+                sync::stage_hunk(CWD, path, hash)?;
+            }
+
+            self.queue_update();
+        }
+
+        Ok(())
+    }
+
+    fn queue_update(&mut self) {
+        self.queue
+            .as_ref()
+            .expect("try using queue in immutable diff")
+            .borrow_mut()
+            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
     }
 
     fn reset_hunk(&self) -> Result<()> {
@@ -434,7 +455,11 @@ impl Component for DiffComponent {
                         Ok(true)
                     }
                     keys::ENTER if !self.is_immutable() => {
-                        self.add_hunk()?;
+                        if self.current.is_stage {
+                            self.unstage_hunk()?;
+                        } else {
+                            self.stage_hunk()?;
+                        }
                         Ok(true)
                     }
                     keys::DIFF_RESET_HUNK
