@@ -12,7 +12,7 @@ use strings::commands;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Modifier, Style},
+    style::Modifier,
     widgets::{Clear, Text},
     Frame,
 };
