@@ -205,4 +205,5 @@ where
                 .border_style(theme.block(focused)),
         )
         .alignment(Alignment::Left)
+        .wrap(true)
 }
