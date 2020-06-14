@@ -2,7 +2,7 @@ use super::{CommandBlocking, DrawableComponent, ScrollType};
 use crate::{
     components::{CommandInfo, Component},
     keys,
-    queue::{Action, InternalEvent, Queue},
+    queue::{Action, InternalEvent, Queue, ResetItem},
     strings,
     ui::{calc_scroll_top, style::Theme},
 };
@@ -303,6 +303,21 @@ impl DiffComponent {
         Ok(())
     }
 
+    fn reset_untracked(&self) -> Result<()> {
+        self.queue
+            .as_ref()
+            .expect("try using queue in immutable diff")
+            .borrow_mut()
+            .push_back(InternalEvent::ConfirmAction(Action::Reset(
+                ResetItem {
+                    path: self.current.path.clone(),
+                    is_folder: false,
+                },
+            )));
+
+        Ok(())
+    }
+
     fn is_immutable(&self) -> bool {
         self.queue.is_none()
     }
@@ -426,7 +441,11 @@ impl Component for DiffComponent {
                         if !self.is_immutable()
                             && !self.is_stage() =>
                     {
-                        self.reset_hunk()?;
+                        if self.diff.untracked {
+                            self.reset_untracked()?;
+                        } else {
+                            self.reset_hunk()?;
+                        }
                         Ok(true)
                     }
                     _ => Ok(false),

@@ -32,7 +32,7 @@ pub fn stage_hunk(
     Ok(())
 }
 
-///
+/// this will fail for an all untracked file
 pub fn reset_hunk(
     repo_path: &str,
     file_path: String,
@@ -133,4 +133,46 @@ pub fn unstage_hunk(
     }
 
     Ok(count == 1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        error::Result,
+        sync::{diff::get_diff, tests::repo_init_empty},
+    };
+    use std::{
+        fs::{self, File},
+        io::Write,
+        path::Path,
+    };
+
+    #[test]
+    fn reset_untracked_file_which_will_not_find_hunk() -> Result<()> {
+        let file_path = Path::new("foo/foo.txt");
+        let (_td, repo) = repo_init_empty()?;
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let sub_path = root.join("foo/");
+
+        fs::create_dir_all(&sub_path)?;
+        File::create(&root.join(file_path))?.write_all(b"test")?;
+
+        let diff = get_diff(
+            sub_path.to_str().unwrap(),
+            String::from(file_path.to_str().unwrap()),
+            false,
+        )?;
+
+        assert!(reset_hunk(
+            repo_path,
+            String::from(file_path.to_str().unwrap()),
+            diff.hunks[0].header_hash,
+        )
+        .is_err());
+
+        Ok(())
+    }
 }

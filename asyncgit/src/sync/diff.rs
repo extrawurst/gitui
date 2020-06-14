@@ -73,6 +73,8 @@ pub struct FileDiff {
     pub hunks: Vec<Hunk>,
     /// lines total summed up over hunks
     pub lines: usize,
+    ///
+    pub untracked: bool,
 }
 
 pub(crate) fn get_diff_raw<'a>(
@@ -150,8 +152,6 @@ fn raw_diff_to_file_diff<'a>(
     diff: &'a Diff,
     work_dir: &Path,
 ) -> Result<FileDiff> {
-    // scope_time!("raw_diff_to_file_diff");
-
     let mut res: FileDiff = FileDiff::default();
     let mut current_lines = Vec::new();
     let mut current_hunk: Option<HunkHeader> = None;
@@ -249,6 +249,10 @@ fn raw_diff_to_file_diff<'a>(
 
     if !current_lines.is_empty() {
         adder(&current_hunk.unwrap(), &current_lines);
+    }
+
+    if new_file_diff {
+        res.untracked = true;
     }
 
     Ok(res)
