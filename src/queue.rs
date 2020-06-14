@@ -37,7 +37,7 @@ pub enum InternalEvent {
     ///
     ConfirmedAction(Action),
     ///
-    AddHunk(u64),
+    StageHunk(u64),
     ///
     ShowErrorMsg(String),
     ///

@@ -278,7 +278,7 @@ impl DiffComponent {
                 .as_ref()
                 .expect("try using queue in immutable diff")
                 .borrow_mut()
-                .push_back(InternalEvent::AddHunk(hash));
+                .push_back(InternalEvent::StageHunk(hash));
         }
 
         Ok(())

@@ -343,7 +343,7 @@ impl App {
                 self.reset.open(action)?;
                 flags.insert(NeedsUpdate::COMMANDS);
             }
-            InternalEvent::AddHunk(hash) => {
+            InternalEvent::StageHunk(hash) => {
                 if let Some((path, is_stage)) =
                     self.status_tab.selected_path()
                 {
