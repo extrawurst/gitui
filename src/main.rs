@@ -66,6 +66,9 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    // TODO: To be removed in a future version, when upgrading from 0.6.x or earlier is unlikely
+    migrate_config()?;
+
     setup_terminal()?;
     defer! {
         shutdown_terminal().expect("shutdown failed");
@@ -202,7 +205,26 @@ fn start_terminal<W: Write>(
     Ok(terminal)
 }
 
-fn get_app_config_path() -> Result<PathBuf> {
+fn migrate_config() -> Result<()> {
+    let cache_path: PathBuf = get_app_cache_path()?;
+
+    let entries = cache_path
+        .read_dir()?
+        .flat_map(|dir_entry| dir_entry)
+        .filter(|entry| {
+            !entry.file_name().to_string_lossy().ends_with(".log")
+        });
+
+    for entry in entries {
+        let mut config_path: PathBuf = get_app_config_path()?;
+        config_path.push(entry.file_name());
+        fs::rename(entry.path(), config_path)?;
+    }
+
+    Ok(())
+}
+
+fn get_app_cache_path() -> Result<PathBuf> {
     let mut path = dirs::cache_dir()
         .ok_or_else(|| anyhow!("failed to find os cache dir."))?;
 
@@ -211,8 +233,17 @@ fn get_app_config_path() -> Result<PathBuf> {
     Ok(path)
 }
 
+fn get_app_config_path() -> Result<PathBuf> {
+    let mut path = dirs::config_dir()
+        .ok_or_else(|| anyhow!("failed to find os config dir."))?;
+
+    path.push("gitui");
+    fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
 fn setup_logging() -> Result<()> {
-    let mut path = get_app_config_path()?;
+    let mut path = get_app_cache_path()?;
     path.push("gitui.log");
 
     let _ = WriteLogger::init(
