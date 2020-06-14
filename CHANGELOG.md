@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Inspect stash commit in detail ([#121](https://github.com/extrawurst/gitui/issues/121))
+- Support reset/revert individual hunks ([#11](https://github.com/extrawurst/gitui/issues/11))
 - Commit Amend (`ctrl+a`) when in commit popup ([#89](https://github.com/extrawurst/gitui/issues/89))
 
 ![](assets/amend.gif)
