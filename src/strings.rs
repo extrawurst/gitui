@@ -20,6 +20,7 @@ pub static CONFIRM_TITLE_RESET: &str = "Reset";
 pub static CONFIRM_TITLE_STASHDROP: &str = "Drop";
 pub static CONFIRM_MSG_RESET: &str = "confirm file reset?";
 pub static CONFIRM_MSG_STASHDROP: &str = "confirm stash drop?";
+pub static CONFIRM_MSG_RESETHUNK: &str = "confirm reset hunk?";
 
 pub static LOG_TITLE: &str = "Commit";
 pub static STASHLIST_TITLE: &str = "Stashes";

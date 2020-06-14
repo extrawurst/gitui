@@ -148,6 +148,10 @@ impl ResetComponent {
                     strings::CONFIRM_TITLE_STASHDROP,
                     strings::CONFIRM_MSG_STASHDROP,
                 ),
+                Action::ResetHunk(_, _) => (
+                    strings::CONFIRM_TITLE_RESET,
+                    strings::CONFIRM_MSG_RESETHUNK,
+                ),
             };
         }
 

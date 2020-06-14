@@ -2,11 +2,11 @@ use super::{CommandBlocking, DrawableComponent, ScrollType};
 use crate::{
     components::{CommandInfo, Component},
     keys,
-    queue::{InternalEvent, NeedsUpdate, Queue},
+    queue::{Action, InternalEvent, Queue},
     strings,
     ui::{calc_scroll_top, style::Theme},
 };
-use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
+use asyncgit::{hash, DiffLine, DiffLineType, FileDiff};
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp};
 use strings::commands;
@@ -288,13 +288,16 @@ impl DiffComponent {
         if let Some(hunk) = self.selected_hunk {
             let hash = self.diff.hunks[hunk].header_hash;
 
-            sync::reset_hunk(CWD, self.current.path.clone(), hash)?;
-
             self.queue
                 .as_ref()
                 .expect("try using queue in immutable diff")
                 .borrow_mut()
-                .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+                .push_back(InternalEvent::ConfirmAction(
+                    Action::ResetHunk(
+                        self.current.path.clone(),
+                        hash,
+                    ),
+                ));
         }
 
         Ok(())

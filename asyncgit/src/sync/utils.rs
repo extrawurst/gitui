@@ -63,6 +63,7 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<Oid> {
     let tree_id = index.write_tree()?;
     let tree = repo.find_tree(tree_id)?;
 
+    //TODO: use NoHead error
     let parents = if let Ok(reference) = repo.head() {
         let parent = repo.find_commit(
             reference.target().ok_or_else(|| {

@@ -13,6 +13,7 @@ pub fn reset_stage(repo_path: &str, path: &str) -> Result<()> {
 
     if let Ok(reference) = head {
         let obj = repo.find_object(
+            //TODO: use NoHead error type
             reference.target().ok_or_else(|| {
                 Error::Generic(
                     "can't get reference to symbolic reference,"
