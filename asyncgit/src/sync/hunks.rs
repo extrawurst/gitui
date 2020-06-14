@@ -32,6 +32,38 @@ pub fn stage_hunk(
     Ok(())
 }
 
+///
+pub fn reset_hunk(
+    repo_path: &str,
+    file_path: String,
+    hunk_hash: u64,
+) -> Result<()> {
+    scope_time!("reset_hunk");
+
+    let repo = repo(repo_path)?;
+
+    let diff = get_diff_raw(&repo, &file_path, false, false)?;
+
+    let hunk_index = find_hunk_index(&diff, hunk_hash);
+    if let Some(hunk_index) = hunk_index {
+        let mut hunk_idx = 0;
+        let mut opt = ApplyOptions::new();
+        opt.hunk_callback(|_hunk| {
+            let res = hunk_idx == hunk_index;
+            hunk_idx += 1;
+            res
+        });
+
+        let diff = get_diff_raw(&repo, &file_path, false, true)?;
+
+        repo.apply(&diff, ApplyLocation::WorkDir, Some(&mut opt))?;
+
+        Ok(())
+    } else {
+        Err(Error::Generic("hunk not found".to_string()))
+    }
+}
+
 fn find_hunk_index(diff: &Diff, hunk_hash: u64) -> Option<usize> {
     let mut result = None;
 
@@ -72,7 +104,6 @@ pub fn unstage_hunk(
     let diff_count_positive = diff.deltas().len();
 
     let hunk_index = find_hunk_index(&diff, hunk_hash);
-
     if hunk_index.is_none() {
         return Err(Error::Generic("hunk not found".to_string()));
     }
@@ -97,12 +128,8 @@ pub fn unstage_hunk(
 
             res
         });
-        if repo
-            .apply(&diff, ApplyLocation::Index, Some(&mut opt))
-            .is_err()
-        {
-            return Err(Error::Generic("apply failed".to_string()));
-        }
+
+        repo.apply(&diff, ApplyLocation::Index, Some(&mut opt))?;
     }
 
     Ok(count == 1)

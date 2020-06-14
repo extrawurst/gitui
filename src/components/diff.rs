@@ -2,7 +2,7 @@ use super::{CommandBlocking, DrawableComponent, ScrollType};
 use crate::{
     components::{CommandInfo, Component},
     keys,
-    queue::{InternalEvent, Queue},
+    queue::{Action, InternalEvent, Queue},
     strings,
     ui::{calc_scroll_top, style::Theme},
 };
@@ -284,8 +284,31 @@ impl DiffComponent {
         Ok(())
     }
 
+    fn reset_hunk(&self) -> Result<()> {
+        if let Some(hunk) = self.selected_hunk {
+            let hash = self.diff.hunks[hunk].header_hash;
+
+            self.queue
+                .as_ref()
+                .expect("try using queue in immutable diff")
+                .borrow_mut()
+                .push_back(InternalEvent::ConfirmAction(
+                    Action::ResetHunk(
+                        self.current.path.clone(),
+                        hash,
+                    ),
+                ));
+        }
+
+        Ok(())
+    }
+
     fn is_immutable(&self) -> bool {
         self.queue.is_none()
+    }
+
+    const fn is_stage(&self) -> bool {
+        self.current.is_stage
     }
 }
 
@@ -350,12 +373,17 @@ impl Component for DiffComponent {
             out.push(CommandInfo::new(
                 commands::DIFF_HUNK_REMOVE,
                 self.selected_hunk.is_some(),
-                self.focused && self.current.is_stage,
+                self.focused && self.is_stage(),
             ));
             out.push(CommandInfo::new(
                 commands::DIFF_HUNK_ADD,
                 self.selected_hunk.is_some(),
-                self.focused && !self.current.is_stage,
+                self.focused && !self.is_stage(),
+            ));
+            out.push(CommandInfo::new(
+                commands::DIFF_HUNK_REVERT,
+                self.selected_hunk.is_some(),
+                self.focused && !self.is_stage(),
             ));
         }
 
@@ -392,6 +420,13 @@ impl Component for DiffComponent {
                     }
                     keys::ENTER if !self.is_immutable() => {
                         self.add_hunk()?;
+                        Ok(true)
+                    }
+                    keys::DIFF_RESET_HUNK
+                        if !self.is_immutable()
+                            && !self.is_stage() =>
+                    {
+                        self.reset_hunk()?;
                         Ok(true)
                     }
                     _ => Ok(false),

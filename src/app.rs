@@ -334,6 +334,10 @@ impl App {
                         flags.insert(NeedsUpdate::ALL);
                     }
                 }
+                Action::ResetHunk(path, hash) => {
+                    sync::reset_hunk(CWD, path, hash)?;
+                    flags.insert(NeedsUpdate::ALL);
+                }
             },
             InternalEvent::ConfirmAction(action) => {
                 self.reset.open(action)?;

@@ -26,6 +26,7 @@ pub struct ResetItem {
 ///
 pub enum Action {
     Reset(ResetItem),
+    ResetHunk(String, u64),
     StashDrop(CommitId),
 }
 
