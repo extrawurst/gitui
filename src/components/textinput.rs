@@ -63,39 +63,35 @@ impl TextInputComponent {
 
     /// Move the cursor left one char.
     fn decr_cursor(&mut self) {
-        let mut new_pos: usize = 0;
-        for (bytes, _) in self.msg.char_indices() {
-            if bytes >= self.cursor_position {
-                break;
-            }
-            new_pos = bytes;
+        let mut index = self.cursor_position.saturating_sub(1);
+        while index > 0 && !self.msg.is_char_boundary(index) {
+            index -= 1;
         }
-        self.cursor_position = new_pos;
+        self.cursor_position = index;
     }
 
     /// Get the position of the next char, or, if the cursor points
     /// to the last char, the `msg.len()`.
     /// Returns None when the cursor is already at `msg.len()`.
     fn next_char_position(&self) -> Option<usize> {
-        let mut char_indices =
-            self.msg[self.cursor_position..].char_indices();
-        if char_indices.next().is_some() {
-            if let Some((bytes, _)) = char_indices.next() {
-                Some(self.cursor_position + bytes)
-            } else {
-                Some(self.msg.len())
-            }
-        } else {
-            None
+        if self.cursor_position >= self.msg.len() {
+            return None;
         }
+        let mut index = self.cursor_position.saturating_add(1);
+        while index < self.msg.len()
+            && !self.msg.is_char_boundary(index)
+        {
+            index += 1;
+        }
+        Some(index)
     }
 
-    ///
+    /// Set the `msg`.
     pub fn set_text(&mut self, msg: String) {
         self.msg = msg;
     }
 
-    ///
+    /// Set the `title`.
     pub fn set_title(&mut self, t: String) {
         self.title = t;
     }
