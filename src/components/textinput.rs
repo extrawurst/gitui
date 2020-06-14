@@ -105,18 +105,21 @@ impl DrawableComponent for TextInputComponent {
     ) -> Result<()> {
         if self.visible {
             let mut txt: Vec<tui::widgets::Text> = Vec::new();
+
             if self.msg.is_empty() {
                 txt.push(Text::styled(
                     self.default_msg.as_str(),
                     self.theme.text(false, false),
                 ));
             } else {
+                let style = self.theme.text(true, false);
+
                 // the portion of the text before the cursor is added
                 // if the cursor is not at the first character
                 if self.cursor_position > 0 {
                     txt.push(Text::styled(
                         &self.msg[..self.cursor_position],
-                        Style::default(),
+                        style,
                     ));
                 }
 
@@ -128,7 +131,7 @@ impl DrawableComponent for TextInputComponent {
                         // a whitespace is used to underline
                         " "
                     },
-                    Style::default().modifier(Modifier::UNDERLINED),
+                    style.modifier(Modifier::UNDERLINED),
                 ));
 
                 // the final portion of the text is added if there is
@@ -137,7 +140,7 @@ impl DrawableComponent for TextInputComponent {
                     if pos < self.msg.len() {
                         txt.push(Text::styled(
                             &self.msg[pos..],
-                            Style::default(),
+                            style,
                         ));
                     }
                 }
