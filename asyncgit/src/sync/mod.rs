@@ -17,7 +17,7 @@ mod tags;
 pub mod utils;
 
 pub use branch::get_branch_name;
-pub use commit::{amend, get_head};
+pub use commit::amend;
 pub use commit_details::{get_commit_details, CommitDetails};
 pub use commit_files::get_commit_files;
 pub use commits_info::{get_commits_info, CommitId, CommitInfo};
@@ -30,8 +30,8 @@ pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use tags::{get_tags, Tags};
 pub use utils::{
-    commit, commit_new, is_bare_repo, is_repo, stage_add_all,
-    stage_add_file, stage_addremoved,
+    commit, commit_new, get_head, is_bare_repo, is_repo,
+    stage_add_all, stage_add_file, stage_addremoved,
 };
 
 #[cfg(test)]

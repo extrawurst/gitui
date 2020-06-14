@@ -3,17 +3,6 @@ use crate::error::Result;
 use scopetime::scope_time;
 
 ///
-pub fn get_head(repo_path: &str) -> Result<CommitId> {
-    scope_time!("get_head");
-
-    let repo = repo(repo_path)?;
-
-    let head_id = repo.head()?.target().expect("head target error");
-
-    Ok(CommitId::new(head_id))
-}
-
-///
 pub fn amend(
     repo_path: &str,
     id: CommitId,
@@ -46,10 +35,9 @@ mod tests {
     use crate::error::Result;
     use crate::sync::{
         commit, get_commit_details, get_commit_files, stage_add_file,
-        tests::{repo_init, repo_init_empty},
-        CommitId, LogWalker,
+        tests::repo_init_empty, utils::get_head, CommitId, LogWalker,
     };
-    use commit::{amend, get_head};
+    use commit::amend;
     use git2::Repository;
     use std::{fs::File, io::Write, path::Path};
 
@@ -93,28 +81,6 @@ mod tests {
         let head = get_head(repo_path)?;
 
         assert_eq!(head, new_id);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_head_empty() -> Result<()> {
-        let (_td, repo) = repo_init_empty()?;
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        assert_eq!(get_head(repo_path).is_ok(), false);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_head() -> Result<()> {
-        let (_td, repo) = repo_init()?;
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        assert_eq!(get_head(repo_path).is_ok(), true);
 
         Ok(())
     }

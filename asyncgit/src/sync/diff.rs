@@ -8,7 +8,7 @@ use git2::{
 };
 use scopetime::scope_time;
 use std::{fs, path::Path};
-use utils::work_dir;
+use utils::{get_head_repo, work_dir};
 
 /// type of diff of a single line
 #[derive(Copy, Clone, PartialEq, Hash, Debug)]
@@ -89,16 +89,8 @@ pub(crate) fn get_diff_raw<'a>(
 
     let diff = if stage {
         // diff against head
-        if let Ok(ref_head) = repo.head() {
-            let parent = repo.find_commit(
-                //TODO: use new NoHead Error
-                ref_head.target().ok_or_else(|| {
-                    let name = ref_head.name().unwrap_or("??");
-                    Error::Generic(
-                        format!("can not find the target of symbolic references: {}", name)
-                    )
-                })?,
-            )?;
+        if let Ok(id) = get_head_repo(&repo) {
+            let parent = repo.find_commit(id.into())?;
 
             let tree = parent.tree()?;
             repo.diff_tree_to_index(

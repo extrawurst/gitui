@@ -47,6 +47,25 @@ pub fn work_dir(repo: &Repository) -> &Path {
     repo.workdir().expect("unable to query workdir")
 }
 
+///
+pub fn get_head(repo_path: &str) -> Result<CommitId> {
+    let repo = repo(repo_path)?;
+    get_head_repo(&repo)
+}
+
+///
+pub fn get_head_repo(repo: &Repository) -> Result<CommitId> {
+    scope_time!("get_head_repo");
+
+    let head = repo.head()?.target();
+
+    if let Some(head_id) = head {
+        Ok(CommitId::new(head_id))
+    } else {
+        Err(Error::NoHead)
+    }
+}
+
 /// ditto
 pub fn commit_new(repo_path: &str, msg: &str) -> Result<CommitId> {
     commit(repo_path, msg).map(CommitId::new)
@@ -63,17 +82,8 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<Oid> {
     let tree_id = index.write_tree()?;
     let tree = repo.find_tree(tree_id)?;
 
-    //TODO: use NoHead error
-    let parents = if let Ok(reference) = repo.head() {
-        let parent = repo.find_commit(
-            reference.target().ok_or_else(|| {
-                Error::Generic(
-                    "failed to get the target for reference"
-                        .to_string(),
-                )
-            })?,
-        )?;
-        vec![parent]
+    let parents = if let Ok(id) = get_head(repo_path) {
+        vec![repo.find_commit(id.into())?]
     } else {
         Vec::new()
     };
@@ -320,6 +330,28 @@ mod tests {
 
         //expect to fail
         assert!(stage_add_all(repo_path, "sub").is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_head_empty() -> Result<()> {
+        let (_td, repo) = repo_init_empty()?;
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert_eq!(get_head(repo_path).is_ok(), false);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_head() -> Result<()> {
+        let (_td, repo) = repo_init()?;
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert_eq!(get_head(repo_path).is_ok(), true);
 
         Ok(())
     }

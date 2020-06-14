@@ -1,5 +1,5 @@
-use super::utils::repo;
-use crate::error::{Error, Result};
+use super::utils::{get_head_repo, repo};
+use crate::error::Result;
 use git2::{build::CheckoutBuilder, ObjectType};
 use scopetime::scope_time;
 
@@ -9,19 +9,9 @@ pub fn reset_stage(repo_path: &str, path: &str) -> Result<()> {
 
     let repo = repo(repo_path)?;
 
-    let head = repo.head();
-
-    if let Ok(reference) = head {
-        let obj = repo.find_object(
-            //TODO: use NoHead error type
-            reference.target().ok_or_else(|| {
-                Error::Generic(
-                    "can't get reference to symbolic reference,"
-                        .to_string(),
-                )
-            })?,
-            Some(ObjectType::Commit),
-        )?;
+    if let Ok(id) = get_head_repo(&repo) {
+        let obj =
+            repo.find_object(id.into(), Some(ObjectType::Commit))?;
 
         repo.reset_default(Some(&obj), &[path])?;
     } else {
