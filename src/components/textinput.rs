@@ -47,6 +47,7 @@ impl TextInputComponent {
     /// Clear the `msg`.
     pub fn clear(&mut self) {
         self.msg.clear();
+        self.cursor_position = 0;
     }
 
     /// Get the `msg`.
