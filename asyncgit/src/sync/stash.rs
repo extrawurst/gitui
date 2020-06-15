@@ -74,7 +74,7 @@ pub fn stash_save(
     message: Option<&str>,
     include_untracked: bool,
     keep_index: bool,
-) -> Result<()> {
+) -> Result<CommitId> {
     scope_time!("stash_save");
 
     let mut repo = repo(repo_path)?;
@@ -90,9 +90,9 @@ pub fn stash_save(
         options.insert(StashFlags::KEEP_INDEX)
     }
 
-    repo.stash_save2(&sig, message, Some(options))?;
+    let id = repo.stash_save2(&sig, message, Some(options))?;
 
-    Ok(())
+    Ok(CommitId::new(id))
 }
 
 #[cfg(test)]

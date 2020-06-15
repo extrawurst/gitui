@@ -66,7 +66,7 @@ impl Component for StashMsgComponent {
                         self.options.stash_untracked,
                         self.options.keep_index,
                     ) {
-                        Ok(()) => {
+                        Ok(_) => {
                             self.input.clear();
                             self.hide();
 

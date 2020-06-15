@@ -71,7 +71,11 @@ pub(crate) fn get_commit_diff(
 mod tests {
     use super::get_commit_files;
     use crate::{
-        sync::{commit, stage_add_file, tests::repo_init, CommitId},
+        error::Result,
+        sync::{
+            commit, stage_add_file, stash_save, tests::repo_init,
+            CommitId,
+        },
         StatusItemType,
     };
     use std::{fs::File, io::Write, path::Path};
@@ -97,5 +101,28 @@ mod tests {
 
         assert_eq!(diff.len(), 1);
         assert_eq!(diff[0].status, StatusItemType::New);
+    }
+
+    #[test]
+    fn test_stashed_untracked() -> Result<()> {
+        let file_path = Path::new("file1.txt");
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?
+            .write_all(b"test file1 content")?;
+
+        let id = stash_save(repo_path, None, true, false)?;
+
+        //TODO: https://github.com/extrawurst/gitui/issues/130
+        // `get_commit_diff` actually needs to merge the regular diff
+        // and a third parent diff containing the untracked files
+        let _diff = get_commit_files(repo_path, id)?;
+
+        // assert_eq!(diff.len(), 1);
+        // assert_eq!(diff[0].status, StatusItemType::New);
+
+        Ok(())
     }
 }
