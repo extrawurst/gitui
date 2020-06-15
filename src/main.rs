@@ -208,12 +208,9 @@ fn start_terminal<W: Write>(
 fn migrate_config() -> Result<()> {
     let cache_path: PathBuf = get_app_cache_path()?;
 
-    let entries = cache_path
-        .read_dir()?
-        .flat_map(|dir_entry| dir_entry)
-        .filter(|entry| {
-            !entry.file_name().to_string_lossy().ends_with(".log")
-        });
+    let entries = cache_path.read_dir()?.flatten().filter(|entry| {
+        !entry.file_name().to_string_lossy().ends_with(".log")
+    });
 
     let config_path: PathBuf = get_app_config_path()?;
     for entry in entries {
