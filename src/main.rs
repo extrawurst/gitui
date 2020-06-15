@@ -215,8 +215,9 @@ fn migrate_config() -> Result<()> {
             !entry.file_name().to_string_lossy().ends_with(".log")
         });
 
+    let config_path: PathBuf = get_app_config_path()?;
     for entry in entries {
-        let mut config_path: PathBuf = get_app_config_path()?;
+        let mut config_path: PathBuf = config_path.clone();
         config_path.push(entry.file_name());
         fs::rename(entry.path(), config_path)?;
     }
