@@ -241,8 +241,8 @@ impl Default for Theme {
         Self {
             selected_tab: Color::Yellow,
             command_fg: Color::White,
-            selection_bg: Color::Rgb(0, 0, 100),
-            cmdbar_extra_lines_bg: Color::Rgb(0, 0, 80),
+            selection_bg: Color::Blue,
+            cmdbar_extra_lines_bg: Color::Blue,
             disabled_fg: Color::DarkGray,
             diff_line_add: Color::Green,
             diff_line_delete: Color::Red,
@@ -251,7 +251,7 @@ impl Default for Theme {
             diff_file_moved: Color::LightMagenta,
             diff_file_modified: Color::Yellow,
             commit_hash: Color::Magenta,
-            commit_time: Color::Rgb(110, 110, 255),
+            commit_time: Color::LightCyan,
             commit_author: Color::Green,
             danger_fg: Color::Red,
         }
