@@ -82,7 +82,7 @@ sudo dnf install gitui
 ### Homebrew (macOS)
 
 ```sh
-brew install extrawurst/tap/gitui
+brew install gitui
 ```
 
 ### Release Binaries
