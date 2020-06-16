@@ -2,6 +2,7 @@
 <img width="300px" src="assets/logo.png" />
 
 ![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4]
+
 </h1>
 
 [s0]: https://github.com/extrawurst/gitui/workflows/CI/badge.svg
@@ -13,68 +14,58 @@
 [s4]: https://img.shields.io/badge/itch.io-ok-green
 [l4]: https://extrawurst.itch.io/gitui
 
-blazing fast terminal-ui for git written in rust
+<h5 align="center">Blazing fast terminal client for git written in Rust</h1>
 
 ![](assets/demo.gif)
 
-# features
+# Features
 
-* fast and intuitive key only control
-* context based help (**no** need to remember tons of hot-keys)
-* inspect/commit/amend changes (incl. hooks: *commit-msg*/*post-commit*)
-* (un)stage files/hunks, revert/reset files/hunk
-* stashing (save, apply, drop, inspect content)
-* browse commit log, diff committed changes
-* scalable terminal ui layout
-* async [input polling](assets/perf_compare.jpg) and 
-* async git API for fluid control
+- Fast and intuitive **keyboard only** control
+- Context based help (**no need to memorize** tons of hot-keys)
+- Inspect, commit, and amend changes (incl. hooks: _commit-msg_/_post-commit_)
+- Stage, unstage, revert and reset files and hunks
+- Stashing (save, apply, drop, and inspect)
+- Browse commit log, diff committed changes
+- Scalable terminal UI layout
+- Async [input polling](assets/perf_compare.jpg)
+- Async git API for fluid control
 
-# benchmarks
+# Benchmarks
 
-For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) I compared *lazygit*,*tig* and *gitui* parsing the entire linux git repository (~900k commits):
+For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([slides](https://github.com/extrawurst/gitui-presentation)) I compared `lazygit`,`tig` and `gitui` by parsing the entire Linux git repository (which contains over 900 thousand commits):
 
-||lazygit|tig|**gitui**|
-|--|--|--|--|
-|time| 57s | 4m 20s |**24s**
-| mem |2.6 gb|1.3 gb| **170 mb** 
-| binary | 16 mb | **600 kb** | 1.4 mb
-| freezes  | yes | soso | **no** 
-| crashes  | sometimes | no | **no** 
+|           | Time        | Memory (GB) | Binary (MB) | Freezes   | Crashes   |
+| --------- | ----------- | ----------- | ----------- | --------- | --------- |
+| `gitui`   | **24 s** ✅ | **0.17** ✅ | 1.4         | **No** ✅ | **No** ✅ |
+| `lazygit` | 57 s        | 2.6         | 16          | Yes       | Sometimes |
+| `tig`     | 4 m 20 s    | 1.3         | **0.6** ✅  | Sometimes | **No** ✅ |
 
-presentation slides: https://github.com/extrawurst/gitui-presentation
+# Motivation
 
-# known limitations
+I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index, commit, diff, stash and log.
 
-* no support for pull/push yet (see [#90](https://github.com/extrawurst/gitui/issues/90))
-* no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
-* [core.hooksPath](https://git-scm.com/docs/githooks) config not supported
-* revert/reset hunk in working dir (see [#11](https://github.com/extrawurst/gitui/issues/11))
+Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool myself to help do features I use the most.
 
-# motivation
+# Known Limitations
 
-I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index/commit, diff, stash and log.
+- no support for push and pull yet (see [#90](https://github.com/extrawurst/gitui/issues/90))
+- limited support for branch (see [#90](https://github.com/extrawurst/gitui/issues/91))
+- no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
+- no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
 
-Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was not bloated, snappy and free. Unfortunately the *free* part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast & simple terminal tool myself to copy the fork features i am using the most.
+Currently, this tool does not fully substitute the _git shell_, however both tools work well in tandem.
 
-# expectation management
+`gitui` currently lacks essential features in git like push, pull, and checkout. The priorities are the basics (add, commit), and on features that are making me mad when done on the _git shell_, like stashes and hunks. Eventually, I will be able to work on features that could lead to making `gitui` a one stop solution to get rid of the shell entirely - but for that I need help - this is just a spare time project right now.
 
-**TL;DR**
+All support is welcomed! Sponsors as well! ❤️
 
-This tool is **not intended** to fully substituted the *git shell* - they are supposed to work in tandem (for now).
+# Installation
 
-**disclaimer**
+For the time being this product is in alpha and is not considered production ready. However, for personal use it is reasonably stable and is being used while developing itself.
 
-`gitui` is currently lacking features that are escential for working with git like push/pull (see *known limitations* above). The priorities are on features that are making me mad when done on the *git shell*. *Then* I will focus on features that eventually could lead to making `gitui` a one stop solution to get rid of the shell entirely - but for that I need help - this is just a sparetime project right now.
+### Arch Linux
 
-All support is welcomed! Sponsors aswell ❤️!
-
-# installation
-
-For the time being this product is considered alpha and **not** production ready.
-
-## Arch Linux
-
-There is an [AUR package for `gitui`](https://aur.archlinux.org/packages/gitui/):
+There is an [AUR package](https://aur.archlinux.org/packages/gitui/) for `gitui`:
 
 ```sh
 git clone https://aur.archlinux.org/gitui.git
@@ -82,57 +73,60 @@ cd gitui
 makepkg -si
 ```
 
-## Fedora
+### Fedora
 
 ```sh
 sudo dnf install gitui
 ```
 
-## homebrew (macos)
+### Homebrew (macOS)
 
-```
+```sh
 brew install extrawurst/tap/gitui
 ```
 
-## release binaries
+### Release Binaries
 
-see [releases](https://github.com/extrawurst/gitui/releases)
+[Available for download in releases](https://github.com/extrawurst/gitui/releases)
 
-## install from source
+Binaries available for:
 
-### requirements
+- Linux
+- macOS
+- Windows
 
-install **latest** `rust`/`cargo`: https://www.rust-lang.org/tools/install
+# Build
 
-### cargo install
+### Requirements
 
-the simplest way to start playing around with `gitui` is to have `cargo` build/install it:
+- Latest `rust` and `cargo`
+  - See [Install Rust](https://www.rust-lang.org/tools/install)
 
-```
-cargo install gitui
-```
+### Cargo Install
 
-# diagnostics
+The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui`
 
-to enable logging:
-```
-gitui -l
-```
+# Diagnostics
 
-this will log to:
-* `$HOME/Library/Caches/gitui/gitui.log` (mac)
-* `$XDG_CACHE_HOME/gitui/gitui.log` (linux using `XDG`) 
-* `$HOME/.cache/gitui/gitui.log` (linux)
+To run with logging enabled run `gitui -l`.
 
-# color theme
+This will log to:
+
+- macOS: `$HOME/Library/Caches/gitui/gitui.log`
+- Linux using `XDG`: `$XDG_CACHE_HOME/gitui/gitui.log`
+- Linux: `$HOME/.cache/gitui/gitui.log`
+
+# Color Theme
 
 ![](assets/light-theme.png)
 
-In general `gitui` should automatically work on `dark` and `light` terminal themes.
-However you can customize everything to your liking: [see THEMES.md](THEMES.md)
+`gitui` should automatically work on both light and dark terminal themes.
 
-# inspiration
+However, you can customize everything to your liking: See [Themes](THEMES.md).
 
-* https://github.com/jesseduffield/lazygit
-* https://github.com/jonas/tig
-* https://github.com/git-up/GitUp (would be nice to comeup with a way to have the map view available in a terminal tool)
+# Inspiration
+
+- [lazygit](https://github.com/jesseduffield/lazygit)
+- [tig](https://github.com/jonas/tig)
+- [GitUp](https://github.com/git-up/GitUp)
+  - It would be nice to come up with a way to have the map view available in a terminal tool
