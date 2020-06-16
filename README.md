@@ -45,6 +45,7 @@ presentation slides: https://github.com/extrawurst/gitui-presentation
 
 # known limitations
 
+* no support for pull/push yet (see [#90](https://github.com/extrawurst/gitui/issues/90))
 * no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 * [core.hooksPath](https://git-scm.com/docs/githooks) config not supported
 * revert/reset hunk in working dir (see [#11](https://github.com/extrawurst/gitui/issues/11))
@@ -54,6 +55,18 @@ presentation slides: https://github.com/extrawurst/gitui-presentation
 I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index/commit, diff, stash and log.
 
 Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was not bloated, snappy and free. Unfortunately the *free* part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast & simple terminal tool myself to copy the fork features i am using the most.
+
+# expectation management
+
+**TL;DR**
+
+This tool is **not intended** to fully substituted the *git shell* - they are supposed to work in tandem (for now).
+
+**disclaimer**
+
+`gitui` is currently lacking features that are escential for working with git like push/pull (see *known limitations* above). The priorities are on features that are making me mad when done on the *git shell*. *Then* I will focus on features that eventually could lead to making `gitui` a one stop solution to get rid of the shell entirely - but for that I need help - this is just a sparetime project right now.
+
+All support is welcomed! Sponsors aswell ❤️!
 
 # installation
 
