@@ -32,7 +32,7 @@
 
 # Benchmarks
 
-For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([slides](https://github.com/extrawurst/gitui-presentation)) I compared `lazygit`,`tig` and `gitui` by parsing the entire Linux git repository (which contains over 900 thousand commits):
+For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([slides](https://github.com/extrawurst/gitui-presentation)) I compared `lazygit`,`tig` and `gitui` by parsing the entire Linux git repository (which contains over 900k commits):
 
 |           | Time        | Memory (GB) | Binary (MB) | Freezes   | Crashes   |
 | --------- | ----------- | ----------- | ----------- | --------- | --------- |
