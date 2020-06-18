@@ -1,7 +1,7 @@
 <h1 align="center">
 <img width="300px" src="assets/logo.png" />
 
-![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4]
+![CI][s0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![DISC][s5]][l5]
 
 </h1>
 
@@ -13,6 +13,8 @@
 [l3]: https://github.com/rust-secure-code/safety-dance/
 [s4]: https://img.shields.io/badge/itch.io-ok-green
 [l4]: https://extrawurst.itch.io/gitui
+[s5]: https://img.shields.io/discord/723083834811220028.svg?logo=chat
+[l5]: https://discord.gg/GzMyq7
 
 <h5 align="center">Blazing fast terminal client for git written in Rust</h1>
 
