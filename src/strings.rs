@@ -90,7 +90,7 @@ pub mod commands {
     );
     ///
     pub static DIFF_HOME_END: CommandText = CommandText::new(
-        "Jump up/down [home,end,\u{11014}up,\u{2191}down]",
+        "Jump up/down [home,end,\u{2191} up,\u{2193} down]",
         "scroll to top or bottom of diff",
         CMD_GROUP_DIFF,
     );
