@@ -14,7 +14,7 @@
 [s4]: https://img.shields.io/badge/itch.io-ok-green
 [l4]: https://extrawurst.itch.io/gitui
 [s5]: https://img.shields.io/discord/723083834811220028.svg?logo=chat
-[l5]: https://discord.gg/GzMyq7
+[l5]: https://discord.gg/7TGFfuq
 
 <h5 align="center">Blazing fast terminal client for git written in Rust</h1>
 
