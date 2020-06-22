@@ -12,8 +12,8 @@
 mod app;
 mod cmdbar;
 mod components;
+mod input;
 mod keys;
-mod poll;
 mod queue;
 mod spinner;
 mod strings;
@@ -37,7 +37,7 @@ use crossterm::{
     },
     ExecutableCommand,
 };
-use poll::{Input, InputEvent};
+use input::{Input, InputEvent};
 use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
