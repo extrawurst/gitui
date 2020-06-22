@@ -102,6 +102,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytesize"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81a18687293a1546b67c246452202bbbf143d239cb43494cc163da14979082da"
+
+[[package]]
 name = "cassowary"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -323,6 +329,7 @@ dependencies = [
  "asyncgit",
  "backtrace",
  "bitflags",
+ "bytesize",
  "chrono",
  "clap",
  "crossbeam-channel",

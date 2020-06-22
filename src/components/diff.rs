@@ -7,6 +7,7 @@ use crate::{
     ui::{calc_scroll_top, style::SharedTheme},
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
+use bytesize::ByteSize;
 use crossterm::event::Event;
 use std::{borrow::Cow, cmp, path::Path};
 use strings::commands;
@@ -29,7 +30,7 @@ struct Current {
 
 ///
 pub struct DiffComponent {
-    diff: FileDiff,
+    diff: Option<FileDiff>,
     selection: usize,
     selected_hunk: Option<usize>,
     current_size: (u16, u16),
@@ -48,7 +49,7 @@ impl DiffComponent {
             queue,
             current: Current::default(),
             selected_hunk: None,
-            diff: FileDiff::default(),
+            diff: None,
             current_size: (0, 0),
             selection: 0,
             scroll_top: 0,
@@ -56,8 +57,11 @@ impl DiffComponent {
         }
     }
     ///
-    const fn can_scroll(&self) -> bool {
-        self.diff.lines > 1
+    fn can_scroll(&self) -> bool {
+        self.diff
+            .as_ref()
+            .map(|diff| diff.lines > 1)
+            .unwrap_or_default()
     }
     ///
     pub fn current(&self) -> (String, bool) {
@@ -66,7 +70,7 @@ impl DiffComponent {
     ///
     pub fn clear(&mut self) -> Result<()> {
         self.current = Current::default();
-        self.diff = FileDiff::default();
+        self.diff = None;
         self.scroll_top = 0;
         self.selection = 0;
         self.selected_hunk = None;
@@ -88,12 +92,13 @@ impl DiffComponent {
                 is_stage,
                 hash,
             };
-            self.diff = diff;
-            self.scroll_top = 0;
-            self.selection = 0;
 
             self.selected_hunk =
-                Self::find_selected_hunk(&self.diff, self.selection)?;
+                Self::find_selected_hunk(&diff, self.selection)?;
+
+            self.diff = Some(diff);
+            self.scroll_top = 0;
+            self.selection = 0;
         }
 
         Ok(())
@@ -103,30 +108,34 @@ impl DiffComponent {
         &mut self,
         move_type: ScrollType,
     ) -> Result<()> {
-        let old = self.selection;
+        if let Some(diff) = &self.diff {
+            let old = self.selection;
 
-        let max = self.diff.lines.saturating_sub(1) as usize;
+            let max = diff.lines.saturating_sub(1) as usize;
 
-        self.selection = match move_type {
-            ScrollType::Down => old.saturating_add(1),
-            ScrollType::Up => old.saturating_sub(1),
-            ScrollType::Home => 0,
-            ScrollType::End => max,
-            ScrollType::PageDown => self.selection.saturating_add(
-                self.current_size.1.saturating_sub(1) as usize,
-            ),
-            ScrollType::PageUp => self.selection.saturating_sub(
-                self.current_size.1.saturating_sub(1) as usize,
-            ),
-        };
+            self.selection = match move_type {
+                ScrollType::Down => old.saturating_add(1),
+                ScrollType::Up => old.saturating_sub(1),
+                ScrollType::Home => 0,
+                ScrollType::End => max,
+                ScrollType::PageDown => {
+                    self.selection.saturating_add(
+                        self.current_size.1.saturating_sub(1)
+                            as usize,
+                    )
+                }
+                ScrollType::PageUp => self.selection.saturating_sub(
+                    self.current_size.1.saturating_sub(1) as usize,
+                ),
+            };
 
-        self.selection = cmp::min(max, self.selection);
+            self.selection = cmp::min(max, self.selection);
 
-        if old != self.selection {
-            self.selected_hunk =
-                Self::find_selected_hunk(&self.diff, self.selection)?;
+            if old != self.selection {
+                self.selected_hunk =
+                    Self::find_selected_hunk(&diff, self.selection)?;
+            }
         }
-
         Ok(())
     }
 
@@ -154,49 +163,96 @@ impl DiffComponent {
     }
 
     fn get_text(&self, width: u16, height: u16) -> Result<Vec<Text>> {
-        let selection = self.selection;
-
-        let min = self.scroll_top;
-        let max = min + height as usize;
-
         let mut res = Vec::new();
-        let mut line_cursor = 0_usize;
-        let mut lines_added = 0_usize;
+        if let Some(diff) = &self.diff {
+            if diff.hunks.is_empty() {
+                let is_positive = diff.size_delta >= 0;
+                let delta_byte_size =
+                    ByteSize::b(diff.size_delta.abs() as u64);
+                let sign = if is_positive { "+" } else { "-" };
+                res.extend(vec![
+                    Text::Raw(Cow::from("size: ")),
+                    Text::Styled(
+                        Cow::from(format!(
+                            "{}",
+                            ByteSize::b(diff.sizes.0)
+                        )),
+                        self.theme.text(false, false),
+                    ),
+                    Text::Raw(Cow::from(" -> ")),
+                    Text::Styled(
+                        Cow::from(format!(
+                            "{}",
+                            ByteSize::b(diff.sizes.1)
+                        )),
+                        self.theme.text(false, false),
+                    ),
+                    Text::Raw(Cow::from(" (")),
+                    Text::Styled(
+                        Cow::from(format!(
+                            "{}{:}",
+                            sign, delta_byte_size
+                        )),
+                        self.theme.diff_line(
+                            if is_positive {
+                                DiffLineType::Add
+                            } else {
+                                DiffLineType::Delete
+                            },
+                            false,
+                        ),
+                    ),
+                    Text::Raw(Cow::from(")")),
+                ]);
+            } else {
+                let selection = self.selection;
 
-        for (i, hunk) in self.diff.hunks.iter().enumerate() {
-            let hunk_selected =
-                self.selected_hunk.map_or(false, |s| s == i);
+                let min = self.scroll_top;
+                let max = min + height as usize;
 
-            if lines_added >= height as usize {
-                break;
-            }
+                let mut line_cursor = 0_usize;
+                let mut lines_added = 0_usize;
 
-            let hunk_len = hunk.lines.len();
-            let hunk_min = line_cursor;
-            let hunk_max = line_cursor + hunk_len;
+                for (i, hunk) in diff.hunks.iter().enumerate() {
+                    let hunk_selected =
+                        self.selected_hunk.map_or(false, |s| s == i);
 
-            if Self::hunk_visible(hunk_min, hunk_max, min, max) {
-                for (i, line) in hunk.lines.iter().enumerate() {
-                    if line_cursor >= min && line_cursor <= max {
-                        Self::add_line(
-                            &mut res,
-                            width,
-                            line,
-                            selection == line_cursor,
-                            hunk_selected,
-                            i == hunk_len as usize - 1,
-                            &self.theme,
-                        );
-                        lines_added += 1;
+                    if lines_added >= height as usize {
+                        break;
                     }
 
-                    line_cursor += 1;
+                    let hunk_len = hunk.lines.len();
+                    let hunk_min = line_cursor;
+                    let hunk_max = line_cursor + hunk_len;
+
+                    if Self::hunk_visible(
+                        hunk_min, hunk_max, min, max,
+                    ) {
+                        for (i, line) in hunk.lines.iter().enumerate()
+                        {
+                            if line_cursor >= min
+                                && line_cursor <= max
+                            {
+                                Self::add_line(
+                                    &mut res,
+                                    width,
+                                    line,
+                                    selection == line_cursor,
+                                    hunk_selected,
+                                    i == hunk_len as usize - 1,
+                                    &self.theme,
+                                );
+                                lines_added += 1;
+                            }
+
+                            line_cursor += 1;
+                        }
+                    } else {
+                        line_cursor += hunk_len;
+                    }
                 }
-            } else {
-                line_cursor += hunk_len;
             }
         }
-
         Ok(res)
     }
 
@@ -272,26 +328,34 @@ impl DiffComponent {
     }
 
     fn unstage_hunk(&mut self) -> Result<()> {
-        if let Some(hunk) = self.selected_hunk {
-            let hash = self.diff.hunks[hunk].header_hash;
-            sync::unstage_hunk(CWD, self.current.path.clone(), hash)?;
-            self.queue_update();
+        if let Some(diff) = &self.diff {
+            if let Some(hunk) = self.selected_hunk {
+                let hash = diff.hunks[hunk].header_hash;
+                sync::unstage_hunk(
+                    CWD,
+                    self.current.path.clone(),
+                    hash,
+                )?;
+                self.queue_update();
+            }
         }
 
         Ok(())
     }
 
     fn stage_hunk(&mut self) -> Result<()> {
-        if let Some(hunk) = self.selected_hunk {
-            let path = self.current.path.clone();
-            if self.diff.untracked {
-                sync::stage_add_file(CWD, Path::new(&path))?;
-            } else {
-                let hash = self.diff.hunks[hunk].header_hash;
-                sync::stage_hunk(CWD, path, hash)?;
-            }
+        if let Some(diff) = &self.diff {
+            if let Some(hunk) = self.selected_hunk {
+                let path = self.current.path.clone();
+                if diff.untracked {
+                    sync::stage_add_file(CWD, Path::new(&path))?;
+                } else {
+                    let hash = diff.hunks[hunk].header_hash;
+                    sync::stage_hunk(CWD, path, hash)?;
+                }
 
-            self.queue_update();
+                self.queue_update();
+            }
         }
 
         Ok(())
@@ -306,21 +370,22 @@ impl DiffComponent {
     }
 
     fn reset_hunk(&self) -> Result<()> {
-        if let Some(hunk) = self.selected_hunk {
-            let hash = self.diff.hunks[hunk].header_hash;
+        if let Some(diff) = &self.diff {
+            if let Some(hunk) = self.selected_hunk {
+                let hash = diff.hunks[hunk].header_hash;
 
-            self.queue
-                .as_ref()
-                .expect("try using queue in immutable diff")
-                .borrow_mut()
-                .push_back(InternalEvent::ConfirmAction(
-                    Action::ResetHunk(
-                        self.current.path.clone(),
-                        hash,
-                    ),
-                ));
+                self.queue
+                    .as_ref()
+                    .expect("try using queue in immutable diff")
+                    .borrow_mut()
+                    .push_back(InternalEvent::ConfirmAction(
+                        Action::ResetHunk(
+                            self.current.path.clone(),
+                            hash,
+                        ),
+                    ));
+            }
         }
-
         Ok(())
     }
 
@@ -466,10 +531,12 @@ impl Component for DiffComponent {
                         if !self.is_immutable()
                             && !self.is_stage() =>
                     {
-                        if self.diff.untracked {
-                            self.reset_untracked()?;
-                        } else {
-                            self.reset_hunk()?;
+                        if let Some(diff) = &self.diff {
+                            if diff.untracked {
+                                self.reset_untracked()?;
+                            } else {
+                                self.reset_hunk()?;
+                            }
                         }
                         Ok(true)
                     }
