@@ -105,8 +105,8 @@ impl Status {
 
     ///
     pub fn new(
-        sender: &Sender<AsyncNotification>,
         queue: &Queue,
+        sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
     ) -> Self {
         Self {

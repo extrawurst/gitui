@@ -76,7 +76,7 @@ impl App {
             msg: MsgComponent::new(theme.clone()),
             tab: 0,
             revlog: Revlog::new(&queue, sender, theme.clone()),
-            status_tab: Status::new(sender, &queue, theme.clone()),
+            status_tab: Status::new(&queue, sender, theme.clone()),
             stashing_tab: Stashing::new(
                 sender,
                 &queue,
