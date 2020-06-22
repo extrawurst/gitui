@@ -55,6 +55,7 @@ pub(crate) fn get_commit_diff(
     let mut opt = pathspec.map(|p| {
         let mut opts = DiffOptions::new();
         opts.pathspec(p);
+        opts.show_binary(true);
         opts
     });
 

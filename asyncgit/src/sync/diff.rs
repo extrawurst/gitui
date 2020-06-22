@@ -298,12 +298,13 @@ fn new_file_content(path: &Path) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::get_diff;
+    use super::{get_diff, get_diff_commit};
     use crate::error::Result;
     use crate::sync::{
         commit, stage_add_file,
         status::{get_status, StatusType},
         tests::{get_statuses, repo_init, repo_init_empty},
+        CommitId,
     };
     use std::{
         fs::{self, File},
@@ -498,6 +499,40 @@ mod tests {
             repo_path,
             String::from(file_path.to_str().unwrap()),
             false,
+        )
+        .unwrap();
+
+        dbg!(&diff);
+        assert_eq!(diff.sizes, (1, 2));
+        assert_eq!(diff.size_delta, 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_diff_delta_size_commit() -> Result<()> {
+        let file_path = Path::new("bar");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?.write_all(b"\x00")?;
+
+        stage_add_file(repo_path, file_path).unwrap();
+
+        commit(repo_path, "").unwrap();
+
+        File::create(&root.join(file_path))?
+            .write_all(b"\x00\x02")?;
+
+        stage_add_file(repo_path, file_path).unwrap();
+
+        let id = commit(repo_path, "").unwrap();
+
+        let diff = get_diff_commit(
+            repo_path,
+            CommitId::new(id),
+            String::new(),
         )
         .unwrap();
 
