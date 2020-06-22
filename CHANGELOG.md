@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Use terminal blue as default selection background ([#129](https://github.com/extrawurst/gitui/issues/129))
 
+### Fixed
+- clearer help headers ([#131](https://github.com/extrawurst/gitui/issues/131))
+
 ## [0.7.0] - 2020-06-15
 
 ### Added
