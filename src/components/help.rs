@@ -195,7 +195,7 @@ impl HelpComponent {
         }
     }
 
-    fn get_text<'a>(&self) -> Vec<Text<'a>> {
+    fn get_text(&self) -> Vec<Text> {
         let mut txt = Vec::new();
 
         let mut processed = 0_u16;
@@ -204,7 +204,7 @@ impl HelpComponent {
             &self.cmds.iter().group_by(|e| e.text.group)
         {
             txt.push(Text::Styled(
-                Cow::from(format!(" {}\n", key)),
+                Cow::from(format!("{}\n", key)),
                 Style::default().modifier(Modifier::REVERSED),
             ));
 

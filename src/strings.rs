@@ -50,13 +50,13 @@ pub mod order {
 pub mod commands {
     use crate::components::CommandText;
 
-    static CMD_GROUP_GENERAL: &str = "General";
-    static CMD_GROUP_DIFF: &str = "Diff";
-    static CMD_GROUP_CHANGES: &str = "Changes";
-    static CMD_GROUP_COMMIT: &str = "Commit";
-    static CMD_GROUP_STASHING: &str = "Stashing";
-    static CMD_GROUP_STASHES: &str = "Stashes";
-    static CMD_GROUP_LOG: &str = "Log";
+    static CMD_GROUP_GENERAL: &str = "-- General --";
+    static CMD_GROUP_DIFF: &str = "-- Diff --";
+    static CMD_GROUP_CHANGES: &str = "-- Changes --";
+    static CMD_GROUP_COMMIT: &str = "-- Commit --";
+    static CMD_GROUP_STASHING: &str = "-- Stashing --";
+    static CMD_GROUP_STASHES: &str = "-- Stashes --";
+    static CMD_GROUP_LOG: &str = "-- Log --";
 
     ///
     pub static TOGGLE_TABS: CommandText = CommandText::new(
