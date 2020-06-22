@@ -133,7 +133,7 @@ impl DiffComponent {
 
             if old != self.selection {
                 self.selected_hunk =
-                    Self::find_selected_hunk(&diff, self.selection)?;
+                    Self::find_selected_hunk(diff, self.selection)?;
             }
         }
         Ok(())
