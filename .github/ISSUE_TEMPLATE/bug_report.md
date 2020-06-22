@@ -23,10 +23,10 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+**Context (please complete the following information):**
+ - OS/Distro + Version: [e.g. `macOS 10.15.5`]
+ - GitUI Version [e.g. `0.5`]
+ - Rust version: [e.g `1.44`]
 
 **Additional context**
 Add any other context about the problem here.
