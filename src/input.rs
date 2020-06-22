@@ -41,7 +41,7 @@ impl Input {
         let current_state = Arc::new(AtomicBool::new(true));
 
         let arc_desired = Arc::clone(&desired_state);
-        let arc_current = Arc::clone(&desired_state);
+        let arc_current = Arc::clone(&current_state);
 
         thread::spawn(move || {
             loop {
