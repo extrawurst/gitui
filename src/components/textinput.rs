@@ -37,7 +37,7 @@ impl TextInputComponent {
         Self {
             msg: String::default(),
             visible: false,
-            theme: theme,
+            theme,
             title: title.to_string(),
             default_msg: default_msg.to_string(),
             cursor_position: 0,

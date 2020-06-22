@@ -128,12 +128,12 @@ impl FileTreeComponent {
         changed
     }
 
-    fn item_to_text(
+    fn item_to_text<'a>(
         item: &FileTreeItem,
         width: u16,
         selected: bool,
-        theme: SharedTheme,
-    ) -> Option<Text> {
+        theme: &'a SharedTheme,
+    ) -> Option<Text<'a>> {
         let indent_str = if item.info.indent == 0 {
             String::from("")
         } else {
@@ -242,7 +242,7 @@ impl DrawableComponent for FileTreeComponent {
                                 .tree
                                 .selection
                                 .map_or(false, |e| e == idx),
-                        self.theme.clone(),
+                        &self.theme,
                     )
                 },
             );

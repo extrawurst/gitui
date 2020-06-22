@@ -34,7 +34,7 @@ impl DetailsComponent {
         Self {
             data: None,
             tags: Vec::new(),
-            theme: theme,
+            theme,
         }
     }
 

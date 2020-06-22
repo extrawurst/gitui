@@ -52,7 +52,7 @@ impl DiffComponent {
             current_size: (0, 0),
             selection: 0,
             scroll_top: 0,
-            theme: theme,
+            theme,
         }
     }
     ///

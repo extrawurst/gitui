@@ -5,11 +5,10 @@ use crate::{
     },
     queue::{Action, InternalEvent, Queue},
     strings, ui,
-    ui::style::Theme,
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
-use std::{borrow::Cow, rc::Rc};
+use std::borrow::Cow;
 use strings::commands;
 use tui::{
     backend::Backend,
@@ -17,13 +16,14 @@ use tui::{
     widgets::{Clear, Text},
     Frame,
 };
+use ui::style::SharedTheme;
 
 ///
 pub struct ResetComponent {
     target: Option<Action>,
     visible: bool,
     queue: Queue,
-    theme: Rc<Box<Theme>>,
+    theme: SharedTheme,
 }
 
 impl DrawableComponent for ResetComponent {
@@ -111,7 +111,7 @@ impl Component for ResetComponent {
 
 impl ResetComponent {
     ///
-    pub fn new(queue: Queue, theme: Rc<Box<Theme>>) -> Self {
+    pub fn new(queue: Queue, theme: SharedTheme) -> Self {
         Self {
             target: None,
             visible: false,
