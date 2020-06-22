@@ -53,7 +53,7 @@ impl App {
     pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         let queue = Queue::default();
 
-        let theme = Rc::new(Box::new(Theme::init()));
+        let theme = Rc::new(Theme::init());
 
         Self {
             reset: ResetComponent::new(queue.clone(), theme.clone()),

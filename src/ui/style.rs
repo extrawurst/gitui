@@ -14,7 +14,7 @@ use std::{
 };
 use tui::style::{Color, Modifier, Style};
 
-pub type SharedTheme = Rc<Box<Theme>>;
+pub type SharedTheme = Rc<Theme>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Theme {
