@@ -1,59 +1,97 @@
-use asyncgit::AsyncNotification;
 use crossbeam_channel::{unbounded, Receiver};
 use crossterm::event::{self, Event};
-use std::time::{Duration, Instant};
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread,
+    time::Duration,
+};
+
+static POLL_DURATION: Duration = Duration::from_millis(1000);
 
 ///
-#[derive(Clone, Copy)]
-pub enum QueueEvent {
-    Tick,
-    SpinnerUpdate,
-    GitEvent(AsyncNotification),
-    InputEvent(Event),
+#[derive(Clone, Copy, Debug)]
+pub enum InputState {
+    Paused,
+    Polling,
 }
 
-static MAX_POLL_DURATION: Duration = Duration::from_secs(2);
-static MIN_POLL_DURATION: Duration = Duration::from_millis(5);
-static MAX_BATCHING_DURATION: Duration = Duration::from_millis(25);
+///
+#[derive(Clone, Copy, Debug)]
+pub enum InputEvent {
+    Input(Event),
+    State(InputState),
+}
 
 ///
-pub fn start_polling_thread() -> Receiver<Vec<QueueEvent>> {
-    let (tx, rx) = unbounded();
+pub struct Input {
+    desired_state: Arc<AtomicBool>,
+    receiver: Receiver<InputEvent>,
+}
 
-    rayon_core::spawn(move || {
-        let mut last_send = Instant::now();
-        let mut batch = Vec::new();
+impl Input {
+    ///
+    pub fn new() -> Self {
+        let (tx, rx) = unbounded();
 
-        loop {
-            let timeout = if batch.is_empty() {
-                MAX_POLL_DURATION
-            } else {
-                MIN_POLL_DURATION
-            };
-            if let Some(e) =
-                poll(timeout).expect("failed to pull events.")
-            {
-                batch.push(QueueEvent::InputEvent(e));
+        let desired_state = Arc::new(AtomicBool::new(true));
+
+        let arc_desired = Arc::clone(&desired_state);
+
+        thread::spawn(move || {
+            let mut current_state = true;
+            loop {
+                //TODO: use condvar to not busy wait
+                if arc_desired.load(Ordering::Relaxed) {
+                    if !current_state {
+                        tx.send(InputEvent::State(
+                            InputState::Polling,
+                        ))
+                        .expect("send failed");
+                    }
+                    current_state = true;
+
+                    if let Some(e) = Self::poll(POLL_DURATION)
+                        .expect("failed to pull events.")
+                    {
+                        tx.send(InputEvent::Input(e))
+                            .expect("send input event failed");
+                    }
+                } else {
+                    if current_state {
+                        tx.send(InputEvent::State(
+                            InputState::Paused,
+                        ))
+                        .expect("send failed");
+                    }
+                    current_state = false;
+                }
             }
+        });
 
-            if !batch.is_empty()
-                && last_send.elapsed() > MAX_BATCHING_DURATION
-            {
-                tx.send(batch).expect("send input event failed");
-                batch = Vec::new();
-                last_send = Instant::now();
-            }
+        Self {
+            receiver: rx,
+            desired_state,
         }
-    });
+    }
 
-    rx
-}
+    ///
+    pub fn receiver(&self) -> Receiver<InputEvent> {
+        self.receiver.clone()
+    }
 
-///
-fn poll(dur: Duration) -> anyhow::Result<Option<Event>> {
-    if event::poll(dur)? {
-        Ok(Some(event::read()?))
-    } else {
-        Ok(None)
+    ///
+    pub fn set_polling(&mut self, enabled: bool) {
+        self.desired_state.store(enabled, Ordering::Relaxed);
+    }
+
+    fn poll(dur: Duration) -> anyhow::Result<Option<Event>> {
+        if event::poll(dur)? {
+            Ok(Some(event::read()?))
+        } else {
+            Ok(None)
+        }
     }
 }

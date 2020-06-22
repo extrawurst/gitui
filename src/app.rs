@@ -8,6 +8,7 @@ use crate::{
         StashMsgComponent,
     },
     keys,
+    poll::InputEvent,
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
     strings,
     tabs::{Revlog, StashList, Stashing, Status},
@@ -117,61 +118,63 @@ impl App {
     }
 
     ///
-    pub fn event(&mut self, ev: Event) -> Result<()> {
+    pub fn event(&mut self, ev: InputEvent) -> Result<()> {
         log::trace!("event: {:?}", ev);
 
-        if self.check_quit_key(ev) {
-            return Ok(());
-        }
+        if let InputEvent::Input(ev) = ev {
+            if self.check_quit_key(ev) {
+                return Ok(());
+            }
 
-        let mut flags = NeedsUpdate::empty();
+            let mut flags = NeedsUpdate::empty();
 
-        if event_pump(ev, self.components_mut().as_mut_slice())? {
-            flags.insert(NeedsUpdate::COMMANDS);
-        } else if let Event::Key(k) = ev {
-            let new_flags = match k {
-                keys::TAB_TOGGLE => {
-                    self.toggle_tabs(false)?;
-                    NeedsUpdate::COMMANDS
-                }
-                keys::TAB_TOGGLE_REVERSE
-                | keys::TAB_TOGGLE_REVERSE_WINDOWS => {
-                    self.toggle_tabs(true)?;
-                    NeedsUpdate::COMMANDS
-                }
-                keys::TAB_1
-                | keys::TAB_2
-                | keys::TAB_3
-                | keys::TAB_4 => {
-                    self.switch_tab(k)?;
-                    NeedsUpdate::COMMANDS
-                }
+            if event_pump(ev, self.components_mut().as_mut_slice())? {
+                flags.insert(NeedsUpdate::COMMANDS);
+            } else if let Event::Key(k) = ev {
+                let new_flags = match k {
+                    keys::TAB_TOGGLE => {
+                        self.toggle_tabs(false)?;
+                        NeedsUpdate::COMMANDS
+                    }
+                    keys::TAB_TOGGLE_REVERSE
+                    | keys::TAB_TOGGLE_REVERSE_WINDOWS => {
+                        self.toggle_tabs(true)?;
+                        NeedsUpdate::COMMANDS
+                    }
+                    keys::TAB_1
+                    | keys::TAB_2
+                    | keys::TAB_3
+                    | keys::TAB_4 => {
+                        self.switch_tab(k)?;
+                        NeedsUpdate::COMMANDS
+                    }
 
-                keys::CMD_BAR_TOGGLE => {
-                    self.cmdbar.toggle_more();
-                    NeedsUpdate::empty()
-                }
+                    keys::CMD_BAR_TOGGLE => {
+                        self.cmdbar.toggle_more();
+                        NeedsUpdate::empty()
+                    }
 
-                _ => NeedsUpdate::empty(),
-            };
+                    _ => NeedsUpdate::empty(),
+                };
 
+                flags.insert(new_flags);
+            }
+
+            let new_flags = self.process_queue()?;
             flags.insert(new_flags);
-        }
 
-        let new_flags = self.process_queue()?;
-        flags.insert(new_flags);
-
-        if flags.contains(NeedsUpdate::ALL) {
-            self.update()?;
-        }
-        //TODO: make this a queue event?
-        //NOTE: set when any tree component changed selection
-        if flags.contains(NeedsUpdate::DIFF) {
-            self.status_tab.update_diff()?;
-            self.inspect_commit_popup.update_diff()?;
-        }
-        if flags.contains(NeedsUpdate::COMMANDS) {
-            self.update_commands();
+            if flags.contains(NeedsUpdate::ALL) {
+                self.update()?;
+            }
+            //TODO: make this a queue event?
+            //NOTE: set when any tree component changed selection
+            if flags.contains(NeedsUpdate::DIFF) {
+                self.status_tab.update_diff()?;
+                self.inspect_commit_popup.update_diff()?;
+            }
+            if flags.contains(NeedsUpdate::COMMANDS) {
+                self.update_commands();
+            }
         }
 
         Ok(())

@@ -21,7 +21,7 @@ mod tabs;
 mod ui;
 mod version;
 
-use crate::{app::App, poll::QueueEvent};
+use crate::app::App;
 use anyhow::{anyhow, Result};
 use asyncgit::AsyncNotification;
 use backtrace::Backtrace;
@@ -37,6 +37,7 @@ use crossterm::{
     },
     ExecutableCommand,
 };
+use poll::{Input, InputEvent};
 use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
@@ -57,6 +58,15 @@ use tui::{
 
 static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(50);
+
+///
+#[derive(Clone, Copy)]
+pub enum QueueEvent {
+    Tick,
+    SpinnerUpdate,
+    GitEvent(AsyncNotification),
+    InputEvent(InputEvent),
+}
 
 fn main() -> Result<()> {
     process_cmdline()?;
@@ -82,7 +92,8 @@ fn main() -> Result<()> {
 
     let mut app = App::new(&tx_git);
 
-    let rx_input = poll::start_polling_thread();
+    let mut input = Input::new();
+    let rx_input = input.receiver();
     let ticker = tick(TICK_INTERVAL);
     let spinner_ticker = tick(SPINNER_INTERVAL);
 
@@ -115,6 +126,9 @@ fn main() -> Result<()> {
                     }
                 }
             }
+
+            //TODO: disable input polling while external editor open
+            input.set_polling(!app.any_work_pending());
 
             if needs_draw {
                 draw(&mut terminal, &mut app)?;
@@ -160,7 +174,7 @@ fn valid_path() -> Result<bool> {
 }
 
 fn select_event(
-    rx_input: &Receiver<Vec<QueueEvent>>,
+    rx_input: &Receiver<InputEvent>,
     rx_git: &Receiver<AsyncNotification>,
     rx_ticker: &Receiver<Instant>,
     rx_spinner: &Receiver<Instant>,
@@ -178,7 +192,9 @@ fn select_event(
     let index = oper.index();
 
     match index {
-        0 => oper.recv(rx_input).map(|inputs| events.extend(inputs)),
+        0 => oper
+            .recv(rx_input)
+            .map(|input| events.push(QueueEvent::InputEvent(input))),
         1 => oper
             .recv(rx_git)
             .map(|ev| events.push(QueueEvent::GitEvent(ev))),
