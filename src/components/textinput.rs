@@ -4,7 +4,6 @@ use crate::{
         CommandInfo, Component, DrawableComponent,
     },
     strings, ui,
-    ui::style::Theme,
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
@@ -16,6 +15,7 @@ use tui::{
     widgets::{Clear, Text},
     Frame,
 };
+use ui::style::SharedTheme;
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
 pub struct TextInputComponent {
@@ -23,21 +23,21 @@ pub struct TextInputComponent {
     default_msg: String,
     msg: String,
     visible: bool,
-    theme: Theme,
+    theme: SharedTheme,
     cursor_position: usize,
 }
 
 impl TextInputComponent {
     ///
     pub fn new(
-        theme: &Theme,
+        theme: SharedTheme,
         title: &str,
         default_msg: &str,
     ) -> Self {
         Self {
             msg: String::default(),
             visible: false,
-            theme: *theme,
+            theme: theme,
             title: title.to_string(),
             default_msg: default_msg.to_string(),
             cursor_position: 0,

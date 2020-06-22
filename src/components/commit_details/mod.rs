@@ -4,7 +4,9 @@ use super::{
     command_pump, event_pump, CommandBlocking, CommandInfo,
     Component, DrawableComponent, FileTreeComponent,
 };
-use crate::{accessors, queue::Queue, strings, ui::style::Theme};
+use crate::{
+    accessors, queue::Queue, strings, ui::style::SharedTheme,
+};
 use anyhow::Result;
 use asyncgit::{
     sync::{CommitId, Tags},
@@ -33,10 +35,10 @@ impl CommitDetailsComponent {
     pub fn new(
         queue: &Queue,
         sender: &Sender<AsyncNotification>,
-        theme: &Theme,
+        theme: SharedTheme,
     ) -> Self {
         Self {
-            details: DetailsComponent::new(theme),
+            details: DetailsComponent::new(theme.clone()),
             git_commit_files: AsyncCommitFiles::new(sender),
             file_tree: FileTreeComponent::new(
                 "",

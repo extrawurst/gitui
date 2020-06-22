@@ -12,12 +12,13 @@ use crate::{
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
     strings,
     tabs::{Revlog, StashList, Stashing, Status},
-    ui::style::Theme,
+    ui::style::{SharedTheme, Theme},
 };
 use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
+use std::rc::Rc;
 use strings::{commands, order};
 use tui::{
     backend::Backend,
@@ -43,7 +44,7 @@ pub struct App {
     stashing_tab: Stashing,
     stashlist_tab: StashList,
     queue: Queue,
-    theme: Theme,
+    theme: SharedTheme,
 }
 
 // public interface
@@ -52,27 +53,36 @@ impl App {
     pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         let queue = Queue::default();
 
-        let theme = Theme::init();
+        let theme = Rc::new(Box::new(Theme::init()));
 
         Self {
-            reset: ResetComponent::new(queue.clone(), &theme),
-            commit: CommitComponent::new(queue.clone(), &theme),
+            reset: ResetComponent::new(queue.clone(), theme.clone()),
+            commit: CommitComponent::new(
+                queue.clone(),
+                theme.clone(),
+            ),
             stashmsg_popup: StashMsgComponent::new(
                 queue.clone(),
-                &theme,
+                theme.clone(),
             ),
             inspect_commit_popup: InspectCommitComponent::new(
-                &queue, sender, &theme,
+                &queue,
+                sender,
+                theme.clone(),
             ),
             do_quit: false,
-            cmdbar: CommandBar::new(&theme),
-            help: HelpComponent::new(&theme),
-            msg: MsgComponent::new(&theme),
+            cmdbar: CommandBar::new(theme.clone()),
+            help: HelpComponent::new(theme.clone()),
+            msg: MsgComponent::new(theme.clone()),
             tab: 0,
-            revlog: Revlog::new(&queue, sender, &theme),
-            status_tab: Status::new(sender, &queue, &theme),
-            stashing_tab: Stashing::new(sender, &queue, &theme),
-            stashlist_tab: StashList::new(&queue, &theme),
+            revlog: Revlog::new(&queue, sender, theme.clone()),
+            status_tab: Status::new(sender, &queue, theme.clone()),
+            stashing_tab: Stashing::new(
+                sender,
+                &queue,
+                theme.clone(),
+            ),
+            stashlist_tab: StashList::new(&queue, theme.clone()),
             queue,
             theme,
         }

@@ -8,7 +8,7 @@ use crate::{
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings,
-    ui::style::Theme,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{sync, StatusItem, StatusItemType, CWD};
@@ -48,7 +48,7 @@ impl ChangesComponent {
         focus: bool,
         is_working_dir: bool,
         queue: Queue,
-        theme: &Theme,
+        theme: SharedTheme,
     ) -> Self {
         Self {
             title: title.into(),

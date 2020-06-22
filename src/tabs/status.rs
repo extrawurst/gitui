@@ -8,7 +8,7 @@ use crate::{
     keys,
     queue::{InternalEvent, Queue, ResetItem},
     strings,
-    ui::style::Theme,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -107,7 +107,7 @@ impl Status {
     pub fn new(
         sender: &Sender<AsyncNotification>,
         queue: &Queue,
-        theme: &Theme,
+        theme: SharedTheme,
     ) -> Self {
         Self {
             queue: queue.clone(),
@@ -119,14 +119,14 @@ impl Status {
                 true,
                 true,
                 queue.clone(),
-                theme,
+                theme.clone(),
             ),
             index: ChangesComponent::new(
                 strings::TITLE_INDEX,
                 false,
                 false,
                 queue.clone(),
-                theme,
+                theme.clone(),
             ),
             diff: DiffComponent::new(Some(queue.clone()), theme),
             git_diff: AsyncDiff::new(sender.clone()),

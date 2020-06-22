@@ -1,4 +1,6 @@
-use crate::{components::CommandInfo, strings, ui::style::Theme};
+use crate::{
+    components::CommandInfo, strings, ui::style::SharedTheme,
+};
 use std::borrow::Cow;
 use tui::{
     backend::Backend,
@@ -24,7 +26,7 @@ struct Command {
 pub struct CommandBar {
     draw_list: Vec<DrawListEntry>,
     cmd_infos: Vec<CommandInfo>,
-    theme: Theme,
+    theme: SharedTheme,
     lines: u16,
     width: u16,
     expandable: bool,
@@ -34,11 +36,11 @@ pub struct CommandBar {
 const MORE_WIDTH: u16 = 11;
 
 impl CommandBar {
-    pub const fn new(theme: &Theme) -> Self {
+    pub const fn new(theme: SharedTheme) -> Self {
         Self {
             draw_list: Vec::new(),
             cmd_infos: Vec::new(),
-            theme: *theme,
+            theme,
             lines: 0,
             width: 0,
             expandable: false,

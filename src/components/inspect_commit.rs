@@ -4,7 +4,7 @@ use super::{
     DrawableComponent,
 };
 use crate::{
-    accessors, keys, queue::Queue, strings, ui::style::Theme,
+    accessors, keys, queue::Queue, strings, ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -154,11 +154,13 @@ impl InspectCommitComponent {
     pub fn new(
         queue: &Queue,
         sender: &Sender<AsyncNotification>,
-        theme: &Theme,
+        theme: SharedTheme,
     ) -> Self {
         Self {
             details: CommitDetailsComponent::new(
-                queue, sender, theme,
+                queue,
+                sender,
+                theme.clone(),
             ),
             diff: DiffComponent::new(None, theme),
             commit_id: None,

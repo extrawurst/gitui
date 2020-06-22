@@ -4,7 +4,7 @@ use crate::{
         CommandInfo, Component, DrawableComponent,
     },
     strings,
-    ui::style::Theme,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -25,16 +25,16 @@ use tui::{
 pub struct DetailsComponent {
     data: Option<CommitDetails>,
     tags: Vec<String>,
-    theme: Theme,
+    theme: SharedTheme,
 }
 
 impl DetailsComponent {
     ///
-    pub const fn new(theme: &Theme) -> Self {
+    pub const fn new(theme: SharedTheme) -> Self {
         Self {
             data: None,
             tags: Vec::new(),
-            theme: *theme,
+            theme: theme,
         }
     }
 

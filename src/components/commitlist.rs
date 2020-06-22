@@ -7,7 +7,7 @@ use crate::{
     keys,
     strings::commands,
     ui::calc_scroll_top,
-    ui::style::Theme,
+    ui::style::{SharedTheme, Theme},
 };
 use anyhow::Result;
 use asyncgit::sync;
@@ -34,12 +34,12 @@ pub struct CommitList {
     tags: Option<Tags>,
     current_size: (u16, u16),
     scroll_top: usize,
-    theme: Theme,
+    theme: SharedTheme,
 }
 
 impl CommitList {
     ///
-    pub fn new(title: &str, theme: &Theme) -> Self {
+    pub fn new(title: &str, theme: SharedTheme) -> Self {
         Self {
             items: ItemBatch::default(),
             selection: 0,
@@ -49,7 +49,7 @@ impl CommitList {
             tags: None,
             current_size: (0, 0),
             scroll_top: 0,
-            theme: *theme,
+            theme,
             title: String::from(title),
         }
     }

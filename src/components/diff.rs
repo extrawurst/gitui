@@ -4,7 +4,7 @@ use crate::{
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings,
-    ui::{calc_scroll_top, style::Theme},
+    ui::{calc_scroll_top, style::SharedTheme},
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use crossterm::event::Event;
@@ -37,12 +37,12 @@ pub struct DiffComponent {
     current: Current,
     scroll_top: usize,
     queue: Option<Queue>,
-    theme: Theme,
+    theme: SharedTheme,
 }
 
 impl DiffComponent {
     ///
-    pub fn new(queue: Option<Queue>, theme: &Theme) -> Self {
+    pub fn new(queue: Option<Queue>, theme: SharedTheme) -> Self {
         Self {
             focused: false,
             queue,
@@ -52,7 +52,7 @@ impl DiffComponent {
             current_size: (0, 0),
             selection: 0,
             scroll_top: 0,
-            theme: *theme,
+            theme: theme,
         }
     }
     ///
@@ -185,7 +185,7 @@ impl DiffComponent {
                             selection == line_cursor,
                             hunk_selected,
                             i == hunk_len as usize - 1,
-                            self.theme,
+                            &self.theme,
                         );
                         lines_added += 1;
                     }
@@ -207,7 +207,7 @@ impl DiffComponent {
         selected: bool,
         selected_hunk: bool,
         end_of_hunk: bool,
-        theme: Theme,
+        theme: &SharedTheme,
     ) {
         {
             let style = theme.diff_hunk_marker(selected_hunk);
@@ -506,7 +506,7 @@ mod tests {
             false,
             false,
             false,
-            Theme::default(),
+            &SharedTheme::default(),
         );
 
         assert_eq!(text.len(), 2);

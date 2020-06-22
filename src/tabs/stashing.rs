@@ -8,7 +8,7 @@ use crate::{
     keys,
     queue::{InternalEvent, Queue},
     strings,
-    ui::style::Theme,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -34,7 +34,7 @@ pub struct Stashing {
     index: FileTreeComponent,
     visible: bool,
     options: StashingOptions,
-    theme: Theme,
+    theme: SharedTheme,
     git_status: AsyncStatus,
     queue: Queue,
 }
@@ -46,21 +46,21 @@ impl Stashing {
     pub fn new(
         sender: &Sender<AsyncNotification>,
         queue: &Queue,
-        theme: &Theme,
+        theme: SharedTheme,
     ) -> Self {
         Self {
             index: FileTreeComponent::new(
                 strings::STASHING_FILES_TITLE,
                 true,
                 Some(queue.clone()),
-                theme,
+                theme.clone(),
             ),
             visible: false,
             options: StashingOptions {
                 keep_index: false,
                 stash_untracked: true,
             },
-            theme: *theme,
+            theme,
             git_status: AsyncStatus::new(sender.clone()),
             queue: queue.clone(),
         }

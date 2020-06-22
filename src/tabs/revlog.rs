@@ -7,7 +7,7 @@ use crate::{
     keys,
     queue::{InternalEvent, Queue},
     strings,
-    ui::style::Theme,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{sync, AsyncLog, AsyncNotification, FetchStatus, CWD};
@@ -37,12 +37,14 @@ impl Revlog {
     pub fn new(
         queue: &Queue,
         sender: &Sender<AsyncNotification>,
-        theme: &Theme,
+        theme: SharedTheme,
     ) -> Self {
         Self {
             queue: queue.clone(),
             commit_details: CommitDetailsComponent::new(
-                queue, sender, theme,
+                queue,
+                sender,
+                theme.clone(),
             ),
             list: CommitList::new(strings::LOG_TITLE, theme),
             git_log: AsyncLog::new(sender),

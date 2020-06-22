@@ -2,7 +2,7 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{keys, strings, ui, ui::style::Theme, version::Version};
+use crate::{keys, strings, ui, version::Version};
 use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -17,13 +17,14 @@ use tui::{
 };
 
 use anyhow::Result;
+use ui::style::SharedTheme;
 
 ///
 pub struct HelpComponent {
     cmds: Vec<CommandInfo>,
     visible: bool,
     selection: u16,
-    theme: Theme,
+    theme: SharedTheme,
 }
 
 impl DrawableComponent for HelpComponent {
@@ -158,12 +159,12 @@ impl Component for HelpComponent {
 }
 
 impl HelpComponent {
-    pub const fn new(theme: &Theme) -> Self {
+    pub const fn new(theme: SharedTheme) -> Self {
         Self {
             cmds: vec![],
             visible: false,
             selection: 0,
-            theme: *theme,
+            theme,
         }
     }
     ///

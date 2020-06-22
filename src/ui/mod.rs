@@ -1,7 +1,7 @@
 mod scrolllist;
 pub mod style;
-use crate::ui::style::Theme;
 use scrolllist::ScrollableList;
+use style::SharedTheme;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -76,7 +76,7 @@ pub fn draw_list<'b, B: Backend, L>(
     items: L,
     select: Option<usize>,
     selected: bool,
-    theme: Theme,
+    theme: &SharedTheme,
 ) where
     L: Iterator<Item = Text<'b>>,
 {

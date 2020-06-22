@@ -6,7 +6,7 @@ use crate::{
     keys,
     queue::{Action, InternalEvent, Queue},
     strings,
-    ui::style::Theme,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::sync;
@@ -23,7 +23,7 @@ pub struct StashList {
 
 impl StashList {
     ///
-    pub fn new(queue: &Queue, theme: &Theme) -> Self {
+    pub fn new(queue: &Queue, theme: SharedTheme) -> Self {
         Self {
             visible: false,
             list: CommitList::new(strings::STASHLIST_TITLE, theme),

@@ -6,7 +6,7 @@ use crate::{
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
-    ui::style::Theme,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -107,7 +107,7 @@ impl Component for CommitComponent {
 
 impl CommitComponent {
     ///
-    pub fn new(queue: Queue, theme: &Theme) -> Self {
+    pub fn new(queue: Queue, theme: SharedTheme) -> Self {
         Self {
             queue,
             amend: None,

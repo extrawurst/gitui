@@ -12,12 +12,12 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
     Frame,
 };
-use ui::style::Theme;
+use ui::style::SharedTheme;
 
 pub struct MsgComponent {
     msg: String,
     visible: bool,
-    theme: Theme,
+    theme: SharedTheme,
 }
 
 use anyhow::Result;
@@ -97,11 +97,11 @@ impl Component for MsgComponent {
 }
 
 impl MsgComponent {
-    pub const fn new(theme: &Theme) -> Self {
+    pub const fn new(theme: SharedTheme) -> Self {
         Self {
             msg: String::new(),
             visible: false,
-            theme: *theme,
+            theme,
         }
     }
     ///

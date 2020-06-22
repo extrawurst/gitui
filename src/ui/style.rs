@@ -10,10 +10,13 @@ use std::path::PathBuf;
 use std::{
     fs::File,
     io::{Read, Write},
+    rc::Rc,
 };
 use tui::style::{Color, Modifier, Style};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub type SharedTheme = Rc<Box<Theme>>;
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Theme {
     #[serde(with = "ColorDef")]
     selected_tab: Color,

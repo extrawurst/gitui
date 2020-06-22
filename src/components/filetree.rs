@@ -10,9 +10,8 @@ use crate::{
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings, ui,
-    ui::style::Theme,
+    ui::style::SharedTheme,
 };
-
 use anyhow::Result;
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::Event;
@@ -28,7 +27,7 @@ pub struct FileTreeComponent {
     focused: bool,
     show_selection: bool,
     queue: Option<Queue>,
-    theme: Theme,
+    theme: SharedTheme,
 }
 
 impl FileTreeComponent {
@@ -37,7 +36,7 @@ impl FileTreeComponent {
         title: &str,
         focus: bool,
         queue: Option<Queue>,
-        theme: &Theme,
+        theme: SharedTheme,
     ) -> Self {
         Self {
             title: title.to_string(),
@@ -46,7 +45,7 @@ impl FileTreeComponent {
             focused: focus,
             show_selection: focus,
             queue,
-            theme: *theme,
+            theme,
         }
     }
 
@@ -133,7 +132,7 @@ impl FileTreeComponent {
         item: &FileTreeItem,
         width: u16,
         selected: bool,
-        theme: Theme,
+        theme: SharedTheme,
     ) -> Option<Text> {
         let indent_str = if item.info.indent == 0 {
             String::from("")
@@ -243,7 +242,7 @@ impl DrawableComponent for FileTreeComponent {
                                 .tree
                                 .selection
                                 .map_or(false, |e| e == idx),
-                        self.theme,
+                        self.theme.clone(),
                     )
                 },
             );
@@ -255,7 +254,7 @@ impl DrawableComponent for FileTreeComponent {
             items,
             self.tree.selection.map(|idx| idx - selection_offset),
             self.focused,
-            self.theme,
+            &self.theme,
         );
 
         Ok(())

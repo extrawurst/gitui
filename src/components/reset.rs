@@ -9,7 +9,7 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
-use std::borrow::Cow;
+use std::{borrow::Cow, rc::Rc};
 use strings::commands;
 use tui::{
     backend::Backend,
@@ -23,7 +23,7 @@ pub struct ResetComponent {
     target: Option<Action>,
     visible: bool,
     queue: Queue,
-    theme: Theme,
+    theme: Rc<Box<Theme>>,
 }
 
 impl DrawableComponent for ResetComponent {
@@ -111,12 +111,12 @@ impl Component for ResetComponent {
 
 impl ResetComponent {
     ///
-    pub fn new(queue: Queue, theme: &Theme) -> Self {
+    pub fn new(queue: Queue, theme: Rc<Box<Theme>>) -> Self {
         Self {
             target: None,
             visible: false,
             queue,
-            theme: *theme,
+            theme,
         }
     }
     ///

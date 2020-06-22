@@ -6,7 +6,7 @@ use crate::{
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
     tabs::StashingOptions,
-    ui::style::Theme,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{sync, CWD};
@@ -117,7 +117,7 @@ impl Component for StashMsgComponent {
 
 impl StashMsgComponent {
     ///
-    pub fn new(queue: Queue, theme: &Theme) -> Self {
+    pub fn new(queue: Queue, theme: SharedTheme) -> Self {
         Self {
             options: StashingOptions::default(),
             queue,
