@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - core homebrew [formulae](https://formulae.brew.sh/formula/gitui#default): `brew install gitui` [[@vladimyr](https://github.com/vladimyr)] ([#137](https://github.com/extrawurst/gitui/issues/137))
+- show file sizes and delta on binary files diff ([#141](https://github.com/extrawurst/gitui/issues/141))
 
 ### Changed
 - Use terminal blue as default selection background ([#129](https://github.com/extrawurst/gitui/issues/129))
