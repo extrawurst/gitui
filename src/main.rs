@@ -134,7 +134,10 @@ fn main() -> Result<()> {
                 draw(&mut terminal, &mut app)?;
             }
 
-            spinner.draw(&mut terminal, app.any_work_pending())?;
+            spinner.draw(
+                &mut terminal,
+                app.any_work_pending() || input.is_state_changing(),
+            )?;
 
             if app.is_quit() {
                 break;
