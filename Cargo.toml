@@ -40,6 +40,9 @@ serde = "1.0"
 anyhow = "1.0.31"
 unicode-width = "0.1"
 
+[badges]
+maintenance = { status = "actively-developed" }
+
 [features]
 default=[]
 timing=["scopetime/enabled"]
