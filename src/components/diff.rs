@@ -9,7 +9,7 @@ use crate::{
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
 use crossterm::event::Event;
-use std::{borrow::Cow, cmp, path::Path};
+use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 use strings::commands;
 use tui::{
     backend::Backend,
@@ -33,10 +33,10 @@ pub struct DiffComponent {
     diff: Option<FileDiff>,
     selection: usize,
     selected_hunk: Option<usize>,
-    current_size: (u16, u16),
+    current_size: Cell<(u16, u16)>,
     focused: bool,
     current: Current,
-    scroll_top: usize,
+    scroll_top: Cell<usize>,
     queue: Option<Queue>,
     theme: SharedTheme,
 }
@@ -50,9 +50,9 @@ impl DiffComponent {
             current: Current::default(),
             selected_hunk: None,
             diff: None,
-            current_size: (0, 0),
+            current_size: Cell::new((0, 0)),
             selection: 0,
-            scroll_top: 0,
+            scroll_top: Cell::new(0),
             theme,
         }
     }
@@ -71,7 +71,7 @@ impl DiffComponent {
     pub fn clear(&mut self) -> Result<()> {
         self.current = Current::default();
         self.diff = None;
-        self.scroll_top = 0;
+        self.scroll_top.set(0);
         self.selection = 0;
         self.selected_hunk = None;
 
@@ -97,7 +97,7 @@ impl DiffComponent {
                 Self::find_selected_hunk(&diff, self.selection)?;
 
             self.diff = Some(diff);
-            self.scroll_top = 0;
+            self.scroll_top.set(0);
             self.selection = 0;
         }
 
@@ -120,12 +120,13 @@ impl DiffComponent {
                 ScrollType::End => max,
                 ScrollType::PageDown => {
                     self.selection.saturating_add(
-                        self.current_size.1.saturating_sub(1)
+                        self.current_size.get().1.saturating_sub(1)
                             as usize,
                     )
                 }
                 ScrollType::PageUp => self.selection.saturating_sub(
-                    self.current_size.1.saturating_sub(1) as usize,
+                    self.current_size.get().1.saturating_sub(1)
+                        as usize,
                 ),
             };
 
@@ -207,7 +208,7 @@ impl DiffComponent {
             } else {
                 let selection = self.selection;
 
-                let min = self.scroll_top;
+                let min = self.scroll_top.get();
                 let max = min + height as usize;
 
                 let mut line_cursor = 0_usize;
@@ -415,24 +416,27 @@ impl DiffComponent {
 
 impl DrawableComponent for DiffComponent {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         r: Rect,
     ) -> Result<()> {
-        self.current_size =
-            (r.width.saturating_sub(2), r.height.saturating_sub(2));
+        self.current_size.set((
+            r.width.saturating_sub(2),
+            r.height.saturating_sub(2),
+        ));
 
-        self.scroll_top = calc_scroll_top(
-            self.scroll_top,
-            self.current_size.1 as usize,
+        self.scroll_top.set(calc_scroll_top(
+            self.scroll_top.get(),
+            self.current_size.get().1 as usize,
             self.selection,
-        );
+        ));
 
         let title =
             format!("{}{}", strings::TITLE_DIFF, self.current.path);
         f.render_widget(
             Paragraph::new(
-                self.get_text(r.width, self.current_size.1)?.iter(),
+                self.get_text(r.width, self.current_size.get().1)?
+                    .iter(),
             )
             .block(
                 Block::default()

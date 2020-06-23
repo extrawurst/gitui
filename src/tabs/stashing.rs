@@ -130,7 +130,7 @@ impl Stashing {
 
 impl DrawableComponent for Stashing {
     fn draw<B: tui::backend::Backend>(
-        &mut self,
+        &self,
         f: &mut tui::Frame<B>,
         rect: tui::layout::Rect,
     ) -> Result<()> {

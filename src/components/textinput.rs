@@ -100,7 +100,7 @@ impl TextInputComponent {
 
 impl DrawableComponent for TextInputComponent {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         _rect: Rect,
     ) -> Result<()> {

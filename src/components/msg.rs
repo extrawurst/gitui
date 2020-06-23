@@ -24,7 +24,7 @@ use anyhow::Result;
 
 impl DrawableComponent for MsgComponent {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         _rect: Rect,
     ) -> Result<()> {

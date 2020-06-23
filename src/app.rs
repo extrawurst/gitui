@@ -18,7 +18,7 @@ use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 use strings::{commands, order};
 use tui::{
     backend::Backend,
@@ -37,7 +37,7 @@ pub struct App {
     commit: CommitComponent,
     stashmsg_popup: StashMsgComponent,
     inspect_commit_popup: InspectCommitComponent,
-    cmdbar: CommandBar,
+    cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
     status_tab: Status,
@@ -71,7 +71,7 @@ impl App {
                 theme.clone(),
             ),
             do_quit: false,
-            cmdbar: CommandBar::new(theme.clone()),
+            cmdbar: RefCell::new(CommandBar::new(theme.clone())),
             help: HelpComponent::new(theme.clone()),
             msg: MsgComponent::new(theme.clone()),
             tab: 0,
@@ -89,13 +89,10 @@ impl App {
     }
 
     ///
-    pub fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-    ) -> Result<()> {
+    pub fn draw<B: Backend>(&self, f: &mut Frame<B>) -> Result<()> {
         let fsize = f.size();
 
-        self.cmdbar.refresh_width(fsize.width);
+        self.cmdbar.borrow_mut().refresh_width(fsize.width);
 
         let chunks_main = Layout::default()
             .direction(Direction::Vertical)
@@ -103,13 +100,13 @@ impl App {
                 [
                     Constraint::Length(2),
                     Constraint::Min(2),
-                    Constraint::Length(self.cmdbar.height()),
+                    Constraint::Length(self.cmdbar.borrow().height()),
                 ]
                 .as_ref(),
             )
             .split(fsize);
 
-        self.cmdbar.draw(f, chunks_main[2]);
+        self.cmdbar.borrow().draw(f, chunks_main[2]);
 
         self.draw_tabs(f, chunks_main[0]);
 
@@ -160,7 +157,7 @@ impl App {
                     }
 
                     keys::CMD_BAR_TOGGLE => {
-                        self.cmdbar.toggle_more();
+                        self.cmdbar.borrow_mut().toggle_more();
                         NeedsUpdate::empty()
                     }
 
@@ -312,7 +309,7 @@ impl App {
 
     fn update_commands(&mut self) {
         self.help.set_cmds(self.commands(true));
-        self.cmdbar.set_cmds(self.commands(false));
+        self.cmdbar.borrow_mut().set_cmds(self.commands(false));
     }
 
     fn process_queue(&mut self) -> Result<NeedsUpdate> {
@@ -428,7 +425,7 @@ impl App {
     }
 
     fn draw_popups<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
     ) -> Result<()> {
         let size = Layout::default()
@@ -436,7 +433,7 @@ impl App {
             .constraints(
                 [
                     Constraint::Min(1),
-                    Constraint::Length(self.cmdbar.height()),
+                    Constraint::Length(self.cmdbar.borrow().height()),
                 ]
                 .as_ref(),
             )

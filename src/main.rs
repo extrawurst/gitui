@@ -98,7 +98,7 @@ fn main() -> Result<()> {
     let spinner_ticker = tick(SPINNER_INTERVAL);
 
     app.update()?;
-    draw(&mut terminal, &mut app)?;
+    draw(&mut terminal, &app)?;
 
     let mut spinner = Spinner::default();
 
@@ -131,7 +131,7 @@ fn main() -> Result<()> {
             input.set_polling(!app.any_work_pending());
 
             if needs_draw {
-                draw(&mut terminal, &mut app)?;
+                draw(&mut terminal, &app)?;
             }
 
             spinner.draw(
@@ -162,7 +162,7 @@ fn shutdown_terminal() -> Result<()> {
 
 fn draw<B: Backend>(
     terminal: &mut Terminal<B>,
-    app: &mut App,
+    app: &App,
 ) -> io::Result<()> {
     terminal.draw(|mut f| {
         if let Err(e) = app.draw(&mut f) {

@@ -31,7 +31,7 @@ pub struct InspectCommitComponent {
 
 impl DrawableComponent for InspectCommitComponent {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         rect: Rect,
     ) -> Result<()> {

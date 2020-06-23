@@ -89,7 +89,7 @@ impl StashList {
 
 impl DrawableComponent for StashList {
     fn draw<B: tui::backend::Backend>(
-        &mut self,
+        &self,
         f: &mut tui::Frame<B>,
         rect: tui::layout::Rect,
     ) -> Result<()> {

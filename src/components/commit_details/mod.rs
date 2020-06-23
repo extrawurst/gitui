@@ -107,7 +107,7 @@ impl CommitDetailsComponent {
 
 impl DrawableComponent for CommitDetailsComponent {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         rect: Rect,
     ) -> Result<()> {

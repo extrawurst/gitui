@@ -211,7 +211,7 @@ impl FileTreeComponent {
 
 impl DrawableComponent for FileTreeComponent {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         r: Rect,
     ) -> Result<()> {

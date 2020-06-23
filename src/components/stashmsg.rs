@@ -22,7 +22,7 @@ pub struct StashMsgComponent {
 
 impl DrawableComponent for StashMsgComponent {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         rect: Rect,
     ) -> Result<()> {

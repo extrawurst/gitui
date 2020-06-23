@@ -28,7 +28,7 @@ pub struct ResetComponent {
 
 impl DrawableComponent for ResetComponent {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         _rect: Rect,
     ) -> Result<()> {

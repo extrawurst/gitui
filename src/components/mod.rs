@@ -120,7 +120,7 @@ pub fn visibility_blocking<T: Component>(
 pub trait DrawableComponent {
     ///
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         rect: Rect,
     ) -> Result<()>;

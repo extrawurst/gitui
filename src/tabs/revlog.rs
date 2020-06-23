@@ -133,7 +133,7 @@ impl Revlog {
 
 impl DrawableComponent for Revlog {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         area: Rect,
     ) -> Result<()> {

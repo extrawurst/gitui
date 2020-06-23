@@ -12,7 +12,9 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync;
 use crossterm::event::Event;
-use std::{borrow::Cow, cmp, convert::TryFrom, time::Instant};
+use std::{
+    borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
+};
 use sync::Tags;
 use tui::{
     backend::Backend,
@@ -32,8 +34,8 @@ pub struct CommitList {
     items: ItemBatch,
     scroll_state: (Instant, f32),
     tags: Option<Tags>,
-    current_size: (u16, u16),
-    scroll_top: usize,
+    current_size: Cell<(u16, u16)>,
+    scroll_top: Cell<usize>,
     theme: SharedTheme,
 }
 
@@ -47,8 +49,8 @@ impl CommitList {
             count_total: 0,
             scroll_state: (Instant::now(), 0_f32),
             tags: None,
-            current_size: (0, 0),
-            scroll_top: 0,
+            current_size: Cell::new((0, 0)),
+            scroll_top: Cell::new(0),
             theme,
             title: String::from(title),
         }
@@ -70,8 +72,8 @@ impl CommitList {
     }
 
     ///
-    pub const fn current_size(&self) -> (u16, u16) {
-        self.current_size
+    pub fn current_size(&self) -> (u16, u16) {
+        self.current_size.get()
     }
 
     ///
@@ -121,7 +123,7 @@ impl CommitList {
             usize::try_from(self.scroll_state.1 as i64)?.max(1);
 
         let page_offset =
-            usize::from(self.current_size.1).saturating_sub(1);
+            usize::from(self.current_size.get().1).saturating_sub(1);
 
         let new_selection = match scroll {
             ScrollType::Up => {
@@ -239,7 +241,7 @@ impl CommitList {
         for (idx, e) in self
             .items
             .iter()
-            .skip(self.scroll_top)
+            .skip(self.scroll_top.get())
             .take(height)
             .enumerate()
         {
@@ -253,7 +255,7 @@ impl CommitList {
 
             Self::add_entry(
                 e,
-                idx + self.scroll_top == selection,
+                idx + self.scroll_top.get() == selection,
                 &mut txt,
                 tags,
                 &self.theme,
@@ -271,23 +273,23 @@ impl CommitList {
 
 impl DrawableComponent for CommitList {
     fn draw<B: Backend>(
-        &mut self,
+        &self,
         f: &mut Frame<B>,
         area: Rect,
     ) -> Result<()> {
-        self.current_size = (
+        self.current_size.set((
             area.width.saturating_sub(2),
             area.height.saturating_sub(2),
-        );
+        ));
 
-        let height_in_lines = self.current_size.1 as usize;
+        let height_in_lines = self.current_size.get().1 as usize;
         let selection = self.relative_selection();
 
-        self.scroll_top = calc_scroll_top(
-            self.scroll_top,
+        self.scroll_top.set(calc_scroll_top(
+            self.scroll_top.get(),
             height_in_lines,
             selection,
-        );
+        ));
 
         let branch_post_fix =
             self.branch.as_ref().map(|b| format!("- {{{}}}", b));
