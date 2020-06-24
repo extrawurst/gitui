@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - clearer help headers ([#131](https://github.com/extrawurst/gitui/issues/131))
+- diisplay non-utf8 commit messages at least partially ([#150](https://github.com/extrawurst/gitui/issues/150))
 
 ## [0.7.0] - 2020-06-15
 

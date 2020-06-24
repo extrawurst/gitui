@@ -2,6 +2,7 @@ use super::utils::repo;
 use crate::error::Result;
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
+use std::borrow::Cow;
 
 /// identifies a single commit
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -81,14 +82,13 @@ pub fn get_commits_info(
 }
 
 fn get_message(c: &Commit, message_length_limit: usize) -> String {
-    if let Some(msg) = c.message() {
-        limit_str(msg, message_length_limit)
-    } else {
-        String::from("<unknown>")
-    }
+    limit_str(
+        String::from_utf8_lossy(c.message_bytes()),
+        message_length_limit,
+    )
 }
 
-fn limit_str(s: &str, limit: usize) -> String {
+fn limit_str(s: Cow<'_, str>, limit: usize) -> String {
     if let Some(first) = s.lines().next() {
         first.chars().take(limit).collect::<String>()
     } else {
@@ -103,6 +103,7 @@ mod tests {
     use crate::error::Result;
     use crate::sync::{
         commit, stage_add_file, tests::repo_init_empty,
+        utils::get_head_repo,
     };
     use std::{fs::File, io::Write, path::Path};
 
@@ -127,6 +128,33 @@ mod tests {
         assert_eq!(res[0].message.as_str(), "commit2");
         assert_eq!(res[0].author.as_str(), "name");
         assert_eq!(res[1].message.as_str(), "commit1");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_utf8() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?.write_all(b"a")?;
+        stage_add_file(repo_path, file_path).unwrap();
+
+        let msg = invalidstring::invalid_utf8("test msg");
+        commit(repo_path, msg.as_str()).unwrap();
+
+        let res = get_commits_info(
+            repo_path,
+            &vec![get_head_repo(&repo).unwrap().into()],
+            50,
+        )
+        .unwrap();
+
+        assert_eq!(res.len(), 1);
+        dbg!(&res[0].message);
+        assert_eq!(res[0].message.starts_with("test msg"), true);
 
         Ok(())
     }

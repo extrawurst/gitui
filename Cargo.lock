@@ -45,6 +45,7 @@ version = "0.7.0"
 dependencies = [
  "crossbeam-channel",
  "git2",
+ "invalidstring",
  "log",
  "rayon-core",
  "scopetime",
@@ -366,6 +367,10 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
+
+[[package]]
+name = "invalidstring"
+version = "0.1.0"
 
 [[package]]
 name = "iovec"
