@@ -63,7 +63,7 @@ pub fn get_commits_info(
 
     let res = commits
         .map(|c: Commit| {
-            let message = get_message(&c, message_length_limit);
+            let message = get_message(&c, Some(message_length_limit));
             let author = if let Some(name) = c.author().name() {
                 String::from(name)
             } else {
@@ -81,11 +81,18 @@ pub fn get_commits_info(
     Ok(res)
 }
 
-fn get_message(c: &Commit, message_length_limit: usize) -> String {
-    limit_str(
-        String::from_utf8_lossy(c.message_bytes()),
-        message_length_limit,
-    )
+///
+pub fn get_message(
+    c: &Commit,
+    message_length_limit: Option<usize>,
+) -> String {
+    let msg = String::from_utf8_lossy(c.message_bytes());
+
+    if let Some(limit) = message_length_limit {
+        limit_str(msg, limit)
+    } else {
+        msg.to_string()
+    }
 }
 
 fn limit_str(s: Cow<'_, str>, limit: usize) -> String {

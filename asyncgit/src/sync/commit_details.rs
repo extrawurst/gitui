@@ -1,4 +1,4 @@
-use super::{utils::repo, CommitId};
+use super::{commits_info::get_message, utils::repo, CommitId};
 use crate::error::Result;
 use git2::Signature;
 use scopetime::scope_time;
@@ -95,14 +95,55 @@ pub fn get_commit_details(
         Some(committer)
     };
 
-    let message = commit.message().map(|m| CommitMessage::from(m));
+    let msg =
+        CommitMessage::from(get_message(&commit, None).as_str());
 
     let details = CommitDetails {
         author,
         committer,
-        message,
+        message: Some(msg),
         hash: id.to_string(),
     };
 
     Ok(details)
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::get_commit_details;
+    use crate::error::Result;
+    use crate::sync::{
+        commit, stage_add_file, tests::repo_init_empty, CommitId,
+    };
+    use std::{fs::File, io::Write, path::Path};
+
+    #[test]
+    fn test_msg_invalid_utf8() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?.write_all(b"a")?;
+        stage_add_file(repo_path, file_path).unwrap();
+
+        let msg = invalidstring::invalid_utf8("test msg");
+        let id = commit(repo_path, msg.as_str()).unwrap();
+
+        let res =
+            get_commit_details(repo_path, CommitId::new(id)).unwrap();
+
+        dbg!(&res.message.as_ref().unwrap().subject);
+        assert_eq!(
+            res.message
+                .as_ref()
+                .unwrap()
+                .subject
+                .starts_with("test msg"),
+            true
+        );
+
+        Ok(())
+    }
 }
