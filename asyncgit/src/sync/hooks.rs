@@ -1,4 +1,5 @@
-use crate::error::Result;
+use super::utils::{repo, work_dir};
+use crate::error::{Error, Result};
 use scopetime::scope_time;
 use std::{
     fs::File,
@@ -22,13 +23,15 @@ pub fn hooks_commit_msg(
 ) -> Result<HookResult> {
     scope_time!("hooks_commit_msg");
 
-    if hook_runable(repo_path, HOOK_COMMIT_MSG) {
-        let temp_file =
-            Path::new(repo_path).join(HOOK_COMMIT_MSG_TEMP_FILE);
+    let work_dir = work_dir_as_string(repo_path)?;
+
+    if hook_runable(work_dir.as_str(), HOOK_COMMIT_MSG) {
+        let temp_file = Path::new(work_dir.as_str())
+            .join(HOOK_COMMIT_MSG_TEMP_FILE);
         File::create(&temp_file)?.write_all(msg.as_bytes())?;
 
         let res = run_hook(
-            repo_path,
+            work_dir.as_str(),
             HOOK_COMMIT_MSG,
             &[HOOK_COMMIT_MSG_TEMP_FILE],
         );
@@ -47,11 +50,26 @@ pub fn hooks_commit_msg(
 pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
     scope_time!("hooks_post_commit");
 
-    if hook_runable(repo_path, HOOK_POST_COMMIT) {
-        Ok(run_hook(repo_path, HOOK_POST_COMMIT, &[]))
+    let work_dir = work_dir_as_string(repo_path)?;
+    let work_dir_str = work_dir.as_str();
+
+    if hook_runable(work_dir_str, HOOK_POST_COMMIT) {
+        Ok(run_hook(work_dir_str, HOOK_POST_COMMIT, &[]))
     } else {
         Ok(HookResult::Ok)
     }
+}
+
+fn work_dir_as_string(repo_path: &str) -> Result<String> {
+    let repo = repo(repo_path)?;
+    work_dir(&repo)
+        .to_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| {
+            Error::Generic(
+                "workdir contains invalid utf8".to_string(),
+            )
+        })
 }
 
 fn hook_runable(path: &str, hook: &str) -> bool {
@@ -126,7 +144,7 @@ fn is_executable(_: PathBuf) -> bool {
 mod tests {
     use super::*;
     use crate::sync::tests::repo_init;
-    use std::fs::File;
+    use std::fs::{self, File};
 
     #[test]
     fn test_smoke() {
@@ -182,7 +200,7 @@ exit 0
     }
 
     #[test]
-    fn test_hooks_commit_msg() {
+    fn test_hooks_commit_msg_reject() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
@@ -198,6 +216,37 @@ exit 1
 
         let mut msg = String::from("test");
         let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
+
+        assert_eq!(
+            res,
+            HookResult::NotOk(String::from("rejected\n"))
+        );
+
+        assert_eq!(msg, String::from("msg\n"));
+    }
+
+    #[test]
+    fn test_hooks_commit_msg_reject_in_subfolder() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        // let repo_path = root.as_os_str().to_str().unwrap();
+
+        let hook = b"
+#!/bin/sh
+echo 'msg' > $1
+echo 'rejected'
+exit 1
+        ";
+
+        create_hook(root, HOOK_COMMIT_MSG, hook);
+
+        let subfolder = root.join("foo/");
+        fs::create_dir_all(&subfolder).unwrap();
+
+        let mut msg = String::from("test");
+        let res =
+            hooks_commit_msg(subfolder.to_str().unwrap(), &mut msg)
+                .unwrap();
 
         assert_eq!(
             res,
@@ -226,5 +275,30 @@ exit 0
 
         assert_eq!(res, HookResult::Ok);
         assert_eq!(msg, String::from("msg\n"));
+    }
+
+    #[test]
+    fn test_post_commit_hook_reject_in_subfolder() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+
+        let hook = b"
+#!/bin/sh
+echo 'rejected'
+exit 1
+        ";
+
+        create_hook(root, HOOK_POST_COMMIT, hook);
+
+        let subfolder = root.join("foo/");
+        fs::create_dir_all(&subfolder).unwrap();
+
+        let res =
+            hooks_post_commit(subfolder.to_str().unwrap()).unwrap();
+
+        assert_eq!(
+            res,
+            HookResult::NotOk(String::from("rejected\n"))
+        );
     }
 }
