@@ -38,13 +38,16 @@ impl Component for StashMsgComponent {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
-        self.input.commands(out, force_all);
+        if self.is_visible() || force_all {
+            self.input.commands(out, force_all);
 
-        out.push(CommandInfo::new(
-            commands::STASHING_CONFIRM_MSG,
-            true,
-            self.is_visible() || force_all,
-        ));
+            out.push(CommandInfo::new(
+                commands::STASHING_CONFIRM_MSG,
+                true,
+                true,
+            ));
+        }
+
         visibility_blocking(self)
     }
 

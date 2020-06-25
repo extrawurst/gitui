@@ -99,26 +99,22 @@ impl Component for HelpComponent {
             out.clear();
         }
 
-        out.push(
-            CommandInfo::new(
-                commands::HELP_OPEN,
+        if self.visible {
+            out.push(CommandInfo::new(commands::SCROLL, true, true));
+
+            out.push(CommandInfo::new(
+                commands::CLOSE_POPUP,
                 true,
-                !self.visible,
-            )
-            .order(99),
-        );
+                true,
+            ));
+        }
 
-        out.push(CommandInfo::new(
-            commands::SCROLL,
-            true,
-            self.visible,
-        ));
-
-        out.push(CommandInfo::new(
-            commands::CLOSE_POPUP,
-            true,
-            self.visible,
-        ));
+        if !self.visible || force_all {
+            out.push(
+                CommandInfo::new(commands::HELP_OPEN, true, true)
+                    .order(99),
+            );
+        }
 
         visibility_blocking(self)
     }

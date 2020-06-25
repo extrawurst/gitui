@@ -75,28 +75,24 @@ impl Component for InspectCommitComponent {
                 force_all,
                 self.components().as_slice(),
             );
-        }
 
-        out.push(
-            CommandInfo::new(
-                commands::CLOSE_POPUP,
+            out.push(
+                CommandInfo::new(commands::CLOSE_POPUP, true, true)
+                    .order(1),
+            );
+
+            out.push(CommandInfo::new(
+                commands::DIFF_FOCUS_RIGHT,
+                self.can_focus_diff(),
+                !self.diff.focused() || force_all,
+            ));
+
+            out.push(CommandInfo::new(
+                commands::DIFF_FOCUS_LEFT,
                 true,
-                self.is_visible(),
-            )
-            .order(1),
-        );
-
-        out.push(CommandInfo::new(
-            commands::DIFF_FOCUS_RIGHT,
-            self.can_focus_diff(),
-            (self.is_visible() && !self.diff.focused()) || force_all,
-        ));
-
-        out.push(CommandInfo::new(
-            commands::DIFF_FOCUS_LEFT,
-            true,
-            (self.is_visible() && self.diff.focused()) || force_all,
-        ));
+                self.diff.focused() || force_all,
+            ));
+        }
 
         visibility_blocking(self)
     }
