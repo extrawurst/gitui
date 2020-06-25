@@ -22,6 +22,7 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Text},
     Frame,
 };
+use unicode_width::UnicodeWidthStr;
 
 const ELEMENTS_PER_LINE: usize = 10;
 
@@ -182,6 +183,7 @@ impl CommitList {
         txt: &mut Vec<Text<'a>>,
         tags: Option<String>,
         theme: &Theme,
+        width: usize,
     ) {
         txt.reserve(ELEMENTS_PER_LINE);
 
@@ -205,9 +207,13 @@ impl CommitList {
 
         txt.push(splitter.clone());
 
+        let author_width =
+            (width.saturating_sub(19) / 3).max(3).min(20);
+        let author = string_width_align(&e.author, author_width);
+
         // commit author
         txt.push(Text::Styled(
-            Cow::from(e.author.as_str()),
+            author.into(),
             theme.commit_author(selected),
         ));
 
@@ -233,7 +239,7 @@ impl CommitList {
         txt.push(Text::Raw(Cow::from("\n")));
     }
 
-    fn get_text(&self, height: usize) -> Vec<Text> {
+    fn get_text(&self, height: usize, width: usize) -> Vec<Text> {
         let selection = self.relative_selection();
 
         let mut txt = Vec::with_capacity(height * ELEMENTS_PER_LINE);
@@ -259,6 +265,7 @@ impl CommitList {
                 &mut txt,
                 tags,
                 &self.theme,
+                width,
             );
         }
 
@@ -277,10 +284,11 @@ impl DrawableComponent for CommitList {
         f: &mut Frame<B>,
         area: Rect,
     ) -> Result<()> {
-        self.current_size.set((
+        let current_size = (
             area.width.saturating_sub(2),
             area.height.saturating_sub(2),
-        ));
+        );
+        self.current_size.set(current_size);
 
         let height_in_lines = self.current_size.get().1 as usize;
         let selection = self.relative_selection();
@@ -303,15 +311,21 @@ impl DrawableComponent for CommitList {
         );
 
         f.render_widget(
-            Paragraph::new(self.get_text(height_in_lines).iter())
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(title.as_str())
-                        .border_style(self.theme.block(true))
-                        .title_style(self.theme.title(true)),
+            Paragraph::new(
+                self.get_text(
+                    height_in_lines,
+                    current_size.0 as usize,
                 )
-                .alignment(Alignment::Left),
+                .iter(),
+            )
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(title.as_str())
+                    .border_style(self.theme.block(true))
+                    .title_style(self.theme.title(true)),
+            )
+            .alignment(Alignment::Left),
             area,
         );
 
@@ -361,5 +375,55 @@ impl Component for CommitList {
             true,
         ));
         CommandBlocking::PassingOn
+    }
+}
+
+#[inline]
+fn string_width_align(s: &str, width: usize) -> String {
+    static POSTFIX: &str = "..";
+
+    let len = UnicodeWidthStr::width(s);
+    let width_wo_postfix = width.saturating_sub(POSTFIX.len());
+
+    if (len >= width_wo_postfix && len <= width)
+        || (len <= width_wo_postfix)
+    {
+        format!("{:w$}", s, w = width)
+    } else {
+        let mut s = s.to_string();
+        s.truncate(find_truncate_point(&s, width_wo_postfix));
+        format!("{}{}", s, POSTFIX)
+    }
+}
+
+#[inline]
+fn find_truncate_point(s: &str, chars: usize) -> usize {
+    s.chars().take(chars).map(char::len_utf8).sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_width_align() {
+        assert_eq!(string_width_align("123", 3), "123");
+        assert_eq!(string_width_align("123", 2), "..");
+        assert_eq!(string_width_align("123", 3), "123");
+        assert_eq!(string_width_align("12345", 6), "12345 ");
+        assert_eq!(string_width_align("1234556", 4), "12..");
+    }
+
+    #[test]
+    fn test_string_width_align_unicode() {
+        assert_eq!(string_width_align("äste", 3), "ä..");
+        assert_eq!(
+            string_width_align("wüsten äste", 10),
+            "wüsten ä.."
+        );
+        assert_eq!(
+            string_width_align("Jon Grythe Stødle", 19),
+            "Jon Grythe Stødle  "
+        );
     }
 }

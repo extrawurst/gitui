@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - show file sizes and delta on binary files diff ([#141](https://github.com/extrawurst/gitui/issues/141))
 
 ### Changed
-- Use terminal blue as default selection background ([#129](https://github.com/extrawurst/gitui/issues/129))
+- use terminal blue as default selection background ([#129](https://github.com/extrawurst/gitui/issues/129))
+- author column in revlog is now fixed width for better alignment ([#148](https://github.com/extrawurst/gitui/issues/148))
 
 ### Fixed
 - clearer help headers ([#131](https://github.com/extrawurst/gitui/issues/131))
