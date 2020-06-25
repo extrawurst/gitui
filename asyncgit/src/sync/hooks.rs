@@ -103,6 +103,25 @@ fn run_hook(
     }
 }
 
+#[cfg(not(windows))]
+fn is_executable(path: PathBuf) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    let metadata = match path.metadata() {
+        Ok(metadata) => metadata,
+        Err(_) => return false,
+    };
+
+    let permissions = metadata.permissions();
+    permissions.mode() & 0o111 != 0
+}
+
+#[cfg(windows)]
+/// windows does not consider bash scripts to be executable so we consider everything
+/// to be executable (which is not far from the truth for windows platform.)
+fn is_executable(_: PathBuf) -> bool {
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -208,23 +227,4 @@ exit 0
         assert_eq!(res, HookResult::Ok);
         assert_eq!(msg, String::from("msg\n"));
     }
-}
-
-#[cfg(not(windows))]
-fn is_executable(path: PathBuf) -> bool {
-    use std::os::unix::fs::PermissionsExt;
-    let metadata = match path.metadata() {
-        Ok(metadata) => metadata,
-        Err(_) => return false,
-    };
-
-    let permissions = metadata.permissions();
-    permissions.mode() & 0o111 != 0
-}
-
-#[cfg(windows)]
-/// windows does not consider bash scripts to be executable so we consider everything
-/// to be executable (which is not far from the truth for windows platform.)
-fn is_executable(_: PathBuf) -> bool {
-    true
 }
