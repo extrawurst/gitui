@@ -44,17 +44,19 @@ impl Component for CommitComponent {
     ) -> CommandBlocking {
         self.input.commands(out, force_all);
 
-        out.push(CommandInfo::new(
-            commands::COMMIT_ENTER,
-            self.can_commit(),
-            self.is_visible() || force_all,
-        ));
+        if self.is_visible() || force_all {
+            out.push(CommandInfo::new(
+                commands::COMMIT_ENTER,
+                self.can_commit(),
+                true,
+            ));
 
-        out.push(CommandInfo::new(
-            commands::COMMIT_AMEND,
-            self.can_amend(),
-            self.is_visible() || force_all,
-        ));
+            out.push(CommandInfo::new(
+                commands::COMMIT_AMEND,
+                self.can_amend(),
+                true,
+            ));
+        }
 
         visibility_blocking(self)
     }
