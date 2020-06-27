@@ -66,6 +66,25 @@ pub fn get_head_repo(repo: &Repository) -> Result<CommitId> {
     }
 }
 
+/// Wrap Repository::signature to allow unknown user.name.
+///
+/// See <https://github.com/extrawurst/gitui/issues/79>.
+pub fn signature_allow_undefined_name(
+    repo: &Repository,
+) -> std::result::Result<git2::Signature<'static>, git2::Error> {
+    match repo.signature() {
+        Err(e) if e.code() == git2::ErrorCode::NotFound => {
+            let config = repo.config()?;
+            git2::Signature::now(
+                config.get_str("user.name").unwrap_or("unknown"),
+                config.get_str("user.email")?,
+            )
+        }
+
+        v => v,
+    }
+}
+
 /// ditto
 pub fn commit_new(repo_path: &str, msg: &str) -> Result<CommitId> {
     commit(repo_path, msg).map(CommitId::new)
@@ -77,7 +96,7 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<Oid> {
 
     let repo = repo(repo_path)?;
 
-    let signature = repo.signature()?;
+    let signature = signature_allow_undefined_name(&repo)?;
     let mut index = repo.index()?;
     let tree_id = index.write_tree()?;
     let tree = repo.find_tree(tree_id)?;
