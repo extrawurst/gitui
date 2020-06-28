@@ -93,6 +93,7 @@ mod tests {
     use commit::amend;
     use git2::Repository;
     use std::{fs::File, io::Write, path::Path};
+    use tempfile::TempDir;
 
     fn count_commits(repo: &Repository, max: usize) -> usize {
         let mut items = Vec::new();
@@ -184,5 +185,27 @@ mod tests {
         assert_eq!(head, new_id);
 
         Ok(())
+    }
+
+    #[test]
+    fn test_commit_unknown_signature() {
+        let file_path = Path::new("foo");
+        let td = TempDir::new().unwrap();
+        let repo = Repository::init(td.path()).unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))
+            .unwrap()
+            .write_all(b"test\nfoo")
+            .unwrap();
+
+        stage_add_file(repo_path, file_path).unwrap();
+
+        let id = commit(repo_path, "commit msg").unwrap();
+
+        let details = get_commit_details(repo_path, id).unwrap();
+
+        assert_eq!(details.author.name, "unknown");
     }
 }
