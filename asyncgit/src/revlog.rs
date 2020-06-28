@@ -1,6 +1,6 @@
 use crate::{
     error::Result,
-    sync::{utils::repo, LogWalker},
+    sync::{utils::repo, CommitId, LogWalker},
     AsyncNotification, CWD,
 };
 use crossbeam_channel::Sender;
@@ -29,7 +29,7 @@ pub enum FetchStatus {
 
 ///
 pub struct AsyncLog {
-    current: Arc<Mutex<Vec<Oid>>>,
+    current: Arc<Mutex<Vec<CommitId>>>,
     sender: Sender<AsyncNotification>,
     pending: Arc<AtomicBool>,
     background: Arc<AtomicBool>,
@@ -60,7 +60,7 @@ impl AsyncLog {
         &self,
         start_index: usize,
         amount: usize,
-    ) -> Result<Vec<Oid>> {
+    ) -> Result<Vec<CommitId>> {
         let list = self.current.lock()?;
         let list_len = list.len();
         let min = start_index.min(list_len);
@@ -80,15 +80,19 @@ impl AsyncLog {
     }
 
     ///
-    fn current_head(&self) -> Result<Oid> {
-        Ok(self.current.lock()?.first().map_or(Oid::zero(), |f| *f))
+    fn current_head(&self) -> Result<CommitId> {
+        Ok(self
+            .current
+            .lock()?
+            .first()
+            .map_or(Oid::zero().into(), |f| *f))
     }
 
     ///
     fn head_changed(&self) -> Result<bool> {
         if let Ok(head) = repo(CWD)?.head() {
             if let Some(head) = head.target() {
-                return Ok(head != self.current_head()?);
+                return Ok(head != self.current_head()?.into());
             }
         }
         Ok(false)
@@ -131,7 +135,7 @@ impl AsyncLog {
     }
 
     fn fetch_helper(
-        arc_current: Arc<Mutex<Vec<Oid>>>,
+        arc_current: Arc<Mutex<Vec<CommitId>>>,
         arc_background: Arc<AtomicBool>,
         sender: &Sender<AsyncNotification>,
     ) -> Result<()> {

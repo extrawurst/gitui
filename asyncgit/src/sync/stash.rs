@@ -4,7 +4,7 @@ use git2::{Oid, Repository, StashFlags};
 use scopetime::scope_time;
 
 ///
-pub fn get_stashes(repo_path: &str) -> Result<Vec<Oid>> {
+pub fn get_stashes(repo_path: &str) -> Result<Vec<CommitId>> {
     scope_time!("get_stashes");
 
     let mut repo = repo(repo_path)?;
@@ -12,7 +12,7 @@ pub fn get_stashes(repo_path: &str) -> Result<Vec<Oid>> {
     let mut list = Vec::new();
 
     repo.stash_foreach(|_index, _msg, id| {
-        list.push(*id);
+        list.push((*id).into());
         true
     })?;
 
@@ -25,7 +25,7 @@ pub fn stash_drop(repo_path: &str, stash_id: CommitId) -> Result<()> {
 
     let mut repo = repo(repo_path)?;
 
-    let index = get_stash_index(&mut repo, stash_id.get_oid())?;
+    let index = get_stash_index(&mut repo, stash_id.into())?;
 
     repo.stash_drop(index)?;
 

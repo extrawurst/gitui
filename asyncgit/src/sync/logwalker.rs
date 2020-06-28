@@ -1,5 +1,6 @@
+use super::CommitId;
 use crate::error::Result;
-use git2::{Oid, Repository, Revwalk};
+use git2::{Repository, Revwalk};
 
 ///
 pub struct LogWalker<'a> {
@@ -19,7 +20,7 @@ impl<'a> LogWalker<'a> {
     ///
     pub fn read(
         &mut self,
-        out: &mut Vec<Oid>,
+        out: &mut Vec<CommitId>,
         limit: usize,
     ) -> Result<usize> {
         let mut count = 0_usize;
@@ -33,7 +34,7 @@ impl<'a> LogWalker<'a> {
         if let Some(ref mut walk) = self.revwalk {
             for id in walk {
                 if let Ok(id) = id {
-                    out.push(id);
+                    out.push(id.into());
                     count += 1;
 
                     if count == limit {
@@ -75,7 +76,7 @@ mod tests {
         walk.read(&mut items, 1).unwrap();
 
         assert_eq!(items.len(), 1);
-        assert_eq!(items[0], oid2);
+        assert_eq!(items[0], oid2.into());
 
         Ok(())
     }
@@ -102,7 +103,7 @@ mod tests {
         dbg!(&info);
 
         assert_eq!(items.len(), 2);
-        assert_eq!(items[0], oid2);
+        assert_eq!(items[0], oid2.into());
 
         let mut items = Vec::new();
         walk.read(&mut items, 100).unwrap();

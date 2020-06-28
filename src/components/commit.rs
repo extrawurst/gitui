@@ -202,7 +202,7 @@ impl CommitComponent {
         let res = if let Some(amend) = self.amend {
             sync::amend(CWD, amend, &msg)
         } else {
-            sync::commit_new(CWD, &msg)
+            sync::commit(CWD, &msg)
         };
         if let Err(e) = res {
             log::error!("commit error: {}", &e);

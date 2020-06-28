@@ -32,6 +32,12 @@ impl Into<Oid> for CommitId {
     }
 }
 
+impl From<Oid> for CommitId {
+    fn from(id: Oid) -> Self {
+        Self::new(id)
+    }
+}
+
 ///
 #[derive(Debug)]
 pub struct CommitInfo {
@@ -48,7 +54,7 @@ pub struct CommitInfo {
 ///
 pub fn get_commits_info(
     repo_path: &str,
-    ids: &[Oid],
+    ids: &[CommitId],
     message_length_limit: usize,
 ) -> Result<Vec<CommitInfo>> {
     scope_time!("get_commits_info");
@@ -57,7 +63,7 @@ pub fn get_commits_info(
 
     let commits = ids
         .iter()
-        .map(|id| repo.find_commit(*id))
+        .map(|id| repo.find_commit((*id).into()))
         .collect::<std::result::Result<Vec<Commit>, Error>>()?
         .into_iter();
 

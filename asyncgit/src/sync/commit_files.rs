@@ -75,7 +75,6 @@ mod tests {
         error::Result,
         sync::{
             commit, stage_add_file, stash_save, tests::repo_init,
-            CommitId,
         },
         StatusItemType,
     };
@@ -97,8 +96,7 @@ mod tests {
 
         let id = commit(repo_path, "commit msg").unwrap();
 
-        let diff =
-            get_commit_files(repo_path, CommitId::new(id)).unwrap();
+        let diff = get_commit_files(repo_path, id).unwrap();
 
         assert_eq!(diff.len(), 1);
         assert_eq!(diff[0].status, StatusItemType::New);

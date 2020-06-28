@@ -2,7 +2,7 @@
 
 use super::CommitId;
 use crate::error::{Error, Result};
-use git2::{IndexAddOption, Oid, Repository, RepositoryOpenFlags};
+use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -60,19 +60,14 @@ pub fn get_head_repo(repo: &Repository) -> Result<CommitId> {
     let head = repo.head()?.target();
 
     if let Some(head_id) = head {
-        Ok(CommitId::new(head_id))
+        Ok(head_id.into())
     } else {
         Err(Error::NoHead)
     }
 }
 
-/// ditto
-pub fn commit_new(repo_path: &str, msg: &str) -> Result<CommitId> {
-    commit(repo_path, msg).map(CommitId::new)
-}
-
 /// this does not run any git hooks
-pub fn commit(repo_path: &str, msg: &str) -> Result<Oid> {
+pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
     scope_time!("commit");
 
     let repo = repo(repo_path)?;
@@ -90,14 +85,16 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<Oid> {
 
     let parents = parents.iter().collect::<Vec<_>>();
 
-    Ok(repo.commit(
-        Some("HEAD"),
-        &signature,
-        &signature,
-        msg,
-        &tree,
-        parents.as_slice(),
-    )?)
+    Ok(repo
+        .commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            msg,
+            &tree,
+            parents.as_slice(),
+        )?
+        .into())
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
