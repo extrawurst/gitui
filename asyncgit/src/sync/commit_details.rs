@@ -114,7 +114,7 @@ mod tests {
     use super::get_commit_details;
     use crate::error::Result;
     use crate::sync::{
-        commit, stage_add_file, tests::repo_init_empty, CommitId,
+        commit, stage_add_file, tests::repo_init_empty,
     };
     use std::{fs::File, io::Write, path::Path};
 
@@ -131,8 +131,7 @@ mod tests {
         let msg = invalidstring::invalid_utf8("test msg");
         let id = commit(repo_path, msg.as_str()).unwrap();
 
-        let res =
-            get_commit_details(repo_path, CommitId::new(id)).unwrap();
+        let res = get_commit_details(repo_path, id).unwrap();
 
         dbg!(&res.message.as_ref().unwrap().subject);
         assert_eq!(

@@ -304,7 +304,6 @@ mod tests {
         commit, stage_add_file,
         status::{get_status, StatusType},
         tests::{get_statuses, repo_init, repo_init_empty},
-        CommitId,
     };
     use std::{
         fs::{self, File},
@@ -529,12 +528,8 @@ mod tests {
 
         let id = commit(repo_path, "").unwrap();
 
-        let diff = get_diff_commit(
-            repo_path,
-            CommitId::new(id),
-            String::new(),
-        )
-        .unwrap();
+        let diff =
+            get_diff_commit(repo_path, id, String::new()).unwrap();
 
         dbg!(&diff);
         assert_eq!(diff.sizes, (1, 2));

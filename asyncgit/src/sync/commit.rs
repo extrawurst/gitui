@@ -35,7 +35,7 @@ mod tests {
     use crate::error::Result;
     use crate::sync::{
         commit, get_commit_details, get_commit_files, stage_add_file,
-        tests::repo_init_empty, utils::get_head, CommitId, LogWalker,
+        tests::repo_init_empty, utils::get_head, LogWalker,
     };
     use commit::amend;
     use git2::Repository;
@@ -67,7 +67,7 @@ mod tests {
 
         stage_add_file(repo_path, file_path2)?;
 
-        let new_id = amend(repo_path, CommitId::new(id), "amended")?;
+        let new_id = amend(repo_path, id, "amended")?;
 
         assert_eq!(count_commits(&repo, 10), 1);
 
