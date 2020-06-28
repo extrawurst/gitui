@@ -43,11 +43,12 @@ mod tests {
     use super::{reset_stage, reset_workdir};
     use crate::error::Result;
     use crate::sync::{
+        commit,
         status::{get_status, StatusType},
         tests::{
             debug_cmd_print, get_statuses, repo_init, repo_init_empty,
         },
-        utils::{commit, stage_add_all, stage_add_file},
+        utils::{stage_add_all, stage_add_file},
     };
     use std::{
         fs::{self, File},

@@ -66,37 +66,6 @@ pub fn get_head_repo(repo: &Repository) -> Result<CommitId> {
     }
 }
 
-/// this does not run any git hooks
-pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
-    scope_time!("commit");
-
-    let repo = repo(repo_path)?;
-
-    let signature = repo.signature()?;
-    let mut index = repo.index()?;
-    let tree_id = index.write_tree()?;
-    let tree = repo.find_tree(tree_id)?;
-
-    let parents = if let Ok(id) = get_head(repo_path) {
-        vec![repo.find_commit(id.into())?]
-    } else {
-        Vec::new()
-    };
-
-    let parents = parents.iter().collect::<Vec<_>>();
-
-    Ok(repo
-        .commit(
-            Some("HEAD"),
-            &signature,
-            &signature,
-            msg,
-            &tree,
-            parents.as_slice(),
-        )?
-        .into())
-}
-
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
 pub fn stage_add_file(repo_path: &str, path: &Path) -> Result<()> {
     scope_time!("stage_add_file");
@@ -143,6 +112,7 @@ pub fn stage_addremoved(repo_path: &str, path: &Path) -> Result<()> {
 mod tests {
     use super::*;
     use crate::sync::{
+        commit,
         status::{get_status, StatusType},
         tests::{
             debug_cmd_print, get_statuses, repo_init, repo_init_empty,
@@ -153,54 +123,6 @@ mod tests {
         io::Write,
         path::Path,
     };
-
-    #[test]
-    fn test_commit() {
-        let file_path = Path::new("foo");
-        let (_td, repo) = repo_init().unwrap();
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        File::create(&root.join(file_path))
-            .unwrap()
-            .write_all(b"test\nfoo")
-            .unwrap();
-
-        assert_eq!(get_statuses(repo_path), (1, 0));
-
-        stage_add_file(repo_path, file_path).unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 1));
-
-        commit(repo_path, "commit msg").unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 0));
-    }
-
-    #[test]
-    fn test_commit_in_empty_repo() {
-        let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty().unwrap();
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 0));
-
-        File::create(&root.join(file_path))
-            .unwrap()
-            .write_all(b"test\nfoo")
-            .unwrap();
-
-        assert_eq!(get_statuses(repo_path), (1, 0));
-
-        stage_add_file(repo_path, file_path).unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 1));
-
-        commit(repo_path, "commit msg").unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 0));
-    }
 
     #[test]
     fn test_stage_add_smoke() {
