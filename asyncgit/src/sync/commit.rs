@@ -83,12 +83,18 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
 #[cfg(test)]
 mod tests {
 
-    use crate::error::Result;
-    use crate::sync::{
-        commit, get_commit_details, get_commit_files, stage_add_file,
-        tests::{get_statuses, repo_init, repo_init_empty},
-        utils::get_head,
-        LogWalker,
+    use crate::{
+        error::Result,
+        sync::{
+            commit, get_commit_details, get_commit_files,
+            stage_add_file,
+            tests::{
+                debug_cmd_print, get_statuses, repo_init,
+                repo_init_empty,
+            },
+            utils::get_head,
+            LogWalker,
+        },
     };
     use commit::amend;
     use git2::Repository;
@@ -201,6 +207,11 @@ mod tests {
             .unwrap();
 
         stage_add_file(repo_path, file_path).unwrap();
+
+        debug_cmd_print(
+            repo_path,
+            "git config user.email 'foo@bar.com'",
+        );
 
         let id = commit(repo_path, "commit msg").unwrap();
 
