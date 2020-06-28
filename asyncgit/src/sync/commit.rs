@@ -1,5 +1,6 @@
-use super::{utils::repo, CommitId};
+use super::{get_head, utils::repo, CommitId};
 use crate::error::Result;
+use git2::{ErrorCode, Repository, Signature};
 use scopetime::scope_time;
 
 ///
@@ -29,13 +30,65 @@ pub fn amend(
     Ok(CommitId::new(new_id))
 }
 
+/// Wrap Repository::signature to allow unknown user.name.
+///
+/// See <https://github.com/extrawurst/gitui/issues/79>.
+fn signature_allow_undefined_name(
+    repo: &Repository,
+) -> std::result::Result<Signature<'_>, git2::Error> {
+    match repo.signature() {
+        Err(e) if e.code() == ErrorCode::NotFound => {
+            let config = repo.config()?;
+            Signature::now(
+                config.get_str("user.name").unwrap_or("unknown"),
+                config.get_str("user.email")?,
+            )
+        }
+
+        v => v,
+    }
+}
+
+/// this does not run any git hooks
+pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
+    scope_time!("commit");
+
+    let repo = repo(repo_path)?;
+
+    let signature = signature_allow_undefined_name(&repo)?;
+    let mut index = repo.index()?;
+    let tree_id = index.write_tree()?;
+    let tree = repo.find_tree(tree_id)?;
+
+    let parents = if let Ok(id) = get_head(repo_path) {
+        vec![repo.find_commit(id.into())?]
+    } else {
+        Vec::new()
+    };
+
+    let parents = parents.iter().collect::<Vec<_>>();
+
+    Ok(repo
+        .commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            msg,
+            &tree,
+            parents.as_slice(),
+        )?
+        .into())
+}
+
 #[cfg(test)]
 mod tests {
 
     use crate::error::Result;
     use crate::sync::{
         commit, get_commit_details, get_commit_files, stage_add_file,
-        tests::repo_init_empty, utils::get_head, LogWalker,
+        tests::{get_statuses, repo_init, repo_init_empty},
+        utils::get_head,
+        LogWalker,
     };
     use commit::amend;
     use git2::Repository;
@@ -46,6 +99,54 @@ mod tests {
         let mut walk = LogWalker::new(&repo);
         walk.read(&mut items, max).unwrap();
         items.len()
+    }
+
+    #[test]
+    fn test_commit() {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))
+            .unwrap()
+            .write_all(b"test\nfoo")
+            .unwrap();
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        stage_add_file(repo_path, file_path).unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 1));
+
+        commit(repo_path, "commit msg").unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
+    }
+
+    #[test]
+    fn test_commit_in_empty_repo() {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
+
+        File::create(&root.join(file_path))
+            .unwrap()
+            .write_all(b"test\nfoo")
+            .unwrap();
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        stage_add_file(repo_path, file_path).unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 1));
+
+        commit(repo_path, "commit msg").unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
     }
 
     #[test]
