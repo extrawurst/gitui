@@ -85,9 +85,19 @@ impl AsyncStatus {
         &mut self,
         params: StatusParams,
     ) -> Result<Option<Status>> {
+        if self.is_pending() {
+            log::trace!("request blocked, still pending");
+            return Ok(None);
+        }
+
         let hash_request = hash(&params);
 
-        log::trace!("request: [hash: {}]", hash_request);
+        log::trace!(
+            "request: [hash: {}] (type: {:?}, untracked: {})",
+            hash_request,
+            params.status_type,
+            params.include_untracked,
+        );
 
         {
             let mut current = self.current.lock()?;
@@ -138,7 +148,7 @@ impl AsyncStatus {
         let res = Self::get_status(status_type, include_untracked)?;
         log::trace!(
             "status fetched: {} (type: {:?}, untracked: {})",
-            hash(&res),
+            hash_request,
             status_type,
             include_untracked
         );
