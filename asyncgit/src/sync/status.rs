@@ -58,7 +58,7 @@ pub struct StatusItem {
 }
 
 ///
-#[derive(Copy, Clone, Hash, PartialEq)]
+#[derive(Copy, Clone, Hash, PartialEq, Debug)]
 pub enum StatusType {
     ///
     WorkingDir,

@@ -136,7 +136,12 @@ impl AsyncStatus {
         arc_last: Arc<Mutex<Status>>,
     ) -> Result<()> {
         let res = Self::get_status(status_type, include_untracked)?;
-        log::trace!("status fetched: {}", hash(&res));
+        log::trace!(
+            "status fetched: {} (type: {:?}, untracked: {})",
+            hash(&res),
+            status_type,
+            include_untracked
+        );
 
         {
             let mut current = arc_current.lock()?;
