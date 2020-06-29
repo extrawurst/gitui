@@ -41,7 +41,7 @@ clippy-pedantic:
 check: fmt clippy
 
 install:
-	cargo install --path "."
+	cargo install --path "." --offline
 
-install-debug:
+install-timing:
 	cargo install --features=timing --path "." --offline
