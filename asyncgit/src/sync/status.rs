@@ -97,6 +97,7 @@ pub fn get_status(
     let statuses = repo.statuses(Some(
         StatusOptions::default()
             .show(status_type.into())
+            .update_index(true)
             .include_untracked(include_untracked)
             .renames_head_to_index(true)
             .recurse_untracked_dirs(true),
