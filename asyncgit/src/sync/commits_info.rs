@@ -2,7 +2,6 @@ use super::utils::repo;
 use crate::error::Result;
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
-use std::borrow::Cow;
 
 /// identifies a single commit
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -93,19 +92,20 @@ pub fn get_message(
     message_length_limit: Option<usize>,
 ) -> String {
     let msg = String::from_utf8_lossy(c.message_bytes());
+    let msg = msg.trim_start();
 
     if let Some(limit) = message_length_limit {
-        limit_str(msg, limit)
+        limit_str(msg, limit).to_string()
     } else {
         msg.to_string()
     }
 }
 
-fn limit_str(s: Cow<'_, str>, limit: usize) -> String {
+fn limit_str(s: &str, limit: usize) -> &str {
     if let Some(first) = s.lines().next() {
-        first.chars().take(limit).collect::<String>()
+        &first[0..limit.min(first.len())]
     } else {
-        String::new()
+        ""
     }
 }
 
