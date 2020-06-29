@@ -90,12 +90,13 @@ fn main() -> Result<()> {
 
     let (tx_git, rx_git) = unbounded();
 
-    let mut app = App::new(&tx_git);
+    let input = Input::new();
 
-    let mut input = Input::new();
     let rx_input = input.receiver();
     let ticker = tick(TICK_INTERVAL);
     let spinner_ticker = tick(SPINNER_INTERVAL);
+
+    let mut app = App::new(&tx_git, input);
 
     let mut spinner = Spinner::default();
     let mut first_update = true;
@@ -129,13 +130,9 @@ fn main() -> Result<()> {
                 QueueEvent::SpinnerUpdate => unreachable!(),
             }
 
-            input.set_polling(app.set_polling());
-
             draw(&mut terminal, &app)?;
 
-            spinner.set_state(
-                app.any_work_pending() || input.is_state_changing(),
-            );
+            spinner.set_state(app.any_work_pending());
             spinner.draw(&mut terminal)?;
 
             if app.is_quit() {

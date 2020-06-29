@@ -7,7 +7,7 @@ use crate::{
         InspectCommitComponent, MsgComponent, ResetComponent,
         StashMsgComponent,
     },
-    input::{InputEvent, InputState},
+    input::{Input, InputEvent, InputState},
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
     strings::{self, commands, order},
@@ -45,21 +45,25 @@ pub struct App {
     stashlist_tab: StashList,
     queue: Queue,
     theme: SharedTheme,
+    input: Input,
 
     // "Flags"
     requires_redraw: Cell<bool>,
-    set_polling: bool,
 }
 
 // public interface
 impl App {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(
+        sender: &Sender<AsyncNotification>,
+        input: Input,
+    ) -> Self {
         let queue = Queue::default();
 
         let theme = Rc::new(Theme::init());
 
         Self {
+            input,
             reset: ResetComponent::new(queue.clone(), theme.clone()),
             commit: CommitComponent::new(
                 queue.clone(),
@@ -90,7 +94,6 @@ impl App {
             queue,
             theme,
             requires_redraw: Cell::new(false),
-            set_polling: true,
         }
     }
 
@@ -197,7 +200,7 @@ impl App {
                     self.msg.show_msg(msg.as_str())?;
                 }
                 self.requires_redraw.set(true);
-                self.set_polling = true;
+                self.input.set_polling(true);
             }
         }
 
@@ -249,6 +252,7 @@ impl App {
             || self.revlog.any_work_pending()
             || self.stashing_tab.anything_pending()
             || self.inspect_commit_popup.any_work_pending()
+            || self.input.is_state_changing()
     }
 
     ///
@@ -259,12 +263,6 @@ impl App {
         } else {
             false
         }
-    }
-
-    ///
-    //TODO: rename
-    pub const fn set_polling(&self) -> bool {
-        self.set_polling
     }
 }
 
@@ -407,7 +405,7 @@ impl App {
                 flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
             }
             InternalEvent::SuspendPolling => {
-                self.set_polling = false;
+                self.input.set_polling(false);
             }
         };
 
