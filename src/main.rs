@@ -57,7 +57,7 @@ use tui::{
 };
 
 static TICK_INTERVAL: Duration = Duration::from_secs(5);
-static SPINNER_INTERVAL: Duration = Duration::from_millis(50);
+static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
 
 ///
 #[derive(Clone, Copy)]
@@ -97,46 +97,46 @@ fn main() -> Result<()> {
     let ticker = tick(TICK_INTERVAL);
     let spinner_ticker = tick(SPINNER_INTERVAL);
 
-    app.update()?;
-    draw(&mut terminal, &app)?;
-
     let mut spinner = Spinner::default();
+    let mut first_update = true;
 
     loop {
-        let events: Vec<QueueEvent> = select_event(
-            &rx_input,
-            &rx_git,
-            &ticker,
-            &spinner_ticker,
-        )?;
+        let event = if first_update {
+            first_update = false;
+            QueueEvent::Tick
+        } else {
+            select_event(
+                &rx_input,
+                &rx_git,
+                &ticker,
+                &spinner_ticker,
+            )?
+        };
 
         {
+            if let QueueEvent::SpinnerUpdate = event {
+                spinner.update();
+                spinner.draw(&mut terminal)?;
+                continue;
+            }
+
             scope_time!("loop");
 
-            let mut needs_draw = true;
-
-            for e in events {
-                match e {
-                    QueueEvent::InputEvent(ev) => app.event(ev)?,
-                    QueueEvent::Tick => app.update()?,
-                    QueueEvent::GitEvent(ev) => app.update_git(ev)?,
-                    QueueEvent::SpinnerUpdate => {
-                        needs_draw = false;
-                        spinner.update()
-                    }
-                }
+            match event {
+                QueueEvent::InputEvent(ev) => app.event(ev)?,
+                QueueEvent::Tick => app.update()?,
+                QueueEvent::GitEvent(ev) => app.update_git(ev)?,
+                QueueEvent::SpinnerUpdate => unreachable!(),
             }
 
             input.set_polling(app.set_polling());
 
-            if needs_draw {
-                draw(&mut terminal, &app)?;
-            }
+            draw(&mut terminal, &app)?;
 
-            spinner.draw(
-                &mut terminal,
+            spinner.set_state(
                 app.any_work_pending() || input.is_state_changing(),
-            )?;
+            );
+            spinner.draw(&mut terminal)?;
 
             if app.is_quit() {
                 break;
@@ -184,9 +184,7 @@ fn select_event(
     rx_git: &Receiver<AsyncNotification>,
     rx_ticker: &Receiver<Instant>,
     rx_spinner: &Receiver<Instant>,
-) -> Result<Vec<QueueEvent>> {
-    let mut events: Vec<QueueEvent> = Vec::new();
-
+) -> Result<QueueEvent> {
     let mut sel = Select::new();
 
     sel.recv(rx_input);
@@ -197,23 +195,15 @@ fn select_event(
     let oper = sel.select();
     let index = oper.index();
 
-    match index {
-        0 => oper
-            .recv(rx_input)
-            .map(|input| events.push(QueueEvent::InputEvent(input))),
-        1 => oper
-            .recv(rx_git)
-            .map(|ev| events.push(QueueEvent::GitEvent(ev))),
-        2 => oper
-            .recv(rx_ticker)
-            .map(|_| events.push(QueueEvent::Tick)),
-        3 => oper
-            .recv(rx_spinner)
-            .map(|_| events.push(QueueEvent::SpinnerUpdate)),
+    let ev = match index {
+        0 => oper.recv(rx_input).map(QueueEvent::InputEvent),
+        1 => oper.recv(rx_git).map(QueueEvent::GitEvent),
+        2 => oper.recv(rx_ticker).map(|_| QueueEvent::Tick),
+        3 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
         _ => return Err(anyhow!("unknown select source")),
     }?;
 
-    Ok(events)
+    Ok(ev)
 }
 
 fn start_terminal<W: Write>(

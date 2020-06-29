@@ -208,10 +208,13 @@ impl App {
     /// forward ticking to components that require it
     pub fn update(&mut self) -> Result<()> {
         log::trace!("update");
+
         self.status_tab.update()?;
         self.revlog.update()?;
         self.stashing_tab.update()?;
         self.stashlist_tab.update()?;
+
+        self.update_commands();
 
         Ok(())
     }
@@ -259,6 +262,7 @@ impl App {
     }
 
     ///
+    //TODO: rename
     pub const fn set_polling(&self) -> bool {
         self.set_polling
     }
