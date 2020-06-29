@@ -4,14 +4,13 @@ use super::{
 };
 use crate::{
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings,
+    strings::{self, commands},
     tabs::StashingOptions,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{sync, CWD};
 use crossterm::event::{Event, KeyCode};
-use strings::commands;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct StashMsgComponent {

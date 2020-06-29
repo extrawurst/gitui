@@ -8,12 +8,11 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::{self, CommitDetails},
+    sync::{self, CommitDetails, CommitId, Tags},
     CWD,
 };
 use crossterm::event::Event;
 use std::borrow::Cow;
-use sync::{CommitId, Tags};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},

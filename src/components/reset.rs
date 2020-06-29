@@ -4,12 +4,12 @@ use crate::{
         CommandInfo, Component, DrawableComponent,
     },
     queue::{Action, InternalEvent, Queue},
-    strings, ui,
+    strings::{self, commands},
+    ui,
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
 use std::borrow::Cow;
-use strings::commands;
 use tui::{
     backend::Backend,
     layout::Rect,

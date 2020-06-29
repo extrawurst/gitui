@@ -6,10 +6,10 @@ use ron::{
     ser::{to_string_pretty, PrettyConfig},
 };
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::{
     fs::File,
     io::{Read, Write},
+    path::PathBuf,
     rc::Rc,
 };
 use tui::style::{Color, Modifier, Style};

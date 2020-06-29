@@ -9,14 +9,14 @@ use crate::{
     components::{CommandInfo, Component},
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings, ui,
+    strings::{commands, order},
+    ui,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::Event;
 use std::{borrow::Cow, convert::From, path::Path};
-use strings::{commands, order};
 use tui::{backend::Backend, layout::Rect, widgets::Text, Frame};
 
 ///

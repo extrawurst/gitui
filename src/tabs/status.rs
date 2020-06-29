@@ -1,13 +1,13 @@
 use crate::{
     accessors,
     components::{
-        self, event_pump, ChangesComponent, CommandBlocking,
-        CommandInfo, Component, DiffComponent, DrawableComponent,
-        FileTreeItemKind,
+        command_pump, event_pump, visibility_blocking,
+        ChangesComponent, CommandBlocking, CommandInfo, Component,
+        DiffComponent, DrawableComponent, FileTreeItemKind,
     },
     keys,
     queue::{InternalEvent, Queue, ResetItem},
-    strings,
+    strings::{self, commands, order},
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -16,10 +16,8 @@ use asyncgit::{
     AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
     StatusParams, CWD,
 };
-use components::{command_pump, visibility_blocking};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use strings::{commands, order};
 use tui::layout::{Constraint, Direction, Layout};
 
 ///

@@ -10,12 +10,11 @@ use crate::{
     ui::style::{SharedTheme, Theme},
 };
 use anyhow::Result;
-use asyncgit::sync;
+use asyncgit::sync::Tags;
 use crossterm::event::Event;
 use std::{
     borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
 };
-use sync::Tags;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},

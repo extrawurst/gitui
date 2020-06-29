@@ -6,15 +6,16 @@ use crate::{
     },
     keys,
     queue::{InternalEvent, Queue},
-    strings,
+    strings::{self, commands},
     ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{sync, AsyncLog, AsyncNotification, FetchStatus, CWD};
+use asyncgit::{
+    sync::{self, CommitId},
+    AsyncLog, AsyncNotification, FetchStatus, CWD,
+};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use strings::commands;
-use sync::CommitId;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},

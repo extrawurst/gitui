@@ -2,12 +2,16 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{keys, strings, ui, version::Version};
+use crate::{
+    keys,
+    strings::{self, commands},
+    ui,
+    version::Version,
+};
 use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
 use std::{borrow::Cow, cmp, convert::TryFrom};
-use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},

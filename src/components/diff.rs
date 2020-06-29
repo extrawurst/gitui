@@ -3,14 +3,13 @@ use crate::{
     components::{CommandInfo, Component},
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
-    strings,
+    strings::{self, commands},
     ui::{calc_scroll_top, style::SharedTheme},
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
-use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},

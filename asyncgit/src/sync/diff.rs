@@ -1,6 +1,10 @@
 //! sync git api for fetching a diff
 
-use super::{commit_files::get_commit_diff, utils, CommitId};
+use super::{
+    commit_files::get_commit_diff,
+    utils::{self, get_head_repo, work_dir},
+    CommitId,
+};
 use crate::{error::Error, error::Result, hash};
 use git2::{
     Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
@@ -8,7 +12,6 @@ use git2::{
 };
 use scopetime::scope_time;
 use std::{cell::RefCell, fs, path::Path, rc::Rc};
-use utils::{get_head_repo, work_dir};
 
 /// type of diff of a single line
 #[derive(Copy, Clone, PartialEq, Hash, Debug)]

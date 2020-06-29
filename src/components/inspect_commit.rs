@@ -4,16 +4,16 @@ use super::{
     DrawableComponent,
 };
 use crate::{
-    accessors, keys, queue::Queue, strings, ui::style::SharedTheme,
+    accessors, keys, queue::Queue, strings::commands,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
-    sync, AsyncDiff, AsyncNotification, DiffParams, DiffType,
+    sync::{CommitId, Tags},
+    AsyncDiff, AsyncNotification, DiffParams, DiffType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use strings::commands;
-use sync::{CommitId, Tags};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},

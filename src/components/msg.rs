@@ -2,10 +2,13 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{keys, strings, ui};
+use crate::{
+    keys,
+    strings::{self, commands},
+    ui,
+};
 use crossterm::event::Event;
 use std::borrow::Cow;
-use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},

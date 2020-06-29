@@ -1,5 +1,6 @@
 mod scrolllist;
 pub mod style;
+
 use scrolllist::ScrollableList;
 use style::SharedTheme;
 use tui::{

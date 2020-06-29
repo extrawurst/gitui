@@ -7,7 +7,7 @@ use crate::{
     },
     keys,
     queue::{InternalEvent, Queue},
-    strings,
+    strings::{self, commands},
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -18,7 +18,6 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use std::borrow::Cow;
-use strings::commands;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
     widgets::{Block, Borders, Paragraph, Text},

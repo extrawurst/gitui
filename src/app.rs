@@ -1,4 +1,3 @@
-use crate::input::InputState;
 use crate::{
     accessors,
     cmdbar::CommandBar,
@@ -8,10 +7,10 @@ use crate::{
         InspectCommitComponent, MsgComponent, ResetComponent,
         StashMsgComponent,
     },
-    input::InputEvent,
+    input::{InputEvent, InputState},
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
-    strings,
+    strings::{self, commands, order},
     tabs::{Revlog, StashList, Stashing, Status},
     ui::style::{SharedTheme, Theme},
 };
@@ -19,9 +18,7 @@ use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
-use std::cell::Cell;
-use std::{cell::RefCell, rc::Rc};
-use strings::{commands, order};
+use std::{cell::Cell, cell::RefCell, rc::Rc};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},

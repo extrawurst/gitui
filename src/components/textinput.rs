@@ -3,11 +3,11 @@ use crate::{
         popup_paragraph, visibility_blocking, CommandBlocking,
         CommandInfo, Component, DrawableComponent,
     },
-    strings, ui,
+    strings::commands,
+    ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
-use strings::commands;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -15,7 +15,6 @@ use tui::{
     widgets::{Clear, Text},
     Frame,
 };
-use ui::style::SharedTheme;
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
 pub struct TextInputComponent {

@@ -1,5 +1,8 @@
 use crate::{
-    error::Result, hash, sync, AsyncNotification, FileDiff, CWD,
+    error::Result,
+    hash,
+    sync::{self, CommitId},
+    AsyncNotification, FileDiff, CWD,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -9,7 +12,6 @@ use std::{
         Arc, Mutex,
     },
 };
-use sync::CommitId;
 
 ///
 #[derive(Hash, Clone, PartialEq)]

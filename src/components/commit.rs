@@ -6,12 +6,12 @@ use crate::{
     get_app_config_path, keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
-    strings::COMMIT_EDITOR_MSG,
+    strings::{commands, COMMIT_EDITOR_MSG},
     ui::style::SharedTheme,
 };
 use anyhow::{anyhow, Result};
 use asyncgit::{
-    sync::{self, CommitId},
+    sync::{self, CommitId, HookResult},
     CWD,
 };
 use crossterm::{
@@ -20,13 +20,13 @@ use crossterm::{
     ExecutableCommand,
 };
 use scopeguard::defer;
-use std::env;
-use std::fs::File;
-use std::io::{self, Read, Write};
-use std::path::PathBuf;
-use std::process::Command;
-use strings::commands;
-use sync::HookResult;
+use std::{
+    env,
+    fs::File,
+    io::{self, Read, Write},
+    path::PathBuf,
+    process::Command,
+};
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct CommitComponent {

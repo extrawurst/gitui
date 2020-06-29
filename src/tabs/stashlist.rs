@@ -5,15 +5,15 @@ use crate::{
     },
     keys,
     queue::{Action, InternalEvent, Queue},
-    strings,
+    strings::{self, commands},
     ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::sync;
-use asyncgit::CWD;
+use asyncgit::{
+    sync::{self, CommitId},
+    CWD,
+};
 use crossterm::event::Event;
-use strings::commands;
-use sync::CommitId;
 
 pub struct StashList {
     list: CommitList,

@@ -1,5 +1,8 @@
 use crate::{
-    error::Result, hash, sync, AsyncNotification, StatusItem, CWD,
+    error::Result,
+    hash,
+    sync::{self, status::StatusType},
+    AsyncNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -10,7 +13,6 @@ use std::{
     },
     time::{SystemTime, UNIX_EPOCH},
 };
-use sync::status::StatusType;
 
 fn current_tick() -> u64 {
     SystemTime::now()

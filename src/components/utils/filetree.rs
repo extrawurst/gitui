@@ -1,13 +1,12 @@
+use anyhow::Result;
 use asyncgit::StatusItem;
 use std::{
     collections::BTreeSet,
     convert::TryFrom,
+    ffi::OsStr,
     ops::{Index, IndexMut},
     path::Path,
 };
-
-use anyhow::Result;
-use std::ffi::OsStr;
 
 /// holds the information shared among all `FileTreeItem` in a `FileTree`
 #[derive(Debug, Clone)]

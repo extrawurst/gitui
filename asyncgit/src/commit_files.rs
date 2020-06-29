@@ -1,12 +1,13 @@
 use crate::{
-    error::Result, sync, AsyncNotification, StatusItem, CWD,
+    error::Result,
+    sync::{self, CommitId},
+    AsyncNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, Mutex,
 };
-use sync::CommitId;
 
 type ResultType = Vec<StatusItem>;
 struct Request<R, A>(R, A);

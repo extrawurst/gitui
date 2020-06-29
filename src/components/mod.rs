@@ -12,13 +12,15 @@ mod reset;
 mod stashmsg;
 mod textinput;
 mod utils;
+
 use anyhow::Result;
+use crossterm::event::Event;
+
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
 pub use commit_details::CommitDetailsComponent;
 pub use commitlist::CommitList;
-use crossterm::event::Event;
 pub use diff::DiffComponent;
 pub use filetree::FileTreeComponent;
 pub use help::HelpComponent;

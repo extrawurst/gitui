@@ -4,8 +4,7 @@ use scopetime::scope_time;
 use std::{
     fs::File,
     io::{Read, Write},
-    path::Path,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
 };
 
