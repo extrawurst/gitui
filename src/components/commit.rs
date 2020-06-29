@@ -2,11 +2,11 @@ use super::{
     textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
 };
-use crate::strings::COMMIT_EDITOR_MSG;
 use crate::{
     get_app_config_path, keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
+    strings::COMMIT_EDITOR_MSG,
     ui::style::SharedTheme,
 };
 use anyhow::{anyhow, Result};
@@ -14,10 +14,15 @@ use asyncgit::{
     sync::{self, CommitId},
     CWD,
 };
-use crossterm::event::Event;
+use crossterm::{
+    event::Event,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
+};
+use scopeguard::defer;
 use std::env;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use std::process::Command;
 use strings::commands;
@@ -149,6 +154,12 @@ impl CommitComponent {
         let command = editor.next().ok_or_else(|| {
             anyhow!("unable to read editor command")
         })?;
+
+        io::stdout().execute(LeaveAlternateScreen)?;
+
+        defer! {
+            io::stdout().execute(EnterAlternateScreen).expect("failed to reset terminal");
+        }
 
         Command::new(command)
             .args(editor)
