@@ -253,7 +253,7 @@ impl DrawableComponent for FileTreeComponent {
         let select = self
             .tree
             .selection
-            .map(|idx| idx - selection_offset)
+            .map(|idx| idx.saturating_sub(selection_offset))
             .unwrap_or_default();
         let tree_height = r.height.saturating_sub(2) as usize;
 
