@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - clearer help headers ([#131](https://github.com/extrawurst/gitui/issues/131))
 - diisplay non-utf8 commit messages at least partially ([#150](https://github.com/extrawurst/gitui/issues/150))
 - hooks ignored when running `gitui` in subfolder of workdir ([#151](https://github.com/extrawurst/gitui/issues/151))
+- better scrolling in file-trees [[@tisorlawan](https://github.com/tisorlawan)] ([#144](https://github.com/extrawurst/gitui/issues/144))
 - some optimizations in reflog
 
 ## [0.7.0] - 2020-06-15
