@@ -256,13 +256,12 @@ impl DrawableComponent for FileTreeComponent {
             .map(|idx| idx - selection_offset)
             .unwrap_or_default();
         let tree_height = r.height.saturating_sub(2) as usize;
-        let scroll_top = self.scroll_top.get();
 
-        if select >= scroll_top + tree_height {
-            self.scroll_top.set(select - tree_height + 1);
-        } else if select < scroll_top {
-            self.scroll_top.set(scroll_top - 1);
-        };
+        self.scroll_top.set(ui::calc_scroll_top(
+            self.scroll_top.get(),
+            tree_height,
+            select,
+        ));
 
         ui::draw_list(
             f,
