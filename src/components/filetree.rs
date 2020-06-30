@@ -16,6 +16,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::Event;
+use std::cell::Cell;
 use std::{borrow::Cow, convert::From, path::Path};
 use tui::{backend::Backend, layout::Rect, widgets::Text, Frame};
 
@@ -28,6 +29,7 @@ pub struct FileTreeComponent {
     show_selection: bool,
     queue: Option<Queue>,
     theme: SharedTheme,
+    scroll_top: Cell<usize>,
 }
 
 impl FileTreeComponent {
@@ -46,6 +48,7 @@ impl FileTreeComponent {
             show_selection: focus,
             queue,
             theme,
+            scroll_top: Cell::new(0),
         }
     }
 
@@ -247,12 +250,25 @@ impl DrawableComponent for FileTreeComponent {
                 },
             );
 
+        let select = self
+            .tree
+            .selection
+            .map(|idx| idx - selection_offset)
+            .unwrap_or_default();
+        let tree_height = r.height.saturating_sub(2) as usize;
+
+        self.scroll_top.set(ui::calc_scroll_top(
+            self.scroll_top.get(),
+            tree_height,
+            select,
+        ));
+
         ui::draw_list(
             f,
             r,
             self.title.as_str(),
-            items,
-            self.tree.selection.map(|idx| idx - selection_offset),
+            items.skip(self.scroll_top.get()),
+            Some(select),
             self.focused,
             &self.theme,
         );
