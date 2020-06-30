@@ -1,3 +1,4 @@
+use crate::notify_mutex::NotifyableMutex;
 use crossbeam_channel::{unbounded, Receiver};
 use crossterm::event::{self, Event};
 use std::{
@@ -27,7 +28,7 @@ pub enum InputEvent {
 
 ///
 pub struct Input {
-    desired_state: Arc<AtomicBool>,
+    desired_state: Arc<NotifyableMutex<bool>>,
     current_state: Arc<AtomicBool>,
     receiver: Receiver<InputEvent>,
 }
@@ -37,40 +38,39 @@ impl Input {
     pub fn new() -> Self {
         let (tx, rx) = unbounded();
 
-        let desired_state = Arc::new(AtomicBool::new(true));
+        let desired_state = Arc::new(NotifyableMutex::new(true));
         let current_state = Arc::new(AtomicBool::new(true));
 
         let arc_desired = Arc::clone(&desired_state);
         let arc_current = Arc::clone(&current_state);
 
-        thread::spawn(move || {
-            loop {
-                //TODO: use condvar to not busy wait
-                if arc_desired.load(Ordering::Relaxed) {
-                    if !arc_current.load(Ordering::Relaxed) {
-                        tx.send(InputEvent::State(
-                            InputState::Polling,
-                        ))
-                        .expect("send failed");
-                    }
-                    arc_current.store(true, Ordering::Relaxed);
+        thread::spawn(move || loop {
+            if arc_desired.get() {
+                if !arc_current.load(Ordering::Relaxed) {
+                    log::info!("input polling resumed");
 
-                    if let Some(e) = Self::poll(POLL_DURATION)
-                        .expect("failed to pull events.")
-                    {
-                        tx.send(InputEvent::Input(e))
-                            .expect("send input event failed");
-                    }
-                } else {
-                    if arc_current.load(Ordering::Relaxed) {
-                        tx.send(InputEvent::State(
-                            InputState::Paused,
-                        ))
-                        .expect("send failed");
-                    }
-
-                    arc_current.store(false, Ordering::Relaxed);
+                    tx.send(InputEvent::State(InputState::Polling))
+                        .expect("send state failed");
                 }
+                arc_current.store(true, Ordering::Relaxed);
+
+                if let Some(e) = Self::poll(POLL_DURATION)
+                    .expect("failed to pull events.")
+                {
+                    tx.send(InputEvent::Input(e))
+                        .expect("send input failed");
+                }
+            } else {
+                if arc_current.load(Ordering::Relaxed) {
+                    log::info!("input polling suspended");
+
+                    tx.send(InputEvent::State(InputState::Paused))
+                        .expect("send state failed");
+                }
+
+                arc_current.store(false, Ordering::Relaxed);
+
+                arc_desired.wait(true);
             }
         });
 
@@ -88,12 +88,16 @@ impl Input {
 
     ///
     pub fn set_polling(&mut self, enabled: bool) {
-        self.desired_state.store(enabled, Ordering::Relaxed);
+        self.desired_state.set_and_notify(enabled)
+    }
+
+    fn shall_poll(&self) -> bool {
+        self.desired_state.get()
     }
 
     ///
     pub fn is_state_changing(&self) -> bool {
-        self.desired_state.load(Ordering::Relaxed)
+        self.shall_poll()
             != self.current_state.load(Ordering::Relaxed)
     }
 

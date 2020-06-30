@@ -14,6 +14,7 @@ mod cmdbar;
 mod components;
 mod input;
 mod keys;
+mod notify_mutex;
 mod queue;
 mod spinner;
 mod strings;
