@@ -68,7 +68,7 @@ pub(crate) fn get_commit_diff(
         None
     };
 
-    let mut opt = pathspec.clone().map(|p| {
+    let mut opt = pathspec.as_ref().map(|p| {
         let mut opts = DiffOptions::new();
         opts.pathspec(p);
         opts.show_binary(true);
@@ -87,7 +87,7 @@ pub(crate) fn get_commit_diff(
         return get_commit_diff(
             repo,
             CommitId::new(untracked_commit),
-            (&pathspec).clone(),
+            pathspec,
         );
     }
 
