@@ -19,6 +19,15 @@ pub fn get_stashes(repo_path: &str) -> Result<Vec<CommitId>> {
     Ok(list)
 }
 
+/// checks whether a given commit is a stash commit.
+pub fn is_stash_commit(
+    repo_path: &str,
+    id: &CommitId,
+) -> Result<bool> {
+    let stashes = get_stashes(repo_path)?;
+    Ok(stashes.contains(&id))
+}
+
 ///
 pub fn stash_drop(repo_path: &str, stash_id: CommitId) -> Result<()> {
     scope_time!("stash_drop");
