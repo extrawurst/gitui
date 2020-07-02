@@ -1,5 +1,5 @@
 use super::{stash::is_stash_commit, utils::repo, CommitId};
-use crate::{error::Result, StatusItem, StatusItemType, CWD};
+use crate::{error::Result, StatusItem, StatusItemType};
 use git2::{Diff, DiffDelta, DiffOptions, Repository};
 use scopetime::scope_time;
 
@@ -33,22 +33,6 @@ pub fn get_commit_files(
         None,
     )?;
 
-    // stash commits have parent commits containing untracked files and if we want to show
-    // these files as if they were actually in the stash commit  we have to have some specific
-    // handling regarding these special stash commits.
-    // more info can be found at https://stackoverflow.com/questions/51275777/why-does-git-stash-pop-say-that-it-could-not-restore-untracked-files-from-stash/51276389#51276389
-    if is_stash_commit(repo_path, &id)? {
-        let commit = repo.find_commit(id.into())?;
-        let untracked_commit = commit.parent_id(2)?;
-
-        let mut untracked_files = get_commit_files(
-            repo_path,
-            CommitId::new(untracked_commit),
-        )?;
-
-        res.append(&mut untracked_files);
-    }
-
     Ok(res)
 }
 
@@ -75,20 +59,25 @@ pub(crate) fn get_commit_diff(
         opts
     });
 
-    let diff = repo.diff_tree_to_tree(
+    let mut diff = repo.diff_tree_to_tree(
         parent.as_ref(),
         Some(&commit_tree),
         opt.as_mut(),
     )?;
 
-    if diff.deltas().len() == 0 && is_stash_commit(CWD, &id)? {
+    if is_stash_commit(
+        repo.path().to_str().expect("repo path utf8 err"),
+        &id,
+    )? {
         let untracked_commit = commit.parent_id(2)?;
 
-        return get_commit_diff(
+        let untracked_diff = get_commit_diff(
             repo,
             CommitId::new(untracked_commit),
             pathspec,
-        );
+        )?;
+
+        diff.merge(&untracked_diff)?;
     }
 
     Ok(diff)
@@ -100,7 +89,8 @@ mod tests {
     use crate::{
         error::Result,
         sync::{
-            commit, stage_add_file, stash_save, tests::repo_init,
+            commit, stage_add_file, stash_save,
+            tests::{get_statuses, repo_init},
         },
         StatusItemType,
     };
@@ -140,13 +130,39 @@ mod tests {
 
         let id = stash_save(repo_path, None, true, false)?;
 
-        //TODO: https://github.com/extrawurst/gitui/issues/130
-        // `get_commit_diff` actually needs to merge the regular diff
-        // and a third parent diff containing the untracked files
         let diff = get_commit_files(repo_path, id)?;
 
         assert_eq!(diff.len(), 1);
         assert_eq!(diff[0].status, StatusItemType::New);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_stashed_untracked_and_modified() -> Result<()> {
+        let file_path1 = Path::new("file1.txt");
+        let file_path2 = Path::new("file2.txt");
+        let (_td, repo) = repo_init()?;
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path1))?.write_all(b"test")?;
+        stage_add_file(repo_path, file_path1)?;
+        commit(repo_path, "c1")?;
+
+        File::create(&root.join(file_path1))?
+            .write_all(b"modified")?;
+        File::create(&root.join(file_path2))?.write_all(b"new")?;
+
+        assert_eq!(get_statuses(repo_path), (2, 0));
+
+        let id = stash_save(repo_path, None, true, false)?;
+
+        let diff = get_commit_files(repo_path, id)?;
+
+        assert_eq!(diff.len(), 2);
+        assert_eq!(diff[0].status, StatusItemType::Modified);
+        assert_eq!(diff[1].status, StatusItemType::New);
 
         Ok(())
     }
