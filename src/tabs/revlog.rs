@@ -11,6 +11,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
+    cached,
     sync::{self, CommitId},
     AsyncLog, AsyncNotification, FetchStatus, CWD,
 };
@@ -31,6 +32,7 @@ pub struct Revlog {
     git_log: AsyncLog,
     queue: Queue,
     visible: bool,
+    branch_name: cached::BranchName,
 }
 
 impl Revlog {
@@ -50,6 +52,7 @@ impl Revlog {
             list: CommitList::new(strings::LOG_TITLE, theme),
             git_log: AsyncLog::new(sender),
             visible: false,
+            branch_name: cached::BranchName::new(CWD),
         }
     }
 
@@ -80,7 +83,7 @@ impl Revlog {
             }
 
             self.list.set_branch(
-                sync::get_branch_name(CWD).map(Some).unwrap_or(None),
+                self.branch_name.lookup().map(Some).unwrap_or(None),
             );
 
             if self.commit_details.is_visible() {

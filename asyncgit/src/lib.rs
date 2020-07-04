@@ -6,6 +6,7 @@
 #![deny(clippy::result_unwrap_used)]
 #![deny(clippy::panic)]
 
+pub mod cached;
 mod commit_files;
 mod diff;
 mod error;

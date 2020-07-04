@@ -11,7 +11,7 @@ use crate::{
     ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{sync, StatusItem, StatusItemType, CWD};
+use asyncgit::{cached, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
 use std::path::Path;
 use strings::commands;
@@ -39,6 +39,7 @@ pub struct ChangesComponent {
     files: FileTreeComponent,
     is_working_dir: bool,
     queue: Queue,
+    branch_name: cached::BranchName,
 }
 
 impl ChangesComponent {
@@ -60,13 +61,14 @@ impl ChangesComponent {
             ),
             is_working_dir,
             queue,
+            branch_name: cached::BranchName::new(CWD),
         }
     }
 
     ///
     pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
         if self.is_working_dir {
-            if let Ok(branch_name) = sync::get_branch_name(CWD) {
+            if let Ok(branch_name) = self.branch_name.lookup() {
                 self.files.set_title(format!(
                     "{} - {{{}}}",
                     &self.title, branch_name,
