@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - show untracked files in stash commit details [[@MCord](https://github.com/MCord)] ([#130](https://github.com/extrawurst/gitui/issues/130))
 - in some repos looking up the branch name was a bottleneck ([#159](https://github.com/extrawurst/gitui/issues/159))
 - some optimizations in reflog
+- fix arrow utf8 encoding in help window [[@daober](https://github.com/daober)] ([#142](https://github.com/extrawurst/gitui/issues/142))
 
 ## [0.7.0] - 2020-06-15
 
