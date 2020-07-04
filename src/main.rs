@@ -39,7 +39,7 @@ use crossterm::{
     },
     ExecutableCommand,
 };
-use input::{Input, InputEvent};
+use input::{Input, InputEvent, InputState};
 use profiler::Profiler;
 use scopeguard::defer;
 use scopetime::scope_time;
@@ -129,7 +129,14 @@ fn main() -> Result<()> {
             scope_time!("loop");
 
             match event {
-                QueueEvent::InputEvent(ev) => app.event(ev)?,
+                QueueEvent::InputEvent(ev) => {
+                    if let InputEvent::State(InputState::Polling) = ev
+                    {
+                        //Note: external ed closed, we need to re-hide cursor
+                        terminal.hide_cursor()?;
+                    }
+                    app.event(ev)?
+                }
                 QueueEvent::Tick => app.update()?,
                 QueueEvent::GitEvent(ev) => app.update_git(ev)?,
                 QueueEvent::SpinnerUpdate => unreachable!(),
