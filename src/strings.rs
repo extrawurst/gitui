@@ -6,7 +6,7 @@ pub static TAB_STATUS: &str = "Status [1]";
 pub static TAB_LOG: &str = "Log [2]";
 pub static TAB_STASHING: &str = "Stashing [3]";
 pub static TAB_STASHES: &str = "Stashes [4]";
-pub static TAB_DIVIDER: &str = "  |  ";
+pub static TAB_DIVIDER: &str = " | ";
 
 pub static CMD_SPLITTER: &str = " ";
 

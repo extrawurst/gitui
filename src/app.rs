@@ -21,9 +21,7 @@ use crossterm::event::{Event, KeyEvent};
 use std::{cell::Cell, cell::RefCell, rc::Rc};
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::Modifier,
-    style::Style,
+    layout::{Constraint, Direction, Layout, Margin, Rect},
     widgets::{Block, Borders, Tabs},
     Frame,
 };
@@ -489,21 +487,28 @@ impl App {
 
     //TODO: make this dynamic
     fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+        let r = r.inner(&Margin {
+            vertical: 0,
+            horizontal: 1,
+        });
+
+        let tabs = &[
+            strings::TAB_STATUS,
+            strings::TAB_LOG,
+            strings::TAB_STASHING,
+            strings::TAB_STASHES,
+        ];
+
         f.render_widget(
             Tabs::default()
-                .block(Block::default().borders(Borders::BOTTOM))
-                .titles(&[
-                    strings::TAB_STATUS,
-                    strings::TAB_LOG,
-                    strings::TAB_STASHING,
-                    strings::TAB_STASHES,
-                ])
-                .style(Style::default())
-                .highlight_style(
-                    self.theme
-                        .tab(true)
-                        .modifier(Modifier::UNDERLINED),
+                .block(
+                    Block::default()
+                        .borders(Borders::BOTTOM)
+                        .border_style(self.theme.block(false)),
                 )
+                .titles(tabs)
+                .style(self.theme.tab(false))
+                .highlight_style(self.theme.tab(true))
                 .divider(strings::TAB_DIVIDER)
                 .select(self.tab),
             r,

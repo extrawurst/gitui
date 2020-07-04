@@ -69,9 +69,9 @@ impl Theme {
 
     pub fn tab(&self, selected: bool) -> Style {
         if selected {
-            Style::default().fg(self.selected_tab)
+            self.text(true, false).modifier(Modifier::UNDERLINED)
         } else {
-            Style::default()
+            self.text(false, false)
         }
     }
 

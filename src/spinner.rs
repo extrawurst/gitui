@@ -1,7 +1,10 @@
 use std::io;
 use tui::{backend::Backend, buffer::Cell, Terminal};
 
-static SPINNER_CHARS: &[char] = &['|', '/', '-', '\\'];
+// static SPINNER_CHARS: &[char] = &['◢', '◣', '◤', '◥'];
+// static SPINNER_CHARS: &[char] = &['⢹', '⢺', '⢼', '⣸', '⣇', '⡧', '⡗', '⡏'];
+static SPINNER_CHARS: &[char] =
+    &['⣷', '⣯', '⣟', '⡿', '⢿', '⣻', '⣽', '⣾'];
 
 ///
 #[derive(Default)]
