@@ -89,6 +89,7 @@ impl TextInputComponent {
     /// Set the `msg`.
     pub fn set_text(&mut self, msg: String) {
         self.msg = msg;
+        //TODO: make sure cursor is in bounds
     }
 
     /// Set the `title`.
