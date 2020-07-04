@@ -1,6 +1,9 @@
 
 .PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
+profile:
+	cargo run --features=timing,pprof -- -l
+
 debug:
 	cargo run --features=timing -- -l
 

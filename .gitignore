@@ -2,3 +2,4 @@
 /release
 .DS_Store
 /.idea/
+flamegraph.svg

@@ -15,6 +15,7 @@ mod components;
 mod input;
 mod keys;
 mod notify_mutex;
+mod profiler;
 mod queue;
 mod spinner;
 mod strings;
@@ -39,6 +40,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use input::{Input, InputEvent};
+use profiler::Profiler;
 use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
@@ -71,6 +73,8 @@ pub enum QueueEvent {
 
 fn main() -> Result<()> {
     process_cmdline()?;
+
+    let _profiler = Profiler::new();
 
     if !valid_path()? {
         eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
