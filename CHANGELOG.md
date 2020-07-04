@@ -8,16 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - core homebrew [formulae](https://formulae.brew.sh/formula/gitui#default): `brew install gitui` [[@vladimyr](https://github.com/vladimyr)] ([#137](https://github.com/extrawurst/gitui/issues/137))
-- show file sizes and delta on binary files diff ([#141](https://github.com/extrawurst/gitui/issues/141))
+- show file sizes and delta on binary diffs ([#141](https://github.com/extrawurst/gitui/issues/141))
+
+![](assets/binary_diff.png)
 - external editor support for commit messages [[@jonstodle](https://github.com/jonstodle)] ([#46](https://github.com/extrawurst/gitui/issues/46))
 
 ### Changed
 - use terminal blue as default selection background ([#129](https://github.com/extrawurst/gitui/issues/129))
 - author column in revlog is now fixed width for better alignment ([#148](https://github.com/extrawurst/gitui/issues/148))
+- cleaner tab bar and background work indicating spinner:
+
+![](assets/spinner.gif)
 
 ### Fixed
 - clearer help headers ([#131](https://github.com/extrawurst/gitui/issues/131))
-- diisplay non-utf8 commit messages at least partially ([#150](https://github.com/extrawurst/gitui/issues/150))
+- display non-utf8 commit messages at least partially ([#150](https://github.com/extrawurst/gitui/issues/150))
 - hooks ignored when running `gitui` in subfolder of workdir ([#151](https://github.com/extrawurst/gitui/issues/151))
 - better scrolling in file-trees [[@tisorlawan](https://github.com/tisorlawan)] ([#144](https://github.com/extrawurst/gitui/issues/144))
 - show untracked files in stash commit details [[@MCord](https://github.com/MCord)] ([#130](https://github.com/extrawurst/gitui/issues/130))
