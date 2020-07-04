@@ -2,6 +2,7 @@
 /// also we make sure to generate a flamegraph on program exit
 pub struct Profiler {
     #[cfg(feature = "pprof")]
+    #[cfg(not(windows))]
     guard: pprof::ProfilerGuard<'static>,
 }
 
@@ -9,6 +10,7 @@ impl Profiler {
     pub fn new() -> Self {
         Self {
             #[cfg(feature = "pprof")]
+            #[cfg(not(windows))]
             guard: pprof::ProfilerGuard::new(100)
                 .expect("profiler launch error"),
         }
@@ -16,6 +18,7 @@ impl Profiler {
 
     fn report(&mut self) {
         #[cfg(feature = "pprof")]
+        #[cfg(not(windows))]
         if let Ok(report) = self.guard.report().build() {
             let file = std::fs::File::create("flamegraph.svg")
                 .expect("flamegraph file err");

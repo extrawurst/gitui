@@ -40,9 +40,7 @@ serde = "1.0"
 anyhow = "1.0.31"
 unicode-width = "0.1"
 
-[target.'cfg(unix)'.dependencies]
-pprof = { version = "0.3", features = ["flamegraph"], optional = true }
-[target.'cfg(macos)'.dependencies]
+[target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.3", features = ["flamegraph"], optional = true }
 
 [badges]
