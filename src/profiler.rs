@@ -7,6 +7,7 @@ pub struct Profiler {
 }
 
 impl Profiler {
+    #[allow(clippy::missing_const_for_fn)]
     pub fn new() -> Self {
         Self {
             #[cfg(feature = "pprof")]
@@ -16,6 +17,7 @@ impl Profiler {
         }
     }
 
+    #[allow(clippy::unused_self)]
     fn report(&mut self) {
         #[cfg(feature = "pprof")]
         #[cfg(not(windows))]
