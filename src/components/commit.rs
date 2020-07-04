@@ -97,6 +97,7 @@ impl Component for CommitComponent {
                         self.queue
                             .borrow_mut()
                             .push_back(InternalEvent::SuspendPolling);
+                        self.hide();
                     }
 
                     _ => (),
@@ -204,6 +205,7 @@ impl CommitComponent {
         let message = message.trim().to_string();
 
         self.input.set_text(message);
+        self.input.show()?;
 
         Ok(())
     }

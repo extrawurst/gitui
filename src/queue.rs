@@ -49,6 +49,8 @@ pub enum InternalEvent {
     ///
     InspectCommit(CommitId),
     ///
+    //TODO: make this a generic OpenExternalEditor to also use it for other places
+    //(see https://github.com/extrawurst/gitui/issues/166)
     SuspendPolling,
 }
 

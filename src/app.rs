@@ -3,9 +3,9 @@ use crate::{
     cmdbar::CommandBar,
     components::{
         event_pump, CommandBlocking, CommandInfo, CommitComponent,
-        Component, DrawableComponent, HelpComponent,
-        InspectCommitComponent, MsgComponent, ResetComponent,
-        StashMsgComponent,
+        Component, DrawableComponent, ExternalEditorComponent,
+        HelpComponent, InspectCommitComponent, MsgComponent,
+        ResetComponent, StashMsgComponent,
     },
     input::{Input, InputEvent, InputState},
     keys,
@@ -35,6 +35,7 @@ pub struct App {
     commit: CommitComponent,
     stashmsg_popup: StashMsgComponent,
     inspect_commit_popup: InspectCommitComponent,
+    external_editor_popup: ExternalEditorComponent,
     cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
@@ -74,6 +75,9 @@ impl App {
             inspect_commit_popup: InspectCommitComponent::new(
                 &queue,
                 sender,
+                theme.clone(),
+            ),
+            external_editor_popup: ExternalEditorComponent::new(
                 theme.clone(),
             ),
             do_quit: false,
@@ -190,6 +194,7 @@ impl App {
                 self.update_commands();
             }
         } else if let InputEvent::State(polling_state) = ev {
+            self.external_editor_popup.hide();
             if let InputState::Paused = polling_state {
                 if let Err(e) = self.commit.show_editor() {
                     let msg =
@@ -274,6 +279,7 @@ impl App {
             commit,
             stashmsg_popup,
             inspect_commit_popup,
+            external_editor_popup,
             help,
             revlog,
             status_tab,
@@ -404,6 +410,8 @@ impl App {
             }
             InternalEvent::SuspendPolling => {
                 self.input.set_polling(false);
+                self.external_editor_popup.show()?;
+                flags.insert(NeedsUpdate::COMMANDS)
             }
         };
 
@@ -458,6 +466,7 @@ impl App {
             || self.msg.is_visible()
             || self.stashmsg_popup.is_visible()
             || self.inspect_commit_popup.is_visible()
+            || self.external_editor_popup.is_visible()
     }
 
     fn draw_popups<B: Backend>(
@@ -481,6 +490,7 @@ impl App {
         self.help.draw(f, size)?;
         self.msg.draw(f, size)?;
         self.inspect_commit_popup.draw(f, size)?;
+        self.external_editor_popup.draw(f, size)?;
 
         Ok(())
     }
