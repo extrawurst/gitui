@@ -5,8 +5,7 @@ use super::{
 use crate::{
     get_app_config_path, keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings,
-    strings::{commands, COMMIT_EDITOR_MSG},
+    strings::{self, commands},
     ui::style::SharedTheme,
 };
 use anyhow::{anyhow, Result};
@@ -67,6 +66,12 @@ impl Component for CommitComponent {
                 self.can_amend(),
                 true,
             ));
+
+            out.push(CommandInfo::new(
+                commands::COMMIT_OPEN_EDITOR,
+                true,
+                true,
+            ));
         }
 
         visibility_blocking(self)
@@ -86,6 +91,12 @@ impl Component for CommitComponent {
 
                     keys::COMMIT_AMEND if self.can_amend() => {
                         self.amend()?;
+                    }
+
+                    keys::OPEN_COMMIT_EDITOR => {
+                        self.queue
+                            .borrow_mut()
+                            .push_back(InternalEvent::SuspendPolling);
                     }
 
                     _ => (),
@@ -137,9 +148,15 @@ impl CommitComponent {
         let mut config_path: PathBuf = get_app_config_path()?;
         config_path.push(COMMIT_MSG_FILE_NAME);
 
-        let mut file = File::create(&config_path)?;
-        file.write_all(COMMIT_EDITOR_MSG.as_bytes())?;
-        drop(file);
+        {
+            //TODO: use a tmpfile here
+            let mut file = File::create(&config_path)?;
+            file.write_fmt(format_args!(
+                "{}\n",
+                self.input.get_text()
+            ))?;
+            file.write_all(strings::COMMIT_EDITOR_MSG.as_bytes())?;
+        }
 
         let mut editor = env::var("GIT_EDTIOR")
             .ok()
@@ -156,9 +173,8 @@ impl CommitComponent {
         })?;
 
         io::stdout().execute(LeaveAlternateScreen)?;
-
         defer! {
-            io::stdout().execute(EnterAlternateScreen).expect("failed to reset terminal");
+            io::stdout().execute(EnterAlternateScreen).expect("reset terminal");
         }
 
         Command::new(command)
@@ -168,6 +184,7 @@ impl CommitComponent {
 
         let mut message = String::new();
 
+        //TODO: see above
         let mut file = File::open(&config_path)?;
         file.read_to_string(&mut message)?;
         drop(file);
@@ -184,9 +201,9 @@ impl CommitComponent {
             })
             .collect();
 
-        if !message.chars().all(char::is_whitespace) {
-            return self.commit_msg(message);
-        }
+        let message = message.trim().to_string();
+
+        self.input.set_text(message);
 
         Ok(())
     }

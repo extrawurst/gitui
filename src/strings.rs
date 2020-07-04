@@ -15,9 +15,8 @@ pub static COMMIT_TITLE: &str = "Commit";
 pub static COMMIT_TITLE_AMEND: &str = "Commit (Amend)";
 pub static COMMIT_MSG: &str = "type commit message..";
 pub static COMMIT_EDITOR_MSG: &str = r##"
-# Enter your commit message
-# Lines starting with '#' will be ignored
-# Empty commit message will abort the commit"##;
+# Edit your commit message
+# Lines starting with '#' will be ignored"##;
 pub static STASH_POPUP_TITLE: &str = "Stash";
 pub static STASH_POPUP_MSG: &str = "type name (optional)";
 pub static CONFIRM_TITLE_RESET: &str = "Reset";
@@ -155,7 +154,7 @@ pub mod commands {
     );
     ///
     pub static COMMIT_OPEN_EDITOR: CommandText = CommandText::new(
-        "Commit editor [C]",
+        "Open editor [^e]",
         "open commit editor (available in non-empty stage)",
         CMD_GROUP_COMMIT,
     );
