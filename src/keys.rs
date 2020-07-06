@@ -48,6 +48,7 @@ pub const SHIFT_UP: KeyEvent =
 pub const SHIFT_DOWN: KeyEvent =
     with_mod(KeyCode::Down, KeyModifiers::SHIFT);
 pub const ENTER: KeyEvent = no_mod(KeyCode::Enter);
+pub const EDIT_FILE: KeyEvent = no_mod(KeyCode::Char('e'));
 pub const STATUS_STAGE_FILE: KeyEvent = no_mod(KeyCode::Enter);
 pub const STATUS_STAGE_ALL: KeyEvent = no_mod(KeyCode::Char('a'));
 pub const STATUS_RESET_FILE: KeyEvent =

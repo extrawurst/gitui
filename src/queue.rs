@@ -1,6 +1,7 @@
 use crate::tabs::StashingOptions;
 use asyncgit::sync::CommitId;
 use bitflags::bitflags;
+use std::path::PathBuf;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 bitflags! {
@@ -49,9 +50,7 @@ pub enum InternalEvent {
     ///
     InspectCommit(CommitId),
     ///
-    //TODO: make this a generic OpenExternalEditor to also use it for other places
-    //(see https://github.com/extrawurst/gitui/issues/166)
-    SuspendPolling,
+    OpenExternalEditor(Option<Box<PathBuf>>),
 }
 
 ///

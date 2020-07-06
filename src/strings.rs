@@ -172,6 +172,12 @@ pub mod commands {
         CMD_GROUP_COMMIT,
     );
     ///
+    pub static EDIT_ITEM: CommandText = CommandText::new(
+        "Edit Item [e]",
+        "edit the currently selected file in an external editor",
+        CMD_GROUP_CHANGES,
+    );
+    ///
     pub static STAGE_ITEM: CommandText = CommandText::new(
         "Stage Item [enter]",
         "stage currently selected file or entire path",

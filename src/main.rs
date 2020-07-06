@@ -43,12 +43,13 @@ use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
 use spinner::Spinner;
+use std::process::Command;
 use std::{
     env, fs,
     fs::File,
     io::{self, Write},
     panic,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process,
     time::{Duration, Instant},
 };
@@ -237,6 +238,28 @@ fn migrate_config() -> Result<()> {
         config_path.push(entry.file_name());
         fs::rename(entry.path(), config_path)?;
     }
+
+    Ok(())
+}
+
+fn open_file_in_editor(path: &Path) -> Result<()> {
+    let mut editor = env::var("GIT_EDITOR")
+        .ok()
+        .or_else(|| env::var("VISUAL").ok())
+        .or_else(|| env::var("EDITOR").ok())
+        .unwrap_or_else(|| String::from("vi"));
+    editor.push_str(&format!(" {}", path.to_string_lossy()));
+
+    let mut editor = editor.split_whitespace();
+
+    let command = editor
+        .next()
+        .ok_or_else(|| anyhow!("unable to read editor command"))?;
+
+    Command::new(command)
+        .args(editor)
+        .status()
+        .map_err(|e| anyhow!("\"{}\": {}", command, e))?;
 
     Ok(())
 }

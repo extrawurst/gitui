@@ -18,6 +18,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use std::path::PathBuf;
 use tui::layout::{Constraint, Direction, Layout};
 
 ///
@@ -313,6 +314,15 @@ impl Component for Status {
         {
             let focus_on_diff = self.focus == Focus::Diff;
             out.push(CommandInfo::new(
+                commands::EDIT_ITEM,
+                if focus_on_diff {
+                    true
+                } else {
+                    self.can_focus_diff()
+                },
+                self.visible || force_all,
+            ));
+            out.push(CommandInfo::new(
                 commands::DIFF_FOCUS_LEFT,
                 true,
                 (self.visible && focus_on_diff) || force_all,
@@ -370,6 +380,22 @@ impl Component for Status {
                     }
                     keys::FOCUS_STAGE => {
                         self.switch_focus(Focus::Stage)
+                    }
+                    keys::EDIT_FILE
+                        if self.can_focus_diff()
+                            || self.focus == Focus::Diff =>
+                    {
+                        if let Some((path, _)) = self.selected_path()
+                        {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::OpenExternalEditor(
+                                    Some(Box::new(PathBuf::from(
+                                        path,
+                                    ))),
+                                ),
+                            );
+                        }
+                        Ok(true)
                     }
                     keys::FOCUS_RIGHT if self.can_focus_diff() => {
                         self.switch_focus(Focus::Diff)
