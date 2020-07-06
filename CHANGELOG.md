@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.8.0] - 2020-07-05
+## [0.8.0] - 2020-07-06
 
 ### Added
 - core homebrew [formulae](https://formulae.brew.sh/formula/gitui#default): `brew install gitui` [[@vladimyr](https://github.com/vladimyr)] ([#137](https://github.com/extrawurst/gitui/issues/137))
