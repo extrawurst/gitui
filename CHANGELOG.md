@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- switch deprecated transitive dependency `net2`->`socket2` [in `crossterm`->`mio`] ([#66](https://github.com/extrawurst/gitui/issues/66))
+
 ## [0.8.0] - 2020-07-06
 
 ### Added

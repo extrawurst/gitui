@@ -1,13 +1,11 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::cargo)]
-//TODO: remove once crossterm upgraded to current mio:
-//https://github.com/crossterm-rs/crossterm/issues/432
-#![allow(clippy::cargo::multiple_crate_versions)]
 #![deny(clippy::pedantic)]
 #![deny(clippy::nursery)]
 #![deny(clippy::result_unwrap_used)]
 #![deny(clippy::panic)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::multiple_crate_versions)]
 
 mod app;
 mod cmdbar;
