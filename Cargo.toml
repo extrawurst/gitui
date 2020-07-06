@@ -29,7 +29,7 @@ itertools = "0.9"
 rayon-core = "1.7"
 log = "0.4"
 simplelog = { version = "0.8", default-features = false }
-dirs = "2.0"
+dirs = "3.0"
 crossbeam-channel = "0.4"
 scopeguard = "1.1"
 bitflags = "1.2"
