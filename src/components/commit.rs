@@ -8,7 +8,7 @@ use crate::{
     strings::{self, commands},
     ui::style::SharedTheme,
 };
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use asyncgit::{
     sync::{self, CommitId, HookResult},
     CWD,
@@ -20,11 +20,9 @@ use crossterm::{
 };
 use scopeguard::defer;
 use std::{
-    env,
     fs::File,
     io::{self, Read, Write},
     path::PathBuf,
-    process::Command,
 };
 use tui::{backend::Backend, layout::Rect, Frame};
 
@@ -94,9 +92,9 @@ impl Component for CommitComponent {
                     }
 
                     keys::OPEN_COMMIT_EDITOR => {
-                        self.queue
-                            .borrow_mut()
-                            .push_back(InternalEvent::SuspendPolling);
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::OpenExternalEditor(None),
+                        );
                         self.hide();
                     }
 
@@ -159,29 +157,12 @@ impl CommitComponent {
             file.write_all(strings::COMMIT_EDITOR_MSG.as_bytes())?;
         }
 
-        let mut editor = env::var("GIT_EDTIOR")
-            .ok()
-            .or_else(|| env::var("VISUAL").ok())
-            .or_else(|| env::var("EDITOR").ok())
-            .unwrap_or_else(|| String::from("vi"));
-        editor
-            .push_str(&format!(" {}", config_path.to_string_lossy()));
-
-        let mut editor = editor.split_whitespace();
-
-        let command = editor.next().ok_or_else(|| {
-            anyhow!("unable to read editor command")
-        })?;
-
         io::stdout().execute(LeaveAlternateScreen)?;
         defer! {
             io::stdout().execute(EnterAlternateScreen).expect("reset terminal");
         }
 
-        Command::new(command)
-            .args(editor)
-            .status()
-            .map_err(|e| anyhow!("\"{}\": {}", command, e))?;
+        crate::open_file_in_editor(&config_path)?;
 
         let mut message = String::new();
 

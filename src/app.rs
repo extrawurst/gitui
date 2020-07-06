@@ -18,6 +18,7 @@ use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
+use std::path::PathBuf;
 use std::{cell::Cell, cell::RefCell, rc::Rc};
 use tui::{
     backend::Backend,
@@ -48,6 +49,7 @@ pub struct App {
 
     // "Flags"
     requires_redraw: Cell<bool>,
+    file_to_open: Option<Box<PathBuf>>,
 }
 
 // public interface
@@ -96,6 +98,7 @@ impl App {
             queue,
             theme,
             requires_redraw: Cell::new(false),
+            file_to_open: None,
         }
     }
 
@@ -196,12 +199,18 @@ impl App {
         } else if let InputEvent::State(polling_state) = ev {
             self.external_editor_popup.hide();
             if let InputState::Paused = polling_state {
-                if let Err(e) = self.commit.show_editor() {
+                let result = match self.file_to_open.take() {
+                    Some(path) => crate::open_file_in_editor(&path),
+                    None => self.commit.show_editor(),
+                };
+
+                if let Err(e) = result {
                     let msg =
                         format!("failed to launch editor:\n{}", e);
                     log::error!("{}", msg.as_str());
                     self.msg.show_msg(msg.as_str())?;
                 }
+
                 self.requires_redraw.set(true);
                 self.input.set_polling(true);
             }
@@ -408,9 +417,10 @@ impl App {
                 self.inspect_commit_popup.open(id)?;
                 flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
             }
-            InternalEvent::SuspendPolling => {
+            InternalEvent::OpenExternalEditor(path) => {
                 self.input.set_polling(false);
                 self.external_editor_popup.show()?;
+                self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
             }
         };
