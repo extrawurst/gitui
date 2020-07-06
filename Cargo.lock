@@ -130,6 +130,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytemuck"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37fa13df2292ecb479ec23aa06f4507928bef07839be9ef15281411076629431"
+
+[[package]]
 name = "bytesize"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -902,9 +908,12 @@ dependencies = [
 
 [[package]]
 name = "rgb"
-version = "0.8.18"
+version = "0.8.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6714061b32e0b0527005d5874c28a57d905559fecfacd361462ad0b01e701996"
+checksum = "90ef54b45ae131327a88597e2463fee4098ad6c88ba7b6af4b3987db8aad4098"
+dependencies = [
+ "bytemuck",
+]
 
 [[package]]
 name = "ron"
@@ -1001,9 +1010,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7cb5678e1615754284ec264d9bb5b4c27d2018577fd90ac0ceb578591ed5ee4"
+checksum = "3757cb9d89161a2f24e1cf78efa0c1fcff485d18e3f55e0aa3480824ddaa0f3f"
 
 [[package]]
 name = "socket2"
