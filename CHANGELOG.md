@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2020-07-07
+
 ### Added
 - open file in editor [[@jonstodle](https://github.com/jonstodle)] ([#166](https://github.com/extrawurst/gitui/issues/166))
 
