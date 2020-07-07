@@ -200,7 +200,11 @@ impl App {
             self.external_editor_popup.hide();
             if let InputState::Paused = polling_state {
                 let result = match self.file_to_open.take() {
-                    Some(path) => crate::open_file_in_editor(&path),
+                    Some(path) => {
+                        ExternalEditorComponent::open_file_in_editor(
+                            &path,
+                        )
+                    }
                     None => self.commit.show_editor(),
                 };
 

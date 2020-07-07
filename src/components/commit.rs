@@ -1,6 +1,7 @@
 use super::{
     textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
+    ExternalEditorComponent,
 };
 use crate::{
     get_app_config_path, keys,
@@ -13,15 +14,10 @@ use asyncgit::{
     sync::{self, CommitId, HookResult},
     CWD,
 };
-use crossterm::{
-    event::Event,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
-    ExecutableCommand,
-};
-use scopeguard::defer;
+use crossterm::event::Event;
 use std::{
     fs::File,
-    io::{self, Read, Write},
+    io::{Read, Write},
     path::PathBuf,
 };
 use tui::{backend::Backend, layout::Rect, Frame};
@@ -144,11 +140,11 @@ impl CommitComponent {
 
     pub fn show_editor(&mut self) -> Result<()> {
         const COMMIT_MSG_FILE_NAME: &str = "COMMITMSG_EDITOR";
+        //TODO: use a tmpfile here
         let mut config_path: PathBuf = get_app_config_path()?;
         config_path.push(COMMIT_MSG_FILE_NAME);
 
         {
-            //TODO: use a tmpfile here
             let mut file = File::create(&config_path)?;
             file.write_fmt(format_args!(
                 "{}\n",
@@ -157,16 +153,10 @@ impl CommitComponent {
             file.write_all(strings::COMMIT_EDITOR_MSG.as_bytes())?;
         }
 
-        io::stdout().execute(LeaveAlternateScreen)?;
-        defer! {
-            io::stdout().execute(EnterAlternateScreen).expect("reset terminal");
-        }
-
-        crate::open_file_in_editor(&config_path)?;
+        ExternalEditorComponent::open_file_in_editor(&config_path)?;
 
         let mut message = String::new();
 
-        //TODO: see above
         let mut file = File::open(&config_path)?;
         file.read_to_string(&mut message)?;
         drop(file);

@@ -6,8 +6,14 @@ use crate::{
     strings,
     ui::{self, style::SharedTheme},
 };
-use anyhow::Result;
-use crossterm::event::Event;
+use anyhow::{anyhow, Result};
+use crossterm::{
+    event::Event,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
+};
+use scopeguard::defer;
+use std::{env, io, path::Path, process::Command};
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -28,6 +34,34 @@ impl ExternalEditorComponent {
             visible: false,
             theme,
         }
+    }
+
+    ///
+    pub fn open_file_in_editor(path: &Path) -> Result<()> {
+        io::stdout().execute(LeaveAlternateScreen)?;
+        defer! {
+            io::stdout().execute(EnterAlternateScreen).expect("reset terminal");
+        }
+
+        let mut editor = env::var("GIT_EDITOR")
+            .ok()
+            .or_else(|| env::var("VISUAL").ok())
+            .or_else(|| env::var("EDITOR").ok())
+            .unwrap_or_else(|| String::from("vi"));
+        editor.push_str(&format!(" {}", path.to_string_lossy()));
+
+        let mut editor = editor.split_whitespace();
+
+        let command = editor.next().ok_or_else(|| {
+            anyhow!("unable to read editor command")
+        })?;
+
+        Command::new(command)
+            .args(editor)
+            .status()
+            .map_err(|e| anyhow!("\"{}\": {}", command, e))?;
+
+        Ok(())
     }
 }
 
