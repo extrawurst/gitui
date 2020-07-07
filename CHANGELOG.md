@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- open file in editor [[@jonstodle](https://github.com/jonstodle)] ([#166](https://github.com/extrawurst/gitui/issues/166))
+
 ### Fixed
 - switch deprecated transitive dependency `net2`->`socket2` [in `crossterm`->`mio`] ([#66](https://github.com/extrawurst/gitui/issues/66))
 - crash diffing a stash that was created via cli ([#178](https://github.com/extrawurst/gitui/issues/178))
