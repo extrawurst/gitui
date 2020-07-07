@@ -36,7 +36,7 @@ impl ExternalEditorComponent {
         }
     }
 
-    ///
+    /// opens file at given `path` in an available editor
     pub fn open_file_in_editor(path: &Path) -> Result<()> {
         io::stdout().execute(LeaveAlternateScreen)?;
         defer! {
