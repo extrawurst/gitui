@@ -108,10 +108,10 @@ pub fn stash_save(
 mod tests {
     use super::*;
     use crate::sync::{
-        get_commits_info,
-        tests::{get_statuses, repo_init},
+        commit, get_commit_files, get_commits_info, stage_add_file,
+        tests::{debug_cmd_print, get_statuses, repo_init},
     };
-    use std::{fs::File, io::Write};
+    use std::{fs::File, io::Write, path::Path};
 
     #[test]
     fn test_smoke() {
@@ -180,6 +180,34 @@ mod tests {
         assert!(
             stash_save(repo_path, Some("foo"), false, false).is_err()
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_stash_without_2nd_parent() -> Result<()> {
+        let file_path1 = Path::new("file1.txt");
+        let (_td, repo) = repo_init()?;
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path1))?.write_all(b"test")?;
+        stage_add_file(repo_path, file_path1)?;
+        commit(repo_path, "c1")?;
+
+        File::create(&root.join(file_path1))?
+            .write_all(b"modified")?;
+
+        //NOTE: apparently `libgit2` works differently to git stash in
+        //always creating the third parent for untracked files while the
+        //cli skips that step when no new files exist
+        debug_cmd_print(repo_path, "git stash");
+
+        let stash = get_stashes(repo_path)?[0];
+
+        let diff = get_commit_files(repo_path, stash)?;
+
+        assert_eq!(diff.len(), 1);
 
         Ok(())
     }

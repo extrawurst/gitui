@@ -69,15 +69,15 @@ pub(crate) fn get_commit_diff(
         repo.path().to_str().expect("repo path utf8 err"),
         &id,
     )? {
-        let untracked_commit = commit.parent_id(2)?;
+        if let Ok(untracked_commit) = commit.parent_id(2) {
+            let untracked_diff = get_commit_diff(
+                repo,
+                CommitId::new(untracked_commit),
+                pathspec,
+            )?;
 
-        let untracked_diff = get_commit_diff(
-            repo,
-            CommitId::new(untracked_commit),
-            pathspec,
-        )?;
-
-        diff.merge(&untracked_diff)?;
+            diff.merge(&untracked_diff)?;
+        }
     }
 
     Ok(diff)
