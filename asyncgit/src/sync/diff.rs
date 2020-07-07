@@ -239,7 +239,7 @@ fn raw_diff_to_file_diff<'a>(
                     let mut patch = Patch::from_buffers(
                         &[],
                         None,
-                        newfile_content.as_bytes(),
+                        newfile_content.as_slice(),
                         Some(&newfile_path),
                         None,
                     )?;
@@ -283,14 +283,16 @@ fn raw_diff_to_file_diff<'a>(
     Ok(res.into_inner())
 }
 
-fn new_file_content(path: &Path) -> Option<String> {
+fn new_file_content(path: &Path) -> Option<Vec<u8>> {
     if let Ok(meta) = fs::symlink_metadata(path) {
         if meta.file_type().is_symlink() {
             if let Ok(path) = fs::read_link(path) {
-                return Some(path.to_str()?.to_string());
+                return Some(
+                    path.to_str()?.to_string().as_bytes().into(),
+                );
             }
         } else if meta.file_type().is_file() {
-            if let Ok(content) = fs::read_to_string(path) {
+            if let Ok(content) = fs::read(path) {
                 return Some(content);
             }
         }
@@ -460,28 +462,6 @@ mod tests {
     }
 
     #[test]
-    fn test_diff_new_binary_file_using_invalid_utf8() -> Result<()> {
-        let file_path = Path::new("bar");
-        let (_td, repo) = repo_init_empty().unwrap();
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        File::create(&root.join(file_path))?
-            .write_all(b"\xc3\x28")?;
-
-        let diff = get_diff(
-            repo_path,
-            String::from(file_path.to_str().unwrap()),
-            false,
-        )
-        .unwrap();
-
-        assert_eq!(diff.hunks.len(), 0);
-
-        Ok(())
-    }
-
-    #[test]
     fn test_diff_delta_size() -> Result<()> {
         let file_path = Path::new("bar");
         let (_td, repo) = repo_init_empty().unwrap();
@@ -507,6 +487,30 @@ mod tests {
         dbg!(&diff);
         assert_eq!(diff.sizes, (1, 2));
         assert_eq!(diff.size_delta, 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_binary_diff_delta_size_untracked() -> Result<()> {
+        let file_path = Path::new("bar");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?
+            .write_all(b"\x00\xc7")?;
+
+        let diff = get_diff(
+            repo_path,
+            String::from(file_path.to_str().unwrap()),
+            false,
+        )
+        .unwrap();
+
+        dbg!(&diff);
+        assert_eq!(diff.sizes, (0, 2));
+        assert_eq!(diff.size_delta, 2);
 
         Ok(())
     }
