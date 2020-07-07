@@ -171,19 +171,31 @@ impl Component for Revlog {
             if event_used {
                 self.update()?;
                 return Ok(true);
-            } else if let Event::Key(keys::LOG_COMMIT_DETAILS) = ev {
-                self.commit_details.toggle_visible()?;
-                self.update()?;
-                return Ok(true);
-            } else if let Event::Key(keys::FOCUS_RIGHT) = ev {
-                return if let Some(id) = self.selected_commit() {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::InspectCommit(id));
-                    Ok(true)
-                } else {
-                    Ok(false)
-                };
+            } else {
+                match ev {
+                    Event::Key(keys::LOG_COMMIT_DETAILS) => {
+                        self.commit_details.toggle_visible()?;
+                        self.update()?;
+                        return Ok(true);
+                    }
+
+                    Event::Key(keys::FOCUS_RIGHT)
+                        if self.commit_details.is_visible() =>
+                    {
+                        return if let Some(id) =
+                            self.selected_commit()
+                        {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::InspectCommit(id),
+                            );
+                            Ok(true)
+                        } else {
+                            Ok(false)
+                        };
+                    }
+
+                    _ => (),
+                }
             }
         }
 
