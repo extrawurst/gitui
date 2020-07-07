@@ -8,8 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - switch deprecated transitive dependency `net2`->`socket2` [in `crossterm`->`mio`] ([#66](https://github.com/extrawurst/gitui/issues/66))
-- crash diffing stash created on command line ([#178](https://github.com/extrawurst/gitui/issues/178))
-- delta file size diff on untracked binary files ([#171](https://github.com/extrawurst/gitui/issues/171))
+- crash diffing a stash that was created via cli ([#178](https://github.com/extrawurst/gitui/issues/178))
+- zero delta file size in diff of untracked binary file ([#171](https://github.com/extrawurst/gitui/issues/171))
+- newlines not visualized correctly in commit editor ([#169](https://github.com/extrawurst/gitui/issues/169))
+
+![](assets/newlines.gif)
 
 ## [0.8.0] - 2020-07-06
 

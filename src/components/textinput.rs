@@ -86,6 +86,13 @@ impl TextInputComponent {
         Some(index)
     }
 
+    fn backspace(&mut self) {
+        if self.cursor_position > 0 {
+            self.decr_cursor();
+            self.msg.remove(self.cursor_position);
+        }
+    }
+
     /// Set the `msg`.
     pub fn set_text(&mut self, msg: String) {
         self.msg = msg;
@@ -96,6 +103,54 @@ impl TextInputComponent {
     pub fn set_title(&mut self, t: String) {
         self.title = t;
     }
+
+    fn get_draw_text(&self) -> Vec<Text> {
+        let style = self.theme.text(true, false);
+
+        let mut txt = Vec::new();
+
+        // the portion of the text before the cursor is added
+        // if the cursor is not at the first character
+        if self.cursor_position > 0 {
+            txt.push(Text::styled(
+                &self.msg[..self.cursor_position],
+                style,
+            ));
+        }
+
+        let cursor_str = if let Some(pos) = self.next_char_position()
+        {
+            &self.msg[self.cursor_position..pos]
+        } else {
+            // if the cursor is at the end of the msg
+            // a whitespace is used to underline
+            " "
+        };
+
+        if cursor_str == "\n" {
+            txt.push(Text::styled(
+                "\u{21b5}",
+                self.theme
+                    .text(false, false)
+                    .modifier(Modifier::UNDERLINED),
+            ));
+        }
+
+        txt.push(Text::styled(
+            cursor_str,
+            style.modifier(Modifier::UNDERLINED),
+        ));
+
+        // the final portion of the text is added if there is
+        // still remaining characters
+        if let Some(pos) = self.next_char_position() {
+            if pos < self.msg.len() {
+                txt.push(Text::styled(&self.msg[pos..], style));
+            }
+        }
+
+        txt
+    }
 }
 
 impl DrawableComponent for TextInputComponent {
@@ -105,46 +160,13 @@ impl DrawableComponent for TextInputComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let mut txt: Vec<tui::widgets::Text> = Vec::new();
-
-            if self.msg.is_empty() {
-                txt.push(Text::styled(
+            let txt = if self.msg.is_empty() {
+                vec![Text::styled(
                     self.default_msg.as_str(),
                     self.theme.text(false, false),
-                ));
+                )]
             } else {
-                let style = self.theme.text(true, false);
-
-                // the portion of the text before the cursor is added
-                // if the cursor is not at the first character
-                if self.cursor_position > 0 {
-                    txt.push(Text::styled(
-                        &self.msg[..self.cursor_position],
-                        style,
-                    ));
-                }
-
-                txt.push(Text::styled(
-                    if let Some(pos) = self.next_char_position() {
-                        &self.msg[self.cursor_position..pos]
-                    } else {
-                        // if the cursor is at the end of the msg
-                        // a whitespace is used to underline
-                        " "
-                    },
-                    style.modifier(Modifier::UNDERLINED),
-                ));
-
-                // the final portion of the text is added if there is
-                // still remaining characters
-                if let Some(pos) = self.next_char_position() {
-                    if pos < self.msg.len() {
-                        txt.push(Text::styled(
-                            &self.msg[pos..],
-                            style,
-                        ));
-                    }
-                }
+                self.get_draw_text()
             };
 
             let area = ui::centered_rect(60, 20, f.size());
@@ -203,12 +225,7 @@ impl Component for TextInputComponent {
                         return Ok(true);
                     }
                     KeyCode::Backspace => {
-                        if self.cursor_position > 0 {
-                            self.decr_cursor();
-                            if self.cursor_position < self.msg.len() {
-                            }
-                            self.msg.remove(self.cursor_position);
-                        }
+                        self.backspace();
                         return Ok(true);
                     }
                     KeyCode::Left => {
@@ -246,5 +263,52 @@ impl Component for TextInputComponent {
         self.visible = true;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_smoke() {
+        let mut comp =
+            TextInputComponent::new(SharedTheme::default(), "", "");
+
+        comp.set_text(String::from("a\nb"));
+
+        assert_eq!(comp.cursor_position, 0);
+
+        comp.incr_cursor();
+        assert_eq!(comp.cursor_position, 1);
+
+        comp.decr_cursor();
+        assert_eq!(comp.cursor_position, 0);
+    }
+
+    fn get_text<'a>(t: &'a Text) -> Option<&'a str> {
+        if let Text::Styled(c, _) = t {
+            Some(c.as_ref())
+        } else {
+            None
+        }
+    }
+
+    #[test]
+    fn test_visualize_newline() {
+        let mut comp =
+            TextInputComponent::new(SharedTheme::default(), "", "");
+
+        comp.set_text(String::from("a\nb"));
+
+        comp.incr_cursor();
+
+        let txt = comp.get_draw_text();
+
+        assert_eq!(txt.len(), 4);
+        assert_eq!(get_text(&txt[0]), Some("a"));
+        assert_eq!(get_text(&txt[1]), Some("\u{21b5}"));
+        assert_eq!(get_text(&txt[2]), Some("\n"));
+        assert_eq!(get_text(&txt[3]), Some("b"));
     }
 }
