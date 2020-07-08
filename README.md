@@ -1,7 +1,7 @@
 <h1 align="center">
 <img width="300px" src="assets/logo.png" />
 
-[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![DISC][s5]][l5]
+[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![DISC][s5]][l5] [![TWEET][s6]][l6]
 
 </h1>
 
@@ -16,6 +16,8 @@
 [l4]: https://extrawurst.itch.io/gitui
 [s5]: https://img.shields.io/discord/723083834811220028.svg?logo=chat
 [l5]: https://discord.gg/7TGFfuq
+[s6]: https://img.shields.io/twitter/follow/extrawurst?label=follow&style=social
+[l6]: https://twitter.com/intent/follow?screen_name=extrawurst
 
 <h5 align="center">Blazing fast terminal client for git written in Rust</h1>
 
