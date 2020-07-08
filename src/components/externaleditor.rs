@@ -38,6 +38,10 @@ impl ExternalEditorComponent {
 
     /// opens file at given `path` in an available editor
     pub fn open_file_in_editor(path: &Path) -> Result<()> {
+        if !path.exists() {
+            return Err(anyhow!("file not found: {:?}", path));
+        }
+
         io::stdout().execute(LeaveAlternateScreen)?;
         defer! {
             io::stdout().execute(EnterAlternateScreen).expect("reset terminal");

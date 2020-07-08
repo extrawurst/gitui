@@ -18,7 +18,6 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::path::PathBuf;
 use tui::layout::{Constraint, Direction, Layout};
 
 ///
@@ -389,9 +388,7 @@ impl Component for Status {
                         {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::OpenExternalEditor(
-                                    Some(Box::new(PathBuf::from(
-                                        path,
-                                    ))),
+                                    Some(path),
                                 ),
                             );
                         }

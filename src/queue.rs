@@ -1,7 +1,6 @@
 use crate::tabs::StashingOptions;
 use asyncgit::sync::CommitId;
 use bitflags::bitflags;
-use std::path::PathBuf;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 bitflags! {
@@ -50,7 +49,7 @@ pub enum InternalEvent {
     ///
     InspectCommit(CommitId),
     ///
-    OpenExternalEditor(Option<Box<PathBuf>>),
+    OpenExternalEditor(Option<String>),
 }
 
 ///

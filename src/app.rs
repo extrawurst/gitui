@@ -18,8 +18,7 @@ use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
-use std::path::PathBuf;
-use std::{cell::Cell, cell::RefCell, rc::Rc};
+use std::{cell::Cell, cell::RefCell, path::Path, rc::Rc};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Margin, Rect},
@@ -49,7 +48,7 @@ pub struct App {
 
     // "Flags"
     requires_redraw: Cell<bool>,
-    file_to_open: Option<Box<PathBuf>>,
+    file_to_open: Option<String>,
 }
 
 // public interface
@@ -202,7 +201,7 @@ impl App {
                 let result = match self.file_to_open.take() {
                     Some(path) => {
                         ExternalEditorComponent::open_file_in_editor(
-                            &path,
+                            Path::new(&path),
                         )
                     }
                     None => self.commit.show_editor(),
