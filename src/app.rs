@@ -5,7 +5,7 @@ use crate::{
         event_pump, CommandBlocking, CommandInfo, CommitComponent,
         Component, DrawableComponent, ExternalEditorComponent,
         HelpComponent, InspectCommitComponent, MsgComponent,
-        ResetComponent, StashMsgComponent,
+        ResetComponent, StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys,
@@ -40,6 +40,7 @@ pub struct App {
     stashmsg_popup: StashMsgComponent,
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
+    tag_commit_popup: TagCommitComponent,
     cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
@@ -83,6 +84,10 @@ impl App {
                 theme.clone(),
             ),
             external_editor_popup: ExternalEditorComponent::new(
+                theme.clone(),
+            ),
+            tag_commit_popup: TagCommitComponent::new(
+                queue.clone(),
                 theme.clone(),
             ),
             do_quit: false,
@@ -296,6 +301,7 @@ impl App {
             stashmsg_popup,
             inspect_commit_popup,
             external_editor_popup,
+            tag_commit_popup,
             help,
             revlog,
             status_tab,
@@ -419,6 +425,9 @@ impl App {
                 self.stashmsg_popup.options(opts);
                 self.stashmsg_popup.show()?
             }
+            InternalEvent::TagCommit(id) => {
+                self.tag_commit_popup.open(id)?;
+            }
             InternalEvent::TabSwitch => self.set_tab(0)?,
             InternalEvent::InspectCommit(id, tags) => {
                 self.inspect_commit_popup.open(id, tags)?;
@@ -484,6 +493,7 @@ impl App {
             || self.stashmsg_popup.is_visible()
             || self.inspect_commit_popup.is_visible()
             || self.external_editor_popup.is_visible()
+            || self.tag_commit_popup.is_visible()
     }
 
     fn draw_popups<B: Backend>(
@@ -508,6 +518,7 @@ impl App {
         self.msg.draw(f, size)?;
         self.inspect_commit_popup.draw(f, size)?;
         self.external_editor_popup.draw(f, size)?;
+        self.tag_commit_popup.draw(f, size)?;
 
         Ok(())
     }

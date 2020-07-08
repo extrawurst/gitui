@@ -18,7 +18,7 @@ pub mod utils;
 
 pub(crate) use branch::get_branch_name;
 
-pub use commit::{amend, commit};
+pub use commit::{amend, commit, tag};
 pub use commit_details::{get_commit_details, CommitDetails};
 pub use commit_files::get_commit_files;
 pub use commits_info::{get_commits_info, CommitId, CommitInfo};
