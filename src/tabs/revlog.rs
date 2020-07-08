@@ -207,6 +207,19 @@ impl Component for Revlog {
                         return Ok(true);
                     }
 
+                    Event::Key(keys::LOG_TAG_COMMIT) => {
+                        return if let Some(id) =
+                            self.selected_commit()
+                        {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::TagCommit(id),
+                            );
+                            Ok(true)
+                        } else {
+                            Ok(false)
+                        };
+                    }
+
                     Event::Key(keys::FOCUS_RIGHT)
                         if self.commit_details.is_visible() =>
                     {
@@ -255,6 +268,12 @@ impl Component for Revlog {
             true,
             (self.visible && self.commit_details.is_visible())
                 || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            commands::LOG_TAG_COMMIT,
+            true,
+            self.visible || force_all,
         ));
 
         visibility_blocking(self)

@@ -27,6 +27,10 @@ pub static CONFIRM_MSG_STASHDROP: &str = "confirm stash drop?";
 pub static CONFIRM_MSG_RESETHUNK: &str = "confirm reset hunk?";
 
 pub static LOG_TITLE: &str = "Commit";
+
+pub static TAG_COMMIT_POPUP_TITLE: &str = "Tag";
+pub static TAG_COMMIT_POPUP_MSG: &str = "type tag";
+
 pub static STASHLIST_TITLE: &str = "Stashes";
 
 pub static HELP_TITLE: &str = "Help: all commands";
@@ -295,4 +299,10 @@ pub mod commands {
         "inspect selected commit in detail",
         CMD_GROUP_LOG,
     );
+    ///
+    pub static LOG_TAG_COMMIT: CommandText =
+        CommandText::new("Tag [t]", "tag commit", CMD_GROUP_LOG);
+    ///
+    pub static TAG_COMMIT_CONFIRM_MSG: CommandText =
+        CommandText::new("Tag [enter]", "tag commit", CMD_GROUP_LOG);
 }
