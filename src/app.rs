@@ -18,7 +18,11 @@ use anyhow::{anyhow, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
-use std::{cell::Cell, cell::RefCell, path::Path, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    path::Path,
+    rc::Rc,
+};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Margin, Rect},
