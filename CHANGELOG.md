@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- removed unmaintained dependency `spin` ([#172](https://github.com/extrawurst/gitui/issues/172))
+
 ## [0.8.1] - 2020-07-07
 
 ### Added
