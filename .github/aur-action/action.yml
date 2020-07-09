@@ -1,0 +1,6 @@
+# action.yml
+name: 'aur packaging test'
+description: ''
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
