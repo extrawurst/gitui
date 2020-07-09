@@ -103,7 +103,11 @@ pub fn get_message(
 
 fn limit_str(s: &str, limit: usize) -> &str {
     if let Some(first) = s.lines().next() {
-        &first[0..limit.min(first.len())]
+        let mut limit = limit.min(first.len());
+        while !first.is_char_boundary(limit) {
+            limit += 1
+        }
+        &first[0..limit]
     } else {
         ""
     }
@@ -112,7 +116,7 @@ fn limit_str(s: &str, limit: usize) -> &str {
 #[cfg(test)]
 mod tests {
 
-    use super::get_commits_info;
+    use super::{get_commits_info, limit_str};
     use crate::error::Result;
     use crate::sync::{
         commit, stage_add_file, tests::repo_init_empty,
@@ -170,5 +174,10 @@ mod tests {
         assert_eq!(res[0].message.starts_with("test msg"), true);
 
         Ok(())
+    }
+
+    #[test]
+    fn test_limit_string_utf8() {
+        assert_eq!(limit_str("里里", 1), "里");
     }
 }
