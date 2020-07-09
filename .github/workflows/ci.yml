@@ -9,57 +9,57 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  # build:
+    # strategy:
+    #   matrix:
+    #     os: [ubuntu-latest, windows-latest, macos-latest]
 
-    runs-on: ${{ matrix.os }}
+    # runs-on: ${{ matrix.os }}
 
-    steps:
-    - uses: actions/checkout@v2
+  #   steps:
+  #   - uses: actions/checkout@v2
 
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-        components: clippy
+  #   - name: Install Rust
+  #     uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #       profile: minimal
+  #       components: clippy
 
-    - name: Build Debug
-      run: |
-        rustc --version
-        cargo build
+  #   - name: Build Debug
+  #     run: |
+  #       rustc --version
+  #       cargo build
 
-    - name: Run tests
-      run: make test
+  #   - name: Run tests
+  #     run: make test
 
-    - name: Run clippy
-      run: |
-        cargo clean
-        make clippy
-    - name: Build Release
-      run: make build-release
+  #   - name: Run clippy
+  #     run: |
+  #       cargo clean
+  #       make clippy
+  #   - name: Build Release
+  #     run: make build-release
 
-  build-linux-musl:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-        target: x86_64-unknown-linux-musl
+  # build-linux-musl:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - name: Install Rust
+  #     uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #       profile: minimal
+  #       target: x86_64-unknown-linux-musl
 
-    - name: Setup MUSL
-      run: |
-        sudo apt-get -qq install musl-tools
-    - name: Build Debug
-      run: cargo build --target=x86_64-unknown-linux-musl
-    - name: Build Release
-      run: |
-        cargo build --release --target=x86_64-unknown-linux-musl
+  #   - name: Setup MUSL
+  #     run: |
+  #       sudo apt-get -qq install musl-tools
+  #   - name: Build Debug
+  #     run: cargo build --target=x86_64-unknown-linux-musl
+  #   - name: Build Release
+  #     run: |
+  #       cargo build --release --target=x86_64-unknown-linux-musl
 
   build-linux-aur:
     runs-on: ubuntu-latest
@@ -74,41 +74,41 @@ jobs:
     - name: Setup AUR
       run: |
         pacman --noconfirm -Syu git base-devel rustup
-    - name: Build Debug
-      run: cargo build
+    - name: Build AUR Package
+      run: makepkg --noconfirm -s
 
-  rustfmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        components: rustfmt
-    - run: cargo fmt -- --check
+  # rustfmt:
+  #   name: Rustfmt
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@master
+  #   - name: Install Rust
+  #     uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #       components: rustfmt
+  #   - run: cargo fmt -- --check
 
-  sec:
-    name: Security audit
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/audit-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+  # sec:
+  #   name: Security audit
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - uses: actions-rs/audit-check@v1
+  #     with:
+  #       token: ${{ secrets.GITHUB_TOKEN }}
 
-  log-test:
-    name: Changelog Test
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Extract release notes
-      id: extract_release_notes
-      uses: ffurrer2/extract-release-notes@v1
-      with:
-        release_notes_file: ./release-notes.txt
-    - uses: actions/upload-artifact@v1
-      with:
-        name: release-notes.txt
-        path: ./release-notes.txt
+  # log-test:
+  #   name: Changelog Test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@master
+  #   - name: Extract release notes
+  #     id: extract_release_notes
+  #     uses: ffurrer2/extract-release-notes@v1
+  #     with:
+  #       release_notes_file: ./release-notes.txt
+  #   - uses: actions/upload-artifact@v1
+  #     with:
+  #       name: release-notes.txt
+  #       path: ./release-notes.txt
