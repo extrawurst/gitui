@@ -73,6 +73,8 @@ jobs:
         useradd -m aur
         echo 'aur ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
         su aur
+        git clone https://aur.archlinux.org/gitui.git
+        cd gitui
         makepkg --noconfirm -s
 
   # rustfmt:
