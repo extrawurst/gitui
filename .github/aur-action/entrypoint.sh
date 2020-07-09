@@ -1,7 +1,7 @@
 #!/bin/sh -l
 
 pwd
-who
+whoami
 
 cd /home/aur
 git clone https://aur.archlinux.org/gitui.git
