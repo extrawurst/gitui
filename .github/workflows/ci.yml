@@ -65,17 +65,16 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux
     steps:
-    - uses: actions/checkout@v2
     - name: Setup AUR
       run: |
         pacman --noconfirm -Syu git base-devel rustup
         rustup update stable
         useradd -m aur
         echo 'aur ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-        su aur
-        git clone https://aur.archlinux.org/gitui.git
-        cd gitui
-        makepkg --noconfirm -s
+        su aur && 
+        git clone https://aur.archlinux.org/gitui.git &&
+        cd gitui &&
+        makepkg --noconfirm -s &&
 
   # rustfmt:
   #   name: Rustfmt
