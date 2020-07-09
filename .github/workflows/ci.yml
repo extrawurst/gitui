@@ -64,8 +64,10 @@ jobs:
   build-linux-aur:
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout
+      uses: actions/checkout@v2
     - name: AUR Test
-      uses: ../aur-action/
+      uses: ./.github/aur-action/
 
   # rustfmt:
   #   name: Rustfmt
