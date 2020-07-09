@@ -61,6 +61,22 @@ jobs:
       run: |
         cargo build --release --target=x86_64-unknown-linux-musl
 
+  build-linux-aur:
+    runs-on: ubuntu-latest
+    container: archlinux
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+    - name: Setup AUR
+      run: |
+        pacman --noconfirm -Syu git base-devel rustup
+    - name: Build Debug
+      run: cargo build
+
   rustfmt:
     name: Rustfmt
     runs-on: ubuntu-latest
