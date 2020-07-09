@@ -1,8 +1,8 @@
 #!/bin/sh -l
 
 pwd
+who
 
-su aur
 cd /home/aur
 git clone https://aur.archlinux.org/gitui.git
 cd gitui
