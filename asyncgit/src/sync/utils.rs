@@ -28,7 +28,7 @@ pub fn is_bare_repo(repo_path: &str) -> Result<bool> {
 }
 
 ///
-pub fn repo(repo_path: &str) -> Result<Repository> {
+pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
     let repo = Repository::open_ext(
         repo_path,
         RepositoryOpenFlags::empty(),
@@ -43,8 +43,18 @@ pub fn repo(repo_path: &str) -> Result<Repository> {
 }
 
 ///
-pub fn work_dir(repo: &Repository) -> &Path {
+pub(crate) fn work_dir(repo: &Repository) -> &Path {
     repo.workdir().expect("unable to query workdir")
+}
+
+///
+pub fn repo_work_dir(repo_path: &str) -> Result<String> {
+    let repo = repo(repo_path)?;
+    if let Some(workdir) = work_dir(&repo).to_str() {
+        Ok(workdir.to_string())
+    } else {
+        Err(Error::Generic("invalid workdir".to_string()))
+    }
 }
 
 ///

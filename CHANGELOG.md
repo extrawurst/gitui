@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - removed unmaintained dependency `spin` ([#172](https://github.com/extrawurst/gitui/issues/172))
+- fix opening relative paths in external editor ([#184](https://github.com/extrawurst/gitui/issues/184))
 
 ## [0.8.1] - 2020-07-07
 

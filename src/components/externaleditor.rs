@@ -7,6 +7,7 @@ use crate::{
     ui::{self, style::SharedTheme},
 };
 use anyhow::{anyhow, Result};
+use asyncgit::{sync::utils::repo_work_dir, CWD};
 use crossterm::{
     event::Event,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
@@ -38,6 +39,14 @@ impl ExternalEditorComponent {
 
     /// opens file at given `path` in an available editor
     pub fn open_file_in_editor(path: &Path) -> Result<()> {
+        let work_dir = repo_work_dir(CWD)?;
+
+        let path = if path.is_relative() {
+            Path::new(&work_dir).join(path)
+        } else {
+            path.into()
+        };
+
         if !path.exists() {
             return Err(anyhow!("file not found: {:?}", path));
         }
@@ -52,6 +61,11 @@ impl ExternalEditorComponent {
             .or_else(|| env::var("VISUAL").ok())
             .or_else(|| env::var("EDITOR").ok())
             .unwrap_or_else(|| String::from("vi"));
+
+        //TODO: check the path.to_str result and return err on None because
+        //otherwise this will pretty likely fail in the command stage otherwise
+        //and https://github.com/extrawurst/gitui/issues/184 showed how weird
+        //'vi' handles opening not existing files
         editor.push_str(&format!(" {}", path.to_string_lossy()));
 
         let mut editor = editor.split_whitespace();
@@ -61,6 +75,7 @@ impl ExternalEditorComponent {
         })?;
 
         Command::new(command)
+            .current_dir(work_dir)
             .args(editor)
             .status()
             .map_err(|e| anyhow!("\"{}\": {}", command, e))?;
