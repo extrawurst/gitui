@@ -65,21 +65,15 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux
     steps:
+    - uses: actions/checkout@v2
     - name: Setup AUR
       run: |
         pacman --noconfirm -Syu git base-devel rustup
+        rustup update stable
         useradd -m aur
         echo 'aur ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
         su aur
-        cd /home/aur
-    - uses: actions/checkout@v2
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-    - name: Build AUR Package
-      run: makepkg --noconfirm -s
+        makepkg --noconfirm -s
 
   # rustfmt:
   #   name: Rustfmt
