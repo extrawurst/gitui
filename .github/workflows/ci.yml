@@ -74,7 +74,7 @@ jobs:
         su aur && 
         git clone https://aur.archlinux.org/gitui.git &&
         cd gitui &&
-        makepkg --noconfirm -s &&
+        makepkg --noconfirm -s
 
   # rustfmt:
   #   name: Rustfmt
