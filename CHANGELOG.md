@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - removed unmaintained dependency `spin` ([#172](https://github.com/extrawurst/gitui/issues/172))
 - opening relative paths in external editor may fail in subpaths ([#184](https://github.com/extrawurst/gitui/issues/184))
 - crashes in revlog with utf8 commit messages ([#188](https://github.com/extrawurst/gitui/issues/188))
+- `add_to_ignore` failed on files without a newline at EOF ([#191](https://github.com/extrawurst/gitui/issues/191))
 
 ## [0.8.1] - 2020-07-07
 
