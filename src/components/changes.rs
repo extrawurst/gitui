@@ -172,15 +172,27 @@ impl ChangesComponent {
         false
     }
 
-    fn add_to_ignore(&mut self) -> Result<bool> {
+    fn add_to_ignore(&mut self) -> bool {
         if let Some(tree_item) = self.selection() {
-            sync::add_to_ignore(CWD, tree_item.info.full_path)?;
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Update(NeedsUpdate::ALL));
-            return Ok(true);
+            if let Err(e) =
+                sync::add_to_ignore(CWD, &tree_item.info.full_path)
+            {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowErrorMsg(format!(
+                        "ignore error:\n{}\nfile:\n{:?}",
+                        e, tree_item.info.full_path
+                    )),
+                );
+            } else {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::Update(NeedsUpdate::ALL),
+                );
+
+                return true;
+            }
         }
-        Ok(false)
+
+        false
     }
 }
 
@@ -306,7 +318,7 @@ impl Component for ChangesComponent {
                         if self.is_working_dir
                             && !self.is_empty() =>
                     {
-                        Ok(self.add_to_ignore()?)
+                        Ok(self.add_to_ignore())
                     }
                     _ => Ok(false),
                 };

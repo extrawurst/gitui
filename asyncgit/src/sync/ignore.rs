@@ -8,7 +8,7 @@ static GITIGNORE: &str = ".gitignore";
 /// add file or path to root ignore file
 pub fn add_to_ignore(
     repo_path: &str,
-    path_to_ignore: String,
+    path_to_ignore: &str,
 ) -> Result<()> {
     scope_time!("add_to_ignore");
 
