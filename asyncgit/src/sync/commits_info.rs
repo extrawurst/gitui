@@ -180,5 +180,9 @@ mod tests {
     #[test]
     fn test_limit_string_utf8() {
         assert_eq!(limit_str("里里", 1), "里");
+
+        let test_src = "导入按钮由选文件改为选目录，因为整个过程中要用到多个mdb文件，这些文件是在程序里写死的，暂且这么来做，有时间了后 再做调整";
+        let test_dst = "导入按钮由选文";
+        assert_eq!(limit_str(test_src, 20), test_dst);
     }
 }
