@@ -65,8 +65,7 @@ impl ChangesComponent {
         }
     }
 
-    ///
-    pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
+    pub fn update(&mut self) -> Result<()> {
         if self.is_working_dir {
             if let Ok(branch_name) = self.branch_name.lookup() {
                 self.files.set_title(format!(
@@ -75,9 +74,12 @@ impl ChangesComponent {
                 ))
             }
         }
+        Ok(())
+    }
 
+    ///
+    pub fn set_items(&mut self, list: &[StatusItem]) -> Result<()> {
         self.files.update(list)?;
-
         Ok(())
     }
 

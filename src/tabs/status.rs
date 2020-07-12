@@ -202,6 +202,8 @@ impl Status {
             ))?;
             self.git_status_stage
                 .fetch(StatusParams::new(StatusType::Stage, true))?;
+
+            self.index_wd.update()?;
         }
 
         Ok(())
@@ -230,10 +232,10 @@ impl Status {
 
     fn update_status(&mut self) -> Result<()> {
         let status = self.git_status_stage.last()?;
-        self.index.update(&status.items)?;
+        self.index.set_items(&status.items)?;
 
         let status = self.git_status_workdir.last()?;
-        self.index_wd.update(&status.items)?;
+        self.index_wd.set_items(&status.items)?;
 
         self.update_diff()?;
 
