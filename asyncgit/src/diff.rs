@@ -122,11 +122,13 @@ impl AsyncDiff {
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
-            if notify {
-                sender
-                    .send(AsyncNotification::Diff)
-                    .expect("error sending diff");
-            }
+            sender
+                .send(if notify {
+                    AsyncNotification::Diff
+                } else {
+                    AsyncNotification::FinishUnchanged
+                })
+                .expect("error sending diff");
         });
 
         Ok(None)

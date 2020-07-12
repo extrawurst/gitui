@@ -13,6 +13,7 @@ mod error;
 mod revlog;
 mod status;
 pub mod sync;
+mod tags;
 
 pub use crate::{
     commit_files::AsyncCommitFiles,
@@ -23,6 +24,7 @@ pub use crate::{
         diff::{DiffLine, DiffLineType, FileDiff},
         status::{StatusItem, StatusItemType},
     },
+    tags::AsyncTags,
 };
 use std::{
     collections::hash_map::DefaultHasher,
@@ -32,6 +34,8 @@ use std::{
 /// this type is used to communicate events back through the channel
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum AsyncNotification {
+    /// this indicates that no new state was fetched but that a async process finished
+    FinishUnchanged,
     ///
     Status,
     ///
@@ -40,6 +44,8 @@ pub enum AsyncNotification {
     Log,
     ///
     CommitFiles,
+    ///
+    Tags,
 }
 
 /// current working director `./`

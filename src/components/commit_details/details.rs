@@ -40,7 +40,7 @@ impl DetailsComponent {
     pub fn set_commit(
         &mut self,
         id: Option<CommitId>,
-        tags: &Tags,
+        tags: Option<&Tags>,
     ) -> Result<()> {
         self.tags.clear();
 
@@ -51,8 +51,10 @@ impl DetailsComponent {
         };
 
         if let Some(id) = id {
-            if let Some(tags) = tags.get(&id) {
-                self.tags.extend(tags.clone());
+            if let Some(tags) = tags {
+                if let Some(tags) = tags.get(&id) {
+                    self.tags.extend(tags.clone());
+                }
             }
         }
 

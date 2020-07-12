@@ -93,13 +93,7 @@ impl CommitList {
     }
 
     ///
-    pub fn has_tags(&self) -> bool {
-        self.tags.is_some()
-    }
-
-    ///
     pub fn clear(&mut self) {
-        self.tags = None;
         self.items.clear();
     }
 

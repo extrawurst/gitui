@@ -13,10 +13,11 @@ use anyhow::Result;
 use asyncgit::{
     cached,
     sync::{self, CommitId},
-    AsyncLog, AsyncNotification, FetchStatus, CWD,
+    AsyncLog, AsyncNotification, AsyncTags, FetchStatus, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use std::time::Duration;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -30,6 +31,7 @@ pub struct Revlog {
     commit_details: CommitDetailsComponent,
     list: CommitList,
     git_log: AsyncLog,
+    git_tags: AsyncTags,
     queue: Queue,
     visible: bool,
     branch_name: cached::BranchName,
@@ -51,6 +53,7 @@ impl Revlog {
             ),
             list: CommitList::new(strings::LOG_TITLE, theme),
             git_log: AsyncLog::new(sender),
+            git_tags: AsyncTags::new(sender),
             visible: false,
             branch_name: cached::BranchName::new(CWD),
         }
@@ -59,6 +62,7 @@ impl Revlog {
     ///
     pub fn any_work_pending(&self) -> bool {
         self.git_log.is_pending()
+            || self.git_tags.is_pending()
             || self.commit_details.any_work_pending()
     }
 
@@ -78,9 +82,7 @@ impl Revlog {
                 self.fetch_commits()?;
             }
 
-            if !self.list.has_tags() || log_changed {
-                self.list.set_tags(sync::get_tags(CWD)?);
-            }
+            self.git_tags.request(Duration::from_secs(3), false)?;
 
             self.list.set_branch(
                 self.branch_name.lookup().map(Some).unwrap_or(None),
@@ -89,7 +91,7 @@ impl Revlog {
             if self.commit_details.is_visible() {
                 self.commit_details.set_commit(
                     self.selected_commit(),
-                    self.list.tags().expect("tags"),
+                    self.list.tags(),
                 )?;
             }
         }
@@ -106,6 +108,12 @@ impl Revlog {
             match ev {
                 AsyncNotification::CommitFiles
                 | AsyncNotification::Log => self.update()?,
+                AsyncNotification::Tags => {
+                    if let Some(tags) = self.git_tags.last()? {
+                        self.list.set_tags(tags);
+                        self.update()?;
+                    }
+                }
                 _ => (),
             }
         }

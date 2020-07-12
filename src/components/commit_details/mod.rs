@@ -68,7 +68,7 @@ impl CommitDetailsComponent {
     pub fn set_commit(
         &mut self,
         id: Option<CommitId>,
-        tags: &Tags,
+        tags: Option<&Tags>,
     ) -> Result<()> {
         self.details.set_commit(id, tags)?;
 
