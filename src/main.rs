@@ -136,8 +136,13 @@ fn main() -> Result<()> {
                     app.event(ev)?
                 }
                 QueueEvent::Tick => app.update()?,
-                QueueEvent::GitEvent(ev) => app.update_git(ev)?,
+                QueueEvent::GitEvent(ev)
+                    if ev != AsyncNotification::FinishUnchanged =>
+                {
+                    app.update_git(ev)?
+                }
                 QueueEvent::SpinnerUpdate => unreachable!(),
+                _ => (),
             }
 
             draw(&mut terminal, &app)?;
