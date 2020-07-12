@@ -77,7 +77,7 @@ impl StashList {
         if let Some(e) = self.list.selected_entry() {
             self.queue
                 .borrow_mut()
-                .push_back(InternalEvent::InspectCommit(e.id));
+                .push_back(InternalEvent::InspectCommit(e.id, None));
         }
     }
 

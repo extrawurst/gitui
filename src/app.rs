@@ -420,8 +420,8 @@ impl App {
                 self.stashmsg_popup.show()?
             }
             InternalEvent::TabSwitch => self.set_tab(0)?,
-            InternalEvent::InspectCommit(id) => {
-                self.inspect_commit_popup.open(id)?;
+            InternalEvent::InspectCommit(id, tags) => {
+                self.inspect_commit_popup.open(id, tags)?;
                 flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
             }
             InternalEvent::OpenExternalEditor(path) => {

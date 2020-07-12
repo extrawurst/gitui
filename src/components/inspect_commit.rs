@@ -9,8 +9,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::CommitId, AsyncDiff, AsyncNotification, DiffParams,
-    DiffType,
+    sync::{CommitId, CommitTags},
+    AsyncDiff, AsyncNotification, DiffParams, DiffType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -23,6 +23,7 @@ use tui::{
 
 pub struct InspectCommitComponent {
     commit_id: Option<CommitId>,
+    tags: Option<CommitTags>,
     diff: DiffComponent,
     details: CommitDetailsComponent,
     git_diff: AsyncDiff,
@@ -160,14 +161,20 @@ impl InspectCommitComponent {
             ),
             diff: DiffComponent::new(None, theme),
             commit_id: None,
+            tags: None,
             git_diff: AsyncDiff::new(sender.clone()),
             visible: false,
         }
     }
 
     ///
-    pub fn open(&mut self, id: CommitId) -> Result<()> {
+    pub fn open(
+        &mut self,
+        id: CommitId,
+        tags: Option<CommitTags>,
+    ) -> Result<()> {
         self.commit_id = Some(id);
+        self.tags = tags;
         self.show()?;
 
         Ok(())
@@ -225,7 +232,7 @@ impl InspectCommitComponent {
     }
 
     fn update(&mut self) -> Result<()> {
-        self.details.set_commit(self.commit_id, None)?;
+        self.details.set_commit(self.commit_id, self.tags.clone())?;
         self.update_diff()?;
 
         Ok(())

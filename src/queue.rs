@@ -1,5 +1,5 @@
 use crate::tabs::StashingOptions;
-use asyncgit::sync::CommitId;
+use asyncgit::sync::{CommitId, CommitTags};
 use bitflags::bitflags;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
@@ -47,7 +47,7 @@ pub enum InternalEvent {
     ///
     TabSwitch,
     ///
-    InspectCommit(CommitId),
+    InspectCommit(CommitId, Option<CommitTags>),
     ///
     OpenExternalEditor(Option<String>),
 }

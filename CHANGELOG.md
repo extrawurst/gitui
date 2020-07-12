@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - crashes in revlog with utf8 commit messages ([#188](https://github.com/extrawurst/gitui/issues/188))
 - `add_to_ignore` failed on files without a newline at EOF ([#191](https://github.com/extrawurst/gitui/issues/191))
 - new tags were not picked up in revlog view ([#190](https://github.com/extrawurst/gitui/issues/190))
+- tags not shown in commit details popup ([#193](https://github.com/extrawurst/gitui/issues/193))
 
 ## [0.8.1] - 2020-07-07
 

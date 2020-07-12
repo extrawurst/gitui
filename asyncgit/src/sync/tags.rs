@@ -3,8 +3,10 @@ use crate::error::Result;
 use scopetime::scope_time;
 use std::collections::BTreeMap;
 
+/// all tags pointing to a single commit
+pub type CommitTags = Vec<String>;
 /// hashmap of tag target commit hash to tag names
-pub type Tags = BTreeMap<CommitId, Vec<String>>;
+pub type Tags = BTreeMap<CommitId, CommitTags>;
 
 /// returns `Tags` type filled with all tags found in repo
 pub fn get_tags(repo_path: &str) -> Result<Tags> {

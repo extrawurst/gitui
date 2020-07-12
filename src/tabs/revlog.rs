@@ -18,6 +18,7 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use std::time::Duration;
+use sync::CommitTags;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -89,10 +90,10 @@ impl Revlog {
             );
 
             if self.commit_details.is_visible() {
-                self.commit_details.set_commit(
-                    self.selected_commit(),
-                    self.list.tags(),
-                )?;
+                let commit = self.selected_commit();
+                let tags = self.selected_commit_tags(&commit);
+
+                self.commit_details.set_commit(commit, tags)?;
             }
         }
 
@@ -140,6 +141,25 @@ impl Revlog {
 
     fn selected_commit(&self) -> Option<CommitId> {
         self.list.selected_entry().map(|e| e.id)
+    }
+
+    fn selected_commit_tags(
+        &self,
+        commit: &Option<CommitId>,
+    ) -> Option<CommitTags> {
+        let tags = self.list.tags();
+
+        commit.and_then(|commit| {
+            if let Some(tags) = tags {
+                if let Some(tags) = tags.get(&commit) {
+                    Some(tags.clone())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -194,7 +214,12 @@ impl Component for Revlog {
                             self.selected_commit()
                         {
                             self.queue.borrow_mut().push_back(
-                                InternalEvent::InspectCommit(id),
+                                InternalEvent::InspectCommit(
+                                    id,
+                                    self.selected_commit_tags(&Some(
+                                        id,
+                                    )),
+                                ),
                             );
                             Ok(true)
                         } else {

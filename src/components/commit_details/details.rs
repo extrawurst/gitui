@@ -8,11 +8,12 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::{self, CommitDetails, CommitId, Tags},
+    sync::{self, CommitDetails, CommitId},
     CWD,
 };
 use crossterm::event::Event;
 use std::borrow::Cow;
+use sync::CommitTags;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -40,7 +41,7 @@ impl DetailsComponent {
     pub fn set_commit(
         &mut self,
         id: Option<CommitId>,
-        tags: Option<&Tags>,
+        tags: Option<CommitTags>,
     ) -> Result<()> {
         self.tags.clear();
 
@@ -50,12 +51,8 @@ impl DetailsComponent {
             None
         };
 
-        if let Some(id) = id {
-            if let Some(tags) = tags {
-                if let Some(tags) = tags.get(&id) {
-                    self.tags.extend(tags.clone());
-                }
-            }
+        if let Some(tags) = tags {
+            self.tags.extend(tags)
         }
 
         Ok(())

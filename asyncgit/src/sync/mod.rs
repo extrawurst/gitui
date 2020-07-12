@@ -29,7 +29,7 @@ pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
-pub use tags::{get_tags, Tags};
+pub use tags::{get_tags, CommitTags, Tags};
 pub use utils::{
     get_head, is_bare_repo, is_repo, stage_add_all, stage_add_file,
     stage_addremoved,
