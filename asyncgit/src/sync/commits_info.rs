@@ -4,7 +4,7 @@ use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
 
 /// identifies a single commit
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct CommitId(Oid);
 
 impl CommitId {

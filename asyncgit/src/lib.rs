@@ -13,6 +13,7 @@ mod error;
 mod revlog;
 mod status;
 pub mod sync;
+mod tags;
 
 pub use crate::{
     commit_files::AsyncCommitFiles,
@@ -23,6 +24,7 @@ pub use crate::{
         diff::{DiffLine, DiffLineType, FileDiff},
         status::{StatusItem, StatusItemType},
     },
+    tags::{AsyncTags, TagsResult},
 };
 use std::{
     collections::hash_map::DefaultHasher,
@@ -40,6 +42,8 @@ pub enum AsyncNotification {
     Log,
     ///
     CommitFiles,
+    ///
+    Tags,
 }
 
 /// current working director `./`
