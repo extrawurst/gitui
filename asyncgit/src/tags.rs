@@ -13,11 +13,9 @@ use sync::Tags;
 
 ///
 #[derive(Default, Clone)]
-pub struct TagsResult {
-    ///
-    pub hash: u64,
-    ///
-    pub tags: Tags,
+struct TagsResult {
+    hash: u64,
+    tags: Tags,
 }
 
 ///
@@ -37,22 +35,11 @@ impl AsyncTags {
         }
     }
 
-    ///
-    pub fn last(&mut self) -> Result<Option<TagsResult>> {
+    /// last fetched result
+    pub fn last(&mut self) -> Result<Option<Tags>> {
         let last = self.last.lock()?;
 
-        Ok(last.clone())
-    }
-
-    ///
-    fn last_hash(
-        last: Arc<Mutex<Option<TagsResult>>>,
-    ) -> Option<u64> {
-        if let Ok(last) = last.lock() {
-            last.as_ref().map(|last| last.hash)
-        } else {
-            None
-        }
+        Ok(last.clone().map(|last| last.tags))
     }
 
     ///
@@ -80,8 +67,6 @@ impl AsyncTags {
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
             if notify {
-                log::trace!("NOTIFY TAGS");
-
                 sender
                     .send(AsyncNotification::Tags)
                     .expect("error sending notify");
@@ -111,5 +96,13 @@ impl AsyncTags {
         }
 
         Ok(true)
+    }
+
+    fn last_hash(
+        last: Arc<Mutex<Option<TagsResult>>>,
+    ) -> Option<u64> {
+        last.lock()
+            .ok()
+            .and_then(|last| last.as_ref().map(|last| last.hash))
     }
 }

@@ -10,7 +10,7 @@ use crate::{
     ui::style::{SharedTheme, Theme},
 };
 use anyhow::Result;
-use asyncgit::TagsResult;
+use asyncgit::sync::Tags;
 use crossterm::event::Event;
 use std::{
     borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
@@ -33,7 +33,7 @@ pub struct CommitList {
     count_total: usize,
     items: ItemBatch,
     scroll_state: (Instant, f32),
-    tags: Option<TagsResult>,
+    tags: Option<Tags>,
     current_size: Cell<(u16, u16)>,
     scroll_top: Cell<usize>,
     theme: SharedTheme,
@@ -88,7 +88,7 @@ impl CommitList {
     }
 
     ///
-    pub fn tags(&self) -> Option<&TagsResult> {
+    pub fn tags(&self) -> Option<&Tags> {
         self.tags.as_ref()
     }
 
@@ -98,7 +98,7 @@ impl CommitList {
     }
 
     ///
-    pub fn set_tags(&mut self, tags: TagsResult) {
+    pub fn set_tags(&mut self, tags: Tags) {
         self.tags = Some(tags);
     }
 
@@ -245,7 +245,7 @@ impl CommitList {
             .enumerate()
         {
             let tags = if let Some(tags) =
-                self.tags.as_ref().and_then(|t| t.tags.get(&e.id))
+                self.tags.as_ref().and_then(|t| t.get(&e.id))
             {
                 Some(tags.join(" "))
             } else {

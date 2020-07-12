@@ -24,7 +24,7 @@ pub use crate::{
         diff::{DiffLine, DiffLineType, FileDiff},
         status::{StatusItem, StatusItemType},
     },
-    tags::{AsyncTags, TagsResult},
+    tags::AsyncTags,
 };
 use std::{
     collections::hash_map::DefaultHasher,

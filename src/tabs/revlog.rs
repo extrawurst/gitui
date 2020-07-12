@@ -89,7 +89,7 @@ impl Revlog {
             if self.commit_details.is_visible() {
                 self.commit_details.set_commit(
                     self.selected_commit(),
-                    self.list.tags().map(|tags| &tags.tags),
+                    self.list.tags(),
                 )?;
             }
         }
