@@ -15,8 +15,9 @@ use tui::{
     widgets::{Clear, Text},
     Frame,
 };
+use tui::style::Color::Red;
 
-/// primarily a subcomponet for user input of text (used in `CommitComponent`)
+/// Primarily a sub-component for user input of text (used in `CommitComponent`).
 pub struct TextInputComponent {
     title: String,
     default_msg: String,
@@ -104,13 +105,13 @@ impl TextInputComponent {
         self.title = t;
     }
 
-    fn get_draw_text(&self) -> Vec<Text> {
+    fn apply_cursor(&self) -> Vec<Text> {
         let style = self.theme.text(true, false);
 
         let mut txt = Vec::new();
 
-        // the portion of the text before the cursor is added
-        // if the cursor is not at the first character
+        // The portion of the text before the cursor is added
+        // if the cursor is not at the first character.
         if self.cursor_position > 0 {
             txt.push(Text::styled(
                 &self.msg[..self.cursor_position],
@@ -141,14 +142,27 @@ impl TextInputComponent {
             style.modifier(Modifier::UNDERLINED),
         ));
 
-        // the final portion of the text is added if there is
-        // still remaining characters
+        // The final portion of the text is added if there is
+        // still remaining characters.
         if let Some(pos) = self.next_char_position() {
             if pos < self.msg.len() {
                 txt.push(Text::styled(&self.msg[pos..], style));
             }
         }
 
+        txt
+    }
+
+    fn apply_highlighting(&self) -> Vec<Text> {
+        let style = self.theme.text(true, false);
+        let mut txt = Vec::new();
+        let char_limit_warning = 50;
+        if self.msg.len() > char_limit_warning {
+            txt.push(Text::styled(&self.msg[..char_limit_warning], style));
+            txt.push(Text::styled(&self.msg[char_limit_warning..], style.fg(Red)));
+        } else {
+            txt.push(Text::styled(&self.msg, style));
+        }
         txt
     }
 }
@@ -166,7 +180,8 @@ impl DrawableComponent for TextInputComponent {
                     self.theme.text(false, false),
                 )]
             } else {
-                self.get_draw_text()
+                self.apply_cursor();
+                self.apply_highlighting()
             };
 
             let area = ui::centered_rect(60, 20, f.size());
@@ -303,7 +318,7 @@ mod tests {
 
         comp.incr_cursor();
 
-        let txt = comp.get_draw_text();
+        let txt = comp.apply_cursor();
 
         assert_eq!(txt.len(), 4);
         assert_eq!(get_text(&txt[0]), Some("a"));
