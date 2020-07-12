@@ -1,12 +1,19 @@
 #![forbid(unsafe_code)]
-// #![warn(clippy::cargo)]
+#![deny(clippy::cargo)]
 #![deny(clippy::pedantic)]
+#![deny(clippy::nursery)]
+#![deny(clippy::result_unwrap_used)]
+#![deny(clippy::panic)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::multiple_crate_versions)]
 
 mod app;
+mod cmdbar;
 mod components;
+mod input;
 mod keys;
-mod poll;
+mod notify_mutex;
+mod profiler;
 mod queue;
 mod spinner;
 mod strings;
@@ -14,19 +21,24 @@ mod tabs;
 mod ui;
 mod version;
 
-use crate::{app::App, poll::QueueEvent};
+use crate::app::App;
+use anyhow::{anyhow, Result};
 use asyncgit::AsyncNotification;
 use backtrace::Backtrace;
+use clap::{
+    crate_authors, crate_description, crate_name, crate_version,
+    App as ClapApp, Arg,
+};
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
     terminal::{
         disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
         LeaveAlternateScreen,
     },
-    ExecutableCommand, Result,
+    ExecutableCommand,
 };
-use io::Write;
-use log::error;
+use input::{Input, InputEvent, InputState};
+use profiler::Profiler;
 use scopeguard::defer;
 use scopetime::scope_time;
 use simplelog::{Config, LevelFilter, WriteLogger};
@@ -34,7 +46,10 @@ use spinner::Spinner;
 use std::{
     env, fs,
     fs::File,
-    io, panic,
+    io::{self, Write},
+    panic,
+    path::PathBuf,
+    process,
     time::{Duration, Instant},
 };
 use tui::{
@@ -43,70 +58,97 @@ use tui::{
 };
 
 static TICK_INTERVAL: Duration = Duration::from_secs(5);
-static SPINNER_INTERVAL: Duration = Duration::from_millis(50);
+static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
+
+///
+#[derive(Clone, Copy)]
+pub enum QueueEvent {
+    Tick,
+    SpinnerUpdate,
+    GitEvent(AsyncNotification),
+    InputEvent(InputEvent),
+}
 
 fn main() -> Result<()> {
-    setup_logging();
+    process_cmdline()?;
 
-    if invalid_path() {
-        eprintln!("invalid git path\nplease run gitui inside of a git repository");
+    let _profiler = Profiler::new();
+
+    if !valid_path()? {
+        eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
         return Ok(());
     }
 
-    enable_raw_mode()?;
-    io::stdout().execute(EnterAlternateScreen)?;
+    // TODO: To be removed in a future version, when upgrading from 0.6.x or earlier is unlikely
+    migrate_config()?;
+
+    setup_terminal()?;
     defer! {
-        io::stdout().execute(LeaveAlternateScreen).unwrap();
-        disable_raw_mode().unwrap();
+        shutdown_terminal().expect("shutdown failed");
     }
 
-    set_panic_handlers();
+    set_panic_handlers()?;
 
     let mut terminal = start_terminal(io::stdout())?;
 
     let (tx_git, rx_git) = unbounded();
 
-    let mut app = App::new(&tx_git);
+    let input = Input::new();
 
-    let rx_input = poll::start_polling_thread();
+    let rx_input = input.receiver();
     let ticker = tick(TICK_INTERVAL);
     let spinner_ticker = tick(SPINNER_INTERVAL);
 
-    app.update();
-    draw(&mut terminal, &mut app)?;
+    let mut app = App::new(&tx_git, input);
 
     let mut spinner = Spinner::default();
+    let mut first_update = true;
 
     loop {
-        let events: Vec<QueueEvent> = select_event(
-            &rx_input,
-            &rx_git,
-            &ticker,
-            &spinner_ticker,
-        );
+        let event = if first_update {
+            first_update = false;
+            QueueEvent::Tick
+        } else {
+            select_event(
+                &rx_input,
+                &rx_git,
+                &ticker,
+                &spinner_ticker,
+            )?
+        };
 
         {
+            if let QueueEvent::SpinnerUpdate = event {
+                spinner.update();
+                spinner.draw(&mut terminal)?;
+                continue;
+            }
+
             scope_time!("loop");
 
-            let mut needs_draw = true;
-
-            for e in events {
-                match e {
-                    QueueEvent::InputEvent(ev) => app.event(ev),
-                    QueueEvent::Tick => app.update(),
-                    QueueEvent::GitEvent(ev) => app.update_git(ev),
-                    QueueEvent::SpinnerUpdate => {
-                        needs_draw = false;
-                        spinner.update()
+            match event {
+                QueueEvent::InputEvent(ev) => {
+                    if let InputEvent::State(InputState::Polling) = ev
+                    {
+                        //Note: external ed closed, we need to re-hide cursor
+                        terminal.hide_cursor()?;
                     }
+                    app.event(ev)?
                 }
+                QueueEvent::Tick => app.update()?,
+                QueueEvent::GitEvent(ev)
+                    if ev != AsyncNotification::FinishUnchanged =>
+                {
+                    app.update_git(ev)?
+                }
+                QueueEvent::SpinnerUpdate => unreachable!(),
+                _ => (),
             }
 
-            if needs_draw {
-                draw(&mut terminal, &mut app)?;
-            }
+            draw(&mut terminal, &app)?;
 
-            spinner.draw(&mut terminal, app.any_work_pending())?;
+            spinner.set_state(app.any_work_pending());
+            spinner.draw(&mut terminal)?;
 
             if app.is_quit() {
                 break;
@@ -117,25 +159,44 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn draw<B: Backend>(
-    terminal: &mut Terminal<B>,
-    app: &mut App,
-) -> io::Result<()> {
-    terminal.draw(|mut f| app.draw(&mut f))
+fn setup_terminal() -> Result<()> {
+    enable_raw_mode()?;
+    io::stdout().execute(EnterAlternateScreen)?;
+    Ok(())
 }
 
-fn invalid_path() -> bool {
-    !asyncgit::is_repo(asyncgit::CWD)
+fn shutdown_terminal() -> Result<()> {
+    io::stdout().execute(LeaveAlternateScreen)?;
+    disable_raw_mode()?;
+    Ok(())
+}
+
+fn draw<B: Backend>(
+    terminal: &mut Terminal<B>,
+    app: &App,
+) -> io::Result<()> {
+    if app.requires_redraw() {
+        terminal.resize(terminal.size()?)?;
+    }
+
+    terminal.draw(|mut f| {
+        if let Err(e) = app.draw(&mut f) {
+            log::error!("failed to draw: {:?}", e)
+        }
+    })
+}
+
+fn valid_path() -> Result<bool> {
+    Ok(asyncgit::sync::is_repo(asyncgit::CWD)
+        && !asyncgit::sync::is_bare_repo(asyncgit::CWD)?)
 }
 
 fn select_event(
-    rx_input: &Receiver<Vec<QueueEvent>>,
+    rx_input: &Receiver<InputEvent>,
     rx_git: &Receiver<AsyncNotification>,
     rx_ticker: &Receiver<Instant>,
     rx_spinner: &Receiver<Instant>,
-) -> Vec<QueueEvent> {
-    let mut events: Vec<QueueEvent> = Vec::new();
-
+) -> Result<QueueEvent> {
     let mut sel = Select::new();
 
     sel.recv(rx_input);
@@ -146,22 +207,15 @@ fn select_event(
     let oper = sel.select();
     let index = oper.index();
 
-    match index {
-        0 => oper.recv(rx_input).map(|inputs| events.extend(inputs)),
-        1 => oper
-            .recv(rx_git)
-            .map(|ev| events.push(QueueEvent::GitEvent(ev))),
-        2 => oper
-            .recv(rx_ticker)
-            .map(|_| events.push(QueueEvent::Tick)),
-        3 => oper
-            .recv(rx_spinner)
-            .map(|_| events.push(QueueEvent::SpinnerUpdate)),
-        _ => panic!("unknown select source"),
-    }
-    .unwrap();
+    let ev = match index {
+        0 => oper.recv(rx_input).map(QueueEvent::InputEvent),
+        1 => oper.recv(rx_git).map(QueueEvent::GitEvent),
+        2 => oper.recv(rx_ticker).map(|_| QueueEvent::Tick),
+        3 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
+        _ => return Err(anyhow!("unknown select source")),
+    }?;
 
-    events
+    Ok(ev)
 }
 
 fn start_terminal<W: Write>(
@@ -175,35 +229,108 @@ fn start_terminal<W: Write>(
     Ok(terminal)
 }
 
-fn setup_logging() {
-    if env::var("GITUI_LOGGING").is_ok() {
-        let mut path = dirs::cache_dir().unwrap();
-        path.push("gitui");
-        path.push("gitui.log");
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
+fn migrate_config() -> Result<()> {
+    let cache_path: PathBuf = get_app_cache_path()?;
 
-        let _ = WriteLogger::init(
-            LevelFilter::Trace,
-            Config::default(),
-            File::create(path).unwrap(),
-        );
+    let entries = cache_path.read_dir()?.flatten().filter(|entry| {
+        !entry.file_name().to_string_lossy().ends_with(".log")
+    });
+
+    let config_path: PathBuf = get_app_config_path()?;
+    for entry in entries {
+        let mut config_path: PathBuf = config_path.clone();
+        config_path.push(entry.file_name());
+        fs::rename(entry.path(), config_path)?;
     }
+
+    Ok(())
 }
 
-fn set_panic_handlers() {
+fn get_app_cache_path() -> Result<PathBuf> {
+    let mut path = dirs::cache_dir()
+        .ok_or_else(|| anyhow!("failed to find os cache dir."))?;
+
+    path.push("gitui");
+    fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
+fn get_app_config_path() -> Result<PathBuf> {
+    let mut path = dirs::config_dir()
+        .ok_or_else(|| anyhow!("failed to find os config dir."))?;
+
+    path.push("gitui");
+    fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
+fn setup_logging() -> Result<()> {
+    let mut path = get_app_cache_path()?;
+    path.push("gitui.log");
+
+    let _ = WriteLogger::init(
+        LevelFilter::Trace,
+        Config::default(),
+        File::create(path)?,
+    );
+
+    Ok(())
+}
+
+fn process_cmdline() -> Result<()> {
+    let app = ClapApp::new(crate_name!())
+        .author(crate_authors!())
+        .version(crate_version!())
+        .about(crate_description!())
+        .arg(
+            Arg::with_name("logging")
+                .help("Stores logging output into a cache directory")
+                .short("l")
+                .long("logging"),
+        )
+        .arg(
+            Arg::with_name("directory")
+                .help("Set the working directory")
+                .short("d")
+                .long("directory")
+                .takes_value(true),
+        );
+
+    let arg_matches = app.get_matches();
+    if arg_matches.is_present("logging") {
+        setup_logging()?;
+    }
+
+    if arg_matches.is_present("directory") {
+        let directory =
+            arg_matches.value_of("directory").unwrap_or(".");
+        env::set_current_dir(directory)?;
+    }
+
+    Ok(())
+}
+
+fn set_panic_handlers() -> Result<()> {
     // regular panic handler
     panic::set_hook(Box::new(|e| {
         let backtrace = Backtrace::new();
-        error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+        log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+        shutdown_terminal().expect("shutdown failed inside panic");
+        eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
     }));
 
     // global threadpool
     rayon_core::ThreadPoolBuilder::new()
         .panic_handler(|e| {
-            error!("thread panic: {:?}", e);
-            panic!(e)
+            let backtrace = Backtrace::new();
+            log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+            shutdown_terminal()
+                .expect("shutdown failed inside panic");
+            eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+            process::abort();
         })
         .num_threads(4)
-        .build_global()
-        .unwrap();
+        .build_global()?;
+
+    Ok(())
 }

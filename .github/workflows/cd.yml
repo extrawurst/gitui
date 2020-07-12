@@ -10,20 +10,28 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [stable]
+
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
     - name: Get version
       id: get_version
       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        components: clippy
+
     - name: Build
       run: cargo build
     - name: Run tests
       run: make test
     - name: Run clippy
       run: |
-        rustup component add clippy
+        cargo clean
         make clippy
 
     - name: Setup MUSL
@@ -31,7 +39,7 @@ jobs:
       run: |
         rustup target add x86_64-unknown-linux-musl
         sudo apt-get -qq install musl-tools
-      
+
     - name: Build Release Mac
       if: matrix.os == 'macos-latest'
       run: make release-mac
@@ -56,16 +64,16 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         body: ${{ steps.release_notes.outputs.release_notes }}
-        prerelease: true
+        prerelease: false
         files: |
           ./release/*.tar.gz
           ./release/*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Bump Brew
+    - name: Bump extrawurst/homebrew-tap formula
       if: matrix.os == 'macos-latest'
-      env: 
+      env:
         HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.BREW_TOKEN }}
       run: |
         brew tap extrawurst/tap
@@ -73,3 +81,11 @@ jobs:
         --sha256=${{ steps.shasum.outputs.sha }} \
         --url="https://github.com/extrawurst/gitui/releases/download/${{ steps.get_version.outputs.version }}/gitui-mac.tar.gz" \
         extrawurst/tap/gitui
+
+    - name: Bump homebrew-core formula
+      uses: mislav/bump-homebrew-formula-action@v1
+      if: "matrix.os == 'macos-latest' && !contains(github.ref, '-')" # skip prereleases
+      env:
+        COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
+      with:
+        formula-name: gitui

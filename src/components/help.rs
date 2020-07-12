@@ -2,50 +2,56 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{keys, strings, ui, version::Version};
+use crate::{
+    keys,
+    strings::{self, commands},
+    ui,
+    version::Version,
+};
 use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
 use std::{borrow::Cow, cmp, convert::TryFrom};
-use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
-    widgets::{Block, Borders, Clear, Paragraph, Text},
+    style::{Modifier, Style},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
     Frame,
 };
 
+use anyhow::Result;
+use ui::style::SharedTheme;
+
 ///
-#[derive(Default)]
 pub struct HelpComponent {
     cmds: Vec<CommandInfo>,
     visible: bool,
     selection: u16,
+    theme: SharedTheme,
 }
 
 impl DrawableComponent for HelpComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
+    fn draw<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        _rect: Rect,
+    ) -> Result<()> {
         if self.visible {
-            let (txt, selected_line) = self.get_text();
-
-            let height = 24;
-            let scroll_threshold = height / 3;
-
-            let scroll = if selected_line > scroll_threshold {
-                self.selection - scroll_threshold
-            } else {
-                0
-            };
+            const SIZE: (u16, u16) = (65, 24);
+            let scroll_threshold = SIZE.1 / 3;
+            let scroll =
+                self.selection.saturating_sub(scroll_threshold);
 
             let area =
-                ui::centered_rect_absolute(65, height, f.size());
+                ui::centered_rect_absolute(SIZE.0, SIZE.1, f.size());
 
             f.render_widget(Clear, area);
             f.render_widget(
                 Block::default()
                     .title(strings::HELP_TITLE)
-                    .borders(Borders::ALL),
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Thick),
                 area,
             );
 
@@ -60,7 +66,7 @@ impl DrawableComponent for HelpComponent {
                 .split(area);
 
             f.render_widget(
-                Paragraph::new(txt.iter())
+                Paragraph::new(self.get_text().iter())
                     .scroll(scroll)
                     .alignment(Alignment::Left),
                 chunks[0],
@@ -68,16 +74,21 @@ impl DrawableComponent for HelpComponent {
 
             f.render_widget(
                 Paragraph::new(
-                    vec![Text::Raw(Cow::from(format!(
-                        "gitui {}",
-                        Version::new(),
-                    )))]
+                    vec![Text::Styled(
+                        Cow::from(format!(
+                            "gitui {}",
+                            Version::new(),
+                        )),
+                        Style::default(),
+                    )]
                     .iter(),
                 )
                 .alignment(Alignment::Right),
                 chunks[1],
             );
         }
+
+        Ok(())
     }
 }
 
@@ -92,31 +103,27 @@ impl Component for HelpComponent {
             out.clear();
         }
 
-        out.push(
-            CommandInfo::new(
-                commands::HELP_OPEN,
+        if self.visible {
+            out.push(CommandInfo::new(commands::SCROLL, true, true));
+
+            out.push(CommandInfo::new(
+                commands::CLOSE_POPUP,
                 true,
-                !self.visible,
-            )
-            .order(99),
-        );
+                true,
+            ));
+        }
 
-        out.push(CommandInfo::new(
-            commands::SCROLL,
-            true,
-            self.visible,
-        ));
-
-        out.push(CommandInfo::new(
-            commands::CLOSE_POPUP,
-            true,
-            self.visible,
-        ));
+        if !self.visible || force_all {
+            out.push(
+                CommandInfo::new(commands::HELP_OPEN, true, true)
+                    .order(99),
+            );
+        }
 
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
                 match e {
@@ -127,12 +134,12 @@ impl Component for HelpComponent {
                 }
             }
 
-            true
+            Ok(true)
         } else if let Event::Key(keys::OPEN_HELP) = ev {
-            self.show();
-            true
+            self.show()?;
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
@@ -144,12 +151,22 @@ impl Component for HelpComponent {
         self.visible = false
     }
 
-    fn show(&mut self) {
-        self.visible = true
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+
+        Ok(())
     }
 }
 
 impl HelpComponent {
+    pub const fn new(theme: SharedTheme) -> Self {
+        Self {
+            cmds: vec![],
+            visible: false,
+            selection: 0,
+            theme,
+        }
+    }
     ///
     pub fn set_cmds(&mut self, cmds: Vec<CommandInfo>) {
         self.cmds = cmds
@@ -171,23 +188,24 @@ impl HelpComponent {
         };
         new_selection = cmp::max(new_selection, 0);
 
-        if let Ok(max) = u16::try_from(self.cmds.len() - 1) {
+        if let Ok(max) =
+            u16::try_from(self.cmds.len().saturating_sub(1))
+        {
             self.selection = cmp::min(new_selection, max);
         }
     }
 
-    fn get_text<'a>(&self) -> (Vec<Text<'a>>, u16) {
+    fn get_text(&self) -> Vec<Text> {
         let mut txt = Vec::new();
 
         let mut processed = 0_u16;
-        let mut selected_line = 0_u16;
 
         for (key, group) in
             &self.cmds.iter().group_by(|e| e.text.group)
         {
             txt.push(Text::Styled(
-                Cow::from(format!(" {}\n", key)),
-                Style::default().fg(Color::Black).bg(Color::Gray),
+                Cow::from(format!("{}\n", key)),
+                Style::default().modifier(Modifier::REVERSED),
             ));
 
             txt.extend(
@@ -195,9 +213,7 @@ impl HelpComponent {
                     .sorted_by_key(|e| e.order)
                     .map(|e| {
                         let is_selected = self.selection == processed;
-                        if is_selected {
-                            selected_line = processed;
-                        }
+
                         processed += 1;
 
                         let mut out = String::from(if is_selected {
@@ -216,18 +232,15 @@ impl HelpComponent {
                             );
                         }
 
-                        let style = if is_selected {
-                            Style::default().fg(Color::Yellow)
-                        } else {
-                            Style::default()
-                        };
-
-                        Text::Styled(Cow::from(out), style)
+                        Text::Styled(
+                            Cow::from(out),
+                            self.theme.text(true, is_selected),
+                        )
                     })
                     .collect::<Vec<_>>(),
             );
         }
 
-        (txt, selected_line)
+        txt
     }
 }

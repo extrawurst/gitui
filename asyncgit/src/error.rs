@@ -5,6 +5,9 @@ pub enum Error {
     #[error("`{0}`")]
     Generic(String),
 
+    #[error("git: no head found")]
+    NoHead,
+
     #[error("io error:{0}")]
     Io(#[from] std::io::Error),
 

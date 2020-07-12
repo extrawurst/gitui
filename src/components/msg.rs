@@ -2,42 +2,57 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{keys, strings, ui};
+use crate::{
+    keys,
+    strings::{self, commands},
+    ui,
+};
 use crossterm::event::Event;
 use std::borrow::Cow;
-use strings::commands;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, Borders, Clear, Paragraph, Text},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
     Frame,
 };
+use ui::style::SharedTheme;
 
-#[derive(Default)]
 pub struct MsgComponent {
     msg: String,
     visible: bool,
+    theme: SharedTheme,
 }
 
-impl DrawableComponent for MsgComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
-        if self.visible {
-            let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
+use anyhow::Result;
 
-            let area = ui::centered_rect_absolute(65, 25, f.size());
-            f.render_widget(Clear, area);
-            f.render_widget(
-                Paragraph::new(txt.iter())
-                    .block(
-                        Block::default()
-                            .title(strings::MSG_TITLE)
-                            .borders(Borders::ALL),
-                    )
-                    .wrap(true)
-                    .alignment(Alignment::Left),
-                area,
-            );
+impl DrawableComponent for MsgComponent {
+    fn draw<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        _rect: Rect,
+    ) -> Result<()> {
+        if !self.visible {
+            return Ok(());
         }
+        let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
+
+        let area = ui::centered_rect_absolute(65, 25, f.size());
+        f.render_widget(Clear, area);
+        f.render_widget(
+            Paragraph::new(txt.iter())
+                .block(
+                    Block::default()
+                        .title(strings::MSG_TITLE_ERROR)
+                        .title_style(self.theme.text_danger())
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Thick),
+                )
+                .alignment(Alignment::Left)
+                .wrap(true),
+            area,
+        );
+
+        Ok(())
     }
 }
 
@@ -56,17 +71,16 @@ impl Component for MsgComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> bool {
+    fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if let keys::CLOSE_MSG = e {
                     self.hide();
                 }
             }
-
-            true
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
@@ -78,15 +92,26 @@ impl Component for MsgComponent {
         self.visible = false
     }
 
-    fn show(&mut self) {
-        self.visible = true
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+
+        Ok(())
     }
 }
 
 impl MsgComponent {
+    pub const fn new(theme: SharedTheme) -> Self {
+        Self {
+            msg: String::new(),
+            visible: false,
+            theme,
+        }
+    }
     ///
-    pub fn show_msg(&mut self, msg: &str) {
+    pub fn show_msg(&mut self, msg: &str) -> Result<()> {
         self.msg = msg.to_string();
-        self.show();
+        self.show()?;
+
+        Ok(())
     }
 }

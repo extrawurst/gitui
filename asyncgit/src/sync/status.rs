@@ -1,8 +1,7 @@
 //! sync git api for fetching a status
 
-use crate::error::Result;
-use crate::{error::Error, sync::utils};
-use git2::{Status, StatusOptions, StatusShow};
+use crate::{error::Error, error::Result, sync::utils};
+use git2::{Delta, Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -37,22 +36,42 @@ impl From<Status> for StatusItemType {
     }
 }
 
+impl From<Delta> for StatusItemType {
+    fn from(d: Delta) -> Self {
+        match d {
+            Delta::Added => StatusItemType::New,
+            Delta::Deleted => StatusItemType::Deleted,
+            Delta::Renamed => StatusItemType::Renamed,
+            Delta::Typechange => StatusItemType::Typechange,
+            _ => StatusItemType::Modified,
+        }
+    }
+}
+
 ///
-#[derive(Default, Clone, Hash, PartialEq, Debug)]
+#[derive(Clone, Hash, PartialEq, Debug)]
 pub struct StatusItem {
     ///
     pub path: String,
     ///
-    pub status: Option<StatusItemType>,
+    pub status: StatusItemType,
 }
 
 ///
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash, PartialEq, Debug)]
 pub enum StatusType {
     ///
     WorkingDir,
     ///
     Stage,
+    ///
+    Both,
+}
+
+impl Default for StatusType {
+    fn default() -> Self {
+        StatusType::WorkingDir
+    }
 }
 
 impl Into<StatusShow> for StatusType {
@@ -60,6 +79,7 @@ impl Into<StatusShow> for StatusType {
         match self {
             StatusType::WorkingDir => StatusShow::Workdir,
             StatusType::Stage => StatusShow::Index,
+            StatusType::Both => StatusShow::IndexAndWorkdir,
         }
     }
 }
@@ -68,15 +88,17 @@ impl Into<StatusShow> for StatusType {
 pub fn get_status(
     repo_path: &str,
     status_type: StatusType,
+    include_untracked: bool,
 ) -> Result<Vec<StatusItem>> {
-    scope_time!("get_index");
+    scope_time!("get_status");
 
     let repo = utils::repo(repo_path)?;
 
     let statuses = repo.statuses(Some(
         StatusOptions::default()
             .show(status_type.into())
-            .include_untracked(true)
+            .update_index(true)
+            .include_untracked(include_untracked)
             .renames_head_to_index(true)
             .recurse_untracked_dirs(true),
     ))?;
@@ -108,7 +130,7 @@ pub fn get_status(
 
         res.push(StatusItem {
             path,
-            status: Some(StatusItemType::from(status)),
+            status: StatusItemType::from(status),
         });
     }
 

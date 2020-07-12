@@ -3,38 +3,49 @@
 #![forbid(unsafe_code)]
 #![forbid(missing_docs)]
 #![deny(clippy::all)]
+#![deny(clippy::result_unwrap_used)]
+#![deny(clippy::panic)]
 
+pub mod cached;
+mod commit_files;
 mod diff;
 mod error;
 mod revlog;
 mod status;
 pub mod sync;
+mod tags;
 
 pub use crate::{
-    diff::{AsyncDiff, DiffParams},
-    revlog::AsyncLog,
-    status::AsyncStatus,
+    commit_files::AsyncCommitFiles,
+    diff::{AsyncDiff, DiffParams, DiffType},
+    revlog::{AsyncLog, FetchStatus},
+    status::{AsyncStatus, StatusParams},
     sync::{
         diff::{DiffLine, DiffLineType, FileDiff},
         status::{StatusItem, StatusItemType},
-        utils::is_repo,
     },
+    tags::AsyncTags,
 };
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 /// this type is used to communicate events back through the channel
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum AsyncNotification {
+    /// this indicates that no new state was fetched but that a async process finished
+    FinishUnchanged,
     ///
     Status,
     ///
     Diff,
     ///
     Log,
+    ///
+    CommitFiles,
+    ///
+    Tags,
 }
 
 /// current working director `./`
@@ -45,12 +56,4 @@ pub fn hash<T: Hash + ?Sized>(v: &T) -> u64 {
     let mut hasher = DefaultHasher::new();
     v.hash(&mut hasher);
     hasher.finish()
-}
-
-/// helper function to return the current tick since unix epoch
-pub fn current_tick() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64
 }

@@ -1,3 +1,5 @@
+use crate::tabs::StashingOptions;
+use asyncgit::sync::{CommitId, CommitTags};
 use bitflags::bitflags;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
@@ -22,19 +24,32 @@ pub struct ResetItem {
 }
 
 ///
+pub enum Action {
+    Reset(ResetItem),
+    ResetHunk(String, u64),
+    StashDrop(CommitId),
+}
+
+///
 pub enum InternalEvent {
     ///
-    ConfirmResetItem(ResetItem),
+    ConfirmAction(Action),
     ///
-    ResetItem(ResetItem),
+    ConfirmedAction(Action),
     ///
-    AddHunk(u64),
-    ///
-    ShowMsg(String),
+    ShowErrorMsg(String),
     ///
     Update(NeedsUpdate),
-    ///
+    /// open commit msg input
     OpenCommit,
+    ///
+    PopupStashing(StashingOptions),
+    ///
+    TabSwitch,
+    ///
+    InspectCommit(CommitId, Option<CommitTags>),
+    ///
+    OpenExternalEditor(Option<String>),
 }
 
 ///

@@ -1,5 +1,8 @@
-use crate::error::Result;
-use crate::{sync, AsyncNotification, CWD};
+use crate::{
+    error::Result,
+    sync::{utils::repo, CommitId, LogWalker},
+    AsyncNotification, CWD,
+};
 use crossbeam_channel::Sender;
 use git2::Oid;
 use scopetime::scope_time;
@@ -9,25 +12,41 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
     },
+    thread,
+    time::Duration,
 };
-use sync::{utils::repo, LogWalker};
+
+///
+#[derive(PartialEq)]
+pub enum FetchStatus {
+    /// previous fetch still running
+    Pending,
+    /// no change expected
+    NoChange,
+    /// new walk was started
+    Started,
+}
 
 ///
 pub struct AsyncLog {
-    current: Arc<Mutex<Vec<Oid>>>,
+    current: Arc<Mutex<Vec<CommitId>>>,
     sender: Sender<AsyncNotification>,
     pending: Arc<AtomicBool>,
+    background: Arc<AtomicBool>,
 }
 
-static LIMIT_COUNT: usize = 1000;
+static LIMIT_COUNT: usize = 3000;
+static SLEEP_FOREGROUND: Duration = Duration::from_millis(2);
+static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
 impl AsyncLog {
     ///
-    pub fn new(sender: Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         Self {
             current: Arc::new(Mutex::new(Vec::new())),
-            sender,
+            sender: sender.clone(),
             pending: Arc::new(AtomicBool::new(false)),
+            background: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -41,7 +60,7 @@ impl AsyncLog {
         &self,
         start_index: usize,
         amount: usize,
-    ) -> Result<Vec<Oid>> {
+    ) -> Result<Vec<CommitId>> {
         let list = self.current.lock()?;
         let list_len = list.len();
         let min = start_index.min(list_len);
@@ -56,28 +75,69 @@ impl AsyncLog {
     }
 
     ///
-    pub fn fetch(&mut self) -> Result<()> {
-        if !self.is_pending() {
-            self.clear()?;
+    pub fn set_background(&mut self) {
+        self.background.store(true, Ordering::Relaxed)
+    }
 
-            let arc_current = Arc::clone(&self.current);
-            let sender = self.sender.clone();
-            let arc_pending = Arc::clone(&self.pending);
+    ///
+    fn current_head(&self) -> Result<CommitId> {
+        Ok(self
+            .current
+            .lock()?
+            .first()
+            .map_or(Oid::zero().into(), |f| *f))
+    }
 
-            rayon_core::spawn(move || {
-                scope_time!("async::revlog");
-                arc_pending.store(true, Ordering::Relaxed);
-                AsyncLog::fetch_helper(arc_current, &sender)
-                    .expect("failed to fetch");
-                arc_pending.store(false, Ordering::Relaxed);
-                Self::notify(&sender);
-            });
+    ///
+    fn head_changed(&self) -> Result<bool> {
+        if let Ok(head) = repo(CWD)?.head() {
+            if let Some(head) = head.target() {
+                return Ok(head != self.current_head()?.into());
+            }
         }
-        Ok(())
+        Ok(false)
+    }
+
+    ///
+    pub fn fetch(&mut self) -> Result<FetchStatus> {
+        self.background.store(false, Ordering::Relaxed);
+
+        if self.is_pending() {
+            return Ok(FetchStatus::Pending);
+        }
+
+        if !self.head_changed()? {
+            return Ok(FetchStatus::NoChange);
+        }
+
+        self.clear()?;
+
+        let arc_current = Arc::clone(&self.current);
+        let sender = self.sender.clone();
+        let arc_pending = Arc::clone(&self.pending);
+        let arc_background = Arc::clone(&self.background);
+
+        rayon_core::spawn(move || {
+            scope_time!("async::revlog");
+
+            arc_pending.store(true, Ordering::Relaxed);
+            AsyncLog::fetch_helper(
+                arc_current,
+                arc_background,
+                &sender,
+            )
+            .expect("failed to fetch");
+            arc_pending.store(false, Ordering::Relaxed);
+
+            Self::notify(&sender);
+        });
+
+        Ok(FetchStatus::Started)
     }
 
     fn fetch_helper(
-        arc_current: Arc<Mutex<Vec<Oid>>>,
+        arc_current: Arc<Mutex<Vec<CommitId>>>,
+        arc_background: Arc<AtomicBool>,
         sender: &Sender<AsyncNotification>,
     ) -> Result<()> {
         let mut entries = Vec::with_capacity(LIMIT_COUNT);
@@ -97,6 +157,14 @@ impl AsyncLog {
                 break;
             } else {
                 Self::notify(&sender);
+
+                let sleep_duration =
+                    if arc_background.load(Ordering::Relaxed) {
+                        SLEEP_BACKGROUND
+                    } else {
+                        SLEEP_FOREGROUND
+                    };
+                thread::sleep(sleep_duration);
             }
         }
 

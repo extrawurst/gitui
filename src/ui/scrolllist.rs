@@ -38,11 +38,6 @@ where
         self
     }
 
-    pub fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-
     pub fn scroll(mut self, index: usize) -> Self {
         self.scroll = index;
         self
@@ -54,21 +49,8 @@ where
     L: Iterator<Item = Text<'b>>,
 {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let list_area = match self.block {
-            Some(b) => b.inner(area),
-            None => area,
-        };
-
-        let list_height = list_area.height as usize;
-
-        let offset = if self.scroll >= list_height {
-            self.scroll - list_height + 1
-        } else {
-            0
-        };
-
         // Render items
-        List::new(self.items.skip(offset as usize))
+        List::new(self.items)
             .block(self.block.unwrap_or_default())
             .style(self.style)
             .render(area, buf);

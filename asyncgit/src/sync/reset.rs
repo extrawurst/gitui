@@ -1,27 +1,17 @@
-use super::utils::repo;
-use crate::error::{Error, Result};
-use git2::{build::CheckoutBuilder, ObjectType, Status};
+use super::utils::{get_head_repo, repo};
+use crate::error::Result;
+use git2::{build::CheckoutBuilder, ObjectType};
 use scopetime::scope_time;
-use std::{fs, path::Path};
 
 ///
-pub fn reset_stage(repo_path: &str, path: &Path) -> Result<()> {
+pub fn reset_stage(repo_path: &str, path: &str) -> Result<()> {
     scope_time!("reset_stage");
 
     let repo = repo(repo_path)?;
 
-    let head = repo.head();
-
-    if let Ok(reference) = head {
-        let obj = repo.find_object(
-            reference.target().ok_or_else(|| {
-                Error::Generic(
-                    "can't get reference to symbolic reference,"
-                        .to_string(),
-                )
-            })?,
-            Some(ObjectType::Commit),
-        )?;
+    if let Ok(id) = get_head_repo(&repo) {
+        let obj =
+            repo.find_object(id.into(), Some(ObjectType::Commit))?;
 
         repo.reset_default(Some(&obj), &[path])?;
     } else {
@@ -32,49 +22,14 @@ pub fn reset_stage(repo_path: &str, path: &Path) -> Result<()> {
 }
 
 ///
-pub fn reset_workdir_file(repo_path: &str, path: &str) -> Result<()> {
-    scope_time!("reset_workdir_file");
-
-    let repo = repo(repo_path)?;
-
-    // Note: early out for removing untracked files, due to bug in checkout_head code:
-    // see https://github.com/libgit2/libgit2/issues/5089
-    let status = repo.status_file(Path::new(path))?;
-
-    if status == Status::WT_NEW
-        || (status == Status::WT_MODIFIED | Status::INDEX_NEW)
-    {
-        fs::remove_file(Path::new(repo_path).join(path))?;
-    };
-
-    if status == Status::WT_NEW {
-        return Ok(());
-    }
-
-    let mut checkout_opts = CheckoutBuilder::new();
-    checkout_opts
-        .update_index(true) // windows: needs this to be true WTF?!
-        .allow_conflicts(true)
-        .force()
-        .path(path);
-
-    repo.checkout_index(None, Some(&mut checkout_opts))?;
-    Ok(())
-}
-
-///
-pub fn reset_workdir_folder(
-    repo_path: &str,
-    path: &str,
-) -> Result<()> {
-    scope_time!("reset_workdir_folder");
+pub fn reset_workdir(repo_path: &str, path: &str) -> Result<()> {
+    scope_time!("reset_workdir");
 
     let repo = repo(repo_path)?;
 
     let mut checkout_opts = CheckoutBuilder::new();
     checkout_opts
         .update_index(true) // windows: needs this to be true WTF?!
-        .allow_conflicts(true)
         .remove_untracked(true)
         .force()
         .path(path);
@@ -85,16 +40,15 @@ pub fn reset_workdir_folder(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        reset_stage, reset_workdir_file, reset_workdir_folder,
-    };
+    use super::{reset_stage, reset_workdir};
     use crate::error::Result;
     use crate::sync::{
+        commit,
         status::{get_status, StatusType},
         tests::{
             debug_cmd_print, get_statuses, repo_init, repo_init_empty,
         },
-        utils::{commit, stage_add_all, stage_add_file},
+        utils::{stage_add_all, stage_add_file},
     };
     use std::{
         fs::{self, File},
@@ -134,8 +88,8 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let res =
-            get_status(repo_path, StatusType::WorkingDir).unwrap();
+        let res = get_status(repo_path, StatusType::WorkingDir, true)
+            .unwrap();
         assert_eq!(res.len(), 0);
 
         let file_path = root.join("bar.txt");
@@ -165,7 +119,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
-        reset_workdir_file(repo_path, "bar.txt").unwrap();
+        reset_workdir(repo_path, "bar.txt").unwrap();
 
         debug_cmd_print(repo_path, "git status");
 
@@ -190,7 +144,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
-        reset_workdir_file(repo_path, "foo/bar.txt").unwrap();
+        reset_workdir(repo_path, "foo/bar.txt").unwrap();
 
         debug_cmd_print(repo_path, "git status");
 
@@ -235,7 +189,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (4, 1));
 
-        reset_workdir_folder(repo_path, "foo").unwrap();
+        reset_workdir(repo_path, "foo").unwrap();
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
@@ -274,7 +228,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
-        reset_workdir_file(repo_path, file).unwrap();
+        reset_workdir(repo_path, file).unwrap();
 
         debug_cmd_print(repo_path, "git status");
 
@@ -299,8 +253,62 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
-        reset_stage(repo_path, file_path).unwrap();
+        reset_stage(repo_path, file_path.to_str().unwrap()).unwrap();
 
         assert_eq!(get_statuses(repo_path), (1, 0));
+    }
+
+    #[test]
+    fn test_reset_untracked_in_subdir_with_cwd_in_subdir() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        {
+            fs::create_dir(&root.join("foo")).unwrap();
+            File::create(&root.join("foo/bar.txt"))
+                .unwrap()
+                .write_all(b"test\nfoo")
+                .unwrap();
+        }
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        reset_workdir(
+            &root.join("foo").as_os_str().to_str().unwrap(),
+            "foo/bar.txt",
+        )
+        .unwrap();
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
+    }
+
+    #[test]
+    fn test_reset_untracked_subdir() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        {
+            fs::create_dir_all(&root.join("foo/bar")).unwrap();
+            File::create(&root.join("foo/bar/baz.txt"))
+                .unwrap()
+                .write_all(b"test\nfoo")
+                .unwrap();
+        }
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        reset_workdir(repo_path, "foo/bar").unwrap();
+
+        debug_cmd_print(repo_path, "git status");
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
     }
 }

@@ -1,360 +1,334 @@
-use asyncgit::StatusItem;
-use std::{
-    collections::BTreeSet,
-    convert::TryFrom,
-    ops::{Index, IndexMut},
-    path::Path,
+use super::{
+    utils::{
+        filetree::{FileTreeItem, FileTreeItemKind},
+        statustree::{MoveSelection, StatusTree},
+    },
+    CommandBlocking, DrawableComponent,
 };
-
-/// holds the information shared among all `FileTreeItem` in a `FileTree`
-#[derive(Debug, Clone)]
-pub struct TreeItemInfo {
-    /// indent level
-    pub indent: u8,
-    /// currently visible depending on the folder collapse states
-    pub visible: bool,
-    /// just the last path element
-    pub path: String,
-    /// the full path
-    pub full_path: String,
-}
-
-impl TreeItemInfo {
-    fn new(indent: u8, path: String, full_path: String) -> Self {
-        Self {
-            indent,
-            visible: true,
-            path,
-            full_path,
-        }
-    }
-}
-
-/// attribute used to indicate the collapse/expand state of a path item
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub struct PathCollapsed(pub bool);
-
-/// `FileTreeItem` can be of two kinds
-#[derive(PartialEq, Debug, Clone)]
-pub enum FileTreeItemKind {
-    Path(PathCollapsed),
-    File(StatusItem),
-}
-
-/// `FileTreeItem` can be of two kinds: see `FileTreeItem` but shares an info
-#[derive(Debug, Clone)]
-pub struct FileTreeItem {
-    pub info: TreeItemInfo,
-    pub kind: FileTreeItemKind,
-}
-
-impl FileTreeItem {
-    fn new_file(item: &StatusItem) -> Self {
-        let item_path = Path::new(&item.path);
-        let indent = u8::try_from(
-            item_path.ancestors().count().saturating_sub(2),
-        )
-        .unwrap();
-        let path = String::from(
-            item_path.file_name().unwrap().to_str().unwrap(),
-        );
-
-        Self {
-            info: TreeItemInfo::new(indent, path, item.path.clone()),
-            kind: FileTreeItemKind::File(item.clone()),
-        }
-    }
-
-    fn new_path(
-        path: &Path,
-        path_string: String,
-        collapsed: bool,
-    ) -> Self {
-        let indent =
-            u8::try_from(path.ancestors().count().saturating_sub(2))
-                .unwrap();
-        let path = String::from(
-            path.components()
-                .last()
-                .unwrap()
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-        );
-
-        Self {
-            info: TreeItemInfo::new(indent, path, path_string),
-            kind: FileTreeItemKind::Path(PathCollapsed(collapsed)),
-        }
-    }
-}
-
-impl Eq for FileTreeItem {}
-
-impl PartialEq for FileTreeItem {
-    fn eq(&self, other: &Self) -> bool {
-        self.info.full_path.eq(&other.info.full_path)
-    }
-}
-
-impl PartialOrd for FileTreeItem {
-    fn partial_cmp(
-        &self,
-        other: &Self,
-    ) -> Option<std::cmp::Ordering> {
-        self.info.full_path.partial_cmp(&other.info.full_path)
-    }
-}
-
-impl Ord for FileTreeItem {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.info.path.cmp(&other.info.path)
-    }
-}
+use crate::{
+    components::{CommandInfo, Component},
+    keys,
+    queue::{InternalEvent, NeedsUpdate, Queue},
+    strings::{commands, order},
+    ui,
+    ui::style::SharedTheme,
+};
+use anyhow::Result;
+use asyncgit::{hash, StatusItem, StatusItemType};
+use crossterm::event::Event;
+use std::cell::Cell;
+use std::{borrow::Cow, convert::From, path::Path};
+use tui::{backend::Backend, layout::Rect, widgets::Text, Frame};
 
 ///
-#[derive(Default)]
-pub struct FileTreeItems(Vec<FileTreeItem>);
+pub struct FileTreeComponent {
+    title: String,
+    tree: StatusTree,
+    current_hash: u64,
+    focused: bool,
+    show_selection: bool,
+    queue: Option<Queue>,
+    theme: SharedTheme,
+    scroll_top: Cell<usize>,
+}
 
-impl FileTreeItems {
+impl FileTreeComponent {
     ///
-    pub(crate) fn new(
-        list: &[StatusItem],
-        collapsed: &BTreeSet<&String>,
+    pub fn new(
+        title: &str,
+        focus: bool,
+        queue: Option<Queue>,
+        theme: SharedTheme,
     ) -> Self {
-        let mut nodes = Vec::with_capacity(list.len());
-        let mut paths_added = BTreeSet::new();
+        Self {
+            title: title.to_string(),
+            tree: StatusTree::default(),
+            current_hash: 0,
+            focused: focus,
+            show_selection: focus,
+            queue,
+            theme,
+            scroll_top: Cell::new(0),
+        }
+    }
 
-        for e in list {
-            {
-                let item_path = Path::new(&e.path);
-
-                FileTreeItems::push_dirs(
-                    item_path,
-                    &mut nodes,
-                    &mut paths_added,
-                    &collapsed,
-                );
-            }
-
-            nodes.push(FileTreeItem::new_file(&e));
+    ///
+    pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
+        let new_hash = hash(list);
+        if self.current_hash != new_hash {
+            self.tree.update(list)?;
+            self.current_hash = new_hash;
         }
 
-        Self(nodes)
+        Ok(())
     }
 
     ///
-    pub(crate) fn items(&self) -> &Vec<FileTreeItem> {
-        &self.0
+    pub fn selection(&self) -> Option<FileTreeItem> {
+        self.tree.selected_item()
     }
 
     ///
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
+    pub fn selection_file(&self) -> Option<StatusItem> {
+        self.tree.selected_item().and_then(|f| {
+            if let FileTreeItemKind::File(f) = f.kind {
+                Some(f)
+            } else {
+                None
+            }
+        })
     }
 
     ///
-    pub(crate) fn find_parent_index(
+    pub fn show_selection(&mut self, show: bool) {
+        self.show_selection = show;
+    }
+
+    /// returns true if list is empty
+    pub fn is_empty(&self) -> bool {
+        self.tree.is_empty()
+    }
+
+    ///
+    pub const fn file_count(&self) -> usize {
+        self.tree.tree.file_count()
+    }
+
+    ///
+    pub fn set_title(&mut self, title: String) {
+        self.title = title;
+    }
+
+    ///
+    pub fn clear(&mut self) -> Result<()> {
+        self.current_hash = 0;
+        self.tree.update(&[])
+    }
+
+    ///
+    pub fn is_file_seleted(&self) -> bool {
+        if let Some(item) = self.tree.selected_item() {
+            match item.kind {
+                FileTreeItemKind::File(_) => true,
+                _ => false,
+            }
+        } else {
+            false
+        }
+    }
+
+    fn move_selection(&mut self, dir: MoveSelection) -> bool {
+        let changed = self.tree.move_selection(dir);
+
+        if changed {
+            if let Some(ref queue) = self.queue {
+                queue.borrow_mut().push_back(InternalEvent::Update(
+                    NeedsUpdate::DIFF,
+                ));
+            }
+        }
+
+        changed
+    }
+
+    fn item_to_text<'a>(
+        item: &FileTreeItem,
+        width: u16,
+        selected: bool,
+        theme: &'a SharedTheme,
+    ) -> Option<Text<'a>> {
+        let indent_str = if item.info.indent == 0 {
+            String::from("")
+        } else {
+            format!("{:w$}", " ", w = (item.info.indent as usize) * 2)
+        };
+
+        if !item.info.visible {
+            return None;
+        }
+
+        match &item.kind {
+            FileTreeItemKind::File(status_item) => {
+                let status_char =
+                    Self::item_status_char(status_item.status);
+                let file = Path::new(&status_item.path)
+                    .file_name()
+                    .and_then(std::ffi::OsStr::to_str)
+                    .expect("invalid path.");
+
+                let txt = if selected {
+                    format!(
+                        "{} {}{:w$}",
+                        status_char,
+                        indent_str,
+                        file,
+                        w = width as usize
+                    )
+                } else {
+                    format!("{} {}{}", status_char, indent_str, file)
+                };
+
+                Some(Text::Styled(
+                    Cow::from(txt),
+                    theme.item(status_item.status, selected),
+                ))
+            }
+
+            FileTreeItemKind::Path(path_collapsed) => {
+                let collapse_char =
+                    if path_collapsed.0 { '▸' } else { '▾' };
+
+                let txt = if selected {
+                    format!(
+                        "  {}{}{:w$}",
+                        indent_str,
+                        collapse_char,
+                        item.info.path,
+                        w = width as usize
+                    )
+                } else {
+                    format!(
+                        "  {}{}{}",
+                        indent_str, collapse_char, item.info.path,
+                    )
+                };
+
+                Some(Text::Styled(
+                    Cow::from(txt),
+                    theme.text(true, selected),
+                ))
+            }
+        }
+    }
+
+    fn item_status_char(item_type: StatusItemType) -> char {
+        match item_type {
+            StatusItemType::Modified => 'M',
+            StatusItemType::New => '+',
+            StatusItemType::Deleted => '-',
+            StatusItemType::Renamed => 'R',
+            _ => ' ',
+        }
+    }
+}
+
+impl DrawableComponent for FileTreeComponent {
+    fn draw<B: Backend>(
         &self,
-        path: &str,
-        index: usize,
-    ) -> usize {
-        if let Some(parent_path) = Path::new(path).parent() {
-            let parent_path = parent_path.to_str().unwrap();
-            for i in (0..=index).rev() {
-                let item = &self.0[i];
-                let item_path = &item.info.full_path;
-                if item_path == parent_path {
-                    return i;
-                }
-            }
-        }
+        f: &mut Frame<B>,
+        r: Rect,
+    ) -> Result<()> {
+        let selection_offset =
+            self.tree.tree.items().iter().enumerate().fold(
+                0,
+                |acc, (idx, e)| {
+                    let visible = e.info.visible;
+                    let index_above_select =
+                        idx < self.tree.selection.unwrap_or(0);
 
-        0
-    }
-
-    fn push_dirs<'a>(
-        item_path: &'a Path,
-        nodes: &mut Vec<FileTreeItem>,
-        paths_added: &mut BTreeSet<&'a Path>,
-        collapsed: &BTreeSet<&String>,
-    ) {
-        let mut ancestors =
-            { item_path.ancestors().skip(1).collect::<Vec<_>>() };
-        ancestors.reverse();
-
-        for c in &ancestors {
-            if c.parent().is_some() {
-                let path_string = String::from(c.to_str().unwrap());
-                if !paths_added.contains(c) {
-                    paths_added.insert(c);
-                    let is_collapsed =
-                        collapsed.contains(&path_string);
-                    nodes.push(FileTreeItem::new_path(
-                        c,
-                        path_string,
-                        is_collapsed,
-                    ));
-                }
-            }
-        }
-    }
-}
-
-impl IndexMut<usize> for FileTreeItems {
-    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-        &mut self.0[idx]
-    }
-}
-
-impl Index<usize> for FileTreeItems {
-    type Output = FileTreeItem;
-
-    fn index(&self, idx: usize) -> &Self::Output {
-        &self.0[idx]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn string_vec_to_status(items: &[&str]) -> Vec<StatusItem> {
-        items
-            .iter()
-            .map(|a| StatusItem {
-                path: String::from(*a),
-                status: None,
-            })
-            .collect::<Vec<_>>()
-    }
-
-    #[test]
-    fn test_simple() {
-        let items = string_vec_to_status(&[
-            "file.txt", //
-        ]);
-
-        let res = FileTreeItems::new(&items, &BTreeSet::new());
-
-        assert_eq!(
-            res.0,
-            vec![FileTreeItem {
-                info: TreeItemInfo {
-                    path: items[0].path.clone(),
-                    full_path: items[0].path.clone(),
-                    indent: 0,
-                    visible: true,
+                    if !visible && index_above_select {
+                        acc + 1
+                    } else {
+                        acc
+                    }
                 },
-                kind: FileTreeItemKind::File(items[0].clone())
-            }]
+            );
+
+        let items =
+            self.tree.tree.items().iter().enumerate().filter_map(
+                |(idx, e)| {
+                    Self::item_to_text(
+                        e,
+                        r.width,
+                        self.show_selection
+                            && self
+                                .tree
+                                .selection
+                                .map_or(false, |e| e == idx),
+                        &self.theme,
+                    )
+                },
+            );
+
+        let select = self
+            .tree
+            .selection
+            .map(|idx| idx.saturating_sub(selection_offset))
+            .unwrap_or_default();
+        let tree_height = r.height.saturating_sub(2) as usize;
+
+        self.scroll_top.set(ui::calc_scroll_top(
+            self.scroll_top.get(),
+            tree_height,
+            select,
+        ));
+
+        ui::draw_list(
+            f,
+            r,
+            self.title.as_str(),
+            items.skip(self.scroll_top.get()),
+            Some(select),
+            self.focused,
+            &self.theme,
         );
 
-        let items = string_vec_to_status(&[
-            "file.txt",  //
-            "file2.txt", //
-        ]);
-
-        let res = FileTreeItems::new(&items, &BTreeSet::new());
-
-        assert_eq!(res.0.len(), 2);
-        assert_eq!(res.0[1].info.path, items[1].path);
+        Ok(())
     }
+}
 
-    #[test]
-    fn test_folder() {
-        let items = string_vec_to_status(&[
-            "a/file.txt", //
-        ]);
-
-        let res = FileTreeItems::new(&items, &BTreeSet::new())
-            .0
-            .iter()
-            .map(|i| i.info.full_path.clone())
-            .collect::<Vec<_>>();
-
-        assert_eq!(
-            res,
-            vec![String::from("a"), items[0].path.clone(),]
-        );
-    }
-
-    #[test]
-    fn test_indent() {
-        let items = string_vec_to_status(&[
-            "a/b/file.txt", //
-        ]);
-
-        let list = FileTreeItems::new(&items, &BTreeSet::new());
-        let mut res = list
-            .0
-            .iter()
-            .map(|i| (i.info.indent, i.info.path.as_str()));
-
-        assert_eq!(res.next(), Some((0, "a")));
-        assert_eq!(res.next(), Some((1, "b")));
-        assert_eq!(res.next(), Some((2, "file.txt")));
-    }
-
-    #[test]
-    fn test_indent_folder_file_name() {
-        let items = string_vec_to_status(&[
-            "a/b",   //
-            "a.txt", //
-        ]);
-
-        let list = FileTreeItems::new(&items, &BTreeSet::new());
-        let mut res = list
-            .0
-            .iter()
-            .map(|i| (i.info.indent, i.info.path.as_str()));
-
-        assert_eq!(res.next(), Some((0, "a")));
-        assert_eq!(res.next(), Some((1, "b")));
-        assert_eq!(res.next(), Some((0, "a.txt")));
-    }
-
-    #[test]
-    fn test_folder_dup() {
-        let items = string_vec_to_status(&[
-            "a/file.txt",  //
-            "a/file2.txt", //
-        ]);
-
-        let res = FileTreeItems::new(&items, &BTreeSet::new())
-            .0
-            .iter()
-            .map(|i| i.info.full_path.clone())
-            .collect::<Vec<_>>();
-
-        assert_eq!(
-            res,
-            vec![
-                String::from("a"),
-                items[0].path.clone(),
-                items[1].path.clone()
-            ]
-        );
-    }
-
-    #[test]
-    fn test_find_parent() {
-        //0 a/
-        //1   b/
-        //2     c
-        //3     d
-
-        let res = FileTreeItems::new(
-            &string_vec_to_status(&[
-                "a/b/c", //
-                "a/b/d", //
-            ]),
-            &BTreeSet::new(),
+impl Component for FileTreeComponent {
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) -> CommandBlocking {
+        out.push(
+            CommandInfo::new(
+                commands::NAVIGATE_TREE,
+                !self.is_empty(),
+                self.focused || force_all,
+            )
+            .order(order::NAV),
         );
 
-        assert_eq!(
-            res.find_parent_index(&String::from("a/b/c"), 3),
-            1
-        );
+        CommandBlocking::PassingOn
+    }
+
+    fn event(&mut self, ev: Event) -> Result<bool> {
+        if self.focused {
+            if let Event::Key(e) = ev {
+                return match e {
+                    keys::MOVE_DOWN => {
+                        Ok(self.move_selection(MoveSelection::Down))
+                    }
+                    keys::MOVE_UP => {
+                        Ok(self.move_selection(MoveSelection::Up))
+                    }
+                    keys::HOME | keys::SHIFT_UP => {
+                        Ok(self.move_selection(MoveSelection::Home))
+                    }
+                    keys::END | keys::SHIFT_DOWN => {
+                        Ok(self.move_selection(MoveSelection::End))
+                    }
+                    keys::MOVE_LEFT => {
+                        Ok(self.move_selection(MoveSelection::Left))
+                    }
+                    keys::MOVE_RIGHT => {
+                        Ok(self.move_selection(MoveSelection::Right))
+                    }
+                    _ => Ok(false),
+                };
+            }
+        }
+
+        Ok(false)
+    }
+
+    fn focused(&self) -> bool {
+        self.focused
+    }
+    fn focus(&mut self, focus: bool) {
+        self.focused = focus;
     }
 }

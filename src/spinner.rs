@@ -1,12 +1,16 @@
 use std::io;
 use tui::{backend::Backend, buffer::Cell, Terminal};
 
-static SPINNER_CHARS: &[char] = &['|', '/', '-', '\\'];
+// static SPINNER_CHARS: &[char] = &['◢', '◣', '◤', '◥'];
+// static SPINNER_CHARS: &[char] = &['⢹', '⢺', '⢼', '⣸', '⣇', '⡧', '⡗', '⡏'];
+static SPINNER_CHARS: &[char] =
+    &['⣷', '⣯', '⣟', '⡿', '⢿', '⣻', '⣽', '⣾'];
 
 ///
 #[derive(Default)]
 pub struct Spinner {
     idx: usize,
+    pending: bool,
 }
 
 impl Spinner {
@@ -16,16 +20,24 @@ impl Spinner {
         self.idx %= SPINNER_CHARS.len();
     }
 
+    ///
+    pub fn set_state(&mut self, pending: bool) {
+        self.pending = pending;
+    }
+
     /// draws or removes spinner char depending on `pending` state
     pub fn draw<B: Backend>(
         &self,
         terminal: &mut Terminal<B>,
-        pending: bool,
     ) -> io::Result<()> {
         let idx = self.idx;
 
         let c: Cell = Cell::default()
-            .set_char(if pending { SPINNER_CHARS[idx] } else { ' ' })
+            .set_char(if self.pending {
+                SPINNER_CHARS[idx]
+            } else {
+                ' '
+            })
             .clone();
         terminal
             .backend_mut()

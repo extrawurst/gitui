@@ -1,6 +1,7 @@
 use super::filetree::{
     FileTreeItem, FileTreeItemKind, FileTreeItems, PathCollapsed,
 };
+use anyhow::Result;
 use asyncgit::StatusItem;
 use std::{cmp, collections::BTreeSet};
 
@@ -28,21 +29,21 @@ struct SelectionChange {
     changes: bool,
 }
 impl SelectionChange {
-    fn new(new_index: usize, changes: bool) -> Self {
+    const fn new(new_index: usize, changes: bool) -> Self {
         Self { new_index, changes }
     }
 }
 
 impl StatusTree {
     /// update tree with a new list, try to retain selection and collapse states
-    pub fn update(&mut self, list: &[StatusItem]) {
+    pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
         let last_collapsed = self.all_collapsed();
 
         let last_selection =
             self.selected_item().map(|e| e.info.full_path);
         let last_selection_index = self.selection.unwrap_or(0);
 
-        self.tree = FileTreeItems::new(list, &last_collapsed);
+        self.tree = FileTreeItems::new(list, &last_collapsed)?;
         self.selection =
             if let Some(ref last_selection) = last_selection {
                 self.find_last_selection(
@@ -56,6 +57,25 @@ impl StatusTree {
             };
 
         self.update_visibility(None, 0, true);
+
+        //NOTE: now that visibility is set we can make sure selection is visible
+        if let Some(idx) = self.selection {
+            self.selection = Some(self.find_visible_idx(idx));
+        }
+
+        Ok(())
+    }
+
+    fn find_visible_idx(&self, mut idx: usize) -> usize {
+        while idx > 0 {
+            if self.is_visible_index(idx) {
+                break;
+            }
+
+            idx -= 1;
+        }
+
+        idx
     }
 
     ///
@@ -196,11 +216,20 @@ impl StatusTree {
         let item_path =
             self.tree[current_selection].info.full_path.clone();
 
-        if matches!(item_kind,  FileTreeItemKind::Path(PathCollapsed(collapsed))
-        if collapsed)
-        {
-            self.expand(&item_path, current_selection);
-            return SelectionChange::new(current_selection, true);
+        match item_kind {
+            FileTreeItemKind::Path(PathCollapsed(collapsed))
+                if collapsed =>
+            {
+                self.expand(&item_path, current_selection);
+                return SelectionChange::new(current_selection, true);
+            }
+            FileTreeItemKind::Path(PathCollapsed(collapsed))
+                if !collapsed =>
+            {
+                return self
+                    .selection_updown(current_selection, false);
+            }
+            _ => (),
         }
 
         SelectionChange::new(current_selection, false)
@@ -322,13 +351,14 @@ impl StatusTree {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use asyncgit::StatusItemType;
 
     fn string_vec_to_status(items: &[&str]) -> Vec<StatusItem> {
         items
             .iter()
             .map(|a| StatusItem {
                 path: String::from(*a),
-                status: None,
+                status: StatusItemType::Modified,
             })
             .collect::<Vec<_>>()
     }
@@ -348,7 +378,7 @@ mod tests {
         ]);
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         assert!(res.move_selection(MoveSelection::Down));
 
@@ -362,11 +392,11 @@ mod tests {
     #[test]
     fn test_keep_selected_item() {
         let mut res = StatusTree::default();
-        res.update(&string_vec_to_status(&["b"]));
+        res.update(&string_vec_to_status(&["b"])).unwrap();
 
         assert_eq!(res.selection, Some(0));
 
-        res.update(&string_vec_to_status(&["a", "b"]));
+        res.update(&string_vec_to_status(&["a", "b"])).unwrap();
 
         assert_eq!(res.selection, Some(1));
     }
@@ -374,11 +404,35 @@ mod tests {
     #[test]
     fn test_keep_selected_index() {
         let mut res = StatusTree::default();
-        res.update(&string_vec_to_status(&["a", "b"]));
+        res.update(&string_vec_to_status(&["a", "b"])).unwrap();
         res.selection = Some(1);
 
-        res.update(&string_vec_to_status(&["d", "c", "a"]));
+        res.update(&string_vec_to_status(&["d", "c", "a"])).unwrap();
         assert_eq!(res.selection, Some(1));
+    }
+
+    #[test]
+    fn test_keep_selected_index_if_not_collapsed() {
+        let mut res = StatusTree::default();
+        res.update(&string_vec_to_status(&["a/b", "c"])).unwrap();
+
+        res.collapse("a/b", 0);
+
+        res.selection = Some(2);
+
+        res.update(&string_vec_to_status(&["a/b"])).unwrap();
+        assert_eq!(
+            get_visibles(&res),
+            vec![
+                true,  //
+                false, //
+            ]
+        );
+        assert_eq!(
+            res.is_visible_index(res.selection.unwrap()),
+            true
+        );
+        assert_eq!(res.selection, Some(0));
     }
 
     #[test]
@@ -387,7 +441,8 @@ mod tests {
         res.update(&string_vec_to_status(&[
             "a/b", //
             "c",
-        ]));
+        ]))
+        .unwrap();
 
         res.collapse("a", 0);
 
@@ -409,7 +464,8 @@ mod tests {
             "a/b", //
             "c",   //
             "d",
-        ]));
+        ]))
+        .unwrap();
 
         assert_eq!(
             res.all_collapsed().iter().collect::<Vec<_>>(),
@@ -440,7 +496,7 @@ mod tests {
         //3   d
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         res.collapse(&String::from("a/b"), 1);
 
@@ -485,7 +541,7 @@ mod tests {
         //4     d
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         res.collapse(&String::from("b"), 1);
         res.collapse(&String::from("a"), 0);
@@ -528,7 +584,7 @@ mod tests {
         //3   c
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         res.collapse(&String::from("a"), 0);
 
@@ -558,7 +614,7 @@ mod tests {
         //3   d
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
 
         res.collapse(&String::from("a/b"), 1);
 
@@ -616,7 +672,7 @@ mod tests {
         //3   d
 
         let mut res = StatusTree::default();
-        res.update(&items);
+        res.update(&items).unwrap();
         res.collapse(&String::from("a/b"), 1);
         res.selection = Some(1);
 

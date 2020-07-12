@@ -1,14 +1,17 @@
 //! sync git api for fetching a diff
 
-use super::utils;
-use crate::error::Result;
-use crate::{error::Error, hash};
+use super::{
+    commit_files::get_commit_diff,
+    utils::{self, get_head_repo, work_dir},
+    CommitId,
+};
+use crate::{error::Error, error::Result, hash};
 use git2::{
     Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
     Repository,
 };
 use scopetime::scope_time;
-use std::{fs, path::Path};
+use std::{cell::RefCell, fs, path::Path, rc::Rc};
 
 /// type of diff of a single line
 #[derive(Copy, Clone, PartialEq, Hash, Debug)]
@@ -72,7 +75,13 @@ pub struct FileDiff {
     /// list of hunks
     pub hunks: Vec<Hunk>,
     /// lines total summed up over hunks
-    pub lines: u16,
+    pub lines: usize,
+    ///
+    pub untracked: bool,
+    /// old and new file size in bytes
+    pub sizes: (u64, u64),
+    /// size delta in bytes
+    pub size_delta: i64,
 }
 
 pub(crate) fn get_diff_raw<'a>(
@@ -81,21 +90,16 @@ pub(crate) fn get_diff_raw<'a>(
     stage: bool,
     reverse: bool,
 ) -> Result<Diff<'a>> {
+    // scope_time!("get_diff_raw");
+
     let mut opt = DiffOptions::new();
     opt.pathspec(p);
     opt.reverse(reverse);
 
     let diff = if stage {
         // diff against head
-        if let Ok(ref_head) = repo.head() {
-            let parent = repo.find_commit(
-                ref_head.target().ok_or_else(|| {
-                    let name = ref_head.name().unwrap_or("??");
-                    Error::Generic(
-                        format!("can not find the target of symbolic references: {}", name)
-                    )
-                })?,
-            )?;
+        if let Ok(id) = get_head_repo(&repo) {
+            let parent = repo.find_commit(id.into())?;
 
             let tree = parent.tree()?;
             repo.diff_tree_to_index(
@@ -119,7 +123,7 @@ pub(crate) fn get_diff_raw<'a>(
     Ok(diff)
 }
 
-///
+/// returns diff of a specific file either in `stage` or workdir
 pub fn get_diff(
     repo_path: &str,
     p: String,
@@ -128,124 +132,167 @@ pub fn get_diff(
     scope_time!("get_diff");
 
     let repo = utils::repo(repo_path)?;
-    let repo_path = repo.path().parent().ok_or_else(|| {
-        Error::Generic(
-            "repositories located at root are not supported."
-                .to_string(),
-        )
-    })?;
+    let work_dir = work_dir(&repo);
     let diff = get_diff_raw(&repo, &p, stage, false)?;
 
-    let mut res: FileDiff = FileDiff::default();
-    let mut current_lines = Vec::new();
-    let mut current_hunk: Option<HunkHeader> = None;
+    raw_diff_to_file_diff(&diff, work_dir)
+}
 
-    let mut adder = |header: &HunkHeader, lines: &Vec<DiffLine>| {
-        res.hunks.push(Hunk {
-            header_hash: hash(header),
-            lines: lines.clone(),
-        });
-        res.lines += lines.len() as u16;
-    };
+/// returns diff of a specific file inside a commit
+/// see `get_commit_diff`
+pub fn get_diff_commit(
+    repo_path: &str,
+    id: CommitId,
+    p: String,
+) -> Result<FileDiff> {
+    scope_time!("get_diff_commit");
 
-    let mut put = |hunk: Option<DiffHunk>, line: git2::DiffLine| {
-        if let Some(hunk) = hunk {
-            let hunk_header = HunkHeader::from(hunk);
+    let repo = utils::repo(repo_path)?;
+    let work_dir = work_dir(&repo);
+    let diff = get_commit_diff(&repo, id, Some(p))?;
 
-            match current_hunk {
-                None => current_hunk = Some(hunk_header),
-                Some(h) if h != hunk_header => {
-                    adder(&h, &current_lines);
-                    current_lines.clear();
-                    current_hunk = Some(hunk_header)
-                }
-                _ => (),
-            }
+    raw_diff_to_file_diff(&diff, work_dir)
+}
 
-            let line_type = match line.origin() {
-                'H' => DiffLineType::Header,
-                '<' | '-' => DiffLineType::Delete,
-                '>' | '+' => DiffLineType::Add,
-                _ => DiffLineType::None,
-            };
+///
+fn raw_diff_to_file_diff<'a>(
+    diff: &'a Diff,
+    work_dir: &Path,
+) -> Result<FileDiff> {
+    let res = Rc::new(RefCell::new(FileDiff::default()));
+    {
+        let mut current_lines = Vec::new();
+        let mut current_hunk: Option<HunkHeader> = None;
 
-            let diff_line = DiffLine {
-                content: String::from_utf8_lossy(line.content())
-                    .to_string(),
-                line_type,
-            };
+        let res_cell = Rc::clone(&res);
+        let adder = move |header: &HunkHeader,
+                          lines: &Vec<DiffLine>| {
+            let mut res = res_cell.borrow_mut();
+            res.hunks.push(Hunk {
+                header_hash: hash(header),
+                lines: lines.clone(),
+            });
+            res.lines += lines.len();
+        };
 
-            current_lines.push(diff_line);
-        }
-    };
-
-    let new_file_diff = if diff.deltas().len() == 1 {
-        // it's safe to unwrap here because we check first that diff.deltas has a single element.
-        let delta: DiffDelta = diff.deltas().next().unwrap();
-
-        if delta.status() == Delta::Untracked {
-            let relative_path =
-                delta.new_file().path().ok_or_else(|| {
-                    Error::Generic(
-                        "new file path is unspecified.".to_string(),
-                    )
-                })?;
-
-            let newfile_path = repo_path.join(relative_path);
-
-            if let Some(newfile_content) =
-                new_file_content(&newfile_path)
+        let res_cell = Rc::clone(&res);
+        let mut put = |delta: DiffDelta,
+                       hunk: Option<DiffHunk>,
+                       line: git2::DiffLine| {
             {
-                let mut patch = Patch::from_buffers(
-                    &[],
-                    None,
-                    newfile_content.as_bytes(),
-                    Some(&newfile_path),
-                    None,
-                )?;
+                let mut res = res_cell.borrow_mut();
+                res.sizes = (
+                    delta.old_file().size(),
+                    delta.new_file().size(),
+                );
+                res.size_delta = (res.sizes.1 as i64)
+                    .saturating_sub(res.sizes.0 as i64);
+            }
+            if let Some(hunk) = hunk {
+                let hunk_header = HunkHeader::from(hunk);
 
-                patch
-                    .print(&mut |_delta, hunk:Option<DiffHunk>, line: git2::DiffLine| {
-                        put(hunk,line);
+                match current_hunk {
+                    None => current_hunk = Some(hunk_header),
+                    Some(h) if h != hunk_header => {
+                        adder(&h, &current_lines);
+                        current_lines.clear();
+                        current_hunk = Some(hunk_header)
+                    }
+                    _ => (),
+                }
+
+                let line_type = match line.origin() {
+                    'H' => DiffLineType::Header,
+                    '<' | '-' => DiffLineType::Delete,
+                    '>' | '+' => DiffLineType::Add,
+                    _ => DiffLineType::None,
+                };
+
+                let diff_line = DiffLine {
+                    content: String::from_utf8_lossy(line.content())
+                        .to_string(),
+                    line_type,
+                };
+
+                current_lines.push(diff_line);
+            }
+        };
+
+        let new_file_diff = if diff.deltas().len() == 1 {
+            // it's safe to unwrap here because we check first that diff.deltas has a single element.
+            let delta: DiffDelta = diff.deltas().next().unwrap();
+
+            if delta.status() == Delta::Untracked {
+                let relative_path =
+                    delta.new_file().path().ok_or_else(|| {
+                        Error::Generic(
+                            "new file path is unspecified."
+                                .to_string(),
+                        )
+                    })?;
+
+                let newfile_path = work_dir.join(relative_path);
+
+                if let Some(newfile_content) =
+                    new_file_content(&newfile_path)
+                {
+                    let mut patch = Patch::from_buffers(
+                        &[],
+                        None,
+                        newfile_content.as_slice(),
+                        Some(&newfile_path),
+                        None,
+                    )?;
+
+                    patch
+                    .print(&mut |delta, hunk:Option<DiffHunk>, line: git2::DiffLine| {
+                        put(delta,hunk,line);
                         true
                     })?;
 
-                true
+                    true
+                } else {
+                    false
+                }
             } else {
                 false
             }
         } else {
             false
+        };
+
+        if !new_file_diff {
+            diff.print(
+                DiffFormat::Patch,
+                move |delta, hunk, line: git2::DiffLine| {
+                    put(delta, hunk, line);
+                    true
+                },
+            )?;
         }
-    } else {
-        false
-    };
 
-    if !new_file_diff {
-        diff.print(
-            DiffFormat::Patch,
-            |_, hunk, line: git2::DiffLine| {
-                put(hunk, line);
-                true
-            },
-        )?;
+        if !current_lines.is_empty() {
+            adder(&current_hunk.unwrap(), &current_lines);
+        }
+
+        if new_file_diff {
+            res.borrow_mut().untracked = true;
+        }
     }
-
-    if !current_lines.is_empty() {
-        adder(&current_hunk.unwrap(), &current_lines);
-    }
-
-    Ok(res)
+    let res = Rc::try_unwrap(res).expect("rc error");
+    Ok(res.into_inner())
 }
 
-fn new_file_content(path: &Path) -> Option<String> {
+fn new_file_content(path: &Path) -> Option<Vec<u8>> {
     if let Ok(meta) = fs::symlink_metadata(path) {
         if meta.file_type().is_symlink() {
             if let Ok(path) = fs::read_link(path) {
-                return Some(path.to_str()?.to_string());
+                return Some(
+                    path.to_str()?.to_string().as_bytes().into(),
+                );
             }
         } else if meta.file_type().is_file() {
-            if let Ok(content) = fs::read_to_string(path) {
+            if let Ok(content) = fs::read(path) {
                 return Some(content);
             }
         }
@@ -256,10 +303,10 @@ fn new_file_content(path: &Path) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::get_diff;
+    use super::{get_diff, get_diff_commit};
     use crate::error::Result;
     use crate::sync::{
-        stage_add_file,
+        commit, stage_add_file,
         status::{get_status, StatusType},
         tests::{get_statuses, repo_init, repo_init_empty},
     };
@@ -275,9 +322,7 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let res =
-            get_status(repo_path, StatusType::WorkingDir).unwrap();
-        assert_eq!(res.len(), 0);
+        assert_eq!(get_statuses(repo_path), (0, 0));
 
         fs::create_dir(&root.join("foo")).unwrap();
         File::create(&root.join("foo/bar.txt"))
@@ -285,9 +330,7 @@ mod tests {
             .write_all(b"test\nfoo")
             .unwrap();
 
-        let res =
-            get_status(repo_path, StatusType::WorkingDir).unwrap();
-        assert_eq!(res.len(), 1);
+        assert_eq!(get_statuses(repo_path), (1, 0));
 
         let diff =
             get_diff(repo_path, "foo/bar.txt".to_string(), false)
@@ -370,8 +413,8 @@ mod tests {
                 .unwrap();
         }
 
-        let res =
-            get_status(repo_path, StatusType::WorkingDir).unwrap();
+        let res = get_status(repo_path, StatusType::WorkingDir, true)
+            .unwrap();
         assert_eq!(res.len(), 1);
         assert_eq!(res[0].path, "bar.txt");
 
@@ -419,14 +462,20 @@ mod tests {
     }
 
     #[test]
-    fn test_diff_new_binary_file_using_invalid_utf8() -> Result<()> {
+    fn test_diff_delta_size() -> Result<()> {
         let file_path = Path::new("bar");
         let (_td, repo) = repo_init_empty().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
+        File::create(&root.join(file_path))?.write_all(b"\x00")?;
+
+        stage_add_file(repo_path, file_path).unwrap();
+
+        commit(repo_path, "commit").unwrap();
+
         File::create(&root.join(file_path))?
-            .write_all(b"\xc3\x28")?;
+            .write_all(b"\x00\x02")?;
 
         let diff = get_diff(
             repo_path,
@@ -435,7 +484,63 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(diff.hunks.len(), 0);
+        dbg!(&diff);
+        assert_eq!(diff.sizes, (1, 2));
+        assert_eq!(diff.size_delta, 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_binary_diff_delta_size_untracked() -> Result<()> {
+        let file_path = Path::new("bar");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?
+            .write_all(b"\x00\xc7")?;
+
+        let diff = get_diff(
+            repo_path,
+            String::from(file_path.to_str().unwrap()),
+            false,
+        )
+        .unwrap();
+
+        dbg!(&diff);
+        assert_eq!(diff.sizes, (0, 2));
+        assert_eq!(diff.size_delta, 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_diff_delta_size_commit() -> Result<()> {
+        let file_path = Path::new("bar");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?.write_all(b"\x00")?;
+
+        stage_add_file(repo_path, file_path).unwrap();
+
+        commit(repo_path, "").unwrap();
+
+        File::create(&root.join(file_path))?
+            .write_all(b"\x00\x02")?;
+
+        stage_add_file(repo_path, file_path).unwrap();
+
+        let id = commit(repo_path, "").unwrap();
+
+        let diff =
+            get_diff_commit(repo_path, id, String::new()).unwrap();
+
+        dbg!(&diff);
+        assert_eq!(diff.sizes, (1, 2));
+        assert_eq!(diff.size_delta, 1);
 
         Ok(())
     }

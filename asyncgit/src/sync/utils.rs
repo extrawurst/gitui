@@ -1,7 +1,8 @@
 //! sync git api (various methods)
 
+use super::CommitId;
 use crate::error::{Error, Result};
-use git2::{IndexAddOption, Oid, Repository, RepositoryOpenFlags};
+use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -15,8 +16,19 @@ pub fn is_repo(repo_path: &str) -> bool {
     .is_ok()
 }
 
+/// checks if the git repo at path `repo_path` is a bare repo
+pub fn is_bare_repo(repo_path: &str) -> Result<bool> {
+    let repo = Repository::open_ext(
+        repo_path,
+        RepositoryOpenFlags::empty(),
+        Vec::<&Path>::new(),
+    )?;
+
+    Ok(repo.is_bare())
+}
+
 ///
-pub fn repo(repo_path: &str) -> Result<Repository> {
+pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
     let repo = Repository::open_ext(
         repo_path,
         RepositoryOpenFlags::empty(),
@@ -24,47 +36,44 @@ pub fn repo(repo_path: &str) -> Result<Repository> {
     )?;
 
     if repo.is_bare() {
-        panic!("bare repo")
+        return Err(Error::Generic("bare repo".to_string()));
     }
 
     Ok(repo)
 }
 
-/// this does not run any git hooks
-pub fn commit(repo_path: &str, msg: &str) -> Result<Oid> {
-    scope_time!("commit");
+///
+pub(crate) fn work_dir(repo: &Repository) -> &Path {
+    repo.workdir().expect("unable to query workdir")
+}
 
+///
+pub fn repo_work_dir(repo_path: &str) -> Result<String> {
     let repo = repo(repo_path)?;
-
-    let signature = repo.signature()?;
-    let mut index = repo.index()?;
-    let tree_id = index.write_tree()?;
-    let tree = repo.find_tree(tree_id)?;
-
-    let parents = if let Ok(reference) = repo.head() {
-        let parent = repo.find_commit(
-            reference.target().ok_or_else(|| {
-                Error::Generic(
-                    "failed to get the target for reference"
-                        .to_string(),
-                )
-            })?,
-        )?;
-        vec![parent]
+    if let Some(workdir) = work_dir(&repo).to_str() {
+        Ok(workdir.to_string())
     } else {
-        Vec::new()
-    };
+        Err(Error::Generic("invalid workdir".to_string()))
+    }
+}
 
-    let parents = parents.iter().collect::<Vec<_>>();
+///
+pub fn get_head(repo_path: &str) -> Result<CommitId> {
+    let repo = repo(repo_path)?;
+    get_head_repo(&repo)
+}
 
-    Ok(repo.commit(
-        Some("HEAD"),
-        &signature,
-        &signature,
-        msg,
-        &tree,
-        parents.as_slice(),
-    )?)
+///
+pub fn get_head_repo(repo: &Repository) -> Result<CommitId> {
+    scope_time!("get_head_repo");
+
+    let head = repo.head()?.target();
+
+    if let Some(head_id) = head {
+        Ok(head_id.into())
+    } else {
+        Err(Error::NoHead)
+    }
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
@@ -113,62 +122,17 @@ pub fn stage_addremoved(repo_path: &str, path: &Path) -> Result<()> {
 mod tests {
     use super::*;
     use crate::sync::{
+        commit,
         status::{get_status, StatusType},
-        tests::{get_statuses, repo_init, repo_init_empty},
+        tests::{
+            debug_cmd_print, get_statuses, repo_init, repo_init_empty,
+        },
     };
     use std::{
         fs::{self, remove_file, File},
         io::Write,
         path::Path,
     };
-
-    #[test]
-    fn test_commit() {
-        let file_path = Path::new("foo");
-        let (_td, repo) = repo_init().unwrap();
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        File::create(&root.join(file_path))
-            .unwrap()
-            .write_all(b"test\nfoo")
-            .unwrap();
-
-        assert_eq!(get_statuses(repo_path), (1, 0));
-
-        stage_add_file(repo_path, file_path).unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 1));
-
-        commit(repo_path, "commit msg").unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 0));
-    }
-
-    #[test]
-    fn test_commit_in_empty_repo() {
-        let file_path = Path::new("foo");
-        let (_td, repo) = repo_init_empty().unwrap();
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 0));
-
-        File::create(&root.join(file_path))
-            .unwrap()
-            .write_all(b"test\nfoo")
-            .unwrap();
-
-        assert_eq!(get_statuses(repo_path), (1, 0));
-
-        stage_add_file(repo_path, file_path).unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 1));
-
-        commit(repo_path, "commit msg").unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 0));
-    }
 
     #[test]
     fn test_stage_add_smoke() {
@@ -214,7 +178,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).unwrap().len()
+            get_status(repo_path, s, true).unwrap().len()
         };
 
         fs::create_dir_all(&root.join("a/d"))?;
@@ -243,7 +207,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).unwrap().len()
+            get_status(repo_path, s, true).unwrap().len()
         };
 
         let full_path = &root.join(file_path);
@@ -267,5 +231,57 @@ mod tests {
 
         assert_eq!(status_count(StatusType::WorkingDir), 0);
         assert_eq!(status_count(StatusType::Stage), 1);
+    }
+
+    // see https://github.com/extrawurst/gitui/issues/108
+    #[test]
+    fn test_staging_sub_git_folder() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let status_count = |s: StatusType| -> usize {
+            get_status(repo_path, s, true).unwrap().len()
+        };
+
+        let sub = &root.join("sub");
+
+        fs::create_dir_all(sub)?;
+
+        debug_cmd_print(sub.to_str().unwrap(), "git init subgit");
+
+        File::create(sub.join("subgit/foo.txt"))
+            .unwrap()
+            .write_all(b"content")
+            .unwrap();
+
+        assert_eq!(status_count(StatusType::WorkingDir), 1);
+
+        //expect to fail
+        assert!(stage_add_all(repo_path, "sub").is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_head_empty() -> Result<()> {
+        let (_td, repo) = repo_init_empty()?;
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert_eq!(get_head(repo_path).is_ok(), false);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_head() -> Result<()> {
+        let (_td, repo) = repo_init()?;
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert_eq!(get_head(repo_path).is_ok(), true);
+
+        Ok(())
     }
 }

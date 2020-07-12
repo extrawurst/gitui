@@ -1,56 +1,42 @@
 use super::{
-    visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent,
+    textinput::TextInputComponent, visibility_blocking,
+    CommandBlocking, CommandInfo, Component, DrawableComponent,
+    ExternalEditorComponent,
 };
 use crate::{
+    get_app_config_path, keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings, ui,
+    strings::{self, commands},
+    ui::style::SharedTheme,
 };
-use asyncgit::{sync, CWD};
-use crossterm::event::{Event, KeyCode};
-use log::error;
-use std::borrow::Cow;
-use strings::commands;
-use sync::HookResult;
-use tui::{
-    backend::Backend,
-    layout::{Alignment, Rect},
-    style::{Color, Style},
-    widgets::{Block, Borders, Clear, Paragraph, Text},
-    Frame,
+use anyhow::Result;
+use asyncgit::{
+    sync::{self, CommitId, HookResult},
+    CWD,
 };
+use crossterm::event::Event;
+use std::{
+    fs::File,
+    io::{Read, Write},
+    path::PathBuf,
+};
+use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct CommitComponent {
-    msg: String,
-    visible: bool,
+    input: TextInputComponent,
+    amend: Option<CommitId>,
     queue: Queue,
 }
 
 impl DrawableComponent for CommitComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _rect: Rect) {
-        if self.visible {
-            let txt = if self.msg.is_empty() {
-                [Text::Styled(
-                    Cow::from(strings::COMMIT_MSG),
-                    Style::default().fg(Color::DarkGray),
-                )]
-            } else {
-                [Text::Raw(Cow::from(self.msg.clone()))]
-            };
+    fn draw<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        rect: Rect,
+    ) -> Result<()> {
+        self.input.draw(f, rect)?;
 
-            let area = ui::centered_rect(60, 20, f.size());
-            f.render_widget(Clear, area);
-            f.render_widget(
-                Paragraph::new(txt.iter())
-                    .block(
-                        Block::default()
-                            .title(strings::COMMIT_TITLE)
-                            .borders(Borders::ALL),
-                    )
-                    .alignment(Alignment::Left),
-                area,
-            );
-        }
+        Ok(())
     }
 }
 
@@ -58,104 +44,219 @@ impl Component for CommitComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
-        _force_all: bool,
+        force_all: bool,
     ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            commands::COMMIT_ENTER,
-            self.can_commit(),
-            self.visible,
-        ));
-        out.push(CommandInfo::new(
-            commands::CLOSE_POPUP,
-            true,
-            self.visible,
-        ));
+        self.input.commands(out, force_all);
+
+        if self.is_visible() || force_all {
+            out.push(CommandInfo::new(
+                commands::COMMIT_ENTER,
+                self.can_commit(),
+                true,
+            ));
+
+            out.push(CommandInfo::new(
+                commands::COMMIT_AMEND,
+                self.can_amend(),
+                true,
+            ));
+
+            out.push(CommandInfo::new(
+                commands::COMMIT_OPEN_EDITOR,
+                true,
+                true,
+            ));
+        }
+
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> bool {
-        if self.visible {
+    fn event(&mut self, ev: Event) -> Result<bool> {
+        if self.is_visible() {
+            if self.input.event(ev)? {
+                return Ok(true);
+            }
+
             if let Event::Key(e) = ev {
-                match e.code {
-                    KeyCode::Esc => {
+                match e {
+                    keys::ENTER if self.can_commit() => {
+                        self.commit()?;
+                    }
+
+                    keys::COMMIT_AMEND if self.can_amend() => {
+                        self.amend()?;
+                    }
+
+                    keys::OPEN_COMMIT_EDITOR => {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::OpenExternalEditor(None),
+                        );
                         self.hide();
                     }
-                    KeyCode::Char(c) => {
-                        self.msg.push(c);
-                    }
-                    KeyCode::Enter if self.can_commit() => {
-                        self.commit();
-                    }
-                    KeyCode::Backspace if !self.msg.is_empty() => {
-                        self.msg.pop().unwrap();
-                    }
+
                     _ => (),
                 };
-                return true;
+
+                // stop key event propagation
+                return Ok(true);
             }
         }
-        false
+
+        Ok(false)
     }
 
     fn is_visible(&self) -> bool {
-        self.visible
+        self.input.is_visible()
     }
 
     fn hide(&mut self) {
-        self.visible = false
+        self.input.hide()
     }
 
-    fn show(&mut self) {
-        self.visible = true
+    fn show(&mut self) -> Result<()> {
+        self.amend = None;
+
+        self.input.clear();
+        self.input.set_title(strings::COMMIT_TITLE.into());
+        self.input.show()?;
+
+        Ok(())
     }
 }
 
 impl CommitComponent {
     ///
-    pub fn new(queue: Queue) -> Self {
+    pub fn new(queue: Queue, theme: SharedTheme) -> Self {
         Self {
             queue,
-            msg: String::default(),
-            visible: false,
+            amend: None,
+            input: TextInputComponent::new(
+                theme,
+                "",
+                strings::COMMIT_MSG,
+            ),
         }
     }
 
-    fn commit(&mut self) {
-        if let HookResult::NotOk(e) =
-            sync::hooks_commit_msg(CWD, &mut self.msg).unwrap()
+    pub fn show_editor(&mut self) -> Result<()> {
+        const COMMIT_MSG_FILE_NAME: &str = "COMMITMSG_EDITOR";
+        //TODO: use a tmpfile here
+        let mut config_path: PathBuf = get_app_config_path()?;
+        config_path.push(COMMIT_MSG_FILE_NAME);
+
         {
-            error!("commit-msg hook error: {}", e);
+            let mut file = File::create(&config_path)?;
+            file.write_fmt(format_args!(
+                "{}\n",
+                self.input.get_text()
+            ))?;
+            file.write_all(strings::COMMIT_EDITOR_MSG.as_bytes())?;
+        }
+
+        ExternalEditorComponent::open_file_in_editor(&config_path)?;
+
+        let mut message = String::new();
+
+        let mut file = File::open(&config_path)?;
+        file.read_to_string(&mut message)?;
+        drop(file);
+        std::fs::remove_file(&config_path)?;
+
+        let message: String = message
+            .lines()
+            .flat_map(|l| {
+                if l.starts_with('#') {
+                    vec![]
+                } else {
+                    vec![l, "\n"]
+                }
+            })
+            .collect();
+
+        let message = message.trim().to_string();
+
+        self.input.set_text(message);
+        self.input.show()?;
+
+        Ok(())
+    }
+
+    fn commit(&mut self) -> Result<()> {
+        self.commit_msg(self.input.get_text().clone())
+    }
+
+    fn commit_msg(&mut self, msg: String) -> Result<()> {
+        let mut msg = msg;
+        if let HookResult::NotOk(e) =
+            sync::hooks_commit_msg(CWD, &mut msg)?
+        {
+            log::error!("commit-msg hook error: {}", e);
             self.queue.borrow_mut().push_back(
-                InternalEvent::ShowMsg(format!(
+                InternalEvent::ShowErrorMsg(format!(
                     "commit-msg hook error:\n{}",
                     e
                 )),
             );
-            return;
+            return Ok(());
         }
 
-        sync::commit(CWD, &self.msg).unwrap();
-        if let HookResult::NotOk(e) =
-            sync::hooks_post_commit(CWD).unwrap()
-        {
-            error!("post-commit hook error: {}", e);
+        let res = if let Some(amend) = self.amend {
+            sync::amend(CWD, amend, &msg)
+        } else {
+            sync::commit(CWD, &msg)
+        };
+        if let Err(e) = res {
+            log::error!("commit error: {}", &e);
             self.queue.borrow_mut().push_back(
-                InternalEvent::ShowMsg(format!(
+                InternalEvent::ShowErrorMsg(format!(
+                    "commit failed:\n{}",
+                    &e
+                )),
+            );
+            return Ok(());
+        }
+
+        if let HookResult::NotOk(e) = sync::hooks_post_commit(CWD)? {
+            log::error!("post-commit hook error: {}", e);
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ShowErrorMsg(format!(
                     "post-commit hook error:\n{}",
                     e
                 )),
             );
         }
 
-        self.msg.clear();
         self.hide();
 
         self.queue
             .borrow_mut()
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
     }
 
     fn can_commit(&self) -> bool {
-        !self.msg.is_empty()
+        !self.input.get_text().is_empty()
+    }
+
+    fn can_amend(&self) -> bool {
+        self.amend.is_none()
+            && sync::get_head(CWD).is_ok()
+            && self.input.get_text().is_empty()
+    }
+
+    fn amend(&mut self) -> Result<()> {
+        let id = sync::get_head(CWD)?;
+        self.amend = Some(id);
+
+        let details = sync::get_commit_details(CWD, id)?;
+
+        self.input.set_title(strings::COMMIT_TITLE_AMEND.into());
+
+        if let Some(msg) = details.message {
+            self.input.set_text(msg.combine());
+        }
+
+        Ok(())
     }
 }

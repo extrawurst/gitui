@@ -1,8 +1,11 @@
 
 .PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
+profile:
+	cargo run --features=timing,pprof -- -l
+
 debug:
-	GITUI_LOGGING=true cargo run --features=timing
+	cargo run --features=timing -- -l
 
 build-release:
 	cargo build --release
@@ -11,6 +14,7 @@ release-mac: build-release
 	strip target/release/gitui
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-mac.tar.gz ./gitui
+	ls -lisah ./release/gitui-mac.tar.gz
 
 release-win: build-release
 	mkdir -p release
@@ -25,16 +29,22 @@ release-linux-musl:
 test:
 	cargo test --workspace
 
+fmt:
+	cargo fmt -- --check
+
 clippy:
+	touch src/main.rs
 	cargo clean -p gitui -p asyncgit -p scopetime
 	cargo clippy --all-features
 
 clippy-pedantic:
-	cargo clean
+	cargo clean -p gitui -p asyncgit -p scopetime
 	cargo clippy --all-features -- -W clippy::pedantic
 
-install:
-	cargo install --path "."
+check: fmt clippy
 
-install-debug:
+install:
+	cargo install --path "." --offline
+
+install-timing:
 	cargo install --features=timing --path "." --offline

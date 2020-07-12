@@ -1,35 +1,45 @@
 use super::{
-    filetree::{FileTreeItem, FileTreeItemKind},
-    statustree::{MoveSelection, StatusTree},
+    filetree::FileTreeComponent,
+    utils::filetree::{FileTreeItem, FileTreeItemKind},
     CommandBlocking, DrawableComponent,
 };
 use crate::{
     components::{CommandInfo, Component},
     keys,
-    queue::{InternalEvent, NeedsUpdate, Queue, ResetItem},
-    strings, ui,
+    queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
+    strings,
+    ui::style::SharedTheme,
 };
-use asyncgit::{hash, sync, StatusItem, StatusItemType, CWD};
+use anyhow::Result;
+use asyncgit::{cached, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
-use std::{borrow::Cow, convert::From, path::Path};
+use std::path::Path;
 use strings::commands;
-use tui::{
-    backend::Backend,
-    layout::Rect,
-    style::{Color, Style},
-    widgets::Text,
-    Frame,
-};
+use tui::{backend::Backend, layout::Rect, Frame};
+
+/// macro to simplify running code that might return Err.
+/// It will show a popup in that case
+#[macro_export]
+macro_rules! try_or_popup {
+    ($self:ident, $msg:literal, $e:expr) => {
+        if let Err(err) = $e {
+            $self.queue.borrow_mut().push_back(
+                InternalEvent::ShowErrorMsg(format!(
+                    "{}\n{}",
+                    $msg, err
+                )),
+            );
+        }
+    };
+}
 
 ///
 pub struct ChangesComponent {
     title: String,
-    tree: StatusTree,
-    current_hash: u64,
-    focused: bool,
-    show_selection: bool,
+    files: FileTreeComponent,
     is_working_dir: bool,
     queue: Queue,
+    branch_name: cached::BranchName,
 }
 
 impl ChangesComponent {
@@ -39,99 +49,111 @@ impl ChangesComponent {
         focus: bool,
         is_working_dir: bool,
         queue: Queue,
+        theme: SharedTheme,
     ) -> Self {
         Self {
-            title: title.to_string(),
-            tree: StatusTree::default(),
-            current_hash: 0,
-            focused: focus,
-            show_selection: focus,
+            title: title.into(),
+            files: FileTreeComponent::new(
+                title,
+                focus,
+                Some(queue.clone()),
+                theme,
+            ),
             is_working_dir,
             queue,
+            branch_name: cached::BranchName::new(CWD),
         }
     }
 
-    ///
-    pub fn update(&mut self, list: &[StatusItem]) {
-        let new_hash = hash(list);
-        if self.current_hash != new_hash {
-            self.tree.update(list);
-            self.current_hash = new_hash;
+    pub fn update(&mut self) -> Result<()> {
+        if self.is_working_dir {
+            if let Ok(branch_name) = self.branch_name.lookup() {
+                self.files.set_title(format!(
+                    "{} - {{{}}}",
+                    &self.title, branch_name,
+                ))
+            }
         }
+        Ok(())
+    }
+
+    ///
+    pub fn set_items(&mut self, list: &[StatusItem]) -> Result<()> {
+        self.files.update(list)?;
+        Ok(())
     }
 
     ///
     pub fn selection(&self) -> Option<FileTreeItem> {
-        self.tree.selected_item()
+        self.files.selection()
     }
 
     ///
     pub fn focus_select(&mut self, focus: bool) {
-        self.focus(focus);
-        self.show_selection = focus;
+        self.files.focus(focus);
+        self.files.show_selection(focus);
     }
 
     /// returns true if list is empty
     pub fn is_empty(&self) -> bool {
-        self.tree.is_empty()
+        self.files.is_empty()
     }
 
     ///
     pub fn is_file_seleted(&self) -> bool {
-        if let Some(item) = self.tree.selected_item() {
-            match item.kind {
-                FileTreeItemKind::File(_) => true,
-                _ => false,
-            }
-        } else {
-            false
-        }
+        self.files.is_file_seleted()
     }
 
-    fn move_selection(&mut self, dir: MoveSelection) -> bool {
-        let changed = self.tree.move_selection(dir);
-
-        if changed {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Update(NeedsUpdate::DIFF));
-        }
-
-        changed
-    }
-
-    fn index_add_remove(&mut self) -> bool {
+    fn index_add_remove(&mut self) -> Result<bool> {
         if let Some(tree_item) = self.selection() {
             if self.is_working_dir {
                 if let FileTreeItemKind::File(i) = tree_item.kind {
-                    if let Some(status) = i.status {
-                        let path = Path::new(i.path.as_str());
-                        return match status {
-                            StatusItemType::Deleted => {
-                                sync::stage_addremoved(CWD, path)
-                                    .is_ok()
-                            }
-                            _ => sync::stage_add_file(CWD, path)
-                                .is_ok(),
-                        };
-                    }
+                    let path = Path::new(i.path.as_str());
+                    match i.status {
+                        StatusItemType::Deleted => {
+                            sync::stage_addremoved(CWD, path)?
+                        }
+                        _ => sync::stage_add_file(CWD, path)?,
+                    };
+
+                    return Ok(true);
                 } else {
                     //TODO: check if we can handle the one file case with it aswell
-                    return sync::stage_add_all(
+                    sync::stage_add_all(
                         CWD,
                         tree_item.info.full_path.as_str(),
-                    )
-                    .is_ok();
+                    )?;
+
+                    return Ok(true);
                 }
             } else {
-                let path =
-                    Path::new(tree_item.info.full_path.as_str());
-                sync::reset_stage(CWD, path).unwrap();
-                return true;
+                let path = tree_item.info.full_path.as_str();
+                sync::reset_stage(CWD, path)?;
+                return Ok(true);
             }
         }
 
-        false
+        Ok(false)
+    }
+
+    fn index_add_all(&mut self) -> Result<()> {
+        sync::stage_add_all(CWD, "*")?;
+
+        self.queue
+            .borrow_mut()
+            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
+    }
+
+    fn stage_remove_all(&mut self) -> Result<()> {
+        sync::reset_stage(CWD, "*")?;
+
+        self.queue
+            .borrow_mut()
+            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
     }
 
     fn dispatch_reset_workdir(&mut self) -> bool {
@@ -139,10 +161,12 @@ impl ChangesComponent {
             let is_folder =
                 matches!(tree_item.kind, FileTreeItemKind::Path(_));
             self.queue.borrow_mut().push_back(
-                InternalEvent::ConfirmResetItem(ResetItem {
-                    path: tree_item.info.full_path,
-                    is_folder,
-                }),
+                InternalEvent::ConfirmAction(Action::Reset(
+                    ResetItem {
+                        path: tree_item.info.full_path,
+                        is_folder,
+                    },
+                )),
             );
 
             return true;
@@ -150,155 +174,39 @@ impl ChangesComponent {
         false
     }
 
-    fn item_to_text(
-        item: &FileTreeItem,
-        width: u16,
-        selected: bool,
-    ) -> Option<Text> {
-        let select_color = Color::Rgb(0, 0, 100);
+    fn add_to_ignore(&mut self) -> bool {
+        if let Some(tree_item) = self.selection() {
+            if let Err(e) =
+                sync::add_to_ignore(CWD, &tree_item.info.full_path)
+            {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowErrorMsg(format!(
+                        "ignore error:\n{}\nfile:\n{:?}",
+                        e, tree_item.info.full_path
+                    )),
+                );
+            } else {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::Update(NeedsUpdate::ALL),
+                );
 
-        let indent_str = if item.info.indent == 0 {
-            String::from("")
-        } else {
-            format!("{:w$}", " ", w = (item.info.indent as usize) * 2)
-        };
-
-        if !item.info.visible {
-            return None;
-        }
-
-        match &item.kind {
-            FileTreeItemKind::File(status_item) => {
-                let status_char =
-                    Self::item_status_char(status_item.status);
-                let file = Path::new(&status_item.path)
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap();
-
-                let txt = if selected {
-                    format!(
-                        "{} {}{:w$}",
-                        status_char,
-                        indent_str,
-                        file,
-                        w = width as usize
-                    )
-                } else {
-                    format!("{} {}{}", status_char, indent_str, file)
-                };
-
-                let mut style =
-                    Style::default().fg(Self::item_color(
-                        status_item
-                            .status
-                            .unwrap_or(StatusItemType::Modified),
-                    ));
-
-                if selected {
-                    style = style.bg(select_color);
-                }
-
-                Some(Text::Styled(Cow::from(txt), style))
-            }
-
-            FileTreeItemKind::Path(path_collapsed) => {
-                let collapse_char =
-                    if path_collapsed.0 { '▸' } else { '▾' };
-
-                let txt = if selected {
-                    format!(
-                        "  {}{}{:w$}",
-                        indent_str,
-                        collapse_char,
-                        item.info.path,
-                        w = width as usize
-                    )
-                } else {
-                    format!(
-                        "  {}{}{}",
-                        indent_str, collapse_char, item.info.path,
-                    )
-                };
-
-                let mut style = Style::default();
-
-                if selected {
-                    style = style.bg(select_color);
-                }
-
-                Some(Text::Styled(Cow::from(txt), style))
+                return true;
             }
         }
-    }
 
-    fn item_color(item_type: StatusItemType) -> Color {
-        match item_type {
-            StatusItemType::Modified => Color::LightYellow,
-            StatusItemType::New => Color::LightGreen,
-            StatusItemType::Deleted => Color::LightRed,
-            StatusItemType::Renamed => Color::LightMagenta,
-            _ => Color::White,
-        }
-    }
-
-    fn item_status_char(item_type: Option<StatusItemType>) -> char {
-        if let Some(item_type) = item_type {
-            match item_type {
-                StatusItemType::Modified => 'M',
-                StatusItemType::New => '+',
-                StatusItemType::Deleted => '-',
-                StatusItemType::Renamed => 'R',
-                _ => ' ',
-            }
-        } else {
-            ' '
-        }
+        false
     }
 }
 
 impl DrawableComponent for ChangesComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, r: Rect) {
-        let selection_offset =
-            self.tree.tree.items().iter().enumerate().fold(
-                0,
-                |acc, (idx, e)| {
-                    let visible = e.info.visible;
-                    let index_above_select =
-                        idx < self.tree.selection.unwrap_or(0);
+    fn draw<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        r: Rect,
+    ) -> Result<()> {
+        self.files.draw(f, r)?;
 
-                    if !visible && index_above_select {
-                        acc + 1
-                    } else {
-                        acc
-                    }
-                },
-            );
-
-        let items =
-            self.tree.tree.items().iter().enumerate().filter_map(
-                |(idx, e)| {
-                    Self::item_to_text(
-                        e,
-                        r.width,
-                        self.show_selection
-                            && self
-                                .tree
-                                .selection
-                                .map_or(false, |e| e == idx),
-                    )
-                },
-            );
-
-        ui::draw_list(
-            f,
-            r,
-            &self.title.to_string(),
-            items,
-            self.tree.selection.map(|idx| idx - selection_offset),
-            self.focused,
-        );
+        Ok(())
     }
 }
 
@@ -308,46 +216,61 @@ impl Component for ChangesComponent {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
+        self.files.commands(out, force_all);
+
         let some_selection = self.selection().is_some();
 
         if self.is_working_dir {
             out.push(CommandInfo::new(
+                commands::STAGE_ALL,
+                some_selection,
+                self.focused(),
+            ));
+            out.push(CommandInfo::new(
                 commands::STAGE_ITEM,
                 some_selection,
-                self.focused,
+                self.focused(),
             ));
             out.push(CommandInfo::new(
                 commands::RESET_ITEM,
                 some_selection,
-                self.focused,
+                self.focused(),
+            ));
+            out.push(CommandInfo::new(
+                commands::IGNORE_ITEM,
+                some_selection,
+                self.focused(),
             ));
         } else {
             out.push(CommandInfo::new(
                 commands::UNSTAGE_ITEM,
                 some_selection,
-                self.focused,
+                self.focused(),
+            ));
+            out.push(CommandInfo::new(
+                commands::UNSTAGE_ALL,
+                some_selection,
+                self.focused(),
             ));
             out.push(
                 CommandInfo::new(
                     commands::COMMIT_OPEN,
                     !self.is_empty(),
-                    self.focused || force_all,
+                    self.focused() || force_all,
                 )
                 .order(-1),
             );
         }
 
-        out.push(CommandInfo::new(
-            commands::NAVIGATE_TREE,
-            !self.is_empty(),
-            self.focused,
-        ));
-
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> bool {
-        if self.focused {
+    fn event(&mut self, ev: Event) -> Result<bool> {
+        if self.files.event(ev)? {
+            return Ok(true);
+        }
+
+        if self.focused() {
             if let Event::Key(e) = ev {
                 return match e {
                     keys::OPEN_COMMIT
@@ -357,53 +280,60 @@ impl Component for ChangesComponent {
                         self.queue
                             .borrow_mut()
                             .push_back(InternalEvent::OpenCommit);
-                        true
+                        Ok(true)
                     }
                     keys::STATUS_STAGE_FILE => {
-                        if self.index_add_remove() {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::Update(
-                                    NeedsUpdate::ALL,
-                                ),
-                            );
-                        }
-                        true
+                        try_or_popup!(
+                            self,
+                            "staging error:",
+                            self.index_add_remove()
+                        );
+
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::Update(NeedsUpdate::ALL),
+                        );
+
+                        Ok(true)
                     }
+
+                    keys::STATUS_STAGE_ALL if !self.is_empty() => {
+                        if self.is_working_dir {
+                            try_or_popup!(
+                                self,
+                                "staging error:",
+                                self.index_add_all()
+                            );
+                        } else {
+                            self.stage_remove_all()?;
+                        }
+
+                        Ok(true)
+                    }
+
                     keys::STATUS_RESET_FILE
                         if self.is_working_dir =>
                     {
-                        self.dispatch_reset_workdir()
+                        Ok(self.dispatch_reset_workdir())
                     }
-                    keys::MOVE_DOWN => {
-                        self.move_selection(MoveSelection::Down)
+
+                    keys::STATUS_IGNORE_FILE
+                        if self.is_working_dir
+                            && !self.is_empty() =>
+                    {
+                        Ok(self.add_to_ignore())
                     }
-                    keys::MOVE_UP => {
-                        self.move_selection(MoveSelection::Up)
-                    }
-                    keys::HOME | keys::SHIFT_UP => {
-                        self.move_selection(MoveSelection::Home)
-                    }
-                    keys::END | keys::SHIFT_DOWN => {
-                        self.move_selection(MoveSelection::End)
-                    }
-                    keys::MOVE_LEFT => {
-                        self.move_selection(MoveSelection::Left)
-                    }
-                    keys::MOVE_RIGHT => {
-                        self.move_selection(MoveSelection::Right)
-                    }
-                    _ => false,
+                    _ => Ok(false),
                 };
             }
         }
 
-        false
+        Ok(false)
     }
 
     fn focused(&self) -> bool {
-        self.focused
+        self.files.focused()
     }
     fn focus(&mut self, focus: bool) {
-        self.focused = focus
+        self.files.focus(focus)
     }
 }

@@ -1,21 +1,51 @@
 use crate::{
-    error::Result, hash, sync, AsyncNotification, StatusItem, CWD,
+    error::Result,
+    hash,
+    sync::{self, status::StatusType},
+    AsyncNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
-use log::trace;
 use std::{
     hash::Hash,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex,
     },
+    time::{SystemTime, UNIX_EPOCH},
 };
-use sync::status::StatusType;
+
+fn current_tick() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("time before unix epoch!")
+        .as_millis() as u64
+}
 
 #[derive(Default, Hash, Clone)]
 pub struct Status {
-    pub work_dir: Vec<StatusItem>,
-    pub stage: Vec<StatusItem>,
+    pub items: Vec<StatusItem>,
+}
+
+///
+#[derive(Default, Hash, Clone, PartialEq)]
+pub struct StatusParams {
+    tick: u64,
+    status_type: StatusType,
+    include_untracked: bool,
+}
+
+impl StatusParams {
+    ///
+    pub fn new(
+        status_type: StatusType,
+        include_untracked: bool,
+    ) -> Self {
+        Self {
+            tick: current_tick(),
+            status_type,
+            include_untracked,
+        }
+    }
 }
 
 struct Request<R, A>(R, Option<A>);
@@ -51,10 +81,23 @@ impl AsyncStatus {
     }
 
     ///
-    pub fn fetch(&mut self, request: u64) -> Result<Option<Status>> {
-        let hash_request = hash(&request);
+    pub fn fetch(
+        &mut self,
+        params: StatusParams,
+    ) -> Result<Option<Status>> {
+        if self.is_pending() {
+            log::trace!("request blocked, still pending");
+            return Ok(None);
+        }
 
-        trace!("request: {} [hash: {}]", request, hash_request);
+        let hash_request = hash(&params);
+
+        log::trace!(
+            "request: [hash: {}] (type: {:?}, untracked: {})",
+            hash_request,
+            params.status_type,
+            params.include_untracked,
+        );
 
         {
             let mut current = self.current.lock()?;
@@ -71,10 +114,14 @@ impl AsyncStatus {
         let arc_last = Arc::clone(&self.last);
         let sender = self.sender.clone();
         let arc_pending = Arc::clone(&self.pending);
+        let status_type = params.status_type;
+        let include_untracked = params.include_untracked;
         rayon_core::spawn(move || {
             arc_pending.fetch_add(1, Ordering::Relaxed);
 
-            AsyncStatus::fetch_helper(
+            Self::fetch_helper(
+                status_type,
+                include_untracked,
                 hash_request,
                 arc_current,
                 arc_last,
@@ -92,12 +139,19 @@ impl AsyncStatus {
     }
 
     fn fetch_helper(
+        status_type: StatusType,
+        include_untracked: bool,
         hash_request: u64,
         arc_current: Arc<Mutex<Request<u64, Status>>>,
         arc_last: Arc<Mutex<Status>>,
     ) -> Result<()> {
-        let res = Self::get_status()?;
-        trace!("status fetched: {}", hash(&res));
+        let res = Self::get_status(status_type, include_untracked)?;
+        log::trace!(
+            "status fetched: {} (type: {:?}, untracked: {})",
+            hash_request,
+            status_type,
+            include_untracked
+        );
 
         {
             let mut current = arc_current.lock()?;
@@ -114,11 +168,16 @@ impl AsyncStatus {
         Ok(())
     }
 
-    fn get_status() -> Result<Status> {
-        let work_dir =
-            sync::status::get_status(CWD, StatusType::WorkingDir)?;
-        let stage = sync::status::get_status(CWD, StatusType::Stage)?;
-
-        Ok(Status { stage, work_dir })
+    fn get_status(
+        status_type: StatusType,
+        include_untracked: bool,
+    ) -> Result<Status> {
+        Ok(Status {
+            items: sync::status::get_status(
+                CWD,
+                status_type,
+                include_untracked,
+            )?,
+        })
     }
 }

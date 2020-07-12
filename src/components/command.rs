@@ -41,6 +41,7 @@ pub struct CommandInfo {
     pub enabled: bool,
     /// will show up in the quick bar
     pub quick_bar: bool,
+
     /// available in current app state
     pub available: bool,
     /// used to order commands in quickbar
@@ -49,7 +50,7 @@ pub struct CommandInfo {
 
 impl CommandInfo {
     ///
-    pub fn new(
+    pub const fn new(
         text: CommandText,
         enabled: bool,
         available: bool,
@@ -63,13 +64,13 @@ impl CommandInfo {
         }
     }
     ///
-    pub fn order(self, order: i8) -> Self {
+    pub const fn order(self, order: i8) -> Self {
         let mut res = self;
         res.order = order;
         res
     }
     ///
-    pub fn hidden(self) -> Self {
+    pub const fn hidden(self) -> Self {
         let mut res = self;
         res.quick_bar = false;
         res
