@@ -82,11 +82,13 @@ impl AsyncTags {
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
-            if notify {
-                sender
-                    .send(AsyncNotification::Tags)
-                    .expect("error sending notify");
-            }
+            sender
+                .send(if notify {
+                    AsyncNotification::Tags
+                } else {
+                    AsyncNotification::FinishUnchanged
+                })
+                .expect("error sending notify");
         });
 
         Ok(())

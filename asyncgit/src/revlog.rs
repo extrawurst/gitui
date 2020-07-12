@@ -128,6 +128,7 @@ impl AsyncLog {
             )
             .expect("failed to fetch");
             arc_pending.store(false, Ordering::Relaxed);
+
             Self::notify(&sender);
         });
 
