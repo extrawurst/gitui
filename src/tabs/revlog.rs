@@ -17,6 +17,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use std::time::Duration;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -61,6 +62,7 @@ impl Revlog {
     ///
     pub fn any_work_pending(&self) -> bool {
         self.git_log.is_pending()
+            || self.git_tags.is_pending()
             || self.commit_details.any_work_pending()
     }
 
@@ -80,7 +82,7 @@ impl Revlog {
                 self.fetch_commits()?;
             }
 
-            self.git_tags.request()?;
+            self.git_tags.request(Duration::from_secs(3), false)?;
 
             self.list.set_branch(
                 self.branch_name.lookup().map(Some).unwrap_or(None),

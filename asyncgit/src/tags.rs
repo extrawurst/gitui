@@ -5,9 +5,12 @@ use crate::{
     AsyncNotification, CWD,
 };
 use crossbeam_channel::Sender;
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc, Mutex,
+use std::{
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex,
+    },
+    time::{Duration, Instant},
 };
 use sync::Tags;
 
@@ -20,7 +23,7 @@ struct TagsResult {
 
 ///
 pub struct AsyncTags {
-    last: Arc<Mutex<Option<TagsResult>>>,
+    last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
     sender: Sender<AsyncNotification>,
     pending: Arc<AtomicUsize>,
 }
@@ -39,7 +42,7 @@ impl AsyncTags {
     pub fn last(&mut self) -> Result<Option<Tags>> {
         let last = self.last.lock()?;
 
-        Ok(last.clone().map(|last| last.tags))
+        Ok(last.clone().map(|last| last.1.tags))
     }
 
     ///
@@ -47,11 +50,24 @@ impl AsyncTags {
         self.pending.load(Ordering::Relaxed) > 0
     }
 
+    fn is_outdated(&self, dur: Duration) -> Result<bool> {
+        let last = self.last.lock()?;
+
+        Ok(last
+            .as_ref()
+            .map(|(last_time, _)| last_time.elapsed() > dur)
+            .unwrap_or(true))
+    }
+
     ///
-    pub fn request(&mut self) -> Result<()> {
+    pub fn request(
+        &mut self,
+        dur: Duration,
+        force: bool,
+    ) -> Result<()> {
         log::trace!("request");
 
-        if self.is_pending() {
+        if !force && (self.is_pending() || !self.is_outdated(dur)?) {
             return Ok(());
         }
 
@@ -77,7 +93,7 @@ impl AsyncTags {
     }
 
     fn getter(
-        arc_last: Arc<Mutex<Option<TagsResult>>>,
+        arc_last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
     ) -> Result<bool> {
         let tags = sync::get_tags(CWD)?;
 
@@ -92,17 +108,18 @@ impl AsyncTags {
 
         {
             let mut last = arc_last.lock()?;
-            *last = Some(TagsResult { tags, hash });
+            let now = Instant::now();
+            *last = Some((now, TagsResult { tags, hash }));
         }
 
         Ok(true)
     }
 
     fn last_hash(
-        last: Arc<Mutex<Option<TagsResult>>>,
+        last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
     ) -> Option<u64> {
         last.lock()
             .ok()
-            .and_then(|last| last.as_ref().map(|last| last.hash))
+            .and_then(|last| last.as_ref().map(|(_, last)| last.hash))
     }
 }
