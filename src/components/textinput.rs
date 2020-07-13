@@ -8,6 +8,7 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
+use tui::style::Color::Red;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -15,7 +16,6 @@ use tui::{
     widgets::{Clear, Text},
     Frame,
 };
-use tui::style::Color::Red;
 
 /// Primarily a sub-component for user input of text (used in `CommitComponent`).
 pub struct TextInputComponent {
@@ -158,8 +158,14 @@ impl TextInputComponent {
         let mut txt = Vec::new();
         let char_limit_warning = 50;
         if self.msg.len() > char_limit_warning {
-            txt.push(Text::styled(&self.msg[..char_limit_warning], style));
-            txt.push(Text::styled(&self.msg[char_limit_warning..], style.fg(Red)));
+            txt.push(Text::styled(
+                &self.msg[..char_limit_warning],
+                style,
+            ));
+            txt.push(Text::styled(
+                &self.msg[char_limit_warning..],
+                style.fg(Red),
+            ));
         } else {
             txt.push(Text::styled(&self.msg, style));
         }
