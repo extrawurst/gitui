@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `add_to_ignore` failed on files without a newline at EOF ([#191](https://github.com/extrawurst/gitui/issues/191))
 - new tags were not picked up in revlog view ([#190](https://github.com/extrawurst/gitui/issues/190))
 - tags not shown in commit details popup ([#193](https://github.com/extrawurst/gitui/issues/193))
+- min size for relative popups on small terminals ([#179](https://github.com/extrawurst/gitui/issues/179))
 
 ## [0.8.1] - 2020-07-07
 

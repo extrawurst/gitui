@@ -170,6 +170,8 @@ impl DrawableComponent for TextInputComponent {
             };
 
             let area = ui::centered_rect(60, 20, f.size());
+            let area = ui::rect_min(10, 3, area);
+
             f.render_widget(Clear, area);
             f.render_widget(
                 popup_paragraph(

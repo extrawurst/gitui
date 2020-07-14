@@ -16,8 +16,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::Event;
-use std::cell::Cell;
-use std::{borrow::Cow, convert::From, path::Path};
+use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
 use tui::{backend::Backend, layout::Rect, widgets::Text, Frame};
 
 ///
