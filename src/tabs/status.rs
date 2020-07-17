@@ -137,7 +137,7 @@ impl Status {
         match self.focus {
             Focus::WorkDir => self.index_wd.is_file_seleted(),
             Focus::Stage => self.index.is_file_seleted(),
-            _ => false,
+            Focus::Diff => false,
         }
     }
 

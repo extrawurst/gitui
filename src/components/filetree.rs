@@ -109,7 +109,7 @@ impl FileTreeComponent {
         if let Some(item) = self.tree.selected_item() {
             match item.kind {
                 FileTreeItemKind::File(_) => true,
-                _ => false,
+                FileTreeItemKind::Path(..) => false,
             }
         } else {
             false
@@ -206,7 +206,7 @@ impl FileTreeComponent {
             StatusItemType::New => '+',
             StatusItemType::Deleted => '-',
             StatusItemType::Renamed => 'R',
-            _ => ' ',
+            StatusItemType::Typechange => ' ',
         }
     }
 }

@@ -110,7 +110,7 @@ impl Theme {
             StatusItemType::Renamed => {
                 Style::default().fg(self.diff_file_moved)
             }
-            _ => Style::default(),
+            StatusItemType::Typechange => Style::default(),
         };
 
         self.apply_select(style, selected)
@@ -155,7 +155,7 @@ impl Theme {
             DiffLineType::Header => Style::default()
                 .fg(self.disabled_fg)
                 .modifier(Modifier::BOLD),
-            _ => Style::default().fg(if selected {
+            DiffLineType::None => Style::default().fg(if selected {
                 self.command_fg
             } else {
                 Color::Reset

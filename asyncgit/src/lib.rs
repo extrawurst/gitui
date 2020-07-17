@@ -3,7 +3,7 @@
 #![forbid(unsafe_code)]
 #![forbid(missing_docs)]
 #![deny(clippy::all)]
-#![deny(clippy::result_unwrap_used)]
+#![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 
 pub mod cached;

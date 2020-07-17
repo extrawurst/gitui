@@ -2,7 +2,7 @@
 #![deny(clippy::cargo)]
 #![deny(clippy::pedantic)]
 #![deny(clippy::nursery)]
-#![deny(clippy::result_unwrap_used)]
+#![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::multiple_crate_versions)]
@@ -141,8 +141,8 @@ fn main() -> Result<()> {
                 {
                     app.update_git(ev)?
                 }
+                QueueEvent::GitEvent(..) => (),
                 QueueEvent::SpinnerUpdate => unreachable!(),
-                _ => (),
             }
 
             draw(&mut terminal, &app)?;

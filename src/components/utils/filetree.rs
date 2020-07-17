@@ -192,7 +192,8 @@ impl FileTreeItems {
         index: usize,
     ) -> usize {
         if let Some(parent_path) = Path::new(path).parent() {
-            let parent_path = parent_path.to_str().unwrap();
+            let parent_path =
+                parent_path.to_str().expect("invalid path");
             for i in (0..=index).rev() {
                 let item = &self.items[i];
                 let item_path = &item.info.full_path;
@@ -216,18 +217,16 @@ impl FileTreeItems {
         ancestors.reverse();
 
         for c in &ancestors {
-            if c.parent().is_some() {
-                let path_string = String::from(c.to_str().unwrap());
-                if !paths_added.contains(c) {
-                    paths_added.insert(c);
-                    let is_collapsed =
-                        collapsed.contains(&path_string);
-                    nodes.push(FileTreeItem::new_path(
-                        c,
-                        path_string,
-                        is_collapsed,
-                    )?);
-                }
+            if c.parent().is_some() && !paths_added.contains(c) {
+                paths_added.insert(c);
+                let path_string =
+                    String::from(c.to_str().expect("invalid path"));
+                let is_collapsed = collapsed.contains(&path_string);
+                nodes.push(FileTreeItem::new_path(
+                    c,
+                    path_string,
+                    is_collapsed,
+                )?);
             }
         }
 

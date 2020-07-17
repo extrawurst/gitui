@@ -219,8 +219,10 @@ fn raw_diff_to_file_diff<'a>(
         };
 
         let new_file_diff = if diff.deltas().len() == 1 {
-            // it's safe to unwrap here because we check first that diff.deltas has a single element.
-            let delta: DiffDelta = diff.deltas().next().unwrap();
+            let delta: DiffDelta = diff
+                .deltas()
+                .next()
+                .expect("it's safe to unwrap here because we check first that diff.deltas has a single element");
 
             if delta.status() == Delta::Untracked {
                 let relative_path =
@@ -272,7 +274,10 @@ fn raw_diff_to_file_diff<'a>(
         }
 
         if !current_lines.is_empty() {
-            adder(&current_hunk.unwrap(), &current_lines);
+            adder(
+                &current_hunk.expect("invalid hunk"),
+                &current_lines,
+            );
         }
 
         if new_file_diff {
