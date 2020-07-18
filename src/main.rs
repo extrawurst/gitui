@@ -79,9 +79,6 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    // TODO: To be removed in a future version, when upgrading from 0.6.x or earlier is unlikely
-    migrate_config()?;
-
     setup_terminal()?;
     defer! {
         shutdown_terminal().expect("shutdown failed");
@@ -227,23 +224,6 @@ fn start_terminal<W: Write>(
     terminal.clear()?;
 
     Ok(terminal)
-}
-
-fn migrate_config() -> Result<()> {
-    let cache_path: PathBuf = get_app_cache_path()?;
-
-    let entries = cache_path.read_dir()?.flatten().filter(|entry| {
-        !entry.file_name().to_string_lossy().ends_with(".log")
-    });
-
-    let config_path: PathBuf = get_app_config_path()?;
-    for entry in entries {
-        let mut config_path: PathBuf = config_path.clone();
-        config_path.push(entry.file_name());
-        fs::rename(entry.path(), config_path)?;
-    }
-
-    Ok(())
 }
 
 fn get_app_cache_path() -> Result<PathBuf> {
