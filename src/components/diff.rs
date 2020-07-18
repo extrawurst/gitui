@@ -12,7 +12,7 @@ use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 use tui::{
     backend::Backend,
-    layout::{Alignment, Rect},
+    layout::Rect,
     symbols,
     widgets::{Block, Borders, Paragraph, Text},
     Frame,
@@ -30,6 +30,7 @@ struct Current {
 ///
 pub struct DiffComponent {
     diff: Option<FileDiff>,
+    pending: bool,
     selection: usize,
     selected_hunk: Option<usize>,
     current_size: Cell<(u16, u16)>,
@@ -47,6 +48,7 @@ impl DiffComponent {
             focused: false,
             queue,
             current: Current::default(),
+            pending: false,
             selected_hunk: None,
             diff: None,
             current_size: Cell::new((0, 0)),
@@ -67,12 +69,13 @@ impl DiffComponent {
         (self.current.path.clone(), self.current.is_stage)
     }
     ///
-    pub fn clear(&mut self) -> Result<()> {
+    pub fn clear(&mut self, pending: bool) -> Result<()> {
         self.current = Current::default();
         self.diff = None;
         self.scroll_top.set(0);
         self.selection = 0;
         self.selected_hunk = None;
+        self.pending = pending;
 
         Ok(())
     }
@@ -83,6 +86,8 @@ impl DiffComponent {
         is_stage: bool,
         diff: FileDiff,
     ) -> Result<()> {
+        self.pending = false;
+
         let hash = hash(&diff);
 
         if self.current.hash != hash {
@@ -432,19 +437,24 @@ impl DrawableComponent for DiffComponent {
 
         let title =
             format!("{}{}", strings::TITLE_DIFF, self.current.path);
+
+        let txt = if self.pending {
+            vec![Text::Styled(
+                Cow::from(strings::LOADING_TEXT),
+                self.theme.text(false, false),
+            )]
+        } else {
+            self.get_text(r.width, self.current_size.get().1)?
+        };
+
         f.render_widget(
-            Paragraph::new(
-                self.get_text(r.width, self.current_size.get().1)?
-                    .iter(),
-            )
-            .block(
+            Paragraph::new(txt.iter()).block(
                 Block::default()
                     .title(title.as_str())
                     .borders(Borders::ALL)
                     .border_style(self.theme.block(self.focused))
                     .title_style(self.theme.title(self.focused)),
-            )
-            .alignment(Alignment::Left),
+            ),
             r,
         );
 

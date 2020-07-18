@@ -38,6 +38,8 @@ pub static HELP_TITLE: &str = "Help: all commands";
 pub static STASHING_FILES_TITLE: &str = "Files to Stash";
 pub static STASHING_OPTIONS_TITLE: &str = "Options";
 
+pub static LOADING_TEXT: &str = "Loading ...";
+
 pub mod commit {
     pub static DETAILS_AUTHOR: &str = "Author: ";
     pub static DETAILS_COMMITTER: &str = "Committer: ";

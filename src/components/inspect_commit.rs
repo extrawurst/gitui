@@ -222,10 +222,12 @@ impl InspectCommitComponent {
                     }
 
                     self.git_diff.request(diff_params)?;
+                    self.diff.clear(true)?;
+                    return Ok(());
                 }
             }
 
-            self.diff.clear()?;
+            self.diff.clear(false)?;
         }
 
         Ok(())

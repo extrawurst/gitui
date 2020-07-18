@@ -271,11 +271,11 @@ impl Status {
                 {
                     self.diff.update(path, is_stage, diff)?;
                 } else {
-                    self.diff.clear()?;
+                    self.diff.clear(true)?;
                 }
             }
         } else {
-            self.diff.clear()?;
+            self.diff.clear(false)?;
         }
 
         Ok(())
