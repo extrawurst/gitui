@@ -50,7 +50,6 @@ pub mod commit {
     pub static DETAILS_INFO_TITLE: &str = "Info";
     pub static DETAILS_MESSAGE_TITLE: &str = "Message";
     pub static DETAILS_FILES_TITLE: &str = "Files:";
-    pub static DETAILS_FILES_LOADING_TITLE: &str = "Files: loading";
 }
 
 pub mod order {
