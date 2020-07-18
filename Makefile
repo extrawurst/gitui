@@ -41,7 +41,7 @@ clippy-pedantic:
 	cargo clean -p gitui -p asyncgit -p scopetime
 	cargo clippy --all-features -- -W clippy::pedantic
 
-check: fmt clippy
+check: fmt clippy test
 
 install:
 	cargo install --path "." --offline
