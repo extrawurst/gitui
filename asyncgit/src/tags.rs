@@ -74,9 +74,10 @@ impl AsyncTags {
         let arc_last = Arc::clone(&self.last);
         let sender = self.sender.clone();
         let arc_pending = Arc::clone(&self.pending);
-        rayon_core::spawn(move || {
-            arc_pending.fetch_add(1, Ordering::Relaxed);
 
+        self.pending.fetch_add(1, Ordering::Relaxed);
+
+        rayon_core::spawn(move || {
             let notify = AsyncTags::getter(arc_last)
                 .expect("error getting tags");
 

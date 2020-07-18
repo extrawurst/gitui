@@ -116,9 +116,10 @@ impl AsyncStatus {
         let arc_pending = Arc::clone(&self.pending);
         let status_type = params.status_type;
         let include_untracked = params.include_untracked;
-        rayon_core::spawn(move || {
-            arc_pending.fetch_add(1, Ordering::Relaxed);
 
+        self.pending.fetch_add(1, Ordering::Relaxed);
+
+        rayon_core::spawn(move || {
             Self::fetch_helper(
                 status_type,
                 include_untracked,
