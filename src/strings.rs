@@ -86,6 +86,13 @@ pub mod commands {
         CMD_GROUP_GENERAL,
     );
     ///
+    pub static NAVIGATE_COMMIT_MESSAGE: CommandText =
+        CommandText::new(
+            "Nav [\u{2191}\u{2193}]",
+            "navigate commit message",
+            CMD_GROUP_GENERAL,
+        );
+    ///
     pub static NAVIGATE_TREE: CommandText = CommandText::new(
         "Nav [\u{2190}\u{2191}\u{2192}\u{2193}]",
         "navigate tree view",

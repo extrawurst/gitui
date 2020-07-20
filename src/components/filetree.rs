@@ -354,5 +354,6 @@ impl Component for FileTreeComponent {
     }
     fn focus(&mut self, focus: bool) {
         self.focused = focus;
+        self.show_selection(focus);
     }
 }
