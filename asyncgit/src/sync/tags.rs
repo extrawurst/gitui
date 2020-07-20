@@ -23,13 +23,24 @@ pub fn get_tags(repo_path: &str) -> Result<Tags> {
 
     let repo = repo(repo_path)?;
 
+    //TODO: use tag_foreach once its released
+    // see https://github.com/rust-lang/git2-rs/pull/595
     for name in repo.tag_names(None)?.iter() {
         if let Some(name) = name {
-            let obj = repo.revparse_single(name)?;
+            let reference = repo.find_reference(
+                format!("refs/tags/{}", name).as_str(),
+            )?;
+            let reference = reference.resolve()?;
 
-            if let Some(tag) = obj.as_tag() {
+            let commit_id = if let Ok(tag) = reference.peel_to_tag() {
+                Some(tag.target_id())
+            } else {
+                reference.target()
+            };
+
+            if let Some(commit_id) = commit_id {
                 let tag_name = String::from(name);
-                adder(CommitId::new(tag.target_id()), tag_name);
+                adder(CommitId::new(commit_id), tag_name);
             }
         }
     }
