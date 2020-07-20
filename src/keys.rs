@@ -27,6 +27,8 @@ pub const FOCUS_WORKDIR: KeyEvent = no_mod(KeyCode::Char('w'));
 pub const FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('s'));
 pub const FOCUS_RIGHT: KeyEvent = no_mod(KeyCode::Right);
 pub const FOCUS_LEFT: KeyEvent = no_mod(KeyCode::Left);
+pub const FOCUS_ABOVE: KeyEvent = no_mod(KeyCode::Up);
+pub const FOCUS_BELOW: KeyEvent = no_mod(KeyCode::Down);
 pub const EXIT: KeyEvent =
     with_mod(KeyCode::Char('c'), KeyModifiers::CONTROL);
 pub const EXIT_POPUP: KeyEvent = no_mod(KeyCode::Esc);

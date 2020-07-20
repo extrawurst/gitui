@@ -5,7 +5,7 @@ use super::{
     Component, DrawableComponent, FileTreeComponent,
 };
 use crate::{
-    accessors, queue::Queue, strings, ui::style::SharedTheme,
+    accessors, keys, queue::Queue, strings, ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -38,7 +38,7 @@ impl CommitDetailsComponent {
         theme: SharedTheme,
     ) -> Self {
         Self {
-            details: DetailsComponent::new(theme.clone()),
+            details: DetailsComponent::new(theme.clone(), false),
             git_commit_files: AsyncCommitFiles::new(sender),
             file_tree: FileTreeComponent::new(
                 "",
@@ -146,6 +146,28 @@ impl Component for CommitDetailsComponent {
             return Ok(true);
         }
 
+        if self.focused() {
+            if let Event::Key(e) = ev {
+                return match e {
+                    keys::FOCUS_BELOW if (self.details.focused()) => {
+                        self.details.focus(false);
+                        self.file_tree.focus(true);
+
+                        return Ok(true);
+                    }
+                    keys::FOCUS_ABOVE
+                        if (self.file_tree.focused()) =>
+                    {
+                        self.file_tree.focus(false);
+                        self.details.focus(true);
+
+                        return Ok(true);
+                    }
+                    _ => Ok(false),
+                };
+            }
+        }
+
         Ok(false)
     }
 
@@ -164,6 +186,7 @@ impl Component for CommitDetailsComponent {
         self.details.focused() || self.file_tree.focused()
     }
     fn focus(&mut self, focus: bool) {
+        self.details.focus(false);
         self.file_tree.focus(focus);
         self.file_tree.show_selection(true);
     }
