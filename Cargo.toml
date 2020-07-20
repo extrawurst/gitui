@@ -23,7 +23,7 @@ scopetime = { path = "./scopetime", version = "0.1" }
 asyncgit = { path = "./asyncgit", version = "0.8" }
 crossterm = "0.17"
 clap = { version = "2.33", default-features = false }
-tui = { version = "0.9", default-features = false, features = ['crossterm'] }
+tui = { version = "0.10", default-features = false, features = ['crossterm'] }
 bytesize = { version = "1.0.1", default-features = false}
 itertools = "0.9"
 rayon-core = "1.7"
