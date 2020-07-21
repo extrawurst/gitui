@@ -12,12 +12,17 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: WSL Setup
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install wsl-ubuntu-1804
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
@@ -38,6 +43,7 @@ jobs:
       run: |
         cargo clean
         make clippy
+
     - name: Build Release
       run: make build-release
 
