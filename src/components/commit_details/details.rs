@@ -12,6 +12,7 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
+use itertools::Itertools;
 use std::borrow::Cow;
 use sync::CommitTags;
 use tui::{
@@ -159,12 +160,20 @@ impl DetailsComponent {
                     self.theme.text(false, false),
                 ));
 
-                for tag in &self.tags {
-                    res.push(Text::Styled(
-                        Cow::from(tag),
-                        self.theme.text(true, false),
-                    ));
-                }
+                res.extend(
+                    self.tags
+                        .iter()
+                        .map(|tag| {
+                            Text::Styled(
+                                Cow::from(tag),
+                                self.theme.text(true, false),
+                            )
+                        })
+                        .intersperse(Text::Styled(
+                            Cow::from(","),
+                            self.theme.text(true, false),
+                        )),
+                );
             }
 
             res

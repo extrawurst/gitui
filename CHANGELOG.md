@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - min size for relative popups on small terminals ([#179](https://github.com/extrawurst/gitui/issues/179))
 - fix crash on resizing terminal to very small width ([#198](https://github.com/extrawurst/gitui/issues/198))
 - fix broken tags when using a different internal representation ([#206](https://github.com/extrawurst/gitui/issues/206))
+- tags are not cleanly seperated in details view ([#212](https://github.com/extrawurst/gitui/issues/212))
 
 ## [0.8.1] - 2020-07-07
 
