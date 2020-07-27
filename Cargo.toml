@@ -37,7 +37,7 @@ chrono = "0.4"
 backtrace = "0.3"
 ron = "0.6"
 serde = "1.0"
-anyhow = "1.0.31"
+anyhow = "1.0.32"
 unicode-width = "0.1"
 
 [target.'cfg(not(windows))'.dependencies]
