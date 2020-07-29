@@ -14,6 +14,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
+
+    - name: WSL Setup
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install wsl-ubuntu-1804
+        
     - name: Get version
       id: get_version
       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
