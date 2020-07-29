@@ -1,6 +1,7 @@
 use super::{get_head, utils::repo, CommitId};
 use crate::error::Result;
 use git2::{ErrorCode, ObjectType, Repository, Signature};
+use gpgme::{Context, Protocol};
 use scopetime::scope_time;
 
 ///
@@ -54,6 +55,7 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
     scope_time!("commit");
 
     let repo = repo(repo_path)?;
+    let config = repo.config()?;
 
     let signature = signature_allow_undefined_name(&repo)?;
     let mut index = repo.index()?;
@@ -68,8 +70,64 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
 
     let parents = parents.iter().collect::<Vec<_>>();
 
-    Ok(repo
-        .commit(
+    let commit_oid = if config.get_bool("commit.gpgsign")? {
+        // Generate commit content
+        let commit_bufffer = repo.commit_create_buffer(
+            &signature,
+            &signature,
+            msg,
+            &tree,
+            parents.as_slice(),
+        )?;
+        let commit_content = commit_bufffer
+            .as_str()
+            .expect("Buffer was not valid UTF-8");
+
+        // Prepare to sign using the designated key in the user's git config
+        let mut gpg_ctx = Context::from_protocol(Protocol::OpenPgp)?;
+        let key =
+            gpg_ctx.get_key(config.get_string("user.signingkey")?)?;
+        gpg_ctx.add_signer(&key)?;
+        gpg_ctx.set_armor(true);
+
+        // Create GPG signature for commit content
+        let mut signature_buffer = Vec::new();
+        gpg_ctx
+            .sign_detached(&*commit_bufffer, &mut signature_buffer)?;
+        let gpg_signature =
+            std::str::from_utf8(&signature_buffer).unwrap();
+
+        let commit_oid = repo.commit_signed(
+            &commit_content,
+            &gpg_signature,
+            None,
+        )?;
+
+        match repo.head() {
+            // If HEAD reference is returned, simply update the target.
+            Ok(mut head) => {
+                head.set_target(commit_oid, msg)?;
+            }
+            // If there is an error getting HEAD, likely it is a new repo
+            // and a reference to a default branch needs to be created.
+            Err(_) => {
+                // Default branch name behavior as of git 2.28.
+                let default_branch_name = config
+                    .get_str("init.defaultBranch")
+                    .unwrap_or("master");
+
+                repo.reference(
+                    &format!("refs/heads/{}", default_branch_name),
+                    commit_oid,
+                    true,
+                    msg,
+                )?;
+            }
+        }
+
+        commit_oid
+    } else {
+        repo.commit(
             Some("HEAD"),
             &signature,
             &signature,
@@ -77,7 +135,9 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
             &tree,
             parents.as_slice(),
         )?
-        .into())
+    };
+
+    Ok(commit_oid.into())
 }
 
 /// Tag a commit.
