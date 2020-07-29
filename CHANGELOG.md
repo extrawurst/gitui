@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- move to (un)staged when the current selection is empty [[@jonstodle](https://github.com/jonstodle)] ([#215](https://github.com/extrawurst/gitui/issues/215))
 - pending load of a diff/status is visualized ([#160](https://github.com/extrawurst/gitui/issues/160))
 - entry on [git-scm.com](https://git-scm.com/downloads/guis) in the list of GUI tools [[@Vidar314](https://github.com/Vidar314)] (see [PR](https://github.com/git/git-scm.com/pull/1485))
 - commits can be tagged in revlog [[@cruessler](https://github.com/cruessler)] ([#103](https://github.com/extrawurst/gitui/issues/103))
