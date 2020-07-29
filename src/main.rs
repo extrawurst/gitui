@@ -79,6 +79,12 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    // TODO: Remove this when upgrading from v0.8.x is unlikely
+    // Only run this migration on macOS, as it's the only platform where the config needs to be moved
+    if cfg!(target_os = "macos") {
+        migrate_config()?;
+    }
+
     setup_terminal()?;
     defer! {
         shutdown_terminal().expect("shutdown failed");
@@ -242,6 +248,29 @@ fn get_app_config_path() -> Result<PathBuf> {
     path.push("gitui");
     fs::create_dir_all(&path)?;
     Ok(path)
+}
+
+fn migrate_config() -> Result<()> {
+    let mut path = dirs::preference_dir().ok_or_else(|| {
+        anyhow!("failed to find os preference dir.")
+    })?;
+
+    path.push("gitui");
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let config_path = get_app_config_path()?;
+    let entries = path.read_dir()?.flatten();
+    for entry in entries {
+        let mut config_path = config_path.clone();
+        config_path.push(entry.file_name());
+        fs::rename(entry.path(), config_path)?;
+    }
+
+    let _ = fs::remove_dir(path);
+
+    Ok(())
 }
 
 fn setup_logging() -> Result<()> {
