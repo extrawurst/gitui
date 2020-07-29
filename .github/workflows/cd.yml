@@ -85,7 +85,6 @@ jobs:
       with:
         formula-name: gitui
         homebrew-tap: extrawurst/tap
-        download-url: "https://github.com/extrawurst/gitui/releases/download/${{ steps.get_version.outputs.version }}/gitui-mac.tar.gz"
 
     - name: Bump homebrew-core formula
       uses: mislav/bump-homebrew-formula-action@v1
