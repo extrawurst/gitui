@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.0] - 2020-07-30
+## [0.9.1] - 2020-07-30
 
 ### Added
 - move to (un)staged when the current selection is empty [[@jonstodle](https://github.com/jonstodle)] ([#215](https://github.com/extrawurst/gitui/issues/215))

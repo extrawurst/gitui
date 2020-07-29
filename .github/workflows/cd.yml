@@ -19,7 +19,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         choco install wsl-ubuntu-1804
-        
+
     - name: Get version
       id: get_version
       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
@@ -70,23 +70,22 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         body: ${{ steps.release_notes.outputs.release_notes }}
-        prerelease: false
+        prerelease: true
         files: |
           ./release/*.tar.gz
           ./release/*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Bump extrawurst/homebrew-tap formula
-      if: matrix.os == 'macos-latest'
+    - name: Bump personal tap formula
+      uses: mislav/bump-homebrew-formula-action@v1
+      if: "matrix.os == 'macos-latest' && !contains(github.ref, '-')" # skip prereleases
       env:
-        HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.BREW_TOKEN }}
-      run: |
-        brew tap extrawurst/tap
-        brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
-        --sha256=${{ steps.shasum.outputs.sha }} \
-        --url="https://github.com/extrawurst/gitui/releases/download/${{ steps.get_version.outputs.version }}/gitui-mac.tar.gz" \
-        extrawurst/tap/gitui
+        COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
+      with:
+        formula-name: gitui
+        homebrew-tap: extrawurst/tap
+        download-url: "https://github.com/extrawurst/gitui/releases/download/${{ steps.get_version.outputs.version }}/gitui-mac.tar.gz"
 
     - name: Bump homebrew-core formula
       uses: mislav/bump-homebrew-formula-action@v1
