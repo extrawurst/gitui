@@ -39,6 +39,15 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: brew install gpgme
 
+    - name: Install GnuPG on Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        $path = [Environment]::GetEnvironmentVariable("path", "machine")
+        $newPath = ($path.Split(';') | Where-Object { $_ -eq 'C:\ProgramData\chocolatey\bin' }) -join ';'
+        [Environment]::SetEnvironmentVariable("path", $newPath, "machine")
+        choco install gpg4win
+        refreshenv
+
     - name: Build Debug
       run: |
         rustc --version
