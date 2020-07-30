@@ -70,7 +70,10 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
 
     let parents = parents.iter().collect::<Vec<_>>();
 
-    let commit_oid = if config.get_bool("commit.gpgsign")? {
+    let commit_oid = if config
+        .get_bool("commit.gpgsign")
+        .unwrap_or(false)
+    {
         // Generate commit content
         let commit_bufffer = repo.commit_create_buffer(
             &signature,
@@ -85,17 +88,18 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
 
         // Prepare to sign using the designated key in the user's git config
         let mut gpg_ctx = Context::from_protocol(Protocol::OpenPgp)?;
-        let key =
-            gpg_ctx.get_key(config.get_string("user.signingkey")?)?;
-        gpg_ctx.add_signer(&key)?;
+        if let Ok(key_id) = config.get_string("user.signingkey") {
+            let key = gpg_ctx.get_key(key_id)?;
+            gpg_ctx.add_signer(&key)?;
+        }
         gpg_ctx.set_armor(true);
 
         // Create GPG signature for commit content
         let mut signature_buffer = Vec::new();
         gpg_ctx
             .sign_detached(&*commit_bufffer, &mut signature_buffer)?;
-        let gpg_signature =
-            std::str::from_utf8(&signature_buffer).unwrap();
+        let gpg_signature = std::str::from_utf8(&signature_buffer)
+            .expect("Buffer was not valid UTF-8");
 
         let commit_oid = repo.commit_signed(
             &commit_content,
