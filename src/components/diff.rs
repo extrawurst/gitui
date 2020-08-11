@@ -1,4 +1,6 @@
-use super::{CommandBlocking, DrawableComponent, ScrollType};
+use super::{
+    CommandBlocking, DrawableComponent, ExtendType, ScrollType,
+};
 use crate::{
     components::{CommandInfo, Component},
     keys,
@@ -28,10 +30,40 @@ struct Current {
 }
 
 ///
+#[derive(Clone, Copy)]
+enum Selection {
+    Single(usize),
+    Multiple(usize, usize),
+}
+
+impl Selection {
+    fn get_start(&self) -> usize {
+        match self {
+            Self::Single(start) | Self::Multiple(start, _) => *start,
+        }
+    }
+
+    fn get_end(&self) -> usize {
+        match self {
+            Self::Single(end) | Self::Multiple(_, end) => *end,
+        }
+    }
+
+    fn contains(&self, index: usize) -> bool {
+        match self {
+            Self::Single(start) => index == *start,
+            Self::Multiple(start, end) => {
+                *start <= index && index <= *end
+            }
+        }
+    }
+}
+
+///
 pub struct DiffComponent {
     diff: Option<FileDiff>,
     pending: bool,
-    selection: usize,
+    selection: Selection,
     selected_hunk: Option<usize>,
     current_size: Cell<(u16, u16)>,
     focused: bool,
@@ -52,7 +84,7 @@ impl DiffComponent {
             selected_hunk: None,
             diff: None,
             current_size: Cell::new((0, 0)),
-            selection: 0,
+            selection: Selection::Single(0),
             scroll_top: Cell::new(0),
             theme,
         }
@@ -73,7 +105,7 @@ impl DiffComponent {
         self.current = Current::default();
         self.diff = None;
         self.scroll_top.set(0);
-        self.selection = 0;
+        self.selection = Selection::Single(0);
         self.selected_hunk = None;
         self.pending = pending;
 
@@ -97,12 +129,14 @@ impl DiffComponent {
                 hash,
             };
 
-            self.selected_hunk =
-                Self::find_selected_hunk(&diff, self.selection)?;
+            self.selected_hunk = Self::find_selected_hunk(
+                &diff,
+                self.selection.get_start(),
+            )?;
 
             self.diff = Some(diff);
             self.scroll_top.set(0);
-            self.selection = 0;
+            self.selection = Selection::Single(0);
         }
 
         Ok(())
@@ -113,34 +147,58 @@ impl DiffComponent {
         move_type: ScrollType,
     ) -> Result<()> {
         if let Some(diff) = &self.diff {
-            let old = self.selection;
+            let old_start = self.selection.get_start();
 
             let max = diff.lines.saturating_sub(1) as usize;
 
-            self.selection = match move_type {
-                ScrollType::Down => old.saturating_add(1),
-                ScrollType::Up => old.saturating_sub(1),
+            let new_start = match move_type {
+                ScrollType::Down => old_start.saturating_add(1),
+                ScrollType::Up => old_start.saturating_sub(1),
                 ScrollType::Home => 0,
                 ScrollType::End => max,
-                ScrollType::PageDown => {
-                    self.selection.saturating_add(
-                        self.current_size.get().1.saturating_sub(1)
-                            as usize,
-                    )
-                }
-                ScrollType::PageUp => self.selection.saturating_sub(
+                ScrollType::PageDown => old_start.saturating_add(
+                    self.current_size.get().1.saturating_sub(1)
+                        as usize,
+                ),
+                ScrollType::PageUp => old_start.saturating_sub(
                     self.current_size.get().1.saturating_sub(1)
                         as usize,
                 ),
             };
 
-            self.selection = cmp::min(max, self.selection);
+            self.selection =
+                Selection::Single(cmp::min(max, new_start));
 
-            if old != self.selection {
+            if new_start != old_start {
                 self.selected_hunk =
-                    Self::find_selected_hunk(diff, self.selection)?;
+                    Self::find_selected_hunk(diff, new_start)?;
             }
         }
+        Ok(())
+    }
+
+    fn extend_selection(
+        &mut self,
+        extend_type: ExtendType,
+    ) -> Result<()> {
+        if let Some(diff) = &self.diff {
+            let max = diff.lines.saturating_sub(1) as usize;
+            let start = self.selection.get_start();
+            let old_end = self.selection.get_end();
+
+            self.selection = match extend_type {
+                ExtendType::Up => Selection::Multiple(
+                    start,
+                    cmp::max(start, old_end.saturating_sub(1)),
+                ),
+
+                ExtendType::Down => Selection::Multiple(
+                    start,
+                    cmp::min(old_end + 1, max),
+                ),
+            };
+        }
+
         Ok(())
     }
 
@@ -210,8 +268,6 @@ impl DiffComponent {
                     Text::Raw(Cow::from(")")),
                 ]);
             } else {
-                let selection = self.selection;
-
                 let min = self.scroll_top.get();
                 let max = min + height as usize;
 
@@ -242,7 +298,8 @@ impl DiffComponent {
                                     &mut res,
                                     width,
                                     line,
-                                    selection == line_cursor,
+                                    self.selection
+                                        .contains(line_cursor),
                                     hunk_selected,
                                     i == hunk_len as usize - 1,
                                     &self.theme,
@@ -432,7 +489,7 @@ impl DrawableComponent for DiffComponent {
         self.scroll_top.set(calc_scroll_top(
             self.scroll_top.get(),
             self.current_size.get().1 as usize,
-            self.selection,
+            self.selection.get_start(),
         ));
 
         let title =
@@ -512,11 +569,19 @@ impl Component for DiffComponent {
                         self.move_selection(ScrollType::Down)?;
                         Ok(true)
                     }
-                    keys::SHIFT_DOWN | keys::END => {
+                    keys::SHIFT_DOWN => {
+                        self.extend_selection(ExtendType::Down)?;
+                        Ok(true)
+                    }
+                    keys::SHIFT_UP => {
+                        self.extend_selection(ExtendType::Up)?;
+                        Ok(true)
+                    }
+                    keys::END => {
                         self.move_selection(ScrollType::End)?;
                         Ok(true)
                     }
-                    keys::HOME | keys::SHIFT_UP => {
+                    keys::HOME => {
                         self.move_selection(ScrollType::Home)?;
                         Ok(true)
                     }
