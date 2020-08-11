@@ -22,7 +22,7 @@ jobs:
     - name: WSL Setup
       if: matrix.os == 'windows-latest'
       run: |
-        choco install wsl
+        choco install wsl-ubuntu-1804
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
