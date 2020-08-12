@@ -1,5 +1,5 @@
 use super::{
-    CommandBlocking, DrawableComponent, ExtendType, ScrollType,
+    CommandBlocking, Direction, DrawableComponent, ScrollType,
 };
 use crate::{
     components::{CommandInfo, Component},
@@ -10,6 +10,7 @@ use crate::{
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
+use clipboard::{ClipboardContext, ClipboardProvider};
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 use tui::{
@@ -49,11 +50,44 @@ impl Selection {
         }
     }
 
+    fn get_top(&self) -> usize {
+        match self {
+            Self::Single(start) => *start,
+            Self::Multiple(start, end) => cmp::min(*start, *end),
+        }
+    }
+
+    fn get_bottom(&self) -> usize {
+        match self {
+            Self::Single(start) => *start,
+            Self::Multiple(start, end) => cmp::max(*start, *end),
+        }
+    }
+
+    fn modify(&mut self, direction: Direction, max: usize) {
+        let start = self.get_start();
+        let old_end = self.get_end();
+
+        *self = match direction {
+            Direction::Up => {
+                Self::Multiple(start, old_end.saturating_sub(1))
+            }
+
+            Direction::Down => {
+                Self::Multiple(start, cmp::min(old_end + 1, max))
+            }
+        };
+    }
+
     fn contains(&self, index: usize) -> bool {
         match self {
             Self::Single(start) => index == *start,
             Self::Multiple(start, end) => {
-                *start <= index && index <= *end
+                if start <= end {
+                    *start <= index && index <= *end
+                } else {
+                    *end <= index && index <= *start
+                }
             }
         }
     }
@@ -147,56 +181,79 @@ impl DiffComponent {
         move_type: ScrollType,
     ) -> Result<()> {
         if let Some(diff) = &self.diff {
-            let old_start = self.selection.get_start();
-
             let max = diff.lines.saturating_sub(1) as usize;
 
             let new_start = match move_type {
-                ScrollType::Down => old_start.saturating_add(1),
-                ScrollType::Up => old_start.saturating_sub(1),
+                ScrollType::Down => {
+                    self.selection.get_bottom().saturating_add(1)
+                }
+                ScrollType::Up => {
+                    self.selection.get_top().saturating_sub(1)
+                }
                 ScrollType::Home => 0,
                 ScrollType::End => max,
-                ScrollType::PageDown => old_start.saturating_add(
-                    self.current_size.get().1.saturating_sub(1)
-                        as usize,
-                ),
-                ScrollType::PageUp => old_start.saturating_sub(
-                    self.current_size.get().1.saturating_sub(1)
-                        as usize,
-                ),
+                ScrollType::PageDown => {
+                    self.selection.get_bottom().saturating_add(
+                        self.current_size.get().1.saturating_sub(1)
+                            as usize,
+                    )
+                }
+                ScrollType::PageUp => {
+                    self.selection.get_top().saturating_sub(
+                        self.current_size.get().1.saturating_sub(1)
+                            as usize,
+                    )
+                }
             };
 
             self.selection =
                 Selection::Single(cmp::min(max, new_start));
 
-            if new_start != old_start {
-                self.selected_hunk =
-                    Self::find_selected_hunk(diff, new_start)?;
-            }
+            self.selected_hunk =
+                Self::find_selected_hunk(diff, new_start)?;
         }
         Ok(())
     }
 
-    fn extend_selection(
+    fn modify_selection(
         &mut self,
-        extend_type: ExtendType,
+        direction: Direction,
     ) -> Result<()> {
         if let Some(diff) = &self.diff {
             let max = diff.lines.saturating_sub(1) as usize;
-            let start = self.selection.get_start();
-            let old_end = self.selection.get_end();
 
-            self.selection = match extend_type {
-                ExtendType::Up => Selection::Multiple(
-                    start,
-                    cmp::max(start, old_end.saturating_sub(1)),
-                ),
+            self.selection.modify(direction, max);
+        }
 
-                ExtendType::Down => Selection::Multiple(
-                    start,
-                    cmp::min(old_end + 1, max),
-                ),
-            };
+        Ok(())
+    }
+
+    fn copy_selection(&self) -> Result<()> {
+        if let Some(diff) = &self.diff {
+            let lines_to_copy: Vec<&str> = diff
+                .hunks
+                .iter()
+                .flat_map(|hunk| hunk.lines.iter())
+                .enumerate()
+                .filter_map(|(i, line)| {
+                    if self.selection.contains(i) {
+                        Some(
+                            line.content
+                                .trim_matches(|c| {
+                                    c == '\n' || c == '\r'
+                                })
+                                .as_ref(),
+                        )
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            let mut ctx: ClipboardContext = ClipboardProvider::new()
+                .expect("failed to get access to clipboard");
+            ctx.set_contents(lines_to_copy.join("\n"))
+                .expect("failed to set clipboard contents");
         }
 
         Ok(())
@@ -489,7 +546,7 @@ impl DrawableComponent for DiffComponent {
         self.scroll_top.set(calc_scroll_top(
             self.scroll_top.get(),
             self.current_size.get().1 as usize,
-            self.selection.get_start(),
+            self.selection.get_end(),
         ));
 
         let title =
@@ -528,6 +585,12 @@ impl Component for DiffComponent {
         out.push(CommandInfo::new(
             commands::SCROLL,
             self.can_scroll(),
+            self.focused,
+        ));
+
+        out.push(CommandInfo::new(
+            commands::COPY,
+            true,
             self.focused,
         ));
 
@@ -570,11 +633,11 @@ impl Component for DiffComponent {
                         Ok(true)
                     }
                     keys::SHIFT_DOWN => {
-                        self.extend_selection(ExtendType::Down)?;
+                        self.modify_selection(Direction::Down)?;
                         Ok(true)
                     }
                     keys::SHIFT_UP => {
-                        self.extend_selection(ExtendType::Up)?;
+                        self.modify_selection(Direction::Up)?;
                         Ok(true)
                     }
                     keys::END => {
@@ -616,6 +679,10 @@ impl Component for DiffComponent {
                                 self.reset_hunk()?;
                             }
                         }
+                        Ok(true)
+                    }
+                    keys::COPY => {
+                        self.copy_selection()?;
                         Ok(true)
                     }
                     _ => Ok(false),

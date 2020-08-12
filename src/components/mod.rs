@@ -106,7 +106,7 @@ pub enum ScrollType {
 }
 
 #[derive(Copy, Clone)]
-pub enum ExtendType {
+pub enum Direction {
     Up,
     Down,
 }
