@@ -13,6 +13,9 @@ pub enum Error {
 
     #[error("git error:{0}")]
     Git(#[from] git2::Error),
+
+    #[error("gpg error:#{0}")]
+    Gpg(#[from] gpg_error::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

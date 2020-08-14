@@ -18,6 +18,8 @@ rayon-core = "1.7"
 crossbeam-channel = "0.4"
 log = "0.4"
 thiserror = "1.0"
+gpg-error = "0.5.1"
+gpgme = "0.9.2"
 
 [dev-dependencies]
 tempfile = "3.1"
