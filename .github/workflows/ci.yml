@@ -26,9 +26,9 @@ jobs:
 
     - name: Windows Setup
       if: matrix.os == 'windows-latest'
-      env:
+      run: |
         # https://codeblog.jonskeet.uk/2019/10/12/using-git-bash-from-appveyor/
-        Path: "C:\Program Files\Git\bin;${{ env.Path }}"
+        echo "::set-env name=Path::"C:\Program Files\Git\bin;${{ env.Path }}"
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
