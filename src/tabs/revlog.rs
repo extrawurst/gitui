@@ -4,7 +4,7 @@ use crate::{
         CommitDetailsComponent, CommitList, Component,
         DrawableComponent,
     },
-    keys,
+    keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
     strings::{self, commands},
     ui::style::SharedTheme,
@@ -36,6 +36,7 @@ pub struct Revlog {
     queue: Queue,
     visible: bool,
     branch_name: cached::BranchName,
+    key_config: SharedKeyConfig,
 }
 
 impl Revlog {
@@ -44,6 +45,7 @@ impl Revlog {
         queue: &Queue,
         sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
     ) -> Self {
         Self {
             queue: queue.clone(),
@@ -51,12 +53,18 @@ impl Revlog {
                 queue,
                 sender,
                 theme.clone(),
+                key_config.clone(),
             ),
-            list: CommitList::new(strings::LOG_TITLE, theme),
+            list: CommitList::new(
+                strings::LOG_TITLE,
+                theme,
+                key_config.clone(),
+            ),
             git_log: AsyncLog::new(sender),
             git_tags: AsyncTags::new(sender),
             visible: false,
             branch_name: cached::BranchName::new(CWD),
+            key_config,
         }
     }
 
@@ -200,14 +208,12 @@ impl Component for Revlog {
                 self.update()?;
                 return Ok(true);
             } else {
-                match ev {
-                    Event::Key(keys::LOG_COMMIT_DETAILS) => {
+                if let Event::Key(k) = ev {
+                    if k == self.key_config.log_commit_details {
                         self.commit_details.toggle_visible()?;
                         self.update()?;
                         return Ok(true);
-                    }
-
-                    Event::Key(keys::LOG_TAG_COMMIT) => {
+                    } else if k == self.key_config.log_tag_commit {
                         return if let Some(id) =
                             self.selected_commit()
                         {
@@ -218,10 +224,8 @@ impl Component for Revlog {
                         } else {
                             Ok(false)
                         };
-                    }
-
-                    Event::Key(keys::FOCUS_RIGHT)
-                        if self.commit_details.is_visible() =>
+                    } else if k == self.key_config.focus_right
+                        && self.commit_details.is_visible()
                     {
                         return if let Some(id) =
                             self.selected_commit()
@@ -238,9 +242,8 @@ impl Component for Revlog {
                         } else {
                             Ok(false)
                         };
+                    } else {
                     }
-
-                    _ => (),
                 }
             }
         }

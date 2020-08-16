@@ -5,7 +5,7 @@ use crate::{
         ChangesComponent, CommandBlocking, CommandInfo, Component,
         DiffComponent, DrawableComponent, FileTreeItemKind,
     },
-    keys,
+    keys::SharedKeyConfig,
     queue::{InternalEvent, Queue, ResetItem},
     strings::{self, commands, order},
     ui::style::SharedTheme,
@@ -47,6 +47,7 @@ pub struct Status {
     git_status_stage: AsyncStatus,
     queue: Queue,
     git_action_executed: bool,
+    key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for Status {
@@ -107,6 +108,7 @@ impl Status {
         queue: &Queue,
         sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
     ) -> Self {
         Self {
             queue: queue.clone(),
@@ -119,6 +121,7 @@ impl Status {
                 true,
                 queue.clone(),
                 theme.clone(),
+                key_config.clone(),
             ),
             index: ChangesComponent::new(
                 strings::TITLE_INDEX,
@@ -126,12 +129,19 @@ impl Status {
                 false,
                 queue.clone(),
                 theme.clone(),
+                key_config.clone(),
             ),
-            diff: DiffComponent::new(queue.clone(), theme, false),
+            diff: DiffComponent::new(
+                queue.clone(),
+                theme,
+                key_config.clone(),
+                false,
+            ),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status_workdir: AsyncStatus::new(sender.clone()),
             git_status_stage: AsyncStatus::new(sender.clone()),
             git_action_executed: false,
+            key_config,
         }
     }
 
@@ -393,50 +403,43 @@ impl Component for Status {
             }
 
             if let Event::Key(k) = ev {
-                return match k {
-                    keys::FOCUS_WORKDIR => {
-                        self.switch_focus(Focus::WorkDir)
+                return if k == self.key_config.focus_workdir {
+                    self.switch_focus(Focus::WorkDir)
+                } else if k == self.key_config.focus_stage {
+                    self.switch_focus(Focus::Stage)
+                } else if k == self.key_config.edit_file
+                    && (self.can_focus_diff()
+                        || self.focus == Focus::Diff)
+                {
+                    if let Some((path, _)) = self.selected_path() {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::OpenExternalEditor(Some(
+                                path,
+                            )),
+                        );
                     }
-                    keys::FOCUS_STAGE => {
-                        self.switch_focus(Focus::Stage)
-                    }
-                    keys::EDIT_FILE
-                        if self.can_focus_diff()
-                            || self.focus == Focus::Diff =>
-                    {
-                        if let Some((path, _)) = self.selected_path()
-                        {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::OpenExternalEditor(
-                                    Some(path),
-                                ),
-                            );
-                        }
-                        Ok(true)
-                    }
-                    keys::FOCUS_RIGHT if self.can_focus_diff() => {
-                        self.switch_focus(Focus::Diff)
-                    }
-                    keys::FOCUS_LEFT => {
-                        self.switch_focus(match self.diff_target {
-                            DiffTarget::Stage => Focus::Stage,
-                            DiffTarget::WorkingDir => Focus::WorkDir,
-                        })
-                    }
-                    keys::MOVE_DOWN
-                        if self.focus == Focus::WorkDir
-                            && !self.index.is_empty() =>
-                    {
-                        self.switch_focus(Focus::Stage)
-                    }
-
-                    keys::MOVE_UP
-                        if self.focus == Focus::Stage
-                            && !self.index_wd.is_empty() =>
-                    {
-                        self.switch_focus(Focus::WorkDir)
-                    }
-                    _ => Ok(false),
+                    Ok(true)
+                } else if k == self.key_config.focus_right
+                    && self.can_focus_diff()
+                {
+                    self.switch_focus(Focus::Diff)
+                } else if k == self.key_config.focus_left {
+                    self.switch_focus(match self.diff_target {
+                        DiffTarget::Stage => Focus::Stage,
+                        DiffTarget::WorkingDir => Focus::WorkDir,
+                    })
+                } else if k == self.key_config.move_down
+                    && self.focus == Focus::WorkDir
+                    && !self.index.is_empty()
+                {
+                    self.switch_focus(Focus::Stage)
+                } else if k == self.key_config.move_up
+                    && self.focus == Focus::Stage
+                    && !self.index_wd.is_empty()
+                {
+                    self.switch_focus(Focus::WorkDir)
+                } else {
+                    Ok(false)
                 };
             }
         }

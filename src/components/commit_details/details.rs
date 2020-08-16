@@ -3,7 +3,7 @@ use crate::{
         dialog_paragraph, utils::time_to_string, CommandBlocking,
         CommandInfo, Component, DrawableComponent, ScrollType,
     },
-    keys,
+    keys::SharedKeyConfig,
     strings::{self, commands, order},
     ui::style::SharedTheme,
 };
@@ -31,6 +31,7 @@ pub struct DetailsComponent {
     focused: bool,
     current_size: Cell<(u16, u16)>,
     scroll_top: Cell<usize>,
+    key_config: SharedKeyConfig,
 }
 
 type WrappedCommitMessage<'a> =
@@ -38,7 +39,11 @@ type WrappedCommitMessage<'a> =
 
 impl DetailsComponent {
     ///
-    pub const fn new(theme: SharedTheme, focused: bool) -> Self {
+    pub const fn new(
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+        focused: bool,
+    ) -> Self {
         Self {
             data: None,
             tags: Vec::new(),
@@ -46,6 +51,7 @@ impl DetailsComponent {
             focused,
             current_size: Cell::new((0, 0)),
             scroll_top: Cell::new(0),
+            key_config,
         }
     }
 
@@ -357,20 +363,20 @@ impl Component for DetailsComponent {
     fn event(&mut self, event: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = event {
-                return match e {
-                    keys::MOVE_UP => {
-                        self.move_scroll_top(ScrollType::Up)
-                    }
-                    keys::MOVE_DOWN => {
-                        self.move_scroll_top(ScrollType::Down)
-                    }
-                    keys::HOME | keys::SHIFT_UP => {
-                        self.move_scroll_top(ScrollType::Home)
-                    }
-                    keys::END | keys::SHIFT_DOWN => {
-                        self.move_scroll_top(ScrollType::End)
-                    }
-                    _ => Ok(false),
+                return if e == self.key_config.move_up {
+                    self.move_scroll_top(ScrollType::Up)
+                } else if e == self.key_config.move_down {
+                    self.move_scroll_top(ScrollType::Down)
+                } else if e == self.key_config.home
+                    || e == self.key_config.shift_up
+                {
+                    self.move_scroll_top(ScrollType::Home)
+                } else if e == self.key_config.end
+                    || e == self.key_config.shift_down
+                {
+                    self.move_scroll_top(ScrollType::End)
+                } else {
+                    Ok(false)
                 };
             }
         }

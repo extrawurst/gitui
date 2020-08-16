@@ -4,7 +4,8 @@ use super::{
     ExternalEditorComponent,
 };
 use crate::{
-    get_app_config_path, keys,
+    get_app_config_path,
+    keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings::{self, commands},
     ui::style::SharedTheme,
@@ -26,6 +27,7 @@ pub struct CommitComponent {
     input: TextInputComponent,
     amend: Option<CommitId>,
     queue: Queue,
+    key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for CommitComponent {
@@ -78,25 +80,19 @@ impl Component for CommitComponent {
             }
 
             if let Event::Key(e) = ev {
-                match e {
-                    keys::ENTER if self.can_commit() => {
-                        self.commit()?;
-                    }
-
-                    keys::COMMIT_AMEND if self.can_amend() => {
-                        self.amend()?;
-                    }
-
-                    keys::OPEN_COMMIT_EDITOR => {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::OpenExternalEditor(None),
-                        );
-                        self.hide();
-                    }
-
-                    _ => (),
-                };
-
+                if e == self.key_config.enter && self.can_commit() {
+                    self.commit()?;
+                } else if e == self.key_config.commit_amend
+                    && self.can_amend()
+                {
+                    self.amend()?;
+                } else if e == self.key_config.open_commit_editor {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::OpenExternalEditor(None),
+                    );
+                    self.hide();
+                } else {
+                }
                 // stop key event propagation
                 return Ok(true);
             }
@@ -126,7 +122,11 @@ impl Component for CommitComponent {
 
 impl CommitComponent {
     ///
-    pub fn new(queue: Queue, theme: SharedTheme) -> Self {
+    pub fn new(
+        queue: Queue,
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             queue,
             amend: None,
@@ -135,6 +135,7 @@ impl CommitComponent {
                 "",
                 strings::COMMIT_MSG,
             ),
+            key_config,
         }
     }
 

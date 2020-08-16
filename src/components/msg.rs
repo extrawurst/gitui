@@ -3,7 +3,7 @@ use super::{
     DrawableComponent,
 };
 use crate::{
-    keys,
+    keys::SharedKeyConfig,
     strings::{self, commands},
     ui,
 };
@@ -21,6 +21,7 @@ pub struct MsgComponent {
     msg: String,
     visible: bool,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
 }
 
 use anyhow::Result;
@@ -74,7 +75,7 @@ impl Component for MsgComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
-                if let keys::CLOSE_MSG = e {
+                if e == self.key_config.close_msg {
                     self.hide();
                 }
             }
@@ -100,11 +101,15 @@ impl Component for MsgComponent {
 }
 
 impl MsgComponent {
-    pub const fn new(theme: SharedTheme) -> Self {
+    pub const fn new(
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             msg: String::new(),
             visible: false,
             theme,
+            key_config,
         }
     }
     ///

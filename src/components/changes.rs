@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
     components::{CommandInfo, Component},
-    keys,
+    keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings, try_or_popup,
     ui::style::SharedTheme,
@@ -24,9 +24,10 @@ pub struct ChangesComponent {
     is_working_dir: bool,
     queue: Queue,
     branch_name: cached::BranchName,
+    key_config: SharedKeyConfig,
 }
 
-impl ChangesComponent {
+impl<'a> ChangesComponent {
     ///
     pub fn new(
         title: &str,
@@ -34,6 +35,7 @@ impl ChangesComponent {
         is_working_dir: bool,
         queue: Queue,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
     ) -> Self {
         Self {
             title: title.into(),
@@ -42,10 +44,12 @@ impl ChangesComponent {
                 focus,
                 Some(queue.clone()),
                 theme,
+                key_config.clone(),
             ),
             is_working_dir,
             queue,
             branch_name: cached::BranchName::new(CWD),
+            key_config,
         }
     }
 
@@ -256,57 +260,49 @@ impl Component for ChangesComponent {
 
         if self.focused() {
             if let Event::Key(e) = ev {
-                return match e {
-                    keys::OPEN_COMMIT
-                        if !self.is_working_dir
-                            && !self.is_empty() =>
-                    {
-                        self.queue
-                            .borrow_mut()
-                            .push_back(InternalEvent::OpenCommit);
-                        Ok(true)
-                    }
-                    keys::STATUS_STAGE_FILE => {
+                return if e == self.key_config.open_commit
+                    && !self.is_working_dir
+                    && !self.is_empty()
+                {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::OpenCommit);
+                    Ok(true)
+                } else if e == self.key_config.status_stage_file {
+                    try_or_popup!(
+                        self,
+                        "staging error:",
+                        self.index_add_remove()
+                    );
+
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::Update(NeedsUpdate::ALL),
+                    );
+                    Ok(true)
+                } else if e == self.key_config.status_stage_all
+                    && !self.is_empty()
+                {
+                    if self.is_working_dir {
                         try_or_popup!(
                             self,
                             "staging error:",
-                            self.index_add_remove()
+                            self.index_add_all()
                         );
-
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::Update(NeedsUpdate::ALL),
-                        );
-
-                        Ok(true)
+                    } else {
+                        self.stage_remove_all()?;
                     }
-
-                    keys::STATUS_STAGE_ALL if !self.is_empty() => {
-                        if self.is_working_dir {
-                            try_or_popup!(
-                                self,
-                                "staging error:",
-                                self.index_add_all()
-                            );
-                        } else {
-                            self.stage_remove_all()?;
-                        }
-
-                        Ok(true)
-                    }
-
-                    keys::STATUS_RESET_FILE
-                        if self.is_working_dir =>
-                    {
-                        Ok(self.dispatch_reset_workdir())
-                    }
-
-                    keys::STATUS_IGNORE_FILE
-                        if self.is_working_dir
-                            && !self.is_empty() =>
-                    {
-                        Ok(self.add_to_ignore())
-                    }
-                    _ => Ok(false),
+                    Ok(true)
+                } else if e == self.key_config.status_reset_file
+                    && self.is_working_dir
+                {
+                    Ok(self.dispatch_reset_workdir())
+                } else if e == self.key_config.status_ignore_file
+                    && self.is_working_dir
+                    && !self.is_empty()
+                {
+                    Ok(self.add_to_ignore())
+                } else {
+                    Ok(false)
                 };
             }
         }

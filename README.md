@@ -135,3 +135,6 @@ However, you can customize everything to your liking: See [Themes](THEMES.md).
 - [tig](https://github.com/jonas/tig)
 - [GitUp](https://github.com/git-up/GitUp)
   - It would be nice to come up with a way to have the map view available in a terminal tool
+
+# Key Bindings
+You can customize every keybing to your liking: See [Key Config](KEY_CONFIG.md).

@@ -3,7 +3,7 @@ use super::{
     DrawableComponent,
 };
 use crate::{
-    keys,
+    keys::SharedKeyConfig,
     strings::{self, commands},
     ui,
     version::Version,
@@ -29,6 +29,7 @@ pub struct HelpComponent {
     visible: bool,
     selection: u16,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for HelpComponent {
@@ -126,18 +127,24 @@ impl Component for HelpComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
-                match e {
-                    keys::EXIT_POPUP => self.hide(),
-                    keys::MOVE_DOWN => self.move_selection(true),
-                    keys::MOVE_UP => self.move_selection(false),
-                    _ => (),
+                if e == self.key_config.exit_popup {
+                    self.hide()
+                } else if e == self.key_config.move_down {
+                    self.move_selection(true)
+                } else if e == self.key_config.move_up {
+                    self.move_selection(false)
+                } else {
                 }
             }
 
             Ok(true)
-        } else if let Event::Key(keys::OPEN_HELP) = ev {
-            self.show()?;
-            Ok(true)
+        } else if let Event::Key(k) = ev {
+            if k == self.key_config.open_help {
+                self.show()?;
+                Ok(true)
+            } else {
+                Ok(false)
+            }
         } else {
             Ok(false)
         }
@@ -159,12 +166,16 @@ impl Component for HelpComponent {
 }
 
 impl HelpComponent {
-    pub const fn new(theme: SharedTheme) -> Self {
+    pub const fn new(
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             cmds: vec![],
             visible: false,
             selection: 0,
             theme,
+            key_config,
         }
     }
     ///

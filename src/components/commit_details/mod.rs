@@ -5,7 +5,8 @@ use super::{
     Component, DrawableComponent, FileTreeComponent,
 };
 use crate::{
-    accessors, keys, queue::Queue, strings, ui::style::SharedTheme,
+    accessors, keys::SharedKeyConfig, queue::Queue, strings,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -26,6 +27,7 @@ pub struct CommitDetailsComponent {
     file_tree: FileTreeComponent,
     git_commit_files: AsyncCommitFiles,
     visible: bool,
+    key_config: SharedKeyConfig,
 }
 
 impl CommitDetailsComponent {
@@ -36,17 +38,24 @@ impl CommitDetailsComponent {
         queue: &Queue,
         sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
     ) -> Self {
         Self {
-            details: DetailsComponent::new(theme.clone(), false),
+            details: DetailsComponent::new(
+                theme.clone(),
+                key_config.clone(),
+                false,
+            ),
             git_commit_files: AsyncCommitFiles::new(sender),
             file_tree: FileTreeComponent::new(
                 "",
                 false,
                 Some(queue.clone()),
                 theme,
+                key_config.clone(),
             ),
             visible: false,
+            key_config,
         }
     }
 
@@ -148,22 +157,20 @@ impl Component for CommitDetailsComponent {
 
         if self.focused() {
             if let Event::Key(e) = ev {
-                return match e {
-                    keys::FOCUS_BELOW if (self.details.focused()) => {
-                        self.details.focus(false);
-                        self.file_tree.focus(true);
-
-                        return Ok(true);
-                    }
-                    keys::FOCUS_ABOVE
-                        if (self.file_tree.focused()) =>
-                    {
-                        self.file_tree.focus(false);
-                        self.details.focus(true);
-
-                        return Ok(true);
-                    }
-                    _ => Ok(false),
+                return if e == self.key_config.focus_below
+                    && self.details.focused()
+                {
+                    self.details.focus(false);
+                    self.file_tree.focus(true);
+                    Ok(true)
+                } else if e == self.key_config.focus_above
+                    && self.file_tree.focused()
+                {
+                    self.file_tree.focus(false);
+                    self.details.focus(true);
+                    Ok(true)
+                } else {
+                    Ok(false)
                 };
             }
         }

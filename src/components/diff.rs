@@ -3,7 +3,7 @@ use super::{
 };
 use crate::{
     components::{CommandInfo, Component},
-    keys,
+    keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings::{self, commands},
     try_or_popup,
@@ -106,6 +106,7 @@ pub struct DiffComponent {
     scroll_top: Cell<usize>,
     queue: Queue,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
     is_immutable: bool,
 }
 
@@ -114,6 +115,7 @@ impl DiffComponent {
     pub fn new(
         queue: Queue,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
         is_immutable: bool,
     ) -> Self {
         Self {
@@ -127,6 +129,7 @@ impl DiffComponent {
             selection: Selection::Single(0),
             scroll_top: Cell::new(0),
             theme,
+            key_config,
             is_immutable,
         }
     }
@@ -634,64 +637,56 @@ impl Component for DiffComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = ev {
-                return match e {
-                    keys::MOVE_DOWN => {
-                        self.move_selection(ScrollType::Down)?;
-                        Ok(true)
+                return if e == self.key_config.move_down {
+                    self.move_selection(ScrollType::Down)?;
+                    Ok(true)
+                } else if e == self.key_config.shift_down {
+                    self.modify_selection(Direction::Down)?;
+                    Ok(true)
+                } else if e == self.key_config.shift_up {
+                    self.modify_selection(Direction::Up)?;
+                    Ok(true)
+                } else if e == self.key_config.end {
+                    self.move_selection(ScrollType::End)?;
+                    Ok(true)
+                } else if e == self.key_config.home {
+                    self.move_selection(ScrollType::Home)?;
+                    Ok(true)
+                } else if e == self.key_config.move_up {
+                    self.move_selection(ScrollType::Up)?;
+                    Ok(true)
+                } else if e == self.key_config.page_up {
+                    self.move_selection(ScrollType::PageUp)?;
+                    Ok(true)
+                } else if e == self.key_config.page_down {
+                    self.move_selection(ScrollType::PageDown)?;
+                    Ok(true)
+                } else if e == self.key_config.enter
+                    && !self.is_immutable
+                {
+                    if self.current.is_stage {
+                        self.unstage_hunk()?;
+                    } else {
+                        self.stage_hunk()?;
                     }
-                    keys::SHIFT_DOWN => {
-                        self.modify_selection(Direction::Down)?;
-                        Ok(true)
-                    }
-                    keys::SHIFT_UP => {
-                        self.modify_selection(Direction::Up)?;
-                        Ok(true)
-                    }
-                    keys::END => {
-                        self.move_selection(ScrollType::End)?;
-                        Ok(true)
-                    }
-                    keys::HOME => {
-                        self.move_selection(ScrollType::Home)?;
-                        Ok(true)
-                    }
-                    keys::MOVE_UP => {
-                        self.move_selection(ScrollType::Up)?;
-                        Ok(true)
-                    }
-                    keys::PAGE_UP => {
-                        self.move_selection(ScrollType::PageUp)?;
-                        Ok(true)
-                    }
-                    keys::PAGE_DOWN => {
-                        self.move_selection(ScrollType::PageDown)?;
-                        Ok(true)
-                    }
-                    keys::ENTER if !self.is_immutable => {
-                        if self.current.is_stage {
-                            self.unstage_hunk()?;
+                    Ok(true)
+                } else if e == self.key_config.diff_reset_hunk
+                    && !self.is_immutable
+                    && !self.is_stage()
+                {
+                    if let Some(diff) = &self.diff {
+                        if diff.untracked {
+                            self.reset_untracked()?;
                         } else {
-                            self.stage_hunk()?;
+                            self.reset_hunk()?;
                         }
-                        Ok(true)
                     }
-                    keys::DIFF_RESET_HUNK
-                        if !self.is_immutable && !self.is_stage() =>
-                    {
-                        if let Some(diff) = &self.diff {
-                            if diff.untracked {
-                                self.reset_untracked()?;
-                            } else {
-                                self.reset_hunk()?;
-                            }
-                        }
-                        Ok(true)
-                    }
-                    keys::COPY => {
-                        self.copy_selection()?;
-                        Ok(true)
-                    }
-                    _ => Ok(false),
+                    Ok(true)
+                } else if e == self.key_config.copy {
+                    self.copy_selection()?;
+                    Ok(true)
+                } else {
+                    Ok(false)
                 };
             }
         }
