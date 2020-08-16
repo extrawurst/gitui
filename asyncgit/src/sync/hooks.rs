@@ -183,8 +183,7 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 exit 0
         ";
 
@@ -204,8 +203,7 @@ exit 0
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 echo 'msg' > $1
 echo 'rejected'
 exit 1
@@ -230,8 +228,7 @@ exit 1
         let root = repo.path().parent().unwrap();
         // let repo_path = root.as_os_str().to_str().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 echo 'msg' > $1
 echo 'rejected'
 exit 1
@@ -261,8 +258,7 @@ exit 1
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 echo 'msg' > $1
 exit 0
         ";
@@ -281,8 +277,7 @@ exit 0
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 echo 'rejected'
 exit 1
         ";
