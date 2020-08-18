@@ -29,6 +29,7 @@ jobs:
       # https://codeblog.jonskeet.uk/2019/10/12/using-git-bash-from-appveyor/
       run: |
         echo "::add-path::C:\Program Files\Git\bin"
+        echo ${{ env.Path }}
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
