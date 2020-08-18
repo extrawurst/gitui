@@ -105,6 +105,7 @@ fn run_hook(
     let output = Command::new("bash")
         .args(bash_args)
         .current_dir(path)
+        .env("DUMMYENV", "FixPathHandlingOnWindows") // This call forces Command to handle the Path environment correctly on windows, the specific env set here does not matter
         .output();
 
     let output = output.expect("general hook error");
