@@ -6,6 +6,7 @@ use crate::{
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings::{self, commands},
+    try_or_popup,
     ui::{calc_scroll_top, style::SharedTheme},
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
@@ -21,7 +22,7 @@ use tui::{
     Frame,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 #[derive(Default)]
 struct Current {
@@ -103,13 +104,18 @@ pub struct DiffComponent {
     focused: bool,
     current: Current,
     scroll_top: Cell<usize>,
-    queue: Option<Queue>,
+    queue: Queue,
     theme: SharedTheme,
+    is_immutable: bool,
 }
 
 impl DiffComponent {
     ///
-    pub fn new(queue: Option<Queue>, theme: SharedTheme) -> Self {
+    pub fn new(
+        queue: Queue,
+        theme: SharedTheme,
+        is_immutable: bool,
+    ) -> Self {
         Self {
             focused: false,
             queue,
@@ -121,6 +127,7 @@ impl DiffComponent {
             selection: Selection::Single(0),
             scroll_top: Cell::new(0),
             theme,
+            is_immutable,
         }
     }
     ///
@@ -228,6 +235,18 @@ impl DiffComponent {
         Ok(())
     }
 
+    fn copy_string(string: String) -> Result<()> {
+        let mut ctx: ClipboardContext = ClipboardProvider::new()
+            .map_err(|_| {
+                anyhow!("failed to get access to clipboard")
+            })?;
+        ctx.set_contents(string).map_err(|_| {
+            anyhow!("failed to set clipboard contents")
+        })?;
+
+        Ok(())
+    }
+
     fn copy_selection(&self) -> Result<()> {
         if let Some(diff) = &self.diff {
             let lines_to_copy: Vec<&str> = diff
@@ -250,10 +269,11 @@ impl DiffComponent {
                 })
                 .collect();
 
-            let mut ctx: ClipboardContext = ClipboardProvider::new()
-                .expect("failed to get access to clipboard");
-            ctx.set_contents(lines_to_copy.join("\n"))
-                .expect("failed to set clipboard contents");
+            try_or_popup!(
+                self,
+                "copy to clipboard error:",
+                Self::copy_string(lines_to_copy.join("\n"))
+            );
         }
 
         Ok(())
@@ -483,7 +503,6 @@ impl DiffComponent {
     fn queue_update(&mut self) {
         self.queue
             .as_ref()
-            .expect("try using queue in immutable diff")
             .borrow_mut()
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));
     }
@@ -493,38 +512,26 @@ impl DiffComponent {
             if let Some(hunk) = self.selected_hunk {
                 let hash = diff.hunks[hunk].header_hash;
 
-                self.queue
-                    .as_ref()
-                    .expect("try using queue in immutable diff")
-                    .borrow_mut()
-                    .push_back(InternalEvent::ConfirmAction(
-                        Action::ResetHunk(
-                            self.current.path.clone(),
-                            hash,
-                        ),
-                    ));
+                self.queue.as_ref().borrow_mut().push_back(
+                    InternalEvent::ConfirmAction(Action::ResetHunk(
+                        self.current.path.clone(),
+                        hash,
+                    )),
+                );
             }
         }
         Ok(())
     }
 
     fn reset_untracked(&self) -> Result<()> {
-        self.queue
-            .as_ref()
-            .expect("try using queue in immutable diff")
-            .borrow_mut()
-            .push_back(InternalEvent::ConfirmAction(Action::Reset(
-                ResetItem {
-                    path: self.current.path.clone(),
-                    is_folder: false,
-                },
-            )));
+        self.queue.as_ref().borrow_mut().push_back(
+            InternalEvent::ConfirmAction(Action::Reset(ResetItem {
+                path: self.current.path.clone(),
+                is_folder: false,
+            })),
+        );
 
         Ok(())
-    }
-
-    fn is_immutable(&self) -> bool {
-        self.queue.is_none()
     }
 
     const fn is_stage(&self) -> bool {
@@ -603,7 +610,7 @@ impl Component for DiffComponent {
             .hidden(),
         );
 
-        if !self.is_immutable() {
+        if !self.is_immutable {
             out.push(CommandInfo::new(
                 commands::DIFF_HUNK_REMOVE,
                 self.selected_hunk.is_some(),
@@ -660,7 +667,7 @@ impl Component for DiffComponent {
                         self.move_selection(ScrollType::PageDown)?;
                         Ok(true)
                     }
-                    keys::ENTER if !self.is_immutable() => {
+                    keys::ENTER if !self.is_immutable => {
                         if self.current.is_stage {
                             self.unstage_hunk()?;
                         } else {
@@ -669,8 +676,7 @@ impl Component for DiffComponent {
                         Ok(true)
                     }
                     keys::DIFF_RESET_HUNK
-                        if !self.is_immutable()
-                            && !self.is_stage() =>
+                        if !self.is_immutable && !self.is_stage() =>
                     {
                         if let Some(diff) = &self.diff {
                             if diff.untracked {
