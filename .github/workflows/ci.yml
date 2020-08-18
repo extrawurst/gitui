@@ -24,14 +24,6 @@ jobs:
     #   run: |
     #     choco install wsl-ubuntu-1804
 
-    - name: Windows Setup
-      if: matrix.os == 'windows-latest'
-      # https://codeblog.jonskeet.uk/2019/10/12/using-git-bash-from-appveyor/
-      run: |
-        echo $Env:Path
-        Get-Command bash
-
-
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
