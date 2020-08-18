@@ -105,7 +105,13 @@ fn run_hook(
     let output = Command::new("bash")
         .args(bash_args)
         .current_dir(path)
-        .env("DUMMYENV", "FixPathHandlingOnWindows") // This call forces Command to handle the Path environment correctly on windows, the specific env set here does not matter
+        // This call forces Command to handle the Path environment correctly on windows,
+        // the specific env set here does not matter
+        // see https://github.com/rust-lang/rust/issues/37519
+        .env(
+            "DUMMY_ENV_TO_FIX_WINDOWS_CMD_RUNS",
+            "FixPathHandlingOnWindows",
+        )
         .output();
 
     let output = output.expect("general hook error");

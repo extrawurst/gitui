@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - selection error in stashlist when deleting last element ([#223](https://github.com/extrawurst/gitui/issues/223))
+- git hooks broke ci build on windows [[@dr-BEat](https://github.com/dr-BEat)] ([#235](https://github.com/extrawurst/gitui/issues/235))
 
 ## [0.9.1] - 2020-07-30
 
