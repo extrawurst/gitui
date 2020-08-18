@@ -30,6 +30,8 @@ jobs:
       run: |
         echo "::add-path::C:\Program Files\Git\bin"
         echo $Env:Path
+        Get-Command bash
+
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
