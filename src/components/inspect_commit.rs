@@ -159,7 +159,7 @@ impl InspectCommitComponent {
                 sender,
                 theme.clone(),
             ),
-            diff: DiffComponent::new(None, theme),
+            diff: DiffComponent::new(queue.clone(), theme, true),
             commit_id: None,
             tags: None,
             git_diff: AsyncDiff::new(sender.clone()),

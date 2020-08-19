@@ -515,8 +515,8 @@ impl App {
         self.stashmsg_popup.draw(f, size)?;
         self.reset.draw(f, size)?;
         self.help.draw(f, size)?;
-        self.msg.draw(f, size)?;
         self.inspect_commit_popup.draw(f, size)?;
+        self.msg.draw(f, size)?;
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
 

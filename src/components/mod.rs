@@ -105,6 +105,12 @@ pub enum ScrollType {
     PageDown,
 }
 
+#[derive(Copy, Clone)]
+pub enum Direction {
+    Up,
+    Down,
+}
+
 ///
 #[derive(PartialEq)]
 pub enum CommandBlocking {

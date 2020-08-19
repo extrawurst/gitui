@@ -1,13 +1,17 @@
-use super::{CommandBlocking, DrawableComponent, ScrollType};
+use super::{
+    CommandBlocking, Direction, DrawableComponent, ScrollType,
+};
 use crate::{
     components::{CommandInfo, Component},
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings::{self, commands},
+    try_or_popup,
     ui::{calc_scroll_top, style::SharedTheme},
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
+use clipboard::{ClipboardContext, ClipboardProvider};
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 use tui::{
@@ -18,7 +22,7 @@ use tui::{
     Frame,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 #[derive(Default)]
 struct Current {
@@ -28,22 +32,90 @@ struct Current {
 }
 
 ///
+#[derive(Clone, Copy)]
+enum Selection {
+    Single(usize),
+    Multiple(usize, usize),
+}
+
+impl Selection {
+    fn get_start(&self) -> usize {
+        match self {
+            Self::Single(start) | Self::Multiple(start, _) => *start,
+        }
+    }
+
+    fn get_end(&self) -> usize {
+        match self {
+            Self::Single(end) | Self::Multiple(_, end) => *end,
+        }
+    }
+
+    fn get_top(&self) -> usize {
+        match self {
+            Self::Single(start) => *start,
+            Self::Multiple(start, end) => cmp::min(*start, *end),
+        }
+    }
+
+    fn get_bottom(&self) -> usize {
+        match self {
+            Self::Single(start) => *start,
+            Self::Multiple(start, end) => cmp::max(*start, *end),
+        }
+    }
+
+    fn modify(&mut self, direction: Direction, max: usize) {
+        let start = self.get_start();
+        let old_end = self.get_end();
+
+        *self = match direction {
+            Direction::Up => {
+                Self::Multiple(start, old_end.saturating_sub(1))
+            }
+
+            Direction::Down => {
+                Self::Multiple(start, cmp::min(old_end + 1, max))
+            }
+        };
+    }
+
+    fn contains(&self, index: usize) -> bool {
+        match self {
+            Self::Single(start) => index == *start,
+            Self::Multiple(start, end) => {
+                if start <= end {
+                    *start <= index && index <= *end
+                } else {
+                    *end <= index && index <= *start
+                }
+            }
+        }
+    }
+}
+
+///
 pub struct DiffComponent {
     diff: Option<FileDiff>,
     pending: bool,
-    selection: usize,
+    selection: Selection,
     selected_hunk: Option<usize>,
     current_size: Cell<(u16, u16)>,
     focused: bool,
     current: Current,
     scroll_top: Cell<usize>,
-    queue: Option<Queue>,
+    queue: Queue,
     theme: SharedTheme,
+    is_immutable: bool,
 }
 
 impl DiffComponent {
     ///
-    pub fn new(queue: Option<Queue>, theme: SharedTheme) -> Self {
+    pub fn new(
+        queue: Queue,
+        theme: SharedTheme,
+        is_immutable: bool,
+    ) -> Self {
         Self {
             focused: false,
             queue,
@@ -52,9 +124,10 @@ impl DiffComponent {
             selected_hunk: None,
             diff: None,
             current_size: Cell::new((0, 0)),
-            selection: 0,
+            selection: Selection::Single(0),
             scroll_top: Cell::new(0),
             theme,
+            is_immutable,
         }
     }
     ///
@@ -73,7 +146,7 @@ impl DiffComponent {
         self.current = Current::default();
         self.diff = None;
         self.scroll_top.set(0);
-        self.selection = 0;
+        self.selection = Selection::Single(0);
         self.selected_hunk = None;
         self.pending = pending;
 
@@ -97,12 +170,14 @@ impl DiffComponent {
                 hash,
             };
 
-            self.selected_hunk =
-                Self::find_selected_hunk(&diff, self.selection)?;
+            self.selected_hunk = Self::find_selected_hunk(
+                &diff,
+                self.selection.get_start(),
+            )?;
 
             self.diff = Some(diff);
             self.scroll_top.set(0);
-            self.selection = 0;
+            self.selection = Selection::Single(0);
         }
 
         Ok(())
@@ -113,34 +188,94 @@ impl DiffComponent {
         move_type: ScrollType,
     ) -> Result<()> {
         if let Some(diff) = &self.diff {
-            let old = self.selection;
-
             let max = diff.lines.saturating_sub(1) as usize;
 
-            self.selection = match move_type {
-                ScrollType::Down => old.saturating_add(1),
-                ScrollType::Up => old.saturating_sub(1),
+            let new_start = match move_type {
+                ScrollType::Down => {
+                    self.selection.get_bottom().saturating_add(1)
+                }
+                ScrollType::Up => {
+                    self.selection.get_top().saturating_sub(1)
+                }
                 ScrollType::Home => 0,
                 ScrollType::End => max,
                 ScrollType::PageDown => {
-                    self.selection.saturating_add(
+                    self.selection.get_bottom().saturating_add(
                         self.current_size.get().1.saturating_sub(1)
                             as usize,
                     )
                 }
-                ScrollType::PageUp => self.selection.saturating_sub(
-                    self.current_size.get().1.saturating_sub(1)
-                        as usize,
-                ),
+                ScrollType::PageUp => {
+                    self.selection.get_top().saturating_sub(
+                        self.current_size.get().1.saturating_sub(1)
+                            as usize,
+                    )
+                }
             };
 
-            self.selection = cmp::min(max, self.selection);
+            self.selection =
+                Selection::Single(cmp::min(max, new_start));
 
-            if old != self.selection {
-                self.selected_hunk =
-                    Self::find_selected_hunk(diff, self.selection)?;
-            }
+            self.selected_hunk =
+                Self::find_selected_hunk(diff, new_start)?;
         }
+        Ok(())
+    }
+
+    fn modify_selection(
+        &mut self,
+        direction: Direction,
+    ) -> Result<()> {
+        if let Some(diff) = &self.diff {
+            let max = diff.lines.saturating_sub(1) as usize;
+
+            self.selection.modify(direction, max);
+        }
+
+        Ok(())
+    }
+
+    fn copy_string(string: String) -> Result<()> {
+        let mut ctx: ClipboardContext = ClipboardProvider::new()
+            .map_err(|_| {
+                anyhow!("failed to get access to clipboard")
+            })?;
+        ctx.set_contents(string).map_err(|_| {
+            anyhow!("failed to set clipboard contents")
+        })?;
+
+        Ok(())
+    }
+
+    fn copy_selection(&self) -> Result<()> {
+        if let Some(diff) = &self.diff {
+            let lines_to_copy: Vec<&str> = diff
+                .hunks
+                .iter()
+                .flat_map(|hunk| hunk.lines.iter())
+                .enumerate()
+                .filter_map(|(i, line)| {
+                    if self.selection.contains(i) {
+                        Some(
+                            line.content
+                                .trim_matches(|c| {
+                                    c == '\n' || c == '\r'
+                                })
+                                .as_ref(),
+                        )
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            try_or_popup!(
+                self,
+                "copy to clipboard error:",
+                Self::copy_string(lines_to_copy.join("\n"))
+            );
+        }
+
         Ok(())
     }
 
@@ -210,8 +345,6 @@ impl DiffComponent {
                     Text::Raw(Cow::from(")")),
                 ]);
             } else {
-                let selection = self.selection;
-
                 let min = self.scroll_top.get();
                 let max = min + height as usize;
 
@@ -242,7 +375,8 @@ impl DiffComponent {
                                     &mut res,
                                     width,
                                     line,
-                                    selection == line_cursor,
+                                    self.selection
+                                        .contains(line_cursor),
                                     hunk_selected,
                                     i == hunk_len as usize - 1,
                                     &self.theme,
@@ -369,7 +503,6 @@ impl DiffComponent {
     fn queue_update(&mut self) {
         self.queue
             .as_ref()
-            .expect("try using queue in immutable diff")
             .borrow_mut()
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));
     }
@@ -379,38 +512,26 @@ impl DiffComponent {
             if let Some(hunk) = self.selected_hunk {
                 let hash = diff.hunks[hunk].header_hash;
 
-                self.queue
-                    .as_ref()
-                    .expect("try using queue in immutable diff")
-                    .borrow_mut()
-                    .push_back(InternalEvent::ConfirmAction(
-                        Action::ResetHunk(
-                            self.current.path.clone(),
-                            hash,
-                        ),
-                    ));
+                self.queue.as_ref().borrow_mut().push_back(
+                    InternalEvent::ConfirmAction(Action::ResetHunk(
+                        self.current.path.clone(),
+                        hash,
+                    )),
+                );
             }
         }
         Ok(())
     }
 
     fn reset_untracked(&self) -> Result<()> {
-        self.queue
-            .as_ref()
-            .expect("try using queue in immutable diff")
-            .borrow_mut()
-            .push_back(InternalEvent::ConfirmAction(Action::Reset(
-                ResetItem {
-                    path: self.current.path.clone(),
-                    is_folder: false,
-                },
-            )));
+        self.queue.as_ref().borrow_mut().push_back(
+            InternalEvent::ConfirmAction(Action::Reset(ResetItem {
+                path: self.current.path.clone(),
+                is_folder: false,
+            })),
+        );
 
         Ok(())
-    }
-
-    fn is_immutable(&self) -> bool {
-        self.queue.is_none()
     }
 
     const fn is_stage(&self) -> bool {
@@ -432,7 +553,7 @@ impl DrawableComponent for DiffComponent {
         self.scroll_top.set(calc_scroll_top(
             self.scroll_top.get(),
             self.current_size.get().1 as usize,
-            self.selection,
+            self.selection.get_end(),
         ));
 
         let title =
@@ -474,6 +595,12 @@ impl Component for DiffComponent {
             self.focused,
         ));
 
+        out.push(CommandInfo::new(
+            commands::COPY,
+            true,
+            self.focused,
+        ));
+
         out.push(
             CommandInfo::new(
                 commands::DIFF_HOME_END,
@@ -483,7 +610,7 @@ impl Component for DiffComponent {
             .hidden(),
         );
 
-        if !self.is_immutable() {
+        if !self.is_immutable {
             out.push(CommandInfo::new(
                 commands::DIFF_HUNK_REMOVE,
                 self.selected_hunk.is_some(),
@@ -512,11 +639,19 @@ impl Component for DiffComponent {
                         self.move_selection(ScrollType::Down)?;
                         Ok(true)
                     }
-                    keys::SHIFT_DOWN | keys::END => {
+                    keys::SHIFT_DOWN => {
+                        self.modify_selection(Direction::Down)?;
+                        Ok(true)
+                    }
+                    keys::SHIFT_UP => {
+                        self.modify_selection(Direction::Up)?;
+                        Ok(true)
+                    }
+                    keys::END => {
                         self.move_selection(ScrollType::End)?;
                         Ok(true)
                     }
-                    keys::HOME | keys::SHIFT_UP => {
+                    keys::HOME => {
                         self.move_selection(ScrollType::Home)?;
                         Ok(true)
                     }
@@ -532,7 +667,7 @@ impl Component for DiffComponent {
                         self.move_selection(ScrollType::PageDown)?;
                         Ok(true)
                     }
-                    keys::ENTER if !self.is_immutable() => {
+                    keys::ENTER if !self.is_immutable => {
                         if self.current.is_stage {
                             self.unstage_hunk()?;
                         } else {
@@ -541,8 +676,7 @@ impl Component for DiffComponent {
                         Ok(true)
                     }
                     keys::DIFF_RESET_HUNK
-                        if !self.is_immutable()
-                            && !self.is_stage() =>
+                        if !self.is_immutable && !self.is_stage() =>
                     {
                         if let Some(diff) = &self.diff {
                             if diff.untracked {
@@ -551,6 +685,10 @@ impl Component for DiffComponent {
                                 self.reset_hunk()?;
                             }
                         }
+                        Ok(true)
+                    }
+                    keys::COPY => {
+                        self.copy_selection()?;
                         Ok(true)
                     }
                     _ => Ok(false),

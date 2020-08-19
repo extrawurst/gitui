@@ -7,7 +7,7 @@ use crate::{
     components::{CommandInfo, Component},
     keys,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
-    strings,
+    strings, try_or_popup,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -16,22 +16,6 @@ use crossterm::event::Event;
 use std::path::Path;
 use strings::commands;
 use tui::{backend::Backend, layout::Rect, Frame};
-
-/// macro to simplify running code that might return Err.
-/// It will show a popup in that case
-#[macro_export]
-macro_rules! try_or_popup {
-    ($self:ident, $msg:literal, $e:expr) => {
-        if let Err(err) = $e {
-            $self.queue.borrow_mut().push_back(
-                InternalEvent::ShowErrorMsg(format!(
-                    "{}\n{}",
-                    $msg, err
-                )),
-            );
-        }
-    };
-}
 
 ///
 pub struct ChangesComponent {

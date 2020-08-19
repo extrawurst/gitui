@@ -105,6 +105,12 @@ pub mod commands {
         CMD_GROUP_GENERAL,
     );
     ///
+    pub static COPY: CommandText = CommandText::new(
+        "Copy [y]",
+        "copy selected lines to clipboard",
+        CMD_GROUP_DIFF,
+    );
+    ///
     pub static DIFF_HOME_END: CommandText = CommandText::new(
         "Jump up/down [home,end,\u{2191} up,\u{2193} down]",
         "scroll to top or bottom of diff",
