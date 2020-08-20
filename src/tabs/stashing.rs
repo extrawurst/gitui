@@ -7,7 +7,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
-    strings::{self, commands},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -51,7 +51,7 @@ impl Stashing {
     ) -> Self {
         Self {
             index: FileTreeComponent::new(
-                strings::STASHING_FILES_TITLE,
+                &strings::stashing_files_title(&key_config),
                 true,
                 Some(queue.clone()),
                 theme.clone(),
@@ -153,11 +153,11 @@ impl DrawableComponent for Stashing {
 
         f.render_widget(
             Paragraph::new(self.get_option_text().iter())
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(strings::STASHING_OPTIONS_TITLE),
-                )
+                .block(Block::default().borders(Borders::ALL).title(
+                    &strings::stashing_options_title(
+                        &self.key_config,
+                    ),
+                ))
                 .alignment(Alignment::Left),
             right_chunks[0],
         );
@@ -182,17 +182,21 @@ impl Component for Stashing {
             );
 
             out.push(CommandInfo::new(
-                commands::STASHING_SAVE,
+                strings::commands::stashing_save(&self.key_config),
                 self.visible && !self.index.is_empty(),
                 self.visible || force_all,
             ));
             out.push(CommandInfo::new(
-                commands::STASHING_TOGGLE_INDEXED,
+                strings::commands::stashing_toggle_indexed(
+                    &self.key_config,
+                ),
                 self.visible,
                 self.visible || force_all,
             ));
             out.push(CommandInfo::new(
-                commands::STASHING_TOGGLE_UNTRACKED,
+                strings::commands::stashing_toggle_untracked(
+                    &self.key_config,
+                ),
                 self.visible,
                 self.visible || force_all,
             ));

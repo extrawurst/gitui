@@ -4,8 +4,8 @@ use super::{
     DrawableComponent,
 };
 use crate::{
-    accessors, keys::SharedKeyConfig, queue::Queue,
-    strings::commands, ui::style::SharedTheme,
+    accessors, keys::SharedKeyConfig, queue::Queue, strings,
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -79,18 +79,22 @@ impl Component for InspectCommitComponent {
             );
 
             out.push(
-                CommandInfo::new(commands::CLOSE_POPUP, true, true)
-                    .order(1),
+                CommandInfo::new(
+                    strings::commands::close_popup(&self.key_config),
+                    true,
+                    true,
+                )
+                .order(1),
             );
 
             out.push(CommandInfo::new(
-                commands::DIFF_FOCUS_RIGHT,
+                strings::commands::diff_focus_right(&self.key_config),
                 self.can_focus_diff(),
                 !self.diff.focused() || force_all,
             ));
 
             out.push(CommandInfo::new(
-                commands::DIFF_FOCUS_LEFT,
+                strings::commands::diff_focus_left(&self.key_config),
                 true,
                 self.diff.focused() || force_all,
             ));

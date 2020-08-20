@@ -10,7 +10,7 @@ use crate::{
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
-    strings::{self, commands, order},
+    strings::{self, order},
     tabs::{Revlog, StashList, Stashing, Status},
     ui::style::{SharedTheme, Theme},
 };
@@ -71,7 +71,11 @@ impl App {
 
         Self {
             input,
-            reset: ResetComponent::new(queue.clone(), theme.clone()),
+            reset: ResetComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
             commit: CommitComponent::new(
                 queue.clone(),
                 theme.clone(),
@@ -80,6 +84,7 @@ impl App {
             stashmsg_popup: StashMsgComponent::new(
                 queue.clone(),
                 theme.clone(),
+                key_config.clone(),
             ),
             inspect_commit_popup: InspectCommitComponent::new(
                 &queue,
@@ -89,13 +94,18 @@ impl App {
             ),
             external_editor_popup: ExternalEditorComponent::new(
                 theme.clone(),
+                key_config.clone(),
             ),
             tag_commit_popup: TagCommitComponent::new(
                 queue.clone(),
                 theme.clone(),
+                key_config.clone(),
             ),
             do_quit: false,
-            cmdbar: RefCell::new(CommandBar::new(theme.clone())),
+            cmdbar: RefCell::new(CommandBar::new(
+                theme.clone(),
+                key_config.clone(),
+            )),
             help: HelpComponent::new(
                 theme.clone(),
                 key_config.clone(),
@@ -191,10 +201,10 @@ impl App {
                 {
                     self.toggle_tabs(true)?;
                     NeedsUpdate::COMMANDS
-                } else if k == self.key_config.tab_1
-                    || k == self.key_config.tab_2
-                    || k == self.key_config.tab_3
-                    || k == self.key_config.tab_4
+                } else if k == self.key_config.tab_status
+                    || k == self.key_config.tab_log
+                    || k == self.key_config.tab_stashing
+                    || k == self.key_config.tab_stashes
                 {
                     self.switch_tab(k)?;
                     NeedsUpdate::COMMANDS
@@ -360,13 +370,13 @@ impl App {
     }
 
     fn switch_tab(&mut self, k: KeyEvent) -> Result<()> {
-        if k == self.key_config.tab_1 {
+        if k == self.key_config.tab_status {
             self.set_tab(0)?
-        } else if k == self.key_config.tab_2 {
+        } else if k == self.key_config.tab_log {
             self.set_tab(1)?
-        } else if k == self.key_config.tab_3 {
+        } else if k == self.key_config.tab_stashing {
             self.set_tab(2)?
-        } else if k == self.key_config.tab_4 {
+        } else if k == self.key_config.tab_stashes {
             self.set_tab(3)?
         }
 
@@ -479,7 +489,7 @@ impl App {
 
         res.push(
             CommandInfo::new(
-                commands::TOGGLE_TABS,
+                strings::commands::toggle_tabs(&self.key_config),
                 true,
                 !self.any_popup_visible(),
             )
@@ -487,7 +497,9 @@ impl App {
         );
         res.push(
             CommandInfo::new(
-                commands::TOGGLE_TABS_DIRECT,
+                strings::commands::toggle_tabs_direct(
+                    &self.key_config,
+                ),
                 true,
                 !self.any_popup_visible(),
             )
@@ -496,7 +508,7 @@ impl App {
 
         res.push(
             CommandInfo::new(
-                commands::QUIT,
+                strings::commands::quit(&self.key_config),
                 true,
                 !self.any_popup_visible(),
             )
@@ -552,10 +564,10 @@ impl App {
         });
 
         let tabs = &[
-            strings::TAB_STATUS,
-            strings::TAB_LOG,
-            strings::TAB_STASHING,
-            strings::TAB_STASHES,
+            strings::tab_status(&self.key_config),
+            strings::tab_log(&self.key_config),
+            strings::tab_stashing(&self.key_config),
+            strings::tab_stashes(&self.key_config),
         ];
 
         f.render_widget(
@@ -568,7 +580,7 @@ impl App {
                 .titles(tabs)
                 .style(self.theme.tab(false))
                 .highlight_style(self.theme.tab(true))
-                .divider(strings::TAB_DIVIDER)
+                .divider(&strings::tab_divider(&self.key_config))
                 .select(self.tab),
             r,
         );

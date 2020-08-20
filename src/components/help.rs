@@ -2,12 +2,7 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{
-    keys::SharedKeyConfig,
-    strings::{self, commands},
-    ui,
-    version::Version,
-};
+use crate::{keys::SharedKeyConfig, strings, ui, version::Version};
 use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -50,7 +45,7 @@ impl DrawableComponent for HelpComponent {
             f.render_widget(Clear, area);
             f.render_widget(
                 Block::default()
-                    .title(strings::HELP_TITLE)
+                    .title(&strings::help_title(&self.key_config))
                     .borders(Borders::ALL)
                     .border_type(BorderType::Thick),
                 area,
@@ -105,10 +100,14 @@ impl Component for HelpComponent {
         }
 
         if self.visible {
-            out.push(CommandInfo::new(commands::SCROLL, true, true));
+            out.push(CommandInfo::new(
+                strings::commands::scroll(&self.key_config),
+                true,
+                true,
+            ));
 
             out.push(CommandInfo::new(
-                commands::CLOSE_POPUP,
+                strings::commands::close_popup(&self.key_config),
                 true,
                 true,
             ));
@@ -116,8 +115,12 @@ impl Component for HelpComponent {
 
         if !self.visible || force_all {
             out.push(
-                CommandInfo::new(commands::HELP_OPEN, true, true)
-                    .order(99),
+                CommandInfo::new(
+                    strings::commands::help_open(&self.key_config),
+                    true,
+                    true,
+                )
+                .order(99),
             );
         }
 
@@ -184,8 +187,8 @@ impl HelpComponent {
             .into_iter()
             .filter(|e| !e.text.hide_help)
             .collect::<Vec<_>>();
-        self.cmds.sort_by_key(|e| e.text);
-        self.cmds.dedup_by_key(|e| e.text);
+        self.cmds.sort_by_key(|e| e.text.clone());
+        self.cmds.dedup_by_key(|e| e.text.clone());
         self.cmds.sort_by_key(|e| hash(&e.text.group));
     }
 

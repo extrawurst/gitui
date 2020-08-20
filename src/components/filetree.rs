@@ -9,7 +9,7 @@ use crate::{
     components::{CommandInfo, Component},
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings::{self, commands, order},
+    strings::{self, order},
     ui,
     ui::style::SharedTheme,
 };
@@ -226,7 +226,7 @@ impl DrawableComponent for FileTreeComponent {
     ) -> Result<()> {
         if self.pending {
             let items = vec![Text::Styled(
-                Cow::from(strings::LOADING_TEXT),
+                Cow::from(strings::loading_text(&self.key_config)),
                 self.theme.text(false, false),
             )];
 
@@ -312,7 +312,7 @@ impl Component for FileTreeComponent {
     ) -> CommandBlocking {
         out.push(
             CommandInfo::new(
-                commands::NAVIGATE_TREE,
+                strings::commands::navigate_tree(&self.key_config),
                 !self.is_empty(),
                 self.focused || force_all,
             )

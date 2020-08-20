@@ -7,7 +7,7 @@ use crate::{
     get_app_config_path,
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings::{self, commands},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -52,19 +52,21 @@ impl Component for CommitComponent {
 
         if self.is_visible() || force_all {
             out.push(CommandInfo::new(
-                commands::COMMIT_ENTER,
+                strings::commands::commit_enter(&self.key_config),
                 self.can_commit(),
                 true,
             ));
 
             out.push(CommandInfo::new(
-                commands::COMMIT_AMEND,
+                strings::commands::commit_amend(&self.key_config),
                 self.can_amend(),
                 true,
             ));
 
             out.push(CommandInfo::new(
-                commands::COMMIT_OPEN_EDITOR,
+                strings::commands::commit_open_editor(
+                    &self.key_config,
+                ),
                 true,
                 true,
             ));
@@ -113,7 +115,8 @@ impl Component for CommitComponent {
         self.amend = None;
 
         self.input.clear();
-        self.input.set_title(strings::COMMIT_TITLE.into());
+        self.input
+            .set_title(strings::commit_title(&self.key_config));
         self.input.show()?;
 
         Ok(())
@@ -132,8 +135,9 @@ impl CommitComponent {
             amend: None,
             input: TextInputComponent::new(
                 theme,
+                key_config.clone(),
                 "",
-                strings::COMMIT_MSG,
+                &strings::commit_msg(&key_config),
             ),
             key_config,
         }
@@ -151,7 +155,10 @@ impl CommitComponent {
                 "{}\n",
                 self.input.get_text()
             ))?;
-            file.write_all(strings::COMMIT_EDITOR_MSG.as_bytes())?;
+            file.write_all(
+                strings::commit_editor_msg(&self.key_config)
+                    .as_bytes(),
+            )?;
         }
 
         ExternalEditorComponent::open_file_in_editor(&config_path)?;
@@ -252,7 +259,8 @@ impl CommitComponent {
 
         let details = sync::get_commit_details(CWD, id)?;
 
-        self.input.set_title(strings::COMMIT_TITLE_AMEND.into());
+        self.input
+            .set_title(strings::commit_title_amend(&self.key_config));
 
         if let Some(msg) = details.message {
             self.input.set_text(msg.combine());

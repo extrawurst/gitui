@@ -5,7 +5,7 @@ use crate::{
         ScrollType,
     },
     keys::SharedKeyConfig,
-    strings::commands,
+    strings,
     ui::calc_scroll_top,
     ui::style::{SharedTheme, Theme},
 };
@@ -368,7 +368,7 @@ impl Component for CommitList {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            commands::SCROLL,
+            strings::commands::scroll(&self.key_config),
             self.selected_entry().is_some(),
             true,
         ));

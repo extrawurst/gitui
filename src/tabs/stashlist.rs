@@ -5,7 +5,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue},
-    strings::{self, commands},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -32,7 +32,7 @@ impl StashList {
         Self {
             visible: false,
             list: CommitList::new(
-                strings::STASHLIST_TITLE,
+                &strings::stashlist_title(&key_config),
                 theme,
                 key_config.clone(),
             ),
@@ -121,17 +121,19 @@ impl Component for StashList {
             let selection_valid =
                 self.list.selected_entry().is_some();
             out.push(CommandInfo::new(
-                commands::STASHLIST_APPLY,
+                strings::commands::stashlist_apply(&self.key_config),
                 selection_valid,
                 true,
             ));
             out.push(CommandInfo::new(
-                commands::STASHLIST_DROP,
+                strings::commands::stashlist_drop(&self.key_config),
                 selection_valid,
                 true,
             ));
             out.push(CommandInfo::new(
-                commands::STASHLIST_INSPECT,
+                strings::commands::stashlist_inspect(
+                    &self.key_config,
+                ),
                 selection_valid,
                 true,
             ));

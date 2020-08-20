@@ -64,7 +64,7 @@ impl CommitDetailsComponent {
 
         format!(
             "{} {}",
-            strings::commit::DETAILS_FILES_TITLE,
+            strings::commit::details_files_title(&self.key_config),
             files_count
         )
     }

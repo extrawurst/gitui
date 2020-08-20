@@ -5,8 +5,7 @@ use crate::{
     components::{CommandInfo, Component},
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
-    strings::{self, commands},
-    try_or_popup,
+    strings, try_or_popup,
     ui::{calc_scroll_top, style::SharedTheme},
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
@@ -559,12 +558,15 @@ impl DrawableComponent for DiffComponent {
             self.selection.get_end(),
         ));
 
-        let title =
-            format!("{}{}", strings::TITLE_DIFF, self.current.path);
+        let title = format!(
+            "{}{}",
+            strings::title_diff(&self.key_config),
+            self.current.path
+        );
 
         let txt = if self.pending {
             vec![Text::Styled(
-                Cow::from(strings::LOADING_TEXT),
+                Cow::from(strings::loading_text(&self.key_config)),
                 self.theme.text(false, false),
             )]
         } else {
@@ -593,20 +595,20 @@ impl Component for DiffComponent {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            commands::SCROLL,
+            strings::commands::scroll(&self.key_config),
             self.can_scroll(),
             self.focused,
         ));
 
         out.push(CommandInfo::new(
-            commands::COPY,
+            strings::commands::copy(&self.key_config),
             true,
             self.focused,
         ));
 
         out.push(
             CommandInfo::new(
-                commands::DIFF_HOME_END,
+                strings::commands::diff_home_end(&self.key_config),
                 self.can_scroll(),
                 self.focused,
             )
@@ -615,17 +617,17 @@ impl Component for DiffComponent {
 
         if !self.is_immutable {
             out.push(CommandInfo::new(
-                commands::DIFF_HUNK_REMOVE,
+                strings::commands::diff_hunk_remove(&self.key_config),
                 self.selected_hunk.is_some(),
                 self.focused && self.is_stage(),
             ));
             out.push(CommandInfo::new(
-                commands::DIFF_HUNK_ADD,
+                strings::commands::diff_hunk_add(&self.key_config),
                 self.selected_hunk.is_some(),
                 self.focused && !self.is_stage(),
             ));
             out.push(CommandInfo::new(
-                commands::DIFF_HUNK_REVERT,
+                strings::commands::diff_hunk_revert(&self.key_config),
                 self.selected_hunk.is_some(),
                 self.focused && !self.is_stage(),
             ));

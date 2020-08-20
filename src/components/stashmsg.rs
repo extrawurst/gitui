@@ -3,8 +3,9 @@ use super::{
     CommandBlocking, CommandInfo, Component, DrawableComponent,
 };
 use crate::{
+    keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings::{self, commands},
+    strings,
     tabs::StashingOptions,
     ui::style::SharedTheme,
 };
@@ -17,6 +18,7 @@ pub struct StashMsgComponent {
     options: StashingOptions,
     input: TextInputComponent,
     queue: Queue,
+    key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for StashMsgComponent {
@@ -41,7 +43,9 @@ impl Component for StashMsgComponent {
             self.input.commands(out, force_all);
 
             out.push(CommandInfo::new(
-                commands::STASHING_CONFIRM_MSG,
+                strings::commands::stashing_confirm_msg(
+                    &self.key_config,
+                ),
                 true,
                 true,
             ));
@@ -119,15 +123,21 @@ impl Component for StashMsgComponent {
 
 impl StashMsgComponent {
     ///
-    pub fn new(queue: Queue, theme: SharedTheme) -> Self {
+    pub fn new(
+        queue: Queue,
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             options: StashingOptions::default(),
             queue,
             input: TextInputComponent::new(
                 theme,
-                strings::STASH_POPUP_TITLE,
-                strings::STASH_POPUP_MSG,
+                key_config.clone(),
+                &strings::stash_popup_title(&key_config),
+                &strings::stash_popup_msg(&key_config),
             ),
+            key_config,
         }
     }
 

@@ -1,5 +1,6 @@
 use crate::{
-    components::CommandInfo, strings, ui::style::SharedTheme,
+    components::CommandInfo, keys::SharedKeyConfig, strings,
+    ui::style::SharedTheme,
 };
 use std::borrow::Cow;
 use tui::{
@@ -27,6 +28,7 @@ pub struct CommandBar {
     draw_list: Vec<DrawListEntry>,
     cmd_infos: Vec<CommandInfo>,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
     lines: u16,
     width: u16,
     expandable: bool,
@@ -36,11 +38,15 @@ pub struct CommandBar {
 const MORE_WIDTH: u16 = 11;
 
 impl CommandBar {
-    pub const fn new(theme: SharedTheme) -> Self {
+    pub const fn new(
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             draw_list: Vec::new(),
             cmd_infos: Vec::new(),
             theme,
+            key_config,
             lines: 0,
             width: 0,
             expandable: false,
@@ -58,7 +64,8 @@ impl CommandBar {
     fn is_multiline(&self, width: u16) -> bool {
         let mut line_width = 0_usize;
         for c in &self.cmd_infos {
-            let entry_w = UnicodeWidthStr::width(c.text.name);
+            let entry_w =
+                UnicodeWidthStr::width(c.text.name.as_str());
 
             if line_width + entry_w > width as usize {
                 return true;
@@ -83,7 +90,8 @@ impl CommandBar {
         let mut lines = 1_u16;
 
         for c in &self.cmd_infos {
-            let entry_w = UnicodeWidthStr::width(c.text.name);
+            let entry_w =
+                UnicodeWidthStr::width(c.text.name.as_str());
 
             if line_width + entry_w > width as usize {
                 self.draw_list.push(DrawListEntry::LineBreak);
@@ -131,7 +139,9 @@ impl CommandBar {
     }
 
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-        let splitter = Text::Raw(Cow::from(strings::CMD_SPLITTER));
+        let splitter = Text::Raw(Cow::from(strings::cmd_splitter(
+            &self.key_config,
+        )));
 
         let texts = self
             .draw_list

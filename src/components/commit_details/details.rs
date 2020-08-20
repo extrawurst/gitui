@@ -4,7 +4,7 @@ use crate::{
         CommandInfo, Component, DrawableComponent, ScrollType,
     },
     keys::SharedKeyConfig,
-    strings::{self, commands, order},
+    strings::{self, order},
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -159,7 +159,9 @@ impl DetailsComponent {
         if let Some(ref data) = self.data {
             let mut res = vec![
                 Text::Styled(
-                    Cow::from(strings::commit::DETAILS_AUTHOR),
+                    Cow::from(strings::commit::details_author(
+                        &self.key_config,
+                    )),
                     self.theme.text(false, false),
                 ),
                 Text::Styled(
@@ -171,7 +173,9 @@ impl DetailsComponent {
                 ),
                 new_line.clone(),
                 Text::Styled(
-                    Cow::from(strings::commit::DETAILS_DATE),
+                    Cow::from(strings::commit::details_date(
+                        &self.key_config,
+                    )),
                     self.theme.text(false, false),
                 ),
                 Text::Styled(
@@ -187,7 +191,11 @@ impl DetailsComponent {
             if let Some(ref committer) = data.committer {
                 res.extend(vec![
                     Text::Styled(
-                        Cow::from(strings::commit::DETAILS_COMMITTER),
+                        Cow::from(
+                            strings::commit::details_committer(
+                                &self.key_config,
+                            ),
+                        ),
                         self.theme.text(false, false),
                     ),
                     Text::Styled(
@@ -199,7 +207,9 @@ impl DetailsComponent {
                     ),
                     new_line.clone(),
                     Text::Styled(
-                        Cow::from(strings::commit::DETAILS_DATE),
+                        Cow::from(strings::commit::details_date(
+                            &self.key_config,
+                        )),
                         self.theme.text(false, false),
                     ),
                     Text::Styled(
@@ -215,7 +225,9 @@ impl DetailsComponent {
 
             res.extend(vec![
                 Text::Styled(
-                    Cow::from(strings::commit::DETAILS_SHA),
+                    Cow::from(strings::commit::details_sha(
+                        &self.key_config,
+                    )),
                     self.theme.text(false, false),
                 ),
                 Text::Styled(
@@ -227,7 +239,9 @@ impl DetailsComponent {
 
             if !self.tags.is_empty() {
                 res.push(Text::Styled(
-                    Cow::from(strings::commit::DETAILS_TAGS),
+                    Cow::from(strings::commit::details_tags(
+                        &self.key_config,
+                    )),
                     self.theme.text(false, false),
                 ));
 
@@ -301,7 +315,9 @@ impl DrawableComponent for DetailsComponent {
 
         f.render_widget(
             dialog_paragraph(
-                strings::commit::DETAILS_INFO_TITLE,
+                &strings::commit::details_info_title(
+                    &self.key_config,
+                ),
                 self.get_text_info().iter(),
                 &self.theme,
                 false,
@@ -325,7 +341,9 @@ impl DrawableComponent for DetailsComponent {
 
         f.render_widget(
             dialog_paragraph(
-                strings::commit::DETAILS_MESSAGE_TITLE,
+                &strings::commit::details_message_title(
+                    &self.key_config,
+                ),
                 wrapped_lines.iter(),
                 &self.theme,
                 self.focused,
@@ -350,7 +368,9 @@ impl Component for DetailsComponent {
 
         out.push(
             CommandInfo::new(
-                commands::NAVIGATE_COMMIT_MESSAGE,
+                strings::commands::navigate_commit_message(
+                    &self.key_config,
+                ),
                 number_of_lines > 0,
                 self.focused || force_all,
             )

@@ -6,7 +6,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
-    strings::{self, commands},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -56,7 +56,7 @@ impl Revlog {
                 key_config.clone(),
             ),
             list: CommitList::new(
-                strings::LOG_TITLE,
+                &strings::log_title(&key_config),
                 theme,
                 key_config.clone(),
             ),
@@ -207,43 +207,35 @@ impl Component for Revlog {
             if event_used {
                 self.update()?;
                 return Ok(true);
-            } else {
-                if let Event::Key(k) = ev {
-                    if k == self.key_config.log_commit_details {
-                        self.commit_details.toggle_visible()?;
-                        self.update()?;
-                        return Ok(true);
-                    } else if k == self.key_config.log_tag_commit {
-                        return if let Some(id) =
-                            self.selected_commit()
-                        {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::TagCommit(id),
-                            );
-                            Ok(true)
-                        } else {
-                            Ok(false)
-                        };
-                    } else if k == self.key_config.focus_right
-                        && self.commit_details.is_visible()
-                    {
-                        return if let Some(id) =
-                            self.selected_commit()
-                        {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::InspectCommit(
-                                    id,
-                                    self.selected_commit_tags(&Some(
-                                        id,
-                                    )),
-                                ),
-                            );
-                            Ok(true)
-                        } else {
-                            Ok(false)
-                        };
+            } else if let Event::Key(k) = ev {
+                if k == self.key_config.log_commit_details {
+                    self.commit_details.toggle_visible()?;
+                    self.update()?;
+                    return Ok(true);
+                } else if k == self.key_config.log_tag_commit {
+                    return if let Some(id) = self.selected_commit() {
+                        self.queue
+                            .borrow_mut()
+                            .push_back(InternalEvent::TagCommit(id));
+                        Ok(true)
                     } else {
-                    }
+                        Ok(false)
+                    };
+                } else if k == self.key_config.focus_right
+                    && self.commit_details.is_visible()
+                {
+                    return if let Some(id) = self.selected_commit() {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::InspectCommit(
+                                id,
+                                self.selected_commit_tags(&Some(id)),
+                            ),
+                        );
+                        Ok(true)
+                    } else {
+                        Ok(false)
+                    };
+                } else {
                 }
             }
         }
@@ -261,20 +253,20 @@ impl Component for Revlog {
         }
 
         out.push(CommandInfo::new(
-            commands::LOG_DETAILS_TOGGLE,
+            strings::commands::log_details_toggle(&self.key_config),
             true,
             self.visible,
         ));
 
         out.push(CommandInfo::new(
-            commands::LOG_DETAILS_OPEN,
+            strings::commands::log_details_open(&self.key_config),
             true,
             (self.visible && self.commit_details.is_visible())
                 || force_all,
         ));
 
         out.push(CommandInfo::new(
-            commands::LOG_TAG_COMMIT,
+            strings::commands::log_tag_commit(&self.key_config),
             true,
             self.visible || force_all,
         ));

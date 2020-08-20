@@ -14,7 +14,6 @@ use anyhow::Result;
 use asyncgit::{cached, sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
 use std::path::Path;
-use strings::commands;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 ///
@@ -210,39 +209,39 @@ impl Component for ChangesComponent {
 
         if self.is_working_dir {
             out.push(CommandInfo::new(
-                commands::STAGE_ALL,
+                strings::commands::stage_all(&self.key_config),
                 some_selection,
                 self.focused(),
             ));
             out.push(CommandInfo::new(
-                commands::STAGE_ITEM,
+                strings::commands::stage_item(&self.key_config),
                 some_selection,
                 self.focused(),
             ));
             out.push(CommandInfo::new(
-                commands::RESET_ITEM,
+                strings::commands::reset_item(&self.key_config),
                 some_selection,
                 self.focused(),
             ));
             out.push(CommandInfo::new(
-                commands::IGNORE_ITEM,
+                strings::commands::ignore_item(&self.key_config),
                 some_selection,
                 self.focused(),
             ));
         } else {
             out.push(CommandInfo::new(
-                commands::UNSTAGE_ITEM,
+                strings::commands::unstage_item(&self.key_config),
                 some_selection,
                 self.focused(),
             ));
             out.push(CommandInfo::new(
-                commands::UNSTAGE_ALL,
+                strings::commands::unstage_all(&self.key_config),
                 some_selection,
                 self.focused(),
             ));
             out.push(
                 CommandInfo::new(
-                    commands::COMMIT_OPEN,
+                    strings::commands::commit_open(&self.key_config),
                     !self.is_empty(),
                     self.focused() || force_all,
                 )

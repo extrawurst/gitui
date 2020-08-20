@@ -2,11 +2,7 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{
-    keys::SharedKeyConfig,
-    strings::{self, commands},
-    ui,
-};
+use crate::{keys::SharedKeyConfig, strings, ui};
 use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
@@ -43,7 +39,9 @@ impl DrawableComponent for MsgComponent {
             Paragraph::new(txt.iter())
                 .block(
                     Block::default()
-                        .title(strings::MSG_TITLE_ERROR)
+                        .title(&strings::msg_title_error(
+                            &self.key_config,
+                        ))
                         .title_style(self.theme.text_danger())
                         .borders(Borders::ALL)
                         .border_type(BorderType::Thick),
@@ -64,7 +62,7 @@ impl Component for MsgComponent {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            commands::CLOSE_MSG,
+            strings::commands::close_msg(&self.key_config),
             true,
             self.visible,
         ));

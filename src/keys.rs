@@ -17,10 +17,10 @@ pub type SharedKeyConfig = Rc<KeyConfig>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KeyConfig {
-    pub tab_1: KeyEvent,
-    pub tab_2: KeyEvent,
-    pub tab_3: KeyEvent,
-    pub tab_4: KeyEvent,
+    pub tab_status: KeyEvent,
+    pub tab_log: KeyEvent,
+    pub tab_stashing: KeyEvent,
+    pub tab_stashes: KeyEvent,
     pub tab_toggle: KeyEvent,
     pub tab_toggle_reverse: KeyEvent,
     pub tab_toggle_reverse_windows: KeyEvent,
@@ -70,10 +70,10 @@ pub struct KeyConfig {
 impl Default for KeyConfig {
     fn default() -> Self {
         Self {
-			tab_1: KeyEvent { code: KeyCode::Char('1'), modifiers: KeyModifiers::empty()},
-			tab_2: KeyEvent { code: KeyCode::Char('2'), modifiers: KeyModifiers::empty()},
-			tab_3: KeyEvent { code: KeyCode::Char('3'), modifiers: KeyModifiers::empty()},
-			tab_4: KeyEvent { code: KeyCode::Char('4'), modifiers: KeyModifiers::empty()},
+			tab_status: KeyEvent { code: KeyCode::Char('1'), modifiers: KeyModifiers::empty()},
+			tab_log: KeyEvent { code: KeyCode::Char('2'), modifiers: KeyModifiers::empty()},
+			tab_stashing: KeyEvent { code: KeyCode::Char('3'), modifiers: KeyModifiers::empty()},
+			tab_stashes: KeyEvent { code: KeyCode::Char('4'), modifiers: KeyModifiers::empty()},
 			tab_toggle: KeyEvent { code: KeyCode::Tab, modifiers: KeyModifiers::empty()},
 			tab_toggle_reverse: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::empty()},
 			tab_toggle_reverse_windows: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::SHIFT},
@@ -158,5 +158,148 @@ impl KeyConfig {
 
     pub fn init() -> Self {
         Self::init_internal().unwrap_or_default()
+    }
+}
+
+// The hint follows apple design
+// http://xahlee.info/comp/unicode_computing_symbols.html
+#[macro_export]
+macro_rules! get_hint {
+    ($target: expr) => {
+        match $target.code {
+            crossterm::event::KeyCode::Char(c) => {
+                format!("{}{}", crate::get_modifier_hint!($target), c)
+            }
+            crossterm::event::KeyCode::Enter => {
+                format!(
+                    "{}\u{23ce}",
+                    crate::get_modifier_hint!($target)
+                ) //⏎
+            }
+            crossterm::event::KeyCode::Left => {
+                format!(
+                    "{}\u{2190}",
+                    crate::get_modifier_hint!($target)
+                ) //←
+            }
+            crossterm::event::KeyCode::Right => {
+                format!(
+                    "{}\u{2192}",
+                    crate::get_modifier_hint!($target)
+                ) //→
+            }
+            crossterm::event::KeyCode::Up => {
+                format!(
+                    "{}\u{2191}",
+                    crate::get_modifier_hint!($target)
+                ) //↑
+            }
+            crossterm::event::KeyCode::Down => {
+                format!(
+                    "{}\u{2193}",
+                    crate::get_modifier_hint!($target)
+                ) //↓
+            }
+            crossterm::event::KeyCode::Backspace => {
+                format!(
+                    "{}\u{232b}",
+                    crate::get_modifier_hint!($target)
+                ) //⌫
+            }
+            crossterm::event::KeyCode::Home => {
+                format!(
+                    "{}\u{2912}",
+                    crate::get_modifier_hint!($target)
+                ) //⤒
+            }
+            crossterm::event::KeyCode::End => {
+                format!(
+                    "{}\u{2913}",
+                    crate::get_modifier_hint!($target)
+                ) //⤓
+            }
+            crossterm::event::KeyCode::PageUp => {
+                format!(
+                    "{}\u{21de}",
+                    crate::get_modifier_hint!($target)
+                ) //⇞
+            }
+            crossterm::event::KeyCode::PageDown => {
+                format!(
+                    "{}\u{21df}",
+                    crate::get_modifier_hint!($target)
+                ) //⇟
+            }
+            crossterm::event::KeyCode::Tab => {
+                format!(
+                    "{}\u{21e5}",
+                    crate::get_modifier_hint!($target)
+                ) //⇥
+            }
+            crossterm::event::KeyCode::BackTab => {
+                format!(
+                    "{}\u{21e4}",
+                    crate::get_modifier_hint!($target)
+                ) //⇤
+            }
+            crossterm::event::KeyCode::Delete => {
+                format!(
+                    "{}\u{2326}",
+                    crate::get_modifier_hint!($target)
+                ) //⌦
+            }
+            crossterm::event::KeyCode::Insert => {
+                format!(
+                    "{}\u{2380}",
+                    crate::get_modifier_hint!($target)
+                ) //⎀
+            }
+            crossterm::event::KeyCode::Esc => {
+                format!(
+                    "{}\u{238b}",
+                    crate::get_modifier_hint!($target)
+                ) //⎋
+            }
+            crossterm::event::KeyCode::F(u) => format!(
+                "{}F{}",
+                crate::get_modifier_hint!($target),
+                u
+            ),
+            crossterm::event::KeyCode::Null => {
+                format!("{}", crate::get_modifier_hint!($target))
+            }
+        };
+    };
+}
+
+#[macro_export]
+macro_rules! get_modifier_hint {
+    ($target: expr) => {
+        match $target.modifiers {
+            crossterm::event::KeyModifiers::CONTROL => {
+                "^".to_string()
+            }
+            crossterm::event::KeyModifiers::SHIFT => {
+                "\u{2192}".to_string() //⇧
+            }
+            crossterm::event::KeyModifiers::ALT => {
+                "\u{2325}".to_string() //⌥
+            }
+            _ => "".to_string(),
+        };
+    };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_hint() {
+        let h = get_hint!(KeyEvent {
+            code: KeyCode::Char('c'),
+            modifiers: KeyModifiers::CONTROL
+        });
+        assert_eq!(h, "^c");
     }
 }

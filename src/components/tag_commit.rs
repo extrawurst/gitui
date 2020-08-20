@@ -3,8 +3,9 @@ use super::{
     CommandBlocking, CommandInfo, Component, DrawableComponent,
 };
 use crate::{
+    keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings::{self, commands},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -19,6 +20,7 @@ pub struct TagCommitComponent {
     input: TextInputComponent,
     commit_id: Option<CommitId>,
     queue: Queue,
+    key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for TagCommitComponent {
@@ -43,7 +45,9 @@ impl Component for TagCommitComponent {
             self.input.commands(out, force_all);
 
             out.push(CommandInfo::new(
-                commands::TAG_COMMIT_CONFIRM_MSG,
+                strings::commands::tag_commit_confirm_msg(
+                    &self.key_config,
+                ),
                 true,
                 true,
             ));
@@ -86,15 +90,21 @@ impl Component for TagCommitComponent {
 
 impl TagCommitComponent {
     ///
-    pub fn new(queue: Queue, theme: SharedTheme) -> Self {
+    pub fn new(
+        queue: Queue,
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             queue,
             input: TextInputComponent::new(
                 theme,
-                strings::TAG_COMMIT_POPUP_TITLE,
-                strings::TAG_COMMIT_POPUP_MSG,
+                key_config.clone(),
+                &strings::tag_commit_popup_title(&key_config),
+                &strings::tag_commit_popup_msg(&key_config),
             ),
             commit_id: None,
+            key_config,
         }
     }
 
