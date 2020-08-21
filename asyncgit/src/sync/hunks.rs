@@ -23,7 +23,8 @@ pub fn stage_hunk(
 
     let mut opt = ApplyOptions::new();
     opt.hunk_callback(|hunk| {
-        let header = HunkHeader::from(hunk.unwrap());
+        let header =
+            HunkHeader::from(hunk.expect("hunk unavailable"));
         hash(&header) == hunk_hash
     });
 
@@ -117,7 +118,8 @@ pub fn unstage_hunk(
         let mut hunk_idx = 0;
         let mut opt = ApplyOptions::new();
         opt.hunk_callback(|_hunk| {
-            let res = if hunk_idx == hunk_index.unwrap() {
+            let res = if hunk_idx == hunk_index.expect("invalid hunk")
+            {
                 count += 1;
                 true
             } else {

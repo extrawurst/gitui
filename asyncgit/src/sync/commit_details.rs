@@ -35,6 +35,7 @@ pub struct CommitMessage {
 }
 
 impl CommitMessage {
+    ///
     pub fn from(s: &str) -> Self {
         if let Some(idx) = s.find('\n') {
             let (first, rest) = s.split_at(idx);

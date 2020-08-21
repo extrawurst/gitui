@@ -5,7 +5,7 @@ use super::{
     Component, DrawableComponent, FileTreeComponent,
 };
 use crate::{
-    accessors, queue::Queue, strings, ui::style::SharedTheme,
+    accessors, keys, queue::Queue, strings, ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -38,7 +38,7 @@ impl CommitDetailsComponent {
         theme: SharedTheme,
     ) -> Self {
         Self {
-            details: DetailsComponent::new(theme.clone()),
+            details: DetailsComponent::new(theme.clone(), false),
             git_commit_files: AsyncCommitFiles::new(sender),
             file_tree: FileTreeComponent::new(
                 "",
@@ -50,18 +50,14 @@ impl CommitDetailsComponent {
         }
     }
 
-    fn get_files_title(&self, loading: bool) -> String {
+    fn get_files_title(&self) -> String {
         let files_count = self.file_tree.file_count();
 
-        if loading {
-            strings::commit::DETAILS_FILES_LOADING_TITLE.to_string()
-        } else {
-            format!(
-                "{} {}",
-                strings::commit::DETAILS_FILES_TITLE,
-                files_count
-            )
-        }
+        format!(
+            "{} {}",
+            strings::commit::DETAILS_FILES_TITLE,
+            files_count
+        )
     }
 
     ///
@@ -78,18 +74,17 @@ impl CommitDetailsComponent {
             {
                 if fetched_id == id {
                     self.file_tree.update(res.as_slice())?;
-                    self.file_tree
-                        .set_title(self.get_files_title(false));
+                    self.file_tree.set_title(self.get_files_title());
 
                     return Ok(());
                 }
             }
+
             self.file_tree.clear()?;
             self.git_commit_files.fetch(id)?;
-            self.file_tree.set_title(self.get_files_title(true));
-        } else {
-            self.file_tree.set_title(self.get_files_title(false));
         }
+
+        self.file_tree.set_title(self.get_files_title());
 
         Ok(())
     }
@@ -151,6 +146,28 @@ impl Component for CommitDetailsComponent {
             return Ok(true);
         }
 
+        if self.focused() {
+            if let Event::Key(e) = ev {
+                return match e {
+                    keys::FOCUS_BELOW if (self.details.focused()) => {
+                        self.details.focus(false);
+                        self.file_tree.focus(true);
+
+                        return Ok(true);
+                    }
+                    keys::FOCUS_ABOVE
+                        if (self.file_tree.focused()) =>
+                    {
+                        self.file_tree.focus(false);
+                        self.details.focus(true);
+
+                        return Ok(true);
+                    }
+                    _ => Ok(false),
+                };
+            }
+        }
+
         Ok(false)
     }
 
@@ -169,6 +186,7 @@ impl Component for CommitDetailsComponent {
         self.details.focused() || self.file_tree.focused()
     }
     fn focus(&mut self, focus: bool) {
+        self.details.focus(false);
         self.file_tree.focus(focus);
         self.file_tree.show_selection(true);
     }

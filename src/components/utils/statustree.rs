@@ -332,8 +332,8 @@ impl StatusTree {
                 inner_collapsed = Some(format!("{}/", &item_path));
             }
 
-            if prefix.is_none()
-                || item_path.starts_with(prefix.unwrap())
+            if prefix
+                .map_or(true, |prefix| item_path.starts_with(prefix))
             {
                 self.tree[i].info.visible = true
             } else {

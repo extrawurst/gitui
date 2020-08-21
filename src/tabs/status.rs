@@ -46,6 +46,7 @@ pub struct Status {
     git_status_workdir: AsyncStatus,
     git_status_stage: AsyncStatus,
     queue: Queue,
+    git_action_executed: bool,
 }
 
 impl DrawableComponent for Status {
@@ -126,10 +127,11 @@ impl Status {
                 queue.clone(),
                 theme.clone(),
             ),
-            diff: DiffComponent::new(Some(queue.clone()), theme),
+            diff: DiffComponent::new(queue.clone(), theme, false),
             git_diff: AsyncDiff::new(sender.clone()),
             git_status_workdir: AsyncStatus::new(sender.clone()),
             git_status_stage: AsyncStatus::new(sender.clone()),
+            git_action_executed: false,
         }
     }
 
@@ -137,7 +139,7 @@ impl Status {
         match self.focus {
             Focus::WorkDir => self.index_wd.is_file_seleted(),
             Focus::Stage => self.index.is_file_seleted(),
-            _ => false,
+            Focus::Diff => false,
         }
     }
 
@@ -231,13 +233,28 @@ impl Status {
     }
 
     fn update_status(&mut self) -> Result<()> {
-        let status = self.git_status_stage.last()?;
-        self.index.set_items(&status.items)?;
+        let stage_status = self.git_status_stage.last()?;
+        self.index.set_items(&stage_status.items)?;
 
-        let status = self.git_status_workdir.last()?;
-        self.index_wd.set_items(&status.items)?;
+        let workdir_status = self.git_status_workdir.last()?;
+        self.index_wd.set_items(&workdir_status.items)?;
 
         self.update_diff()?;
+
+        if self.git_action_executed {
+            self.git_action_executed = false;
+
+            if self.focus == Focus::WorkDir
+                && workdir_status.items.is_empty()
+                && !stage_status.items.is_empty()
+            {
+                self.switch_focus(Focus::Stage)?;
+            } else if self.focus == Focus::Stage
+                && stage_status.items.is_empty()
+            {
+                self.switch_focus(Focus::WorkDir)?;
+            }
+        }
 
         Ok(())
     }
@@ -271,11 +288,11 @@ impl Status {
                 {
                     self.diff.update(path, is_stage, diff)?;
                 } else {
-                    self.diff.clear()?;
+                    self.diff.clear(true)?;
                 }
             }
         } else {
-            self.diff.clear()?;
+            self.diff.clear(false)?;
         }
 
         Ok(())
@@ -371,6 +388,7 @@ impl Component for Status {
     fn event(&mut self, ev: crossterm::event::Event) -> Result<bool> {
         if self.visible {
             if event_pump(ev, self.components_mut().as_mut_slice())? {
+                self.git_action_executed = true;
                 return Ok(true);
             }
 

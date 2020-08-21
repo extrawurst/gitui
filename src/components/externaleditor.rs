@@ -14,6 +14,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use scopeguard::defer;
+use std::ffi::OsStr;
 use std::{env, io, path::Path, process::Command};
 use tui::{
     backend::Backend,
@@ -56,23 +57,24 @@ impl ExternalEditorComponent {
             io::stdout().execute(EnterAlternateScreen).expect("reset terminal");
         }
 
-        let mut editor = env::var("GIT_EDITOR")
+        let editor = env::var("GIT_EDITOR")
             .ok()
             .or_else(|| env::var("VISUAL").ok())
             .or_else(|| env::var("EDITOR").ok())
             .unwrap_or_else(|| String::from("vi"));
 
-        //TODO: check the path.to_str result and return err on None because
-        //otherwise this will pretty likely fail in the command stage otherwise
-        //and https://github.com/extrawurst/gitui/issues/184 showed how weird
-        //'vi' handles opening not existing files
-        editor.push_str(&format!(" {}", path.to_string_lossy()));
-
+        // TODO: proper handling arguments containing whitespaces
+        // This does not do the right thing if the input is `editor --something "with spaces"`
         let mut editor = editor.split_whitespace();
 
         let command = editor.next().ok_or_else(|| {
             anyhow!("unable to read editor command")
         })?;
+
+        let mut editor: Vec<&OsStr> =
+            editor.map(|s| OsStr::new(s)).collect();
+
+        editor.push(path.as_os_str());
 
         Command::new(command)
             .current_dir(work_dir)

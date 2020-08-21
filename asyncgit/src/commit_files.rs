@@ -57,7 +57,7 @@ impl AsyncCommitFiles {
 
         {
             let current = self.current.lock()?;
-            if let Some(ref c) = *current {
+            if let Some(c) = &*current {
                 if c.0 == id {
                     return Ok(());
                 }
@@ -68,9 +68,9 @@ impl AsyncCommitFiles {
         let sender = self.sender.clone();
         let arc_pending = Arc::clone(&self.pending);
 
-        rayon_core::spawn(move || {
-            arc_pending.fetch_add(1, Ordering::Relaxed);
+        self.pending.fetch_add(1, Ordering::Relaxed);
 
+        rayon_core::spawn(move || {
             Self::fetch_helper(id, arc_current)
                 .expect("failed to fetch");
 
@@ -92,9 +92,15 @@ impl AsyncCommitFiles {
     ) -> Result<()> {
         let res = sync::get_commit_files(CWD, id)?;
 
+        log::trace!(
+            "get_commit_files: {} ({})",
+            id.to_string(),
+            res.len()
+        );
+
         {
-            let mut last = arc_current.lock()?;
-            *last = Some(Request(id, res));
+            let mut current = arc_current.lock()?;
+            *current = Some(Request(id, res));
         }
 
         Ok(())

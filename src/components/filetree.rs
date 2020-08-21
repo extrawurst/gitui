@@ -9,21 +9,21 @@ use crate::{
     components::{CommandInfo, Component},
     keys,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings::{commands, order},
+    strings::{self, commands, order},
     ui,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::Event;
-use std::cell::Cell;
-use std::{borrow::Cow, convert::From, path::Path};
+use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
 use tui::{backend::Backend, layout::Rect, widgets::Text, Frame};
 
 ///
 pub struct FileTreeComponent {
     title: String,
     tree: StatusTree,
+    pending: bool,
     current_hash: u64,
     focused: bool,
     show_selection: bool,
@@ -49,11 +49,13 @@ impl FileTreeComponent {
             queue,
             theme,
             scroll_top: Cell::new(0),
+            pending: true,
         }
     }
 
     ///
     pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
+        self.pending = false;
         let new_hash = hash(list);
         if self.current_hash != new_hash {
             self.tree.update(list)?;
@@ -102,6 +104,7 @@ impl FileTreeComponent {
     ///
     pub fn clear(&mut self) -> Result<()> {
         self.current_hash = 0;
+        self.pending = true;
         self.tree.update(&[])
     }
 
@@ -110,7 +113,7 @@ impl FileTreeComponent {
         if let Some(item) = self.tree.selected_item() {
             match item.kind {
                 FileTreeItemKind::File(_) => true,
-                _ => false,
+                FileTreeItemKind::Path(..) => false,
             }
         } else {
             false
@@ -207,7 +210,7 @@ impl FileTreeComponent {
             StatusItemType::New => '+',
             StatusItemType::Deleted => '-',
             StatusItemType::Renamed => 'R',
-            _ => ' ',
+            StatusItemType::Typechange => ' ',
         }
     }
 }
@@ -218,25 +221,58 @@ impl DrawableComponent for FileTreeComponent {
         f: &mut Frame<B>,
         r: Rect,
     ) -> Result<()> {
-        let selection_offset =
-            self.tree.tree.items().iter().enumerate().fold(
-                0,
-                |acc, (idx, e)| {
-                    let visible = e.info.visible;
-                    let index_above_select =
-                        idx < self.tree.selection.unwrap_or(0);
+        if self.pending {
+            let items = vec![Text::Styled(
+                Cow::from(strings::LOADING_TEXT),
+                self.theme.text(false, false),
+            )];
 
-                    if !visible && index_above_select {
-                        acc + 1
-                    } else {
-                        acc
-                    }
-                },
+            ui::draw_list(
+                f,
+                r,
+                self.title.as_str(),
+                items.into_iter(),
+                None,
+                self.focused,
+                &self.theme,
             );
+        } else {
+            let selection_offset =
+                self.tree.tree.items().iter().enumerate().fold(
+                    0,
+                    |acc, (idx, e)| {
+                        let visible = e.info.visible;
+                        let index_above_select =
+                            idx < self.tree.selection.unwrap_or(0);
 
-        let items =
-            self.tree.tree.items().iter().enumerate().filter_map(
-                |(idx, e)| {
+                        if !visible && index_above_select {
+                            acc + 1
+                        } else {
+                            acc
+                        }
+                    },
+                );
+
+            let select = self
+                .tree
+                .selection
+                .map(|idx| idx.saturating_sub(selection_offset))
+                .unwrap_or_default();
+            let tree_height = r.height.saturating_sub(2) as usize;
+
+            self.scroll_top.set(ui::calc_scroll_top(
+                self.scroll_top.get(),
+                tree_height,
+                select,
+            ));
+
+            let items = self
+                .tree
+                .tree
+                .items()
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, e)| {
                     Self::item_to_text(
                         e,
                         r.width,
@@ -247,31 +283,19 @@ impl DrawableComponent for FileTreeComponent {
                                 .map_or(false, |e| e == idx),
                         &self.theme,
                     )
-                },
+                })
+                .skip(self.scroll_top.get());
+
+            ui::draw_list(
+                f,
+                r,
+                self.title.as_str(),
+                items,
+                Some(select),
+                self.focused,
+                &self.theme,
             );
-
-        let select = self
-            .tree
-            .selection
-            .map(|idx| idx.saturating_sub(selection_offset))
-            .unwrap_or_default();
-        let tree_height = r.height.saturating_sub(2) as usize;
-
-        self.scroll_top.set(ui::calc_scroll_top(
-            self.scroll_top.get(),
-            tree_height,
-            select,
-        ));
-
-        ui::draw_list(
-            f,
-            r,
-            self.title.as_str(),
-            items.skip(self.scroll_top.get()),
-            Some(select),
-            self.focused,
-            &self.theme,
-        );
+        }
 
         Ok(())
     }
@@ -330,5 +354,6 @@ impl Component for FileTreeComponent {
     }
     fn focus(&mut self, focus: bool) {
         self.focused = focus;
+        self.show_selection(focus);
     }
 }

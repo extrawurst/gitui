@@ -1,6 +1,6 @@
 use super::{get_head, utils::repo, CommitId};
 use crate::error::Result;
-use git2::{ErrorCode, Repository, Signature};
+use git2::{ErrorCode, ObjectType, Repository, Signature};
 use scopetime::scope_time;
 
 ///
@@ -80,17 +80,39 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
         .into())
 }
 
+/// Tag a commit.
+///
+/// This function will return an `Err(…)` variant if the tag’s name is refused
+/// by git or if the tag already exists.
+pub fn tag(
+    repo_path: &str,
+    commit_id: &CommitId,
+    tag: &str,
+) -> Result<CommitId> {
+    scope_time!("tag");
+
+    let repo = repo(repo_path)?;
+
+    let signature = signature_allow_undefined_name(&repo)?;
+    let object_id = commit_id.get_oid();
+    let target =
+        repo.find_object(object_id, Some(ObjectType::Commit))?;
+
+    Ok(repo.tag(tag, &target, &signature, "", false)?.into())
+}
+
 #[cfg(test)]
 mod tests {
 
     use crate::error::Result;
     use crate::sync::{
         commit, get_commit_details, get_commit_files, stage_add_file,
+        tags::get_tags,
         tests::{get_statuses, repo_init, repo_init_empty},
         utils::get_head,
         LogWalker,
     };
-    use commit::amend;
+    use commit::{amend, tag};
     use git2::Repository;
     use std::{fs::File, io::Write, path::Path};
 
@@ -182,6 +204,44 @@ mod tests {
         let head = get_head(repo_path)?;
 
         assert_eq!(head, new_id);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_tag() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?
+            .write_all(b"test\nfoo")?;
+
+        stage_add_file(repo_path, file_path)?;
+
+        let new_id = commit(repo_path, "commit msg")?;
+
+        tag(repo_path, &new_id, "tag")?;
+
+        assert_eq!(
+            get_tags(repo_path).unwrap()[&new_id],
+            vec!["tag"]
+        );
+
+        assert!(matches!(tag(repo_path, &new_id, "tag"), Err(_)));
+
+        assert_eq!(
+            get_tags(repo_path).unwrap()[&new_id],
+            vec!["tag"]
+        );
+
+        tag(repo_path, &new_id, "second-tag")?;
+
+        assert_eq!(
+            get_tags(repo_path).unwrap()[&new_id],
+            vec!["second-tag", "tag"]
+        );
 
         Ok(())
     }

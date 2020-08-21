@@ -157,7 +157,7 @@ impl CommandBar {
             let r = Rect::new(
                 r.width.saturating_sub(MORE_WIDTH),
                 r.y + r.height.saturating_sub(1),
-                MORE_WIDTH,
+                MORE_WIDTH.min(r.width),
                 1,
             );
 

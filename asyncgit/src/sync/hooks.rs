@@ -105,6 +105,13 @@ fn run_hook(
     let output = Command::new("bash")
         .args(bash_args)
         .current_dir(path)
+        // This call forces Command to handle the Path environment correctly on windows,
+        // the specific env set here does not matter
+        // see https://github.com/rust-lang/rust/issues/37519
+        .env(
+            "DUMMY_ENV_TO_FIX_WINDOWS_CMD_RUNS",
+            "FixPathHandlingOnWindows",
+        )
         .output();
 
     let output = output.expect("general hook error");
@@ -183,8 +190,7 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 exit 0
         ";
 
@@ -204,8 +210,7 @@ exit 0
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 echo 'msg' > $1
 echo 'rejected'
 exit 1
@@ -230,8 +235,7 @@ exit 1
         let root = repo.path().parent().unwrap();
         // let repo_path = root.as_os_str().to_str().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 echo 'msg' > $1
 echo 'rejected'
 exit 1
@@ -261,8 +265,7 @@ exit 1
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 echo 'msg' > $1
 exit 0
         ";
@@ -281,8 +284,7 @@ exit 0
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
 
-        let hook = b"
-#!/bin/sh
+        let hook = b"#!/bin/sh
 echo 'rejected'
 exit 1
         ";

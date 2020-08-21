@@ -11,6 +11,7 @@ mod inspect_commit;
 mod msg;
 mod reset;
 mod stashmsg;
+mod tag_commit;
 mod textinput;
 mod utils;
 
@@ -30,6 +31,8 @@ pub use inspect_commit::InspectCommitComponent;
 pub use msg::MsgComponent;
 pub use reset::ResetComponent;
 pub use stashmsg::StashMsgComponent;
+pub use tag_commit::TagCommitComponent;
+pub use textinput::TextInputComponent;
 pub use utils::filetree::FileTreeItemKind;
 
 use crate::ui::style::Theme;
@@ -100,6 +103,12 @@ pub enum ScrollType {
     End,
     PageUp,
     PageDown,
+}
+
+#[derive(Copy, Clone)]
+pub enum Direction {
+    Up,
+    Down,
 }
 
 ///

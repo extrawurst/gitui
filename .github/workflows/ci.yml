@@ -11,8 +11,9 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -26,6 +27,11 @@ jobs:
         profile: minimal
         components: clippy
 
+    - name: Install dependencies for clipboard access
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get -qq install libxcb-shape0-dev libxcb-xfixes0-dev
+
     - name: Build Debug
       run: |
         rustc --version
@@ -38,6 +44,7 @@ jobs:
       run: |
         cargo clean
         make clippy
+
     - name: Build Release
       run: make build-release
 
@@ -51,6 +58,10 @@ jobs:
         toolchain: stable
         profile: minimal
         target: x86_64-unknown-linux-musl
+
+    - name: Install dependencies for clipboard access
+      run: |
+        sudo apt-get -qq install libxcb-shape0-dev libxcb-xfixes0-dev
 
     - name: Setup MUSL
       run: |

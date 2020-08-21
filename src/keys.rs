@@ -27,6 +27,8 @@ pub const FOCUS_WORKDIR: KeyEvent = no_mod(KeyCode::Char('w'));
 pub const FOCUS_STAGE: KeyEvent = no_mod(KeyCode::Char('s'));
 pub const FOCUS_RIGHT: KeyEvent = no_mod(KeyCode::Right);
 pub const FOCUS_LEFT: KeyEvent = no_mod(KeyCode::Left);
+pub const FOCUS_ABOVE: KeyEvent = no_mod(KeyCode::Up);
+pub const FOCUS_BELOW: KeyEvent = no_mod(KeyCode::Down);
 pub const EXIT: KeyEvent =
     with_mod(KeyCode::Char('c'), KeyModifiers::CONTROL);
 pub const EXIT_POPUP: KeyEvent = no_mod(KeyCode::Esc);
@@ -48,6 +50,7 @@ pub const SHIFT_UP: KeyEvent =
 pub const SHIFT_DOWN: KeyEvent =
     with_mod(KeyCode::Down, KeyModifiers::SHIFT);
 pub const ENTER: KeyEvent = no_mod(KeyCode::Enter);
+pub const COPY: KeyEvent = no_mod(KeyCode::Char('y'));
 pub const EDIT_FILE: KeyEvent = no_mod(KeyCode::Char('e'));
 pub const STATUS_STAGE_FILE: KeyEvent = no_mod(KeyCode::Enter);
 pub const STATUS_STAGE_ALL: KeyEvent = no_mod(KeyCode::Char('a'));
@@ -66,5 +69,6 @@ pub const STASH_DROP: KeyEvent =
     with_mod(KeyCode::Char('D'), KeyModifiers::SHIFT);
 pub const CMD_BAR_TOGGLE: KeyEvent = no_mod(KeyCode::Char('.'));
 pub const LOG_COMMIT_DETAILS: KeyEvent = no_mod(KeyCode::Enter);
+pub const LOG_TAG_COMMIT: KeyEvent = no_mod(KeyCode::Char('t'));
 pub const COMMIT_AMEND: KeyEvent =
     with_mod(KeyCode::Char('a'), KeyModifiers::CONTROL);

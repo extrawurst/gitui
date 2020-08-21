@@ -27,12 +27,18 @@ pub static CONFIRM_MSG_STASHDROP: &str = "confirm stash drop?";
 pub static CONFIRM_MSG_RESETHUNK: &str = "confirm reset hunk?";
 
 pub static LOG_TITLE: &str = "Commit";
+
+pub static TAG_COMMIT_POPUP_TITLE: &str = "Tag";
+pub static TAG_COMMIT_POPUP_MSG: &str = "type tag";
+
 pub static STASHLIST_TITLE: &str = "Stashes";
 
 pub static HELP_TITLE: &str = "Help: all commands";
 
 pub static STASHING_FILES_TITLE: &str = "Files to Stash";
 pub static STASHING_OPTIONS_TITLE: &str = "Options";
+
+pub static LOADING_TEXT: &str = "Loading ...";
 
 pub mod commit {
     pub static DETAILS_AUTHOR: &str = "Author: ";
@@ -44,7 +50,6 @@ pub mod commit {
     pub static DETAILS_INFO_TITLE: &str = "Info";
     pub static DETAILS_MESSAGE_TITLE: &str = "Message";
     pub static DETAILS_FILES_TITLE: &str = "Files:";
-    pub static DETAILS_FILES_LOADING_TITLE: &str = "Files: loading";
 }
 
 pub mod order {
@@ -81,6 +86,13 @@ pub mod commands {
         CMD_GROUP_GENERAL,
     );
     ///
+    pub static NAVIGATE_COMMIT_MESSAGE: CommandText =
+        CommandText::new(
+            "Nav [\u{2191}\u{2193}]",
+            "navigate commit message",
+            CMD_GROUP_GENERAL,
+        );
+    ///
     pub static NAVIGATE_TREE: CommandText = CommandText::new(
         "Nav [\u{2190}\u{2191}\u{2192}\u{2193}]",
         "navigate tree view",
@@ -91,6 +103,12 @@ pub mod commands {
         "Scroll [\u{2191}\u{2193}]",
         "scroll up or down in focused view",
         CMD_GROUP_GENERAL,
+    );
+    ///
+    pub static COPY: CommandText = CommandText::new(
+        "Copy [y]",
+        "copy selected lines to clipboard",
+        CMD_GROUP_DIFF,
     );
     ///
     pub static DIFF_HOME_END: CommandText = CommandText::new(
@@ -295,4 +313,10 @@ pub mod commands {
         "inspect selected commit in detail",
         CMD_GROUP_LOG,
     );
+    ///
+    pub static LOG_TAG_COMMIT: CommandText =
+        CommandText::new("Tag [t]", "tag commit", CMD_GROUP_LOG);
+    ///
+    pub static TAG_COMMIT_CONFIRM_MSG: CommandText =
+        CommandText::new("Tag [enter]", "tag commit", CMD_GROUP_LOG);
 }

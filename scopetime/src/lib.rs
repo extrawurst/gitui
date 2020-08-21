@@ -2,7 +2,7 @@
 
 #![forbid(unsafe_code)]
 #![forbid(missing_docs)]
-#![deny(clippy::result_unwrap_used)]
+#![deny(clippy::unwrap_used)]
 
 use std::time::Instant;
 

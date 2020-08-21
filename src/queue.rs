@@ -49,6 +49,8 @@ pub enum InternalEvent {
     ///
     InspectCommit(CommitId, Option<CommitTags>),
     ///
+    TagCommit(CommitId),
+    ///
     OpenExternalEditor(Option<String>),
 }
 
