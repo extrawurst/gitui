@@ -163,142 +163,88 @@ impl KeyConfig {
 
 // The hint follows apple design
 // http://xahlee.info/comp/unicode_computing_symbols.html
-#[macro_export]
-macro_rules! get_hint {
-    ($target: expr) => {
-        match $target.code {
-            crossterm::event::KeyCode::Char(c) => {
-                format!("{}{}", crate::get_modifier_hint!($target), c)
-            }
-            crossterm::event::KeyCode::Enter => {
-                format!(
-                    "{}\u{23ce}",
-                    crate::get_modifier_hint!($target)
-                ) //⏎
-            }
-            crossterm::event::KeyCode::Left => {
-                format!(
-                    "{}\u{2190}",
-                    crate::get_modifier_hint!($target)
-                ) //←
-            }
-            crossterm::event::KeyCode::Right => {
-                format!(
-                    "{}\u{2192}",
-                    crate::get_modifier_hint!($target)
-                ) //→
-            }
-            crossterm::event::KeyCode::Up => {
-                format!(
-                    "{}\u{2191}",
-                    crate::get_modifier_hint!($target)
-                ) //↑
-            }
-            crossterm::event::KeyCode::Down => {
-                format!(
-                    "{}\u{2193}",
-                    crate::get_modifier_hint!($target)
-                ) //↓
-            }
-            crossterm::event::KeyCode::Backspace => {
-                format!(
-                    "{}\u{232b}",
-                    crate::get_modifier_hint!($target)
-                ) //⌫
-            }
-            crossterm::event::KeyCode::Home => {
-                format!(
-                    "{}\u{2912}",
-                    crate::get_modifier_hint!($target)
-                ) //⤒
-            }
-            crossterm::event::KeyCode::End => {
-                format!(
-                    "{}\u{2913}",
-                    crate::get_modifier_hint!($target)
-                ) //⤓
-            }
-            crossterm::event::KeyCode::PageUp => {
-                format!(
-                    "{}\u{21de}",
-                    crate::get_modifier_hint!($target)
-                ) //⇞
-            }
-            crossterm::event::KeyCode::PageDown => {
-                format!(
-                    "{}\u{21df}",
-                    crate::get_modifier_hint!($target)
-                ) //⇟
-            }
-            crossterm::event::KeyCode::Tab => {
-                format!(
-                    "{}\u{21e5}",
-                    crate::get_modifier_hint!($target)
-                ) //⇥
-            }
-            crossterm::event::KeyCode::BackTab => {
-                format!(
-                    "{}\u{21e4}",
-                    crate::get_modifier_hint!($target)
-                ) //⇤
-            }
-            crossterm::event::KeyCode::Delete => {
-                format!(
-                    "{}\u{2326}",
-                    crate::get_modifier_hint!($target)
-                ) //⌦
-            }
-            crossterm::event::KeyCode::Insert => {
-                format!(
-                    "{}\u{2380}",
-                    crate::get_modifier_hint!($target)
-                ) //⎀
-            }
-            crossterm::event::KeyCode::Esc => {
-                format!(
-                    "{}\u{238b}",
-                    crate::get_modifier_hint!($target)
-                ) //⎋
-            }
-            crossterm::event::KeyCode::F(u) => format!(
-                "{}F{}",
-                crate::get_modifier_hint!($target),
-                u
-            ),
-            crossterm::event::KeyCode::Null => {
-                format!("{}", crate::get_modifier_hint!($target))
-            }
-        };
-    };
+pub fn get_hint(ev: KeyEvent) -> String {
+    match ev.code {
+        KeyCode::Char(c) => {
+            format!("{}{}", get_modifier_hint(ev.modifiers), c)
+        }
+        KeyCode::Enter => {
+            format!("{}\u{23ce}", get_modifier_hint(ev.modifiers)) //⏎
+        }
+        KeyCode::Left => {
+            format!("{}\u{2190}", get_modifier_hint(ev.modifiers)) //←
+        }
+        KeyCode::Right => {
+            format!("{}\u{2192}", get_modifier_hint(ev.modifiers)) //→
+        }
+        KeyCode::Up => {
+            format!("{}\u{2191}", get_modifier_hint(ev.modifiers)) //↑
+        }
+        KeyCode::Down => {
+            format!("{}\u{2193}", get_modifier_hint(ev.modifiers)) //↓
+        }
+        KeyCode::Backspace => {
+            format!("{}\u{232b}", get_modifier_hint(ev.modifiers)) //⌫
+        }
+        KeyCode::Home => {
+            format!("{}\u{2912}", get_modifier_hint(ev.modifiers)) //⤒
+        }
+        KeyCode::End => {
+            format!("{}\u{2913}", get_modifier_hint(ev.modifiers)) //⤓
+        }
+        KeyCode::PageUp => {
+            format!("{}\u{21de}", get_modifier_hint(ev.modifiers)) //⇞
+        }
+        KeyCode::PageDown => {
+            format!("{}\u{21df}", get_modifier_hint(ev.modifiers)) //⇟
+        }
+        KeyCode::Tab => {
+            format!("{}\u{21e5}", get_modifier_hint(ev.modifiers)) //⇥
+        }
+        KeyCode::BackTab => {
+            format!("{}\u{21e4}", get_modifier_hint(ev.modifiers)) //⇤
+        }
+        KeyCode::Delete => {
+            format!("{}\u{2326}", get_modifier_hint(ev.modifiers)) //⌦
+        }
+        KeyCode::Insert => {
+            format!("{}\u{2380}", get_modifier_hint(ev.modifiers)) //⎀
+        }
+        KeyCode::Esc => {
+            format!("{}\u{238b}", get_modifier_hint(ev.modifiers)) //⎋
+        }
+        KeyCode::F(u) => {
+            format!("{}F{}", get_modifier_hint(ev.modifiers), u)
+        }
+        KeyCode::Null => {
+            format!("{}", get_modifier_hint(ev.modifiers))
+        }
+    }
 }
 
-#[macro_export]
-macro_rules! get_modifier_hint {
-    ($target: expr) => {
-        match $target.modifiers {
-            crossterm::event::KeyModifiers::CONTROL => {
-                "^".to_string()
-            }
-            crossterm::event::KeyModifiers::SHIFT => {
-                "\u{2192}".to_string() //⇧
-            }
-            crossterm::event::KeyModifiers::ALT => {
-                "\u{2325}".to_string() //⌥
-            }
-            _ => "".to_string(),
-        };
-    };
+fn get_modifier_hint(modifier: KeyModifiers) -> String {
+    match modifier {
+        KeyModifiers::CONTROL => "^".to_string(),
+        KeyModifiers::SHIFT => {
+            "\u{2192}".to_string() //⇧
+        }
+        KeyModifiers::ALT => {
+            "\u{2325}".to_string() //⌥
+        }
+        _ => "".to_string(),
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::get_hint;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     #[test]
-    fn get_hint() {
-        let h = get_hint!(KeyEvent {
+    fn test_get_hint() {
+        let h = get_hint(KeyEvent {
             code: KeyCode::Char('c'),
-            modifiers: KeyModifiers::CONTROL
+            modifiers: KeyModifiers::CONTROL,
         });
         assert_eq!(h, "^c");
     }
