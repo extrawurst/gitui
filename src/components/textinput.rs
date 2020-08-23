@@ -278,8 +278,12 @@ mod tests {
 
     #[test]
     fn test_smoke() {
-        let mut comp =
-            TextInputComponent::new(SharedTheme::default(), "", "");
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
 
         comp.set_text(String::from("a\nb"));
 
@@ -302,8 +306,12 @@ mod tests {
 
     #[test]
     fn test_visualize_newline() {
-        let mut comp =
-            TextInputComponent::new(SharedTheme::default(), "", "");
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
 
         comp.set_text(String::from("a\nb"));
 
