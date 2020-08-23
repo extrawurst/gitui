@@ -24,6 +24,13 @@ use tui::{
     Frame,
 };
 
+enum Detail {
+    Author,
+    Date,
+    Commiter,
+    Sha,
+}
+
 pub struct DetailsComponent {
     data: Option<CommitDetails>,
     tags: Vec<String>,
@@ -153,17 +160,41 @@ impl DetailsComponent {
             .collect()
     }
 
+    fn style_detail(&self, field: &Detail) -> Text {
+        match field {
+            Detail::Author => Text::Styled(
+                Cow::from(strings::commit::details_author(
+                    &self.key_config,
+                )),
+                self.theme.text(false, false),
+            ),
+            Detail::Date => Text::Styled(
+                Cow::from(strings::commit::details_date(
+                    &self.key_config,
+                )),
+                self.theme.text(false, false),
+            ),
+            Detail::Commiter => Text::Styled(
+                Cow::from(strings::commit::details_committer(
+                    &self.key_config,
+                )),
+                self.theme.text(false, false),
+            ),
+            Detail::Sha => Text::Styled(
+                Cow::from(strings::commit::details_tags(
+                    &self.key_config,
+                )),
+                self.theme.text(false, false),
+            ),
+        }
+    }
+
     fn get_text_info(&self) -> Vec<Text> {
         let new_line = Text::Raw(Cow::from("\n"));
 
         if let Some(ref data) = self.data {
             let mut res = vec![
-                Text::Styled(
-                    Cow::from(strings::commit::details_author(
-                        &self.key_config,
-                    )),
-                    self.theme.text(false, false),
-                ),
+                self.style_detail(&Detail::Author),
                 Text::Styled(
                     Cow::from(format!(
                         "{} <{}>",
@@ -172,12 +203,7 @@ impl DetailsComponent {
                     self.theme.text(true, false),
                 ),
                 new_line.clone(),
-                Text::Styled(
-                    Cow::from(strings::commit::details_date(
-                        &self.key_config,
-                    )),
-                    self.theme.text(false, false),
-                ),
+                self.style_detail(&Detail::Date),
                 Text::Styled(
                     Cow::from(time_to_string(
                         data.author.time,
@@ -190,14 +216,7 @@ impl DetailsComponent {
 
             if let Some(ref committer) = data.committer {
                 res.extend(vec![
-                    Text::Styled(
-                        Cow::from(
-                            strings::commit::details_committer(
-                                &self.key_config,
-                            ),
-                        ),
-                        self.theme.text(false, false),
-                    ),
+                    self.style_detail(&Detail::Commiter),
                     Text::Styled(
                         Cow::from(format!(
                             "{} <{}>",
@@ -206,12 +225,7 @@ impl DetailsComponent {
                         self.theme.text(true, false),
                     ),
                     new_line.clone(),
-                    Text::Styled(
-                        Cow::from(strings::commit::details_date(
-                            &self.key_config,
-                        )),
-                        self.theme.text(false, false),
-                    ),
+                    self.style_detail(&Detail::Date),
                     Text::Styled(
                         Cow::from(time_to_string(
                             committer.time,
@@ -238,13 +252,7 @@ impl DetailsComponent {
             ]);
 
             if !self.tags.is_empty() {
-                res.push(Text::Styled(
-                    Cow::from(strings::commit::details_tags(
-                        &self.key_config,
-                    )),
-                    self.theme.text(false, false),
-                ));
-
+                res.push(self.style_detail(&Detail::Sha));
                 res.extend(
                     self.tags
                         .iter()
