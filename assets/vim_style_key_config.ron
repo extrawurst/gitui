@@ -3,10 +3,10 @@
 // bits: 1  SHIFT
 // bits: 2  CONTROL
 (
-    tab_1: ( code: Char('1'), modifiers: ( bits: 0,),),
-    tab_2: ( code: Char('2'), modifiers: ( bits: 0,),),
-    tab_3: ( code: Char('3'), modifiers: ( bits: 0,),),
-    tab_4: ( code: Char('4'), modifiers: ( bits: 0,),),
+    tab_status: ( code: Char('1'), modifiers: ( bits: 0,),),
+    tab_log: ( code: Char('2'), modifiers: ( bits: 0,),),
+    tab_stashing: ( code: Char('3'), modifiers: ( bits: 0,),),
+    tab_stashes: ( code: Char('4'), modifiers: ( bits: 0,),),
 
     tab_toggle: ( code: Tab, modifiers: ( bits: 0,),),
     tab_toggle_reverse: ( code: BackTab, modifiers: ( bits: 0,),),
@@ -62,4 +62,5 @@
     log_commit_details: ( code: Enter, modifiers: ( bits: 0,),),
     log_tag_commit: ( code: Char('t'), modifiers: ( bits: 0,),),
     commit_amend: ( code: Char('A'), modifiers: ( bits: 0,),),
+    copy: ( code: Char('y'), modifiers: ( bits: 0,),),
 )
