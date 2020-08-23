@@ -1,13 +1,5 @@
 use crate::{get_hint, keys::SharedKeyConfig};
 
-static CMD_GROUP_GENERAL: &str = "-- General --";
-static CMD_GROUP_DIFF: &str = "-- Diff --";
-static CMD_GROUP_CHANGES: &str = "-- Changes --";
-static CMD_GROUP_COMMIT: &str = "-- Commit --";
-static CMD_GROUP_STASHING: &str = "-- Stashing --";
-static CMD_GROUP_STASHES: &str = "-- Stashes --";
-static CMD_GROUP_LOG: &str = "-- Log --";
-
 pub mod order {
     pub static NAV: i8 = 1;
 }
@@ -120,7 +112,7 @@ pub fn loading_text(_key_config: &SharedKeyConfig) -> String {
 }
 
 pub mod commit {
-    use super::*;
+    use crate::keys::SharedKeyConfig;
     pub fn details_author(_key_config: &SharedKeyConfig) -> String {
         "author:: ".to_string()
     }
@@ -156,8 +148,17 @@ pub mod commit {
 }
 
 pub mod commands {
-    use super::*;
     use crate::components::CommandText;
+    use crate::{get_hint, keys::SharedKeyConfig};
+
+    static CMD_GROUP_GENERAL: &str = "-- General --";
+    static CMD_GROUP_DIFF: &str = "-- Diff --";
+    static CMD_GROUP_CHANGES: &str = "-- Changes --";
+    static CMD_GROUP_COMMIT: &str = "-- Commit --";
+    static CMD_GROUP_STASHING: &str = "-- Stashing --";
+    static CMD_GROUP_STASHES: &str = "-- Stashes --";
+    static CMD_GROUP_LOG: &str = "-- Log --";
+
     pub fn toggle_tabs(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!("Next [{}]", get_hint!(key_config.tab_toggle)),
