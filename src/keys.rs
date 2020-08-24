@@ -235,7 +235,7 @@ fn get_modifier_hint(modifier: KeyModifiers) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::get_hint;
+    use super::{get_hint, KeyConfig};
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     #[test]
@@ -245,5 +245,16 @@ mod tests {
             modifiers: KeyModifiers::CONTROL,
         });
         assert_eq!(h, "^c");
+    }
+
+    #[test]
+    fn test_load_vim_style_example() {
+        assert_eq!(
+            KeyConfig::read_file(
+                "assets/vim_style_key_config.ron".into()
+            )
+            .is_ok(),
+            true
+        );
     }
 }
