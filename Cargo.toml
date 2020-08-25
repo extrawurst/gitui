@@ -26,7 +26,7 @@ clap = { version = "2.33", default-features = false }
 tui = { version = "0.9", default-features = false, features = ['crossterm'] }
 bytesize = { version = "1.0.1", default-features = false}
 itertools = "0.9"
-rayon-core = "1.7"
+rayon-core = "1.8"
 log = "0.4"
 simplelog = { version = "0.8", default-features = false }
 dirs = "3.0"
