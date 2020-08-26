@@ -3,6 +3,7 @@ use crate::{
         visibility_blocking, CommandBlocking, CommandInfo, Component,
         DrawableComponent,
     },
+    keys::SharedKeyConfig,
     strings,
     ui::{self, style::SharedTheme},
 };
@@ -27,14 +28,19 @@ use tui::{
 pub struct ExternalEditorComponent {
     visible: bool,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
 }
 
 impl ExternalEditorComponent {
     ///
-    pub fn new(theme: SharedTheme) -> Self {
+    pub fn new(
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             visible: false,
             theme,
+            key_config,
         }
     }
 
@@ -93,8 +99,9 @@ impl DrawableComponent for ExternalEditorComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let txt =
-                vec![Text::Raw(strings::MSG_OPENING_EDITOR.into())];
+            let txt = vec![Text::Raw(
+                strings::msg_opening_editor(&self.key_config).into(),
+            )];
 
             let area = ui::centered_rect_absolute(25, 3, f.size());
             f.render_widget(Clear, area);

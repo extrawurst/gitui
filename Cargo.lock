@@ -316,6 +316,7 @@ dependencies = [
  "libc",
  "mio",
  "parking_lot 0.10.2",
+ "serde",
  "signal-hook",
  "winapi",
 ]

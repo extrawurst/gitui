@@ -3,9 +3,9 @@ use crate::{
         popup_paragraph, visibility_blocking, CommandBlocking,
         CommandInfo, Component, DrawableComponent,
     },
+    keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue},
-    strings::{self, commands},
-    ui,
+    strings, ui,
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
@@ -24,6 +24,7 @@ pub struct ResetComponent {
     visible: bool,
     queue: Queue,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for ResetComponent {
@@ -43,7 +44,12 @@ impl DrawableComponent for ResetComponent {
             let area = ui::centered_rect(30, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                popup_paragraph(title, txt.iter(), &self.theme, true),
+                popup_paragraph(
+                    &title,
+                    txt.iter(),
+                    &self.theme,
+                    true,
+                ),
                 area,
             );
         }
@@ -59,12 +65,12 @@ impl Component for ResetComponent {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            commands::RESET_CONFIRM,
+            strings::commands::reset_confirm(&self.key_config),
             true,
             self.visible,
         ));
         out.push(CommandInfo::new(
-            commands::CLOSE_POPUP,
+            strings::commands::close_popup(&self.key_config),
             true,
             self.visible,
         ));
@@ -111,12 +117,17 @@ impl Component for ResetComponent {
 
 impl ResetComponent {
     ///
-    pub fn new(queue: Queue, theme: SharedTheme) -> Self {
+    pub fn new(
+        queue: Queue,
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             target: None,
             visible: false,
             queue,
             theme,
+            key_config,
         }
     }
     ///
@@ -137,24 +148,26 @@ impl ResetComponent {
         self.hide();
     }
 
-    fn get_text(&self) -> (&str, &str) {
+    fn get_text(&self) -> (String, String) {
         if let Some(ref a) = self.target {
             return match a {
                 Action::Reset(_) => (
-                    strings::CONFIRM_TITLE_RESET,
-                    strings::CONFIRM_MSG_RESET,
+                    strings::confirm_title_reset(&self.key_config),
+                    strings::confirm_msg_reset(&self.key_config),
                 ),
                 Action::StashDrop(_) => (
-                    strings::CONFIRM_TITLE_STASHDROP,
-                    strings::CONFIRM_MSG_STASHDROP,
+                    strings::confirm_title_stashdrop(
+                        &self.key_config,
+                    ),
+                    strings::confirm_msg_stashdrop(&self.key_config),
                 ),
                 Action::ResetHunk(_, _) => (
-                    strings::CONFIRM_TITLE_RESET,
-                    strings::CONFIRM_MSG_RESETHUNK,
+                    strings::confirm_title_reset(&self.key_config),
+                    strings::confirm_msg_resethunk(&self.key_config),
                 ),
             };
         }
 
-        ("", "")
+        ("".to_string(), "".to_string())
     }
 }

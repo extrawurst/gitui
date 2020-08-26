@@ -3,10 +3,9 @@ use super::{
 };
 use crate::{
     components::{CommandInfo, Component},
-    keys,
+    keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
-    strings::{self, commands},
-    try_or_popup,
+    strings, try_or_popup,
     ui::{calc_scroll_top, style::SharedTheme},
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
@@ -106,6 +105,7 @@ pub struct DiffComponent {
     scroll_top: Cell<usize>,
     queue: Queue,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
     is_immutable: bool,
 }
 
@@ -114,6 +114,7 @@ impl DiffComponent {
     pub fn new(
         queue: Queue,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
         is_immutable: bool,
     ) -> Self {
         Self {
@@ -127,6 +128,7 @@ impl DiffComponent {
             selection: Selection::Single(0),
             scroll_top: Cell::new(0),
             theme,
+            key_config,
             is_immutable,
         }
     }
@@ -556,12 +558,15 @@ impl DrawableComponent for DiffComponent {
             self.selection.get_end(),
         ));
 
-        let title =
-            format!("{}{}", strings::TITLE_DIFF, self.current.path);
+        let title = format!(
+            "{}{}",
+            strings::title_diff(&self.key_config),
+            self.current.path
+        );
 
         let txt = if self.pending {
             vec![Text::Styled(
-                Cow::from(strings::LOADING_TEXT),
+                Cow::from(strings::loading_text(&self.key_config)),
                 self.theme.text(false, false),
             )]
         } else {
@@ -590,20 +595,20 @@ impl Component for DiffComponent {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            commands::SCROLL,
+            strings::commands::scroll(&self.key_config),
             self.can_scroll(),
             self.focused,
         ));
 
         out.push(CommandInfo::new(
-            commands::COPY,
+            strings::commands::copy(&self.key_config),
             true,
             self.focused,
         ));
 
         out.push(
             CommandInfo::new(
-                commands::DIFF_HOME_END,
+                strings::commands::diff_home_end(&self.key_config),
                 self.can_scroll(),
                 self.focused,
             )
@@ -612,17 +617,17 @@ impl Component for DiffComponent {
 
         if !self.is_immutable {
             out.push(CommandInfo::new(
-                commands::DIFF_HUNK_REMOVE,
+                strings::commands::diff_hunk_remove(&self.key_config),
                 self.selected_hunk.is_some(),
                 self.focused && self.is_stage(),
             ));
             out.push(CommandInfo::new(
-                commands::DIFF_HUNK_ADD,
+                strings::commands::diff_hunk_add(&self.key_config),
                 self.selected_hunk.is_some(),
                 self.focused && !self.is_stage(),
             ));
             out.push(CommandInfo::new(
-                commands::DIFF_HUNK_REVERT,
+                strings::commands::diff_hunk_revert(&self.key_config),
                 self.selected_hunk.is_some(),
                 self.focused && !self.is_stage(),
             ));
@@ -634,64 +639,56 @@ impl Component for DiffComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = ev {
-                return match e {
-                    keys::MOVE_DOWN => {
-                        self.move_selection(ScrollType::Down)?;
-                        Ok(true)
+                return if e == self.key_config.move_down {
+                    self.move_selection(ScrollType::Down)?;
+                    Ok(true)
+                } else if e == self.key_config.shift_down {
+                    self.modify_selection(Direction::Down)?;
+                    Ok(true)
+                } else if e == self.key_config.shift_up {
+                    self.modify_selection(Direction::Up)?;
+                    Ok(true)
+                } else if e == self.key_config.end {
+                    self.move_selection(ScrollType::End)?;
+                    Ok(true)
+                } else if e == self.key_config.home {
+                    self.move_selection(ScrollType::Home)?;
+                    Ok(true)
+                } else if e == self.key_config.move_up {
+                    self.move_selection(ScrollType::Up)?;
+                    Ok(true)
+                } else if e == self.key_config.page_up {
+                    self.move_selection(ScrollType::PageUp)?;
+                    Ok(true)
+                } else if e == self.key_config.page_down {
+                    self.move_selection(ScrollType::PageDown)?;
+                    Ok(true)
+                } else if e == self.key_config.enter
+                    && !self.is_immutable
+                {
+                    if self.current.is_stage {
+                        self.unstage_hunk()?;
+                    } else {
+                        self.stage_hunk()?;
                     }
-                    keys::SHIFT_DOWN => {
-                        self.modify_selection(Direction::Down)?;
-                        Ok(true)
-                    }
-                    keys::SHIFT_UP => {
-                        self.modify_selection(Direction::Up)?;
-                        Ok(true)
-                    }
-                    keys::END => {
-                        self.move_selection(ScrollType::End)?;
-                        Ok(true)
-                    }
-                    keys::HOME => {
-                        self.move_selection(ScrollType::Home)?;
-                        Ok(true)
-                    }
-                    keys::MOVE_UP => {
-                        self.move_selection(ScrollType::Up)?;
-                        Ok(true)
-                    }
-                    keys::PAGE_UP => {
-                        self.move_selection(ScrollType::PageUp)?;
-                        Ok(true)
-                    }
-                    keys::PAGE_DOWN => {
-                        self.move_selection(ScrollType::PageDown)?;
-                        Ok(true)
-                    }
-                    keys::ENTER if !self.is_immutable => {
-                        if self.current.is_stage {
-                            self.unstage_hunk()?;
+                    Ok(true)
+                } else if e == self.key_config.diff_reset_hunk
+                    && !self.is_immutable
+                    && !self.is_stage()
+                {
+                    if let Some(diff) = &self.diff {
+                        if diff.untracked {
+                            self.reset_untracked()?;
                         } else {
-                            self.stage_hunk()?;
+                            self.reset_hunk()?;
                         }
-                        Ok(true)
                     }
-                    keys::DIFF_RESET_HUNK
-                        if !self.is_immutable && !self.is_stage() =>
-                    {
-                        if let Some(diff) = &self.diff {
-                            if diff.untracked {
-                                self.reset_untracked()?;
-                            } else {
-                                self.reset_hunk()?;
-                            }
-                        }
-                        Ok(true)
-                    }
-                    keys::COPY => {
-                        self.copy_selection()?;
-                        Ok(true)
-                    }
-                    _ => Ok(false),
+                    Ok(true)
+                } else if e == self.key_config.copy {
+                    self.copy_selection()?;
+                    Ok(true)
+                } else {
+                    Ok(false)
                 };
             }
         }

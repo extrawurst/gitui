@@ -8,9 +8,9 @@ use crate::{
         ResetComponent, StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
-    keys,
+    keys::{KeyConfig, SharedKeyConfig},
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
-    strings::{self, commands, order},
+    strings::{self, order},
     tabs::{Revlog, StashList, Stashing, Status},
     ui::style::{SharedTheme, Theme},
 };
@@ -49,6 +49,7 @@ pub struct App {
     stashlist_tab: StashList,
     queue: Queue,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
     input: Input,
 
     // "Flags"
@@ -66,45 +67,77 @@ impl App {
         let queue = Queue::default();
 
         let theme = Rc::new(Theme::init());
+        let key_config = Rc::new(KeyConfig::init());
 
         Self {
             input,
-            reset: ResetComponent::new(queue.clone(), theme.clone()),
+            reset: ResetComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
             commit: CommitComponent::new(
                 queue.clone(),
                 theme.clone(),
+                key_config.clone(),
             ),
             stashmsg_popup: StashMsgComponent::new(
                 queue.clone(),
                 theme.clone(),
+                key_config.clone(),
             ),
             inspect_commit_popup: InspectCommitComponent::new(
                 &queue,
                 sender,
                 theme.clone(),
+                key_config.clone(),
             ),
             external_editor_popup: ExternalEditorComponent::new(
                 theme.clone(),
+                key_config.clone(),
             ),
             tag_commit_popup: TagCommitComponent::new(
                 queue.clone(),
                 theme.clone(),
+                key_config.clone(),
             ),
             do_quit: false,
-            cmdbar: RefCell::new(CommandBar::new(theme.clone())),
-            help: HelpComponent::new(theme.clone()),
-            msg: MsgComponent::new(theme.clone()),
+            cmdbar: RefCell::new(CommandBar::new(
+                theme.clone(),
+                key_config.clone(),
+            )),
+            help: HelpComponent::new(
+                theme.clone(),
+                key_config.clone(),
+            ),
+            msg: MsgComponent::new(theme.clone(), key_config.clone()),
             tab: 0,
-            revlog: Revlog::new(&queue, sender, theme.clone()),
-            status_tab: Status::new(&queue, sender, theme.clone()),
+            revlog: Revlog::new(
+                &queue,
+                sender,
+                theme.clone(),
+                key_config.clone(),
+            ),
+            status_tab: Status::new(
+                &queue,
+                sender,
+                theme.clone(),
+                key_config.clone(),
+            ),
             stashing_tab: Stashing::new(
                 sender,
                 &queue,
                 theme.clone(),
+                key_config.clone(),
             ),
-            stashlist_tab: StashList::new(&queue, theme.clone()),
+            stashlist_tab: StashList::new(
+                &queue,
+                theme.clone(),
+                key_config.clone(),
+            ),
             queue,
             theme,
+            key_config,
             requires_redraw: Cell::new(false),
             file_to_open: None,
         }
@@ -160,30 +193,26 @@ impl App {
             if event_pump(ev, self.components_mut().as_mut_slice())? {
                 flags.insert(NeedsUpdate::COMMANDS);
             } else if let Event::Key(k) = ev {
-                let new_flags = match k {
-                    keys::TAB_TOGGLE => {
-                        self.toggle_tabs(false)?;
-                        NeedsUpdate::COMMANDS
-                    }
-                    keys::TAB_TOGGLE_REVERSE
-                    | keys::TAB_TOGGLE_REVERSE_WINDOWS => {
-                        self.toggle_tabs(true)?;
-                        NeedsUpdate::COMMANDS
-                    }
-                    keys::TAB_1
-                    | keys::TAB_2
-                    | keys::TAB_3
-                    | keys::TAB_4 => {
-                        self.switch_tab(k)?;
-                        NeedsUpdate::COMMANDS
-                    }
-
-                    keys::CMD_BAR_TOGGLE => {
-                        self.cmdbar.borrow_mut().toggle_more();
-                        NeedsUpdate::empty()
-                    }
-
-                    _ => NeedsUpdate::empty(),
+                let new_flags = if k == self.key_config.tab_toggle {
+                    self.toggle_tabs(false)?;
+                    NeedsUpdate::COMMANDS
+                } else if k == self.key_config.tab_toggle_reverse
+                    || k == self.key_config.tab_toggle_reverse_windows
+                {
+                    self.toggle_tabs(true)?;
+                    NeedsUpdate::COMMANDS
+                } else if k == self.key_config.tab_status
+                    || k == self.key_config.tab_log
+                    || k == self.key_config.tab_stashing
+                    || k == self.key_config.tab_stashes
+                {
+                    self.switch_tab(k)?;
+                    NeedsUpdate::COMMANDS
+                } else if k == self.key_config.cmd_bar_toggle {
+                    self.cmdbar.borrow_mut().toggle_more();
+                    NeedsUpdate::empty()
+                } else {
+                    NeedsUpdate::empty()
                 };
 
                 flags.insert(new_flags);
@@ -312,7 +341,7 @@ impl App {
 
     fn check_quit_key(&mut self, ev: Event) -> bool {
         if let Event::Key(e) = ev {
-            if let keys::EXIT = e {
+            if e == self.key_config.exit {
                 self.do_quit = true;
                 return true;
             }
@@ -341,12 +370,14 @@ impl App {
     }
 
     fn switch_tab(&mut self, k: KeyEvent) -> Result<()> {
-        match k {
-            keys::TAB_1 => self.set_tab(0)?,
-            keys::TAB_2 => self.set_tab(1)?,
-            keys::TAB_3 => self.set_tab(2)?,
-            keys::TAB_4 => self.set_tab(3)?,
-            _ => (),
+        if k == self.key_config.tab_status {
+            self.set_tab(0)?
+        } else if k == self.key_config.tab_log {
+            self.set_tab(1)?
+        } else if k == self.key_config.tab_stashing {
+            self.set_tab(2)?
+        } else if k == self.key_config.tab_stashes {
+            self.set_tab(3)?
         }
 
         Ok(())
@@ -458,7 +489,7 @@ impl App {
 
         res.push(
             CommandInfo::new(
-                commands::TOGGLE_TABS,
+                strings::commands::toggle_tabs(&self.key_config),
                 true,
                 !self.any_popup_visible(),
             )
@@ -466,7 +497,9 @@ impl App {
         );
         res.push(
             CommandInfo::new(
-                commands::TOGGLE_TABS_DIRECT,
+                strings::commands::toggle_tabs_direct(
+                    &self.key_config,
+                ),
                 true,
                 !self.any_popup_visible(),
             )
@@ -475,7 +508,7 @@ impl App {
 
         res.push(
             CommandInfo::new(
-                commands::QUIT,
+                strings::commands::quit(&self.key_config),
                 true,
                 !self.any_popup_visible(),
             )
@@ -531,10 +564,10 @@ impl App {
         });
 
         let tabs = &[
-            strings::TAB_STATUS,
-            strings::TAB_LOG,
-            strings::TAB_STASHING,
-            strings::TAB_STASHES,
+            strings::tab_status(&self.key_config),
+            strings::tab_log(&self.key_config),
+            strings::tab_stashing(&self.key_config),
+            strings::tab_stashes(&self.key_config),
         ];
 
         f.render_widget(
@@ -547,7 +580,7 @@ impl App {
                 .titles(tabs)
                 .style(self.theme.tab(false))
                 .highlight_style(self.theme.tab(true))
-                .divider(strings::TAB_DIVIDER)
+                .divider(&strings::tab_divider(&self.key_config))
                 .select(self.tab),
             r,
         );

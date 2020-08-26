@@ -4,8 +4,8 @@ use crate::{
         CommandBlocking, CommandInfo, Component, DrawableComponent,
         ScrollType,
     },
-    keys,
-    strings::commands,
+    keys::SharedKeyConfig,
+    strings,
     ui::calc_scroll_top,
     ui::style::{SharedTheme, Theme},
 };
@@ -37,11 +37,16 @@ pub struct CommitList {
     current_size: Cell<(u16, u16)>,
     scroll_top: Cell<usize>,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
 }
 
 impl CommitList {
     ///
-    pub fn new(title: &str, theme: SharedTheme) -> Self {
+    pub fn new(
+        title: &str,
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             items: ItemBatch::default(),
             selection: 0,
@@ -52,6 +57,7 @@ impl CommitList {
             current_size: Cell::new((0, 0)),
             scroll_top: Cell::new(0),
             theme,
+            key_config,
             title: String::from(title),
         }
     }
@@ -172,10 +178,10 @@ impl CommitList {
         self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
     }
 
-    fn add_entry<'a>(
-        e: &'a LogEntry,
+    fn add_entry<'b>(
+        e: &'b LogEntry,
         selected: bool,
-        txt: &mut Vec<Text<'a>>,
+        txt: &mut Vec<Text<'b>>,
         tags: Option<String>,
         theme: &Theme,
         width: usize,
@@ -331,28 +337,25 @@ impl DrawableComponent for CommitList {
 impl Component for CommitList {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if let Event::Key(k) = ev {
-            let selection_changed = match k {
-                keys::MOVE_UP => {
-                    self.move_selection(ScrollType::Up)?
-                }
-                keys::MOVE_DOWN => {
-                    self.move_selection(ScrollType::Down)?
-                }
-                keys::SHIFT_UP | keys::HOME => {
-                    self.move_selection(ScrollType::Home)?
-                }
-                keys::SHIFT_DOWN | keys::END => {
-                    self.move_selection(ScrollType::End)?
-                }
-                keys::PAGE_UP => {
-                    self.move_selection(ScrollType::PageUp)?
-                }
-                keys::PAGE_DOWN => {
-                    self.move_selection(ScrollType::PageDown)?
-                }
-                _ => false,
+            let selection_changed = if k == self.key_config.move_up {
+                self.move_selection(ScrollType::Up)?
+            } else if k == self.key_config.move_down {
+                self.move_selection(ScrollType::Down)?
+            } else if k == self.key_config.shift_up
+                || k == self.key_config.home
+            {
+                self.move_selection(ScrollType::Home)?
+            } else if k == self.key_config.shift_down
+                || k == self.key_config.end
+            {
+                self.move_selection(ScrollType::End)?
+            } else if k == self.key_config.page_up {
+                self.move_selection(ScrollType::PageUp)?
+            } else if k == self.key_config.page_down {
+                self.move_selection(ScrollType::PageDown)?
+            } else {
+                false
             };
-
             return Ok(selection_changed);
         }
 
@@ -365,7 +368,7 @@ impl Component for CommitList {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            commands::SCROLL,
+            strings::commands::scroll(&self.key_config),
             self.selected_entry().is_some(),
             true,
         ));

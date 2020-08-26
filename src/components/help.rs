@@ -2,12 +2,7 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{
-    keys,
-    strings::{self, commands},
-    ui,
-    version::Version,
-};
+use crate::{keys::SharedKeyConfig, strings, ui, version::Version};
 use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -29,6 +24,7 @@ pub struct HelpComponent {
     visible: bool,
     selection: u16,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for HelpComponent {
@@ -49,7 +45,7 @@ impl DrawableComponent for HelpComponent {
             f.render_widget(Clear, area);
             f.render_widget(
                 Block::default()
-                    .title(strings::HELP_TITLE)
+                    .title(&strings::help_title(&self.key_config))
                     .borders(Borders::ALL)
                     .border_type(BorderType::Thick),
                 area,
@@ -104,10 +100,14 @@ impl Component for HelpComponent {
         }
 
         if self.visible {
-            out.push(CommandInfo::new(commands::SCROLL, true, true));
+            out.push(CommandInfo::new(
+                strings::commands::scroll(&self.key_config),
+                true,
+                true,
+            ));
 
             out.push(CommandInfo::new(
-                commands::CLOSE_POPUP,
+                strings::commands::close_popup(&self.key_config),
                 true,
                 true,
             ));
@@ -115,8 +115,12 @@ impl Component for HelpComponent {
 
         if !self.visible || force_all {
             out.push(
-                CommandInfo::new(commands::HELP_OPEN, true, true)
-                    .order(99),
+                CommandInfo::new(
+                    strings::commands::help_open(&self.key_config),
+                    true,
+                    true,
+                )
+                .order(99),
             );
         }
 
@@ -126,18 +130,24 @@ impl Component for HelpComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
-                match e {
-                    keys::EXIT_POPUP => self.hide(),
-                    keys::MOVE_DOWN => self.move_selection(true),
-                    keys::MOVE_UP => self.move_selection(false),
-                    _ => (),
+                if e == self.key_config.exit_popup {
+                    self.hide()
+                } else if e == self.key_config.move_down {
+                    self.move_selection(true)
+                } else if e == self.key_config.move_up {
+                    self.move_selection(false)
+                } else {
                 }
             }
 
             Ok(true)
-        } else if let Event::Key(keys::OPEN_HELP) = ev {
-            self.show()?;
-            Ok(true)
+        } else if let Event::Key(k) = ev {
+            if k == self.key_config.open_help {
+                self.show()?;
+                Ok(true)
+            } else {
+                Ok(false)
+            }
         } else {
             Ok(false)
         }
@@ -159,12 +169,16 @@ impl Component for HelpComponent {
 }
 
 impl HelpComponent {
-    pub const fn new(theme: SharedTheme) -> Self {
+    pub const fn new(
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             cmds: vec![],
             visible: false,
             selection: 0,
             theme,
+            key_config,
         }
     }
     ///
@@ -173,8 +187,8 @@ impl HelpComponent {
             .into_iter()
             .filter(|e| !e.text.hide_help)
             .collect::<Vec<_>>();
-        self.cmds.sort_by_key(|e| e.text);
-        self.cmds.dedup_by_key(|e| e.text);
+        self.cmds.sort_by_key(|e| e.text.clone());
+        self.cmds.dedup_by_key(|e| e.text.clone());
         self.cmds.sort_by_key(|e| hash(&e.text.group));
     }
 

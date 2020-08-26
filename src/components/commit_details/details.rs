@@ -3,8 +3,8 @@ use crate::{
         dialog_paragraph, utils::time_to_string, CommandBlocking,
         CommandInfo, Component, DrawableComponent, ScrollType,
     },
-    keys,
-    strings::{self, commands, order},
+    keys::SharedKeyConfig,
+    strings::{self, order},
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -24,6 +24,13 @@ use tui::{
     Frame,
 };
 
+enum Detail {
+    Author,
+    Date,
+    Commiter,
+    Sha,
+}
+
 pub struct DetailsComponent {
     data: Option<CommitDetails>,
     tags: Vec<String>,
@@ -31,6 +38,7 @@ pub struct DetailsComponent {
     focused: bool,
     current_size: Cell<(u16, u16)>,
     scroll_top: Cell<usize>,
+    key_config: SharedKeyConfig,
 }
 
 type WrappedCommitMessage<'a> =
@@ -38,7 +46,11 @@ type WrappedCommitMessage<'a> =
 
 impl DetailsComponent {
     ///
-    pub const fn new(theme: SharedTheme, focused: bool) -> Self {
+    pub const fn new(
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+        focused: bool,
+    ) -> Self {
         Self {
             data: None,
             tags: Vec::new(),
@@ -46,6 +58,7 @@ impl DetailsComponent {
             focused,
             current_size: Cell::new((0, 0)),
             scroll_top: Cell::new(0),
+            key_config,
         }
     }
 
@@ -147,15 +160,41 @@ impl DetailsComponent {
             .collect()
     }
 
+    fn style_detail(&self, field: &Detail) -> Text {
+        match field {
+            Detail::Author => Text::Styled(
+                Cow::from(strings::commit::details_author(
+                    &self.key_config,
+                )),
+                self.theme.text(false, false),
+            ),
+            Detail::Date => Text::Styled(
+                Cow::from(strings::commit::details_date(
+                    &self.key_config,
+                )),
+                self.theme.text(false, false),
+            ),
+            Detail::Commiter => Text::Styled(
+                Cow::from(strings::commit::details_committer(
+                    &self.key_config,
+                )),
+                self.theme.text(false, false),
+            ),
+            Detail::Sha => Text::Styled(
+                Cow::from(strings::commit::details_tags(
+                    &self.key_config,
+                )),
+                self.theme.text(false, false),
+            ),
+        }
+    }
+
     fn get_text_info(&self) -> Vec<Text> {
         let new_line = Text::Raw(Cow::from("\n"));
 
         if let Some(ref data) = self.data {
             let mut res = vec![
-                Text::Styled(
-                    Cow::from(strings::commit::DETAILS_AUTHOR),
-                    self.theme.text(false, false),
-                ),
+                self.style_detail(&Detail::Author),
                 Text::Styled(
                     Cow::from(format!(
                         "{} <{}>",
@@ -164,10 +203,7 @@ impl DetailsComponent {
                     self.theme.text(true, false),
                 ),
                 new_line.clone(),
-                Text::Styled(
-                    Cow::from(strings::commit::DETAILS_DATE),
-                    self.theme.text(false, false),
-                ),
+                self.style_detail(&Detail::Date),
                 Text::Styled(
                     Cow::from(time_to_string(
                         data.author.time,
@@ -180,10 +216,7 @@ impl DetailsComponent {
 
             if let Some(ref committer) = data.committer {
                 res.extend(vec![
-                    Text::Styled(
-                        Cow::from(strings::commit::DETAILS_COMMITTER),
-                        self.theme.text(false, false),
-                    ),
+                    self.style_detail(&Detail::Commiter),
                     Text::Styled(
                         Cow::from(format!(
                             "{} <{}>",
@@ -192,10 +225,7 @@ impl DetailsComponent {
                         self.theme.text(true, false),
                     ),
                     new_line.clone(),
-                    Text::Styled(
-                        Cow::from(strings::commit::DETAILS_DATE),
-                        self.theme.text(false, false),
-                    ),
+                    self.style_detail(&Detail::Date),
                     Text::Styled(
                         Cow::from(time_to_string(
                             committer.time,
@@ -209,7 +239,9 @@ impl DetailsComponent {
 
             res.extend(vec![
                 Text::Styled(
-                    Cow::from(strings::commit::DETAILS_SHA),
+                    Cow::from(strings::commit::details_sha(
+                        &self.key_config,
+                    )),
                     self.theme.text(false, false),
                 ),
                 Text::Styled(
@@ -220,11 +252,7 @@ impl DetailsComponent {
             ]);
 
             if !self.tags.is_empty() {
-                res.push(Text::Styled(
-                    Cow::from(strings::commit::DETAILS_TAGS),
-                    self.theme.text(false, false),
-                ));
-
+                res.push(self.style_detail(&Detail::Sha));
                 res.extend(
                     self.tags
                         .iter()
@@ -295,7 +323,9 @@ impl DrawableComponent for DetailsComponent {
 
         f.render_widget(
             dialog_paragraph(
-                strings::commit::DETAILS_INFO_TITLE,
+                &strings::commit::details_info_title(
+                    &self.key_config,
+                ),
                 self.get_text_info().iter(),
                 &self.theme,
                 false,
@@ -319,7 +349,9 @@ impl DrawableComponent for DetailsComponent {
 
         f.render_widget(
             dialog_paragraph(
-                strings::commit::DETAILS_MESSAGE_TITLE,
+                &strings::commit::details_message_title(
+                    &self.key_config,
+                ),
                 wrapped_lines.iter(),
                 &self.theme,
                 self.focused,
@@ -344,7 +376,9 @@ impl Component for DetailsComponent {
 
         out.push(
             CommandInfo::new(
-                commands::NAVIGATE_COMMIT_MESSAGE,
+                strings::commands::navigate_commit_message(
+                    &self.key_config,
+                ),
                 number_of_lines > 0,
                 self.focused || force_all,
             )
@@ -357,20 +391,20 @@ impl Component for DetailsComponent {
     fn event(&mut self, event: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = event {
-                return match e {
-                    keys::MOVE_UP => {
-                        self.move_scroll_top(ScrollType::Up)
-                    }
-                    keys::MOVE_DOWN => {
-                        self.move_scroll_top(ScrollType::Down)
-                    }
-                    keys::HOME | keys::SHIFT_UP => {
-                        self.move_scroll_top(ScrollType::Home)
-                    }
-                    keys::END | keys::SHIFT_DOWN => {
-                        self.move_scroll_top(ScrollType::End)
-                    }
-                    _ => Ok(false),
+                return if e == self.key_config.move_up {
+                    self.move_scroll_top(ScrollType::Up)
+                } else if e == self.key_config.move_down {
+                    self.move_scroll_top(ScrollType::Down)
+                } else if e == self.key_config.home
+                    || e == self.key_config.shift_up
+                {
+                    self.move_scroll_top(ScrollType::Home)
+                } else if e == self.key_config.end
+                    || e == self.key_config.shift_down
+                {
+                    self.move_scroll_top(ScrollType::End)
+                } else {
+                    Ok(false)
                 };
             }
         }

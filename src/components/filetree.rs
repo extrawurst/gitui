@@ -7,9 +7,9 @@ use super::{
 };
 use crate::{
     components::{CommandInfo, Component},
-    keys,
+    keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings::{self, commands, order},
+    strings::{self, order},
     ui,
     ui::style::SharedTheme,
 };
@@ -29,6 +29,7 @@ pub struct FileTreeComponent {
     show_selection: bool,
     queue: Option<Queue>,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
     scroll_top: Cell<usize>,
 }
 
@@ -39,6 +40,7 @@ impl FileTreeComponent {
         focus: bool,
         queue: Option<Queue>,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
     ) -> Self {
         Self {
             title: title.to_string(),
@@ -48,6 +50,7 @@ impl FileTreeComponent {
             show_selection: focus,
             queue,
             theme,
+            key_config,
             scroll_top: Cell::new(0),
             pending: true,
         }
@@ -134,12 +137,12 @@ impl FileTreeComponent {
         changed
     }
 
-    fn item_to_text<'a>(
+    fn item_to_text<'b>(
         item: &FileTreeItem,
         width: u16,
         selected: bool,
-        theme: &'a SharedTheme,
-    ) -> Option<Text<'a>> {
+        theme: &'b SharedTheme,
+    ) -> Option<Text<'b>> {
         let indent_str = if item.info.indent == 0 {
             String::from("")
         } else {
@@ -223,7 +226,7 @@ impl DrawableComponent for FileTreeComponent {
     ) -> Result<()> {
         if self.pending {
             let items = vec![Text::Styled(
-                Cow::from(strings::LOADING_TEXT),
+                Cow::from(strings::loading_text(&self.key_config)),
                 self.theme.text(false, false),
             )];
 
@@ -309,7 +312,7 @@ impl Component for FileTreeComponent {
     ) -> CommandBlocking {
         out.push(
             CommandInfo::new(
-                commands::NAVIGATE_TREE,
+                strings::commands::navigate_tree(&self.key_config),
                 !self.is_empty(),
                 self.focused || force_all,
             )
@@ -322,26 +325,24 @@ impl Component for FileTreeComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = ev {
-                return match e {
-                    keys::MOVE_DOWN => {
-                        Ok(self.move_selection(MoveSelection::Down))
-                    }
-                    keys::MOVE_UP => {
-                        Ok(self.move_selection(MoveSelection::Up))
-                    }
-                    keys::HOME | keys::SHIFT_UP => {
-                        Ok(self.move_selection(MoveSelection::Home))
-                    }
-                    keys::END | keys::SHIFT_DOWN => {
-                        Ok(self.move_selection(MoveSelection::End))
-                    }
-                    keys::MOVE_LEFT => {
-                        Ok(self.move_selection(MoveSelection::Left))
-                    }
-                    keys::MOVE_RIGHT => {
-                        Ok(self.move_selection(MoveSelection::Right))
-                    }
-                    _ => Ok(false),
+                return if e == self.key_config.move_down {
+                    Ok(self.move_selection(MoveSelection::Down))
+                } else if e == self.key_config.move_up {
+                    Ok(self.move_selection(MoveSelection::Up))
+                } else if e == self.key_config.home
+                    || e == self.key_config.shift_up
+                {
+                    Ok(self.move_selection(MoveSelection::Home))
+                } else if e == self.key_config.end
+                    || e == self.key_config.shift_down
+                {
+                    Ok(self.move_selection(MoveSelection::End))
+                } else if e == self.key_config.move_left {
+                    Ok(self.move_selection(MoveSelection::Left))
+                } else if e == self.key_config.move_right {
+                    Ok(self.move_selection(MoveSelection::Right))
+                } else {
+                    Ok(false)
                 };
             }
         }

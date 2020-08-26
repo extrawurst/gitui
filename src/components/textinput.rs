@@ -3,7 +3,8 @@ use crate::{
         popup_paragraph, visibility_blocking, CommandBlocking,
         CommandInfo, Component, DrawableComponent,
     },
-    strings::commands,
+    keys::SharedKeyConfig,
+    strings,
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
@@ -23,6 +24,7 @@ pub struct TextInputComponent {
     msg: String,
     visible: bool,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
     cursor_position: usize,
 }
 
@@ -30,6 +32,7 @@ impl TextInputComponent {
     ///
     pub fn new(
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
         title: &str,
         default_msg: &str,
     ) -> Self {
@@ -37,6 +40,7 @@ impl TextInputComponent {
             msg: String::default(),
             visible: false,
             theme,
+            key_config,
             title: title.to_string(),
             default_msg: default_msg.to_string(),
             cursor_position: 0,
@@ -196,7 +200,7 @@ impl Component for TextInputComponent {
     ) -> CommandBlocking {
         out.push(
             CommandInfo::new(
-                commands::CLOSE_POPUP,
+                strings::commands::close_popup(&self.key_config),
                 true,
                 self.visible,
             )
@@ -274,8 +278,12 @@ mod tests {
 
     #[test]
     fn test_smoke() {
-        let mut comp =
-            TextInputComponent::new(SharedTheme::default(), "", "");
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
 
         comp.set_text(String::from("a\nb"));
 
@@ -298,8 +306,12 @@ mod tests {
 
     #[test]
     fn test_visualize_newline() {
-        let mut comp =
-            TextInputComponent::new(SharedTheme::default(), "", "");
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
 
         comp.set_text(String::from("a\nb"));
 
