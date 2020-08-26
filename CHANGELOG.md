@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- fully **customizable key bindings** (see [KEY_CONFIG.md](KEY_CONFIG.md)) [[@yanganto](https://github.com/yanganto)] ([#109](https://github.com/extrawurst/gitui/issues/109)) ([#57](https://github.com/extrawurst/gitui/issues/57))
 - support scrolling in long commit messages [[@cruessler](https://github.com/cruessler)]([#208](https://github.com/extrawurst/gitui/issues/208))
 - copy lines from diffs to clipboard [[@cruessler](https://github.com/cruessler)]([#229](https://github.com/extrawurst/gitui/issues/229))
 
