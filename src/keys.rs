@@ -224,7 +224,7 @@ fn get_modifier_hint(modifier: KeyModifiers) -> String {
     match modifier {
         KeyModifiers::CONTROL => "^".to_string(),
         KeyModifiers::SHIFT => {
-            "\u{2192}".to_string() //⇧
+            "\u{21e7}".to_string() //⇧
         }
         KeyModifiers::ALT => {
             "\u{2325}".to_string() //⌥
