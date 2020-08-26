@@ -546,7 +546,7 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Details Inspect [{}]",
+                "Details [{}]",
                 get_hint(key_config.log_commit_details),
             ),
             "open details of selected commit",

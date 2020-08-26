@@ -26,7 +26,7 @@ pub struct ChangesComponent {
     key_config: SharedKeyConfig,
 }
 
-impl<'a> ChangesComponent {
+impl ChangesComponent {
     ///
     pub fn new(
         title: &str,
