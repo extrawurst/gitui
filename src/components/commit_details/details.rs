@@ -477,13 +477,13 @@ mod tests {
         assert_eq!(
             get_wrapped_lines(&message_with_body, 7),
             vec![
-                "Commit", "message", "", "First", "line", "Second",
+                "Commit", "message", "First", "line", "Second",
                 "line"
             ]
         );
         assert_eq!(
             get_wrapped_lines(&message_with_body, 14),
-            vec!["Commit message", "", "First line", "Second line"]
+            vec!["Commit message", "First line", "Second line"]
         );
     }
 }
