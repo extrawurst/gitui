@@ -5,6 +5,7 @@
 #![deny(clippy::all)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
+#![deny(clippy::perf)]
 
 pub mod cached;
 mod commit_files;

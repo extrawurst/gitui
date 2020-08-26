@@ -216,7 +216,7 @@ pub fn get_hint(ev: KeyEvent) -> String {
         KeyCode::F(u) => {
             format!("{}F{}", get_modifier_hint(ev.modifiers), u)
         }
-        KeyCode::Null => get_modifier_hint(ev.modifiers).to_string(),
+        KeyCode::Null => get_modifier_hint(ev.modifiers),
     }
 }
 

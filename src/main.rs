@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::cargo)]
 #![deny(clippy::pedantic)]
+#![deny(clippy::perf)]
 #![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
