@@ -11,10 +11,10 @@ pub fn title_status(key_config: &SharedKeyConfig) -> String {
     )
 }
 pub fn title_diff(_key_config: &SharedKeyConfig) -> String {
-    "diff:: ".to_string()
+    "Diff: ".to_string()
 }
 pub fn title_index(key_config: &SharedKeyConfig) -> String {
-    format!("Staged Changes []{}", get_hint(key_config.focus_stage))
+    format!("Staged Changes [{}]", get_hint(key_config.focus_stage))
 }
 pub fn tab_status(key_config: &SharedKeyConfig) -> String {
     format!("Status [{}]", get_hint(key_config.tab_status))
@@ -97,7 +97,7 @@ pub fn stashlist_title(_key_config: &SharedKeyConfig) -> String {
     "Stashes".to_string()
 }
 pub fn help_title(_key_config: &SharedKeyConfig) -> String {
-    "help:: all commands".to_string()
+    "Help: all commands".to_string()
 }
 pub fn stashing_files_title(_key_config: &SharedKeyConfig) -> String {
     "Files to Stash".to_string()
@@ -114,21 +114,21 @@ pub fn loading_text(_key_config: &SharedKeyConfig) -> String {
 pub mod commit {
     use crate::keys::SharedKeyConfig;
     pub fn details_author(_key_config: &SharedKeyConfig) -> String {
-        "author:: ".to_string()
+        "Author: ".to_string()
     }
     pub fn details_committer(
         _key_config: &SharedKeyConfig,
     ) -> String {
-        "committer:: ".to_string()
+        "Committer: ".to_string()
     }
     pub fn details_sha(_key_config: &SharedKeyConfig) -> String {
-        "sha:: ".to_string()
+        "Sha: ".to_string()
     }
     pub fn details_date(_key_config: &SharedKeyConfig) -> String {
-        "date:: ".to_string()
+        "Date: ".to_string()
     }
     pub fn details_tags(_key_config: &SharedKeyConfig) -> String {
-        "tags:: ".to_string()
+        "Tags: ".to_string()
     }
     pub fn details_info_title(
         _key_config: &SharedKeyConfig,
@@ -143,7 +143,7 @@ pub mod commit {
     pub fn details_files_title(
         _key_config: &SharedKeyConfig,
     ) -> String {
-        "files::".to_string()
+        "Files:".to_string()
     }
 }
 
@@ -546,7 +546,7 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Details IDetails nspect [{}]",
+                "Details Inspect [{}]",
                 get_hint(key_config.log_commit_details),
             ),
             "open details of selected commit",

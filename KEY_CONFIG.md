@@ -1,7 +1,5 @@
 # Key Config
-
 Default using arrow key to navigate the gitui and Ctrl + C to leave
-Here is the [default config](assets/default_key_config.ron)
 
 to change the key bindings of the program you have to modify `key_config.ron` file
 [Ron format](https://github.com/ron-rs/ron) located at config path. The path differs depending on the operating system:
