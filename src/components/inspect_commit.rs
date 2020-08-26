@@ -118,7 +118,7 @@ impl Component for InspectCommitComponent {
                     self.details.focus(false);
                     self.diff.focus(true);
                 } else if e == self.key_config.focus_left
-                    && self.focused()
+                    && self.diff.focused()
                 {
                     self.details.focus(true);
                     self.diff.focus(false);
