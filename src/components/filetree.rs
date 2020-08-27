@@ -113,14 +113,12 @@ impl FileTreeComponent {
 
     ///
     pub fn is_file_seleted(&self) -> bool {
-        if let Some(item) = self.tree.selected_item() {
+        self.tree.selected_item().map_or(false, |item| {
             match item.kind {
                 FileTreeItemKind::File(_) => true,
                 FileTreeItemKind::Path(..) => false,
             }
-        } else {
-            false
-        }
+        })
     }
 
     fn move_selection(&mut self, dir: MoveSelection) -> bool {
