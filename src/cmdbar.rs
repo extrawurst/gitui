@@ -124,7 +124,7 @@ impl CommandBar {
         self.refresh_list(self.width);
     }
 
-    pub fn height(&self) -> u16 {
+    pub const fn height(&self) -> u16 {
         if self.expandable && self.expanded {
             self.lines
         } else {

@@ -207,7 +207,7 @@ impl FileTreeComponent {
         }
     }
 
-    fn item_status_char(item_type: StatusItemType) -> char {
+    const fn item_status_char(item_type: StatusItemType) -> char {
         match item_type {
             StatusItemType::Modified => 'M',
             StatusItemType::New => '+',
