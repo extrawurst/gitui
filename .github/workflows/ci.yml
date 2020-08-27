@@ -17,6 +17,7 @@ jobs:
         rust: [nightly, stable]
 
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.rust == 'nightly' }}
 
     steps:
     - uses: actions/checkout@v2
