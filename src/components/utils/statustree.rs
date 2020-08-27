@@ -44,17 +44,16 @@ impl StatusTree {
         let last_selection_index = self.selection.unwrap_or(0);
 
         self.tree = FileTreeItems::new(list, &last_collapsed)?;
-        self.selection =
-            if let Some(ref last_selection) = last_selection {
+        self.selection = last_selection.as_ref().map_or(
+            self.tree.items().first().map(|_| 0),
+            |last_selection| {
                 self.find_last_selection(
                     last_selection,
                     last_selection_index,
                 )
                 .or_else(|| self.tree.items().first().map(|_| 0))
-            } else {
-                // simply select first
-                self.tree.items().first().map(|_| 0)
-            };
+            },
+        );
 
         self.update_visibility(None, 0, true);
 

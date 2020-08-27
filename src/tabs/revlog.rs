@@ -158,15 +158,13 @@ impl Revlog {
         let tags = self.list.tags();
 
         commit.and_then(|commit| {
-            if let Some(tags) = tags {
+            tags.and_then(|tags| {
                 if let Some(tags) = tags.get(&commit) {
                     Some(tags.clone())
                 } else {
                     None
                 }
-            } else {
-                None
-            }
+            })
         })
     }
 }
