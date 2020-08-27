@@ -14,6 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        rust: [nightly, stable]
 
     runs-on: ${{ matrix.os }}
 
@@ -23,7 +24,8 @@ jobs:
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: ${{ matrix.rust }}
+        default: true
         profile: minimal
         components: clippy
 
