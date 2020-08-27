@@ -1,14 +1,8 @@
 mod scrolllist;
 pub mod style;
 
-use scrolllist::ScrollableList;
-use style::SharedTheme;
-use tui::{
-    backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
-    widgets::{Block, Borders, Text},
-    Frame,
-};
+pub use scrolllist::draw_list;
+use tui::layout::{Constraint, Direction, Layout, Rect};
 
 /// return the scroll position (line) necessary to have the `selection` in view if it is not already
 pub fn calc_scroll_top(
@@ -83,27 +77,4 @@ pub fn centered_rect_absolute(
         width.min(r.width),
         height.min(r.height),
     )
-}
-
-pub fn draw_list<'b, B: Backend, L>(
-    f: &mut Frame<B>,
-    r: Rect,
-    title: &'b str,
-    items: L,
-    select: Option<usize>,
-    selected: bool,
-    theme: &SharedTheme,
-) where
-    L: Iterator<Item = Text<'b>>,
-{
-    let list = ScrollableList::new(items)
-        .block(
-            Block::default()
-                .title(title)
-                .borders(Borders::ALL)
-                .title_style(theme.title(selected))
-                .border_style(theme.block(selected)),
-        )
-        .scroll(select.unwrap_or_default());
-    f.render_widget(list, r)
 }

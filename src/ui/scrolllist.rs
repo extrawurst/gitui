@@ -1,13 +1,16 @@
+use super::style::SharedTheme;
 use std::iter::Iterator;
 use tui::{
+    backend::Backend,
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    widgets::{Block, List, Text, Widget},
+    widgets::{Block, Borders, List, Text, Widget},
+    Frame,
 };
 
 ///
-pub struct ScrollableList<'b, L>
+struct ScrollableList<'b, L>
 where
     L: Iterator<Item = Text<'b>>,
 {
@@ -24,7 +27,7 @@ impl<'b, L> ScrollableList<'b, L>
 where
     L: Iterator<Item = Text<'b>>,
 {
-    pub fn new(items: L) -> Self {
+    fn new(items: L) -> Self {
         Self {
             block: None,
             items,
@@ -33,12 +36,12 @@ where
         }
     }
 
-    pub fn block(mut self, block: Block<'b>) -> Self {
+    fn block(mut self, block: Block<'b>) -> Self {
         self.block = Some(block);
         self
     }
 
-    pub fn scroll(mut self, index: usize) -> Self {
+    fn scroll(mut self, index: usize) -> Self {
         self.scroll = index;
         self
     }
@@ -55,4 +58,27 @@ where
             .style(self.style)
             .render(area, buf);
     }
+}
+
+pub fn draw_list<'b, B: Backend, L>(
+    f: &mut Frame<B>,
+    r: Rect,
+    title: &'b str,
+    items: L,
+    select: Option<usize>,
+    selected: bool,
+    theme: &SharedTheme,
+) where
+    L: Iterator<Item = Text<'b>>,
+{
+    let list = ScrollableList::new(items)
+        .block(
+            Block::default()
+                .title(title)
+                .borders(Borders::ALL)
+                .title_style(theme.title(selected))
+                .border_style(theme.block(selected)),
+        )
+        .scroll(select.unwrap_or_default());
+    f.render_widget(list, r)
 }
