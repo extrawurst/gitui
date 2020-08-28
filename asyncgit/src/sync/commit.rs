@@ -9,7 +9,7 @@ pub fn amend(
     id: CommitId,
     msg: &str,
 ) -> Result<CommitId> {
-    scope_time!("commit");
+    scope_time!("amend");
 
     let repo = repo(repo_path)?;
     let commit = repo.find_commit(id.into())?;
