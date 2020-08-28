@@ -215,8 +215,9 @@ impl DiffComponent {
                 }
             };
 
-            self.selection =
-                Selection::Single(cmp::min(max, new_start));
+            let new_start = cmp::min(max, new_start);
+
+            self.selection = Selection::Single(new_start);
 
             self.selected_hunk =
                 Self::find_selected_hunk(diff, new_start)?;
