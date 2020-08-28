@@ -149,7 +149,7 @@ impl Component for StashList {
             }
 
             if let Event::Key(k) = ev {
-                if k == self.key_config.stash_apply {
+                if k == self.key_config.enter {
                     self.apply_stash()
                 } else if k == self.key_config.stash_drop {
                     self.drop_stash()

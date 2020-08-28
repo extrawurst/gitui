@@ -267,7 +267,7 @@ impl Component for ChangesComponent {
                         .borrow_mut()
                         .push_back(InternalEvent::OpenCommit);
                     Ok(true)
-                } else if e == self.key_config.status_toggle_item {
+                } else if e == self.key_config.enter {
                     try_or_popup!(
                         self,
                         "staging error:",

@@ -200,7 +200,7 @@ impl Component for Revlog {
                 self.update()?;
                 return Ok(true);
             } else if let Event::Key(k) = ev {
-                if k == self.key_config.log_commit_details {
+                if k == self.key_config.enter {
                     self.commit_details.toggle_visible()?;
                     self.update()?;
                     return Ok(true);
