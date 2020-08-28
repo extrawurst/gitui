@@ -687,7 +687,7 @@ impl Component for DiffComponent {
                         self.stage_hunk()?;
                     }
                     Ok(true)
-                } else if e == self.key_config.diff_reset_hunk
+                } else if e == self.key_config.status_reset_item
                     && !self.is_immutable
                     && !self.is_stage()
                 {

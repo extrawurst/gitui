@@ -255,7 +255,7 @@ pub mod commands {
         CommandText::new(
             format!(
                 "Add hunk [{}]",
-                get_hint(key_config.diff_reset_hunk),
+                get_hint(key_config.status_toggle_item),
             ),
             "adds selected hunk to stage",
             CMD_GROUP_DIFF,
@@ -267,7 +267,7 @@ pub mod commands {
         CommandText::new(
             format!(
                 "Revert hunk [{}]",
-                get_hint(key_config.status_reset_file),
+                get_hint(key_config.status_reset_item),
             ),
             "reverts selected hunk",
             CMD_GROUP_DIFF,

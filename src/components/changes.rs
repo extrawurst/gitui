@@ -267,7 +267,7 @@ impl Component for ChangesComponent {
                         .borrow_mut()
                         .push_back(InternalEvent::OpenCommit);
                     Ok(true)
-                } else if e == self.key_config.status_stage_file {
+                } else if e == self.key_config.status_toggle_item {
                     try_or_popup!(
                         self,
                         "staging error:",
@@ -291,7 +291,7 @@ impl Component for ChangesComponent {
                         self.stage_remove_all()?;
                     }
                     Ok(true)
-                } else if e == self.key_config.status_reset_file
+                } else if e == self.key_config.status_reset_item
                     && self.is_working_dir
                 {
                     Ok(self.dispatch_reset_workdir())

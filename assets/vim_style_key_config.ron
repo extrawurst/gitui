@@ -43,11 +43,10 @@
 
     edit_file: ( code: Char('I'), modifiers: ( bits: 0,),),
 
-    status_stage_file: ( code: Enter, modifiers: ( bits: 0,),),
+    status_toggle_item: ( code: Enter, modifiers: ( bits: 0,),),
     status_stage_all: ( code: Char('a'), modifiers: ( bits: 0,),),
-    status_reset_file: ( code: Char('U'), modifiers: ( bits: 0,),),
 
-    diff_reset_hunk: ( code: Enter, modifiers: ( bits: 0,),),
+    status_reset_item: ( code: Char('U'), modifiers: ( bits: 0,),),
     status_ignore_file: ( code: Char('i'), modifiers: ( bits: 0,),),
 
     stashing_save: ( code: Char('w'), modifiers: ( bits: 0,),),
