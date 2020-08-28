@@ -1,3 +1,4 @@
+use super::style::SharedTheme;
 use std::convert::TryFrom;
 use tui::{
     backend::Backend,
@@ -13,6 +14,8 @@ use tui::{
 struct Scrollbar {
     max: u16,
     pos: u16,
+    style_bar: Style,
+    style_pos: Style,
 }
 
 impl Scrollbar {
@@ -20,6 +23,8 @@ impl Scrollbar {
         Self {
             max: u16::try_from(max).unwrap_or_default(),
             pos: u16::try_from(pos).unwrap_or_default(),
+            style_pos: Style::default(),
+            style_bar: Style::default(),
         }
     }
 }
@@ -44,32 +49,29 @@ impl Widget for Scrollbar {
             return;
         }
 
-        let style = Style::default();
         for y in area.top()..area.bottom() {
-            buf.set_string(right, y, THICK_VERTICAL, style);
+            buf.set_string(right, y, THICK_VERTICAL, self.style_bar);
         }
 
         let progress = f32::from(self.pos) / f32::from(self.max);
         let pos = f32::from(area.height.saturating_sub(1)) * progress;
+        //TODO: any better way for this?
         #[allow(clippy::cast_sign_loss)]
         #[allow(clippy::cast_possible_truncation)]
         let pos = pos as u16;
 
-        buf.set_string(
-            right,
-            area.top() + pos,
-            FULL,
-            style.fg(Color::Blue),
-        );
+        buf.set_string(right, area.top() + pos, FULL, self.style_pos);
     }
 }
 
 pub fn draw_scrollbar<B: Backend>(
     f: &mut Frame<B>,
     r: Rect,
+    theme: &SharedTheme,
     max: usize,
     pos: usize,
 ) {
-    let widget = Scrollbar::new(max, pos);
+    let mut widget = Scrollbar::new(max, pos);
+    widget.style_pos = theme.scroll_bar_pos();
     f.render_widget(widget, r)
 }

@@ -595,6 +595,7 @@ impl DrawableComponent for DiffComponent {
             ui::draw_scrollbar(
                 f,
                 r,
+                &self.theme,
                 self.lines_count(),
                 self.selection.get_end(),
             );
