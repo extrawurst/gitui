@@ -252,13 +252,11 @@ impl CommitList {
             .take(height)
             .enumerate()
         {
-            let tags = if let Some(tags) =
-                self.tags.as_ref().and_then(|t| t.get(&e.id))
-            {
-                Some(tags.join(" "))
-            } else {
-                None
-            };
+            let tags = self
+                .tags
+                .as_ref()
+                .and_then(|t| t.get(&e.id))
+                .map(|tags| tags.join(" "));
 
             Self::add_entry(
                 e,

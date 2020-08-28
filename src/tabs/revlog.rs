@@ -158,15 +158,7 @@ impl Revlog {
         let tags = self.list.tags();
 
         commit.and_then(|commit| {
-            if let Some(tags) = tags {
-                if let Some(tags) = tags.get(&commit) {
-                    Some(tags.clone())
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+            tags.and_then(|tags| tags.get(&commit).cloned())
         })
     }
 }
@@ -213,28 +205,32 @@ impl Component for Revlog {
                     self.update()?;
                     return Ok(true);
                 } else if k == self.key_config.log_tag_commit {
-                    return if let Some(id) = self.selected_commit() {
-                        self.queue
-                            .borrow_mut()
-                            .push_back(InternalEvent::TagCommit(id));
-                        Ok(true)
-                    } else {
-                        Ok(false)
-                    };
+                    return self.selected_commit().map_or(
+                        Ok(false),
+                        |id| {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::TagCommit(id),
+                            );
+                            Ok(true)
+                        },
+                    );
                 } else if k == self.key_config.focus_right
                     && self.commit_details.is_visible()
                 {
-                    return if let Some(id) = self.selected_commit() {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::InspectCommit(
-                                id,
-                                self.selected_commit_tags(&Some(id)),
-                            ),
-                        );
-                        Ok(true)
-                    } else {
-                        Ok(false)
-                    };
+                    return self.selected_commit().map_or(
+                        Ok(false),
+                        |id| {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::InspectCommit(
+                                    id,
+                                    self.selected_commit_tags(&Some(
+                                        id,
+                                    )),
+                                ),
+                            );
+                            Ok(true)
+                        },
+                    );
                 } else {
                 }
             }

@@ -122,14 +122,11 @@ impl TextInputComponent {
             ));
         }
 
-        let cursor_str = if let Some(pos) = self.next_char_position()
-        {
-            &self.msg[self.cursor_position..pos]
-        } else {
+        let cursor_str = self
+            .next_char_position()
             // if the cursor is at the end of the msg
             // a whitespace is used to underline
-            " "
-        };
+            .map_or(" ", |pos| &self.msg[self.cursor_position..pos]);
 
         if cursor_str == "\n" {
             txt.push(Text::styled(

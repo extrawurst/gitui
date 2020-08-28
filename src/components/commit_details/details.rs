@@ -69,11 +69,8 @@ impl DetailsComponent {
     ) -> Result<()> {
         self.tags.clear();
 
-        self.data = if let Some(id) = id {
-            sync::get_commit_details(CWD, id).ok()
-        } else {
-            None
-        };
+        self.data =
+            id.and_then(|id| sync::get_commit_details(CWD, id).ok());
 
         self.scroll_top.set(0);
 

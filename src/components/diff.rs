@@ -38,13 +38,13 @@ enum Selection {
 }
 
 impl Selection {
-    fn get_start(&self) -> usize {
+    const fn get_start(&self) -> usize {
         match self {
             Self::Single(start) | Self::Multiple(start, _) => *start,
         }
     }
 
-    fn get_end(&self) -> usize {
+    const fn get_end(&self) -> usize {
         match self {
             Self::Single(end) | Self::Multiple(_, end) => *end,
         }
@@ -447,7 +447,7 @@ impl DiffComponent {
         ));
     }
 
-    fn hunk_visible(
+    const fn hunk_visible(
         hunk_min: usize,
         hunk_max: usize,
         min: usize,
