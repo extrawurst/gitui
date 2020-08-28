@@ -208,10 +208,10 @@ impl CommitComponent {
             return Ok(());
         }
 
-        let res =
-            self.amend.map_or(sync::commit(CWD, &msg), |amend| {
-                sync::amend(CWD, amend, &msg)
-            });
+        let res = self.amend.map_or_else(
+            || sync::commit(CWD, &msg),
+            |amend| sync::amend(CWD, amend, &msg),
+        );
         if let Err(e) = res {
             log::error!("commit error: {}", &e);
             self.queue.borrow_mut().push_back(
