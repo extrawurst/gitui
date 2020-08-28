@@ -1,6 +1,8 @@
+mod scrollbar;
 mod scrolllist;
 pub mod style;
 
+pub use scrollbar::draw_scrollbar;
 pub use scrolllist::draw_list;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 

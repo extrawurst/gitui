@@ -6,7 +6,7 @@ use crate::{
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings, try_or_popup,
-    ui::{calc_scroll_top, style::SharedTheme},
+    ui::{self, calc_scroll_top, style::SharedTheme},
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
@@ -224,12 +224,20 @@ impl DiffComponent {
         Ok(())
     }
 
+    fn lines_count(&self) -> usize {
+        if let Some(diff) = &self.diff {
+            diff.lines.saturating_sub(1)
+        } else {
+            0
+        }
+    }
+
     fn modify_selection(
         &mut self,
         direction: Direction,
     ) -> Result<()> {
         if let Some(diff) = &self.diff {
-            let max = diff.lines.saturating_sub(1) as usize;
+            let max = diff.lines.saturating_sub(1);
 
             self.selection.modify(direction, max);
         }
@@ -583,6 +591,14 @@ impl DrawableComponent for DiffComponent {
             ),
             r,
         );
+        if self.focused {
+            ui::draw_scrollbar(
+                f,
+                r,
+                self.lines_count(),
+                self.selection.get_end(),
+            );
+        }
 
         Ok(())
     }
