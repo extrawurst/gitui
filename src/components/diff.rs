@@ -225,11 +225,9 @@ impl DiffComponent {
     }
 
     fn lines_count(&self) -> usize {
-        if let Some(diff) = &self.diff {
-            diff.lines.saturating_sub(1)
-        } else {
-            0
-        }
+        self.diff
+            .as_ref()
+            .map_or(0, |diff| diff.lines.saturating_sub(1))
     }
 
     fn modify_selection(
