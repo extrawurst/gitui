@@ -4,7 +4,7 @@ use tui::{
     backend::Backend,
     buffer::Buffer,
     layout::{Margin, Rect},
-    style::{Color, Style},
+    style::Style,
     symbols::{block::FULL, line::THICK_VERTICAL},
     widgets::Widget,
     Frame,
