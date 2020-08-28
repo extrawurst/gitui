@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - copy lines from diffs to clipboard [[@cruessler](https://github.com/cruessler)]([#229](https://github.com/extrawurst/gitui/issues/229))
 - scrollbar in long diffs ([#204](https://github.com/extrawurst/gitui/issues/204))
 
+![scrollbar](assets/scrollbar.gif)
+
 ### Fixed
 
 - selection error in stashlist when deleting last element ([#223](https://github.com/extrawurst/gitui/issues/223))
