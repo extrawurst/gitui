@@ -579,8 +579,20 @@ pub mod commands {
         key_config: &SharedKeyConfig,
     ) -> CommandText {
         CommandText::new(
-            format!("Branch [{}]", get_hint(key_config.enter),),
+            format!("Create Branch [{}]", get_hint(key_config.enter),),
             "create branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn open_branch_create_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Branch [{}]",
+                get_hint(key_config.create_branch),
+            ),
+            "open create branch popup",
             CMD_GROUP_GENERAL,
         )
     }

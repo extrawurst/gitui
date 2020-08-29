@@ -362,6 +362,14 @@ impl Component for Status {
             ));
         }
 
+        out.push(CommandInfo::new(
+            strings::commands::open_branch_create_popup(
+                &self.key_config,
+            ),
+            true,
+            true,
+        ));
+
         out.push(
             CommandInfo::new(
                 strings::commands::select_status(&self.key_config),
