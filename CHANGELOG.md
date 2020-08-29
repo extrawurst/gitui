@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![scrollbar](assets/scrollbar.gif)
 
+- allow creating new branch ([#253](https://github.com/extrawurst/gitui/issues/253))
+
 ### Fixed
 
 - selection error in stashlist when deleting last element ([#223](https://github.com/extrawurst/gitui/issues/223))

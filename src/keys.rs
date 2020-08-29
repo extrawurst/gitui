@@ -59,6 +59,7 @@ pub struct KeyConfig {
     pub log_tag_commit: KeyEvent,
     pub commit_amend: KeyEvent,
     pub copy: KeyEvent,
+    pub create_branch: KeyEvent,
 }
 
 #[rustfmt::skip]
@@ -106,7 +107,8 @@ impl Default for KeyConfig {
 			cmd_bar_toggle: KeyEvent { code: KeyCode::Char('.'), modifiers: KeyModifiers::empty()},
 			log_tag_commit: KeyEvent { code: KeyCode::Char('t'), modifiers: KeyModifiers::empty()},
 			commit_amend: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
-			copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
+            copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
+            create_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
         }
     }
 }

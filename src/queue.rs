@@ -51,6 +51,8 @@ pub enum InternalEvent {
     ///
     TagCommit(CommitId),
     ///
+    CreateBranch,
+    ///
     OpenExternalEditor(Option<String>),
 }
 

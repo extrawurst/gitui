@@ -1,3 +1,4 @@
+use std::string::FromUtf8Error;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -13,6 +14,9 @@ pub enum Error {
 
     #[error("git error:{0}")]
     Git(#[from] git2::Error),
+
+    #[error("utf8 error:{0}")]
+    Utf8Error(#[from] FromUtf8Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

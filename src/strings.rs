@@ -110,6 +110,16 @@ pub fn stashing_options_title(
 pub fn loading_text(_key_config: &SharedKeyConfig) -> String {
     "Loading ...".to_string()
 }
+pub fn create_branch_popup_title(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Branch".to_string()
+}
+pub fn create_branch_popup_msg(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "type branch name".to_string()
+}
 
 pub mod commit {
     use crate::keys::SharedKeyConfig;
@@ -563,6 +573,27 @@ pub mod commands {
             format!("Tag [{}]", get_hint(key_config.enter),),
             "tag commit",
             CMD_GROUP_LOG,
+        )
+    }
+    pub fn create_branch_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Create Branch [{}]", get_hint(key_config.enter),),
+            "create branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn open_branch_create_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Branch [{}]",
+                get_hint(key_config.create_branch),
+            ),
+            "open create branch popup",
+            CMD_GROUP_GENERAL,
         )
     }
 }
