@@ -40,7 +40,7 @@ serde = "1.0"
 anyhow = "1.0.32"
 unicode-width = "0.1"
 textwrap = "0.12"
-clipboard = "0.5"
+cli-clipboard = "0.2"
 
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.3", features = ["flamegraph"], optional = true }

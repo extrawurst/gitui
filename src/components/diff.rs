@@ -10,7 +10,7 @@ use crate::{
 };
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
-use clipboard::{ClipboardContext, ClipboardProvider};
+use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 use tui::{
