@@ -8,6 +8,7 @@ on:
 jobs:
   release:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
@@ -65,7 +66,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         body: ${{ steps.release_notes.outputs.release_notes }}
-        prerelease: true
+        prerelease: contains(github.ref, '-')
         files: |
           ./release/*.tar.gz
           ./release/*.zip
