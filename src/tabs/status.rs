@@ -362,6 +362,14 @@ impl Component for Status {
             ));
         }
 
+        out.push(CommandInfo::new(
+            strings::commands::open_branch_create_popup(
+                &self.key_config,
+            ),
+            true,
+            true,
+        ));
+
         out.push(
             CommandInfo::new(
                 strings::commands::select_status(&self.key_config),
@@ -438,6 +446,11 @@ impl Component for Status {
                     && !self.index_wd.is_empty()
                 {
                     self.switch_focus(Focus::WorkDir)
+                } else if k == self.key_config.create_branch {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::CreateBranch);
+                    Ok(true)
                 } else {
                     Ok(false)
                 };
