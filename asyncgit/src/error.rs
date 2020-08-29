@@ -1,5 +1,5 @@
-use thiserror::Error;
 use std::string::FromUtf8Error;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
