@@ -13,7 +13,7 @@ use asyncgit::{
     sync::{self, CommitId},
     CWD,
 };
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct TagCommitComponent {
@@ -63,7 +63,7 @@ impl Component for TagCommitComponent {
             }
 
             if let Event::Key(e) = ev {
-                if let KeyCode::Enter = e.code {
+                if e == self.key_config.enter {
                     self.tag()
                 }
 

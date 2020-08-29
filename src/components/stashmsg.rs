@@ -11,7 +11,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{sync, CWD};
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct StashMsgComponent {
@@ -61,7 +61,7 @@ impl Component for StashMsgComponent {
             }
 
             if let Event::Key(e) = ev {
-                if let KeyCode::Enter = e.code {
+                if e == self.key_config.enter {
                     match sync::stash_save(
                         CWD,
                         if self.input.get_text().is_empty() {
