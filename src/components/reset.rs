@@ -8,7 +8,7 @@ use crate::{
     strings, ui,
 };
 use anyhow::Result;
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
     backend::Backend,
@@ -81,19 +81,13 @@ impl Component for ResetComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
-                return match e.code {
-                    KeyCode::Esc => {
-                        self.hide();
-                        Ok(true)
-                    }
+                if e == self.key_config.exit_popup {
+                    self.hide();
+                } else if e == self.key_config.enter {
+                    self.confirm();
+                }
 
-                    KeyCode::Enter => {
-                        self.confirm();
-                        Ok(true)
-                    }
-
-                    _ => Ok(true),
-                };
+                return Ok(true);
             }
         }
 

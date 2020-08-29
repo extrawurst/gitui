@@ -209,13 +209,15 @@ impl Component for TextInputComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
+                if e == self.key_config.exit_popup {
+                    self.hide();
+                    return Ok(true);
+                }
+
                 let is_ctrl =
                     e.modifiers.contains(KeyModifiers::CONTROL);
+
                 match e.code {
-                    KeyCode::Esc => {
-                        self.hide();
-                        return Ok(true);
-                    }
                     KeyCode::Char(c) if !is_ctrl => {
                         self.msg.insert(self.cursor_position, c);
                         self.incr_cursor();
