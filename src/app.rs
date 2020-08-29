@@ -3,9 +3,10 @@ use crate::{
     cmdbar::CommandBar,
     components::{
         event_pump, CommandBlocking, CommandInfo, CommitComponent,
-        Component, DrawableComponent, ExternalEditorComponent,
-        HelpComponent, InspectCommitComponent, MsgComponent,
-        ResetComponent, StashMsgComponent, TagCommitComponent,
+        Component, CreateBranchComponent, DrawableComponent,
+        ExternalEditorComponent, HelpComponent,
+        InspectCommitComponent, MsgComponent, ResetComponent,
+        StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -41,6 +42,7 @@ pub struct App {
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
     tag_commit_popup: TagCommitComponent,
+    create_branch_popup: CreateBranchComponent,
     cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
@@ -97,6 +99,11 @@ impl App {
                 key_config.clone(),
             ),
             tag_commit_popup: TagCommitComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            create_branch_popup: CreateBranchComponent::new(
                 queue.clone(),
                 theme.clone(),
                 key_config.clone(),
@@ -331,6 +338,7 @@ impl App {
             inspect_commit_popup,
             external_editor_popup,
             tag_commit_popup,
+            create_branch_popup,
             help,
             revlog,
             status_tab,
@@ -459,6 +467,9 @@ impl App {
             InternalEvent::TagCommit(id) => {
                 self.tag_commit_popup.open(id)?;
             }
+            InternalEvent::CreateBranch => {
+                self.create_branch_popup.open()?;
+            }
             InternalEvent::TabSwitch => self.set_tab(0)?,
             InternalEvent::InspectCommit(id, tags) => {
                 self.inspect_commit_popup.open(id, tags)?;
@@ -527,6 +538,7 @@ impl App {
             || self.inspect_commit_popup.is_visible()
             || self.external_editor_popup.is_visible()
             || self.tag_commit_popup.is_visible()
+            || self.create_branch_popup.is_visible()
     }
 
     fn draw_popups<B: Backend>(
@@ -552,6 +564,7 @@ impl App {
         self.msg.draw(f, size)?;
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
+        self.create_branch_popup.draw(f, size)?;
 
         Ok(())
     }

@@ -438,6 +438,11 @@ impl Component for Status {
                     && !self.index_wd.is_empty()
                 {
                     self.switch_focus(Focus::WorkDir)
+                } else if k == self.key_config.create_branch {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::CreateBranch);
+                    Ok(true)
                 } else {
                     Ok(false)
                 };
