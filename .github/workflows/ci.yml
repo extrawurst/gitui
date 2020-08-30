@@ -72,6 +72,8 @@ jobs:
     - name: Build Debug
       run: |
         cargo build --target=x86_64-unknown-linux-musl
+        ls -lisa ./target/x86_64-unknown-linux-musl/debug
+        ldd ./target/x86_64-unknown-linux-musl/debug/gitui
         ./target/x86_64-unknown-linux-musl/debug/gitui --version
     - name: Build Release
       run: |
