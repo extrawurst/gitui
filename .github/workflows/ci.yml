@@ -70,10 +70,14 @@ jobs:
       run: |
         sudo apt-get -qq install musl-tools
     - name: Build Debug
-      run: cargo build --target=x86_64-unknown-linux-musl
+      run: |
+        cargo build --target=x86_64-unknown-linux-musl
+        ./target/x86_64-unknown-linux-musl/debug/gitui --version
     - name: Build Release
       run: |
         cargo build --release --target=x86_64-unknown-linux-musl
+        ldd ./target/x86_64-unknown-linux-musl/release/gitui
+        ./target/x86_64-unknown-linux-musl/release/gitui --version
 
   rustfmt:
     name: Rustfmt
