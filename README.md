@@ -129,12 +129,13 @@ This will log to:
 
 However, you can customize everything to your liking: See [Themes](THEMES.md).
 
+# Key Bindings
+
+The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to set them to `vim`-like bindings.
+
 # Inspiration
 
 - [lazygit](https://github.com/jesseduffield/lazygit)
 - [tig](https://github.com/jonas/tig)
 - [GitUp](https://github.com/git-up/GitUp)
   - It would be nice to come up with a way to have the map view available in a terminal tool
-
-# Key Bindings
-The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to set them to `vim`-like bindings.
