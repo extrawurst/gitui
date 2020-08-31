@@ -18,3 +18,13 @@ pub fn copy_string(string: String) -> Result<()> {
 pub fn copy_string(_string: String) -> Result<()> {
     Ok(())
 }
+
+#[cfg(feature = "clipboard")]
+pub fn is_supported() -> bool {
+    true
+}
+
+#[cfg(not(feature = "clipboard"))]
+pub fn is_supported() -> bool {
+    false
+}

@@ -604,11 +604,13 @@ impl Component for DiffComponent {
             self.focused,
         ));
 
-        out.push(CommandInfo::new(
-            strings::commands::copy(&self.key_config),
-            true,
-            self.focused,
-        ));
+        if crate::clipboard::is_supported() {
+            out.push(CommandInfo::new(
+                strings::commands::copy(&self.key_config),
+                true,
+                self.focused,
+            ));
+        }
 
         out.push(
             CommandInfo::new(
@@ -688,7 +690,9 @@ impl Component for DiffComponent {
                         }
                     }
                     Ok(true)
-                } else if e == self.key_config.copy {
+                } else if e == self.key_config.copy
+                    && crate::clipboard::is_supported()
+                {
                     self.copy_selection()?;
                     Ok(true)
                 } else {
