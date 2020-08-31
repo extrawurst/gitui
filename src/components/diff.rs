@@ -8,8 +8,10 @@ use crate::{
     strings, try_or_popup,
     ui::{self, calc_scroll_top, style::SharedTheme},
 };
+use anyhow::Result;
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
+#[cfg(feature = "clipboard")]
 use clipboard::{ClipboardContext, ClipboardProvider};
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
@@ -20,8 +22,6 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Text},
     Frame,
 };
-
-use anyhow::{anyhow, Result};
 
 #[derive(Default)]
 struct Current {
@@ -244,7 +244,10 @@ impl DiffComponent {
         Ok(())
     }
 
+    #[cfg(feature = "clipboard")]
     fn copy_string(string: String) -> Result<()> {
+        use anyhow::anyhow;
+
         let mut ctx: ClipboardContext = ClipboardProvider::new()
             .map_err(|_| {
                 anyhow!("failed to get access to clipboard")
@@ -253,6 +256,11 @@ impl DiffComponent {
             anyhow!("failed to set clipboard contents")
         })?;
 
+        Ok(())
+    }
+
+    #[cfg(not(feature = "clipboard"))]
+    fn copy_string(_string: String) -> Result<()> {
         Ok(())
     }
 
