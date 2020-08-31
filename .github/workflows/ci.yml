@@ -62,10 +62,6 @@ jobs:
         profile: minimal
         target: x86_64-unknown-linux-musl
 
-    - name: Install dependencies for clipboard access
-      run: |
-        sudo apt-get -qq install libxcb-shape0-dev libxcb-xfixes0-dev
-
     - name: Setup MUSL
       run: |
         sudo apt-get -qq install musl-tools
