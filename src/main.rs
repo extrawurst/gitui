@@ -10,6 +10,7 @@
 #![warn(clippy::missing_const_for_fn)]
 
 mod app;
+mod clipboard;
 mod cmdbar;
 mod components;
 mod input;

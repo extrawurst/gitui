@@ -11,8 +11,6 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
-#[cfg(feature = "clipboard")]
-use clipboard::{ClipboardContext, ClipboardProvider};
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 use tui::{
@@ -244,26 +242,6 @@ impl DiffComponent {
         Ok(())
     }
 
-    #[cfg(feature = "clipboard")]
-    fn copy_string(string: String) -> Result<()> {
-        use anyhow::anyhow;
-
-        let mut ctx: ClipboardContext = ClipboardProvider::new()
-            .map_err(|_| {
-                anyhow!("failed to get access to clipboard")
-            })?;
-        ctx.set_contents(string).map_err(|_| {
-            anyhow!("failed to set clipboard contents")
-        })?;
-
-        Ok(())
-    }
-
-    #[cfg(not(feature = "clipboard"))]
-    fn copy_string(_string: String) -> Result<()> {
-        Ok(())
-    }
-
     fn copy_selection(&self) -> Result<()> {
         if let Some(diff) = &self.diff {
             let lines_to_copy: Vec<&str> = diff
@@ -289,7 +267,9 @@ impl DiffComponent {
             try_or_popup!(
                 self,
                 "copy to clipboard error:",
-                Self::copy_string(lines_to_copy.join("\n"))
+                crate::clipboard::copy_string(
+                    lines_to_copy.join("\n")
+                )
             );
         }
 
