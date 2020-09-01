@@ -324,7 +324,7 @@ impl Status {
         }
     }
 
-    fn push(&mut self) {
+    fn push(&self) {
         if let Some(branch) = self.index_wd.branch_name() {
             let branch = format!("refs/heads/{}", branch);
             match sync::push_origin(CWD, branch.as_str()) {
@@ -390,6 +390,11 @@ impl Component for Status {
                 &self.key_config,
             ),
             true,
+            true,
+        ));
+        out.push(CommandInfo::new(
+            strings::commands::status_push(&self.key_config),
+            self.index_wd.branch_name().is_some(),
             true,
         ));
 

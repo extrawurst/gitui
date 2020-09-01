@@ -599,4 +599,11 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn status_push(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Push [{}]", get_hint(key_config.push),),
+            "push to origin",
+            CMD_GROUP_GENERAL,
+        )
+    }
 }

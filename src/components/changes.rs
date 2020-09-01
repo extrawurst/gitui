@@ -65,8 +65,8 @@ impl ChangesComponent {
     }
 
     ///
-    pub fn branch_name(&mut self) -> Option<String> {
-        self.branch_name.lookup().ok()
+    pub fn branch_name(&self) -> Option<String> {
+        self.branch_name.last()
     }
 
     ///
