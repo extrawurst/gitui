@@ -112,9 +112,8 @@ impl TextInputComponent {
         let style = self.theme.text(true, false);
 
         let mut txt = Vec::new();
-
-        // the portion of the text before the cursor is added
-        // if the cursor is not at the first character
+        // The portion of the text before the cursor is added
+        // if the cursor is not at the first character.
         if self.cursor_position > 0 {
             txt.push(Text::styled(
                 &self.msg[..self.cursor_position],
@@ -142,8 +141,8 @@ impl TextInputComponent {
             style.modifier(Modifier::UNDERLINED),
         ));
 
-        // the final portion of the text is added if there is
-        // still remaining characters
+        // The final portion of the text is added if there are
+        // still remaining characters.
         if let Some(pos) = self.next_char_position() {
             if pos < self.msg.len() {
                 txt.push(Text::styled(&self.msg[pos..], style));
@@ -274,6 +273,7 @@ impl Component for TextInputComponent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tui::style::Style;
 
     #[test]
     fn test_smoke() {
@@ -295,12 +295,51 @@ mod tests {
         assert_eq!(comp.cursor_position, 0);
     }
 
-    fn get_text<'a>(t: &'a Text) -> Option<&'a str> {
-        if let Text::Styled(c, _) = t {
-            Some(c.as_ref())
-        } else {
-            None
-        }
+    #[test]
+    fn text_cursor_initial_position() {
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
+        let theme = SharedTheme::default();
+        let underlined =
+            theme.text(true, false).modifier(Modifier::UNDERLINED);
+
+        comp.set_text(String::from("a"));
+
+        let txt = comp.get_draw_text();
+
+        assert_eq!(txt.len(), 1);
+        assert_eq!(get_text(&txt[0]), Some("a"));
+        assert_eq!(get_style(&txt[0]), Some(&underlined));
+    }
+
+    #[test]
+    fn test_cursor_second_position() {
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
+        let theme = SharedTheme::default();
+        let underlined =
+            theme.text(true, false).modifier(Modifier::UNDERLINED);
+
+        let not_underlined = Style::new();
+
+        comp.set_text(String::from("a"));
+        comp.incr_cursor();
+
+        let txt = comp.get_draw_text();
+
+        assert_eq!(txt.len(), 2);
+        assert_eq!(get_text(&txt[0]), Some("a"));
+        assert_eq!(get_style(&txt[0]), Some(&not_underlined));
+        assert_eq!(get_text(&txt[1]), Some(" "));
+        assert_eq!(get_style(&txt[1]), Some(&underlined));
     }
 
     #[test]
@@ -312,8 +351,11 @@ mod tests {
             "",
         );
 
-        comp.set_text(String::from("a\nb"));
+        let theme = SharedTheme::default();
+        let underlined =
+            theme.text(false, false).modifier(Modifier::UNDERLINED);
 
+        comp.set_text(String::from("a\nb"));
         comp.incr_cursor();
 
         let txt = comp.get_draw_text();
@@ -321,7 +363,47 @@ mod tests {
         assert_eq!(txt.len(), 4);
         assert_eq!(get_text(&txt[0]), Some("a"));
         assert_eq!(get_text(&txt[1]), Some("\u{21b5}"));
+        assert_eq!(get_style(&txt[1]), Some(&underlined));
         assert_eq!(get_text(&txt[2]), Some("\n"));
         assert_eq!(get_text(&txt[3]), Some("b"));
+    }
+
+    #[test]
+    fn test_invisable_newline() {
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
+
+        let theme = SharedTheme::default();
+        let underlined =
+            theme.text(true, false).modifier(Modifier::UNDERLINED);
+
+        comp.set_text(String::from("a\nb"));
+
+        let txt = comp.get_draw_text();
+
+        assert_eq!(txt.len(), 2);
+        assert_eq!(get_text(&txt[0]), Some("a"));
+        assert_eq!(get_style(&txt[0]), Some(&underlined));
+        assert_eq!(get_text(&txt[1]), Some("\nb"));
+    }
+
+    fn get_text<'a>(t: &'a Text) -> Option<&'a str> {
+        if let Text::Styled(c, _) = t {
+            Some(c.as_ref())
+        } else {
+            None
+        }
+    }
+
+    fn get_style<'a>(t: &'a Text) -> Option<&'a Style> {
+        if let Text::Styled(_, c) = t {
+            Some(c)
+        } else {
+            None
+        }
     }
 }
