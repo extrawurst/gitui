@@ -63,7 +63,7 @@ jobs:
         target: x86_64-unknown-linux-musl
     - name: Setup MUSL
       run: |
-        sudo apt-get -qq install musl-tools libssl-dev
+        sudo apt-get -qq install musl-tools
     - name: Build Debug
       run: |
         make build-linux-musl-debug
