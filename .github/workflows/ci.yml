@@ -72,6 +72,9 @@ jobs:
       run: |
         make build-linux-musl-release
         ./target/x86_64-unknown-linux-musl/release/gitui --version
+    - name: Test
+      run: |
+        make test-linux-musl
 
   # rustfmt:
   #   name: Rustfmt

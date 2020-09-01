@@ -31,6 +31,9 @@ build-linux-musl-debug:
 build-linux-musl-release:
 	cargo build --release --target=x86_64-unknown-linux-musl --no-default-features
 
+test-linux-musl:
+	cargo test --workspace --target=x86_64-unknown-linux-musl
+
 test:
 	cargo test --workspace
 
