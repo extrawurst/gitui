@@ -20,7 +20,7 @@ pub fn copy_string(_string: String) -> Result<()> {
 }
 
 #[cfg(feature = "clipboard")]
-pub fn is_supported() -> bool {
+pub const fn is_supported() -> bool {
     true
 }
 
