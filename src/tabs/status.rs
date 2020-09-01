@@ -327,22 +327,17 @@ impl Status {
     fn push(&self) {
         if let Some(branch) = self.index_wd.branch_name() {
             let branch = format!("refs/heads/{}", branch);
-            match sync::push_origin(CWD, branch.as_str()) {
-                Err(e) => {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "push failed:\n{}",
-                            e
-                        )),
-                    );
-                }
-                Ok(_) => {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowInfoMsg(
-                            format!("pushed",),
-                        ),
-                    );
-                }
+            if let Err(e) = sync::push_origin(CWD, branch.as_str()) {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowErrorMsg(format!(
+                        "push failed:\n{}",
+                        e
+                    )),
+                );
+            } else {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowInfoMsg("pushed".to_string()),
+                );
             }
         }
     }
