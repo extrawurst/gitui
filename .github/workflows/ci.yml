@@ -14,8 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        rust: [nightly, stable]
 
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.rust == 'nightly' }}
 
     steps:
     - uses: actions/checkout@v2
@@ -23,7 +25,8 @@ jobs:
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: ${{ matrix.rust }}
+        default: true
         profile: minimal
         components: clippy
 
@@ -59,18 +62,17 @@ jobs:
         profile: minimal
         target: x86_64-unknown-linux-musl
 
-    - name: Install dependencies for clipboard access
-      run: |
-        sudo apt-get -qq install libxcb-shape0-dev libxcb-xfixes0-dev
-
     - name: Setup MUSL
       run: |
         sudo apt-get -qq install musl-tools
     - name: Build Debug
-      run: cargo build --target=x86_64-unknown-linux-musl
+      run: |
+        make build-linux-musl-debug
+        ./target/x86_64-unknown-linux-musl/debug/gitui --version
     - name: Build Release
       run: |
-        cargo build --release --target=x86_64-unknown-linux-musl
+        make build-linux-musl-release
+        ./target/x86_64-unknown-linux-musl/release/gitui --version
 
   rustfmt:
     name: Rustfmt

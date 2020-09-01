@@ -1,63 +1,165 @@
-pub static TITLE_STATUS: &str = "Unstaged Changes [w]";
-pub static TITLE_DIFF: &str = "Diff: ";
-pub static TITLE_INDEX: &str = "Staged Changes [s]";
-
-pub static TAB_STATUS: &str = "Status [1]";
-pub static TAB_LOG: &str = "Log [2]";
-pub static TAB_STASHING: &str = "Stashing [3]";
-pub static TAB_STASHES: &str = "Stashes [4]";
-pub static TAB_DIVIDER: &str = " | ";
-
-pub static CMD_SPLITTER: &str = " ";
-
-pub static MSG_OPENING_EDITOR: &str = "opening editor...";
-pub static MSG_TITLE_ERROR: &str = "Error";
-pub static COMMIT_TITLE: &str = "Commit";
-pub static COMMIT_TITLE_AMEND: &str = "Commit (Amend)";
-pub static COMMIT_MSG: &str = "type commit message..";
-pub static COMMIT_EDITOR_MSG: &str = r##"
-# Edit your commit message
-# Lines starting with '#' will be ignored"##;
-pub static STASH_POPUP_TITLE: &str = "Stash";
-pub static STASH_POPUP_MSG: &str = "type name (optional)";
-pub static CONFIRM_TITLE_RESET: &str = "Reset";
-pub static CONFIRM_TITLE_STASHDROP: &str = "Drop";
-pub static CONFIRM_MSG_RESET: &str = "confirm file reset?";
-pub static CONFIRM_MSG_STASHDROP: &str = "confirm stash drop?";
-pub static CONFIRM_MSG_RESETHUNK: &str = "confirm reset hunk?";
-
-pub static LOG_TITLE: &str = "Commit";
-
-pub static TAG_COMMIT_POPUP_TITLE: &str = "Tag";
-pub static TAG_COMMIT_POPUP_MSG: &str = "type tag";
-
-pub static STASHLIST_TITLE: &str = "Stashes";
-
-pub static HELP_TITLE: &str = "Help: all commands";
-
-pub static STASHING_FILES_TITLE: &str = "Files to Stash";
-pub static STASHING_OPTIONS_TITLE: &str = "Options";
-
-pub static LOADING_TEXT: &str = "Loading ...";
-
-pub mod commit {
-    pub static DETAILS_AUTHOR: &str = "Author: ";
-    pub static DETAILS_COMMITTER: &str = "Committer: ";
-    pub static DETAILS_SHA: &str = "SHA: ";
-    pub static DETAILS_DATE: &str = "Date: ";
-    pub static DETAILS_TAGS: &str = "Tags: ";
-
-    pub static DETAILS_INFO_TITLE: &str = "Info";
-    pub static DETAILS_MESSAGE_TITLE: &str = "Message";
-    pub static DETAILS_FILES_TITLE: &str = "Files:";
-}
+use crate::keys::{get_hint, SharedKeyConfig};
 
 pub mod order {
     pub static NAV: i8 = 1;
 }
 
+pub fn title_status(key_config: &SharedKeyConfig) -> String {
+    format!(
+        "Unstaged Changes [{}]",
+        get_hint(key_config.focus_workdir)
+    )
+}
+pub fn title_diff(_key_config: &SharedKeyConfig) -> String {
+    "Diff: ".to_string()
+}
+pub fn title_index(key_config: &SharedKeyConfig) -> String {
+    format!("Staged Changes [{}]", get_hint(key_config.focus_stage))
+}
+pub fn tab_status(key_config: &SharedKeyConfig) -> String {
+    format!("Status [{}]", get_hint(key_config.tab_status))
+}
+pub fn tab_log(key_config: &SharedKeyConfig) -> String {
+    format!("Log [{}]", get_hint(key_config.tab_log))
+}
+pub fn tab_stashing(key_config: &SharedKeyConfig) -> String {
+    format!("Stashing [{}]", get_hint(key_config.tab_stashing))
+}
+pub fn tab_stashes(key_config: &SharedKeyConfig) -> String {
+    format!("Stashes [{}]", get_hint(key_config.tab_stashes))
+}
+pub fn tab_divider(_key_config: &SharedKeyConfig) -> String {
+    " | ".to_string()
+}
+pub fn cmd_splitter(_key_config: &SharedKeyConfig) -> String {
+    " ".to_string()
+}
+pub fn msg_opening_editor(_key_config: &SharedKeyConfig) -> String {
+    "opening editor...".to_string()
+}
+pub fn msg_title_error(_key_config: &SharedKeyConfig) -> String {
+    "Error".to_string()
+}
+pub fn commit_title(_key_config: &SharedKeyConfig) -> String {
+    "Commit".to_string()
+}
+pub fn commit_title_amend(_key_config: &SharedKeyConfig) -> String {
+    "Commit (Amend)".to_string()
+}
+pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {
+    "type commit message..".to_string()
+}
+pub fn commit_editor_msg(_key_config: &SharedKeyConfig) -> String {
+    r##"
+# Edit your commit message
+# Lines starting with '#' will be ignored"##
+        .to_string()
+}
+pub fn stash_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "Stash".to_string()
+}
+pub fn stash_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type name (optional)".to_string()
+}
+pub fn confirm_title_reset(_key_config: &SharedKeyConfig) -> String {
+    "Reset".to_string()
+}
+pub fn confirm_title_stashdrop(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Drop".to_string()
+}
+pub fn confirm_msg_reset(_key_config: &SharedKeyConfig) -> String {
+    "confirm file reset?".to_string()
+}
+pub fn confirm_msg_stashdrop(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "confirm stash drop?".to_string()
+}
+pub fn confirm_msg_resethunk(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "confirm reset hunk?".to_string()
+}
+pub fn log_title(_key_config: &SharedKeyConfig) -> String {
+    "Commit".to_string()
+}
+pub fn tag_commit_popup_title(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Tag".to_string()
+}
+pub fn tag_commit_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type tag".to_string()
+}
+pub fn stashlist_title(_key_config: &SharedKeyConfig) -> String {
+    "Stashes".to_string()
+}
+pub fn help_title(_key_config: &SharedKeyConfig) -> String {
+    "Help: all commands".to_string()
+}
+pub fn stashing_files_title(_key_config: &SharedKeyConfig) -> String {
+    "Files to Stash".to_string()
+}
+pub fn stashing_options_title(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Options".to_string()
+}
+pub fn loading_text(_key_config: &SharedKeyConfig) -> String {
+    "Loading ...".to_string()
+}
+pub fn create_branch_popup_title(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Branch".to_string()
+}
+pub fn create_branch_popup_msg(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "type branch name".to_string()
+}
+
+pub mod commit {
+    use crate::keys::SharedKeyConfig;
+    pub fn details_author(_key_config: &SharedKeyConfig) -> String {
+        "Author: ".to_string()
+    }
+    pub fn details_committer(
+        _key_config: &SharedKeyConfig,
+    ) -> String {
+        "Committer: ".to_string()
+    }
+    pub fn details_sha(_key_config: &SharedKeyConfig) -> String {
+        "Sha: ".to_string()
+    }
+    pub fn details_date(_key_config: &SharedKeyConfig) -> String {
+        "Date: ".to_string()
+    }
+    pub fn details_tags(_key_config: &SharedKeyConfig) -> String {
+        "Tags: ".to_string()
+    }
+    pub fn details_info_title(
+        _key_config: &SharedKeyConfig,
+    ) -> String {
+        "Info".to_string()
+    }
+    pub fn details_message_title(
+        _key_config: &SharedKeyConfig,
+    ) -> String {
+        "Message".to_string()
+    }
+    pub fn details_files_title(
+        _key_config: &SharedKeyConfig,
+    ) -> String {
+        "Files:".to_string()
+    }
+}
+
 pub mod commands {
     use crate::components::CommandText;
+    use crate::keys::{get_hint, SharedKeyConfig};
 
     static CMD_GROUP_GENERAL: &str = "-- General --";
     static CMD_GROUP_DIFF: &str = "-- Diff --";
@@ -67,256 +169,431 @@ pub mod commands {
     static CMD_GROUP_STASHES: &str = "-- Stashes --";
     static CMD_GROUP_LOG: &str = "-- Log --";
 
-    ///
-    pub static TOGGLE_TABS: CommandText = CommandText::new(
-        "Next [tab]",
-        "switch to next tab",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static TOGGLE_TABS_DIRECT: CommandText = CommandText::new(
-        "Tab [1234]",
-        "switch top level tabs directly",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static HELP_OPEN: CommandText = CommandText::new(
-        "Help [h]",
-        "open this help screen",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static NAVIGATE_COMMIT_MESSAGE: CommandText =
+    pub fn toggle_tabs(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
-            "Nav [\u{2191}\u{2193}]",
+            format!("Next [{}]", get_hint(key_config.tab_toggle)),
+            "switch to next tab",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn toggle_tabs_direct(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Tab [{}{}{}{}]",
+                get_hint(key_config.tab_status),
+                get_hint(key_config.tab_log),
+                get_hint(key_config.tab_stashing),
+                get_hint(key_config.tab_stashes),
+            ),
+            "switch top level tabs directly",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn help_open(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Help [{}]", get_hint(key_config.open_help)),
+            "open this help screen",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn navigate_commit_message(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Nav [{}{}]",
+                get_hint(key_config.move_up),
+                get_hint(key_config.move_down)
+            ),
             "navigate commit message",
             CMD_GROUP_GENERAL,
-        );
-    ///
-    pub static NAVIGATE_TREE: CommandText = CommandText::new(
-        "Nav [\u{2190}\u{2191}\u{2192}\u{2193}]",
-        "navigate tree view",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static SCROLL: CommandText = CommandText::new(
-        "Scroll [\u{2191}\u{2193}]",
-        "scroll up or down in focused view",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static COPY: CommandText = CommandText::new(
-        "Copy [y]",
-        "copy selected lines to clipboard",
-        CMD_GROUP_DIFF,
-    );
-    ///
-    pub static DIFF_HOME_END: CommandText = CommandText::new(
-        "Jump up/down [home,end,\u{2191} up,\u{2193} down]",
-        "scroll to top or bottom of diff",
-        CMD_GROUP_DIFF,
-    );
-    ///
-    pub static DIFF_HUNK_ADD: CommandText = CommandText::new(
-        "Add hunk [enter]",
-        "adds selected hunk to stage",
-        CMD_GROUP_DIFF,
-    );
-    ///
-    pub static DIFF_HUNK_REVERT: CommandText = CommandText::new(
-        "Revert hunk [D]",
-        "reverts selected hunk",
-        CMD_GROUP_DIFF,
-    );
-    ///
-    pub static DIFF_HUNK_REMOVE: CommandText = CommandText::new(
-        "Remove hunk [enter]",
-        "removes selected hunk from stage",
-        CMD_GROUP_DIFF,
-    );
-    ///
-    pub static CLOSE_POPUP: CommandText = CommandText::new(
-        "Close [esc]",
-        "close overlay (e.g commit, help)",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static CLOSE_MSG: CommandText = CommandText::new(
-        "Close [enter]",
-        "close msg popup (e.g msg)",
-        CMD_GROUP_GENERAL,
-    )
-    .hide_help();
-    ///
-    pub static SELECT_STAGING: CommandText = CommandText::new(
-        "To stage [s]",
-        "focus/select staging area",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static SELECT_STATUS: CommandText = CommandText::new(
-        "To files [1,2]",
-        "focus/select file tree of staged or unstaged files",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static SELECT_UNSTAGED: CommandText = CommandText::new(
-        "To unstaged [w]",
-        "focus/select unstaged area",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static COMMIT_OPEN: CommandText = CommandText::new(
-        "Commit [c]",
-        "open commit popup (available in non-empty stage)",
-        CMD_GROUP_COMMIT,
-    );
-    ///
-    pub static COMMIT_OPEN_EDITOR: CommandText = CommandText::new(
-        "Open editor [^e]",
-        "open commit editor (available in non-empty stage)",
-        CMD_GROUP_COMMIT,
-    );
-    ///
-    pub static COMMIT_ENTER: CommandText = CommandText::new(
-        "Commit [enter]",
-        "commit (available when commit message is non-empty)",
-        CMD_GROUP_COMMIT,
-    );
-    ///
-    pub static COMMIT_AMEND: CommandText = CommandText::new(
-        "Amend [^a]",
-        "amend last commit",
-        CMD_GROUP_COMMIT,
-    );
-    ///
-    pub static EDIT_ITEM: CommandText = CommandText::new(
-        "Edit Item [e]",
-        "edit the currently selected file in an external editor",
-        CMD_GROUP_CHANGES,
-    );
-    ///
-    pub static STAGE_ITEM: CommandText = CommandText::new(
-        "Stage Item [enter]",
-        "stage currently selected file or entire path",
-        CMD_GROUP_CHANGES,
-    );
-    ///
-    pub static STAGE_ALL: CommandText = CommandText::new(
-        "Stage All [a]",
-        "stage all changes (in unstaged files)",
-        CMD_GROUP_CHANGES,
-    );
-    ///
-    pub static UNSTAGE_ITEM: CommandText = CommandText::new(
-        "Unstage Item [enter]",
-        "unstage currently selected file or entire path",
-        CMD_GROUP_CHANGES,
-    );
-    ///
-    pub static UNSTAGE_ALL: CommandText = CommandText::new(
-        "Unstage all [a]",
-        "unstage all files (in staged files)",
-        CMD_GROUP_CHANGES,
-    );
-    ///
-    pub static RESET_ITEM: CommandText = CommandText::new(
-        "Reset Item [D]",
-        "revert changes in selected file or entire path",
-        CMD_GROUP_CHANGES,
-    );
-    ///
-    pub static IGNORE_ITEM: CommandText = CommandText::new(
-        "Ignore [i]",
-        "Add file or path to .gitignore",
-        CMD_GROUP_CHANGES,
-    );
-    ///
-    pub static DIFF_FOCUS_LEFT: CommandText = CommandText::new(
-        "Back [\u{2190}]", //←
-        "view and select changed files",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static DIFF_FOCUS_RIGHT: CommandText = CommandText::new(
-        "Diff [\u{2192}]", //→
-        "inspect file diff",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static QUIT: CommandText = CommandText::new(
-        "Quit [^c]",
-        "quit gitui application",
-        CMD_GROUP_GENERAL,
-    );
-    ///
-    pub static RESET_CONFIRM: CommandText = CommandText::new(
-        "Confirm [enter]",
-        "resets the file in question",
-        CMD_GROUP_GENERAL,
-    );
-
-    ///
-    pub static STASHING_SAVE: CommandText = CommandText::new(
-        "Save [s]",
-        "opens stash name input popup",
-        CMD_GROUP_STASHING,
-    );
-    ///
-    pub static STASHING_TOGGLE_INDEXED: CommandText =
+        )
+    }
+    pub fn navigate_tree(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
         CommandText::new(
-            "Toggle Staged [i]",
+            format!(
+                "Nav [{}{}{}{}]",
+                get_hint(key_config.move_up),
+                get_hint(key_config.move_down),
+                get_hint(key_config.move_right),
+                get_hint(key_config.move_left)
+            ),
+            "navigate tree view",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn scroll(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Scroll [{}{}]",
+                get_hint(key_config.focus_above),
+                get_hint(key_config.focus_below)
+            ),
+            "scroll up or down in focused view",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn copy(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Copy [{}]", get_hint(key_config.copy),),
+            "copy selected lines to clipboard",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn diff_home_end(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Jump up/down [{},{},{},{}]",
+                get_hint(key_config.home),
+                get_hint(key_config.end),
+                get_hint(key_config.move_up),
+                get_hint(key_config.move_down)
+            ),
+            "scroll to top or bottom of diff",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn diff_hunk_add(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Add hunk [{}]", get_hint(key_config.enter),),
+            "adds selected hunk to stage",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn diff_hunk_revert(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Revert hunk [{}]",
+                get_hint(key_config.status_reset_item),
+            ),
+            "reverts selected hunk",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn diff_hunk_remove(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Remove hunk [{}]", get_hint(key_config.enter),),
+            "removes selected hunk from stage",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn close_popup(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Close [{}]", get_hint(key_config.exit_popup),),
+            "close overlay (e.g commit, help)",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn close_msg(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Close [{}]", get_hint(key_config.enter),),
+            "close msg popup (e.g msg)",
+            CMD_GROUP_GENERAL,
+        )
+        .hide_help()
+    }
+    pub fn select_staging(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "To stage [{}]",
+                get_hint(key_config.focus_stage),
+            ),
+            "focus/select staging area",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn select_status(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "To files [{},{}]",
+                get_hint(key_config.tab_status),
+                get_hint(key_config.tab_log),
+            ),
+            "focus/select file tree of staged or unstaged files",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn select_unstaged(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "To unstaged [{}]",
+                get_hint(key_config.focus_workdir),
+            ),
+            "focus/select unstaged area",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn commit_open(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Commit [{}]", get_hint(key_config.open_commit),),
+            "open commit popup (available in non-empty stage)",
+            CMD_GROUP_COMMIT,
+        )
+    }
+    pub fn commit_open_editor(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Open editor [{}]",
+                get_hint(key_config.open_commit_editor),
+            ),
+            "open commit editor (available in non-empty stage)",
+            CMD_GROUP_COMMIT,
+        )
+    }
+    pub fn commit_enter(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Commit [{}]", get_hint(key_config.enter),),
+            "commit (available when commit message is non-empty)",
+            CMD_GROUP_COMMIT,
+        )
+    }
+    pub fn commit_amend(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Amend [{}]", get_hint(key_config.commit_amend),),
+            "amend last commit",
+            CMD_GROUP_COMMIT,
+        )
+    }
+    pub fn edit_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Edit Item [{}]", get_hint(key_config.edit_file),),
+            "edit the currently selected file in an external editor",
+            CMD_GROUP_CHANGES,
+        )
+    }
+    pub fn stage_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Stage Item [{}]", get_hint(key_config.enter),),
+            "stage currently selected file or entire path",
+            CMD_GROUP_CHANGES,
+        )
+    }
+    pub fn stage_all(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Stage All [{}]",
+                get_hint(key_config.status_stage_all),
+            ),
+            "stage all changes (in unstaged files)",
+            CMD_GROUP_CHANGES,
+        )
+    }
+    pub fn unstage_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Unstage Item [{}]", get_hint(key_config.enter),),
+            "unstage currently selected file or entire path",
+            CMD_GROUP_CHANGES,
+        )
+    }
+    pub fn unstage_all(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Unstage all [{}]",
+                get_hint(key_config.status_stage_all),
+            ),
+            "unstage all files (in staged files)",
+            CMD_GROUP_CHANGES,
+        )
+    }
+    pub fn reset_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Reset Item [{}]",
+                get_hint(key_config.stash_drop),
+            ),
+            "revert changes in selected file or entire path",
+            CMD_GROUP_CHANGES,
+        )
+    }
+    pub fn ignore_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Ignore [{}]",
+                get_hint(key_config.status_ignore_file),
+            ),
+            "Add file or path to .gitignore",
+            CMD_GROUP_CHANGES,
+        )
+    }
+
+    pub fn diff_focus_left(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Back [{}]", get_hint(key_config.focus_left),),
+            "view and select changed files",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn diff_focus_right(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Diff [{}]", get_hint(key_config.focus_right),),
+            "inspect file diff",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn quit(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Quit [{}]", get_hint(key_config.exit),),
+            "quit gitui application",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn reset_confirm(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Confirm [{}]", get_hint(key_config.enter),),
+            "resets the file in question",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn stashing_save(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Save [{}]", get_hint(key_config.stashing_save),),
+            "opens stash name input popup",
+            CMD_GROUP_STASHING,
+        )
+    }
+    pub fn stashing_toggle_indexed(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Toggle Staged [{}]",
+                get_hint(key_config.stashing_toggle_index),
+            ),
             "toggle including staged files into stash",
             CMD_GROUP_STASHING,
-        );
-    ///
-    pub static STASHING_TOGGLE_UNTRACKED: CommandText =
+        )
+    }
+    pub fn stashing_toggle_untracked(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
         CommandText::new(
-            "Toggle Untracked [u]",
+            format!(
+                "Toggle Untracked [{}]",
+                get_hint(key_config.stashing_toggle_untracked),
+            ),
             "toggle including untracked files into stash",
             CMD_GROUP_STASHING,
-        );
-    ///
-    pub static STASHING_CONFIRM_MSG: CommandText = CommandText::new(
-        "Stash [enter]",
-        "save files to stash",
-        CMD_GROUP_STASHING,
-    );
-    ///
-    pub static STASHLIST_APPLY: CommandText = CommandText::new(
-        "Apply [enter]",
-        "apply selected stash",
-        CMD_GROUP_STASHES,
-    );
-    ///
-    pub static STASHLIST_DROP: CommandText = CommandText::new(
-        "Drop [D]",
-        "drop selected stash",
-        CMD_GROUP_STASHES,
-    );
-    ///
-    pub static STASHLIST_INSPECT: CommandText = CommandText::new(
-        "Inspect [\u{2192}]", //→
-        "open stash commit details (allows to diff files)",
-        CMD_GROUP_STASHES,
-    );
-
-    ///
-    pub static LOG_DETAILS_TOGGLE: CommandText = CommandText::new(
-        "Details [enter]",
-        "open details of selected commit",
-        CMD_GROUP_LOG,
-    );
-    ///
-    pub static LOG_DETAILS_OPEN: CommandText = CommandText::new(
-        "Inspect [\u{2192}]", //→
-        "inspect selected commit in detail",
-        CMD_GROUP_LOG,
-    );
-    ///
-    pub static LOG_TAG_COMMIT: CommandText =
-        CommandText::new("Tag [t]", "tag commit", CMD_GROUP_LOG);
-    ///
-    pub static TAG_COMMIT_CONFIRM_MSG: CommandText =
-        CommandText::new("Tag [enter]", "tag commit", CMD_GROUP_LOG);
+        )
+    }
+    pub fn stashing_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Stash [{}]", get_hint(key_config.enter),),
+            "save files to stash",
+            CMD_GROUP_STASHING,
+        )
+    }
+    pub fn stashlist_apply(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Apply [{}]", get_hint(key_config.enter),),
+            "apply selected stash",
+            CMD_GROUP_STASHES,
+        )
+    }
+    pub fn stashlist_drop(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Drop [{}]", get_hint(key_config.stash_drop),),
+            "drop selected stash",
+            CMD_GROUP_STASHES,
+        )
+    }
+    pub fn stashlist_inspect(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Inspect [{}]", get_hint(key_config.focus_right),),
+            "open stash commit details (allows to diff files)",
+            CMD_GROUP_STASHES,
+        )
+    }
+    pub fn log_details_toggle(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Details [{}]", get_hint(key_config.enter),),
+            "open details of selected commit",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn log_details_open(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Inspect [{}]", get_hint(key_config.focus_right),),
+            "inspect selected commit in detail",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn log_tag_commit(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Tag [{}]", get_hint(key_config.log_tag_commit),),
+            "tag commit",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn tag_commit_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Tag [{}]", get_hint(key_config.enter),),
+            "tag commit",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn create_branch_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Create Branch [{}]", get_hint(key_config.enter),),
+            "create branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn open_branch_create_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Branch [{}]",
+                get_hint(key_config.create_branch),
+            ),
+            "open create branch popup",
+            CMD_GROUP_GENERAL,
+        )
+    }
 }

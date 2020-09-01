@@ -4,9 +4,10 @@ use super::{
     ExternalEditorComponent,
 };
 use crate::{
-    get_app_config_path, keys,
+    get_app_config_path,
+    keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings::{self, commands},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -26,6 +27,7 @@ pub struct CommitComponent {
     input: TextInputComponent,
     amend: Option<CommitId>,
     queue: Queue,
+    key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for CommitComponent {
@@ -50,19 +52,21 @@ impl Component for CommitComponent {
 
         if self.is_visible() || force_all {
             out.push(CommandInfo::new(
-                commands::COMMIT_ENTER,
+                strings::commands::commit_enter(&self.key_config),
                 self.can_commit(),
                 true,
             ));
 
             out.push(CommandInfo::new(
-                commands::COMMIT_AMEND,
+                strings::commands::commit_amend(&self.key_config),
                 self.can_amend(),
                 true,
             ));
 
             out.push(CommandInfo::new(
-                commands::COMMIT_OPEN_EDITOR,
+                strings::commands::commit_open_editor(
+                    &self.key_config,
+                ),
                 true,
                 true,
             ));
@@ -78,25 +82,19 @@ impl Component for CommitComponent {
             }
 
             if let Event::Key(e) = ev {
-                match e {
-                    keys::ENTER if self.can_commit() => {
-                        self.commit()?;
-                    }
-
-                    keys::COMMIT_AMEND if self.can_amend() => {
-                        self.amend()?;
-                    }
-
-                    keys::OPEN_COMMIT_EDITOR => {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::OpenExternalEditor(None),
-                        );
-                        self.hide();
-                    }
-
-                    _ => (),
-                };
-
+                if e == self.key_config.enter && self.can_commit() {
+                    self.commit()?;
+                } else if e == self.key_config.commit_amend
+                    && self.can_amend()
+                {
+                    self.amend()?;
+                } else if e == self.key_config.open_commit_editor {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::OpenExternalEditor(None),
+                    );
+                    self.hide();
+                } else {
+                }
                 // stop key event propagation
                 return Ok(true);
             }
@@ -117,7 +115,8 @@ impl Component for CommitComponent {
         self.amend = None;
 
         self.input.clear();
-        self.input.set_title(strings::COMMIT_TITLE.into());
+        self.input
+            .set_title(strings::commit_title(&self.key_config));
         self.input.show()?;
 
         Ok(())
@@ -126,15 +125,21 @@ impl Component for CommitComponent {
 
 impl CommitComponent {
     ///
-    pub fn new(queue: Queue, theme: SharedTheme) -> Self {
+    pub fn new(
+        queue: Queue,
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             queue,
             amend: None,
             input: TextInputComponent::new(
                 theme,
+                key_config.clone(),
                 "",
-                strings::COMMIT_MSG,
+                &strings::commit_msg(&key_config),
             ),
+            key_config,
         }
     }
 
@@ -150,7 +155,10 @@ impl CommitComponent {
                 "{}\n",
                 self.input.get_text()
             ))?;
-            file.write_all(strings::COMMIT_EDITOR_MSG.as_bytes())?;
+            file.write_all(
+                strings::commit_editor_msg(&self.key_config)
+                    .as_bytes(),
+            )?;
         }
 
         ExternalEditorComponent::open_file_in_editor(&config_path)?;
@@ -200,11 +208,10 @@ impl CommitComponent {
             return Ok(());
         }
 
-        let res = if let Some(amend) = self.amend {
-            sync::amend(CWD, amend, &msg)
-        } else {
-            sync::commit(CWD, &msg)
-        };
+        let res = self.amend.map_or_else(
+            || sync::commit(CWD, &msg),
+            |amend| sync::amend(CWD, amend, &msg),
+        );
         if let Err(e) = res {
             log::error!("commit error: {}", &e);
             self.queue.borrow_mut().push_back(
@@ -251,7 +258,8 @@ impl CommitComponent {
 
         let details = sync::get_commit_details(CWD, id)?;
 
-        self.input.set_title(strings::COMMIT_TITLE_AMEND.into());
+        self.input
+            .set_title(strings::commit_title_amend(&self.key_config));
 
         if let Some(msg) = details.message {
             self.input.set_text(msg.combine());

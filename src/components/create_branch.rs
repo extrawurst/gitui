@@ -16,14 +16,14 @@ use asyncgit::{
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
-pub struct TagCommitComponent {
+pub struct CreateBranchComponent {
     input: TextInputComponent,
     commit_id: Option<CommitId>,
     queue: Queue,
     key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for TagCommitComponent {
+impl DrawableComponent for CreateBranchComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
@@ -35,7 +35,7 @@ impl DrawableComponent for TagCommitComponent {
     }
 }
 
-impl Component for TagCommitComponent {
+impl Component for CreateBranchComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
@@ -45,7 +45,7 @@ impl Component for TagCommitComponent {
             self.input.commands(out, force_all);
 
             out.push(CommandInfo::new(
-                strings::commands::tag_commit_confirm_msg(
+                strings::commands::create_branch_confirm_msg(
                     &self.key_config,
                 ),
                 true,
@@ -64,7 +64,7 @@ impl Component for TagCommitComponent {
 
             if let Event::Key(e) = ev {
                 if e == self.key_config.enter {
-                    self.tag()
+                    self.create_branch();
                 }
 
                 return Ok(true);
@@ -88,7 +88,7 @@ impl Component for TagCommitComponent {
     }
 }
 
-impl TagCommitComponent {
+impl CreateBranchComponent {
     ///
     pub fn new(
         queue: Queue,
@@ -100,8 +100,8 @@ impl TagCommitComponent {
             input: TextInputComponent::new(
                 theme,
                 key_config.clone(),
-                &strings::tag_commit_popup_title(&key_config),
-                &strings::tag_commit_popup_msg(&key_config),
+                &strings::create_branch_popup_title(&key_config),
+                &strings::create_branch_popup_msg(&key_config),
             ),
             commit_id: None,
             key_config,
@@ -109,35 +109,35 @@ impl TagCommitComponent {
     }
 
     ///
-    pub fn open(&mut self, id: CommitId) -> Result<()> {
-        self.commit_id = Some(id);
+    pub fn open(&mut self) -> Result<()> {
+        self.commit_id = None;
         self.show()?;
 
         Ok(())
     }
 
     ///
-    pub fn tag(&mut self) {
-        if let Some(commit_id) = self.commit_id {
-            match sync::tag(CWD, &commit_id, self.input.get_text()) {
-                Ok(_) => {
-                    self.input.clear();
-                    self.hide();
+    pub fn create_branch(&mut self) {
+        let res =
+            sync::create_branch(CWD, self.input.get_text().as_str());
 
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::Update(NeedsUpdate::ALL),
-                    );
-                }
-                Err(e) => {
-                    self.hide();
-                    log::error!("e: {}", e,);
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "tag error:\n{}",
-                            e,
-                        )),
-                    );
-                }
+        self.input.clear();
+        self.hide();
+
+        match res {
+            Ok(_) => {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::Update(NeedsUpdate::ALL),
+                );
+            }
+            Err(e) => {
+                log::error!("create branch: {}", e,);
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowErrorMsg(format!(
+                        "create branch error:\n{}",
+                        e,
+                    )),
+                );
             }
         }
     }

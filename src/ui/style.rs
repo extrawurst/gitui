@@ -51,6 +51,10 @@ pub struct Theme {
 }
 
 impl Theme {
+    pub fn scroll_bar_pos(&self) -> Style {
+        Style::default().fg(self.selection_bg)
+    }
+
     pub fn block(&self, focus: bool) -> Style {
         if focus {
             Style::default()
@@ -116,7 +120,11 @@ impl Theme {
         self.apply_select(style, selected)
     }
 
-    fn apply_select(&self, style: Style, selected: bool) -> Style {
+    const fn apply_select(
+        &self,
+        style: Style,
+        selected: bool,
+    ) -> Style {
         if selected {
             style.bg(self.selection_bg)
         } else {

@@ -3,7 +3,8 @@ use crate::{
         popup_paragraph, visibility_blocking, CommandBlocking,
         CommandInfo, Component, DrawableComponent,
     },
-    strings::commands,
+    keys::SharedKeyConfig,
+    strings,
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
@@ -23,6 +24,7 @@ pub struct TextInputComponent {
     msg: String,
     visible: bool,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
     cursor_position: usize,
 }
 
@@ -30,6 +32,7 @@ impl TextInputComponent {
     ///
     pub fn new(
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
         title: &str,
         default_msg: &str,
     ) -> Self {
@@ -37,6 +40,7 @@ impl TextInputComponent {
             msg: String::default(),
             visible: false,
             theme,
+            key_config,
             title: title.to_string(),
             default_msg: default_msg.to_string(),
             cursor_position: 0,
@@ -118,14 +122,11 @@ impl TextInputComponent {
             ));
         }
 
-        let cursor_str = if let Some(pos) = self.next_char_position()
-        {
-            &self.msg[self.cursor_position..pos]
-        } else {
+        let cursor_str = self
+            .next_char_position()
             // if the cursor is at the end of the msg
             // a whitespace is used to underline
-            " "
-        };
+            .map_or(" ", |pos| &self.msg[self.cursor_position..pos]);
 
         if cursor_str == "\n" {
             txt.push(Text::styled(
@@ -196,7 +197,7 @@ impl Component for TextInputComponent {
     ) -> CommandBlocking {
         out.push(
             CommandInfo::new(
-                commands::CLOSE_POPUP,
+                strings::commands::close_popup(&self.key_config),
                 true,
                 self.visible,
             )
@@ -208,13 +209,15 @@ impl Component for TextInputComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
+                if e == self.key_config.exit_popup {
+                    self.hide();
+                    return Ok(true);
+                }
+
                 let is_ctrl =
                     e.modifiers.contains(KeyModifiers::CONTROL);
+
                 match e.code {
-                    KeyCode::Esc => {
-                        self.hide();
-                        return Ok(true);
-                    }
                     KeyCode::Char(c) if !is_ctrl => {
                         self.msg.insert(self.cursor_position, c);
                         self.incr_cursor();
@@ -274,8 +277,12 @@ mod tests {
 
     #[test]
     fn test_smoke() {
-        let mut comp =
-            TextInputComponent::new(SharedTheme::default(), "", "");
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
 
         comp.set_text(String::from("a\nb"));
 
@@ -298,8 +305,12 @@ mod tests {
 
     #[test]
     fn test_visualize_newline() {
-        let mut comp =
-            TextInputComponent::new(SharedTheme::default(), "", "");
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
 
         comp.set_text(String::from("a\nb"));
 

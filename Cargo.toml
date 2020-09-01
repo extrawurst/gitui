@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.9.1"
+version = "0.10.1"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
@@ -20,13 +20,13 @@ keywords = [
 
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
-asyncgit = { path = "./asyncgit", version = "0.9" }
-crossterm = "0.17"
+asyncgit = { path = "./asyncgit", version = "0.10" }
+crossterm = { version = "0.17", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
 tui = { version = "0.9", default-features = false, features = ['crossterm'] }
 bytesize = { version = "1.0.1", default-features = false}
 itertools = "0.9"
-rayon-core = "1.7"
+rayon-core = "1.8"
 log = "0.4"
 simplelog = { version = "0.8", default-features = false }
 dirs = "3.0"
@@ -40,7 +40,7 @@ serde = "1.0"
 anyhow = "1.0.32"
 unicode-width = "0.1"
 textwrap = "0.12"
-clipboard = "0.5"
+clipboard = { version = "0.5", optional = true }
 
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.3", features = ["flamegraph"], optional = true }
@@ -49,7 +49,7 @@ pprof = { version = "0.3", features = ["flamegraph"], optional = true }
 maintenance = { status = "actively-developed" }
 
 [features]
-default=[]
+default=["clipboard"]
 timing=["scopetime/enabled"]
 
 [workspace]

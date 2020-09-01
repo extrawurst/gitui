@@ -4,7 +4,7 @@ use super::{
     DrawableComponent,
 };
 use crate::{
-    accessors, keys, queue::Queue, strings::commands,
+    accessors, keys::SharedKeyConfig, queue::Queue, strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -28,6 +28,7 @@ pub struct InspectCommitComponent {
     details: CommitDetailsComponent,
     git_diff: AsyncDiff,
     visible: bool,
+    key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for InspectCommitComponent {
@@ -78,18 +79,22 @@ impl Component for InspectCommitComponent {
             );
 
             out.push(
-                CommandInfo::new(commands::CLOSE_POPUP, true, true)
-                    .order(1),
+                CommandInfo::new(
+                    strings::commands::close_popup(&self.key_config),
+                    true,
+                    true,
+                )
+                .order(1),
             );
 
             out.push(CommandInfo::new(
-                commands::DIFF_FOCUS_RIGHT,
+                strings::commands::diff_focus_right(&self.key_config),
                 self.can_focus_diff(),
                 !self.diff.focused() || force_all,
             ));
 
             out.push(CommandInfo::new(
-                commands::DIFF_FOCUS_LEFT,
+                strings::commands::diff_focus_left(&self.key_config),
                 true,
                 self.diff.focused() || force_all,
             ));
@@ -105,19 +110,18 @@ impl Component for InspectCommitComponent {
             }
 
             if let Event::Key(e) = ev {
-                match e {
-                    keys::EXIT_POPUP => {
-                        self.hide();
-                    }
-                    keys::FOCUS_RIGHT if self.can_focus_diff() => {
-                        self.details.focus(false);
-                        self.diff.focus(true);
-                    }
-                    keys::FOCUS_LEFT if self.diff.focused() => {
-                        self.details.focus(true);
-                        self.diff.focus(false);
-                    }
-                    _ => (),
+                if e == self.key_config.exit_popup {
+                    self.hide();
+                } else if e == self.key_config.focus_right
+                    && self.can_focus_diff()
+                {
+                    self.details.focus(false);
+                    self.diff.focus(true);
+                } else if e == self.key_config.focus_left
+                    && self.diff.focused()
+                {
+                    self.details.focus(true);
+                    self.diff.focus(false);
                 }
 
                 // stop key event propagation
@@ -152,18 +156,26 @@ impl InspectCommitComponent {
         queue: &Queue,
         sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
     ) -> Self {
         Self {
             details: CommitDetailsComponent::new(
                 queue,
                 sender,
                 theme.clone(),
+                key_config.clone(),
             ),
-            diff: DiffComponent::new(queue.clone(), theme, true),
+            diff: DiffComponent::new(
+                queue.clone(),
+                theme,
+                key_config.clone(),
+                true,
+            ),
             commit_id: None,
             tags: None,
             git_diff: AsyncDiff::new(sender.clone()),
             visible: false,
+            key_config,
         }
     }
 

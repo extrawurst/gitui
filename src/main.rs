@@ -1,13 +1,16 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::cargo)]
 #![deny(clippy::pedantic)]
+#![deny(clippy::perf)]
 #![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::multiple_crate_versions)]
+#![warn(clippy::missing_const_for_fn)]
 
 mod app;
+mod clipboard;
 mod cmdbar;
 mod components;
 mod input;

@@ -7,6 +7,15 @@ use scopetime::scope_time;
 use std::path::Path;
 
 ///
+#[derive(PartialEq, Debug, Clone)]
+pub struct Head {
+    ///
+    pub name: String,
+    ///
+    pub id: CommitId,
+}
+
+///
 pub fn is_repo(repo_path: &str) -> bool {
     Repository::open_ext(
         repo_path,
@@ -61,6 +70,24 @@ pub fn repo_work_dir(repo_path: &str) -> Result<String> {
 pub fn get_head(repo_path: &str) -> Result<CommitId> {
     let repo = repo(repo_path)?;
     get_head_repo(&repo)
+}
+
+///
+pub fn get_head_tuple(repo_path: &str) -> Result<Head> {
+    let repo = repo(repo_path)?;
+    let id = get_head_repo(&repo)?;
+    let name = get_head_refname(&repo)?;
+
+    Ok(Head { name, id })
+}
+
+///
+pub fn get_head_refname(repo: &Repository) -> Result<String> {
+    let head = repo.head()?;
+    let name_bytes = head.name_bytes();
+    let ref_name = String::from_utf8(name_bytes.to_vec())?;
+
+    Ok(ref_name)
 }
 
 ///

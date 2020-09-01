@@ -4,9 +4,9 @@ use crate::{
         CommitDetailsComponent, CommitList, Component,
         DrawableComponent,
     },
-    keys,
+    keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
-    strings::{self, commands},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -36,6 +36,7 @@ pub struct Revlog {
     queue: Queue,
     visible: bool,
     branch_name: cached::BranchName,
+    key_config: SharedKeyConfig,
 }
 
 impl Revlog {
@@ -44,6 +45,7 @@ impl Revlog {
         queue: &Queue,
         sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
     ) -> Self {
         Self {
             queue: queue.clone(),
@@ -51,12 +53,18 @@ impl Revlog {
                 queue,
                 sender,
                 theme.clone(),
+                key_config.clone(),
             ),
-            list: CommitList::new(strings::LOG_TITLE, theme),
+            list: CommitList::new(
+                &strings::log_title(&key_config),
+                theme,
+                key_config.clone(),
+            ),
             git_log: AsyncLog::new(sender),
             git_tags: AsyncTags::new(sender),
             visible: false,
             branch_name: cached::BranchName::new(CWD),
+            key_config,
         }
     }
 
@@ -150,15 +158,7 @@ impl Revlog {
         let tags = self.list.tags();
 
         commit.and_then(|commit| {
-            if let Some(tags) = tags {
-                if let Some(tags) = tags.get(&commit) {
-                    Some(tags.clone())
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+            tags.and_then(|tags| tags.get(&commit).cloned())
         })
     }
 }
@@ -199,33 +199,27 @@ impl Component for Revlog {
             if event_used {
                 self.update()?;
                 return Ok(true);
-            } else {
-                match ev {
-                    Event::Key(keys::LOG_COMMIT_DETAILS) => {
-                        self.commit_details.toggle_visible()?;
-                        self.update()?;
-                        return Ok(true);
-                    }
-
-                    Event::Key(keys::LOG_TAG_COMMIT) => {
-                        return if let Some(id) =
-                            self.selected_commit()
-                        {
+            } else if let Event::Key(k) = ev {
+                if k == self.key_config.enter {
+                    self.commit_details.toggle_visible()?;
+                    self.update()?;
+                    return Ok(true);
+                } else if k == self.key_config.log_tag_commit {
+                    return self.selected_commit().map_or(
+                        Ok(false),
+                        |id| {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::TagCommit(id),
                             );
                             Ok(true)
-                        } else {
-                            Ok(false)
-                        };
-                    }
-
-                    Event::Key(keys::FOCUS_RIGHT)
-                        if self.commit_details.is_visible() =>
-                    {
-                        return if let Some(id) =
-                            self.selected_commit()
-                        {
+                        },
+                    );
+                } else if k == self.key_config.focus_right
+                    && self.commit_details.is_visible()
+                {
+                    return self.selected_commit().map_or(
+                        Ok(false),
+                        |id| {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::InspectCommit(
                                     id,
@@ -235,12 +229,13 @@ impl Component for Revlog {
                                 ),
                             );
                             Ok(true)
-                        } else {
-                            Ok(false)
-                        };
-                    }
-
-                    _ => (),
+                        },
+                    );
+                } else if k == self.key_config.create_branch {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::CreateBranch);
+                    return Ok(true);
                 }
             }
         }
@@ -258,20 +253,28 @@ impl Component for Revlog {
         }
 
         out.push(CommandInfo::new(
-            commands::LOG_DETAILS_TOGGLE,
+            strings::commands::log_details_toggle(&self.key_config),
             true,
             self.visible,
         ));
 
         out.push(CommandInfo::new(
-            commands::LOG_DETAILS_OPEN,
+            strings::commands::log_details_open(&self.key_config),
             true,
             (self.visible && self.commit_details.is_visible())
                 || force_all,
         ));
 
         out.push(CommandInfo::new(
-            commands::LOG_TAG_COMMIT,
+            strings::commands::log_tag_commit(&self.key_config),
+            true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::open_branch_create_popup(
+                &self.key_config,
+            ),
             true,
             self.visible || force_all,
         ));

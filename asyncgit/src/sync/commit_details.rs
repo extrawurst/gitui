@@ -37,21 +37,23 @@ pub struct CommitMessage {
 impl CommitMessage {
     ///
     pub fn from(s: &str) -> Self {
-        if let Some(idx) = s.find('\n') {
-            let (first, rest) = s.split_at(idx);
-            Self {
-                subject: first.to_string(),
-                body: if rest.is_empty() {
-                    None
-                } else {
-                    Some(rest.to_string())
-                },
-            }
+        let mut lines = s.lines();
+        let subject = if let Some(subject) = lines.next() {
+            subject.to_string()
         } else {
-            Self {
-                subject: s.to_string(),
-                body: None,
-            }
+            String::new()
+        };
+
+        let body: Vec<String> =
+            lines.map(|line| line.to_string()).collect();
+
+        Self {
+            subject,
+            body: if body.is_empty() {
+                None
+            } else {
+                Some(body.join("\n"))
+            },
         }
     }
 
@@ -112,7 +114,7 @@ pub fn get_commit_details(
 #[cfg(test)]
 mod tests {
 
-    use super::get_commit_details;
+    use super::{get_commit_details, CommitMessage};
     use crate::error::Result;
     use crate::sync::{
         commit, stage_add_file, tests::repo_init_empty,
@@ -143,6 +145,16 @@ mod tests {
                 .starts_with("test msg"),
             true
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_msg_linefeeds() -> Result<()> {
+        let msg = CommitMessage::from("foo\nbar\r\ntest");
+
+        assert_eq!(msg.subject, String::from("foo"),);
+        assert_eq!(msg.body, Some(String::from("bar\ntest")),);
 
         Ok(())
     }

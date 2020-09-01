@@ -1,8 +1,8 @@
 ///
-#[derive(Copy, Clone, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub struct CommandText {
     ///
-    pub name: &'static str,
+    pub name: String,
     ///
     pub desc: &'static str,
     ///
@@ -14,7 +14,7 @@ pub struct CommandText {
 impl CommandText {
     ///
     pub const fn new(
-        name: &'static str,
+        name: String,
         desc: &'static str,
         group: &'static str,
     ) -> Self {
@@ -63,24 +63,28 @@ impl CommandInfo {
             order: 0,
         }
     }
+
     ///
     pub const fn order(self, order: i8) -> Self {
         let mut res = self;
         res.order = order;
         res
     }
+
     ///
     pub const fn hidden(self) -> Self {
         let mut res = self;
         res.quick_bar = false;
         res
     }
+
     ///
     pub fn print(&self, out: &mut String) {
-        out.push_str(self.text.name);
+        out.push_str(&self.text.name);
     }
+
     ///
-    pub fn show_in_quickbar(&self) -> bool {
+    pub const fn show_in_quickbar(&self) -> bool {
         self.quick_bar && self.available
     }
 }

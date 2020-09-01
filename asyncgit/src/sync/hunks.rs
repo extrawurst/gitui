@@ -111,7 +111,13 @@ pub fn unstage_hunk(
 
     let diff = get_diff_raw(&repo, &file_path, true, true)?;
 
-    assert_eq!(diff.deltas().len(), diff_count_positive);
+    if diff.deltas().len() != diff_count_positive {
+        return Err(Error::Generic(format!(
+            "hunk error: {}!={}",
+            diff.deltas().len(),
+            diff_count_positive
+        )));
+    }
 
     let mut count = 0;
     {

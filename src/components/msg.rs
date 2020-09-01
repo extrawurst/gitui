@@ -2,11 +2,7 @@ use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent,
 };
-use crate::{
-    keys,
-    strings::{self, commands},
-    ui,
-};
+use crate::{keys::SharedKeyConfig, strings, ui};
 use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
@@ -21,6 +17,7 @@ pub struct MsgComponent {
     msg: String,
     visible: bool,
     theme: SharedTheme,
+    key_config: SharedKeyConfig,
 }
 
 use anyhow::Result;
@@ -42,7 +39,9 @@ impl DrawableComponent for MsgComponent {
             Paragraph::new(txt.iter())
                 .block(
                     Block::default()
-                        .title(strings::MSG_TITLE_ERROR)
+                        .title(&strings::msg_title_error(
+                            &self.key_config,
+                        ))
                         .title_style(self.theme.text_danger())
                         .borders(Borders::ALL)
                         .border_type(BorderType::Thick),
@@ -63,7 +62,7 @@ impl Component for MsgComponent {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            commands::CLOSE_MSG,
+            strings::commands::close_msg(&self.key_config),
             true,
             self.visible,
         ));
@@ -74,7 +73,7 @@ impl Component for MsgComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
-                if let keys::CLOSE_MSG = e {
+                if e == self.key_config.enter {
                     self.hide();
                 }
             }
@@ -100,11 +99,15 @@ impl Component for MsgComponent {
 }
 
 impl MsgComponent {
-    pub const fn new(theme: SharedTheme) -> Self {
+    pub const fn new(
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             msg: String::new(),
             visible: false,
             theme,
+            key_config,
         }
     }
     ///

@@ -5,9 +5,9 @@ use crate::{
         CommandBlocking, CommandInfo, Component, DrawableComponent,
         FileTreeComponent,
     },
-    keys,
+    keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
-    strings::{self, commands},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -36,6 +36,7 @@ pub struct Stashing {
     theme: SharedTheme,
     git_status: AsyncStatus,
     queue: Queue,
+    key_config: SharedKeyConfig,
 }
 
 impl Stashing {
@@ -46,13 +47,15 @@ impl Stashing {
         sender: &Sender<AsyncNotification>,
         queue: &Queue,
         theme: SharedTheme,
+        key_config: SharedKeyConfig,
     ) -> Self {
         Self {
             index: FileTreeComponent::new(
-                strings::STASHING_FILES_TITLE,
+                &strings::stashing_files_title(&key_config),
                 true,
                 Some(queue.clone()),
                 theme.clone(),
+                key_config.clone(),
             ),
             visible: false,
             options: StashingOptions {
@@ -62,6 +65,7 @@ impl Stashing {
             theme,
             git_status: AsyncStatus::new(sender.clone()),
             queue: queue.clone(),
+            key_config,
         }
     }
 
@@ -149,11 +153,11 @@ impl DrawableComponent for Stashing {
 
         f.render_widget(
             Paragraph::new(self.get_option_text().iter())
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(strings::STASHING_OPTIONS_TITLE),
-                )
+                .block(Block::default().borders(Borders::ALL).title(
+                    &strings::stashing_options_title(
+                        &self.key_config,
+                    ),
+                ))
                 .alignment(Alignment::Left),
             right_chunks[0],
         );
@@ -178,17 +182,21 @@ impl Component for Stashing {
             );
 
             out.push(CommandInfo::new(
-                commands::STASHING_SAVE,
+                strings::commands::stashing_save(&self.key_config),
                 self.visible && !self.index.is_empty(),
                 self.visible || force_all,
             ));
             out.push(CommandInfo::new(
-                commands::STASHING_TOGGLE_INDEXED,
+                strings::commands::stashing_toggle_indexed(
+                    &self.key_config,
+                ),
                 self.visible,
                 self.visible || force_all,
             ));
             out.push(CommandInfo::new(
-                commands::STASHING_TOGGLE_UNTRACKED,
+                strings::commands::stashing_toggle_untracked(
+                    &self.key_config,
+                ),
                 self.visible,
                 self.visible || force_all,
             ));
@@ -204,31 +212,30 @@ impl Component for Stashing {
             }
 
             if let Event::Key(k) = ev {
-                return match k {
-                    keys::STASHING_SAVE if !self.index.is_empty() => {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::PopupStashing(
-                                self.options,
-                            ),
-                        );
+                return if k == self.key_config.stashing_save
+                    && !self.index.is_empty()
+                {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::PopupStashing(self.options),
+                    );
 
-                        Ok(true)
-                    }
-                    keys::STASHING_TOGGLE_INDEX => {
-                        self.options.keep_index =
-                            !self.options.keep_index;
-                        self.update()?;
-                        Ok(true)
-                    }
-                    keys::STASHING_TOGGLE_UNTRACKED => {
-                        self.options.stash_untracked =
-                            !self.options.stash_untracked;
-                        self.update()?;
-                        Ok(true)
-                    }
-                    _ => Ok(false),
+                    Ok(true)
+                } else if k == self.key_config.stashing_toggle_index {
+                    self.options.keep_index =
+                        !self.options.keep_index;
+                    self.update()?;
+                    Ok(true)
+                } else if k
+                    == self.key_config.stashing_toggle_untracked
+                {
+                    self.options.stash_untracked =
+                        !self.options.stash_untracked;
+                    self.update()?;
+                    Ok(true)
+                } else {
+                    Ok(false)
                 };
-            }
+            };
         }
 
         Ok(false)

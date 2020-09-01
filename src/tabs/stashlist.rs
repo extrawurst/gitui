@@ -3,9 +3,9 @@ use crate::{
         visibility_blocking, CommandBlocking, CommandInfo,
         CommitList, Component, DrawableComponent,
     },
-    keys,
+    keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue},
-    strings::{self, commands},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -19,15 +19,25 @@ pub struct StashList {
     list: CommitList,
     visible: bool,
     queue: Queue,
+    key_config: SharedKeyConfig,
 }
 
 impl StashList {
     ///
-    pub fn new(queue: &Queue, theme: SharedTheme) -> Self {
+    pub fn new(
+        queue: &Queue,
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+    ) -> Self {
         Self {
             visible: false,
-            list: CommitList::new(strings::STASHLIST_TITLE, theme),
+            list: CommitList::new(
+                &strings::stashlist_title(&key_config),
+                theme,
+                key_config.clone(),
+            ),
             queue: queue.clone(),
+            key_config,
         }
     }
 
@@ -111,17 +121,19 @@ impl Component for StashList {
             let selection_valid =
                 self.list.selected_entry().is_some();
             out.push(CommandInfo::new(
-                commands::STASHLIST_APPLY,
+                strings::commands::stashlist_apply(&self.key_config),
                 selection_valid,
                 true,
             ));
             out.push(CommandInfo::new(
-                commands::STASHLIST_DROP,
+                strings::commands::stashlist_drop(&self.key_config),
                 selection_valid,
                 true,
             ));
             out.push(CommandInfo::new(
-                commands::STASHLIST_INSPECT,
+                strings::commands::stashlist_inspect(
+                    &self.key_config,
+                ),
                 selection_valid,
                 true,
             ));
@@ -137,13 +149,14 @@ impl Component for StashList {
             }
 
             if let Event::Key(k) = ev {
-                match k {
-                    keys::STASH_APPLY => self.apply_stash(),
-                    keys::STASH_DROP => self.drop_stash(),
-                    keys::STASH_OPEN => self.inspect(),
-
-                    _ => (),
-                };
+                if k == self.key_config.enter {
+                    self.apply_stash()
+                } else if k == self.key_config.stash_drop {
+                    self.drop_stash()
+                } else if k == self.key_config.stash_open {
+                    self.inspect()
+                } else {
+                }
             }
         }
 

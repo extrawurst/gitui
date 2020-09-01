@@ -129,6 +129,10 @@ This will log to:
 
 However, you can customize everything to your liking: See [Themes](THEMES.md).
 
+# Key Bindings
+
+The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to set them to `vim`-like bindings.
+
 # Inspiration
 
 - [lazygit](https://github.com/jesseduffield/lazygit)

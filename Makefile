@@ -20,11 +20,16 @@ release-win: build-release
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
 
-release-linux-musl: 
-	cargo build --release --target=x86_64-unknown-linux-musl
+release-linux-musl: build-linux-musl-release
 	strip target/x86_64-unknown-linux-musl/release/gitui
 	mkdir -p release
 	tar -C ./target/x86_64-unknown-linux-musl/release/ -czvf ./release/gitui-linux-musl.tar.gz ./gitui
+
+build-linux-musl-debug:
+	cargo build --target=x86_64-unknown-linux-musl --no-default-features
+
+build-linux-musl-release:
+	cargo build --release --target=x86_64-unknown-linux-musl --no-default-features
 
 test:
 	cargo test --workspace
