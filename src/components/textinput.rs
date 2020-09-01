@@ -15,6 +15,7 @@ use tui::{
     widgets::{Clear, Text},
     Frame,
 };
+use tui::style::Style;
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
 pub struct TextInputComponent {
@@ -270,6 +271,7 @@ impl Component for TextInputComponent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tui::style::{Style, Color};
 
     #[test]
     fn test_smoke() {
@@ -287,18 +289,53 @@ mod tests {
         assert_eq!(comp.cursor_position, 0);
     }
 
-    fn get_text<'a>(t: &'a Text) -> Option<&'a str> {
-        if let Text::Styled(c, _) = t {
-            Some(c.as_ref())
-        } else {
-            None
-        }
+    #[test]
+    fn text_cursor_initial_position() {
+        let mut comp =
+            TextInputComponent::new(SharedTheme::default(), "", "");
+
+        let underlined = Style::new();
+        let underlined = underlined.modifier(Modifier::UNDERLINED);
+
+        comp.set_text(String::from("a"));
+
+        let txt = comp.get_draw_text();
+
+        assert_eq!(txt.len(), 1);
+        assert_eq!(get_text(&txt[0]), Some("a"));
+        assert_eq!(get_style(&txt[0]), Some(&underlined));
+    }
+
+    #[test]
+    fn test_cursor_second_position() {
+        let mut comp =
+            TextInputComponent::new(SharedTheme::default(), "", "");
+
+        let underlined = Style::new();
+        let underlined = underlined.modifier(Modifier::UNDERLINED);
+
+        let not_underlined = Style::new();
+
+        comp.set_text(String::from("a"));
+        comp.incr_cursor();
+
+        let txt = comp.get_draw_text();
+
+        assert_eq!(txt.len(), 2);
+        assert_eq!(get_text(&txt[0]), Some("a"));
+        assert_eq!(get_style(&txt[0]), Some(&not_underlined));
+        assert_eq!(get_text(&txt[1]), Some(" "));
+        assert_eq!(get_style(&txt[1]), Some(&underlined));
     }
 
     #[test]
     fn test_visualize_newline() {
         let mut comp =
             TextInputComponent::new(SharedTheme::default(), "", "");
+
+        let underlined = Style::new();
+        let underlined = underlined.fg(Color::DarkGray);
+        let underlined = underlined.modifier(Modifier::UNDERLINED);
 
         comp.set_text(String::from("a\nb"));
 
@@ -309,6 +346,7 @@ mod tests {
         assert_eq!(txt.len(), 4);
         assert_eq!(get_text(&txt[0]), Some("a"));
         assert_eq!(get_text(&txt[1]), Some("\u{21b5}"));
+        assert_eq!(get_style(&txt[1]), Some(&underlined));
         assert_eq!(get_text(&txt[2]), Some("\n"));
         assert_eq!(get_text(&txt[3]), Some("b"));
     }
