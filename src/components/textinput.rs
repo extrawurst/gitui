@@ -108,9 +108,8 @@ impl TextInputComponent {
         let style = self.theme.text(true, false);
 
         let mut txt = Vec::new();
-
-        // the portion of the text before the cursor is added
-        // if the cursor is not at the first character
+        // The portion of the text before the cursor is added
+        // if the cursor is not at the first character.
         if self.cursor_position > 0 {
             txt.push(Text::styled(
                 &self.msg[..self.cursor_position],
@@ -141,8 +140,8 @@ impl TextInputComponent {
             style.modifier(Modifier::UNDERLINED),
         ));
 
-        // the final portion of the text is added if there is
-        // still remaining characters
+        // The final portion of the text is added if there are
+        // still remaining characters.
         if let Some(pos) = self.next_char_position() {
             if pos < self.msg.len() {
                 txt.push(Text::styled(&self.msg[pos..], style));
@@ -313,4 +312,21 @@ mod tests {
         assert_eq!(get_text(&txt[2]), Some("\n"));
         assert_eq!(get_text(&txt[3]), Some("b"));
     }
+
+    fn get_text<'a>(t: &'a Text) -> Option<&'a str> {
+        if let Text::Styled(c, _) = t {
+            Some(c.as_ref())
+        } else {
+            None
+        }
+    }
+
+    fn get_style<'a>(t: &'a Text) -> Option<&'a Style> {
+        if let Text::Styled(_, c) = t {
+            Some(c)
+        } else {
+            None
+        }
+    }
+
 }
