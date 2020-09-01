@@ -64,7 +64,7 @@ jobs:
 
     - name: Setup MUSL
       run: |
-        sudo apt-get -qq install musl-tools
+        sudo apt-get -qq install musl-tools libssl-dev
     - name: Build Debug
       run: |
         make build-linux-musl-debug
