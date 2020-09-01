@@ -297,12 +297,12 @@ mod tests {
 
     #[test]
     fn text_cursor_initial_position() {
-        let mut comp =
-            TextInputComponent::new(
-                SharedTheme::default(),
-                SharedKeyConfig::default(),
-                "",
-                "");
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
 
         let underlined = Style::new();
         let underlined = underlined.modifier(Modifier::UNDERLINED);
@@ -318,12 +318,12 @@ mod tests {
 
     #[test]
     fn test_cursor_second_position() {
-        let mut comp =
-            TextInputComponent::new(
-                SharedTheme::default(),
-                SharedKeyConfig::default(),
-                "",
-                "");
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
 
         let underlined = Style::new();
         let underlined = underlined.modifier(Modifier::UNDERLINED);
