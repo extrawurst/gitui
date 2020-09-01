@@ -44,7 +44,7 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
 }
 
 ///
-pub fn push_origin(repo_path: &str, branch: &str) -> Result<usize> {
+pub fn push_origin(repo_path: &str, branch: &str) -> Result<()> {
     scope_time!("push_origin");
 
     let repo = utils::repo(repo_path)?;
@@ -55,7 +55,7 @@ pub fn push_origin(repo_path: &str, branch: &str) -> Result<usize> {
 
     remote.push(&[branch], Some(&mut options))?;
 
-    Ok(remote.stats().received_bytes())
+    Ok(())
 }
 
 fn remote_callbacks<'a>() -> RemoteCallbacks<'a> {

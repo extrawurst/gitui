@@ -326,6 +326,7 @@ impl Status {
 
     fn push(&mut self) {
         if let Some(branch) = self.index_wd.branch_name() {
+            let branch = format!("refs/heads/{}", branch);
             match sync::push_origin(CWD, branch.as_str()) {
                 Err(e) => {
                     self.queue.borrow_mut().push_back(
@@ -335,11 +336,10 @@ impl Status {
                         )),
                     );
                 }
-                Ok(bytes) => {
+                Ok(_) => {
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ShowErrorMsg(format!(
-                            "pushed: {} bytes",
-                            bytes
+                            "pushed",
                         )),
                     );
                 }
