@@ -9,46 +9,46 @@ on:
     branches: [ master ]
 
 jobs:
-  # build:
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: [ubuntu-latest, macos-latest, windows-latest]
-  #       rust: [nightly, stable]
-  #   runs-on: ${{ matrix.os }}
-  #   continue-on-error: ${{ matrix.rust == 'nightly' }}
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        rust: [nightly, stable]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.rust == 'nightly' }}
 
-  #   steps:
-  #   - uses: actions/checkout@v2
+    steps:
+    - uses: actions/checkout@v2
 
-  #   - name: Install Rust
-  #     uses: actions-rs/toolchain@v1
-  #     with:
-  #       toolchain: ${{ matrix.rust }}
-  #       default: true
-  #       profile: minimal
-  #       components: clippy
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        default: true
+        profile: minimal
+        components: clippy
 
-  #   - name: Install dependencies for clipboard access
-  #     if: matrix.os == 'ubuntu-latest'
-  #     run: |
-  #       sudo apt-get -qq install libxcb-shape0-dev libxcb-xfixes0-dev
+    - name: Install dependencies for clipboard access
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get -qq install libxcb-shape0-dev libxcb-xfixes0-dev
 
-  #   - name: Build Debug
-  #     run: |
-  #       rustc --version
-  #       cargo build
+    - name: Build Debug
+      run: |
+        rustc --version
+        cargo build
 
-  #   - name: Run tests
-  #     run: make test
+    - name: Run tests
+      run: make test
 
-  #   - name: Run clippy
-  #     run: |
-  #       cargo clean
-  #       make clippy
+    - name: Run clippy
+      run: |
+        cargo clean
+        make clippy
 
-  #   - name: Build Release
-  #     run: make build-release
+    - name: Build Release
+      run: make build-release
 
   build-linux-musl:
     runs-on: ubuntu-latest
@@ -75,38 +75,38 @@ jobs:
       run: |
         make test-linux-musl
 
-  # rustfmt:
-  #   name: Rustfmt
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@master
-  #   - name: Install Rust
-  #     uses: actions-rs/toolchain@v1
-  #     with:
-  #       toolchain: stable
-  #       components: rustfmt
-  #   - run: cargo fmt -- --check
+  rustfmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt
+    - run: cargo fmt -- --check
 
-  # sec:
-  #   name: Security audit
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v2
-  #   - uses: actions-rs/audit-check@v1
-  #     with:
-  #       token: ${{ secrets.GITHUB_TOKEN }}
+  sec:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/audit-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
-  # log-test:
-  #   name: Changelog Test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@master
-  #   - name: Extract release notes
-  #     id: extract_release_notes
-  #     uses: ffurrer2/extract-release-notes@v1
-  #     with:
-  #       release_notes_file: ./release-notes.txt
-  #   - uses: actions/upload-artifact@v1
-  #     with:
-  #       name: release-notes.txt
-  #       path: ./release-notes.txt
+  log-test:
+    name: Changelog Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Extract release notes
+      id: extract_release_notes
+      uses: ffurrer2/extract-release-notes@v1
+      with:
+        release_notes_file: ./release-notes.txt
+    - uses: actions/upload-artifact@v1
+      with:
+        name: release-notes.txt
+        path: ./release-notes.txt
