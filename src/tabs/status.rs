@@ -323,6 +323,29 @@ impl Status {
             true
         }
     }
+
+    fn push(&mut self) {
+        if let Some(branch) = self.index_wd.branch_name() {
+            match sync::push_origin(CWD, branch.as_str()) {
+                Err(e) => {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(format!(
+                            "push failed:\n{}",
+                            e
+                        )),
+                    );
+                }
+                Ok(bytes) => {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(format!(
+                            "pushed: {} bytes",
+                            bytes
+                        )),
+                    );
+                }
+            }
+        }
+    }
 }
 
 impl Component for Status {
@@ -450,6 +473,9 @@ impl Component for Status {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
+                    Ok(true)
+                } else if k == self.key_config.push {
+                    self.push();
                     Ok(true)
                 } else {
                     Ok(false)

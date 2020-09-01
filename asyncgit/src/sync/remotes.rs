@@ -1,7 +1,7 @@
 //!
 
 use crate::{error::Result, sync::utils};
-use git2::{Cred, FetchOptions, RemoteCallbacks};
+use git2::{Cred, FetchOptions, PushOptions, RemoteCallbacks};
 use scopetime::scope_time;
 
 ///
@@ -35,6 +35,30 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     let repo = utils::repo(repo_path)?;
     let mut remote = repo.find_remote("origin")?;
 
+    let mut options = FetchOptions::new();
+    options.remote_callbacks(remote_callbacks());
+
+    remote.fetch(&[branch], Some(&mut options), None)?;
+
+    Ok(remote.stats().received_bytes())
+}
+
+///
+pub fn push_origin(repo_path: &str, branch: &str) -> Result<usize> {
+    scope_time!("push_origin");
+
+    let repo = utils::repo(repo_path)?;
+    let mut remote = repo.find_remote("origin")?;
+
+    let mut options = PushOptions::new();
+    options.remote_callbacks(remote_callbacks());
+
+    remote.push(&[branch], Some(&mut options))?;
+
+    Ok(remote.stats().received_bytes())
+}
+
+fn remote_callbacks<'a>() -> RemoteCallbacks<'a> {
     let mut callbacks = RemoteCallbacks::new();
     callbacks.credentials(|url, username_from_url, allowed_types| {
         log::debug!(
@@ -49,12 +73,7 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
         )
     });
 
-    let mut options = FetchOptions::new();
-    options.remote_callbacks(callbacks);
-
-    remote.fetch(&[branch], Some(&mut options), None)?;
-
-    Ok(remote.stats().received_bytes())
+    callbacks
 }
 
 #[cfg(test)]

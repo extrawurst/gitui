@@ -60,6 +60,7 @@ pub struct KeyConfig {
     pub commit_amend: KeyEvent,
     pub copy: KeyEvent,
     pub create_branch: KeyEvent,
+    pub push: KeyEvent,
 }
 
 #[rustfmt::skip]
@@ -109,6 +110,7 @@ impl Default for KeyConfig {
 			commit_amend: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
             copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
             create_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
+            push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
         }
     }
 }

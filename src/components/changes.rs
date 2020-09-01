@@ -65,6 +65,11 @@ impl ChangesComponent {
     }
 
     ///
+    pub fn branch_name(&mut self) -> Option<String> {
+        self.branch_name.lookup().ok()
+    }
+
+    ///
     pub fn set_items(&mut self, list: &[StatusItem]) -> Result<()> {
         self.files.update(list)?;
         Ok(())
