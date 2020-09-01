@@ -13,7 +13,7 @@ keywords = ["git"]
 
 [dependencies]
 scopetime = { path = "../scopetime", version = "0.1" }
-git2 = { version = "0.13.10", default-features = false }
+git2 = { version = "0.13" }
 rayon-core = "1.8"
 crossbeam-channel = "0.4"
 log = "0.4"
