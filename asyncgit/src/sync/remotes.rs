@@ -29,7 +29,7 @@ pub fn remote_push_master(repo_path: &str) -> Result<()> {
 }
 
 ///
-pub fn remote_fetch_master(repo_path: &str) -> Result<usize> {
+pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     scope_time!("remote_fetch_master");
 
     let repo = utils::repo(repo_path)?;
@@ -52,7 +52,7 @@ pub fn remote_fetch_master(repo_path: &str) -> Result<usize> {
     let mut options = FetchOptions::new();
     options.remote_callbacks(callbacks);
 
-    remote.fetch(&["master"], Some(&mut options), None)?;
+    remote.fetch(&[branch], Some(&mut options), None)?;
 
     Ok(remote.stats().received_bytes())
 }
@@ -79,6 +79,6 @@ mod tests {
 
         assert_eq!(remotes, vec![String::from("origin")]);
 
-        remote_fetch_master(repo_path).unwrap();
+        fetch_origin(repo_path, "master").unwrap();
     }
 }
