@@ -14,6 +14,7 @@ use tui::{
 use ui::style::SharedTheme;
 
 pub struct MsgComponent {
+    title: String,
     msg: String,
     visible: bool,
     theme: SharedTheme,
@@ -39,9 +40,7 @@ impl DrawableComponent for MsgComponent {
             Paragraph::new(txt.iter())
                 .block(
                     Block::default()
-                        .title(&strings::msg_title_error(
-                            &self.key_config,
-                        ))
+                        .title(self.title.as_str())
                         .title_style(self.theme.text_danger())
                         .borders(Borders::ALL)
                         .border_type(BorderType::Thick),
@@ -104,14 +103,26 @@ impl MsgComponent {
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
+            title: String::new(),
             msg: String::new(),
             visible: false,
             theme,
             key_config,
         }
     }
+
     ///
-    pub fn show_msg(&mut self, msg: &str) -> Result<()> {
+    pub fn show_error(&mut self, msg: &str) -> Result<()> {
+        self.title = strings::msg_title_error(&self.key_config);
+        self.msg = msg.to_string();
+        self.show()?;
+
+        Ok(())
+    }
+
+    ///
+    pub fn show_info(&mut self, msg: &str) -> Result<()> {
+        self.title = strings::msg_title_info(&self.key_config);
         self.msg = msg.to_string();
         self.show()?;
 

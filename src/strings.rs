@@ -40,6 +40,9 @@ pub fn msg_opening_editor(_key_config: &SharedKeyConfig) -> String {
 pub fn msg_title_error(_key_config: &SharedKeyConfig) -> String {
     "Error".to_string()
 }
+pub fn msg_title_info(_key_config: &SharedKeyConfig) -> String {
+    "Info".to_string()
+}
 pub fn commit_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
 }

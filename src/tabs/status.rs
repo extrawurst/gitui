@@ -338,9 +338,9 @@ impl Status {
                 }
                 Ok(_) => {
                     self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "pushed",
-                        )),
+                        InternalEvent::ShowInfoMsg(
+                            format!("pushed",),
+                        ),
                     );
                 }
             }
