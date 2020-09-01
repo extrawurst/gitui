@@ -9,7 +9,6 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
-use tui::style::Style;
 use tui::{
     backend::Backend,
     layout::Rect,
