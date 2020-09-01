@@ -8,6 +8,7 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
+use tui::style::Style;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -15,7 +16,6 @@ use tui::{
     widgets::{Clear, Text},
     Frame,
 };
-use tui::style::Style;
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
 pub struct TextInputComponent {
@@ -271,7 +271,7 @@ impl Component for TextInputComponent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tui::style::{Style, Color};
+    use tui::style::{Color, Style};
 
     #[test]
     fn test_smoke() {
@@ -366,5 +366,4 @@ mod tests {
             None
         }
     }
-
 }
