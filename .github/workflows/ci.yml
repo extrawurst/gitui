@@ -55,24 +55,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-        target: x86_64-unknown-linux-musl
+    # - name: Install Rust
+    #   uses: actions-rs/toolchain@v1
+    #   with:
+    #     toolchain: stable
+    #     profile: minimal
+    #     target: x86_64-unknown-linux-musl
 
-    - name: Setup MUSL
-      run: |
-        sudo apt-get -qq install musl-tools libssl-dev
-    - name: Build Debug
-      run: |
-        make build-linux-musl-debug
-        ./target/x86_64-unknown-linux-musl/debug/gitui --version
-    - name: Build Release
-      run: |
-        make build-linux-musl-release
-        ./target/x86_64-unknown-linux-musl/release/gitui --version
+    - name: Build
+      uses: stevenleadbeater/rust-musl-builder@master
+      with:
+          args: /bin/bash -c "cargo build --release --target=x86_64-unknown-linux-musl --no-default-features"
+    # - name: Build Debug
+    #   run: |
+    #     make build-linux-musl-debug
+    #     ./target/x86_64-unknown-linux-musl/debug/gitui --version
+    # - name: Build Release
+    #   run: |
+    #     make build-linux-musl-release
+    #     ./target/x86_64-unknown-linux-musl/release/gitui --version
 
   rustfmt:
     name: Rustfmt
