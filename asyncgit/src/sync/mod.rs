@@ -30,9 +30,7 @@ pub use hooks::{hooks_commit_msg, hooks_post_commit, HookResult};
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
-pub use remotes::{
-    fetch_origin, get_remotes, push_origin, remote_push_master,
-};
+pub use remotes::{fetch_origin, get_remotes, push_origin};
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use tags::{get_tags, CommitTags, Tags};

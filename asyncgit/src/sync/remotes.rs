@@ -17,18 +17,6 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
 }
 
 ///
-pub fn remote_push_master(repo_path: &str) -> Result<()> {
-    scope_time!("remote_push_master");
-
-    let repo = utils::repo(repo_path)?;
-    let mut remote = repo.find_remote("origin")?;
-
-    remote.push(&["refs/heads/master"], None)?;
-
-    Ok(())
-}
-
-///
 pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     scope_time!("remote_fetch_master");
 
@@ -52,6 +40,7 @@ pub fn push_origin(repo_path: &str, branch: &str) -> Result<()> {
 
     let mut options = PushOptions::new();
     options.remote_callbacks(remote_callbacks());
+    options.packbuilder_parallelism(0);
 
     remote.push(&[branch], Some(&mut options))?;
 
@@ -60,6 +49,14 @@ pub fn push_origin(repo_path: &str, branch: &str) -> Result<()> {
 
 fn remote_callbacks<'a>() -> RemoteCallbacks<'a> {
     let mut callbacks = RemoteCallbacks::new();
+    callbacks.push_transfer_progress(|progress, total, bytes| {
+        log::debug!(
+            "progress: {}/{} ({} B)",
+            progress,
+            total,
+            bytes,
+        );
+    });
     callbacks.credentials(|url, username_from_url, allowed_types| {
         log::debug!(
             "creds: '{}' {:?} ({:?})",
