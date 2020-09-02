@@ -49,16 +49,20 @@ pub fn push_origin(repo_path: &str, branch: &str) -> Result<()> {
 
 fn remote_callbacks<'a>() -> RemoteCallbacks<'a> {
     let mut callbacks = RemoteCallbacks::new();
-    // callbacks.push_transfer_progress(|progress, total, bytes| {
-    //     log::debug!(
-    //         "progress: {}/{} ({} B)",
-    //         progress,
-    //         total,
-    //         bytes,
-    //     );
-    // });
+    callbacks.push_transfer_progress(|progress, total, bytes| {
+        log::debug!(
+            "progress: {}/{} ({} B)",
+            progress,
+            total,
+            bytes,
+        );
+    });
     callbacks.pack_progress(|stage, current, total| {
         log::debug!("packing: {:?} - {}/{}", stage, current, total);
+    });
+    callbacks.sideband_progress(|text| {
+        log::debug!("sideband: {}", String::from_utf8_lossy(text));
+        true
     });
     callbacks.credentials(|url, username_from_url, allowed_types| {
         log::debug!(
