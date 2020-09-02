@@ -60,8 +60,32 @@ mod tests {
     use std::process::Command;
     use tempfile::TempDir;
 
+    /// Calling `set_search_path` with an empty directory makes sure that there
+    /// is no git config interfering with our tests (for example user-local
+    /// `.gitconfig`).
+    #[allow(unsafe_code)]
+    fn sandbox_config_files() {
+        use git2::{opts::set_search_path, ConfigLevel};
+        use std::sync::Once;
+
+        static INIT: Once = Once::new();
+
+        // Adapted from https://github.com/rust-lang/cargo/pull/9035
+        INIT.call_once(|| unsafe {
+            let temp_dir = TempDir::new().unwrap();
+            let path = temp_dir.path();
+
+            set_search_path(ConfigLevel::System, &path).unwrap();
+            set_search_path(ConfigLevel::Global, &path).unwrap();
+            set_search_path(ConfigLevel::XDG, &path).unwrap();
+            set_search_path(ConfigLevel::ProgramData, &path).unwrap();
+        });
+    }
+
     ///
     pub fn repo_init_empty() -> Result<(TempDir, Repository)> {
+        sandbox_config_files();
+
         let td = TempDir::new()?;
         let repo = Repository::init(td.path())?;
         {
@@ -74,6 +98,8 @@ mod tests {
 
     ///
     pub fn repo_init() -> Result<(TempDir, Repository)> {
+        sandbox_config_files();
+
         let td = TempDir::new()?;
         let repo = Repository::init(td.path())?;
         {

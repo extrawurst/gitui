@@ -1,7 +1,7 @@
 //! asyncgit
 
-#![forbid(unsafe_code)]
 #![forbid(missing_docs)]
+#![deny(unsafe_code)]
 #![deny(unused_imports)]
 #![deny(clippy::all)]
 #![deny(clippy::unwrap_used)]
