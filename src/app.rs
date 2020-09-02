@@ -256,7 +256,7 @@ impl App {
                     let msg =
                         format!("failed to launch editor:\n{}", e);
                     log::error!("{}", msg.as_str());
-                    self.msg.show_msg(msg.as_str())?;
+                    self.msg.show_error(msg.as_str())?;
                 }
 
                 self.requires_redraw.set(true);
@@ -454,7 +454,12 @@ impl App {
                 flags.insert(NeedsUpdate::COMMANDS);
             }
             InternalEvent::ShowErrorMsg(msg) => {
-                self.msg.show_msg(msg.as_str())?;
+                self.msg.show_error(msg.as_str())?;
+                flags
+                    .insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+            }
+            InternalEvent::ShowInfoMsg(msg) => {
+                self.msg.show_info(msg.as_str())?;
                 flags
                     .insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
             }

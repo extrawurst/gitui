@@ -323,6 +323,24 @@ impl Status {
             true
         }
     }
+
+    fn push(&self) {
+        if let Some(branch) = self.index_wd.branch_name() {
+            let branch = format!("refs/heads/{}", branch);
+            if let Err(e) = sync::push_origin(CWD, branch.as_str()) {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowErrorMsg(format!(
+                        "push failed:\n{}",
+                        e
+                    )),
+                );
+            } else {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowInfoMsg("pushed".to_string()),
+                );
+            }
+        }
+    }
 }
 
 impl Component for Status {
@@ -367,6 +385,11 @@ impl Component for Status {
                 &self.key_config,
             ),
             true,
+            true,
+        ));
+        out.push(CommandInfo::new(
+            strings::commands::status_push(&self.key_config),
+            self.index_wd.branch_name().is_some(),
             true,
         ));
 
@@ -450,6 +473,9 @@ impl Component for Status {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
+                    Ok(true)
+                } else if k == self.key_config.push {
+                    self.push();
                     Ok(true)
                 } else {
                     Ok(false)

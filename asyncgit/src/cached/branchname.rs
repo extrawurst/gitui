@@ -32,6 +32,11 @@ impl BranchName {
         self.fetch(current_head)
     }
 
+    ///
+    pub fn last(&self) -> Option<String> {
+        self.last_result.as_ref().map(|last| last.1.clone())
+    }
+
     fn fetch(&mut self, head: Head) -> Result<String> {
         let name = sync::get_branch_name(self.repo_path.as_str())?;
         self.last_result = Some((head, name.clone()));

@@ -40,6 +40,9 @@ pub fn msg_opening_editor(_key_config: &SharedKeyConfig) -> String {
 pub fn msg_title_error(_key_config: &SharedKeyConfig) -> String {
     "Error".to_string()
 }
+pub fn msg_title_info(_key_config: &SharedKeyConfig) -> String {
+    "Info".to_string()
+}
 pub fn commit_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
 }
@@ -593,6 +596,13 @@ pub mod commands {
                 get_hint(key_config.create_branch),
             ),
             "open create branch popup",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn status_push(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Push [{}]", get_hint(key_config.push),),
+            "push to origin",
             CMD_GROUP_GENERAL,
         )
     }
