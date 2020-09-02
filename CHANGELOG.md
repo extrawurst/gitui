@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - push to origin support ([#265](https://github.com/extrawurst/gitui/issues/265))
 
+### Changed
+- do not highlight selection in diff view when not focused ([#270](https://github.com/extrawurst/gitui/issues/270))
+
 ## [0.10.1] - 2020-09-01
 
 ### Fixed

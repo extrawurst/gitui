@@ -349,8 +349,10 @@ impl DiffComponent {
                 let mut lines_added = 0_usize;
 
                 for (i, hunk) in diff.hunks.iter().enumerate() {
-                    let hunk_selected =
-                        self.selected_hunk.map_or(false, |s| s == i);
+                    let hunk_selected = self.focused()
+                        && self
+                            .selected_hunk
+                            .map_or(false, |s| s == i);
 
                     if lines_added >= height as usize {
                         break;
@@ -372,8 +374,10 @@ impl DiffComponent {
                                     &mut res,
                                     width,
                                     line,
-                                    self.selection
-                                        .contains(line_cursor),
+                                    self.focused()
+                                        && self
+                                            .selection
+                                            .contains(line_cursor),
                                     hunk_selected,
                                     i == hunk_len as usize - 1,
                                     &self.theme,
