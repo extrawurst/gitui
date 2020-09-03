@@ -14,7 +14,7 @@ keywords = ["git"]
 [dependencies]
 scopetime = { path = "../scopetime", version = "0.1" }
 # git2 = { version = "0.13", features = ["vendored-openssl"] }
-git2 = { path = "../../github/git2-rs" }
+git2 = { git="https://github.com/rust-lang/git2-rs.git", rev="5fddf7e04dc76e70873569ca9f1de3287ec3edda", features = ["vendored-openssl"] }
 rayon-core = "1.8"
 crossbeam-channel = "0.4"
 log = "0.4"

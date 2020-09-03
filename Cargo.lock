@@ -407,6 +407,7 @@ checksum = "aaf91faf136cb47367fa430cd46e37a788775e7fa104f8b4bcb3861dc389b724"
 [[package]]
 name = "git2"
 version = "0.13.10"
+source = "git+https://github.com/rust-lang/git2-rs.git?rev=5fddf7e04dc76e70873569ca9f1de3287ec3edda#5fddf7e04dc76e70873569ca9f1de3287ec3edda"
 dependencies = [
  "bitflags",
  "libc",
@@ -547,6 +548,7 @@ checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
 [[package]]
 name = "libgit2-sys"
 version = "0.12.12+1.0.1"
+source = "git+https://github.com/rust-lang/git2-rs.git?rev=5fddf7e04dc76e70873569ca9f1de3287ec3edda#5fddf7e04dc76e70873569ca9f1de3287ec3edda"
 dependencies = [
  "cc",
  "libc",
@@ -806,6 +808,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de"
 
 [[package]]
+name = "openssl-src"
+version = "111.10.2+1.1.1g"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a287fdb22e32b5b60624d4a5a7a02dbe82777f730ec0dbc42a0554326fef5a70"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "openssl-sys"
 version = "0.9.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -814,6 +825,7 @@ dependencies = [
  "autocfg",
  "cc",
  "libc",
+ "openssl-src",
  "pkg-config",
  "vcpkg",
 ]

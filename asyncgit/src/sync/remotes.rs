@@ -60,10 +60,6 @@ fn remote_callbacks<'a>() -> RemoteCallbacks<'a> {
     callbacks.pack_progress(|stage, current, total| {
         log::debug!("packing: {:?} - {}/{}", stage, current, total);
     });
-    callbacks.sideband_progress(|text| {
-        log::debug!("sideband: {}", String::from_utf8_lossy(text));
-        true
-    });
     callbacks.credentials(|url, username_from_url, allowed_types| {
         log::debug!(
             "creds: '{}' {:?} ({:?})",
