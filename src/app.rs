@@ -100,6 +100,7 @@ impl App {
                 key_config.clone(),
             ),
             push_popup: PushComponent::new(
+                &queue,
                 sender,
                 theme.clone(),
                 key_config.clone(),

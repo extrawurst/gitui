@@ -4,6 +4,7 @@ use crate::{
         DrawableComponent,
     },
     keys::SharedKeyConfig,
+    queue::{InternalEvent, Queue},
     strings,
     ui::{self, style::SharedTheme},
 };
@@ -22,6 +23,7 @@ use tui::{
 pub struct PushComponent {
     visible: bool,
     git_push: AsyncPush,
+    queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
 }
@@ -29,11 +31,13 @@ pub struct PushComponent {
 impl PushComponent {
     ///
     pub fn new(
+        queue: &Queue,
         sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
+            queue: queue.clone(),
             visible: false,
             git_push: AsyncPush::new(sender),
             theme,
@@ -68,17 +72,17 @@ impl PushComponent {
     ///
     fn update(&mut self) -> Result<()> {
         if !self.git_push.is_pending()? {
-            if let Some(_err) = self.git_push.last_result()? {
-                // self.queue.borrow_mut().push_back(
-                //     InternalEvent::ShowErrorMsg(format!(
-                //         "push failed:\n{}",
-                //         err
-                //     )),
-                // );
+            if let Some(err) = self.git_push.last_result()? {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowErrorMsg(format!(
+                        "push failed:\n{}",
+                        err
+                    )),
+                );
             } else {
-                // self.queue.borrow_mut().push_back(
-                //     InternalEvent::ShowInfoMsg("pushed".to_string()),
-                // );
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowInfoMsg("pushed".to_string()),
+                );
             }
 
             self.hide();
