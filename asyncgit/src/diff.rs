@@ -52,11 +52,11 @@ pub struct AsyncDiff {
 
 impl AsyncDiff {
     ///
-    pub fn new(sender: Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         Self {
             current: Arc::new(Mutex::new(Request(0, None))),
             last: Arc::new(Mutex::new(None)),
-            sender,
+            sender: sender.clone(),
             pending: Arc::new(AtomicUsize::new(0)),
         }
     }

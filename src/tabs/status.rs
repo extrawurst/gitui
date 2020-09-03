@@ -137,7 +137,7 @@ impl Status {
                 key_config.clone(),
                 false,
             ),
-            git_diff: AsyncDiff::new(sender.clone()),
+            git_diff: AsyncDiff::new(sender),
             git_status_workdir: AsyncStatus::new(sender.clone()),
             git_status_stage: AsyncStatus::new(sender.clone()),
             git_action_executed: false,
@@ -327,18 +327,10 @@ impl Status {
     fn push(&self) {
         if let Some(branch) = self.index_wd.branch_name() {
             let branch = format!("refs/heads/{}", branch);
-            if let Err(e) = sync::push_origin(CWD, branch.as_str()) {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ShowErrorMsg(format!(
-                        "push failed:\n{}",
-                        e
-                    )),
-                );
-            } else {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ShowInfoMsg("pushed".to_string()),
-                );
-            }
+
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::Push(branch));
         }
     }
 }

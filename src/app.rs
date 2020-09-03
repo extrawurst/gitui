@@ -5,8 +5,8 @@ use crate::{
         event_pump, CommandBlocking, CommandInfo, CommitComponent,
         Component, CreateBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
-        InspectCommitComponent, MsgComponent, ResetComponent,
-        StashMsgComponent, TagCommitComponent,
+        InspectCommitComponent, MsgComponent, PushComponent,
+        ResetComponent, StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -41,6 +41,7 @@ pub struct App {
     stashmsg_popup: StashMsgComponent,
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
+    push_popup: PushComponent,
     tag_commit_popup: TagCommitComponent,
     create_branch_popup: CreateBranchComponent,
     cmdbar: RefCell<CommandBar>,
@@ -95,6 +96,11 @@ impl App {
                 key_config.clone(),
             ),
             external_editor_popup: ExternalEditorComponent::new(
+                theme.clone(),
+                key_config.clone(),
+            ),
+            push_popup: PushComponent::new(
+                sender,
                 theme.clone(),
                 key_config.clone(),
             ),
@@ -293,6 +299,7 @@ impl App {
         self.stashing_tab.update_git(ev)?;
         self.revlog.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
+        self.push_popup.update_git(ev)?;
 
         //TODO: better system for this
         // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
@@ -337,6 +344,7 @@ impl App {
             stashmsg_popup,
             inspect_commit_popup,
             external_editor_popup,
+            push_popup,
             tag_commit_popup,
             create_branch_popup,
             help,
@@ -486,6 +494,10 @@ impl App {
                 self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
             }
+            InternalEvent::Push(branch) => {
+                self.push_popup.push(branch)?;
+                flags.insert(NeedsUpdate::ALL)
+            }
         };
 
         Ok(flags)
@@ -570,6 +582,7 @@ impl App {
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
+        self.push_popup.draw(f, size)?;
 
         Ok(())
     }
