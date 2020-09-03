@@ -80,9 +80,9 @@ impl PushComponent {
                 //     InternalEvent::ShowInfoMsg("pushed".to_string()),
                 // );
             }
-        }
 
-        self.hide();
+            self.hide();
+        }
 
         Ok(())
     }
