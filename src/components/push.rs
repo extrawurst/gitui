@@ -85,6 +85,8 @@ impl PushComponent {
                     )),
                 );
             }
+
+            self.hide();
         }
 
         Ok(())
