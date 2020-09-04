@@ -4,6 +4,8 @@ pub mod order {
     pub static NAV: i8 = 1;
 }
 
+pub static PUSH_POPUP_MSG: &str = "pushing...";
+
 pub fn title_status(key_config: &SharedKeyConfig) -> String {
     format!(
         "Unstaged Changes [{}]",

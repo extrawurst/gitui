@@ -86,6 +86,8 @@ impl PushComponent {
             }
 
             self.hide();
+        } else {
+            //TODO: show progress
         }
 
         Ok(())
@@ -99,9 +101,7 @@ impl DrawableComponent for PushComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let txt = vec![Text::Raw(
-                strings::msg_opening_editor(&self.key_config).into(),
-            )];
+            let txt = vec![Text::Raw(strings::PUSH_POPUP_MSG.into())];
 
             let area = ui::centered_rect_absolute(25, 3, f.size());
             f.render_widget(Clear, area);
@@ -129,7 +129,7 @@ impl Component for PushComponent {
         out: &mut Vec<CommandInfo>,
         _force_all: bool,
     ) -> CommandBlocking {
-        if self.visible {
+        if self.is_visible() {
             out.clear();
         }
 
@@ -137,7 +137,7 @@ impl Component for PushComponent {
     }
 
     fn event(&mut self, _ev: Event) -> Result<bool> {
-        if self.visible {
+        if self.is_visible() {
             return Ok(true);
         }
 
