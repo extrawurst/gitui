@@ -547,6 +547,7 @@ impl App {
         res
     }
 
+    //TODO: make this automatic, i keep forgetting to add popups here
     fn any_popup_visible(&self) -> bool {
         self.commit.is_visible()
             || self.help.is_visible()
@@ -557,6 +558,7 @@ impl App {
             || self.external_editor_popup.is_visible()
             || self.tag_commit_popup.is_visible()
             || self.create_branch_popup.is_visible()
+            || self.push_popup.is_visible()
     }
 
     fn draw_popups<B: Backend>(
