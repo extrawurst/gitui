@@ -232,21 +232,7 @@ impl App {
                 flags.insert(new_flags);
             }
 
-            let new_flags = self.process_queue()?;
-            flags.insert(new_flags);
-
-            if flags.contains(NeedsUpdate::ALL) {
-                self.update()?;
-            }
-            //TODO: make this a queue event?
-            //NOTE: set when any tree component changed selection
-            if flags.contains(NeedsUpdate::DIFF) {
-                self.status_tab.update_diff()?;
-                self.inspect_commit_popup.update_diff()?;
-            }
-            if flags.contains(NeedsUpdate::COMMANDS) {
-                self.update_commands();
-            }
+            self.process_queue(flags)?;
         } else if let InputEvent::State(polling_state) = ev {
             self.external_editor_popup.hide();
             if let InputState::Paused = polling_state {
@@ -420,7 +406,28 @@ impl App {
         self.cmdbar.borrow_mut().set_cmds(self.commands(false));
     }
 
-    fn process_queue(&mut self) -> Result<NeedsUpdate> {
+    fn process_queue(&mut self, flags: NeedsUpdate) -> Result<()> {
+        let mut flags = flags;
+        let new_flags = self.process_internal_events()?;
+        flags.insert(new_flags);
+
+        if flags.contains(NeedsUpdate::ALL) {
+            self.update()?;
+        }
+        //TODO: make this a queue event?
+        //NOTE: set when any tree component changed selection
+        if flags.contains(NeedsUpdate::DIFF) {
+            self.status_tab.update_diff()?;
+            self.inspect_commit_popup.update_diff()?;
+        }
+        if flags.contains(NeedsUpdate::COMMANDS) {
+            self.update_commands();
+        }
+
+        Ok(())
+    }
+
+    fn process_internal_events(&mut self) -> Result<NeedsUpdate> {
         let mut flags = NeedsUpdate::empty();
 
         loop {
