@@ -290,7 +290,7 @@ impl App {
 
         //TODO: better system for this
         // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
-        self.update_commands();
+        self.process_queue(NeedsUpdate::COMMANDS)?;
 
         Ok(())
     }
