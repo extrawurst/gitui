@@ -23,6 +23,7 @@ use tui::{
 pub struct PushComponent {
     visible: bool,
     git_push: AsyncPush,
+    pending: bool,
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
@@ -38,6 +39,7 @@ impl PushComponent {
     ) -> Self {
         Self {
             queue: queue.clone(),
+            pending: false,
             visible: false,
             git_push: AsyncPush::new(sender),
             theme,
@@ -71,7 +73,9 @@ impl PushComponent {
 
     ///
     fn update(&mut self) -> Result<()> {
-        if !self.git_push.is_pending()? {
+        self.pending = self.git_push.is_pending()?;
+
+        if !self.pending {
             if let Some(err) = self.git_push.last_result()? {
                 self.queue.borrow_mut().push_back(
                     InternalEvent::ShowErrorMsg(format!(
@@ -79,13 +83,7 @@ impl PushComponent {
                         err
                     )),
                 );
-            } else {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ShowInfoMsg("pushed".to_string()),
-                );
             }
-
-            self.hide();
         } else {
             //TODO: show progress
         }
@@ -101,7 +99,11 @@ impl DrawableComponent for PushComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let txt = vec![Text::Raw(strings::PUSH_POPUP_MSG.into())];
+            let txt = vec![Text::Raw(if self.pending {
+                strings::PUSH_POPUP_MSG.into()
+            } else {
+                strings::PUSH_POPUP_MSG_DONE.into()
+            })];
 
             let area = ui::centered_rect_absolute(25, 3, f.size());
             f.render_widget(Clear, area);
@@ -133,14 +135,24 @@ impl Component for PushComponent {
             out.clear();
         }
 
+        out.push(CommandInfo::new(
+            strings::commands::close_popup(&self.key_config),
+            !self.pending,
+            self.visible,
+        ));
+
         visibility_blocking(self)
     }
 
-    fn event(&mut self, _ev: Event) -> Result<bool> {
-        if self.is_visible() {
+    fn event(&mut self, ev: Event) -> Result<bool> {
+        if self.visible {
+            if let Event::Key(e) = ev {
+                if e == self.key_config.exit_popup {
+                    self.hide();
+                }
+            }
             return Ok(true);
         }
-
         Ok(false)
     }
 
