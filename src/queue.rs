@@ -39,8 +39,6 @@ pub enum InternalEvent {
     ///
     ShowErrorMsg(String),
     ///
-    ShowInfoMsg(String),
-    ///
     Update(NeedsUpdate),
     /// open commit msg input
     OpenCommit,

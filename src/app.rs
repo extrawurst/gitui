@@ -467,11 +467,6 @@ impl App {
                 flags
                     .insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
             }
-            InternalEvent::ShowInfoMsg(msg) => {
-                self.msg.show_info(msg.as_str())?;
-                flags
-                    .insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-            }
             InternalEvent::Update(u) => flags.insert(u),
             InternalEvent::OpenCommit => self.commit.show()?,
             InternalEvent::PopupStashing(opts) => {

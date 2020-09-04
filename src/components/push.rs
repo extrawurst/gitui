@@ -49,6 +49,7 @@ impl PushComponent {
 
     ///
     pub fn push(&mut self, branch: String) -> Result<()> {
+        self.pending = true;
         self.git_push.request(PushRequest {
             remote: String::from("origin"),
             branch,
@@ -136,7 +137,7 @@ impl Component for PushComponent {
         }
 
         out.push(CommandInfo::new(
-            strings::commands::close_popup(&self.key_config),
+            strings::commands::close_msg(&self.key_config),
             !self.pending,
             self.visible,
         ));
@@ -147,7 +148,7 @@ impl Component for PushComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
-                if e == self.key_config.exit_popup {
+                if e == self.key_config.enter {
                     self.hide();
                 }
             }
