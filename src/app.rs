@@ -5,8 +5,8 @@ use crate::{
         event_pump, CommandBlocking, CommandInfo, CommitComponent,
         Component, CreateBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
-        InspectCommitComponent, MsgComponent, ResetComponent,
-        StashMsgComponent, TagCommitComponent,
+        InspectCommitComponent, MsgComponent, PushComponent,
+        ResetComponent, StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -41,6 +41,7 @@ pub struct App {
     stashmsg_popup: StashMsgComponent,
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
+    push_popup: PushComponent,
     tag_commit_popup: TagCommitComponent,
     create_branch_popup: CreateBranchComponent,
     cmdbar: RefCell<CommandBar>,
@@ -95,6 +96,12 @@ impl App {
                 key_config.clone(),
             ),
             external_editor_popup: ExternalEditorComponent::new(
+                theme.clone(),
+                key_config.clone(),
+            ),
+            push_popup: PushComponent::new(
+                &queue,
+                sender,
                 theme.clone(),
                 key_config.clone(),
             ),
@@ -225,21 +232,7 @@ impl App {
                 flags.insert(new_flags);
             }
 
-            let new_flags = self.process_queue()?;
-            flags.insert(new_flags);
-
-            if flags.contains(NeedsUpdate::ALL) {
-                self.update()?;
-            }
-            //TODO: make this a queue event?
-            //NOTE: set when any tree component changed selection
-            if flags.contains(NeedsUpdate::DIFF) {
-                self.status_tab.update_diff()?;
-                self.inspect_commit_popup.update_diff()?;
-            }
-            if flags.contains(NeedsUpdate::COMMANDS) {
-                self.update_commands();
-            }
+            self.process_queue(flags)?;
         } else if let InputEvent::State(polling_state) = ev {
             self.external_editor_popup.hide();
             if let InputState::Paused = polling_state {
@@ -293,10 +286,11 @@ impl App {
         self.stashing_tab.update_git(ev)?;
         self.revlog.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
+        self.push_popup.update_git(ev)?;
 
         //TODO: better system for this
         // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
-        self.update_commands();
+        self.process_queue(NeedsUpdate::COMMANDS)?;
 
         Ok(())
     }
@@ -337,6 +331,7 @@ impl App {
             stashmsg_popup,
             inspect_commit_popup,
             external_editor_popup,
+            push_popup,
             tag_commit_popup,
             create_branch_popup,
             help,
@@ -411,7 +406,28 @@ impl App {
         self.cmdbar.borrow_mut().set_cmds(self.commands(false));
     }
 
-    fn process_queue(&mut self) -> Result<NeedsUpdate> {
+    fn process_queue(&mut self, flags: NeedsUpdate) -> Result<()> {
+        let mut flags = flags;
+        let new_flags = self.process_internal_events()?;
+        flags.insert(new_flags);
+
+        if flags.contains(NeedsUpdate::ALL) {
+            self.update()?;
+        }
+        //TODO: make this a queue event?
+        //NOTE: set when any tree component changed selection
+        if flags.contains(NeedsUpdate::DIFF) {
+            self.status_tab.update_diff()?;
+            self.inspect_commit_popup.update_diff()?;
+        }
+        if flags.contains(NeedsUpdate::COMMANDS) {
+            self.update_commands();
+        }
+
+        Ok(())
+    }
+
+    fn process_internal_events(&mut self) -> Result<NeedsUpdate> {
         let mut flags = NeedsUpdate::empty();
 
         loop {
@@ -458,11 +474,6 @@ impl App {
                 flags
                     .insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
             }
-            InternalEvent::ShowInfoMsg(msg) => {
-                self.msg.show_info(msg.as_str())?;
-                flags
-                    .insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-            }
             InternalEvent::Update(u) => flags.insert(u),
             InternalEvent::OpenCommit => self.commit.show()?,
             InternalEvent::PopupStashing(opts) => {
@@ -485,6 +496,10 @@ impl App {
                 self.external_editor_popup.show()?;
                 self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
+            }
+            InternalEvent::Push(branch) => {
+                self.push_popup.push(branch)?;
+                flags.insert(NeedsUpdate::ALL)
             }
         };
 
@@ -534,6 +549,7 @@ impl App {
         res
     }
 
+    //TODO: make this automatic, i keep forgetting to add popups here
     fn any_popup_visible(&self) -> bool {
         self.commit.is_visible()
             || self.help.is_visible()
@@ -544,6 +560,7 @@ impl App {
             || self.external_editor_popup.is_visible()
             || self.tag_commit_popup.is_visible()
             || self.create_branch_popup.is_visible()
+            || self.push_popup.is_visible()
     }
 
     fn draw_popups<B: Backend>(
@@ -570,6 +587,7 @@ impl App {
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
+        self.push_popup.draw(f, size)?;
 
         Ok(())
     }

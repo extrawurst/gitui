@@ -39,8 +39,6 @@ pub enum InternalEvent {
     ///
     ShowErrorMsg(String),
     ///
-    ShowInfoMsg(String),
-    ///
     Update(NeedsUpdate),
     /// open commit msg input
     OpenCommit,
@@ -56,6 +54,8 @@ pub enum InternalEvent {
     CreateBranch,
     ///
     OpenExternalEditor(Option<String>),
+    ///
+    Push(String),
 }
 
 ///

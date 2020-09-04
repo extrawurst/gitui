@@ -173,7 +173,7 @@ impl InspectCommitComponent {
             ),
             commit_id: None,
             tags: None,
-            git_diff: AsyncDiff::new(sender.clone()),
+            git_diff: AsyncDiff::new(sender),
             visible: false,
             key_config,
         }

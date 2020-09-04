@@ -4,6 +4,8 @@ pub mod order {
     pub static NAV: i8 = 1;
 }
 
+pub static PUSH_POPUP_MSG: &str = "pushing...";
+
 pub fn title_status(key_config: &SharedKeyConfig) -> String {
     format!(
         "Unstaged Changes [{}]",
@@ -39,9 +41,6 @@ pub fn msg_opening_editor(_key_config: &SharedKeyConfig) -> String {
 }
 pub fn msg_title_error(_key_config: &SharedKeyConfig) -> String {
     "Error".to_string()
-}
-pub fn msg_title_info(_key_config: &SharedKeyConfig) -> String {
-    "Info".to_string()
 }
 pub fn commit_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
