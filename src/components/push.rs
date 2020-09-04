@@ -85,8 +85,6 @@ impl PushComponent {
                     )),
                 );
             }
-        } else {
-            //TODO: show progress
         }
 
         Ok(())
