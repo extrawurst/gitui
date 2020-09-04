@@ -273,7 +273,7 @@ impl Component for TextInputComponent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tui::style::{Color, Style};
+    use tui::style::Style;
 
     #[test]
     fn test_smoke() {
@@ -303,8 +303,8 @@ mod tests {
             "",
             "",
         );
-
-        let underlined = Style::new();
+        let theme = SharedTheme::default();
+        let underlined = theme.text(true, false);
         let underlined = underlined.modifier(Modifier::UNDERLINED);
 
         comp.set_text(String::from("a"));
@@ -324,8 +324,8 @@ mod tests {
             "",
             "",
         );
-
-        let underlined = Style::new();
+        let theme = SharedTheme::default();
+        let underlined = theme.text(true, false);
         let underlined = underlined.modifier(Modifier::UNDERLINED);
 
         let not_underlined = Style::new();
@@ -351,12 +351,11 @@ mod tests {
             "",
         );
 
-        let underlined = Style::new();
-        let underlined = underlined.fg(Color::DarkGray);
+        let theme = SharedTheme::default();
+        let underlined = theme.text(false, false);
         let underlined = underlined.modifier(Modifier::UNDERLINED);
 
         comp.set_text(String::from("a\nb"));
-
         comp.incr_cursor();
 
         let txt = comp.get_draw_text();
