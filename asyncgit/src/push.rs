@@ -78,7 +78,11 @@ impl AsyncPush {
 
         rayon_core::spawn(move || {
             //TODO: use channels to communicate progress
-            let res = sync::push_origin(CWD, params.branch.as_str());
+            let res = sync::push_origin(
+                CWD,
+                params.remote.as_str(),
+                params.branch.as_str(),
+            );
 
             Self::set_result(arc_res, res).expect("result error");
 
