@@ -100,11 +100,7 @@ impl DrawableComponent for PushComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let txt = vec![Text::Raw(if self.pending {
-                strings::PUSH_POPUP_MSG.into()
-            } else {
-                strings::PUSH_POPUP_MSG_DONE.into()
-            })];
+            let txt = vec![Text::Raw(strings::PUSH_POPUP_MSG.into())];
 
             let area = ui::centered_rect_absolute(25, 3, f.size());
             f.render_widget(Clear, area);

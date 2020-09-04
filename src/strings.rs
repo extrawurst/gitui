@@ -5,7 +5,6 @@ pub mod order {
 }
 
 pub static PUSH_POPUP_MSG: &str = "pushing...";
-pub static PUSH_POPUP_MSG_DONE: &str = "pushed";
 
 pub fn title_status(key_config: &SharedKeyConfig) -> String {
     format!(
