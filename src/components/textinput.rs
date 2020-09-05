@@ -304,8 +304,9 @@ mod tests {
             "",
         );
         let theme = SharedTheme::default();
-        let underlined = theme.text(true, false);
-        let underlined = underlined.modifier(Modifier::UNDERLINED);
+        let underlined = theme
+            .text(true, false)
+            .modifier(Modifier::UNDERLINED);
 
         comp.set_text(String::from("a"));
 
@@ -325,8 +326,9 @@ mod tests {
             "",
         );
         let theme = SharedTheme::default();
-        let underlined = theme.text(true, false);
-        let underlined = underlined.modifier(Modifier::UNDERLINED);
+        let underlined = theme
+            .text(true, false)
+            .modifier(Modifier::UNDERLINED);
 
         let not_underlined = Style::new();
 
@@ -352,8 +354,9 @@ mod tests {
         );
 
         let theme = SharedTheme::default();
-        let underlined = theme.text(false, false);
-        let underlined = underlined.modifier(Modifier::UNDERLINED);
+        let underlined = theme
+            .text(false, false)
+            .modifier(Modifier::UNDERLINED);
 
         comp.set_text(String::from("a\nb"));
         comp.incr_cursor();
