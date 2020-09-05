@@ -371,6 +371,30 @@ mod tests {
         assert_eq!(get_text(&txt[3]), Some("b"));
     }
 
+    #[test]
+    fn test_invisable_newline() {
+        let mut comp = TextInputComponent::new(
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+            "",
+            "",
+        );
+
+        let theme = SharedTheme::default();
+        let underlined = theme
+            .text(true, false)
+            .modifier(Modifier::UNDERLINED);
+
+        comp.set_text(String::from("a\nb"));
+
+        let txt = comp.get_draw_text();
+
+        assert_eq!(txt.len(), 2);
+        assert_eq!(get_text(&txt[0]), Some("a"));
+        assert_eq!(get_style(&txt[0]), Some(&underlined));
+        assert_eq!(get_text(&txt[1]), Some("\nb"));
+    }
+
     fn get_text<'a>(t: &'a Text) -> Option<&'a str> {
         if let Text::Styled(c, _) = t {
             Some(c.as_ref())
