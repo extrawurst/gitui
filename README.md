@@ -106,6 +106,8 @@ Binaries available for:
 
 - Latest `rust` and `cargo`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
+- xcb
+  - Ubuntu: `sudo apt install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev`
 
 ### Cargo Install
 
