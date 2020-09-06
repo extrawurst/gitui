@@ -30,6 +30,7 @@
 - Inspect, commit, and amend changes (incl. hooks: _commit-msg_/_post-commit_)
 - Stage, unstage, revert and reset files and hunks
 - Stashing (save, apply, drop, and inspect)
+- Push to remote
 - Browse commit log, diff committed changes
 - Scalable terminal UI layout
 - Async [input polling](assets/perf_compare.jpg)
@@ -53,7 +54,7 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 
 # Known Limitations
 
-- no support for push and pull yet (see [#90](https://github.com/extrawurst/gitui/issues/90))
+- no support for `pull` yet (see [#90](https://github.com/extrawurst/gitui/issues/90))
 - limited support for branching (see [#90](https://github.com/extrawurst/gitui/issues/91))
 - no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 - no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
