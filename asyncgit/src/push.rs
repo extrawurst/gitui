@@ -10,30 +10,59 @@ use std::{
 use sync::ProgressNotification;
 use thread::JoinHandle;
 
+///
 #[derive(Clone, Debug)]
-pub enum PushProgress {
-    PackingAddingObject(u8),
-    PackingDeltafiction(u8),
-    Pushing(u8),
+pub enum PushProgressState {
+    ///
+    PackingAddingObject,
+    ///
+    PackingDeltafiction,
+    ///
+    Pushing,
+}
+
+///
+#[derive(Clone, Debug)]
+pub struct PushProgress {
+    ///
+    pub state: PushProgressState,
+    ///
+    pub progress: u8,
+}
+
+impl PushProgress {
+    ///
+    pub fn new(state: PushProgressState, progress: u8) -> Self {
+        Self { state, progress }
+    }
 }
 
 impl From<ProgressNotification> for PushProgress {
     fn from(progress: ProgressNotification) -> Self {
         match progress {
+            //TODO: actual progress value calculation
             ProgressNotification::Packing { stage, .. } => {
                 match stage {
                     git2::PackBuilderStage::AddingObjects => {
-                        PushProgress::PackingAddingObject(0)
+                        PushProgress::new(
+                            PushProgressState::PackingAddingObject,
+                            10,
+                        )
                     }
                     git2::PackBuilderStage::Deltafication => {
-                        PushProgress::PackingDeltafiction(50)
+                        PushProgress::new(
+                            PushProgressState::PackingDeltafiction,
+                            40,
+                        )
                     }
                 }
             }
             ProgressNotification::PushTransfer { .. } => {
-                PushProgress::Pushing(100)
+                PushProgress::new(PushProgressState::Pushing, 60)
             }
-            ProgressNotification::Done => PushProgress::Pushing(100),
+            ProgressNotification::Done => {
+                PushProgress::new(PushProgressState::Pushing, 100)
+            }
         }
     }
 }

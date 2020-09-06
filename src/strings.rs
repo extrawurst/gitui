@@ -4,7 +4,10 @@ pub mod order {
     pub static NAV: i8 = 1;
 }
 
-pub static PUSH_POPUP_MSG: &str = "pushing...";
+pub static PUSH_POPUP_MSG: &str = "Push";
+pub static PUSH_POPUP_STATES_ADDING: &str = "adding objects (1/3)";
+pub static PUSH_POPUP_STATES_DELTAS: &str = "deltas (2/3)";
+pub static PUSH_POPUP_STATES_PUSHING: &str = "pushing (3/3)";
 
 pub fn title_status(key_config: &SharedKeyConfig) -> String {
     format!(

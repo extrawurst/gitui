@@ -9,7 +9,9 @@ use crate::{
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::{AsyncNotification, AsyncPush, PushRequest};
+use asyncgit::{
+    AsyncNotification, AsyncPush, PushProgress, PushRequest,
+};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{
@@ -23,6 +25,7 @@ use tui::{
 pub struct PushComponent {
     visible: bool,
     git_push: AsyncPush,
+    progress: Option<PushProgress>,
     pending: bool,
     queue: Queue,
     theme: SharedTheme,
@@ -42,6 +45,7 @@ impl PushComponent {
             pending: false,
             visible: false,
             git_push: AsyncPush::new(sender),
+            progress: None,
             theme,
             key_config,
         }
@@ -75,6 +79,7 @@ impl PushComponent {
     ///
     fn update(&mut self) -> Result<()> {
         self.pending = self.git_push.is_pending()?;
+        self.progress = self.git_push.progress()?;
 
         if !self.pending {
             if let Some(err) = self.git_push.last_result()? {
@@ -91,6 +96,15 @@ impl PushComponent {
 
         Ok(())
     }
+
+    fn get_progress(&self) -> (String, u8) {
+        self.progress
+            .as_ref()
+            .map(|progress| {
+                (format!("{:?}", progress.state), progress.progress)
+            })
+            .unwrap_or_default()
+    }
 }
 
 impl DrawableComponent for PushComponent {
@@ -100,14 +114,17 @@ impl DrawableComponent for PushComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let txt = vec![Text::Raw(strings::PUSH_POPUP_MSG.into())];
+            let (state, progress) = self.get_progress();
+            let txt = format!("{} ({})", state, progress);
+            let txt = vec![Text::Raw(txt.into())];
 
-            let area = ui::centered_rect_absolute(25, 3, f.size());
+            let area = ui::centered_rect_absolute(25, 4, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
                 Paragraph::new(txt.iter())
                     .block(
                         Block::default()
+                            .title(strings::PUSH_POPUP_MSG)
                             .borders(Borders::ALL)
                             .border_type(BorderType::Thick)
                             .title_style(self.theme.title(true))
