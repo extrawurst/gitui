@@ -56,6 +56,7 @@ impl PushComponent {
     ///
     pub fn push(&mut self, branch: String) -> Result<()> {
         self.pending = true;
+        self.progress = None;
         self.git_push.request(PushRequest {
             remote: String::from("origin"),
             branch,
