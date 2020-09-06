@@ -193,30 +193,22 @@ impl AsyncPush {
             let incoming = receiver.recv();
             // log::info!("push progress received: {:?}", incoming);
             match incoming {
-                Ok(update) => match update {
-                    ProgressNotification::Done => {
-                        Self::set_progress(
-                            progress.clone(),
-                            Some(update),
-                        )
-                        .expect("set prgoress failed");
-                        sender
-                            .send(AsyncNotification::Push)
-                            .expect("error sending push");
+                Ok(update) => {
+                    Self::set_progress(
+                        progress.clone(),
+                        Some(update),
+                    )
+                    .expect("set prgoress failed");
+                    sender
+                        .send(AsyncNotification::Push)
+                        .expect("error sending push");
 
+                    thread::sleep_ms(200);
+
+                    if let ProgressNotification::Done = update {
                         break;
                     }
-                    _ => {
-                        Self::set_progress(
-                            progress.clone(),
-                            Some(update),
-                        )
-                        .expect("set prgoress failed");
-                        sender
-                            .send(AsyncNotification::Push)
-                            .expect("error sending push");
-                    }
-                },
+                }
                 Err(e) => {
                     log::error!(
                         "push progress receiver error: {}",
