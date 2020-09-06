@@ -4,8 +4,9 @@ use crate::{
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::{
+    cmp,
     sync::{Arc, Mutex},
-    thread, cmp,
+    thread,
 };
 use sync::ProgressNotification;
 use thread::JoinHandle;
@@ -292,5 +293,32 @@ impl AsyncPush {
         };
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_progress_zero_total() {
+        let prog = PushProgress::from_progress(
+            PushProgressState::Pushing,
+            1,
+            0,
+        );
+
+        assert_eq!(prog.progress, 100);
+    }
+
+    #[test]
+    fn test_progress_rounding() {
+        let prog = PushProgress::from_progress(
+            PushProgressState::Pushing,
+            2,
+            10,
+        );
+
+        assert_eq!(prog.progress, 20);
     }
 }
