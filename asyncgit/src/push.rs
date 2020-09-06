@@ -183,7 +183,15 @@ impl AsyncPush {
             // log::info!("push progress received: {:?}", incoming);
             match incoming {
                 Ok(update) => match update {
-                    ProgressNotification::Done => break,
+                    ProgressNotification::Done => {
+                        Self::set_progress(
+                            progress.clone(),
+                            Some(update),
+                        )
+                        .expect("set prgoress failed");
+
+                        break;
+                    }
                     _ => {
                         Self::set_progress(
                             progress.clone(),
