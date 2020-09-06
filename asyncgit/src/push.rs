@@ -8,6 +8,7 @@ use std::{
     cmp,
     sync::{Arc, Mutex},
     thread,
+    time::Duration,
 };
 use sync::ProgressNotification;
 use thread::JoinHandle;
@@ -191,7 +192,6 @@ impl AsyncPush {
 
         thread::spawn(move || loop {
             let incoming = receiver.recv();
-            // log::info!("push progress received: {:?}", incoming);
             match incoming {
                 Ok(update) => {
                     Self::set_progress(
@@ -203,7 +203,8 @@ impl AsyncPush {
                         .send(AsyncNotification::Push)
                         .expect("error sending push");
 
-                    thread::sleep_ms(200);
+                    //NOTE: for better debugging
+                    thread::sleep(Duration::from_millis(300));
 
                     if let ProgressNotification::Done = update {
                         break;
