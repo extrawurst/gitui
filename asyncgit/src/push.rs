@@ -189,6 +189,9 @@ impl AsyncPush {
                             Some(update),
                         )
                         .expect("set prgoress failed");
+                        sender
+                            .send(AsyncNotification::Push)
+                            .expect("error sending push");
 
                         break;
                     }
