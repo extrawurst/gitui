@@ -17,8 +17,11 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{
     backend::Backend,
-    layout::Rect,
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Style},
+    widgets::{
+        Block, BorderType, Borders, Clear, Gauge, Paragraph, Text,
+    },
     Frame,
 };
 
@@ -134,13 +137,15 @@ impl DrawableComponent for PushComponent {
     ) -> Result<()> {
         if self.visible {
             let (state, progress) = self.get_progress();
-            let txt = format!("{} ({})", state, progress);
-            let txt = vec![Text::Raw(txt.into())];
+            let txt = format!("{}", state);
+            // let txt = vec![Text::Raw(txt.into())];
 
-            let area = ui::centered_rect_absolute(25, 4, f.size());
+            let area = ui::centered_rect_absolute(30, 3, f.size());
+
             f.render_widget(Clear, area);
             f.render_widget(
-                Paragraph::new(txt.iter())
+                Gauge::default()
+                    .label(txt.as_str())
                     .block(
                         Block::default()
                             .title(strings::PUSH_POPUP_MSG)
@@ -149,7 +154,12 @@ impl DrawableComponent for PushComponent {
                             .title_style(self.theme.title(true))
                             .border_style(self.theme.block(true)),
                     )
-                    .style(self.theme.text_danger()),
+                    .style(
+                        Style::default()
+                            .fg(Color::White)
+                            .bg(Color::Black), // .modifier(Modifier::ITALIC),
+                    )
+                    .percent(progress as u16),
                 area,
             );
         }
