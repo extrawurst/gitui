@@ -6,7 +6,6 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::{
     sync::{Arc, Mutex},
     thread,
-    time::Duration,
 };
 use sync::ProgressNotification;
 use thread::JoinHandle;
@@ -156,8 +155,6 @@ impl AsyncPush {
                 .expect("closing send failed");
 
             handle.join().expect("joining thread failed");
-
-            thread::sleep(Duration::from_secs(1));
 
             Self::set_result(arc_res, res).expect("result error");
 
