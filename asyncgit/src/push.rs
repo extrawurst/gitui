@@ -8,6 +8,7 @@ use std::{
     thread,
 };
 use sync::ProgressNotification;
+use thread::JoinHandle;
 
 #[derive(Clone, Debug)]
 enum PushStates {
@@ -83,7 +84,7 @@ impl AsyncPush {
         thread::spawn(move || {
             let (progress_sender, receiver) = unbounded();
 
-            Self::spawn_receiver_thread(receiver);
+            let handle = Self::spawn_receiver_thread(receiver);
 
             let res = sync::push(
                 CWD,
@@ -95,6 +96,8 @@ impl AsyncPush {
             progress_sender
                 .send(ProgressNotification::Done)
                 .expect("closing send failed");
+
+            handle.join().expect("joinin thread failed");
 
             Self::set_result(arc_res, res).expect("result error");
 
@@ -110,7 +113,7 @@ impl AsyncPush {
 
     fn spawn_receiver_thread(
         receiver: Receiver<ProgressNotification>,
-    ) {
+    ) -> JoinHandle<()> {
         log::info!("push progress receiver spawned");
 
         thread::spawn(move || loop {
@@ -129,7 +132,7 @@ impl AsyncPush {
                     break;
                 }
             }
-        });
+        })
     }
 
     fn set_request(&self, params: &PushRequest) -> Result<()> {
