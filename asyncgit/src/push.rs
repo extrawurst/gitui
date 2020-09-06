@@ -11,15 +11,30 @@ use sync::ProgressNotification;
 use thread::JoinHandle;
 
 #[derive(Clone, Debug)]
-enum PushStates {
-    None,
-    // Packing,
-    // Pushing(usize, usize),
+pub enum PushProgress {
+    PackingAddingObject(u8),
+    PackingDeltafiction(u8),
+    Pushing(u8),
 }
 
-impl Default for PushStates {
-    fn default() -> Self {
-        PushStates::None
+impl From<ProgressNotification> for PushProgress {
+    fn from(progress: ProgressNotification) -> Self {
+        match progress {
+            ProgressNotification::Packing { stage, .. } => {
+                match stage {
+                    git2::PackBuilderStage::AddingObjects => {
+                        PushProgress::PackingAddingObject(0)
+                    }
+                    git2::PackBuilderStage::Deltafication => {
+                        PushProgress::PackingDeltafiction(50)
+                    }
+                }
+            }
+            ProgressNotification::PushTransfer { .. } => {
+                PushProgress::Pushing(100)
+            }
+            ProgressNotification::Done => PushProgress::Pushing(100),
+        }
     }
 }
 
@@ -35,13 +50,13 @@ pub struct PushRequest {
 #[derive(Default, Clone, Debug)]
 struct PushState {
     request: PushRequest,
-    state: PushStates,
 }
 
 ///
 pub struct AsyncPush {
     state: Arc<Mutex<Option<PushState>>>,
     last_result: Arc<Mutex<Option<String>>>,
+    progress: Arc<Mutex<Option<ProgressNotification>>>,
     sender: Sender<AsyncNotification>,
 }
 
@@ -51,6 +66,7 @@ impl AsyncPush {
         Self {
             state: Arc::new(Mutex::new(None)),
             last_result: Arc::new(Mutex::new(None)),
+            progress: Arc::new(Mutex::new(None)),
             sender: sender.clone(),
         }
     }
@@ -68,6 +84,12 @@ impl AsyncPush {
     }
 
     ///
+    pub fn progress(&self) -> Result<Option<PushProgress>> {
+        let res = self.progress.lock()?;
+        Ok(res.map(|progress| progress.into()))
+    }
+
+    ///
     pub fn request(&mut self, params: PushRequest) -> Result<()> {
         log::trace!("request");
 
@@ -76,15 +98,21 @@ impl AsyncPush {
         }
 
         self.set_request(&params)?;
+        Self::set_progress(self.progress.clone(), None)?;
 
         let arc_state = Arc::clone(&self.state);
         let arc_res = Arc::clone(&self.last_result);
+        let arc_progress = Arc::clone(&self.progress);
         let sender = self.sender.clone();
 
         thread::spawn(move || {
             let (progress_sender, receiver) = unbounded();
 
-            let handle = Self::spawn_receiver_thread(receiver);
+            let handle = Self::spawn_receiver_thread(
+                sender.clone(),
+                receiver,
+                arc_progress,
+            );
 
             let res = sync::push(
                 CWD,
@@ -97,7 +125,7 @@ impl AsyncPush {
                 .send(ProgressNotification::Done)
                 .expect("closing send failed");
 
-            handle.join().expect("joinin thread failed");
+            handle.join().expect("joining thread failed");
 
             Self::set_result(arc_res, res).expect("result error");
 
@@ -112,17 +140,28 @@ impl AsyncPush {
     }
 
     fn spawn_receiver_thread(
+        sender: Sender<AsyncNotification>,
         receiver: Receiver<ProgressNotification>,
+        progress: Arc<Mutex<Option<ProgressNotification>>>,
     ) -> JoinHandle<()> {
         log::info!("push progress receiver spawned");
 
         thread::spawn(move || loop {
             let incoming = receiver.recv();
-            log::info!("push progress received: {:?}", incoming);
+            // log::info!("push progress received: {:?}", incoming);
             match incoming {
                 Ok(update) => match update {
                     ProgressNotification::Done => break,
-                    _ => (),
+                    _ => {
+                        Self::set_progress(
+                            progress.clone(),
+                            Some(update),
+                        )
+                        .expect("set prgoress failed");
+                        sender
+                            .send(AsyncNotification::Push)
+                            .expect("error sending push");
+                    }
                 },
                 Err(e) => {
                     log::error!(
@@ -144,7 +183,6 @@ impl AsyncPush {
 
         *state = Some(PushState {
             request: params.clone(),
-            ..PushState::default()
         });
 
         Ok(())
@@ -156,6 +194,20 @@ impl AsyncPush {
         let mut state = state.lock()?;
 
         *state = None;
+
+        Ok(())
+    }
+
+    fn set_progress(
+        progress: Arc<Mutex<Option<ProgressNotification>>>,
+        state: Option<ProgressNotification>,
+    ) -> Result<()> {
+        let simple_progress: Option<PushProgress> =
+            state.map(|prog| prog.into());
+        log::info!("push progress: {:?}", simple_progress);
+        let mut progress = progress.lock()?;
+
+        *progress = state;
 
         Ok(())
     }
