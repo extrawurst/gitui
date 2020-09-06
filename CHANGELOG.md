@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- push to origin support ([#265](https://github.com/extrawurst/gitui/issues/265))
+- push to remote support ([#265](https://github.com/extrawurst/gitui/issues/265)) ([#267](https://github.com/extrawurst/gitui/issues/267))
 
 ### Changed
 - do not highlight selection in diff view when not focused ([#270](https://github.com/extrawurst/gitui/issues/270))
