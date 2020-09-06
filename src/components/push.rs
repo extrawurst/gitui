@@ -10,7 +10,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    AsyncNotification, AsyncPush, PushProgress, PushRequest,
+    AsyncNotification, AsyncPush, PushProgress, PushProgressState,
+    PushRequest,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -101,9 +102,27 @@ impl PushComponent {
         self.progress
             .as_ref()
             .map(|progress| {
-                (format!("{:?}", progress.state), progress.progress)
+                (
+                    Self::progress_state_name(&progress.state),
+                    progress.progress,
+                )
             })
-            .unwrap_or_default()
+            .unwrap_or((strings::PUSH_POPUP_PROGRESS_NONE.into(), 0))
+    }
+
+    fn progress_state_name(state: &PushProgressState) -> String {
+        match state {
+            PushProgressState::PackingAddingObject => {
+                strings::PUSH_POPUP_STATES_ADDING
+            }
+            PushProgressState::PackingDeltafiction => {
+                strings::PUSH_POPUP_STATES_DELTAS
+            }
+            PushProgressState::Pushing => {
+                strings::PUSH_POPUP_STATES_PUSHING
+            }
+        }
+        .into()
     }
 }
 
