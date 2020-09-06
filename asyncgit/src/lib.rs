@@ -20,7 +20,7 @@ mod tags;
 pub use crate::{
     commit_files::AsyncCommitFiles,
     diff::{AsyncDiff, DiffParams, DiffType},
-    push::{AsyncPush, PushRequest},
+    push::{AsyncPush, PushProgress, PushProgressState, PushRequest},
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
     sync::{

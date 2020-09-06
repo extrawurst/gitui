@@ -9,13 +9,17 @@ use crate::{
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::{AsyncNotification, AsyncPush, PushRequest};
+use asyncgit::{
+    AsyncNotification, AsyncPush, PushProgress, PushProgressState,
+    PushRequest,
+};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{
     backend::Backend,
     layout::Rect,
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
+    style::{Color, Style},
+    widgets::{Block, BorderType, Borders, Clear, Gauge},
     Frame,
 };
 
@@ -23,6 +27,7 @@ use tui::{
 pub struct PushComponent {
     visible: bool,
     git_push: AsyncPush,
+    progress: Option<PushProgress>,
     pending: bool,
     queue: Queue,
     theme: SharedTheme,
@@ -42,6 +47,7 @@ impl PushComponent {
             pending: false,
             visible: false,
             git_push: AsyncPush::new(sender),
+            progress: None,
             theme,
             key_config,
         }
@@ -50,6 +56,7 @@ impl PushComponent {
     ///
     pub fn push(&mut self, branch: String) -> Result<()> {
         self.pending = true;
+        self.progress = None;
         self.git_push.request(PushRequest {
             remote: String::from("origin"),
             branch,
@@ -75,6 +82,7 @@ impl PushComponent {
     ///
     fn update(&mut self) -> Result<()> {
         self.pending = self.git_push.is_pending()?;
+        self.progress = self.git_push.progress()?;
 
         if !self.pending {
             if let Some(err) = self.git_push.last_result()? {
@@ -91,6 +99,33 @@ impl PushComponent {
 
         Ok(())
     }
+
+    fn get_progress(&self) -> (String, u8) {
+        self.progress.as_ref().map_or(
+            (strings::PUSH_POPUP_PROGRESS_NONE.into(), 0),
+            |progress| {
+                (
+                    Self::progress_state_name(&progress.state),
+                    progress.progress,
+                )
+            },
+        )
+    }
+
+    fn progress_state_name(state: &PushProgressState) -> String {
+        match state {
+            PushProgressState::PackingAddingObject => {
+                strings::PUSH_POPUP_STATES_ADDING
+            }
+            PushProgressState::PackingDeltafiction => {
+                strings::PUSH_POPUP_STATES_DELTAS
+            }
+            PushProgressState::Pushing => {
+                strings::PUSH_POPUP_STATES_PUSHING
+            }
+        }
+        .into()
+    }
 }
 
 impl DrawableComponent for PushComponent {
@@ -100,20 +135,28 @@ impl DrawableComponent for PushComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let txt = vec![Text::Raw(strings::PUSH_POPUP_MSG.into())];
+            let (state, progress) = self.get_progress();
 
-            let area = ui::centered_rect_absolute(25, 3, f.size());
+            let area = ui::centered_rect_absolute(30, 3, f.size());
+
             f.render_widget(Clear, area);
             f.render_widget(
-                Paragraph::new(txt.iter())
+                Gauge::default()
+                    .label(state.as_str())
                     .block(
                         Block::default()
+                            .title(strings::PUSH_POPUP_MSG)
                             .borders(Borders::ALL)
                             .border_type(BorderType::Thick)
                             .title_style(self.theme.title(true))
                             .border_style(self.theme.block(true)),
                     )
-                    .style(self.theme.text_danger()),
+                    .style(
+                        Style::default()
+                            .fg(Color::White)
+                            .bg(Color::Black), // .modifier(Modifier::ITALIC),
+                    )
+                    .percent(u16::from(progress)),
                 area,
             );
         }

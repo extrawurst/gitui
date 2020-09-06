@@ -1,8 +1,37 @@
 //!
 
 use crate::{error::Result, sync::utils};
-use git2::{Cred, FetchOptions, PushOptions, RemoteCallbacks};
+use crossbeam_channel::Sender;
+use git2::{
+    Cred, FetchOptions, PackBuilderStage, PushOptions,
+    RemoteCallbacks,
+};
 use scopetime::scope_time;
+
+///
+#[derive(Debug, Clone, Copy)]
+pub enum ProgressNotification {
+    ///
+    PushTransfer {
+        ///
+        current: usize,
+        ///
+        total: usize,
+        ///
+        bytes: usize,
+    },
+    ///
+    Packing {
+        ///
+        stage: PackBuilderStage,
+        ///
+        total: usize,
+        ///
+        current: usize,
+    },
+    ///
+    Done,
+}
 
 ///
 pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
@@ -24,7 +53,7 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     let mut remote = repo.find_remote("origin")?;
 
     let mut options = FetchOptions::new();
-    options.remote_callbacks(remote_callbacks());
+    options.remote_callbacks(remote_callbacks(None));
 
     remote.fetch(&[branch], Some(&mut options), None)?;
 
@@ -32,10 +61,11 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
 }
 
 ///
-pub fn push_origin(
+pub fn push(
     repo_path: &str,
     remote: &str,
     branch: &str,
+    progress_sender: Sender<ProgressNotification>,
 ) -> Result<()> {
     scope_time!("push_origin");
 
@@ -43,7 +73,8 @@ pub fn push_origin(
     let mut remote = repo.find_remote(remote)?;
 
     let mut options = PushOptions::new();
-    options.remote_callbacks(remote_callbacks());
+
+    options.remote_callbacks(remote_callbacks(Some(progress_sender)));
     options.packbuilder_parallelism(0);
 
     remote.push(&[branch], Some(&mut options))?;
@@ -51,18 +82,37 @@ pub fn push_origin(
     Ok(())
 }
 
-fn remote_callbacks<'a>() -> RemoteCallbacks<'a> {
+fn remote_callbacks<'a>(
+    sender: Option<Sender<ProgressNotification>>,
+) -> RemoteCallbacks<'a> {
     let mut callbacks = RemoteCallbacks::new();
-    callbacks.push_transfer_progress(|progress, total, bytes| {
-        log::debug!(
-            "progress: {}/{} ({} B)",
-            progress,
-            total,
-            bytes,
-        );
+    let sender_clone = sender.clone();
+    callbacks.push_transfer_progress(move |current, total, bytes| {
+        sender_clone.clone().map(|sender| {
+            sender.send(ProgressNotification::PushTransfer {
+                current,
+                total,
+                bytes,
+            })
+        });
+
+        // log::debug!(
+        //     "progress: {}/{} ({} B)",
+        //     progress,
+        //     total,
+        //     bytes,
+        // );
     });
-    callbacks.pack_progress(|stage, current, total| {
-        log::debug!("packing: {:?} - {}/{}", stage, current, total);
+    callbacks.pack_progress(move |stage, current, total| {
+        sender.clone().map(|sender| {
+            sender.send(ProgressNotification::Packing {
+                stage,
+                total,
+                current,
+            })
+        });
+
+        // log::debug!("packing: {:?} - {}/{}", stage, current, total);
     });
     callbacks.credentials(|url, username_from_url, allowed_types| {
         log::debug!(
