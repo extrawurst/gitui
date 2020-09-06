@@ -3,6 +3,7 @@ use crate::{
     sync, AsyncNotification, CWD,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
+use git2::PackBuilderStage;
 use std::{
     cmp,
     sync::{Arc, Mutex},
@@ -33,15 +34,7 @@ pub struct PushProgress {
 
 impl PushProgress {
     ///
-    pub fn new(state: PushProgressState) -> Self {
-        Self {
-            state,
-            progress: 100,
-        }
-    }
-
-    ///
-    pub fn from_progress(
+    pub fn new(
         state: PushProgressState,
         current: usize,
         total: usize,
@@ -56,38 +49,33 @@ impl PushProgress {
 impl From<ProgressNotification> for PushProgress {
     fn from(progress: ProgressNotification) -> Self {
         match progress {
-            //TODO: actual progress value calculation
             ProgressNotification::Packing {
                 stage,
                 current,
                 total,
             } => match stage {
-                git2::PackBuilderStage::AddingObjects => {
-                    PushProgress::from_progress(
-                        PushProgressState::PackingAddingObject,
-                        current,
-                        total,
-                    )
-                }
-                git2::PackBuilderStage::Deltafication => {
-                    PushProgress::from_progress(
-                        PushProgressState::PackingDeltafiction,
-                        current,
-                        total,
-                    )
-                }
+                PackBuilderStage::AddingObjects => PushProgress::new(
+                    PushProgressState::PackingAddingObject,
+                    current,
+                    total,
+                ),
+                PackBuilderStage::Deltafication => PushProgress::new(
+                    PushProgressState::PackingDeltafiction,
+                    current,
+                    total,
+                ),
             },
             ProgressNotification::PushTransfer {
                 current,
                 total,
                 ..
-            } => PushProgress::from_progress(
+            } => PushProgress::new(
                 PushProgressState::Pushing,
                 current,
                 total,
             ),
             ProgressNotification::Done => {
-                PushProgress::new(PushProgressState::Pushing)
+                PushProgress::new(PushProgressState::Pushing, 1, 1)
             }
         }
     }
@@ -302,22 +290,16 @@ mod tests {
 
     #[test]
     fn test_progress_zero_total() {
-        let prog = PushProgress::from_progress(
-            PushProgressState::Pushing,
-            1,
-            0,
-        );
+        let prog =
+            PushProgress::new(PushProgressState::Pushing, 1, 0);
 
         assert_eq!(prog.progress, 100);
     }
 
     #[test]
     fn test_progress_rounding() {
-        let prog = PushProgress::from_progress(
-            PushProgressState::Pushing,
-            2,
-            10,
-        );
+        let prog =
+            PushProgress::new(PushProgressState::Pushing, 2, 10);
 
         assert_eq!(prog.progress, 20);
     }

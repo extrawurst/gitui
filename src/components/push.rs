@@ -99,15 +99,15 @@ impl PushComponent {
     }
 
     fn get_progress(&self) -> (String, u8) {
-        self.progress
-            .as_ref()
-            .map(|progress| {
+        self.progress.as_ref().map_or(
+            (strings::PUSH_POPUP_PROGRESS_NONE.into(), 0),
+            |progress| {
                 (
                     Self::progress_state_name(&progress.state),
                     progress.progress,
                 )
-            })
-            .unwrap_or((strings::PUSH_POPUP_PROGRESS_NONE.into(), 0))
+            },
+        )
     }
 
     fn progress_state_name(state: &PushProgressState) -> String {
