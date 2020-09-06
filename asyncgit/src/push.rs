@@ -2,8 +2,12 @@ use crate::{
     error::{Error, Result},
     sync, AsyncNotification, CWD,
 };
-use crossbeam_channel::Sender;
-use std::sync::{Arc, Mutex};
+use crossbeam_channel::{unbounded, Receiver, Sender};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+};
+use sync::ProgressNotification;
 
 #[derive(Clone, Debug)]
 enum PushStates {
@@ -76,13 +80,21 @@ impl AsyncPush {
         let arc_res = Arc::clone(&self.last_result);
         let sender = self.sender.clone();
 
-        rayon_core::spawn(move || {
-            //TODO: use channels to communicate progress
-            let res = sync::push_origin(
+        thread::spawn(move || {
+            let (progress_sender, receiver) = unbounded();
+
+            Self::spawn_receiver_thread(receiver);
+
+            let res = sync::push(
                 CWD,
                 params.remote.as_str(),
                 params.branch.as_str(),
+                progress_sender.clone(),
             );
+
+            progress_sender
+                .send(ProgressNotification::Done)
+                .expect("closing send failed");
 
             Self::set_result(arc_res, res).expect("result error");
 
@@ -94,6 +106,30 @@ impl AsyncPush {
         });
 
         Ok(())
+    }
+
+    fn spawn_receiver_thread(
+        receiver: Receiver<ProgressNotification>,
+    ) {
+        log::info!("push progress receiver spawned");
+
+        thread::spawn(move || loop {
+            let incoming = receiver.recv();
+            log::info!("push progress received: {:?}", incoming);
+            match incoming {
+                Ok(update) => match update {
+                    ProgressNotification::Done => break,
+                    _ => (),
+                },
+                Err(e) => {
+                    log::error!(
+                        "push progress receiver error: {}",
+                        e
+                    );
+                    break;
+                }
+            }
+        });
     }
 
     fn set_request(&self, params: &PushRequest) -> Result<()> {
