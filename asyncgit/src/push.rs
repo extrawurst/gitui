@@ -5,8 +5,7 @@ use crate::{
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::{
     sync::{Arc, Mutex},
-    thread,
-    time::Duration,
+    thread, cmp,
 };
 use sync::ProgressNotification;
 use thread::JoinHandle;
@@ -33,7 +32,22 @@ pub struct PushProgress {
 
 impl PushProgress {
     ///
-    pub fn new(state: PushProgressState, progress: u8) -> Self {
+    pub fn new(state: PushProgressState) -> Self {
+        Self {
+            state,
+            progress: 100,
+        }
+    }
+
+    ///
+    pub fn from_progress(
+        state: PushProgressState,
+        current: usize,
+        total: usize,
+    ) -> Self {
+        let total = cmp::max(current, total);
+        let progress = current as f32 / total as f32 * 100.0;
+        let progress = progress as u8;
         Self { state, progress }
     }
 }
@@ -42,27 +56,37 @@ impl From<ProgressNotification> for PushProgress {
     fn from(progress: ProgressNotification) -> Self {
         match progress {
             //TODO: actual progress value calculation
-            ProgressNotification::Packing { stage, .. } => {
-                match stage {
-                    git2::PackBuilderStage::AddingObjects => {
-                        PushProgress::new(
-                            PushProgressState::PackingAddingObject,
-                            10,
-                        )
-                    }
-                    git2::PackBuilderStage::Deltafication => {
-                        PushProgress::new(
-                            PushProgressState::PackingDeltafiction,
-                            40,
-                        )
-                    }
+            ProgressNotification::Packing {
+                stage,
+                current,
+                total,
+            } => match stage {
+                git2::PackBuilderStage::AddingObjects => {
+                    PushProgress::from_progress(
+                        PushProgressState::PackingAddingObject,
+                        current,
+                        total,
+                    )
                 }
-            }
-            ProgressNotification::PushTransfer { .. } => {
-                PushProgress::new(PushProgressState::Pushing, 60)
-            }
+                git2::PackBuilderStage::Deltafication => {
+                    PushProgress::from_progress(
+                        PushProgressState::PackingDeltafiction,
+                        current,
+                        total,
+                    )
+                }
+            },
+            ProgressNotification::PushTransfer {
+                current,
+                total,
+                ..
+            } => PushProgress::from_progress(
+                PushProgressState::Pushing,
+                current,
+                total,
+            ),
             ProgressNotification::Done => {
-                PushProgress::new(PushProgressState::Pushing, 100)
+                PushProgress::new(PushProgressState::Pushing)
             }
         }
     }
@@ -156,8 +180,6 @@ impl AsyncPush {
                 .expect("closing send failed");
 
             handle.join().expect("joining thread failed");
-
-            thread::sleep(Duration::from_millis(500));
 
             Self::set_result(arc_res, res).expect("result error");
 

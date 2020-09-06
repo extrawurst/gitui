@@ -14,7 +14,7 @@ pub enum ProgressNotification {
     ///
     PushTransfer {
         ///
-        progress: usize,
+        current: usize,
         ///
         total: usize,
         ///
@@ -87,24 +87,22 @@ fn remote_callbacks<'a>(
 ) -> RemoteCallbacks<'a> {
     let mut callbacks = RemoteCallbacks::new();
     let sender_clone = sender.clone();
-    callbacks.push_transfer_progress(
-        move |progress, total, bytes| {
-            sender_clone.clone().map(|sender| {
-                sender.send(ProgressNotification::PushTransfer {
-                    progress,
-                    total,
-                    bytes,
-                })
-            });
+    callbacks.push_transfer_progress(move |current, total, bytes| {
+        sender_clone.clone().map(|sender| {
+            sender.send(ProgressNotification::PushTransfer {
+                current,
+                total,
+                bytes,
+            })
+        });
 
-            // log::debug!(
-            //     "progress: {}/{} ({} B)",
-            //     progress,
-            //     total,
-            //     bytes,
-            // );
-        },
-    );
+        // log::debug!(
+        //     "progress: {}/{} ({} B)",
+        //     progress,
+        //     total,
+        //     bytes,
+        // );
+    });
     callbacks.pack_progress(move |stage, current, total| {
         sender.clone().map(|sender| {
             sender.send(ProgressNotification::Packing {
