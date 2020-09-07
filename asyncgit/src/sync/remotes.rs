@@ -98,6 +98,10 @@ fn remote_callbacks<'a>(
 
         log::debug!("progress: {}/{} ({} B)", current, total, bytes,);
     });
+    callbacks.update_tips(|name, a, b| {
+        log::debug!("update: '{}' [{}] [{}]", name, a, b);
+        true
+    });
     callbacks.transfer_progress(|p| {
         log::debug!(
             "transfer progress: {} B / {} / {} ",
