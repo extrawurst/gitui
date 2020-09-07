@@ -60,4 +60,5 @@
     copy: ( code: Char('y'), modifiers: ( bits: 0,),),
     create_branch: ( code: Char('b'), modifiers: ( bits: 0,),),
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
+    fetch: ( code: Char('f'), modifiers: ( bits: 0,),),
 )
