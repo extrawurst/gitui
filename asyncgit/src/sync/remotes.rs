@@ -47,7 +47,7 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
 
 ///
 pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
-    scope_time!("remote_fetch_master");
+    scope_time!("fetch_origin");
 
     let repo = utils::repo(repo_path)?;
     let mut remote = repo.find_remote("origin")?;
@@ -96,12 +96,16 @@ fn remote_callbacks<'a>(
             })
         });
 
-        // log::debug!(
-        //     "progress: {}/{} ({} B)",
-        //     progress,
-        //     total,
-        //     bytes,
-        // );
+        log::debug!("progress: {}/{} ({} B)", current, total, bytes,);
+    });
+    callbacks.transfer_progress(|p| {
+        log::debug!(
+            "transfer progress: {} B / {} / {} ",
+            p.received_bytes(),
+            p.received_objects(),
+            p.total_objects()
+        );
+        true
     });
     callbacks.pack_progress(move |stage, current, total| {
         sender.clone().map(|sender| {
@@ -112,7 +116,7 @@ fn remote_callbacks<'a>(
             })
         });
 
-        // log::debug!("packing: {:?} - {}/{}", stage, current, total);
+        log::debug!("packing: {:?} - {}/{}", stage, current, total);
     });
     callbacks.credentials(|url, username_from_url, allowed_types| {
         log::debug!(

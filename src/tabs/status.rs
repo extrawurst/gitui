@@ -333,6 +333,29 @@ impl Status {
                 .push_back(InternalEvent::Push(branch));
         }
     }
+
+    fn fetch(&self) {
+        if let Some(branch) = self.index_wd.branch_name() {
+            match sync::fetch_origin(CWD, branch.as_str()) {
+                Err(e) => {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(format!(
+                            "fetch error:\n{}",
+                            e
+                        )),
+                    );
+                }
+                Ok(bytes) => {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(format!(
+                            "fetched:\n{} B",
+                            bytes
+                        )),
+                    );
+                }
+            }
+        }
+    }
 }
 
 impl Component for Status {
@@ -468,6 +491,9 @@ impl Component for Status {
                     Ok(true)
                 } else if k == self.key_config.push {
                     self.push();
+                    Ok(true)
+                } else if k == self.key_config.fetch {
+                    self.fetch();
                     Ok(true)
                 } else {
                     Ok(false)
