@@ -106,6 +106,8 @@ fn remote_callbacks<'a>(
     let mut callbacks = RemoteCallbacks::new();
     let sender_clone = sender.clone();
     callbacks.push_transfer_progress(move |current, total, bytes| {
+        log::debug!("progress: {}/{} ({} B)", current, total, bytes,);
+
         sender_clone.clone().map(|sender| {
             sender.send(ProgressNotification::PushTransfer {
                 current,
@@ -113,13 +115,12 @@ fn remote_callbacks<'a>(
                 bytes,
             })
         });
-
-        log::debug!("progress: {}/{} ({} B)", current, total, bytes,);
     });
 
     let sender_clone = sender.clone();
     callbacks.update_tips(move |name, a, b| {
-        log::debug!("update: '{}' [{}] [{}]", name, a, b);
+        log::debug!("update tips: '{}' [{}] [{}]", name, a, b);
+
         sender_clone.clone().map(|sender| {
             sender.send(ProgressNotification::UpdateTips {
                 name: name.to_string(),
@@ -132,6 +133,12 @@ fn remote_callbacks<'a>(
 
     let sender_clone = sender.clone();
     callbacks.transfer_progress(move |p| {
+        log::debug!(
+            "transfer: {}/{}",
+            p.received_objects(),
+            p.total_objects()
+        );
+
         sender_clone.clone().map(|sender| {
             sender.send(ProgressNotification::Transfer {
                 objects: p.received_objects(),
@@ -142,6 +149,8 @@ fn remote_callbacks<'a>(
     });
 
     callbacks.pack_progress(move |stage, current, total| {
+        log::debug!("packing: {:?} - {}/{}", stage, current, total);
+
         sender.clone().map(|sender| {
             sender.send(ProgressNotification::Packing {
                 stage,
@@ -149,8 +158,6 @@ fn remote_callbacks<'a>(
                 current,
             })
         });
-
-        log::debug!("packing: {:?} - {}/{}", stage, current, total);
     });
     callbacks.credentials(|url, username_from_url, allowed_types| {
         log::debug!(

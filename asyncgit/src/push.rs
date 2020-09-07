@@ -75,9 +75,8 @@ impl From<ProgressNotification> for PushProgress {
                 current,
                 total,
             ),
-            ProgressNotification::Done | _ => {
-                PushProgress::new(PushProgressState::Pushing, 1, 1)
-            }
+            //ProgressNotification::Done |
+            _ => PushProgress::new(PushProgressState::Pushing, 1, 1),
         }
     }
 }
