@@ -40,8 +40,8 @@ impl PushProgress {
         current: usize,
         total: usize,
     ) -> Self {
-        let total = cmp::max(current, total);
-        let progress = current as f32 / total as f32 * 100.0;
+        let total = cmp::max(current, total) as f32;
+        let progress = current as f32 / total * 100.0;
         let progress = progress as u8;
         Self { state, progress }
     }
@@ -75,7 +75,7 @@ impl From<ProgressNotification> for PushProgress {
                 current,
                 total,
             ),
-            ProgressNotification::Done => {
+            ProgressNotification::Done | _ => {
                 PushProgress::new(PushProgressState::Pushing, 1, 1)
             }
         }
@@ -130,7 +130,7 @@ impl AsyncPush {
     ///
     pub fn progress(&self) -> Result<Option<PushProgress>> {
         let res = self.progress.lock()?;
-        Ok(res.map(|progress| progress.into()))
+        Ok(res.as_ref().map(|progress| progress.clone().into()))
     }
 
     ///
@@ -196,7 +196,7 @@ impl AsyncPush {
                 Ok(update) => {
                     Self::set_progress(
                         progress.clone(),
-                        Some(update),
+                        Some(update.clone()),
                     )
                     .expect("set prgoress failed");
                     sender
@@ -250,7 +250,7 @@ impl AsyncPush {
         state: Option<ProgressNotification>,
     ) -> Result<()> {
         let simple_progress: Option<PushProgress> =
-            state.map(|prog| prog.into());
+            state.as_ref().map(|prog| prog.clone().into());
         log::info!("push progress: {:?}", simple_progress);
         let mut progress = progress.lock()?;
 

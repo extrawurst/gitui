@@ -8,9 +8,27 @@ use git2::{
 };
 use scopetime::scope_time;
 
+use super::CommitId;
+
 ///
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum ProgressNotification {
+    ///
+    UpdateTips {
+        ///
+        name: String,
+        ///
+        a: CommitId,
+        ///
+        b: CommitId,
+    },
+    ///
+    Transfer {
+        ///
+        objects: usize,
+        ///
+        total_objects: usize,
+    },
     ///
     PushTransfer {
         ///
@@ -98,19 +116,31 @@ fn remote_callbacks<'a>(
 
         log::debug!("progress: {}/{} ({} B)", current, total, bytes,);
     });
-    callbacks.update_tips(|name, a, b| {
+
+    let sender_clone = sender.clone();
+    callbacks.update_tips(move |name, a, b| {
         log::debug!("update: '{}' [{}] [{}]", name, a, b);
+        sender_clone.clone().map(|sender| {
+            sender.send(ProgressNotification::UpdateTips {
+                name: name.to_string(),
+                a: a.into(),
+                b: b.into(),
+            })
+        });
         true
     });
-    callbacks.transfer_progress(|p| {
-        log::debug!(
-            "transfer progress: {} B / {} / {} ",
-            p.received_bytes(),
-            p.received_objects(),
-            p.total_objects()
-        );
+
+    let sender_clone = sender.clone();
+    callbacks.transfer_progress(move |p| {
+        sender_clone.clone().map(|sender| {
+            sender.send(ProgressNotification::Transfer {
+                objects: p.received_objects(),
+                total_objects: p.total_objects(),
+            })
+        });
         true
     });
+
     callbacks.pack_progress(move |stage, current, total| {
         sender.clone().map(|sender| {
             sender.send(ProgressNotification::Packing {
