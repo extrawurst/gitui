@@ -58,6 +58,7 @@ impl PushComponent {
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
+            //TODO: find tracking branch name
             remote: String::from("origin"),
             branch,
         })?;
