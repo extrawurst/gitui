@@ -91,7 +91,13 @@ sudo dnf install gitui
 brew install gitui
 ```
 
-### Release Binaries
+### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)
+
+```
+scoop install gitui
+```
+
+## Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
 
