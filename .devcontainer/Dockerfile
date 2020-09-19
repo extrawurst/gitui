@@ -1,7 +1,16 @@
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.140.1/containers/rust/.devcontainer/base.Dockerfile
+FROM ubuntu:18.04
 
-FROM mcr.microsoft.com/vscode/devcontainers/rust:0-1
+RUN apt-get update
+RUN apt-get install -y \
+  curl \
+  git \
+  gnupg2 \
+  jq \
+  sudo \
+  zsh \
+  vim \
+  build-essential \
+  openssl
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
-# [Optional] Uncomment this section to install additional packages.
-# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-#     && apt-get -y install --no-install-recommends <your-package-list-here>
+ENV PATH="/root/.cargo/bin:$PATH"

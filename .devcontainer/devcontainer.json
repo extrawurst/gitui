@@ -5,11 +5,6 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
-	"runArgs": [
-		"--cap-add=SYS_PTRACE",
-		"--security-opt",
-		"seccomp=unconfined"
-	],
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"terminal.integrated.shell.linux": "/bin/bash",
@@ -22,11 +17,10 @@
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"matklad.rust-analyzer",
-		"bungcip.better-toml",
 		"vadimcn.vscode-lldb",
 		"mutantdino.resourcemonitor",
 		"serayuzgur.crates",
-		"a5huynh.vscode-ron"
+		"ms-vsliveshare.vsliveshare"
 	]
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
