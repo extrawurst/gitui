@@ -214,6 +214,79 @@ impl FileTreeComponent {
             StatusItemType::Typechange => ' ',
         }
     }
+
+    fn item_to_text_simple<'b>(
+        string: &str,
+        indent: usize,
+        visible: bool,
+        file_item_kind: &FileTreeItemKind,
+        width: u16,
+        selected: bool,
+        theme: &'b SharedTheme,
+    ) -> Option<Text<'b>> {
+        let indent_str = if indent == 0 {
+            String::from("")
+        } else {
+            format!("{:w$}", " ", w = (indent as usize) * 2)
+        };
+
+        if !visible {
+            return None;
+        }
+
+        match file_item_kind {
+            FileTreeItemKind::File(status_item) => {
+                let status_char =
+                    Self::item_status_char(status_item.status);
+                let file = Path::new(&status_item.path)
+                    .file_name()
+                    .and_then(std::ffi::OsStr::to_str)
+                    .expect("invalid path.");
+
+                let txt = if selected {
+                    format!(
+                        "{} {}{:w$}",
+                        status_char,
+                        indent_str,
+                        file,
+                        w = width as usize
+                    )
+                } else {
+                    format!("{} {}{}", status_char, indent_str, file)
+                };
+
+                Some(Text::Styled(
+                    Cow::from(txt),
+                    theme.item(status_item.status, selected),
+                ))
+            }
+
+            FileTreeItemKind::Path(path_collapsed) => {
+                let collapse_char =
+                    if path_collapsed.0 { '▸' } else { '▾' };
+
+                let txt = if selected {
+                    format!(
+                        "  {}{}{:w$}",
+                        indent_str,
+                        collapse_char,
+                        string,
+                        w = width as usize
+                    )
+                } else {
+                    format!(
+                        "  {}{}{}",
+                        indent_str, collapse_char, string,
+                    )
+                };
+
+                Some(Text::Styled(
+                    Cow::from(txt),
+                    theme.text(true, selected),
+                ))
+            }
+        }
+    }
 }
 
 impl DrawableComponent for FileTreeComponent {
@@ -254,10 +327,113 @@ impl DrawableComponent for FileTreeComponent {
                     },
                 );
 
+            let mut should_skip_over: usize = 0;
+
+            let mut vec_text = vec![];
+
+            let mut on_going_select_offset = 0;
+
+            for (index, item) in
+                self.tree.tree.items().iter().enumerate()
+            {
+                if should_skip_over > 0 {
+                    should_skip_over -= 1;
+                    continue;
+                }
+
+                vec_text.push((
+                    item.info.path.clone(),
+                    item.info.indent,
+                    item.info.visible,
+                    //true,
+                    &item.kind,
+                ));
+                let mut idx_temp = index;
+                if index
+                    < (self.tree.tree.items().len().saturating_sub(2))
+                {
+                    while idx_temp
+                        < (self
+                            .tree
+                            .tree
+                            .items()
+                            .len()
+                            .saturating_sub(2))
+                        && self.tree.tree.items()[idx_temp]
+                            .info
+                            .indent
+                            < self.tree.tree.items()[idx_temp + 1]
+                                .info
+                                .indent
+                        && self.tree.tree.items()[idx_temp + 1]
+                            .info
+                            .indent
+                            < self.tree.tree.items()[idx_temp + 2]
+                                .info
+                                .indent
+                    {
+                        // then fold up the folder/file
+                        // because there is only one in the directory
+                        idx_temp += 1;
+                        should_skip_over += 1;
+                        //let index_above_select =;
+                        //if index > self.tree.selection.unwrap_or(0) {
+                        on_going_select_offset += 1;
+                        // }
+
+                        // check if there is another folder or file at the
+                        // same level, if there is, don't merge up
+                        let mut idx_temp_inner = idx_temp + 1;
+                        while self.tree.tree.items()[idx_temp]
+                            .info
+                            .indent
+                            < self.tree.tree.items()[idx_temp_inner] //.saturating_add(1)
+                                .info
+                                .indent
+                        {
+                            idx_temp_inner += 1;
+                            if idx_temp_inner
+                                == self.tree.tree.items().len() - 1
+                            {
+                                break;
+                            }
+                        }
+
+                        if (self.tree.tree.items()[idx_temp_inner] //.saturating_sub(1)
+                            .info
+                            .indent
+                            == self.tree.tree.items()[idx_temp] //+1
+                                .info
+                                .indent)
+                        {
+                            // check if there is another folder or file at the same level, so don't merge up
+
+                            // don't skip this one, it should be on it's own line
+                            should_skip_over -= 1;
+                            break;
+                        } else {
+                            // There is only one item at this level (in the folder) so do merge up
+                            let vec_text_len = vec_text.len();
+                            vec_text[vec_text_len - 1].0 +=
+                                &(String::from("/")
+                                    + &self.tree.tree.items()
+                                        [idx_temp]
+                                        .info
+                                        .path);
+                        }
+                    }
+                }
+            }
+            log::info!("Vec Text to display: {:?}", vec_text);
+
             let select = self
                 .tree
                 .selection
-                .map(|idx| idx.saturating_sub(selection_offset))
+                .map(|idx| {
+                    idx.saturating_sub(
+                        selection_offset, //+ on_going_select_offset,
+                    )
+                })
                 .unwrap_or_default();
             let tree_height = r.height.saturating_sub(2) as usize;
 
@@ -267,25 +443,29 @@ impl DrawableComponent for FileTreeComponent {
                 select,
             ));
 
-            let items = self
-                .tree
-                .tree
-                .items()
+            let items = vec_text
                 .iter()
                 .enumerate()
-                .filter_map(|(idx, e)| {
-                    Self::item_to_text(
-                        e,
-                        r.width,
-                        self.show_selection
-                            && self
-                                .tree
-                                .selection
-                                .map_or(false, |e| e == idx),
-                        &self.theme,
-                    )
-                })
+                .filter_map(
+                    |(index, (txt, indent, visible, kind))| {
+                        Self::item_to_text_simple(
+                            txt,
+                            *indent as usize,
+                            *visible,
+                            kind,
+                            r.width,
+                            self.show_selection
+                                && self
+                                    .tree
+                                    .selection
+                                    .map_or(false, |e| e == index),
+                            &self.theme,
+                        )
+                    },
+                )
                 .skip(self.scroll_top.get());
+
+            //self.tree.selection = Some(select);
 
             ui::draw_list(
                 f,
