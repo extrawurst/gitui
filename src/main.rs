@@ -281,7 +281,7 @@ fn setup_logging() -> Result<()> {
     path.push("gitui.log");
 
     let _ = WriteLogger::init(
-        LevelFilter::Info,
+        LevelFilter::Trace,
         Config::default(),
         File::create(path)?,
     );
