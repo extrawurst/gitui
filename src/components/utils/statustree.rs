@@ -10,6 +10,10 @@ use std::{cmp, collections::BTreeSet};
 pub struct StatusTree {
     pub tree: FileTreeItems,
     pub selection: Option<usize>,
+
+    // some folders may be folded up, this allows jumping
+    // over folders which are folded into their parent
+    pub available_selections: Vec<usize>,
 }
 
 ///
@@ -56,6 +60,7 @@ impl StatusTree {
         );
 
         self.update_visibility(None, 0, true);
+        self.available_selections = self.setup_available_selections();
 
         //NOTE: now that visibility is set we can make sure selection is visible
         if let Some(idx) = self.selection {
@@ -63,6 +68,69 @@ impl StatusTree {
         }
 
         Ok(())
+    }
+
+    /// Return which indices can be selected taking into account that
+    /// some folders may be folded up into their parent
+    ///
+    /// It should be impossible to select a folder
+    /// which has been folded into its parent
+    fn setup_available_selections(&self) -> Vec<usize> {
+        // use the same algorithm as in filetree build_vec_text_for_drawing function
+        let mut should_skip_over: usize = 0;
+        let mut vec_available_selections: Vec<usize> = vec![];
+        let tree_items = self.tree.items();
+        for index in 0..tree_items.len() {
+            if should_skip_over > 0 {
+                should_skip_over -= 1;
+                continue;
+            }
+            let mut idx_temp = index;
+            vec_available_selections.push(index);
+            if index < (tree_items.len().saturating_sub(2)) {
+                while idx_temp < (tree_items.len().saturating_sub(2))
+                    && tree_items[idx_temp].info.indent
+                        < tree_items[idx_temp + 1].info.indent
+                    && tree_items[idx_temp + 1].info.indent
+                        < tree_items[idx_temp + 2].info.indent
+                {
+                    // fold up the folder/file
+                    // because there is only one in the directory
+                    idx_temp += 1;
+                    should_skip_over += 1;
+
+                    // check if there is another folder or file at the
+                    // same level, if there is, don't fold up
+                    let mut idx_temp_inner;
+                    if idx_temp + 2 < tree_items.len() {
+                        idx_temp_inner = idx_temp + 1;
+                        while tree_items[idx_temp].info.indent
+                            < tree_items[idx_temp_inner].info.indent
+                        {
+                            idx_temp_inner += 1;
+                            if idx_temp_inner == tree_items.len() - 1
+                            {
+                                break;
+                            }
+                        }
+                    } else {
+                        idx_temp_inner = idx_temp;
+                    }
+                    if tree_items[idx_temp_inner].info.indent
+                        == tree_items[idx_temp].info.indent
+                    {
+                        // there is another folder or file at the same level, so don't fold up
+                        // don't skip over this one, it should be on its own line
+                        should_skip_over -= 1;
+                        break;
+                    } else {
+                        // There is only one item at this level (in the folder)
+                        // so do fold up if this were a file or folder
+                    }
+                }
+            }
+        }
+        vec_available_selections
     }
 
     fn find_visible_idx(&self, mut idx: usize) -> usize {
@@ -153,30 +221,71 @@ impl StatusTree {
         current_index: usize,
         up: bool,
     ) -> SelectionChange {
-        let mut new_index = current_index;
+        let mut current_index_in_available_selections;
+        let mut cur_index_find = current_index;
+        if self.available_selections.len() > 0 {
+            loop {
+                if let Some(pos) = self
+                    .available_selections
+                    .iter()
+                    .position(|i| *i == cur_index_find)
+                {
+                    current_index_in_available_selections = pos;
+                    break;
+                } else {
+                    // Find the closest to the index, usually this shouldn't happen
+                    if current_index == 0 {
+                        // This should never happen,  if it does, this means there
+                        // was no first index in available_selections
+                        // which means there are elements in available_selections
+                        // but none are at 0, which does not make sense
+                        panic!("Something is wrong, unable to find which item is selected in the status tree.  There are items in the statustree but none are at index 0.  Restarting the application should fix this.");
+                    }
+                    cur_index_find -= 1;
+                }
+            }
+        } else {
+            // Go to top
+            current_index_in_available_selections = 0;
+        }
 
-        let items_max = self.tree.len().saturating_sub(1);
+        let mut new_index;
 
         loop {
+            // Use available_selections to go to the correct selection as
+            // some of the folders may be folded up
             new_index = if up {
-                new_index.saturating_sub(1)
+                current_index_in_available_selections =
+                    current_index_in_available_selections
+                        .saturating_sub(1);
+                self.available_selections
+                    [current_index_in_available_selections]
             } else {
-                new_index.saturating_add(1)
+                if current_index_in_available_selections
+                    .saturating_add(1)
+                    <= self
+                        .available_selections
+                        .len()
+                        .saturating_sub(1)
+                {
+                    current_index_in_available_selections =
+                        current_index_in_available_selections
+                            .saturating_add(1);
+                    self.available_selections
+                        [current_index_in_available_selections]
+                } else {
+                    // can't move down anymore
+                    new_index = current_index;
+                    break;
+                }
             };
 
-            new_index = cmp::min(new_index, items_max);
-
+            // Find a visible index, then break
+            // there must be at least 1
             if self.is_visible_index(new_index) {
                 break;
             }
-
-            if new_index == 0 || new_index == items_max {
-                // limit reached, dont update
-                new_index = current_index;
-                break;
-            }
         }
-
         SelectionChange::new(new_index, false)
     }
 
