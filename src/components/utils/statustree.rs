@@ -235,11 +235,9 @@ impl StatusTree {
                 } else {
                     // Find the closest to the index, usually this shouldn't happen
                     if current_index == 0 {
-                        // This should never happen,  if it does, this means there
-                        // was no first index in available_selections
-                        // which means there are elements in available_selections
-                        // but none are at 0, which does not make sense
-                        panic!("Something is wrong, unable to find which item is selected in the status tree.  There are items in the statustree but none are at index 0.  Restarting the application should fix this.");
+                        // This should never happen
+                        current_index_in_available_selections = 0;
+                        break;
                     }
                     cur_index_find -= 1;
                 }
