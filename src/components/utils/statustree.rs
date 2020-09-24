@@ -120,7 +120,6 @@ impl StatusTree {
                         == tree_items[idx_temp].info.indent
                     {
                         // there is another folder or file at the same level, so don't fold up
-                        // don't skip over this one, it should be on its own line
                         should_skip_over -= 1;
                         break;
                     } else {
