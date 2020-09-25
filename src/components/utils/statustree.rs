@@ -251,8 +251,6 @@ impl StatusTree {
                 }
             };
 
-            // Find a visible index, then break
-            // there must be at least 1
             if self.is_visible_index(new_index) {
                 break;
             }
@@ -756,5 +754,52 @@ mod tests {
         assert!(res.move_selection(MoveSelection::Down));
 
         assert_eq!(res.selection, Some(3));
+    }
+
+    #[test]
+    fn test_folders_fold_up_if_alone_in_directory() {
+        let items = string_vec_to_status(&[
+            "a/b/c/d", //
+            "a/e/f/g", //
+            "a/h/i/j", //
+        ]);
+
+        //0 a/
+        //1   b/
+        //2     c/
+        //3       d
+        //4   e/
+        //5     f/
+        //6       g
+        //7   h/
+        //8     i/
+        //9       j
+
+        //0 a/b/c/
+        //3       d
+        //4   e/f/
+        //6       g
+        //7   h/i/
+        //9       j
+
+        let mut res = StatusTree::default();
+        res.update(&items).unwrap();
+
+        assert!(res.move_selection(MoveSelection::Down));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(3));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(4));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(6));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(7));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(9));
     }
 }
