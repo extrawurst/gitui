@@ -20,7 +20,8 @@ use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
-    widgets::{Block, Borders, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Paragraph},
 };
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -101,14 +102,14 @@ impl Stashing {
         Ok(())
     }
 
-    fn get_option_text(&self) -> Vec<Text> {
-        let bracket_open = Text::Raw(Cow::from("["));
-        let bracket_close = Text::Raw(Cow::from("]"));
+    fn get_option_text(&self) -> Vec<Span> {
+        let bracket_open = Span::raw(Cow::from("["));
+        let bracket_close = Span::raw(Cow::from("]"));
         let option_on =
-            Text::Styled(Cow::from("x"), self.theme.option(true));
+            Span::styled(Cow::from("x"), self.theme.option(true));
 
         let option_off =
-            Text::Styled(Cow::from("_"), self.theme.option(false));
+            Span::styled(Cow::from("_"), self.theme.option(false));
 
         vec![
             bracket_open.clone(),
@@ -118,7 +119,7 @@ impl Stashing {
                 option_off.clone()
             },
             bracket_close.clone(),
-            Text::Raw(Cow::from(" stash untracked\n")),
+            Span::raw(Cow::from(" stash untracked\n")),
             bracket_open,
             if self.options.keep_index {
                 option_on.clone()
@@ -126,7 +127,7 @@ impl Stashing {
                 option_off.clone()
             },
             bracket_close,
-            Text::Raw(Cow::from(" keep index")),
+            Span::raw(Cow::from(" keep index")),
         ]
     }
 }
@@ -152,11 +153,9 @@ impl DrawableComponent for Stashing {
             .split(chunks[1]);
 
         f.render_widget(
-            Paragraph::new(self.get_option_text().iter())
+            Paragraph::new(Spans::from(self.get_option_text()))
                 .block(Block::default().borders(Borders::ALL).title(
-                    &strings::stashing_options_title(
-                        &self.key_config,
-                    ),
+                    strings::stashing_options_title(&self.key_config),
                 ))
                 .alignment(Alignment::Left),
             right_chunks[0],

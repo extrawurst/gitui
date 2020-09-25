@@ -17,7 +17,8 @@ use tui::{
     backend::Backend,
     layout::Rect,
     symbols,
-    widgets::{Block, Borders, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
@@ -299,7 +300,7 @@ impl DiffComponent {
         Ok(None)
     }
 
-    fn get_text(&self, width: u16, height: u16) -> Result<Vec<Text>> {
+    fn get_text(&self, width: u16, height: u16) -> Result<Vec<Span>> {
         let mut res = Vec::new();
         if let Some(diff) = &self.diff {
             if diff.hunks.is_empty() {
@@ -308,24 +309,24 @@ impl DiffComponent {
                     ByteSize::b(diff.size_delta.abs() as u64);
                 let sign = if is_positive { "+" } else { "-" };
                 res.extend(vec![
-                    Text::Raw(Cow::from("size: ")),
-                    Text::Styled(
+                    Span::raw(Cow::from("size: ")),
+                    Span::styled(
                         Cow::from(format!(
                             "{}",
                             ByteSize::b(diff.sizes.0)
                         )),
                         self.theme.text(false, false),
                     ),
-                    Text::Raw(Cow::from(" -> ")),
-                    Text::Styled(
+                    Span::raw(Cow::from(" -> ")),
+                    Span::styled(
                         Cow::from(format!(
                             "{}",
                             ByteSize::b(diff.sizes.1)
                         )),
                         self.theme.text(false, false),
                     ),
-                    Text::Raw(Cow::from(" (")),
-                    Text::Styled(
+                    Span::raw(Cow::from(" (")),
+                    Span::styled(
                         Cow::from(format!(
                             "{}{:}",
                             sign, delta_byte_size
@@ -339,7 +340,7 @@ impl DiffComponent {
                             false,
                         ),
                     ),
-                    Text::Raw(Cow::from(")")),
+                    Span::raw(Cow::from(")")),
                 ]);
             } else {
                 let min = self.scroll_top.get();
@@ -397,7 +398,7 @@ impl DiffComponent {
     }
 
     fn add_line(
-        text: &mut Vec<Text>,
+        text: &mut Vec<Span>,
         width: u16,
         line: &DiffLine,
         selected: bool,
@@ -409,17 +410,17 @@ impl DiffComponent {
             let style = theme.diff_hunk_marker(selected_hunk);
 
             if end_of_hunk {
-                text.push(Text::Styled(
+                text.push(Span::styled(
                     Cow::from(symbols::line::BOTTOM_LEFT),
                     style,
                 ));
             } else {
                 text.push(match line.line_type {
-                    DiffLineType::Header => Text::Styled(
+                    DiffLineType::Header => Span::styled(
                         Cow::from(symbols::line::TOP_LEFT),
                         style,
                     ),
-                    _ => Text::Styled(
+                    _ => Span::styled(
                         Cow::from(symbols::line::VERTICAL),
                         style,
                     ),
@@ -440,7 +441,7 @@ impl DiffComponent {
         //TODO: allow customize tabsize
         let content = Cow::from(filled.replace("\t", "  "));
 
-        text.push(Text::Styled(
+        text.push(Span::styled(
             content,
             theme.diff_line(line.line_type, selected),
         ));
@@ -564,7 +565,7 @@ impl DrawableComponent for DiffComponent {
         );
 
         let txt = if self.pending {
-            vec![Text::Styled(
+            vec![Span::styled(
                 Cow::from(strings::loading_text(&self.key_config)),
                 self.theme.text(false, false),
             )]
@@ -573,7 +574,7 @@ impl DrawableComponent for DiffComponent {
         };
 
         f.render_widget(
-            Paragraph::new(txt.iter()).block(
+            Paragraph::new(Spans::from(txt)).block(
                 Block::default()
                     .title(title.as_str())
                     .borders(Borders::ALL)
@@ -738,7 +739,7 @@ mod tests {
 
         assert_eq!(text.len(), 2);
 
-        if let Text::Styled(c, _) = &text[1] {
+        if let Span::styled(c, _) = &text[1] {
             assert_eq!(c, "line 1\n");
         } else {
             panic!("err")

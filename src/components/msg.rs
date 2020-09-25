@@ -8,7 +8,8 @@ use std::borrow::Cow;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
 use ui::style::SharedTheme;
@@ -32,12 +33,12 @@ impl DrawableComponent for MsgComponent {
         if !self.visible {
             return Ok(());
         }
-        let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
+        let txt = vec![Span::raw(Cow::from(self.msg.as_str()))];
 
         let area = ui::centered_rect_absolute(65, 25, f.size());
         f.render_widget(Clear, area);
         f.render_widget(
-            Paragraph::new(txt.iter())
+            Paragraph::new(Spans::from(txt))
                 .block(
                     Block::default()
                         .title(self.title.as_str())
@@ -46,7 +47,7 @@ impl DrawableComponent for MsgComponent {
                         .border_type(BorderType::Thick),
                 )
                 .alignment(Alignment::Left)
-                .wrap(true),
+                .wrap(Wrap { trim: true }),
             area,
         );
 

@@ -1,5 +1,5 @@
 use super::{
-    textinput::TextInputComponent, visibility_blocking,
+    textinput::SpanInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
 };
 use crate::{
@@ -17,7 +17,7 @@ use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct CreateBranchComponent {
-    input: TextInputComponent,
+    input: SpanInputComponent,
     commit_id: Option<CommitId>,
     queue: Queue,
     key_config: SharedKeyConfig,
@@ -97,7 +97,7 @@ impl CreateBranchComponent {
     ) -> Self {
         Self {
             queue,
-            input: TextInputComponent::new(
+            input: SpanInputComponent::new(
                 theme,
                 key_config.clone(),
                 &strings::create_branch_popup_title(&key_config),

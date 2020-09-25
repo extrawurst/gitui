@@ -11,7 +11,8 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -45,7 +46,7 @@ impl DrawableComponent for HelpComponent {
             f.render_widget(Clear, area);
             f.render_widget(
                 Block::default()
-                    .title(&strings::help_title(&self.key_config))
+                    .title(strings::help_title(&self.key_config))
                     .borders(Borders::ALL)
                     .border_type(BorderType::Thick),
                 area,
@@ -62,23 +63,17 @@ impl DrawableComponent for HelpComponent {
                 .split(area);
 
             f.render_widget(
-                Paragraph::new(self.get_text().iter())
-                    .scroll(scroll)
+                Paragraph::new(Spans::from(self.get_text()))
+                    .scroll((0, scroll))
                     .alignment(Alignment::Left),
                 chunks[0],
             );
 
             f.render_widget(
-                Paragraph::new(
-                    vec![Text::Styled(
-                        Cow::from(format!(
-                            "gitui {}",
-                            Version::new(),
-                        )),
-                        Style::default(),
-                    )]
-                    .iter(),
-                )
+                Paragraph::new(Spans::from(vec![Span::styled(
+                    Cow::from(format!("gitui {}", Version::new(),)),
+                    Style::default(),
+                )]))
                 .alignment(Alignment::Right),
                 chunks[1],
             );
@@ -209,7 +204,7 @@ impl HelpComponent {
         }
     }
 
-    fn get_text(&self) -> Vec<Text> {
+    fn get_text(&self) -> Vec<Span> {
         let mut txt = Vec::new();
 
         let mut processed = 0_u16;
@@ -217,9 +212,9 @@ impl HelpComponent {
         for (key, group) in
             &self.cmds.iter().group_by(|e| e.text.group)
         {
-            txt.push(Text::Styled(
+            txt.push(Span::styled(
                 Cow::from(format!("{}\n", key)),
-                Style::default().modifier(Modifier::REVERSED),
+                Style::default().add_modifier(Modifier::REVERSED),
             ));
 
             txt.extend(
@@ -246,7 +241,7 @@ impl HelpComponent {
                             );
                         }
 
-                        Text::Styled(
+                        Span::styled(
                             Cow::from(out),
                             self.theme.text(true, is_selected),
                         )

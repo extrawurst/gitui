@@ -5,14 +5,15 @@ use tui::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    widgets::{Block, Borders, List, Text, Widget},
+    text::Span,
+    widgets::{Block, Borders, List, Widget},
     Frame,
 };
 
 ///
 struct ScrollableList<'b, L>
 where
-    L: Iterator<Item = Text<'b>>,
+    L: Iterator<Item = Span<'b>>,
 {
     block: Option<Block<'b>>,
     /// Items to be displayed
@@ -25,7 +26,7 @@ where
 
 impl<'b, L> ScrollableList<'b, L>
 where
-    L: Iterator<Item = Text<'b>>,
+    L: Iterator<Item = Span<'b>>,
 {
     fn new(items: L) -> Self {
         Self {
@@ -49,7 +50,7 @@ where
 
 impl<'b, L> Widget for ScrollableList<'b, L>
 where
-    L: Iterator<Item = Text<'b>>,
+    L: Iterator<Item = Span<'b>>,
 {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Render items
@@ -69,7 +70,7 @@ pub fn draw_list<'b, B: Backend, L>(
     selected: bool,
     theme: &SharedTheme,
 ) where
-    L: Iterator<Item = Text<'b>>,
+    L: Iterator<Item = Span<'b>>,
 {
     let list = ScrollableList::new(items)
         .block(

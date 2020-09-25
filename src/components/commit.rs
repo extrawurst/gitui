@@ -1,5 +1,5 @@
 use super::{
-    textinput::TextInputComponent, visibility_blocking,
+    textinput::SpanInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
     ExternalEditorComponent,
 };
@@ -24,7 +24,7 @@ use std::{
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct CommitComponent {
-    input: TextInputComponent,
+    input: SpanInputComponent,
     amend: Option<CommitId>,
     queue: Queue,
     key_config: SharedKeyConfig,
@@ -133,7 +133,7 @@ impl CommitComponent {
         Self {
             queue,
             amend: None,
-            input: TextInputComponent::new(
+            input: SpanInputComponent::new(
                 theme,
                 key_config.clone(),
                 "",

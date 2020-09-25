@@ -10,15 +10,12 @@ use crate::{
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use tui::{
-    backend::Backend,
-    layout::Rect,
-    style::Modifier,
-    widgets::{Clear, Text},
-    Frame,
+    backend::Backend, layout::Rect, style::Modifier, text::Span,
+    text::StyledGrapheme, widgets::Clear, Frame,
 };
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
-pub struct TextInputComponent {
+pub struct SpanInputComponent {
     title: String,
     default_msg: String,
     msg: String,
@@ -28,7 +25,7 @@ pub struct TextInputComponent {
     cursor_position: usize,
 }
 
-impl TextInputComponent {
+impl SpanInputComponent {
     ///
     pub fn new(
         theme: SharedTheme,
@@ -108,14 +105,14 @@ impl TextInputComponent {
         self.title = t;
     }
 
-    fn get_draw_text(&self) -> Vec<Text> {
+    fn get_draw_text(&self) -> Vec<Span> {
         let style = self.theme.text(true, false);
 
         let mut txt = Vec::new();
         // The portion of the text before the cursor is added
         // if the cursor is not at the first character.
         if self.cursor_position > 0 {
-            txt.push(Text::styled(
+            txt.push(Span::styled(
                 &self.msg[..self.cursor_position],
                 style,
             ));
@@ -128,24 +125,24 @@ impl TextInputComponent {
             .map_or(" ", |pos| &self.msg[self.cursor_position..pos]);
 
         if cursor_str == "\n" {
-            txt.push(Text::styled(
+            txt.push(Span::styled(
                 "\u{21b5}",
                 self.theme
                     .text(false, false)
-                    .modifier(Modifier::UNDERLINED),
+                    .add_modifier(Modifier::UNDERLINED),
             ));
         }
 
-        txt.push(Text::styled(
+        txt.push(Span::styled(
             cursor_str,
-            style.modifier(Modifier::UNDERLINED),
+            style.add_modifier(Modifier::UNDERLINED),
         ));
 
         // The final portion of the text is added if there are
         // still remaining characters.
         if let Some(pos) = self.next_char_position() {
             if pos < self.msg.len() {
-                txt.push(Text::styled(&self.msg[pos..], style));
+                txt.push(Span::styled(&self.msg[pos..], style));
             }
         }
 
@@ -153,7 +150,7 @@ impl TextInputComponent {
     }
 }
 
-impl DrawableComponent for TextInputComponent {
+impl DrawableComponent for SpanInputComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
@@ -161,7 +158,7 @@ impl DrawableComponent for TextInputComponent {
     ) -> Result<()> {
         if self.visible {
             let txt = if self.msg.is_empty() {
-                vec![Text::styled(
+                vec![Span::styled(
                     self.default_msg.as_str(),
                     self.theme.text(false, false),
                 )]
@@ -176,7 +173,7 @@ impl DrawableComponent for TextInputComponent {
             f.render_widget(
                 popup_paragraph(
                     self.title.as_str(),
-                    txt.iter(),
+                    txt,
                     &self.theme,
                     true,
                 ),
@@ -188,7 +185,7 @@ impl DrawableComponent for TextInputComponent {
     }
 }
 
-impl Component for TextInputComponent {
+impl Component for SpanInputComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
@@ -277,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_smoke() {
-        let mut comp = TextInputComponent::new(
+        let mut comp = SpanInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",
@@ -297,15 +294,16 @@ mod tests {
 
     #[test]
     fn text_cursor_initial_position() {
-        let mut comp = TextInputComponent::new(
+        let mut comp = SpanInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",
             "",
         );
         let theme = SharedTheme::default();
-        let underlined =
-            theme.text(true, false).modifier(Modifier::UNDERLINED);
+        let underlined = theme
+            .text(true, false)
+            .add_modifier(Modifier::UNDERLINED);
 
         comp.set_text(String::from("a"));
 
@@ -318,17 +316,18 @@ mod tests {
 
     #[test]
     fn test_cursor_second_position() {
-        let mut comp = TextInputComponent::new(
+        let mut comp = SpanInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",
             "",
         );
         let theme = SharedTheme::default();
-        let underlined =
-            theme.text(true, false).modifier(Modifier::UNDERLINED);
+        let underlined = theme
+            .text(true, false)
+            .add_modifier(Modifier::UNDERLINED);
 
-        let not_underlined = Style::new();
+        let not_underlined = Style::default();
 
         comp.set_text(String::from("a"));
         comp.incr_cursor();
@@ -344,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_visualize_newline() {
-        let mut comp = TextInputComponent::new(
+        let mut comp = SpanInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",
@@ -352,8 +351,9 @@ mod tests {
         );
 
         let theme = SharedTheme::default();
-        let underlined =
-            theme.text(false, false).modifier(Modifier::UNDERLINED);
+        let underlined = theme
+            .text(false, false)
+            .add_modifier(Modifier::UNDERLINED);
 
         comp.set_text(String::from("a\nb"));
         comp.incr_cursor();
@@ -370,7 +370,7 @@ mod tests {
 
     #[test]
     fn test_invisable_newline() {
-        let mut comp = TextInputComponent::new(
+        let mut comp = SpanInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",
@@ -378,8 +378,9 @@ mod tests {
         );
 
         let theme = SharedTheme::default();
-        let underlined =
-            theme.text(true, false).modifier(Modifier::UNDERLINED);
+        let underlined = theme
+            .text(true, false)
+            .add_modifier(Modifier::UNDERLINED);
 
         comp.set_text(String::from("a\nb"));
 
@@ -391,19 +392,11 @@ mod tests {
         assert_eq!(get_text(&txt[1]), Some("\nb"));
     }
 
-    fn get_text<'a>(t: &'a Text) -> Option<&'a str> {
-        if let Text::Styled(c, _) = t {
-            Some(c.as_ref())
-        } else {
-            None
-        }
+    fn get_text<'a>(t: &'a Span) -> Option<&'a str> {
+        Some(&t.content)
     }
 
-    fn get_style<'a>(t: &'a Text) -> Option<&'a Style> {
-        if let Text::Styled(_, c) = t {
-            Some(c)
-        } else {
-            None
-        }
+    fn get_style<'a>(t: &'a Span) -> Option<&'a Style> {
+        Some(&t.style)
     }
 }

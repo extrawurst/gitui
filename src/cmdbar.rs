@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Paragraph, Text},
+    widgets::{Paragraph, Span},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -142,8 +142,7 @@ impl CommandBar {
         if r.width < MORE_WIDTH {
             return;
         }
-
-        let splitter = Text::Raw(Cow::from(strings::cmd_splitter(
+        let splitter = Span::raw(Cow::from(strings::cmd_splitter(
             &self.key_config,
         )));
 
@@ -151,12 +150,12 @@ impl CommandBar {
             .draw_list
             .iter()
             .map(|c| match c {
-                DrawListEntry::Command(c) => Text::Styled(
+                DrawListEntry::Command(c) => Span::styled(
                     Cow::from(c.txt.as_str()),
                     self.theme.commandbar(c.enabled, c.line),
                 ),
                 DrawListEntry::LineBreak => {
-                    Text::Raw(Cow::from("\n"))
+                    Span::raw(Cow::from("\n"))
                 }
                 DrawListEntry::Splitter => splitter.clone(),
             })
@@ -177,7 +176,7 @@ impl CommandBar {
 
             f.render_widget(
                 Paragraph::new(
-                    vec![Text::Raw(Cow::from(if self.expanded {
+                    vec![Span::raw(Cow::from(if self.expanded {
                         "less [.]"
                     } else {
                         "more [.]"

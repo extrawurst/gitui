@@ -20,10 +20,10 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    widgets::Text,
+    text::Span,
     Frame,
 };
-
+//::Span
 enum Detail {
     Author,
     Date,
@@ -122,7 +122,7 @@ impl DetailsComponent {
 
     fn get_theme_for_line(&self, bold: bool) -> Style {
         if bold {
-            self.theme.text(true, false).modifier(Modifier::BOLD)
+            self.theme.text(true, false).add_modifier(Modifier::BOLD)
         } else {
             self.theme.text(true, false)
         }
@@ -132,8 +132,8 @@ impl DetailsComponent {
         &self,
         width: usize,
         height: usize,
-    ) -> Vec<Text> {
-        let newline = Text::Styled(
+    ) -> Vec<Span> {
+        let newline = Span::styled::<String>(
             String::from("\n").into(),
             self.theme.text(true, false),
         );
@@ -148,7 +148,7 @@ impl DetailsComponent {
             .skip(self.scroll_top.get())
             .take(height)
             .map(|(i, line)| {
-                Text::Styled(
+                Span::styled(
                     line.clone(),
                     self.get_theme_for_line(i < wrapped_title.len()),
                 )
@@ -157,27 +157,27 @@ impl DetailsComponent {
             .collect()
     }
 
-    fn style_detail(&self, field: &Detail) -> Text {
+    fn style_detail(&self, field: &Detail) -> Span {
         match field {
-            Detail::Author => Text::Styled(
+            Detail::Author => Span::styled(
                 Cow::from(strings::commit::details_author(
                     &self.key_config,
                 )),
                 self.theme.text(false, false),
             ),
-            Detail::Date => Text::Styled(
+            Detail::Date => Span::styled(
                 Cow::from(strings::commit::details_date(
                     &self.key_config,
                 )),
                 self.theme.text(false, false),
             ),
-            Detail::Commiter => Text::Styled(
+            Detail::Commiter => Span::styled(
                 Cow::from(strings::commit::details_committer(
                     &self.key_config,
                 )),
                 self.theme.text(false, false),
             ),
-            Detail::Sha => Text::Styled(
+            Detail::Sha => Span::styled(
                 Cow::from(strings::commit::details_tags(
                     &self.key_config,
                 )),
@@ -186,13 +186,13 @@ impl DetailsComponent {
         }
     }
 
-    fn get_text_info(&self) -> Vec<Text> {
-        let new_line = Text::Raw(Cow::from("\n"));
+    fn get_text_info(&self) -> Vec<Span> {
+        let new_line = Span::raw(Cow::from("\n"));
 
         if let Some(ref data) = self.data {
             let mut res = vec![
                 self.style_detail(&Detail::Author),
-                Text::Styled(
+                Span::styled(
                     Cow::from(format!(
                         "{} <{}>",
                         data.author.name, data.author.email
@@ -201,7 +201,7 @@ impl DetailsComponent {
                 ),
                 new_line.clone(),
                 self.style_detail(&Detail::Date),
-                Text::Styled(
+                Span::styled(
                     Cow::from(time_to_string(
                         data.author.time,
                         false,
@@ -214,7 +214,7 @@ impl DetailsComponent {
             if let Some(ref committer) = data.committer {
                 res.extend(vec![
                     self.style_detail(&Detail::Commiter),
-                    Text::Styled(
+                    Span::styled(
                         Cow::from(format!(
                             "{} <{}>",
                             committer.name, committer.email
@@ -223,7 +223,7 @@ impl DetailsComponent {
                     ),
                     new_line.clone(),
                     self.style_detail(&Detail::Date),
-                    Text::Styled(
+                    Span::styled(
                         Cow::from(time_to_string(
                             committer.time,
                             false,
@@ -235,13 +235,13 @@ impl DetailsComponent {
             }
 
             res.extend(vec![
-                Text::Styled(
+                Span::styled(
                     Cow::from(strings::commit::details_sha(
                         &self.key_config,
                     )),
                     self.theme.text(false, false),
                 ),
-                Text::Styled(
+                Span::styled(
                     Cow::from(data.hash.clone()),
                     self.theme.text(true, false),
                 ),
@@ -254,12 +254,12 @@ impl DetailsComponent {
                     self.tags
                         .iter()
                         .map(|tag| {
-                            Text::Styled(
+                            Span::styled(
                                 Cow::from(tag),
                                 self.theme.text(true, false),
                             )
                         })
-                        .intersperse(Text::Styled(
+                        .intersperse(Span::styled(
                             Cow::from(","),
                             self.theme.text(true, false),
                         )),

@@ -18,7 +18,8 @@ use std::{
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, Borders, Paragraph, Text},
+    text::Span,
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -181,7 +182,7 @@ impl CommitList {
     fn add_entry<'b>(
         e: &'b LogEntry,
         selected: bool,
-        txt: &mut Vec<Text<'b>>,
+        txt: &mut Vec<Span<'b>>,
         tags: Option<String>,
         theme: &Theme,
         width: usize,
@@ -190,10 +191,10 @@ impl CommitList {
 
         let splitter_txt = Cow::from(" ");
         let splitter =
-            Text::Styled(splitter_txt, theme.text(true, selected));
+            Span::styled(splitter_txt, theme.text(true, selected));
 
         // commit hash
-        txt.push(Text::Styled(
+        txt.push(Span::styled(
             Cow::from(e.hash_short.as_str()),
             theme.commit_hash(selected),
         ));
@@ -201,7 +202,7 @@ impl CommitList {
         txt.push(splitter.clone());
 
         // commit timestamp
-        txt.push(Text::Styled(
+        txt.push(Span::styled(
             Cow::from(e.time.as_str()),
             theme.commit_time(selected),
         ));
@@ -213,15 +214,15 @@ impl CommitList {
         let author = string_width_align(&e.author, author_width);
 
         // commit author
-        txt.push(Text::Styled(
-            author.into(),
+        txt.push(Span::styled::<String>(
+            author,
             theme.commit_author(selected),
         ));
 
         txt.push(splitter.clone());
 
         // commit tags
-        txt.push(Text::Styled(
+        txt.push(Span::styled(
             Cow::from(if let Some(tags) = tags {
                 format!(" {}", tags)
             } else {
@@ -233,14 +234,14 @@ impl CommitList {
         txt.push(splitter);
 
         // commit msg
-        txt.push(Text::Styled(
+        txt.push(Span::styled(
             Cow::from(e.msg.as_str()),
             theme.text(true, selected),
         ));
-        txt.push(Text::Raw(Cow::from("\n")));
+        txt.push(Span::raw(Cow::from("\n")));
     }
 
-    fn get_text(&self, height: usize, width: usize) -> Vec<Text> {
+    fn get_text(&self, height: usize, width: usize) -> Vec<Span> {
         let selection = self.relative_selection();
 
         let mut txt = Vec::with_capacity(height * ELEMENTS_PER_LINE);
@@ -310,13 +311,12 @@ impl DrawableComponent for CommitList {
         );
 
         f.render_widget(
-            Paragraph::new(
+            Paragraph::new(tui::text::Spans::from(
                 self.get_text(
                     height_in_lines,
                     current_size.0 as usize,
-                )
-                .iter(),
-            )
+                ),
+            ))
             .block(
                 Block::default()
                     .borders(Borders::ALL)

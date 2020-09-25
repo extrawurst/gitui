@@ -21,7 +21,7 @@ use anyhow::Result;
 use crossterm::event::Event;
 
 pub use changes::ChangesComponent;
-pub use command::{CommandInfo, CommandText};
+pub use command::{CommandInfo, CommandSpan};
 pub use commit::CommitComponent;
 pub use commit_details::CommitDetailsComponent;
 pub use commitlist::CommitList;
@@ -36,14 +36,15 @@ pub use push::PushComponent;
 pub use reset::ResetComponent;
 pub use stashmsg::StashMsgComponent;
 pub use tag_commit::TagCommitComponent;
-pub use textinput::TextInputComponent;
+pub use textinput::SpanInputComponent;
 pub use utils::filetree::FileTreeItemKind;
 
 use crate::ui::style::Theme;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, BorderType, Borders, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, BorderType, Borders, Paragraph, Wrap},
     Frame,
 };
 
@@ -183,16 +184,13 @@ pub trait Component {
     }
 }
 
-fn dialog_paragraph<'a, 't, T>(
+fn dialog_paragraph<'a>(
     title: &'a str,
-    content: T,
+    content: Vec<Span<'a>>,
     theme: &Theme,
     focused: bool,
-) -> Paragraph<'a, 't, T>
-where
-    T: Iterator<Item = &'t Text<'t>>,
-{
-    Paragraph::new(content)
+) -> Paragraph<'a> {
+    Paragraph::new(Spans::from(content))
         .block(
             Block::default()
                 .title(title)
@@ -203,16 +201,13 @@ where
         .alignment(Alignment::Left)
 }
 
-fn popup_paragraph<'a, 't, T>(
+fn popup_paragraph<'a>(
     title: &'a str,
-    content: T,
+    content: Vec<Span<'a>>,
     theme: &Theme,
     focused: bool,
-) -> Paragraph<'a, 't, T>
-where
-    T: Iterator<Item = &'t Text<'t>>,
-{
-    Paragraph::new(content)
+) -> Paragraph<'a> {
+    Paragraph::new(Spans::from(content))
         .block(
             Block::default()
                 .title(title)
@@ -222,5 +217,5 @@ where
                 .border_style(theme.block(focused)),
         )
         .alignment(Alignment::Left)
-        .wrap(true)
+        .wrap(Wrap { trim: true })
 }
