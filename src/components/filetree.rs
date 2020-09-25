@@ -244,34 +244,30 @@ impl FileTreeComponent {
             });
 
             let mut idx_temp = index;
-            if index < (tree_items.len().saturating_sub(2)) {
-                while idx_temp < (tree_items.len().saturating_sub(2))
-                    && tree_items[idx_temp].info.indent
-                        < tree_items[idx_temp + 1].info.indent
-                    && tree_items[idx_temp + 1].info.indent
-                        < tree_items[idx_temp + 2].info.indent
-                {
-                    // fold up the folder/file
-                    idx_temp += 1;
-                    should_skip_over += 1;
-                    // check if there is another folder or file at the same level
-                    if self.tree.tree.multiple_items_at_path(idx_temp)
-                    {
-                        // don't fold up
-                        should_skip_over -= 1;
-                        break;
-                    } else {
-                        // There is only one item at this level (i.e only one folder in the folder),
-                        // so do fold up
-                        let vec_draw_text_info_len =
-                            vec_draw_text_info.len();
-                        vec_draw_text_info
-                            [vec_draw_text_info_len - 1]
-                            .name += &(String::from("/")
-                            + &tree_items[idx_temp].info.path);
-                        if index_above_select {
-                            selection_offset += 1;
-                        }
+            while idx_temp < (tree_items.len().saturating_sub(2))
+                && tree_items[idx_temp].info.indent
+                    < tree_items[idx_temp + 1].info.indent
+                && tree_items[idx_temp + 1].info.indent
+                    < tree_items[idx_temp + 2].info.indent
+            {
+                // fold up the folder/file
+                idx_temp += 1;
+                should_skip_over += 1;
+                // check if there is another folder or file at the same level
+                if self.tree.tree.multiple_items_at_path(idx_temp) {
+                    // don't fold up
+                    should_skip_over -= 1;
+                    break;
+                } else {
+                    // There is only one item at this level (i.e only one folder in the folder),
+                    // so do fold up
+                    let vec_draw_text_info_len =
+                        vec_draw_text_info.len();
+                    vec_draw_text_info[vec_draw_text_info_len - 1]
+                        .name += &(String::from("/")
+                        + &tree_items[idx_temp].info.path);
+                    if index_above_select {
+                        selection_offset += 1;
                     }
                 }
             }

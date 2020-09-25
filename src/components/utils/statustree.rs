@@ -86,22 +86,20 @@ impl StatusTree {
             }
             let mut idx_temp = index;
             vec_available_selections.push(index);
-            if index < (tree_items.len().saturating_sub(2)) {
-                while idx_temp < (tree_items.len().saturating_sub(2))
-                    && tree_items[idx_temp].info.indent
-                        < tree_items[idx_temp + 1].info.indent
-                    && tree_items[idx_temp + 1].info.indent
-                        < tree_items[idx_temp + 2].info.indent
-                {
-                    // fold up the folder/file
-                    idx_temp += 1;
-                    should_skip_over += 1;
+            while idx_temp < (tree_items.len().saturating_sub(2))
+                && tree_items[idx_temp].info.indent
+                    < tree_items[idx_temp + 1].info.indent
+                && tree_items[idx_temp + 1].info.indent
+                    < tree_items[idx_temp + 2].info.indent
+            {
+                // fold up the folder/file
+                idx_temp += 1;
+                should_skip_over += 1;
 
-                    if self.tree.multiple_items_at_path(idx_temp) {
-                        // don't fold up
-                        should_skip_over -= 1;
-                        break;
-                    }
+                if self.tree.multiple_items_at_path(idx_temp) {
+                    // don't fold up
+                    should_skip_over -= 1;
+                    break;
                 }
             }
         }
