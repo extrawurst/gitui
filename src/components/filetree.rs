@@ -251,13 +251,11 @@ impl FileTreeComponent {
                     && tree_items[idx_temp + 1].info.indent
                         < tree_items[idx_temp + 2].info.indent
                 {
-                    // fold up the folder/file
-                    // because there is only one in the directory
+                    // fold up the folder/file because there is only one in the directory
                     idx_temp += 1;
                     should_skip_over += 1;
 
-                    // check if there is another folder or file at the
-                    // same level, if there is, don't fold up
+                    // check if there is another folder or file at the same level, if there is, don't fold up
                     let mut idx_temp_inner;
                     if idx_temp + 2 < tree_items.len() {
                         idx_temp_inner = idx_temp + 1;
@@ -276,13 +274,11 @@ impl FileTreeComponent {
                     if tree_items[idx_temp_inner].info.indent
                         == tree_items[idx_temp].info.indent
                     {
-                        // there is another folder or file at the same level,
-                        // so don't fold up, it should be on its own line
+                        // there is another folder or file at the same level, so don't fold up, it should be on its own line
                         should_skip_over -= 1;
                         break;
                     } else {
-                        // There is only one item at this level
-                        // (i.e only one folder in the folder),
+                        // There is only one item at this level (i.e only one folder in the folder),
                         // so do fold up
                         let vec_draw_text_info_len =
                             vec_draw_text_info.len();
