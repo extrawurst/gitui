@@ -791,8 +791,7 @@ mod tests {
 
         let mut res = StatusTree::default();
         res.update(&items).unwrap();
-
-        assert!(res.move_selection(MoveSelection::Down));
+        res.selection = Some(1);
 
         assert!(res.move_selection(MoveSelection::Down));
         assert_eq!(res.selection, Some(3));
@@ -808,5 +807,29 @@ mod tests {
 
         assert!(res.move_selection(MoveSelection::Down));
         assert_eq!(res.selection, Some(9));
+    }
+
+    #[test]
+    fn test_folders_fold_up_if_alone_in_directory_2() {
+        let items = string_vec_to_status(&["a/b/c/d/e/f/g/h"]);
+
+        //0 a/
+        //1   b/
+        //2     c/
+        //3       d/
+        //4         e/
+        //5           f/
+        //6             g/
+        //7               h
+
+        //0 a/b/c/d/e/f/g/
+        //7               h
+
+        let mut res = StatusTree::default();
+        res.update(&items).unwrap();
+        res.selection = Some(1);
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(7));
     }
 }
