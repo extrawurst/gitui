@@ -145,7 +145,7 @@ impl FileTreeComponent {
         }
     }
 
-    fn item_to_text_simple<'b>(
+    fn item_to_text<'b>(
         string: &str,
         indent: usize,
         visible: bool,
@@ -351,7 +351,7 @@ impl DrawableComponent for FileTreeComponent {
                 .iter()
                 .enumerate()
                 .filter_map(|(index, draw_text_info)| {
-                    Self::item_to_text_simple(
+                    Self::item_to_text(
                         &draw_text_info.name,
                         draw_text_info.indent as usize,
                         draw_text_info.visible,
