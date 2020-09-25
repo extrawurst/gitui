@@ -422,4 +422,27 @@ mod tests {
             1
         );
     }
+
+    #[test]
+    fn test_multiple_items_at_path() {
+        //0 a/
+        //1   b/
+        //2     c/
+        //3       d
+        //4     e/
+        //5       f
+
+        let res = FileTreeItems::new(
+            &string_vec_to_status(&[
+                "a/b/c/d", //
+                "a/b/e/f", //
+            ]),
+            &BTreeSet::new(),
+        )
+        .unwrap();
+
+        assert_eq!(res.multiple_items_at_path(0), false);
+        assert_eq!(res.multiple_items_at_path(1), false);
+        assert_eq!(res.multiple_items_at_path(2), true);
+    }
 }
