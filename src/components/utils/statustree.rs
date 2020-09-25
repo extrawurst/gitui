@@ -70,11 +70,10 @@ impl StatusTree {
         Ok(())
     }
 
-    /// Return which indices can be selected taking into account that
+    /// Return which indices can be selected, taking into account that
     /// some folders may be folded up into their parent
     ///
-    /// It should be impossible to select a folder
-    /// which has been folded into its parent
+    /// It should be impossible to select a folder which has been folded into its parent
     fn setup_available_selections(&self) -> Vec<usize> {
         // use the same algorithm as in filetree build_vec_text_for_drawing function
         let mut should_skip_over: usize = 0;
@@ -95,36 +94,13 @@ impl StatusTree {
                         < tree_items[idx_temp + 2].info.indent
                 {
                     // fold up the folder/file
-                    // because there is only one in the directory
                     idx_temp += 1;
                     should_skip_over += 1;
 
-                    // check if there is another folder or file at the
-                    // same level, if there is, don't fold up
-                    let mut idx_temp_inner;
-                    if idx_temp + 2 < tree_items.len() {
-                        idx_temp_inner = idx_temp + 1;
-                        while tree_items[idx_temp].info.indent
-                            < tree_items[idx_temp_inner].info.indent
-                        {
-                            idx_temp_inner += 1;
-                            if idx_temp_inner == tree_items.len() - 1
-                            {
-                                break;
-                            }
-                        }
-                    } else {
-                        idx_temp_inner = idx_temp;
-                    }
-                    if tree_items[idx_temp_inner].info.indent
-                        == tree_items[idx_temp].info.indent
-                    {
-                        // there is another folder or file at the same level, so don't fold up
+                    if self.tree.multiple_items_at_path(idx_temp) {
+                        // don't fold up
                         should_skip_over -= 1;
                         break;
-                    } else {
-                        // There is only one item at this level (in the folder)
-                        // so do fold up if this were a file or folder
                     }
                 }
             }

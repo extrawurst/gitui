@@ -232,6 +232,32 @@ impl FileTreeItems {
 
         Ok(())
     }
+
+    pub fn multiple_items_at_path(&self, index: usize) -> bool {
+        let tree_items = self.items();
+        let mut idx_temp_inner;
+        if index + 2 < tree_items.len() {
+            idx_temp_inner = index + 1;
+            while tree_items[index].info.indent
+                < tree_items[idx_temp_inner].info.indent
+            {
+                idx_temp_inner += 1;
+                if idx_temp_inner == tree_items.len() - 1 {
+                    break;
+                }
+            }
+        } else {
+            idx_temp_inner = index;
+        }
+
+        if tree_items[idx_temp_inner].info.indent
+            == tree_items[index].info.indent
+        {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl IndexMut<usize> for FileTreeItems {

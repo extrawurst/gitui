@@ -251,30 +251,13 @@ impl FileTreeComponent {
                     && tree_items[idx_temp + 1].info.indent
                         < tree_items[idx_temp + 2].info.indent
                 {
-                    // fold up the folder/file because there is only one in the directory
+                    // fold up the folder/file
                     idx_temp += 1;
                     should_skip_over += 1;
-
-                    // check if there is another folder or file at the same level, if there is, don't fold up
-                    let mut idx_temp_inner;
-                    if idx_temp + 2 < tree_items.len() {
-                        idx_temp_inner = idx_temp + 1;
-                        while tree_items[idx_temp].info.indent
-                            < tree_items[idx_temp_inner].info.indent
-                        {
-                            idx_temp_inner += 1;
-                            if idx_temp_inner == tree_items.len() - 1
-                            {
-                                break;
-                            }
-                        }
-                    } else {
-                        idx_temp_inner = idx_temp;
-                    }
-                    if tree_items[idx_temp_inner].info.indent
-                        == tree_items[idx_temp].info.indent
+                    // check if there is another folder or file at the same level
+                    if self.tree.tree.multiple_items_at_path(idx_temp)
                     {
-                        // there is another folder or file at the same level, so don't fold up, it should be on its own line
+                        // don't fold up
                         should_skip_over -= 1;
                         break;
                     } else {
