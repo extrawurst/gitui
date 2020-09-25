@@ -86,18 +86,25 @@ impl StatusTree {
             }
             let mut idx_temp = index;
             vec_available_selections.push(index);
-            while idx_temp < (tree_items.len().saturating_sub(2))
+
+            while idx_temp < tree_items.len().saturating_sub(2)
                 && tree_items[idx_temp].info.indent
                     < tree_items[idx_temp + 1].info.indent
-                && tree_items[idx_temp + 1].info.indent
-                    < tree_items[idx_temp + 2].info.indent
             {
                 // fold up the folder/file
                 idx_temp += 1;
                 should_skip_over += 1;
 
+                // don't fold files up
+                if let FileTreeItemKind::File(_) =
+                    &tree_items[idx_temp].kind
+                {
+                    should_skip_over -= 1;
+                    break;
+                }
+
+                // don't fold up if more than one folder in folder
                 if self.tree.multiple_items_at_path(idx_temp) {
-                    // don't fold up
                     should_skip_over -= 1;
                     break;
                 }

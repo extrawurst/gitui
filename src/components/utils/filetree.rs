@@ -238,16 +238,14 @@ impl FileTreeItems {
         let mut idx_temp_inner;
         if index + 2 < tree_items.len() {
             idx_temp_inner = index + 1;
-            while tree_items[index].info.indent
-                < tree_items[idx_temp_inner].info.indent
+            while idx_temp_inner < tree_items.len().saturating_sub(1)
+                && tree_items[index].info.indent
+                    < tree_items[idx_temp_inner].info.indent
             {
                 idx_temp_inner += 1;
-                if idx_temp_inner == tree_items.len() - 1 {
-                    break;
-                }
             }
         } else {
-            idx_temp_inner = index;
+            return false;
         }
 
         if tree_items[idx_temp_inner].info.indent
