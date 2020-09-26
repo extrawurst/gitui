@@ -11,7 +11,7 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::{Span, Spans},
+    text::{Span, Spans, Text},
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
@@ -63,8 +63,8 @@ impl DrawableComponent for HelpComponent {
                 .split(area);
 
             f.render_widget(
-                Paragraph::new(Spans::from(self.get_text()))
-                    .scroll((0, scroll))
+                Paragraph::new(self.get_text())
+                    .scroll((scroll, 0))
                     .alignment(Alignment::Left),
                 chunks[0],
             );
@@ -204,50 +204,113 @@ impl HelpComponent {
         }
     }
 
-    fn get_text(&self) -> Vec<Span> {
-        let mut txt = Vec::new();
+    fn get_text(&self) -> Vec<Spans> {
+        let mut txt: Vec<Spans> = Vec::new();
 
         let mut processed = 0_u16;
 
         for (key, group) in
             &self.cmds.iter().group_by(|e| e.text.group)
         {
-            txt.push(Span::styled(
-                Cow::from(format!("{}\n", key)),
+            txt.push(Spans::from(Span::styled(
+                Cow::from(format!("{}", key)),
                 Style::default().add_modifier(Modifier::REVERSED),
-            ));
+            )));
 
-            txt.extend(
+            //for key in
+            for command_info in group {
+                let is_selected = self.selection == processed;
+
+                processed += 1;
+
+                txt.push(Spans::from(Span::styled(
+                    Cow::from(if is_selected {
+                        format!(">{}", command_info.text.name)
+                    } else {
+                        format!(" {}", command_info.text.name)
+                    }),
+                    self.theme.text(true, is_selected),
+                )));
+
+                if is_selected {
+                    txt.push(Spans::from(Span::styled(
+                        Cow::from(format!(
+                            "  {}\n",
+                            command_info.text.desc
+                        )),
+                        self.theme.text(true, is_selected),
+                    )));
+                }
+            }
+
+            /*txt.extend(
                 group
                     .sorted_by_key(|e| e.order)
                     .map(|e| {
-                        let is_selected = self.selection == processed;
+                        vec![
+                            ({
+                                let is_selected =
+                                    self.selection == processed;
 
-                        processed += 1;
+                                processed += 1;
 
-                        let mut out = String::from(if is_selected {
-                            ">"
-                        } else {
-                            " "
-                        });
+                                let mut spans: Vec<Spans> =
+                                    Vec::new();
 
-                        e.print(&mut out);
-                        out.push('\n');
+                                spans.push(Spans::from(
+                                    Span::styled(
+                                        Cow::from(if is_selected {
+                                            format!(
+                                                ">{}",
+                                                e.text.name
+                                            )
+                                        } else {
+                                            format!(
+                                                " {}",
+                                                e.text.name
+                                            )
+                                        }),
+                                        self.theme
+                                            .text(true, is_selected),
+                                    ),
+                                ));
 
-                        if is_selected {
-                            out.push_str(
-                                format!("  {}\n", e.text.desc)
-                                    .as_str(),
-                            );
-                        }
+                                /*let mut out =
+                                    String::from(if is_selected {
+                                        ">"
+                                    } else {
+                                        " "
+                                    });
 
-                        Span::styled(
-                            Cow::from(out),
-                            self.theme.text(true, is_selected),
-                        )
+                                e.print(&mut out);
+                                out.push('\n');*/
+
+                                //let name = e.text
+
+                                if is_selected {
+                                    spans.push(Spans::from(
+                                        Span::styled(
+                                            Cow::from(format!(
+                                                "  {}\n",
+                                                e.text.desc
+                                            )),
+                                            self.theme.text(
+                                                true,
+                                                is_selected,
+                                            ),
+                                        ),
+                                    ));
+                                    /*out.push_str(
+                                        format!("  {}\n", e.text.desc)
+                                            .as_str(),
+                                    );*/
+                                }
+                                spans
+                            }),
+                        ]
                     })
                     .collect::<Vec<_>>(),
-            );
+            );*/
         }
 
         txt

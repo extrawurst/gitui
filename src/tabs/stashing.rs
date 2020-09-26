@@ -102,7 +102,7 @@ impl Stashing {
         Ok(())
     }
 
-    fn get_option_text(&self) -> Vec<Span> {
+    fn get_option_text(&self) -> Vec<Spans> {
         let bracket_open = Span::raw(Cow::from("["));
         let bracket_close = Span::raw(Cow::from("]"));
         let option_on =
@@ -112,22 +112,26 @@ impl Stashing {
             Span::styled(Cow::from("_"), self.theme.option(false));
 
         vec![
-            bracket_open.clone(),
-            if self.options.stash_untracked {
-                option_on.clone()
-            } else {
-                option_off.clone()
-            },
-            bracket_close.clone(),
-            Span::raw(Cow::from(" stash untracked\n")),
-            bracket_open,
-            if self.options.keep_index {
-                option_on.clone()
-            } else {
-                option_off.clone()
-            },
-            bracket_close,
-            Span::raw(Cow::from(" keep index")),
+            Spans::from(vec![
+                bracket_open.clone(),
+                if self.options.stash_untracked {
+                    option_on.clone()
+                } else {
+                    option_off.clone()
+                },
+                bracket_close.clone(),
+                Span::raw(Cow::from(" stash untracked")),
+            ]),
+            Spans::from(vec![
+                bracket_open,
+                if self.options.keep_index {
+                    option_on.clone()
+                } else {
+                    option_off.clone()
+                },
+                bracket_close,
+                Span::raw(Cow::from(" keep index")),
+            ]),
         ]
     }
 }
@@ -153,7 +157,7 @@ impl DrawableComponent for Stashing {
             .split(chunks[1]);
 
         f.render_widget(
-            Paragraph::new(Spans::from(self.get_option_text()))
+            Paragraph::new(self.get_option_text())
                 .block(Block::default().borders(Borders::ALL).title(
                     strings::stashing_options_title(&self.key_config),
                 ))

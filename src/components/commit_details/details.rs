@@ -14,6 +14,7 @@ use asyncgit::{
 };
 use crossterm::event::Event;
 use itertools::Itertools;
+use std::clone::Clone;
 use std::{borrow::Cow, cell::Cell};
 use sync::CommitTags;
 use tui::{
@@ -23,7 +24,6 @@ use tui::{
     text::Span,
     Frame,
 };
-//::Span
 enum Detail {
     Author,
     Date,
@@ -323,7 +323,10 @@ impl DrawableComponent for DetailsComponent {
                 &strings::commit::details_info_title(
                     &self.key_config,
                 ),
-                self.get_text_info().iter(),
+                self.get_text_info()
+                    .iter()
+                    .map(Clone::clone)
+                    .collect::<Vec<Span>>(),
                 &self.theme,
                 false,
             ),
@@ -349,7 +352,10 @@ impl DrawableComponent for DetailsComponent {
                 &strings::commit::details_message_title(
                     &self.key_config,
                 ),
-                wrapped_lines.iter(),
+                wrapped_lines
+                    .iter()
+                    .map(Clone::clone)
+                    .collect::<Vec<Span>>(),
                 &self.theme,
                 self.focused,
             ),

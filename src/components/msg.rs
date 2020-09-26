@@ -33,12 +33,17 @@ impl DrawableComponent for MsgComponent {
         if !self.visible {
             return Ok(());
         }
-        let txt = vec![Span::raw(Cow::from(self.msg.as_str()))];
+        let txt = Spans::from(
+            self.msg
+                .split('\n')
+                .map(|string| Span::raw::<String>(string.to_string()))
+                .collect::<Vec<Span>>(),
+        );
 
         let area = ui::centered_rect_absolute(65, 25, f.size());
         f.render_widget(Clear, area);
         f.render_widget(
-            Paragraph::new(Spans::from(txt))
+            Paragraph::new(txt)
                 .block(
                     Block::default()
                         .title(self.title.as_str())

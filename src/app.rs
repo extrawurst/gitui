@@ -27,6 +27,7 @@ use std::{
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Margin, Rect},
+    text::{Span, Spans},
     widgets::{Block, Borders, Tabs},
     Frame,
 };
@@ -599,24 +600,27 @@ impl App {
             horizontal: 1,
         });
 
-        let tabs = &[
-            strings::tab_status(&self.key_config),
-            strings::tab_log(&self.key_config),
-            strings::tab_stashing(&self.key_config),
-            strings::tab_stashes(&self.key_config),
-        ];
+        let tabs = [
+            Span::raw(strings::tab_status(&self.key_config)),
+            Span::raw(strings::tab_log(&self.key_config)),
+            Span::raw(strings::tab_stashing(&self.key_config)),
+            Span::raw(strings::tab_stashes(&self.key_config)),
+        ]
+        .iter()
+        .cloned()
+        .map(Spans::from)
+        .collect();
 
         f.render_widget(
-            Tabs::default()
+            Tabs::new(tabs)
                 .block(
                     Block::default()
                         .borders(Borders::BOTTOM)
                         .border_style(self.theme.block(false)),
                 )
-                .titles(tabs)
                 .style(self.theme.tab(false))
                 .highlight_style(self.theme.tab(true))
-                .divider(&strings::tab_divider(&self.key_config))
+                .divider(strings::tab_divider(&self.key_config))
                 .select(self.tab),
             r,
         );

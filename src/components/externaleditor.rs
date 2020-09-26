@@ -100,9 +100,14 @@ impl DrawableComponent for ExternalEditorComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let txt = vec![Span::raw::<String>(
-                strings::msg_opening_editor(&self.key_config),
-            )];
+            let txt = Spans::from(
+                strings::msg_opening_editor(&self.key_config)
+                    .split('\n')
+                    .map(|string| {
+                        Span::raw::<String>(string.to_string())
+                    })
+                    .collect::<Vec<Span>>(),
+            );
 
             let area = ui::centered_rect_absolute(25, 3, f.size());
             f.render_widget(Clear, area);

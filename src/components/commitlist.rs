@@ -238,7 +238,7 @@ impl CommitList {
             Cow::from(e.msg.as_str()),
             theme.text(true, selected),
         ));
-        txt.push(Span::raw(Cow::from("\n")));
+        //txt.push(Span::raw(Cow::from("\n")));
     }
 
     fn get_text(&self, height: usize, width: usize) -> Vec<Span> {

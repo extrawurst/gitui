@@ -65,7 +65,7 @@ impl Theme {
 
     pub fn title(&self, focused: bool) -> Style {
         if focused {
-            Style::default().modifier(Modifier::BOLD)
+            Style::default().add_modifier(Modifier::BOLD)
         } else {
             Style::default().fg(self.disabled_fg)
         }
@@ -73,7 +73,9 @@ impl Theme {
 
     pub fn tab(&self, selected: bool) -> Style {
         if selected {
-            self.text(true, false).modifier(Modifier::UNDERLINED)
+            self.text(true, false)
+                .fg(Color::White)
+                .add_modifier(Modifier::UNDERLINED)
         } else {
             self.text(false, false)
         }
@@ -82,7 +84,7 @@ impl Theme {
     pub fn tags(&self, selected: bool) -> Style {
         Style::default()
             .fg(self.selected_tab)
-            .modifier(Modifier::BOLD)
+            .add_modifier(Modifier::BOLD)
             .bg(if selected {
                 self.selection_bg
             } else {
@@ -120,11 +122,7 @@ impl Theme {
         self.apply_select(style, selected)
     }
 
-    const fn apply_select(
-        &self,
-        style: Style,
-        selected: bool,
-    ) -> Style {
+    fn apply_select(&self, style: Style, selected: bool) -> Style {
         if selected {
             style.bg(self.selection_bg)
         } else {
@@ -162,7 +160,7 @@ impl Theme {
             }
             DiffLineType::Header => Style::default()
                 .fg(self.disabled_fg)
-                .modifier(Modifier::BOLD),
+                .add_modifier(Modifier::BOLD),
             DiffLineType::None => Style::default().fg(if selected {
                 self.command_fg
             } else {

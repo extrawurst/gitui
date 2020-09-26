@@ -6,7 +6,8 @@ use std::borrow::Cow;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Paragraph, Span},
+    text::{Span, Spans},
+    widgets::Paragraph,
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -148,21 +149,38 @@ impl CommandBar {
 
         let texts = self
             .draw_list
-            .iter()
-            .map(|c| match c {
-                DrawListEntry::Command(c) => Span::styled(
-                    Cow::from(c.txt.as_str()),
-                    self.theme.commandbar(c.enabled, c.line),
-                ),
-                DrawListEntry::LineBreak => {
-                    Span::raw(Cow::from("\n"))
-                }
-                DrawListEntry::Splitter => splitter.clone(),
+            .split(|c| match c {
+                DrawListEntry::LineBreak => true,
+                _ => false,
             })
-            .collect::<Vec<_>>();
+            .map(|c_arr| {
+                Spans::from(
+                    c_arr
+                        .iter()
+                        .map(|c| match c {
+                            DrawListEntry::Command(c) => {
+                                Span::styled(
+                                    Cow::from(c.txt.as_str()),
+                                    self.theme.commandbar(
+                                        c.enabled, c.line,
+                                    ),
+                                )
+                            }
+                            DrawListEntry::LineBreak => {
+                                // Doesn't exist in split array
+                                Span::raw("")
+                            }
+                            DrawListEntry::Splitter => {
+                                splitter.clone()
+                            }
+                        })
+                        .collect::<Vec<Span>>(),
+                )
+            })
+            .collect::<Vec<Spans>>();
 
         f.render_widget(
-            Paragraph::new(texts.iter()).alignment(Alignment::Left),
+            Paragraph::new(texts).alignment(Alignment::Left),
             r,
         );
 
@@ -175,14 +193,13 @@ impl CommandBar {
             );
 
             f.render_widget(
-                Paragraph::new(
-                    vec![Span::raw(Cow::from(if self.expanded {
+                Paragraph::new(Spans::from(vec![Span::raw(
+                    Cow::from(if self.expanded {
                         "less [.]"
                     } else {
                         "more [.]"
-                    }))]
-                    .iter(),
-                )
+                    }),
+                )]))
                 .alignment(Alignment::Right),
                 r,
             );

@@ -6,7 +6,7 @@ use tui::{
     layout::Rect,
     style::Style,
     text::Span,
-    widgets::{Block, Borders, List, Widget},
+    widgets::{Block, Borders, List, ListItem, Widget},
     Frame,
 };
 
@@ -54,10 +54,14 @@ where
 {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Render items
-        List::new(self.items)
-            .block(self.block.unwrap_or_default())
-            .style(self.style)
-            .render(area, buf);
+        List::new(
+            self.items
+                .map(|span| ListItem::new(span))
+                .collect::<Vec<ListItem>>(),
+        )
+        .block(self.block.unwrap_or_default())
+        .style(self.style)
+        .render(area, buf);
     }
 }
 
