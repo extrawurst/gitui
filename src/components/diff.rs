@@ -716,34 +716,3 @@ impl Component for DiffComponent {
         self.focused = focus
     }
 }
-/* This test no longer applies because there should be no line endings
-This is done by having multiple spans since tui 0.11
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_lineendings() {
-        let mut text = Vec::new();
-        text.push(DiffComponent::get_line_to_add(
-            10,
-            &DiffLine {
-                content: String::from("line 1\r\n"),
-                line_type: DiffLineType::None,
-            },
-            false,
-            false,
-            false,
-            &SharedTheme::default(),
-        ));
-        assert_eq!(text.len(), 2);
-
-        assert_eq!(&text[1].content, "line 1\n");
-        /*if let Span::styled(c, _) = &text[1] {
-            assert_eq!(c, "line 1\n");
-        } else {
-            panic!("err")
-        }*/
-    }
-}
-*/
