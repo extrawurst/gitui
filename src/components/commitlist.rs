@@ -18,7 +18,7 @@ use std::{
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    text::Span,
+    text::{Span, Spans},
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
@@ -179,14 +179,14 @@ impl CommitList {
         self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
     }
 
-    fn add_entry<'b>(
-        e: &'b LogEntry,
+    fn get_entry_to_add<'a>(
+        e: &'a LogEntry,
         selected: bool,
-        txt: &mut Vec<Span<'b>>,
         tags: Option<String>,
         theme: &Theme,
         width: usize,
-    ) {
+    ) -> Spans<'a> {
+        let mut txt: Vec<Span> = Vec::new();
         txt.reserve(ELEMENTS_PER_LINE);
 
         let splitter_txt = Cow::from(" ");
@@ -238,13 +238,13 @@ impl CommitList {
             Cow::from(e.msg.as_str()),
             theme.text(true, selected),
         ));
-        //txt.push(Span::raw(Cow::from("\n")));
+        Spans::from(txt)
     }
 
-    fn get_text(&self, height: usize, width: usize) -> Vec<Span> {
+    fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
         let selection = self.relative_selection();
 
-        let mut txt = Vec::with_capacity(height * ELEMENTS_PER_LINE);
+        let mut txt: Vec<Spans> = Vec::with_capacity(height);
 
         for (idx, e) in self
             .items
@@ -258,15 +258,13 @@ impl CommitList {
                 .as_ref()
                 .and_then(|t| t.get(&e.id))
                 .map(|tags| tags.join(" "));
-
-            Self::add_entry(
+            txt.push(Self::get_entry_to_add(
                 e,
                 idx + self.scroll_top.get() == selection,
-                &mut txt,
                 tags,
                 &self.theme,
                 width,
-            );
+            ));
         }
 
         txt
@@ -311,12 +309,12 @@ impl DrawableComponent for CommitList {
         );
 
         f.render_widget(
-            Paragraph::new(tui::text::Spans::from(
+            Paragraph::new(
                 self.get_text(
                     height_in_lines,
                     current_size.0 as usize,
                 ),
-            ))
+            )
             .block(
                 Block::default()
                     .borders(Borders::ALL)
