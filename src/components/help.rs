@@ -217,7 +217,6 @@ impl HelpComponent {
                 Style::default().add_modifier(Modifier::REVERSED),
             )));
 
-            //for key in
             for command_info in group {
                 let is_selected = self.selection == processed;
 
@@ -242,75 +241,6 @@ impl HelpComponent {
                     )));
                 }
             }
-
-            /*txt.extend(
-                group
-                    .sorted_by_key(|e| e.order)
-                    .map(|e| {
-                        vec![
-                            ({
-                                let is_selected =
-                                    self.selection == processed;
-
-                                processed += 1;
-
-                                let mut spans: Vec<Spans> =
-                                    Vec::new();
-
-                                spans.push(Spans::from(
-                                    Span::styled(
-                                        Cow::from(if is_selected {
-                                            format!(
-                                                ">{}",
-                                                e.text.name
-                                            )
-                                        } else {
-                                            format!(
-                                                " {}",
-                                                e.text.name
-                                            )
-                                        }),
-                                        self.theme
-                                            .text(true, is_selected),
-                                    ),
-                                ));
-
-                                /*let mut out =
-                                    String::from(if is_selected {
-                                        ">"
-                                    } else {
-                                        " "
-                                    });
-
-                                e.print(&mut out);
-                                out.push('\n');*/
-
-                                //let name = e.text
-
-                                if is_selected {
-                                    spans.push(Spans::from(
-                                        Span::styled(
-                                            Cow::from(format!(
-                                                "  {}\n",
-                                                e.text.desc
-                                            )),
-                                            self.theme.text(
-                                                true,
-                                                is_selected,
-                                            ),
-                                        ),
-                                    ));
-                                    /*out.push_str(
-                                        format!("  {}\n", e.text.desc)
-                                            .as_str(),
-                                    );*/
-                                }
-                                spans
-                            }),
-                        ]
-                    })
-                    .collect::<Vec<_>>(),
-            );*/
         }
 
         txt
