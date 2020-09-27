@@ -7,9 +7,12 @@ pub fn copy_string(string: String) -> Result<()> {
     use anyhow::anyhow;
 
     let mut ctx: ClipboardContext = ClipboardProvider::new()
-        .map_err(|_| anyhow!("failed to get access to clipboard"))?;
-    ctx.set_contents(string)
-        .map_err(|_| anyhow!("failed to set clipboard contents"))?;
+        .map_err(|e| {
+            anyhow!("failed to get access to clipboard: {}", e)
+        })?;
+    ctx.set_contents(string).map_err(|e| {
+        anyhow!("failed to set clipboard contents: {}", e)
+    })?;
 
     Ok(())
 }
