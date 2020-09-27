@@ -185,27 +185,6 @@ impl FileTreeItems {
         self.file_count
     }
 
-    ///
-    pub(crate) fn find_parent_index(
-        &self,
-        path: &str,
-        index: usize,
-    ) -> usize {
-        if let Some(parent_path) = Path::new(path).parent() {
-            let parent_path =
-                parent_path.to_str().expect("invalid path");
-            for i in (0..=index).rev() {
-                let item = &self.items[i];
-                let item_path = &item.info.full_path;
-                if item_path == parent_path {
-                    return i;
-                }
-            }
-        }
-
-        0
-    }
-
     fn push_dirs<'a>(
         item_path: &'a Path,
         nodes: &mut Vec<FileTreeItem>,
@@ -231,6 +210,25 @@ impl FileTreeItems {
         }
 
         Ok(())
+    }
+
+    pub fn multiple_items_at_path(&self, index: usize) -> bool {
+        let tree_items = self.items();
+        let mut idx_temp_inner;
+        if index + 2 < tree_items.len() {
+            idx_temp_inner = index + 1;
+            while idx_temp_inner < tree_items.len().saturating_sub(1)
+                && tree_items[index].info.indent
+                    < tree_items[idx_temp_inner].info.indent
+            {
+                idx_temp_inner += 1;
+            }
+        } else {
+            return false;
+        }
+
+        tree_items[idx_temp_inner].info.indent
+            == tree_items[index].info.indent
     }
 }
 
@@ -378,24 +376,25 @@ mod tests {
     }
 
     #[test]
-    fn test_find_parent() {
+    fn test_multiple_items_at_path() {
         //0 a/
         //1   b/
-        //2     c
-        //3     d
+        //2     c/
+        //3       d
+        //4     e/
+        //5       f
 
         let res = FileTreeItems::new(
             &string_vec_to_status(&[
-                "a/b/c", //
-                "a/b/d", //
+                "a/b/c/d", //
+                "a/b/e/f", //
             ]),
             &BTreeSet::new(),
         )
         .unwrap();
 
-        assert_eq!(
-            res.find_parent_index(&String::from("a/b/c"), 3),
-            1
-        );
+        assert_eq!(res.multiple_items_at_path(0), false);
+        assert_eq!(res.multiple_items_at_path(1), false);
+        assert_eq!(res.multiple_items_at_path(2), true);
     }
 }

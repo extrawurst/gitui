@@ -10,6 +10,10 @@ use std::{cmp, collections::BTreeSet};
 pub struct StatusTree {
     pub tree: FileTreeItems,
     pub selection: Option<usize>,
+
+    // some folders may be folded up, this allows jumping
+    // over folders which are folded into their parent
+    pub available_selections: Vec<usize>,
 }
 
 ///
@@ -56,6 +60,7 @@ impl StatusTree {
         );
 
         self.update_visibility(None, 0, true);
+        self.available_selections = self.setup_available_selections();
 
         //NOTE: now that visibility is set we can make sure selection is visible
         if let Some(idx) = self.selection {
@@ -63,6 +68,49 @@ impl StatusTree {
         }
 
         Ok(())
+    }
+
+    /// Return which indices can be selected, taking into account that
+    /// some folders may be folded up into their parent
+    ///
+    /// It should be impossible to select a folder which has been folded into its parent
+    fn setup_available_selections(&self) -> Vec<usize> {
+        // use the same algorithm as in filetree build_vec_text_for_drawing function
+        let mut should_skip_over: usize = 0;
+        let mut vec_available_selections: Vec<usize> = vec![];
+        let tree_items = self.tree.items();
+        for index in 0..tree_items.len() {
+            if should_skip_over > 0 {
+                should_skip_over -= 1;
+                continue;
+            }
+            let mut idx_temp = index;
+            vec_available_selections.push(index);
+
+            while idx_temp < tree_items.len().saturating_sub(2)
+                && tree_items[idx_temp].info.indent
+                    < tree_items[idx_temp + 1].info.indent
+            {
+                // fold up the folder/file
+                idx_temp += 1;
+                should_skip_over += 1;
+
+                // don't fold files up
+                if let FileTreeItemKind::File(_) =
+                    &tree_items[idx_temp].kind
+                {
+                    should_skip_over -= 1;
+                    break;
+                }
+
+                // don't fold up if more than one folder in folder
+                if self.tree.multiple_items_at_path(idx_temp) {
+                    should_skip_over -= 1;
+                    break;
+                }
+            }
+        }
+        vec_available_selections
     }
 
     fn find_visible_idx(&self, mut idx: usize) -> usize {
@@ -153,30 +201,62 @@ impl StatusTree {
         current_index: usize,
         up: bool,
     ) -> SelectionChange {
-        let mut new_index = current_index;
+        let mut current_index_in_available_selections;
+        let mut cur_index_find = current_index;
+        if self.available_selections.is_empty() {
+            // Go to top
+            current_index_in_available_selections = 0;
+        } else {
+            loop {
+                if let Some(pos) = self
+                    .available_selections
+                    .iter()
+                    .position(|i| *i == cur_index_find)
+                {
+                    current_index_in_available_selections = pos;
+                    break;
+                } else {
+                    // Find the closest to the index, usually this shouldn't happen
+                    if current_index == 0 {
+                        // This should never happen
+                        current_index_in_available_selections = 0;
+                        break;
+                    }
+                    cur_index_find -= 1;
+                }
+            }
+        }
 
-        let items_max = self.tree.len().saturating_sub(1);
+        let mut new_index;
 
         loop {
+            // Use available_selections to go to the correct selection as
+            // some of the folders may be folded up
             new_index = if up {
-                new_index.saturating_sub(1)
+                current_index_in_available_selections =
+                    current_index_in_available_selections
+                        .saturating_sub(1);
+                self.available_selections
+                    [current_index_in_available_selections]
+            } else if current_index_in_available_selections
+                .saturating_add(1)
+                <= self.available_selections.len().saturating_sub(1)
+            {
+                current_index_in_available_selections =
+                    current_index_in_available_selections
+                        .saturating_add(1);
+                self.available_selections
+                    [current_index_in_available_selections]
             } else {
-                new_index.saturating_add(1)
+                // can't move down anymore
+                new_index = current_index;
+                break;
             };
-
-            new_index = cmp::min(new_index, items_max);
 
             if self.is_visible_index(new_index) {
                 break;
             }
-
-            if new_index == 0 || new_index == items_max {
-                // limit reached, dont update
-                new_index = current_index;
-                break;
-            }
         }
-
         SelectionChange::new(new_index, false)
     }
 
@@ -244,11 +324,7 @@ impl StatusTree {
             || matches!(item_kind,FileTreeItemKind::Path(PathCollapsed(collapsed))
         if collapsed)
         {
-            SelectionChange::new(
-                self.tree
-                    .find_parent_index(&item_path, current_selection),
-                false,
-            )
+            self.selection_updown(current_selection, true)
         } else if matches!(item_kind,  FileTreeItemKind::Path(PathCollapsed(collapsed))
         if !collapsed)
         {
@@ -676,5 +752,148 @@ mod tests {
         assert!(res.move_selection(MoveSelection::Down));
 
         assert_eq!(res.selection, Some(3));
+    }
+
+    #[test]
+    fn test_folders_fold_up_if_alone_in_directory() {
+        let items = string_vec_to_status(&[
+            "a/b/c/d", //
+            "a/e/f/g", //
+            "a/h/i/j", //
+        ]);
+
+        //0 a/
+        //1   b/
+        //2     c/
+        //3       d
+        //4   e/
+        //5     f/
+        //6       g
+        //7   h/
+        //8     i/
+        //9       j
+
+        //0 a/
+        //1   b/c/
+        //3       d
+        //4   e/f/
+        //6       g
+        //7   h/i/
+        //9       j
+
+        let mut res = StatusTree::default();
+        res.update(&items).unwrap();
+        res.selection = Some(0);
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(1));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(3));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(4));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(6));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(7));
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(9));
+    }
+
+    #[test]
+    fn test_folders_fold_up_if_alone_in_directory_2() {
+        let items = string_vec_to_status(&["a/b/c/d/e/f/g/h"]);
+
+        //0 a/
+        //1   b/
+        //2     c/
+        //3       d/
+        //4         e/
+        //5           f/
+        //6             g/
+        //7               h
+
+        //0 a/b/c/d/e/f/g/
+        //7               h
+
+        let mut res = StatusTree::default();
+        res.update(&items).unwrap();
+        res.selection = Some(0);
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(7));
+    }
+
+    #[test]
+    fn test_folders_fold_up_down_with_selection_left_right() {
+        let items = string_vec_to_status(&[
+            "a/b/c/d", //
+            "a/e/f/g", //
+            "a/h/i/j", //
+        ]);
+
+        //0 a/
+        //1   b/
+        //2     c/
+        //3       d
+        //4   e/
+        //5     f/
+        //6       g
+        //7   h/
+        //8     i/
+        //9       j
+
+        //0 a/
+        //1   b/c/
+        //3       d
+        //4   e/f/
+        //6       g
+        //7   h/i/
+        //9       j
+
+        let mut res = StatusTree::default();
+        res.update(&items).unwrap();
+        res.selection = Some(0);
+
+        assert!(res.move_selection(MoveSelection::Left));
+        assert_eq!(res.selection, Some(0));
+
+        // These should do nothing
+        res.move_selection(MoveSelection::Left);
+        res.move_selection(MoveSelection::Left);
+        assert_eq!(res.selection, Some(0));
+        //
+        assert!(res.move_selection(MoveSelection::Right)); // unfold 0
+        assert_eq!(res.selection, Some(0));
+
+        assert!(res.move_selection(MoveSelection::Right)); // move to 1
+        assert_eq!(res.selection, Some(1));
+
+        assert!(res.move_selection(MoveSelection::Left)); // fold 1
+        assert!(res.move_selection(MoveSelection::Down)); // move to 4
+        assert_eq!(res.selection, Some(4));
+
+        assert!(res.move_selection(MoveSelection::Left)); // fold 4
+        assert!(res.move_selection(MoveSelection::Down)); // move to 7
+        assert_eq!(res.selection, Some(7));
+
+        assert!(res.move_selection(MoveSelection::Right)); // move to 9
+        assert_eq!(res.selection, Some(9));
+
+        assert!(res.move_selection(MoveSelection::Left)); // move to 7
+        assert_eq!(res.selection, Some(7));
+
+        assert!(res.move_selection(MoveSelection::Left)); // folds 7
+        assert_eq!(res.selection, Some(7));
+        assert!(res.move_selection(MoveSelection::Left)); // move to 4
+        assert_eq!(res.selection, Some(4));
+        assert!(res.move_selection(MoveSelection::Left)); // move to 1
+        assert_eq!(res.selection, Some(1));
+        assert!(res.move_selection(MoveSelection::Left)); // move to 0
+        assert_eq!(res.selection, Some(0));
     }
 }

@@ -135,23 +135,36 @@ impl FileTreeComponent {
         changed
     }
 
+    const fn item_status_char(item_type: StatusItemType) -> char {
+        match item_type {
+            StatusItemType::Modified => 'M',
+            StatusItemType::New => '+',
+            StatusItemType::Deleted => '-',
+            StatusItemType::Renamed => 'R',
+            StatusItemType::Typechange => ' ',
+        }
+    }
+
     fn item_to_text<'b>(
-        item: &FileTreeItem,
+        string: &str,
+        indent: usize,
+        visible: bool,
+        file_item_kind: &FileTreeItemKind,
         width: u16,
         selected: bool,
         theme: &'b SharedTheme,
     ) -> Option<Text<'b>> {
-        let indent_str = if item.info.indent == 0 {
+        let indent_str = if indent == 0 {
             String::from("")
         } else {
-            format!("{:w$}", " ", w = (item.info.indent as usize) * 2)
+            format!("{:w$}", " ", w = (indent as usize) * 2)
         };
 
-        if !item.info.visible {
+        if !visible {
             return None;
         }
 
-        match &item.kind {
+        match file_item_kind {
             FileTreeItemKind::File(status_item) => {
                 let status_char =
                     Self::item_status_char(status_item.status);
@@ -187,13 +200,13 @@ impl FileTreeComponent {
                         "  {}{}{:w$}",
                         indent_str,
                         collapse_char,
-                        item.info.path,
+                        string,
                         w = width as usize
                     )
                 } else {
                     format!(
                         "  {}{}{}",
-                        indent_str, collapse_char, item.info.path,
+                        indent_str, collapse_char, string,
                     )
                 };
 
@@ -205,15 +218,78 @@ impl FileTreeComponent {
         }
     }
 
-    const fn item_status_char(item_type: StatusItemType) -> char {
-        match item_type {
-            StatusItemType::Modified => 'M',
-            StatusItemType::New => '+',
-            StatusItemType::Deleted => '-',
-            StatusItemType::Renamed => 'R',
-            StatusItemType::Typechange => ' ',
+    /// Returns a Vec<TextDrawInfo> which is used to draw the `FileTreeComponent` correctly,
+    /// allowing folders to be folded up if they are alone in their directory
+    fn build_vec_text_draw_info_for_drawing(
+        &self,
+    ) -> (Vec<TextDrawInfo>, usize) {
+        let mut should_skip_over: usize = 0;
+        let mut selection_offset: usize = 0;
+        let mut vec_draw_text_info: Vec<TextDrawInfo> = vec![];
+        let tree_items = self.tree.tree.items();
+        for (index, item) in tree_items.iter().enumerate() {
+            if should_skip_over > 0 {
+                should_skip_over -= 1;
+                continue;
+            }
+
+            let index_above_select =
+                index < self.tree.selection.unwrap_or(0);
+
+            vec_draw_text_info.push(TextDrawInfo {
+                name: item.info.path.clone(),
+                indent: item.info.indent,
+                visible: item.info.visible,
+                item_kind: &item.kind,
+            });
+
+            let mut idx_temp = index;
+
+            while idx_temp < tree_items.len().saturating_sub(2)
+                && tree_items[idx_temp].info.indent
+                    < tree_items[idx_temp + 1].info.indent
+            {
+                // fold up the folder/file
+                idx_temp += 1;
+                should_skip_over += 1;
+
+                // don't fold files up
+                if let FileTreeItemKind::File(_) =
+                    &tree_items[idx_temp].kind
+                {
+                    should_skip_over -= 1;
+                    break;
+                }
+
+                // don't fold up if more than one folder in folder
+                if self.tree.tree.multiple_items_at_path(idx_temp) {
+                    should_skip_over -= 1;
+                    break;
+                } else {
+                    // There is only one item at this level (i.e only one folder in the folder),
+                    // so do fold up
+
+                    let vec_draw_text_info_len =
+                        vec_draw_text_info.len();
+                    vec_draw_text_info[vec_draw_text_info_len - 1]
+                        .name += &(String::from("/")
+                        + &tree_items[idx_temp].info.path);
+                    if index_above_select {
+                        selection_offset += 1;
+                    }
+                }
+            }
         }
+        (vec_draw_text_info, selection_offset)
     }
+}
+
+/// Used for drawing the `FileTreeComponent`
+struct TextDrawInfo<'a> {
+    name: String,
+    indent: u8,
+    visible: bool,
+    item_kind: &'a FileTreeItemKind,
 }
 
 impl DrawableComponent for FileTreeComponent {
@@ -238,21 +314,8 @@ impl DrawableComponent for FileTreeComponent {
                 &self.theme,
             );
         } else {
-            let selection_offset =
-                self.tree.tree.items().iter().enumerate().fold(
-                    0,
-                    |acc, (idx, e)| {
-                        let visible = e.info.visible;
-                        let index_above_select =
-                            idx < self.tree.selection.unwrap_or(0);
-
-                        if !visible && index_above_select {
-                            acc + 1
-                        } else {
-                            acc
-                        }
-                    },
-                );
+            let (vec_draw_text_info, selection_offset) =
+                self.build_vec_text_draw_info_for_drawing();
 
             let select = self
                 .tree
@@ -267,26 +330,21 @@ impl DrawableComponent for FileTreeComponent {
                 select,
             ));
 
-            let items = self
-                .tree
-                .tree
-                .items()
+            let items = vec_draw_text_info
                 .iter()
                 .enumerate()
-                .filter_map(|(idx, e)| {
+                .filter_map(|(index, draw_text_info)| {
                     Self::item_to_text(
-                        e,
+                        &draw_text_info.name,
+                        draw_text_info.indent as usize,
+                        draw_text_info.visible,
+                        draw_text_info.item_kind,
                         r.width,
-                        self.show_selection
-                            && self
-                                .tree
-                                .selection
-                                .map_or(false, |e| e == idx),
+                        self.show_selection && select == index,
                         &self.theme,
                     )
                 })
                 .skip(self.scroll_top.get());
-
             ui::draw_list(
                 f,
                 r,
