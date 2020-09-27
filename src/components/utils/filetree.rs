@@ -376,28 +376,6 @@ mod tests {
     }
 
     #[test]
-    fn test_find_parent() {
-        //0 a/
-        //1   b/
-        //2     c
-        //3     d
-
-        let res = FileTreeItems::new(
-            &string_vec_to_status(&[
-                "a/b/c", //
-                "a/b/d", //
-            ]),
-            &BTreeSet::new(),
-        )
-        .unwrap();
-
-        assert_eq!(
-            res.find_parent_index(&String::from("a/b/c"), 3),
-            1
-        );
-    }
-
-    #[test]
     fn test_multiple_items_at_path() {
         //0 a/
         //1   b/
