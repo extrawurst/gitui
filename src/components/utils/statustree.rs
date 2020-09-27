@@ -329,11 +329,7 @@ impl StatusTree {
             || matches!(item_kind,FileTreeItemKind::Path(PathCollapsed(collapsed))
         if collapsed)
         {
-            SelectionChange::new(
-                self.tree
-                    .find_parent_index(&item_path, current_selection),
-                false,
-            )
+            return self.selection_updown(current_selection, true);
         } else if matches!(item_kind,  FileTreeItemKind::Path(PathCollapsed(collapsed))
         if !collapsed)
         {
