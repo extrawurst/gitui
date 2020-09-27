@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![tree](assets/compact-tree.png)
 
+### Fixed
+- crash when changing git repo while gitui is open ([#271](https://github.com/extrawurst/gitui/issues/271))
+
 ## [0.10.1] - 2020-09-01
 
 ### Fixed

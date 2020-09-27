@@ -120,20 +120,22 @@ impl AsyncStatus {
         self.pending.fetch_add(1, Ordering::Relaxed);
 
         rayon_core::spawn(move || {
-            Self::fetch_helper(
+            let ok = Self::fetch_helper(
                 status_type,
                 include_untracked,
                 hash_request,
                 arc_current,
                 arc_last,
             )
-            .expect("failed to fetch status");
+            .is_ok();
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
-            sender
-                .send(AsyncNotification::Status)
-                .expect("error sending status");
+            if ok {
+                sender
+                    .send(AsyncNotification::Status)
+                    .expect("error sending status");
+            }
         });
 
         Ok(None)
