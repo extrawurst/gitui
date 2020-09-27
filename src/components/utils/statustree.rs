@@ -203,7 +203,10 @@ impl StatusTree {
     ) -> SelectionChange {
         let mut current_index_in_available_selections;
         let mut cur_index_find = current_index;
-        if self.available_selections.len() > 0 {
+        if self.available_selections.is_empty() {
+            // Go to top
+            current_index_in_available_selections = 0;
+        } else {
             loop {
                 if let Some(pos) = self
                     .available_selections
@@ -222,9 +225,6 @@ impl StatusTree {
                     cur_index_find -= 1;
                 }
             }
-        } else {
-            // Go to top
-            current_index_in_available_selections = 0;
         }
 
         let mut new_index;
@@ -238,24 +238,19 @@ impl StatusTree {
                         .saturating_sub(1);
                 self.available_selections
                     [current_index_in_available_selections]
+            } else if current_index_in_available_selections
+                .saturating_add(1)
+                <= self.available_selections.len().saturating_sub(1)
+            {
+                current_index_in_available_selections =
+                    current_index_in_available_selections
+                        .saturating_add(1);
+                self.available_selections
+                    [current_index_in_available_selections]
             } else {
-                if current_index_in_available_selections
-                    .saturating_add(1)
-                    <= self
-                        .available_selections
-                        .len()
-                        .saturating_sub(1)
-                {
-                    current_index_in_available_selections =
-                        current_index_in_available_selections
-                            .saturating_add(1);
-                    self.available_selections
-                        [current_index_in_available_selections]
-                } else {
-                    // can't move down anymore
-                    new_index = current_index;
-                    break;
-                }
+                // can't move down anymore
+                new_index = current_index;
+                break;
             };
 
             if self.is_visible_index(new_index) {
@@ -329,7 +324,7 @@ impl StatusTree {
             || matches!(item_kind,FileTreeItemKind::Path(PathCollapsed(collapsed))
         if collapsed)
         {
-            return self.selection_updown(current_selection, true);
+            self.selection_updown(current_selection, true)
         } else if matches!(item_kind,  FileTreeItemKind::Path(PathCollapsed(collapsed))
         if !collapsed)
         {
