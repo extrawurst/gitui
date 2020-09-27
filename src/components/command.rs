@@ -79,11 +79,6 @@ impl CommandInfo {
     }
 
     ///
-    pub fn print(&self, out: &mut String) {
-        out.push_str(&self.text.name);
-    }
-
-    ///
     pub const fn show_in_quickbar(&self) -> bool {
         self.quick_bar && self.available
     }
