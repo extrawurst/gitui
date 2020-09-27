@@ -55,9 +55,7 @@ where
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Render items
         List::new(
-            self.items
-                .map(|span| ListItem::new(span))
-                .collect::<Vec<ListItem>>(),
+            self.items.map(ListItem::new).collect::<Vec<ListItem>>(),
         )
         .block(self.block.unwrap_or_default())
         .style(self.style)

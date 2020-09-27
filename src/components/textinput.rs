@@ -11,7 +11,7 @@ use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use tui::{
     backend::Backend, layout::Rect, style::Modifier, text::Span,
-    text::StyledGrapheme, widgets::Clear, Frame,
+    widgets::Clear, Frame,
 };
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)

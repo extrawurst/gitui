@@ -11,7 +11,7 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::{Span, Spans, Text},
+    text::{Span, Spans},
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
@@ -213,7 +213,7 @@ impl HelpComponent {
             &self.cmds.iter().group_by(|e| e.text.group)
         {
             txt.push(Spans::from(Span::styled(
-                Cow::from(format!("{}", key)),
+                Cow::from(key.to_string()),
                 Style::default().add_modifier(Modifier::REVERSED),
             )));
 

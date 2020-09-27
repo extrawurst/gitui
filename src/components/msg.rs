@@ -4,7 +4,6 @@ use super::{
 };
 use crate::{keys::SharedKeyConfig, strings, ui};
 use crossterm::event::Event;
-use std::borrow::Cow;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},

@@ -112,7 +112,7 @@ impl DrawableComponent for ExternalEditorComponent {
             let area = ui::centered_rect_absolute(25, 3, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                Paragraph::new(Spans::from(txt))
+                Paragraph::new(txt)
                     .block(
                         Block::default()
                             .borders(Borders::ALL)

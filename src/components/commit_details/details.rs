@@ -134,7 +134,7 @@ impl DetailsComponent {
         height: usize,
     ) -> Vec<Span> {
         let newline = Span::styled::<String>(
-            String::from("\n").into(),
+            String::from("\n"),
             self.theme.text(true, false),
         );
 
