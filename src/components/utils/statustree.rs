@@ -778,7 +778,8 @@ mod tests {
         //8     i/
         //9       j
 
-        //0 a/b/c/
+        //0 a/
+        //1   b/c/
         //3       d
         //4   e/f/
         //6       g
@@ -787,7 +788,10 @@ mod tests {
 
         let mut res = StatusTree::default();
         res.update(&items).unwrap();
-        res.selection = Some(1);
+        res.selection = Some(0);
+
+        assert!(res.move_selection(MoveSelection::Down));
+        assert_eq!(res.selection, Some(1));
 
         assert!(res.move_selection(MoveSelection::Down));
         assert_eq!(res.selection, Some(3));
@@ -823,9 +827,78 @@ mod tests {
 
         let mut res = StatusTree::default();
         res.update(&items).unwrap();
-        res.selection = Some(1);
+        res.selection = Some(0);
 
         assert!(res.move_selection(MoveSelection::Down));
         assert_eq!(res.selection, Some(7));
+    }
+
+    #[test]
+    fn test_folders_fold_up_down_with_selection_left_right() {
+        let items = string_vec_to_status(&[
+            "a/b/c/d", //
+            "a/e/f/g", //
+            "a/h/i/j", //
+        ]);
+
+        //0 a/
+        //1   b/
+        //2     c/
+        //3       d
+        //4   e/
+        //5     f/
+        //6       g
+        //7   h/
+        //8     i/
+        //9       j
+
+        //0 a/
+        //1   b/c/
+        //3       d
+        //4   e/f/
+        //6       g
+        //7   h/i/
+        //9       j
+
+        let mut res = StatusTree::default();
+        res.update(&items).unwrap();
+        res.selection = Some(0);
+
+        assert!(res.move_selection(MoveSelection::Left));
+        assert_eq!(res.selection, Some(0));
+
+        // These should do nothing
+        res.move_selection(MoveSelection::Left);
+        res.move_selection(MoveSelection::Left);
+        assert_eq!(res.selection, Some(0));
+        //
+        assert!(res.move_selection(MoveSelection::Right)); // unfold 0
+        assert_eq!(res.selection, Some(0));
+
+        assert!(res.move_selection(MoveSelection::Right)); // move to 1
+        assert_eq!(res.selection, Some(1));
+
+        assert!(res.move_selection(MoveSelection::Left)); // fold 1
+        assert!(res.move_selection(MoveSelection::Down)); // move to 4
+        assert_eq!(res.selection, Some(4));
+
+        assert!(res.move_selection(MoveSelection::Left)); // fold 4
+        assert!(res.move_selection(MoveSelection::Down)); // move to 7
+        assert_eq!(res.selection, Some(7));
+
+        assert!(res.move_selection(MoveSelection::Right)); // move to 9
+        assert_eq!(res.selection, Some(9));
+
+        assert!(res.move_selection(MoveSelection::Left)); // move to 7
+        assert_eq!(res.selection, Some(7));
+
+        assert!(res.move_selection(MoveSelection::Left)); // folds 7
+        assert_eq!(res.selection, Some(7));
+        assert!(res.move_selection(MoveSelection::Left)); // move to 4
+        assert_eq!(res.selection, Some(4));
+        assert!(res.move_selection(MoveSelection::Left)); // move to 1
+        assert_eq!(res.selection, Some(1));
+        assert!(res.move_selection(MoveSelection::Left)); // move to 0
+        assert_eq!(res.selection, Some(0));
     }
 }
