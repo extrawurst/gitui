@@ -77,9 +77,8 @@ pub fn draw_list<'b, B: Backend, L>(
     let list = ScrollableList::new(items)
         .block(
             Block::default()
-                .title(title)
+                .title(Span::styled(title, theme.title(selected)))
                 .borders(Borders::ALL)
-                .title_style(theme.title(selected))
                 .border_style(theme.block(selected)),
         )
         .scroll(select.unwrap_or_default());

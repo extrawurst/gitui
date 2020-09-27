@@ -19,6 +19,7 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Style},
+    text::Span,
     widgets::{Block, BorderType, Borders, Clear, Gauge},
     Frame,
 };
@@ -146,10 +147,12 @@ impl DrawableComponent for PushComponent {
                     .label(state.as_str())
                     .block(
                         Block::default()
-                            .title(strings::PUSH_POPUP_MSG)
+                            .title(Span::styled(
+                                strings::PUSH_POPUP_MSG,
+                                self.theme.title(true),
+                            ))
                             .borders(Borders::ALL)
                             .border_type(BorderType::Thick)
-                            .title_style(self.theme.title(true))
                             .border_style(self.theme.block(true)),
                     )
                     .style(

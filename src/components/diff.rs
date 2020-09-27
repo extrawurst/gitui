@@ -576,10 +576,12 @@ impl DrawableComponent for DiffComponent {
         f.render_widget(
             Paragraph::new(txt).block(
                 Block::default()
-                    .title(title.as_str())
+                    .title(Span::styled(
+                        title.as_str(),
+                        self.theme.title(self.focused),
+                    ))
                     .borders(Borders::ALL)
-                    .border_style(self.theme.block(self.focused))
-                    .title_style(self.theme.title(self.focused)),
+                    .border_style(self.theme.block(self.focused)),
             ),
             r,
         );

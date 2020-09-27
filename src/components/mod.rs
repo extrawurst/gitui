@@ -193,9 +193,8 @@ fn dialog_paragraph<'a>(
     Paragraph::new(Spans::from(content))
         .block(
             Block::default()
-                .title(title)
+                .title(Span::styled(title, theme.title(focused)))
                 .borders(Borders::ALL)
-                .title_style(theme.title(focused))
                 .border_style(theme.block(focused)),
         )
         .alignment(Alignment::Left)
@@ -210,10 +209,9 @@ fn popup_paragraph<'a>(
     Paragraph::new(Spans::from(content))
         .block(
             Block::default()
-                .title(title)
+                .title(Span::styled(title, theme.title(focused)))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Thick)
-                .title_style(theme.title(focused))
                 .border_style(theme.block(focused)),
         )
         .alignment(Alignment::Left)

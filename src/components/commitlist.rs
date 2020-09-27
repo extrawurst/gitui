@@ -318,9 +318,11 @@ impl DrawableComponent for CommitList {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(title.as_str())
-                    .border_style(self.theme.block(true))
-                    .title_style(self.theme.title(true)),
+                    .title(Span::styled(
+                        title.as_str(),
+                        self.theme.title(true),
+                    ))
+                    .border_style(self.theme.block(true)),
             )
             .alignment(Alignment::Left),
             area,

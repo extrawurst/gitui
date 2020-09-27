@@ -45,8 +45,10 @@ impl DrawableComponent for MsgComponent {
             Paragraph::new(txt)
                 .block(
                     Block::default()
-                        .title(self.title.as_str())
-                        .title_style(self.theme.text_danger())
+                        .title(Span::styled(
+                            self.title.as_str(),
+                            self.theme.text_danger(),
+                        ))
                         .borders(Borders::ALL)
                         .border_type(BorderType::Thick),
                 )
