@@ -450,53 +450,25 @@ mod tests {
     #[test]
     fn test_correct_scroll_position() {
         let items = string_vec_to_status(&[
-            "a/b/b1",  //
-            "a/b/b2",  //
-            "a/b/b3",  //
-            "a/b/b4",  //
-            "a/b/b5",  //
-            "a/b/b6",  //
-            "a/b/b7",  //
-            "a/b/b8",  //
-            "a/b/b9",  //
-            "a/b/b10", //
-            "a/b/b11", //
-            "a/b/b12", //
-            "a/b/b13", //
-            "a/b/b14", //
-            "a/b/b15", //
-            "a/b/b16", //
-            "a/b/b17", //
-            "a/b/b18", //
-            "a/b/b19", //
-            "a/b/b20", //
-            "a/c/c1",  //
+            "a/b/b1", //
+            "a/b/b2", //
+            "a/c/c1", //
         ]);
 
-        //0 a/b/
+        //0 a/
+        //1   b/
         //2     b1
         //3     b2
-        //4     b3
-        //5     b4
-        //6     b5
-        //7     b6
-        //8     b7
-        //9     b8
-        //10    b9
-        //11    b10
-        //12    b11
-        //13    b12
-        //14    b13
-        //15    b14
-        //16    b15
-        //17    b16
-        //18    b17
-        //19    b18
-        //21    b19
-        //22    b20
-        //23  c/
-        //24    c1
+        //4  c/
+        //5    c1
 
+        // Set up test terminal
+        let test_backend = tui::backend::TestBackend::new(100, 100);
+        let mut terminal = tui::Terminal::new(test_backend)
+            .expect("Unable to set up terminal");
+        let mut frame = terminal.get_frame();
+
+        // set up file tree
         let mut ftc = FileTreeComponent::new(
             "title",
             true,
@@ -507,8 +479,13 @@ mod tests {
         ftc.update(&items)
             .expect("Updating FileTreeComponent failed");
 
-        ftc.move_selection(MoveSelection::Left); // Fold 0
-        ftc.move_selection(MoveSelection::Down);
+        ftc.move_selection(MoveSelection::Down); // Move to b/
+        ftc.move_selection(MoveSelection::Left); // Fold b/
+        ftc.move_selection(MoveSelection::Down); // Move to c/
+
+        ftc.draw(&mut frame, Rect::new(0, 0, 10, 5))
+            .expect("Draw failed");
+
         assert_eq!(ftc.scroll_top.get(), 0); // should still be at top
     }
 }
