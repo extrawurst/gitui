@@ -324,10 +324,27 @@ impl DrawableComponent for FileTreeComponent {
                 .unwrap_or_default();
             let tree_height = r.height.saturating_sub(2) as usize;
 
+            // Need to consider the selection offset if folders are
+            // folded and their contents not visible for scroll
+            let selection_offset_visible =
+                self.tree.tree.items().iter().enumerate().fold(
+                    0,
+                    |acc, (idx, e)| {
+                        let visible = e.info.visible;
+                        let index_above_select =
+                            idx < self.tree.selection.unwrap_or(0);
+
+                        if !visible && index_above_select {
+                            acc + 1
+                        } else {
+                            acc
+                        }
+                    },
+                );
             self.scroll_top.set(ui::calc_scroll_top(
                 self.scroll_top.get(),
                 tree_height,
-                select,
+                select.saturating_sub(selection_offset_visible),
             ));
 
             let items = vec_draw_text_info
