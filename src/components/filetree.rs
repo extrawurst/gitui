@@ -222,11 +222,13 @@ impl FileTreeComponent {
     /// allowing folders to be folded up if they are alone in their directory
     fn build_vec_text_draw_info_for_drawing(
         &self,
-    ) -> (Vec<TextDrawInfo>, usize) {
+    ) -> (Vec<TextDrawInfo>, usize, usize) {
         let mut should_skip_over: usize = 0;
         let mut selection_offset: usize = 0;
+        let mut selection_offset_visible: usize = 0;
         let mut vec_draw_text_info: Vec<TextDrawInfo> = vec![];
         let tree_items = self.tree.tree.items();
+
         for (index, item) in tree_items.iter().enumerate() {
             if should_skip_over > 0 {
                 should_skip_over -= 1;
@@ -235,6 +237,10 @@ impl FileTreeComponent {
 
             let index_above_select =
                 index < self.tree.selection.unwrap_or(0);
+
+            if !item.info.visible && index_above_select {
+                selection_offset_visible += 1;
+            }
 
             vec_draw_text_info.push(TextDrawInfo {
                 name: item.info.path.clone(),
@@ -260,9 +266,12 @@ impl FileTreeComponent {
                     should_skip_over -= 1;
                     break;
                 }
-
                 // don't fold up if more than one folder in folder
-                if self.tree.tree.multiple_items_at_path(idx_temp) {
+                else if self
+                    .tree
+                    .tree
+                    .multiple_items_at_path(idx_temp)
+                {
                     should_skip_over -= 1;
                     break;
                 } else {
@@ -280,7 +289,11 @@ impl FileTreeComponent {
                 }
             }
         }
-        (vec_draw_text_info, selection_offset)
+        (
+            vec_draw_text_info,
+            selection_offset,
+            selection_offset_visible,
+        )
     }
 }
 
@@ -314,8 +327,11 @@ impl DrawableComponent for FileTreeComponent {
                 &self.theme,
             );
         } else {
-            let (vec_draw_text_info, selection_offset) =
-                self.build_vec_text_draw_info_for_drawing();
+            let (
+                vec_draw_text_info,
+                selection_offset,
+                selection_offset_visible,
+            ) = self.build_vec_text_draw_info_for_drawing();
 
             let select = self
                 .tree
@@ -324,23 +340,6 @@ impl DrawableComponent for FileTreeComponent {
                 .unwrap_or_default();
             let tree_height = r.height.saturating_sub(2) as usize;
 
-            // Need to consider the selection offset if folders are
-            // folded and their contents not visible for scroll
-            let selection_offset_visible =
-                self.tree.tree.items().iter().enumerate().fold(
-                    0,
-                    |acc, (idx, e)| {
-                        let visible = e.info.visible;
-                        let index_above_select =
-                            idx < self.tree.selection.unwrap_or(0);
-
-                        if !visible && index_above_select {
-                            acc + 1
-                        } else {
-                            acc
-                        }
-                    },
-                );
             self.scroll_top.set(ui::calc_scroll_top(
                 self.scroll_top.get(),
                 tree_height,
