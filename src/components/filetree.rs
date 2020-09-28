@@ -431,3 +431,84 @@ impl Component for FileTreeComponent {
         self.show_selection(focus);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use asyncgit::StatusItemType;
+
+    fn string_vec_to_status(items: &[&str]) -> Vec<StatusItem> {
+        items
+            .iter()
+            .map(|a| StatusItem {
+                path: String::from(*a),
+                status: StatusItemType::Modified,
+            })
+            .collect::<Vec<_>>()
+    }
+
+    #[test]
+    fn test_correct_scroll_position() {
+        let items = string_vec_to_status(&[
+            "a/b/b1",  //
+            "a/b/b2",  //
+            "a/b/b3",  //
+            "a/b/b4",  //
+            "a/b/b5",  //
+            "a/b/b6",  //
+            "a/b/b7",  //
+            "a/b/b8",  //
+            "a/b/b9",  //
+            "a/b/b10", //
+            "a/b/b11", //
+            "a/b/b12", //
+            "a/b/b13", //
+            "a/b/b14", //
+            "a/b/b15", //
+            "a/b/b16", //
+            "a/b/b17", //
+            "a/b/b18", //
+            "a/b/b19", //
+            "a/b/b20", //
+            "a/c/c1",  //
+        ]);
+
+        //0 a/b/
+        //2     b1
+        //3     b2
+        //4     b3
+        //5     b4
+        //6     b5
+        //7     b6
+        //8     b7
+        //9     b8
+        //10    b9
+        //11    b10
+        //12    b11
+        //13    b12
+        //14    b13
+        //15    b14
+        //16    b15
+        //17    b16
+        //18    b17
+        //19    b18
+        //21    b19
+        //22    b20
+        //23  c/
+        //24    c1
+
+        let mut ftc = FileTreeComponent::new(
+            "title",
+            true,
+            None,
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+        );
+        ftc.update(&items)
+            .expect("Updating FileTreeComponent failed");
+
+        ftc.move_selection(MoveSelection::Left); // Fold 0
+        ftc.move_selection(MoveSelection::Down);
+        assert_eq!(ftc.scroll_top.get(), 0); // should still be at top
+    }
+}
