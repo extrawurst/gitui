@@ -186,24 +186,17 @@ impl FileTreeItems {
     }
 
     ///
-    pub(crate) fn find_parent_index(
-        &self,
-        path: &str,
-        index: usize,
-    ) -> usize {
-        if let Some(parent_path) = Path::new(path).parent() {
-            let parent_path =
-                parent_path.to_str().expect("invalid path");
-            for i in (0..=index).rev() {
-                let item = &self.items[i];
-                let item_path = &item.info.full_path;
-                if item_path == parent_path {
-                    return i;
-                }
+    pub(crate) fn find_parent_index(&self, index: usize) -> usize {
+        let item_indent = &self.items[index].info.indent;
+        let mut parent_index = index;
+        while item_indent <= &self.items[parent_index].info.indent {
+            if parent_index == 0 {
+                return 0;
             }
+            parent_index -= 1;
         }
 
-        0
+        parent_index
     }
 
     fn push_dirs<'a>(
@@ -435,9 +428,6 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(
-            res.find_parent_index(&String::from("a/b/c"), 3),
-            1
-        );
+        assert_eq!(res.find_parent_index(3), 1);
     }
 }
