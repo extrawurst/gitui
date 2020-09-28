@@ -324,7 +324,14 @@ impl StatusTree {
             || matches!(item_kind,FileTreeItemKind::Path(PathCollapsed(collapsed))
         if collapsed)
         {
-            self.selection_updown(current_selection, true)
+            let mut cur_parent =
+                self.tree.find_parent_index(current_selection);
+            while !self.available_selections.contains(&cur_parent)
+                && cur_parent != 0
+            {
+                cur_parent = self.tree.find_parent_index(cur_parent);
+            }
+            SelectionChange::new(cur_parent, false)
         } else if matches!(item_kind,  FileTreeItemKind::Path(PathCollapsed(collapsed))
         if !collapsed)
         {
@@ -889,11 +896,8 @@ mod tests {
 
         assert!(res.move_selection(MoveSelection::Left)); // folds 7
         assert_eq!(res.selection, Some(7));
-        assert!(res.move_selection(MoveSelection::Left)); // move to 4
-        assert_eq!(res.selection, Some(4));
-        assert!(res.move_selection(MoveSelection::Left)); // move to 1
-        assert_eq!(res.selection, Some(1));
-        assert!(res.move_selection(MoveSelection::Left)); // move to 0
+
+        assert!(res.move_selection(MoveSelection::Left)); // jump to 0
         assert_eq!(res.selection, Some(0));
     }
 }
