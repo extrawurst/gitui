@@ -55,7 +55,7 @@ pub enum InternalEvent {
     ///
     OpenExternalEditor(Option<String>),
     ///
-    Push(String),
+    Push(String, bool),
 }
 
 ///

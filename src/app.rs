@@ -497,8 +497,8 @@ impl App {
                 self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
             }
-            InternalEvent::Push(branch) => {
-                self.push_popup.push(branch)?;
+            InternalEvent::Push(branch, force) => {
+                self.push_popup.push(branch, force)?;
                 flags.insert(NeedsUpdate::ALL)
             }
         };

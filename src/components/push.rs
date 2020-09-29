@@ -26,6 +26,7 @@ use tui::{
 ///
 pub struct PushComponent {
     visible: bool,
+    force: bool,
     git_push: AsyncPush,
     progress: Option<PushProgress>,
     pending: bool,
@@ -44,6 +45,7 @@ impl PushComponent {
     ) -> Self {
         Self {
             queue: queue.clone(),
+            force: false,
             pending: false,
             visible: false,
             git_push: AsyncPush::new(sender),
@@ -54,14 +56,23 @@ impl PushComponent {
     }
 
     ///
-    pub fn push(&mut self, branch: String) -> Result<()> {
+    pub fn push(
+        &mut self,
+        branch: String,
+        force: bool,
+    ) -> Result<()> {
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
             //TODO: find tracking branch name
             remote: String::from("origin"),
             branch,
+            force,
         })?;
+
+        if force {
+            self.force = true;
+        }
         self.show()?;
         Ok(())
     }
@@ -146,7 +157,11 @@ impl DrawableComponent for PushComponent {
                     .label(state.as_str())
                     .block(
                         Block::default()
-                            .title(strings::PUSH_POPUP_MSG)
+                            .title(if self.force {
+                                strings::FORCE_PUSH_POPUP_MSG
+                            } else {
+                                strings::PUSH_POPUP_MSG
+                            })
                             .borders(Borders::ALL)
                             .border_type(BorderType::Thick)
                             .title_style(self.theme.title(true))

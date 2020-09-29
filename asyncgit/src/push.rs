@@ -88,6 +88,8 @@ pub struct PushRequest {
     pub remote: String,
     ///
     pub branch: String,
+    ///
+    pub force: bool,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -161,6 +163,7 @@ impl AsyncPush {
                 CWD,
                 params.remote.as_str(),
                 params.branch.as_str(),
+                params.force,
                 progress_sender.clone(),
             );
 

@@ -324,13 +324,13 @@ impl Status {
         }
     }
 
-    fn push(&self) {
+    fn push(&self, force: bool) {
         if let Some(branch) = self.index_wd.branch_name() {
             let branch = format!("refs/heads/{}", branch);
 
             self.queue
                 .borrow_mut()
-                .push_back(InternalEvent::Push(branch));
+                .push_back(InternalEvent::Push(branch, force));
         }
     }
 
@@ -490,7 +490,10 @@ impl Component for Status {
                         .push_back(InternalEvent::CreateBranch);
                     Ok(true)
                 } else if k == self.key_config.push {
-                    self.push();
+                    self.push(false);
+                    Ok(true)
+                } else if k == self.key_config.force_push {
+                    self.push(true);
                     Ok(true)
                 } else if k == self.key_config.fetch {
                     self.fetch();

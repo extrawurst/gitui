@@ -83,6 +83,7 @@ pub fn push(
     repo_path: &str,
     remote: &str,
     branch: &str,
+    force: bool,
     progress_sender: Sender<ProgressNotification>,
 ) -> Result<()> {
     scope_time!("push_origin");
@@ -95,7 +96,14 @@ pub fn push(
     options.remote_callbacks(remote_callbacks(Some(progress_sender)));
     options.packbuilder_parallelism(0);
 
-    remote.push(&[branch], Some(&mut options))?;
+    if force {
+        remote.push(
+            &[String::from("+") + branch],
+            Some(&mut options),
+        )?;
+    } else {
+        remote.push(&[branch], Some(&mut options))?;
+    }
 
     Ok(())
 }

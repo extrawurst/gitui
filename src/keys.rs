@@ -61,6 +61,7 @@ pub struct KeyConfig {
     pub copy: KeyEvent,
     pub create_branch: KeyEvent,
     pub push: KeyEvent,
+    pub force_push: KeyEvent,
     pub fetch: KeyEvent,
 }
 
@@ -112,6 +113,7 @@ impl Default for KeyConfig {
             copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
             create_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
+            force_push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::SHIFT},
             fetch: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
         }
     }
