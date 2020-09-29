@@ -1,5 +1,5 @@
 use super::{
-    textinput::SpanInputComponent, visibility_blocking,
+    textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
 };
 use crate::{
@@ -16,7 +16,7 @@ use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct StashMsgComponent {
     options: StashingOptions,
-    input: SpanInputComponent,
+    input: TextInputComponent,
     queue: Queue,
     key_config: SharedKeyConfig,
 }
@@ -131,7 +131,7 @@ impl StashMsgComponent {
         Self {
             options: StashingOptions::default(),
             queue,
-            input: SpanInputComponent::new(
+            input: TextInputComponent::new(
                 theme,
                 key_config.clone(),
                 &strings::stash_popup_title(&key_config),

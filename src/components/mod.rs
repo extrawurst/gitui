@@ -21,7 +21,7 @@ use anyhow::Result;
 use crossterm::event::Event;
 
 pub use changes::ChangesComponent;
-pub use command::{CommandInfo, CommandSpan};
+pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
 pub use commit_details::CommitDetailsComponent;
 pub use commitlist::CommitList;
@@ -36,7 +36,7 @@ pub use push::PushComponent;
 pub use reset::ResetComponent;
 pub use stashmsg::StashMsgComponent;
 pub use tag_commit::TagCommitComponent;
-pub use textinput::SpanInputComponent;
+pub use textinput::TextInputComponent;
 pub use utils::filetree::FileTreeItemKind;
 
 use crate::ui::style::Theme;

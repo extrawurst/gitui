@@ -164,7 +164,7 @@ pub mod commit {
 }
 
 pub mod commands {
-    use crate::components::CommandSpan;
+    use crate::components::CommandText;
     use crate::keys::{get_hint, SharedKeyConfig};
 
     static CMD_GROUP_GENERAL: &str = "-- General --";
@@ -175,8 +175,8 @@ pub mod commands {
     static CMD_GROUP_STASHES: &str = "-- Stashes --";
     static CMD_GROUP_LOG: &str = "-- Log --";
 
-    pub fn toggle_tabs(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn toggle_tabs(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Next [{}]", get_hint(key_config.tab_toggle)),
             "switch to next tab",
             CMD_GROUP_GENERAL,
@@ -184,8 +184,8 @@ pub mod commands {
     }
     pub fn toggle_tabs_direct(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "Tab [{}{}{}{}]",
                 get_hint(key_config.tab_status),
@@ -197,8 +197,8 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn help_open(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn help_open(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Help [{}]", get_hint(key_config.open_help)),
             "open this help screen",
             CMD_GROUP_GENERAL,
@@ -206,8 +206,8 @@ pub mod commands {
     }
     pub fn navigate_commit_message(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "Nav [{}{}]",
                 get_hint(key_config.move_up),
@@ -219,8 +219,8 @@ pub mod commands {
     }
     pub fn navigate_tree(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "Nav [{}{}{}{}]",
                 get_hint(key_config.move_up),
@@ -232,8 +232,8 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn scroll(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn scroll(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!(
                 "Scroll [{}{}]",
                 get_hint(key_config.focus_above),
@@ -243,8 +243,8 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn copy(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn copy(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Copy [{}]", get_hint(key_config.copy),),
             "copy selected lines to clipboard",
             CMD_GROUP_DIFF,
@@ -252,8 +252,8 @@ pub mod commands {
     }
     pub fn diff_home_end(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "Jump up/down [{},{},{},{}]",
                 get_hint(key_config.home),
@@ -267,8 +267,8 @@ pub mod commands {
     }
     pub fn diff_hunk_add(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Add hunk [{}]", get_hint(key_config.enter),),
             "adds selected hunk to stage",
             CMD_GROUP_DIFF,
@@ -276,8 +276,8 @@ pub mod commands {
     }
     pub fn diff_hunk_revert(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "Revert hunk [{}]",
                 get_hint(key_config.status_reset_item),
@@ -288,22 +288,22 @@ pub mod commands {
     }
     pub fn diff_hunk_remove(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Remove hunk [{}]", get_hint(key_config.enter),),
             "removes selected hunk from stage",
             CMD_GROUP_DIFF,
         )
     }
-    pub fn close_popup(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn close_popup(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Close [{}]", get_hint(key_config.exit_popup),),
             "close overlay (e.g commit, help)",
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn close_msg(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn close_msg(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Close [{}]", get_hint(key_config.enter),),
             "close msg popup (e.g msg)",
             CMD_GROUP_GENERAL,
@@ -312,8 +312,8 @@ pub mod commands {
     }
     pub fn select_staging(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "To stage [{}]",
                 get_hint(key_config.focus_stage),
@@ -324,8 +324,8 @@ pub mod commands {
     }
     pub fn select_status(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "To files [{},{}]",
                 get_hint(key_config.tab_status),
@@ -337,8 +337,8 @@ pub mod commands {
     }
     pub fn select_unstaged(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "To unstaged [{}]",
                 get_hint(key_config.focus_workdir),
@@ -347,8 +347,8 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn commit_open(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn commit_open(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Commit [{}]", get_hint(key_config.open_commit),),
             "open commit popup (available in non-empty stage)",
             CMD_GROUP_COMMIT,
@@ -356,8 +356,8 @@ pub mod commands {
     }
     pub fn commit_open_editor(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "Open editor [{}]",
                 get_hint(key_config.open_commit_editor),
@@ -366,36 +366,36 @@ pub mod commands {
             CMD_GROUP_COMMIT,
         )
     }
-    pub fn commit_enter(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn commit_enter(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Commit [{}]", get_hint(key_config.enter),),
             "commit (available when commit message is non-empty)",
             CMD_GROUP_COMMIT,
         )
     }
-    pub fn commit_amend(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn commit_amend(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Amend [{}]", get_hint(key_config.commit_amend),),
             "amend last commit",
             CMD_GROUP_COMMIT,
         )
     }
-    pub fn edit_item(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn edit_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Edit Item [{}]", get_hint(key_config.edit_file),),
             "edit the currently selected file in an external editor",
             CMD_GROUP_CHANGES,
         )
     }
-    pub fn stage_item(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn stage_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Stage Item [{}]", get_hint(key_config.enter),),
             "stage currently selected file or entire path",
             CMD_GROUP_CHANGES,
         )
     }
-    pub fn stage_all(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn stage_all(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!(
                 "Stage All [{}]",
                 get_hint(key_config.status_stage_all),
@@ -404,15 +404,15 @@ pub mod commands {
             CMD_GROUP_CHANGES,
         )
     }
-    pub fn unstage_item(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn unstage_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Unstage Item [{}]", get_hint(key_config.enter),),
             "unstage currently selected file or entire path",
             CMD_GROUP_CHANGES,
         )
     }
-    pub fn unstage_all(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn unstage_all(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!(
                 "Unstage all [{}]",
                 get_hint(key_config.status_stage_all),
@@ -421,8 +421,8 @@ pub mod commands {
             CMD_GROUP_CHANGES,
         )
     }
-    pub fn reset_item(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn reset_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!(
                 "Reset Item [{}]",
                 get_hint(key_config.stash_drop),
@@ -431,8 +431,8 @@ pub mod commands {
             CMD_GROUP_CHANGES,
         )
     }
-    pub fn ignore_item(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn ignore_item(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!(
                 "Ignore [{}]",
                 get_hint(key_config.status_ignore_file),
@@ -444,8 +444,8 @@ pub mod commands {
 
     pub fn diff_focus_left(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Back [{}]", get_hint(key_config.focus_left),),
             "view and select changed files",
             CMD_GROUP_GENERAL,
@@ -453,15 +453,15 @@ pub mod commands {
     }
     pub fn diff_focus_right(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Diff [{}]", get_hint(key_config.focus_right),),
             "inspect file diff",
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn quit(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn quit(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Quit [{}]", get_hint(key_config.exit),),
             "quit gitui application",
             CMD_GROUP_GENERAL,
@@ -469,8 +469,8 @@ pub mod commands {
     }
     pub fn reset_confirm(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Confirm [{}]", get_hint(key_config.enter),),
             "resets the file in question",
             CMD_GROUP_GENERAL,
@@ -478,8 +478,8 @@ pub mod commands {
     }
     pub fn stashing_save(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Save [{}]", get_hint(key_config.stashing_save),),
             "opens stash name input popup",
             CMD_GROUP_STASHING,
@@ -487,8 +487,8 @@ pub mod commands {
     }
     pub fn stashing_toggle_indexed(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "Toggle Staged [{}]",
                 get_hint(key_config.stashing_toggle_index),
@@ -499,8 +499,8 @@ pub mod commands {
     }
     pub fn stashing_toggle_untracked(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "Toggle Untracked [{}]",
                 get_hint(key_config.stashing_toggle_untracked),
@@ -511,8 +511,8 @@ pub mod commands {
     }
     pub fn stashing_confirm_msg(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Stash [{}]", get_hint(key_config.enter),),
             "save files to stash",
             CMD_GROUP_STASHING,
@@ -520,8 +520,8 @@ pub mod commands {
     }
     pub fn stashlist_apply(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Apply [{}]", get_hint(key_config.enter),),
             "apply selected stash",
             CMD_GROUP_STASHES,
@@ -529,8 +529,8 @@ pub mod commands {
     }
     pub fn stashlist_drop(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Drop [{}]", get_hint(key_config.stash_drop),),
             "drop selected stash",
             CMD_GROUP_STASHES,
@@ -538,8 +538,8 @@ pub mod commands {
     }
     pub fn stashlist_inspect(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Inspect [{}]", get_hint(key_config.focus_right),),
             "open stash commit details (allows to diff files)",
             CMD_GROUP_STASHES,
@@ -547,8 +547,8 @@ pub mod commands {
     }
     pub fn log_details_toggle(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Details [{}]", get_hint(key_config.enter),),
             "open details of selected commit",
             CMD_GROUP_LOG,
@@ -556,8 +556,8 @@ pub mod commands {
     }
     pub fn log_details_open(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Inspect [{}]", get_hint(key_config.focus_right),),
             "inspect selected commit in detail",
             CMD_GROUP_LOG,
@@ -565,8 +565,8 @@ pub mod commands {
     }
     pub fn log_tag_commit(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Tag [{}]", get_hint(key_config.log_tag_commit),),
             "tag commit",
             CMD_GROUP_LOG,
@@ -574,8 +574,8 @@ pub mod commands {
     }
     pub fn tag_commit_confirm_msg(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Tag [{}]", get_hint(key_config.enter),),
             "tag commit",
             CMD_GROUP_LOG,
@@ -583,8 +583,8 @@ pub mod commands {
     }
     pub fn create_branch_confirm_msg(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!("Create Branch [{}]", get_hint(key_config.enter),),
             "create branch",
             CMD_GROUP_GENERAL,
@@ -592,8 +592,8 @@ pub mod commands {
     }
     pub fn open_branch_create_popup(
         key_config: &SharedKeyConfig,
-    ) -> CommandSpan {
-        CommandSpan::new(
+    ) -> CommandText {
+        CommandText::new(
             format!(
                 "Branch [{}]",
                 get_hint(key_config.create_branch),
@@ -602,8 +602,8 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn status_push(key_config: &SharedKeyConfig) -> CommandSpan {
-        CommandSpan::new(
+    pub fn status_push(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
             format!("Push [{}]", get_hint(key_config.push),),
             "push to origin",
             CMD_GROUP_GENERAL,

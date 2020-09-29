@@ -15,7 +15,7 @@ use tui::{
 };
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
-pub struct SpanInputComponent {
+pub struct TextInputComponent {
     title: String,
     default_msg: String,
     msg: String,
@@ -25,7 +25,7 @@ pub struct SpanInputComponent {
     cursor_position: usize,
 }
 
-impl SpanInputComponent {
+impl TextInputComponent {
     ///
     pub fn new(
         theme: SharedTheme,
@@ -150,7 +150,7 @@ impl SpanInputComponent {
     }
 }
 
-impl DrawableComponent for SpanInputComponent {
+impl DrawableComponent for TextInputComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
@@ -185,7 +185,7 @@ impl DrawableComponent for SpanInputComponent {
     }
 }
 
-impl Component for SpanInputComponent {
+impl Component for TextInputComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_smoke() {
-        let mut comp = SpanInputComponent::new(
+        let mut comp = TextInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",
@@ -294,7 +294,7 @@ mod tests {
 
     #[test]
     fn text_cursor_initial_position() {
-        let mut comp = SpanInputComponent::new(
+        let mut comp = TextInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",
@@ -316,7 +316,7 @@ mod tests {
 
     #[test]
     fn test_cursor_second_position() {
-        let mut comp = SpanInputComponent::new(
+        let mut comp = TextInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_visualize_newline() {
-        let mut comp = SpanInputComponent::new(
+        let mut comp = TextInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",
@@ -370,7 +370,7 @@ mod tests {
 
     #[test]
     fn test_invisable_newline() {
-        let mut comp = SpanInputComponent::new(
+        let mut comp = TextInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
             "",

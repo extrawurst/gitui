@@ -1,5 +1,5 @@
 use super::{
-    textinput::SpanInputComponent, visibility_blocking,
+    textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
 };
 use crate::{
@@ -17,7 +17,7 @@ use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct TagCommitComponent {
-    input: SpanInputComponent,
+    input: TextInputComponent,
     commit_id: Option<CommitId>,
     queue: Queue,
     key_config: SharedKeyConfig,
@@ -97,7 +97,7 @@ impl TagCommitComponent {
     ) -> Self {
         Self {
             queue,
-            input: SpanInputComponent::new(
+            input: TextInputComponent::new(
                 theme,
                 key_config.clone(),
                 &strings::tag_commit_popup_title(&key_config),

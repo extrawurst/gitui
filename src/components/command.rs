@@ -1,6 +1,6 @@
 ///
 #[derive(Clone, PartialEq, PartialOrd, Ord, Eq)]
-pub struct CommandSpan {
+pub struct CommandText {
     ///
     pub name: String,
     ///
@@ -11,7 +11,7 @@ pub struct CommandSpan {
     pub hide_help: bool,
 }
 
-impl CommandSpan {
+impl CommandText {
     ///
     pub const fn new(
         name: String,
@@ -36,7 +36,7 @@ impl CommandSpan {
 ///
 pub struct CommandInfo {
     ///
-    pub text: CommandSpan,
+    pub text: CommandText,
     /// available but not active in the context
     pub enabled: bool,
     /// will show up in the quick bar
@@ -51,7 +51,7 @@ pub struct CommandInfo {
 impl CommandInfo {
     ///
     pub const fn new(
-        text: CommandSpan,
+        text: CommandText,
         enabled: bool,
         available: bool,
     ) -> Self {
