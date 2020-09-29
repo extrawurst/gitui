@@ -610,4 +610,16 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn status_force_push(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Force Push [{}]",
+                get_hint(key_config.force_push),
+            ),
+            "force push to origin",
+            CMD_GROUP_GENERAL,
+        )
+    }
 }

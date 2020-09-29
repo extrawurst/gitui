@@ -407,6 +407,11 @@ impl Component for Status {
             self.index_wd.branch_name().is_some(),
             true,
         ));
+        out.push(CommandInfo::new(
+            strings::commands::status_force_push(&self.key_config),
+            self.index_wd.branch_name().is_some(),
+            true,
+        ));
 
         out.push(
             CommandInfo::new(
