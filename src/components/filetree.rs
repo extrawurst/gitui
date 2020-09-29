@@ -222,11 +222,13 @@ impl FileTreeComponent {
     /// allowing folders to be folded up if they are alone in their directory
     fn build_vec_text_draw_info_for_drawing(
         &self,
-    ) -> (Vec<TextDrawInfo>, usize) {
+    ) -> (Vec<TextDrawInfo>, usize, usize) {
         let mut should_skip_over: usize = 0;
         let mut selection_offset: usize = 0;
+        let mut selection_offset_visible: usize = 0;
         let mut vec_draw_text_info: Vec<TextDrawInfo> = vec![];
         let tree_items = self.tree.tree.items();
+
         for (index, item) in tree_items.iter().enumerate() {
             if should_skip_over > 0 {
                 should_skip_over -= 1;
@@ -235,6 +237,10 @@ impl FileTreeComponent {
 
             let index_above_select =
                 index < self.tree.selection.unwrap_or(0);
+
+            if !item.info.visible && index_above_select {
+                selection_offset_visible += 1;
+            }
 
             vec_draw_text_info.push(TextDrawInfo {
                 name: item.info.path.clone(),
@@ -260,9 +266,12 @@ impl FileTreeComponent {
                     should_skip_over -= 1;
                     break;
                 }
-
                 // don't fold up if more than one folder in folder
-                if self.tree.tree.multiple_items_at_path(idx_temp) {
+                else if self
+                    .tree
+                    .tree
+                    .multiple_items_at_path(idx_temp)
+                {
                     should_skip_over -= 1;
                     break;
                 } else {
@@ -280,7 +289,11 @@ impl FileTreeComponent {
                 }
             }
         }
-        (vec_draw_text_info, selection_offset)
+        (
+            vec_draw_text_info,
+            selection_offset,
+            selection_offset_visible,
+        )
     }
 }
 
@@ -314,8 +327,11 @@ impl DrawableComponent for FileTreeComponent {
                 &self.theme,
             );
         } else {
-            let (vec_draw_text_info, selection_offset) =
-                self.build_vec_text_draw_info_for_drawing();
+            let (
+                vec_draw_text_info,
+                selection_offset,
+                selection_offset_visible,
+            ) = self.build_vec_text_draw_info_for_drawing();
 
             let select = self
                 .tree
@@ -327,7 +343,7 @@ impl DrawableComponent for FileTreeComponent {
             self.scroll_top.set(ui::calc_scroll_top(
                 self.scroll_top.get(),
                 tree_height,
-                select,
+                select.saturating_sub(selection_offset_visible),
             ));
 
             let items = vec_draw_text_info
@@ -412,5 +428,103 @@ impl Component for FileTreeComponent {
     fn focus(&mut self, focus: bool) {
         self.focused = focus;
         self.show_selection(focus);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use asyncgit::StatusItemType;
+
+    fn string_vec_to_status(items: &[&str]) -> Vec<StatusItem> {
+        items
+            .iter()
+            .map(|a| StatusItem {
+                path: String::from(*a),
+                status: StatusItemType::Modified,
+            })
+            .collect::<Vec<_>>()
+    }
+
+    #[test]
+    fn test_correct_scroll_position() {
+        let items = string_vec_to_status(&[
+            "a/b/b1", //
+            "a/b/b2", //
+            "a/c/c1", //
+        ]);
+
+        //0 a/
+        //1   b/
+        //2     b1
+        //3     b2
+        //4  c/
+        //5    c1
+
+        // Set up test terminal
+        let test_backend = tui::backend::TestBackend::new(100, 100);
+        let mut terminal = tui::Terminal::new(test_backend)
+            .expect("Unable to set up terminal");
+        let mut frame = terminal.get_frame();
+
+        // set up file tree
+        let mut ftc = FileTreeComponent::new(
+            "title",
+            true,
+            None,
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+        );
+        ftc.update(&items)
+            .expect("Updating FileTreeComponent failed");
+
+        ftc.move_selection(MoveSelection::Down); // Move to b/
+        ftc.move_selection(MoveSelection::Left); // Fold b/
+        ftc.move_selection(MoveSelection::Down); // Move to c/
+
+        ftc.draw(&mut frame, Rect::new(0, 0, 10, 5))
+            .expect("Draw failed");
+
+        assert_eq!(ftc.scroll_top.get(), 0); // should still be at top
+    }
+
+    #[test]
+    fn test_correct_foldup_and_not_visible_scroll_position() {
+        let items = string_vec_to_status(&[
+            "a/b/b1", //
+            "c/d1",   //
+            "c/d2",   //
+        ]);
+
+        //0 a/b/
+        //2     b1
+        //3 c/
+        //4   d1
+        //5   d2
+
+        // Set up test terminal
+        let test_backend = tui::backend::TestBackend::new(100, 100);
+        let mut terminal = tui::Terminal::new(test_backend)
+            .expect("Unable to set up terminal");
+        let mut frame = terminal.get_frame();
+
+        // set up file tree
+        let mut ftc = FileTreeComponent::new(
+            "title",
+            true,
+            None,
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+        );
+        ftc.update(&items)
+            .expect("Updating FileTreeComponent failed");
+
+        ftc.move_selection(MoveSelection::Left); // Fold a/b/
+        ftc.move_selection(MoveSelection::Down); // Move to c/
+
+        ftc.draw(&mut frame, Rect::new(0, 0, 10, 5))
+            .expect("Draw failed");
+
+        assert_eq!(ftc.scroll_top.get(), 0); // should still be at top
     }
 }
