@@ -487,4 +487,44 @@ mod tests {
 
         assert_eq!(ftc.scroll_top.get(), 0); // should still be at top
     }
+
+    #[test]
+    fn test_correct_foldup_and_not_visible_scroll_position() {
+        let items = string_vec_to_status(&[
+            "a/b/b1", //
+            "c/d1",   //
+            "c/d2",   //
+        ]);
+
+        //0 a/b/
+        //2     b1
+        //3 c/
+        //4   d1
+        //5   d2
+
+        // Set up test terminal
+        let test_backend = tui::backend::TestBackend::new(100, 100);
+        let mut terminal = tui::Terminal::new(test_backend)
+            .expect("Unable to set up terminal");
+        let mut frame = terminal.get_frame();
+
+        // set up file tree
+        let mut ftc = FileTreeComponent::new(
+            "title",
+            true,
+            None,
+            SharedTheme::default(),
+            SharedKeyConfig::default(),
+        );
+        ftc.update(&items)
+            .expect("Updating FileTreeComponent failed");
+
+        ftc.move_selection(MoveSelection::Left); // Fold a/b/
+        ftc.move_selection(MoveSelection::Down); // Move to c/
+
+        ftc.draw(&mut frame, Rect::new(0, 0, 10, 5))
+            .expect("Draw failed");
+
+        assert_eq!(ftc.scroll_top.get(), 0); // should still be at top
+    }
 }
