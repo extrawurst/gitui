@@ -7,6 +7,7 @@ pub use scrolllist::draw_list;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
 /// return the scroll position (line) necessary to have the `selection` in view if it is not already
+#[allow(clippy::missing_const_for_fn)]
 pub fn calc_scroll_top(
     current_top: usize,
     height_in_lines: usize,
