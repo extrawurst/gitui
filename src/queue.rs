@@ -53,6 +53,8 @@ pub enum InternalEvent {
     ///
     CreateBranch,
     ///
+    SelectBranch(String),
+    ///
     OpenExternalEditor(Option<String>),
     ///
     Push(String),

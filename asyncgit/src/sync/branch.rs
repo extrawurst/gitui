@@ -28,6 +28,98 @@ pub(crate) fn get_branch_name(repo_path: &str) -> Result<String> {
     Err(Error::NoHead)
 }
 
+///
+pub struct BranchForDisplay {
+    ///
+    pub name: String,
+    ///
+    pub reference: String,
+    ///
+    pub top_commit_message: String,
+    ///
+    pub top_commit_reference: String,
+    ///
+    pub is_head: bool,
+}
+
+impl From<(String, String, String, String, bool)>
+    for BranchForDisplay
+{
+    fn from(
+        (n, r, tcm, tcr, ih): (String, String, String, String, bool),
+    ) -> Self {
+        Self {
+            name: n,
+            reference: r,
+            top_commit_message: tcm,
+            top_commit_reference: tcr,
+            is_head: ih,
+        }
+    }
+}
+
+///
+pub fn get_branches_to_display(
+    repo_path: &str,
+) -> Vec<BranchForDisplay> {
+    if let Ok(cur_repo) = utils::repo(repo_path) {
+        cur_repo
+            .branches(None)
+            .map_err(super::super::error::Error::Git)
+            .expect("")
+            .map(|b| {
+                let branch = &(&b).as_ref().expect("").0;
+
+                let top_commit =
+                    branch.get().peel_to_commit().expect("");
+
+                let mut commit_id = top_commit.id().to_string();
+                commit_id.truncate(7);
+                (
+                    match branch.name().expect("") {
+                        Some(name) => String::from(name),
+                        None => String::from(""),
+                    },
+                    match branch.get().name() {
+                        Some(name) => String::from(name),
+                        None => String::from(""),
+                    },
+                    match top_commit.message()//.shorthand()
+                    {
+                        Some(name) => String::from(name.trim_end()),
+                        None => String::from(""),
+                    },
+                    commit_id,
+                    branch.is_head(),
+                )
+            })
+            .map(BranchForDisplay::from)
+            .collect::<_>()
+    } else {
+        vec![]
+    }
+}
+
+/// Modify HEAD to point to a branch
+/// then checkout head
+pub fn checkout_branch(
+    repo_path: &str,
+    branch_ref: &str,
+) -> Result<()> {
+    // This defaults to a safe checkout, so don't delete anything that
+    // hasn't been committed or stashed, in this case it will Err
+    if let Ok(repo) = utils::repo(repo_path) {
+        if repo.set_head(branch_ref).is_ok()
+            && repo.checkout_head(None).is_ok()
+        {
+            return Ok(());
+        }
+    }
+
+    // TODO change this
+    Err(Error::NoHead)
+}
+
 /// creates a new branch pointing to current HEAD commit and updating HEAD to new branch
 pub fn create_branch(repo_path: &str, name: &str) -> Result<()> {
     scope_time!("create_branch");

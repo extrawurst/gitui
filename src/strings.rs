@@ -10,6 +10,8 @@ pub static PUSH_POPUP_STATES_ADDING: &str = "adding objects (1/3)";
 pub static PUSH_POPUP_STATES_DELTAS: &str = "deltas (2/3)";
 pub static PUSH_POPUP_STATES_PUSHING: &str = "pushing (3/3)";
 
+pub static SELECT_BRANCH_POPUP_MSG: &str = "Switch Branch";
+
 pub fn title_status(key_config: &SharedKeyConfig) -> String {
     format!(
         "Unstaged Changes [{}]",
@@ -595,13 +597,26 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Branch [{}]",
+                "Create [{}]",
                 get_hint(key_config.create_branch),
             ),
             "open create branch popup",
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn open_branch_select_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Checkout [{}]",
+                get_hint(key_config.select_branch),
+            ),
+            "open select branch popup",
+            CMD_GROUP_GENERAL,
+        )
+    }
+
     pub fn status_push(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!("Push [{}]", get_hint(key_config.push),),
