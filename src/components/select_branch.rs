@@ -28,10 +28,8 @@ use ui::style::SharedTheme;
 ///
 pub struct SelectBranchComponent {
     branch_names: Vec<BranchForDisplay>,
-    //cur_branch: String,
     visible: bool,
     selection: u16,
-    //can_create_branch: bool,
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
@@ -43,7 +41,7 @@ impl DrawableComponent for SelectBranchComponent {
         f: &mut Frame<B>,
         _rect: Rect,
     ) -> Result<()> {
-        // Render a scrolllist inside a box
+        // Render a scrolllist of branches inside a box
 
         if self.visible {
             const SIZE: (u16, u16) = (50, 20);
@@ -165,7 +163,6 @@ impl SelectBranchComponent {
     ) -> Self {
         Self {
             branch_names: Self::get_branch_names(),
-            //cur_branch: get_branch_name(),
             visible: false,
             selection: 0,
             queue,
