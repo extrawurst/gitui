@@ -12,7 +12,7 @@ use anyhow::Result;
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
 use crossterm::event::{
-    Event,
+    Event, KeyModifiers,
     MouseEvent::{ScrollDown, ScrollUp},
 };
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
@@ -653,12 +653,44 @@ impl Component for DiffComponent {
         if self.focused {
             if let Event::Mouse(mouse_ev) = ev {
                 return match mouse_ev {
-                    ScrollUp(_col, _row, _key_modifiers) => {
-                        self.move_selection(ScrollType::Up)?;
+                    ScrollUp(_col, _row, key_modifiers) => {
+                        match key_modifiers {
+                            KeyModifiers::SHIFT => {
+                                self.modify_selection(Direction::Up)?;
+                            }
+                            KeyModifiers::CONTROL => {
+                                self.modify_selection(Direction::Up)?;
+                                self.modify_selection(Direction::Up)?;
+                                self.modify_selection(Direction::Up)?;
+                            }
+                            KeyModifiers::NONE => {
+                                self.move_selection(ScrollType::Up)?;
+                            }
+                            _ => {}
+                        };
                         Ok(true)
                     }
-                    ScrollDown(_col, _row, _key_modifiers) => {
-                        self.move_selection(ScrollType::Down)?;
+                    ScrollDown(_col, _row, key_modifiers) => {
+                        match key_modifiers {
+                            KeyModifiers::SHIFT => self
+                                .modify_selection(Direction::Down)?,
+                            KeyModifiers::CONTROL => {
+                                self.modify_selection(
+                                    Direction::Down,
+                                )?;
+                                self.modify_selection(
+                                    Direction::Down,
+                                )?;
+                                self.modify_selection(
+                                    Direction::Down,
+                                )?;
+                            }
+                            _ => {
+                                self.move_selection(
+                                    ScrollType::Down,
+                                )?;
+                            }
+                        };
                         Ok(true)
                     }
                     _ => Ok(false),
