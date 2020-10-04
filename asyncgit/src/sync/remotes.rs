@@ -1,15 +1,13 @@
 //!
 
+use super::CommitId;
 use crate::{error::Result, sync::utils};
 use crossbeam_channel::Sender;
 use git2::{
-    Cred, FetchOptions, PackBuilderStage, PushOptions,
-    RemoteCallbacks,
+    Cred, Error as GitError, FetchOptions, PackBuilderStage,
+    PushOptions, RemoteCallbacks,
 };
 use scopetime::scope_time;
-
-use super::CommitId;
-
 ///
 #[derive(Debug, Clone)]
 pub enum ProgressNotification {
@@ -71,7 +69,10 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     let mut remote = repo.find_remote("origin")?;
 
     let mut options = FetchOptions::new();
-    options.remote_callbacks(remote_callbacks(None));
+    options.remote_callbacks(match remote_callbacks(None) {
+        Ok(callback) => callback,
+        Err(e) => return Err(e),
+    });
 
     remote.fetch(&[branch], Some(&mut options), None)?;
 
@@ -92,7 +93,12 @@ pub fn push(
 
     let mut options = PushOptions::new();
 
-    options.remote_callbacks(remote_callbacks(Some(progress_sender)));
+    options.remote_callbacks(
+        match remote_callbacks(Some(progress_sender)) {
+            Ok(callbacks) => callbacks,
+            Err(e) => return Err(e),
+        },
+    );
     options.packbuilder_parallelism(0);
 
     remote.push(&[branch], Some(&mut options))?;
@@ -102,7 +108,7 @@ pub fn push(
 
 fn remote_callbacks<'a>(
     sender: Option<Sender<ProgressNotification>>,
-) -> RemoteCallbacks<'a> {
+) -> Result<RemoteCallbacks<'a>> {
     let mut callbacks = RemoteCallbacks::new();
     let sender_clone = sender.clone();
     callbacks.push_transfer_progress(move |current, total, bytes| {
@@ -167,12 +173,15 @@ fn remote_callbacks<'a>(
             allowed_types
         );
 
-        Cred::ssh_key_from_agent(
-            username_from_url.expect("username not found"),
-        )
+        match username_from_url {
+            Some(username) => Cred::ssh_key_from_agent(username),
+            None => Err(GitError::from_str(
+                " Couldn't extract username from url.",
+            )),
+        }
     });
 
-    callbacks
+    Ok(callbacks)
 }
 
 #[cfg(test)]
