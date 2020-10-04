@@ -34,6 +34,7 @@ use clap::{
 };
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
+    event::EnableMouseCapture,
     terminal::{
         disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
         LeaveAlternateScreen,
@@ -168,6 +169,7 @@ fn main() -> Result<()> {
 fn setup_terminal() -> Result<()> {
     enable_raw_mode()?;
     io::stdout().execute(EnterAlternateScreen)?;
+    io::stdout().execute(EnableMouseCapture)?;
     Ok(())
 }
 
