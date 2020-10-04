@@ -42,23 +42,9 @@ pub struct BranchForDisplay {
     pub is_head: bool,
 }
 
-impl From<(String, String, String, String, bool)>
-    for BranchForDisplay
-{
-    fn from(
-        (n, r, tcm, tcr, ih): (String, String, String, String, bool),
-    ) -> Self {
-        Self {
-            name: n,
-            reference: r,
-            top_commit_message: tcm,
-            top_commit_reference: tcr,
-            is_head: ih,
-        }
-    }
-}
-
-///
+/// TODO make this cached
+/// Used to return only the nessessary information for displaying a branch
+/// rather than an iterator over the actual branches
 pub fn get_branches_to_display(
     repo_path: &str,
 ) -> Vec<BranchForDisplay> {
@@ -75,25 +61,28 @@ pub fn get_branches_to_display(
 
                 let mut commit_id = top_commit.id().to_string();
                 commit_id.truncate(7);
-                (
-                    match branch.name().expect("") {
+                BranchForDisplay {
+                    name: match branch.name().expect("") {
                         Some(name) => String::from(name),
                         None => String::from(""),
                     },
-                    match branch.get().name() {
+
+                    reference: match branch.get().name() {
                         Some(name) => String::from(name),
                         None => String::from(""),
                     },
-                    match top_commit.message()//.shorthand()
-                    {
-                        Some(name) => String::from(name.trim_end()),
-                        None => String::from(""),
-                    },
-                    commit_id,
-                    branch.is_head(),
-                )
+
+                    top_commit_message: match top_commit.message()//.shorthand()
+                     {
+                         Some(name) => String::from(name.trim_end()),
+                         None => String::from(""),
+                     },
+
+                    top_commit_reference: commit_id,
+
+                    is_head: branch.is_head(),
+                }
             })
-            .map(BranchForDisplay::from)
             .collect::<_>()
     } else {
         vec![]
