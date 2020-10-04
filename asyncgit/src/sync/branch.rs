@@ -89,8 +89,7 @@ pub fn get_branches_to_display(
     }
 }
 
-/// Modify HEAD to point to a branch
-/// then checkout head
+/// Modify HEAD to point to a branch then checkout head
 pub fn checkout_branch(
     repo_path: &str,
     branch_ref: &str,
