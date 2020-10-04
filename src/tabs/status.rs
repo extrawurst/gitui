@@ -494,11 +494,11 @@ impl Component for Status {
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
                     Ok(true)
-                } else if k == self.key_config.push {
-                    self.push(false);
-                    Ok(true)
                 } else if k == self.key_config.force_push {
                     self.push(true);
+                    Ok(true)
+                } else if k == self.key_config.push {
+                    self.push(false);
                     Ok(true)
                 } else if k == self.key_config.fetch {
                     self.fetch();
