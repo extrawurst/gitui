@@ -11,7 +11,10 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
-use crossterm::event::Event;
+use crossterm::event::{
+    Event,
+    MouseEvent::{ScrollDown, ScrollUp},
+};
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 use tui::{
     backend::Backend,
@@ -648,7 +651,19 @@ impl Component for DiffComponent {
 
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
-            if let Event::Key(e) = ev {
+            if let Event::Mouse(mouse_ev) = ev {
+                return match mouse_ev {
+                    ScrollUp(_col, _row, _key_modifiers) => {
+                        self.move_selection(ScrollType::Up)?;
+                        Ok(true)
+                    }
+                    ScrollDown(_col, _row, _key_modifiers) => {
+                        self.move_selection(ScrollType::Down)?;
+                        Ok(true)
+                    }
+                    _ => Ok(false),
+                };
+            } else if let Event::Key(e) = ev {
                 return if e == self.key_config.move_down {
                     self.move_selection(ScrollType::Down)?;
                     Ok(true)
