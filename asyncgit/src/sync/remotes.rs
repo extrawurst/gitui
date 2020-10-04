@@ -1,13 +1,13 @@
 //!
 
+use super::CommitId;
 use crate::{error::Result, sync::utils};
 use crossbeam_channel::Sender;
 use git2::{
-    Cred, FetchOptions, PackBuilderStage, PushOptions,
-    RemoteCallbacks, Error as GitError
+    Cred, Error as GitError, FetchOptions, PackBuilderStage,
+    PushOptions, RemoteCallbacks,
 };
 use scopetime::scope_time;
-use super::CommitId;
 ///
 #[derive(Debug, Clone)]
 pub enum ProgressNotification {
@@ -56,7 +56,7 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
     let repo = utils::repo(repo_path)?;
     let remotes = repo.remotes()?;
     let remotes: Vec<String> =
-      remotes.iter().filter_map(|s| s).map(String::from).collect();
+        remotes.iter().filter_map(|s| s).map(String::from).collect();
 
     Ok(remotes)
 }
@@ -71,7 +71,7 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     let mut options = FetchOptions::new();
     options.remote_callbacks(match remote_callbacks(None) {
         Ok(callback) => callback,
-        Err(e) => return Err(e)
+        Err(e) => return Err(e),
     });
 
     remote.fetch(&[branch], Some(&mut options), None)?;
@@ -93,10 +93,12 @@ pub fn push(
 
     let mut options = PushOptions::new();
 
-    options.remote_callbacks(match remote_callbacks(Some(progress_sender)) {
-        Ok(callbacks) => callbacks,
-        Err(e) => return Err(e)
-    });
+    options.remote_callbacks(
+        match remote_callbacks(Some(progress_sender)) {
+            Ok(callbacks) => callbacks,
+            Err(e) => return Err(e),
+        },
+    );
     options.packbuilder_parallelism(0);
 
     remote.push(&[branch], Some(&mut options))?;
@@ -172,12 +174,10 @@ fn remote_callbacks<'a>(
         );
 
         match username_from_url {
-            Some(username) => {
-                Cred::ssh_key_from_agent(
-                    username,
-                )
-            },
-            None => Err(GitError::from_str(" Couldn't extract username from url."))
+            Some(username) => Cred::ssh_key_from_agent(username),
+            None => Err(GitError::from_str(
+                " Couldn't extract username from url.",
+            )),
         }
     });
 
