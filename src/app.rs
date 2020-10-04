@@ -496,8 +496,8 @@ impl App {
             InternalEvent::CreateBranch => {
                 self.create_branch_popup.open()?;
             }
-            InternalEvent::SelectBranch(branch) => {
-                self.select_branch_popup.open(branch)?;
+            InternalEvent::SelectBranch => {
+                self.select_branch_popup.open()?;
             }
             InternalEvent::TabSwitch => self.set_tab(0)?,
             InternalEvent::InspectCommit(id, tags) => {

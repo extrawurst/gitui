@@ -6,22 +6,20 @@ use crate::{
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings, ui,
-    version::Version,
 };
-use asyncgit::hash;
+use asyncgit::{
+    sync::{
+        checkout_branch, get_branches_to_display, BranchForDisplay,
+    },
+    CWD,
+};
 use crossterm::event::Event;
-use itertools::Itertools;
 use std::{borrow::Cow, cmp, convert::TryFrom};
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
     Frame,
-};
-
-use asyncgit::sync::{
-    checkout_branch, get_branches_to_display, BranchForDisplay,
 };
 
 use anyhow::Result;
@@ -33,7 +31,7 @@ pub struct SelectBranchComponent {
     //cur_branch: String,
     visible: bool,
     selection: u16,
-    can_create_branch: bool,
+    //can_create_branch: bool,
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
@@ -48,7 +46,7 @@ impl DrawableComponent for SelectBranchComponent {
         // Render a scrolllist inside a box
 
         if self.visible {
-            const SIZE: (u16, u16) = (50, 20); //(65, 24);
+            const SIZE: (u16, u16) = (50, 20);
             let scroll_threshold = SIZE.1 / 3;
             let scroll =
                 self.selection.saturating_sub(scroll_threshold);
@@ -166,11 +164,10 @@ impl SelectBranchComponent {
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
-            branch_names: Self::get_branch_names(), //update_branches,
+            branch_names: Self::get_branch_names(),
             //cur_branch: get_branch_name(),
             visible: false,
             selection: 0,
-            can_create_branch: true,
             queue,
             theme,
             key_config,
@@ -178,20 +175,22 @@ impl SelectBranchComponent {
     }
     /// Get all the names of the branches in the repo
     pub fn get_branch_names() -> Vec<BranchForDisplay> {
-        get_branches_to_display("./")
+        get_branches_to_display(CWD)
     }
 
-    pub fn open(&mut self, selected_branch: String) -> Result<()> {
+    ///
+    pub fn open(&mut self) -> Result<()> {
         self.show()?;
 
         Ok(())
     }
 
+    ////
     pub fn update_branches(&mut self) {
         self.branch_names = Self::get_branch_names();
-        //self.cur_branch = get_branch_name("./");
     }
 
+    ///
     fn move_selection(&mut self, inc: bool) {
         let mut new_selection = self.selection;
 
@@ -209,6 +208,7 @@ impl SelectBranchComponent {
         }
     }
 
+    /// Get branches to display
     fn get_text(&self, theme: &SharedTheme) -> Vec<Text> {
         let mut txt = Vec::new();
 
@@ -223,8 +223,10 @@ impl SelectBranchComponent {
         {
             let mut commit_message =
                 displaybranch.top_commit_message.clone();
-            commit_message.truncate(30);
-            commit_message += "...";
+            if commit_message.len() > 30 {
+                commit_message.truncate(30);
+                commit_message += "...";
+            }
 
             let is_head_str =
                 if displaybranch.is_head { "*" } else { " " };
@@ -261,7 +263,8 @@ impl SelectBranchComponent {
         checkout_branch(
             "./",
             &self.branch_names[self.selection as usize].reference,
-        );
+        )
+        .expect("Failed to checkout branch, does the branch exist?");
         self.queue
             .borrow_mut()
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));

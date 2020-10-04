@@ -491,11 +491,9 @@ impl Component for Status {
                         .push_back(InternalEvent::CreateBranch);
                     Ok(true)
                 } else if k == self.key_config.select_branch {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::SelectBranch(String::from(
-                            "master", // TODOx
-                        )),
-                    );
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::SelectBranch);
                     Ok(true)
                 } else if k == self.key_config.push {
                     self.push();
