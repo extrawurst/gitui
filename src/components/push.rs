@@ -69,10 +69,8 @@ impl PushComponent {
             branch,
             force,
         })?;
+        self.force = force;
 
-        if force {
-            self.force = true;
-        }
         self.show()?;
         Ok(())
     }
