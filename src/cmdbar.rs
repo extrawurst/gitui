@@ -35,7 +35,7 @@ pub struct CommandBar {
     expanded: bool,
 }
 
-const MORE_WIDTH: u16 = 11;
+const MORE_WIDTH: u16 = 9;
 
 impl CommandBar {
     pub const fn new(
@@ -139,6 +139,10 @@ impl CommandBar {
     }
 
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+        if r.width < MORE_WIDTH {
+            return;
+        }
+
         let splitter = Text::Raw(Cow::from(strings::cmd_splitter(
             &self.key_config,
         )));
