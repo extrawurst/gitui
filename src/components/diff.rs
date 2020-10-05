@@ -649,6 +649,7 @@ impl Component for DiffComponent {
         CommandBlocking::PassingOn
     }
 
+    #[allow(clippy::too_many_lines)]
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Mouse(mouse_ev) = ev {
@@ -685,11 +686,12 @@ impl Component for DiffComponent {
                                     Direction::Down,
                                 )?;
                             }
-                            _ => {
+                            KeyModifiers::NONE => {
                                 self.move_selection(
                                     ScrollType::Down,
                                 )?;
                             }
+                            _ => {}
                         };
                         Ok(true)
                     }
