@@ -4,6 +4,7 @@ use crate::{
     error::{Error, Result},
     sync::utils,
 };
+use git2::BranchType;
 use scopetime::scope_time;
 use utils::get_head_repo;
 
@@ -50,7 +51,7 @@ pub fn get_branches_to_display(
 ) -> Vec<BranchForDisplay> {
     if let Ok(cur_repo) = utils::repo(repo_path) {
         cur_repo
-            .branches(None)
+            .branches(Some(BranchType::Local))
             .map_err(super::super::error::Error::Git)
             .expect("")
             .map(|b| {
@@ -72,11 +73,10 @@ pub fn get_branches_to_display(
                         None => String::from(""),
                     },
 
-                    top_commit_message: match top_commit.message()//.shorthand()
-                     {
-                         Some(name) => String::from(name.trim_end()),
-                         None => String::from(""),
-                     },
+                    top_commit_message: match top_commit.summary() {
+                        Some(summary) => String::from(summary),
+                        None => String::from(""),
+                    },
 
                     top_commit_reference: commit_id,
 
