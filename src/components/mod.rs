@@ -43,7 +43,7 @@ use crate::ui::style::Theme;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    text::{Span, Spans},
+    text::{Span, Spans, Text},
     widgets::{Block, BorderType, Borders, Paragraph, Wrap},
     Frame,
 };
@@ -186,11 +186,11 @@ pub trait Component {
 
 fn dialog_paragraph<'a>(
     title: &'a str,
-    content: Vec<Span<'a>>,
+    content: Text<'a>,
     theme: &Theme,
     focused: bool,
 ) -> Paragraph<'a> {
-    Paragraph::new(Spans::from(content))
+    Paragraph::new(content)
         .block(
             Block::default()
                 .title(Span::styled(title, theme.title(focused)))

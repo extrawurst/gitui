@@ -21,7 +21,7 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::Span,
+    text::{Span, Spans, Text},
     Frame,
 };
 enum Detail {
@@ -132,12 +132,7 @@ impl DetailsComponent {
         &self,
         width: usize,
         height: usize,
-    ) -> Vec<Span> {
-        let newline = Span::styled::<String>(
-            String::from("\n"),
-            self.theme.text(true, false),
-        );
-
+    ) -> Vec<Spans> {
         let (wrapped_title, wrapped_message) =
             self.get_wrapped_lines(width);
 
@@ -148,12 +143,11 @@ impl DetailsComponent {
             .skip(self.scroll_top.get())
             .take(height)
             .map(|(i, line)| {
-                Span::styled(
+                Spans::from(vec![Span::styled(
                     line.clone(),
                     self.get_theme_for_line(i < wrapped_title.len()),
-                )
+                )])
             })
-            .intersperse(newline)
             .collect()
     }
 
@@ -186,55 +180,57 @@ impl DetailsComponent {
         }
     }
 
-    fn get_text_info(&self) -> Vec<Span> {
-        let new_line = Span::raw(Cow::from("\n"));
-
+    fn get_text_info(&self) -> Vec<Spans> {
         if let Some(ref data) = self.data {
             let mut res = vec![
-                self.style_detail(&Detail::Author),
-                Span::styled(
-                    Cow::from(format!(
-                        "{} <{}>",
-                        data.author.name, data.author.email
-                    )),
-                    self.theme.text(true, false),
-                ),
-                new_line.clone(),
-                self.style_detail(&Detail::Date),
-                Span::styled(
-                    Cow::from(time_to_string(
-                        data.author.time,
-                        false,
-                    )),
-                    self.theme.text(true, false),
-                ),
-                new_line.clone(),
-            ];
-
-            if let Some(ref committer) = data.committer {
-                res.extend(vec![
-                    self.style_detail(&Detail::Commiter),
+                Spans::from(vec![
+                    self.style_detail(&Detail::Author),
                     Span::styled(
                         Cow::from(format!(
                             "{} <{}>",
-                            committer.name, committer.email
+                            data.author.name, data.author.email
                         )),
                         self.theme.text(true, false),
                     ),
-                    new_line.clone(),
+                ]),
+                Spans::from(vec![
                     self.style_detail(&Detail::Date),
                     Span::styled(
                         Cow::from(time_to_string(
-                            committer.time,
+                            data.author.time,
                             false,
                         )),
                         self.theme.text(true, false),
                     ),
-                    new_line.clone(),
+                ]),
+            ];
+
+            if let Some(ref committer) = data.committer {
+                res.extend(vec![
+                    Spans::from(vec![
+                        self.style_detail(&Detail::Commiter),
+                        Span::styled(
+                            Cow::from(format!(
+                                "{} <{}>",
+                                committer.name, committer.email
+                            )),
+                            self.theme.text(true, false),
+                        ),
+                    ]),
+                    Spans::from(vec![
+                        self.style_detail(&Detail::Date),
+                        Span::styled(
+                            Cow::from(time_to_string(
+                                committer.time,
+                                false,
+                            )),
+                            self.theme.text(true, false),
+                        ),
+                    ]),
                 ]);
             }
 
-            res.extend(vec![
+            res.push(Spans::from(vec![
                 Span::styled(
                     Cow::from(strings::commit::details_sha(
                         &self.key_config,
@@ -245,12 +241,13 @@ impl DetailsComponent {
                     Cow::from(data.hash.clone()),
                     self.theme.text(true, false),
                 ),
-                new_line.clone(),
-            ]);
+            ]));
 
             if !self.tags.is_empty() {
-                res.push(self.style_detail(&Detail::Sha));
-                res.extend(
+                res.push(Spans::from(
+                    self.style_detail(&Detail::Sha),
+                ));
+                res.push(Spans::from(
                     self.tags
                         .iter()
                         .map(|tag| {
@@ -262,8 +259,9 @@ impl DetailsComponent {
                         .intersperse(Span::styled(
                             Cow::from(","),
                             self.theme.text(true, false),
-                        )),
-                );
+                        ))
+                        .collect::<Vec<Span>>(),
+                ));
             }
 
             res
@@ -323,10 +321,7 @@ impl DrawableComponent for DetailsComponent {
                 &strings::commit::details_info_title(
                     &self.key_config,
                 ),
-                self.get_text_info()
-                    .iter()
-                    .map(Clone::clone)
-                    .collect::<Vec<Span>>(),
+                Text::from(self.get_text_info()),
                 &self.theme,
                 false,
             ),
@@ -352,10 +347,7 @@ impl DrawableComponent for DetailsComponent {
                 &strings::commit::details_message_title(
                     &self.key_config,
                 ),
-                wrapped_lines
-                    .iter()
-                    .map(Clone::clone)
-                    .collect::<Vec<Span>>(),
+                Text::from(wrapped_lines),
                 &self.theme,
                 self.focused,
             ),
