@@ -12,7 +12,10 @@ use asyncgit::{
     sync::{self, CommitDetails, CommitId, CommitMessage},
     CWD,
 };
-use crossterm::event::Event;
+use crossterm::event::{
+    Event,
+    MouseEvent::{ScrollDown, ScrollUp},
+};
 use itertools::Itertools;
 use std::{borrow::Cow, cell::Cell};
 use sync::CommitTags;
@@ -387,7 +390,17 @@ impl Component for DetailsComponent {
 
     fn event(&mut self, event: Event) -> Result<bool> {
         if self.focused {
-            if let Event::Key(e) = event {
+            if let Event::Mouse(mouse_ev) = event {
+                return match mouse_ev {
+                    ScrollUp(_col, _row, _key_modifiers) => {
+                        self.move_scroll_top(ScrollType::Up)
+                    }
+                    ScrollDown(_col, _row, _key_modifiers) => {
+                        self.move_scroll_top(ScrollType::Down)
+                    }
+                    _ => Ok(false),
+                };
+            } else if let Event::Key(e) = event {
                 return if e == self.key_config.move_up {
                     self.move_scroll_top(ScrollType::Up)
                 } else if e == self.key_config.move_down {
