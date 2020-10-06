@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![push](assets/push.gif)
 
+- scrollbar in long commit messages ([#308](https://github.com/extrawurst/gitui/issues/308))
+
 ### Changed
 - do not highlight selection in diff view when not focused ([#270](https://github.com/extrawurst/gitui/issues/270))
 - compact treeview [[@WizardOhio24](https://github.com/WizardOhio24)] ([#192](https://github.com/extrawurst/gitui/issues/192))

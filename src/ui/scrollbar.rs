@@ -41,7 +41,7 @@ impl Widget for Scrollbar {
             vertical: 1,
         });
 
-        if area.height <= 4 {
+        if area.height < 4 {
             return;
         }
 

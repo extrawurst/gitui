@@ -5,7 +5,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     strings::{self, order},
-    ui::style::SharedTheme,
+    ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -355,6 +355,17 @@ impl DrawableComponent for DetailsComponent {
             ),
             chunks[1],
         );
+
+        if self.focused {
+            ui::draw_scrollbar(
+                f,
+                chunks[1],
+                &self.theme,
+                self.get_number_of_lines(width as usize)
+                    .saturating_sub(height as usize),
+                self.scroll_top.get(),
+            )
+        }
 
         Ok(())
     }
