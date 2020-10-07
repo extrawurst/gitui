@@ -15,6 +15,12 @@ pub enum Error {
     #[error("git: work dir error")]
     NoWorkDir,
 
+    #[error("git: no parent of commit found")]
+    NoParent,
+
+    #[error("git: rebase error")]
+    Rebase,
+
     #[error("io error:{0}")]
     Io(#[from] std::io::Error),
 

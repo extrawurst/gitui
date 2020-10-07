@@ -112,6 +112,12 @@ pub fn tag_commit_popup_title(
 pub fn tag_commit_popup_msg(_key_config: &SharedKeyConfig) -> String {
     "type tag".to_string()
 }
+pub fn reword_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "reword".to_string()
+}
+pub fn reword_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "new message".to_string()
+}
 pub fn stashlist_title(_key_config: &SharedKeyConfig) -> String {
     "Stashes".to_string()
 }

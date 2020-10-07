@@ -100,8 +100,8 @@ impl RewordComponent {
             input: TextInputComponent::new(
                 theme,
                 key_config.clone(),
-                &strings::tag_commit_popup_title(&key_config),
-                &strings::tag_commit_popup_msg(&key_config),
+                &strings::reword_popup_title(&key_config),
+                &strings::reword_popup_msg(&key_config),
             ),
             commit_id: None,
             key_config,
@@ -119,7 +119,7 @@ impl RewordComponent {
     ///
     pub fn reword(&mut self) {
         if let Some(commit_id) = self.commit_id {
-            match sync::reword(
+            match sync::reword_safe(
                 CWD,
                 commit_id.into(),
                 self.input.get_text(),
@@ -133,6 +133,7 @@ impl RewordComponent {
                     );
                 }
                 Err(e) => {
+                    self.input.clear();
                     self.hide();
                     log::error!("e: {}", e,);
                     self.queue.borrow_mut().push_back(
