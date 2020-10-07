@@ -1,14 +1,8 @@
 //!
 
 use super::commit::signature_allow_undefined_name;
-use super::CommitId;
 use crate::{error::Error, error::Result, sync::utils};
-use crossbeam_channel::Sender;
-use git2::{
-    Cred, Error as GitError, FetchOptions, Oid, PackBuilderStage,
-    PushOptions, RebaseOptions, RemoteCallbacks,
-};
-use scopetime::scope_time;
+use git2::{Oid, RebaseOptions};
 
 /// This is the same as reword, but will abort and fix the repo if something goes wrong
 pub fn reword_safe(
@@ -38,8 +32,7 @@ pub fn reword_safe(
 /// is implimented in git2rs
 ///
 /// This is dangerous if this errors, as the head will be detached so this should
-/// always be wrapped by another function which aborts the rebase and checks-out the
-/// previous branch if something goes worng
+/// always be wrapped by another function which aborts the rebase if something goes worng
 pub fn reword(
     repo_path: &str,
     commit_oid: Oid,
@@ -56,10 +49,10 @@ pub fn reword(
         None
     };
 
-    let commit_to_change = if parent_commit_oid.is_some() {
+    let commit_to_change = if let Some(pc_oid) = parent_commit_oid {
         // Need to start at one previous to the commit, so
         // next point to the actual commit we want to change
-        repo.find_annotated_commit(parent_commit_oid.unwrap())?
+        repo.find_annotated_commit(pc_oid)?
     } else {
         return Err(Error::NoParent);
         // Would the below work?
@@ -70,13 +63,20 @@ pub fn reword(
     let mut cur_branch_name = None;
 
     // Find the head branch
-    for b in repo.branches(None).unwrap() {
+    for b in repo.branches(None)? {
         let branch = b?.0;
         if branch.is_head() {
-            cur_branch_ref =
-                Some(String::from(branch.get().name().unwrap()));
-            cur_branch_name =
-                Some(String::from(branch.name().unwrap().unwrap()));
+            cur_branch_ref = Some(String::from(
+                branch
+                    .get()
+                    .name()
+                    .expect("Branch name is not valid utf8"),
+            ));
+            cur_branch_name = Some(String::from(
+                branch
+                    .name()?
+                    .expect("Branch name is not valid utf8"),
+            ));
             top_branch_commit = Some(repo.find_annotated_commit(
                 branch.get().peel_to_commit()?.id(),
             )?);
@@ -86,18 +86,16 @@ pub fn reword(
 
     if let Some(top_branch_commit) = top_branch_commit {
         // Branch was found, so start a rebase
-        let mut rebase = repo
-            .rebase(
-                Some(&top_branch_commit),
-                Some(&commit_to_change),
-                None,
-                Some(&mut RebaseOptions::default()),
-            )
-            .unwrap();
+        let mut rebase = repo.rebase(
+            Some(&top_branch_commit),
+            Some(&commit_to_change),
+            None,
+            Some(&mut RebaseOptions::default()),
+        )?;
 
         let mut target;
 
-        rebase.next().unwrap()?;
+        rebase.next();
         if parent_commit_oid.is_none() {
             return Err(Error::NoParent);
         } else {
@@ -106,7 +104,7 @@ pub fn reword(
 
         // Set target to top commit, don't know when the rebase will end
         // so have to loop till end
-        for _ in rebase.next() {
+        while rebase.next().is_some() {
             target = rebase.commit(None, &sig, None)?;
         }
         rebase.finish(None)?;
