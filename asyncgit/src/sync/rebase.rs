@@ -10,10 +10,6 @@ use git2::{
 };
 use scopetime::scope_time;
 
-struct Rebase {}
-
-impl Rebase {}
-
 /// This is the same as reword, but will abort and fix the repo if something goes wrong
 pub fn reword_safe(
     repo_path: &str,
