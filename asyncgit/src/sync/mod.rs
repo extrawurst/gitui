@@ -14,6 +14,7 @@ mod hooks;
 mod hunks;
 mod ignore;
 mod logwalker;
+mod rebase;
 mod remotes;
 mod reset;
 mod stash;
@@ -40,6 +41,7 @@ pub use hooks::{
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
+pub use rebase::reword;
 pub use remotes::{
     fetch_origin, get_remotes, push, ProgressNotification,
     DEFAULT_REMOTE_NAME,

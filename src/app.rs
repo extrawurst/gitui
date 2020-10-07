@@ -6,8 +6,8 @@ use crate::{
         Component, CreateBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PushComponent,
-        RenameBranchComponent, ResetComponent, SelectBranchComponent,
-        StashMsgComponent, TagCommitComponent,
+        RenameBranchComponent, ResetComponent, RewordComponent,
+        SelectBranchComponent, StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -45,6 +45,7 @@ pub struct App {
     external_editor_popup: ExternalEditorComponent,
     push_popup: PushComponent,
     tag_commit_popup: TagCommitComponent,
+    reword_popup: RewordComponent,
     create_branch_popup: CreateBranchComponent,
     rename_branch_popup: RenameBranchComponent,
     select_branch_popup: SelectBranchComponent,
@@ -110,6 +111,11 @@ impl App {
                 key_config.clone(),
             ),
             tag_commit_popup: TagCommitComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            reword_popup: RewordComponent::new(
                 queue.clone(),
                 theme.clone(),
                 key_config.clone(),
@@ -347,6 +353,7 @@ impl App {
             external_editor_popup,
             push_popup,
             tag_commit_popup,
+            reword_popup,
             create_branch_popup,
             rename_branch_popup,
             select_branch_popup,
@@ -513,6 +520,9 @@ impl App {
             InternalEvent::TagCommit(id) => {
                 self.tag_commit_popup.open(id)?;
             }
+            InternalEvent::RewordCommit(id) => {
+                self.reword_popup.open(id)?;
+            }
             InternalEvent::CreateBranch => {
                 self.create_branch_popup.open()?;
             }
@@ -600,6 +610,7 @@ impl App {
             || self.push_popup.is_visible()
             || self.select_branch_popup.is_visible()
             || self.rename_branch_popup.is_visible()
+            || self.reword_popup.is_visible()
     }
 
     fn draw_popups<B: Backend>(
@@ -624,6 +635,7 @@ impl App {
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
         self.select_branch_popup.draw(f, size)?;
+        self.reword_popup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;

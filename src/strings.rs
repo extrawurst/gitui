@@ -625,6 +625,15 @@ pub mod commands {
             CMD_GROUP_LOG,
         )
     }
+    pub fn reword_commit(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Reword [{}]", get_hint(key_config.reword),),
+            "reword commit",
+            CMD_GROUP_LOG,
+        )
+    }
     pub fn create_branch_confirm_msg(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
