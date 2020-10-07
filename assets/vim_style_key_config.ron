@@ -70,4 +70,5 @@
     delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
     fetch: ( code: Char('f'), modifiers: ( bits: 0,),),
+    reword: ( code: Char('r'), modifiers: ( bits: 0,),),
 )
