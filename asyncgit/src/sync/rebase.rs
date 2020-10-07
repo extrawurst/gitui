@@ -11,17 +11,34 @@ pub fn reword_safe(
     message: &str,
 ) -> Result<()> {
     let repo = utils::repo(repo_path)?;
-    if reword(repo_path, commit_oid, message).is_ok() {
-        Ok(())
-    } else {
-        // Something went wrong, checkout the master branch
-        // then error
-        if let Ok(mut rebase) = repo.open_rebase(None) {
-            rebase.abort()?;
-            repo.set_head("master")?;
-            repo.checkout_head(None)?;
+    let mut cur_branch_ref = None;
+    // Find the head branch
+    for b in repo.branches(None)? {
+        let branch = b?.0;
+        if branch.is_head() {
+            cur_branch_ref = Some(String::from(
+                branch
+                    .get()
+                    .name()
+                    .expect("Branch name is not valid utf8"),
+            ));
+            break;
         }
-        Err(Error::Rebase)
+    }
+
+    match reword(repo_path, commit_oid, message) {
+        Ok(()) => Ok(()),
+        // Something went wrong, checkout the previous branch then error
+        Err(e) => {
+            if let Ok(mut rebase) = repo.open_rebase(None) {
+                if let Some(cur_branch) = cur_branch_ref {
+                    rebase.abort()?;
+                    repo.set_head(&cur_branch)?;
+                    repo.checkout_head(None)?;
+                }
+            }
+            Err(e)
+        }
     }
 }
 
