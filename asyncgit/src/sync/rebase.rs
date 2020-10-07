@@ -47,8 +47,6 @@ pub fn reword(
 ) -> Result<()> {
     let repo = utils::repo(repo_path)?;
     let sig = signature_allow_undefined_name(&repo)?;
-    let head = repo
-        .find_annotated_commit(utils::get_head(repo_path)?.into())?;
 
     let parent_commit_oid = if let Ok(parent_commit) =
         repo.find_commit(commit_oid)?.parent(0)
