@@ -31,8 +31,7 @@ pub fn reword_safe(
     }
 }
 
-/// Changes the commit message of a commit with a specified hash
-/// change_commit_message
+/// Changes the commit message of a commit with a specified oid
 ///
 /// While this function is most commonly associated with doing a
 /// reword opperation in an interactive rebase, that is not how it
