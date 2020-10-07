@@ -37,7 +37,7 @@ pub fn reword_safe(
 /// reword opperation in an interactive rebase, that is not how it
 /// is implimented in git2rs
 ///
-/// This is dangrous if this errors, as the head will be detached so this should
+/// This is dangerous if this errors, as the head will be detached so this should
 /// always be wrapped by another function which aborts the rebase and checks-out the
 /// previous branch if something goes worng
 pub fn reword(
