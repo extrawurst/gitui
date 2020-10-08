@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - crash when changing git repo while gitui is open ([#271](https://github.com/extrawurst/gitui/issues/271))
 - crash on small terminal size ([#307](https://github.com/extrawurst/gitui/issues/307))
+- fix vim keybindings uppercase handling [[@yanganto](https://github.com/yanganto)] ([#286](https://github.com/extrawurst/gitui/issues/286))
 
 ## [0.10.1] - 2020-09-01
 
