@@ -48,45 +48,29 @@ pub struct BranchForDisplay {
 /// rather than an iterator over the actual branches
 pub fn get_branches_to_display(
     repo_path: &str,
-) -> Vec<BranchForDisplay> {
-    if let Ok(cur_repo) = utils::repo(repo_path) {
-        cur_repo
-            .branches(Some(BranchType::Local))
-            .map_err(super::super::error::Error::Git)
-            .expect("")
-            .map(|b| {
-                let branch = &(&b).as_ref().expect("").0;
+) -> Result<Vec<BranchForDisplay>> {
+    let cur_repo = utils::repo(repo_path)?;
+    let mut branches_for_display = vec![];
 
-                let top_commit =
-                    branch.get().peel_to_commit().expect("");
+    for b in cur_repo.branches(Some(BranchType::Local))? {
+        let branch = &b?.0;
+        let top_commit = branch.get().peel_to_commit()?;
+        let mut commit_id = top_commit.id().to_string();
+        commit_id.truncate(7);
 
-                let mut commit_id = top_commit.id().to_string();
-                commit_id.truncate(7);
-                BranchForDisplay {
-                    name: match branch.name().expect("") {
-                        Some(name) => String::from(name),
-                        None => String::from(""),
-                    },
-
-                    reference: match branch.get().name() {
-                        Some(name) => String::from(name),
-                        None => String::from(""),
-                    },
-
-                    top_commit_message: match top_commit.summary() {
-                        Some(summary) => String::from(summary),
-                        None => String::from(""),
-                    },
-
-                    top_commit_reference: commit_id,
-
-                    is_head: branch.is_head(),
-                }
-            })
-            .collect::<_>()
-    } else {
-        vec![]
+        branches_for_display.push(BranchForDisplay {
+            name: String::from_utf8(Vec::from(branch.name_bytes()?))?,
+            reference: String::from_utf8(Vec::from(
+                branch.get().name_bytes(),
+            ))?,
+            top_commit_message: String::from_utf8(Vec::from(
+                top_commit.summary_bytes().unwrap_or(&[]),
+            ))?,
+            top_commit_reference: commit_id,
+            is_head: branch.is_head(),
+        })
     }
+    Ok(branches_for_display)
 }
 
 /// Modify HEAD to point to a branch then checkout head
@@ -104,7 +88,6 @@ pub fn checkout_branch(
         }
     }
 
-    // TODO change this
     Err(Error::NoHead)
 }
 
