@@ -14,7 +14,7 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
-use std::{borrow::Cow, cmp, convert::TryFrom};
+use std::{cmp, convert::TryFrom};
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -173,8 +173,7 @@ impl SelectBranchComponent {
     }
     /// Get all the names of the branches in the repo
     pub fn get_branch_names() -> Result<Vec<BranchForDisplay>> {
-        get_branches_to_display(CWD)
-            .map_err(|e| anyhow::Error::new(e))
+        get_branches_to_display(CWD).map_err(anyhow::Error::new)
     }
 
     ///
@@ -256,10 +255,7 @@ impl SelectBranchComponent {
                         theme.commit_hash(true),
                     ),
                     Span::styled(
-                        format!(
-                            "{}",
-                            displaybranch.top_commit_message
-                        ),
+                        displaybranch.top_commit_message.to_string(),
                         theme.text(true, true),
                     ),
                 ]
@@ -285,10 +281,7 @@ impl SelectBranchComponent {
                         theme.commit_hash(false),
                     ),
                     Span::styled(
-                        format!(
-                            "{}",
-                            displaybranch.top_commit_message
-                        ),
+                        displaybranch.top_commit_message.to_string(),
                         theme.text(true, false),
                     ),
                 ]
