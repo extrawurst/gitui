@@ -25,7 +25,7 @@ If applicable, add screenshots to help explain your problem.
 
 **Context (please complete the following information):**
  - OS/Distro + Version: [e.g. `macOS 10.15.5`]
- - GitUI Version [e.g. `0.5`]
+ - GitUI Version: [e.g. `0.5`]
  - Rust version: [e.g `1.44`]
 
 **Additional context**
