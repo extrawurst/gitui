@@ -18,7 +18,8 @@ use std::{borrow::Cow, cmp, convert::TryFrom};
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
+    text::{Span, Spans, Text},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -71,8 +72,8 @@ impl DrawableComponent for SelectBranchComponent {
                 )
                 .split(area)[0];
             f.render_widget(
-                Paragraph::new(self.get_text(&self.theme)?.iter())
-                    .scroll(scroll)
+                Paragraph::new(self.get_text(&self.theme)?)
+                    .scroll((scroll, 0))
                     .alignment(Alignment::Left),
                 chunk,
             );
@@ -209,7 +210,7 @@ impl SelectBranchComponent {
     }
 
     /// Get branches to display
-    fn get_text(&self, theme: &SharedTheme) -> Result<Vec<Text>> {
+    fn get_text(&self, theme: &SharedTheme) -> Result<Text> {
         let mut txt = Vec::new();
 
         let max_branch_name = self
@@ -233,31 +234,68 @@ impl SelectBranchComponent {
             let is_head_str =
                 if displaybranch.is_head { "*" } else { " " };
 
-            txt.push(Text::Styled(
-                if self.selection as usize == i {
-                    Cow::from(format!(
-                        "{} >{:w$} {} {}\n",
-                        is_head_str,
-                        displaybranch.name,
-                        displaybranch.top_commit_reference,
-                        displaybranch.top_commit_message,
-                        w = max_branch_name
-                    ))
-                } else {
-                    Cow::from(format!(
-                        "{}  {:w$} {} {}\n",
-                        is_head_str,
-                        displaybranch.name,
-                        displaybranch.top_commit_reference,
-                        displaybranch.top_commit_message,
-                        w = max_branch_name
-                    ))
-                },
-                theme.text(true, i == self.selection.into()),
-            ));
+            txt.push(Spans::from(if self.selection as usize == i {
+                vec![
+                    Span::styled(
+                        format!("{} ", is_head_str),
+                        theme.commit_author(true),
+                    ),
+                    Span::styled(
+                        format!(
+                            ">{:w$} ",
+                            displaybranch.name,
+                            w = max_branch_name
+                        ),
+                        theme.commit_author(true),
+                    ),
+                    Span::styled(
+                        format!(
+                            "{} ",
+                            displaybranch.top_commit_reference
+                        ),
+                        theme.commit_hash(true),
+                    ),
+                    Span::styled(
+                        format!(
+                            "{}",
+                            displaybranch.top_commit_message
+                        ),
+                        theme.text(true, true),
+                    ),
+                ]
+            } else {
+                vec![
+                    Span::styled(
+                        format!("{} ", is_head_str),
+                        theme.commit_author(false),
+                    ),
+                    Span::styled(
+                        format!(
+                            " {:w$} ",
+                            displaybranch.name,
+                            w = max_branch_name
+                        ),
+                        theme.commit_author(false),
+                    ),
+                    Span::styled(
+                        format!(
+                            "{} ",
+                            displaybranch.top_commit_reference
+                        ),
+                        theme.commit_hash(false),
+                    ),
+                    Span::styled(
+                        format!(
+                            "{}",
+                            displaybranch.top_commit_message
+                        ),
+                        theme.text(true, false),
+                    ),
+                ]
+            }));
         }
 
-        Ok(txt)
+        Ok(Text::from(txt))
     }
 
     ///
