@@ -2,6 +2,12 @@
 // bits: 0  None 
 // bits: 1  SHIFT
 // bits: 2  CONTROL
+//
+// Note:
+// If the default key layout is lower case,
+// and you want to use `Shift + q` to trigger the exit event,
+// the setting should like this `exit: ( code: Char('Q'), modifiers: ( bits: 1,),),`
+// The Char should be upper case, and the shift modified bit should be set to 1.
 (
     tab_status: ( code: Char('1'), modifiers: ( bits: 0,),),
     tab_log: ( code: Char('2'), modifiers: ( bits: 0,),),
@@ -19,11 +25,11 @@
     focus_above: ( code: Char('k'), modifiers: ( bits: 0,),),
     focus_below: ( code: Char('j'), modifiers: ( bits: 0,),),
 
-    exit: ( code: Char('c'), modifiers: ( bits: 2,),),
+    exit: ( code: Char('Q'), modifiers: ( bits: 1,),),
     exit_popup: ( code: Esc, modifiers: ( bits: 0,),),
 
     open_commit: ( code: Char('c'), modifiers: ( bits: 0,),),
-    open_commit_editor: ( code: Char('E'), modifiers: ( bits: 0,),),
+    open_commit_editor: ( code: Char('E'), modifiers: ( bits: 1,),),
     open_help: ( code: F(1), modifiers: ( bits: 0,),),
 
     move_left: ( code: Char('h'), modifiers: ( bits: 0,),),
@@ -32,19 +38,19 @@
     end: ( code: End, modifiers: ( bits: 0,),),
     move_up: ( code: Char('k'), modifiers: ( bits: 0,),),
     move_down: ( code: Char('j'), modifiers: ( bits: 0,),),
-    page_up: ( code: Char('u'), modifiers: ( bits: 2,),),
-    page_down: ( code: Char('d'), modifiers: ( bits: 2,),),
+    page_up: ( code: Char('b'), modifiers: ( bits: 2,),),
+    page_down: ( code: Char('f'), modifiers: ( bits: 2,),),
 
-    shift_up: ( code: Char('K'), modifiers: ( bits: 0,),),
-    shift_down: ( code: Char('J'), modifiers: ( bits: 0,),),
+    shift_up: ( code: Char('K'), modifiers: ( bits: 1,),),
+    shift_down: ( code: Char('J'), modifiers: ( bits: 1,),),
 
     enter: ( code: Enter, modifiers: ( bits: 0,),),
 
-    edit_file: ( code: Char('I'), modifiers: ( bits: 0,),),
+    edit_file: ( code: Char('I'), modifiers: ( bits: 1,),),
 
     status_stage_all: ( code: Char('a'), modifiers: ( bits: 0,),),
 
-    status_reset_item: ( code: Char('U'), modifiers: ( bits: 0,),),
+    status_reset_item: ( code: Char('U'), modifiers: ( bits: 1,),),
     status_ignore_file: ( code: Char('i'), modifiers: ( bits: 0,),),
 
     stashing_save: ( code: Char('w'), modifiers: ( bits: 0,),),
@@ -52,11 +58,11 @@
     stashing_toggle_index: ( code: Char('m'), modifiers: ( bits: 0,),),
 
     stash_open: ( code: Char('l'), modifiers: ( bits: 0,),),
-    stash_drop: ( code: Char('D'), modifiers: ( bits: 0,),),
+    stash_drop: ( code: Char('D'), modifiers: ( bits: 1,),),
 
     cmd_bar_toggle: ( code: Char('.'), modifiers: ( bits: 0,),),
     log_tag_commit: ( code: Char('t'), modifiers: ( bits: 0,),),
-    commit_amend: ( code: Char('A'), modifiers: ( bits: 0,),),
+    commit_amend: ( code: Char('A'), modifiers: ( bits: 1,),),
     copy: ( code: Char('y'), modifiers: ( bits: 0,),),
     create_branch: ( code: Char('b'), modifiers: ( bits: 0,),),
 )
