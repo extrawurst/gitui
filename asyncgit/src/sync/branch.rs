@@ -49,6 +49,7 @@ pub struct BranchForDisplay {
 pub fn get_branches_to_display(
     repo_path: &str,
 ) -> Result<Vec<BranchForDisplay>> {
+    scope_time!("get_branches_to_display");
     let cur_repo = utils::repo(repo_path)?;
     let mut branches_for_display = vec![];
 
