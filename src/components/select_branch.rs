@@ -71,7 +71,7 @@ impl DrawableComponent for SelectBranchComponent {
                 )
                 .split(area)[0];
             f.render_widget(
-                Paragraph::new(self.get_text(&self.theme).iter())
+                Paragraph::new(self.get_text(&self.theme)?.iter())
                     .scroll(scroll)
                     .alignment(Alignment::Left),
                 chunk,
@@ -162,7 +162,7 @@ impl SelectBranchComponent {
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
-            branch_names: Self::get_branch_names(),
+            branch_names: Vec::new(),
             visible: false,
             selection: 0,
             queue,
@@ -171,20 +171,23 @@ impl SelectBranchComponent {
         }
     }
     /// Get all the names of the branches in the repo
-    pub fn get_branch_names() -> Vec<BranchForDisplay> {
+    pub fn get_branch_names() -> Result<Vec<BranchForDisplay>> {
         get_branches_to_display(CWD)
+            .map_err(|e| anyhow::Error::new(e))
     }
 
     ///
     pub fn open(&mut self) -> Result<()> {
+        self.update_branches()?;
         self.show()?;
 
         Ok(())
     }
 
     ////
-    pub fn update_branches(&mut self) {
-        self.branch_names = Self::get_branch_names();
+    pub fn update_branches(&mut self) -> Result<()> {
+        self.branch_names = Self::get_branch_names()?;
+        Ok(())
     }
 
     ///
@@ -206,7 +209,7 @@ impl SelectBranchComponent {
     }
 
     /// Get branches to display
-    fn get_text(&self, theme: &SharedTheme) -> Vec<Text> {
+    fn get_text(&self, theme: &SharedTheme) -> Result<Vec<Text>> {
         let mut txt = Vec::new();
 
         let max_branch_name = self
@@ -214,14 +217,16 @@ impl SelectBranchComponent {
             .iter()
             .map(|displaybranch| displaybranch.name.len())
             .max()
-            .expect("Failed to find max branch length");
+            .ok_or_else(|| anyhow::Error::msg(
+                "Couldn't get max_branch_name, is there a problem with the branches in the repo?",
+            ))?;
 
         for (i, displaybranch) in self.branch_names.iter().enumerate()
         {
             let mut commit_message =
                 displaybranch.top_commit_message.clone();
-            if commit_message.len() > 30 {
-                commit_message.truncate(30);
+            if commit_message.len() > 20 {
+                commit_message.truncate(20);
                 commit_message += "...";
             }
 
@@ -252,13 +257,13 @@ impl SelectBranchComponent {
             ));
         }
 
-        txt
+        Ok(txt)
     }
 
     ///
     fn switch_to_selected_branch(&self) {
         checkout_branch(
-            "./",
+            asyncgit::CWD,
             &self.branch_names[self.selection as usize].reference,
         )
         .expect("Failed to checkout branch, does the branch exist?");
