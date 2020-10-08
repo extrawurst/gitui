@@ -80,15 +80,11 @@ pub fn checkout_branch(
 ) -> Result<()> {
     // This defaults to a safe checkout, so don't delete anything that
     // hasn't been committed or stashed, in this case it will Err
-    if let Ok(repo) = utils::repo(repo_path) {
-        if repo.set_head(branch_ref).is_ok()
-            && repo.checkout_head(None).is_ok()
-        {
-            return Ok(());
-        }
-    }
+    let repo = utils::repo(repo_path)?;
+    repo.set_head(branch_ref)?;
+    repo.checkout_head(None)?;
 
-    Err(Error::NoHead)
+    Ok(())
 }
 
 /// creates a new branch pointing to current HEAD commit and updating HEAD to new branch
