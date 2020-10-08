@@ -18,8 +18,8 @@ pub enum Error {
     #[error("git: no parent of commit found")]
     NoParent,
 
-    #[error("git: rebase error")]
-    Rebase,
+    #[error("git: not on a branch")]
+    NoBranch,
 
     #[error("io error:{0}")]
     Io(#[from] std::io::Error),
