@@ -54,7 +54,7 @@ pub fn reword_safe(
 ///
 /// This is dangerous if this errors, as the head will be detached so this should
 /// always be wrapped by another function which aborts the rebase if something goes worng
-pub fn reword(
+fn reword(
     repo_path: &str,
     commit_oid: Oid,
     message: &str,
