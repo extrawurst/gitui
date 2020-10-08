@@ -125,7 +125,7 @@ impl Component for SelectBranchComponent {
                 } else if e == self.key_config.move_up {
                     self.move_selection(false)
                 } else if e == self.key_config.enter {
-                    self.switch_to_selected_branch();
+                    self.switch_to_selected_branch()?;
                     self.hide()
                 } else if e == self.key_config.create_branch {
                     self.queue
@@ -292,14 +292,15 @@ impl SelectBranchComponent {
     }
 
     ///
-    fn switch_to_selected_branch(&self) {
+    fn switch_to_selected_branch(&self) -> Result<()> {
         checkout_branch(
             asyncgit::CWD,
             &self.branch_names[self.selection as usize].reference,
-        )
-        .expect("Failed to checkout branch, does the branch exist?");
+        )?;
         self.queue
             .borrow_mut()
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
     }
 }
