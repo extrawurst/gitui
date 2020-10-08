@@ -4,11 +4,11 @@ use super::{
 };
 use crate::{keys::SharedKeyConfig, strings, ui};
 use crossterm::event::Event;
-use std::borrow::Cow;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
 use ui::style::SharedTheme;
@@ -32,21 +32,28 @@ impl DrawableComponent for MsgComponent {
         if !self.visible {
             return Ok(());
         }
-        let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
+        let txt = Spans::from(
+            self.msg
+                .split('\n')
+                .map(|string| Span::raw::<String>(string.to_string()))
+                .collect::<Vec<Span>>(),
+        );
 
         let area = ui::centered_rect_absolute(65, 25, f.size());
         f.render_widget(Clear, area);
         f.render_widget(
-            Paragraph::new(txt.iter())
+            Paragraph::new(txt)
                 .block(
                     Block::default()
-                        .title(self.title.as_str())
-                        .title_style(self.theme.text_danger())
+                        .title(Span::styled(
+                            self.title.as_str(),
+                            self.theme.text_danger(),
+                        ))
                         .borders(Borders::ALL)
                         .border_type(BorderType::Thick),
                 )
                 .alignment(Alignment::Left)
-                .wrap(true),
+                .wrap(Wrap { trim: true }),
             area,
         );
 

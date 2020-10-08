@@ -20,7 +20,8 @@ use std::{env, io, path::Path, process::Command};
 use tui::{
     backend::Backend,
     layout::Rect,
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -99,19 +100,23 @@ impl DrawableComponent for ExternalEditorComponent {
         _rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let txt = vec![Text::Raw(
-                strings::msg_opening_editor(&self.key_config).into(),
-            )];
+            let txt = Spans::from(
+                strings::msg_opening_editor(&self.key_config)
+                    .split('\n')
+                    .map(|string| {
+                        Span::raw::<String>(string.to_string())
+                    })
+                    .collect::<Vec<Span>>(),
+            );
 
             let area = ui::centered_rect_absolute(25, 3, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                Paragraph::new(txt.iter())
+                Paragraph::new(txt)
                     .block(
                         Block::default()
                             .borders(Borders::ALL)
                             .border_type(BorderType::Thick)
-                            .title_style(self.theme.title(true))
                             .border_style(self.theme.block(true)),
                     )
                     .style(self.theme.text_danger()),

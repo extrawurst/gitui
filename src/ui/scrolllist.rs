@@ -5,14 +5,15 @@ use tui::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    widgets::{Block, Borders, List, Text, Widget},
+    text::Span,
+    widgets::{Block, Borders, List, ListItem, Widget},
     Frame,
 };
 
 ///
 struct ScrollableList<'b, L>
 where
-    L: Iterator<Item = Text<'b>>,
+    L: Iterator<Item = Span<'b>>,
 {
     block: Option<Block<'b>>,
     /// Items to be displayed
@@ -25,7 +26,7 @@ where
 
 impl<'b, L> ScrollableList<'b, L>
 where
-    L: Iterator<Item = Text<'b>>,
+    L: Iterator<Item = Span<'b>>,
 {
     fn new(items: L) -> Self {
         Self {
@@ -49,14 +50,16 @@ where
 
 impl<'b, L> Widget for ScrollableList<'b, L>
 where
-    L: Iterator<Item = Text<'b>>,
+    L: Iterator<Item = Span<'b>>,
 {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Render items
-        List::new(self.items)
-            .block(self.block.unwrap_or_default())
-            .style(self.style)
-            .render(area, buf);
+        List::new(
+            self.items.map(ListItem::new).collect::<Vec<ListItem>>(),
+        )
+        .block(self.block.unwrap_or_default())
+        .style(self.style)
+        .render(area, buf);
     }
 }
 
@@ -69,14 +72,13 @@ pub fn draw_list<'b, B: Backend, L>(
     selected: bool,
     theme: &SharedTheme,
 ) where
-    L: Iterator<Item = Text<'b>>,
+    L: Iterator<Item = Span<'b>>,
 {
     let list = ScrollableList::new(items)
         .block(
             Block::default()
-                .title(title)
+                .title(Span::styled(title, theme.title(selected)))
                 .borders(Borders::ALL)
-                .title_style(theme.title(selected))
                 .border_style(theme.block(selected)),
         )
         .scroll(select.unwrap_or_default());

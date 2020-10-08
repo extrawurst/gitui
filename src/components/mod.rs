@@ -43,7 +43,8 @@ use crate::ui::style::Theme;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, BorderType, Borders, Paragraph, Text},
+    text::{Span, Spans, Text},
+    widgets::{Block, BorderType, Borders, Paragraph, Wrap},
     Frame,
 };
 
@@ -183,44 +184,36 @@ pub trait Component {
     }
 }
 
-fn dialog_paragraph<'a, 't, T>(
+fn dialog_paragraph<'a>(
     title: &'a str,
-    content: T,
+    content: Text<'a>,
     theme: &Theme,
     focused: bool,
-) -> Paragraph<'a, 't, T>
-where
-    T: Iterator<Item = &'t Text<'t>>,
-{
+) -> Paragraph<'a> {
     Paragraph::new(content)
         .block(
             Block::default()
-                .title(title)
+                .title(Span::styled(title, theme.title(focused)))
                 .borders(Borders::ALL)
-                .title_style(theme.title(focused))
                 .border_style(theme.block(focused)),
         )
         .alignment(Alignment::Left)
 }
 
-fn popup_paragraph<'a, 't, T>(
+fn popup_paragraph<'a>(
     title: &'a str,
-    content: T,
+    content: Vec<Span<'a>>,
     theme: &Theme,
     focused: bool,
-) -> Paragraph<'a, 't, T>
-where
-    T: Iterator<Item = &'t Text<'t>>,
-{
-    Paragraph::new(content)
+) -> Paragraph<'a> {
+    Paragraph::new(Spans::from(content))
         .block(
             Block::default()
-                .title(title)
+                .title(Span::styled(title, theme.title(focused)))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Thick)
-                .title_style(theme.title(focused))
                 .border_style(theme.block(focused)),
         )
         .alignment(Alignment::Left)
-        .wrap(true)
+        .wrap(Wrap { trim: true })
 }
