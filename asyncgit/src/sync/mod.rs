@@ -41,7 +41,7 @@ pub use hooks::{
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
-pub use rebase::{reword, reword_safe};
+pub use rebase::reword_safe;
 pub use remotes::{
     fetch_origin, get_remotes, push, ProgressNotification,
     DEFAULT_REMOTE_NAME,
