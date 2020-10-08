@@ -111,8 +111,11 @@ impl RewordComponent {
     ///
     pub fn open(&mut self, id: CommitId) -> Result<()> {
         self.commit_id = Some(id);
-        let commit = sync::get_commit_details(CWD, id)?;
-        self.input.set_text(commit.message.expect("").combine());
+        if let Some(commit_msg) =
+            sync::get_commit_details(CWD, id)?.message
+        {
+            self.input.set_text(commit_msg.combine());
+        }
         self.show()?;
 
         Ok(())
