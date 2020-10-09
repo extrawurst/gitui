@@ -277,7 +277,6 @@ impl App {
         self.revlog.update()?;
         self.stashing_tab.update()?;
         self.stashlist_tab.update()?;
-        self.select_branch_popup.update_branches()?;
 
         self.update_commands();
 
