@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-
 - added windows scoop recipe ([#164](https://github.com/extrawurst/gitui/issues/164))
 - push to remote ([#265](https://github.com/extrawurst/gitui/issues/265)) ([#267](https://github.com/extrawurst/gitui/issues/267))
 
@@ -19,14 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - scrollbar in long commit messages [[@timaliberdov](https://github.com/timaliberdov)] ([#308](https://github.com/extrawurst/gitui/issues/308))
 
 ### Changed
-
 - do not highlight selection in diff view when not focused ([#270](https://github.com/extrawurst/gitui/issues/270))
 - compact treeview [[@WizardOhio24](https://github.com/WizardOhio24)] ([#192](https://github.com/extrawurst/gitui/issues/192))
 
 ![tree](assets/compact-tree.png)
 
 ### Fixed
-
 - crash when changing git repo while gitui is open ([#271](https://github.com/extrawurst/gitui/issues/271))
 - crash on small terminal size ([#307](https://github.com/extrawurst/gitui/issues/307))
 - fix vim keybindings uppercase handling [[@yanganto](https://github.com/yanganto)] ([#286](https://github.com/extrawurst/gitui/issues/286))
@@ -34,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.1] - 2020-09-01
 
 ### Fixed
-
 - static linux binaries broke due to new clipboard feature which is disabled on linux for now ([#259](https://github.com/extrawurst/gitui/issues/259))
 
 ## [0.10.0] - 2020-08-29
@@ -42,11 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - fully **customizable key bindings** (see [KEY_CONFIG.md](KEY_CONFIG.md)) [[@yanganto](https://github.com/yanganto)] ([#109](https://github.com/extrawurst/gitui/issues/109)) ([#57](https://github.com/extrawurst/gitui/issues/57))
-- support scrolling in long commit messages [[@cruessler](https://github.com/cruessler)](<[#208](https://github.com/extrawurst/gitui/issues/208)>)
+- support scrolling in long commit messages [[@cruessler](https://github.com/cruessler)]([#208](https://github.com/extrawurst/gitui/issues/208))
 
 ![scrolling](assets/msg-scrolling.gif)
 
-- copy lines from diffs to clipboard [[@cruessler](https://github.com/cruessler)](<[#229](https://github.com/extrawurst/gitui/issues/229)>)
+- copy lines from diffs to clipboard [[@cruessler](https://github.com/cruessler)]([#229](https://github.com/extrawurst/gitui/issues/229))
 
 ![select-copy](assets/select-copy.gif)
 
@@ -65,10 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- move to (un)staged when the current selection is empty [[@jonstodle](https://github.com/jonstodle)](<[#215](https://github.com/extrawurst/gitui/issues/215)>)
+- move to (un)staged when the current selection is empty [[@jonstodle](https://github.com/jonstodle)]([#215](https://github.com/extrawurst/gitui/issues/215))
 - pending load of a diff/status is visualized ([#160](https://github.com/extrawurst/gitui/issues/160))
 - entry on [git-scm.com](https://git-scm.com/downloads/guis) in the list of GUI tools [[@Vidar314](https://github.com/Vidar314)] (see [PR](https://github.com/git/git-scm.com/pull/1485))
-- commits can be tagged in revlog [[@cruessler](https://github.com/cruessler)](<[#103](https://github.com/extrawurst/gitui/issues/103)>)
+- commits can be tagged in revlog [[@cruessler](https://github.com/cruessler)]([#103](https://github.com/extrawurst/gitui/issues/103))
 
 ![](assets/tagging.gif)
 
@@ -93,11 +89,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- open file in editor [[@jonstodle](https://github.com/jonstodle)](<[#166](https://github.com/extrawurst/gitui/issues/166)>)
+- open file in editor [[@jonstodle](https://github.com/jonstodle)]([#166](https://github.com/extrawurst/gitui/issues/166))
 
 ### Fixed
 
-- switch deprecated transitive dependency `net2`->`socket2` [in `crossterm`->`mio`](<[#66](https://github.com/extrawurst/gitui/issues/66)>)
+- switch deprecated transitive dependency `net2`->`socket2` [in `crossterm`->`mio`]([#66](https://github.com/extrawurst/gitui/issues/66))
 - crash diffing a stash that was created via cli ([#178](https://github.com/extrawurst/gitui/issues/178))
 - zero delta file size in diff of untracked binary file ([#171](https://github.com/extrawurst/gitui/issues/171))
 - newlines not visualized correctly in commit editor ([#169](https://github.com/extrawurst/gitui/issues/169))
@@ -130,11 +126,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - clearer help headers ([#131](https://github.com/extrawurst/gitui/issues/131))
 - display non-utf8 commit messages at least partially ([#150](https://github.com/extrawurst/gitui/issues/150))
 - hooks ignored when running `gitui` in subfolder of workdir ([#151](https://github.com/extrawurst/gitui/issues/151))
-- better scrolling in file-trees [[@tisorlawan](https://github.com/tisorlawan)](<[#144](https://github.com/extrawurst/gitui/issues/144)>)
-- show untracked files in stash commit details [[@MCord](https://github.com/MCord)](<[#130](https://github.com/extrawurst/gitui/issues/130)>)
+- better scrolling in file-trees [[@tisorlawan](https://github.com/tisorlawan)]([#144](https://github.com/extrawurst/gitui/issues/144))
+- show untracked files in stash commit details [[@MCord](https://github.com/MCord)]([#130](https://github.com/extrawurst/gitui/issues/130))
 - in some repos looking up the branch name was a bottleneck ([#159](https://github.com/extrawurst/gitui/issues/159))
 - some optimizations in reflog
-- fix arrow utf8 encoding in help window [[@daober](https://github.com/daober)](<[#142](https://github.com/extrawurst/gitui/issues/142)>)
+- fix arrow utf8 encoding in help window [[@daober](https://github.com/daober)]([#142](https://github.com/extrawurst/gitui/issues/142))
 
 ## [0.7.0] - 2020-06-15
 
@@ -151,7 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - file trees: `arrow-right` on expanded folder moves down into folder
 - better scrolling in diff ([#52](https://github.com/extrawurst/gitui/issues/52))
 - display current branch in status/log ([#115](https://github.com/extrawurst/gitui/issues/115))
-- commit msg popup: add cursor and more controls (`arrow-left/right`, `delete` & `backspace`) [[@alistaircarscadden](https://github.com/alistaircarscadden)](<[#46](https://github.com/extrawurst/gitui/issues/46)>)
+- commit msg popup: add cursor and more controls (`arrow-left/right`, `delete` & `backspace`) [[@alistaircarscadden](https://github.com/alistaircarscadden)]([#46](https://github.com/extrawurst/gitui/issues/46))
 - moved `theme.ron` from `XDG_CACHE_HOME` to `XDG_CONFIG_HOME` [[@jonstodle](https://github.com/jonstodle)](<[#98](https://github.com/extrawurst/gitui/issues/98)>)
 
 ### Fixed
@@ -173,13 +169,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New `Stage all [a]`/`Unstage all [a]` in changes lists ([#82](https://github.com/extrawurst/gitui/issues/82))
-- add `-d`, `--directory` options to set working directory via program arg [[@alistaircarscadden](https://github.com/alistaircarscadden)](<[#73](https://github.com/extrawurst/gitui/issues/73)>)
+- add `-d`, `--directory` options to set working directory via program arg [[@alistaircarscadden](https://github.com/alistaircarscadden)]([#73](https://github.com/extrawurst/gitui/issues/73))
 - commit detail view in revlog ([#80](https://github.com/extrawurst/gitui/issues/80))
 
 ### Fixed
 
 - app closes when staging invalid file/path ([#108](https://github.com/extrawurst/gitui/issues/108))
-- `shift+tab` not working on windows [[@MCord](https://github.com/MCord)](<[#111](https://github.com/extrawurst/gitui/issues/111)>)
+- `shift+tab` not working on windows [[@MCord](https://github.com/MCord)]([#111](https://github.com/extrawurst/gitui/issues/111))
 
 ## [0.5.0] - 2020-06-01
 
@@ -193,8 +189,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - support adding untracked file/folder to `.gitignore` ([#44](https://github.com/extrawurst/gitui/issues/44))
 - support reverse tabbing using shift+tab ([#92](https://github.com/extrawurst/gitui/issues/92))
-- switch to using cmd line args instead of `ENV` (`-l` for logging and `--version`) **please convert your GITUI_LOGGING usage** [[@shenek](https://github.com/shenek)](<[#88](https://github.com/extrawurst/gitui/issues/88)>)
-- added missing LICENSE.md files in sub-crates [[@ignatenkobrain](https://github.com/ignatenkobrain)](<[#94](https://github.com/extrawurst/gitui/pull/94)>)
+- switch to using cmd line args instead of `ENV` (`-l` for logging and `--version`) **please convert your GITUI_LOGGING usage** [[@shenek](https://github.com/shenek)]([#88](https://github.com/extrawurst/gitui/issues/88))
+- added missing LICENSE.md files in sub-crates [[@ignatenkobrain](https://github.com/ignatenkobrain)]([#94](https://github.com/extrawurst/gitui/pull/94))
 
 ### Fixed
 
@@ -224,7 +220,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- support color themes and light mode [[@MCord](https://github.com/MCord)](<[#28](https://github.com/extrawurst/gitui/issues/28)>)
+- support color themes and light mode [[@MCord](https://github.com/MCord)]([#28](https://github.com/extrawurst/gitui/issues/28))
 
 ### Changed
 
@@ -248,12 +244,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - introduced proper changelog
-- hook support on windows [[@MCord](https://github.com/MCord)](<[#14](https://github.com/extrawurst/gitui/issues/14)>)
+- hook support on windows [[@MCord](https://github.com/MCord)]([#14](https://github.com/extrawurst/gitui/issues/14))
 
 ### Changed
 
 - show longer commit messages in log view
-- introduce propper error handling in `asyncgit` [[@MCord](https://github.com/MCord)](<[#53](https://github.com/extrawurst/gitui/issues/53)>)
+- introduce propper error handling in `asyncgit` [[@MCord](https://github.com/MCord)]([#53](https://github.com/extrawurst/gitui/issues/53))
 - better error message when trying to run outside of a valid git repo ([#56](https://github.com/extrawurst/gitui/issues/56))
 - improve ctrl+c handling so it is checked first and no component needs to worry of blocking it
 
