@@ -102,7 +102,9 @@ pub fn checkout_branch(
         Ok(())
     } else {
         Err(Error::Generic(
-            format!("Cannot change branch. There are unstaged/staged changes which have not been committed/stashed. There is {:?} changes preventing checking out a different branch.",  repo.statuses(None)?.get(0).unwrap().path().unwrap() ),
+            format!("Cannot change branch. There are unstaged/staged changes which have not been committed/stashed. There is {:?} changes preventing checking out a different branch.",  repo.statuses(Some(
+                git2::StatusOptions::new().include_ignored(false),
+            ))?.len()),
         ))
     }
 }
