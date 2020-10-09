@@ -2,6 +2,7 @@
 
 #![forbid(unsafe_code)]
 #![forbid(missing_docs)]
+#![deny(unused_imports)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::perf)]
 
