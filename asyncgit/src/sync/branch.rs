@@ -83,12 +83,18 @@ pub fn checkout_branch(
     // This defaults to a safe checkout, so don't delete anything that
     // hasn't been committed or stashed, in this case it will Err
     let repo = utils::repo(repo_path)?;
+    let cur_ref = repo.head()?;
     if repo.statuses(None)?.is_empty() {
         repo.set_head(branch_ref)?;
-        repo.checkout_head(Some(
+
+        if let Err(e) = repo.checkout_head(Some(
             git2::build::CheckoutBuilder::new().force(),
-        ))
-        .map_err(Error::Git)
+        )) {
+            // This is safe beacuse cur_ref was just found
+            repo.set_head(cur_ref.name().unwrap_or(""))?;
+            return Err(Error::Git(e));
+        }
+        Ok(())
     } else {
         Err(Error::Generic(
             format!("Cannot change branch. There are unstaged/staged changes which have not been committed/stashed. There is {:?} changes preventing checking out a different branch.",  repo.statuses(None)?.len() ),
