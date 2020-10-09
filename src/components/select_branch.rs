@@ -127,7 +127,15 @@ impl Component for SelectBranchComponent {
                 } else if e == self.key_config.move_up {
                     self.move_selection(false)
                 } else if e == self.key_config.enter {
-                    self.switch_to_selected_branch()?;
+                    if let Err(e) = self.switch_to_selected_branch() {
+                        log::error!("switch branch error: {}", e);
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::ShowErrorMsg(format!(
+                                "switch branch error:\n{}",
+                                e
+                            )),
+                        );
+                    }
                     self.hide()
                 } else if e == self.key_config.create_branch {
                     self.queue

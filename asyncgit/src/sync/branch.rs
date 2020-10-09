@@ -2,7 +2,8 @@
 
 use crate::{
     error::{Error, Result},
-    sync::utils,
+    sync::{reset_workdir, utils},
+    CWD,
 };
 use git2::BranchType;
 use scopetime::scope_time;
@@ -74,7 +75,7 @@ pub fn get_branches_to_display(
     Ok(branches_for_display)
 }
 
-/// Modify HEAD to point to a branch then checkout head
+/// Modify HEAD to point to a branch then checkout head, does not work if there are uncommitted changes
 pub fn checkout_branch(
     repo_path: &str,
     branch_ref: &str,
@@ -82,10 +83,17 @@ pub fn checkout_branch(
     // This defaults to a safe checkout, so don't delete anything that
     // hasn't been committed or stashed, in this case it will Err
     let repo = utils::repo(repo_path)?;
-    repo.set_head(branch_ref)?;
-    repo.checkout_head(None)?;
-
-    Ok(())
+    if repo.statuses(None)?.is_empty() {
+        repo.set_head(branch_ref)?;
+        repo.checkout_head(Some(
+            git2::build::CheckoutBuilder::new().force(),
+        ))
+        .map_err(Error::Git)
+    } else {
+        Err(Error::Generic(
+            format!("Cannot change branch. There are unstaged/staged changes which have not been committed/stashed. There is {:?} changes preventing checking out a different branch.",  repo.statuses(None)?.len() ),
+        ))
+    }
 }
 
 /// creates a new branch pointing to current HEAD commit and updating HEAD to new branch
