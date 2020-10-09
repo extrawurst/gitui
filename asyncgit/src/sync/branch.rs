@@ -4,6 +4,7 @@ use crate::{
     error::{Error, Result},
     sync::utils,
 };
+use git2::BranchType;
 use scopetime::scope_time;
 use utils::get_head_repo;
 
@@ -26,6 +27,86 @@ pub(crate) fn get_branch_name(repo_path: &str) -> Result<String> {
     }
 
     Err(Error::NoHead)
+}
+
+///
+pub struct BranchForDisplay {
+    ///
+    pub name: String,
+    ///
+    pub reference: String,
+    ///
+    pub top_commit_message: String,
+    ///
+    pub top_commit_reference: String,
+    ///
+    pub is_head: bool,
+}
+
+/// TODO make this cached
+/// Used to return only the nessessary information for displaying a branch
+/// rather than an iterator over the actual branches
+pub fn get_branches_to_display(
+    repo_path: &str,
+) -> Result<Vec<BranchForDisplay>> {
+    scope_time!("get_branches_to_display");
+    let cur_repo = utils::repo(repo_path)?;
+    let mut branches_for_display = vec![];
+
+    for b in cur_repo.branches(Some(BranchType::Local))? {
+        let branch = &b?.0;
+        let top_commit = branch.get().peel_to_commit()?;
+        let mut commit_id = top_commit.id().to_string();
+        commit_id.truncate(7);
+
+        branches_for_display.push(BranchForDisplay {
+            name: String::from_utf8(Vec::from(branch.name_bytes()?))?,
+            reference: String::from_utf8(Vec::from(
+                branch.get().name_bytes(),
+            ))?,
+            top_commit_message: String::from_utf8(Vec::from(
+                top_commit.summary_bytes().unwrap_or(&[]),
+            ))?,
+            top_commit_reference: commit_id,
+            is_head: branch.is_head(),
+        })
+    }
+    Ok(branches_for_display)
+}
+
+/// Modify HEAD to point to a branch then checkout head, does not work if there are uncommitted changes
+pub fn checkout_branch(
+    repo_path: &str,
+    branch_ref: &str,
+) -> Result<()> {
+    scope_time!("checkout_branch");
+    // This defaults to a safe checkout, so don't delete anything that
+    // hasn't been committed or stashed, in this case it will Err
+    let repo = utils::repo(repo_path)?;
+    let cur_ref = repo.head()?;
+    if repo
+        .statuses(Some(
+            git2::StatusOptions::new().include_ignored(false),
+        ))?
+        .is_empty()
+    {
+        repo.set_head(branch_ref)?;
+
+        if let Err(e) = repo.checkout_head(Some(
+            git2::build::CheckoutBuilder::new().force(),
+        )) {
+            // This is safe beacuse cur_ref was just found
+            repo.set_head(cur_ref.name().unwrap_or(""))?;
+            return Err(Error::Git(e));
+        }
+        Ok(())
+    } else {
+        Err(Error::Generic(
+            format!("Cannot change branch. There are unstaged/staged changes which have not been committed/stashed. There is {:?} changes preventing checking out a different branch.",  repo.statuses(Some(
+                git2::StatusOptions::new().include_ignored(false),
+            ))?.len()),
+        ))
+    }
 }
 
 /// creates a new branch pointing to current HEAD commit and updating HEAD to new branch
