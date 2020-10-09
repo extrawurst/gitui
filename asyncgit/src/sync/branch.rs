@@ -43,13 +43,13 @@ pub struct BranchForDisplay {
     pub is_head: bool,
 }
 
-/// TODO make this cached
 /// Used to return only the nessessary information for displaying a branch
 /// rather than an iterator over the actual branches
 pub fn get_branches_to_display(
     repo_path: &str,
 ) -> Result<Vec<BranchForDisplay>> {
     scope_time!("get_branches_to_display");
+
     let cur_repo = utils::repo(repo_path)?;
     let mut branches_for_display = vec![];
 
@@ -65,7 +65,7 @@ pub fn get_branches_to_display(
                 branch.get().name_bytes(),
             ))?,
             top_commit_message: String::from_utf8(Vec::from(
-                top_commit.summary_bytes().unwrap_or(&[]),
+                top_commit.summary_bytes().unwrap_or_default(),
             ))?,
             top_commit_reference: commit_id,
             is_head: branch.is_head(),
@@ -80,31 +80,29 @@ pub fn checkout_branch(
     branch_ref: &str,
 ) -> Result<()> {
     scope_time!("checkout_branch");
+
     // This defaults to a safe checkout, so don't delete anything that
     // hasn't been committed or stashed, in this case it will Err
     let repo = utils::repo(repo_path)?;
     let cur_ref = repo.head()?;
-    if repo
-        .statuses(Some(
-            git2::StatusOptions::new().include_ignored(false),
-        ))?
-        .is_empty()
-    {
+    let statuses = repo.statuses(Some(
+        git2::StatusOptions::new().include_ignored(false),
+    ))?;
+
+    if statuses.is_empty() {
         repo.set_head(branch_ref)?;
 
         if let Err(e) = repo.checkout_head(Some(
             git2::build::CheckoutBuilder::new().force(),
         )) {
             // This is safe beacuse cur_ref was just found
-            repo.set_head(cur_ref.name().unwrap_or(""))?;
+            repo.set_head(cur_ref.name().expect("utf8 error"))?;
             return Err(Error::Git(e));
         }
         Ok(())
     } else {
         Err(Error::Generic(
-            format!("Cannot change branch. There are unstaged/staged changes which have not been committed/stashed. There is {:?} changes preventing checking out a different branch.",  repo.statuses(Some(
-                git2::StatusOptions::new().include_ignored(false),
-            ))?.len()),
+            format!("Cannot change branch. There are unstaged/staged changes which have not been committed/stashed. There is {:?} changes preventing checking out a different branch.",  statuses.len()),
         ))
     }
 }
