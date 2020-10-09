@@ -141,7 +141,7 @@ impl Component for SelectBranchComponent {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
-                } else {
+                    self.hide();
                 }
             }
 
