@@ -45,7 +45,7 @@ impl DrawableComponent for SelectBranchComponent {
         // Render a scrolllist of branches inside a box
 
         if self.visible {
-            const SIZE: (u16, u16) = (50, 35);
+            const SIZE: (u16, u16) = (50, 45);
             let scroll_threshold = SIZE.1 / 3;
             let scroll =
                 self.selection.saturating_sub(scroll_threshold);
@@ -72,9 +72,11 @@ impl DrawableComponent for SelectBranchComponent {
                 )
                 .split(area)[0];
             f.render_widget(
-                Paragraph::new(self.get_text(&self.theme)?)
-                    .scroll((scroll, 0))
-                    .alignment(Alignment::Left),
+                Paragraph::new(
+                    self.get_text(&self.theme, area.width)?,
+                )
+                .scroll((scroll, 0))
+                .alignment(Alignment::Left),
                 chunk,
             );
         }
@@ -209,25 +211,30 @@ impl SelectBranchComponent {
     }
 
     /// Get branches to display
-    fn get_text(&self, theme: &SharedTheme) -> Result<Text> {
+    fn get_text(
+        &self,
+        theme: &SharedTheme,
+        width_available: u16,
+    ) -> Result<Text> {
+        const BRANCH_NAME_LENGTH: usize = 15;
+        // total width - commit hash - branch name -"*  " - "..." = remaining width
+        let commit_message_length: usize =
+            width_available as usize - 8 - BRANCH_NAME_LENGTH - 3 - 3;
         let mut txt = Vec::new();
-
-        let max_branch_name = self
-            .branch_names
-            .iter()
-            .map(|displaybranch| displaybranch.name.len())
-            .max()
-            .ok_or_else(|| anyhow::Error::msg(
-                "Couldn't get max_branch_name, is there a problem with the branches in the repo?",
-            ))?;
 
         for (i, displaybranch) in self.branch_names.iter().enumerate()
         {
             let mut commit_message =
                 displaybranch.top_commit_message.clone();
-            if commit_message.len() > 20 {
-                commit_message.truncate(20);
+            if commit_message.len() > commit_message_length {
+                commit_message.truncate(commit_message_length - 3);
                 commit_message += "...";
+            }
+
+            let mut branch_name = displaybranch.name.clone();
+            if branch_name.len() > BRANCH_NAME_LENGTH {
+                branch_name.truncate(BRANCH_NAME_LENGTH - 3);
+                branch_name += "...";
             }
 
             let is_head_str =
@@ -242,8 +249,8 @@ impl SelectBranchComponent {
                     Span::styled(
                         format!(
                             ">{:w$} ",
-                            displaybranch.name,
-                            w = max_branch_name
+                            branch_name,
+                            w = BRANCH_NAME_LENGTH
                         ),
                         theme.commit_author(true),
                     ),
@@ -268,8 +275,8 @@ impl SelectBranchComponent {
                     Span::styled(
                         format!(
                             " {:w$} ",
-                            displaybranch.name,
-                            w = max_branch_name
+                            branch_name,
+                            w = BRANCH_NAME_LENGTH
                         ),
                         theme.commit_author(false),
                     ),
