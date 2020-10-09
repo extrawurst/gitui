@@ -2,8 +2,7 @@
 
 use crate::{
     error::{Error, Result},
-    sync::{reset_workdir, utils},
-    CWD,
+    sync::utils,
 };
 use git2::BranchType;
 use scopetime::scope_time;
