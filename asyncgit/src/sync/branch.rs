@@ -79,6 +79,7 @@ pub fn checkout_branch(
     repo_path: &str,
     branch_ref: &str,
 ) -> Result<()> {
+    scope_time!("checkout_branch");
     // This defaults to a safe checkout, so don't delete anything that
     // hasn't been committed or stashed, in this case it will Err
     let repo = utils::repo(repo_path)?;
