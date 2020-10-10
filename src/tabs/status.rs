@@ -406,7 +406,7 @@ impl Component for Status {
         out.push(CommandInfo::new(
             strings::commands::status_push(&self.key_config),
             self.index_wd.branch_name().is_some(),
-            true,
+            self.visible || force_all,
         ));
 
         out.push(
