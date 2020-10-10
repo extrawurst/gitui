@@ -370,6 +370,14 @@ impl Component for Status {
                 force_all,
                 self.components().as_slice(),
             );
+
+            out.push(CommandInfo::new(
+                strings::commands::open_branch_select_popup(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));
         }
 
         {
@@ -394,14 +402,6 @@ impl Component for Status {
                 (self.visible && !focus_on_diff) || force_all,
             ));
         }
-
-        out.push(CommandInfo::new(
-            strings::commands::open_branch_select_popup(
-                &self.key_config,
-            ),
-            true,
-            true,
-        ));
 
         out.push(CommandInfo::new(
             strings::commands::status_push(&self.key_config),
