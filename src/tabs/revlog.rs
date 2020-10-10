@@ -78,6 +78,7 @@ impl Revlog {
     ///
     pub fn update(&mut self) -> Result<()> {
         if self.visible {
+            let cur_selection = self.list.selection();
             let log_changed =
                 self.git_log.fetch()? == FetchStatus::Started;
 
@@ -103,6 +104,8 @@ impl Revlog {
 
                 self.commit_details.set_commit(commit, tags)?;
             }
+
+            self.list.set_selection(cur_selection);
         }
 
         Ok(())

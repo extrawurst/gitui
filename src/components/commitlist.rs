@@ -79,6 +79,11 @@ impl CommitList {
     }
 
     ///
+    pub fn set_selection(&mut self, new_selection: usize) {
+        self.selection = new_selection;
+    }
+
+    ///
     pub fn current_size(&self) -> (u16, u16) {
         self.current_size.get()
     }
