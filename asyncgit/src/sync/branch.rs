@@ -112,6 +112,22 @@ pub fn checkout_branch(
     }
 }
 
+/// The user must not be on the branch for the branch to be deleted
+pub fn delete_branch(
+    repo_path: &str,
+    branch_ref: &str,
+) -> Result<()> {
+    scope_time!("delete_branch");
+
+    let repo = utils::repo(repo_path)?;
+    let cur_ref = repo.head()?;
+    let branch_as_ref = repo.find_reference(branch_ref)?;
+    if cur_ref != branch_as_ref {
+        branch_as_ref.delete()?;
+    }
+    Ok(())
+}
+
 /// creates a new branch pointing to current HEAD commit and updating HEAD to new branch
 pub fn create_branch(repo_path: &str, name: &str) -> Result<()> {
     scope_time!("create_branch");
