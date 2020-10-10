@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![push](assets/push.gif)
 
-- new branch list popup incl. checkout [[@WizardOhio24](https://github.com/timaliberdov)] ([#303](https://github.com/extrawurst/gitui/issues/303))
+- new branch list popup incl. checkout [[@WizardOhio24](https://github.com/WizardOhio24)] ([#303](https://github.com/extrawurst/gitui/issues/303))
 
 - scrollbar in long commit messages [[@timaliberdov](https://github.com/timaliberdov)] ([#308](https://github.com/extrawurst/gitui/issues/308))
 
