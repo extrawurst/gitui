@@ -1,33 +1,47 @@
 use anyhow::Result;
-#[cfg(feature = "clipboard")]
-use clipboard::{ClipboardContext, ClipboardProvider};
+use std::io::Write;
+use std::process::{Command, Stdio};
 
-#[cfg(feature = "clipboard")]
-pub fn copy_string(string: String) -> Result<()> {
+fn execute_copy_command(
+    command: &mut Command,
+    string: &str,
+) -> Result<()> {
     use anyhow::anyhow;
 
-    let mut ctx: ClipboardContext = ClipboardProvider::new()
-        .map_err(|e| {
-            anyhow!("failed to get access to clipboard: {}", e)
-        })?;
-    ctx.set_contents(string).map_err(|e| {
-        anyhow!("failed to set clipboard contents: {}", e)
-    })?;
+    let mut process = command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .spawn()
+        .map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
+
+    process
+        .stdin
+        .as_mut()
+        .ok_or_else(|| anyhow!("`{:?}`", command))?
+        .write_all(string.as_bytes())
+        .map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
+
+    process
+        .wait()
+        .map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
 
     Ok(())
 }
 
-#[cfg(not(feature = "clipboard"))]
-pub fn copy_string(_string: String) -> Result<()> {
-    Ok(())
+#[cfg(target_os = "linux")]
+pub fn copy_string(string: &str) -> Result<()> {
+    execute_copy_command(
+        Command::new("xclip").arg("-selection").arg("clipboard"),
+        string,
+    )
 }
 
-#[cfg(feature = "clipboard")]
-pub const fn is_supported() -> bool {
-    true
+#[cfg(target_os = "macos")]
+pub fn copy_string(string: &str) -> Result<()> {
+    execute_copy_command(&mut Command::new("pbcopy"), string)
 }
 
-#[cfg(not(feature = "clipboard"))]
-pub fn is_supported() -> bool {
-    false
+#[cfg(windows)]
+pub fn copy_string(string: &str) -> Result<()> {
+    execute_copy_command(&mut Command::new("clip"), string)
 }
