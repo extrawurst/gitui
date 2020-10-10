@@ -378,6 +378,12 @@ impl Component for Status {
                 true,
                 true,
             ));
+
+            out.push(CommandInfo::new(
+                strings::commands::status_push(&self.key_config),
+                self.index_wd.branch_name().is_some(),
+                true,
+            ));
         }
 
         {
@@ -402,12 +408,6 @@ impl Component for Status {
                 (self.visible && !focus_on_diff) || force_all,
             ));
         }
-
-        out.push(CommandInfo::new(
-            strings::commands::status_push(&self.key_config),
-            self.index_wd.branch_name().is_some(),
-            self.visible || force_all,
-        ));
 
         out.push(
             CommandInfo::new(
