@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - do not highlight selection in diff view when not focused ([#270](https://github.com/extrawurst/gitui/issues/270))
+- copy to clipboard using `xclip`(linux), `pbcopy`(mac) or `clip`(win) [[@cruessler](https://github.com/cruessler)] ([#262](https://github.com/extrawurst/gitui/issues/262))
 - compact treeview [[@WizardOhio24](https://github.com/WizardOhio24)] ([#192](https://github.com/extrawurst/gitui/issues/192))
 
 ![tree](assets/compact-tree.png)

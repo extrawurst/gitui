@@ -3,10 +3,12 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 fn execute_copy_command(
-    command: &mut Command,
+    command: Command,
     string: &str,
 ) -> Result<()> {
     use anyhow::anyhow;
+
+    let mut command = command;
 
     let mut process = command
         .stdin(Stdio::piped())
@@ -30,18 +32,17 @@ fn execute_copy_command(
 
 #[cfg(target_os = "linux")]
 pub fn copy_string(string: &str) -> Result<()> {
-    execute_copy_command(
-        Command::new("xclip").arg("-selection").arg("clipboard"),
-        string,
-    )
+    let mut cmd = Command::new("xclip");
+    cmd.arg("-selection").arg("clipboard");
+    execute_copy_command(cmd, string)
 }
 
 #[cfg(target_os = "macos")]
 pub fn copy_string(string: &str) -> Result<()> {
-    execute_copy_command(&mut Command::new("pbcopy"), string)
+    execute_copy_command(Command::new("pbcopy"), string)
 }
 
 #[cfg(windows)]
 pub fn copy_string(string: &str) -> Result<()> {
-    execute_copy_command(&mut Command::new("clip"), string)
+    execute_copy_command(Command::new("clip"), string)
 }
