@@ -2,10 +2,7 @@ use anyhow::Result;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-fn execute_copy_command(
-    command: Command,
-    string: &str,
-) -> Result<()> {
+fn execute_copy_command(command: Command, text: &str) -> Result<()> {
     use anyhow::anyhow;
 
     let mut command = command;
@@ -20,7 +17,7 @@ fn execute_copy_command(
         .stdin
         .as_mut()
         .ok_or_else(|| anyhow!("`{:?}`", command))?
-        .write_all(string.as_bytes())
+        .write_all(text.as_bytes())
         .map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
 
     process
