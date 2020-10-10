@@ -40,7 +40,6 @@ serde = "1.0"
 anyhow = "1.0.33"
 unicode-width = "0.1"
 textwrap = "0.12"
-clipboard = { version = "0.5", optional = true }
 
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.3", features = ["flamegraph"], optional = true }
@@ -49,7 +48,7 @@ pprof = { version = "0.3", features = ["flamegraph"], optional = true }
 maintenance = { status = "actively-developed" }
 
 [features]
-default=["clipboard"]
+default=[]
 timing=["scopetime/enabled"]
 
 [workspace]

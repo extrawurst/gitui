@@ -269,7 +269,7 @@ impl DiffComponent {
                 self,
                 "copy to clipboard error:",
                 crate::clipboard::copy_string(
-                    lines_to_copy.join("\n")
+                    &lines_to_copy.join("\n")
                 )
             );
         }
@@ -611,13 +611,11 @@ impl Component for DiffComponent {
             self.focused,
         ));
 
-        if crate::clipboard::is_supported() {
-            out.push(CommandInfo::new(
-                strings::commands::copy(&self.key_config),
-                true,
-                self.focused,
-            ));
-        }
+        out.push(CommandInfo::new(
+            strings::commands::copy(&self.key_config),
+            true,
+            self.focused,
+        ));
 
         out.push(
             CommandInfo::new(
@@ -697,9 +695,7 @@ impl Component for DiffComponent {
                         }
                     }
                     Ok(true)
-                } else if e == self.key_config.copy
-                    && crate::clipboard::is_supported()
-                {
+                } else if e == self.key_config.copy {
                     self.copy_selection()?;
                     Ok(true)
                 } else {

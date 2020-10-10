@@ -29,11 +29,6 @@ jobs:
         profile: minimal
         components: clippy
 
-    - name: Install dependencies for clipboard access
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get -qq install libxcb-shape0-dev libxcb-xfixes0-dev
-
     - name: Build Debug
       run: |
         rustc --version
