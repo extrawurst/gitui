@@ -127,7 +127,7 @@ impl RenameBranchComponent {
         if let Some(br) = &self.branch_ref {
             let res = sync::rename_branch(
                 CWD,
-                &br,
+                br,
                 self.input.get_text().as_str(),
             );
 
