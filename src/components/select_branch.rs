@@ -45,7 +45,7 @@ impl DrawableComponent for SelectBranchComponent {
         // Render a scrolllist of branches inside a box
 
         if self.visible {
-            const SIZE: (u16, u16) = (50, 45);
+            const SIZE: (u16, u16) = (50, 20);
             let scroll_threshold = SIZE.1 / 3;
             let scroll =
                 self.selection.saturating_sub(scroll_threshold);
