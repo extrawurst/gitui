@@ -219,3 +219,38 @@ mod tests_branches {
         );
     }
 }
+
+#[cfg(test)]
+mod tests_checkout {
+    use super::*;
+    use crate::sync::tests::repo_init;
+
+    #[test]
+    fn test_smoke() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert!(
+            checkout_branch(repo_path, "refs/heads/master").is_ok()
+        );
+        assert!(
+            checkout_branch(repo_path, "refs/heads/foobar").is_err()
+        );
+    }
+
+    #[test]
+    fn test_multiple() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        create_branch(repo_path, "test").unwrap();
+
+        assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+        assert!(
+            checkout_branch(repo_path, "refs/heads/master").is_ok()
+        );
+        assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+    }
+}
