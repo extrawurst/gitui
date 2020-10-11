@@ -65,6 +65,7 @@
     commit_amend: ( code: Char('A'), modifiers: ( bits: 1,),),
     copy: ( code: Char('y'), modifiers: ( bits: 0,),),
     create_branch: ( code: Char('c'), modifiers: ( bits: 0,),),
+    rename_branch: ( code: Char('r'), modifiers: ( bits: 0,),),
     select_branch: ( code: Char('b'), modifiers: ( bits: 0,),),
     delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
