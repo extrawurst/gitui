@@ -6,6 +6,7 @@
 #![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
+#![deny(clippy::match_like_matches_macro)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::multiple_crate_versions)]
 

@@ -149,10 +149,7 @@ impl CommandBar {
 
         let texts = self
             .draw_list
-            .split(|c| match c {
-                DrawListEntry::LineBreak => true,
-                _ => false,
-            })
+            .split(|c| matches!(c, DrawListEntry::LineBreak))
             .map(|c_arr| {
                 Spans::from(
                     c_arr
