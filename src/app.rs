@@ -474,9 +474,18 @@ impl App {
                     flags.insert(NeedsUpdate::ALL);
                 }
                 Action::DeleteBranch(branch_ref) => {
-                    sync::delete_branch(CWD, &branch_ref)?;
-                    flags.insert(NeedsUpdate::ALL);
-                    self.select_branch_popup.hide();
+                    if let Err(e) =
+                        sync::delete_branch(CWD, &branch_ref)
+                    {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::ShowErrorMsg(
+                                e.to_string(),
+                            ),
+                        )
+                    } else {
+                        flags.insert(NeedsUpdate::ALL);
+                        self.select_branch_popup.hide();
+                    }
                 }
             },
             InternalEvent::ConfirmAction(action) => {
@@ -600,13 +609,13 @@ impl App {
         self.stashmsg_popup.draw(f, size)?;
         self.help.draw(f, size)?;
         self.inspect_commit_popup.draw(f, size)?;
-        self.msg.draw(f, size)?;
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
         self.select_branch_popup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;
         self.reset.draw(f, size)?;
+        self.msg.draw(f, size)?;
 
         Ok(())
     }

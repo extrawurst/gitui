@@ -124,6 +124,8 @@ pub fn delete_branch(
     let mut branch_as_ref = repo.find_reference(branch_ref)?;
     if cur_ref != branch_as_ref {
         branch_as_ref.delete()?;
+    } else {
+        return Err(Error::Generic("You cannot be on the branch you want to delete, switch branch, then delete this branch".to_string()));
     }
     Ok(())
 }
