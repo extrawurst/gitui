@@ -114,7 +114,7 @@ impl Default for KeyConfig {
             copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
             create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::NONE},
             select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::NONE},
-            delete_branch: KeyEvent{code: KeyCode::Char('d'), modifiers: KeyModifiers::NONE},
+            delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
             fetch: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
         }

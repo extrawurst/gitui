@@ -118,25 +118,14 @@ impl Component for SelectBranchComponent {
                 strings::commands::delete_branch_popup(
                     &self.key_config,
                 ),
-                if self
-                    .branch_names
+                self.branch_names
                     .iter()
                     .enumerate()
                     .filter(|(index, b)| {
                         b.is_head && *index == self.selection as usize
                     })
-                    .map(|(index, _)| index)
                     .count()
-                    == 0
-                //.get(0)
-                //.is_none()
-                //.collect::<Vec<usize>>()
-                //.is_empty()
-                {
-                    true
-                } else {
-                    false
-                },
+                    == 0,
                 true,
             ));
         }
