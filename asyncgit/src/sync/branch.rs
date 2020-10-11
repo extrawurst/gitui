@@ -51,26 +51,31 @@ pub fn get_branches_to_display(
     scope_time!("get_branches_to_display");
 
     let cur_repo = utils::repo(repo_path)?;
-    let mut branches_for_display = vec![];
+    let branches_for_display = cur_repo
+        .branches(Some(BranchType::Local))?
+        .map(|b| {
+            let branch = b?.0;
+            let top_commit = branch.get().peel_to_commit()?;
+            let mut commit_id = top_commit.id().to_string();
+            commit_id.truncate(7);
 
-    for b in cur_repo.branches(Some(BranchType::Local))? {
-        let branch = &b?.0;
-        let top_commit = branch.get().peel_to_commit()?;
-        let mut commit_id = top_commit.id().to_string();
-        commit_id.truncate(7);
-
-        branches_for_display.push(BranchForDisplay {
-            name: String::from_utf8(Vec::from(branch.name_bytes()?))?,
-            reference: String::from_utf8(Vec::from(
-                branch.get().name_bytes(),
-            ))?,
-            top_commit_message: String::from_utf8(Vec::from(
-                top_commit.summary_bytes().unwrap_or_default(),
-            ))?,
-            top_commit_reference: commit_id,
-            is_head: branch.is_head(),
+            Ok(BranchForDisplay {
+                name: String::from_utf8(Vec::from(
+                    branch.name_bytes()?,
+                ))?,
+                reference: String::from_utf8(Vec::from(
+                    branch.get().name_bytes(),
+                ))?,
+                top_commit_message: String::from_utf8(Vec::from(
+                    top_commit.summary_bytes().unwrap_or_default(),
+                ))?,
+                top_commit_reference: commit_id,
+                is_head: branch.is_head(),
+            })
         })
-    }
+        .filter_map(Result::ok)
+        .collect();
+
     Ok(branches_for_display)
 }
 
