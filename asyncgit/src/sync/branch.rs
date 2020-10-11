@@ -174,3 +174,43 @@ mod tests_create_branch {
         );
     }
 }
+
+#[cfg(test)]
+mod tests_branches {
+    use super::*;
+    use crate::sync::tests::repo_init;
+
+    #[test]
+    fn test_smoke() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert_eq!(
+            get_branches_to_display(repo_path)
+                .unwrap()
+                .iter()
+                .map(|b| b.name.clone())
+                .collect::<Vec<_>>(),
+            vec!["master"]
+        );
+    }
+
+    #[test]
+    fn test_multiple() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        create_branch(repo_path, "test").unwrap();
+
+        assert_eq!(
+            get_branches_to_display(repo_path)
+                .unwrap()
+                .iter()
+                .map(|b| b.name.clone())
+                .collect::<Vec<_>>(),
+            vec!["master", "test"]
+        );
+    }
+}
