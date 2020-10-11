@@ -120,10 +120,10 @@ pub fn delete_branch(
     scope_time!("delete_branch");
 
     let repo = utils::repo(repo_path)?;
-    let cur_ref = repo.head()?;
-    let mut branch_as_ref = repo.find_reference(branch_ref)?;
-    if cur_ref != branch_as_ref {
-        branch_as_ref.delete()?;
+    let branch_as_ref = repo.find_reference(branch_ref)?;
+    let mut branch = git2::Branch::wrap(branch_as_ref);
+    if !branch.is_head() {
+        branch.delete()?;
     } else {
         return Err(Error::Generic("You cannot be on the branch you want to delete, switch branch, then delete this branch".to_string()));
     }
@@ -270,5 +270,51 @@ mod tests_checkout {
             checkout_branch(repo_path, "refs/heads/master").is_ok()
         );
         assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+    }
+}
+
+#[cfg(test)]
+mod test_delete_branch {
+    use super::*;
+    use crate::sync::tests::repo_init;
+
+    #[test]
+    fn test_delete_branch() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        create_branch(repo_path, "branch1").unwrap();
+        create_branch(repo_path, "branch2").unwrap();
+
+        checkout_branch(repo_path, "refs/heads/branch1").unwrap();
+
+        assert_eq!(
+            repo.branches(None)
+                .unwrap()
+                .nth(1)
+                .unwrap()
+                .unwrap()
+                .0
+                .name()
+                .unwrap()
+                .unwrap(),
+            "branch2"
+        );
+
+        delete_branch(repo_path, "refs/heads/branch2").unwrap();
+
+        assert_eq!(
+            repo.branches(None)
+                .unwrap()
+                .nth(1)
+                .unwrap()
+                .unwrap()
+                .0
+                .name()
+                .unwrap()
+                .unwrap(),
+            "master"
+        );
     }
 }
