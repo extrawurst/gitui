@@ -140,6 +140,17 @@ pub fn create_branch_popup_msg(
     "type branch name".to_string()
 }
 
+pub fn rename_branch_popup_title(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Rename Branch".to_string()
+}
+pub fn rename_branch_popup_msg(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "new branch name".to_string()
+}
+
 pub mod commit {
     use crate::keys::SharedKeyConfig;
     pub fn details_author(_key_config: &SharedKeyConfig) -> String {
@@ -612,6 +623,27 @@ pub mod commands {
                 get_hint(key_config.create_branch),
             ),
             "open create branch popup",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn rename_branch_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Rename Branch [{}]", get_hint(key_config.enter),),
+            "rename branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn rename_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Rename Branch [{}]",
+                get_hint(key_config.rename_branch),
+            ),
+            "rename branch",
             CMD_GROUP_GENERAL,
         )
     }
