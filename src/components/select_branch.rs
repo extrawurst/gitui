@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     keys::SharedKeyConfig,
-    queue::{InternalEvent, NeedsUpdate, Queue},
+    queue::{Action, InternalEvent, NeedsUpdate, Queue},
     strings, ui,
 };
 use asyncgit::{
@@ -142,6 +142,21 @@ impl Component for SelectBranchComponent {
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
                     self.hide();
+                } else if e == self.key_config.delete_branch {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ConfirmAction(
+                            Action::DeleteBranch(
+                                self.branch_names
+                                    [self.selection as usize]
+                                    .reference
+                                    .clone(),
+                            ),
+                        ),
+                    );
+                    /*self.queue
+                    .borrow_mut()
+                    .push_back(InternalEvent::DeleteBranch);*/
+                    //self.hide();
                 }
             }
 

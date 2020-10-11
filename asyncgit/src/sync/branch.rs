@@ -121,7 +121,7 @@ pub fn delete_branch(
 
     let repo = utils::repo(repo_path)?;
     let cur_ref = repo.head()?;
-    let branch_as_ref = repo.find_reference(branch_ref)?;
+    let mut branch_as_ref = repo.find_reference(branch_ref)?;
     if cur_ref != branch_as_ref {
         branch_as_ref.delete()?;
     }

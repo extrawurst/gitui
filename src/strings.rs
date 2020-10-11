@@ -90,6 +90,17 @@ pub fn confirm_msg_resethunk(
 ) -> String {
     "confirm reset hunk?".to_string()
 }
+pub fn confirm_title_delete_branch(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Delete Branch".to_string()
+}
+pub fn confirm_msg_delete_branch(
+    _key_config: &SharedKeyConfig,
+    branch_ref: &str,
+) -> String {
+    branch_ref.to_string() + "\nconfirm delete branch?"
+}
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
 }
