@@ -157,7 +157,7 @@ impl ResetComponent {
                     ),
                     strings::confirm_msg_delete_branch(
                         &self.key_config,
-                        branch_ref.to_string(),
+                        branch_ref,
                     ),
                 ),
             };

@@ -7,7 +7,7 @@ pub use scrolllist::draw_list;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
 /// return the scroll position (line) necessary to have the `selection` in view if it is not already
-pub fn calc_scroll_top(
+pub const fn calc_scroll_top(
     current_top: usize,
     height_in_lines: usize,
     selection: usize,

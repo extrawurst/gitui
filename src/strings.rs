@@ -97,7 +97,7 @@ pub fn confirm_title_delete_branch(
 }
 pub fn confirm_msg_delete_branch(
     _key_config: &SharedKeyConfig,
-    branch_ref: String,
+    branch_ref: &str,
 ) -> String {
     format!("Confirm deleting branch: '{}' ?", branch_ref)
 }
