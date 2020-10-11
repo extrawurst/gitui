@@ -99,7 +99,7 @@ pub fn confirm_msg_delete_branch(
     _key_config: &SharedKeyConfig,
     branch_ref: String,
 ) -> String {
-    branch_ref + "\nconfirm delete branch?"
+    format!("Confirm deleting branch: '{}' ?", branch_ref)
 }
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
