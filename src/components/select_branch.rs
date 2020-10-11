@@ -118,7 +118,7 @@ impl Component for SelectBranchComponent {
                 strings::commands::delete_branch_popup(
                     &self.key_config,
                 ),
-                self.selection_is_cur_branch(),
+                !self.selection_is_cur_branch(),
                 true,
             ));
         }
@@ -219,6 +219,7 @@ impl SelectBranchComponent {
         Ok(())
     }
 
+    ///
     pub fn selection_is_cur_branch(&self) -> bool {
         self.branch_names
             .iter()
@@ -227,7 +228,7 @@ impl SelectBranchComponent {
                 b.is_head && *index == self.selection as usize
             })
             .count()
-            == 0
+            > 0
     }
 
     ///
