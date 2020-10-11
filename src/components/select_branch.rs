@@ -113,6 +113,14 @@ impl Component for SelectBranchComponent {
                 true,
                 true,
             ));
+
+            out.push(CommandInfo::new(
+                strings::commands::delete_branch_popup(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));
         }
         visibility_blocking(self)
     }

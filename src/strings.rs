@@ -615,6 +615,18 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn delete_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Delete [{}]",
+                get_hint(key_config.delete_branch),
+            ),
+            "delete a branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn open_branch_select_popup(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
