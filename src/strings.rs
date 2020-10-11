@@ -90,6 +90,17 @@ pub fn confirm_msg_resethunk(
 ) -> String {
     "confirm reset hunk?".to_string()
 }
+pub fn confirm_title_delete_branch(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Delete Branch".to_string()
+}
+pub fn confirm_msg_delete_branch(
+    _key_config: &SharedKeyConfig,
+    branch_ref: String,
+) -> String {
+    branch_ref + "\nconfirm delete branch?"
+}
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
 }
@@ -601,6 +612,18 @@ pub mod commands {
                 get_hint(key_config.create_branch),
             ),
             "open create branch popup",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn delete_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Delete [{}]",
+                get_hint(key_config.delete_branch),
+            ),
+            "delete a branch",
             CMD_GROUP_GENERAL,
         )
     }

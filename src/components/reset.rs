@@ -151,6 +151,15 @@ impl ResetComponent {
                     strings::confirm_title_reset(&self.key_config),
                     strings::confirm_msg_resethunk(&self.key_config),
                 ),
+                Action::DeleteBranch(branch_ref) => (
+                    strings::confirm_title_delete_branch(
+                        &self.key_config,
+                    ),
+                    strings::confirm_msg_delete_branch(
+                        &self.key_config,
+                        branch_ref.to_string(),
+                    ),
+                ),
             };
         }
 

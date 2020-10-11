@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     keys::SharedKeyConfig,
-    queue::{InternalEvent, NeedsUpdate, Queue},
+    queue::{Action, InternalEvent, NeedsUpdate, Queue},
     strings, ui,
 };
 use asyncgit::{
@@ -45,7 +45,7 @@ impl DrawableComponent for SelectBranchComponent {
         // Render a scrolllist of branches inside a box
 
         if self.visible {
-            const SIZE: (u16, u16) = (50, 45);
+            const SIZE: (u16, u16) = (50, 20);
             let scroll_threshold = SIZE.1 / 3;
             let scroll =
                 self.selection.saturating_sub(scroll_threshold);
@@ -113,6 +113,14 @@ impl Component for SelectBranchComponent {
                 true,
                 true,
             ));
+
+            out.push(CommandInfo::new(
+                strings::commands::delete_branch_popup(
+                    &self.key_config,
+                ),
+                !self.selection_is_cur_branch(),
+                true,
+            ));
         }
         visibility_blocking(self)
     }
@@ -142,6 +150,19 @@ impl Component for SelectBranchComponent {
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
                     self.hide();
+                } else if e == self.key_config.delete_branch
+                    && !self.selection_is_cur_branch()
+                {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ConfirmAction(
+                            Action::DeleteBranch(
+                                self.branch_names
+                                    [self.selection as usize]
+                                    .reference
+                                    .clone(),
+                            ),
+                        ),
+                    );
                 }
             }
 
@@ -198,6 +219,18 @@ impl SelectBranchComponent {
     pub fn update_branches(&mut self) -> Result<()> {
         self.branch_names = Self::get_branch_names()?;
         Ok(())
+    }
+
+    ///
+    pub fn selection_is_cur_branch(&self) -> bool {
+        self.branch_names
+            .iter()
+            .enumerate()
+            .filter(|(index, b)| {
+                b.is_head && *index == self.selection as usize
+            })
+            .count()
+            > 0
     }
 
     ///
