@@ -97,6 +97,12 @@ brew install gitui
 scoop install gitui
 ```
 
+### [Chocolatey](https://chocolatey.org/packages/gitui) (Windows)
+
+```
+choco install gitui
+```
+
 ## Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
