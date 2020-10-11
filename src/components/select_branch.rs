@@ -118,14 +118,7 @@ impl Component for SelectBranchComponent {
                 strings::commands::delete_branch_popup(
                     &self.key_config,
                 ),
-                self.branch_names
-                    .iter()
-                    .enumerate()
-                    .filter(|(index, b)| {
-                        b.is_head && *index == self.selection as usize
-                    })
-                    .count()
-                    == 0,
+                self.selection_is_cur_branch(),
                 true,
             ));
         }
@@ -224,6 +217,17 @@ impl SelectBranchComponent {
     pub fn update_branches(&mut self) -> Result<()> {
         self.branch_names = Self::get_branch_names()?;
         Ok(())
+    }
+
+    pub fn selection_is_cur_branch(&self) -> bool {
+        self.branch_names
+            .iter()
+            .enumerate()
+            .filter(|(index, b)| {
+                b.is_head && *index == self.selection as usize
+            })
+            .count()
+            == 0
     }
 
     ///
