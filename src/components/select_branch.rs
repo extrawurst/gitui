@@ -150,7 +150,9 @@ impl Component for SelectBranchComponent {
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
                     self.hide();
-                } else if e == self.key_config.delete_branch {
+                } else if e == self.key_config.delete_branch
+                    && !self.selection_is_cur_branch()
+                {
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ConfirmAction(
                             Action::DeleteBranch(
