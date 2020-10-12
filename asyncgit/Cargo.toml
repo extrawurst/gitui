@@ -15,7 +15,7 @@ keywords = ["git"]
 scopetime = { path = "../scopetime", version = "0.1" }
 git2 = { version = "0.13", features = ["vendored-openssl"] }
 rayon-core = "1.8"
-crossbeam-channel = "0.4"
+crossbeam-channel = "0.5"
 log = "0.4"
 thiserror = "1.0"
 
