@@ -2,12 +2,13 @@ use crate::{
     accessors,
     cmdbar::CommandBar,
     components::{
-        event_pump, CommandBlocking, CommandInfo, CommitComponent,
-        Component, CreateBranchComponent, DrawableComponent,
+        event_pump, AddRemoteComponent, CommandBlocking, CommandInfo,
+        CommitComponent, Component, CreateBranchComponent,
+        CreateRemoteBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PushComponent,
         RenameBranchComponent, ResetComponent, SelectBranchComponent,
-        StashMsgComponent, TagCommitComponent,
+        SetUpstreamComponent, StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -47,7 +48,10 @@ pub struct App {
     tag_commit_popup: TagCommitComponent,
     create_branch_popup: CreateBranchComponent,
     rename_branch_popup: RenameBranchComponent,
+    create_remote_branch_popup: CreateRemoteBranchComponent,
     select_branch_popup: SelectBranchComponent,
+    set_upstream_popoup: SetUpstreamComponent,
+    add_remote_popup: AddRemoteComponent,
     cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
@@ -65,6 +69,7 @@ pub struct App {
 }
 
 // public interface
+#[allow(clippy::too_many_lines)]
 impl App {
     ///
     pub fn new(
@@ -124,7 +129,23 @@ impl App {
                 theme.clone(),
                 key_config.clone(),
             ),
+            create_remote_branch_popup:
+                CreateRemoteBranchComponent::new(
+                    queue.clone(),
+                    theme.clone(),
+                    key_config.clone(),
+                ),
             select_branch_popup: SelectBranchComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            set_upstream_popoup: SetUpstreamComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            add_remote_popup: AddRemoteComponent::new(
                 queue.clone(),
                 theme.clone(),
                 key_config.clone(),
@@ -349,7 +370,10 @@ impl App {
             tag_commit_popup,
             create_branch_popup,
             rename_branch_popup,
+            create_remote_branch_popup,
             select_branch_popup,
+            set_upstream_popoup,
+            add_remote_popup,
             help,
             revlog,
             status_tab,
@@ -523,6 +547,22 @@ impl App {
             InternalEvent::SelectBranch => {
                 self.select_branch_popup.open()?;
             }
+            InternalEvent::CreateUpstreamBranch(local_branch_ref) => {
+                self.create_remote_branch_popup
+                    .open(local_branch_ref)?;
+            }
+            InternalEvent::AddUpstreamBranch(remote_branch) => {
+                self.set_upstream_popoup
+                    .add_in_memory_remote_branch(remote_branch)?;
+            }
+            InternalEvent::OpenUpstreamBranchPopup(
+                local_branch_ref,
+            ) => {
+                self.set_upstream_popoup.open(local_branch_ref)?;
+            }
+            InternalEvent::AddRemote => {
+                self.add_remote_popup.open()?;
+            }
             InternalEvent::TabSwitch => self.set_tab(0)?,
             InternalEvent::InspectCommit(id, tags) => {
                 self.inspect_commit_popup.open(id, tags)?;
@@ -596,7 +636,10 @@ impl App {
             || self.inspect_commit_popup.is_visible()
             || self.external_editor_popup.is_visible()
             || self.tag_commit_popup.is_visible()
+            || self.set_upstream_popoup.is_visible()
+            || self.add_remote_popup.is_visible()
             || self.create_branch_popup.is_visible()
+            || self.create_remote_branch_popup.is_visible()
             || self.push_popup.is_visible()
             || self.select_branch_popup.is_visible()
             || self.rename_branch_popup.is_visible()
@@ -626,6 +669,9 @@ impl App {
         self.select_branch_popup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
+        self.create_remote_branch_popup.draw(f, size)?;
+        self.set_upstream_popoup.draw(f, size)?;
+        self.add_remote_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;
         self.reset.draw(f, size)?;
         self.msg.draw(f, size)?;

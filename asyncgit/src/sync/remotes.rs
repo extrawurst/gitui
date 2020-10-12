@@ -68,6 +68,24 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
 }
 
 ///
+pub fn add_remote(
+    repo_path: &str,
+    name: &str,
+    url: &str,
+) -> Result<()> {
+    let repo = utils::repo(repo_path)?;
+    repo.remote(name, url)?;
+    Ok(())
+}
+
+///
+pub fn remove_remote(repo_path: &str, name: &str) -> Result<()> {
+    let repo = utils::repo(repo_path)?;
+    repo.remote_delete(name)?;
+    Ok(())
+}
+
+///
 pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     scope_time!("fetch_origin");
 

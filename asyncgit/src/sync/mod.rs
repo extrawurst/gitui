@@ -21,8 +21,10 @@ pub mod utils;
 pub(crate) use branch::get_branch_name;
 pub use branch::{
     branch_compare_upstream, checkout_branch, create_branch,
-    delete_branch, get_branches_to_display, rename_branch,
-    BranchCompare, BranchForDisplay,
+    delete_branch, get_branch_upstream, get_branches_to_display,
+    get_local_branches_to_display, get_remote_branches_to_display,
+    rename_branch, set_branch_upstream, BranchCompare,
+    BranchForDisplay,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
@@ -36,8 +38,8 @@ pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
 pub use remotes::{
-    fetch_origin, get_remotes, push, ProgressNotification,
-    DEFAULT_REMOTE_NAME,
+    add_remote, fetch_origin, get_remotes, push, remove_remote,
+    ProgressNotification, DEFAULT_REMOTE_NAME,
 };
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};

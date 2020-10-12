@@ -428,6 +428,15 @@ impl Component for Status {
                 true,
             ));
 
+            // TODO
+            /*out.push(CommandInfo::new(
+                strings::commands::open_upstream_branch_popup(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));*/
+
             out.push(CommandInfo::new(
                 strings::commands::status_push(&self.key_config),
                 self.can_push(),

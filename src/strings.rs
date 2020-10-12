@@ -12,6 +12,14 @@ pub static PUSH_POPUP_STATES_PUSHING: &str = "pushing (3/3)";
 
 pub static SELECT_BRANCH_POPUP_MSG: &str = "Switch Branch";
 
+pub static ADD_REMOTE_POPUP_TITLE: &str = "Add Remote Repository";
+pub static ADD_REMOTE_POPUP_MSG_NAME: &str = "Add Remote Name...";
+pub static ADD_REMOTE_POPUP_MSG_URL: &str = "Add Remote URL...";
+
+pub fn set_branch_upstream_popup(branch_name: &str) -> String {
+    format!("Set Upstream of branch {}", branch_name)
+}
+
 pub fn title_status(key_config: &SharedKeyConfig) -> String {
     format!(
         "Unstaged Changes [{}]",
@@ -161,6 +169,16 @@ pub fn rename_branch_popup_msg(
     _key_config: &SharedKeyConfig,
 ) -> String {
     "new branch name".to_string()
+}
+pub fn create_remote_branch_popup_title(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Create Remote Branch".to_string()
+}
+pub fn create_remote_branch_popup_msg(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "e.g. origin/example".to_string()
 }
 
 pub mod commit {
@@ -634,6 +652,30 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn create_remote_branch_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Create Remote Branch [{}]",
+                get_hint(key_config.enter),
+            ),
+            "create remote branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn open_create_remote_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Create Remote Branch [{}]",
+                get_hint(key_config.create_upstream_branch),
+            ),
+            "create remote branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn open_branch_create_popup(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
@@ -691,7 +733,54 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
-
+    pub fn open_upstream_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Upstreams [{}]",
+                get_hint(key_config.open_upstream_branch_popup),
+            ),
+            "open branch upstreams popup",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn add_remote_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Add Remote [{}]",
+                get_hint(key_config.add_remote),
+            ),
+            "add remote repo",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn add_remote_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Add Remote [{}]",
+                get_hint(key_config.add_remote),
+            ),
+            "add remote repo",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn remove_remote_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Remove Remote [{}]",
+                get_hint(key_config.remove_remote),
+            ),
+            "remove remote repo",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn status_push(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!("Push [{}]", get_hint(key_config.push),),

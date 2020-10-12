@@ -58,6 +58,14 @@ pub enum InternalEvent {
     ///
     SelectBranch,
     ///
+    OpenUpstreamBranchPopup(String),
+    ///
+    AddRemote,
+    ///
+    AddUpstreamBranch(String),
+    ///
+    CreateUpstreamBranch(String),
+    ///
     OpenExternalEditor(Option<String>),
     ///
     Push(String),

@@ -4,13 +4,14 @@ use super::{
 };
 use crate::{
     keys::SharedKeyConfig,
-    queue::{Action, InternalEvent, NeedsUpdate, Queue},
+    queue::{InternalEvent, NeedsUpdate, Queue},
     strings, ui,
 };
+//Action
 use asyncgit::{
     sync::{
-        checkout_branch, get_local_branches_to_display,
-        BranchForDisplay,
+        get_branch_upstream, get_remote_branches_to_display,
+        set_branch_upstream, BranchForDisplay,
     },
     CWD,
 };
@@ -28,8 +29,10 @@ use anyhow::Result;
 use ui::style::SharedTheme;
 
 ///
-pub struct SelectBranchComponent {
+pub struct SetUpstreamComponent {
     branch_names: Vec<BranchForDisplay>,
+    in_memory_branches: Vec<BranchForDisplay>,
+    cur_local_branch_ref: Option<String>,
     visible: bool,
     selection: u16,
     queue: Queue,
@@ -37,7 +40,7 @@ pub struct SelectBranchComponent {
     key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for SelectBranchComponent {
+impl DrawableComponent for SetUpstreamComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
@@ -46,53 +49,60 @@ impl DrawableComponent for SelectBranchComponent {
         // Render a scrolllist of branches inside a box
 
         if self.visible {
-            const PERCENT_SIZE: (u16, u16) = (60, 25);
-            const MIN_SIZE: (u16, u16) = (50, 20);
-
-            let area = ui::centered_rect(
-                PERCENT_SIZE.0,
-                PERCENT_SIZE.1,
-                f.size(),
-            );
-            let area = ui::rect_min(MIN_SIZE.0, MIN_SIZE.1, area);
-
-            let scroll_threshold = area.height / 3;
+            const SIZE: (u16, u16) = (50, 20);
+            let scroll_threshold = SIZE.1 / 3;
             let scroll =
                 self.selection.saturating_sub(scroll_threshold);
 
-            f.render_widget(Clear, area);
-            f.render_widget(
-                Block::default()
-                    .title(strings::SELECT_BRANCH_POPUP_MSG)
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Thick),
-                area,
-            );
+            let area =
+                ui::centered_rect_absolute(SIZE.0, SIZE.1, f.size());
+            if let Some(local_branch_ref) = &self.cur_local_branch_ref
+            {
+                if let Some(branch_name) =
+                    local_branch_ref.clone().rsplit('/').next()
+                {
+                    f.render_widget(Clear, area);
+                    f.render_widget(
+                        Block::default()
+                            .title(
+                                strings::set_branch_upstream_popup(
+                                    branch_name,
+                                ),
+                            )
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Thick),
+                        area,
+                    );
 
-            let chunk = Layout::default()
-                .vertical_margin(1)
-                .horizontal_margin(1)
-                .direction(Direction::Vertical)
-                .constraints(
-                    [Constraint::Min(1), Constraint::Length(1)]
-                        .as_ref(),
-                )
-                .split(area)[0];
-            f.render_widget(
-                Paragraph::new(
-                    self.get_text(&self.theme, area.width)?,
-                )
-                .scroll((scroll, 0))
-                .alignment(Alignment::Left),
-                chunk,
-            );
+                    let chunk = Layout::default()
+                        .vertical_margin(1)
+                        .horizontal_margin(1)
+                        .direction(Direction::Vertical)
+                        .constraints(
+                            [
+                                Constraint::Min(1),
+                                Constraint::Length(1),
+                            ]
+                            .as_ref(),
+                        )
+                        .split(area)[0];
+                    f.render_widget(
+                        Paragraph::new(
+                            self.get_text(&self.theme, area.width)?,
+                        )
+                        .scroll((scroll, 0))
+                        .alignment(Alignment::Left),
+                        chunk,
+                    );
+                }
+            }
         }
 
         Ok(())
     }
 }
 
-impl Component for SelectBranchComponent {
+impl Component for SetUpstreamComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
@@ -122,23 +132,13 @@ impl Component for SelectBranchComponent {
             ));
 
             out.push(CommandInfo::new(
-                strings::commands::delete_branch_popup(
-                    &self.key_config,
-                ),
-                !self.selection_is_cur_branch(),
+                strings::commands::add_remote_popup(&self.key_config),
+                true,
                 true,
             ));
 
             out.push(CommandInfo::new(
-                strings::commands::rename_branch_popup(
-                    &self.key_config,
-                ),
-                !self.selection_is_cur_branch(),
-                true,
-            ));
-
-            out.push(CommandInfo::new(
-                strings::commands::open_upstream_branch_popup(
+                strings::commands::remove_remote_popup(
                     &self.key_config,
                 ),
                 true,
@@ -152,61 +152,44 @@ impl Component for SelectBranchComponent {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
-                    self.hide()
+                    self.hide();
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::SelectBranch);
                 } else if e == self.key_config.move_down {
                     self.move_selection(true)
                 } else if e == self.key_config.move_up {
                     self.move_selection(false)
                 } else if e == self.key_config.enter {
-                    if let Err(e) = self.switch_to_selected_branch() {
-                        log::error!("switch branch error: {}", e);
+                    if let Err(e) = self.set_upstream() {
+                        log::error!(
+                            "set branch upstream error: {}",
+                            e
+                        );
                         self.queue.borrow_mut().push_back(
                             InternalEvent::ShowErrorMsg(format!(
-                                "switch branch error:\n{}",
+                                "set branch upstream error:\n{}",
                                 e
                             )),
                         );
                     }
                     self.hide()
-                } else if e == self.key_config.create_branch {
+                } else if e == self.key_config.create_upstream_branch
+                {
+                    if let Some(local_branch_ref) =
+                        &self.cur_local_branch_ref
+                    {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::CreateUpstreamBranch(
+                                local_branch_ref.clone(),
+                            ),
+                        );
+                        self.hide();
+                    }
+                } else if e == self.key_config.add_remote {
                     self.queue
                         .borrow_mut()
-                        .push_back(InternalEvent::CreateBranch);
-                    self.hide();
-                } else if e == self.key_config.rename_branch {
-                    let cur_branch =
-                        &self.branch_names[self.selection as usize];
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::RenameBranch(
-                            cur_branch.reference.clone(),
-                            cur_branch.name.clone(),
-                        ),
-                    );
-                    self.hide();
-                } else if e == self.key_config.delete_branch
-                    && !self.selection_is_cur_branch()
-                {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ConfirmAction(
-                            Action::DeleteBranch(
-                                self.branch_names
-                                    [self.selection as usize]
-                                    .reference
-                                    .clone(),
-                            ),
-                        ),
-                    );
-                } else if e
-                    == self.key_config.open_upstream_branch_popup
-                {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::OpenUpstreamBranchPopup(
-                            self.branch_names
-                                [self.selection as usize]
-                                .reference
-                                .clone(),
-                        ),
-                    );
+                        .push_back(InternalEvent::AddRemote);
                     self.hide();
                 }
             }
@@ -232,7 +215,7 @@ impl Component for SelectBranchComponent {
     }
 }
 
-impl SelectBranchComponent {
+impl SetUpstreamComponent {
     pub fn new(
         queue: Queue,
         theme: SharedTheme,
@@ -240,6 +223,8 @@ impl SelectBranchComponent {
     ) -> Self {
         Self {
             branch_names: Vec::new(),
+            in_memory_branches: Vec::new(),
+            cur_local_branch_ref: None,
             visible: false,
             selection: 0,
             queue,
@@ -249,12 +234,22 @@ impl SelectBranchComponent {
     }
     /// Get all the names of the branches in the repo
     pub fn get_branch_names() -> Result<Vec<BranchForDisplay>> {
-        get_local_branches_to_display(CWD).map_err(anyhow::Error::new)
+        get_remote_branches_to_display(CWD)
+            .map_err(anyhow::Error::new)
     }
 
     ///
-    pub fn open(&mut self) -> Result<()> {
-        self.update_branches()?;
+    pub fn open(&mut self, local_branch_ref: String) -> Result<()> {
+        self.branch_names.clear();
+        if let Err(e) = self.update_branches() {
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ShowErrorMsg(format!(
+                    "Opening Upstreams Error: {}",
+                    e
+                )),
+            );
+        }
+        self.cur_local_branch_ref = Some(local_branch_ref);
         self.show()?;
 
         Ok(())
@@ -263,19 +258,26 @@ impl SelectBranchComponent {
     ////
     pub fn update_branches(&mut self) -> Result<()> {
         self.branch_names = Self::get_branch_names()?;
+        self.branch_names
+            .append(&mut (self.in_memory_branches.clone()));
+
         Ok(())
     }
 
-    ///
-    pub fn selection_is_cur_branch(&self) -> bool {
-        self.branch_names
-            .iter()
-            .enumerate()
-            .filter(|(index, b)| {
-                b.is_head && *index == self.selection as usize
-            })
-            .count()
-            > 0
+    ////
+    pub fn add_in_memory_remote_branch(
+        &mut self,
+        remote_branch: String,
+    ) -> Result<()> {
+        let branch_to_add = BranchForDisplay {
+            name: remote_branch.clone(),
+            top_commit_reference: "NONE".to_string(),
+            top_commit_message: "NONE".to_string(),
+            reference: remote_branch,
+            is_head: false,
+        };
+        self.in_memory_branches.push(branch_to_add);
+        Ok(())
     }
 
     ///
@@ -302,19 +304,23 @@ impl SelectBranchComponent {
         theme: &SharedTheme,
         width_available: u16,
     ) -> Result<Text> {
-        const COMMIT_HASH_LENGTH: usize = 8;
-        const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
-        const THREE_DOTS_LENGTH: usize = 3; // "..."
+        const BRANCH_NAME_LENGTH: usize = 15;
 
-        // branch name = 30% of area size
-        let branch_name_length: usize =
-            width_available as usize * 30 / 100;
-        // commit message takes up the remaining width
+        let mut upstream_ref = None;
+        if let Some(local_branch_ref) = &self.cur_local_branch_ref {
+            if let Ok(cur_upstream) =
+                get_branch_upstream(CWD, local_branch_ref)
+            {
+                upstream_ref = Some(cur_upstream);
+            }
+        }
+
+        // total width - commit hash - branch name -"*  " - "..." = remaining width
         let commit_message_length: usize = (width_available as usize)
-            .saturating_sub(COMMIT_HASH_LENGTH)
-            .saturating_sub(branch_name_length)
-            .saturating_sub(IS_HEAD_STAR_LENGTH)
-            .saturating_sub(THREE_DOTS_LENGTH);
+            .saturating_sub(8)
+            .saturating_sub(BRANCH_NAME_LENGTH)
+            .saturating_sub(3)
+            .saturating_sub(3);
         let mut txt = Vec::new();
 
         for (i, displaybranch) in self.branch_names.iter().enumerate()
@@ -323,23 +329,27 @@ impl SelectBranchComponent {
                 displaybranch.top_commit_message.clone();
             if commit_message.len() > commit_message_length {
                 commit_message.truncate(
-                    commit_message_length
-                        .saturating_sub(THREE_DOTS_LENGTH),
+                    commit_message_length.saturating_sub(3),
                 );
                 commit_message += "...";
             }
 
             let mut branch_name = displaybranch.name.clone();
-            if branch_name.len() > branch_name_length {
-                branch_name.truncate(
-                    branch_name_length
-                        .saturating_sub(THREE_DOTS_LENGTH),
-                );
+            if branch_name.len() > BRANCH_NAME_LENGTH {
+                branch_name.truncate(BRANCH_NAME_LENGTH - 3);
                 branch_name += "...";
             }
 
-            let is_head_str =
-                if displaybranch.is_head { "*" } else { " " };
+            let is_head_str = upstream_ref.as_ref().map_or(
+                " ",
+                |cur_upstream_ref| {
+                    if *cur_upstream_ref == displaybranch.reference {
+                        "U"
+                    } else {
+                        " "
+                    }
+                },
+            );
 
             txt.push(Spans::from(if self.selection as usize == i {
                 vec![
@@ -351,16 +361,14 @@ impl SelectBranchComponent {
                         format!(
                             ">{:w$} ",
                             branch_name,
-                            w = branch_name_length
+                            w = BRANCH_NAME_LENGTH
                         ),
                         theme.commit_author(true),
                     ),
                     Span::styled(
                         format!(
                             "{} ",
-                            displaybranch
-                                .top_commit
-                                .get_short_string()
+                            displaybranch.top_commit_reference
                         ),
                         theme.commit_hash(true),
                     ),
@@ -379,16 +387,14 @@ impl SelectBranchComponent {
                         format!(
                             " {:w$} ",
                             branch_name,
-                            w = branch_name_length
+                            w = BRANCH_NAME_LENGTH
                         ),
                         theme.commit_author(false),
                     ),
                     Span::styled(
                         format!(
                             "{} ",
-                            displaybranch
-                                .top_commit
-                                .get_short_string()
+                            displaybranch.top_commit_reference
                         ),
                         theme.commit_hash(false),
                     ),
@@ -404,11 +410,14 @@ impl SelectBranchComponent {
     }
 
     ///
-    fn switch_to_selected_branch(&self) -> Result<()> {
-        checkout_branch(
-            asyncgit::CWD,
-            &self.branch_names[self.selection as usize].reference,
-        )?;
+    fn set_upstream(&self) -> Result<()> {
+        if let Some(local_branch_ref) = &self.cur_local_branch_ref {
+            set_branch_upstream(
+                asyncgit::CWD,
+                local_branch_ref,
+                &self.branch_names[self.selection as usize].name,
+            )?;
+        }
         self.queue
             .borrow_mut()
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));
