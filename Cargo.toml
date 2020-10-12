@@ -30,7 +30,7 @@ rayon-core = "1.8"
 log = "0.4"
 simplelog = { version = "0.8", default-features = false }
 dirs = "3.0"
-crossbeam-channel = "0.4"
+crossbeam-channel = "0.5"
 scopeguard = "1.1"
 bitflags = "1.2"
 chrono = "0.4"
