@@ -259,8 +259,11 @@ impl SelectBranchComponent {
     ) -> Result<Text> {
         const BRANCH_NAME_LENGTH: usize = 15;
         // total width - commit hash - branch name -"*  " - "..." = remaining width
-        let commit_message_length: usize =
-            width_available as usize - 8 - BRANCH_NAME_LENGTH - 3 - 3;
+        let commit_message_length: usize = (width_available as usize)
+            .saturating_sub(8)
+            .saturating_sub(BRANCH_NAME_LENGTH)
+            .saturating_sub(3)
+            .saturating_sub(3);
         let mut txt = Vec::new();
 
         for (i, displaybranch) in self.branch_names.iter().enumerate()
@@ -268,13 +271,16 @@ impl SelectBranchComponent {
             let mut commit_message =
                 displaybranch.top_commit_message.clone();
             if commit_message.len() > commit_message_length {
-                commit_message.truncate(commit_message_length - 3);
+                commit_message.truncate(
+                    commit_message_length.saturating_sub(3),
+                );
                 commit_message += "...";
             }
 
             let mut branch_name = displaybranch.name.clone();
             if branch_name.len() > BRANCH_NAME_LENGTH {
-                branch_name.truncate(BRANCH_NAME_LENGTH - 3);
+                branch_name
+                    .truncate(BRANCH_NAME_LENGTH.saturating_sub(3));
                 branch_name += "...";
             }
 
