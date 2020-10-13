@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cargo",
+			"subcommand": "build",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "Rust: cargo build - gitui"
+		}
+	]
+}
