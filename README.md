@@ -35,7 +35,7 @@
 - Scalable terminal UI layout
 - Async [input polling](assets/perf_compare.jpg)
 - Async git API for fluid control
-
+a
 # Benchmarks
 
 For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([slides](https://github.com/extrawurst/gitui-presentation)) I compared `lazygit`,`tig` and `gitui` by parsing the entire Linux git repository (which contains over 900k commits):
