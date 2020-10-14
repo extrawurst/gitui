@@ -258,9 +258,16 @@ impl SelectBranchComponent {
         width_available: u16,
     ) -> Result<Text> {
         const BRANCH_NAME_LENGTH: usize = 15;
-        // total width - commit hash - branch name -"*  " - "..." = remaining width
-        let commit_message_length: usize =
-            width_available as usize - 8 - BRANCH_NAME_LENGTH - 3 - 3;
+        const COMMIT_HASH_LENGTH: usize = 8;
+        const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
+        const THREE_DOTS_LENGTH: usize = 3; // "..."
+
+        // commit message takes up the remaining width
+        let commit_message_length: usize = (width_available as usize)
+            .saturating_sub(COMMIT_HASH_LENGTH)
+            .saturating_sub(BRANCH_NAME_LENGTH)
+            .saturating_sub(IS_HEAD_STAR_LENGTH)
+            .saturating_sub(THREE_DOTS_LENGTH);
         let mut txt = Vec::new();
 
         for (i, displaybranch) in self.branch_names.iter().enumerate()
@@ -268,13 +275,19 @@ impl SelectBranchComponent {
             let mut commit_message =
                 displaybranch.top_commit_message.clone();
             if commit_message.len() > commit_message_length {
-                commit_message.truncate(commit_message_length - 3);
+                commit_message.truncate(
+                    commit_message_length
+                        .saturating_sub(THREE_DOTS_LENGTH),
+                );
                 commit_message += "...";
             }
 
             let mut branch_name = displaybranch.name.clone();
             if branch_name.len() > BRANCH_NAME_LENGTH {
-                branch_name.truncate(BRANCH_NAME_LENGTH - 3);
+                branch_name.truncate(
+                    BRANCH_NAME_LENGTH
+                        .saturating_sub(THREE_DOTS_LENGTH),
+                );
                 branch_name += "...";
             }
 
