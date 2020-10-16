@@ -632,7 +632,7 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Checkout [{}]",
+                "Branches [{}]",
                 get_hint(key_config.select_branch),
             ),
             "open select branch popup",
