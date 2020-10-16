@@ -115,14 +115,29 @@ Binaries available for:
 
 # Build
 
-### Requirements
+## Requirements
 
 - Latest `rust` and `cargo`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
-
-### Cargo Install
+  
+## Cargo Install
 
 The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui`
+
+## Cargo Build
+
+If you want to build this crate, you need to install and use the nightly toolchain :
+
+```sh
+rustup install nightly
+cargo +nightly build
+```
+
+Then you can run gitui :
+
+```sh
+./target/debug/gitui
+```
 
 # Diagnostics
 
