@@ -55,7 +55,6 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 # Known Limitations
 
 - no support for `pull` yet (see [#90](https://github.com/extrawurst/gitui/issues/90))
-- limited support for branching (see [#91](https://github.com/extrawurst/gitui/issues/91))
 - no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 - no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
 
