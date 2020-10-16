@@ -139,6 +139,18 @@ pub fn create_branch_popup_msg(
 ) -> String {
     "type branch name".to_string()
 }
+pub fn username_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "Username".to_string()
+}
+pub fn username_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type username".to_string()
+}
+pub fn password_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "Password".to_string()
+}
+pub fn password_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type password".to_string()
+}
 
 pub fn rename_branch_popup_title(
     _key_config: &SharedKeyConfig,

@@ -5,6 +5,7 @@ mod commit;
 mod commit_details;
 mod commit_files;
 mod commits_info;
+pub mod cred;
 pub mod diff;
 mod hooks;
 mod hunks;

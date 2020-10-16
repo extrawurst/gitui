@@ -1,13 +1,16 @@
 //!
 
 use super::CommitId;
-use crate::{error::Result, sync::utils};
+use crate::{
+    error::Result, sync::cred::BasicAuthCredential, sync::utils,
+};
 use crossbeam_channel::Sender;
 use git2::{
     Cred, Error as GitError, FetchOptions, PackBuilderStage,
     PushOptions, RemoteCallbacks,
 };
 use scopetime::scope_time;
+
 ///
 #[derive(Debug, Clone)]
 pub enum ProgressNotification {
@@ -69,7 +72,7 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     let mut remote = repo.find_remote("origin")?;
 
     let mut options = FetchOptions::new();
-    options.remote_callbacks(match remote_callbacks(None) {
+    options.remote_callbacks(match remote_callbacks(None, None) {
         Ok(callback) => callback,
         Err(e) => return Err(e),
     });
@@ -84,6 +87,7 @@ pub fn push(
     repo_path: &str,
     remote: &str,
     branch: &str,
+    basic_credential: Option<BasicAuthCredential>,
     progress_sender: Sender<ProgressNotification>,
 ) -> Result<()> {
     scope_time!("push_origin");
@@ -94,7 +98,10 @@ pub fn push(
     let mut options = PushOptions::new();
 
     options.remote_callbacks(
-        match remote_callbacks(Some(progress_sender)) {
+        match remote_callbacks(
+            Some(progress_sender),
+            basic_credential,
+        ) {
             Ok(callbacks) => callbacks,
             Err(e) => return Err(e),
         },
@@ -108,6 +115,7 @@ pub fn push(
 
 fn remote_callbacks<'a>(
     sender: Option<Sender<ProgressNotification>>,
+    basic_credential: Option<BasicAuthCredential>,
 ) -> Result<RemoteCallbacks<'a>> {
     let mut callbacks = RemoteCallbacks::new();
     let sender_clone = sender.clone();
@@ -165,21 +173,52 @@ fn remote_callbacks<'a>(
             })
         });
     });
-    callbacks.credentials(|url, username_from_url, allowed_types| {
-        log::debug!(
-            "creds: '{}' {:?} ({:?})",
-            url,
-            username_from_url,
-            allowed_types
-        );
 
-        match username_from_url {
-            Some(username) => Cred::ssh_key_from_agent(username),
-            None => Err(GitError::from_str(
-                " Couldn't extract username from url.",
-            )),
-        }
-    });
+    let mut first_call_to_credentials = true;
+    callbacks.credentials(
+        move |url, username_from_url, allowed_types| {
+            log::debug!(
+                "creds: '{}' {:?} ({:?})",
+                url,
+                username_from_url,
+                allowed_types
+            );
+            if first_call_to_credentials {
+                first_call_to_credentials = false;
+            } else {
+                return Err(GitError::from_str("Bad credentials."));
+            }
+
+            match &basic_credential {
+                _ if allowed_types.is_ssh_key() => {
+                    match username_from_url {
+                        Some(username) => {
+                            Cred::ssh_key_from_agent(username)
+                        }
+                        None => Err(GitError::from_str(
+                            " Couldn't extract username from url.",
+                        )),
+                    }
+                }
+                Some(BasicAuthCredential {
+                    username: Some(user),
+                    password: Some(pwd),
+                }) if allowed_types.is_user_pass_plaintext() => {
+                    Cred::userpass_plaintext(&user, &pwd)
+                }
+                Some(BasicAuthCredential {
+                    username: Some(user),
+                    password: _,
+                }) if allowed_types.is_username() => {
+                    Cred::username(user)
+                }
+                _ if allowed_types.is_default() => Cred::default(),
+                _ => Err(GitError::from_str(
+                    "Couldn't find credentials",
+                )),
+            }
+        },
+    );
 
     Ok(callbacks)
 }

@@ -1,3 +1,4 @@
+use crate::components::TextInputComponent;
 use crate::{
     components::{
         visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -10,8 +11,10 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    AsyncNotification, AsyncPush, PushProgress, PushProgressState,
-    PushRequest,
+    sync::cred::extract_username_password,
+    sync::cred::need_username_password,
+    sync::cred::BasicAuthCredential, AsyncNotification, AsyncPush,
+    PushProgress, PushProgressState, PushRequest,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -30,10 +33,16 @@ pub struct PushComponent {
     git_push: AsyncPush,
     progress: Option<PushProgress>,
     pending: bool,
+    branch: String,
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
+    input_username: TextInputComponent,
+    input_password: TextInputComponent,
+    cred: Option<BasicAuthCredential>,
 }
+
+const DEFAULT_REMOTE_NAME: &str = "origin";
 
 impl PushComponent {
     ///
@@ -47,23 +56,63 @@ impl PushComponent {
             queue: queue.clone(),
             pending: false,
             visible: false,
+            branch: "".to_string(),
             git_push: AsyncPush::new(sender),
             progress: None,
+            input_username: TextInputComponent::new(
+                theme.clone(),
+                key_config.clone(),
+                &strings::username_popup_title(&key_config),
+                &strings::username_popup_msg(&key_config),
+            ),
+            input_password: TextInputComponent::new(
+                theme.clone(),
+                key_config.clone(),
+                &strings::password_popup_title(&key_config),
+                &strings::password_popup_msg(&key_config),
+            ),
             theme,
             key_config,
+            cred: None,
         }
     }
 
     ///
     pub fn push(&mut self, branch: String) -> Result<()> {
+        self.branch = branch;
+        self.show()?;
+        match need_username_password(DEFAULT_REMOTE_NAME) {
+            Ok(true) => {
+                self.cred = extract_username_password("origin")
+                    .map(Some)
+                    .unwrap_or(None);
+                match &self.cred {
+                    None
+                    | Some(BasicAuthCredential {
+                        username: None,
+                        password: _,
+                    }) => self.input_username.show(),
+                    Some(BasicAuthCredential {
+                        username: _,
+                        password: None,
+                    }) => self.input_password.show(),
+                    Some(_) => self.push_to_remote(),
+                }
+            }
+            _ => self.push_to_remote(),
+        }
+    }
+
+    fn push_to_remote(&mut self) -> Result<()> {
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
             //TODO: find tracking branch name
-            remote: String::from("origin"),
-            branch,
+            remote: String::from(DEFAULT_REMOTE_NAME),
+            branch: self.branch.clone(),
+            basic_credential: self.cred.clone(),
         })?;
-        self.show()?;
+        self.cred = None;
         Ok(())
     }
 
@@ -95,7 +144,6 @@ impl PushComponent {
                     )),
                 );
             }
-
             self.hide();
         }
 
@@ -134,7 +182,7 @@ impl DrawableComponent for PushComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
-        _rect: Rect,
+        rect: Rect,
     ) -> Result<()> {
         if self.visible {
             let (state, progress) = self.get_progress();
@@ -163,6 +211,8 @@ impl DrawableComponent for PushComponent {
                     .percent(u16::from(progress)),
                 area,
             );
+            self.input_username.draw(f, rect)?;
+            self.input_password.draw(f, rect)?;
         }
 
         Ok(())
@@ -191,8 +241,44 @@ impl Component for PushComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
-                if e == self.key_config.enter {
+                if e == self.key_config.exit_popup {
                     self.hide();
+                }
+                if self.input_username.event(ev)?
+                    || self.input_password.event(ev)?
+                {
+                    return Ok(true);
+                } else if e == self.key_config.enter {
+                    if self.input_username.is_visible() {
+                        self.cred = Some(BasicAuthCredential {
+                            username: Some(
+                                self.input_username
+                                    .get_text()
+                                    .to_owned(),
+                            ),
+                            password: None,
+                        });
+                        self.input_username.hide();
+                        self.input_password.show()?;
+                    } else if self.input_password.is_visible() {
+                        self.cred = Some(BasicAuthCredential {
+                            username: self.cred.as_ref().and_then(
+                                |cred| cred.username.clone(),
+                            ),
+                            password: Some(
+                                self.input_password
+                                    .get_text()
+                                    .to_owned(),
+                            ),
+                        });
+                        self.input_password.hide();
+                        self.input_password.clear();
+
+                        self.push_to_remote()?;
+                        self.cred = None;
+                    } else {
+                        self.hide();
+                    }
                 }
             }
             return Ok(true);

@@ -69,6 +69,7 @@ dependencies = [
  "scopetime",
  "tempfile",
  "thiserror",
+ "url",
 ]
 
 [[package]]
