@@ -155,10 +155,10 @@ impl DrawableComponent for PushComponent {
                             .border_type(BorderType::Thick)
                             .border_style(self.theme.block(true)),
                     )
-                    .style(
+                    .gauge_style(
                         Style::default()
-                            .fg(Color::White)
-                            .bg(Color::Black), // .modifier(Modifier::ITALIC),
+                            .fg(Color::Reset)
+                            .bg(Color::Reset), // .modifier(Modifier::ITALIC),
                     )
                     .percent(u16::from(progress)),
                 area,
