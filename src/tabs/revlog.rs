@@ -236,6 +236,11 @@ impl Component for Revlog {
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
                     return Ok(true);
+                } else if k == self.key_config.select_branch {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::SelectBranch);
+                    return Ok(true);
                 }
             }
         }
@@ -273,6 +278,14 @@ impl Component for Revlog {
 
         out.push(CommandInfo::new(
             strings::commands::open_branch_create_popup(
+                &self.key_config,
+            ),
+            true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::open_branch_select_popup(
                 &self.key_config,
             ),
             true,
