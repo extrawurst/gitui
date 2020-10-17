@@ -121,6 +121,14 @@ impl Component for SelectBranchComponent {
                 !self.selection_is_cur_branch(),
                 true,
             ));
+
+            out.push(CommandInfo::new(
+                strings::commands::rename_branch_popup(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));
         }
         visibility_blocking(self)
     }
@@ -149,6 +157,16 @@ impl Component for SelectBranchComponent {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
+                    self.hide();
+                } else if e == self.key_config.rename_branch {
+                    let cur_branch =
+                        &self.branch_names[self.selection as usize];
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::RenameBranch(
+                            cur_branch.reference.clone(),
+                            cur_branch.name.clone(),
+                        ),
+                    );
                     self.hide();
                 } else if e == self.key_config.delete_branch
                     && !self.selection_is_cur_branch()
