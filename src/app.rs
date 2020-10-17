@@ -68,6 +68,7 @@ pub struct App {
 // public interface
 impl App {
     ///
+    #[allow(clippy::too_many_lines)]
     pub fn new(
         sender: &Sender<AsyncNotification>,
         input: Input,
