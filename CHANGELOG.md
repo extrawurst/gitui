@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![branches](assets/push.gif)
 
-- new branch list popup incl. checkout/delete [[@WizardOhio24](https://github.com/WizardOhio24)] ([#303](https://github.com/extrawurst/gitui/issues/303)) ([#323](https://github.com/extrawurst/gitui/issues/323))
+- new branch list popup incl. checkout/delete/rename [[@WizardOhio24](https://github.com/WizardOhio24)] ([#303](https://github.com/extrawurst/gitui/issues/303)) ([#323](https://github.com/extrawurst/gitui/issues/323))
 
 ![push](assets/branches.gif)
 
