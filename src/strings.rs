@@ -139,6 +139,29 @@ pub fn create_branch_popup_msg(
 ) -> String {
     "type branch name".to_string()
 }
+pub fn username_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "Username".to_string()
+}
+pub fn username_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type username".to_string()
+}
+pub fn password_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "Password".to_string()
+}
+pub fn password_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type password".to_string()
+}
+
+pub fn rename_branch_popup_title(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Rename Branch".to_string()
+}
+pub fn rename_branch_popup_msg(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "new branch name".to_string()
+}
 
 pub mod commit {
     use crate::keys::SharedKeyConfig;
@@ -615,6 +638,27 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn rename_branch_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Rename Branch [{}]", get_hint(key_config.enter),),
+            "rename branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn rename_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Rename Branch [{}]",
+                get_hint(key_config.rename_branch),
+            ),
+            "rename branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn delete_branch_popup(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
@@ -632,7 +676,7 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Checkout [{}]",
+                "Branches [{}]",
                 get_hint(key_config.select_branch),
             ),
             "open select branch popup",

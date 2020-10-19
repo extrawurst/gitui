@@ -69,6 +69,7 @@ dependencies = [
  "scopetime",
  "tempfile",
  "thiserror",
+ "url",
 ]
 
 [[package]]
@@ -430,9 +431,9 @@ checksum = "aaf91faf136cb47367fa430cd46e37a788775e7fa104f8b4bcb3861dc389b724"
 
 [[package]]
 name = "git2"
-version = "0.13.11"
+version = "0.13.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e094214efbc7fdbbdee952147e493b00e99a4e52817492277e98967ae918165"
+checksum = "ca6f1a0238d7f8f8fd5ee642f4ebac4dbc03e03d1f78fbe7a3ede35dcf7e2224"
 dependencies = [
  "bitflags",
  "libc",
@@ -571,9 +572,9 @@ checksum = "2448f6066e80e3bfc792e9c98bf705b4b0fc6e8ef5b43e5889aff0eaa9c58743"
 
 [[package]]
 name = "libgit2-sys"
-version = "0.12.13+1.0.1"
+version = "0.12.14+1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "069eea34f76ec15f2822ccf78fe0cdb8c9016764d0a12865278585a74dbdeae5"
+checksum = "8f25af58e6495f7caf2919d08f212de550cfa3ed2f5e744988938ea292b9f549"
 dependencies = [
  "cc",
  "libc",
@@ -1069,18 +1070,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.116"
+version = "1.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96fe57af81d28386a513cbc6858332abc6117cfdb5999647c6444b8f43a370a5"
+checksum = "b88fa983de7720629c9387e9f517353ed404164b1e482c970a90c1a4aaf7dc1a"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.116"
+version = "1.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f630a6370fd8e457873b4bd2ffdae75408bc291ba72be773772a4c2a065d9ae8"
+checksum = "cbd1ae72adb44aab48f325a02444a5fc079349a8d804c1fc922aed3f7454c74e"
 dependencies = [
  "proc-macro2",
  "quote",

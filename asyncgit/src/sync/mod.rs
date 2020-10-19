@@ -5,6 +5,7 @@ mod commit;
 mod commit_details;
 mod commit_files;
 mod commits_info;
+pub mod cred;
 pub mod diff;
 mod hooks;
 mod hunks;
@@ -20,7 +21,7 @@ pub mod utils;
 pub(crate) use branch::get_branch_name;
 pub use branch::{
     checkout_branch, create_branch, delete_branch,
-    get_branches_to_display, BranchForDisplay,
+    get_branches_to_display, rename_branch, BranchForDisplay,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
