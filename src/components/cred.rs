@@ -21,7 +21,7 @@ pub struct CredComponent {
     key_config: SharedKeyConfig,
     input_username: TextInputComponent,
     input_password: TextInputComponent,
-    pub cred: BasicAuthCredential,
+    cred: BasicAuthCredential,
 }
 
 impl CredComponent {
@@ -49,8 +49,12 @@ impl CredComponent {
         }
     }
 
-    pub fn init(&mut self, cred: BasicAuthCredential) {
+    pub fn set_cred(&mut self, cred: BasicAuthCredential) {
         self.cred = cred;
+    }
+
+    pub const fn get_cred(&self) -> &BasicAuthCredential {
+        &self.cred
     }
 }
 

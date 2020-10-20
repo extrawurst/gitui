@@ -78,7 +78,7 @@ impl PushComponent {
             if cred.is_complete() {
                 self.push_to_remote(Some(cred))
             } else {
-                self.input_cred.init(cred);
+                self.input_cred.set_cred(cred);
                 self.input_cred.show()
             }
         } else {
@@ -235,10 +235,10 @@ impl Component for PushComponent {
                     return Ok(true);
                 } else if e == self.key_config.enter {
                     if self.input_cred.is_visible()
-                        && self.input_cred.cred.is_complete()
+                        && self.input_cred.get_cred().is_complete()
                     {
                         self.push_to_remote(Some(
-                            self.input_cred.cred.clone(),
+                            self.input_cred.get_cred().clone(),
                         ))?;
                         self.input_cred.hide();
                     } else {

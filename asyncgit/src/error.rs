@@ -10,7 +10,7 @@ pub enum Error {
     NoHead,
 
     #[error("git: remote url not found")]
-    NoRemote,
+    UnknownRemote,
 
     #[error("io error:{0}")]
     Io(#[from] std::io::Error),
