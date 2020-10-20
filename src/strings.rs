@@ -346,6 +346,14 @@ pub mod commands {
         )
         .hide_help()
     }
+    pub fn validate_msg(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Validate [{}]", get_hint(key_config.enter),),
+            "validate msg",
+            CMD_GROUP_GENERAL,
+        )
+        .hide_help()
+    }
     pub fn select_staging(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
