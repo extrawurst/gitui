@@ -36,6 +36,7 @@ pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
 pub use remotes::{
     fetch_origin, get_remotes, push, ProgressNotification,
+    DEFAULT_REMOTE_NAME,
 };
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};

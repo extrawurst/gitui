@@ -11,10 +11,13 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::cred::extract_username_password,
-    sync::cred::need_username_password,
-    sync::cred::BasicAuthCredential, AsyncNotification, AsyncPush,
-    PushProgress, PushProgressState, PushRequest,
+    sync::cred::{
+        extract_username_password, need_username_password,
+        BasicAuthCredential,
+    },
+    sync::DEFAULT_REMOTE_NAME,
+    AsyncNotification, AsyncPush, PushProgress, PushProgressState,
+    PushRequest,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -41,8 +44,6 @@ pub struct PushComponent {
     input_password: TextInputComponent,
     cred: Option<BasicAuthCredential>,
 }
-
-const DEFAULT_REMOTE_NAME: &str = "origin";
 
 impl PushComponent {
     ///
@@ -83,9 +84,10 @@ impl PushComponent {
         self.show()?;
         match need_username_password(DEFAULT_REMOTE_NAME) {
             Ok(true) => {
-                self.cred = extract_username_password("origin")
-                    .map(Some)
-                    .unwrap_or(None);
+                self.cred =
+                    extract_username_password(DEFAULT_REMOTE_NAME)
+                        .map(Some)
+                        .unwrap_or(None);
                 match &self.cred {
                     None
                     | Some(BasicAuthCredential {

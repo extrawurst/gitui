@@ -20,7 +20,7 @@ pub fn need_username_password(remote: &str) -> Result<bool> {
     let url = repo
         .find_remote(remote)?
         .url()
-        .ok_or_else(|| Error::Generic("No remote URL".to_owned()))?
+        .ok_or_else(|| Error::NoRemote)?
         .to_owned();
     let is_http = url.starts_with("http");
     Ok(is_http)
@@ -34,7 +34,7 @@ pub fn extract_username_password(
     let url = repo
         .find_remote(remote)?
         .url()
-        .ok_or_else(|| Error::Generic("No remote URL".to_owned()))?
+        .ok_or_else(|| Error::NoRemote)?
         .to_owned();
     let mut helper = CredentialHelper::new(&url);
 

@@ -53,6 +53,9 @@ pub enum ProgressNotification {
 }
 
 ///
+pub const DEFAULT_REMOTE_NAME: &str = "origin";
+
+///
 pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
     scope_time!("get_remotes");
 
@@ -69,7 +72,7 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     scope_time!("fetch_origin");
 
     let repo = utils::repo(repo_path)?;
-    let mut remote = repo.find_remote("origin")?;
+    let mut remote = repo.find_remote(DEFAULT_REMOTE_NAME)?;
 
     let mut options = FetchOptions::new();
     options.remote_callbacks(match remote_callbacks(None, None) {
@@ -175,6 +178,11 @@ fn remote_callbacks<'a>(
     });
 
     let mut first_call_to_credentials = true;
+    // This boolean is used to avoid multiple call to credentials callback.
+    // If credentials are bad, we don't ask the user to re-fill his creds. We push an error and he will be able to restart his action (for example a push) and retype his creds.
+    // This behavior is explained in a issue on git2-rs project : https://github.com/rust-lang/git2-rs/issues/347
+    // An implementation reference is done in cargo : https://github.com/rust-lang/cargo/blob/9fb208dddb12a3081230a5fd8f470e01df8faa25/src/cargo/sources/git/utils.rs#L588
+    // There is also a guide about libgit2 authentication : https://libgit2.org/docs/guides/authentication/
     callbacks.credentials(
         move |url, username_from_url, allowed_types| {
             log::debug!(
@@ -243,7 +251,7 @@ mod tests {
 
         let remotes = get_remotes(repo_path).unwrap();
 
-        assert_eq!(remotes, vec![String::from("origin")]);
+        assert_eq!(remotes, vec![String::from(DEFAULT_REMOTE_NAME)]);
 
         fetch_origin(repo_path, "master").unwrap();
     }
