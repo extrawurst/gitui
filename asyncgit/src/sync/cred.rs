@@ -6,7 +6,7 @@ use crate::error::{Error, Result};
 use crate::CWD;
 
 /// basic Authentication Credentials
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct BasicAuthCredential {
     ///
     pub username: Option<String>,
@@ -76,5 +76,182 @@ pub fn extract_cred_from_url(url: &str) -> BasicAuthCredential {
         )
     } else {
         BasicAuthCredential::new(None, None)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::sync::cred::{
+        extract_cred_from_url, extract_username_password,
+        need_username_password, BasicAuthCredential,
+    };
+    use crate::sync::tests::repo_init;
+    use crate::sync::DEFAULT_REMOTE_NAME;
+    use serial_test::serial;
+    use std::env;
+
+    #[test]
+    fn test_credential_complete() {
+        assert_eq!(
+            BasicAuthCredential::new(
+                Some("username".to_owned()),
+                Some("password".to_owned())
+            )
+            .is_complete(),
+            true
+        );
+    }
+
+    #[test]
+    fn test_credential_not_complete() {
+        assert_eq!(
+            BasicAuthCredential::new(
+                None,
+                Some("password".to_owned())
+            )
+            .is_complete(),
+            false
+        );
+        assert_eq!(
+            BasicAuthCredential::new(
+                Some("username".to_owned()),
+                None
+            )
+            .is_complete(),
+            false
+        );
+        assert_eq!(
+            BasicAuthCredential::new(None, None).is_complete(),
+            false
+        );
+    }
+
+    #[test]
+    fn test_extract_username_from_url() {
+        assert_eq!(
+            extract_cred_from_url("https://user@github.com"),
+            BasicAuthCredential::new(Some("user".to_owned()), None)
+        );
+    }
+
+    #[test]
+    fn test_extract_username_password_from_url() {
+        assert_eq!(
+            extract_cred_from_url("https://user:pwd@github.com"),
+            BasicAuthCredential::new(
+                Some("user".to_owned()),
+                Some("pwd".to_owned())
+            )
+        );
+    }
+
+    #[test]
+    fn test_extract_nothing_from_url() {
+        assert_eq!(
+            extract_cred_from_url("https://github.com"),
+            BasicAuthCredential::new(None, None)
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_need_username_password_if_https() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        env::set_current_dir(repo_path).unwrap();
+        repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
+            .unwrap();
+
+        assert_eq!(
+            need_username_password(DEFAULT_REMOTE_NAME).unwrap(),
+            true
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_dont_need_username_password_if_ssh() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        env::set_current_dir(repo_path).unwrap();
+        repo.remote(DEFAULT_REMOTE_NAME, "git@github.com:user/repo")
+            .unwrap();
+
+        assert_eq!(
+            need_username_password(DEFAULT_REMOTE_NAME).unwrap(),
+            false
+        );
+    }
+
+    #[test]
+    #[serial]
+    #[should_panic]
+    fn test_error_if_no_remote_when_trying_to_retrieve_if_need_username_password(
+    ) {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        env::set_current_dir(repo_path).unwrap();
+
+        need_username_password(DEFAULT_REMOTE_NAME).unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_extract_username_password_from_repo() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        env::set_current_dir(repo_path).unwrap();
+        repo.remote(
+            DEFAULT_REMOTE_NAME,
+            "http://user:pass@github.com",
+        )
+        .unwrap();
+
+        assert_eq!(
+            extract_username_password(DEFAULT_REMOTE_NAME).unwrap(),
+            BasicAuthCredential::new(
+                Some("user".to_owned()),
+                Some("pass".to_owned())
+            )
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_extract_username_from_repo() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        env::set_current_dir(repo_path).unwrap();
+        repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
+            .unwrap();
+
+        assert_eq!(
+            extract_username_password(DEFAULT_REMOTE_NAME).unwrap(),
+            BasicAuthCredential::new(Some("user".to_owned()), None)
+        );
+    }
+
+    #[test]
+    #[serial]
+    #[should_panic]
+    fn test_error_if_no_remote_when_trying_to_extract_username_password(
+    ) {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        env::set_current_dir(repo_path).unwrap();
+
+        extract_username_password(DEFAULT_REMOTE_NAME).unwrap();
     }
 }
