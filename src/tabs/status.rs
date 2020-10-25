@@ -165,7 +165,7 @@ impl Status {
 
         let mut rect = if self.index_wd.focused() {
             let mut rect = chunks[0];
-            rect.y = rect.y + rect.height.saturating_sub(1);
+            rect.y += rect.height.saturating_sub(1);
             rect
         } else {
             chunks[1]
@@ -393,16 +393,16 @@ impl Status {
     }
 
     fn check_branch_state(&mut self) {
-        self.git_branch_state =
-            if let Some(branch) = self.index_wd.branch_name() {
+        self.git_branch_state = self.index_wd.branch_name().map_or(
+            BranchCompare::default(),
+            |branch| {
                 sync::branch_compare_upstream(CWD, branch.as_str())
                     .unwrap_or_default()
-            } else {
-                BranchCompare::default()
-            };
+            },
+        );
     }
 
-    fn can_push(&self) -> bool {
+    const fn can_push(&self) -> bool {
         self.git_branch_state.ahead > 0
     }
 }
