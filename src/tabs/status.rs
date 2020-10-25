@@ -12,13 +12,17 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
+    sync::BranchCompare,
     sync::{self, status::StatusType},
     AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
     StatusParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::layout::{Constraint, Direction, Layout};
+use tui::{
+    layout::{Alignment, Constraint, Direction, Layout},
+    widgets::Paragraph,
+};
 
 ///
 #[derive(PartialEq)]
@@ -45,6 +49,7 @@ pub struct Status {
     git_diff: AsyncDiff,
     git_status_workdir: AsyncStatus,
     git_status_stage: AsyncStatus,
+    git_branch_state: BranchCompare,
     queue: Queue,
     git_action_executed: bool,
     key_config: SharedKeyConfig,
@@ -95,6 +100,7 @@ impl DrawableComponent for Status {
         self.index_wd.draw(f, left_chunks[0])?;
         self.index.draw(f, left_chunks[1])?;
         self.diff.draw(f, chunks[1])?;
+        self.draw_branch_state(f, left_chunks[0]);
 
         Ok(())
     }
@@ -141,8 +147,29 @@ impl Status {
             git_status_workdir: AsyncStatus::new(sender.clone()),
             git_status_stage: AsyncStatus::new(sender.clone()),
             git_action_executed: false,
+            git_branch_state: BranchCompare::default(),
             key_config,
         }
+    }
+
+    fn draw_branch_state<B: tui::backend::Backend>(
+        &self,
+        f: &mut tui::Frame<B>,
+        rect: tui::layout::Rect,
+    ) {
+        let w = Paragraph::new(format!(
+            "\u{2191}{} \u{2193}{}",
+            self.git_branch_state.ahead, self.git_branch_state.behind
+        ))
+        .alignment(Alignment::Right);
+
+        let mut rect = rect;
+        rect.x += 1;
+        rect.width = rect.width.saturating_sub(2);
+        rect.y = rect.y + rect.height.saturating_sub(1);
+        rect.height = 1;
+
+        f.render_widget(w, rect);
     }
 
     fn can_focus_diff(&self) -> bool {
@@ -216,6 +243,7 @@ impl Status {
                 .fetch(StatusParams::new(StatusType::Stage, true))?;
 
             self.index_wd.update()?;
+            self.check_branch_state();
         }
 
         Ok(())
@@ -356,6 +384,20 @@ impl Status {
             }
         }
     }
+
+    fn check_branch_state(&mut self) {
+        self.git_branch_state =
+            if let Some(branch) = self.index_wd.branch_name() {
+                sync::branch_compare_upstream(CWD, branch.as_str())
+                    .unwrap_or_default()
+            } else {
+                BranchCompare::default()
+            };
+    }
+
+    fn can_push(&self) -> bool {
+        self.git_branch_state.ahead > 0
+    }
 }
 
 impl Component for Status {
@@ -381,7 +423,7 @@ impl Component for Status {
 
             out.push(CommandInfo::new(
                 strings::commands::status_push(&self.key_config),
-                self.index_wd.branch_name().is_some(),
+                self.can_push(),
                 true,
             ));
         }
