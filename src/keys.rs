@@ -231,7 +231,7 @@ fn get_modifier_hint(modifier: KeyModifiers) -> String {
         KeyModifiers::ALT => {
             "\u{2325}".to_string() //⌥
         }
-        _ => "".to_string(),
+        _ => String::new(),
     }
 }
 

@@ -8,6 +8,8 @@ use git2::BranchType;
 use scopetime::scope_time;
 use utils::get_head_repo;
 
+use super::CommitId;
+
 /// returns the branch-name head is currently pointing to
 /// this might be expensive, see `cached::BranchName`
 pub(crate) fn get_branch_name(repo_path: &str) -> Result<String> {
@@ -38,7 +40,7 @@ pub struct BranchForDisplay {
     ///
     pub top_commit_message: String,
     ///
-    pub top_commit_reference: String,
+    pub top_commit: CommitId,
     ///
     pub is_head: bool,
 }
@@ -56,8 +58,6 @@ pub fn get_branches_to_display(
         .map(|b| {
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
-            let mut commit_id = top_commit.id().to_string();
-            commit_id.truncate(7);
 
             Ok(BranchForDisplay {
                 name: String::from_utf8(Vec::from(
@@ -69,7 +69,7 @@ pub fn get_branches_to_display(
                 top_commit_message: String::from_utf8(Vec::from(
                     top_commit.summary_bytes().unwrap_or_default(),
                 ))?,
-                top_commit_reference: commit_id,
+                top_commit: top_commit.id().into(),
                 is_head: branch.is_head(),
             })
         })

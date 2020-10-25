@@ -54,7 +54,7 @@ impl PushComponent {
             queue: queue.clone(),
             pending: false,
             visible: false,
-            branch: "".to_string(),
+            branch: String::new(),
             git_push: AsyncPush::new(sender),
             progress: None,
             input_cred: CredComponent::new(
@@ -189,9 +189,10 @@ impl DrawableComponent for PushComponent {
                             .border_style(self.theme.block(true)),
                     )
                     .gauge_style(
+                        //TODO: use theme
                         Style::default()
                             .fg(Color::White)
-                            .bg(Color::Black), // .modifier(Modifier::ITALIC),
+                            .bg(Color::Black),
                     )
                     .percent(u16::from(progress)),
                 area,

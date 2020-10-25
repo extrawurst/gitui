@@ -337,7 +337,9 @@ impl SelectBranchComponent {
                     Span::styled(
                         format!(
                             "{} ",
-                            displaybranch.top_commit_reference
+                            displaybranch
+                                .top_commit
+                                .get_short_string()
                         ),
                         theme.commit_hash(true),
                     ),
@@ -363,7 +365,9 @@ impl SelectBranchComponent {
                     Span::styled(
                         format!(
                             "{} ",
-                            displaybranch.top_commit_reference
+                            displaybranch
+                                .top_commit
+                                .get_short_string()
                         ),
                         theme.commit_hash(false),
                     ),
