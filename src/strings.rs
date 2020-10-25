@@ -139,6 +139,18 @@ pub fn create_branch_popup_msg(
 ) -> String {
     "type branch name".to_string()
 }
+pub fn username_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "Username".to_string()
+}
+pub fn username_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type username".to_string()
+}
+pub fn password_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "Password".to_string()
+}
+pub fn password_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type password".to_string()
+}
 
 pub fn rename_branch_popup_title(
     _key_config: &SharedKeyConfig,
@@ -330,6 +342,14 @@ pub mod commands {
         CommandText::new(
             format!("Close [{}]", get_hint(key_config.enter),),
             "close msg popup (e.g msg)",
+            CMD_GROUP_GENERAL,
+        )
+        .hide_help()
+    }
+    pub fn validate_msg(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Validate [{}]", get_hint(key_config.enter),),
+            "validate msg",
             CMD_GROUP_GENERAL,
         )
         .hide_help()

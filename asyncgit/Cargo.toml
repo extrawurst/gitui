@@ -18,7 +18,9 @@ rayon-core = "1.9"
 crossbeam-channel = "0.5"
 log = "0.4"
 thiserror = "1.0"
+url = "2.1.1"
 
 [dev-dependencies]
 tempfile = "3.1"
 invalidstring = { path = "../invalidstring", version = "0.1" }
+serial_test = "0.5.0"
