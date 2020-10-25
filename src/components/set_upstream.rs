@@ -11,7 +11,7 @@ use crate::{
 use asyncgit::{
     sync::{
         get_branch_upstream, get_remote_branches_to_display,
-        set_branch_upstream, BranchForDisplay,
+        set_branch_upstream, BranchForDisplay, CommitId,
     },
     CWD,
 };
@@ -271,7 +271,7 @@ impl SetUpstreamComponent {
     ) -> Result<()> {
         let branch_to_add = BranchForDisplay {
             name: remote_branch.clone(),
-            top_commit_reference: "NONE".to_string(),
+            top_commit: CommitId::zero(),
             top_commit_message: "NONE".to_string(),
             reference: remote_branch,
             is_head: false,
@@ -368,7 +368,9 @@ impl SetUpstreamComponent {
                     Span::styled(
                         format!(
                             "{} ",
-                            displaybranch.top_commit_reference
+                            displaybranch
+                                .top_commit
+                                .get_short_string()
                         ),
                         theme.commit_hash(true),
                     ),
@@ -394,7 +396,9 @@ impl SetUpstreamComponent {
                     Span::styled(
                         format!(
                             "{} ",
-                            displaybranch.top_commit_reference
+                            displaybranch
+                                .top_commit
+                                .get_short_string()
                         ),
                         theme.commit_hash(false),
                     ),
