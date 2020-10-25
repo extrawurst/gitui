@@ -186,7 +186,7 @@ impl CommandBar {
                 r.width.saturating_sub(MORE_WIDTH),
                 r.y + r.height.saturating_sub(1),
                 MORE_WIDTH.min(r.width),
-                1,
+                1.min(r.height),
             );
 
             f.render_widget(
