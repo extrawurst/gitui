@@ -1,5 +1,6 @@
 /target
 /release
+/wix
 .DS_Store
 /.idea/
 flamegraph.svg

@@ -43,7 +43,9 @@ jobs:
         make clippy
 
     - name: Build Release
-      run: make build-release
+      run: |
+       make build-release
+       make release-win
 
   build-linux-musl:
     runs-on: ubuntu-latest
