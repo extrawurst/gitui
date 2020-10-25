@@ -17,12 +17,9 @@ pub fn reword_safe(
     for b in repo.branches(None)? {
         let branch = b?.0;
         if branch.is_head() {
-            cur_branch_ref = Some(String::from(
-                branch
-                    .get()
-                    .name()
-                    .expect("Branch name is not valid utf8"),
-            ));
+            cur_branch_ref = Some(String::from_utf8(
+                branch.get().name_bytes().to_vec(),
+            )?);
             break;
         }
     }
