@@ -21,7 +21,7 @@ release-win: build-release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
 	cargo install cargo-wix
 	cargo wix init
-	cargo wix --no-build -- nocapture --output ./release/gitui.msi
+	cargo wix --no-build --nocapture --output ./release/gitui.msi
 
 release-linux-musl: build-linux-musl-release
 	strip target/x86_64-unknown-linux-musl/release/gitui
