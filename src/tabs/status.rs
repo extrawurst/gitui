@@ -100,7 +100,7 @@ impl DrawableComponent for Status {
         self.index_wd.draw(f, left_chunks[0])?;
         self.index.draw(f, left_chunks[1])?;
         self.diff.draw(f, chunks[1])?;
-        self.draw_branch_state(f, left_chunks[0]);
+        self.draw_branch_state(f, &left_chunks);
 
         Ok(())
     }
@@ -155,7 +155,7 @@ impl Status {
     fn draw_branch_state<B: tui::backend::Backend>(
         &self,
         f: &mut tui::Frame<B>,
-        rect: tui::layout::Rect,
+        chunks: &[tui::layout::Rect],
     ) {
         let w = Paragraph::new(format!(
             "\u{2191}{} \u{2193}{}",
@@ -163,11 +163,18 @@ impl Status {
         ))
         .alignment(Alignment::Right);
 
-        let mut rect = rect;
+        let mut rect = if self.index_wd.focused() {
+            let mut rect = chunks[0];
+            rect.y = rect.y + rect.height.saturating_sub(1);
+            rect
+        } else {
+            chunks[1]
+        };
+
         rect.x += 1;
         rect.width = rect.width.saturating_sub(2);
-        rect.y = rect.y + rect.height.saturating_sub(1);
-        rect.height = 1;
+        rect.height =
+            rect.height.saturating_sub(rect.height.saturating_sub(1));
 
         f.render_widget(w, rect);
     }
