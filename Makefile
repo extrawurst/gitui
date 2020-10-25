@@ -19,7 +19,7 @@ release-mac: build-release
 release-win: build-release
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
-	cargo install wix
+	cargo install cargo-wix
 	cargo wix init
 	cargo wix
 
