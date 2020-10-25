@@ -53,7 +53,7 @@ pub fn centered_rect(
         .split(popup_layout[1])[1]
 }
 
-/// makes sure Rect `r` at least stays as big as `width`/`height`
+/// makes sure Rect `r` at least stays as big as `width` & `height`
 pub fn rect_min(width: u16, height: u16, r: Rect) -> Rect {
     let new_width = r.width.max(width);
     let new_height = r.height.max(height);

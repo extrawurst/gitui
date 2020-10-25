@@ -17,7 +17,7 @@ use crossterm::event::Event;
 use std::{cmp, convert::TryFrom};
 use tui::{
     backend::Backend,
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Rect},
     text::{Span, Spans, Text},
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
@@ -40,10 +40,8 @@ impl DrawableComponent for SelectBranchComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
-        _rect: Rect,
+        rect: Rect,
     ) -> Result<()> {
-        // Render a scrolllist of branches inside a box
-
         if self.visible {
             const PERCENT_SIZE: (u16, u16) = (60, 25);
             const MIN_SIZE: (u16, u16) = (50, 20);
@@ -54,6 +52,7 @@ impl DrawableComponent for SelectBranchComponent {
                 f.size(),
             );
             let area = ui::rect_min(MIN_SIZE.0, MIN_SIZE.1, area);
+            let area = area.intersection(rect);
 
             let scroll_threshold = area.height / 3;
             let scroll =
@@ -61,29 +60,18 @@ impl DrawableComponent for SelectBranchComponent {
 
             f.render_widget(Clear, area);
             f.render_widget(
-                Block::default()
-                    .title(strings::SELECT_BRANCH_POPUP_MSG)
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Thick),
-                area,
-            );
-
-            let chunk = Layout::default()
-                .vertical_margin(1)
-                .horizontal_margin(1)
-                .direction(Direction::Vertical)
-                .constraints(
-                    [Constraint::Min(1), Constraint::Length(1)]
-                        .as_ref(),
-                )
-                .split(area)[0];
-            f.render_widget(
                 Paragraph::new(
                     self.get_text(&self.theme, area.width)?,
                 )
+                .block(
+                    Block::default()
+                        .title(strings::SELECT_BRANCH_POPUP_MSG)
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Thick),
+                )
                 .scroll((scroll, 0))
                 .alignment(Alignment::Left),
-                chunk,
+                area,
             );
         }
 
