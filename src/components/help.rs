@@ -3,6 +3,7 @@ use super::{
     DrawableComponent,
 };
 use crate::{keys::SharedKeyConfig, strings, ui, version::Version};
+use anyhow::Result;
 use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -15,8 +16,6 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
-
-use anyhow::Result;
 use ui::style::SharedTheme;
 
 ///
