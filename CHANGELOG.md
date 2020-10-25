@@ -12,11 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - added gitui to [chocolatey](https://chocolatey.org/packages/gitui) on windows by [@nils-a](https://github.com/nils-a)
 - push to remote ([#265](https://github.com/extrawurst/gitui/issues/265)) ([#267](https://github.com/extrawurst/gitui/issues/267))
 
-![branches](assets/push.gif)
+![push](assets/push.gif)
 
+- incoming/outgoing commits to upstream ([#362](https://github.com/extrawurst/gitui/issues/362))
 - new branch list popup incl. checkout/delete/rename [[@WizardOhio24](https://github.com/WizardOhio24)] ([#303](https://github.com/extrawurst/gitui/issues/303)) ([#323](https://github.com/extrawurst/gitui/issues/323))
 
-![push](assets/branches.gif)
+![branches](assets/branches.gif)
 
 - scrollbar in long commit messages [[@timaliberdov](https://github.com/timaliberdov)] ([#308](https://github.com/extrawurst/gitui/issues/308))
 

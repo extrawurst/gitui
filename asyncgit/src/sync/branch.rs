@@ -2,13 +2,11 @@
 
 use crate::{
     error::{Error, Result},
-    sync::utils,
+    sync::{utils, CommitId},
 };
 use git2::BranchType;
 use scopetime::scope_time;
 use utils::get_head_repo;
-
-use super::CommitId;
 
 /// returns the branch-name head is currently pointing to
 /// this might be expensive, see `cached::BranchName`
@@ -77,6 +75,39 @@ pub fn get_branches_to_display(
         .collect();
 
     Ok(branches_for_display)
+}
+
+///
+#[derive(Debug, Default)]
+pub struct BranchCompare {
+    ///
+    pub ahead: usize,
+    ///
+    pub behind: usize,
+}
+
+///
+pub fn branch_compare_upstream(
+    repo_path: &str,
+    branch: &str,
+) -> Result<BranchCompare> {
+    scope_time!("branch_compare_upstream");
+
+    let repo = utils::repo(repo_path)?;
+
+    let branch = repo.find_branch(branch, BranchType::Local)?;
+    let upstream = branch.upstream()?;
+
+    let branch_commit =
+        branch.into_reference().peel_to_commit()?.id();
+
+    let upstream_commit =
+        upstream.into_reference().peel_to_commit()?.id();
+
+    let (ahead, behind) =
+        repo.graph_ahead_behind(branch_commit, upstream_commit)?;
+
+    Ok(BranchCompare { ahead, behind })
 }
 
 /// Modify HEAD to point to a branch then checkout head, does not work if there are uncommitted changes
