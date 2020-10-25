@@ -26,7 +26,7 @@ mod ui;
 mod version;
 
 use crate::app::App;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use asyncgit::AsyncNotification;
 use backtrace::Backtrace;
 use clap::{
@@ -213,7 +213,7 @@ fn select_event(
         1 => oper.recv(rx_git).map(QueueEvent::GitEvent),
         2 => oper.recv(rx_ticker).map(|_| QueueEvent::Tick),
         3 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
-        _ => return Err(anyhow!("unknown select source")),
+        _ => bail!("unknown select source"),
     }?;
 
     Ok(ev)
