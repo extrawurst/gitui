@@ -52,7 +52,7 @@ impl Component for RewordComponent {
             self.input.commands(out, force_all);
 
             out.push(CommandInfo::new(
-                strings::commands::tag_commit_confirm_msg(
+                strings::commands::reword_commit_confirm_msg(
                     &self.key_config,
                 ),
                 true,
