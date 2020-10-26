@@ -4,7 +4,7 @@ use tui::{backend::Backend, layout::Rect, Frame};
 
 use asyncgit::sync::cred::BasicAuthCredential;
 
-use crate::components::TextInputComponent;
+use crate::components::{InputType, TextInputComponent};
 use crate::{
     components::{
         visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -37,13 +37,15 @@ impl CredComponent {
                 key_config.clone(),
                 &strings::username_popup_title(&key_config),
                 &strings::username_popup_msg(&key_config),
-            ),
+            )
+            .with_input_type(InputType::Singleline),
             input_password: TextInputComponent::new(
                 theme,
                 key_config.clone(),
                 &strings::password_popup_title(&key_config),
                 &strings::password_popup_msg(&key_config),
-            ),
+            )
+            .with_input_type(InputType::Password),
             key_config,
             cred: BasicAuthCredential::new(None, None),
         }
