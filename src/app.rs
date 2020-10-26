@@ -33,6 +33,13 @@ use tui::{
     Frame,
 };
 
+/// Used to determine where the user should
+/// be put when the external editor is closed
+pub enum EditorVisible {
+    Commit,
+    Reword,
+}
+
 ///
 pub struct App {
     do_quit: bool,
@@ -59,6 +66,7 @@ pub struct App {
     theme: SharedTheme,
     key_config: SharedKeyConfig,
     input: Input,
+    cur_editor_visible: EditorVisible,
 
     // "Flags"
     requires_redraw: Cell<bool>,
@@ -175,6 +183,7 @@ impl App {
             key_config,
             requires_redraw: Cell::new(false),
             file_to_open: None,
+            cur_editor_visible: EditorVisible::Commit,
         }
     }
 
@@ -263,7 +272,14 @@ impl App {
                             Path::new(&path),
                         )
                     }
-                    None => self.commit.show_editor(),
+                    None => match self.cur_editor_visible {
+                        EditorVisible::Commit => {
+                            self.commit.show_editor()
+                        }
+                        EditorVisible::Reword => {
+                            self.reword_popup.show_editor()
+                        }
+                    },
                 };
 
                 if let Err(e) = result {
@@ -513,7 +529,10 @@ impl App {
                     .insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
             }
             InternalEvent::Update(u) => flags.insert(u),
-            InternalEvent::OpenCommit => self.commit.show()?,
+            InternalEvent::OpenCommit => {
+                self.cur_editor_visible = EditorVisible::Commit;
+                self.commit.show()?;
+            }
             InternalEvent::PopupStashing(opts) => {
                 self.stashmsg_popup.options(opts);
                 self.stashmsg_popup.show()?
@@ -522,6 +541,7 @@ impl App {
                 self.tag_commit_popup.open(id)?;
             }
             InternalEvent::RewordCommit(id) => {
+                self.cur_editor_visible = EditorVisible::Reword;
                 self.reword_popup.open(id)?;
             }
             InternalEvent::CreateBranch => {

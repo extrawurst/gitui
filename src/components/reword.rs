@@ -1,8 +1,10 @@
 use super::{
     textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
+    ExternalEditorComponent,
 };
 use crate::{
+    get_app_config_path,
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
@@ -14,6 +16,11 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
+use std::{
+    fs::File,
+    io::{Read, Write},
+    path::PathBuf,
+};
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct RewordComponent {
@@ -51,6 +58,14 @@ impl Component for RewordComponent {
                 true,
                 true,
             ));
+
+            out.push(CommandInfo::new(
+                strings::commands::commit_open_editor(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));
         }
 
         visibility_blocking(self)
@@ -65,6 +80,11 @@ impl Component for RewordComponent {
             if let Event::Key(e) = ev {
                 if e == self.key_config.enter {
                     self.reword()
+                } else if e == self.key_config.open_commit_editor {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::OpenExternalEditor(None),
+                    );
+                    self.hide();
                 }
 
                 return Ok(true);
@@ -117,6 +137,55 @@ impl RewordComponent {
             self.input.set_text(commit_msg.combine());
         }
         self.show()?;
+
+        Ok(())
+    }
+
+    /// After an external editor has been open,
+    /// this should be called to put the text in the
+    /// right place
+    pub fn show_editor(&mut self) -> Result<()> {
+        const COMMIT_MSG_FILE_NAME: &str = "COMMITMSG_EDITOR";
+        //TODO: use a tmpfile here
+        let mut config_path: PathBuf = get_app_config_path()?;
+        config_path.push(COMMIT_MSG_FILE_NAME);
+
+        {
+            let mut file = File::create(&config_path)?;
+            file.write_fmt(format_args!(
+                "{}\n",
+                self.input.get_text()
+            ))?;
+            file.write_all(
+                strings::commit_editor_msg(&self.key_config)
+                    .as_bytes(),
+            )?;
+        }
+
+        ExternalEditorComponent::open_file_in_editor(&config_path)?;
+
+        let mut message = String::new();
+
+        let mut file = File::open(&config_path)?;
+        file.read_to_string(&mut message)?;
+        drop(file);
+        std::fs::remove_file(&config_path)?;
+
+        let message: String = message
+            .lines()
+            .flat_map(|l| {
+                if l.starts_with('#') {
+                    vec![]
+                } else {
+                    vec![l, "\n"]
+                }
+            })
+            .collect();
+
+        let message = message.trim().to_string();
+
+        self.input.set_text(message);
+        self.input.show()?;
 
         Ok(())
     }
