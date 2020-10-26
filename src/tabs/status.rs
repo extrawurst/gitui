@@ -162,11 +162,12 @@ impl Status {
     ) {
         if let Some(branch_name) = self.git_branch_name.last() {
             let w = Paragraph::new(format!(
-                    "\u{2191}{} \u{2193}{} {{{}}}",
-                    self.git_branch_state.ahead, self.git_branch_state.behind,
-                    branch_name
-                    ))
-                .alignment(Alignment::Right);
+                "\u{2191}{} \u{2193}{} {{{}}}",
+                self.git_branch_state.ahead,
+                self.git_branch_state.behind,
+                branch_name
+            ))
+            .alignment(Alignment::Right);
 
             let mut rect = if self.index_wd.focused() {
                 let mut rect = chunks[0];
@@ -178,8 +179,9 @@ impl Status {
 
             rect.x += 1;
             rect.width = rect.width.saturating_sub(2);
-            rect.height =
-                rect.height.saturating_sub(rect.height.saturating_sub(1));
+            rect.height = rect
+                .height
+                .saturating_sub(rect.height.saturating_sub(1));
 
             f.render_widget(w, rect);
         }

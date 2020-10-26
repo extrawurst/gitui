@@ -52,10 +52,7 @@ impl ChangesComponent {
 
     pub fn update(&mut self) -> Result<()> {
         if self.is_working_dir {
-            self.files.set_title(format!(
-                    "{}",
-                    &self.title, 
-                    ))
+            self.files.set_title(format!("{}", &self.title,))
         }
         Ok(())
     }
