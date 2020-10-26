@@ -22,6 +22,7 @@ release-win: build-release
 	cargo install cargo-wix
 	cargo wix init
 	cargo wix --no-build --nocapture --output ./release/gitui.msi
+	ls -l ./release/gitui.msi
 
 release-linux-musl: build-linux-musl-release
 	strip target/x86_64-unknown-linux-musl/release/gitui
