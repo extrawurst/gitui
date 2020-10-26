@@ -61,3 +61,4 @@ members=[
 lto = true
 opt-level = 'z'  # Optimize for size.
 codegen-units = 1
+panic = "abort"
