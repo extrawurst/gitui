@@ -141,3 +141,48 @@ fn reword(
     // Repo is not on a branch, possibly detached head
     Err(Error::NoBranch)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sync::{
+        commit, stage_add_file, tests::repo_init_empty,
+    };
+    use std::{fs::File, io::Write, path::Path};
+
+    #[test]
+    fn test_reword() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?.write_all(b"a")?;
+        stage_add_file(repo_path, file_path).unwrap();
+        commit(repo_path, "commit1").unwrap();
+        File::create(&root.join(file_path))?.write_all(b"ab")?;
+        stage_add_file(repo_path, file_path).unwrap();
+        let oid2 = commit(repo_path, "commit2").unwrap();
+
+        let branch =
+            repo.branches(None).unwrap().next().unwrap().unwrap().0;
+        let branch_ref = branch.get();
+        let commit_ref = branch_ref.peel_to_commit().unwrap();
+        let message = commit_ref.message().unwrap();
+
+        assert_eq!(message, "commit2");
+
+        reword_safe(repo_path, oid2.into(), "NewCommitMessage")
+            .unwrap();
+
+        // Need to get the branch again as top oid has changed
+        let branch =
+            repo.branches(None).unwrap().next().unwrap().unwrap().0;
+        let branch_ref = branch.get();
+        let commit_ref_new = branch_ref.peel_to_commit().unwrap();
+        let message_new = commit_ref_new.message().unwrap();
+        assert_eq!(message_new, "NewCommitMessage");
+
+        Ok(())
+    }
+}
