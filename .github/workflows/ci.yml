@@ -49,8 +49,8 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cargo install cargo-wix
-	      cargo wix init
-	      cargo wix --no-build --nocapture
+        cargo wix init
+        cargo wix --no-build --nocapture
 
   build-linux-musl:
     runs-on: ubuntu-latest
