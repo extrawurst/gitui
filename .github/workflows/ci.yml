@@ -45,6 +45,10 @@ jobs:
     - name: Build Release
       run: make build-release
 
+    - name: make-wix
+      if: matrix.os == 'windows-latest'
+      run: make release-win
+
   build-linux-musl:
     runs-on: ubuntu-latest
     steps:

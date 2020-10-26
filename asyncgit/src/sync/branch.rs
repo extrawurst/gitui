@@ -2,7 +2,7 @@
 
 use crate::{
     error::{Error, Result},
-    sync::utils,
+    sync::{utils, CommitId},
 };
 use git2::BranchType;
 use scopetime::scope_time;
@@ -38,7 +38,7 @@ pub struct BranchForDisplay {
     ///
     pub top_commit_message: String,
     ///
-    pub top_commit_reference: String,
+    pub top_commit: CommitId,
     ///
     pub is_head: bool,
 }
@@ -56,8 +56,6 @@ pub fn get_branches_to_display(
         .map(|b| {
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
-            let mut commit_id = top_commit.id().to_string();
-            commit_id.truncate(7);
 
             Ok(BranchForDisplay {
                 name: String::from_utf8(Vec::from(
@@ -69,7 +67,7 @@ pub fn get_branches_to_display(
                 top_commit_message: String::from_utf8(Vec::from(
                     top_commit.summary_bytes().unwrap_or_default(),
                 ))?,
-                top_commit_reference: commit_id,
+                top_commit: top_commit.id().into(),
                 is_head: branch.is_head(),
             })
         })
@@ -77,6 +75,39 @@ pub fn get_branches_to_display(
         .collect();
 
     Ok(branches_for_display)
+}
+
+///
+#[derive(Debug, Default)]
+pub struct BranchCompare {
+    ///
+    pub ahead: usize,
+    ///
+    pub behind: usize,
+}
+
+///
+pub fn branch_compare_upstream(
+    repo_path: &str,
+    branch: &str,
+) -> Result<BranchCompare> {
+    scope_time!("branch_compare_upstream");
+
+    let repo = utils::repo(repo_path)?;
+
+    let branch = repo.find_branch(branch, BranchType::Local)?;
+    let upstream = branch.upstream()?;
+
+    let branch_commit =
+        branch.into_reference().peel_to_commit()?.id();
+
+    let upstream_commit =
+        upstream.into_reference().peel_to_commit()?.id();
+
+    let (ahead, behind) =
+        repo.graph_ahead_behind(branch_commit, upstream_commit)?;
+
+    Ok(BranchCompare { ahead, behind })
 }
 
 /// Modify HEAD to point to a branch then checkout head, does not work if there are uncommitted changes

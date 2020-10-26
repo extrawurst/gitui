@@ -4,6 +4,7 @@ mod commit;
 mod commit_details;
 mod commitlist;
 mod create_branch;
+mod cred;
 mod diff;
 mod externaleditor;
 mod filetree;

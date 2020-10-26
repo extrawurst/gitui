@@ -163,6 +163,6 @@ impl ResetComponent {
             };
         }
 
-        ("".to_string(), "".to_string())
+        (String::new(), String::new())
     }
 }

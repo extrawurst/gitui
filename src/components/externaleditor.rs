@@ -7,7 +7,7 @@ use crate::{
     strings,
     ui::{self, style::SharedTheme},
 };
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use asyncgit::{sync::utils::repo_work_dir, CWD};
 use crossterm::{
     event::Event,
@@ -56,7 +56,7 @@ impl ExternalEditorComponent {
         };
 
         if !path.exists() {
-            return Err(anyhow!("file not found: {:?}", path));
+            bail!("file not found: {:?}", path);
         }
 
         io::stdout().execute(LeaveAlternateScreen)?;
