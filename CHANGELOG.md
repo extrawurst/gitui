@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - added windows scoop recipe ([#164](https://github.com/extrawurst/gitui/issues/164))
 - added gitui to [chocolatey](https://chocolatey.org/packages/gitui) on windows by [@nils-a](https://github.com/nils-a)
+- added windows installer (msi) to release [[@pm100](https://github.com/pm100)] ([#360](https://github.com/extrawurst/gitui/issues/360))
 - push to remote ([#265](https://github.com/extrawurst/gitui/issues/265)) ([#267](https://github.com/extrawurst/gitui/issues/267))
 
 ![push](assets/push.gif)
