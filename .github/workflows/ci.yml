@@ -45,9 +45,12 @@ jobs:
     - name: Build Release
       run: make build-release
 
-    - name: make-wix
+    - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
-      run: make release-win
+      run: |
+        cargo install cargo-wix
+	      cargo wix init
+	      cargo wix --no-build --nocapture
 
   build-linux-musl:
     runs-on: ubuntu-latest
