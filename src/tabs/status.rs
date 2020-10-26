@@ -259,7 +259,6 @@ impl Status {
             self.git_status_stage
                 .fetch(StatusParams::new(StatusType::Stage, true))?;
 
-            self.index_wd.update()?;
             self.check_branch_state();
         }
 

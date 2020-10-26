@@ -18,7 +18,6 @@ use tui::{backend::Backend, layout::Rect, Frame};
 
 ///
 pub struct ChangesComponent {
-    title: String,
     files: FileTreeComponent,
     is_working_dir: bool,
     queue: Queue,
@@ -36,7 +35,6 @@ impl ChangesComponent {
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
-            title: title.into(),
             files: FileTreeComponent::new(
                 title,
                 focus,
@@ -48,13 +46,6 @@ impl ChangesComponent {
             queue,
             key_config,
         }
-    }
-
-    pub fn update(&mut self) -> Result<()> {
-        if self.is_working_dir {
-            self.files.set_title(format!("{}", &self.title,))
-        }
-        Ok(())
     }
 
     ///
