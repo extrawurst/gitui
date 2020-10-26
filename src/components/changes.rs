@@ -11,7 +11,7 @@ use crate::{
     ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{cached, sync, StatusItem, StatusItemType, CWD};
+use asyncgit::{sync, StatusItem, StatusItemType, CWD};
 use crossterm::event::Event;
 use std::path::Path;
 use tui::{backend::Backend, layout::Rect, Frame};
@@ -22,7 +22,6 @@ pub struct ChangesComponent {
     files: FileTreeComponent,
     is_working_dir: bool,
     queue: Queue,
-    branch_name: cached::BranchName,
     key_config: SharedKeyConfig,
 }
 
@@ -47,26 +46,18 @@ impl ChangesComponent {
             ),
             is_working_dir,
             queue,
-            branch_name: cached::BranchName::new(CWD),
             key_config,
         }
     }
 
     pub fn update(&mut self) -> Result<()> {
         if self.is_working_dir {
-            if let Ok(branch_name) = self.branch_name.lookup() {
-                self.files.set_title(format!(
-                    "{} - {{{}}}",
-                    &self.title, branch_name,
-                ))
-            }
+            self.files.set_title(format!(
+                    "{}",
+                    &self.title, 
+                    ))
         }
         Ok(())
-    }
-
-    ///
-    pub fn branch_name(&self) -> Option<String> {
-        self.branch_name.last()
     }
 
     ///

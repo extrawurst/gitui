@@ -12,6 +12,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
+    cached,
     sync::BranchCompare,
     sync::{self, status::StatusType},
     AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
@@ -50,6 +51,7 @@ pub struct Status {
     git_status_workdir: AsyncStatus,
     git_status_stage: AsyncStatus,
     git_branch_state: BranchCompare,
+    git_branch_name: cached::BranchName,
     queue: Queue,
     git_action_executed: bool,
     key_config: SharedKeyConfig,
@@ -148,6 +150,7 @@ impl Status {
             git_status_stage: AsyncStatus::new(sender.clone()),
             git_action_executed: false,
             git_branch_state: BranchCompare::default(),
+            git_branch_name: cached::BranchName::new(CWD),
             key_config,
         }
     }
@@ -157,26 +160,29 @@ impl Status {
         f: &mut tui::Frame<B>,
         chunks: &[tui::layout::Rect],
     ) {
-        let w = Paragraph::new(format!(
-            "\u{2191}{} \u{2193}{}",
-            self.git_branch_state.ahead, self.git_branch_state.behind
-        ))
-        .alignment(Alignment::Right);
+        if let Some(branch_name) = self.git_branch_name.last() {
+            let w = Paragraph::new(format!(
+                    "\u{2191}{} \u{2193}{} {{{}}}",
+                    self.git_branch_state.ahead, self.git_branch_state.behind,
+                    branch_name
+                    ))
+                .alignment(Alignment::Right);
 
-        let mut rect = if self.index_wd.focused() {
-            let mut rect = chunks[0];
-            rect.y += rect.height.saturating_sub(1);
-            rect
-        } else {
-            chunks[1]
-        };
+            let mut rect = if self.index_wd.focused() {
+                let mut rect = chunks[0];
+                rect.y += rect.height.saturating_sub(1);
+                rect
+            } else {
+                chunks[1]
+            };
 
-        rect.x += 1;
-        rect.width = rect.width.saturating_sub(2);
-        rect.height =
-            rect.height.saturating_sub(rect.height.saturating_sub(1));
+            rect.x += 1;
+            rect.width = rect.width.saturating_sub(2);
+            rect.height =
+                rect.height.saturating_sub(rect.height.saturating_sub(1));
 
-        f.render_widget(w, rect);
+            f.render_widget(w, rect);
+        }
     }
 
     fn can_focus_diff(&self) -> bool {
@@ -240,6 +246,8 @@ impl Status {
 
     ///
     pub fn update(&mut self) -> Result<()> {
+        self.git_branch_name.lookup().map(Some).unwrap_or(None);
+
         if self.is_visible() {
             self.git_diff.refresh()?;
             self.git_status_workdir.fetch(StatusParams::new(
@@ -360,7 +368,7 @@ impl Status {
     }
 
     fn push(&self) {
-        if let Some(branch) = self.index_wd.branch_name() {
+        if let Some(branch) = self.git_branch_name.last() {
             let branch = format!("refs/heads/{}", branch);
 
             self.queue
@@ -370,7 +378,7 @@ impl Status {
     }
 
     fn fetch(&self) {
-        if let Some(branch) = self.index_wd.branch_name() {
+        if let Some(branch) = self.git_branch_name.last() {
             match sync::fetch_origin(CWD, branch.as_str()) {
                 Err(e) => {
                     self.queue.borrow_mut().push_back(
@@ -393,7 +401,7 @@ impl Status {
     }
 
     fn check_branch_state(&mut self) {
-        self.git_branch_state = self.index_wd.branch_name().map_or(
+        self.git_branch_state = self.git_branch_name.last().map_or(
             BranchCompare::default(),
             |branch| {
                 sync::branch_compare_upstream(CWD, branch.as_str())
