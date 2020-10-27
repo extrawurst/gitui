@@ -9,6 +9,7 @@ use std::{
 };
 
 const HOOK_POST_COMMIT: &str = ".git/hooks/post-commit";
+const HOOK_PRE_COMMIT: &str = ".git/hooks/pre-commit";
 const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
 const HOOK_COMMIT_MSG_TEMP_FILE: &str = ".git/COMMIT_EDITMSG";
 
@@ -45,6 +46,21 @@ pub fn hooks_commit_msg(
     }
 }
 
+/// this hook is documented here https://git-scm.com/docs/githooks#_pre_commit
+///
+pub fn hooks_pre_commit(repo_path: &str) -> Result<HookResult> {
+    scope_time!("hooks_pre_commit");
+
+    let work_dir = work_dir_as_string(repo_path)?;
+
+    if hook_runable(work_dir.as_str(), HOOK_PRE_COMMIT) {
+        let res = run_hook(work_dir.as_str(), HOOK_PRE_COMMIT, &[]);
+
+        Ok(res)
+    } else {
+        Ok(HookResult::Ok)
+    }
+}
 ///
 pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
     scope_time!("hooks_post_commit");

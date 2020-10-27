@@ -194,6 +194,16 @@ impl CommitComponent {
     }
 
     fn commit_msg(&mut self, msg: String) -> Result<()> {
+        if let HookResult::NotOk(e) = sync::hooks_pre_commit(CWD)? {
+            log::error!("pre-commit hook error: {}", e);
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ShowErrorMsg(format!(
+                    "commit-msg hook error:\n{}",
+                    e
+                )),
+            );
+            return Ok(());
+        }
         let mut msg = msg;
         if let HookResult::NotOk(e) =
             sync::hooks_commit_msg(CWD, &mut msg)?
