@@ -3,6 +3,7 @@ use super::{
     DrawableComponent,
 };
 use crate::{
+    components::ScrollType,
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
     strings, ui,
@@ -14,7 +15,10 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
-use std::{cmp, convert::TryFrom};
+use std::{
+    convert::{TryFrom, TryInto},
+    time::Instant,
+};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -31,6 +35,7 @@ pub struct SelectBranchComponent {
     branch_names: Vec<BranchForDisplay>,
     visible: bool,
     selection: u16,
+    scroll_state: (Instant, f32),
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
@@ -54,7 +59,7 @@ impl DrawableComponent for SelectBranchComponent {
             let area = ui::rect_min(MIN_SIZE.0, MIN_SIZE.1, area);
             let area = area.intersection(rect);
 
-            let scroll_threshold = area.height / 3;
+            let scroll_threshold = area.height - 1;
             let scroll =
                 self.selection.saturating_sub(scroll_threshold);
 
@@ -133,9 +138,9 @@ impl Component for SelectBranchComponent {
                 if e == self.key_config.exit_popup {
                     self.hide()
                 } else if e == self.key_config.move_down {
-                    self.move_selection(true)
+                    return self.move_selection(ScrollType::Up);
                 } else if e == self.key_config.move_up {
-                    self.move_selection(false)
+                    return self.move_selection(ScrollType::Down);
                 } else if e == self.key_config.enter {
                     if let Err(e) = self.switch_to_selected_branch() {
                         log::error!("switch branch error: {}", e);
@@ -209,6 +214,7 @@ impl SelectBranchComponent {
             branch_names: Vec::new(),
             visible: false,
             selection: 0,
+            scroll_state: (Instant::now(), 0_f32),
             queue,
             theme,
             key_config,
@@ -246,21 +252,58 @@ impl SelectBranchComponent {
     }
 
     ///
-    fn move_selection(&mut self, inc: bool) {
-        let mut new_selection = self.selection;
+    fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
+        self.update_scroll_speed();
 
-        new_selection = if inc {
-            new_selection.saturating_add(1)
-        } else {
-            new_selection.saturating_sub(1)
+        #[allow(clippy::cast_possible_truncation)]
+        let speed_int =
+            u16::try_from(self.scroll_state.1 as i64)?.max(1);
+
+        let num_branches: u16 = self.branch_names.len().try_into()?;
+        let num_branches = num_branches.saturating_sub(1);
+
+        let mut new_selection = match scroll {
+            ScrollType::Up => {
+                self.selection.saturating_add(speed_int)
+            }
+            ScrollType::Down => {
+                self.selection.saturating_sub(speed_int)
+            }
+            _ => self.selection,
         };
-        new_selection = cmp::max(new_selection, 0);
 
-        if let Ok(max) =
-            u16::try_from(self.branch_names.len().saturating_sub(1))
-        {
-            self.selection = cmp::min(new_selection, max);
+        if new_selection > num_branches {
+            new_selection = num_branches;
         }
+
+        self.selection = new_selection;
+
+        Ok(true)
+    }
+
+    ///
+    fn update_scroll_speed(&mut self) {
+        const REPEATED_SCROLL_THRESHOLD_MILLIS: u128 = 300;
+        const SCROLL_SPEED_START: f32 = 0.1_f32;
+        const SCROLL_SPEED_MAX: f32 = 10_f32;
+        const SCROLL_SPEED_MULTIPLIER: f32 = 1.05_f32;
+
+        let now = Instant::now();
+
+        let since_last_scroll =
+            now.duration_since(self.scroll_state.0);
+
+        self.scroll_state.0 = now;
+
+        let speed = if since_last_scroll.as_millis()
+            < REPEATED_SCROLL_THRESHOLD_MILLIS
+        {
+            self.scroll_state.1 * SCROLL_SPEED_MULTIPLIER
+        } else {
+            SCROLL_SPEED_START
+        };
+
+        self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
     }
 
     /// Get branches to display
