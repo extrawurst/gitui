@@ -202,8 +202,8 @@ impl DrawableComponent for TextInputComponent {
                 InputType::Multiline => {
                     let area = ui::centered_rect(60, 20, f.size());
                     ui::rect_inside(
-                        &Size::new(10, 3),
-                        &f.size().into(),
+                        Size::new(10, 3),
+                        f.size().into(),
                         area,
                     )
                 }

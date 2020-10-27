@@ -53,7 +53,7 @@ impl DrawableComponent for SelectBranchComponent {
                 f.size(),
             );
             let area =
-                ui::rect_inside(&MIN_SIZE, &f.size().into(), area);
+                ui::rect_inside(MIN_SIZE, f.size().into(), area);
             let area = area.intersection(rect);
 
             let scroll_threshold = area.height / 3;

@@ -22,6 +22,7 @@ pub const fn calc_scroll_top(
 }
 
 /// ui component size representation
+#[derive(Copy, Clone)]
 pub struct Size {
     pub width: u16,
     pub height: u16,
@@ -72,7 +73,7 @@ pub fn centered_rect(
 }
 
 /// makes sure Rect `r` at least stays as big as min and not bigger than max
-pub fn rect_inside(min: &Size, max: &Size, r: Rect) -> Rect {
+pub fn rect_inside(min: Size, max: Size, r: Rect) -> Rect {
     let new_width = r.width.max(min.width).min(max.width);
     let new_height = r.height.max(min.height).min(max.height);
     let diff_width = new_width.saturating_sub(r.width);
