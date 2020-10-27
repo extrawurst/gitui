@@ -6,7 +6,8 @@ use crate::{
     components::ScrollType,
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
-    strings, ui,
+    strings,
+    ui::{self, calc_scroll_top},
 };
 use asyncgit::{
     sync::{
@@ -16,6 +17,7 @@ use asyncgit::{
 };
 use crossterm::event::Event;
 use std::{
+    cell::Cell,
     convert::{TryFrom, TryInto},
     time::Instant,
 };
@@ -36,6 +38,7 @@ pub struct SelectBranchComponent {
     visible: bool,
     selection: u16,
     scroll_state: (Instant, f32),
+    scroll_top: Cell<usize>,
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
@@ -59,22 +62,27 @@ impl DrawableComponent for SelectBranchComponent {
             let area = ui::rect_min(MIN_SIZE.0, MIN_SIZE.1, area);
             let area = area.intersection(rect);
 
-            let scroll_threshold = area.height - 1;
-            let scroll =
-                self.selection.saturating_sub(scroll_threshold);
+            let height_in_lines = area.height as usize - 2;
+
+            self.scroll_top.set(calc_scroll_top(
+                self.scroll_top.get(),
+                height_in_lines,
+                self.selection as usize,
+            ));
 
             f.render_widget(Clear, area);
             f.render_widget(
-                Paragraph::new(
-                    self.get_text(&self.theme, area.width)?,
-                )
+                Paragraph::new(self.get_text(
+                    &self.theme,
+                    area.width,
+                    height_in_lines,
+                )?)
                 .block(
                     Block::default()
                         .title(strings::SELECT_BRANCH_POPUP_MSG)
                         .borders(Borders::ALL)
                         .border_type(BorderType::Thick),
                 )
-                .scroll((scroll, 0))
                 .alignment(Alignment::Left),
                 area,
             );
@@ -215,6 +223,7 @@ impl SelectBranchComponent {
             visible: false,
             selection: 0,
             scroll_state: (Instant::now(), 0_f32),
+            scroll_top: Cell::new(0),
             queue,
             theme,
             key_config,
@@ -311,6 +320,7 @@ impl SelectBranchComponent {
         &self,
         theme: &SharedTheme,
         width_available: u16,
+        height: usize,
     ) -> Result<Text> {
         const COMMIT_HASH_LENGTH: usize = 8;
         const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
@@ -327,7 +337,12 @@ impl SelectBranchComponent {
             .saturating_sub(THREE_DOTS_LENGTH);
         let mut txt = Vec::new();
 
-        for (i, displaybranch) in self.branch_names.iter().enumerate()
+        for (i, displaybranch) in self
+            .branch_names
+            .iter()
+            .skip(self.scroll_top.get())
+            .take(height)
+            .enumerate()
         {
             let mut commit_message =
                 displaybranch.top_commit_message.clone();
@@ -351,63 +366,67 @@ impl SelectBranchComponent {
             let is_head_str =
                 if displaybranch.is_head { "*" } else { " " };
 
-            txt.push(Spans::from(if self.selection as usize == i {
-                vec![
-                    Span::styled(
-                        format!("{} ", is_head_str),
-                        theme.commit_author(true),
-                    ),
-                    Span::styled(
-                        format!(
-                            ">{:w$} ",
-                            branch_name,
-                            w = branch_name_length
+            txt.push(Spans::from(
+                if self.selection as usize - self.scroll_top.get()
+                    == i
+                {
+                    vec![
+                        Span::styled(
+                            format!("{} ", is_head_str),
+                            theme.commit_author(true),
                         ),
-                        theme.commit_author(true),
-                    ),
-                    Span::styled(
-                        format!(
-                            "{} ",
-                            displaybranch
-                                .top_commit
-                                .get_short_string()
+                        Span::styled(
+                            format!(
+                                ">{:w$} ",
+                                branch_name,
+                                w = branch_name_length
+                            ),
+                            theme.commit_author(true),
                         ),
-                        theme.commit_hash(true),
-                    ),
-                    Span::styled(
-                        commit_message.to_string(),
-                        theme.text(true, true),
-                    ),
-                ]
-            } else {
-                vec![
-                    Span::styled(
-                        format!("{} ", is_head_str),
-                        theme.commit_author(false),
-                    ),
-                    Span::styled(
-                        format!(
-                            " {:w$} ",
-                            branch_name,
-                            w = branch_name_length
+                        Span::styled(
+                            format!(
+                                "{} ",
+                                displaybranch
+                                    .top_commit
+                                    .get_short_string()
+                            ),
+                            theme.commit_hash(true),
                         ),
-                        theme.commit_author(false),
-                    ),
-                    Span::styled(
-                        format!(
-                            "{} ",
-                            displaybranch
-                                .top_commit
-                                .get_short_string()
+                        Span::styled(
+                            commit_message.to_string(),
+                            theme.text(true, true),
                         ),
-                        theme.commit_hash(false),
-                    ),
-                    Span::styled(
-                        commit_message.to_string(),
-                        theme.text(true, false),
-                    ),
-                ]
-            }));
+                    ]
+                } else {
+                    vec![
+                        Span::styled(
+                            format!("{} ", is_head_str),
+                            theme.commit_author(false),
+                        ),
+                        Span::styled(
+                            format!(
+                                " {:w$} ",
+                                branch_name,
+                                w = branch_name_length
+                            ),
+                            theme.commit_author(false),
+                        ),
+                        Span::styled(
+                            format!(
+                                "{} ",
+                                displaybranch
+                                    .top_commit
+                                    .get_short_string()
+                            ),
+                            theme.commit_hash(false),
+                        ),
+                        Span::styled(
+                            commit_message.to_string(),
+                            theme.text(true, false),
+                        ),
+                    ]
+                },
+            ));
         }
 
         Ok(Text::from(txt))
