@@ -23,6 +23,7 @@ use tui::{
     Frame,
 };
 
+use crate::ui::Size;
 use anyhow::Result;
 use ui::style::SharedTheme;
 
@@ -43,15 +44,16 @@ impl DrawableComponent for SelectBranchComponent {
         rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            const PERCENT_SIZE: (u16, u16) = (60, 25);
-            const MIN_SIZE: (u16, u16) = (50, 20);
+            const PERCENT_SIZE: Size = Size::new(60, 25);
+            const MIN_SIZE: Size = Size::new(50, 20);
 
             let area = ui::centered_rect(
-                PERCENT_SIZE.0,
-                PERCENT_SIZE.1,
+                PERCENT_SIZE.width,
+                PERCENT_SIZE.height,
                 f.size(),
             );
-            let area = ui::rect_min(MIN_SIZE.0, MIN_SIZE.1, area);
+            let area =
+                ui::rect_inside(&MIN_SIZE, &f.size().into(), area);
             let area = area.intersection(rect);
 
             let scroll_threshold = area.height / 3;
