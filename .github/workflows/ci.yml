@@ -50,7 +50,8 @@ jobs:
       run: |
         cargo install cargo-wix
         cargo wix init
-        cargo wix --no-build --nocapture
+        cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
+        ls -l ./target/wix/gitui.msi
 
   build-linux-musl:
     runs-on: ubuntu-latest
