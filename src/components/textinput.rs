@@ -9,10 +9,19 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
+use itertools::Itertools;
+use std::ops::Range;
 use tui::{
     backend::Backend, layout::Rect, style::Modifier, text::Span,
     widgets::Clear, Frame,
 };
+
+#[derive(PartialEq)]
+pub enum InputType {
+    Singleline,
+    Multiline,
+    Password,
+}
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
 pub struct TextInputComponent {
@@ -23,6 +32,7 @@ pub struct TextInputComponent {
     theme: SharedTheme,
     key_config: SharedKeyConfig,
     cursor_position: usize,
+    input_type: InputType,
 }
 
 impl TextInputComponent {
@@ -41,7 +51,16 @@ impl TextInputComponent {
             title: title.to_string(),
             default_msg: default_msg.to_string(),
             cursor_position: 0,
+            input_type: InputType::Multiline,
         }
+    }
+
+    pub const fn with_input_type(
+        mut self,
+        input_type: InputType,
+    ) -> Self {
+        self.input_type = input_type;
+        self
     }
 
     /// Clear the `msg`.
@@ -113,7 +132,7 @@ impl TextInputComponent {
         // if the cursor is not at the first character.
         if self.cursor_position > 0 {
             txt.push(Span::styled(
-                &self.msg[..self.cursor_position],
+                self.get_msg(0..self.cursor_position),
                 style,
             ));
         }
@@ -122,7 +141,9 @@ impl TextInputComponent {
             .next_char_position()
             // if the cursor is at the end of the msg
             // a whitespace is used to underline
-            .map_or(" ", |pos| &self.msg[self.cursor_position..pos]);
+            .map_or(" ".to_owned(), |pos| {
+                self.get_msg(self.cursor_position..pos)
+            });
 
         if cursor_str == "\n" {
             txt.push(Span::styled(
@@ -142,11 +163,21 @@ impl TextInputComponent {
         // still remaining characters.
         if let Some(pos) = self.next_char_position() {
             if pos < self.msg.len() {
-                txt.push(Span::styled(&self.msg[pos..], style));
+                txt.push(Span::styled(
+                    self.get_msg(pos..self.msg.len()),
+                    style,
+                ));
             }
         }
 
         txt
+    }
+
+    fn get_msg(&self, range: Range<usize>) -> String {
+        match self.input_type {
+            InputType::Password => range.map(|_| "*").join(""),
+            _ => self.msg[range].to_owned(),
+        }
     }
 }
 
@@ -166,8 +197,13 @@ impl DrawableComponent for TextInputComponent {
                 self.get_draw_text()
             };
 
-            let area = ui::centered_rect(60, 20, f.size());
-            let area = ui::rect_min(10, 3, area);
+            let area = match self.input_type {
+                InputType::Multiline => {
+                    let area = ui::centered_rect(60, 20, f.size());
+                    ui::rect_min(10, 3, area)
+                }
+                _ => ui::centered_rect_absolute(32, 3, f.size()),
+            };
 
             f.render_widget(Clear, area);
             f.render_widget(

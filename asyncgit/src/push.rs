@@ -1,3 +1,4 @@
+use crate::sync::cred::BasicAuthCredential;
 use crate::{
     error::{Error, Result},
     sync, AsyncNotification, CWD,
@@ -88,6 +89,8 @@ pub struct PushRequest {
     pub remote: String,
     ///
     pub branch: String,
+    ///
+    pub basic_credential: Option<BasicAuthCredential>,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -161,6 +164,7 @@ impl AsyncPush {
                 CWD,
                 params.remote.as_str(),
                 params.branch.as_str(),
+                params.basic_credential,
                 progress_sender.clone(),
             );
 

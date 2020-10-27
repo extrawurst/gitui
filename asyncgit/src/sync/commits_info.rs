@@ -17,6 +17,11 @@ impl CommitId {
     pub(crate) fn get_oid(self) -> Oid {
         self.0
     }
+
+    ///
+    pub fn get_short_string(&self) -> String {
+        self.to_string().chars().take(7).collect()
+    }
 }
 
 impl ToString for CommitId {

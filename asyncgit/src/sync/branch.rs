@@ -2,7 +2,7 @@
 
 use crate::{
     error::{Error, Result},
-    sync::utils,
+    sync::{utils, CommitId},
 };
 use git2::BranchType;
 use scopetime::scope_time;
@@ -38,7 +38,7 @@ pub struct BranchForDisplay {
     ///
     pub top_commit_message: String,
     ///
-    pub top_commit_reference: String,
+    pub top_commit: CommitId,
     ///
     pub is_head: bool,
 }
@@ -56,8 +56,6 @@ pub fn get_branches_to_display(
         .map(|b| {
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
-            let mut commit_id = top_commit.id().to_string();
-            commit_id.truncate(7);
 
             Ok(BranchForDisplay {
                 name: String::from_utf8(Vec::from(
@@ -69,7 +67,7 @@ pub fn get_branches_to_display(
                 top_commit_message: String::from_utf8(Vec::from(
                     top_commit.summary_bytes().unwrap_or_default(),
                 ))?,
-                top_commit_reference: commit_id,
+                top_commit: top_commit.id().into(),
                 is_head: branch.is_head(),
             })
         })
@@ -77,6 +75,39 @@ pub fn get_branches_to_display(
         .collect();
 
     Ok(branches_for_display)
+}
+
+///
+#[derive(Debug, Default)]
+pub struct BranchCompare {
+    ///
+    pub ahead: usize,
+    ///
+    pub behind: usize,
+}
+
+///
+pub fn branch_compare_upstream(
+    repo_path: &str,
+    branch: &str,
+) -> Result<BranchCompare> {
+    scope_time!("branch_compare_upstream");
+
+    let repo = utils::repo(repo_path)?;
+
+    let branch = repo.find_branch(branch, BranchType::Local)?;
+    let upstream = branch.upstream()?;
+
+    let branch_commit =
+        branch.into_reference().peel_to_commit()?.id();
+
+    let upstream_commit =
+        upstream.into_reference().peel_to_commit()?.id();
+
+    let (ahead, behind) =
+        repo.graph_ahead_behind(branch_commit, upstream_commit)?;
+
+    Ok(BranchCompare { ahead, behind })
 }
 
 /// Modify HEAD to point to a branch then checkout head, does not work if there are uncommitted changes
@@ -127,6 +158,22 @@ pub fn delete_branch(
     } else {
         return Err(Error::Generic("You cannot be on the branch you want to delete, switch branch, then delete this branch".to_string()));
     }
+    Ok(())
+}
+
+/// Rename the branch reference
+pub fn rename_branch(
+    repo_path: &str,
+    branch_ref: &str,
+    new_name: &str,
+) -> Result<()> {
+    scope_time!("delete_branch");
+
+    let repo = utils::repo(repo_path)?;
+    let branch_as_ref = repo.find_reference(branch_ref)?;
+    let mut branch = git2::Branch::wrap(branch_as_ref);
+    branch.rename(new_name, true)?;
+
     Ok(())
 }
 
@@ -315,6 +362,52 @@ mod test_delete_branch {
                 .unwrap()
                 .unwrap(),
             "master"
+        );
+    }
+}
+
+#[cfg(test)]
+mod test_rename_branch {
+    use super::*;
+    use crate::sync::tests::repo_init;
+
+    #[test]
+    fn test_rename_branch() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        create_branch(repo_path, "branch1").unwrap();
+
+        checkout_branch(repo_path, "refs/heads/branch1").unwrap();
+
+        assert_eq!(
+            repo.branches(None)
+                .unwrap()
+                .nth(0)
+                .unwrap()
+                .unwrap()
+                .0
+                .name()
+                .unwrap()
+                .unwrap(),
+            "branch1"
+        );
+
+        rename_branch(repo_path, "refs/heads/branch1", "AnotherName")
+            .unwrap();
+
+        assert_eq!(
+            repo.branches(None)
+                .unwrap()
+                .nth(0)
+                .unwrap()
+                .unwrap()
+                .0
+                .name()
+                .unwrap()
+                .unwrap(),
+            "AnotherName"
         );
     }
 }
