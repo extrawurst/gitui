@@ -16,11 +16,7 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
-use std::{
-    cell::Cell,
-    convert::{TryFrom, TryInto},
-    time::Instant,
-};
+use std::{cell::Cell, convert::TryInto};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -37,7 +33,6 @@ pub struct SelectBranchComponent {
     branch_names: Vec<BranchForDisplay>,
     visible: bool,
     selection: u16,
-    scroll_state: (Instant, f32),
     scroll_top: Cell<usize>,
     queue: Queue,
     theme: SharedTheme,
@@ -222,7 +217,6 @@ impl SelectBranchComponent {
             branch_names: Vec::new(),
             visible: false,
             selection: 0,
-            scroll_state: (Instant::now(), 0_f32),
             scroll_top: Cell::new(0),
             queue,
             theme,
@@ -262,22 +256,12 @@ impl SelectBranchComponent {
 
     ///
     fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
-        self.update_scroll_speed();
-
-        #[allow(clippy::cast_possible_truncation)]
-        let speed_int =
-            u16::try_from(self.scroll_state.1 as i64)?.max(1);
-
         let num_branches: u16 = self.branch_names.len().try_into()?;
         let num_branches = num_branches.saturating_sub(1);
 
         let mut new_selection = match scroll {
-            ScrollType::Up => {
-                self.selection.saturating_add(speed_int)
-            }
-            ScrollType::Down => {
-                self.selection.saturating_sub(speed_int)
-            }
+            ScrollType::Up => self.selection.saturating_add(1),
+            ScrollType::Down => self.selection.saturating_sub(1),
             _ => self.selection,
         };
 
@@ -288,31 +272,6 @@ impl SelectBranchComponent {
         self.selection = new_selection;
 
         Ok(true)
-    }
-
-    ///
-    fn update_scroll_speed(&mut self) {
-        const REPEATED_SCROLL_THRESHOLD_MILLIS: u128 = 300;
-        const SCROLL_SPEED_START: f32 = 0.1_f32;
-        const SCROLL_SPEED_MAX: f32 = 10_f32;
-        const SCROLL_SPEED_MULTIPLIER: f32 = 1.05_f32;
-
-        let now = Instant::now();
-
-        let since_last_scroll =
-            now.duration_since(self.scroll_state.0);
-
-        self.scroll_state.0 = now;
-
-        let speed = if since_last_scroll.as_millis()
-            < REPEATED_SCROLL_THRESHOLD_MILLIS
-        {
-            self.scroll_state.1 * SCROLL_SPEED_MULTIPLIER
-        } else {
-            SCROLL_SPEED_START
-        };
-
-        self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
     }
 
     /// Get branches to display
