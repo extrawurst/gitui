@@ -74,6 +74,49 @@ macro_rules! accessors {
     };
 }
 
+/// creates a function to determine if any popup is visible
+#[macro_export]
+macro_rules! any_popup_visible {
+    ($self:ident, [$($element:ident),+]) => {
+        fn any_popup_visible(& $self) -> bool{
+            ($($self.$element.is_visible()) || +)
+        }
+    };
+}
+
+/// creates the draw popup function
+#[macro_export]
+macro_rules! draw_popups {
+    ($self:ident, [$($element:ident),+]) => {
+        fn draw_popups<B: Backend>(& $self, mut f: &mut Frame<B>) -> Result<()>{
+            let size = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Min(1),
+                    Constraint::Length($self.cmdbar.borrow().height()),
+                ]
+                .as_ref(),
+            )
+            .split(f.size())[0];
+
+            ($($self.$element.draw(&mut f, size)?) , +);
+
+            return Ok(());
+        }
+    };
+}
+
+/// simply calls
+/// any_popup_visible!() and draw_popups!() macros
+#[macro_export]
+macro_rules! setup_popups {
+    ($self:ident, [$($element:ident),+]) => {
+        any_popup_visible!($self, [$($element),+]);
+        draw_popups!($self, [ $($element),+ ]);
+    };
+}
+
 /// returns `true` if event was consumed
 pub fn event_pump(
     ev: Event,
