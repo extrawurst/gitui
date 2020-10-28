@@ -110,7 +110,11 @@ fn run_hook(
     hook_script: &str,
     args: &[&str],
 ) -> HookResult {
-    let mut bash_args = vec![hook_script.to_string()];
+
+    let path = Path::new(path);
+    let script = path.join(hook_script);
+    let mut bash_args = vec![];
+//    let mut bash_args = vec![hook_script.to_string()];
     bash_args.extend_from_slice(
         &args
             .iter()
@@ -118,7 +122,7 @@ fn run_hook(
             .collect::<Vec<String>>(),
     );
 
-    let output = Command::new("bash")
+    let output = Command::new(script)
         .args(bash_args)
         .current_dir(path)
         // This call forces Command to handle the Path environment correctly on windows,
