@@ -7,12 +7,11 @@ use crossterm::event::Event;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    text::{Span, Spans},
+    text::Span,
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
 use ui::style::SharedTheme;
-
 pub struct MsgComponent {
     title: String,
     msg: String,
@@ -32,17 +31,26 @@ impl DrawableComponent for MsgComponent {
         if !self.visible {
             return Ok(());
         }
-        let txt = Spans::from(
-            self.msg
-                .split('\n')
-                .map(|string| Span::raw::<String>(string.to_string()))
-                .collect::<Vec<Span>>(),
-        );
 
-        let area = ui::centered_rect_absolute(65, 25, f.size());
+        // determine the maximum width of text block
+        let lens = self
+            .msg
+            .split('\n')
+            .map(|string| string.len())
+            .collect::<Vec<usize>>();
+        let max = lens.iter().max().unwrap();
+        let mut width = (*max + 2) as u16;
+        // dont overflow screen, and dont get too narrow
+        if width > f.size().width {
+            width = f.size().width
+        } else if width < 60 {
+            width = 60
+        }
+
+        let area = ui::centered_rect_absolute(width, 25, f.size());
         f.render_widget(Clear, area);
         f.render_widget(
-            Paragraph::new(txt)
+            Paragraph::new(self.msg.clone())
                 .block(
                     Block::default()
                         .title(Span::styled(

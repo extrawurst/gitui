@@ -31,7 +31,9 @@ pub use commit_details::{
 pub use commit_files::get_commit_files;
 pub use commits_info::{get_commits_info, CommitId, CommitInfo};
 pub use diff::get_diff_commit;
-pub use hooks::{hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult};
+pub use hooks::{
+    hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,
+};
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
