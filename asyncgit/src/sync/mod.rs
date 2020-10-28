@@ -14,15 +14,16 @@ mod logwalker;
 mod remotes;
 mod reset;
 mod stash;
+mod state;
 pub mod status;
 mod tags;
 pub mod utils;
 
 pub(crate) use branch::get_branch_name;
 pub use branch::{
-    branch_compare_upstream, checkout_branch, create_branch,
-    delete_branch, get_branches_to_display, rename_branch,
-    BranchCompare, BranchForDisplay,
+    branch_compare_upstream, branch_merge_upstream, checkout_branch,
+    create_branch, delete_branch, get_branches_to_display,
+    rename_branch, BranchCompare, BranchForDisplay,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
@@ -41,6 +42,7 @@ pub use remotes::{
 };
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
+pub use state::{repo_state, RepoState};
 pub use tags::{get_tags, CommitTags, Tags};
 pub use utils::{
     get_head, get_head_tuple, is_bare_repo, is_repo, stage_add_all,

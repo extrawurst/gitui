@@ -1,6 +1,6 @@
 //!
 
-use super::CommitId;
+use super::{branch, CommitId};
 use crate::{
     error::Result, sync::cred::BasicAuthCredential, sync::utils,
 };
@@ -81,6 +81,8 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     });
 
     remote.fetch(&[branch], Some(&mut options), None)?;
+
+    branch::branch_merge_upstream(repo_path, branch)?;
 
     Ok(remote.stats().received_bytes())
 }
