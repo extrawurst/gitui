@@ -110,14 +110,8 @@ fn run_hook(
     hook_script: &str,
     args: &[&str],
 ) -> HookResult {
-    let mut bash_args =
-        vec!["-c".to_string(), hook_script.to_string()];
-    bash_args.extend_from_slice(
-        &args
-            .iter()
-            .map(|x| (*x).to_string())
-            .collect::<Vec<String>>(),
-    );
+    let arg_str = format!("{} {}", hook_script, args.join(" "));
+    let bash_args = vec!["-c".to_string(), arg_str];
 
     let output = Command::new("bash")
         .args(bash_args)
