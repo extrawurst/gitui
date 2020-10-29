@@ -355,14 +355,18 @@ impl DrawableComponent for DetailsComponent {
         );
 
         if self.focused {
-            ui::draw_scrollbar(
-                f,
-                chunks[1],
-                &self.theme,
-                self.get_number_of_lines(width as usize)
-                    .saturating_sub(height as usize),
-                self.scroll_top.get(),
-            )
+            if self.get_number_of_lines(width as usize)
+                > height as usize
+            {
+                ui::draw_scrollbar(
+                    f,
+                    chunks[1],
+                    &self.theme,
+                    self.get_number_of_lines(width as usize)
+                        .saturating_sub(height as usize),
+                    self.scroll_top.get(),
+                )
+            }
         }
 
         Ok(())

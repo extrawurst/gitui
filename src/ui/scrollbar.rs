@@ -45,10 +45,6 @@ impl Widget for Scrollbar {
             return;
         }
 
-        if area.height > self.max {
-            return;
-        }
-
         for y in area.top()..area.bottom() {
             buf.set_string(right, y, THICK_VERTICAL, self.style_bar);
         }
