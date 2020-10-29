@@ -4,6 +4,7 @@ use super::{
 };
 use crate::{keys::SharedKeyConfig, strings, ui};
 use crossterm::event::Event;
+use std::convert::TryFrom;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -36,10 +37,10 @@ impl DrawableComponent for MsgComponent {
         let lens = self
             .msg
             .split('\n')
-            .map(|string| string.len())
+            .map(str::len)
             .collect::<Vec<usize>>();
-        let max = lens.iter().max().unwrap();
-        let mut width = (*max + 2) as u16;
+        let max = lens.iter().max().expect("max");
+        let mut width = u16::try_from(*max + 2).expect("cant fail");
         // dont overflow screen, and dont get too narrow
         if width > f.size().width {
             width = f.size().width
