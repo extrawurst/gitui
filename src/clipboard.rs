@@ -1,9 +1,7 @@
 use anyhow::Result;
 use std::ffi::OsStr;
 use std::io::Write;
-use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use which::which;
 
 fn execute_copy_command(command: Command, text: &str) -> Result<()> {
     use anyhow::anyhow;
@@ -46,6 +44,8 @@ fn gen_command(
 
 #[cfg(target_os = "linux")]
 pub fn copy_string(string: &str) -> Result<()> {
+    use std::path::PathBuf;
+    use which::which;
     let (path, xclip_syntax) = which("xclip")
         .ok()
         .map(|path| (path, true))
