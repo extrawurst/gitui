@@ -46,17 +46,17 @@ fn gen_command(
 pub fn copy_string(string: &str) -> Result<()> {
     use std::path::PathBuf;
     use which::which;
-    let (path, xclip_syntax) = which("xclip")
-        .ok()
-        .map(|path| (path, true))
-        .unwrap_or_else(|| {
+    let (path, xclip_syntax) = which("xclip").ok().map_or_else(
+        || {
             (
                 which("xsel")
                     .ok()
                     .unwrap_or_else(|| PathBuf::from("xsel")),
                 false,
             )
-        });
+        },
+        |path| (path, true),
+    );
 
     let cmd = gen_command(path, xclip_syntax);
     execute_copy_command(cmd, string)
