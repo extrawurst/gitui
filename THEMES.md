@@ -1,4 +1,4 @@
-# Themes 
+# Themes
 
 default on light terminal:
 ![](assets/light-theme.png)
@@ -10,5 +10,4 @@ to change the colors of the program you have to modify `theme.ron` file
 * `$XDG_CONFIG_HOME/gitui/theme.ron` (linux using XDG)
 * `$HOME/.config/gitui/theme.ron` (linux)
 
-Valid colors can be found in [ColorDef](./src/ui/style.rs#ColorDef) struct. note that rgb colors might not be supported 
-in every terminal.
+Valid colors can be found in tui-rs' [Color](https://docs.rs/tui/0.12.0/tui/style/enum.Color.html) struct. note that rgb colors might not be supported in every terminal.
