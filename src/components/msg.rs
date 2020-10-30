@@ -39,8 +39,12 @@ impl DrawableComponent for MsgComponent {
             .split('\n')
             .map(str::len)
             .collect::<Vec<usize>>();
-        let max = lens.iter().max().expect("max");
-        let mut width = u16::try_from(*max + 2).expect("cant fail");
+        let mut max = lens.iter().max().expect("max") + 2;
+        if max > std::u16::MAX as usize {
+            max = std::u16::MAX as usize;
+        }
+        let mut width =
+            u16::try_from(max).expect("cant fail due to check above");
         // dont overflow screen, and dont get too narrow
         if width > f.size().width {
             width = f.size().width

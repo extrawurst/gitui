@@ -198,7 +198,7 @@ impl CommitComponent {
             log::error!("pre-commit hook error: {}", e);
             self.queue.borrow_mut().push_back(
                 InternalEvent::ShowErrorMsg(format!(
-                    "commit-msg hook error:\n{}",
+                    "pre-commit hook error:\n{}",
                     e
                 )),
             );
