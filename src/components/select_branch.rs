@@ -57,7 +57,8 @@ impl DrawableComponent for SelectBranchComponent {
             let area = ui::rect_min(MIN_SIZE.0, MIN_SIZE.1, area);
             let area = area.intersection(rect);
 
-            let height_in_lines = area.height as usize - 2;
+            let height_in_lines =
+                (area.height as usize).saturating_sub(2);
 
             self.scroll_top.set(calc_scroll_top(
                 self.scroll_top.get(),
