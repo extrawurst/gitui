@@ -223,7 +223,7 @@ exit 0
 
         // mirror how python pre-commmit sets itself up
         #[cfg(not(windows))]
-        let hook = b"#!/bin/env python
+        let hook = b"#!/usr/bin/env python
 import sys
 sys.exit(0)
         ";
@@ -246,7 +246,7 @@ sys.exit(0)
 
         // mirror how python pre-commmit sets itself up
         #[cfg(not(windows))]
-        let hook = b"#!/bin/env python
+        let hook = b"#!/usr/bin/env python
 import sys
 sys.exit(1)
         ";
