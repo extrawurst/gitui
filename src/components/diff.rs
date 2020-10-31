@@ -591,7 +591,7 @@ impl DrawableComponent for DiffComponent {
                 r,
                 &self.theme,
                 self.lines_count(),
-                self.selection.get_end(),
+                self.scroll_top.get(),
             );
         }
 

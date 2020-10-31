@@ -359,8 +359,7 @@ impl DrawableComponent for DetailsComponent {
                 f,
                 chunks[1],
                 &self.theme,
-                self.get_number_of_lines(width as usize)
-                    .saturating_sub(height as usize),
+                self.get_number_of_lines(width as usize),
                 self.scroll_top.get(),
             )
         }
