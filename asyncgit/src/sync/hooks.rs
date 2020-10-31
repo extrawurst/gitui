@@ -216,6 +216,37 @@ exit 0
     }
 
     #[test]
+    fn test_pre_commit_sh() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let hook = b"#!/bin/sh
+exit 0
+        ";
+
+        create_hook(root, HOOK_PRE_COMMIT, hook);
+        let res = hooks_pre_commit(repo_path).unwrap();
+        assert_eq!(res, HookResult::Ok);
+    }
+
+    #[test]
+    fn test_pre_commit_fail_sh() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let hook = b"#!/bin/sh
+echo 'rejected'        
+exit 1
+        ";
+
+        create_hook(root, HOOK_PRE_COMMIT, hook);
+        let res = hooks_pre_commit(repo_path).unwrap();
+        assert!(res != HookResult::Ok);
+    }
+
+    #[test]
     fn test_pre_commit_py() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
