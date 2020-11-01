@@ -367,7 +367,9 @@ mod tests {
             "",
         );
         let theme = SharedTheme::default();
-        let underlined = theme
+
+        // retained for when tui trailing NBSP bug fixed
+        let _underlined = theme
             .text(true, false)
             .add_modifier(Modifier::UNDERLINED);
 
@@ -382,7 +384,7 @@ mod tests {
         assert_eq!(get_text(&txt[0]), Some("a"));
         assert_eq!(get_style(&txt[0]), Some(&not_underlined));
         assert_eq!(get_text(&txt[1]), Some("_"));
-        assert_eq!(get_style(&txt[1]), Some(&underlined));
+        assert_eq!(get_style(&txt[1]), Some(&not_underlined));
     }
 
     #[test]
