@@ -137,6 +137,10 @@ impl TextInputComponent {
             ));
         }
 
+        // this code with _ for the trailing cursor character needs to be revised once tui fixes
+        // https://github.com/fdehau/tui-rs/issues/404
+        // it should be NBSP => const NBSP: &str = "\u{00a0}";
+        // ...
         let cursor_str = self
             .next_char_position()
             // if the cursor is at the end of the msg
@@ -153,12 +157,16 @@ impl TextInputComponent {
                     .add_modifier(Modifier::UNDERLINED),
             ));
         }
+        // ... and this conditional underline needs to be removed
 
-        txt.push(Span::styled(
-            cursor_str,
-            style.add_modifier(Modifier::UNDERLINED),
-        ));
-
+        if cursor_str == "_" {
+            txt.push(Span::styled(cursor_str, style));
+        } else {
+            txt.push(Span::styled(
+                cursor_str,
+                style.add_modifier(Modifier::UNDERLINED),
+            ));
+        }
         // The final portion of the text is added if there are
         // still remaining characters.
         if let Some(pos) = self.next_char_position() {
