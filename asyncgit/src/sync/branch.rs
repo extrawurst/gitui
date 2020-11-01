@@ -43,6 +43,8 @@ pub struct BranchForDisplay {
     pub top_commit: CommitId,
     ///
     pub is_head: bool,
+    ///
+    pub has_upstream: bool,
 }
 
 /// Used to return only the nessessary information for displaying a branch
@@ -67,6 +69,7 @@ pub fn get_branches_to_display(
                 )?,
                 top_commit: top_commit.id().into(),
                 is_head: branch.is_head(),
+                has_upstream: branch.upstream().is_ok(),
             })
         })
         .filter_map(Result::ok)

@@ -228,7 +228,7 @@ impl SelectBranchComponent {
     }
     /// Get all the names of the branches in the repo
     pub fn get_branch_names() -> Result<Vec<BranchForDisplay>> {
-        get_branches_to_display(CWD).map_err(anyhow::Error::new)
+        Ok(get_branches_to_display(CWD)?)
     }
 
     ///
@@ -325,70 +325,47 @@ impl SelectBranchComponent {
                 branch_name += "...";
             }
 
+            let selected =
+                self.selection as usize - self.scroll_top.get() == i;
+
             let is_head_str =
                 if displaybranch.is_head { "*" } else { " " };
+            let has_upstream_str = if displaybranch.has_upstream {
+                "\u{2191}"
+            } else {
+                " "
+            };
 
-            txt.push(Spans::from(
-                if self.selection as usize - self.scroll_top.get()
-                    == i
-                {
-                    vec![
-                        Span::styled(
-                            format!("{} ", is_head_str),
-                            theme.commit_author(true),
-                        ),
-                        Span::styled(
-                            format!(
-                                ">{:w$} ",
-                                branch_name,
-                                w = branch_name_length
-                            ),
-                            theme.commit_author(true),
-                        ),
-                        Span::styled(
-                            format!(
-                                "{} ",
-                                displaybranch
-                                    .top_commit
-                                    .get_short_string()
-                            ),
-                            theme.commit_hash(true),
-                        ),
-                        Span::styled(
-                            commit_message.to_string(),
-                            theme.text(true, true),
-                        ),
-                    ]
-                } else {
-                    vec![
-                        Span::styled(
-                            format!("{} ", is_head_str),
-                            theme.commit_author(false),
-                        ),
-                        Span::styled(
-                            format!(
-                                " {:w$} ",
-                                branch_name,
-                                w = branch_name_length
-                            ),
-                            theme.commit_author(false),
-                        ),
-                        Span::styled(
-                            format!(
-                                "{} ",
-                                displaybranch
-                                    .top_commit
-                                    .get_short_string()
-                            ),
-                            theme.commit_hash(false),
-                        ),
-                        Span::styled(
-                            commit_message.to_string(),
-                            theme.text(true, false),
-                        ),
-                    ]
-                },
-            ));
+            let span_prefix = Span::styled(
+                format!("{}{} ", is_head_str, has_upstream_str),
+                theme.commit_author(selected),
+            );
+            let span_hash = Span::styled(
+                format!(
+                    "{} ",
+                    displaybranch.top_commit.get_short_string()
+                ),
+                theme.commit_hash(selected),
+            );
+            let span_msg = Span::styled(
+                commit_message.to_string(),
+                theme.text(true, selected),
+            );
+            let span_name = Span::styled(
+                format!(
+                    "{:w$} ",
+                    branch_name,
+                    w = branch_name_length
+                ),
+                theme.branch(selected, displaybranch.is_head),
+            );
+
+            txt.push(Spans::from(vec![
+                span_prefix,
+                span_name,
+                span_hash,
+                span_msg,
+            ]));
         }
 
         Ok(Text::from(txt))
