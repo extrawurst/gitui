@@ -1,4 +1,5 @@
 use anyhow::Result;
+#[cfg(target_os = "linux")]
 use std::ffi::OsStr;
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -28,6 +29,7 @@ fn execute_copy_command(command: Command, text: &str) -> Result<()> {
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
 fn gen_command(
     path: impl AsRef<OsStr>,
     xclip_syntax: bool,
