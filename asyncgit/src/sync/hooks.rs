@@ -34,7 +34,7 @@ pub fn hooks_commit_msg(
             work_dir.as_str(),
             HOOK_COMMIT_MSG,
             &[HOOK_COMMIT_MSG_TEMP_FILE],
-        );
+        )?;
 
         // load possibly altered msg
         msg.clear();
@@ -54,9 +54,7 @@ pub fn hooks_pre_commit(repo_path: &str) -> Result<HookResult> {
     let work_dir = work_dir_as_string(repo_path)?;
 
     if hook_runable(work_dir.as_str(), HOOK_PRE_COMMIT) {
-        let res = run_hook(work_dir.as_str(), HOOK_PRE_COMMIT, &[]);
-
-        Ok(res)
+        Ok(run_hook(work_dir.as_str(), HOOK_PRE_COMMIT, &[])?)
     } else {
         Ok(HookResult::Ok)
     }
@@ -69,7 +67,7 @@ pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
     let work_dir_str = work_dir.as_str();
 
     if hook_runable(work_dir_str, HOOK_POST_COMMIT) {
-        Ok(run_hook(work_dir_str, HOOK_POST_COMMIT, &[]))
+        Ok(run_hook(work_dir_str, HOOK_POST_COMMIT, &[])?)
     } else {
         Ok(HookResult::Ok)
     }
@@ -108,7 +106,7 @@ fn run_hook(
     path: &str,
     hook_script: &str,
     args: &[&str],
-) -> HookResult {
+) -> Result<HookResult> {
     let arg_str = format!("{} {}", hook_script, args.join(" "));
     let bash_args = vec!["-c".to_string(), arg_str];
 
@@ -122,18 +120,16 @@ fn run_hook(
             "DUMMY_ENV_TO_FIX_WINDOWS_CMD_RUNS",
             "FixPathHandlingOnWindows",
         )
-        .output();
-
-    let output = output.expect("general hook error");
+        .output()?;
 
     if output.status.success() {
-        HookResult::Ok
+        Ok(HookResult::Ok)
     } else {
         let err = String::from_utf8_lossy(&output.stderr);
         let out = String::from_utf8_lossy(&output.stdout);
         let formatted = format!("{}{}", out, err);
 
-        HookResult::NotOk(formatted)
+        Ok(HookResult::NotOk(formatted))
     }
 }
 
