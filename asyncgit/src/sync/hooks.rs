@@ -9,6 +9,7 @@ use std::{
 };
 
 const HOOK_POST_COMMIT: &str = ".git/hooks/post-commit";
+const HOOK_PRE_COMMIT: &str = ".git/hooks/pre-commit";
 const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
 const HOOK_COMMIT_MSG_TEMP_FILE: &str = ".git/COMMIT_EDITMSG";
 
@@ -33,7 +34,7 @@ pub fn hooks_commit_msg(
             work_dir.as_str(),
             HOOK_COMMIT_MSG,
             &[HOOK_COMMIT_MSG_TEMP_FILE],
-        );
+        )?;
 
         // load possibly altered msg
         msg.clear();
@@ -45,6 +46,19 @@ pub fn hooks_commit_msg(
     }
 }
 
+/// this hook is documented here https://git-scm.com/docs/githooks#_pre_commit
+///
+pub fn hooks_pre_commit(repo_path: &str) -> Result<HookResult> {
+    scope_time!("hooks_pre_commit");
+
+    let work_dir = work_dir_as_string(repo_path)?;
+
+    if hook_runable(work_dir.as_str(), HOOK_PRE_COMMIT) {
+        Ok(run_hook(work_dir.as_str(), HOOK_PRE_COMMIT, &[])?)
+    } else {
+        Ok(HookResult::Ok)
+    }
+}
 ///
 pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
     scope_time!("hooks_post_commit");
@@ -53,7 +67,7 @@ pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
     let work_dir_str = work_dir.as_str();
 
     if hook_runable(work_dir_str, HOOK_POST_COMMIT) {
-        Ok(run_hook(work_dir_str, HOOK_POST_COMMIT, &[]))
+        Ok(run_hook(work_dir_str, HOOK_POST_COMMIT, &[])?)
     } else {
         Ok(HookResult::Ok)
     }
@@ -93,14 +107,9 @@ fn run_hook(
     path: &str,
     hook_script: &str,
     args: &[&str],
-) -> HookResult {
-    let mut bash_args = vec![hook_script.to_string()];
-    bash_args.extend_from_slice(
-        &args
-            .iter()
-            .map(|x| (*x).to_string())
-            .collect::<Vec<String>>(),
-    );
+) -> Result<HookResult> {
+    let arg_str = format!("{} {}", hook_script, args.join(" "));
+    let bash_args = vec!["-c".to_string(), arg_str];
 
     let output = Command::new("bash")
         .args(bash_args)
@@ -112,18 +121,16 @@ fn run_hook(
             "DUMMY_ENV_TO_FIX_WINDOWS_CMD_RUNS",
             "FixPathHandlingOnWindows",
         )
-        .output();
-
-    let output = output.expect("general hook error");
+        .output()?;
 
     if output.status.success() {
-        HookResult::Ok
+        Ok(HookResult::Ok)
     } else {
         let err = String::from_utf8_lossy(&output.stderr);
         let out = String::from_utf8_lossy(&output.stdout);
         let formatted = format!("{}{}", out, err);
 
-        HookResult::NotOk(formatted)
+        Ok(HookResult::NotOk(formatted))
     }
 }
 
@@ -202,6 +209,83 @@ exit 0
         assert_eq!(res, HookResult::Ok);
 
         assert_eq!(msg, String::from("test"));
+    }
+
+    #[test]
+    fn test_pre_commit_sh() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let hook = b"#!/bin/sh
+exit 0
+        ";
+
+        create_hook(root, HOOK_PRE_COMMIT, hook);
+        let res = hooks_pre_commit(repo_path).unwrap();
+        assert_eq!(res, HookResult::Ok);
+    }
+
+    #[test]
+    fn test_pre_commit_fail_sh() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let hook = b"#!/bin/sh
+echo 'rejected'        
+exit 1
+        ";
+
+        create_hook(root, HOOK_PRE_COMMIT, hook);
+        let res = hooks_pre_commit(repo_path).unwrap();
+        assert!(res != HookResult::Ok);
+    }
+
+    #[test]
+    fn test_pre_commit_py() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        // mirror how python pre-commmit sets itself up
+        #[cfg(not(windows))]
+        let hook = b"#!/usr/bin/env python
+import sys
+sys.exit(0)
+        ";
+        #[cfg(windows)]
+        let hook = b"#!/bin/env python.exe
+import sys
+sys.exit(0)
+        ";
+
+        create_hook(root, HOOK_PRE_COMMIT, hook);
+        let res = hooks_pre_commit(repo_path).unwrap();
+        assert_eq!(res, HookResult::Ok);
+    }
+
+    #[test]
+    fn test_pre_commit_fail_py() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        // mirror how python pre-commmit sets itself up
+        #[cfg(not(windows))]
+        let hook = b"#!/usr/bin/env python
+import sys
+sys.exit(1)
+        ";
+        #[cfg(windows)]
+        let hook = b"#!/bin/env python.exe
+import sys
+sys.exit(1)
+        ";
+
+        create_hook(root, HOOK_PRE_COMMIT, hook);
+        let res = hooks_pre_commit(repo_path).unwrap();
+        assert!(res != HookResult::Ok);
     }
 
     #[test]
