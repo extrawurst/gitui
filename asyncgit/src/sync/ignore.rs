@@ -18,7 +18,7 @@ pub fn add_to_ignore(
 
     let repo = repo(repo_path)?;
 
-    let ignore_file = work_dir(&repo).join(GITIGNORE);
+    let ignore_file = work_dir(&repo)?.join(GITIGNORE);
 
     let optional_newline = ignore_file.exists()
         && !file_ends_with_newline(&ignore_file)?;

@@ -132,7 +132,7 @@ pub fn get_diff(
     scope_time!("get_diff");
 
     let repo = utils::repo(repo_path)?;
-    let work_dir = work_dir(&repo);
+    let work_dir = work_dir(&repo)?;
     let diff = get_diff_raw(&repo, &p, stage, false)?;
 
     raw_diff_to_file_diff(&diff, work_dir)
@@ -148,7 +148,7 @@ pub fn get_diff_commit(
     scope_time!("get_diff_commit");
 
     let repo = utils::repo(repo_path)?;
-    let work_dir = work_dir(&repo);
+    let work_dir = work_dir(&repo)?;
     let diff = get_commit_diff(&repo, id, Some(p))?;
 
     raw_diff_to_file_diff(&diff, work_dir)
@@ -284,7 +284,8 @@ fn raw_diff_to_file_diff<'a>(
             res.borrow_mut().untracked = true;
         }
     }
-    let res = Rc::try_unwrap(res).expect("rc error");
+    let res = Rc::try_unwrap(res)
+        .map_err(|_| Error::Generic("".to_owned()))?;
     Ok(res.into_inner())
 }
 

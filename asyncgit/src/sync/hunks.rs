@@ -105,9 +105,10 @@ pub fn unstage_hunk(
     let diff_count_positive = diff.deltas().len();
 
     let hunk_index = find_hunk_index(&diff, hunk_hash);
-    if hunk_index.is_none() {
-        return Err(Error::Generic("hunk not found".to_string()));
-    }
+    let hunk_index = hunk_index.map_or_else(
+        || Err(Error::Generic("hunk not found".to_string())),
+        Ok,
+    )?;
 
     let diff = get_diff_raw(&repo, &file_path, true, true)?;
 
@@ -124,8 +125,7 @@ pub fn unstage_hunk(
         let mut hunk_idx = 0;
         let mut opt = ApplyOptions::new();
         opt.hunk_callback(|_hunk| {
-            let res = if hunk_idx == hunk_index.expect("invalid hunk")
-            {
+            let res = if hunk_idx == hunk_index {
                 count += 1;
                 true
             } else {

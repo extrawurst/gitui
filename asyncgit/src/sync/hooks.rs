@@ -77,14 +77,13 @@ pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
 
 fn work_dir_as_string(repo_path: &str) -> Result<String> {
     let repo = repo(repo_path)?;
-    work_dir(&repo)
-        .to_str()
-        .map(|s| s.to_string())
-        .ok_or_else(|| {
+    work_dir(&repo)?.to_str().map(|s| s.to_string()).ok_or_else(
+        || {
             Error::Generic(
                 "workdir contains invalid utf8".to_string(),
             )
-        })
+        },
+    )
 }
 
 fn hook_runable(path: &str, hook: &str) -> bool {
