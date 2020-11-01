@@ -23,9 +23,12 @@ pub fn stage_hunk(
 
     let mut opt = ApplyOptions::new();
     opt.hunk_callback(|hunk| {
-        let header =
-            HunkHeader::from(hunk.expect("hunk unavailable"));
-        hash(&header) == hunk_hash
+        if let Some(hunk) = hunk {
+            let header = HunkHeader::from(hunk);
+            hash(&header) == hunk_hash
+        } else {
+            false
+        }
     });
 
     repo.apply(&diff, ApplyLocation::Index, Some(&mut opt))?;

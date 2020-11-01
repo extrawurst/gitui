@@ -219,40 +219,39 @@ fn raw_diff_to_file_diff<'a>(
         };
 
         let new_file_diff = if diff.deltas().len() == 1 {
-            let delta: DiffDelta = diff
-                .deltas()
-                .next()
-                .expect("it's safe to unwrap here because we check first that diff.deltas has a single element");
+            if let Some(delta) = diff.deltas().next() {
+                if delta.status() == Delta::Untracked {
+                    let relative_path =
+                        delta.new_file().path().ok_or_else(|| {
+                            Error::Generic(
+                                "new file path is unspecified."
+                                    .to_string(),
+                            )
+                        })?;
 
-            if delta.status() == Delta::Untracked {
-                let relative_path =
-                    delta.new_file().path().ok_or_else(|| {
-                        Error::Generic(
-                            "new file path is unspecified."
-                                .to_string(),
-                        )
-                    })?;
+                    let newfile_path = work_dir.join(relative_path);
 
-                let newfile_path = work_dir.join(relative_path);
+                    if let Some(newfile_content) =
+                        new_file_content(&newfile_path)
+                    {
+                        let mut patch = Patch::from_buffers(
+                            &[],
+                            None,
+                            newfile_content.as_slice(),
+                            Some(&newfile_path),
+                            None,
+                        )?;
 
-                if let Some(newfile_content) =
-                    new_file_content(&newfile_path)
-                {
-                    let mut patch = Patch::from_buffers(
-                        &[],
-                        None,
-                        newfile_content.as_slice(),
-                        Some(&newfile_path),
-                        None,
-                    )?;
-
-                    patch
+                        patch
                     .print(&mut |delta, hunk:Option<DiffHunk>, line: git2::DiffLine| {
                         put(delta,hunk,line);
                         true
                     })?;
 
-                    true
+                        true
+                    } else {
+                        false
+                    }
                 } else {
                     false
                 }
@@ -275,7 +274,10 @@ fn raw_diff_to_file_diff<'a>(
 
         if !current_lines.is_empty() {
             adder(
-                &current_hunk.expect("invalid hunk"),
+                &current_hunk.map_or_else(
+                    || Err(Error::Generic("invalid hunk".to_owned())),
+                    Ok,
+                )?,
                 &current_lines,
             );
         }
@@ -285,7 +287,7 @@ fn raw_diff_to_file_diff<'a>(
         }
     }
     let res = Rc::try_unwrap(res)
-        .map_err(|_| Error::Generic("".to_owned()))?;
+        .map_err(|_| Error::Generic("rc unwrap error".to_owned()))?;
     Ok(res.into_inner())
 }
 
