@@ -41,6 +41,9 @@ anyhow = "1.0.33"
 unicode-width = "0.1"
 textwrap = "0.12"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+which = "4.0.2"
+
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.3", features = ["flamegraph"], optional = true }
 

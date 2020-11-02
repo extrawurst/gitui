@@ -1,5 +1,7 @@
 use super::{stash::is_stash_commit, utils::repo, CommitId};
-use crate::{error::Result, StatusItem, StatusItemType};
+use crate::{
+    error::Error, error::Result, StatusItem, StatusItemType,
+};
 use git2::{Diff, DiffDelta, DiffOptions, Repository};
 use scopetime::scope_time;
 
@@ -66,7 +68,10 @@ pub(crate) fn get_commit_diff(
     )?;
 
     if is_stash_commit(
-        repo.path().to_str().expect("repo path utf8 err"),
+        repo.path().to_str().map_or_else(
+            || Err(Error::Generic("repo path utf8 err".to_owned())),
+            Ok,
+        )?,
         &id,
     )? {
         if let Ok(untracked_commit) = commit.parent_id(2) {
