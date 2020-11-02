@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - crash when changing git repo while gitui is open ([#271](https://github.com/extrawurst/gitui/issues/271))
+- remove workaround for color serialization [[@1wilkens](https://github.com/1wilkens)] ([#149](https://github.com/extrawurst/gitui/issues/149))
 - crash on small terminal size ([#307](https://github.com/extrawurst/gitui/issues/307))
 - fix vim keybindings uppercase handling [[@yanganto](https://github.com/yanganto)] ([#286](https://github.com/extrawurst/gitui/issues/286))
 

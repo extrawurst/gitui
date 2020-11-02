@@ -21,6 +21,25 @@ pub const fn calc_scroll_top(
     }
 }
 
+/// ui component size representation
+#[derive(Copy, Clone)]
+pub struct Size {
+    pub width: u16,
+    pub height: u16,
+}
+
+impl Size {
+    pub const fn new(width: u16, height: u16) -> Self {
+        Self { width, height }
+    }
+}
+
+impl Into<Size> for Rect {
+    fn into(self) -> Size {
+        Size::new(self.width, self.height)
+    }
+}
+
 /// use layouts to create a rects that
 /// centers inside `r` and sizes `percent_x`/`percent_x` of `r`
 pub fn centered_rect(
@@ -53,10 +72,10 @@ pub fn centered_rect(
         .split(popup_layout[1])[1]
 }
 
-/// makes sure Rect `r` at least stays as big as `width` & `height`
-pub fn rect_min(width: u16, height: u16, r: Rect) -> Rect {
-    let new_width = r.width.max(width);
-    let new_height = r.height.max(height);
+/// makes sure Rect `r` at least stays as big as min and not bigger than max
+pub fn rect_inside(min: Size, max: Size, r: Rect) -> Rect {
+    let new_width = r.width.max(min.width).min(max.width);
+    let new_height = r.height.max(min.height).min(max.height);
     let diff_width = new_width.saturating_sub(r.width);
     let diff_height = new_height.saturating_sub(r.height);
 

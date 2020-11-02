@@ -321,9 +321,9 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.18.1"
+version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cef9149b29071d44c9fb98fd9c27fcf74405bbdb761889ad6a03f36be93b0b15"
+checksum = "4e86d73f2a0b407b5768d10a8c720cf5d2df49a9efc10ca09176d201ead4b7fb"
 dependencies = [
  "bitflags",
  "crossterm_winapi",
@@ -447,7 +447,7 @@ dependencies = [
  "chrono",
  "clap",
  "crossbeam-channel",
- "crossterm 0.18.1",
+ "crossterm 0.18.2",
  "dirs-next",
  "itertools",
  "log",
@@ -461,6 +461,7 @@ dependencies = [
  "textwrap 0.12.1",
  "tui",
  "unicode-width",
+ "which",
 ]
 
 [[package]]
@@ -1282,6 +1283,7 @@ dependencies = [
  "bitflags",
  "cassowary",
  "crossterm 0.17.7",
+ "serde",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -1356,6 +1358,16 @@ name = "wasi"
 version = "0.9.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
+
+[[package]]
+name = "which"
+version = "4.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87c14ef7e1b8b8ecfc75d5eca37949410046e66f15d185c01d70824f1f8111ef"
+dependencies = [
+ "libc",
+ "thiserror",
+]
 
 [[package]]
 name = "winapi"

@@ -1,3 +1,4 @@
+use crate::ui::Size;
 use crate::{
     components::{
         popup_paragraph, visibility_blocking, CommandBlocking,
@@ -208,7 +209,11 @@ impl DrawableComponent for TextInputComponent {
             let area = match self.input_type {
                 InputType::Multiline => {
                     let area = ui::centered_rect(60, 20, f.size());
-                    ui::rect_min(10, 3, area)
+                    ui::rect_inside(
+                        Size::new(10, 3),
+                        f.size().into(),
+                        area,
+                    )
                 }
                 _ => ui::centered_rect_absolute(32, 3, f.size()),
             };

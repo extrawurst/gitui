@@ -23,7 +23,7 @@ scopetime = { path = "./scopetime", version = "0.1" }
 asyncgit = { path = "./asyncgit", version = "0.10" }
 crossterm = { version = "0.18", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
-tui = { version = "0.12", default-features = false, features = ['crossterm'] }
+tui = { version = "0.12", default-features = false, features = ['crossterm', 'serde'] }
 bytesize = { version = "1.0.1", default-features = false}
 itertools = "0.9"
 rayon-core = "1.9"
@@ -40,6 +40,9 @@ serde = "1.0"
 anyhow = "1.0.33"
 unicode-width = "0.1"
 textwrap = "0.12"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+which = "4.0.2"
 
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.3", features = ["flamegraph"], optional = true }
