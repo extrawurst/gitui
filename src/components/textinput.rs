@@ -12,6 +12,7 @@ use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
 use std::ops::Range;
+use std::cell::Cell;
 use tui::{
     backend::Backend, layout::Rect, style::Modifier, text::Span,
     text::Spans, widgets::Clear, Frame,
@@ -35,7 +36,7 @@ pub struct TextInputComponent {
     cursor_position: usize,
     current_line: usize,
     input_type: InputType,
-    num_lines: usize,
+    num_lines: Cell<usize>,
     display_off: usize,
 }
 
@@ -57,7 +58,7 @@ impl TextInputComponent {
             cursor_position: 0,
             current_line: 0,
             input_type: InputType::Multiline,
-            num_lines: 3,
+            num_lines: Cell::new(0),
             display_off: 0,
         }
     }
@@ -111,7 +112,7 @@ impl TextInputComponent {
                 cursor,
                 self.msg[self.current_line].len(),
             );
-            if self.current_line > self.num_lines - 1 {
+            if self.current_line > self.num_lines.get() - 1 {
                 self.display_off += 1;
             }
         }
@@ -163,29 +164,31 @@ impl TextInputComponent {
         self.current_line = cl;
         self.next_line(0);
     }
-
+    fn merge_lines(&mut self) {
+        let next_line = self.msg[self.current_line + 1].clone();
+        self.msg.remove(self.current_line + 1);
+        self.msg[self.current_line].push_str(&next_line);
+    }
     fn delete_char(&mut self) {
         if self.cursor_position < self.msg[self.current_line].len() {
             self.msg[self.current_line].remove(self.cursor_position);
         } else if self.msg.len() + 1 > self.current_line {
-            let next_line = self.msg[self.current_line + 1].clone();
-            self.msg.remove(self.current_line + 1);
-            self.msg[self.current_line].push_str(&next_line);
+            self.merge_lines();
         }
     }
     fn backspace(&mut self) {
         if self.cursor_position > 0 {
             self.decr_cursor();
             self.msg[self.current_line].remove(self.cursor_position);
+        } else if self.current_line > 0 {
+            self.prev_line(std::usize::MAX);
+            self.merge_lines();
         }
     }
 
     /// Set the `msg`.
     pub fn set_text(&mut self, msg: &str) {
         self.msg = msg.split('\n').map(ToString::to_string).collect();
-        if self.msg.is_empty() {
-            self.msg.push(String::default());
-        }
         self.cursor_position = 0;
         self.current_line = 0;
     }
@@ -198,16 +201,10 @@ impl TextInputComponent {
     fn get_draw_text(&self) -> Vec<Spans> {
         let style = self.theme.text(true, false);
         let mut spans = Vec::new();
-        // let start = {
-        //     if self.msg.len() > self.num_lines {
-        //         self.msg.len() - self.num_lines
-        //     } else {
-        //         0
-        //     }
-        // };
+
         for i in self.display_off
             ..std::cmp::min(
-                self.num_lines + self.display_off,
+                self.num_lines.get() + self.display_off,
                 self.msg.len(),
             )
         {
@@ -306,6 +303,7 @@ impl DrawableComponent for TextInputComponent {
                 }
                 _ => ui::centered_rect_absolute(32, 3, f.size()),
             };
+            self.num_lines.set(area.height as usize - 2);
             f.render_widget(Clear, area);
             f.render_widget(
                 popup_paragraph(
