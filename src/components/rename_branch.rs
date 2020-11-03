@@ -112,7 +112,7 @@ impl RenameBranchComponent {
     pub fn open(
         &mut self,
         branch_ref: String,
-        cur_name: String,
+        cur_name: &str,
     ) -> Result<()> {
         self.branch_ref = None;
         self.branch_ref = Some(branch_ref);

@@ -62,12 +62,14 @@ impl Component for StashMsgComponent {
 
             if let Event::Key(e) = ev {
                 if e == self.key_config.enter {
+                    let msg = self.input.get_text();
+
                     match sync::stash_save(
                         CWD,
-                        if self.input.get_text().is_empty() {
+                        if msg.is_empty() {
                             None
                         } else {
-                            Some(self.input.get_text().as_str())
+                            Some(&msg)
                         },
                         self.options.stash_untracked,
                         self.options.keep_index,

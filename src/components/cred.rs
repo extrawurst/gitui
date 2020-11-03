@@ -111,11 +111,7 @@ impl Component for CredComponent {
                 } else if e == self.key_config.enter {
                     if self.input_username.is_visible() {
                         self.cred = BasicAuthCredential::new(
-                            Some(
-                                self.input_username
-                                    .get_text()
-                                    .to_owned(),
-                            ),
+                            Some(self.input_username.get_text()),
                             None,
                         );
                         self.input_username.hide();
@@ -123,11 +119,7 @@ impl Component for CredComponent {
                     } else if self.input_password.is_visible() {
                         self.cred = BasicAuthCredential::new(
                             self.cred.username.clone(),
-                            Some(
-                                self.input_password
-                                    .get_text()
-                                    .to_owned(),
-                            ),
+                            Some(self.input_password.get_text()),
                         );
                         self.input_password.hide();
                         self.input_password.clear();

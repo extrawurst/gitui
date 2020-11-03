@@ -518,7 +518,7 @@ impl App {
             }
             InternalEvent::RenameBranch(branch_ref, cur_name) => {
                 self.rename_branch_popup
-                    .open(branch_ref, cur_name)?;
+                    .open(branch_ref, &cur_name)?;
             }
             InternalEvent::SelectBranch => {
                 self.select_branch_popup.open()?;

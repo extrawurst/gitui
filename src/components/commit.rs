@@ -183,14 +183,14 @@ impl CommitComponent {
 
         let message = message.trim().to_string();
 
-        self.input.set_text(message);
+        self.input.set_text(&message);
         self.input.show()?;
 
         Ok(())
     }
 
     fn commit(&mut self) -> Result<()> {
-        self.commit_msg(self.input.get_text().clone())
+        self.commit_msg(self.input.get_text())
     }
 
     fn commit_msg(&mut self, msg: String) -> Result<()> {
@@ -272,7 +272,7 @@ impl CommitComponent {
             .set_title(strings::commit_title_amend(&self.key_config));
 
         if let Some(msg) = details.message {
-            self.input.set_text(msg.combine());
+            self.input.set_text(&msg.combine());
         }
 
         Ok(())
