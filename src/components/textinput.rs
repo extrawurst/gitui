@@ -343,7 +343,10 @@ impl Component for TextInputComponent {
             if let Event::Key(e) = ev {
                 let is_ctrl =
                     e.modifiers.contains(KeyModifiers::CONTROL);
-                if (e.code == KeyCode::Enter || e.code == KeyCode::Char('j')) && is_ctrl {
+                if (e.code == KeyCode::Enter
+                    || e.code == KeyCode::Char('j'))
+                    && is_ctrl
+                {
                     self.split_line();
                     return Ok(true);
                 }
