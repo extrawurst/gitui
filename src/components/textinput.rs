@@ -11,8 +11,8 @@ use crate::{
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
-use std::ops::Range;
 use std::cell::Cell;
+use std::ops::Range;
 use tui::{
     backend::Backend, layout::Rect, style::Modifier, text::Span,
     text::Spans, widgets::Clear, Frame,
@@ -58,7 +58,8 @@ impl TextInputComponent {
             cursor_position: 0,
             current_line: 0,
             input_type: InputType::Multiline,
-            num_lines: Cell::new(0),
+            // tests need a few lines
+            num_lines: Cell::new(5),
             display_off: 0,
         }
     }
@@ -342,7 +343,7 @@ impl Component for TextInputComponent {
             if let Event::Key(e) = ev {
                 let is_ctrl =
                     e.modifiers.contains(KeyModifiers::CONTROL);
-                if e.code == KeyCode::Enter && is_ctrl {
+                if (e.code == KeyCode::Enter || e.code == KeyCode::Char('j')) && is_ctrl {
                     self.split_line();
                     return Ok(true);
                 }
