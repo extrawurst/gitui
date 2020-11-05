@@ -269,7 +269,7 @@ impl CommitList {
         let selection = self.relative_selection();
 
         let mut txt: Vec<Spans> = Vec::with_capacity(height);
-        //self.scroll_top.get() ==
+
         for (idx, e) in self
             .items
             .iter()
