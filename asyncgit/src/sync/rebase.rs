@@ -1,5 +1,6 @@
 //!
 
+use super::branch::get_cur_branch_ref;
 use super::commit::signature_allow_undefined_name;
 use crate::{error::Error, error::Result, sync::utils};
 use git2::{Oid, RebaseOptions};
@@ -11,18 +12,7 @@ pub fn reword_safe(
     message: &str,
 ) -> Result<()> {
     let repo = utils::repo(repo_path)?;
-    let mut cur_branch_ref = None;
-
-    // Find the head branch
-    for b in repo.branches(None)? {
-        let branch = b?.0;
-        if branch.is_head() {
-            cur_branch_ref = Some(String::from_utf8(
-                branch.get().name_bytes().to_vec(),
-            )?);
-            break;
-        }
-    }
+    let cur_branch_ref = get_cur_branch_ref(repo_path)?;
 
     match reword(repo_path, commit_oid, message) {
         Ok(()) => Ok(()),
