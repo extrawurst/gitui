@@ -374,14 +374,14 @@ impl Component for CommitList {
                 self.move_selection(ScrollType::Up)?
             } else if k == self.key_config.move_down {
                 self.move_selection(ScrollType::Down)?
-            } else if k == self.key_config.shift_up
-                || k == self.key_config.home
-            {
+            } else if k == self.key_config.shift_up {
                 self.move_selection(ScrollType::ShiftUp)?
-            } else if k == self.key_config.shift_down
-                || k == self.key_config.end
-            {
+            } else if k == self.key_config.shift_down {
                 self.move_selection(ScrollType::ShiftDown)?
+            } else if k == self.key_config.home {
+                self.move_selection(ScrollType::Home)?
+            } else if k == self.key_config.end {
+                self.move_selection(ScrollType::End)?
             } else if k == self.key_config.page_up {
                 self.move_selection(ScrollType::PageUp)?
             } else if k == self.key_config.page_down {
