@@ -29,7 +29,7 @@ const ELEMENTS_PER_LINE: usize = 10;
 ///
 pub struct CommitList {
     title: String,
-    selection: usize,
+    selection: (usize, usize),
     branch: Option<String>,
     count_total: usize,
     items: ItemBatch,
@@ -50,7 +50,7 @@ impl CommitList {
     ) -> Self {
         Self {
             items: ItemBatch::default(),
-            selection: 0,
+            selection: (0, 0),
             branch: None,
             count_total: 0,
             scroll_state: (Instant::now(), 0_f32),
@@ -75,7 +75,7 @@ impl CommitList {
 
     ///
     pub const fn selection(&self) -> usize {
-        self.selection
+        self.selection.0
     }
 
     ///
@@ -86,8 +86,10 @@ impl CommitList {
     ///
     pub fn set_count_total(&mut self, total: usize) {
         self.count_total = total;
-        self.selection =
-            cmp::min(self.selection, self.selection_max());
+        self.selection = (
+            cmp::min(self.selection.0, self.selection_max()),
+            self.selection.1,
+        );
     }
 
     ///
@@ -117,7 +119,9 @@ impl CommitList {
     ///
     pub fn selected_entry(&self) -> Option<&LogEntry> {
         self.items.iter().nth(
-            self.selection.saturating_sub(self.items.index_offset()),
+            self.selection
+                .0
+                .saturating_sub(self.items.index_offset()),
         )
     }
 
@@ -132,26 +136,43 @@ impl CommitList {
             usize::from(self.current_size.get().1).saturating_sub(1);
 
         let new_selection = match scroll {
-            ScrollType::Up => {
-                self.selection.saturating_sub(speed_int)
+            ScrollType::Up => (
+                self.selection.1.saturating_sub(speed_int),
+                self.selection.1.saturating_sub(speed_int),
+            ),
+            ScrollType::Down => (
+                self.selection.1.saturating_add(speed_int),
+                self.selection.1.saturating_add(speed_int),
+            ),
+            ScrollType::ShiftUp => (
+                self.selection.0,
+                self.selection.1.saturating_sub(speed_int),
+            ),
+            ScrollType::ShiftDown => (
+                self.selection.0,
+                self.selection.1.saturating_add(speed_int),
+            ),
+            ScrollType::PageUp => (
+                self.selection.0.saturating_sub(page_offset),
+                self.selection.0.saturating_sub(page_offset),
+            ),
+            ScrollType::PageDown => (
+                self.selection.0.saturating_add(page_offset),
+                self.selection.0.saturating_add(page_offset),
+            ),
+            ScrollType::Home => (0, 0),
+            ScrollType::End => {
+                (self.selection_max(), self.selection_max())
             }
-            ScrollType::Down => {
-                self.selection.saturating_add(speed_int)
-            }
-            ScrollType::PageUp => {
-                self.selection.saturating_sub(page_offset)
-            }
-            ScrollType::PageDown => {
-                self.selection.saturating_add(page_offset)
-            }
-            ScrollType::Home => 0,
-            ScrollType::End => self.selection_max(),
         };
 
-        let new_selection =
-            cmp::min(new_selection, self.selection_max());
+        let new_selection = (
+            cmp::min(new_selection.0, self.selection_max()),
+            cmp::min(new_selection.1, self.selection_max()),
+        );
 
-        let needs_update = new_selection != self.selection;
+        let needs_update = new_selection.0 != self.selection.0
+            || new_selection.1 != self.selection.1;
 
         self.selection = new_selection;
 
@@ -248,7 +269,7 @@ impl CommitList {
         let selection = self.relative_selection();
 
         let mut txt: Vec<Spans> = Vec::with_capacity(height);
-
+        //self.scroll_top.get() ==
         for (idx, e) in self
             .items
             .iter()
@@ -263,7 +284,11 @@ impl CommitList {
                 .map(|tags| tags.join(" "));
             txt.push(Self::get_entry_to_add(
                 e,
-                idx + self.scroll_top.get() == selection,
+                (idx + self.scroll_top.get() >= selection.0
+                    && idx + self.scroll_top.get() <= selection.1)
+                    || (idx + self.scroll_top.get() <= selection.0
+                        && idx + self.scroll_top.get()
+                            >= selection.1),
                 tags,
                 &self.theme,
                 width,
@@ -274,8 +299,15 @@ impl CommitList {
     }
 
     #[allow(clippy::missing_const_for_fn)]
-    fn relative_selection(&self) -> usize {
-        self.selection.saturating_sub(self.items.index_offset())
+    fn relative_selection(&self) -> (usize, usize) {
+        (
+            self.selection
+                .0
+                .saturating_sub(self.items.index_offset()),
+            self.selection
+                .1
+                .saturating_sub(self.items.index_offset()),
+        )
     }
 }
 
@@ -297,7 +329,7 @@ impl DrawableComponent for CommitList {
         self.scroll_top.set(calc_scroll_top(
             self.scroll_top.get(),
             height_in_lines,
-            selection,
+            selection.0,
         ));
 
         let branch_post_fix =
@@ -306,7 +338,7 @@ impl DrawableComponent for CommitList {
         let title = format!(
             "{} {}/{} {}",
             self.title,
-            self.count_total.saturating_sub(self.selection),
+            self.count_total.saturating_sub(self.selection.0),
             self.count_total,
             branch_post_fix.as_deref().unwrap_or(""),
         );
@@ -345,11 +377,11 @@ impl Component for CommitList {
             } else if k == self.key_config.shift_up
                 || k == self.key_config.home
             {
-                self.move_selection(ScrollType::Home)?
+                self.move_selection(ScrollType::ShiftUp)?
             } else if k == self.key_config.shift_down
                 || k == self.key_config.end
             {
-                self.move_selection(ScrollType::End)?
+                self.move_selection(ScrollType::ShiftDown)?
             } else if k == self.key_config.page_up {
                 self.move_selection(ScrollType::PageUp)?
             } else if k == self.key_config.page_down {

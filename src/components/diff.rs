@@ -198,7 +198,6 @@ impl DiffComponent {
                 ScrollType::Up => {
                     self.selection.get_top().saturating_sub(1)
                 }
-                ScrollType::Home => 0,
                 ScrollType::End => max,
                 ScrollType::PageDown => {
                     self.selection.get_bottom().saturating_add(
@@ -212,6 +211,7 @@ impl DiffComponent {
                             as usize,
                     )
                 }
+                ScrollType::Home | _ => 0,
             };
 
             let new_start = cmp::min(max, new_start);
