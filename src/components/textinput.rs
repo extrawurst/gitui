@@ -138,11 +138,14 @@ impl TextInputComponent {
             ));
         }
 
+        // this code with _ for the trailing cursor character needs to be revised once tui fixes
+        // it should be NBSP => const NBSP: &str = "\u{00a0}";
+        // ...
         let cursor_str = self
             .next_char_position()
             // if the cursor is at the end of the msg
             // a whitespace is used to underline
-            .map_or(" ".to_owned(), |pos| {
+            .map_or("_".to_owned(), |pos| {
                 self.get_msg(self.cursor_position..pos)
             });
 
@@ -155,10 +158,15 @@ impl TextInputComponent {
             ));
         }
 
-        txt.push(Span::styled(
-            cursor_str,
-            style.add_modifier(Modifier::UNDERLINED),
-        ));
+        // ... and this conditional underline needs to be removed
+        if cursor_str == "_" {
+            txt.push(Span::styled(cursor_str, style));
+        } else {
+            txt.push(Span::styled(
+                cursor_str,
+                style.add_modifier(Modifier::UNDERLINED),
+            ));
+        }
 
         // The final portion of the text is added if there are
         // still remaining characters.
@@ -364,7 +372,8 @@ mod tests {
             "",
         );
         let theme = SharedTheme::default();
-        let underlined = theme
+        // retained for when tui trailing NBSP bug fixed
+        let _underlined = theme
             .text(true, false)
             .add_modifier(Modifier::UNDERLINED);
 
@@ -378,8 +387,8 @@ mod tests {
         assert_eq!(txt.len(), 2);
         assert_eq!(get_text(&txt[0]), Some("a"));
         assert_eq!(get_style(&txt[0]), Some(&not_underlined));
-        assert_eq!(get_text(&txt[1]), Some(" "));
-        assert_eq!(get_style(&txt[1]), Some(&underlined));
+        assert_eq!(get_text(&txt[1]), Some("_"));
+        assert_eq!(get_style(&txt[1]), Some(&not_underlined));
     }
 
     #[test]
