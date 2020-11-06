@@ -207,11 +207,11 @@ fn dialog_paragraph<'a>(
 
 fn popup_paragraph<'a>(
     title: &'a str,
-    content: Vec<Span<'a>>,
+    content: Vec<Spans<'a>>,
     theme: &Theme,
     focused: bool,
 ) -> Paragraph<'a> {
-    Paragraph::new(Spans::from(content))
+    Paragraph::new(content)
         .block(
             Block::default()
                 .title(Span::styled(title, theme.title(focused)))
