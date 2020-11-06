@@ -427,8 +427,6 @@ mod tests {
         assert_eq!(txt.len(), 2);
         assert_eq!(get_text(&l1_spans[0]), Some("a"));
         assert_eq!(get_text(&l1_spans[1]), Some("_"));
-        //assert_eq!(get_style(&l1_spans[1]), Some(&underlined));
-        //assert_eq!(get_text(&txt[2]), Some("\n"));
         assert_eq!(get_text(&l2_spans[0]), Some("b"));
     }
 
