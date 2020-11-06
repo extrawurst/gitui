@@ -37,9 +37,12 @@ chrono = "0.4"
 backtrace = "0.3"
 ron = "0.6"
 serde = "1.0"
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 unicode-width = "0.1"
 textwrap = "0.12"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+which = "4.0.2"
 
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.3", features = ["flamegraph"], optional = true }

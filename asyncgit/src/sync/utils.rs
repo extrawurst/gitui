@@ -52,14 +52,14 @@ pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
 }
 
 ///
-pub(crate) fn work_dir(repo: &Repository) -> &Path {
-    repo.workdir().expect("unable to query workdir")
+pub(crate) fn work_dir(repo: &Repository) -> Result<&Path> {
+    repo.workdir().map_or(Err(Error::NoWorkDir), |dir| Ok(dir))
 }
 
 ///
 pub fn repo_work_dir(repo_path: &str) -> Result<String> {
     let repo = repo(repo_path)?;
-    if let Some(workdir) = work_dir(&repo).to_str() {
+    if let Some(workdir) = work_dir(&repo)?.to_str() {
         Ok(workdir.to_string())
     } else {
         Err(Error::Generic("invalid workdir".to_string()))
@@ -84,8 +84,7 @@ pub fn get_head_tuple(repo_path: &str) -> Result<Head> {
 ///
 pub fn get_head_refname(repo: &Repository) -> Result<String> {
     let head = repo.head()?;
-    let name_bytes = head.name_bytes();
-    let ref_name = String::from_utf8(name_bytes.to_vec())?;
+    let ref_name = bytes2string(head.name_bytes())?;
 
     Ok(ref_name)
 }
@@ -143,6 +142,11 @@ pub fn stage_addremoved(repo_path: &str, path: &Path) -> Result<()> {
     index.write()?;
 
     Ok(())
+}
+
+/// helper function
+pub(crate) fn bytes2string(bytes: &[u8]) -> Result<String> {
+    Ok(String::from_utf8(bytes.to_vec())?)
 }
 
 #[cfg(test)]

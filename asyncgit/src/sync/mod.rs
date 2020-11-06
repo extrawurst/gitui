@@ -1,5 +1,8 @@
 //! sync git api
 
+//TODO: remove once we have this activated on the toplevel
+#![deny(clippy::expect_used)]
+
 mod branch;
 mod commit;
 mod commit_details;
