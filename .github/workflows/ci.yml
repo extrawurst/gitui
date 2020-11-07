@@ -22,12 +22,16 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Restore cargo cache
+      if: matrix.os != 'macos-latest'
       uses: actions/cache@v2
       env:
-        cache-name: cache-cargo-crates
+        cache-name: ci
       with:
-        path: ~/.cargo
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.rust }}-${{ hashFiles('Cargo.lock') }}
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}-${{ hashFiles('Cargo.lock') }}
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
@@ -39,7 +43,6 @@ jobs:
 
     - name: Build Debug
       run: |
-        rustc --version
         cargo build
 
     - name: Run tests

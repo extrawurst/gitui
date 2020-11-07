@@ -51,7 +51,7 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 
 I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index, commit, diff, stash and log.
 
-Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool myself to help do features I use the most.
+Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool to help with features I use the most.
 
 # Known Limitations
 
