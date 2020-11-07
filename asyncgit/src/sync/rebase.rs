@@ -2,7 +2,14 @@
 
 use super::branch::get_cur_branch_ref;
 use super::commit::signature_allow_undefined_name;
-use crate::{error::Error, error::Result, sync::utils};
+use crate::{
+    error::Error,
+    error::Result,
+    sync::{
+        branch::get_cur_branch,
+        utils::{self, bytes2string},
+    },
+};
 use git2::{Oid, RebaseOptions};
 
 /// This is the same as reword, but will abort and fix the repo if something goes wrong
@@ -64,35 +71,15 @@ fn reword(
     } else {
         return Err(Error::NoParent);
     };
-    let mut top_branch_commit = None;
-    let mut cur_branch_ref = None;
-    let mut cur_branch_name = None;
 
-    // Find the head branch
-    for b in repo.branches(None)? {
-        let branch = b?.0;
-        if branch.is_head() {
-            // When getting the branch name/ref, make sure both are valid utf8
-            cur_branch_ref = Some(String::from_utf8(Vec::from(
-                branch.get().name_bytes(),
-            ))?);
-            cur_branch_name = Some(String::from_utf8(Vec::from(
-                branch.name_bytes()?,
-            ))?);
-            top_branch_commit = Some(repo.find_annotated_commit(
-                branch.get().peel_to_commit()?.id(),
-            )?);
-            break;
-        }
-    }
+    // If we are on a branch
+    if let Ok(Some(branch)) = get_cur_branch(&repo) {
+        let cur_branch_ref = bytes2string(branch.get().name_bytes())?;
+        let cur_branch_name = bytes2string(branch.name_bytes()?)?;
+        let top_branch_commit = repo.find_annotated_commit(
+            branch.get().peel_to_commit()?.id(),
+        )?;
 
-    if let (
-        Some(top_branch_commit),
-        Some(cur_branch_name),
-        Some(cur_branch_ref),
-    ) = (top_branch_commit, cur_branch_name, cur_branch_ref)
-    {
-        // Branch was found, so start a rebase
         let mut rebase = repo.rebase(
             Some(&top_branch_commit),
             Some(&commit_to_change),
