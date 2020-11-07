@@ -27,7 +27,7 @@ jobs:
         cache-name: cache-cargo-crates
       with:
         path: ~/.cargo
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('Cargo.lock') }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.rust }}-${{ hashFiles('Cargo.lock') }}
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
