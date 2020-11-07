@@ -22,7 +22,6 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Restore cargo cache
-      if: matrix.os != 'macos-latest'
       uses: actions/cache@v2
       env:
         cache-name: ci
@@ -32,6 +31,10 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}-${{ hashFiles('Cargo.lock') }}
+
+    - name: MacOS Workaround
+      if: matrix.os == 'macos-latest'
+      run: cargo clean --locked --release -p serde_derive 
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
