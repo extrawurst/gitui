@@ -16,6 +16,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Restore cargo cache
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-cargo-crates
+      with:
+        path: ~/.cargo
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('Cargo.lock') }}
+
     - name: Get version
       id: get_version
       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
