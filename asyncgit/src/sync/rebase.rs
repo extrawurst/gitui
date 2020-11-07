@@ -13,7 +13,7 @@ use crate::{
 use git2::{Oid, RebaseOptions};
 
 /// This is the same as reword, but will abort and fix the repo if something goes wrong
-pub fn reword_safe(
+pub fn reword(
     repo_path: &str,
     commit_oid: Oid,
     message: &str,
@@ -21,7 +21,7 @@ pub fn reword_safe(
     let repo = utils::repo(repo_path)?;
     let cur_branch_ref = get_cur_branch_ref(repo_path)?;
 
-    match reword(repo_path, commit_oid, message) {
+    match reword_internal(repo_path, commit_oid, message) {
         Ok(()) => Ok(()),
         // Something went wrong, checkout the previous branch then error
         Err(e) => {
@@ -48,7 +48,7 @@ pub fn reword_safe(
 ///
 /// This is dangerous if it errors, as the head will be detached so this should
 /// always be wrapped by another function which aborts the rebase if something goes wrong
-fn reword(
+fn reword_internal(
     repo_path: &str,
     commit_oid: Oid,
     message: &str,
@@ -149,8 +149,7 @@ mod tests {
 
         assert_eq!(message, "commit2");
 
-        reword_safe(repo_path, oid2.into(), "NewCommitMessage")
-            .unwrap();
+        reword(repo_path, oid2.into(), "NewCommitMessage").unwrap();
 
         // Need to get the branch again as top oid has changed
         let branch =

@@ -193,7 +193,7 @@ impl RewordComponent {
     ///
     pub fn reword(&mut self) {
         if let Some(commit_id) = self.commit_id {
-            match sync::reword_safe(
+            match sync::reword(
                 CWD,
                 commit_id.into(),
                 self.input.get_text(),
