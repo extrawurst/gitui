@@ -39,7 +39,6 @@ jobs:
 
     - name: Run clippy
       run: |
-        cargo clean
         make clippy
 
     - name: Build Release
