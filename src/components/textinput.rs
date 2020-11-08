@@ -378,7 +378,7 @@ mod tests {
         assert_eq!(txt.len(), 2);
         assert_eq!(get_text(&txt[0]), Some("a"));
         assert_eq!(get_style(&txt[0]), Some(&not_underlined));
-        assert_eq!(get_text(&txt[1]), Some(" "));
+        assert_eq!(get_text(&txt[1]), Some(" \u{200b}"));
         assert_eq!(get_style(&txt[1]), Some(&underlined));
     }
 
