@@ -17,7 +17,8 @@ use tui::{
     widgets::Clear, Frame,
 };
 
-const EOL_CHAR: &str = "\u{200b}";
+//const EOL_CHAR: &str = "\u{200b}";
+const EOL_CHAR: &str = "_";
 #[derive(PartialEq)]
 pub enum InputType {
     Singleline,
@@ -159,15 +160,10 @@ impl TextInputComponent {
             ));
         }
 
-        // ... and this conditional underline needs to be removed
-        if cursor_str == EOL_CHAR {
-            txt.push(Span::styled(cursor_str, style));
-        } else {
-            txt.push(Span::styled(
-                cursor_str,
-                style.add_modifier(Modifier::UNDERLINED),
-            ));
-        }
+        txt.push(Span::styled(
+            cursor_str,
+            style.add_modifier(Modifier::UNDERLINED),
+        ));
 
         // The final portion of the text is added if there are
         // still remaining characters.
@@ -373,8 +369,7 @@ mod tests {
             "",
         );
         let theme = SharedTheme::default();
-        // retained for when tui trailing NBSP bug fixed
-        let _underlined = theme
+        let underlined = theme
             .text(true, false)
             .add_modifier(Modifier::UNDERLINED);
 
@@ -389,7 +384,7 @@ mod tests {
         assert_eq!(get_text(&txt[0]), Some("a"));
         assert_eq!(get_style(&txt[0]), Some(&not_underlined));
         assert_eq!(get_text(&txt[1]), Some(EOL_CHAR));
-        assert_eq!(get_style(&txt[1]), Some(&not_underlined));
+        assert_eq!(get_style(&txt[1]), Some(&underlined));
     }
 
     #[test]
