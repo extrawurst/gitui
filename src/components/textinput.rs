@@ -17,6 +17,7 @@ use tui::{
     widgets::Clear, Frame,
 };
 
+const EOL_CHAR: &str = "\u{200b}";
 #[derive(PartialEq)]
 pub enum InputType {
     Singleline,
@@ -145,7 +146,7 @@ impl TextInputComponent {
             .next_char_position()
             // if the cursor is at the end of the msg
             // a whitespace is used to underline
-            .map_or("_".to_owned(), |pos| {
+            .map_or(EOL_CHAR.to_owned(), |pos| {
                 self.get_msg(self.cursor_position..pos)
             });
 
@@ -159,7 +160,7 @@ impl TextInputComponent {
         }
 
         // ... and this conditional underline needs to be removed
-        if cursor_str == "_" {
+        if cursor_str == EOL_CHAR {
             txt.push(Span::styled(cursor_str, style));
         } else {
             txt.push(Span::styled(
@@ -387,7 +388,7 @@ mod tests {
         assert_eq!(txt.len(), 2);
         assert_eq!(get_text(&txt[0]), Some("a"));
         assert_eq!(get_style(&txt[0]), Some(&not_underlined));
-        assert_eq!(get_text(&txt[1]), Some("_"));
+        assert_eq!(get_text(&txt[1]), Some(EOL_CHAR));
         assert_eq!(get_style(&txt[1]), Some(&not_underlined));
     }
 
