@@ -8,7 +8,9 @@ use crate::{
     ui::{self, style::SharedTheme},
 };
 use anyhow::{anyhow, bail, Result};
-use asyncgit::{sync::utils::repo_work_dir, CWD};
+use asyncgit::{
+    sync::utils::get_config_string, sync::utils::repo_work_dir, CWD,
+};
 use crossterm::{
     event::Event,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
@@ -66,26 +68,40 @@ impl ExternalEditorComponent {
 
         let editor = env::var("GIT_EDITOR")
             .ok()
+            .or_else(|| get_config_string(CWD, "core.editor").ok()?)
             .or_else(|| env::var("VISUAL").ok())
             .or_else(|| env::var("EDITOR").ok())
             .unwrap_or_else(|| String::from("vi"));
 
         // TODO: proper handling arguments containing whitespaces
         // This does not do the right thing if the input is `editor --something "with spaces"`
-        let mut editor = editor.split_whitespace();
 
-        let command = editor.next().ok_or_else(|| {
-            anyhow!("unable to read editor command")
-        })?;
+        // deal with "editor name with spaces" p1 p2 p3
+        // and with "editor_no_spaces" p1 p2 p3
+        // does not address spaces in pn
+        let mut echars = editor.chars().peekable();
+        let command: String =
+            if *echars.peek().expect("value isnt empty") == '\"' {
+                echars
+                    .by_ref()
+                    .skip(1)
+                    .take_while(|c| *c != '\"')
+                    .collect()
+            } else {
+                echars.by_ref().take_while(|c| *c != ' ').collect()
+            };
 
-        let mut editor: Vec<&OsStr> =
-            editor.map(|s| OsStr::new(s)).collect();
+        let remainder_str = echars.collect::<String>();
+        let remainder = remainder_str.split_whitespace();
 
-        editor.push(path.as_os_str());
+        let mut args: Vec<&OsStr> =
+            remainder.map(|s| OsStr::new(s)).collect();
 
-        Command::new(command)
+        args.push(path.as_os_str());
+
+        Command::new(command.clone())
             .current_dir(work_dir)
-            .args(editor)
+            .args(args)
             .status()
             .map_err(|e| anyhow!("\"{}\": {}", command, e))?;
 
