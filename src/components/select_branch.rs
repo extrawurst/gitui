@@ -78,11 +78,19 @@ impl DrawableComponent for SelectBranchComponent {
                 .block(
                     Block::default()
                         .title(strings::SELECT_BRANCH_POPUP_MSG)
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Thick),
+                        .border_type(BorderType::Thick)
+                        .borders(Borders::ALL),
                 )
                 .alignment(Alignment::Left),
                 area,
+            );
+
+            ui::draw_scrollbar(
+                f,
+                area,
+                &self.theme,
+                self.branch_names.len(),
+                self.scroll_top.get(),
             );
         }
 
