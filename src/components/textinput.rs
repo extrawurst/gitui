@@ -17,8 +17,8 @@ use tui::{
     widgets::Clear, Frame,
 };
 
-//const EOL_CHAR: &str = "\u{200b}";
 const EOL_CHAR: &str = "_";
+
 #[derive(PartialEq)]
 pub enum InputType {
     Singleline,
