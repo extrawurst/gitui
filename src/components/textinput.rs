@@ -160,10 +160,15 @@ impl TextInputComponent {
             ));
         }
 
-        txt.push(Span::styled(
-            cursor_str,
-            style.add_modifier(Modifier::UNDERLINED),
-        ));
+        // ... and this conditional underline needs to be removed
+        if cursor_str == EOL_CHAR {
+            txt.push(Span::styled(cursor_str, style));
+        } else {
+            txt.push(Span::styled(
+                cursor_str,
+                style.add_modifier(Modifier::UNDERLINED),
+            ));
+        }
 
         // The final portion of the text is added if there are
         // still remaining characters.
@@ -369,7 +374,8 @@ mod tests {
             "",
         );
         let theme = SharedTheme::default();
-        let underlined = theme
+        // preserved for when tiu fixes NBSP
+        let _underlined = theme
             .text(true, false)
             .add_modifier(Modifier::UNDERLINED);
 
@@ -384,7 +390,7 @@ mod tests {
         assert_eq!(get_text(&txt[0]), Some("a"));
         assert_eq!(get_style(&txt[0]), Some(&not_underlined));
         assert_eq!(get_text(&txt[1]), Some(EOL_CHAR));
-        assert_eq!(get_style(&txt[1]), Some(&underlined));
+        assert_eq!(get_style(&txt[1]), Some(&not_underlined));
     }
 
     #[test]
