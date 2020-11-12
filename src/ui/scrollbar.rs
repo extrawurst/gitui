@@ -5,7 +5,7 @@ use tui::{
     buffer::Buffer,
     layout::{Margin, Rect},
     style::Style,
-    symbols::{block::FULL, line::THICK_VERTICAL},
+    symbols::{block::FULL, line::DOUBLE_VERTICAL},
     widgets::Widget,
     Frame,
 };
@@ -50,7 +50,7 @@ impl Widget for Scrollbar {
         }
 
         for y in area.top()..area.bottom() {
-            buf.set_string(right, y, THICK_VERTICAL, self.style_bar);
+            buf.set_string(right, y, DOUBLE_VERTICAL, self.style_bar);
         }
 
         let max_pos = self.lines.saturating_sub(area.height);
