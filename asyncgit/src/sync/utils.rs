@@ -216,7 +216,6 @@ mod tests {
         let good_cfg = get_config_string(rpath, "user.name");
         assert!(good_cfg.is_ok());
         assert!(good_cfg.unwrap().is_some());
-
     }
     #[test]
     fn test_staging_one_file() {
