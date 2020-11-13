@@ -224,9 +224,7 @@ impl App {
                 let new_flags = if k == self.key_config.tab_toggle {
                     self.toggle_tabs(false)?;
                     NeedsUpdate::COMMANDS
-                } else if k == self.key_config.tab_toggle_reverse
-                    || k == self.key_config.tab_toggle_reverse_windows
-                {
+                } else if k == self.key_config.tab_toggle_reverse {
                     self.toggle_tabs(true)?;
                     NeedsUpdate::COMMANDS
                 } else if k == self.key_config.tab_status
