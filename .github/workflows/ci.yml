@@ -21,6 +21,22 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Restore cargo cache
+      uses: actions/cache@v2
+      env:
+        cache-name: ci
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          ~/.cargo/bin
+          target
+        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}-${{ hashFiles('Cargo.lock') }}
+
+    - name: MacOS Workaround
+      if: matrix.os == 'macos-latest'
+      run: cargo clean --locked -p serde_derive -p thiserror
+
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
@@ -29,14 +45,8 @@ jobs:
         profile: minimal
         components: clippy
 
-    - name: Install dependencies for clipboard access
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get -qq install libxcb-shape0-dev libxcb-xfixes0-dev
-
     - name: Build Debug
       run: |
-        rustc --version
         cargo build
 
     - name: Run tests
@@ -44,11 +54,18 @@ jobs:
 
     - name: Run clippy
       run: |
-        cargo clean
         make clippy
 
     - name: Build Release
       run: make build-release
+
+    - name: Build MSI (windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        cargo install cargo-wix
+        cargo wix init
+        cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
+        ls -l ./target/wix/gitui.msi
 
   build-linux-musl:
     runs-on: ubuntu-latest

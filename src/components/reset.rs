@@ -11,10 +11,7 @@ use anyhow::Result;
 use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
-    backend::Backend,
-    layout::Rect,
-    widgets::{Clear, Text},
-    Frame,
+    backend::Backend, layout::Rect, text::Span, widgets::Clear, Frame,
 };
 use ui::style::SharedTheme;
 
@@ -36,7 +33,7 @@ impl DrawableComponent for ResetComponent {
         if self.visible {
             let (title, msg) = self.get_text();
 
-            let txt = vec![Text::Styled(
+            let txt = vec![Span::styled(
                 Cow::from(msg),
                 self.theme.text_danger(),
             )];
@@ -44,12 +41,7 @@ impl DrawableComponent for ResetComponent {
             let area = ui::centered_rect(30, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                popup_paragraph(
-                    &title,
-                    txt.iter(),
-                    &self.theme,
-                    true,
-                ),
+                popup_paragraph(&title, txt, &self.theme, true),
                 area,
             );
         }
@@ -159,9 +151,18 @@ impl ResetComponent {
                     strings::confirm_title_reset(&self.key_config),
                     strings::confirm_msg_resethunk(&self.key_config),
                 ),
+                Action::DeleteBranch(branch_ref) => (
+                    strings::confirm_title_delete_branch(
+                        &self.key_config,
+                    ),
+                    strings::confirm_msg_delete_branch(
+                        &self.key_config,
+                        branch_ref,
+                    ),
+                ),
             };
         }
 
-        ("".to_string(), "".to_string())
+        (String::new(), String::new())
     }
 }

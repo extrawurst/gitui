@@ -60,6 +60,9 @@ pub struct KeyConfig {
     pub commit_amend: KeyEvent,
     pub copy: KeyEvent,
     pub create_branch: KeyEvent,
+    pub rename_branch: KeyEvent,
+    pub select_branch: KeyEvent,
+    pub delete_branch: KeyEvent,
     pub push: KeyEvent,
     pub force_push: KeyEvent,
     pub fetch: KeyEvent,
@@ -111,7 +114,10 @@ impl Default for KeyConfig {
 			log_tag_commit: KeyEvent { code: KeyCode::Char('t'), modifiers: KeyModifiers::empty()},
 			commit_amend: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
             copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
-            create_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
+            create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::NONE},
+            rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::NONE},
+            select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::NONE},
+            delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
             force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
             fetch: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
@@ -227,7 +233,7 @@ fn get_modifier_hint(modifier: KeyModifiers) -> String {
         KeyModifiers::ALT => {
             "\u{2325}".to_string() //⌥
         }
-        _ => "".to_string(),
+        _ => String::new(),
     }
 }
 

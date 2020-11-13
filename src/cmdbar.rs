@@ -6,7 +6,8 @@ use std::borrow::Cow;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Paragraph, Text},
+    text::{Span, Spans},
+    widgets::Paragraph,
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -35,7 +36,7 @@ pub struct CommandBar {
     expanded: bool,
 }
 
-const MORE_WIDTH: u16 = 11;
+const MORE_WIDTH: u16 = 9;
 
 impl CommandBar {
     pub const fn new(
@@ -139,27 +140,44 @@ impl CommandBar {
     }
 
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-        let splitter = Text::Raw(Cow::from(strings::cmd_splitter(
+        if r.width < MORE_WIDTH {
+            return;
+        }
+        let splitter = Span::raw(Cow::from(strings::cmd_splitter(
             &self.key_config,
         )));
 
         let texts = self
             .draw_list
-            .iter()
-            .map(|c| match c {
-                DrawListEntry::Command(c) => Text::Styled(
-                    Cow::from(c.txt.as_str()),
-                    self.theme.commandbar(c.enabled, c.line),
-                ),
-                DrawListEntry::LineBreak => {
-                    Text::Raw(Cow::from("\n"))
-                }
-                DrawListEntry::Splitter => splitter.clone(),
+            .split(|c| matches!(c, DrawListEntry::LineBreak))
+            .map(|c_arr| {
+                Spans::from(
+                    c_arr
+                        .iter()
+                        .map(|c| match c {
+                            DrawListEntry::Command(c) => {
+                                Span::styled(
+                                    Cow::from(c.txt.as_str()),
+                                    self.theme.commandbar(
+                                        c.enabled, c.line,
+                                    ),
+                                )
+                            }
+                            DrawListEntry::LineBreak => {
+                                // Doesn't exist in split array
+                                Span::raw("")
+                            }
+                            DrawListEntry::Splitter => {
+                                splitter.clone()
+                            }
+                        })
+                        .collect::<Vec<Span>>(),
+                )
             })
-            .collect::<Vec<_>>();
+            .collect::<Vec<Spans>>();
 
         f.render_widget(
-            Paragraph::new(texts.iter()).alignment(Alignment::Left),
+            Paragraph::new(texts).alignment(Alignment::Left),
             r,
         );
 
@@ -168,18 +186,17 @@ impl CommandBar {
                 r.width.saturating_sub(MORE_WIDTH),
                 r.y + r.height.saturating_sub(1),
                 MORE_WIDTH.min(r.width),
-                1,
+                1.min(r.height),
             );
 
             f.render_widget(
-                Paragraph::new(
-                    vec![Text::Raw(Cow::from(if self.expanded {
+                Paragraph::new(Spans::from(vec![Span::raw(
+                    Cow::from(if self.expanded {
                         "less [.]"
                     } else {
                         "more [.]"
-                    }))]
-                    .iter(),
-                )
+                    }),
+                )]))
                 .alignment(Alignment::Right),
                 r,
             );

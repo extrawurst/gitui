@@ -6,7 +6,8 @@ use crate::{
         Component, CreateBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PushComponent,
-        ResetComponent, StashMsgComponent, TagCommitComponent,
+        RenameBranchComponent, ResetComponent, SelectBranchComponent,
+        StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -15,7 +16,7 @@ use crate::{
     tabs::{Revlog, StashList, Stashing, Status},
     ui::style::{SharedTheme, Theme},
 };
-use anyhow::{anyhow, Result};
+use anyhow::{bail, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
@@ -27,6 +28,7 @@ use std::{
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Margin, Rect},
+    text::{Span, Spans},
     widgets::{Block, Borders, Tabs},
     Frame,
 };
@@ -44,6 +46,8 @@ pub struct App {
     push_popup: PushComponent,
     tag_commit_popup: TagCommitComponent,
     create_branch_popup: CreateBranchComponent,
+    rename_branch_popup: RenameBranchComponent,
+    select_branch_popup: SelectBranchComponent,
     cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
@@ -111,6 +115,16 @@ impl App {
                 key_config.clone(),
             ),
             create_branch_popup: CreateBranchComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            rename_branch_popup: RenameBranchComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            select_branch_popup: SelectBranchComponent::new(
                 queue.clone(),
                 theme.clone(),
                 key_config.clone(),
@@ -185,7 +199,7 @@ impl App {
             1 => self.revlog.draw(f, chunks_main[1])?,
             2 => self.stashing_tab.draw(f, chunks_main[1])?,
             3 => self.stashlist_tab.draw(f, chunks_main[1])?,
-            _ => return Err(anyhow!("unknown tab")),
+            _ => bail!("unknown tab"),
         };
 
         self.draw_popups(f)?;
@@ -334,6 +348,8 @@ impl App {
             push_popup,
             tag_commit_popup,
             create_branch_popup,
+            rename_branch_popup,
+            select_branch_popup,
             help,
             revlog,
             status_tab,
@@ -464,6 +480,20 @@ impl App {
                     sync::reset_hunk(CWD, path, hash)?;
                     flags.insert(NeedsUpdate::ALL);
                 }
+                Action::DeleteBranch(branch_ref) => {
+                    if let Err(e) =
+                        sync::delete_branch(CWD, &branch_ref)
+                    {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::ShowErrorMsg(
+                                e.to_string(),
+                            ),
+                        )
+                    } else {
+                        flags.insert(NeedsUpdate::ALL);
+                        self.select_branch_popup.hide();
+                    }
+                }
             },
             InternalEvent::ConfirmAction(action) => {
                 self.reset.open(action)?;
@@ -485,6 +515,13 @@ impl App {
             }
             InternalEvent::CreateBranch => {
                 self.create_branch_popup.open()?;
+            }
+            InternalEvent::RenameBranch(branch_ref, cur_name) => {
+                self.rename_branch_popup
+                    .open(branch_ref, cur_name)?;
+            }
+            InternalEvent::SelectBranch => {
+                self.select_branch_popup.open()?;
             }
             InternalEvent::TabSwitch => self.set_tab(0)?,
             InternalEvent::InspectCommit(id, tags) => {
@@ -561,6 +598,8 @@ impl App {
             || self.tag_commit_popup.is_visible()
             || self.create_branch_popup.is_visible()
             || self.push_popup.is_visible()
+            || self.select_branch_popup.is_visible()
+            || self.rename_branch_popup.is_visible()
     }
 
     fn draw_popups<B: Backend>(
@@ -580,14 +619,16 @@ impl App {
 
         self.commit.draw(f, size)?;
         self.stashmsg_popup.draw(f, size)?;
-        self.reset.draw(f, size)?;
         self.help.draw(f, size)?;
         self.inspect_commit_popup.draw(f, size)?;
-        self.msg.draw(f, size)?;
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
+        self.select_branch_popup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
+        self.rename_branch_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;
+        self.reset.draw(f, size)?;
+        self.msg.draw(f, size)?;
 
         Ok(())
     }
@@ -599,24 +640,27 @@ impl App {
             horizontal: 1,
         });
 
-        let tabs = &[
-            strings::tab_status(&self.key_config),
-            strings::tab_log(&self.key_config),
-            strings::tab_stashing(&self.key_config),
-            strings::tab_stashes(&self.key_config),
-        ];
+        let tabs = [
+            Span::raw(strings::tab_status(&self.key_config)),
+            Span::raw(strings::tab_log(&self.key_config)),
+            Span::raw(strings::tab_stashing(&self.key_config)),
+            Span::raw(strings::tab_stashes(&self.key_config)),
+        ]
+        .iter()
+        .cloned()
+        .map(Spans::from)
+        .collect();
 
         f.render_widget(
-            Tabs::default()
+            Tabs::new(tabs)
                 .block(
                     Block::default()
                         .borders(Borders::BOTTOM)
                         .border_style(self.theme.block(false)),
                 )
-                .titles(tabs)
                 .style(self.theme.tab(false))
                 .highlight_style(self.theme.tab(true))
-                .divider(&strings::tab_divider(&self.key_config))
+                .divider(strings::tab_divider(&self.key_config))
                 .select(self.tab),
             r,
         );

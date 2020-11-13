@@ -7,7 +7,6 @@ use crossbeam_channel::Sender;
 use git2::Oid;
 use scopetime::scope_time;
 use std::{
-    iter::FromIterator,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
@@ -66,7 +65,7 @@ impl AsyncLog {
         let min = start_index.min(list_len);
         let max = min + amount;
         let max = max.min(list_len);
-        Ok(Vec::from_iter(list[min..max].iter().cloned()))
+        Ok(list[min..max].to_vec())
     }
 
     ///

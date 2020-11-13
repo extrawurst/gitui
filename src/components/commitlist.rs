@@ -18,7 +18,8 @@ use std::{
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, Borders, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -96,6 +97,9 @@ impl CommitList {
     }
 
     ///
+    //TODO: make const as soon as Option::<T>::as_ref
+    // is stabilizeD to be const (not as of rust 1.47)
+    #[allow(clippy::missing_const_for_fn)]
     pub fn tags(&self) -> Option<&Tags> {
         self.tags.as_ref()
     }
@@ -178,22 +182,22 @@ impl CommitList {
         self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
     }
 
-    fn add_entry<'b>(
-        e: &'b LogEntry,
+    fn get_entry_to_add<'a>(
+        e: &'a LogEntry,
         selected: bool,
-        txt: &mut Vec<Text<'b>>,
         tags: Option<String>,
         theme: &Theme,
         width: usize,
-    ) {
+    ) -> Spans<'a> {
+        let mut txt: Vec<Span> = Vec::new();
         txt.reserve(ELEMENTS_PER_LINE);
 
         let splitter_txt = Cow::from(" ");
         let splitter =
-            Text::Styled(splitter_txt, theme.text(true, selected));
+            Span::styled(splitter_txt, theme.text(true, selected));
 
         // commit hash
-        txt.push(Text::Styled(
+        txt.push(Span::styled(
             Cow::from(e.hash_short.as_str()),
             theme.commit_hash(selected),
         ));
@@ -201,7 +205,7 @@ impl CommitList {
         txt.push(splitter.clone());
 
         // commit timestamp
-        txt.push(Text::Styled(
+        txt.push(Span::styled(
             Cow::from(e.time.as_str()),
             theme.commit_time(selected),
         ));
@@ -213,15 +217,15 @@ impl CommitList {
         let author = string_width_align(&e.author, author_width);
 
         // commit author
-        txt.push(Text::Styled(
-            author.into(),
+        txt.push(Span::styled::<String>(
+            author,
             theme.commit_author(selected),
         ));
 
         txt.push(splitter.clone());
 
         // commit tags
-        txt.push(Text::Styled(
+        txt.push(Span::styled(
             Cow::from(if let Some(tags) = tags {
                 format!(" {}", tags)
             } else {
@@ -233,17 +237,17 @@ impl CommitList {
         txt.push(splitter);
 
         // commit msg
-        txt.push(Text::Styled(
+        txt.push(Span::styled(
             Cow::from(e.msg.as_str()),
             theme.text(true, selected),
         ));
-        txt.push(Text::Raw(Cow::from("\n")));
+        Spans::from(txt)
     }
 
-    fn get_text(&self, height: usize, width: usize) -> Vec<Text> {
+    fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
         let selection = self.relative_selection();
 
-        let mut txt = Vec::with_capacity(height * ELEMENTS_PER_LINE);
+        let mut txt: Vec<Spans> = Vec::with_capacity(height);
 
         for (idx, e) in self
             .items
@@ -257,15 +261,13 @@ impl CommitList {
                 .as_ref()
                 .and_then(|t| t.get(&e.id))
                 .map(|tags| tags.join(" "));
-
-            Self::add_entry(
+            txt.push(Self::get_entry_to_add(
                 e,
                 idx + self.scroll_top.get() == selection,
-                &mut txt,
                 tags,
                 &self.theme,
                 width,
-            );
+            ));
         }
 
         txt
@@ -314,15 +316,16 @@ impl DrawableComponent for CommitList {
                 self.get_text(
                     height_in_lines,
                     current_size.0 as usize,
-                )
-                .iter(),
+                ),
             )
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(title.as_str())
-                    .border_style(self.theme.block(true))
-                    .title_style(self.theme.title(true)),
+                    .title(Span::styled(
+                        title.as_str(),
+                        self.theme.title(true),
+                    ))
+                    .border_style(self.theme.block(true)),
             )
             .alignment(Alignment::Left),
             area,

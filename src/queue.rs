@@ -28,6 +28,7 @@ pub enum Action {
     Reset(ResetItem),
     ResetHunk(String, u64),
     StashDrop(CommitId),
+    DeleteBranch(String),
 }
 
 ///
@@ -52,6 +53,10 @@ pub enum InternalEvent {
     TagCommit(CommitId),
     ///
     CreateBranch,
+    ///
+    RenameBranch(String, String),
+    ///
+    SelectBranch,
     ///
     OpenExternalEditor(Option<String>),
     ///

@@ -1,7 +1,7 @@
 use crate::{
     components::{
-        visibility_blocking, CommandBlocking, CommandInfo, Component,
-        DrawableComponent,
+        cred::CredComponent, visibility_blocking, CommandBlocking,
+        CommandInfo, Component, DrawableComponent,
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
@@ -10,6 +10,11 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
+    sync::cred::{
+        extract_username_password, need_username_password,
+        BasicAuthCredential,
+    },
+    sync::DEFAULT_REMOTE_NAME,
     AsyncNotification, AsyncPush, PushProgress, PushProgressState,
     PushRequest,
 };
@@ -19,6 +24,7 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Style},
+    text::Span,
     widgets::{Block, BorderType, Borders, Clear, Gauge},
     Frame,
 };
@@ -30,9 +36,11 @@ pub struct PushComponent {
     git_push: AsyncPush,
     progress: Option<PushProgress>,
     pending: bool,
+    branch: String,
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
+    input_cred: CredComponent,
 }
 
 impl PushComponent {
@@ -48,8 +56,13 @@ impl PushComponent {
             force: false,
             pending: false,
             visible: false,
+            branch: String::new(),
             git_push: AsyncPush::new(sender),
             progress: None,
+            input_cred: CredComponent::new(
+                theme.clone(),
+                key_config.clone(),
+            ),
             theme,
             key_config,
         }
@@ -61,17 +74,39 @@ impl PushComponent {
         branch: String,
         force: bool,
     ) -> Result<()> {
+        self.branch = branch;
+        self.force = force;
+        self.show()?;
+        if need_username_password(DEFAULT_REMOTE_NAME)? {
+            let cred = extract_username_password(DEFAULT_REMOTE_NAME)
+                .unwrap_or_else(|_| {
+                    BasicAuthCredential::new(None, None)
+                });
+            if cred.is_complete() {
+                self.push_to_remote(Some(cred), force)
+            } else {
+                self.input_cred.set_cred(cred);
+                self.input_cred.show()
+            }
+        } else {
+            self.push_to_remote(None, force)
+        }
+    }
+
+    fn push_to_remote(
+        &mut self,
+        cred: Option<BasicAuthCredential>,
+        force: bool,
+    ) -> Result<()> {
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
             //TODO: find tracking branch name
-            remote: String::from("origin"),
-            branch,
+            remote: String::from(DEFAULT_REMOTE_NAME),
+            branch: self.branch.clone(),
             force,
+            basic_credential: cred,
         })?;
-        self.force = force;
-
-        self.show()?;
         Ok(())
     }
 
@@ -103,7 +138,6 @@ impl PushComponent {
                     )),
                 );
             }
-
             self.hide();
         }
 
@@ -142,7 +176,7 @@ impl DrawableComponent for PushComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
-        _rect: Rect,
+        rect: Rect,
     ) -> Result<()> {
         if self.visible {
             let (state, progress) = self.get_progress();
@@ -155,24 +189,28 @@ impl DrawableComponent for PushComponent {
                     .label(state.as_str())
                     .block(
                         Block::default()
-                            .title(if self.force {
-                                strings::FORCE_PUSH_POPUP_MSG
-                            } else {
-                                strings::PUSH_POPUP_MSG
-                            })
+                            .title(Span::styled(
+                                if self.force {
+                                    strings::FORCE_PUSH_POPUP_MSG
+                                } else {
+                                    strings::PUSH_POPUP_MSG
+                                },
+                                self.theme.title(true),
+                            ))
                             .borders(Borders::ALL)
                             .border_type(BorderType::Thick)
-                            .title_style(self.theme.title(true))
                             .border_style(self.theme.block(true)),
                     )
-                    .style(
+                    .gauge_style(
+                        //TODO: use theme
                         Style::default()
                             .fg(Color::White)
-                            .bg(Color::Black), // .modifier(Modifier::ITALIC),
+                            .bg(Color::Black),
                     )
                     .percent(u16::from(progress)),
                 area,
             );
+            self.input_cred.draw(f, rect)?;
         }
 
         Ok(())
@@ -183,26 +221,44 @@ impl Component for PushComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
-        _force_all: bool,
+        force_all: bool,
     ) -> CommandBlocking {
         if self.is_visible() {
             out.clear();
         }
 
-        out.push(CommandInfo::new(
-            strings::commands::close_msg(&self.key_config),
-            !self.pending,
-            self.visible,
-        ));
-
-        visibility_blocking(self)
+        if self.input_cred.is_visible() {
+            self.input_cred.commands(out, force_all)
+        } else {
+            out.push(CommandInfo::new(
+                strings::commands::close_msg(&self.key_config),
+                !self.pending,
+                self.visible,
+            ));
+            visibility_blocking(self)
+        }
     }
 
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
-                if e == self.key_config.enter {
+                if e == self.key_config.exit_popup {
                     self.hide();
+                }
+                if self.input_cred.event(ev)? {
+                    return Ok(true);
+                } else if e == self.key_config.enter {
+                    if self.input_cred.is_visible()
+                        && self.input_cred.get_cred().is_complete()
+                    {
+                        self.push_to_remote(
+                            Some(self.input_cred.get_cred().clone()),
+                            self.force,
+                        )?;
+                        self.input_cred.hide();
+                    } else {
+                        self.hide();
+                    }
                 }
             }
             return Ok(true);

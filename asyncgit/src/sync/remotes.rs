@@ -1,14 +1,15 @@
 //!
 
-use crate::{error::Result, sync::utils};
+use super::CommitId;
+use crate::{
+    error::Result, sync::cred::BasicAuthCredential, sync::utils,
+};
 use crossbeam_channel::Sender;
 use git2::{
-    Cred, FetchOptions, PackBuilderStage, PushOptions,
-    RemoteCallbacks,
+    Cred, Error as GitError, FetchOptions, PackBuilderStage,
+    PushOptions, RemoteCallbacks,
 };
 use scopetime::scope_time;
-
-use super::CommitId;
 
 ///
 #[derive(Debug, Clone)]
@@ -52,6 +53,9 @@ pub enum ProgressNotification {
 }
 
 ///
+pub const DEFAULT_REMOTE_NAME: &str = "origin";
+
+///
 pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
     scope_time!("get_remotes");
 
@@ -68,10 +72,13 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     scope_time!("fetch_origin");
 
     let repo = utils::repo(repo_path)?;
-    let mut remote = repo.find_remote("origin")?;
+    let mut remote = repo.find_remote(DEFAULT_REMOTE_NAME)?;
 
     let mut options = FetchOptions::new();
-    options.remote_callbacks(remote_callbacks(None));
+    options.remote_callbacks(match remote_callbacks(None, None) {
+        Ok(callback) => callback,
+        Err(e) => return Err(e),
+    });
 
     remote.fetch(&[branch], Some(&mut options), None)?;
 
@@ -84,6 +91,7 @@ pub fn push(
     remote: &str,
     branch: &str,
     force: bool,
+    basic_credential: Option<BasicAuthCredential>,
     progress_sender: Sender<ProgressNotification>,
 ) -> Result<()> {
     scope_time!("push_origin");
@@ -93,7 +101,15 @@ pub fn push(
 
     let mut options = PushOptions::new();
 
-    options.remote_callbacks(remote_callbacks(Some(progress_sender)));
+    options.remote_callbacks(
+        match remote_callbacks(
+            Some(progress_sender),
+            basic_credential,
+        ) {
+            Ok(callbacks) => callbacks,
+            Err(e) => return Err(e),
+        },
+    );
     options.packbuilder_parallelism(0);
 
     if force {
@@ -110,7 +126,8 @@ pub fn push(
 
 fn remote_callbacks<'a>(
     sender: Option<Sender<ProgressNotification>>,
-) -> RemoteCallbacks<'a> {
+    basic_credential: Option<BasicAuthCredential>,
+) -> Result<RemoteCallbacks<'a>> {
     let mut callbacks = RemoteCallbacks::new();
     let sender_clone = sender.clone();
     callbacks.push_transfer_progress(move |current, total, bytes| {
@@ -167,20 +184,59 @@ fn remote_callbacks<'a>(
             })
         });
     });
-    callbacks.credentials(|url, username_from_url, allowed_types| {
-        log::debug!(
-            "creds: '{}' {:?} ({:?})",
-            url,
-            username_from_url,
-            allowed_types
-        );
 
-        Cred::ssh_key_from_agent(
-            username_from_url.expect("username not found"),
-        )
-    });
+    let mut first_call_to_credentials = true;
+    // This boolean is used to avoid multiple call to credentials callback.
+    // If credentials are bad, we don't ask the user to re-fill his creds. We push an error and he will be able to restart his action (for example a push) and retype his creds.
+    // This behavior is explained in a issue on git2-rs project : https://github.com/rust-lang/git2-rs/issues/347
+    // An implementation reference is done in cargo : https://github.com/rust-lang/cargo/blob/9fb208dddb12a3081230a5fd8f470e01df8faa25/src/cargo/sources/git/utils.rs#L588
+    // There is also a guide about libgit2 authentication : https://libgit2.org/docs/guides/authentication/
+    callbacks.credentials(
+        move |url, username_from_url, allowed_types| {
+            log::debug!(
+                "creds: '{}' {:?} ({:?})",
+                url,
+                username_from_url,
+                allowed_types
+            );
+            if first_call_to_credentials {
+                first_call_to_credentials = false;
+            } else {
+                return Err(GitError::from_str("Bad credentials."));
+            }
 
-    callbacks
+            match &basic_credential {
+                _ if allowed_types.is_ssh_key() => {
+                    match username_from_url {
+                        Some(username) => {
+                            Cred::ssh_key_from_agent(username)
+                        }
+                        None => Err(GitError::from_str(
+                            " Couldn't extract username from url.",
+                        )),
+                    }
+                }
+                Some(BasicAuthCredential {
+                    username: Some(user),
+                    password: Some(pwd),
+                }) if allowed_types.is_user_pass_plaintext() => {
+                    Cred::userpass_plaintext(&user, &pwd)
+                }
+                Some(BasicAuthCredential {
+                    username: Some(user),
+                    password: _,
+                }) if allowed_types.is_username() => {
+                    Cred::username(user)
+                }
+                _ if allowed_types.is_default() => Cred::default(),
+                _ => Err(GitError::from_str(
+                    "Couldn't find credentials",
+                )),
+            }
+        },
+    );
+
+    Ok(callbacks)
 }
 
 #[cfg(test)]
@@ -203,7 +259,7 @@ mod tests {
 
         let remotes = get_remotes(repo_path).unwrap();
 
-        assert_eq!(remotes, vec![String::from("origin")]);
+        assert_eq!(remotes, vec![String::from(DEFAULT_REMOTE_NAME)]);
 
         fetch_origin(repo_path, "master").unwrap();
     }

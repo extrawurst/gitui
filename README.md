@@ -31,6 +31,7 @@
 - Stage, unstage, revert and reset files and hunks
 - Stashing (save, apply, drop, and inspect)
 - Push to remote
+- Branch List (create, rename, delete)
 - Browse commit log, diff committed changes
 - Scalable terminal UI layout
 - Async [input polling](assets/perf_compare.jpg)
@@ -50,12 +51,11 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 
 I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index, commit, diff, stash and log.
 
-Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool myself to help do features I use the most.
+Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool to help with features I use the most.
 
 # Known Limitations
 
 - no support for `pull` yet (see [#90](https://github.com/extrawurst/gitui/issues/90))
-- limited support for branching (see [#91](https://github.com/extrawurst/gitui/issues/91))
 - no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 - no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
 
@@ -95,6 +95,12 @@ brew install gitui
 
 ```
 scoop install gitui
+```
+
+### [Chocolatey](https://chocolatey.org/packages/gitui) (Windows)
+
+```
+choco install gitui
 ```
 
 ## Release Binaries
@@ -146,3 +152,4 @@ The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to se
 - [tig](https://github.com/jonas/tig)
 - [GitUp](https://github.com/git-up/GitUp)
   - It would be nice to come up with a way to have the map view available in a terminal tool
+- [git-brunch](https://github.com/andys8/git-brunch)

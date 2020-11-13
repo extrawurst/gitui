@@ -17,7 +17,8 @@ use tui::{
     backend::Backend,
     layout::Rect,
     symbols,
-    widgets::{Block, Borders, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
@@ -268,7 +269,7 @@ impl DiffComponent {
                 self,
                 "copy to clipboard error:",
                 crate::clipboard::copy_string(
-                    lines_to_copy.join("\n")
+                    &lines_to_copy.join("\n")
                 )
             );
         }
@@ -299,33 +300,37 @@ impl DiffComponent {
         Ok(None)
     }
 
-    fn get_text(&self, width: u16, height: u16) -> Result<Vec<Text>> {
-        let mut res = Vec::new();
+    fn get_text(
+        &self,
+        width: u16,
+        height: u16,
+    ) -> Result<Vec<Spans>> {
+        let mut res: Vec<Spans> = Vec::new();
         if let Some(diff) = &self.diff {
             if diff.hunks.is_empty() {
                 let is_positive = diff.size_delta >= 0;
                 let delta_byte_size =
                     ByteSize::b(diff.size_delta.abs() as u64);
                 let sign = if is_positive { "+" } else { "-" };
-                res.extend(vec![
-                    Text::Raw(Cow::from("size: ")),
-                    Text::Styled(
+                res.extend(vec![Spans::from(vec![
+                    Span::raw(Cow::from("size: ")),
+                    Span::styled(
                         Cow::from(format!(
                             "{}",
                             ByteSize::b(diff.sizes.0)
                         )),
                         self.theme.text(false, false),
                     ),
-                    Text::Raw(Cow::from(" -> ")),
-                    Text::Styled(
+                    Span::raw(Cow::from(" -> ")),
+                    Span::styled(
                         Cow::from(format!(
                             "{}",
                             ByteSize::b(diff.sizes.1)
                         )),
                         self.theme.text(false, false),
                     ),
-                    Text::Raw(Cow::from(" (")),
-                    Text::Styled(
+                    Span::raw(Cow::from(" (")),
+                    Span::styled(
                         Cow::from(format!(
                             "{}{:}",
                             sign, delta_byte_size
@@ -339,8 +344,8 @@ impl DiffComponent {
                             false,
                         ),
                     ),
-                    Text::Raw(Cow::from(")")),
-                ]);
+                    Span::raw(Cow::from(")")),
+                ])]);
             } else {
                 let min = self.scroll_top.get();
                 let max = min + height as usize;
@@ -370,8 +375,7 @@ impl DiffComponent {
                             if line_cursor >= min
                                 && line_cursor <= max
                             {
-                                Self::add_line(
-                                    &mut res,
+                                res.push(Self::get_line_to_add(
                                     width,
                                     line,
                                     self.focused()
@@ -381,7 +385,7 @@ impl DiffComponent {
                                     hunk_selected,
                                     i == hunk_len as usize - 1,
                                     &self.theme,
-                                );
+                                ));
                                 lines_added += 1;
                             }
 
@@ -396,36 +400,30 @@ impl DiffComponent {
         Ok(res)
     }
 
-    fn add_line(
-        text: &mut Vec<Text>,
+    fn get_line_to_add<'a>(
         width: u16,
-        line: &DiffLine,
+        line: &'a DiffLine,
         selected: bool,
         selected_hunk: bool,
         end_of_hunk: bool,
         theme: &SharedTheme,
-    ) {
-        {
-            let style = theme.diff_hunk_marker(selected_hunk);
+    ) -> Spans<'a> {
+        let style = theme.diff_hunk_marker(selected_hunk);
 
-            if end_of_hunk {
-                text.push(Text::Styled(
-                    Cow::from(symbols::line::BOTTOM_LEFT),
+        let left_side_of_line = if end_of_hunk {
+            Span::styled(Cow::from(symbols::line::BOTTOM_LEFT), style)
+        } else {
+            match line.line_type {
+                DiffLineType::Header => Span::styled(
+                    Cow::from(symbols::line::TOP_LEFT),
                     style,
-                ));
-            } else {
-                text.push(match line.line_type {
-                    DiffLineType::Header => Text::Styled(
-                        Cow::from(symbols::line::TOP_LEFT),
-                        style,
-                    ),
-                    _ => Text::Styled(
-                        Cow::from(symbols::line::VERTICAL),
-                        style,
-                    ),
-                });
+                ),
+                _ => Span::styled(
+                    Cow::from(symbols::line::VERTICAL),
+                    style,
+                ),
             }
-        }
+        };
 
         let trimmed =
             line.content.trim_matches(|c| c == '\n' || c == '\r');
@@ -440,10 +438,13 @@ impl DiffComponent {
         //TODO: allow customize tabsize
         let content = Cow::from(filled.replace("\t", "  "));
 
-        text.push(Text::Styled(
-            content,
-            theme.diff_line(line.line_type, selected),
-        ));
+        Spans::from(vec![
+            left_side_of_line,
+            Span::styled(
+                content,
+                theme.diff_line(line.line_type, selected),
+            ),
+        ])
     }
 
     const fn hunk_visible(
@@ -564,21 +565,23 @@ impl DrawableComponent for DiffComponent {
         );
 
         let txt = if self.pending {
-            vec![Text::Styled(
+            vec![Spans::from(vec![Span::styled(
                 Cow::from(strings::loading_text(&self.key_config)),
                 self.theme.text(false, false),
-            )]
+            )])]
         } else {
             self.get_text(r.width, self.current_size.get().1)?
         };
 
         f.render_widget(
-            Paragraph::new(txt.iter()).block(
+            Paragraph::new(txt).block(
                 Block::default()
-                    .title(title.as_str())
+                    .title(Span::styled(
+                        title.as_str(),
+                        self.theme.title(self.focused),
+                    ))
                     .borders(Borders::ALL)
-                    .border_style(self.theme.block(self.focused))
-                    .title_style(self.theme.title(self.focused)),
+                    .border_style(self.theme.block(self.focused)),
             ),
             r,
         );
@@ -588,7 +591,7 @@ impl DrawableComponent for DiffComponent {
                 r,
                 &self.theme,
                 self.lines_count(),
-                self.selection.get_end(),
+                self.scroll_top.get(),
             );
         }
 
@@ -608,13 +611,11 @@ impl Component for DiffComponent {
             self.focused,
         ));
 
-        if crate::clipboard::is_supported() {
-            out.push(CommandInfo::new(
-                strings::commands::copy(&self.key_config),
-                true,
-                self.focused,
-            ));
-        }
+        out.push(CommandInfo::new(
+            strings::commands::copy(&self.key_config),
+            true,
+            self.focused,
+        ));
 
         out.push(
             CommandInfo::new(
@@ -694,9 +695,7 @@ impl Component for DiffComponent {
                         }
                     }
                     Ok(true)
-                } else if e == self.key_config.copy
-                    && crate::clipboard::is_supported()
-                {
+                } else if e == self.key_config.copy {
                     self.copy_selection()?;
                     Ok(true)
                 } else {
@@ -713,35 +712,5 @@ impl Component for DiffComponent {
     }
     fn focus(&mut self, focus: bool) {
         self.focused = focus
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_lineendings() {
-        let mut text = Vec::new();
-        DiffComponent::add_line(
-            &mut text,
-            10,
-            &DiffLine {
-                content: String::from("line 1\r\n"),
-                line_type: DiffLineType::None,
-            },
-            false,
-            false,
-            false,
-            &SharedTheme::default(),
-        );
-
-        assert_eq!(text.len(), 2);
-
-        if let Text::Styled(c, _) = &text[1] {
-            assert_eq!(c, "line 1\n");
-        } else {
-            panic!("err")
-        }
     }
 }

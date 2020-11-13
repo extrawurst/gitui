@@ -11,6 +11,8 @@ pub static PUSH_POPUP_STATES_ADDING: &str = "adding objects (1/3)";
 pub static PUSH_POPUP_STATES_DELTAS: &str = "deltas (2/3)";
 pub static PUSH_POPUP_STATES_PUSHING: &str = "pushing (3/3)";
 
+pub static SELECT_BRANCH_POPUP_MSG: &str = "Switch Branch";
+
 pub fn title_status(key_config: &SharedKeyConfig) -> String {
     format!(
         "Unstaged Changes [{}]",
@@ -89,6 +91,17 @@ pub fn confirm_msg_resethunk(
 ) -> String {
     "confirm reset hunk?".to_string()
 }
+pub fn confirm_title_delete_branch(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Delete Branch".to_string()
+}
+pub fn confirm_msg_delete_branch(
+    _key_config: &SharedKeyConfig,
+    branch_ref: &str,
+) -> String {
+    format!("Confirm deleting branch: '{}' ?", branch_ref)
+}
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
 }
@@ -126,6 +139,29 @@ pub fn create_branch_popup_msg(
     _key_config: &SharedKeyConfig,
 ) -> String {
     "type branch name".to_string()
+}
+pub fn username_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "Username".to_string()
+}
+pub fn username_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type username".to_string()
+}
+pub fn password_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "Password".to_string()
+}
+pub fn password_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "type password".to_string()
+}
+
+pub fn rename_branch_popup_title(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Rename Branch".to_string()
+}
+pub fn rename_branch_popup_msg(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "new branch name".to_string()
 }
 
 pub mod commit {
@@ -307,6 +343,14 @@ pub mod commands {
         CommandText::new(
             format!("Close [{}]", get_hint(key_config.enter),),
             "close msg popup (e.g msg)",
+            CMD_GROUP_GENERAL,
+        )
+        .hide_help()
+    }
+    pub fn validate_msg(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Validate [{}]", get_hint(key_config.enter),),
+            "validate msg",
             CMD_GROUP_GENERAL,
         )
         .hide_help()
@@ -596,13 +640,59 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Branch [{}]",
+                "Create [{}]",
                 get_hint(key_config.create_branch),
             ),
             "open create branch popup",
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn rename_branch_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!("Rename Branch [{}]", get_hint(key_config.enter),),
+            "rename branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn rename_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Rename Branch [{}]",
+                get_hint(key_config.rename_branch),
+            ),
+            "rename branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn delete_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Delete [{}]",
+                get_hint(key_config.delete_branch),
+            ),
+            "delete a branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn open_branch_select_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Branches [{}]",
+                get_hint(key_config.select_branch),
+            ),
+            "open select branch popup",
+            CMD_GROUP_GENERAL,
+        )
+    }
+
     pub fn status_push(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!("Push [{}]", get_hint(key_config.push),),

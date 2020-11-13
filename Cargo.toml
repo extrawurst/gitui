@@ -21,26 +21,28 @@ keywords = [
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
 asyncgit = { path = "./asyncgit", version = "0.10" }
-crossterm = { version = "0.17", features = [ "serde" ] }
+crossterm = { version = "0.18", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
-tui = { version = "0.9", default-features = false, features = ['crossterm'] }
+tui = { version = "0.12", default-features = false, features = ['crossterm', 'serde'] }
 bytesize = { version = "1.0.1", default-features = false}
 itertools = "0.9"
-rayon-core = "1.8"
+rayon-core = "1.9"
 log = "0.4"
 simplelog = { version = "0.8", default-features = false }
-dirs = "3.0"
-crossbeam-channel = "0.4"
+dirs-next = "2.0"
+crossbeam-channel = "0.5"
 scopeguard = "1.1"
 bitflags = "1.2"
 chrono = "0.4"
 backtrace = "0.3"
 ron = "0.6"
 serde = "1.0"
-anyhow = "1.0.32"
+anyhow = "1.0.34"
 unicode-width = "0.1"
 textwrap = "0.12"
-clipboard = { version = "0.5", optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+which = "4.0"
 
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.3", features = ["flamegraph"], optional = true }
@@ -49,7 +51,7 @@ pprof = { version = "0.3", features = ["flamegraph"], optional = true }
 maintenance = { status = "actively-developed" }
 
 [features]
-default=["clipboard"]
+default=[]
 timing=["scopetime/enabled"]
 
 [workspace]

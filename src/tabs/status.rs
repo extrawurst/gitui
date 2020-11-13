@@ -12,13 +12,18 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
+    cached,
+    sync::BranchCompare,
     sync::{self, status::StatusType},
     AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
     StatusParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::layout::{Constraint, Direction, Layout};
+use tui::{
+    layout::{Alignment, Constraint, Direction, Layout},
+    widgets::Paragraph,
+};
 
 ///
 #[derive(PartialEq)]
@@ -45,6 +50,8 @@ pub struct Status {
     git_diff: AsyncDiff,
     git_status_workdir: AsyncStatus,
     git_status_stage: AsyncStatus,
+    git_branch_state: BranchCompare,
+    git_branch_name: cached::BranchName,
     queue: Queue,
     git_action_executed: bool,
     key_config: SharedKeyConfig,
@@ -95,6 +102,7 @@ impl DrawableComponent for Status {
         self.index_wd.draw(f, left_chunks[0])?;
         self.index.draw(f, left_chunks[1])?;
         self.diff.draw(f, chunks[1])?;
+        self.draw_branch_state(f, &left_chunks);
 
         Ok(())
     }
@@ -141,7 +149,41 @@ impl Status {
             git_status_workdir: AsyncStatus::new(sender.clone()),
             git_status_stage: AsyncStatus::new(sender.clone()),
             git_action_executed: false,
+            git_branch_state: BranchCompare::default(),
+            git_branch_name: cached::BranchName::new(CWD),
             key_config,
+        }
+    }
+
+    fn draw_branch_state<B: tui::backend::Backend>(
+        &self,
+        f: &mut tui::Frame<B>,
+        chunks: &[tui::layout::Rect],
+    ) {
+        if let Some(branch_name) = self.git_branch_name.last() {
+            let w = Paragraph::new(format!(
+                "\u{2191}{} \u{2193}{} {{{}}}",
+                self.git_branch_state.ahead,
+                self.git_branch_state.behind,
+                branch_name
+            ))
+            .alignment(Alignment::Right);
+
+            let mut rect = if self.index_wd.focused() {
+                let mut rect = chunks[0];
+                rect.y += rect.height.saturating_sub(1);
+                rect
+            } else {
+                chunks[1]
+            };
+
+            rect.x += 1;
+            rect.width = rect.width.saturating_sub(2);
+            rect.height = rect
+                .height
+                .saturating_sub(rect.height.saturating_sub(1));
+
+            f.render_widget(w, rect);
         }
     }
 
@@ -206,6 +248,8 @@ impl Status {
 
     ///
     pub fn update(&mut self) -> Result<()> {
+        self.git_branch_name.lookup().map(Some).unwrap_or(None);
+
         if self.is_visible() {
             self.git_diff.refresh()?;
             self.git_status_workdir.fetch(StatusParams::new(
@@ -215,7 +259,7 @@ impl Status {
             self.git_status_stage
                 .fetch(StatusParams::new(StatusType::Stage, true))?;
 
-            self.index_wd.update()?;
+            self.check_branch_state();
         }
 
         Ok(())
@@ -325,7 +369,7 @@ impl Status {
     }
 
     fn push(&self, force: bool) {
-        if let Some(branch) = self.index_wd.branch_name() {
+        if let Some(branch) = self.git_branch_name.last() {
             let branch = format!("refs/heads/{}", branch);
 
             self.queue
@@ -335,7 +379,7 @@ impl Status {
     }
 
     fn fetch(&self) {
-        if let Some(branch) = self.index_wd.branch_name() {
+        if let Some(branch) = self.git_branch_name.last() {
             match sync::fetch_origin(CWD, branch.as_str()) {
                 Err(e) => {
                     self.queue.borrow_mut().push_back(
@@ -356,6 +400,20 @@ impl Status {
             }
         }
     }
+
+    fn check_branch_state(&mut self) {
+        self.git_branch_state = self.git_branch_name.last().map_or(
+            BranchCompare::default(),
+            |branch| {
+                sync::branch_compare_upstream(CWD, branch.as_str())
+                    .unwrap_or_default()
+            },
+        );
+    }
+
+    const fn can_push(&self) -> bool {
+        self.git_branch_state.ahead > 0
+    }
 }
 
 impl Component for Status {
@@ -370,6 +428,27 @@ impl Component for Status {
                 force_all,
                 self.components().as_slice(),
             );
+
+            out.push(CommandInfo::new(
+                strings::commands::open_branch_select_popup(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::status_push(&self.key_config),
+                self.can_push(),
+                true,
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::status_force_push(
+                    &self.key_config,
+                ),
+                self.can_push(),
+                true,
+            ));
         }
 
         {
@@ -394,24 +473,6 @@ impl Component for Status {
                 (self.visible && !focus_on_diff) || force_all,
             ));
         }
-
-        out.push(CommandInfo::new(
-            strings::commands::open_branch_create_popup(
-                &self.key_config,
-            ),
-            true,
-            true,
-        ));
-        out.push(CommandInfo::new(
-            strings::commands::status_push(&self.key_config),
-            self.index_wd.branch_name().is_some(),
-            true,
-        ));
-        out.push(CommandInfo::new(
-            strings::commands::status_force_push(&self.key_config),
-            self.index_wd.branch_name().is_some(),
-            true,
-        ));
 
         out.push(
             CommandInfo::new(
@@ -489,10 +550,10 @@ impl Component for Status {
                     && !self.index_wd.is_empty()
                 {
                     self.switch_focus(Focus::WorkDir)
-                } else if k == self.key_config.create_branch {
+                } else if k == self.key_config.select_branch {
                     self.queue
                         .borrow_mut()
-                        .push_back(InternalEvent::CreateBranch);
+                        .push_back(InternalEvent::SelectBranch);
                     Ok(true)
                 } else if k == self.key_config.force_push {
                     self.push(true);

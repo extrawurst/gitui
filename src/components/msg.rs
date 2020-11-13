@@ -4,15 +4,15 @@ use super::{
 };
 use crate::{keys::SharedKeyConfig, strings, ui};
 use crossterm::event::Event;
-use std::borrow::Cow;
+use std::convert::TryFrom;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
+    text::Span,
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
 use ui::style::SharedTheme;
-
 pub struct MsgComponent {
     title: String,
     msg: String,
@@ -32,21 +32,41 @@ impl DrawableComponent for MsgComponent {
         if !self.visible {
             return Ok(());
         }
-        let txt = vec![Text::Raw(Cow::from(self.msg.as_str()))];
 
-        let area = ui::centered_rect_absolute(65, 25, f.size());
+        // determine the maximum width of text block
+        let lens = self
+            .msg
+            .split('\n')
+            .map(str::len)
+            .collect::<Vec<usize>>();
+        let mut max = lens.iter().max().expect("max") + 2;
+        if max > std::u16::MAX as usize {
+            max = std::u16::MAX as usize;
+        }
+        let mut width =
+            u16::try_from(max).expect("cant fail due to check above");
+        // dont overflow screen, and dont get too narrow
+        if width > f.size().width {
+            width = f.size().width
+        } else if width < 60 {
+            width = 60
+        }
+
+        let area = ui::centered_rect_absolute(width, 25, f.size());
         f.render_widget(Clear, area);
         f.render_widget(
-            Paragraph::new(txt.iter())
+            Paragraph::new(self.msg.clone())
                 .block(
                     Block::default()
-                        .title(self.title.as_str())
-                        .title_style(self.theme.text_danger())
+                        .title(Span::styled(
+                            self.title.as_str(),
+                            self.theme.text_danger(),
+                        ))
                         .borders(Borders::ALL)
                         .border_type(BorderType::Thick),
                 )
                 .alignment(Alignment::Left)
-                .wrap(true),
+                .wrap(Wrap { trim: true }),
             area,
         );
 

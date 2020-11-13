@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use asyncgit::StatusItem;
 use std::{
     collections::BTreeSet,
@@ -75,9 +75,7 @@ impl FileTreeItem {
                 ),
                 kind: FileTreeItemKind::File(item.clone()),
             }),
-            None => {
-                Err(anyhow::anyhow!("invalid file name {:?}", item))
-            }
+            None => bail!("invalid file name {:?}", item),
         }
     }
 
@@ -102,10 +100,7 @@ impl FileTreeItem {
                     collapsed,
                 )),
             }),
-
-            None => Err(anyhow::anyhow!(
-                "failed to create item from path"
-            )),
+            None => bail!("failed to create item from path"),
         }
     }
 }

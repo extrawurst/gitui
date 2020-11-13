@@ -14,13 +14,11 @@ pub struct LogEntry {
 
 impl From<CommitInfo> for LogEntry {
     fn from(c: CommitInfo) -> Self {
-        let hash = c.id.to_string().chars().take(7).collect();
-
         Self {
             author: c.author,
             msg: c.message,
             time: time_to_string(c.time, true),
-            hash_short: hash,
+            hash_short: c.id.get_short_string(),
             id: c.id,
         }
     }

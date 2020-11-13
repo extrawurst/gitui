@@ -18,35 +18,34 @@ pub type SharedTheme = Rc<Theme>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Theme {
-    #[serde(with = "ColorDef")]
     selected_tab: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     command_fg: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     selection_bg: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     cmdbar_extra_lines_bg: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     disabled_fg: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_line_add: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_line_delete: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_file_added: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_file_removed: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_file_moved: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_file_modified: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     commit_hash: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     commit_time: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     commit_author: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     danger_fg: Color,
 }
 
@@ -65,15 +64,31 @@ impl Theme {
 
     pub fn title(&self, focused: bool) -> Style {
         if focused {
-            Style::default().modifier(Modifier::BOLD)
+            Style::default().add_modifier(Modifier::BOLD)
         } else {
             Style::default().fg(self.disabled_fg)
         }
     }
 
+    pub fn branch(&self, selected: bool, head: bool) -> Style {
+        let branch = if head {
+            Style::default().add_modifier(Modifier::BOLD)
+        } else {
+            Style::default()
+        };
+
+        if selected {
+            branch.patch(Style::default().bg(self.selection_bg))
+        } else {
+            branch
+        }
+    }
+
     pub fn tab(&self, selected: bool) -> Style {
         if selected {
-            self.text(true, false).modifier(Modifier::UNDERLINED)
+            self.text(true, false)
+                .fg(Color::White)
+                .add_modifier(Modifier::UNDERLINED)
         } else {
             self.text(false, false)
         }
@@ -82,7 +97,7 @@ impl Theme {
     pub fn tags(&self, selected: bool) -> Style {
         Style::default()
             .fg(self.selected_tab)
-            .modifier(Modifier::BOLD)
+            .add_modifier(Modifier::BOLD)
             .bg(if selected {
                 self.selection_bg
             } else {
@@ -120,11 +135,7 @@ impl Theme {
         self.apply_select(style, selected)
     }
 
-    const fn apply_select(
-        &self,
-        style: Style,
-        selected: bool,
-    ) -> Style {
+    fn apply_select(&self, style: Style, selected: bool) -> Style {
         if selected {
             style.bg(self.selection_bg)
         } else {
@@ -162,7 +173,7 @@ impl Theme {
             }
             DiffLineType::Header => Style::default()
                 .fg(self.disabled_fg)
-                .modifier(Modifier::BOLD),
+                .add_modifier(Modifier::BOLD),
             DiffLineType::None => Style::default().fg(if selected {
                 self.command_fg
             } else {
@@ -267,30 +278,4 @@ impl Default for Theme {
             danger_fg: Color::Red,
         }
     }
-}
-
-/// we duplicate the Color definition from `tui` crate to implement Serde serialisation
-/// this enum can be removed once [tui-#292](https://github.com/fdehau/tui-rs/issues/292) is resolved
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-#[serde(remote = "Color")]
-enum ColorDef {
-    Reset,
-    Black,
-    Red,
-    Green,
-    Yellow,
-    Blue,
-    Magenta,
-    Cyan,
-    Gray,
-    DarkGray,
-    LightRed,
-    LightGreen,
-    LightYellow,
-    LightBlue,
-    LightMagenta,
-    LightCyan,
-    White,
-    Rgb(u8, u8, u8),
-    Indexed(u8),
 }
