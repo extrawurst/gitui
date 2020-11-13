@@ -23,7 +23,6 @@ use crossterm::event::Event;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Style},
     text::Span,
     widgets::{Block, BorderType, Borders, Clear, Gauge},
     Frame,
@@ -188,12 +187,7 @@ impl DrawableComponent for PushComponent {
                             .border_type(BorderType::Thick)
                             .border_style(self.theme.block(true)),
                     )
-                    .gauge_style(
-                        //TODO: use theme
-                        Style::default()
-                            .fg(Color::White)
-                            .bg(Color::Black),
-                    )
+                    .gauge_style(self.theme.push_gauge())
                     .percent(u16::from(progress)),
                 area,
             );
