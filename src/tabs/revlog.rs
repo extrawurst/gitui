@@ -200,21 +200,7 @@ impl Component for Revlog {
                 self.update()?;
                 return Ok(true);
             } else if let Event::Key(k) = ev {
-                if k == self.key_config.enter {
-                    self.commit_details.toggle_visible()?;
-                    self.update()?;
-                    return Ok(true);
-                } else if k == self.key_config.log_tag_commit {
-                    return self.selected_commit().map_or(
-                        Ok(false),
-                        |id| {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::TagCommit(id),
-                            );
-                            Ok(true)
-                        },
-                    );
-                } else if k == self.key_config.focus_right
+                if k == self.key_config.focus_right
                     && self.commit_details.is_visible()
                 {
                     return self.selected_commit().map_or(
@@ -231,6 +217,26 @@ impl Component for Revlog {
                             Ok(true)
                         },
                     );
+                } else if k == self.key_config.enter
+                    || k == self.key_config.focus_right
+                {
+                    self.commit_details.toggle_visible()?;
+                    self.update()?;
+                    return Ok(true);
+                } else if k == self.key_config.log_tag_commit {
+                    return self.selected_commit().map_or(
+                        Ok(false),
+                        |id| {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::TagCommit(id),
+                            );
+                            Ok(true)
+                        },
+                    );
+                } else if k == self.key_config.focus_left
+                    && self.commit_details.is_visible()
+                {
+                    self.commit_details.hide();
                 } else if k == self.key_config.select_branch {
                     self.queue
                         .borrow_mut()
