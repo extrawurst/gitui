@@ -47,6 +47,10 @@ pub struct Theme {
     commit_author: Color,
     #[serde(with = "Color")]
     danger_fg: Color,
+    #[serde(with = "Color")]
+    push_gauge_bg: Color,
+    #[serde(with = "Color")]
+    push_gauge_fg: Color,
 }
 
 impl Theme {
@@ -220,6 +224,12 @@ impl Theme {
         )
     }
 
+    pub fn push_gauge(&self) -> Style {
+        Style::default()
+            .fg(self.push_gauge_fg)
+            .bg(self.push_gauge_bg)
+    }
+
     fn save(&self) -> Result<()> {
         let theme_file = Self::get_theme_file()?;
         let mut file = File::create(theme_file)?;
@@ -276,6 +286,8 @@ impl Default for Theme {
             commit_time: Color::LightCyan,
             commit_author: Color::Green,
             danger_fg: Color::Red,
+            push_gauge_bg: Color::White,
+            push_gauge_fg: Color::Red,
         }
     }
 }
