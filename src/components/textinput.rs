@@ -142,7 +142,7 @@ impl TextInputComponent {
             .next_char_position()
             // if the cursor is at the end of the msg
             // a whitespace is used to underline
-            .map_or(" \u{200b}".to_owned(), |pos| {
+            .map_or(" ".to_owned(), |pos| {
                 self.get_msg(self.cursor_position..pos)
             });
 
