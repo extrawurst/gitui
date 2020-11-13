@@ -178,8 +178,8 @@ fn remote_callbacks<'a>(
     });
 
     let mut first_call_to_credentials = true;
-    // This boolean is used to avoid multiple call to credentials callback.
-    // If credentials are bad, we don't ask the user to re-fill his creds. We push an error and he will be able to restart his action (for example a push) and retype his creds.
+    // This boolean is used to avoid multiple calls to credentials callback.
+    // If credentials are bad, we don't ask the user to re-fill their creds. We push an error and they will be able to restart their action (for example a push) and retype their creds.
     // This behavior is explained in a issue on git2-rs project : https://github.com/rust-lang/git2-rs/issues/347
     // An implementation reference is done in cargo : https://github.com/rust-lang/cargo/blob/9fb208dddb12a3081230a5fd8f470e01df8faa25/src/cargo/sources/git/utils.rs#L588
     // There is also a guide about libgit2 authentication : https://libgit2.org/docs/guides/authentication/
