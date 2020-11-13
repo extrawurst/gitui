@@ -29,6 +29,7 @@ pub enum Action {
     ResetHunk(String, u64),
     StashDrop(CommitId),
     DeleteBranch(String),
+    ForcePush(String, bool),
 }
 
 ///

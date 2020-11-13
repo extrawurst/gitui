@@ -6,7 +6,7 @@ use crate::{
         DiffComponent, DrawableComponent, FileTreeItemKind,
     },
     keys::SharedKeyConfig,
-    queue::{InternalEvent, Queue, ResetItem},
+    queue::{Action, InternalEvent, Queue, ResetItem},
     strings::{self, order},
     ui::style::SharedTheme,
 };
@@ -372,9 +372,17 @@ impl Status {
         if let Some(branch) = self.git_branch_name.last() {
             let branch = format!("refs/heads/{}", branch);
 
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Push(branch, force));
+            if force {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ConfirmAction(Action::ForcePush(
+                        branch, force,
+                    )),
+                );
+            } else {
+                self.queue
+                    .borrow_mut()
+                    .push_back(InternalEvent::Push(branch, force));
+            }
         }
     }
 

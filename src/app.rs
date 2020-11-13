@@ -494,6 +494,10 @@ impl App {
                         self.select_branch_popup.hide();
                     }
                 }
+                Action::ForcePush(branch, force) => self
+                    .queue
+                    .borrow_mut()
+                    .push_back(InternalEvent::Push(branch, force)),
             },
             InternalEvent::ConfirmAction(action) => {
                 self.reset.open(action)?;

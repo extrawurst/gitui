@@ -102,6 +102,20 @@ pub fn confirm_msg_delete_branch(
 ) -> String {
     format!("Confirm deleting branch: '{}' ?", branch_ref)
 }
+pub fn confirm_title_force_push(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Force Push".to_string()
+}
+pub fn confirm_msg_force_push(
+    _key_config: &SharedKeyConfig,
+    branch_ref: &str,
+) -> String {
+    format!(
+        "Confirm force push to branch '{}' ?  This may rewrite history.",
+        branch_ref
+    )
+}
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
 }
