@@ -166,7 +166,7 @@ impl ResetComponent {
                     ),
                     strings::confirm_msg_force_push(
                         &self.key_config,
-                        branch,
+                        branch.rsplit('/').next().expect("There was no / in the head reference which is impossible in git"),
                     ),
                 ),
             };
