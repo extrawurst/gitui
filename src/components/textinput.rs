@@ -141,7 +141,8 @@ impl TextInputComponent {
         }
 
         // this code with _ for the trailing cursor character needs to be revised once tui fixes
-        // it should be NBSP => const NBSP: &str = "\u{00a0}";
+        // https://github.com/fdehau/tui-rs/issues/404
+        // it should be NBSP => const EOL_CHAR: &str = "\u{00a0}";
         // ...
         let cursor_str = self
             .next_char_position()
