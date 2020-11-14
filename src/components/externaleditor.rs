@@ -75,7 +75,7 @@ impl ExternalEditorComponent {
         let mut editor = editor.split_whitespace();
 
         let command = editor.next().ok_or_else(|| {
-            anyhow!("unable to read editor command")
+            anyhow!("Environment config variable for opening an editor is empty, check \"GIT_EDITOR\", \"VISUAL\" and \"EDITOR\" environment variables are not empty.")
         })?;
 
         let mut editor: Vec<&OsStr> =
