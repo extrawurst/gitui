@@ -81,11 +81,8 @@ impl ExternalEditorComponent {
         // does not address spaces in pn
         let mut echars = editor.chars().peekable();
 
-        if editor.is_empty() {
-            return Err(anyhow!("unable to read editor command"));
-        };
-        let command: String = if editor.len() > 1
-            && *echars.peek().expect("verified length so cant fail")
+        let command: String = if
+            *echars.peek().ok_or(anyhow!("editor configuration set to empty string"))?
                 == '\"'
         {
             echars
