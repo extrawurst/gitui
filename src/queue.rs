@@ -1,3 +1,4 @@
+use crate::app::EditorSource;
 use crate::tabs::StashingOptions;
 use asyncgit::sync::{CommitId, CommitTags};
 use bitflags::bitflags;
@@ -60,7 +61,7 @@ pub enum InternalEvent {
     ///
     SelectBranch,
     ///
-    OpenExternalEditor(Option<String>),
+    OpenExternalEditor(Option<String>, EditorSource),
     ///
     Push(String),
 }

@@ -1,5 +1,6 @@
 use crate::{
     accessors,
+    app::EditorSource,
     components::{
         command_pump, event_pump, visibility_blocking,
         ChangesComponent, CommandBlocking, CommandInfo, Component,
@@ -523,9 +524,10 @@ impl Component for Status {
                 {
                     if let Some((path, _)) = self.selected_path() {
                         self.queue.borrow_mut().push_back(
-                            InternalEvent::OpenExternalEditor(Some(
-                                path,
-                            )),
+                            InternalEvent::OpenExternalEditor(
+                                Some(path),
+                                EditorSource::Commit,
+                            ),
                         );
                     }
                     Ok(true)
