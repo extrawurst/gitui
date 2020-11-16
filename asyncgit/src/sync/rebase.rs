@@ -44,7 +44,7 @@ pub fn reword(
 ///
 /// While this function is most commonly associated with doing a
 /// reword opperation in an interactive rebase, that is not how it
-/// is implimented in git2rs
+/// is implemented in git2rs
 ///
 /// This is dangerous if it errors, as the head will be detached so this should
 /// always be wrapped by another function which aborts the rebase if something goes wrong
