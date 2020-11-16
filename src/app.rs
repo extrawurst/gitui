@@ -16,7 +16,7 @@ use crate::{
     tabs::{Revlog, StashList, Stashing, Status},
     ui::style::{SharedTheme, Theme},
 };
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
@@ -35,7 +35,7 @@ use tui::{
 
 /// Used to determine where the user should
 /// be put when the external editor is closed
-pub enum EditorVisible {
+pub enum EditorSource {
     Commit,
     Reword,
 }
@@ -66,11 +66,10 @@ pub struct App {
     theme: SharedTheme,
     key_config: SharedKeyConfig,
     input: Input,
-    cur_editor_visible: EditorVisible,
+    external_editor: Option<(Option<String>, EditorSource)>,
 
     // "Flags"
     requires_redraw: Cell<bool>,
-    file_to_open: Option<String>,
 }
 
 // public interface
@@ -182,8 +181,7 @@ impl App {
             theme,
             key_config,
             requires_redraw: Cell::new(false),
-            file_to_open: None,
-            cur_editor_visible: EditorVisible::Commit,
+            external_editor: None,
         }
     }
 
@@ -266,21 +264,41 @@ impl App {
         } else if let InputEvent::State(polling_state) = ev {
             self.external_editor_popup.hide();
             if let InputState::Paused = polling_state {
-                let result = match self.file_to_open.take() {
+                let result = if let Some(ee) = &self.external_editor {
+                    match ee.0 {
+                        Some(path) => {
+                            ExternalEditorComponent::open_file_in_editor(
+                                Path::new(&path)
+                            )
+                        },
+                        None => match ee.1 {
+                            EditorSource::Commit => {
+                                self.commit.show_editor()
+                            }
+                            EditorSource::Reword => {
+                                self.reword_popup.show_editor()
+                            }
+                        },
+                    }
+                } else {
+                    Err(anyhow!("There was no editor path or return path selected, the app external editor was set to null, put in a bug report at https://github.com/extrawurst/gitui and detail what you tried to do, this is most likely an error"))
+                };
+
+                /*let result = match self.file_to_open.take() {
                     Some(path) => {
                         ExternalEditorComponent::open_file_in_editor(
                             Path::new(&path),
                         )
                     }
-                    None => match self.cur_editor_visible {
-                        EditorVisible::Commit => {
+                    None => match self.external_editor {
+                        Some(Some(p), EditorSource::Commit) => {
                             self.commit.show_editor()
                         }
-                        EditorVisible::Reword => {
+                        EditorSource::Reword => {
                             self.reword_popup.show_editor()
                         }
                     },
-                };
+                };*/
 
                 if let Err(e) = result {
                     let msg =
@@ -530,7 +548,10 @@ impl App {
             }
             InternalEvent::Update(u) => flags.insert(u),
             InternalEvent::OpenCommit => {
-                self.cur_editor_visible = EditorVisible::Commit;
+                self.external_editor =
+                    Some((None, EditorSource::Commit));
+
+                // self.cur_editor_visible = EditorSource::Commit;
                 self.commit.show()?;
             }
             InternalEvent::PopupStashing(opts) => {
@@ -541,7 +562,8 @@ impl App {
                 self.tag_commit_popup.open(id)?;
             }
             InternalEvent::RewordCommit(id) => {
-                self.cur_editor_visible = EditorVisible::Reword;
+                self.external_editor =
+                    Some((None, EditorSource::Reword));
                 self.reword_popup.open(id)?;
             }
             InternalEvent::CreateBranch => {
@@ -559,10 +581,12 @@ impl App {
                 self.inspect_commit_popup.open(id, tags)?;
                 flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
             }
-            InternalEvent::OpenExternalEditor(path) => {
+            InternalEvent::OpenExternalEditor(
+                path,
+                editor_source,
+            ) => {
                 self.input.set_polling(false);
                 self.external_editor_popup.show()?;
-                self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
             }
             InternalEvent::Push(branch) => {

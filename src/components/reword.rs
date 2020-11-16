@@ -4,6 +4,7 @@ use super::{
     ExternalEditorComponent,
 };
 use crate::{
+    app::EditorSource,
     get_app_config_path,
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
@@ -82,7 +83,10 @@ impl Component for RewordComponent {
                     self.reword()
                 } else if e == self.key_config.open_commit_editor {
                     self.queue.borrow_mut().push_back(
-                        InternalEvent::OpenExternalEditor(None),
+                        InternalEvent::OpenExternalEditor(
+                            None,
+                            EditorSource::Reword,
+                        ),
                     );
                     self.hide();
                 }
