@@ -265,7 +265,7 @@ impl App {
             self.external_editor_popup.hide();
             if let InputState::Paused = polling_state {
                 let result = if let Some(ee) = &self.external_editor {
-                    match ee.0 {
+                    match &ee.0 {
                         Some(path) => {
                             ExternalEditorComponent::open_file_in_editor(
                                 Path::new(&path)
@@ -582,8 +582,8 @@ impl App {
                 flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
             }
             InternalEvent::OpenExternalEditor(
-                path,
-                editor_source,
+                _path,
+                _editor_source,
             ) => {
                 self.input.set_polling(false);
                 self.external_editor_popup.show()?;
