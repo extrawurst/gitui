@@ -85,6 +85,16 @@ makepkg -si
 sudo dnf install gitui
 ```
 
+### Gentoo
+
+Available in [dm9pZCAq overlay](https://github.com/gentoo-mirror/dm9pZCAq)
+
+```sh
+sudo eselect repository enable dm9pZCAq
+sudo emerge --sync dm9pZCAq
+sudo emerge dev-vcs/gitui::dm9pZCAq
+```
+
 ### Homebrew (macOS)
 
 ```sh
