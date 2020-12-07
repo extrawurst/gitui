@@ -270,10 +270,7 @@ impl DetailsComponent {
         }
     }
 
-    fn move_scroll_top(
-        &mut self,
-        move_type: ScrollType,
-    ) -> Result<bool> {
+    fn move_scroll_top(&mut self, move_type: ScrollType) -> bool {
         if self.data.is_some() {
             let old = self.scroll_top.get();
             let width = self.current_size.get().0 as usize;
@@ -292,14 +289,14 @@ impl DetailsComponent {
             };
 
             if new_scroll_top > max {
-                return Ok(false);
+                return false;
             }
 
             self.scroll_top.set(new_scroll_top);
 
-            return Ok(true);
+            return true;
         }
-        Ok(false)
+        false
     }
 }
 
@@ -396,7 +393,7 @@ impl Component for DetailsComponent {
     fn event(&mut self, event: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = event {
-                return if e == self.key_config.move_up {
+                return Ok(if e == self.key_config.move_up {
                     self.move_scroll_top(ScrollType::Up)
                 } else if e == self.key_config.move_down {
                     self.move_scroll_top(ScrollType::Down)
@@ -409,8 +406,8 @@ impl Component for DetailsComponent {
                 {
                     self.move_scroll_top(ScrollType::End)
                 } else {
-                    Ok(false)
-                };
+                    false
+                });
             }
         }
 
