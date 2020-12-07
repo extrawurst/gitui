@@ -81,10 +81,10 @@ impl ExternalEditorComponent {
         // does not address spaces in pn
         let mut echars = editor.chars().peekable();
 
-        let command: String = if *echars.peek().ok_or_else(|| {
+        let first_char = *echars.peek().ok_or_else(|| {
             anyhow!("editor configuration set to empty string")
-        })? == '\"'
-        {
+        })?;
+        let command: String = if first_char == '\"' {
             echars
                 .by_ref()
                 .skip(1)
