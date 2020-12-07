@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - added windows scoop recipe ([#164](https://github.com/extrawurst/gitui/issues/164))
 - added gitui to [chocolatey](https://chocolatey.org/packages/gitui) on windows by [@nils-a](https://github.com/nils-a)
+- added gitui gentoo instructions to readme [[@dm9pZCAq](https://github.com/dm9pZCAq)] ([#430](https://github.com/extrawurst/gitui/pull/430))
 - added windows installer (msi) to release [[@pm100](https://github.com/pm100)] ([#360](https://github.com/extrawurst/gitui/issues/360))
 - push to remote ([#265](https://github.com/extrawurst/gitui/issues/265)) ([#267](https://github.com/extrawurst/gitui/issues/267))
 
@@ -35,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - remove workaround for color serialization [[@1wilkens](https://github.com/1wilkens)] ([#149](https://github.com/extrawurst/gitui/issues/149))
 - crash on small terminal size ([#307](https://github.com/extrawurst/gitui/issues/307))
 - fix vim keybindings uppercase handling [[@yanganto](https://github.com/yanganto)] ([#286](https://github.com/extrawurst/gitui/issues/286))
+- remove shift tab windows workaround [[@nils-a](https://github.com/nils-a)] ([#112](https://github.com/extrawurst/gitui/issues/112))
+- core.editor is ignored [[@pm100](https://github.com/pm100)] ([#414](https://github.com/extrawurst/gitui/issues/414))
 
 ## [0.10.1] - 2020-09-01
 
