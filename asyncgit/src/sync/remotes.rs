@@ -75,10 +75,7 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     let mut remote = repo.find_remote(DEFAULT_REMOTE_NAME)?;
 
     let mut options = FetchOptions::new();
-    options.remote_callbacks(match remote_callbacks(None, None) {
-        Ok(callback) => callback,
-        Err(e) => return Err(e),
-    });
+    options.remote_callbacks(remote_callbacks(None, None));
 
     remote.fetch(&[branch], Some(&mut options), None)?;
 
@@ -100,15 +97,10 @@ pub fn push(
 
     let mut options = PushOptions::new();
 
-    options.remote_callbacks(
-        match remote_callbacks(
-            Some(progress_sender),
-            basic_credential,
-        ) {
-            Ok(callbacks) => callbacks,
-            Err(e) => return Err(e),
-        },
-    );
+    options.remote_callbacks(remote_callbacks(
+        Some(progress_sender),
+        basic_credential,
+    ));
     options.packbuilder_parallelism(0);
 
     remote.push(&[branch], Some(&mut options))?;
@@ -119,7 +111,7 @@ pub fn push(
 fn remote_callbacks<'a>(
     sender: Option<Sender<ProgressNotification>>,
     basic_credential: Option<BasicAuthCredential>,
-) -> Result<RemoteCallbacks<'a>> {
+) -> RemoteCallbacks<'a> {
     let mut callbacks = RemoteCallbacks::new();
     let sender_clone = sender.clone();
     callbacks.push_transfer_progress(move |current, total, bytes| {
@@ -228,7 +220,7 @@ fn remote_callbacks<'a>(
         },
     );
 
-    Ok(callbacks)
+    callbacks
 }
 
 #[cfg(test)]
