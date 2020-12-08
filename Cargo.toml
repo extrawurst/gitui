@@ -39,7 +39,7 @@ ron = "0.6"
 serde = "1.0"
 anyhow = "1.0.35"
 unicode-width = "0.1"
-textwrap = "0.12"
+textwrap = "0.13"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 which = "4.0"
