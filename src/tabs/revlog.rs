@@ -151,6 +151,11 @@ impl Revlog {
         self.list.selected_entry().map(|e| e.id)
     }
 
+    fn copy_commit_hash(&self) -> Result<()> {
+        self.list.copy_entry_hash()?;
+        Ok(())
+    }
+
     fn selected_commit_tags(
         &self,
         commit: &Option<CommitId>,
@@ -203,6 +208,9 @@ impl Component for Revlog {
                 if k == self.key_config.enter {
                     self.commit_details.toggle_visible()?;
                     self.update()?;
+                    return Ok(true);
+                } else if k == self.key_config.copy {
+                    self.copy_commit_hash()?;
                     return Ok(true);
                 } else if k == self.key_config.log_tag_commit {
                     return self.selected_commit().map_or(
