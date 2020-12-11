@@ -66,11 +66,13 @@ impl ExternalEditorComponent {
             io::stdout().execute(EnterAlternateScreen).expect("reset terminal");
         }
 
-        let editor = env::var("GIT_EDITOR")
+        let environment_options = ["GIT_EDITOR", "VISUAL", "EDITOR"];
+
+        let editor = env::var(environment_options[0])
             .ok()
             .or_else(|| get_config_string(CWD, "core.editor").ok()?)
-            .or_else(|| env::var("VISUAL").ok())
-            .or_else(|| env::var("EDITOR").ok())
+            .or_else(|| env::var(environment_options[1]).ok())
+            .or_else(|| env::var(environment_options[2]).ok())
             .unwrap_or_else(|| String::from("vi"));
 
         // TODO: proper handling arguments containing whitespaces
@@ -82,7 +84,10 @@ impl ExternalEditorComponent {
         let mut echars = editor.chars().peekable();
 
         let first_char = *echars.peek().ok_or_else(|| {
-            anyhow!("editor configuration set to empty string")
+            anyhow!(
+                "editor env variable found empty: {}",
+                environment_options.join(" or ")
+            )
         })?;
         let command: String = if first_char == '\"' {
             echars
