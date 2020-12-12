@@ -44,6 +44,7 @@ textwrap = "0.13"
 [target.'cfg(target_os = "linux")'.dependencies]
 which = "4.0"
 
+# pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.3", features = ["flamegraph"], optional = true }
 
@@ -64,3 +65,9 @@ members=[
 lto = true
 opt-level = 'z'  # Optimize for size.
 codegen-units = 1
+
+# make debug build as fast as release 
+# usage of utf8 encoding inside tui 
+# makes their debug profile slow
+[profile.dev.package."tui"]
+opt-level = 3
