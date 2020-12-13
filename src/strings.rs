@@ -286,6 +286,13 @@ pub mod commands {
             CMD_GROUP_DIFF,
         )
     }
+    pub fn copy_hash(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!("Copy Hash [{}]", get_hint(key_config.copy),),
+            "copy selected commit hash to clipboard",
+            CMD_GROUP_DIFF,
+        )
+    }
     pub fn diff_home_end(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
