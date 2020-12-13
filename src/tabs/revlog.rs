@@ -287,6 +287,12 @@ impl Component for Revlog {
             self.visible || force_all,
         ));
 
+        out.push(CommandInfo::new(
+            strings::commands::copy_hash(&self.key_config),
+            true,
+            self.visible || force_all,
+        ));
+
         visibility_blocking(self)
     }
 
