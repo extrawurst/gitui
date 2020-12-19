@@ -396,15 +396,15 @@ impl Component for DetailsComponent {
     fn event(&mut self, event: Event) -> Result<bool> {
         if self.focused {
             if let Event::Mouse(mouse_ev) = event {
-                return match mouse_ev {
+                return Ok(match mouse_ev {
                     ScrollUp(_col, _row, _key_modifiers) => {
                         self.move_scroll_top(ScrollType::Up)
                     }
                     ScrollDown(_col, _row, _key_modifiers) => {
                         self.move_scroll_top(ScrollType::Down)
                     }
-                    _ => Ok(false),
-                };
+                    _ => false,
+                });
             } else if let Event::Key(e) = event {
                 return Ok(if e == self.key_config.move_up {
                     self.move_scroll_top(ScrollType::Up)
