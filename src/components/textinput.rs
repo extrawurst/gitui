@@ -170,7 +170,7 @@ impl TextInputComponent {
             txt = text_append(
                 txt,
                 Text::styled(
-                    substitute.clone(),
+                    substitute.to_owned(),
                     self.theme
                         .text(false, false)
                         .add_modifier(Modifier::UNDERLINED),
@@ -413,8 +413,8 @@ mod tests {
             "",
         );
         let theme = SharedTheme::default();
-        let underlined = theme
-            .text(true, false)
+        let underlined_whitespace = theme
+            .text(false, false)
             .add_modifier(Modifier::UNDERLINED);
 
         let not_underlined = Style::default();
@@ -430,8 +430,11 @@ mod tests {
             get_style(&txt.lines[0].0[0]),
             Some(&not_underlined)
         );
-        assert_eq!(get_text(&txt.lines[0].0[1]), Some(" "));
-        assert_eq!(get_style(&txt.lines[0].0[1]), Some(&underlined));
+        assert_eq!(get_text(&txt.lines[0].0[1]), Some("\u{00B7}"));
+        assert_eq!(
+            get_style(&txt.lines[0].0[1]),
+            Some(&underlined_whitespace)
+        );
     }
 
     #[test]
