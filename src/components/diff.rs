@@ -640,15 +640,15 @@ impl Component for DiffComponent {
                     ScrollUp(_col, _row, key_modifiers) => {
                         match key_modifiers {
                             KeyModifiers::SHIFT => {
-                                self.modify_selection(Direction::Up)?;
+                                self.modify_selection(Direction::Up);
                             }
                             KeyModifiers::CONTROL => {
-                                self.modify_selection(Direction::Up)?;
-                                self.modify_selection(Direction::Up)?;
-                                self.modify_selection(Direction::Up)?;
+                                self.modify_selection(Direction::Up);
+                                self.modify_selection(Direction::Up);
+                                self.modify_selection(Direction::Up);
                             }
                             KeyModifiers::NONE => {
-                                self.move_selection(ScrollType::Up)?;
+                                self.move_selection(ScrollType::Up);
                             }
                             _ => {}
                         };
@@ -657,22 +657,22 @@ impl Component for DiffComponent {
                     ScrollDown(_col, _row, key_modifiers) => {
                         match key_modifiers {
                             KeyModifiers::SHIFT => self
-                                .modify_selection(Direction::Down)?,
+                                .modify_selection(Direction::Down),
                             KeyModifiers::CONTROL => {
                                 self.modify_selection(
                                     Direction::Down,
-                                )?;
+                                );
                                 self.modify_selection(
                                     Direction::Down,
-                                )?;
+                                );
                                 self.modify_selection(
                                     Direction::Down,
-                                )?;
+                                );
                             }
                             KeyModifiers::NONE => {
                                 self.move_selection(
                                     ScrollType::Down,
-                                )?;
+                                );
                             }
                             _ => {}
                         };
