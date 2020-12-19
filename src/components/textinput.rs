@@ -11,7 +11,7 @@ use crate::{
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
-use std::ops::Range;
+use std::{collections::HashMap, ops::Range};
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -157,11 +157,20 @@ impl TextInputComponent {
                 self.get_msg(self.cursor_position..pos)
             });
 
-        if cursor_str == "\n" {
+        let cursor_highlighting = {
+            let mut h = HashMap::with_capacity(2);
+            h.insert("\n", "\u{21b5}\n\r");
+            h.insert(" ", "\u{00B7}");
+            h
+        };
+
+        if let Some(substitute) =
+            cursor_highlighting.get(cursor_str.as_str())
+        {
             txt = text_append(
                 txt,
                 Text::styled(
-                    "\u{21b5}\n\r",
+                    substitute.clone(),
                     self.theme
                         .text(false, false)
                         .add_modifier(Modifier::UNDERLINED),
