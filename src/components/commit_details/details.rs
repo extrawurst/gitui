@@ -5,7 +5,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     strings::{self, order},
-    ui::style::SharedTheme,
+    ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -17,16 +17,16 @@ use crossterm::event::{
     MouseEvent::{ScrollDown, ScrollUp},
 };
 use itertools::Itertools;
+use std::clone::Clone;
 use std::{borrow::Cow, cell::Cell};
 use sync::CommitTags;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    widgets::Text,
+    text::{Span, Spans, Text},
     Frame,
 };
-
 enum Detail {
     Author,
     Date,
@@ -125,7 +125,7 @@ impl DetailsComponent {
 
     fn get_theme_for_line(&self, bold: bool) -> Style {
         if bold {
-            self.theme.text(true, false).modifier(Modifier::BOLD)
+            self.theme.text(true, false).add_modifier(Modifier::BOLD)
         } else {
             self.theme.text(true, false)
         }
@@ -135,12 +135,7 @@ impl DetailsComponent {
         &self,
         width: usize,
         height: usize,
-    ) -> Vec<Text> {
-        let newline = Text::Styled(
-            String::from("\n").into(),
-            self.theme.text(true, false),
-        );
-
+    ) -> Vec<Spans> {
         let (wrapped_title, wrapped_message) =
             self.get_wrapped_lines(width);
 
@@ -151,36 +146,35 @@ impl DetailsComponent {
             .skip(self.scroll_top.get())
             .take(height)
             .map(|(i, line)| {
-                Text::Styled(
+                Spans::from(vec![Span::styled(
                     line.clone(),
                     self.get_theme_for_line(i < wrapped_title.len()),
-                )
+                )])
             })
-            .intersperse(newline)
             .collect()
     }
 
-    fn style_detail(&self, field: &Detail) -> Text {
+    fn style_detail(&self, field: &Detail) -> Span {
         match field {
-            Detail::Author => Text::Styled(
+            Detail::Author => Span::styled(
                 Cow::from(strings::commit::details_author(
                     &self.key_config,
                 )),
                 self.theme.text(false, false),
             ),
-            Detail::Date => Text::Styled(
+            Detail::Date => Span::styled(
                 Cow::from(strings::commit::details_date(
                     &self.key_config,
                 )),
                 self.theme.text(false, false),
             ),
-            Detail::Commiter => Text::Styled(
+            Detail::Commiter => Span::styled(
                 Cow::from(strings::commit::details_committer(
                     &self.key_config,
                 )),
                 self.theme.text(false, false),
             ),
-            Detail::Sha => Text::Styled(
+            Detail::Sha => Span::styled(
                 Cow::from(strings::commit::details_tags(
                     &self.key_config,
                 )),
@@ -189,84 +183,88 @@ impl DetailsComponent {
         }
     }
 
-    fn get_text_info(&self) -> Vec<Text> {
-        let new_line = Text::Raw(Cow::from("\n"));
-
+    fn get_text_info(&self) -> Vec<Spans> {
         if let Some(ref data) = self.data {
             let mut res = vec![
-                self.style_detail(&Detail::Author),
-                Text::Styled(
-                    Cow::from(format!(
-                        "{} <{}>",
-                        data.author.name, data.author.email
-                    )),
-                    self.theme.text(true, false),
-                ),
-                new_line.clone(),
-                self.style_detail(&Detail::Date),
-                Text::Styled(
-                    Cow::from(time_to_string(
-                        data.author.time,
-                        false,
-                    )),
-                    self.theme.text(true, false),
-                ),
-                new_line.clone(),
-            ];
-
-            if let Some(ref committer) = data.committer {
-                res.extend(vec![
-                    self.style_detail(&Detail::Commiter),
-                    Text::Styled(
+                Spans::from(vec![
+                    self.style_detail(&Detail::Author),
+                    Span::styled(
                         Cow::from(format!(
                             "{} <{}>",
-                            committer.name, committer.email
+                            data.author.name, data.author.email
                         )),
                         self.theme.text(true, false),
                     ),
-                    new_line.clone(),
+                ]),
+                Spans::from(vec![
                     self.style_detail(&Detail::Date),
-                    Text::Styled(
+                    Span::styled(
                         Cow::from(time_to_string(
-                            committer.time,
+                            data.author.time,
                             false,
                         )),
                         self.theme.text(true, false),
                     ),
-                    new_line.clone(),
+                ]),
+            ];
+
+            if let Some(ref committer) = data.committer {
+                res.extend(vec![
+                    Spans::from(vec![
+                        self.style_detail(&Detail::Commiter),
+                        Span::styled(
+                            Cow::from(format!(
+                                "{} <{}>",
+                                committer.name, committer.email
+                            )),
+                            self.theme.text(true, false),
+                        ),
+                    ]),
+                    Spans::from(vec![
+                        self.style_detail(&Detail::Date),
+                        Span::styled(
+                            Cow::from(time_to_string(
+                                committer.time,
+                                false,
+                            )),
+                            self.theme.text(true, false),
+                        ),
+                    ]),
                 ]);
             }
 
-            res.extend(vec![
-                Text::Styled(
+            res.push(Spans::from(vec![
+                Span::styled(
                     Cow::from(strings::commit::details_sha(
                         &self.key_config,
                     )),
                     self.theme.text(false, false),
                 ),
-                Text::Styled(
+                Span::styled(
                     Cow::from(data.hash.clone()),
                     self.theme.text(true, false),
                 ),
-                new_line.clone(),
-            ]);
+            ]));
 
             if !self.tags.is_empty() {
-                res.push(self.style_detail(&Detail::Sha));
-                res.extend(
+                res.push(Spans::from(
+                    self.style_detail(&Detail::Sha),
+                ));
+                res.push(Spans::from(
                     self.tags
                         .iter()
                         .map(|tag| {
-                            Text::Styled(
+                            Span::styled(
                                 Cow::from(tag),
                                 self.theme.text(true, false),
                             )
                         })
-                        .intersperse(Text::Styled(
+                        .intersperse(Span::styled(
                             Cow::from(","),
                             self.theme.text(true, false),
-                        )),
-                );
+                        ))
+                        .collect::<Vec<Span>>(),
+                ));
             }
 
             res
@@ -275,10 +273,7 @@ impl DetailsComponent {
         }
     }
 
-    fn move_scroll_top(
-        &mut self,
-        move_type: ScrollType,
-    ) -> Result<bool> {
+    fn move_scroll_top(&mut self, move_type: ScrollType) -> bool {
         if self.data.is_some() {
             let old = self.scroll_top.get();
             let width = self.current_size.get().0 as usize;
@@ -297,14 +292,14 @@ impl DetailsComponent {
             };
 
             if new_scroll_top > max {
-                return Ok(false);
+                return false;
             }
 
             self.scroll_top.set(new_scroll_top);
 
-            return Ok(true);
+            return true;
         }
-        Ok(false)
+        false
     }
 }
 
@@ -326,7 +321,7 @@ impl DrawableComponent for DetailsComponent {
                 &strings::commit::details_info_title(
                     &self.key_config,
                 ),
-                self.get_text_info().iter(),
+                Text::from(self.get_text_info()),
                 &self.theme,
                 false,
             ),
@@ -352,12 +347,22 @@ impl DrawableComponent for DetailsComponent {
                 &strings::commit::details_message_title(
                     &self.key_config,
                 ),
-                wrapped_lines.iter(),
+                Text::from(wrapped_lines),
                 &self.theme,
                 self.focused,
             ),
             chunks[1],
         );
+
+        if self.focused {
+            ui::draw_scrollbar(
+                f,
+                chunks[1],
+                &self.theme,
+                self.get_number_of_lines(width as usize),
+                self.scroll_top.get(),
+            )
+        }
 
         Ok(())
     }
@@ -401,7 +406,7 @@ impl Component for DetailsComponent {
                     _ => Ok(false),
                 };
             } else if let Event::Key(e) = event {
-                return if e == self.key_config.move_up {
+                return Ok(if e == self.key_config.move_up {
                     self.move_scroll_top(ScrollType::Up)
                 } else if e == self.key_config.move_down {
                     self.move_scroll_top(ScrollType::Down)
@@ -414,8 +419,8 @@ impl Component for DetailsComponent {
                 {
                     self.move_scroll_top(ScrollType::End)
                 } else {
-                    Ok(false)
-                };
+                    false
+                });
             }
         }
 

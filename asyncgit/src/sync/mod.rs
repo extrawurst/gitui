@@ -1,10 +1,14 @@
 //! sync git api
 
+//TODO: remove once we have this activated on the toplevel
+#![deny(clippy::expect_used)]
+
 mod branch;
 mod commit;
 mod commit_details;
 mod commit_files;
 mod commits_info;
+pub mod cred;
 pub mod diff;
 mod hooks;
 mod hunks;
@@ -17,8 +21,12 @@ pub mod status;
 mod tags;
 pub mod utils;
 
-pub use branch::create_branch;
 pub(crate) use branch::get_branch_name;
+pub use branch::{
+    branch_compare_upstream, checkout_branch, create_branch,
+    delete_branch, get_branches_to_display, rename_branch,
+    BranchCompare, BranchForDisplay,
+};
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
     get_commit_details, CommitDetails, CommitMessage,
@@ -26,12 +34,15 @@ pub use commit_details::{
 pub use commit_files::get_commit_files;
 pub use commits_info::{get_commits_info, CommitId, CommitInfo};
 pub use diff::get_diff_commit;
-pub use hooks::{hooks_commit_msg, hooks_post_commit, HookResult};
+pub use hooks::{
+    hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,
+};
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
 pub use remotes::{
     fetch_origin, get_remotes, push, ProgressNotification,
+    DEFAULT_REMOTE_NAME,
 };
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};

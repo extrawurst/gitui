@@ -151,6 +151,11 @@ impl Revlog {
         self.list.selected_entry().map(|e| e.id)
     }
 
+    fn copy_commit_hash(&self) -> Result<()> {
+        self.list.copy_entry_hash()?;
+        Ok(())
+    }
+
     fn selected_commit_tags(
         &self,
         commit: &Option<CommitId>,
@@ -204,6 +209,9 @@ impl Component for Revlog {
                     self.commit_details.toggle_visible()?;
                     self.update()?;
                     return Ok(true);
+                } else if k == self.key_config.copy {
+                    self.copy_commit_hash()?;
+                    return Ok(true);
                 } else if k == self.key_config.log_tag_commit {
                     return self.selected_commit().map_or(
                         Ok(false),
@@ -231,10 +239,10 @@ impl Component for Revlog {
                             Ok(true)
                         },
                     );
-                } else if k == self.key_config.create_branch {
+                } else if k == self.key_config.select_branch {
                     self.queue
                         .borrow_mut()
-                        .push_back(InternalEvent::CreateBranch);
+                        .push_back(InternalEvent::SelectBranch);
                     return Ok(true);
                 }
             }
@@ -272,9 +280,15 @@ impl Component for Revlog {
         ));
 
         out.push(CommandInfo::new(
-            strings::commands::open_branch_create_popup(
+            strings::commands::open_branch_select_popup(
                 &self.key_config,
             ),
+            true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::copy_hash(&self.key_config),
             true,
             self.visible || force_all,
         ));

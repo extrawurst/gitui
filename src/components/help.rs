@@ -3,6 +3,7 @@ use super::{
     DrawableComponent,
 };
 use crate::{keys::SharedKeyConfig, strings, ui, version::Version};
+use anyhow::Result;
 use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -11,11 +12,10 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Text},
+    text::{Span, Spans},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
-
-use anyhow::Result;
 use ui::style::SharedTheme;
 
 ///
@@ -45,7 +45,7 @@ impl DrawableComponent for HelpComponent {
             f.render_widget(Clear, area);
             f.render_widget(
                 Block::default()
-                    .title(&strings::help_title(&self.key_config))
+                    .title(strings::help_title(&self.key_config))
                     .borders(Borders::ALL)
                     .border_type(BorderType::Thick),
                 area,
@@ -62,23 +62,17 @@ impl DrawableComponent for HelpComponent {
                 .split(area);
 
             f.render_widget(
-                Paragraph::new(self.get_text().iter())
-                    .scroll(scroll)
+                Paragraph::new(self.get_text())
+                    .scroll((scroll, 0))
                     .alignment(Alignment::Left),
                 chunks[0],
             );
 
             f.render_widget(
-                Paragraph::new(
-                    vec![Text::Styled(
-                        Cow::from(format!(
-                            "gitui {}",
-                            Version::new(),
-                        )),
-                        Style::default(),
-                    )]
-                    .iter(),
-                )
+                Paragraph::new(Spans::from(vec![Span::styled(
+                    Cow::from(format!("gitui {}", Version::new(),)),
+                    Style::default(),
+                )]))
                 .alignment(Alignment::Right),
                 chunks[1],
             );
@@ -209,50 +203,43 @@ impl HelpComponent {
         }
     }
 
-    fn get_text(&self) -> Vec<Text> {
-        let mut txt = Vec::new();
+    fn get_text(&self) -> Vec<Spans> {
+        let mut txt: Vec<Spans> = Vec::new();
 
         let mut processed = 0_u16;
 
         for (key, group) in
             &self.cmds.iter().group_by(|e| e.text.group)
         {
-            txt.push(Text::Styled(
-                Cow::from(format!("{}\n", key)),
-                Style::default().modifier(Modifier::REVERSED),
-            ));
+            txt.push(Spans::from(Span::styled(
+                Cow::from(key.to_string()),
+                Style::default().add_modifier(Modifier::REVERSED),
+            )));
 
-            txt.extend(
-                group
-                    .sorted_by_key(|e| e.order)
-                    .map(|e| {
-                        let is_selected = self.selection == processed;
+            for command_info in group {
+                let is_selected = self.selection == processed;
 
-                        processed += 1;
+                processed += 1;
 
-                        let mut out = String::from(if is_selected {
-                            ">"
-                        } else {
-                            " "
-                        });
+                txt.push(Spans::from(Span::styled(
+                    Cow::from(if is_selected {
+                        format!(">{}", command_info.text.name)
+                    } else {
+                        format!(" {}", command_info.text.name)
+                    }),
+                    self.theme.text(true, is_selected),
+                )));
 
-                        e.print(&mut out);
-                        out.push('\n');
-
-                        if is_selected {
-                            out.push_str(
-                                format!("  {}\n", e.text.desc)
-                                    .as_str(),
-                            );
-                        }
-
-                        Text::Styled(
-                            Cow::from(out),
-                            self.theme.text(true, is_selected),
-                        )
-                    })
-                    .collect::<Vec<_>>(),
-            );
+                if is_selected {
+                    txt.push(Spans::from(Span::styled(
+                        Cow::from(format!(
+                            "  {}\n",
+                            command_info.text.desc
+                        )),
+                        self.theme.text(true, is_selected),
+                    )));
+                }
+            }
         }
 
         txt

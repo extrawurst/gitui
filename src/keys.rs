@@ -23,7 +23,6 @@ pub struct KeyConfig {
     pub tab_stashes: KeyEvent,
     pub tab_toggle: KeyEvent,
     pub tab_toggle_reverse: KeyEvent,
-    pub tab_toggle_reverse_windows: KeyEvent,
     pub focus_workdir: KeyEvent,
     pub focus_stage: KeyEvent,
     pub focus_right: KeyEvent,
@@ -60,6 +59,9 @@ pub struct KeyConfig {
     pub commit_amend: KeyEvent,
     pub copy: KeyEvent,
     pub create_branch: KeyEvent,
+    pub rename_branch: KeyEvent,
+    pub select_branch: KeyEvent,
+    pub delete_branch: KeyEvent,
     pub push: KeyEvent,
     pub fetch: KeyEvent,
 }
@@ -73,8 +75,7 @@ impl Default for KeyConfig {
 			tab_stashing: KeyEvent { code: KeyCode::Char('3'), modifiers: KeyModifiers::empty()},
 			tab_stashes: KeyEvent { code: KeyCode::Char('4'), modifiers: KeyModifiers::empty()},
 			tab_toggle: KeyEvent { code: KeyCode::Tab, modifiers: KeyModifiers::empty()},
-			tab_toggle_reverse: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::empty()},
-			tab_toggle_reverse_windows: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::SHIFT},
+			tab_toggle_reverse: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::SHIFT},
 			focus_workdir: KeyEvent { code: KeyCode::Char('w'), modifiers: KeyModifiers::empty()},
 			focus_stage: KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
 			focus_right: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::empty()},
@@ -110,7 +111,10 @@ impl Default for KeyConfig {
 			log_tag_commit: KeyEvent { code: KeyCode::Char('t'), modifiers: KeyModifiers::empty()},
 			commit_amend: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
             copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
-            create_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
+            create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::NONE},
+            rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::NONE},
+            select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::NONE},
+            delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
             fetch: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
         }
@@ -153,7 +157,13 @@ impl KeyConfig {
     }
 
     pub fn init() -> Self {
-        Self::init_internal().unwrap_or_default()
+        match Self::init_internal() {
+            Ok(v) => v,
+            Err(e) => {
+                log::error!("failed loading key binding: {}", e);
+                Self::default()
+            }
+        }
     }
 }
 
@@ -225,7 +235,7 @@ fn get_modifier_hint(modifier: KeyModifiers) -> String {
         KeyModifiers::ALT => {
             "\u{2325}".to_string() //⌥
         }
-        _ => "".to_string(),
+        _ => String::new(),
     }
 }
 

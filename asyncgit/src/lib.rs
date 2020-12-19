@@ -2,10 +2,13 @@
 
 #![forbid(unsafe_code)]
 #![forbid(missing_docs)]
+#![deny(unused_imports)]
 #![deny(clippy::all)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 #![deny(clippy::perf)]
+//TODO: get this in someday since expect still leads us to crashes sometimes
+// #![deny(clippy::expect_used)]
 
 pub mod cached;
 mod commit_files;

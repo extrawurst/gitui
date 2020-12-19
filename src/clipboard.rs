@@ -1,33 +1,75 @@
 use anyhow::Result;
-#[cfg(feature = "clipboard")]
-use clipboard::{ClipboardContext, ClipboardProvider};
+#[cfg(target_os = "linux")]
+use std::ffi::OsStr;
+use std::io::Write;
+use std::process::{Command, Stdio};
 
-#[cfg(feature = "clipboard")]
-pub fn copy_string(string: String) -> Result<()> {
+fn execute_copy_command(command: Command, text: &str) -> Result<()> {
     use anyhow::anyhow;
 
-    let mut ctx: ClipboardContext = ClipboardProvider::new()
-        .map_err(|e| {
-            anyhow!("failed to get access to clipboard: {}", e)
-        })?;
-    ctx.set_contents(string).map_err(|e| {
-        anyhow!("failed to set clipboard contents: {}", e)
-    })?;
+    let mut command = command;
+
+    let mut process = command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .spawn()
+        .map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
+
+    process
+        .stdin
+        .as_mut()
+        .ok_or_else(|| anyhow!("`{:?}`", command))?
+        .write_all(text.as_bytes())
+        .map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
+
+    process
+        .wait()
+        .map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
 
     Ok(())
 }
 
-#[cfg(not(feature = "clipboard"))]
-pub fn copy_string(_string: String) -> Result<()> {
-    Ok(())
+#[cfg(target_os = "linux")]
+fn gen_command(
+    path: impl AsRef<OsStr>,
+    xclip_syntax: bool,
+) -> Command {
+    let mut c = Command::new(path);
+    if xclip_syntax {
+        c.arg("-selection");
+        c.arg("clipboard");
+    } else {
+        c.arg("--clipboard");
+    }
+    c
 }
 
-#[cfg(feature = "clipboard")]
-pub const fn is_supported() -> bool {
-    true
+#[cfg(target_os = "linux")]
+pub fn copy_string(string: &str) -> Result<()> {
+    use std::path::PathBuf;
+    use which::which;
+    let (path, xclip_syntax) = which("xclip").ok().map_or_else(
+        || {
+            (
+                which("xsel")
+                    .ok()
+                    .unwrap_or_else(|| PathBuf::from("xsel")),
+                false,
+            )
+        },
+        |path| (path, true),
+    );
+
+    let cmd = gen_command(path, xclip_syntax);
+    execute_copy_command(cmd, string)
 }
 
-#[cfg(not(feature = "clipboard"))]
-pub fn is_supported() -> bool {
-    false
+#[cfg(target_os = "macos")]
+pub fn copy_string(string: &str) -> Result<()> {
+    execute_copy_command(Command::new("pbcopy"), string)
+}
+
+#[cfg(windows)]
+pub fn copy_string(string: &str) -> Result<()> {
+    execute_copy_command(Command::new("clip"), string)
 }

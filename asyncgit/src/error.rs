@@ -9,6 +9,12 @@ pub enum Error {
     #[error("git: no head found")]
     NoHead,
 
+    #[error("git: remote url not found")]
+    UnknownRemote,
+
+    #[error("git: work dir error")]
+    NoWorkDir,
+
     #[error("io error:{0}")]
     Io(#[from] std::io::Error),
 

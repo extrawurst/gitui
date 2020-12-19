@@ -20,7 +20,7 @@ use crossterm::event::{
     MouseEvent::{ScrollDown, ScrollUp},
 };
 use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
-use tui::{backend::Backend, layout::Rect, widgets::Text, Frame};
+use tui::{backend::Backend, layout::Rect, text::Span, Frame};
 
 ///
 pub struct FileTreeComponent {
@@ -156,7 +156,7 @@ impl FileTreeComponent {
         width: u16,
         selected: bool,
         theme: &'b SharedTheme,
-    ) -> Option<Text<'b>> {
+    ) -> Option<Span<'b>> {
         let indent_str = if indent == 0 {
             String::from("")
         } else {
@@ -188,7 +188,7 @@ impl FileTreeComponent {
                     format!("{} {}{}", status_char, indent_str, file)
                 };
 
-                Some(Text::Styled(
+                Some(Span::styled(
                     Cow::from(txt),
                     theme.item(status_item.status, selected),
                 ))
@@ -213,7 +213,7 @@ impl FileTreeComponent {
                     )
                 };
 
-                Some(Text::Styled(
+                Some(Span::styled(
                     Cow::from(txt),
                     theme.text(true, selected),
                 ))
@@ -315,7 +315,7 @@ impl DrawableComponent for FileTreeComponent {
         r: Rect,
     ) -> Result<()> {
         if self.pending {
-            let items = vec![Text::Styled(
+            let items = vec![Span::styled(
                 Cow::from(strings::loading_text(&self.key_config)),
                 self.theme.text(false, false),
             )];
