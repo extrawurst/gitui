@@ -157,7 +157,13 @@ impl KeyConfig {
     }
 
     pub fn init() -> Self {
-        Self::init_internal().unwrap_or_default()
+        match Self::init_internal() {
+            Ok(v) => v,
+            Err(e) => {
+                log::error!("failed loading key binding: {}", e);
+                Self::default()
+            }
+        }
     }
 }
 
