@@ -94,15 +94,11 @@ pub(crate) fn branch_set_upstream(
 ) -> Result<()> {
     scope_time!("branch_set_upstream");
 
-    log::debug!("branch_set_upstream: {}", branch_name);
-
     let mut branch =
         repo.find_branch(branch_name, BranchType::Local)?;
 
-    log::debug!("branch_set_upstream: '{}'", branch.name()?.unwrap());
     if branch.upstream().is_err() {
-        let upstream_name =
-            format!("refs/remotes/origin/{}", branch_name);
+        let upstream_name = format!("remotes/origin/{}", branch_name);
         branch.set_upstream(Some(upstream_name.as_str()))?;
     }
 
