@@ -410,18 +410,16 @@ impl Status {
 
     fn check_branch_state(&mut self) {
         self.git_branch_state =
-            self.git_branch_name.last().map_or(None, |branch| {
+            self.git_branch_name.last().and_then(|branch| {
                 sync::branch_compare_upstream(CWD, branch.as_str())
-                    .map_or(None, Some)
+                    .ok()
             });
     }
 
-    const fn can_push(&self) -> bool {
-        if let Some(state) = &self.git_branch_state {
-            state.ahead > 0
-        } else {
-            true
-        }
+    fn can_push(&self) -> bool {
+        self.git_branch_state
+            .as_ref()
+            .map_or(true, |state| state.ahead > 0)
     }
 }
 
