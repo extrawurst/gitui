@@ -99,7 +99,10 @@ pub(crate) fn branch_set_upstream(
 
     if branch.upstream().is_err() {
         let upstream_name = format!("remotes/origin/{}", branch_name);
-        branch.set_upstream(Some(upstream_name.as_str()))?;
+
+        log::debug!("branch_set_upstream: {}", upstream_name);
+        let res = branch.set_upstream(Some(upstream_name.as_str()));
+        log::debug!("branch_set_upstream: {:?}", res);
     }
 
     Ok(())
