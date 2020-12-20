@@ -143,7 +143,7 @@ impl DrawableComponent for ExternalEditorComponent {
                             .border_type(BorderType::Thick)
                             .border_style(self.theme.block(true)),
                     )
-                    .style(self.theme.text_danger()),
+                    .style(self.theme.block(true)),
                 area,
             );
         }
