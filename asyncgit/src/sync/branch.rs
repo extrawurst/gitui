@@ -97,7 +97,9 @@ pub(crate) fn branch_set_upstream(
     let mut branch =
         repo.find_branch(branch_name, BranchType::Local)?;
     if branch.upstream().is_err() {
-        branch.set_upstream(Some(branch_name))?;
+        let upstream_name =
+            format!("refs/remotes/origin/{}", branch_name);
+        branch.set_upstream(Some(upstream_name.as_str()))?;
     }
 
     Ok(())
