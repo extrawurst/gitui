@@ -248,6 +248,25 @@ mod tests_create_branch {
 }
 
 #[cfg(test)]
+mod tests_branch_compare {
+    use super::*;
+    use crate::sync::tests::repo_init;
+
+    #[test]
+    fn test_smoke() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        create_branch(repo_path, "test").unwrap();
+
+        let res = branch_compare_upstream(repo_path, "test");
+
+        assert_eq!(res.is_err(), true);
+    }
+}
+
+#[cfg(test)]
 mod tests_branches {
     use super::*;
     use crate::sync::tests::repo_init;
