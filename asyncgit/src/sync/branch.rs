@@ -96,6 +96,8 @@ pub(crate) fn branch_set_upstream(
 
     let mut branch =
         repo.find_branch(branch_name, BranchType::Local)?;
+
+    log::debug!("branch_set_upstream: {}", branch.name()?.unwrap());
     if branch.upstream().is_err() {
         let upstream_name =
             format!("refs/remotes/origin/{}", branch_name);
@@ -111,6 +113,8 @@ pub fn branch_compare_upstream(
     branch: &str,
 ) -> Result<BranchCompare> {
     scope_time!("branch_compare_upstream");
+
+    log::debug!("branch_compare_upstream: {}", branch);
 
     let repo = utils::repo(repo_path)?;
 
