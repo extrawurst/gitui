@@ -4,7 +4,7 @@ use crate::{
     error::{Error, Result},
     sync::{utils, CommitId},
 };
-use git2::BranchType;
+use git2::{BranchType, Repository};
 use scopetime::scope_time;
 use utils::get_head_repo;
 
@@ -88,6 +88,25 @@ pub struct BranchCompare {
 }
 
 ///
+pub(crate) fn branch_set_upstream(
+    repo: &Repository,
+    branch_name: &str,
+) -> Result<()> {
+    scope_time!("branch_set_upstream");
+
+    let mut branch =
+        repo.find_branch(branch_name, BranchType::Local)?;
+
+    if branch.upstream().is_err() {
+        //TODO: what about other remote names
+        let upstream_name = format!("origin/{}", branch_name);
+        branch.set_upstream(Some(upstream_name.as_str()))?;
+    }
+
+    Ok(())
+}
+
+///
 pub fn branch_compare_upstream(
     repo_path: &str,
     branch: &str,
@@ -97,6 +116,7 @@ pub fn branch_compare_upstream(
     let repo = utils::repo(repo_path)?;
 
     let branch = repo.find_branch(branch, BranchType::Local)?;
+
     let upstream = branch.upstream()?;
 
     let branch_commit =

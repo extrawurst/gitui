@@ -1,6 +1,6 @@
 //!
 
-use super::CommitId;
+use super::{branch::branch_set_upstream, CommitId};
 use crate::{
     error::Result, sync::cred::BasicAuthCredential, sync::utils,
 };
@@ -90,7 +90,7 @@ pub fn push(
     basic_credential: Option<BasicAuthCredential>,
     progress_sender: Sender<ProgressNotification>,
 ) -> Result<()> {
-    scope_time!("push_origin");
+    scope_time!("push");
 
     let repo = utils::repo(repo_path)?;
     let mut remote = repo.find_remote(remote)?;
@@ -103,7 +103,11 @@ pub fn push(
     ));
     options.packbuilder_parallelism(0);
 
-    remote.push(&[branch], Some(&mut options))?;
+    let branch_name = format!("refs/heads/{}", branch);
+
+    remote.push(&[branch_name.as_str()], Some(&mut options))?;
+
+    branch_set_upstream(&repo, branch)?;
 
     Ok(())
 }
