@@ -286,8 +286,8 @@ impl Default for Theme {
             commit_time: Color::LightCyan,
             commit_author: Color::Green,
             danger_fg: Color::Red,
-            push_gauge_bg: Color::White,
-            push_gauge_fg: Color::Red,
+            push_gauge_bg: Color::Blue,
+            push_gauge_fg: Color::White,
         }
     }
 }
