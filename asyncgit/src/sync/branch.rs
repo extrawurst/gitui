@@ -119,6 +119,11 @@ pub fn branch_compare_upstream(
     let repo = utils::repo(repo_path)?;
 
     let branch = repo.find_branch(branch, BranchType::Local)?;
+
+    log::debug!(
+        "branch_compare_upstream: '{}'",
+        branch.name()?.unwrap()
+    );
     let upstream = branch.upstream()?;
 
     let branch_commit =
