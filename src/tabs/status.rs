@@ -377,8 +377,6 @@ impl Status {
 
     fn push(&self) {
         if let Some(branch) = self.git_branch_name.last() {
-            let branch = format!("refs/heads/{}", branch);
-
             self.queue
                 .borrow_mut()
                 .push_back(InternalEvent::Push(branch));

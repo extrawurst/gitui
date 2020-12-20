@@ -103,7 +103,9 @@ pub fn push(
     ));
     options.packbuilder_parallelism(0);
 
-    remote.push(&[branch], Some(&mut options))?;
+    let branch_name = format!("refs/heads/{}", branch);
+
+    remote.push(&[branch_name.as_str()], Some(&mut options))?;
 
     branch_set_upstream(&repo, branch)?;
 
