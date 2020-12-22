@@ -1,12 +1,10 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 #[cfg(target_os = "linux")]
 use std::ffi::OsStr;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
 fn execute_copy_command(command: Command, text: &str) -> Result<()> {
-    use anyhow::anyhow;
-
     let mut command = command;
 
     let mut process = command
