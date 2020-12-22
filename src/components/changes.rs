@@ -88,20 +88,20 @@ impl ChangesComponent {
                     };
 
                     return Ok(true);
-                } else {
-                    //TODO: check if we can handle the one file case with it aswell
-                    sync::stage_add_all(
-                        CWD,
-                        tree_item.info.full_path.as_str(),
-                    )?;
-
-                    return Ok(true);
                 }
-            } else {
-                let path = tree_item.info.full_path.as_str();
-                sync::reset_stage(CWD, path)?;
+
+                //TODO: check if we can handle the one file case with it aswell
+                sync::stage_add_all(
+                    CWD,
+                    tree_item.info.full_path.as_str(),
+                )?;
+
                 return Ok(true);
             }
+
+            let path = tree_item.info.full_path.as_str();
+            sync::reset_stage(CWD, path)?;
+            return Ok(true);
         }
 
         Ok(false)
