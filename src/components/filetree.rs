@@ -274,18 +274,17 @@ impl FileTreeComponent {
                 {
                     should_skip_over -= 1;
                     break;
-                } else {
-                    // There is only one item at this level (i.e only one folder in the folder),
-                    // so do fold up
+                }
 
-                    let vec_draw_text_info_len =
-                        vec_draw_text_info.len();
-                    vec_draw_text_info[vec_draw_text_info_len - 1]
-                        .name += &(String::from("/")
-                        + &tree_items[idx_temp].info.path);
-                    if index_above_select {
-                        selection_offset += 1;
-                    }
+                // There is only one item at this level (i.e only one folder in the folder),
+                // so do fold up
+
+                let vec_draw_text_info_len = vec_draw_text_info.len();
+                vec_draw_text_info[vec_draw_text_info_len - 1]
+                    .name += &(String::from("/")
+                    + &tree_items[idx_temp].info.path);
+                if index_above_select {
+                    selection_offset += 1;
                 }
             }
         }
