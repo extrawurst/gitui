@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
-#[cfg(target_os = "linux")]
+#[cfg(target_family = "unix")]
+#[cfg(not(target_os = "macos"))]
 use std::ffi::OsStr;
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -27,7 +28,7 @@ fn execute_copy_command(command: Command, text: &str) -> Result<()> {
     Ok(())
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_family = "unix", not(target_os = "macos")))]
 fn gen_command(
     path: impl AsRef<OsStr>,
     xclip_syntax: bool,
@@ -42,7 +43,7 @@ fn gen_command(
     c
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_family = "unix", not(target_os = "macos")))]
 pub fn copy_string(string: &str) -> Result<()> {
     use std::path::PathBuf;
     use which::which;
