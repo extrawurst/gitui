@@ -29,7 +29,7 @@ fn execute_copy_command(command: Command, text: &str) -> Result<()> {
     Ok(())
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(target_family = "linux")]
 fn gen_command(
     path: impl AsRef<OsStr>,
     xclip_syntax: bool,
@@ -44,7 +44,7 @@ fn gen_command(
     c
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(target_family = "linux")]
 pub fn copy_string(string: &str) -> Result<()> {
     use std::path::PathBuf;
     use which::which;
