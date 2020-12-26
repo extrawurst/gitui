@@ -231,6 +231,7 @@ impl KeyConfig {
         }
     }
 
+    //TODO: make customizable (see https://github.com/extrawurst/gitui/issues/465)
     fn get_modifier_hint(modifier: KeyModifiers) -> String {
         match modifier {
             KeyModifiers::CONTROL => "^".to_string(),
