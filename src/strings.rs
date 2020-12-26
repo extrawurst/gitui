@@ -311,7 +311,7 @@ pub mod commands {
                 key_config.get_hint(key_config.copy),
             ),
             "copy selected commit hash to clipboard",
-            CMD_GROUP_DIFF,
+            CMD_GROUP_LOG,
         )
     }
     pub fn diff_home_end(
