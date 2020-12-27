@@ -14,10 +14,10 @@ use itertools::Itertools;
 use std::{collections::HashMap, ops::Range};
 use tui::{
     backend::Backend,
-    layout::Rect,
+    layout::{Alignment, Rect},
     style::Modifier,
     text::{Spans, Text},
-    widgets::Clear,
+    widgets::{Clear, Paragraph},
     Frame,
 };
 
@@ -34,6 +34,7 @@ pub struct TextInputComponent {
     default_msg: String,
     msg: String,
     visible: bool,
+    show_char_count: bool,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
     cursor_position: usize,
@@ -47,12 +48,14 @@ impl TextInputComponent {
         key_config: SharedKeyConfig,
         title: &str,
         default_msg: &str,
+        show_char_count: bool,
     ) -> Self {
         Self {
             msg: String::new(),
             visible: false,
             theme,
             key_config,
+            show_char_count,
             title: title.to_string(),
             default_msg: default_msg.to_string(),
             cursor_position: 0,
@@ -209,6 +212,28 @@ impl TextInputComponent {
             _ => self.msg[range].to_owned(),
         }
     }
+
+    fn draw_char_count<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+        let count = self.msg.len();
+        if count > 0 {
+            let w = Paragraph::new(format!("[{} chars]", count))
+                .alignment(Alignment::Right);
+
+            let mut rect = {
+                let mut rect = r;
+                rect.y += rect.height.saturating_sub(1);
+                rect
+            };
+
+            rect.x += 1;
+            rect.width = rect.width.saturating_sub(2);
+            rect.height = rect
+                .height
+                .saturating_sub(rect.height.saturating_sub(1));
+
+            f.render_widget(w, rect);
+        }
+    }
 }
 
 // merges last line of `txt` with first of `append` so we do not generate unneeded newlines
@@ -269,6 +294,10 @@ impl DrawableComponent for TextInputComponent {
                 ),
                 area,
             );
+
+            if self.show_char_count {
+                self.draw_char_count(f, area);
+            }
         }
 
         Ok(())
@@ -369,6 +398,7 @@ mod tests {
             SharedKeyConfig::default(),
             "",
             "",
+            false,
         );
 
         comp.set_text(String::from("a\nb"));
@@ -389,6 +419,7 @@ mod tests {
             SharedKeyConfig::default(),
             "",
             "",
+            false,
         );
         let theme = SharedTheme::default();
         let underlined = theme
@@ -411,6 +442,7 @@ mod tests {
             SharedKeyConfig::default(),
             "",
             "",
+            false,
         );
         let theme = SharedTheme::default();
         let underlined_whitespace = theme
@@ -444,6 +476,7 @@ mod tests {
             SharedKeyConfig::default(),
             "",
             "",
+            false,
         );
 
         let theme = SharedTheme::default();
@@ -473,6 +506,7 @@ mod tests {
             SharedKeyConfig::default(),
             "",
             "",
+            false,
         );
 
         let theme = SharedTheme::default();
