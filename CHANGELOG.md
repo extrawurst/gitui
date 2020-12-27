@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- show used char count in input texts ([#466](https://github.com/extrawurst/gitui/issues/466))
+
+![push](assets/char_count.gif)
+
 ### Fixed
 - compilation broken on freebsd ([#461](https://github.com/extrawurst/gitui/issues/461))
 
