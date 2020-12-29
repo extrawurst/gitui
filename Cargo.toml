@@ -21,7 +21,7 @@ keywords = [
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
 asyncgit = { path = "./asyncgit", version = "0.11" }
-crossterm = { version = "0.18", features = [ "serde" ] }
+crossterm = { version = "0.19", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
 tui = { version = "0.13", default-features = false, features = ['crossterm', 'serde'] }
 bytesize = { version = "1.0.1", default-features = false}
