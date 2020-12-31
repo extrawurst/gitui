@@ -377,7 +377,7 @@ dependencies = [
  "scopetime",
  "serde",
  "simplelog",
- "textwrap 0.13.1",
+ "textwrap 0.13.2",
  "tui",
  "unicode-width",
  "which",
@@ -1087,9 +1087,9 @@ dependencies = [
 
 [[package]]
 name = "textwrap"
-version = "0.13.1"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7aca9e798437265144ddacce09343df0b3413a0aef54b1e212e640e472118b80"
+checksum = "3cdcf6b66102d38821c33eea2bf1e8b7bd738072171cbf8a0683fbb46fcb8b0b"
 dependencies = [
  "smawk",
  "unicode-width",
