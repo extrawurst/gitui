@@ -180,6 +180,7 @@ impl DetailsComponent {
         }
     }
 
+    #[allow(unstable_name_collisions)]
     fn get_text_info(&self) -> Vec<Spans> {
         if let Some(ref data) = self.data {
             let mut res = vec![
@@ -247,6 +248,7 @@ impl DetailsComponent {
                 res.push(Spans::from(
                     self.style_detail(&Detail::Sha),
                 ));
+
                 res.push(Spans::from(
                     self.tags
                         .iter()
