@@ -267,6 +267,14 @@ fn process_cmdline() -> Result<()> {
         .version(crate_version!())
         .about(crate_description!())
         .arg(
+            Arg::with_name("theme")
+                .help("Set the color theme (defaults to theme.ron")
+                .short("t")
+                .long("theme")
+                .value_name("THEME")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("logging")
                 .help("Stores logging output into a cache directory")
                 .short("l")
@@ -289,6 +297,13 @@ fn process_cmdline() -> Result<()> {
         let directory =
             arg_matches.value_of("directory").unwrap_or(".");
         env::set_current_dir(directory)?;
+    }
+    let arg_theme =
+        arg_matches.value_of("theme").unwrap_or("theme.ron");
+    if get_app_config_path()?.join(arg_theme).is_file() {
+        env::set_var("GITUI_THEME", arg_theme)
+    } else {
+        env::set_var("GITUI_THEME", "theme.ron")
     }
 
     Ok(())
