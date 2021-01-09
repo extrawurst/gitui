@@ -239,17 +239,16 @@ impl Theme {
         Ok(())
     }
 
-    /// Check for GITUI_THEME if it exists use it, otherwise use theme.ron
+    /// Check for `GITUI_THEME` if it exists use it, otherwise use theme.ron
     fn get_theme_file() -> Result<PathBuf> {
         let app_home = get_app_config_path()?;
 
-        Ok(if let Some(env) = env::var_os("GITUI_THEME") {
-            match env.to_str() {
+        Ok(match env::var_os("GITUI_THEME") {
+            Some(env) => match env.to_str() {
                 Some(x) => app_home.join(x),
                 None => app_home.join("theme.ron"),
-            }
-        } else {
-            app_home.join("theme.ron")
+            },
+            None => app_home.join("theme.ron"),
         })
     }
 
