@@ -268,7 +268,7 @@ fn process_cmdline() -> Result<()> {
         .about(crate_description!())
         .arg(
             Arg::with_name("theme")
-                .help("Set the color theme (defaults to theme.ron")
+                .help("Set the color theme (defaults to theme.ron)")
                 .short("t")
                 .long("theme")
                 .value_name("THEME")
