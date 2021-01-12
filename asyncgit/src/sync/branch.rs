@@ -1,5 +1,6 @@
 //!
 
+use super::{remotes::get_first_remote_in_repo, utils::bytes2string};
 use crate::{
     error::{Error, Result},
     sync::{utils, CommitId},
@@ -7,8 +8,6 @@ use crate::{
 use git2::{BranchType, Repository};
 use scopetime::scope_time;
 use utils::get_head_repo;
-
-use super::utils::bytes2string;
 
 /// returns the branch-name head is currently pointing to
 /// this might be expensive, see `cached::BranchName`
@@ -98,8 +97,8 @@ pub(crate) fn branch_set_upstream(
         repo.find_branch(branch_name, BranchType::Local)?;
 
     if branch.upstream().is_err() {
-        //TODO: what about other remote names
-        let upstream_name = format!("origin/{}", branch_name);
+        let remote = get_first_remote_in_repo(repo)?;
+        let upstream_name = format!("{}/{}", remote, branch_name);
         branch.set_upstream(Some(upstream_name.as_str()))?;
     }
 

@@ -2,12 +2,14 @@
 
 use super::{branch::branch_set_upstream, CommitId};
 use crate::{
-    error::Result, sync::cred::BasicAuthCredential, sync::utils,
+    error::{Error, Result},
+    sync::cred::BasicAuthCredential,
+    sync::utils,
 };
 use crossbeam_channel::Sender;
 use git2::{
     Cred, Error as GitError, FetchOptions, PackBuilderStage,
-    PushOptions, RemoteCallbacks,
+    PushOptions, RemoteCallbacks, Repository,
 };
 use scopetime::scope_time;
 
@@ -53,9 +55,6 @@ pub enum ProgressNotification {
 }
 
 ///
-pub const DEFAULT_REMOTE_NAME: &str = "origin";
-
-///
 pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
     scope_time!("get_remotes");
 
@@ -68,11 +67,36 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
 }
 
 ///
+pub fn get_first_remote(repo_path: &str) -> Result<String> {
+    let repo = utils::repo(repo_path)?;
+    get_first_remote_in_repo(&repo)
+}
+
+///
+pub(crate) fn get_first_remote_in_repo(
+    repo: &Repository,
+) -> Result<String> {
+    scope_time!("get_remotes");
+
+    let remotes = repo.remotes()?;
+
+    let first_remote = remotes
+        .iter()
+        .next()
+        .flatten()
+        .map(String::from)
+        .ok_or_else(|| Error::Generic("no remote found".into()))?;
+
+    Ok(first_remote)
+}
+
+///
 pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     scope_time!("fetch_origin");
 
     let repo = utils::repo(repo_path)?;
-    let mut remote = repo.find_remote(DEFAULT_REMOTE_NAME)?;
+    let mut remote =
+        repo.find_remote(&get_first_remote_in_repo(&repo)?)?;
 
     let mut options = FetchOptions::new();
     options.remote_callbacks(remote_callbacks(None, None));
@@ -247,8 +271,39 @@ mod tests {
 
         let remotes = get_remotes(repo_path).unwrap();
 
-        assert_eq!(remotes, vec![String::from(DEFAULT_REMOTE_NAME)]);
+        assert_eq!(remotes, vec![String::from("origin")]);
 
         fetch_origin(repo_path, "master").unwrap();
+    }
+
+    #[test]
+    fn test_first_remote() {
+        let td = TempDir::new().unwrap();
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "git clone https://github.com/extrawurst/brewdump.git",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote add second https://github.com/extrawurst/brewdump.git",
+        );
+
+        let repo_path = td.path().join("brewdump");
+        let repo_path = repo_path.as_os_str().to_str().unwrap();
+
+        let remotes = get_remotes(repo_path).unwrap();
+
+        assert_eq!(
+            remotes,
+            vec![String::from("origin"), String::from("second")]
+        );
+
+        let first = get_first_remote_in_repo(
+            &utils::repo(repo_path).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(first, String::from("origin"));
     }
 }
