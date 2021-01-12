@@ -21,6 +21,6 @@ thiserror = "1.0"
 url = "2.2"
 
 [dev-dependencies]
-tempfile = "3.1"
+tempfile = "3.2"
 invalidstring = { path = "../invalidstring", version = "0.1" }
 serial_test = "0.5.1"
