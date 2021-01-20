@@ -1,4 +1,3 @@
-use crate::get_app_config_path;
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
 use ron::{
@@ -7,7 +6,6 @@ use ron::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    env,
     fs::File,
     io::{Read, Write},
     path::PathBuf,
@@ -231,25 +229,12 @@ impl Theme {
             .bg(self.push_gauge_bg)
     }
 
-    fn save(&self) -> Result<()> {
-        let theme_file = Self::get_theme_file()?;
+    // This will only be called when theme.ron doesn't already exists
+    fn save(&self, theme_file: PathBuf) -> Result<()> {
         let mut file = File::create(theme_file)?;
         let data = to_string_pretty(self, PrettyConfig::default())?;
         file.write_all(data.as_bytes())?;
         Ok(())
-    }
-
-    /// Check for `GITUI_THEME` if it exists use it, otherwise use theme.ron
-    fn get_theme_file() -> Result<PathBuf> {
-        let app_home = get_app_config_path()?;
-
-        Ok(match env::var_os("GITUI_THEME") {
-            Some(env) => match env.to_str() {
-                Some(x) => app_home.join(x),
-                None => app_home.join("theme.ron"),
-            },
-            None => app_home.join("theme.ron"),
-        })
     }
 
     fn read_file(theme_file: PathBuf) -> Result<Self> {
@@ -263,8 +248,9 @@ impl Theme {
         if theme.exists() {
             Ok(Self::read_file(theme)?)
         } else {
+            // This will only be called when theme.ron doesn't already exists
             let def = Self::default();
-            if def.save().is_err() {
+            if def.save(theme).is_err() {
                 log::warn!("failed to store default theme to disk.")
             }
             Ok(def)
