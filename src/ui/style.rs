@@ -259,10 +259,9 @@ impl Theme {
         Ok(from_bytes(&buffer)?)
     }
 
-    fn init_internal() -> Result<Self> {
-        let file = Self::get_theme_file()?;
-        if file.exists() {
-            Ok(Self::read_file(file)?)
+    fn init_internal(theme: PathBuf) -> Result<Self> {
+        if theme.exists() {
+            Ok(Self::read_file(theme)?)
         } else {
             let def = Self::default();
             if def.save().is_err() {
@@ -272,8 +271,8 @@ impl Theme {
         }
     }
 
-    pub fn init() -> Self {
-        Self::init_internal().unwrap_or_default()
+    pub fn init(theme_path: PathBuf) -> Self {
+        Self::init_internal(theme_path).unwrap_or_default()
     }
 }
 
