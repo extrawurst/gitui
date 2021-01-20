@@ -73,8 +73,12 @@ pub enum QueueEvent {
     InputEvent(InputEvent),
 }
 
+struct CliArgs {
+    theme: PathBuf,
+}
+
 fn main() -> Result<()> {
-    process_cmdline()?;
+    let cliargs = process_cmdline()?;
 
     let _profiler = Profiler::new();
 
@@ -100,7 +104,7 @@ fn main() -> Result<()> {
     let ticker = tick(TICK_INTERVAL);
     let spinner_ticker = tick(SPINNER_INTERVAL);
 
-    let mut app = App::new(&tx_git, input);
+    let mut app = App::new(&tx_git, input, cliargs.theme);
 
     let mut spinner = Spinner::default();
     let mut first_update = true;
@@ -261,7 +265,7 @@ fn setup_logging() -> Result<()> {
     Ok(())
 }
 
-fn process_cmdline() -> Result<()> {
+fn process_cmdline() -> Result<CliArgs> {
     let app = ClapApp::new(crate_name!())
         .author(crate_authors!())
         .version(crate_version!())
@@ -301,12 +305,14 @@ fn process_cmdline() -> Result<()> {
     let arg_theme =
         arg_matches.value_of("theme").unwrap_or("theme.ron");
     if get_app_config_path()?.join(arg_theme).is_file() {
-        env::set_var("GITUI_THEME", arg_theme)
+        Ok(CliArgs {
+            theme: get_app_config_path()?.join(arg_theme),
+        })
     } else {
-        env::set_var("GITUI_THEME", "theme.ron")
+        Ok(CliArgs {
+            theme: get_app_config_path()?.join("theme.ron"),
+        })
     }
-
-    Ok(())
 }
 
 fn set_panic_handlers() -> Result<()> {
