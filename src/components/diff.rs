@@ -13,7 +13,7 @@ use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
 use crossterm::event::{
     Event, KeyModifiers,
-    MouseEvent::{ScrollDown, ScrollUp},
+    MouseEventKind::{ScrollDown, ScrollUp},
 };
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 use tui::{
@@ -636,9 +636,9 @@ impl Component for DiffComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Mouse(mouse_ev) = ev {
-                return match mouse_ev {
-                    ScrollUp(_col, _row, key_modifiers) => {
-                        match key_modifiers {
+                return match mouse_ev.kind {
+                    ScrollUp => {
+                        match mouse_ev.modifiers {
                             KeyModifiers::SHIFT => {
                                 self.modify_selection(Direction::Up);
                             }
@@ -654,10 +654,11 @@ impl Component for DiffComponent {
                         };
                         Ok(true)
                     }
-                    ScrollDown(_col, _row, key_modifiers) => {
-                        match key_modifiers {
-                            KeyModifiers::SHIFT => self
-                                .modify_selection(Direction::Down),
+                    ScrollDown => {
+                        match mouse_ev.modifiers {
+                            KeyModifiers::SHIFT => {
+                                self.modify_selection(Direction::Down)
+                            }
                             KeyModifiers::CONTROL => {
                                 self.modify_selection(
                                     Direction::Down,
@@ -670,9 +671,7 @@ impl Component for DiffComponent {
                                 );
                             }
                             KeyModifiers::NONE => {
-                                self.move_selection(
-                                    ScrollType::Down,
-                                );
+                                self.move_selection(ScrollType::Down);
                             }
                             _ => {}
                         };

@@ -13,7 +13,7 @@ use anyhow::Result;
 use asyncgit::sync::Tags;
 use crossterm::event::{
     Event,
-    MouseEvent::{ScrollDown, ScrollUp},
+    MouseEventKind::{ScrollDown, ScrollUp},
 };
 use std::{
     borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
@@ -350,11 +350,9 @@ impl DrawableComponent for CommitList {
 impl Component for CommitList {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if let Event::Mouse(mouse_ev) = ev {
-            let selection_changed = match mouse_ev {
-                ScrollUp(_col, _row, _key_modifiers) => {
-                    self.move_selection(ScrollType::Up)?
-                }
-                ScrollDown(_col, _row, _key_modifiers) => {
+            let selection_changed = match mouse_ev.kind {
+                ScrollUp => self.move_selection(ScrollType::Up)?,
+                ScrollDown => {
                     self.move_selection(ScrollType::Down)?
                 }
                 _ => false,

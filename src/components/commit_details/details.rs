@@ -14,7 +14,7 @@ use asyncgit::{
 };
 use crossterm::event::{
     Event,
-    MouseEvent::{ScrollDown, ScrollUp},
+    MouseEventKind::{ScrollDown, ScrollUp},
 };
 use itertools::Itertools;
 use std::clone::Clone;
@@ -398,11 +398,9 @@ impl Component for DetailsComponent {
     fn event(&mut self, event: Event) -> Result<bool> {
         if self.focused {
             if let Event::Mouse(mouse_ev) = event {
-                return Ok(match mouse_ev {
-                    ScrollUp(_col, _row, _key_modifiers) => {
-                        self.move_scroll_top(ScrollType::Up)
-                    }
-                    ScrollDown(_col, _row, _key_modifiers) => {
+                return Ok(match mouse_ev.kind {
+                    ScrollUp => self.move_scroll_top(ScrollType::Up),
+                    ScrollDown => {
                         self.move_scroll_top(ScrollType::Down)
                     }
                     _ => false,

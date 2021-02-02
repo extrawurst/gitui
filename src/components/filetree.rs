@@ -17,7 +17,7 @@ use anyhow::Result;
 use asyncgit::{hash, StatusItem, StatusItemType};
 use crossterm::event::{
     Event,
-    MouseEvent::{ScrollDown, ScrollUp},
+    MouseEventKind::{ScrollDown, ScrollUp},
 };
 use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
 use tui::{backend::Backend, layout::Rect, text::Span, Frame};
@@ -399,11 +399,11 @@ impl Component for FileTreeComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Mouse(mouse_ev) = ev {
-                return match mouse_ev {
-                    ScrollUp(_col, _row, _key_modifiers) => {
+                return match mouse_ev.kind {
+                    ScrollUp => {
                         Ok(self.move_selection(MoveSelection::Up))
                     }
-                    ScrollDown(_col, _row, _key_modifiers) => {
+                    ScrollDown => {
                         Ok(self.move_selection(MoveSelection::Down))
                     }
                     _ => Ok(false),
