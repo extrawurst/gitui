@@ -11,7 +11,7 @@ use anyhow::Result;
 use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
-    backend::Backend, layout::Rect, text::Span, widgets::Clear, Frame,
+    backend::Backend, layout::Rect, text::Text, widgets::Clear, Frame,
 };
 use ui::style::SharedTheme;
 
@@ -33,10 +33,10 @@ impl DrawableComponent for ResetComponent {
         if self.visible {
             let (title, msg) = self.get_text();
 
-            let txt = vec![Span::styled(
+            let txt = Text::styled(
                 Cow::from(msg),
                 self.theme.text_danger(),
-            )];
+            );
 
             let area = ui::centered_rect(50, 20, f.size());
             f.render_widget(Clear, area);

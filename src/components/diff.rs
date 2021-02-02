@@ -174,7 +174,7 @@ impl DiffComponent {
             self.selected_hunk = Self::find_selected_hunk(
                 &diff,
                 self.selection.get_start(),
-            )?;
+            );
 
             self.diff = Some(diff);
             self.scroll_top.set(0);
@@ -184,10 +184,7 @@ impl DiffComponent {
         Ok(())
     }
 
-    fn move_selection(
-        &mut self,
-        move_type: ScrollType,
-    ) -> Result<()> {
+    fn move_selection(&mut self, move_type: ScrollType) {
         if let Some(diff) = &self.diff {
             let max = diff.lines.saturating_sub(1) as usize;
 
@@ -219,9 +216,8 @@ impl DiffComponent {
             self.selection = Selection::Single(new_start);
 
             self.selected_hunk =
-                Self::find_selected_hunk(diff, new_start)?;
+                Self::find_selected_hunk(diff, new_start);
         }
-        Ok(())
     }
 
     fn lines_count(&self) -> usize {
@@ -230,20 +226,15 @@ impl DiffComponent {
             .map_or(0, |diff| diff.lines.saturating_sub(1))
     }
 
-    fn modify_selection(
-        &mut self,
-        direction: Direction,
-    ) -> Result<()> {
+    fn modify_selection(&mut self, direction: Direction) {
         if let Some(diff) = &self.diff {
             let max = diff.lines.saturating_sub(1);
 
             self.selection.modify(direction, max);
         }
-
-        Ok(())
     }
 
-    fn copy_selection(&self) -> Result<()> {
+    fn copy_selection(&self) {
         if let Some(diff) = &self.diff {
             let lines_to_copy: Vec<&str> = diff
                 .hunks
@@ -273,14 +264,12 @@ impl DiffComponent {
                 )
             );
         }
-
-        Ok(())
     }
 
     fn find_selected_hunk(
         diff: &FileDiff,
         line_selected: usize,
-    ) -> Result<Option<usize>> {
+    ) -> Option<usize> {
         let mut line_cursor = 0_usize;
         for (i, hunk) in diff.hunks.iter().enumerate() {
             let hunk_len = hunk.lines.len();
@@ -291,20 +280,16 @@ impl DiffComponent {
                 hunk_min <= line_selected && hunk_max > line_selected;
 
             if hunk_selected {
-                return Ok(Some(i));
+                return Some(i);
             }
 
             line_cursor += hunk_len;
         }
 
-        Ok(None)
+        None
     }
 
-    fn get_text(
-        &self,
-        width: u16,
-        height: u16,
-    ) -> Result<Vec<Spans>> {
+    fn get_text(&self, width: u16, height: u16) -> Vec<Spans> {
         let mut res: Vec<Spans> = Vec::new();
         if let Some(diff) = &self.diff {
             if diff.hunks.is_empty() {
@@ -397,7 +382,7 @@ impl DiffComponent {
                 }
             }
         }
-        Ok(res)
+        res
     }
 
     fn get_line_to_add<'a>(
@@ -509,7 +494,7 @@ impl DiffComponent {
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));
     }
 
-    fn reset_hunk(&self) -> Result<()> {
+    fn reset_hunk(&self) {
         if let Some(diff) = &self.diff {
             if let Some(hunk) = self.selected_hunk {
                 let hash = diff.hunks[hunk].header_hash;
@@ -522,18 +507,15 @@ impl DiffComponent {
                 );
             }
         }
-        Ok(())
     }
 
-    fn reset_untracked(&self) -> Result<()> {
+    fn reset_untracked(&self) {
         self.queue.as_ref().borrow_mut().push_back(
             InternalEvent::ConfirmAction(Action::Reset(ResetItem {
                 path: self.current.path.clone(),
                 is_folder: false,
             })),
         );
-
-        Ok(())
     }
 
     const fn is_stage(&self) -> bool {
@@ -570,7 +552,7 @@ impl DrawableComponent for DiffComponent {
                 self.theme.text(false, false),
             )])]
         } else {
-            self.get_text(r.width, self.current_size.get().1)?
+            self.get_text(r.width, self.current_size.get().1)
         };
 
         f.render_widget(
@@ -651,28 +633,28 @@ impl Component for DiffComponent {
         if self.focused {
             if let Event::Key(e) = ev {
                 return if e == self.key_config.move_down {
-                    self.move_selection(ScrollType::Down)?;
+                    self.move_selection(ScrollType::Down);
                     Ok(true)
                 } else if e == self.key_config.shift_down {
-                    self.modify_selection(Direction::Down)?;
+                    self.modify_selection(Direction::Down);
                     Ok(true)
                 } else if e == self.key_config.shift_up {
-                    self.modify_selection(Direction::Up)?;
+                    self.modify_selection(Direction::Up);
                     Ok(true)
                 } else if e == self.key_config.end {
-                    self.move_selection(ScrollType::End)?;
+                    self.move_selection(ScrollType::End);
                     Ok(true)
                 } else if e == self.key_config.home {
-                    self.move_selection(ScrollType::Home)?;
+                    self.move_selection(ScrollType::Home);
                     Ok(true)
                 } else if e == self.key_config.move_up {
-                    self.move_selection(ScrollType::Up)?;
+                    self.move_selection(ScrollType::Up);
                     Ok(true)
                 } else if e == self.key_config.page_up {
-                    self.move_selection(ScrollType::PageUp)?;
+                    self.move_selection(ScrollType::PageUp);
                     Ok(true)
                 } else if e == self.key_config.page_down {
-                    self.move_selection(ScrollType::PageDown)?;
+                    self.move_selection(ScrollType::PageDown);
                     Ok(true)
                 } else if e == self.key_config.enter
                     && !self.is_immutable
@@ -689,14 +671,14 @@ impl Component for DiffComponent {
                 {
                     if let Some(diff) = &self.diff {
                         if diff.untracked {
-                            self.reset_untracked()?;
+                            self.reset_untracked();
                         } else {
-                            self.reset_hunk()?;
+                            self.reset_hunk();
                         }
                     }
                     Ok(true)
                 } else if e == self.key_config.copy {
-                    self.copy_selection()?;
+                    self.copy_selection();
                     Ok(true)
                 } else {
                     Ok(false)

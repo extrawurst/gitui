@@ -102,6 +102,7 @@ impl TagCommitComponent {
                 key_config.clone(),
                 &strings::tag_commit_popup_title(&key_config),
                 &strings::tag_commit_popup_msg(&key_config),
+                true,
             ),
             commit_id: None,
             key_config,

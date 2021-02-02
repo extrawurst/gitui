@@ -1,13 +1,15 @@
 //!
 
-use super::CommitId;
+use super::{branch::branch_set_upstream, CommitId};
 use crate::{
-    error::Result, sync::cred::BasicAuthCredential, sync::utils,
+    error::{Error, Result},
+    sync::cred::BasicAuthCredential,
+    sync::utils,
 };
 use crossbeam_channel::Sender;
 use git2::{
     Cred, Error as GitError, FetchOptions, PackBuilderStage,
-    PushOptions, RemoteCallbacks,
+    PushOptions, RemoteCallbacks, Repository,
 };
 use scopetime::scope_time;
 
@@ -53,9 +55,6 @@ pub enum ProgressNotification {
 }
 
 ///
-pub const DEFAULT_REMOTE_NAME: &str = "origin";
-
-///
 pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
     scope_time!("get_remotes");
 
@@ -68,17 +67,39 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
 }
 
 ///
+pub fn get_first_remote(repo_path: &str) -> Result<String> {
+    let repo = utils::repo(repo_path)?;
+    get_first_remote_in_repo(&repo)
+}
+
+///
+pub(crate) fn get_first_remote_in_repo(
+    repo: &Repository,
+) -> Result<String> {
+    scope_time!("get_remotes");
+
+    let remotes = repo.remotes()?;
+
+    let first_remote = remotes
+        .iter()
+        .next()
+        .flatten()
+        .map(String::from)
+        .ok_or_else(|| Error::Generic("no remote found".into()))?;
+
+    Ok(first_remote)
+}
+
+///
 pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
     scope_time!("fetch_origin");
 
     let repo = utils::repo(repo_path)?;
-    let mut remote = repo.find_remote(DEFAULT_REMOTE_NAME)?;
+    let mut remote =
+        repo.find_remote(&get_first_remote_in_repo(&repo)?)?;
 
     let mut options = FetchOptions::new();
-    options.remote_callbacks(match remote_callbacks(None, None) {
-        Ok(callback) => callback,
-        Err(e) => return Err(e),
-    });
+    options.remote_callbacks(remote_callbacks(None, None));
 
     remote.fetch(&[branch], Some(&mut options), None)?;
 
@@ -94,32 +115,29 @@ pub fn push(
     basic_credential: Option<BasicAuthCredential>,
     progress_sender: Sender<ProgressNotification>,
 ) -> Result<()> {
-    scope_time!("push_origin");
+    scope_time!("push");
 
     let repo = utils::repo(repo_path)?;
     let mut remote = repo.find_remote(remote)?;
 
     let mut options = PushOptions::new();
 
-    options.remote_callbacks(
-        match remote_callbacks(
-            Some(progress_sender),
-            basic_credential,
-        ) {
-            Ok(callbacks) => callbacks,
-            Err(e) => return Err(e),
-        },
-    );
+    options.remote_callbacks(remote_callbacks(
+        Some(progress_sender),
+        basic_credential,
+    ));
     options.packbuilder_parallelism(0);
 
+    let branch_name = format!("refs/heads/{}", branch);
     if force {
         remote.push(
-            &[String::from("+") + branch],
+            &[String::from("+") + &branch_name],
             Some(&mut options),
         )?;
     } else {
-        remote.push(&[branch], Some(&mut options))?;
+        remote.push(&[branch_name.as_str()], Some(&mut options))?;
     }
+    branch_set_upstream(&repo, branch)?;
 
     Ok(())
 }
@@ -127,7 +145,7 @@ pub fn push(
 fn remote_callbacks<'a>(
     sender: Option<Sender<ProgressNotification>>,
     basic_credential: Option<BasicAuthCredential>,
-) -> Result<RemoteCallbacks<'a>> {
+) -> RemoteCallbacks<'a> {
     let mut callbacks = RemoteCallbacks::new();
     let sender_clone = sender.clone();
     callbacks.push_transfer_progress(move |current, total, bytes| {
@@ -186,8 +204,8 @@ fn remote_callbacks<'a>(
     });
 
     let mut first_call_to_credentials = true;
-    // This boolean is used to avoid multiple call to credentials callback.
-    // If credentials are bad, we don't ask the user to re-fill his creds. We push an error and he will be able to restart his action (for example a push) and retype his creds.
+    // This boolean is used to avoid multiple calls to credentials callback.
+    // If credentials are bad, we don't ask the user to re-fill their creds. We push an error and they will be able to restart their action (for example a push) and retype their creds.
     // This behavior is explained in a issue on git2-rs project : https://github.com/rust-lang/git2-rs/issues/347
     // An implementation reference is done in cargo : https://github.com/rust-lang/cargo/blob/9fb208dddb12a3081230a5fd8f470e01df8faa25/src/cargo/sources/git/utils.rs#L588
     // There is also a guide about libgit2 authentication : https://libgit2.org/docs/guides/authentication/
@@ -236,7 +254,7 @@ fn remote_callbacks<'a>(
         },
     );
 
-    Ok(callbacks)
+    callbacks
 }
 
 #[cfg(test)]
@@ -259,8 +277,39 @@ mod tests {
 
         let remotes = get_remotes(repo_path).unwrap();
 
-        assert_eq!(remotes, vec![String::from(DEFAULT_REMOTE_NAME)]);
+        assert_eq!(remotes, vec![String::from("origin")]);
 
         fetch_origin(repo_path, "master").unwrap();
+    }
+
+    #[test]
+    fn test_first_remote() {
+        let td = TempDir::new().unwrap();
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "git clone https://github.com/extrawurst/brewdump.git",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote add second https://github.com/extrawurst/brewdump.git",
+        );
+
+        let repo_path = td.path().join("brewdump");
+        let repo_path = repo_path.as_os_str().to_str().unwrap();
+
+        let remotes = get_remotes(repo_path).unwrap();
+
+        assert_eq!(
+            remotes,
+            vec![String::from("origin"), String::from("second")]
+        );
+
+        let first = get_first_remote_in_repo(
+            &utils::repo(repo_path).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(first, String::from("origin"));
     }
 }

@@ -121,6 +121,15 @@ impl CommitList {
         )
     }
 
+    pub fn copy_entry_hash(&self) -> Result<()> {
+        if let Some(e) = self.items.iter().nth(
+            self.selection.saturating_sub(self.items.index_offset()),
+        ) {
+            crate::clipboard::copy_string(&e.hash_short)?;
+        }
+        Ok(())
+    }
+
     fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
         self.update_scroll_speed();
 

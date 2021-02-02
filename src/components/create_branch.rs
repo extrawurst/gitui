@@ -102,6 +102,7 @@ impl CreateBranchComponent {
                 key_config.clone(),
                 &strings::create_branch_popup_title(&key_config),
                 &strings::create_branch_popup_msg(&key_config),
+                true,
             ),
             commit_id: None,
             key_config,

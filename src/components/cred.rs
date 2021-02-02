@@ -37,6 +37,7 @@ impl CredComponent {
                 key_config.clone(),
                 &strings::username_popup_title(&key_config),
                 &strings::username_popup_msg(&key_config),
+                false,
             )
             .with_input_type(InputType::Singleline),
             input_password: TextInputComponent::new(
@@ -44,6 +45,7 @@ impl CredComponent {
                 key_config.clone(),
                 &strings::password_popup_title(&key_config),
                 &strings::password_popup_msg(&key_config),
+                false,
             )
             .with_input_type(InputType::Password),
             key_config,

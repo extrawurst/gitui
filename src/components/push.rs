@@ -10,20 +10,21 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::cred::{
-        extract_username_password, need_username_password,
-        BasicAuthCredential,
+    sync::{
+        cred::{
+            extract_username_password, need_username_password,
+            BasicAuthCredential,
+        },
+        get_first_remote,
     },
-    sync::DEFAULT_REMOTE_NAME,
     AsyncNotification, AsyncPush, PushProgress, PushProgressState,
-    PushRequest,
+    PushRequest, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Style},
     text::Span,
     widgets::{Block, BorderType, Borders, Clear, Gauge},
     Frame,
@@ -77,9 +78,9 @@ impl PushComponent {
         self.branch = branch;
         self.force = force;
         self.show()?;
-        if need_username_password(DEFAULT_REMOTE_NAME)? {
-            let cred = extract_username_password(DEFAULT_REMOTE_NAME)
-                .unwrap_or_else(|_| {
+        if need_username_password()? {
+            let cred =
+                extract_username_password().unwrap_or_else(|_| {
                     BasicAuthCredential::new(None, None)
                 });
             if cred.is_complete() {
@@ -101,8 +102,7 @@ impl PushComponent {
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
-            //TODO: find tracking branch name
-            remote: String::from(DEFAULT_REMOTE_NAME),
+            remote: get_first_remote(CWD)?,
             branch: self.branch.clone(),
             force,
             basic_credential: cred,
@@ -201,12 +201,7 @@ impl DrawableComponent for PushComponent {
                             .border_type(BorderType::Thick)
                             .border_style(self.theme.block(true)),
                     )
-                    .gauge_style(
-                        //TODO: use theme
-                        Style::default()
-                            .fg(Color::White)
-                            .bg(Color::Black),
-                    )
+                    .gauge_style(self.theme.push_gauge())
                     .percent(u16::from(progress)),
                 area,
             );

@@ -102,6 +102,7 @@ impl RenameBranchComponent {
                 key_config.clone(),
                 &strings::rename_branch_popup_title(&key_config),
                 &strings::rename_branch_popup_msg(&key_config),
+                true,
             ),
             branch_ref: None,
             key_config,
