@@ -68,7 +68,7 @@
     select_branch: ( code: Char('b'), modifiers: ( bits: 0,),),
     delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
-    force_push: ( code: Char('p'), modifiers: ( bits: 2,),),
+    force_push: ( code: Char('P'), modifiers: ( bits: 1,),),
     fetch: ( code: Char('f'), modifiers: ( bits: 0,),),
 
     //removed in 0.11
