@@ -122,6 +122,7 @@ impl RewordComponent {
                 key_config.clone(),
                 &strings::reword_popup_title(&key_config),
                 &strings::reword_popup_msg(&key_config),
+                false,
             ),
             commit_id: None,
             key_config,
