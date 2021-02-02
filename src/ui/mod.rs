@@ -34,9 +34,12 @@ impl Size {
     }
 }
 
-impl Into<Size> for Rect {
-    fn into(self) -> Size {
-        Size::new(self.width, self.height)
+impl From<Rect> for Size {
+    fn from(r: Rect) -> Self {
+        Self {
+            width: r.width,
+            height: r.height,
+        }
     }
 }
 

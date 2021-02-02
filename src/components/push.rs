@@ -10,13 +10,15 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::cred::{
-        extract_username_password, need_username_password,
-        BasicAuthCredential,
+    sync::{
+        cred::{
+            extract_username_password, need_username_password,
+            BasicAuthCredential,
+        },
+        get_first_remote,
     },
-    sync::DEFAULT_REMOTE_NAME,
     AsyncNotification, AsyncPush, PushProgress, PushProgressState,
-    PushRequest,
+    PushRequest, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -69,9 +71,9 @@ impl PushComponent {
     pub fn push(&mut self, branch: String) -> Result<()> {
         self.branch = branch;
         self.show()?;
-        if need_username_password(DEFAULT_REMOTE_NAME)? {
-            let cred = extract_username_password(DEFAULT_REMOTE_NAME)
-                .unwrap_or_else(|_| {
+        if need_username_password()? {
+            let cred =
+                extract_username_password().unwrap_or_else(|_| {
                     BasicAuthCredential::new(None, None)
                 });
             if cred.is_complete() {
@@ -92,8 +94,7 @@ impl PushComponent {
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
-            //TODO: find tracking branch name
-            remote: String::from(DEFAULT_REMOTE_NAME),
+            remote: get_first_remote(CWD)?,
             branch: self.branch.clone(),
             basic_credential: cred,
         })?;

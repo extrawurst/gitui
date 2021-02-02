@@ -1,14 +1,13 @@
 //!
 
+use super::{remotes::get_first_remote_in_repo, utils::bytes2string};
 use crate::{
     error::{Error, Result},
     sync::{utils, CommitId},
 };
-use git2::BranchType;
+use git2::{BranchType, Repository};
 use scopetime::scope_time;
 use utils::get_head_repo;
-
-use super::utils::bytes2string;
 
 /// returns the branch-name head is currently pointing to
 /// this might be expensive, see `cached::BranchName`
@@ -88,6 +87,25 @@ pub struct BranchCompare {
 }
 
 ///
+pub(crate) fn branch_set_upstream(
+    repo: &Repository,
+    branch_name: &str,
+) -> Result<()> {
+    scope_time!("branch_set_upstream");
+
+    let mut branch =
+        repo.find_branch(branch_name, BranchType::Local)?;
+
+    if branch.upstream().is_err() {
+        let remote = get_first_remote_in_repo(repo)?;
+        let upstream_name = format!("{}/{}", remote, branch_name);
+        branch.set_upstream(Some(upstream_name.as_str()))?;
+    }
+
+    Ok(())
+}
+
+///
 pub fn branch_compare_upstream(
     repo_path: &str,
     branch: &str,
@@ -97,6 +115,7 @@ pub fn branch_compare_upstream(
     let repo = utils::repo(repo_path)?;
 
     let branch = repo.find_branch(branch, BranchType::Local)?;
+
     let upstream = branch.upstream()?;
 
     let branch_commit =
@@ -244,6 +263,25 @@ mod tests_create_branch {
             get_branch_name(repo_path).unwrap().as_str(),
             "branch1"
         );
+    }
+}
+
+#[cfg(test)]
+mod tests_branch_compare {
+    use super::*;
+    use crate::sync::tests::repo_init;
+
+    #[test]
+    fn test_smoke() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        create_branch(repo_path, "test").unwrap();
+
+        let res = branch_compare_upstream(repo_path, "test");
+
+        assert_eq!(res.is_err(), true);
     }
 }
 

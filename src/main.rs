@@ -74,8 +74,12 @@ pub enum QueueEvent {
     InputEvent(InputEvent),
 }
 
+struct CliArgs {
+    theme: PathBuf,
+}
+
 fn main() -> Result<()> {
-    process_cmdline()?;
+    let cliargs = process_cmdline()?;
 
     let _profiler = Profiler::new();
 
@@ -101,7 +105,7 @@ fn main() -> Result<()> {
     let ticker = tick(TICK_INTERVAL);
     let spinner_ticker = tick(SPINNER_INTERVAL);
 
-    let mut app = App::new(&tx_git, input);
+    let mut app = App::new(&tx_git, input, cliargs.theme);
 
     let mut spinner = Spinner::default();
     let mut first_update = true;
@@ -263,11 +267,19 @@ fn setup_logging() -> Result<()> {
     Ok(())
 }
 
-fn process_cmdline() -> Result<()> {
+fn process_cmdline() -> Result<CliArgs> {
     let app = ClapApp::new(crate_name!())
         .author(crate_authors!())
         .version(crate_version!())
         .about(crate_description!())
+        .arg(
+            Arg::with_name("theme")
+                .help("Set the color theme (defaults to theme.ron)")
+                .short("t")
+                .long("theme")
+                .value_name("THEME")
+                .takes_value(true),
+        )
         .arg(
             Arg::with_name("logging")
                 .help("Stores logging output into a cache directory")
@@ -292,8 +304,17 @@ fn process_cmdline() -> Result<()> {
             arg_matches.value_of("directory").unwrap_or(".");
         env::set_current_dir(directory)?;
     }
-
-    Ok(())
+    let arg_theme =
+        arg_matches.value_of("theme").unwrap_or("theme.ron");
+    if get_app_config_path()?.join(arg_theme).is_file() {
+        Ok(CliArgs {
+            theme: get_app_config_path()?.join(arg_theme),
+        })
+    } else {
+        Ok(CliArgs {
+            theme: get_app_config_path()?.join("theme.ron"),
+        })
+    }
 }
 
 fn set_panic_handlers() -> Result<()> {

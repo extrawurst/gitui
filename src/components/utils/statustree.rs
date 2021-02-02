@@ -215,15 +215,15 @@ impl StatusTree {
                 {
                     current_index_in_available_selections = pos;
                     break;
-                } else {
-                    // Find the closest to the index, usually this shouldn't happen
-                    if current_index == 0 {
-                        // This should never happen
-                        current_index_in_available_selections = 0;
-                        break;
-                    }
-                    cur_index_find -= 1;
                 }
+
+                // Find the closest to the index, usually this shouldn't happen
+                if current_index == 0 {
+                    // This should never happen
+                    current_index_in_available_selections = 0;
+                    break;
+                }
+                cur_index_find -= 1;
             }
         }
 
@@ -398,9 +398,8 @@ impl StatusTree {
                     }
                     // we are still in a collapsed inner path
                     continue;
-                } else {
-                    inner_collapsed = None;
                 }
+                inner_collapsed = None;
             }
 
             let item_kind = self.tree[i].kind.clone();
