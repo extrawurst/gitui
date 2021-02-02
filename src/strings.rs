@@ -830,7 +830,7 @@ pub mod commands {
         CommandText::new(
             format!(
                 "Force Push [{}]",
-                get_hint(key_config.force_push),
+                key_config.get_hint(key_config.force_push),
             ),
             "force push to origin",
             CMD_GROUP_GENERAL,
