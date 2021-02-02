@@ -736,7 +736,10 @@ pub mod commands {
         key_config: &SharedKeyConfig,
     ) -> CommandText {
         CommandText::new(
-            format!("Reword [{}]", get_hint(key_config.enter),),
+            format!(
+                "Reword [{}]",
+                key_config.get_hint(key_config.enter),
+            ),
             "tag commit",
             CMD_GROUP_LOG,
         )
@@ -745,7 +748,10 @@ pub mod commands {
         key_config: &SharedKeyConfig,
     ) -> CommandText {
         CommandText::new(
-            format!("Reword [{}]", get_hint(key_config.reword),),
+            format!(
+                "Reword [{}]",
+                key_config.get_hint(key_config.reword),
+            ),
             "reword commit",
             CMD_GROUP_LOG,
         )
