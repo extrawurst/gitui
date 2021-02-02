@@ -21,6 +21,22 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Restore cargo cache
+      uses: actions/cache@v2
+      env:
+        cache-name: ci
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          ~/.cargo/bin
+          target
+        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}-${{ hashFiles('Cargo.lock') }}
+
+    - name: MacOS Workaround
+      if: matrix.os == 'macos-latest'
+      run: cargo clean --locked -p serde_derive -p thiserror
+
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
@@ -31,7 +47,6 @@ jobs:
 
     - name: Build Debug
       run: |
-        rustc --version
         cargo build
 
     - name: Run tests
@@ -39,7 +54,6 @@ jobs:
 
     - name: Run clippy
       run: |
-        cargo clean
         make clippy
 
     - name: Build Release
@@ -49,7 +63,6 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cargo install cargo-wix
-        cargo wix init
         cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
         ls -l ./target/wix/gitui.msi
 

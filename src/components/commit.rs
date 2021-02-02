@@ -138,6 +138,7 @@ impl CommitComponent {
                 key_config.clone(),
                 "",
                 &strings::commit_msg(&key_config),
+                true,
             ),
             key_config,
         }

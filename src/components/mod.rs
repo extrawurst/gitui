@@ -21,9 +21,6 @@ mod tag_commit;
 mod textinput;
 mod utils;
 
-use anyhow::Result;
-use crossterm::event::Event;
-
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
@@ -47,10 +44,12 @@ pub use textinput::{InputType, TextInputComponent};
 pub use utils::filetree::FileTreeItemKind;
 
 use crate::ui::style::Theme;
+use anyhow::Result;
+use crossterm::event::Event;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    text::{Span, Spans, Text},
+    text::{Span, Text},
     widgets::{Block, BorderType, Borders, Paragraph, Wrap},
     Frame,
 };
@@ -207,13 +206,16 @@ fn dialog_paragraph<'a>(
         .alignment(Alignment::Left)
 }
 
-fn popup_paragraph<'a>(
+fn popup_paragraph<'a, T>(
     title: &'a str,
-    content: Vec<Span<'a>>,
+    content: T,
     theme: &Theme,
     focused: bool,
-) -> Paragraph<'a> {
-    Paragraph::new(Spans::from(content))
+) -> Paragraph<'a>
+where
+    T: Into<Text<'a>>,
+{
+    Paragraph::new(content.into())
         .block(
             Block::default()
                 .title(Span::styled(title, theme.title(focused)))

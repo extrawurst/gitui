@@ -74,15 +74,23 @@ impl DrawableComponent for SelectBranchComponent {
                     &self.theme,
                     area.width,
                     height_in_lines,
-                )?)
+                ))
                 .block(
                     Block::default()
                         .title(strings::SELECT_BRANCH_POPUP_MSG)
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Thick),
+                        .border_type(BorderType::Thick)
+                        .borders(Borders::ALL),
                 )
                 .alignment(Alignment::Left),
                 area,
+            );
+
+            ui::draw_scrollbar(
+                f,
+                area,
+                &self.theme,
+                self.branch_names.len(),
+                self.scroll_top.get(),
             );
         }
 
@@ -283,7 +291,7 @@ impl SelectBranchComponent {
         theme: &SharedTheme,
         width_available: u16,
         height: usize,
-    ) -> Result<Text> {
+    ) -> Text {
         const COMMIT_HASH_LENGTH: usize = 8;
         const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
         const THREE_DOTS_LENGTH: usize = 3; // "..."
@@ -368,7 +376,7 @@ impl SelectBranchComponent {
             ]));
         }
 
-        Ok(Text::from(txt))
+        Text::from(txt)
     }
 
     ///
