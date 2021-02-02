@@ -63,7 +63,6 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cargo install cargo-wix
-        cargo wix init
         cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
         ls -l ./target/wix/gitui.msi
 

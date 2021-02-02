@@ -1,4 +1,3 @@
-use crate::get_app_config_path;
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
 use ron::{
@@ -47,6 +46,10 @@ pub struct Theme {
     commit_author: Color,
     #[serde(with = "Color")]
     danger_fg: Color,
+    #[serde(with = "Color")]
+    push_gauge_bg: Color,
+    #[serde(with = "Color")]
+    push_gauge_fg: Color,
 }
 
 impl Theme {
@@ -220,17 +223,18 @@ impl Theme {
         )
     }
 
-    fn save(&self) -> Result<()> {
-        let theme_file = Self::get_theme_file()?;
+    pub fn push_gauge(&self) -> Style {
+        Style::default()
+            .fg(self.push_gauge_fg)
+            .bg(self.push_gauge_bg)
+    }
+
+    // This will only be called when theme.ron doesn't already exists
+    fn save(&self, theme_file: PathBuf) -> Result<()> {
         let mut file = File::create(theme_file)?;
         let data = to_string_pretty(self, PrettyConfig::default())?;
         file.write_all(data.as_bytes())?;
         Ok(())
-    }
-
-    fn get_theme_file() -> Result<PathBuf> {
-        let app_home = get_app_config_path()?;
-        Ok(app_home.join("theme.ron"))
     }
 
     fn read_file(theme_file: PathBuf) -> Result<Self> {
@@ -240,21 +244,21 @@ impl Theme {
         Ok(from_bytes(&buffer)?)
     }
 
-    fn init_internal() -> Result<Self> {
-        let file = Self::get_theme_file()?;
-        if file.exists() {
-            Ok(Self::read_file(file)?)
+    fn init_internal(theme: PathBuf) -> Result<Self> {
+        if theme.exists() {
+            Ok(Self::read_file(theme)?)
         } else {
+            // This will only be called when theme.ron doesn't already exists
             let def = Self::default();
-            if def.save().is_err() {
+            if def.save(theme).is_err() {
                 log::warn!("failed to store default theme to disk.")
             }
             Ok(def)
         }
     }
 
-    pub fn init() -> Self {
-        Self::init_internal().unwrap_or_default()
+    pub fn init(theme_path: PathBuf) -> Self {
+        Self::init_internal(theme_path).unwrap_or_default()
     }
 }
 
@@ -276,6 +280,8 @@ impl Default for Theme {
             commit_time: Color::LightCyan,
             commit_author: Color::Green,
             danger_fg: Color::Red,
+            push_gauge_bg: Color::Blue,
+            push_gauge_fg: Color::Reset,
         }
     }
 }

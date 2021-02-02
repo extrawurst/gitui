@@ -74,9 +74,9 @@ impl Default for StatusType {
     }
 }
 
-impl Into<StatusShow> for StatusType {
-    fn into(self) -> StatusShow {
-        match self {
+impl From<StatusType> for StatusShow {
+    fn from(s: StatusType) -> Self {
+        match s {
             StatusType::WorkingDir => StatusShow::Workdir,
             StatusType::Stage => StatusShow::Index,
             StatusType::Both => StatusShow::IndexAndWorkdir,

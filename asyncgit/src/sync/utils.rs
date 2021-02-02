@@ -144,6 +144,29 @@ pub fn stage_addremoved(repo_path: &str, path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// get string from config
+pub fn get_config_string(
+    repo_path: &str,
+    key: &str,
+) -> Result<Option<String>> {
+    let repo = repo(repo_path)?;
+    let cfg = repo.config()?;
+
+    // this code doesnt match what the doc says regarding what
+    // gets returned when but it actually works
+    let entry_res = cfg.get_entry(key);
+
+    let entry = match entry_res {
+        Ok(ent) => ent,
+        Err(_) => return Ok(None),
+    };
+
+    if !entry.has_value() {
+        Ok(None)
+    } else {
+        Ok(entry.value().map(|s| s.to_string()))
+    }
+}
 /// helper function
 pub(crate) fn bytes2string(bytes: &[u8]) -> Result<String> {
     Ok(String::from_utf8(bytes.to_vec())?)
@@ -177,7 +200,23 @@ mod tests {
             false
         );
     }
+    #[test]
+    fn test_get_config() {
+        let bad_dir_cfg =
+            get_config_string("oodly_noodly", "this.doesnt.exist");
+        assert!(bad_dir_cfg.is_err());
 
+        let (_td, repo) = repo_init().unwrap();
+        let path = repo.path();
+        let rpath = path.as_os_str().to_str().unwrap();
+        let bad_cfg = get_config_string(rpath, "this.doesnt.exist");
+        assert!(bad_cfg.is_ok());
+        assert!(bad_cfg.unwrap().is_none());
+        // repo init sets user.name
+        let good_cfg = get_config_string(rpath, "user.name");
+        assert!(good_cfg.is_ok());
+        assert!(good_cfg.unwrap().is_some());
+    }
     #[test]
     fn test_staging_one_file() {
         let file_path = Path::new("file1.txt");

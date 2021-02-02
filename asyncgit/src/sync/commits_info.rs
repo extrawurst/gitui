@@ -30,9 +30,9 @@ impl ToString for CommitId {
     }
 }
 
-impl Into<Oid> for CommitId {
-    fn into(self) -> Oid {
-        self.0
+impl From<CommitId> for Oid {
+    fn from(id: CommitId) -> Self {
+        id.0
     }
 }
 

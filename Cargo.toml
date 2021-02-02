@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.10.1"
+version = "0.11.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
@@ -20,15 +20,15 @@ keywords = [
 
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
-asyncgit = { path = "./asyncgit", version = "0.10" }
-crossterm = { version = "0.18", features = [ "serde" ] }
+asyncgit = { path = "./asyncgit", version = "0.11" }
+crossterm = { version = "0.19", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
-tui = { version = "0.12", default-features = false, features = ['crossterm', 'serde'] }
+tui = { version = "0.14", default-features = false, features = ['crossterm', 'serde'] }
 bytesize = { version = "1.0.1", default-features = false}
-itertools = "0.9"
+itertools = "0.10"
 rayon-core = "1.9"
 log = "0.4"
-simplelog = { version = "0.8", default-features = false }
+simplelog = { version = "0.9", default-features = false }
 dirs-next = "2.0"
 crossbeam-channel = "0.5"
 scopeguard = "1.1"
@@ -37,15 +37,16 @@ chrono = "0.4"
 backtrace = "0.3"
 ron = "0.6"
 serde = "1.0"
-anyhow = "1.0.34"
+anyhow = "1.0.38"
 unicode-width = "0.1"
-textwrap = "0.12"
+textwrap = "0.13"
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.0"
 
+# pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]
-pprof = { version = "0.3", features = ["flamegraph"], optional = true }
+pprof = { version = "0.4", features = ["flamegraph"], optional = true }
 
 [badges]
 maintenance = { status = "actively-developed" }
@@ -64,3 +65,9 @@ members=[
 lto = true
 opt-level = 'z'  # Optimize for size.
 codegen-units = 1
+
+# make debug build as fast as release 
+# usage of utf8 encoding inside tui 
+# makes their debug profile slow
+[profile.dev.package."tui"]
+opt-level = 3

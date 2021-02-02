@@ -22,7 +22,7 @@ use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
 use std::{
     cell::{Cell, RefCell},
-    path::Path,
+    path::{Path, PathBuf},
     rc::Rc,
 };
 use tui::{
@@ -70,10 +70,11 @@ impl App {
     pub fn new(
         sender: &Sender<AsyncNotification>,
         input: Input,
+        theme_path: PathBuf,
     ) -> Self {
         let queue = Queue::default();
 
-        let theme = Rc::new(Theme::init());
+        let theme = Rc::new(Theme::init(theme_path));
         let key_config = Rc::new(KeyConfig::init());
 
         Self {
@@ -224,9 +225,7 @@ impl App {
                 let new_flags = if k == self.key_config.tab_toggle {
                     self.toggle_tabs(false)?;
                     NeedsUpdate::COMMANDS
-                } else if k == self.key_config.tab_toggle_reverse
-                    || k == self.key_config.tab_toggle_reverse_windows
-                {
+                } else if k == self.key_config.tab_toggle_reverse {
                     self.toggle_tabs(true)?;
                     NeedsUpdate::COMMANDS
                 } else if k == self.key_config.tab_status
