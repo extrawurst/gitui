@@ -320,6 +320,17 @@ pub mod commands {
             CMD_GROUP_LOG,
         )
     }
+    pub fn find_commit(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Find Commit [{}]",
+                key_config
+                    .get_hint(key_config.show_find_commit_text_input),
+            ),
+            "show find commit box to search by sha, author or message",
+            CMD_GROUP_LOG,
+        )
+    }
     pub fn diff_home_end(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
