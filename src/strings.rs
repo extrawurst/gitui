@@ -720,17 +720,6 @@ pub mod commands {
             CMD_GROUP_LOG,
         )
     }
-    pub fn find_commit(key_config: &SharedKeyConfig) -> CommandText {
-        CommandText::new(
-            format!(
-                "Find Commit [{}]",
-                key_config
-                    .get_hint(key_config.show_find_commit_text_input),
-            ),
-            "find commit",
-            CMD_GROUP_LOG,
-        )
-    }
     pub fn tag_commit_confirm_msg(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
