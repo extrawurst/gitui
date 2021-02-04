@@ -1,6 +1,6 @@
 use super::{
-    textinput::TextInputComponent, visibility_blocking,
-    CommandBlocking, CommandInfo, Component, DrawableComponent,
+    textinput::TextInputComponent, CommandBlocking, CommandInfo,
+    Component, DrawableComponent,
 };
 use crate::{
     keys::SharedKeyConfig,
@@ -34,22 +34,10 @@ impl DrawableComponent for FindCommitComponent {
 impl Component for FindCommitComponent {
     fn commands(
         &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
+        _out: &mut Vec<CommandInfo>,
+        _force_all: bool,
     ) -> CommandBlocking {
-        if self.is_visible() || force_all {
-            self.input.commands(out, force_all);
-
-            out.push(CommandInfo::new(
-                strings::commands::rename_branch_confirm_msg(
-                    &self.key_config,
-                ),
-                true,
-                true,
-            ));
-        }
-
-        visibility_blocking(self)
+        CommandBlocking::PassingOn
     }
 
     fn event(&mut self, ev: Event) -> Result<bool> {
@@ -109,8 +97,8 @@ impl FindCommitComponent {
         let mut input_component = TextInputComponent::new(
             theme,
             key_config.clone(),
-            &strings::rename_branch_popup_title(&key_config),
-            &strings::rename_branch_popup_msg(&key_config),
+            &strings::find_commit_title(&key_config),
+            &strings::find_commit_msg(&key_config),
             true,
         );
         input_component.show().expect("Will not error");

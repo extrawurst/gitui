@@ -113,6 +113,12 @@ pub fn confirm_msg_delete_branch(
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
 }
+pub fn find_commit_title(_key_config: &SharedKeyConfig) -> String {
+    "Find Commit".to_string()
+}
+pub fn find_commit_msg(_key_config: &SharedKeyConfig) -> String {
+    "Search Sha, Author and Message".to_string()
+}
 pub fn tag_commit_popup_title(
     _key_config: &SharedKeyConfig,
 ) -> String {
@@ -711,6 +717,17 @@ pub mod commands {
                 key_config.get_hint(key_config.log_tag_commit),
             ),
             "tag commit",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn find_commit(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Find Commit [{}]",
+                key_config
+                    .get_hint(key_config.show_find_commit_text_input),
+            ),
+            "find commit",
             CMD_GROUP_LOG,
         )
     }
