@@ -34,8 +34,8 @@ pub struct AsyncLog {
     background: Arc<AtomicBool>,
 }
 
-static LIMIT_COUNT: usize = 3000;
-static SLEEP_FOREGROUND: Duration = Duration::from_millis(2);
+static LIMIT_COUNT: usize = 5;
+static SLEEP_FOREGROUND: Duration = Duration::from_millis(500);
 static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
 impl AsyncLog {
@@ -63,7 +63,7 @@ impl AsyncLog {
         let list = self.current.lock()?;
         let list_len = list.len();
         let min = start_index.min(list_len);
-        let max = min + amount;
+        let max = min.saturating_add(amount);
         let max = max.min(list_len);
         Ok(list[min..max].to_vec())
     }
