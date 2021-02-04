@@ -41,7 +41,7 @@ impl Component for FindCommitComponent {
     }
 
     fn event(&mut self, ev: Event) -> Result<bool> {
-        if self.is_visible() {
+        if self.is_visible() && self.focused() {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
                     // Prevent text input closing

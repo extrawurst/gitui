@@ -244,11 +244,10 @@ impl DrawableComponent for Revlog {
 impl Component for Revlog {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
-            let event_used = if self.find_commit.focused() {
-                self.find_commit.event(ev)?
-            } else {
-                self.list.event(ev)?
-            };
+            let mut event_used = self.find_commit.event(ev)?;
+            if !event_used {
+                event_used = self.list.event(ev)?;
+            }
 
             if event_used {
                 self.update()?;
