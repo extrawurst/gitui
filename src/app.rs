@@ -349,11 +349,11 @@ impl App {
             create_branch_popup,
             rename_branch_popup,
             select_branch_popup,
-            help,
             revlog,
             status_tab,
             stashing_tab,
-            stashlist_tab
+            stashlist_tab,
+            help
         ]
     );
 
