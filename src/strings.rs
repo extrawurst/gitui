@@ -740,7 +740,7 @@ pub mod commands {
                 "Reword [{}]",
                 key_config.get_hint(key_config.enter),
             ),
-            "tag commit",
+            "reword commit",
             CMD_GROUP_LOG,
         )
     }
