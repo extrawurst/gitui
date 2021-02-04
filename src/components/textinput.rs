@@ -39,6 +39,7 @@ pub struct TextInputComponent {
     key_config: SharedKeyConfig,
     cursor_position: usize,
     input_type: InputType,
+    should_use_rect: bool,
 }
 
 impl TextInputComponent {
@@ -60,6 +61,7 @@ impl TextInputComponent {
             default_msg: default_msg.to_string(),
             cursor_position: 0,
             input_type: InputType::Multiline,
+            should_use_rect: false,
         }
     }
 
@@ -234,6 +236,10 @@ impl TextInputComponent {
             f.render_widget(w, rect);
         }
     }
+
+    pub fn set_should_use_rect(&mut self, b: bool) {
+        self.should_use_rect = b;
+    }
 }
 
 // merges last line of `txt` with first of `append` so we do not generate unneeded newlines
@@ -260,7 +266,7 @@ impl DrawableComponent for TextInputComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
-        _rect: Rect,
+        rect: Rect,
     ) -> Result<()> {
         if self.visible {
             let txt = if self.msg.is_empty() {
@@ -272,16 +278,21 @@ impl DrawableComponent for TextInputComponent {
                 self.get_draw_text()
             };
 
-            let area = match self.input_type {
-                InputType::Multiline => {
-                    let area = ui::centered_rect(60, 20, f.size());
-                    ui::rect_inside(
-                        Size::new(10, 3),
-                        f.size().into(),
-                        area,
-                    )
+            let area = if self.should_use_rect {
+                rect
+            } else {
+                match self.input_type {
+                    InputType::Multiline => {
+                        let area =
+                            ui::centered_rect(60, 20, f.size());
+                        ui::rect_inside(
+                            Size::new(10, 3),
+                            f.size().into(),
+                            area,
+                        )
+                    }
+                    _ => ui::centered_rect_absolute(32, 3, f.size()),
                 }
-                _ => ui::centered_rect_absolute(32, 3, f.size()),
             };
 
             f.render_widget(Clear, area);

@@ -39,6 +39,7 @@ pub struct CommitList {
     scroll_top: Cell<usize>,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
+    filter_string: Option<String>,
 }
 
 impl CommitList {
@@ -60,6 +61,7 @@ impl CommitList {
             theme,
             key_config,
             title: String::from(title),
+            filter_string: None,
         }
     }
 
@@ -112,6 +114,11 @@ impl CommitList {
     ///
     pub fn set_tags(&mut self, tags: Tags) {
         self.tags = Some(tags);
+    }
+
+    ///
+    pub fn set_filter(&mut self, filter_string: Option<String>) {
+        self.filter_string = filter_string;
     }
 
     ///
@@ -261,6 +268,15 @@ impl CommitList {
         for (idx, e) in self
             .items
             .iter()
+            .filter(|log_entry| {
+                if let Some(filter_string) = &self.filter_string {
+                    return log_entry
+                        .hash_short
+                        .contains(filter_string)
+                        || log_entry.msg.contains(filter_string);
+                }
+                true
+            })
             .skip(self.scroll_top.get())
             .take(height)
             .enumerate()

@@ -33,6 +33,8 @@ pub struct KeyConfig {
     pub exit_popup: KeyEvent,
     pub open_commit: KeyEvent,
     pub open_commit_editor: KeyEvent,
+    pub show_find_commit_text_input: KeyEvent,
+    pub focus_find_commit: KeyEvent,
     pub open_help: KeyEvent,
     pub move_left: KeyEvent,
     pub move_right: KeyEvent,
@@ -85,7 +87,9 @@ impl Default for KeyConfig {
 			exit: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::CONTROL},
 			exit_popup: KeyEvent { code: KeyCode::Esc, modifiers: KeyModifiers::empty()},
 			open_commit: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::empty()},
-			open_commit_editor: KeyEvent { code: KeyCode::Char('e'), modifiers:KeyModifiers::CONTROL},
+            open_commit_editor: KeyEvent { code: KeyCode::Char('e'), modifiers:KeyModifiers::CONTROL},
+            show_find_commit_text_input: KeyEvent {code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
+            focus_find_commit: KeyEvent {code: KeyCode::Down, modifiers: KeyModifiers::ALT},
 			open_help: KeyEvent { code: KeyCode::Char('h'), modifiers: KeyModifiers::empty()},
 			move_left: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::empty()},
 			move_right: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::empty()},
@@ -206,27 +210,21 @@ impl KeyConfig {
             | KeyCode::BackTab
             | KeyCode::Delete
             | KeyCode::Insert
-            | KeyCode::Esc => {
-                format!(
-                    "{}{}",
-                    Self::get_modifier_hint(ev.modifiers),
-                    self.get_key_symbol(ev.code)
-                )
-            }
-            KeyCode::Char(c) => {
-                format!(
-                    "{}{}",
-                    Self::get_modifier_hint(ev.modifiers),
-                    c
-                )
-            }
-            KeyCode::F(u) => {
-                format!(
-                    "{}F{}",
-                    Self::get_modifier_hint(ev.modifiers),
-                    u
-                )
-            }
+            | KeyCode::Esc => format!(
+                "{}{}",
+                Self::get_modifier_hint(ev.modifiers),
+                self.get_key_symbol(ev.code)
+            ),
+            KeyCode::Char(c) => format!(
+                "{}{}",
+                Self::get_modifier_hint(ev.modifiers),
+                c
+            ),
+            KeyCode::F(u) => format!(
+                "{}F{}",
+                Self::get_modifier_hint(ev.modifiers),
+                u
+            ),
             KeyCode::Null => Self::get_modifier_hint(ev.modifiers),
         }
     }

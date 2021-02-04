@@ -61,6 +61,8 @@ pub enum InternalEvent {
     OpenExternalEditor(Option<String>),
     ///
     Push(String),
+    ///
+    FilterLog(String),
 }
 
 ///

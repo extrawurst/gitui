@@ -2,7 +2,7 @@ use crate::{
     components::{
         visibility_blocking, CommandBlocking, CommandInfo,
         CommitDetailsComponent, CommitList, Component,
-        DrawableComponent,
+        DrawableComponent, FindCommitComponent,
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
@@ -31,12 +31,15 @@ const SLICE_SIZE: usize = 1200;
 pub struct Revlog {
     commit_details: CommitDetailsComponent,
     list: CommitList,
+    find_commit: FindCommitComponent,
     git_log: AsyncLog,
     git_tags: AsyncTags,
     queue: Queue,
     visible: bool,
     branch_name: cached::BranchName,
     key_config: SharedKeyConfig,
+    show_find_commit_box: bool,
+    filter_string: Option<String>,
 }
 
 impl Revlog {
@@ -57,6 +60,11 @@ impl Revlog {
             ),
             list: CommitList::new(
                 &strings::log_title(&key_config),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            find_commit: FindCommitComponent::new(
+                queue.clone(),
                 theme,
                 key_config.clone(),
             ),
@@ -65,6 +73,8 @@ impl Revlog {
             visible: false,
             branch_name: cached::BranchName::new(CWD),
             key_config,
+            show_find_commit_box: true,
+            filter_string: None,
         }
     }
 
@@ -166,6 +176,14 @@ impl Revlog {
             tags.and_then(|tags| tags.get(&commit).cloned())
         })
     }
+
+    pub fn filter(&mut self, filter_by: String) {
+        if filter_by == "" {
+            self.list.set_filter(None);
+        } else {
+            self.list.set_filter(Some(filter_by));
+        }
+    }
 }
 
 impl DrawableComponent for Revlog {
@@ -174,22 +192,50 @@ impl DrawableComponent for Revlog {
         f: &mut Frame<B>,
         area: Rect,
     ) -> Result<()> {
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Percentage(60),
-                    Constraint::Percentage(40),
-                ]
-                .as_ref(),
-            )
-            .split(area);
-
         if self.commit_details.is_visible() {
-            self.list.draw(f, chunks[0])?;
-            self.commit_details.draw(f, chunks[1])?;
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints(
+                    [
+                        Constraint::Percentage(60),
+                        Constraint::Percentage(40),
+                    ]
+                    .as_ref(),
+                )
+                .split(area);
+
+            if self.find_commit.is_visible() {
+                let log_find_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints(
+                        [
+                            Constraint::Percentage(90),
+                            Constraint::Percentage(20),
+                        ]
+                        .as_ref(),
+                    )
+                    .split(chunks[0]);
+                self.list.draw(f, log_find_chunks[0])?;
+                self.find_commit.draw(f, log_find_chunks[1])?;
+                self.commit_details.draw(f, chunks[1])?;
+            }
         } else {
-            self.list.draw(f, area)?;
+            if self.find_commit.is_visible() {
+                let log_find_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints(
+                        [
+                            Constraint::Percentage(90),
+                            Constraint::Percentage(20),
+                        ]
+                        .as_ref(),
+                    )
+                    .split(area);
+                self.list.draw(f, log_find_chunks[0])?;
+                self.find_commit.draw(f, log_find_chunks[1])?;
+            } else {
+                self.list.draw(f, area)?;
+            }
         }
 
         Ok(())
@@ -199,7 +245,11 @@ impl DrawableComponent for Revlog {
 impl Component for Revlog {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
-            let event_used = self.list.event(ev)?;
+            let event_used = if self.find_commit.focused() {
+                self.find_commit.event(ev)?
+            } else {
+                self.list.event(ev)?
+            };
 
             if event_used {
                 self.update()?;
@@ -243,6 +293,14 @@ impl Component for Revlog {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::SelectBranch);
+                    return Ok(true);
+                } else if k
+                    == self.key_config.show_find_commit_text_input
+                {
+                    self.find_commit.toggle_visible()?;
+                    return Ok(true);
+                } else if k == self.key_config.focus_find_commit {
+                    self.find_commit.focus(true);
                     return Ok(true);
                 }
             }
