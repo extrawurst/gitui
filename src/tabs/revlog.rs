@@ -38,6 +38,8 @@ pub struct Revlog {
     visible: bool,
     branch_name: cached::BranchName,
     key_config: SharedKeyConfig,
+    is_filtering: bool,
+    has_all_commits: bool,
 }
 
 impl Revlog {
@@ -71,6 +73,8 @@ impl Revlog {
             visible: false,
             branch_name: cached::BranchName::new(CWD),
             key_config,
+            is_filtering: false,
+            has_all_commits: false,
         }
     }
 
@@ -84,8 +88,13 @@ impl Revlog {
     ///
     pub fn update(&mut self) -> Result<()> {
         if self.visible {
-            let log_changed =
-                self.git_log.fetch()? == FetchStatus::Started;
+            let log_changed = if self.is_filtering {
+                // If filtering should get all commits
+                self.git_log.fetch(Some(usize::MAX))?
+                    == FetchStatus::Started
+            } else {
+                self.git_log.fetch(None)? == FetchStatus::Started
+            };
 
             self.list.set_count_total(self.git_log.count()?);
 
@@ -140,15 +149,24 @@ impl Revlog {
         let want_min =
             self.list.selection().saturating_sub(SLICE_SIZE / 2);
 
-        let commits = sync::get_commits_info(
-            CWD,
-            &self.git_log.get_slice(want_min, SLICE_SIZE)?,
-            self.list.current_size().0.into(),
-        );
+        // If filtering get all commits
+        let commits = if self.is_filtering {
+            sync::get_commits_info(
+                CWD,
+                &self.git_log.get_slice(0, usize::MAX)?,
+                self.list.current_size().0.into(),
+            )
+        } else {
+            sync::get_commits_info(
+                CWD,
+                &self.git_log.get_slice(want_min, SLICE_SIZE)?,
+                self.list.current_size().0.into(),
+            )
+        };
 
         if let Ok(commits) = commits {
             self.list.items().set_items(want_min, commits);
-        }
+        };
 
         Ok(())
     }
@@ -175,8 +193,22 @@ impl Revlog {
 
     pub fn filter(&mut self, filter_by: String) {
         if filter_by == "" {
+            self.is_filtering = false;
+            self.has_all_commits = false;
             self.list.set_filter(None);
         } else {
+            self.is_filtering = true;
+            // Don't get all the commits again if already have them,
+            // depening on repo could be expensive to constantly update
+            if !self.has_all_commits {
+                if let Err(e) = self.update() {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(e.to_string()),
+                    );
+                }
+                self.has_all_commits = true;
+            }
+
             self.list.set_filter(Some(filter_by));
         }
     }
