@@ -99,7 +99,7 @@ impl FindCommitComponent {
             key_config.clone(),
             &strings::find_commit_title(&key_config),
             &strings::find_commit_msg(&key_config),
-            true,
+            false,
         );
         input_component.show().expect("Will not error");
         input_component.set_should_use_rect(true);
