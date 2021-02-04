@@ -71,8 +71,6 @@ impl Revlog {
             visible: false,
             branch_name: cached::BranchName::new(CWD),
             key_config,
-            show_find_commit_box: true,
-            filter_string: None,
         }
     }
 
