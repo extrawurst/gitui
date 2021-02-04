@@ -1,6 +1,6 @@
 //!
 
-use super::branch::get_cur_branch_ref;
+use super::branch::get_head_refname;
 use super::commit::signature_allow_undefined_name;
 use crate::{
     error::Error,
@@ -19,7 +19,7 @@ pub fn reword(
     message: &str,
 ) -> Result<()> {
     let repo = utils::repo(repo_path)?;
-    let cur_branch_ref = get_cur_branch_ref(repo_path)?;
+    let cur_branch_ref = get_head_refname(repo_path)?;
 
     match reword_internal(repo_path, commit_oid, message) {
         Ok(()) => Ok(()),

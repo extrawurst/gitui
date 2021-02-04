@@ -46,7 +46,7 @@ pub(crate) fn get_cur_branch(
 }
 
 /// Convenience function to get the current branch reference
-pub fn get_cur_branch_ref(repo_path: &str) -> Result<Option<String>> {
+pub fn get_head_refname(repo_path: &str) -> Result<Option<String>> {
     let repo = utils::repo(repo_path)?;
     if let Ok(Some(b)) = get_cur_branch(&repo) {
         return Ok(Some(String::from_utf8(
