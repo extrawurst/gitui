@@ -95,7 +95,8 @@ impl CommitList {
                     return log_entry
                         .hash_short
                         .contains(filter_string)
-                        || log_entry.msg.contains(filter_string);
+                        || log_entry.msg.contains(filter_string)
+                        || log_entry.author.contains(filter_string);
                 }
                 true
             })
@@ -142,7 +143,8 @@ impl CommitList {
                     return log_entry
                         .hash_short
                         .contains(filter_string)
-                        || log_entry.msg.contains(filter_string);
+                        || log_entry.msg.contains(filter_string)
+                        || log_entry.author.contains(filter_string);
                 }
                 true
             })
@@ -297,7 +299,8 @@ impl CommitList {
                     return log_entry
                         .hash_short
                         .contains(filter_string)
-                        || log_entry.msg.contains(filter_string);
+                        || log_entry.msg.contains(filter_string)
+                        || log_entry.author.contains(filter_string);
                 }
                 true
             })
