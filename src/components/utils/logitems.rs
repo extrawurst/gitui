@@ -62,16 +62,6 @@ impl ItemBatch {
         self.index_offset = start_index;
     }
 
-    ///
-    pub fn extend(&mut self, commits: Vec<CommitInfo>) {
-        self.items.extend(commits.into_iter().map(LogEntry::from));
-    }
-
-    ///
-    pub fn len(&self) -> usize {
-        self.items.len()
-    }
-
     /// returns `true` if we should fetch updated list of items
     pub fn needs_data(&self, idx: usize, idx_max: usize) -> bool {
         let want_min =

@@ -38,9 +38,8 @@ pub struct Revlog {
     visible: bool,
     branch_name: cached::BranchName,
     key_config: SharedKeyConfig,
-    filter_string: Option<String>,
-    filter_count: usize,
-    prev_log_count: usize,
+    is_filtering: bool,
+    has_all_commits: bool,
 }
 
 impl Revlog {
@@ -74,9 +73,8 @@ impl Revlog {
             visible: false,
             branch_name: cached::BranchName::new(CWD),
             key_config,
-            filter_string: None,
-            filter_count: 0,
-            prev_log_count: 0,
+            is_filtering: false,
+            has_all_commits: false,
         }
     }
 
@@ -90,8 +88,15 @@ impl Revlog {
     ///
     pub fn update(&mut self) -> Result<()> {
         if self.visible {
-            let log_changed =
-                self.git_log.fetch()? == FetchStatus::Started;
+            let log_changed = if self.is_filtering {
+                // If filtering should get all commits
+                self.git_log.fetch(Some(usize::MAX))?
+                    == FetchStatus::Started
+            } else {
+                self.git_log.fetch(None)? == FetchStatus::Started
+            };
+
+            self.list.update_total_count();
 
             let selection = self.list.selection();
             let selection_max = self.list.selection_max();
@@ -99,12 +104,6 @@ impl Revlog {
                 || log_changed
             {
                 self.fetch_commits()?;
-            }
-
-            if let Some(_) = &self.filter_string {
-                //self.list.set_total_count(self.git_log.count()?);
-            } else {
-                self.list.set_total_count(self.git_log.count()?);
             }
 
             self.git_tags.request(Duration::from_secs(3), false)?;
@@ -150,50 +149,24 @@ impl Revlog {
         let want_min =
             self.list.selection().saturating_sub(SLICE_SIZE / 2);
 
-        if self.filter_string.is_none() {
-            let commits = sync::get_commits_info(
+        // If filtering get all commits
+        let commits = if self.is_filtering {
+            sync::get_commits_info(
+                CWD,
+                &self.git_log.get_slice(0, usize::MAX)?,
+                self.list.current_size().0.into(),
+            )
+        } else {
+            sync::get_commits_info(
                 CWD,
                 &self.git_log.get_slice(want_min, SLICE_SIZE)?,
                 self.list.current_size().0.into(),
-            );
+            )
+        };
 
-            if let Ok(commits) = commits {
-                self.list.items().set_items(want_min, commits);
-            };
-        } else {
-            let commits = sync::get_commits_info(
-                CWD,
-                &self
-                    .git_log
-                    .get_slice(self.prev_log_count, usize::MAX)?,
-                self.list.current_size().0.into(),
-            );
-
-            if let Ok(mut commits) = commits {
-                if let Some(filter_string) = &self.filter_string {
-                    let filtered_commits = commits
-                        .drain(..)
-                        .filter(|commit_info| {
-                            return commit_info
-                                .id
-                                .get_short_string()
-                                .contains(filter_string)
-                                || commit_info
-                                    .message
-                                    .contains(filter_string)
-                                || commit_info
-                                    .author
-                                    .contains(filter_string);
-                        })
-                        .collect::<Vec<asyncgit::sync::CommitInfo>>();
-                    self.filter_count += filtered_commits.len();
-                    self.list.items().extend(filtered_commits);
-                    let total_count = self.filter_count;
-                    self.list.set_total_count(total_count);
-                }
-            };
-            self.prev_log_count = self.git_log.count()?;
-        }
+        if let Ok(commits) = commits {
+            self.list.items().set_items(want_min, commits);
+        };
 
         Ok(())
     }
@@ -219,18 +192,24 @@ impl Revlog {
     }
 
     pub fn filter(&mut self, filter_by: String) {
-        self.filter_count = 0;
         if filter_by == "" {
-            self.filter_string = None;
-            self.list.clear();
+            self.is_filtering = false;
+            self.has_all_commits = false;
+            self.list.set_filter(None);
+            self.list.update_total_count();
         } else {
-            self.filter_string = Some(filter_by);
-            self.list.clear();
-        }
-        if let Err(e) = self.update() {
-            self.queue.borrow_mut().push_back(
-                InternalEvent::ShowErrorMsg(e.to_string()),
-            );
+            self.is_filtering = true;
+            self.list.set_filter(Some(filter_by));
+            // Don't get all the commits again if already have them,
+            // depening on repo could be expensive to constantly update
+            if !self.has_all_commits {
+                if let Err(e) = self.update() {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(e.to_string()),
+                    );
+                }
+                self.has_all_commits = true;
+            }
         }
     }
 }

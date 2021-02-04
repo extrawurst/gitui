@@ -34,8 +34,8 @@ pub struct AsyncLog {
     background: Arc<AtomicBool>,
 }
 
-static LIMIT_COUNT: usize = 5;
-static SLEEP_FOREGROUND: Duration = Duration::from_millis(500);
+static LIMIT_COUNT: usize = 3000;
+static SLEEP_FOREGROUND: Duration = Duration::from_millis(2);
 static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
 impl AsyncLog {
@@ -63,7 +63,7 @@ impl AsyncLog {
         let list = self.current.lock()?;
         let list_len = list.len();
         let min = start_index.min(list_len);
-        let max = min.saturating_add(amount);
+        let max = min + amount;
         let max = max.min(list_len);
         Ok(list[min..max].to_vec())
     }
@@ -97,8 +97,11 @@ impl AsyncLog {
         Ok(false)
     }
 
-    ///
-    pub fn fetch(&mut self) -> Result<FetchStatus> {
+    /// None for amount means fetch the default
+    pub fn fetch(
+        &mut self,
+        amount: Option<usize>,
+    ) -> Result<FetchStatus> {
         self.background.store(false, Ordering::Relaxed);
 
         if self.is_pending() {
@@ -125,6 +128,7 @@ impl AsyncLog {
                 arc_current,
                 arc_background,
                 &sender,
+                amount.unwrap_or(LIMIT_COUNT),
             )
             .expect("failed to fetch");
 
@@ -140,14 +144,15 @@ impl AsyncLog {
         arc_current: Arc<Mutex<Vec<CommitId>>>,
         arc_background: Arc<AtomicBool>,
         sender: &Sender<AsyncNotification>,
+        amount: usize,
     ) -> Result<()> {
-        let mut entries = Vec::with_capacity(LIMIT_COUNT);
+        let mut entries = Vec::with_capacity(amount);
         let r = repo(CWD)?;
         let mut walker = LogWalker::new(&r);
         loop {
             entries.clear();
             let res_is_err =
-                walker.read(&mut entries, LIMIT_COUNT).is_err();
+                walker.read(&mut entries, amount).is_err();
 
             if !res_is_err {
                 let mut current = arc_current.lock()?;
