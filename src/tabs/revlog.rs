@@ -218,6 +218,9 @@ impl DrawableComponent for Revlog {
                 self.list.draw(f, log_find_chunks[0])?;
                 self.find_commit.draw(f, log_find_chunks[1])?;
                 self.commit_details.draw(f, chunks[1])?;
+            } else {
+                self.list.draw(f, chunks[0])?;
+                self.commit_details.draw(f, chunks[1])?;
             }
         } else {
             if self.find_commit.is_visible() {

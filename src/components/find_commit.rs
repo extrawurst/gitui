@@ -66,6 +66,7 @@ impl Component for FindCommitComponent {
                     return Ok(true);
                 } else if e == self.key_config.exit_popup {
                     // Prevent text input closing
+                    self.focus(false);
                     return Ok(true);
                 }
             }
