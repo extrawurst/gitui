@@ -97,11 +97,8 @@ impl AsyncLog {
         Ok(false)
     }
 
-    /// None for amount means fetch the default
-    pub fn fetch(
-        &mut self,
-        amount: Option<usize>,
-    ) -> Result<FetchStatus> {
+    ///
+    pub fn fetch(&mut self) -> Result<FetchStatus> {
         self.background.store(false, Ordering::Relaxed);
 
         if self.is_pending() {
@@ -128,7 +125,6 @@ impl AsyncLog {
                 arc_current,
                 arc_background,
                 &sender,
-                amount.unwrap_or(LIMIT_COUNT),
             )
             .expect("failed to fetch");
 
@@ -144,15 +140,14 @@ impl AsyncLog {
         arc_current: Arc<Mutex<Vec<CommitId>>>,
         arc_background: Arc<AtomicBool>,
         sender: &Sender<AsyncNotification>,
-        amount: usize,
     ) -> Result<()> {
-        let mut entries = Vec::with_capacity(amount);
+        let mut entries = Vec::with_capacity(LIMIT_COUNT);
         let r = repo(CWD)?;
         let mut walker = LogWalker::new(&r);
         loop {
             entries.clear();
             let res_is_err =
-                walker.read(&mut entries, amount).is_err();
+                walker.read(&mut entries, LIMIT_COUNT).is_err();
 
             if !res_is_err {
                 let mut current = arc_current.lock()?;

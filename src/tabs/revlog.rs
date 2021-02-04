@@ -38,8 +38,8 @@ pub struct Revlog {
     visible: bool,
     branch_name: cached::BranchName,
     key_config: SharedKeyConfig,
-    is_filtering: bool,
-    has_all_commits: bool,
+    filter_string: Option<String>,
+    filter_count: usize,
 }
 
 impl Revlog {
@@ -73,8 +73,8 @@ impl Revlog {
             visible: false,
             branch_name: cached::BranchName::new(CWD),
             key_config,
-            is_filtering: false,
-            has_all_commits: false,
+            filter_string: None,
+            filter_count: 0,
         }
     }
 
@@ -88,15 +88,14 @@ impl Revlog {
     ///
     pub fn update(&mut self) -> Result<()> {
         if self.visible {
-            let log_changed = if self.is_filtering {
-                // If filtering should get all commits
-                self.git_log.fetch(Some(usize::MAX))?
-                    == FetchStatus::Started
-            } else {
-                self.git_log.fetch(None)? == FetchStatus::Started
-            };
+            let log_changed =
+                self.git_log.fetch()? == FetchStatus::Started;
 
-            self.list.update_total_count();
+            if let Some(_) = &self.filter_string {
+                self.list.set_total_count(self.filter_count);
+            } else {
+                self.list.set_total_count(self.git_log.count()?);
+            }
 
             let selection = self.list.selection();
             let selection_max = self.list.selection_max();
@@ -149,23 +148,36 @@ impl Revlog {
         let want_min =
             self.list.selection().saturating_sub(SLICE_SIZE / 2);
 
-        // If filtering get all commits
-        let commits = if self.is_filtering {
-            sync::get_commits_info(
-                CWD,
-                &self.git_log.get_slice(0, usize::MAX)?,
-                self.list.current_size().0.into(),
-            )
-        } else {
-            sync::get_commits_info(
-                CWD,
-                &self.git_log.get_slice(want_min, SLICE_SIZE)?,
-                self.list.current_size().0.into(),
-            )
-        };
+        let commits = sync::get_commits_info(
+            CWD,
+            &self.git_log.get_slice(want_min, SLICE_SIZE)?,
+            self.list.current_size().0.into(),
+        );
 
-        if let Ok(commits) = commits {
-            self.list.items().set_items(want_min, commits);
+        if let Ok(mut commits) = commits {
+            if let Some(filter_string) = &self.filter_string {
+                let filtered_commits = commits
+                    .drain(..)
+                    .filter(|commit_info| {
+                        return commit_info
+                            .id
+                            .get_short_string()
+                            .contains(filter_string)
+                            || commit_info
+                                .message
+                                .contains(filter_string)
+                            || commit_info
+                                .author
+                                .contains(filter_string);
+                    })
+                    .collect::<Vec<asyncgit::sync::CommitInfo>>();
+                self.filter_count = filtered_commits.len();
+                self.list
+                    .items()
+                    .set_items(want_min, filtered_commits);
+            } else {
+                self.list.items().set_items(want_min, commits);
+            }
         };
 
         Ok(())
@@ -193,23 +205,16 @@ impl Revlog {
 
     pub fn filter(&mut self, filter_by: String) {
         if filter_by == "" {
-            self.is_filtering = false;
-            self.has_all_commits = false;
-            self.list.set_filter(None);
-            self.list.update_total_count();
+            self.filter_string = None;
+            self.list.clear();
         } else {
-            self.is_filtering = true;
-            self.list.set_filter(Some(filter_by));
-            // Don't get all the commits again if already have them,
-            // depening on repo could be expensive to constantly update
-            if !self.has_all_commits {
-                if let Err(e) = self.update() {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(e.to_string()),
-                    );
-                }
-                self.has_all_commits = true;
-            }
+            self.filter_string = Some(filter_by);
+            self.list.clear();
+        }
+        if let Err(e) = self.update() {
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ShowErrorMsg(e.to_string()),
+            );
         }
     }
 }
