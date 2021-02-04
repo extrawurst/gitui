@@ -14,7 +14,6 @@ use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct FindCommitComponent {
     input: TextInputComponent,
-    branch_ref: Option<String>,
     queue: Queue,
     is_focused: bool,
     visible: bool,
@@ -117,29 +116,14 @@ impl FindCommitComponent {
             &strings::rename_branch_popup_msg(&key_config),
             true,
         );
-        input_component.show().expect("Will not err");
+        input_component.show().expect("Will not error");
         input_component.set_should_use_rect(true);
         Self {
             queue,
             input: input_component,
-            branch_ref: None,
             key_config,
             visible: false,
             is_focused: false,
         }
-    }
-
-    ///
-    pub fn open(
-        &mut self,
-        branch_ref: String,
-        cur_name: String,
-    ) -> Result<()> {
-        self.branch_ref = None;
-        self.branch_ref = Some(branch_ref);
-        self.input.set_text(cur_name);
-        self.show()?;
-
-        Ok(())
     }
 }

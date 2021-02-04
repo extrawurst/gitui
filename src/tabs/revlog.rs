@@ -38,8 +38,6 @@ pub struct Revlog {
     visible: bool,
     branch_name: cached::BranchName,
     key_config: SharedKeyConfig,
-    show_find_commit_box: bool,
-    filter_string: Option<String>,
 }
 
 impl Revlog {
