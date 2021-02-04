@@ -96,7 +96,7 @@ impl Revlog {
                 self.git_log.fetch(None)? == FetchStatus::Started
             };
 
-            self.list.set_count_total(self.git_log.count()?);
+            self.list.update_total_count();
 
             let selection = self.list.selection();
             let selection_max = self.list.selection_max();
