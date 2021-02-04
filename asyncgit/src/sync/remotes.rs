@@ -113,7 +113,7 @@ pub fn push(
     branch: &str,
     force: bool,
     basic_credential: Option<BasicAuthCredential>,
-    progress_sender: Sender<ProgressNotification>,
+    progress_sender: Option<Sender<ProgressNotification>>,
 ) -> Result<()> {
     scope_time!("push");
 
@@ -123,7 +123,7 @@ pub fn push(
     let mut options = PushOptions::new();
 
     options.remote_callbacks(remote_callbacks(
-        Some(progress_sender),
+        progress_sender,
         basic_credential,
     ));
     options.packbuilder_parallelism(0);
@@ -311,5 +311,78 @@ mod tests {
         )
         .unwrap();
         assert_eq!(first, String::from("origin"));
+    }
+
+    #[test]
+    fn test_force_push() {
+        use super::push;
+        use crate::sync::tests::upstream_repo_init;
+        use std::fs::File;
+        use std::io::Write;
+
+        let (
+            tmp_repo_dir,
+            repo,
+            tmp_upstream_dir,
+            upstream,
+            tmp_other_repo_dir,
+            other_repo,
+        ) = upstream_repo_init().expect("Failed to create co");
+
+        let tmp_repo_file_path =
+            tmp_repo_dir.path().join("temp_file.txt");
+        let mut tmp_repo_file =
+            File::create(tmp_repo_file_path).unwrap();
+        writeln!(tmp_repo_file, "TempSomething").unwrap();
+
+        let mut index = repo.index().unwrap();
+        let id = index.write_tree().unwrap();
+
+        let tree = repo.find_tree(id).unwrap();
+        let sig = repo.signature().unwrap();
+        repo.commit(Some("HEAD"), &sig, &sig, "next", &tree, &[])
+            .unwrap();
+
+        push(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "origin",
+            "master",
+            false,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let tmp_repo_file_path =
+            tmp_repo_dir.path().join("temp_file.txt");
+        let mut tmp_repo_file =
+            File::create(tmp_repo_file_path).unwrap();
+        writeln!(tmp_repo_file, "TempElse").unwrap();
+
+        assert_eq!(
+            push(
+                tmp_other_repo_dir.path().to_str().unwrap(),
+                "origin",
+                "master",
+                false,
+                None,
+                None,
+            )
+            .is_err(),
+            true
+        );
+
+        assert_eq!(
+            push(
+                tmp_other_repo_dir.path().to_str().unwrap(),
+                "origin",
+                "master",
+                true,
+                None,
+                None,
+            )
+            .is_err(),
+            false
+        );
     }
 }

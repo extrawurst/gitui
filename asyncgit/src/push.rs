@@ -168,7 +168,7 @@ impl AsyncPush {
                 params.branch.as_str(),
                 params.force,
                 params.basic_credential,
-                progress_sender.clone(),
+                Some(progress_sender.clone()),
             );
 
             progress_sender
