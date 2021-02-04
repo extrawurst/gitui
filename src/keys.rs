@@ -88,7 +88,7 @@ impl Default for KeyConfig {
 			exit_popup: KeyEvent { code: KeyCode::Esc, modifiers: KeyModifiers::empty()},
 			open_commit: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::empty()},
             open_commit_editor: KeyEvent { code: KeyCode::Char('e'), modifiers:KeyModifiers::CONTROL},
-            show_find_commit_text_input: KeyEvent {code: KeyCode::Char(':'), modifiers: KeyModifiers::empty()},
+            show_find_commit_text_input: KeyEvent {code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
             focus_find_commit: KeyEvent {code: KeyCode::Down, modifiers: KeyModifiers::ALT},
 			open_help: KeyEvent { code: KeyCode::Char('h'), modifiers: KeyModifiers::empty()},
 			move_left: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::empty()},
