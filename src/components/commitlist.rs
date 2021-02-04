@@ -123,9 +123,21 @@ impl CommitList {
 
     ///
     pub fn selected_entry(&self) -> Option<&LogEntry> {
-        self.items.iter().nth(
-            self.selection.saturating_sub(self.items.index_offset()),
-        )
+        self.items
+            .iter()
+            .filter(|log_entry| {
+                if let Some(filter_string) = &self.filter_string {
+                    return log_entry
+                        .hash_short
+                        .contains(filter_string)
+                        || log_entry.msg.contains(filter_string);
+                }
+                true
+            })
+            .nth(
+                self.selection
+                    .saturating_sub(self.items.index_offset()),
+            )
     }
 
     pub fn copy_entry_hash(&self) -> Result<()> {
