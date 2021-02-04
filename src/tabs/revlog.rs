@@ -196,8 +196,10 @@ impl Revlog {
             self.is_filtering = false;
             self.has_all_commits = false;
             self.list.set_filter(None);
+            self.list.update_total_count();
         } else {
             self.is_filtering = true;
+            self.list.set_filter(Some(filter_by));
             // Don't get all the commits again if already have them,
             // depening on repo could be expensive to constantly update
             if !self.has_all_commits {
@@ -208,8 +210,6 @@ impl Revlog {
                 }
                 self.has_all_commits = true;
             }
-
-            self.list.set_filter(Some(filter_by));
         }
     }
 }
