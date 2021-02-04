@@ -55,21 +55,18 @@ impl Component for FindCommitComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.is_visible() {
             if let Event::Key(e) = ev {
-                if e == self.key_config.enter {
-                    // Send internal event to filter revlog
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::FilterLog(
-                            self.input.get_text().to_string(),
-                        ),
-                    );
-                    return Ok(true);
-                } else if e == self.key_config.exit_popup {
+                if e == self.key_config.exit_popup {
                     // Prevent text input closing
                     self.focus(false);
                     return Ok(true);
                 }
             }
             if self.input.event(ev)? {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::FilterLog(
+                        self.input.get_text().to_string(),
+                    ),
+                );
                 return Ok(true);
             }
         }
