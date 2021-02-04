@@ -46,6 +46,7 @@ impl Component for FindCommitComponent {
                 if e == self.key_config.exit_popup {
                     // Prevent text input closing
                     self.focus(false);
+                    self.visible = false;
                     return Ok(true);
                 }
             }
@@ -110,5 +111,9 @@ impl FindCommitComponent {
             visible: false,
             is_focused: false,
         }
+    }
+
+    pub fn clear_input(&mut self) {
+        self.input.clear();
     }
 }

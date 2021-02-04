@@ -333,6 +333,16 @@ impl Component for Revlog {
                 } else if k == self.key_config.focus_find_commit {
                     self.find_commit.focus(true);
                     return Ok(true);
+                } else if k == self.key_config.exit_popup {
+                    self.filter("".to_string());
+                    self.find_commit.clear_input();
+                    if let Err(e) = self.update() {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::ShowErrorMsg(
+                                e.to_string(),
+                            ),
+                        );
+                    }
                 }
             }
         }
