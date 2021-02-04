@@ -296,6 +296,7 @@ impl Component for Revlog {
                     == self.key_config.show_find_commit_text_input
                 {
                     self.find_commit.toggle_visible()?;
+                    self.find_commit.focus(true);
                     return Ok(true);
                 } else if k == self.key_config.focus_find_commit {
                     self.find_commit.focus(true);
