@@ -113,12 +113,19 @@ mod tests {
         let tmp_other_repo_dir = TempDir::new()?;
         let tmp_upstream_dir = TempDir::new()?;
         let repo = Repository::init(tmp_repo_dir.path())?;
-        let other_repo = Repository::init(tmp_repo_dir.path())?;
-        let upstream = Repository::init(tmp_upstream_dir.path())?;
+        let other_repo = Repository::init(tmp_other_repo_dir.path())?;
+        let upstream =
+            Repository::init_bare(tmp_upstream_dir.path())?;
         repo.remote(
             "origin",
             tmp_upstream_dir.path().to_str().unwrap(),
         )?;
+
+        other_repo.remote(
+            "origin",
+            tmp_upstream_dir.path().to_str().unwrap(),
+        )?;
+
         {
             let mut config = repo.config()?;
             config.set_str("user.name", "name")?;
@@ -126,6 +133,9 @@ mod tests {
 
             let mut index = repo.index()?;
             let id = index.write_tree()?;
+
+            let root = repo.path().parent().unwrap();
+            let repo_path = root.as_os_str().to_str().unwrap();
 
             let tree = repo.find_tree(id)?;
             let sig = repo.signature()?;
@@ -137,7 +147,8 @@ mod tests {
                 &tree,
                 &[],
             )?;
-
+        }
+        {
             let mut config = other_repo.config()?;
             config.set_str("user.name", "name")?;
             config.set_str("user.email", "email")?;
@@ -155,10 +166,12 @@ mod tests {
                 &tree,
                 &[],
             )?;
-
-            branch_set_upstream(&repo, "master")?;
-            branch_set_upstream(&other_repo, "master")?;
         }
+
+        branch_set_upstream(&repo, "master")?;
+        branch_set_upstream(&other_repo, "master")?;
+        println!("Set Upstream");
+
         Ok((
             tmp_repo_dir,
             repo,
