@@ -327,7 +327,7 @@ mod tests {
             upstream,
             tmp_other_repo_dir,
             other_repo,
-        ) = upstream_repo_init().expect("Failed to create co");
+        ) = upstream_repo_init().expect("Failed to setup");
 
         let tmp_repo_file_path =
             tmp_repo_dir.path().join("temp_file.txt");
