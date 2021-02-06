@@ -140,7 +140,7 @@ impl RewordComponent {
         Ok(())
     }
 
-    /// Ope external editor
+    /// Open external editor
     pub fn show_editor(&mut self) -> Result<()> {
         let message = show_editor(Some(self.input.get_text()))?
             .trim()
