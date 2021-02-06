@@ -522,7 +522,7 @@ mod tests {
             false
         );
 
-        let mut commit_ids = Vec::<CommitId>::new();
+        commit_ids.clear();
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
 
         // Check that only the other repo commit is now in upstream
