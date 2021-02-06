@@ -320,6 +320,12 @@ mod tests {
         use std::fs::File;
         use std::io::Write;
 
+        use crate::sync::commit::commit;
+
+        // This test mimics the scenario of 2 people having 2
+        // local branches and both modifying the same file then
+        // both pushing, sequentially
+
         let (
             tmp_repo_dir,
             repo,
@@ -335,12 +341,7 @@ mod tests {
             File::create(tmp_repo_file_path).unwrap();
         writeln!(tmp_repo_file, "TempSomething").unwrap();
 
-        let mut index = repo.index().unwrap();
-        let id = index.write_tree().unwrap();
-
-        let tree = repo.find_tree(id).unwrap();
-        let sig = repo.signature().unwrap();
-        repo.commit(Some("HEAD"), &sig, &sig, "next", &tree, &[])
+        commit(tmp_repo_dir.path().to_str().unwrap(), "some")
             .unwrap();
 
         push(
@@ -353,12 +354,20 @@ mod tests {
         )
         .unwrap();
 
-        let tmp_repo_file_path =
-            tmp_repo_dir.path().join("temp_file.txt");
-        let mut tmp_repo_file =
-            File::create(tmp_repo_file_path).unwrap();
-        writeln!(tmp_repo_file, "TempElse").unwrap();
+        let tmp_other_repo_file_path =
+            tmp_other_repo_dir.path().join("temp_file.txt");
+        let mut tmp_other_repo_file =
+            File::create(tmp_other_repo_file_path).unwrap();
+        writeln!(tmp_other_repo_file, "TempElse").unwrap();
 
+        commit(
+            tmp_other_repo_dir.path().to_str().unwrap(),
+            "someElse",
+        )
+        .unwrap();
+
+        // Attempt a normal push,
+        // should fail as branches diverged
         assert_eq!(
             push(
                 tmp_other_repo_dir.path().to_str().unwrap(),
@@ -372,6 +381,8 @@ mod tests {
             true
         );
 
+        // Attempt force push,
+        // should work as it forces the push through
         assert_eq!(
             push(
                 tmp_other_repo_dir.path().to_str().unwrap(),

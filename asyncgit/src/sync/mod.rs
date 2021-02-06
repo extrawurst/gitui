@@ -107,7 +107,7 @@ mod tests {
         TempDir,
         Repository,
     )> {
-        use crate::sync::branch::branch_set_upstream;
+        // use crate::sync::branch::branch_set_upstream;
 
         let tmp_repo_dir = TempDir::new()?;
         let tmp_other_repo_dir = TempDir::new()?;
@@ -168,8 +168,8 @@ mod tests {
             )?;
         }
 
-        branch_set_upstream(&repo, "master")?;
-        branch_set_upstream(&other_repo, "master")?;
+        //branch_set_upstream(&repo, "master")?;
+        //branch_set_upstream(&other_repo, "master")?;
         println!("Set Upstream");
 
         Ok((
