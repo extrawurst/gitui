@@ -316,24 +316,32 @@ mod tests {
     #[test]
     fn test_force_push() {
         use super::push;
-        use crate::sync::tests::upstream_repo_init;
         use std::fs::File;
         use std::io::Write;
 
         use crate::sync::commit::commit;
+        use crate::sync::tests::{repo_init, repo_init_bare};
 
         // This test mimics the scenario of 2 people having 2
         // local branches and both modifying the same file then
         // both pushing, sequentially
 
-        let (
-            tmp_repo_dir,
-            repo,
-            tmp_upstream_dir,
-            upstream,
-            tmp_other_repo_dir,
-            other_repo,
-        ) = upstream_repo_init().expect("Failed to setup");
+        let (tmp_repo_dir, repo) = repo_init().unwrap();
+        let (tmp_other_repo_dir, other_repo) = repo_init().unwrap();
+        let (tmp_upstream_dir, upstream) = repo_init_bare().unwrap();
+
+        repo.remote(
+            "origin",
+            tmp_upstream_dir.path().to_str().unwrap(),
+        )
+        .unwrap();
+
+        other_repo
+            .remote(
+                "origin",
+                tmp_upstream_dir.path().to_str().unwrap(),
+            )
+            .unwrap();
 
         let tmp_repo_file_path =
             tmp_repo_dir.path().join("temp_file.txt");
@@ -341,8 +349,11 @@ mod tests {
             File::create(tmp_repo_file_path).unwrap();
         writeln!(tmp_repo_file, "TempSomething").unwrap();
 
-        commit(tmp_repo_dir.path().to_str().unwrap(), "some")
-            .unwrap();
+        commit(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "repo_1_commit",
+        )
+        .unwrap();
 
         push(
             tmp_repo_dir.path().to_str().unwrap(),
@@ -362,7 +373,7 @@ mod tests {
 
         commit(
             tmp_other_repo_dir.path().to_str().unwrap(),
-            "someElse",
+            "repo_2_commit",
         )
         .unwrap();
 
