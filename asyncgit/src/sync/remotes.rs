@@ -526,7 +526,6 @@ mod tests {
 
         commit_ids.clear();
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
-        let c = upstream.find_commit((commit_ids[0]).into()).unwrap();
 
         // Check that only the other repo commit is now in upstream
         assert_eq!(
@@ -535,7 +534,14 @@ mod tests {
         );
 
         assert_eq!(
-            c.parents().next().unwrap().id() == upstream_parent,
+            upstream
+                .find_commit((commit_ids[0]).into())
+                .unwrap()
+                .parents()
+                .next()
+                .unwrap()
+                .id()
+                == upstream_parent,
             true
         );
     }
