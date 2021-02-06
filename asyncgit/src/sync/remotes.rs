@@ -522,12 +522,12 @@ mod tests {
             false
         );
 
+        let mut commit_ids = Vec::<CommitId>::new();
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
 
-        // Check that both the commits are now in upstream
+        // Check that only the other repo commit is now in upstream
         assert_eq!(
-            commit_ids.contains(&repo_commit_ids[0])
-                && commit_ids.contains(&other_repo_commit_ids[0]),
+            commit_ids.contains(&other_repo_commit_ids[0]),
             true
         );
 
