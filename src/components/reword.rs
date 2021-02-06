@@ -161,15 +161,13 @@ impl RewordComponent {
         }
 
         ExternalEditorComponent::open_file_in_editor(
-            &tmp_file.path(),
+            tmp_file.path(),
         )?;
 
         let mut message = String::new();
 
         let mut file = tmp_file.reopen()?;
         file.read_to_string(&mut message)?;
-        drop(file);
-        std::fs::remove_file(&tmp_file.path())?;
 
         let message: String = message
             .lines()
