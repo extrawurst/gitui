@@ -171,6 +171,9 @@ pub fn rename_branch_popup_msg(
 ) -> String {
     "new branch name".to_string()
 }
+pub fn set_branch_upstream_popup(branch_name: &str) -> String {
+    format!("Set Upstream of branch {}", branch_name)
+}
 
 pub mod commit {
     use crate::keys::SharedKeyConfig;
@@ -796,6 +799,18 @@ pub mod commands {
             ),
             "open select branch popup",
             CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn set_upstream_confirm(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Set Upstream [{}]",
+                key_config.get_hint(key_config.enter),
+            ),
+            "Set the upstream branch",
+            CMD_GROUP_COMMIT,
         )
     }
 

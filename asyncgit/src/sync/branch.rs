@@ -46,16 +46,31 @@ pub struct BranchForDisplay {
     pub has_upstream: bool,
 }
 
+/// Get only the local branches
+pub fn get_local_branches_to_display(
+    repo_path: &str,
+) -> Result<Vec<BranchForDisplay>> {
+    get_branches_to_display(repo_path, Some(BranchType::Local))
+}
+
+/// Get only the remote branches
+pub fn get_remote_branches_to_display(
+    repo_path: &str,
+) -> Result<Vec<BranchForDisplay>> {
+    get_branches_to_display(repo_path, Some(BranchType::Remote))
+}
+
 /// Used to return only the nessessary information for displaying a branch
 /// rather than an iterator over the actual branches
 pub fn get_branches_to_display(
     repo_path: &str,
+    filter: Option<BranchType>,
 ) -> Result<Vec<BranchForDisplay>> {
     scope_time!("get_branches_to_display");
 
     let cur_repo = utils::repo(repo_path)?;
     let branches_for_display = cur_repo
-        .branches(Some(BranchType::Local))?
+        .branches(filter)?
         .map(|b| {
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
@@ -87,6 +102,24 @@ pub struct BranchCompare {
 }
 
 ///
+pub fn get_branch_upstream(
+    repo_path: &str,
+    branch_ref: &str,
+) -> Result<String> {
+    scope_time!("get_branch_upstream");
+    String::from_utf8(
+        git2::Branch::wrap(
+            utils::repo(repo_path)?.find_reference(branch_ref)?,
+        )
+        .upstream()?
+        .get()
+        .name_bytes()
+        .to_vec(),
+    )
+    .map_err(Error::Utf8Error)
+}
+
+///
 pub(crate) fn branch_set_upstream(
     repo: &Repository,
     branch_name: &str,
@@ -102,6 +135,22 @@ pub(crate) fn branch_set_upstream(
         branch.set_upstream(Some(upstream_name.as_str()))?;
     }
 
+    Ok(())
+}
+
+/// Sets the upstream of a branch, this is where the commits go when pushing
+pub fn set_branch_upstream(
+    repo_path: &str,
+    branch_ref: &str,
+    upstream_ref: &str,
+) -> Result<()> {
+    scope_time!("set_branch_upstream");
+
+    let repo = utils::repo(repo_path)?;
+    let branch_as_ref = repo.find_reference(branch_ref)?;
+    let mut branch = git2::Branch::wrap(branch_as_ref);
+
+    branch.set_upstream(Some(upstream_ref))?;
     Ok(())
 }
 
@@ -297,7 +346,7 @@ mod tests_branches {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_local_branches_to_display(repo_path,)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())
@@ -315,7 +364,7 @@ mod tests_branches {
         create_branch(repo_path, "test").unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_local_branches_to_display(repo_path,)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())

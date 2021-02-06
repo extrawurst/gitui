@@ -11,7 +11,8 @@ use crate::{
 };
 use asyncgit::{
     sync::{
-        checkout_branch, get_branches_to_display, BranchForDisplay,
+        checkout_branch, get_local_branches_to_display,
+        BranchForDisplay,
     },
     CWD,
 };
@@ -236,7 +237,7 @@ impl SelectBranchComponent {
     }
     /// Get all the names of the branches in the repo
     pub fn get_branch_names() -> Result<Vec<BranchForDisplay>> {
-        Ok(get_branches_to_display(CWD)?)
+        Ok(get_local_branches_to_display(CWD)?)
     }
 
     ///
