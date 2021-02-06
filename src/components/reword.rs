@@ -146,10 +146,9 @@ impl RewordComponent {
     /// this should be called to put the text in the
     /// right place
     pub fn show_editor(&mut self) -> Result<()> {
-        let tmp_file = NamedTempFile::new()?;
-
+        let temp_file = NamedTempFile::new()?;
         {
-            let mut file = tmp_file.reopen()?;
+            let mut file = temp_file.reopen()?;
             file.write_fmt(format_args!(
                 "{}\n",
                 self.input.get_text()
@@ -161,12 +160,12 @@ impl RewordComponent {
         }
 
         ExternalEditorComponent::open_file_in_editor(
-            tmp_file.path(),
+            temp_file.path(),
         )?;
 
         let mut message = String::new();
 
-        let mut file = tmp_file.reopen()?;
+        let mut file = temp_file.reopen()?;
         file.read_to_string(&mut message)?;
 
         let message: String = message
