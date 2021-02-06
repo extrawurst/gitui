@@ -454,8 +454,6 @@ mod tests {
         let mut repo_commit_ids = Vec::<CommitId>::new();
         LogWalker::new(&repo).read(&mut repo_commit_ids, 1).unwrap();
 
-        println!("repo {:?}", repo_commit_ids);
-
         push(
             tmp_repo_dir.path().to_str().unwrap(),
             "origin",
@@ -490,8 +488,6 @@ mod tests {
             .read(&mut other_repo_commit_ids, 1)
             .unwrap();
 
-        println!("other repo {:?}", other_repo_commit_ids);
-
         // Attempt a normal push,
         // should fail as branches diverged
         assert_eq!(
@@ -513,8 +509,6 @@ mod tests {
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
         assert_eq!(commit_ids.contains(&repo_commit_ids[0]), true);
 
-        println!(" upstream {:?}", commit_ids);
-
         // Attempt force push,
         // should work as it forces the push through
         assert_eq!(
@@ -534,21 +528,15 @@ mod tests {
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
         let c = upstream.find_commit((commit_ids[0]).into()).unwrap();
 
-        assert_eq!(
-            c.parents().next().unwrap().id() == upstream_parent,
-            true
-        );
-        println!(
-            "upstream {:?}",
-            c.parents().collect::<Vec<git2::Commit>>()[0].id()
-        );
-
         // Check that only the other repo commit is now in upstream
         assert_eq!(
             commit_ids.contains(&other_repo_commit_ids[0]),
             true
         );
 
-        println!("upstream {:?}", commit_ids);
+        assert_eq!(
+            c.parents().next().unwrap().id() == upstream_parent,
+            true
+        );
     }
 }
