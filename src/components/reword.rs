@@ -5,7 +5,6 @@ use super::{
 };
 use crate::{
     app::EditorSource,
-    get_app_config_path,
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
@@ -17,11 +16,8 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
-use std::{
-    fs::File,
-    io::{Read, Write},
-    path::PathBuf,
-};
+use std::io::{Read, Write};
+use tempfile::NamedTempFile;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct RewordComponent {
@@ -150,13 +146,10 @@ impl RewordComponent {
     /// this should be called to put the text in the
     /// right place
     pub fn show_editor(&mut self) -> Result<()> {
-        const COMMIT_MSG_FILE_NAME: &str = "COMMITMSG_EDITOR";
-        //TODO: use a tmpfile here
-        let mut config_path: PathBuf = get_app_config_path()?;
-        config_path.push(COMMIT_MSG_FILE_NAME);
+        let tmp_file = NamedTempFile::new()?;
 
         {
-            let mut file = File::create(&config_path)?;
+            let mut file = tmp_file.reopen()?;
             file.write_fmt(format_args!(
                 "{}\n",
                 self.input.get_text()
@@ -167,14 +160,16 @@ impl RewordComponent {
             )?;
         }
 
-        ExternalEditorComponent::open_file_in_editor(&config_path)?;
+        ExternalEditorComponent::open_file_in_editor(
+            &tmp_file.path(),
+        )?;
 
         let mut message = String::new();
 
-        let mut file = File::open(&config_path)?;
+        let mut file = tmp_file.reopen()?;
         file.read_to_string(&mut message)?;
         drop(file);
-        std::fs::remove_file(&config_path)?;
+        std::fs::remove_file(&tmp_file.path())?;
 
         let message: String = message
             .lines()

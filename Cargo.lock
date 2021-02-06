@@ -377,6 +377,7 @@ dependencies = [
  "scopetime",
  "serde",
  "simplelog",
+ "tempfile",
  "textwrap 0.13.2",
  "tui",
  "unicode-width",
