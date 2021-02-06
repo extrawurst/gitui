@@ -407,4 +407,134 @@ mod tests {
             false
         );
     }
+
+    #[test]
+    fn test_force_push_rewrites_history() {
+        use super::push;
+        use std::fs::File;
+        use std::io::Write;
+
+        use crate::sync::commit::commit;
+        use crate::sync::tests::{repo_init, repo_init_bare};
+        use crate::sync::LogWalker;
+
+        // This test mimics the scenario of 2 people having 2
+        // local branches and both modifying the same file then
+        // both pushing, sequentially
+
+        let (tmp_repo_dir, repo) = repo_init().unwrap();
+        let (tmp_other_repo_dir, other_repo) = repo_init().unwrap();
+        let (tmp_upstream_dir, upstream) = repo_init_bare().unwrap();
+
+        repo.remote(
+            "origin",
+            tmp_upstream_dir.path().to_str().unwrap(),
+        )
+        .unwrap();
+
+        other_repo
+            .remote(
+                "origin",
+                tmp_upstream_dir.path().to_str().unwrap(),
+            )
+            .unwrap();
+
+        let tmp_repo_file_path =
+            tmp_repo_dir.path().join("temp_file.txt");
+        let mut tmp_repo_file =
+            File::create(tmp_repo_file_path).unwrap();
+        writeln!(tmp_repo_file, "TempSomething").unwrap();
+
+        commit(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "repo_1_commit",
+        )
+        .unwrap();
+
+        let mut repo_commit_ids = Vec::<CommitId>::new();
+        LogWalker::new(&repo).read(&mut repo_commit_ids, 1);
+
+        println!("repo {:?}", repo_commit_ids);
+
+        let mut upstream_commit_ids = Vec::<CommitId>::new();
+        LogWalker::new(&upstream).read(&mut upstream_commit_ids, 1);
+
+        println!("upstream {:?}", upstream_commit_ids);
+
+        push(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "origin",
+            "master",
+            false,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let tmp_other_repo_file_path =
+            tmp_other_repo_dir.path().join("temp_file.txt");
+        let mut tmp_other_repo_file =
+            File::create(tmp_other_repo_file_path).unwrap();
+        writeln!(tmp_other_repo_file, "TempElse").unwrap();
+
+        commit(
+            tmp_other_repo_dir.path().to_str().unwrap(),
+            "repo_2_commit",
+        )
+        .unwrap();
+        let mut other_repo_commit_ids = Vec::<CommitId>::new();
+        LogWalker::new(&other_repo)
+            .read(&mut other_repo_commit_ids, 1);
+
+        println!("other repo {:?}", other_repo_commit_ids);
+
+        // Attempt a normal push,
+        // should fail as branches diverged
+        assert_eq!(
+            push(
+                tmp_other_repo_dir.path().to_str().unwrap(),
+                "origin",
+                "master",
+                false,
+                None,
+                None,
+            )
+            .is_err(),
+            true
+        );
+
+        // Check that the other commit is not in upstream,
+        // a normal push would not rewrite history
+        let mut commit_ids = Vec::<CommitId>::new();
+        LogWalker::new(&upstream).read(&mut commit_ids, 1);
+        assert_eq!(commit_ids.contains(&repo_commit_ids[0]), true);
+
+        println!(" upstream {:?}", commit_ids);
+
+        // Attempt force push,
+        // should work as it forces the push through
+        assert_eq!(
+            push(
+                tmp_other_repo_dir.path().to_str().unwrap(),
+                "origin",
+                "master",
+                true,
+                None,
+                None,
+            )
+            .is_err(),
+            false
+        );
+
+        LogWalker::new(&upstream).read(&mut commit_ids, 1);
+
+        // Check that both the commits are now in upstream
+        assert_eq!(
+            commit_ids.contains(&repo_commit_ids[0])
+                && commit_ids.contains(&other_repo_commit_ids[0]),
+            true
+        );
+
+        println!("upstream {:?}", commit_ids);
+    }
 }
