@@ -283,22 +283,6 @@ impl App {
                     Err(anyhow!("There was no editor path or return path selected, the app external editor was set to null, put in a bug report at https://github.com/extrawurst/gitui and detail what you tried to do, this is most likely an error"))
                 };
 
-                /*let result = match self.file_to_open.take() {
-                    Some(path) => {
-                        ExternalEditorComponent::open_file_in_editor(
-                            Path::new(&path),
-                        )
-                    }
-                    None => match self.external_editor {
-                        Some(Some(p), EditorSource::Commit) => {
-                            self.commit.show_editor()
-                        }
-                        EditorSource::Reword => {
-                            self.reword_popup.show_editor()
-                        }
-                    },
-                };*/
-
                 if let Err(e) = result {
                     let msg =
                         format!("failed to launch editor:\n{}", e);
