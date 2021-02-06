@@ -452,14 +452,9 @@ mod tests {
         .unwrap();
 
         let mut repo_commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(&repo).read(&mut repo_commit_ids, 1);
+        LogWalker::new(&repo).read(&mut repo_commit_ids, 1).unwrap();
 
         println!("repo {:?}", repo_commit_ids);
-
-        let mut upstream_commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(&upstream).read(&mut upstream_commit_ids, 1);
-
-        println!("upstream {:?}", upstream_commit_ids);
 
         push(
             tmp_repo_dir.path().to_str().unwrap(),
@@ -484,7 +479,8 @@ mod tests {
         .unwrap();
         let mut other_repo_commit_ids = Vec::<CommitId>::new();
         LogWalker::new(&other_repo)
-            .read(&mut other_repo_commit_ids, 1);
+            .read(&mut other_repo_commit_ids, 1)
+            .unwrap();
 
         println!("other repo {:?}", other_repo_commit_ids);
 
@@ -506,7 +502,7 @@ mod tests {
         // Check that the other commit is not in upstream,
         // a normal push would not rewrite history
         let mut commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(&upstream).read(&mut commit_ids, 1);
+        LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
         assert_eq!(commit_ids.contains(&repo_commit_ids[0]), true);
 
         println!(" upstream {:?}", commit_ids);
@@ -526,7 +522,7 @@ mod tests {
             false
         );
 
-        LogWalker::new(&upstream).read(&mut commit_ids, 1);
+        LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
 
         // Check that both the commits are now in upstream
         assert_eq!(
