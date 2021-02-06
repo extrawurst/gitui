@@ -1,7 +1,7 @@
 use super::{
-    textinput::TextInputComponent, visibility_blocking,
-    CommandBlocking, CommandInfo, Component, DrawableComponent,
-    ExternalEditorComponent,
+    externaleditor::show_editor, textinput::TextInputComponent,
+    visibility_blocking, CommandBlocking, CommandInfo, Component,
+    DrawableComponent,
 };
 use crate::{
     app::EditorSource,
@@ -16,8 +16,6 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
-use std::io::{Read, Write};
-use tempfile::NamedTempFile;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct RewordComponent {
@@ -142,44 +140,11 @@ impl RewordComponent {
         Ok(())
     }
 
-    /// After an external editor has been open,
-    /// this should be called to put the text in the
-    /// right place
+    /// Ope external editor
     pub fn show_editor(&mut self) -> Result<()> {
-        let temp_file = NamedTempFile::new()?;
-        {
-            let mut file = temp_file.reopen()?;
-            file.write_fmt(format_args!(
-                "{}\n",
-                self.input.get_text()
-            ))?;
-            file.write_all(
-                strings::commit_editor_msg(&self.key_config)
-                    .as_bytes(),
-            )?;
-        }
-
-        ExternalEditorComponent::open_file_in_editor(
-            temp_file.path(),
-        )?;
-
-        let mut message = String::new();
-
-        let mut file = temp_file.reopen()?;
-        file.read_to_string(&mut message)?;
-
-        let message: String = message
-            .lines()
-            .flat_map(|l| {
-                if l.starts_with('#') {
-                    vec![]
-                } else {
-                    vec![l, "\n"]
-                }
-            })
-            .collect();
-
-        let message = message.trim().to_string();
+        let message = show_editor(Some(self.input.get_text()))?
+            .trim()
+            .to_string();
 
         self.input.set_text(message);
         self.input.show()?;

@@ -66,7 +66,7 @@ pub fn commit_title_amend(_key_config: &SharedKeyConfig) -> String {
 pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {
     "type commit message..".to_string()
 }
-pub fn commit_editor_msg(_key_config: &SharedKeyConfig) -> String {
+pub fn commit_editor_msg() -> String {
     r##"
 # Edit your commit message
 # Lines starting with '#' will be ignored"##
