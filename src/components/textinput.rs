@@ -500,7 +500,7 @@ mod tests {
     }
 
     #[test]
-    fn test_invisable_newline() {
+    fn test_invisible_newline() {
         let mut comp = TextInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),
