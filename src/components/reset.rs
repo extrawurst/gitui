@@ -41,7 +41,7 @@ impl DrawableComponent for ResetComponent {
             let area = ui::centered_rect(30, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
-                popup_paragraph(&title, txt, &self.theme, true, None),
+                popup_paragraph(&title, txt, &self.theme, true),
                 area,
             );
         }

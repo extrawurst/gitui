@@ -139,7 +139,8 @@ impl CommitComponent {
                 "",
                 &strings::commit_msg(&key_config),
                 true,
-            ),
+            )
+            .for_commit(),
             key_config,
         }
     }

@@ -1,8 +1,8 @@
 use crate::ui::Size;
 use crate::{
     components::{
-        popup_paragraph, visibility_blocking, CommandBlocking,
-        CommandInfo, Component, DrawableComponent,
+        popup_paragraph, popup_paragraph_commit, visibility_blocking,
+        CommandBlocking, CommandInfo, Component, DrawableComponent,
     },
     keys::SharedKeyConfig,
     strings,
@@ -39,6 +39,7 @@ pub struct TextInputComponent {
     key_config: SharedKeyConfig,
     cursor_position: usize,
     input_type: InputType,
+    for_commit: bool,
 }
 
 impl TextInputComponent {
@@ -60,7 +61,14 @@ impl TextInputComponent {
             default_msg: default_msg.to_string(),
             cursor_position: 0,
             input_type: InputType::Multiline,
+            for_commit: false,
         }
+    }
+
+    ///
+    pub fn for_commit(mut self) -> Self {
+        self.for_commit = true;
+        self
     }
 
     pub const fn with_input_type(
@@ -285,19 +293,28 @@ impl DrawableComponent for TextInputComponent {
             };
 
             f.render_widget(Clear, area);
+
             f.render_widget(
-                popup_paragraph(
-                    self.title.as_str(),
-                    txt,
-                    &self.theme,
-                    true,
-                    if let Some(msg) = self.msg.split("\n").next() {
-                        println!("{}", msg.len());
-                        Some(msg.len())
-                    } else {
-                        None
-                    },
-                ),
+                if self.for_commit {
+                    popup_paragraph_commit(
+                        self.title.as_str(),
+                        txt,
+                        &self.theme,
+                        true,
+                        self.msg
+                            .split("\n")
+                            .next()
+                            .expect("Cannot fail")
+                            .len(),
+                    )
+                } else {
+                    popup_paragraph(
+                        self.title.as_str(),
+                        txt,
+                        &self.theme,
+                        true,
+                    )
+                },
                 area,
             );
 
