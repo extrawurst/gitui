@@ -291,6 +291,12 @@ impl DrawableComponent for TextInputComponent {
                     txt,
                     &self.theme,
                     true,
+                    if let Some(msg) = self.msg.split("\n").next() {
+                        println!("{}", msg.len());
+                        Some(msg.len())
+                    } else {
+                        None
+                    },
                 ),
                 area,
             );

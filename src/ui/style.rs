@@ -50,6 +50,7 @@ pub struct Theme {
     push_gauge_bg: Color,
     #[serde(with = "Color")]
     push_gauge_fg: Color,
+    commit_first_line_max_len: Option<usize>,
 }
 
 impl Theme {
@@ -229,6 +230,10 @@ impl Theme {
             .bg(self.push_gauge_bg)
     }
 
+    pub fn commit_first_line_max_len(&self) -> Option<usize> {
+        self.commit_first_line_max_len
+    }
+
     // This will only be called when theme.ron doesn't already exists
     fn save(&self, theme_file: PathBuf) -> Result<()> {
         let mut file = File::create(theme_file)?;
@@ -282,6 +287,7 @@ impl Default for Theme {
             danger_fg: Color::Red,
             push_gauge_bg: Color::Blue,
             push_gauge_fg: Color::Reset,
+            commit_first_line_max_len: Some(50),
         }
     }
 }

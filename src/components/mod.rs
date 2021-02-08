@@ -209,17 +209,31 @@ fn popup_paragraph<'a, T>(
     content: T,
     theme: &Theme,
     focused: bool,
+    commit_length: Option<usize>,
 ) -> Paragraph<'a>
 where
     T: Into<Text<'a>>,
 {
-    Paragraph::new(content.into())
+    let text = content.into();
+
+    let mut border_style = theme.block(focused);
+
+    if let Some(c_max) = theme.commit_first_line_max_len() {
+        if let Some(cl) = commit_length {
+            if cl > c_max {
+                border_style =
+                    theme.text_danger().patch(border_style);
+            }
+        }
+    };
+
+    Paragraph::new(text)
         .block(
             Block::default()
                 .title(Span::styled(title, theme.title(focused)))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Thick)
-                .border_style(theme.block(focused)),
+                .border_style(border_style),
         )
         .alignment(Alignment::Left)
         .wrap(Wrap { trim: true })
