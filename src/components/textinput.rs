@@ -339,7 +339,7 @@ impl Component for TextInputComponent {
                         return Ok(true);
                     }
                     KeyCode::Enter => {
-                        if e.modifiers.contains(KeyModifiers::ALT); {
+                        if e.modifiers.contains(KeyModifiers::ALT) {
                             self.msg
                                 .insert(self.cursor_position, '\n');
                             self.incr_cursor();
