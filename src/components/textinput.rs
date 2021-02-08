@@ -302,7 +302,7 @@ impl DrawableComponent for TextInputComponent {
                         &self.theme,
                         true,
                         self.msg
-                            .split("\n")
+                            .split('\n')
                             .next()
                             .expect("Cannot fail")
                             .len(),
