@@ -230,7 +230,7 @@ impl Theme {
             .bg(self.push_gauge_bg)
     }
 
-    pub fn commit_first_line_max_len(&self) -> Option<usize> {
+    pub const fn commit_first_line_max_len(&self) -> Option<usize> {
         self.commit_first_line_max_len
     }
 

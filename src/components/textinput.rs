@@ -66,7 +66,7 @@ impl TextInputComponent {
     }
 
     ///
-    pub fn for_commit(mut self) -> Self {
+    pub const fn for_commit(mut self) -> Self {
         self.for_commit = true;
         self
     }

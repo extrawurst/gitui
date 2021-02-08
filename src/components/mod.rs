@@ -245,7 +245,7 @@ where
     popup_paragraph_inner(title, content, theme, focused, None)
 }
 
-/// Use popup_paragraph or popup_paragraph_commit depending on need, they call this
+/// Use `popup_paragraph` or `popup_paragraph_commit` depending on need, they call this
 fn popup_paragraph_inner<'a, T>(
     title: &'a str,
     content: T,
@@ -263,7 +263,8 @@ where
                 .borders(Borders::ALL)
                 .border_type(BorderType::Thick)
                 .border_style(
-                    border_style.unwrap_or(theme.block(focused)),
+                    border_style
+                        .unwrap_or_else(|| theme.block(focused)),
                 ),
         )
         .alignment(Alignment::Left)
