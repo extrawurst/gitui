@@ -199,13 +199,44 @@ impl Revlog {
         })
     }
 
+    fn get_what_to_filter_by(
+        filter_by_str: String,
+    ) -> (String, FilterBy) {
+        if let Some(':') = filter_by_str.chars().nth(0) {
+            let mut to_filter_by = FilterBy::empty();
+            let mut split_str =
+                filter_by_str.split(' ').collect::<Vec<&str>>();
+            if split_str.len() == 1 {
+                split_str.push("");
+            }
+            let first = split_str[0];
+            if first.contains('s') {
+                to_filter_by = to_filter_by | FilterBy::SHA;
+            }
+            if first.contains('a') {
+                to_filter_by = to_filter_by | FilterBy::AUTHOR;
+            }
+            if first.contains('m') {
+                to_filter_by = to_filter_by | FilterBy::MESSAGE;
+            }
+            if to_filter_by.is_empty() {
+                to_filter_by = FilterBy::all();
+            }
+
+            return (split_str[1..].join(" "), to_filter_by);
+        }
+        (filter_by_str, FilterBy::all())
+    }
+
     pub fn filter(&mut self, filter_by: String) -> Result<()> {
         if filter_by == "" {
             self.async_filter.stop_filter();
             self.is_filtering = false;
         } else {
+            let (search_string_processed, to_filter_by) =
+                Self::get_what_to_filter_by(filter_by);
             self.async_filter
-                .start_filter(filter_by, FilterBy::all())
+                .start_filter(search_string_processed, to_filter_by)
                 .expect("TODO: REMOVE EXPECT");
             self.is_filtering = true;
         }
