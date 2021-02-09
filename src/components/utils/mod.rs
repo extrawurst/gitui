@@ -1,5 +1,6 @@
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
 
+pub mod async_commit_filter;
 pub mod filetree;
 pub mod logitems;
 pub mod statustree;

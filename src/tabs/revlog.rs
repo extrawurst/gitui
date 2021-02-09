@@ -1,5 +1,6 @@
 use crate::{
     components::{
+        async_commit_filter::{AsyncCommitFilterer, FilterBy},
         visibility_blocking, CommandBlocking, CommandInfo,
         CommitDetailsComponent, CommitList, Component,
         DrawableComponent, FindCommitComponent,
@@ -32,6 +33,7 @@ pub struct Revlog {
     commit_details: CommitDetailsComponent,
     list: CommitList,
     find_commit: FindCommitComponent,
+    async_filter: AsyncCommitFilterer,
     git_log: AsyncLog,
     git_tags: AsyncTags,
     queue: Queue,
@@ -39,7 +41,6 @@ pub struct Revlog {
     branch_name: cached::BranchName,
     key_config: SharedKeyConfig,
     is_filtering: bool,
-    has_all_commits: bool,
 }
 
 impl Revlog {
@@ -50,6 +51,7 @@ impl Revlog {
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
+        let log = AsyncLog::new(sender);
         Self {
             queue: queue.clone(),
             commit_details: CommitDetailsComponent::new(
@@ -68,13 +70,13 @@ impl Revlog {
                 theme,
                 key_config.clone(),
             ),
-            git_log: AsyncLog::new(sender),
+            async_filter: AsyncCommitFilterer::new(log.clone(), 10),
+            git_log: log,
             git_tags: AsyncTags::new(sender),
             visible: false,
             branch_name: cached::BranchName::new(CWD),
             key_config,
             is_filtering: false,
-            has_all_commits: false,
         }
     }
 
@@ -88,15 +90,15 @@ impl Revlog {
     ///
     pub fn update(&mut self) -> Result<()> {
         if self.visible {
-            let log_changed = if self.is_filtering {
-                // If filtering should get all commits
-                self.git_log.fetch(Some(usize::MAX))?
-                    == FetchStatus::Started
+            let mut log_changed = false;
+            if self.is_filtering {
+                self.list
+                    .update_total_count(self.async_filter.count());
             } else {
-                self.git_log.fetch(None)? == FetchStatus::Started
-            };
-
-            self.list.update_total_count();
+                log_changed =
+                    self.git_log.fetch()? == FetchStatus::Started;
+                self.list.update_total_count(self.git_log.count()?);
+            }
 
             let selection = self.list.selection();
             let selection_max = self.list.selection_max();
@@ -149,19 +151,19 @@ impl Revlog {
         let want_min =
             self.list.selection().saturating_sub(SLICE_SIZE / 2);
 
-        // If filtering get all commits
         let commits = if self.is_filtering {
-            sync::get_commits_info(
-                CWD,
-                &self.git_log.get_slice(0, usize::MAX)?,
-                self.list.current_size().0.into(),
-            )
+            self.async_filter
+                .get_filter_items(want_min, SLICE_SIZE)
+                .map_err(|_| {
+                    anyhow::anyhow!("Failed to get filtered items")
+                })
         } else {
             sync::get_commits_info(
                 CWD,
                 &self.git_log.get_slice(want_min, SLICE_SIZE)?,
                 self.list.current_size().0.into(),
             )
+            .map_err(|e| anyhow::anyhow!(e.to_string()))
         };
 
         if let Ok(commits) = commits {
@@ -193,10 +195,23 @@ impl Revlog {
 
     pub fn filter(&mut self, filter_by: String) {
         if filter_by == "" {
+            self.async_filter
+                .start_filter(filter_by, FilterBy::all())
+                .expect("TODO: REMOVE EXPECT");
+            self.is_filtering = false;
+        } else {
+            self.async_filter.stop_filter();
+            self.is_filtering = true;
+        }
+
+        /*
+        if filter_by == "" {
             self.is_filtering = false;
             self.has_all_commits = false;
             self.list.set_filter(None);
-            self.list.update_total_count();
+            self.list.update_total_count(
+                self.git_log.count().expect("Some"),
+            );
         } else {
             self.is_filtering = true;
             self.list.set_filter(Some(filter_by));
@@ -210,7 +225,7 @@ impl Revlog {
                 }
                 self.has_all_commits = true;
             }
-        }
+        }*/
     }
 }
 

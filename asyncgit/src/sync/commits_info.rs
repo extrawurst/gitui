@@ -43,7 +43,7 @@ impl From<Oid> for CommitId {
 }
 
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CommitInfo {
     ///
     pub message: String,

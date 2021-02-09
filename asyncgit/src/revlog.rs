@@ -27,6 +27,7 @@ pub enum FetchStatus {
 }
 
 ///
+#[derive(Clone)]
 pub struct AsyncLog {
     current: Arc<Mutex<Vec<CommitId>>>,
     sender: Sender<AsyncNotification>,
@@ -34,7 +35,7 @@ pub struct AsyncLog {
     background: Arc<AtomicBool>,
 }
 
-static LIMIT_COUNT: usize = 3000;
+static LIMIT_COUNT: usize = 5;
 static SLEEP_FOREGROUND: Duration = Duration::from_millis(2);
 static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
@@ -97,11 +98,8 @@ impl AsyncLog {
         Ok(false)
     }
 
-    /// None for amount means fetch the default
-    pub fn fetch(
-        &mut self,
-        amount: Option<usize>,
-    ) -> Result<FetchStatus> {
+    ///
+    pub fn fetch(&mut self) -> Result<FetchStatus> {
         self.background.store(false, Ordering::Relaxed);
 
         if self.is_pending() {
@@ -128,7 +126,7 @@ impl AsyncLog {
                 arc_current,
                 arc_background,
                 &sender,
-                amount.unwrap_or(LIMIT_COUNT),
+                LIMIT_COUNT,
             )
             .expect("failed to fetch");
 

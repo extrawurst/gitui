@@ -86,21 +86,8 @@ impl CommitList {
     }
 
     ///
-    pub fn update_total_count(&mut self) {
-        self.count_total = self
-            .items
-            .iter()
-            .filter(|log_entry| {
-                if let Some(filter_string) = &self.filter_string {
-                    return log_entry
-                        .hash_short
-                        .contains(filter_string)
-                        || log_entry.msg.contains(filter_string)
-                        || log_entry.author.contains(filter_string);
-                }
-                true
-            })
-            .count();
+    pub fn update_total_count(&mut self, count: usize) {
+        self.count_total = count;
         self.selection =
             cmp::min(self.selection, self.selection_max());
     }

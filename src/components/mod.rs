@@ -41,6 +41,7 @@ pub use select_branch::SelectBranchComponent;
 pub use stashmsg::StashMsgComponent;
 pub use tag_commit::TagCommitComponent;
 pub use textinput::{InputType, TextInputComponent};
+pub use utils::async_commit_filter;
 pub use utils::filetree::FileTreeItemKind;
 
 use crate::ui::style::Theme;
