@@ -14,9 +14,9 @@ use std::{
     time::Duration,
 };
 
-const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(2);
+const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(5);
 const FILTER_SLEEP_DURATION_FAILED_LOCK: Duration =
-    Duration::from_millis(5);
+    Duration::from_millis(10);
 const SLICE_SIZE: usize = 1200;
 
 bitflags! {
@@ -151,10 +151,10 @@ impl AsyncCommitFilterer {
                                 message_length_limit,
                             ) {
                                 Ok(mut v) => {
-                                    if v.len() == 1
+                                    if v.len() <= 1
                                         && !async_log.is_pending()
                                     {
-                                        // Assume finished if log not pending and only 1 commit
+                                        // Assume finished if log not pending and either 0 or 1 commit
                                         filter_finished.store(
                                             true,
                                             Ordering::Relaxed,
