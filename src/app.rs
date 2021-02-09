@@ -538,7 +538,7 @@ impl App {
                 flags.insert(NeedsUpdate::ALL)
             }
             InternalEvent::FilterLog(string_to_fliter_by) => {
-                self.revlog.filter(string_to_fliter_by)?
+                self.revlog.filter(&string_to_fliter_by)?
             }
         };
 

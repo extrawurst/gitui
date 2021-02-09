@@ -223,18 +223,22 @@ impl Revlog {
                 to_filter_by = FilterBy::all();
             }
 
-            return (split_str[1..].join(" "), to_filter_by);
+            return (
+                split_str[1..].join(" ").trim().to_string(),
+                to_filter_by,
+            );
         }
         (filter_by_str, FilterBy::all())
     }
 
-    pub fn filter(&mut self, filter_by: String) -> Result<()> {
+    pub fn filter(&mut self, filter_by: &str) -> Result<()> {
+        let trimmed_string = filter_by.trim().to_string();
         if filter_by == "" {
             self.async_filter.stop_filter();
             self.is_filtering = false;
         } else {
             let (search_string_processed, to_filter_by) =
-                Self::get_what_to_filter_by(filter_by);
+                Self::get_what_to_filter_by(trimmed_string);
             self.async_filter
                 .start_filter(search_string_processed, to_filter_by)
                 .map_err(|e| anyhow::anyhow!(e.to_string()))?;
@@ -364,7 +368,7 @@ impl Component for Revlog {
                     self.find_commit.focus(true);
                     return Ok(true);
                 } else if k == self.key_config.exit_popup {
-                    self.filter("".to_string())?;
+                    self.filter("")?;
                     self.find_commit.clear_input();
                     self.update()?;
                 }
