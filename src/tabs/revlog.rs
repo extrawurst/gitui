@@ -237,7 +237,7 @@ impl Revlog {
                 Self::get_what_to_filter_by(filter_by);
             self.async_filter
                 .start_filter(search_string_processed, to_filter_by)
-                .expect("TODO: REMOVE EXPECT");
+                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
             self.is_filtering = true;
         }
         self.update()
