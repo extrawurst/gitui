@@ -199,7 +199,7 @@ impl Revlog {
         })
     }
 
-    pub fn filter(&mut self, filter_by: String) {
+    pub fn filter(&mut self, filter_by: String) -> Result<()> {
         if filter_by == "" {
             self.async_filter.stop_filter();
             self.is_filtering = false;
@@ -209,30 +209,7 @@ impl Revlog {
                 .expect("TODO: REMOVE EXPECT");
             self.is_filtering = true;
         }
-        self.update();
-
-        /*
-        if filter_by == "" {
-            self.is_filtering = false;
-            self.has_all_commits = false;
-            self.list.set_filter(None);
-            self.list.update_total_count(
-                self.git_log.count().expect("Some"),
-            );
-        } else {
-            self.is_filtering = true;
-            self.list.set_filter(Some(filter_by));
-            // Don't get all the commits again if already have them,
-            // depening on repo could be expensive to constantly update
-            if !self.has_all_commits {
-                if let Err(e) = self.update() {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(e.to_string()),
-                    );
-                }
-                self.has_all_commits = true;
-            }
-        }*/
+        self.update()
     }
 }
 
@@ -356,15 +333,9 @@ impl Component for Revlog {
                     self.find_commit.focus(true);
                     return Ok(true);
                 } else if k == self.key_config.exit_popup {
-                    self.filter("".to_string());
+                    self.filter("".to_string())?;
                     self.find_commit.clear_input();
-                    if let Err(e) = self.update() {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::ShowErrorMsg(
-                                e.to_string(),
-                            ),
-                        );
-                    }
+                    self.update()?;
                 }
             }
         }
