@@ -142,10 +142,10 @@ impl AsyncCommitFilterer {
                                 usize::MAX,
                             ) {
                                 Ok(mut v) => {
-                                    if v.len() <= 1
+                                    if v.len() == 0
                                         && !async_log.is_pending()
                                     {
-                                        // Assume finished if log not pending and either 0 or 1 commit
+                                        // Assume finished if log not pending and 0 recieved
                                         filter_finished.store(
                                             true,
                                             Ordering::Relaxed,
