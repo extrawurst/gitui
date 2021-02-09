@@ -103,6 +103,13 @@ impl AsyncCommitFilterer {
         self.clear().expect("Can't fail unless app crashes");
         self.filter_string = filter_string.clone();
         self.filter_by = filter_by.clone();
+        if let Some(sender) = &self.filter_thread_sender {
+            return sender.send(true).map_err(|_| {
+                anyhow::anyhow!(
+                    "Could not send shutdown to filter thread"
+                )
+            });
+        }
 
         let filtered_commits = Arc::clone(&self.filtered_commits);
         let filter_count = Arc::clone(&self.filter_count);

@@ -200,7 +200,9 @@ impl Revlog {
                 .expect("TODO: REMOVE EXPECT");
             self.is_filtering = false;
         } else {
-            self.async_filter.stop_filter();
+            self.async_filter.stop_filter().expect(
+                "TODO: Could not stop filter, it's out of control!!!",
+            );
             self.is_filtering = true;
         }
 
