@@ -82,17 +82,30 @@ impl AsyncCommitFilterer {
             .drain(..)
             .filter(|ci| {
                 if filter_by.contains(FilterBy::SHA) {
-                    if ci.id.to_string().contains(filter_string) {
+                    if ci
+                        .id
+                        .to_string()
+                        .to_lowercase()
+                        .contains(&filter_string.to_lowercase())
+                    {
                         return true;
                     }
                 }
                 if filter_by.contains(FilterBy::AUTHOR) {
-                    if ci.author.contains(filter_string) {
+                    if ci
+                        .author
+                        .to_lowercase()
+                        .contains(&filter_string.to_lowercase())
+                    {
                         return true;
                     }
                 }
                 if filter_by.contains(FilterBy::MESSAGE) {
-                    if ci.message.contains(filter_string) {
+                    if ci
+                        .message
+                        .to_lowercase()
+                        .contains(&filter_string.to_lowercase())
+                    {
                         return true;
                     }
                 }
