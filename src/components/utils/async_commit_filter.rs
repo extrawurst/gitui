@@ -1,6 +1,6 @@
 use anyhow::Result;
 use asyncgit::{
-    sync::{self, CommitInfo},
+    sync::{self, limit_str, CommitInfo},
     AsyncLog, AsyncNotification, CWD,
 };
 use bitflags::bitflags;
@@ -14,7 +14,7 @@ use std::{
     time::Duration,
 };
 
-const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(5);
+const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(500);
 const FILTER_SLEEP_DURATION_FAILED_LOCK: Duration =
     Duration::from_millis(10);
 const SLICE_SIZE: usize = 1200;
@@ -42,14 +42,12 @@ pub struct AsyncCommitFilterer {
     filter_finished: Arc<AtomicBool>,
     filter_thread_sender: Option<Sender<bool>>,
     sender: Sender<AsyncNotification>,
-    message_length_limit: usize,
 }
 
 impl AsyncCommitFilterer {
     pub fn new(
         git_log: AsyncLog,
         sender: &Sender<AsyncNotification>,
-        message_length_limit: usize,
     ) -> Self {
         Self {
             filter_string: "".to_string(),
@@ -60,7 +58,6 @@ impl AsyncCommitFilterer {
             filter_finished: Arc::new(AtomicBool::new(false)),
             filter_thread_sender: None,
             sender: sender.clone(),
-            message_length_limit,
         }
     }
 
@@ -109,24 +106,18 @@ impl AsyncCommitFilterer {
         filter_string: String,
         filter_by: FilterBy,
     ) -> Result<()> {
+        self.stop_filter();
+
         self.clear().expect("Can't fail unless app crashes");
         self.filter_string = filter_string.clone();
         self.filter_by = filter_by.clone();
         self.filter_count.store(0, Ordering::Relaxed);
-        self.stop_filter().expect("Can't fail");
-        /*if let Some(sender) = &self.filter_thread_sender {
-            return sender.send(true).map_err(|_| {
-                anyhow::anyhow!(
-                    "Could not send shutdown to filter thread"
-                )
-            });
-        }*/
 
         let filtered_commits = Arc::clone(&self.filtered_commits);
         let filter_count = Arc::clone(&self.filter_count);
         let async_log = self.git_log.clone();
         let filter_finished = Arc::clone(&self.filter_finished);
-        let message_length_limit = self.message_length_limit;
+        filter_finished.store(false, Ordering::Relaxed);
 
         let (tx, rx) = crossbeam_channel::unbounded();
 
@@ -148,7 +139,7 @@ impl AsyncCommitFilterer {
                             Ok(ids) => match sync::get_commits_info(
                                 CWD,
                                 &ids,
-                                message_length_limit,
+                                usize::MAX,
                             ) {
                                 Ok(mut v) => {
                                     if v.len() <= 1
@@ -210,14 +201,16 @@ impl AsyncCommitFilterer {
         Ok(())
     }
 
-    /// Stop the filter, is is possible to restart from this stage by calling restart
-    pub fn stop_filter(&self) -> Result<(), ()> {
+    /// Stop the filter if one was running, otherwise does nothing.
+    /// Is it possible to restart from this stage by calling restart
+    pub fn stop_filter(&self) {
+        // Any error this gives can be safely ignored,
+        // it will send if reciever exists, otherwise does nothing
         if let Some(sender) = &self.filter_thread_sender {
             match sender.try_send(true) {
                 Ok(_) | Err(_) => {}
             };
         }
-        Ok(())
     }
 
     /// Use if the next item to be filtered is a substring of the previous item.
@@ -230,6 +223,7 @@ impl AsyncCommitFilterer {
         &mut self,
         start: usize,
         amount: usize,
+        message_length_limit: usize,
     ) -> Result<
         Vec<CommitInfo>,
         std::sync::PoisonError<
@@ -241,7 +235,12 @@ impl AsyncCommitFilterer {
         let min = start.min(len);
         let max = min + amount;
         let max = max.min(len);
-        Ok(fc[min..max].to_vec())
+        let mut commits_requested = fc[min..max].to_vec();
+        for c in &mut commits_requested {
+            c.message = limit_str(&c.message, message_length_limit)
+                .to_string();
+        }
+        Ok(commits_requested)
     }
 
     pub fn count(&self) -> usize {

@@ -107,7 +107,8 @@ pub fn get_message(
 }
 
 #[inline]
-fn limit_str(s: &str, limit: usize) -> &str {
+///
+pub fn limit_str(s: &str, limit: usize) -> &str {
     if let Some(first) = s.lines().next() {
         let mut limit = limit.min(first.len());
         while !first.is_char_boundary(limit) {

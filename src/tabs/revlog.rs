@@ -75,7 +75,6 @@ impl Revlog {
             async_filter: AsyncCommitFilterer::new(
                 log.clone(),
                 sender,
-                10,
             ),
             git_log: log,
             git_tags: AsyncTags::new(sender),
@@ -158,10 +157,12 @@ impl Revlog {
 
         let commits = if self.is_filtering {
             self.async_filter
-                .get_filter_items(want_min, SLICE_SIZE)
-                .map_err(|_| {
-                    anyhow::anyhow!("Failed to get filtered items")
-                })
+                .get_filter_items(
+                    want_min,
+                    SLICE_SIZE,
+                    self.list.current_size().0.into(),
+                )
+                .map_err(|e| anyhow::anyhow!(e.to_string()))
         } else {
             sync::get_commits_info(
                 CWD,
@@ -200,9 +201,7 @@ impl Revlog {
 
     pub fn filter(&mut self, filter_by: String) {
         if filter_by == "" {
-            self.async_filter.stop_filter().expect(
-                "TODO: Could not stop filter, it's out of control!!!",
-            );
+            self.async_filter.stop_filter();
             self.is_filtering = false;
         } else {
             self.async_filter
