@@ -1,6 +1,8 @@
 use crate::{
     components::{
-        async_commit_filter::{AsyncCommitFilterer, FilterBy},
+        async_commit_filter::{
+            AsyncCommitFilterer, FilterBy, FilterStatus,
+        },
         visibility_blocking, CommandBlocking, CommandInfo,
         CommitDetailsComponent, CommitList, Component,
         DrawableComponent, FindCommitComponent,
@@ -70,7 +72,11 @@ impl Revlog {
                 theme,
                 key_config.clone(),
             ),
-            async_filter: AsyncCommitFilterer::new(log.clone(), 10),
+            async_filter: AsyncCommitFilterer::new(
+                log.clone(),
+                sender,
+                10,
+            ),
             git_log: log,
             git_tags: AsyncTags::new(sender),
             visible: false,
@@ -90,15 +96,14 @@ impl Revlog {
     ///
     pub fn update(&mut self) -> Result<()> {
         if self.visible {
-            let mut log_changed = false;
-            if self.is_filtering {
+            let log_changed = if self.is_filtering {
                 self.list
                     .update_total_count(self.async_filter.count());
+                self.async_filter.fetch() == FilterStatus::Filtering
             } else {
-                log_changed =
-                    self.git_log.fetch()? == FetchStatus::Started;
                 self.list.update_total_count(self.git_log.count()?);
-            }
+                self.git_log.fetch()? == FetchStatus::Started
+            };
 
             let selection = self.list.selection();
             let selection_max = self.list.selection_max();
@@ -195,16 +200,17 @@ impl Revlog {
 
     pub fn filter(&mut self, filter_by: String) {
         if filter_by == "" {
-            self.async_filter
-                .start_filter(filter_by, FilterBy::all())
-                .expect("TODO: REMOVE EXPECT");
-            self.is_filtering = false;
-        } else {
             self.async_filter.stop_filter().expect(
                 "TODO: Could not stop filter, it's out of control!!!",
             );
+            self.is_filtering = false;
+        } else {
+            self.async_filter
+                .start_filter(filter_by, FilterBy::all())
+                .expect("TODO: REMOVE EXPECT");
             self.is_filtering = true;
         }
+        self.update();
 
         /*
         if filter_by == "" {

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use asyncgit::{
     sync::{self, CommitInfo},
-    AsyncLog, CWD,
+    AsyncLog, AsyncNotification, CWD,
 };
 use bitflags::bitflags;
 use crossbeam_channel::{Sender, TryRecvError};
@@ -27,6 +27,12 @@ bitflags! {
     }
 }
 
+#[derive(PartialEq)]
+pub enum FilterStatus {
+    Filtering,
+    Finished,
+}
+
 pub struct AsyncCommitFilterer {
     git_log: AsyncLog,
     filter_string: String,
@@ -35,12 +41,14 @@ pub struct AsyncCommitFilterer {
     filter_count: Arc<AtomicUsize>,
     filter_finished: Arc<AtomicBool>,
     filter_thread_sender: Option<Sender<bool>>,
+    sender: Sender<AsyncNotification>,
     message_length_limit: usize,
 }
 
 impl AsyncCommitFilterer {
     pub fn new(
         git_log: AsyncLog,
+        sender: &Sender<AsyncNotification>,
         message_length_limit: usize,
     ) -> Self {
         Self {
@@ -51,6 +59,7 @@ impl AsyncCommitFilterer {
             filter_count: Arc::new(AtomicUsize::new(0)),
             filter_finished: Arc::new(AtomicBool::new(false)),
             filter_thread_sender: None,
+            sender: sender.clone(),
             message_length_limit,
         }
     }
@@ -76,17 +85,17 @@ impl AsyncCommitFilterer {
             .drain(..)
             .filter(|ci| {
                 if filter_by.contains(FilterBy::SHA) {
-                    if filter_string.contains(&ci.id.to_string()) {
+                    if ci.id.to_string().contains(filter_string) {
                         return true;
                     }
                 }
                 if filter_by.contains(FilterBy::AUTHOR) {
-                    if filter_string.contains(&ci.author) {
+                    if ci.author.contains(filter_string) {
                         return true;
                     }
                 }
                 if filter_by.contains(FilterBy::MESSAGE) {
-                    if filter_string.contains(&ci.message) {
+                    if ci.message.contains(filter_string) {
                         return true;
                     }
                 }
@@ -103,13 +112,15 @@ impl AsyncCommitFilterer {
         self.clear().expect("Can't fail unless app crashes");
         self.filter_string = filter_string.clone();
         self.filter_by = filter_by.clone();
-        if let Some(sender) = &self.filter_thread_sender {
+        self.filter_count.store(0, Ordering::Relaxed);
+        self.stop_filter().expect("Can't fail");
+        /*if let Some(sender) = &self.filter_thread_sender {
             return sender.send(true).map_err(|_| {
                 anyhow::anyhow!(
                     "Could not send shutdown to filter thread"
                 )
             });
-        }
+        }*/
 
         let filtered_commits = Arc::clone(&self.filtered_commits);
         let filter_count = Arc::clone(&self.filter_count);
@@ -120,6 +131,7 @@ impl AsyncCommitFilterer {
         let (tx, rx) = crossbeam_channel::unbounded();
 
         self.filter_thread_sender = Some(tx);
+        let async_app_sender = self.sender.clone();
 
         thread::spawn(move || {
             let mut cur_index: usize = 0;
@@ -140,7 +152,7 @@ impl AsyncCommitFilterer {
                             ) {
                                 Ok(mut v) => {
                                     if v.len() == 1
-                                        && async_log.is_pending()
+                                        && !async_log.is_pending()
                                     {
                                         // Assume finished if log not pending and only 1 commit
                                         filter_finished.store(
@@ -164,6 +176,7 @@ impl AsyncCommitFilterer {
                                             fc.append(&mut filtered);
                                             drop(fc);
                                             cur_index += SLICE_SIZE;
+                                            async_app_sender.send(AsyncNotification::Log).expect("error sending");
                                             thread::sleep(
                                                 FILTER_SLEEP_DURATION,
                                             );
@@ -200,9 +213,11 @@ impl AsyncCommitFilterer {
     /// Stop the filter, is is possible to restart from this stage by calling restart
     pub fn stop_filter(&self) -> Result<(), ()> {
         if let Some(sender) = &self.filter_thread_sender {
-            return sender.send(true).map_err(|_| ());
+            match sender.try_send(true) {
+                Ok(_) | Err(_) => {}
+            };
         }
-        Err(())
+        Ok(())
     }
 
     /// Use if the next item to be filtered is a substring of the previous item.
@@ -231,5 +246,13 @@ impl AsyncCommitFilterer {
 
     pub fn count(&self) -> usize {
         self.filter_count.load(Ordering::Relaxed)
+    }
+
+    pub fn fetch(&self) -> FilterStatus {
+        if self.filter_finished.load(Ordering::Relaxed) {
+            FilterStatus::Finished
+        } else {
+            FilterStatus::Filtering
+        }
     }
 }
