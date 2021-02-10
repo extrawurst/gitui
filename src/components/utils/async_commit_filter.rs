@@ -14,10 +14,10 @@ use std::{
     time::Duration,
 };
 
-const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(2000);
+const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(10);
 const FILTER_SLEEP_DURATION_FAILED_LOCK: Duration =
     Duration::from_millis(500);
-const SLICE_SIZE: usize = 100;
+const SLICE_SIZE: usize = 1200;
 
 bitflags! {
     pub struct FilterBy: u32 {
