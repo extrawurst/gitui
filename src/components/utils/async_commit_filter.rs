@@ -6,6 +6,7 @@ use asyncgit::{
 use bitflags::bitflags;
 use crossbeam_channel::{Sender, TryRecvError};
 use std::{
+    cell::RefCell,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc, Mutex,
@@ -39,7 +40,7 @@ pub struct AsyncCommitFilterer {
     filtered_commits: Arc<Mutex<Vec<CommitInfo>>>,
     filter_count: Arc<AtomicUsize>,
     filter_finished: Arc<AtomicBool>,
-    filter_finished_local: bool,
+    is_pending_local: RefCell<bool>,
     filter_thread_sender: Option<Sender<bool>>,
     sender: Sender<AsyncNotification>,
 }
@@ -55,20 +56,20 @@ impl AsyncCommitFilterer {
             filtered_commits: Arc::new(Mutex::new(Vec::new())),
             filter_count: Arc::new(AtomicUsize::new(0)),
             filter_finished: Arc::new(AtomicBool::new(true)),
-            filter_finished_local: true,
+            is_pending_local: RefCell::new(true),
             filter_thread_sender: None,
             sender: sender.clone(),
         }
     }
 
-    pub fn is_pending(&mut self) -> bool {
-        self.filter_finished_local
-            || if self.fetch() == FilterStatus::Finished {
-                self.filter_finished_local = true;
-                true
-            } else {
-                false
-            }
+    pub fn is_pending(&self) -> bool {
+        let mut b = self.is_pending_local.borrow_mut();
+        if *b {
+            *b = self.fetch() == FilterStatus::Filtering;
+            *b
+        } else {
+            false
+        }
     }
 
     pub fn clear(
@@ -227,7 +228,7 @@ impl AsyncCommitFilterer {
 
     /// Stop the filter if one was running, otherwise does nothing.
     /// Is it possible to restart from this stage by calling restart
-    pub fn stop_filter(&mut self) {
+    pub fn stop_filter(&self) {
         // Any error this gives can be safely ignored,
         // it will send if reciever exists, otherwise does nothing
         if let Some(sender) = &self.filter_thread_sender {
@@ -235,7 +236,7 @@ impl AsyncCommitFilterer {
                 Ok(_) | Err(_) => {}
             };
         }
-        self.filter_finished_local = false;
+        self.is_pending_local.replace(true);
         self.filter_finished.store(true, Ordering::Relaxed);
     }
 
