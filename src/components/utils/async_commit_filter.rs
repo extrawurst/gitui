@@ -14,10 +14,10 @@ use std::{
     time::Duration,
 };
 
-const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(20);
+const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(2000);
 const FILTER_SLEEP_DURATION_FAILED_LOCK: Duration =
     Duration::from_millis(500);
-const SLICE_SIZE: usize = 1200;
+const SLICE_SIZE: usize = 100;
 
 bitflags! {
     pub struct FilterBy: u32 {
@@ -53,10 +53,14 @@ impl AsyncCommitFilterer {
             git_log: git_log,
             filtered_commits: Arc::new(Mutex::new(Vec::new())),
             filter_count: Arc::new(AtomicUsize::new(0)),
-            filter_finished: Arc::new(AtomicBool::new(false)),
+            filter_finished: Arc::new(AtomicBool::new(true)),
             filter_thread_sender: None,
             sender: sender.clone(),
         }
+    }
+
+    pub fn is_pending(&self) -> bool {
+        self.fetch() == FilterStatus::Filtering
     }
 
     pub fn clear(
@@ -137,7 +141,7 @@ impl AsyncCommitFilterer {
         self.filter_thread_sender = Some(tx);
         let async_app_sender = self.sender.clone();
 
-        thread::spawn(move || {
+        rayon_core::spawn(move || {
             let mut cur_index: usize = 0;
             loop {
                 match rx.try_recv() {
@@ -223,6 +227,7 @@ impl AsyncCommitFilterer {
                 Ok(_) | Err(_) => {}
             };
         }
+        self.filter_finished.store(true, Ordering::Relaxed);
     }
 
     /// Use if the next item to be filtered is a substring of the previous item.

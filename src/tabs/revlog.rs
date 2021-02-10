@@ -89,6 +89,7 @@ impl Revlog {
     pub fn any_work_pending(&self) -> bool {
         self.git_log.is_pending()
             || self.git_tags.is_pending()
+            || self.async_filter.is_pending()
             || self.commit_details.any_work_pending()
     }
 
