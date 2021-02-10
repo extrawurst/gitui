@@ -35,8 +35,7 @@ pub enum FilterStatus {
 
 pub struct AsyncCommitFilterer {
     git_log: AsyncLog,
-    filter_string: String,
-    filter_by: FilterBy,
+    filter_strings: Vec<(String, FilterBy)>,
     filtered_commits: Arc<Mutex<Vec<CommitInfo>>>,
     filter_count: Arc<AtomicUsize>,
     filter_finished: Arc<AtomicBool>,
@@ -50,8 +49,7 @@ impl AsyncCommitFilterer {
         sender: &Sender<AsyncNotification>,
     ) -> Self {
         Self {
-            filter_string: "".to_string(),
-            filter_by: FilterBy::empty(),
+            filter_strings: Vec::new(),
             git_log: git_log,
             filtered_commits: Arc::new(Mutex::new(Vec::new())),
             filter_count: Arc::new(AtomicUsize::new(0)),
@@ -74,56 +72,58 @@ impl AsyncCommitFilterer {
     }
 
     pub fn filter(
-        vec_commit_info: &mut Vec<CommitInfo>,
-        filter_string: &String,
-        filter_by: FilterBy,
+        vec_commit_info: Vec<CommitInfo>,
+        filter_strings: &Vec<(String, FilterBy)>,
     ) -> Vec<CommitInfo> {
-        vec_commit_info
-            .drain(..)
-            .filter(|ci| {
-                if filter_by.contains(FilterBy::SHA) {
-                    if ci
-                        .id
-                        .to_string()
-                        .to_lowercase()
-                        .contains(&filter_string.to_lowercase())
-                    {
-                        return true;
+        let mut commit_infos = vec_commit_info;
+        for (s, filter) in filter_strings {
+            commit_infos = commit_infos
+                .drain(..)
+                .filter(|ci| {
+                    if filter.contains(FilterBy::SHA) {
+                        if ci
+                            .id
+                            .to_string()
+                            .to_lowercase()
+                            .contains(&s.to_lowercase())
+                        {
+                            return true;
+                        }
                     }
-                }
-                if filter_by.contains(FilterBy::AUTHOR) {
-                    if ci
-                        .author
-                        .to_lowercase()
-                        .contains(&filter_string.to_lowercase())
-                    {
-                        return true;
+
+                    if filter.contains(FilterBy::AUTHOR) {
+                        if ci
+                            .author
+                            .to_lowercase()
+                            .contains(&s.to_lowercase())
+                        {
+                            return true;
+                        }
                     }
-                }
-                if filter_by.contains(FilterBy::MESSAGE) {
-                    if ci
-                        .message
-                        .to_lowercase()
-                        .contains(&filter_string.to_lowercase())
-                    {
-                        return true;
+                    if filter.contains(FilterBy::MESSAGE) {
+                        if ci
+                            .message
+                            .to_lowercase()
+                            .contains(&s.to_lowercase())
+                        {
+                            return true;
+                        }
                     }
-                }
-                false
-            })
-            .collect::<Vec<CommitInfo>>()
+                    false
+                })
+                .collect::<Vec<CommitInfo>>()
+        }
+        return commit_infos;
     }
 
     pub fn start_filter(
         &mut self,
-        filter_string: String,
-        filter_by: FilterBy,
+        filter_strings: Vec<(String, FilterBy)>,
     ) -> Result<()> {
         self.stop_filter();
 
         self.clear().expect("Can't fail unless app crashes");
-        self.filter_string = filter_string.clone();
-        self.filter_by = filter_by.clone();
+        self.filter_strings = filter_strings.clone();
         self.filter_count.store(0, Ordering::Relaxed);
 
         let filtered_commits = Arc::clone(&self.filtered_commits);
@@ -154,7 +154,7 @@ impl AsyncCommitFilterer {
                                 &ids,
                                 usize::MAX,
                             ) {
-                                Ok(mut v) => {
+                                Ok(v) => {
                                     if v.len() == 0
                                         && !async_log.is_pending()
                                     {
@@ -167,9 +167,8 @@ impl AsyncCommitFilterer {
                                     }
 
                                     let mut filtered = Self::filter(
-                                        &mut v,
-                                        &filter_string,
-                                        filter_by,
+                                        v,
+                                        &filter_strings,
                                     );
                                     filter_count.fetch_add(
                                         filtered.len(),

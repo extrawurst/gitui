@@ -200,35 +200,41 @@ impl Revlog {
     }
 
     fn get_what_to_filter_by(
-        filter_by_str: String,
-    ) -> (String, FilterBy) {
-        if let Some(':') = filter_by_str.chars().nth(0) {
-            let mut to_filter_by = FilterBy::empty();
-            let mut split_str =
-                filter_by_str.split(' ').collect::<Vec<&str>>();
-            if split_str.len() == 1 {
-                split_str.push("");
-            }
-            let first = split_str[0];
-            if first.contains('s') {
-                to_filter_by = to_filter_by | FilterBy::SHA;
-            }
-            if first.contains('a') {
-                to_filter_by = to_filter_by | FilterBy::AUTHOR;
-            }
-            if first.contains('m') {
-                to_filter_by = to_filter_by | FilterBy::MESSAGE;
-            }
-            if to_filter_by.is_empty() {
-                to_filter_by = FilterBy::all();
-            }
+        filter_by_str: &str,
+    ) -> Vec<(String, FilterBy)> {
+        let mut search_vec = vec![];
+        for split_sub in filter_by_str.split("||") {
+            if let Some(':') = split_sub.chars().nth(0) {
+                let mut to_filter_by = FilterBy::empty();
+                let mut split_str =
+                    split_sub.split(' ').collect::<Vec<&str>>();
+                if split_str.len() == 1 {
+                    split_str.push("");
+                }
+                let first = split_str[0];
+                if first.contains('s') {
+                    to_filter_by = to_filter_by | FilterBy::SHA;
+                }
+                if first.contains('a') {
+                    to_filter_by = to_filter_by | FilterBy::AUTHOR;
+                }
+                if first.contains('m') {
+                    to_filter_by = to_filter_by | FilterBy::MESSAGE;
+                }
+                if to_filter_by.is_empty() {
+                    to_filter_by = FilterBy::all();
+                }
 
-            return (
-                split_str[1..].join(" ").trim().to_string(),
-                to_filter_by,
-            );
+                search_vec.push((
+                    split_str[1..].join(" ").trim().to_string(),
+                    to_filter_by,
+                ));
+            } else {
+                search_vec
+                    .push((split_sub.to_string(), FilterBy::all()))
+            }
         }
-        (filter_by_str, FilterBy::all())
+        return search_vec;
     }
 
     pub fn filter(&mut self, filter_by: &str) -> Result<()> {
@@ -237,10 +243,10 @@ impl Revlog {
             self.async_filter.stop_filter();
             self.is_filtering = false;
         } else {
-            let (search_string_processed, to_filter_by) =
-                Self::get_what_to_filter_by(trimmed_string);
+            let filter_strings =
+                Self::get_what_to_filter_by(&trimmed_string);
             self.async_filter
-                .start_filter(search_string_processed, to_filter_by)
+                .start_filter(filter_strings)
                 .map_err(|e| anyhow::anyhow!(e.to_string()))?;
             self.is_filtering = true;
         }
