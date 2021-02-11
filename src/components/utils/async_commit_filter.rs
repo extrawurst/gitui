@@ -151,63 +151,69 @@ impl AsyncCommitFilterer {
             filtered_commits.lock().clear();
             let mut cur_index: usize = 0;
             loop {
-                // Get the git_log and start filtering through it
-                match async_log.get_slice(cur_index, SLICE_SIZE) {
-                    Ok(ids) => {
-                        match sync::get_commits_info(
-                            CWD,
-                            &ids,
-                            usize::MAX,
-                        ) {
-                            Ok(v) => {
-                                match rx.try_recv() {
-                                    Ok(_)
-                                    | Err(
-                                        TryRecvError::Disconnected,
-                                    ) => {
-                                        break;
-                                    }
-                                    _ => {}
-                                }
-                                if v.len() == 0
-                                    && !async_log.is_pending()
-                                {
-                                    // Assume finished if log not pending and 0 recieved
-                                    filter_finished.store(
-                                        true,
-                                        Ordering::Relaxed,
-                                    );
-                                    break;
-                                }
+                match rx.try_recv() {
+                    Ok(_) | Err(TryRecvError::Disconnected) => {
+                        break;
+                    }
+                    _ => {
+                        // Get the git_log and start filtering through it
+                        match async_log
+                            .get_slice(cur_index, SLICE_SIZE)
+                        {
+                            Ok(ids) => {
+                                match sync::get_commits_info(
+                                    CWD,
+                                    &ids,
+                                    usize::MAX,
+                                ) {
+                                    Ok(v) => {
+                                        if v.len() == 0
+                                            && !async_log.is_pending()
+                                        {
+                                            // Assume finished if log not pending and 0 recieved
+                                            filter_finished.store(
+                                                true,
+                                                Ordering::Relaxed,
+                                            );
+                                            break;
+                                        }
 
-                                let mut filtered =
-                                    Self::filter(v, &filter_strings);
-                                filter_count.fetch_add(
-                                    filtered.len(),
-                                    Ordering::Relaxed,
-                                );
-                                let mut fc = filtered_commits.lock();
-                                fc.append(&mut filtered);
-                                drop(fc);
-                                cur_index += SLICE_SIZE;
-                                async_app_sender
+                                        let mut filtered =
+                                            Self::filter(
+                                                v,
+                                                &filter_strings,
+                                            );
+                                        filter_count.fetch_add(
+                                            filtered.len(),
+                                            Ordering::Relaxed,
+                                        );
+                                        let mut fc =
+                                            filtered_commits.lock();
+                                        fc.append(&mut filtered);
+                                        drop(fc);
+                                        cur_index += SLICE_SIZE;
+                                        async_app_sender
                                     .send(AsyncNotification::Log)
                                     .expect("error sending");
-                                thread::sleep(FILTER_SLEEP_DURATION);
+                                        thread::sleep(
+                                            FILTER_SLEEP_DURATION,
+                                        );
+                                    }
+                                    Err(_) => {
+                                        // Failed to get commit info
+                                        thread::sleep(
+                                    FILTER_SLEEP_DURATION_FAILED_LOCK,
+                                );
+                                    }
+                                }
                             }
                             Err(_) => {
-                                // Failed to get commit info
+                                // Failed to get slice
                                 thread::sleep(
                                     FILTER_SLEEP_DURATION_FAILED_LOCK,
                                 );
                             }
                         }
-                    }
-                    Err(_) => {
-                        // Failed to get slice
-                        thread::sleep(
-                            FILTER_SLEEP_DURATION_FAILED_LOCK,
-                        );
                     }
                 }
             }
