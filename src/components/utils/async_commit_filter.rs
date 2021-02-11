@@ -105,12 +105,14 @@ impl AsyncCommitFilterer {
                                         .contains(
                                             &s.to_lowercase(),
                                         ))
-                                || filter
+                                || (filter
                                     .contains(FilterBy::MESSAGE)
                                     && commit
                                         .message
                                         .to_lowercase()
-                                        .contains(&s.to_lowercase()));
+                                        .contains(
+                                            &s.to_lowercase(),
+                                        )));
                     }
                     if is_and {
                         return true;
