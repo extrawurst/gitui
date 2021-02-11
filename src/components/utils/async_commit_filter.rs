@@ -44,7 +44,6 @@ pub struct AsyncCommitFilterer {
     is_pending_local: RefCell<bool>,
     filter_thread_sender: Option<Sender<bool>>,
     //filter_thread_receiver: Receiver<bool>,
-    filter_thread_running: Arc<AtomicBool>,
     filter_thread_mutex: Arc<Mutex<()>>,
     sender: Sender<AsyncNotification>,
 }
@@ -65,7 +64,6 @@ impl AsyncCommitFilterer {
             is_pending_local: RefCell::new(false),
             filter_thread_sender: None,
             //filter_thread_receiver: rx.clone(),
-            filter_thread_running: Arc::new(AtomicBool::new(true)),
             sender: sender.clone(),
         }
     }
@@ -166,9 +164,6 @@ impl AsyncCommitFilterer {
         let async_log = self.git_log.clone();
         let filter_finished = Arc::clone(&self.filter_finished);
 
-        let filter_thread_running =
-            Arc::clone(&self.filter_thread_running);
-
         let (tx, rx) = crossbeam_channel::unbounded();
         //let rx = self.filter_thread_receiver.clone();
 
@@ -206,10 +201,6 @@ impl AsyncCommitFilterer {
                                     | Err(
                                         TryRecvError::Disconnected,
                                     ) => {
-                                        filter_thread_running.store(
-                                            false,
-                                            Ordering::Relaxed,
-                                        );
                                         break;
                                     }
                                     _ => {}
@@ -220,10 +211,6 @@ impl AsyncCommitFilterer {
                                     // Assume finished if log not pending and 0 recieved
                                     filter_finished.store(
                                         true,
-                                        Ordering::Relaxed,
-                                    );
-                                    filter_thread_running.store(
-                                        false,
                                         Ordering::Relaxed,
                                     );
                                     break;
