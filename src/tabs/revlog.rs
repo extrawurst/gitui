@@ -226,9 +226,16 @@ impl Revlog {
                         to_filter_by =
                             to_filter_by | FilterBy::MESSAGE;
                     }
-                    if to_filter_by.is_empty() {
-                        to_filter_by = FilterBy::all();
+                    if first.contains('!') {
+                        to_filter_by = to_filter_by | FilterBy::NOT;
                     }
+
+                    if to_filter_by.is_empty() {
+                        to_filter_by =
+                            FilterBy::all() & !FilterBy::NOT;
+                    } else if to_filter_by == FilterBy::NOT {
+                        to_filter_by = FilterBy::all();
+                    };
 
                     and_vec.push((
                         split_str[1..].join(" ").trim().to_string(),

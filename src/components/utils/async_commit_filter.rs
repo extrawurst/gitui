@@ -26,6 +26,7 @@ bitflags! {
         const SHA = 0b0000_0001;
         const AUTHOR = 0b0000_0010;
         const MESSAGE = 0b0000_0100;
+        const NOT = 0b0000_1000;
     }
 }
 
@@ -85,29 +86,55 @@ impl AsyncCommitFilterer {
                 for to_and in filter_strings {
                     let mut is_and = true;
                     for (s, filter) in to_and {
-                        is_and = is_and
-                            && ((filter.contains(FilterBy::SHA)
-                                && commit
-                                    .id
-                                    .to_string()
-                                    .to_lowercase()
-                                    .contains(&s.to_lowercase()))
-                                || (filter
-                                    .contains(FilterBy::AUTHOR)
-                                    && commit
-                                        .author
+                        is_and = if filter.contains(FilterBy::NOT) {
+                            is_and
+                                && ((filter.contains(FilterBy::SHA)
+                                    && !commit
+                                        .id
+                                        .to_string()
                                         .to_lowercase()
-                                        .contains(
-                                            &s.to_lowercase(),
-                                        ))
-                                || (filter
-                                    .contains(FilterBy::MESSAGE)
+                                        .contains(&s.to_lowercase()))
+                                    || (filter
+                                        .contains(FilterBy::AUTHOR)
+                                        && !commit
+                                            .author
+                                            .to_lowercase()
+                                            .contains(
+                                                &s.to_lowercase(),
+                                            ))
+                                    || (filter
+                                        .contains(FilterBy::MESSAGE)
+                                        && !commit
+                                            .message
+                                            .to_lowercase()
+                                            .contains(
+                                                &s.to_lowercase(),
+                                            )))
+                        } else {
+                            is_and
+                                && ((filter.contains(FilterBy::SHA)
                                     && commit
-                                        .message
+                                        .id
+                                        .to_string()
                                         .to_lowercase()
-                                        .contains(
-                                            &s.to_lowercase(),
-                                        )));
+                                        .contains(&s.to_lowercase()))
+                                    || (filter
+                                        .contains(FilterBy::AUTHOR)
+                                        && commit
+                                            .author
+                                            .to_lowercase()
+                                            .contains(
+                                                &s.to_lowercase(),
+                                            ))
+                                    || (filter
+                                        .contains(FilterBy::MESSAGE)
+                                        && commit
+                                            .message
+                                            .to_lowercase()
+                                            .contains(
+                                                &s.to_lowercase(),
+                                            )))
+                        }
                     }
                     if is_and {
                         return true;
