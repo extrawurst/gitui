@@ -754,9 +754,9 @@ checksum = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c"
 
 [[package]]
 name = "pprof"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffccebf7f721f18477a39f99a7bae543edd02a9850a2cbfe6c407f8cc291dd89"
+checksum = "91fe0f88878f44476a04f211fbe5262367f213d8de01ec584f87d60de749c4cc"
 dependencies = [
  "backtrace",
  "inferno",
