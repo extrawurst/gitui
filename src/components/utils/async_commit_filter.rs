@@ -43,7 +43,6 @@ pub struct AsyncCommitFilterer {
     filter_finished: Arc<AtomicBool>,
     is_pending_local: RefCell<bool>,
     filter_thread_sender: Option<Sender<bool>>,
-    //filter_thread_receiver: Receiver<bool>,
     filter_thread_mutex: Arc<Mutex<()>>,
     sender: Sender<AsyncNotification>,
 }
@@ -53,7 +52,6 @@ impl AsyncCommitFilterer {
         git_log: AsyncLog,
         sender: &Sender<AsyncNotification>,
     ) -> Self {
-        //let (tx, rx) = crossbeam_channel::unbounded();
         Self {
             filter_strings: Vec::new(),
             git_log: git_log,
@@ -63,7 +61,6 @@ impl AsyncCommitFilterer {
             filter_thread_mutex: Arc::new(Mutex::new(())),
             is_pending_local: RefCell::new(false),
             filter_thread_sender: None,
-            //filter_thread_receiver: rx.clone(),
             sender: sender.clone(),
         }
     }
@@ -128,8 +125,6 @@ impl AsyncCommitFilterer {
                                     .contains(&s.to_lowercase())
                                 {
                                     true
-                                //filtered_commits.push(commit.clone());
-                                //break;
                                 } else {
                                     false
                                 }
@@ -145,7 +140,6 @@ impl AsyncCommitFilterer {
                 false
             })
             .collect()
-        //return filtered_commits;
     }
 
     #[allow(clippy::too_many_lines)]
@@ -165,17 +159,14 @@ impl AsyncCommitFilterer {
         let filter_finished = Arc::clone(&self.filter_finished);
 
         let (tx, rx) = crossbeam_channel::unbounded();
-        //let rx = self.filter_thread_receiver.clone();
 
         self.filter_thread_sender = Some(tx);
         let async_app_sender = self.sender.clone();
 
         let prev_thread_mutex = Arc::clone(&self.filter_thread_mutex);
-        // let filter_thread_mutex = Arc::new(Mutex::new(true));
         self.filter_thread_mutex = Arc::new(Mutex::new(()));
 
         let cur_thread_mutex = Arc::clone(&self.filter_thread_mutex);
-        // Arc::clone(&self.filter_thread_mutex);
         self.is_pending_local.replace(true);
 
         rayon_core::spawn(move || {
