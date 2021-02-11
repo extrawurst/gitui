@@ -202,38 +202,47 @@ impl Revlog {
 
     fn get_what_to_filter_by(
         filter_by_str: &str,
-    ) -> Vec<(String, FilterBy)> {
+    ) -> Vec<Vec<(String, FilterBy)>> {
         let mut search_vec = vec![];
-        for split_sub in filter_by_str.split("||") {
-            if let Some(':') = split_sub.chars().nth(0) {
-                let mut to_filter_by = FilterBy::empty();
-                let mut split_str =
-                    split_sub.split(' ').collect::<Vec<&str>>();
-                if split_str.len() == 1 {
-                    split_str.push("");
-                }
-                let first = split_str[0];
-                if first.contains('s') {
-                    to_filter_by = to_filter_by | FilterBy::SHA;
-                }
-                if first.contains('a') {
-                    to_filter_by = to_filter_by | FilterBy::AUTHOR;
-                }
-                if first.contains('m') {
-                    to_filter_by = to_filter_by | FilterBy::MESSAGE;
-                }
-                if to_filter_by.is_empty() {
-                    to_filter_by = FilterBy::all();
-                }
+        let mut and_vec = Vec::new();
+        for or in filter_by_str.split("||") {
+            for split_sub in or.split("&&") {
+                if let Some(':') = split_sub.chars().nth(0) {
+                    let mut to_filter_by = FilterBy::empty();
+                    let mut split_str =
+                        split_sub.split(' ').collect::<Vec<&str>>();
+                    if split_str.len() == 1 {
+                        split_str.push("");
+                    }
+                    let first = split_str[0];
+                    if first.contains('s') {
+                        to_filter_by = to_filter_by | FilterBy::SHA;
+                    }
+                    if first.contains('a') {
+                        to_filter_by =
+                            to_filter_by | FilterBy::AUTHOR;
+                    }
+                    if first.contains('m') {
+                        to_filter_by =
+                            to_filter_by | FilterBy::MESSAGE;
+                    }
+                    if to_filter_by.is_empty() {
+                        to_filter_by = FilterBy::all();
+                    }
 
-                search_vec.push((
-                    split_str[1..].join(" ").trim().to_string(),
-                    to_filter_by,
-                ));
-            } else {
-                search_vec
-                    .push((split_sub.to_string(), FilterBy::all()))
+                    and_vec.push((
+                        split_str[1..].join(" ").trim().to_string(),
+                        to_filter_by,
+                    ));
+                } else {
+                    and_vec.push((
+                        split_sub.to_string(),
+                        FilterBy::all(),
+                    ))
+                }
             }
+            search_vec.push(and_vec.clone());
+            and_vec.clear();
         }
         return search_vec;
     }

@@ -36,7 +36,7 @@ pub enum FilterStatus {
 
 pub struct AsyncCommitFilterer {
     git_log: AsyncLog,
-    filter_strings: Vec<(String, FilterBy)>,
+    filter_strings: Vec<Vec<(String, FilterBy)>>,
     filtered_commits: Arc<Mutex<Vec<CommitInfo>>>,
     filter_count: Arc<AtomicUsize>,
     filter_finished: Arc<AtomicBool>,
@@ -85,53 +85,73 @@ impl AsyncCommitFilterer {
     }
 
     pub fn filter(
-        vec_commit_info: Vec<CommitInfo>,
-        filter_strings: &Vec<(String, FilterBy)>,
+        mut vec_commit_info: Vec<CommitInfo>,
+        filter_strings: &Vec<Vec<(String, FilterBy)>>,
     ) -> Vec<CommitInfo> {
-        let mut commit_infos = vec_commit_info;
-        for (s, filter) in filter_strings {
-            commit_infos = commit_infos
-                .drain(..)
-                .filter(|ci| {
-                    if filter.contains(FilterBy::SHA) {
-                        if ci
-                            .id
-                            .to_string()
-                            .to_lowercase()
-                            .contains(&s.to_lowercase())
-                        {
-                            return true;
-                        }
+        vec_commit_info
+            .drain(..)
+            .filter(|commit| {
+                for to_and in filter_strings {
+                    let mut is_and = true;
+                    for (s, filter) in to_and {
+                        let b = false
+                            || if filter.contains(FilterBy::SHA) {
+                                if commit
+                                    .id
+                                    .to_string()
+                                    .to_lowercase()
+                                    .contains(&s.to_lowercase())
+                                {
+                                    true
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                            || if filter.contains(FilterBy::AUTHOR) {
+                                if commit
+                                    .author
+                                    .to_lowercase()
+                                    .contains(&s.to_lowercase())
+                                {
+                                    true
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                            || if filter.contains(FilterBy::MESSAGE) {
+                                if commit
+                                    .message
+                                    .to_lowercase()
+                                    .contains(&s.to_lowercase())
+                                {
+                                    true
+                                //filtered_commits.push(commit.clone());
+                                //break;
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            };
+                        is_and = is_and && b;
                     }
-
-                    if filter.contains(FilterBy::AUTHOR) {
-                        if ci
-                            .author
-                            .to_lowercase()
-                            .contains(&s.to_lowercase())
-                        {
-                            return true;
-                        }
+                    if is_and {
+                        return true;
                     }
-                    if filter.contains(FilterBy::MESSAGE) {
-                        if ci
-                            .message
-                            .to_lowercase()
-                            .contains(&s.to_lowercase())
-                        {
-                            return true;
-                        }
-                    }
-                    false
-                })
-                .collect::<Vec<CommitInfo>>()
-        }
-        return commit_infos;
+                }
+                false
+            })
+            .collect()
+        //return filtered_commits;
     }
 
     pub fn start_filter(
         &mut self,
-        filter_strings: Vec<(String, FilterBy)>,
+        filter_strings: Vec<Vec<(String, FilterBy)>>,
     ) -> Result<()> {
         self.stop_filter();
 
