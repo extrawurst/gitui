@@ -42,6 +42,9 @@ pub struct AsyncCommitFilterer {
     filter_finished: Arc<AtomicBool>,
     is_pending_local: RefCell<bool>,
     filter_thread_sender: Option<Sender<bool>>,
+    //filter_thread_receiver: Receiver<bool>,
+    filter_thread_running: Arc<AtomicBool>,
+    filter_thread_mutex: Arc<Mutex<()>>,
     sender: Sender<AsyncNotification>,
 }
 
@@ -50,14 +53,18 @@ impl AsyncCommitFilterer {
         git_log: AsyncLog,
         sender: &Sender<AsyncNotification>,
     ) -> Self {
+        //let (tx, rx) = crossbeam_channel::unbounded();
         Self {
             filter_strings: Vec::new(),
             git_log: git_log,
             filtered_commits: Arc::new(Mutex::new(Vec::new())),
             filter_count: Arc::new(AtomicUsize::new(0)),
-            filter_finished: Arc::new(AtomicBool::new(true)),
+            filter_finished: Arc::new(AtomicBool::new(false)),
+            filter_thread_mutex: Arc::new(Mutex::new(())),
             is_pending_local: RefCell::new(true),
             filter_thread_sender: None,
+            //filter_thread_receiver: rx.clone(),
+            filter_thread_running: Arc::new(AtomicBool::new(true)),
             sender: sender.clone(),
         }
     }
@@ -149,6 +156,7 @@ impl AsyncCommitFilterer {
         //return filtered_commits;
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn start_filter(
         &mut self,
         filter_strings: Vec<Vec<(String, FilterBy)>>,
@@ -163,18 +171,34 @@ impl AsyncCommitFilterer {
         let filter_count = Arc::clone(&self.filter_count);
         let async_log = self.git_log.clone();
         let filter_finished = Arc::clone(&self.filter_finished);
-        filter_finished.store(false, Ordering::Relaxed);
+
+        let filter_thread_running =
+            Arc::clone(&self.filter_thread_running);
 
         let (tx, rx) = crossbeam_channel::unbounded();
+        //let rx = self.filter_thread_receiver.clone();
 
         self.filter_thread_sender = Some(tx);
         let async_app_sender = self.sender.clone();
 
+        let prev_thread_mutex = Arc::clone(&self.filter_thread_mutex);
+        // let filter_thread_mutex = Arc::new(Mutex::new(true));
+        self.filter_thread_mutex = Arc::new(Mutex::new(()));
+
+        let cur_thread_mutex = Arc::clone(&self.filter_thread_mutex);
+        // Arc::clone(&self.filter_thread_mutex);
+
         rayon_core::spawn(move || {
+            // Only 1 thread can filter at a time
+            let _c = cur_thread_mutex.lock().expect("cant fail");
+            let _p = prev_thread_mutex.lock().expect("cant fail");
+            filter_finished.store(false, Ordering::Relaxed);
             let mut cur_index: usize = 0;
             loop {
                 match rx.try_recv() {
                     Ok(_) | Err(TryRecvError::Disconnected) => {
+                        filter_thread_running
+                            .store(false, Ordering::Relaxed);
                         break;
                     }
                     Err(TryRecvError::Empty) => {
@@ -182,56 +206,68 @@ impl AsyncCommitFilterer {
                         match async_log
                             .get_slice(cur_index, SLICE_SIZE)
                         {
-                            Ok(ids) => match sync::get_commits_info(
-                                CWD,
-                                &ids,
-                                usize::MAX,
-                            ) {
-                                Ok(v) => {
-                                    if v.len() == 0
-                                        && !async_log.is_pending()
-                                    {
-                                        // Assume finished if log not pending and 0 recieved
-                                        filter_finished.store(
-                                            true,
+                            Ok(ids) => {
+                                match sync::get_commits_info(
+                                    CWD,
+                                    &ids,
+                                    usize::MAX,
+                                ) {
+                                    Ok(v) => {
+                                        if v.len() == 0
+                                            && !async_log.is_pending()
+                                        {
+                                            // Assume finished if log not pending and 0 recieved
+                                            filter_finished.store(
+                                                true,
+                                                Ordering::Relaxed,
+                                            );
+                                            filter_thread_running
+                                                .store(
+                                                    false,
+                                                    Ordering::Relaxed,
+                                                );
+                                            break;
+                                        }
+
+                                        let mut filtered =
+                                            Self::filter(
+                                                v,
+                                                &filter_strings,
+                                            );
+                                        filter_count.fetch_add(
+                                            filtered.len(),
                                             Ordering::Relaxed,
                                         );
-                                        break;
-                                    }
-
-                                    let mut filtered = Self::filter(
-                                        v,
-                                        &filter_strings,
-                                    );
-                                    filter_count.fetch_add(
-                                        filtered.len(),
-                                        Ordering::Relaxed,
-                                    );
-                                    match filtered_commits.lock() {
-                                        Ok(mut fc) => {
-                                            fc.append(&mut filtered);
-                                            drop(fc);
-                                            cur_index += SLICE_SIZE;
-                                            async_app_sender.send(AsyncNotification::Log).expect("error sending");
-                                            thread::sleep(
+                                        match filtered_commits.lock()
+                                        {
+                                            Ok(mut fc) => {
+                                                fc.append(
+                                                    &mut filtered,
+                                                );
+                                                drop(fc);
+                                                cur_index +=
+                                                    SLICE_SIZE;
+                                                async_app_sender.send(AsyncNotification::Log).expect("error sending");
+                                                thread::sleep(
                                                 FILTER_SLEEP_DURATION,
                                             );
-                                        }
-                                        Err(_) => {
-                                            // Failed to lock `filtered_commits`
-                                            thread::sleep(
+                                            }
+                                            Err(_) => {
+                                                // Failed to lock `filtered_commits`
+                                                thread::sleep(
                                     FILTER_SLEEP_DURATION_FAILED_LOCK,
                                 );
+                                            }
                                         }
                                     }
-                                }
-                                Err(_) => {
-                                    // Failed to get commit info
-                                    thread::sleep(
+                                    Err(_) => {
+                                        // Failed to get commit info
+                                        thread::sleep(
                                 FILTER_SLEEP_DURATION_FAILED_LOCK,
                             );
+                                    }
                                 }
-                            },
+                            }
                             Err(_) => {
                                 // Failed to get slice
                                 thread::sleep(
