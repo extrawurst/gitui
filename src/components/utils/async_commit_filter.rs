@@ -9,11 +9,13 @@ use std::{
     cell::RefCell,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
-        Arc, Mutex,
+        Arc,
     },
     thread,
     time::Duration,
 };
+
+use parking_lot::Mutex;
 
 const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(10);
 const FILTER_SLEEP_DURATION_FAILED_LOCK: Duration =
@@ -79,15 +81,8 @@ impl AsyncCommitFilterer {
         }
     }
 
-    pub fn clear(
-        &mut self,
-    ) -> Result<
-        (),
-        std::sync::PoisonError<
-            std::sync::MutexGuard<Vec<CommitInfo>>,
-        >,
-    > {
-        self.filtered_commits.lock()?.clear();
+    pub fn clear(&mut self) -> Result<()> {
+        self.filtered_commits.lock().clear();
         Ok(())
     }
 
@@ -190,11 +185,11 @@ impl AsyncCommitFilterer {
 
         rayon_core::spawn(move || {
             // Only 1 thread can filter at a time
-            let _c = cur_thread_mutex.lock().expect("cant fail");
-            let _p = prev_thread_mutex.lock().expect("cant fail");
+            let _c = cur_thread_mutex.lock();
+            let _p = prev_thread_mutex.lock();
             filter_finished.store(false, Ordering::Relaxed);
             filter_count.store(0, Ordering::Relaxed);
-            filtered_commits.lock().expect("Cant fail").clear();
+            filtered_commits.lock().clear();
             let mut cur_index: usize = 0;
             loop {
                 // Get the git_log and start filtering through it
@@ -240,23 +235,14 @@ impl AsyncCommitFilterer {
                                     filtered.len(),
                                     Ordering::Relaxed,
                                 );
-                                match filtered_commits.lock() {
-                                    Ok(mut fc) => {
-                                        fc.append(&mut filtered);
-                                        drop(fc);
-                                        cur_index += SLICE_SIZE;
-                                        async_app_sender.send(AsyncNotification::Log).expect("error sending");
-                                        thread::sleep(
-                                            FILTER_SLEEP_DURATION,
-                                        );
-                                    }
-                                    Err(_) => {
-                                        // Failed to lock `filtered_commits`
-                                        thread::sleep(
-                                    FILTER_SLEEP_DURATION_FAILED_LOCK,
-                                );
-                                    }
-                                }
+                                let mut fc = filtered_commits.lock();
+                                fc.append(&mut filtered);
+                                drop(fc);
+                                cur_index += SLICE_SIZE;
+                                async_app_sender
+                                    .send(AsyncNotification::Log)
+                                    .expect("error sending");
+                                thread::sleep(FILTER_SLEEP_DURATION);
                             }
                             Err(_) => {
                                 // Failed to get commit info
@@ -303,13 +289,8 @@ impl AsyncCommitFilterer {
         start: usize,
         amount: usize,
         message_length_limit: usize,
-    ) -> Result<
-        Vec<CommitInfo>,
-        std::sync::PoisonError<
-            std::sync::MutexGuard<Vec<CommitInfo>>,
-        >,
-    > {
-        let fc = self.filtered_commits.lock()?;
+    ) -> Result<Vec<CommitInfo>> {
+        let fc = self.filtered_commits.lock();
         let len = fc.len();
         let min = start.min(len);
         let max = min + amount;
