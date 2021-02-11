@@ -62,7 +62,7 @@ impl AsyncCommitFilterer {
             filter_count: Arc::new(AtomicUsize::new(0)),
             filter_finished: Arc::new(AtomicBool::new(false)),
             filter_thread_mutex: Arc::new(Mutex::new(())),
-            is_pending_local: RefCell::new(true),
+            is_pending_local: RefCell::new(false),
             filter_thread_sender: None,
             //filter_thread_receiver: rx.clone(),
             filter_thread_running: Arc::new(AtomicBool::new(true)),
@@ -181,6 +181,7 @@ impl AsyncCommitFilterer {
 
         let cur_thread_mutex = Arc::clone(&self.filter_thread_mutex);
         // Arc::clone(&self.filter_thread_mutex);
+        self.is_pending_local.replace(true);
 
         rayon_core::spawn(move || {
             // Only 1 thread can filter at a time
@@ -273,7 +274,7 @@ impl AsyncCommitFilterer {
                 Ok(_) | Err(_) => {}
             };
         }
-        self.is_pending_local.replace(true);
+        self.is_pending_local.replace(false);
         self.filter_finished.store(true, Ordering::Relaxed);
     }
 
