@@ -129,9 +129,7 @@ impl AsyncCommitFilterer {
     ) -> Result<()> {
         self.stop_filter();
 
-        self.clear().expect("Can't fail unless app crashes");
         self.filter_strings = filter_strings.clone();
-        self.filter_count.store(0, Ordering::Relaxed);
 
         let filtered_commits = Arc::clone(&self.filtered_commits);
         let filter_count = Arc::clone(&self.filter_count);
