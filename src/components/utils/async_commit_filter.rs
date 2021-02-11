@@ -121,7 +121,6 @@ impl AsyncCommitFilterer {
             .collect()
     }
 
-    #[allow(clippy::too_many_lines)]
     pub fn start_filter(
         &mut self,
         filter_strings: Vec<Vec<(String, FilterBy)>>,
