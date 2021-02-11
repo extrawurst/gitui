@@ -5,6 +5,7 @@ use asyncgit::{
 };
 use bitflags::bitflags;
 use crossbeam_channel::{Sender, TryRecvError};
+use parking_lot::Mutex;
 use std::{
     cell::RefCell,
     sync::{
@@ -14,8 +15,6 @@ use std::{
     thread,
     time::Duration,
 };
-
-use parking_lot::Mutex;
 
 const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(10);
 const FILTER_SLEEP_DURATION_FAILED_LOCK: Duration =
