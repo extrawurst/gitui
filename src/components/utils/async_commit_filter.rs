@@ -90,48 +90,27 @@ impl AsyncCommitFilterer {
                 for to_and in filter_strings {
                     let mut is_and = true;
                     for (s, filter) in to_and {
-                        let b = false
-                            || if filter.contains(FilterBy::SHA) {
-                                if commit
+                        is_and = is_and
+                            && ((filter.contains(FilterBy::SHA)
+                                && commit
                                     .id
                                     .to_string()
                                     .to_lowercase()
-                                    .contains(&s.to_lowercase())
-                                {
-                                    true
-                                } else {
-                                    false
-                                }
-                            } else {
-                                false
-                            }
-                            || if filter.contains(FilterBy::AUTHOR) {
-                                if commit
-                                    .author
-                                    .to_lowercase()
-                                    .contains(&s.to_lowercase())
-                                {
-                                    true
-                                } else {
-                                    false
-                                }
-                            } else {
-                                false
-                            }
-                            || if filter.contains(FilterBy::MESSAGE) {
-                                if commit
-                                    .message
-                                    .to_lowercase()
-                                    .contains(&s.to_lowercase())
-                                {
-                                    true
-                                } else {
-                                    false
-                                }
-                            } else {
-                                false
-                            };
-                        is_and = is_and && b;
+                                    .contains(&s.to_lowercase()))
+                                || (filter
+                                    .contains(FilterBy::AUTHOR)
+                                    && commit
+                                        .author
+                                        .to_lowercase()
+                                        .contains(
+                                            &s.to_lowercase(),
+                                        ))
+                                || filter
+                                    .contains(FilterBy::MESSAGE)
+                                    && commit
+                                        .message
+                                        .to_lowercase()
+                                        .contains(&s.to_lowercase()));
                     }
                     if is_and {
                         return true;
