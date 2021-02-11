@@ -75,11 +75,6 @@ impl AsyncCommitFilterer {
         }
     }
 
-    pub fn clear(&mut self) -> Result<()> {
-        self.filtered_commits.lock().clear();
-        Ok(())
-    }
-
     pub fn filter(
         mut vec_commit_info: Vec<CommitInfo>,
         filter_strings: &Vec<Vec<(String, FilterBy)>>,
