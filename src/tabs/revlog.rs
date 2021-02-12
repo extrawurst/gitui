@@ -232,8 +232,9 @@ impl Revlog {
                     }
 
                     if to_filter_by.is_empty() {
-                        to_filter_by =
-                            FilterBy::all() & !FilterBy::NOT;
+                        to_filter_by = FilterBy::all()
+                            & !FilterBy::NOT
+                            & !FilterBy::CASE_SENSITIVE;
                     } else if to_filter_by
                         == FilterBy::CASE_SENSITIVE & FilterBy::NOT
                     {
@@ -254,7 +255,9 @@ impl Revlog {
                 } else {
                     and_vec.push((
                         split_sub.to_string(),
-                        FilterBy::all(),
+                        FilterBy::all()
+                            & !FilterBy::NOT
+                            & !FilterBy::CASE_SENSITIVE,
                     ))
                 }
             }
