@@ -56,7 +56,7 @@ impl AsyncCommitFilterer {
     ) -> Self {
         Self {
             filter_strings: Vec::new(),
-            git_log: git_log,
+            git_log,
             filtered_commits: Arc::new(Mutex::new(Vec::new())),
             filter_count: Arc::new(AtomicUsize::new(0)),
             filter_finished: Arc::new(AtomicBool::new(false)),
@@ -87,7 +87,7 @@ impl AsyncCommitFilterer {
     #[allow(clippy::too_many_lines)]
     pub fn filter(
         mut vec_commit_info: Vec<CommitInfo>,
-        filter_strings: &Vec<Vec<(String, FilterBy)>>,
+        filter_strings: &[Vec<(String, FilterBy)>],
     ) -> Vec<CommitInfo> {
         vec_commit_info
             .drain(..)
@@ -251,7 +251,7 @@ impl AsyncCommitFilterer {
                                     usize::MAX,
                                 ) {
                                     Ok(v) => {
-                                        if v.len() == 0
+                                        if v.is_empty()
                                             && !async_log.is_pending()
                                         {
                                             // Assume finished if log not pending and 0 recieved

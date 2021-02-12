@@ -63,7 +63,7 @@ impl Component for FindCommitComponent {
     }
 
     fn is_visible(&self) -> bool {
-        return self.visible;
+        self.visible
     }
 
     fn hide(&mut self) {
@@ -79,7 +79,7 @@ impl Component for FindCommitComponent {
     }
 
     fn focused(&self) -> bool {
-        return self.is_focused;
+        self.is_focused
     }
 
     fn toggle_visible(&mut self) -> Result<()> {

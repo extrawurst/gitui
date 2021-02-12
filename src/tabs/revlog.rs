@@ -207,7 +207,7 @@ impl Revlog {
         let mut and_vec = Vec::new();
         for or in filter_by_str.split("||") {
             for split_sub in or.split("&&") {
-                if let Some(':') = split_sub.chars().nth(0) {
+                if let Some(':') = split_sub.chars().next() {
                     let mut to_filter_by = FilterBy::empty();
                     let mut split_str =
                         split_sub.split(' ').collect::<Vec<&str>>();
@@ -216,22 +216,19 @@ impl Revlog {
                     }
                     let first = split_str[0];
                     if first.contains('s') {
-                        to_filter_by = to_filter_by | FilterBy::SHA;
+                        to_filter_by |= FilterBy::SHA;
                     }
                     if first.contains('a') {
-                        to_filter_by =
-                            to_filter_by | FilterBy::AUTHOR;
+                        to_filter_by |= FilterBy::AUTHOR;
                     }
                     if first.contains('m') {
-                        to_filter_by =
-                            to_filter_by | FilterBy::MESSAGE;
+                        to_filter_by |= FilterBy::MESSAGE;
                     }
                     if first.contains('c') {
-                        to_filter_by =
-                            to_filter_by | FilterBy::CASE_SENSITIVE;
+                        to_filter_by |= FilterBy::CASE_SENSITIVE;
                     }
                     if first.contains('!') {
-                        to_filter_by = to_filter_by | FilterBy::NOT;
+                        to_filter_by |= FilterBy::NOT;
                     }
 
                     if to_filter_by.is_empty() {
@@ -242,8 +239,8 @@ impl Revlog {
                     {
                         FilterBy::all();
                     } else if to_filter_by == FilterBy::NOT {
-                        to_filter_by =
-                            FilterBy::all() & !FilterBy::NOT;
+                        to_filter_by = FilterBy::all()
+                            & !FilterBy::CASE_SENSITIVE;
                     } else if to_filter_by == FilterBy::CASE_SENSITIVE
                     {
                         to_filter_by =
@@ -264,7 +261,7 @@ impl Revlog {
             search_vec.push(and_vec.clone());
             and_vec.clear();
         }
-        return search_vec;
+        search_vec
     }
 
     pub fn filter(&mut self, filter_by: &str) -> Result<()> {
@@ -320,23 +317,21 @@ impl DrawableComponent for Revlog {
                 self.list.draw(f, chunks[0])?;
                 self.commit_details.draw(f, chunks[1])?;
             }
+        } else if self.find_commit.is_visible() {
+            let log_find_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(
+                    [
+                        Constraint::Percentage(90),
+                        Constraint::Percentage(20),
+                    ]
+                    .as_ref(),
+                )
+                .split(area);
+            self.list.draw(f, log_find_chunks[0])?;
+            self.find_commit.draw(f, log_find_chunks[1])?;
         } else {
-            if self.find_commit.is_visible() {
-                let log_find_chunks = Layout::default()
-                    .direction(Direction::Vertical)
-                    .constraints(
-                        [
-                            Constraint::Percentage(90),
-                            Constraint::Percentage(20),
-                        ]
-                        .as_ref(),
-                    )
-                    .split(area);
-                self.list.draw(f, log_find_chunks[0])?;
-                self.find_commit.draw(f, log_find_chunks[1])?;
-            } else {
-                self.list.draw(f, area)?;
-            }
+            self.list.draw(f, area)?;
         }
 
         Ok(())
