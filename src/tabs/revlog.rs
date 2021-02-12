@@ -226,6 +226,10 @@ impl Revlog {
                         to_filter_by =
                             to_filter_by | FilterBy::MESSAGE;
                     }
+                    if first.contains('c') {
+                        to_filter_by =
+                            to_filter_by | FilterBy::CASE_SENSITIVE;
+                    }
                     if first.contains('!') {
                         to_filter_by = to_filter_by | FilterBy::NOT;
                     }
@@ -233,8 +237,17 @@ impl Revlog {
                     if to_filter_by.is_empty() {
                         to_filter_by =
                             FilterBy::all() & !FilterBy::NOT;
+                    } else if to_filter_by
+                        == FilterBy::CASE_SENSITIVE & FilterBy::NOT
+                    {
+                        FilterBy::all();
                     } else if to_filter_by == FilterBy::NOT {
-                        to_filter_by = FilterBy::all();
+                        to_filter_by =
+                            FilterBy::all() & !FilterBy::NOT;
+                    } else if to_filter_by == FilterBy::CASE_SENSITIVE
+                    {
+                        to_filter_by =
+                            FilterBy::all() & !FilterBy::NOT;
                     };
 
                     and_vec.push((

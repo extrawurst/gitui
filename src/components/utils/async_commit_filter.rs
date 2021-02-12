@@ -27,6 +27,7 @@ bitflags! {
         const AUTHOR = 0b0000_0010;
         const MESSAGE = 0b0000_0100;
         const NOT = 0b0000_1000;
+        const CASE_SENSITIVE = 0b0001_0000;
     }
 }
 
@@ -76,6 +77,7 @@ impl AsyncCommitFilterer {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn filter(
         mut vec_commit_info: Vec<CommitInfo>,
         filter_strings: &Vec<Vec<(String, FilterBy)>>,
@@ -86,54 +88,102 @@ impl AsyncCommitFilterer {
                 for to_and in filter_strings {
                     let mut is_and = true;
                     for (s, filter) in to_and {
-                        is_and = if filter.contains(FilterBy::NOT) {
-                            is_and
-                                && ((filter.contains(FilterBy::SHA)
-                                    && !commit
-                                        .id
-                                        .to_string()
-                                        .to_lowercase()
-                                        .contains(&s.to_lowercase()))
-                                    || (filter
-                                        .contains(FilterBy::AUTHOR)
+                        if filter.contains(FilterBy::CASE_SENSITIVE) {
+                            is_and = if filter.contains(FilterBy::NOT)
+                            {
+                                is_and
+                                    && ((filter
+                                        .contains(FilterBy::SHA)
                                         && !commit
+                                            .id
+                                            .to_string()
+                                            .contains(s))
+                                        || (filter.contains(
+                                            FilterBy::AUTHOR,
+                                        ) && !commit
                                             .author
-                                            .to_lowercase()
-                                            .contains(
-                                                &s.to_lowercase(),
-                                            ))
-                                    || (filter
-                                        .contains(FilterBy::MESSAGE)
-                                        && !commit
+                                            .contains(s))
+                                        || (filter.contains(
+                                            FilterBy::MESSAGE,
+                                        ) && !commit
                                             .message
-                                            .to_lowercase()
-                                            .contains(
-                                                &s.to_lowercase(),
-                                            )))
+                                            .contains(s)))
+                            } else {
+                                is_and
+                                    && ((filter
+                                        .contains(FilterBy::SHA)
+                                        && commit
+                                            .id
+                                            .to_string()
+                                            .contains(s))
+                                        || (filter.contains(
+                                            FilterBy::AUTHOR,
+                                        ) && commit
+                                            .author
+                                            .contains(s))
+                                        || (filter.contains(
+                                            FilterBy::MESSAGE,
+                                        ) && commit
+                                            .message
+                                            .contains(s)))
+                            }
                         } else {
-                            is_and
-                                && ((filter.contains(FilterBy::SHA)
-                                    && commit
-                                        .id
-                                        .to_string()
-                                        .to_lowercase()
-                                        .contains(&s.to_lowercase()))
-                                    || (filter
-                                        .contains(FilterBy::AUTHOR)
-                                        && commit
+                            is_and = if filter.contains(FilterBy::NOT)
+                            {
+                                is_and
+                                    && ((filter
+                                        .contains(FilterBy::SHA)
+                                        && !commit
+                                            .id
+                                            .to_string()
+                                            .to_lowercase()
+                                            .contains(
+                                                &s.to_lowercase(),
+                                            ))
+                                        || (filter.contains(
+                                            FilterBy::AUTHOR,
+                                        ) && !commit
                                             .author
                                             .to_lowercase()
                                             .contains(
                                                 &s.to_lowercase(),
                                             ))
-                                    || (filter
-                                        .contains(FilterBy::MESSAGE)
-                                        && commit
+                                        || (filter.contains(
+                                            FilterBy::MESSAGE,
+                                        ) && !commit
                                             .message
                                             .to_lowercase()
                                             .contains(
                                                 &s.to_lowercase(),
                                             )))
+                            } else {
+                                is_and
+                                    && ((filter
+                                        .contains(FilterBy::SHA)
+                                        && commit
+                                            .id
+                                            .to_string()
+                                            .to_lowercase()
+                                            .contains(
+                                                &s.to_lowercase(),
+                                            ))
+                                        || (filter.contains(
+                                            FilterBy::AUTHOR,
+                                        ) && commit
+                                            .author
+                                            .to_lowercase()
+                                            .contains(
+                                                &s.to_lowercase(),
+                                            ))
+                                        || (filter.contains(
+                                            FilterBy::MESSAGE,
+                                        ) && commit
+                                            .message
+                                            .to_lowercase()
+                                            .contains(
+                                                &s.to_lowercase(),
+                                            )))
+                            }
                         }
                     }
                     if is_and {
