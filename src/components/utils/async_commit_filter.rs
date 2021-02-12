@@ -77,6 +77,13 @@ impl AsyncCommitFilterer {
         }
     }
 
+    /// `filter_strings` should be split by or them and, for example,
+    ///
+    /// A || B && C && D || E
+    ///
+    /// would be
+    ///
+    /// vec [vec![A], vec![B, C, D], vec![E]]
     #[allow(clippy::too_many_lines)]
     pub fn filter(
         mut vec_commit_info: Vec<CommitInfo>,
