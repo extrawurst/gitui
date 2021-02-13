@@ -273,7 +273,9 @@ impl Revlog {
     }
 
     pub fn filter(&mut self, filter_by: &str) -> Result<()> {
-        let trimmed_string = filter_by.trim().to_string();
+        let pre_processed_string =
+            Self::pre_process_string(filter_by.to_string());
+        let trimmed_string = pre_processed_string.trim().to_string();
         if filter_by == "" {
             self.async_filter.stop_filter();
             self.is_filtering = false;
@@ -286,6 +288,46 @@ impl Revlog {
             self.is_filtering = true;
         }
         self.update()
+    }
+
+    /// pre process string to remove any brackets
+    pub fn pre_process_string(mut s: String) -> String {
+        while s.contains("&&(") {
+            let before = s.clone();
+            s = Self::remove_out_brackets(&s);
+            if s == before {
+                break;
+            }
+        }
+        s
+    }
+
+    pub fn remove_out_brackets(s: &str) -> String {
+        if let Some(first_bracket) = s.find("&&(") {
+            let (first, rest_of_string) =
+                s.split_at(first_bracket + 3);
+            if let Some(last_bracket) = rest_of_string.find(')') {
+                let mut v = vec![];
+                let (second, third) =
+                    rest_of_string.split_at(last_bracket);
+                if let Some((first, third)) = first
+                    .strip_suffix('(')
+                    .zip(third.strip_prefix(')'))
+                {
+                    for element in second.split("||") {
+                        // Append first, prepend third onto branket element
+                        v.push(format!(
+                            "{}{}{}",
+                            first.clone(),
+                            element.clone(),
+                            third.clone()
+                        ));
+                    }
+                    return v.join("||");
+                }
+            }
+        }
+        return s.to_string();
     }
 }
 
