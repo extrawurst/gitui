@@ -355,9 +355,8 @@ impl Revlog {
                     // Found
                     ending_brakcet_pos = Some(iter_count);
                     break;
-                } else {
-                    brack_count -= 1;
                 }
+                brack_count -= 1;
             }
             iter_count += 1;
         }
