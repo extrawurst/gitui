@@ -318,11 +318,11 @@ impl Revlog {
                     .strip_suffix('(')
                     .zip(third.strip_prefix(')'))
                 {
-                    for element in second.split("||") {
-                        // Append first, prepend third onto branket element
+                    for inside_bracket_item in second.split("||") {
+                        // Append first, prepend third onto bracket element
                         v.push(format!(
                             "{}{}{}",
-                            first, element, third
+                            first, inside_bracket_item, third
                         ));
                     }
                     return v.join("||");
