@@ -314,7 +314,6 @@ impl Revlog {
                 let mut v = vec![];
                 let (second, third) =
                     rest_of_string.split_at(last_bracket);
-                println!("{}___{}___{}", first, second, third);
                 if let Some((first, third)) = first
                     .strip_suffix('(')
                     .zip(third.strip_prefix(')'))
@@ -325,10 +324,6 @@ impl Revlog {
                             "{}{}{}",
                             first, element, third
                         ));
-
-                        // std::thread::sleep(
-                        //    std::time::Duration::from_secs(2),
-                        //);
                     }
                     return v.join("||");
                 }
