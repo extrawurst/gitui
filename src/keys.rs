@@ -64,13 +64,32 @@ pub struct KeyConfig {
     pub delete_branch: KeyEvent,
     pub push: KeyEvent,
     pub fetch: KeyEvent,
+
+    pub enter_symbol: String,
+    pub left_symbol: String,
+    pub right_symbol: String,
+    pub up_symbol: String,
+    pub down_symbol: String,
+    pub backspace_symbol: String,
+    pub home_symbol: String,
+    pub end_symbol: String,
+    pub page_up_symbol: String,
+    pub page_down_symbol: String,
+    pub tab_symbol: String,
+    pub back_tab_symbol: String,
+    pub delete_symbol: String,
+    pub insert_symbol: String,
+    pub esc_symbol: String,
+    pub control_symbol: String,
+    pub shift_symbol: String,
+    pub alt_symbol: String,
 }
 
 #[rustfmt::skip]
 impl Default for KeyConfig {
     fn default() -> Self {
         Self {
-			tab_status: KeyEvent { code: KeyCode::Char('1'), modifiers: KeyModifiers::empty()},
+            tab_status: KeyEvent { code: KeyCode::Char('1'), modifiers: KeyModifiers::empty()},
 			tab_log: KeyEvent { code: KeyCode::Char('2'), modifiers: KeyModifiers::empty()},
 			tab_stashing: KeyEvent { code: KeyCode::Char('3'), modifiers: KeyModifiers::empty()},
 			tab_stashes: KeyEvent { code: KeyCode::Char('4'), modifiers: KeyModifiers::empty()},
@@ -117,6 +136,25 @@ impl Default for KeyConfig {
             delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
             fetch: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
+
+            enter_symbol: "\u{23ce}".into(),     //⏎
+            left_symbol: "\u{2190}".into(),      //←
+            right_symbol: "\u{2192}".into(),     //→
+            up_symbol: "\u{2191}".into(),        //↑
+            down_symbol: "\u{2193}".into(),      //↓
+            backspace_symbol: "\u{232b}".into(), //⌫
+            home_symbol: "\u{2912}".into(),      //⤒
+            end_symbol: "\u{2913}".into(),       //⤓
+            page_up_symbol: "\u{21de}".into(),   //⇞
+            page_down_symbol: "\u{21df}".into(), //⇟
+            tab_symbol: "\u{21e5}".into(),       //⇥
+            back_tab_symbol: "\u{21e4}".into(),  //⇤
+            delete_symbol: "\u{2326}".into(),    //⌦
+            insert_symbol: "\u{2380}".into(),    //⎀
+            esc_symbol: "\u{238b}".into(),       //⎋
+            control_symbol: "^".into(),
+            shift_symbol: "\u{21e7}".into(),     //⇧
+            alt_symbol: "\u{2325}".into(),       //⌥
         }
     }
 }
@@ -167,25 +205,23 @@ impl KeyConfig {
         }
     }
 
-    //TODO: make this configurable (https://github.com/extrawurst/gitui/issues/465)
-    #[allow(clippy::unused_self)]
-    const fn get_key_symbol(&self, k: KeyCode) -> &str {
+    fn get_key_symbol(&self, k: KeyCode) -> &str {
         match k {
-            KeyCode::Enter => "\u{23ce}",     //⏎
-            KeyCode::Left => "\u{2190}",      //←
-            KeyCode::Right => "\u{2192}",     //→
-            KeyCode::Up => "\u{2191}",        //↑
-            KeyCode::Down => "\u{2193}",      //↓
-            KeyCode::Backspace => "\u{232b}", //⌫
-            KeyCode::Home => "\u{2912}",      //⤒
-            KeyCode::End => "\u{2913}",       //⤓
-            KeyCode::PageUp => "\u{21de}",    //⇞
-            KeyCode::PageDown => "\u{21df}",  //⇟
-            KeyCode::Tab => "\u{21e5}",       //⇥
-            KeyCode::BackTab => "\u{21e4}",   //⇤
-            KeyCode::Delete => "\u{2326}",    //⌦
-            KeyCode::Insert => "\u{2380}",    //⎀
-            KeyCode::Esc => "\u{238b}",       //⎋
+            KeyCode::Enter => &self.enter_symbol,
+            KeyCode::Left => &self.left_symbol,
+            KeyCode::Right => &self.right_symbol,
+            KeyCode::Up => &self.up_symbol,
+            KeyCode::Down => &self.down_symbol,
+            KeyCode::Backspace => &self.backspace_symbol,
+            KeyCode::Home => &self.home_symbol,
+            KeyCode::End => &self.end_symbol,
+            KeyCode::PageUp => &self.page_up_symbol,
+            KeyCode::PageDown => &self.page_down_symbol,
+            KeyCode::Tab => &self.tab_symbol,
+            KeyCode::BackTab => &self.back_tab_symbol,
+            KeyCode::Delete => &self.delete_symbol,
+            KeyCode::Insert => &self.insert_symbol,
+            KeyCode::Esc => &self.esc_symbol,
             _ => "?",
         }
     }
@@ -209,39 +245,34 @@ impl KeyConfig {
             | KeyCode::Esc => {
                 format!(
                     "{}{}",
-                    Self::get_modifier_hint(ev.modifiers),
+                    self.get_modifier_hint(ev.modifiers),
                     self.get_key_symbol(ev.code)
                 )
             }
             KeyCode::Char(c) => {
                 format!(
                     "{}{}",
-                    Self::get_modifier_hint(ev.modifiers),
+                    self.get_modifier_hint(ev.modifiers),
                     c
                 )
             }
             KeyCode::F(u) => {
                 format!(
                     "{}F{}",
-                    Self::get_modifier_hint(ev.modifiers),
+                    self.get_modifier_hint(ev.modifiers),
                     u
                 )
             }
-            KeyCode::Null => Self::get_modifier_hint(ev.modifiers),
+            KeyCode::Null => self.get_modifier_hint(ev.modifiers).into(),
         }
     }
 
-    //TODO: make customizable (see https://github.com/extrawurst/gitui/issues/465)
-    fn get_modifier_hint(modifier: KeyModifiers) -> String {
+    fn get_modifier_hint(&self, modifier: KeyModifiers) -> &str {
         match modifier {
-            KeyModifiers::CONTROL => "^".to_string(),
-            KeyModifiers::SHIFT => {
-                "\u{21e7}".to_string() //⇧
-            }
-            KeyModifiers::ALT => {
-                "\u{2325}".to_string() //⌥
-            }
-            _ => String::new(),
+            KeyModifiers::CONTROL => &self.control_symbol,
+            KeyModifiers::SHIFT => &self.shift_symbol,
+            KeyModifiers::ALT => &self.alt_symbol,
+            _ => "",
         }
     }
 }
@@ -270,5 +301,16 @@ mod tests {
             .is_ok(),
             true
         );
+    }
+
+    #[test]
+    fn test_load_alternate_symbol_example() {
+        assert_eq!(
+            KeyConfig::read_file(
+                "assets/alternate_key_symbols.ron".into()
+            )
+                .is_ok(),
+            true
+        )
     }
 }
