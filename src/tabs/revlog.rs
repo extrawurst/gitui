@@ -54,6 +54,7 @@ impl Revlog {
         key_config: SharedKeyConfig,
     ) -> Self {
         let log = AsyncLog::new(sender);
+        let tags = AsyncTags::new(sender);
         Self {
             queue: queue.clone(),
             commit_details: CommitDetailsComponent::new(
@@ -74,10 +75,11 @@ impl Revlog {
             ),
             async_filter: AsyncCommitFilterer::new(
                 log.clone(),
+                tags.clone(),
                 sender,
             ),
             git_log: log,
-            git_tags: AsyncTags::new(sender),
+            git_tags: tags,
             visible: false,
             branch_name: cached::BranchName::new(CWD),
             key_config,
@@ -226,6 +228,9 @@ impl Revlog {
                     }
                     if first.contains('c') {
                         to_filter_by |= FilterBy::CASE_SENSITIVE;
+                    }
+                    if first.contains('t') {
+                        to_filter_by |= FilterBy::TAGS;
                     }
                     if first.contains('!') {
                         to_filter_by |= FilterBy::NOT;

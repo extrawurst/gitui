@@ -1,7 +1,7 @@
 use anyhow::Result;
 use asyncgit::{
-    sync::{self, limit_str, CommitInfo},
-    AsyncLog, AsyncNotification, CWD,
+    sync::{self, limit_str, CommitId, CommitInfo},
+    AsyncLog, AsyncNotification, AsyncTags, CWD,
 };
 use bitflags::bitflags;
 use crossbeam_channel::{Sender, TryRecvError};
@@ -28,6 +28,7 @@ bitflags! {
         const MESSAGE = 0b0000_0100;
         const NOT = 0b0000_1000;
         const CASE_SENSITIVE = 0b0001_0000;
+        const TAGS = 0b0010_0000;
     }
 }
 
@@ -39,6 +40,7 @@ pub enum FilterStatus {
 
 pub struct AsyncCommitFilterer {
     git_log: AsyncLog,
+    git_tags: AsyncTags,
     filter_strings: Vec<Vec<(String, FilterBy)>>,
     filtered_commits: Arc<Mutex<Vec<CommitInfo>>>,
     filter_count: Arc<AtomicUsize>,
@@ -52,11 +54,13 @@ pub struct AsyncCommitFilterer {
 impl AsyncCommitFilterer {
     pub fn new(
         git_log: AsyncLog,
+        git_tags: AsyncTags,
         sender: &Sender<AsyncNotification>,
     ) -> Self {
         Self {
             filter_strings: Vec::new(),
             git_log,
+            git_tags,
             filtered_commits: Arc::new(Mutex::new(Vec::new())),
             filter_count: Arc::new(AtomicUsize::new(0)),
             filter_finished: Arc::new(AtomicBool::new(false)),
@@ -87,6 +91,9 @@ impl AsyncCommitFilterer {
     #[allow(clippy::too_many_lines)]
     pub fn filter(
         mut vec_commit_info: Vec<CommitInfo>,
+        tags: &Option<
+            std::collections::BTreeMap<CommitId, Vec<String>>,
+        >,
         filter_strings: &[Vec<(String, FilterBy)>],
     ) -> Vec<CommitInfo> {
         vec_commit_info
@@ -99,12 +106,17 @@ impl AsyncCommitFilterer {
                             is_and = if filter.contains(FilterBy::NOT)
                             {
                                 is_and
-                                    && ((filter
-                                        .contains(FilterBy::SHA)
-                                        && !commit
-                                            .id
-                                            .to_string()
-                                            .contains(s))
+                                    && (filter
+                                        .contains(FilterBy::TAGS)
+                                        &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
+                                                !tag_string.contains(s)
+                                            }).count() > 0))
+                                        || (filter
+                                            .contains(FilterBy::SHA)
+                                            && !commit
+                                                .id
+                                                .to_string()
+                                                .contains(s))
                                         || (filter.contains(
                                             FilterBy::AUTHOR,
                                         ) && !commit
@@ -117,7 +129,12 @@ impl AsyncCommitFilterer {
                                             .contains(s)))
                             } else {
                                 is_and
-                                    && ((filter
+                                && (filter
+                                    .contains(FilterBy::TAGS)
+                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
+                                            !tag_string.contains(s)
+                                        }).count() > 0))
+                                    || (filter
                                         .contains(FilterBy::SHA)
                                         && commit
                                             .id
@@ -138,7 +155,12 @@ impl AsyncCommitFilterer {
                             is_and = if filter.contains(FilterBy::NOT)
                             {
                                 is_and
-                                    && ((filter
+                                && (filter
+                                    .contains(FilterBy::TAGS)
+                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
+                                            !tag_string.to_lowercase().contains(&s.to_lowercase())
+                                        }).count() > 0))
+                                    || (filter
                                         .contains(FilterBy::SHA)
                                         && !commit
                                             .id
@@ -165,7 +187,12 @@ impl AsyncCommitFilterer {
                                             )))
                             } else {
                                 is_and
-                                    && ((filter
+                                && (filter
+                                    .contains(FilterBy::TAGS)
+                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
+                                            tag_string.to_lowercase().contains(&s.to_lowercase())
+                                        }).count() > 0))
+                                    || (filter
                                         .contains(FilterBy::SHA)
                                         && commit
                                             .id
@@ -202,6 +229,7 @@ impl AsyncCommitFilterer {
             .collect()
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn start_filter(
         &mut self,
         filter_strings: Vec<Vec<(String, FilterBy)>>,
@@ -225,6 +253,30 @@ impl AsyncCommitFilterer {
 
         let cur_thread_mutex = Arc::clone(&self.filter_thread_mutex);
         self.is_pending_local.replace(true);
+
+        // If the search does not contain tags, do not include them
+        let mut contains_tags = false;
+        for or in &filter_strings {
+            for (_, filter_by) in or {
+                if filter_by.contains(FilterBy::TAGS) {
+                    contains_tags = true;
+                    break;
+                }
+            }
+            if contains_tags {
+                break;
+            }
+        }
+
+        let tags = if contains_tags {
+            if let Ok(o) = self.git_tags.last() {
+                o
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         rayon_core::spawn(move || {
             // Only 1 thread can filter at a time
@@ -265,6 +317,7 @@ impl AsyncCommitFilterer {
                                         let mut filtered =
                                             Self::filter(
                                                 v,
+                                                &tags,
                                                 &filter_strings,
                                             );
                                         filter_count.fetch_add(
