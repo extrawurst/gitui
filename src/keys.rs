@@ -263,7 +263,9 @@ impl KeyConfig {
                     u
                 )
             }
-            KeyCode::Null => self.get_modifier_hint(ev.modifiers).into(),
+            KeyCode::Null => {
+                self.get_modifier_hint(ev.modifiers).into()
+            }
         }
     }
 
@@ -309,7 +311,7 @@ mod tests {
             KeyConfig::read_file(
                 "assets/alternate_key_symbols.ron".into()
             )
-                .is_ok(),
+            .is_ok(),
             true
         )
     }
