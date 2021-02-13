@@ -276,7 +276,6 @@ impl Revlog {
     pub fn filter(&mut self, filter_by: &str) -> Result<()> {
         let pre_processed_string =
             Self::pre_process_string(filter_by.to_string());
-        println!("{}", pre_processed_string);
         let trimmed_string = pre_processed_string.trim().to_string();
         if filter_by == "" {
             self.async_filter.stop_filter();
