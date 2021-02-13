@@ -306,7 +306,9 @@ impl Revlog {
         if let Some(first_bracket) = s.find("&&(") {
             let (first, rest_of_string) =
                 s.split_at(first_bracket + 3);
-            if let Some(last_bracket) = rest_of_string.find(')') {
+            if let Some(last_bracket) =
+                Self::get_ending_bracket(rest_of_string)
+            {
                 let mut v = vec![];
                 let (second, third) =
                     rest_of_string.split_at(last_bracket);
@@ -328,6 +330,44 @@ impl Revlog {
             }
         }
         return s.to_string();
+    }
+
+    pub fn get_ending_bracket(s: &str) -> Option<usize> {
+        let mut brack_count = 0;
+        let mut char_iter = s.chars();
+        let mut ending_brakcet_pos = None;
+        let mut iter_count = 0;
+        loop {
+            if let Some(c) = char_iter.next() {
+                if c == '&' {
+                    if let Some(c2) = char_iter.next() {
+                        {
+                            iter_count += 1;
+                            if c2 == '&' {
+                                if let Some(c3) = char_iter.next() {
+                                    iter_count += 1;
+                                    if c3 == '(' {
+                                        brack_count += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if c == ')' {
+                    if brack_count == 0 {
+                        // Found
+                        ending_brakcet_pos = Some(iter_count);
+                        break;
+                    } else {
+                        brack_count -= 1;
+                    }
+                }
+            } else {
+                break;
+            }
+            iter_count += 1;
+        }
+        ending_brakcet_pos
     }
 }
 
