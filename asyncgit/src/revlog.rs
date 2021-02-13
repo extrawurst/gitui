@@ -35,7 +35,7 @@ pub struct AsyncLog {
     background: Arc<AtomicBool>,
 }
 
-static LIMIT_COUNT: usize = 5;
+static LIMIT_COUNT: usize = 3000;
 static SLEEP_FOREGROUND: Duration = Duration::from_millis(2);
 static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
