@@ -320,16 +320,14 @@ impl Revlog {
                         // Append first, prepend third onto branket element
                         v.push(format!(
                             "{}{}{}",
-                            first.clone(),
-                            element.clone(),
-                            third.clone()
+                            first, element, third
                         ));
                     }
                     return v.join("||");
                 }
             }
         }
-        return s.to_string();
+        s.to_string()
     }
 
     pub fn get_ending_bracket(s: &str) -> Option<usize> {
@@ -337,33 +335,29 @@ impl Revlog {
         let mut char_iter = s.chars();
         let mut ending_brakcet_pos = None;
         let mut iter_count = 0;
-        loop {
-            if let Some(c) = char_iter.next() {
-                if c == '&' {
-                    if let Some(c2) = char_iter.next() {
-                        {
-                            iter_count += 1;
-                            if c2 == '&' {
-                                if let Some(c3) = char_iter.next() {
-                                    iter_count += 1;
-                                    if c3 == '(' {
-                                        brack_count += 1;
-                                    }
+        while let Some(c) = char_iter.next() {
+            if c == '&' {
+                if let Some(c2) = char_iter.next() {
+                    {
+                        iter_count += 1;
+                        if c2 == '&' {
+                            if let Some(c3) = char_iter.next() {
+                                iter_count += 1;
+                                if c3 == '(' {
+                                    brack_count += 1;
                                 }
                             }
                         }
                     }
-                } else if c == ')' {
-                    if brack_count == 0 {
-                        // Found
-                        ending_brakcet_pos = Some(iter_count);
-                        break;
-                    } else {
-                        brack_count -= 1;
-                    }
                 }
-            } else {
-                break;
+            } else if c == ')' {
+                if brack_count == 0 {
+                    // Found
+                    ending_brakcet_pos = Some(iter_count);
+                    break;
+                } else {
+                    brack_count -= 1;
+                }
             }
             iter_count += 1;
         }
