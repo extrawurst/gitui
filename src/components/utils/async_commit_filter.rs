@@ -108,7 +108,7 @@ impl AsyncCommitFilterer {
                                 is_and
                                     && (filter
                                         .contains(FilterBy::TAGS)
-                                        &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
+                                        &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                                 !tag_string.contains(s)
                                             }).count() > 0))
                                         || (filter
@@ -132,7 +132,7 @@ impl AsyncCommitFilterer {
                                 && (filter
                                     .contains(FilterBy::TAGS)
                                     &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
-                                            !tag_string.contains(s)
+                                            tag_string.contains(s)
                                         }).count() > 0))
                                     || (filter
                                         .contains(FilterBy::SHA)
@@ -157,7 +157,7 @@ impl AsyncCommitFilterer {
                                 is_and
                                 && (filter
                                     .contains(FilterBy::TAGS)
-                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
+                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                             !tag_string.to_lowercase().contains(&s.to_lowercase())
                                         }).count() > 0))
                                     || (filter

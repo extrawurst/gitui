@@ -246,7 +246,8 @@ impl Revlog {
                         FilterBy::all();
                     } else if to_filter_by == FilterBy::NOT {
                         to_filter_by = FilterBy::all()
-                            & !FilterBy::CASE_SENSITIVE;
+                            & !FilterBy::CASE_SENSITIVE
+                            & !FilterBy::TAGS;
                     } else if to_filter_by == FilterBy::CASE_SENSITIVE
                     {
                         to_filter_by =
@@ -275,6 +276,7 @@ impl Revlog {
     pub fn filter(&mut self, filter_by: &str) -> Result<()> {
         let pre_processed_string =
             Self::pre_process_string(filter_by.to_string());
+        println!("{}", pre_processed_string);
         let trimmed_string = pre_processed_string.trim().to_string();
         if filter_by == "" {
             self.async_filter.stop_filter();
@@ -312,6 +314,7 @@ impl Revlog {
                 let mut v = vec![];
                 let (second, third) =
                     rest_of_string.split_at(last_bracket);
+                println!("{}___{}___{}", first, second, third);
                 if let Some((first, third)) = first
                     .strip_suffix('(')
                     .zip(third.strip_prefix(')'))
@@ -322,6 +325,10 @@ impl Revlog {
                             "{}{}{}",
                             first, element, third
                         ));
+
+                        // std::thread::sleep(
+                        //    std::time::Duration::from_secs(2),
+                        //);
                     }
                     return v.join("||");
                 }
@@ -334,22 +341,10 @@ impl Revlog {
         let mut brack_count = 0;
         let mut char_iter = s.chars();
         let mut ending_brakcet_pos = None;
-        let mut iter_count = 0;
+        let mut iter_count: usize = 0;
         while let Some(c) = char_iter.next() {
-            if c == '&' {
-                if let Some(c2) = char_iter.next() {
-                    {
-                        iter_count += 1;
-                        if c2 == '&' {
-                            if let Some(c3) = char_iter.next() {
-                                iter_count += 1;
-                                if c3 == '(' {
-                                    brack_count += 1;
-                                }
-                            }
-                        }
-                    }
-                }
+            if c == '(' {
+                brack_count += 1;
             } else if c == ')' {
                 if brack_count == 0 {
                     // Found
