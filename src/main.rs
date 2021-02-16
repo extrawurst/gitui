@@ -244,8 +244,12 @@ fn get_app_cache_path() -> Result<PathBuf> {
 }
 
 fn get_app_config_path() -> Result<PathBuf> {
-    let mut path = dirs_next::config_dir()
-        .ok_or_else(|| anyhow!("failed to find os config dir."))?;
+    let mut path = if cfg!(target_os = "macos") {
+        dirs_next::home_dir().map(|h| h.join(".config"))
+    } else {
+        dirs_next::config_dir()
+    }
+    .ok_or_else(|| anyhow!("failed to find os config dir."))?;
 
     path.push("gitui");
     fs::create_dir_all(&path)?;
