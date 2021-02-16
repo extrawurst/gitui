@@ -51,7 +51,7 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 
 I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index, commit, diff, stash and log.
 
-Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool myself to help do features I use the most.
+Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool to help with features I use the most.
 
 # Known Limitations
 
@@ -83,6 +83,16 @@ makepkg -si
 
 ```sh
 sudo dnf install gitui
+```
+
+### Gentoo
+
+Available in [dm9pZCAq overlay](https://github.com/gentoo-mirror/dm9pZCAq)
+
+```sh
+sudo eselect repository enable dm9pZCAq
+sudo emerge --sync dm9pZCAq
+sudo emerge dev-vcs/gitui::dm9pZCAq
 ```
 
 ### Homebrew (macOS)
@@ -145,6 +155,20 @@ However, you can customize everything to your liking: See [Themes](THEMES.md).
 # Key Bindings
 
 The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to set them to `vim`-like bindings.
+
+# Road(map) to 1.0
+
+These are the high level goals before calling out `1.0`:
+
+* upstream branches ([#453](https://github.com/extrawurst/gitui/issues/453))
+* force push ([#274](https://github.com/extrawurst/gitui/issues/274))
+* simple pull (only for ff-merge) ([#319](https://github.com/extrawurst/gitui/issues/319))
+* merging with conflicts ([#485](https://github.com/extrawurst/gitui/issues/485))
+* log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
+* file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
+* more tag support ([#483](https://github.com/extrawurst/gitui/issues/483))
+* file blame ([#484](https://github.com/extrawurst/gitui/issues/484))
+* visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
 
 # Inspiration
 

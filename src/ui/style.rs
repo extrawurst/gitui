@@ -1,4 +1,3 @@
-use crate::get_app_config_path;
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
 use ron::{
@@ -18,36 +17,39 @@ pub type SharedTheme = Rc<Theme>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Theme {
-    #[serde(with = "ColorDef")]
     selected_tab: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     command_fg: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     selection_bg: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     cmdbar_extra_lines_bg: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     disabled_fg: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_line_add: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_line_delete: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_file_added: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_file_removed: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_file_moved: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     diff_file_modified: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     commit_hash: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     commit_time: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     commit_author: Color,
-    #[serde(with = "ColorDef")]
+    #[serde(with = "Color")]
     danger_fg: Color,
+    #[serde(with = "Color")]
+    push_gauge_bg: Color,
+    #[serde(with = "Color")]
+    push_gauge_fg: Color,
 }
 
 impl Theme {
@@ -68,6 +70,20 @@ impl Theme {
             Style::default().add_modifier(Modifier::BOLD)
         } else {
             Style::default().fg(self.disabled_fg)
+        }
+    }
+
+    pub fn branch(&self, selected: bool, head: bool) -> Style {
+        let branch = if head {
+            Style::default().add_modifier(Modifier::BOLD)
+        } else {
+            Style::default()
+        };
+
+        if selected {
+            branch.patch(Style::default().bg(self.selection_bg))
+        } else {
+            branch
         }
     }
 
@@ -207,17 +223,18 @@ impl Theme {
         )
     }
 
-    fn save(&self) -> Result<()> {
-        let theme_file = Self::get_theme_file()?;
+    pub fn push_gauge(&self) -> Style {
+        Style::default()
+            .fg(self.push_gauge_fg)
+            .bg(self.push_gauge_bg)
+    }
+
+    // This will only be called when theme.ron doesn't already exists
+    fn save(&self, theme_file: PathBuf) -> Result<()> {
         let mut file = File::create(theme_file)?;
         let data = to_string_pretty(self, PrettyConfig::default())?;
         file.write_all(data.as_bytes())?;
         Ok(())
-    }
-
-    fn get_theme_file() -> Result<PathBuf> {
-        let app_home = get_app_config_path()?;
-        Ok(app_home.join("theme.ron"))
     }
 
     fn read_file(theme_file: PathBuf) -> Result<Self> {
@@ -227,21 +244,21 @@ impl Theme {
         Ok(from_bytes(&buffer)?)
     }
 
-    fn init_internal() -> Result<Self> {
-        let file = Self::get_theme_file()?;
-        if file.exists() {
-            Ok(Self::read_file(file)?)
+    fn init_internal(theme: PathBuf) -> Result<Self> {
+        if theme.exists() {
+            Ok(Self::read_file(theme)?)
         } else {
+            // This will only be called when theme.ron doesn't already exists
             let def = Self::default();
-            if def.save().is_err() {
+            if def.save(theme).is_err() {
                 log::warn!("failed to store default theme to disk.")
             }
             Ok(def)
         }
     }
 
-    pub fn init() -> Self {
-        Self::init_internal().unwrap_or_default()
+    pub fn init(theme_path: PathBuf) -> Self {
+        Self::init_internal(theme_path).unwrap_or_default()
     }
 }
 
@@ -263,32 +280,8 @@ impl Default for Theme {
             commit_time: Color::LightCyan,
             commit_author: Color::Green,
             danger_fg: Color::Red,
+            push_gauge_bg: Color::Blue,
+            push_gauge_fg: Color::Reset,
         }
     }
-}
-
-/// we duplicate the Color definition from `tui` crate to implement Serde serialisation
-/// this enum can be removed once [tui-#292](https://github.com/fdehau/tui-rs/issues/292) is resolved
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-#[serde(remote = "Color")]
-enum ColorDef {
-    Reset,
-    Black,
-    Red,
-    Green,
-    Yellow,
-    Blue,
-    Magenta,
-    Cyan,
-    Gray,
-    DarkGray,
-    LightRed,
-    LightGreen,
-    LightYellow,
-    LightBlue,
-    LightMagenta,
-    LightCyan,
-    White,
-    Rgb(u8, u8, u8),
-    Indexed(u8),
 }
