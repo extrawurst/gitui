@@ -85,6 +85,7 @@ impl Revlog {
             branch_name: cached::BranchName::new(CWD),
             key_config,
             is_filtering: false,
+            filter_string: "".to_string(),
         }
     }
 
