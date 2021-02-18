@@ -177,7 +177,7 @@ impl Revlog {
 
         if let Ok(commits) = commits {
             self.list.items().set_items(want_min, commits);
-        };
+        }
 
         Ok(())
     }
