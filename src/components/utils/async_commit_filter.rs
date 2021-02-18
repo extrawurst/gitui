@@ -1,6 +1,6 @@
 use anyhow::Result;
 use asyncgit::{
-    sync::{self, limit_str, CommitId, CommitInfo},
+    sync::{self, limit_str, CommitId, CommitInfo, Tags},
     AsyncLog, AsyncNotification, AsyncTags, CWD,
 };
 use bitflags::bitflags;
@@ -229,7 +229,31 @@ impl AsyncCommitFilterer {
             .collect()
     }
 
-    #[allow(clippy::too_many_lines)]
+    /// If the filtering string contain filtering by tags
+    /// return them, else don't get the tags
+    fn get_tags(
+        filter_strings: &Vec<Vec<(String, FilterBy)>>,
+        git_tags: &mut AsyncTags,
+    ) -> Result<Option<Tags>> {
+        let mut contains_tags = false;
+        for or in filter_strings {
+            for (_, filter_by) in or {
+                if filter_by.contains(FilterBy::TAGS) {
+                    contains_tags = true;
+                    break;
+                }
+            }
+            if contains_tags {
+                break;
+            }
+        }
+
+        if contains_tags {
+            return git_tags.last().map_err(|e| anyhow::anyhow!(e));
+        }
+        Ok(None)
+    }
+
     pub fn start_filter(
         &mut self,
         filter_strings: Vec<Vec<(String, FilterBy)>>,
@@ -255,28 +279,8 @@ impl AsyncCommitFilterer {
         self.is_pending_local.replace(true);
 
         // If the search does not contain tags, do not include them
-        let mut contains_tags = false;
-        for or in &filter_strings {
-            for (_, filter_by) in or {
-                if filter_by.contains(FilterBy::TAGS) {
-                    contains_tags = true;
-                    break;
-                }
-            }
-            if contains_tags {
-                break;
-            }
-        }
-
-        let tags = if contains_tags {
-            if let Ok(o) = self.git_tags.last() {
-                o
-            } else {
-                None
-            }
-        } else {
-            None
-        };
+        let tags =
+            Self::get_tags(&filter_strings, &mut self.git_tags)?;
 
         rayon_core::spawn(move || {
             // Only 1 thread can filter at a time
