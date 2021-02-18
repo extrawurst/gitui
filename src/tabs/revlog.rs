@@ -101,11 +101,10 @@ impl Revlog {
     pub fn update(&mut self) -> Result<()> {
         if self.visible {
             let log_changed = if self.is_filtering {
-                self.list
-                    .update_total_count(self.async_filter.count());
+                self.list.set_total_count(self.async_filter.count());
                 self.async_filter.fetch() == FilterStatus::Filtering
             } else {
-                self.list.update_total_count(self.git_log.count()?);
+                self.list.set_total_count(self.git_log.count()?);
                 self.git_log.fetch()? == FetchStatus::Started
             };
 

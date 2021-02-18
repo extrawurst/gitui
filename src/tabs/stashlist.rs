@@ -48,7 +48,7 @@ impl StashList {
             let commits =
                 sync::get_commits_info(CWD, stashes.as_slice(), 100)?;
 
-            self.list.update_total_count(commits.len());
+            self.list.set_total_count(commits.len());
             self.list.items().set_items(0, commits);
         }
 
