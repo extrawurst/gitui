@@ -331,6 +331,7 @@ impl Revlog {
         s.to_string()
     }
 
+    // Get outer matching brakets in a string
     pub fn get_ending_bracket(s: &str) -> Option<usize> {
         let mut brack_count = 0;
         let mut char_iter = s.chars();
