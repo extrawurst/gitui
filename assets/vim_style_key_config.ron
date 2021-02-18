@@ -62,6 +62,7 @@
     cmd_bar_toggle: ( code: Char('.'), modifiers: ( bits: 0,),),
     log_tag_commit: ( code: Char('t'), modifiers: ( bits: 0,),),
     commit_amend: ( code: Char('A'), modifiers: ( bits: 1,),),
+    commit_new_line: ( code: Enter, modifiers: ( bits: 3,),),
     copy: ( code: Char('y'), modifiers: ( bits: 0,),),
     create_branch: ( code: Char('c'), modifiers: ( bits: 0,),),
     rename_branch: ( code: Char('r'), modifiers: ( bits: 0,),),

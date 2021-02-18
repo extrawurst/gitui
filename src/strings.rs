@@ -471,8 +471,8 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "New Line [ALT+{}]",
-                key_config.get_hint(key_config.enter),
+                "New Line [{}]",
+                key_config.get_hint(key_config.commit_new_line),
             ),
             "make a new line in the commit message",
             CMD_GROUP_COMMIT,
