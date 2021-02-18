@@ -466,6 +466,18 @@ pub mod commands {
             CMD_GROUP_COMMIT,
         )
     }
+    pub fn commit_new_line(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "New Line [ALT+{}]",
+                key_config.get_hint(key_config.enter),
+            ),
+            "make a new line in the commit message",
+            CMD_GROUP_COMMIT,
+        )
+    }
     pub fn commit_amend(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(

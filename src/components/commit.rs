@@ -70,6 +70,12 @@ impl Component for CommitComponent {
                 true,
                 true,
             ));
+
+            out.push(CommandInfo::new(
+                strings::commands::commit_new_line(&self.key_config),
+                true,
+                true,
+            ));
         }
 
         visibility_blocking(self)
