@@ -106,11 +106,11 @@ impl AsyncCommitFilterer {
                             is_and = if filter.contains(FilterBy::NOT)
                             {
                                 is_and
-                                    && (filter
+                                    && ((filter
                                         .contains(FilterBy::TAGS)
                                         &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                                 !tag_string.contains(s)
-                                            }).count() > 0))
+                                            }).count() > 0)))
                                         || (filter
                                             .contains(FilterBy::SHA)
                                             && !commit
@@ -129,11 +129,11 @@ impl AsyncCommitFilterer {
                                             .contains(s)))
                             } else {
                                 is_and
-                                && (filter
+                                && ((filter
                                     .contains(FilterBy::TAGS)
                                     &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                             tag_string.contains(s)
-                                        }).count() > 0))
+                                        }).count() > 0)))
                                     || (filter
                                         .contains(FilterBy::SHA)
                                         && commit
@@ -155,11 +155,11 @@ impl AsyncCommitFilterer {
                             is_and = if filter.contains(FilterBy::NOT)
                             {
                                 is_and
-                                && (filter
+                                && ((filter
                                     .contains(FilterBy::TAGS)
                                     &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                             !tag_string.to_lowercase().contains(&s.to_lowercase())
-                                        }).count() > 0))
+                                        }).count() > 0)))
                                     || (filter
                                         .contains(FilterBy::SHA)
                                         && !commit
@@ -187,11 +187,11 @@ impl AsyncCommitFilterer {
                                             )))
                             } else {
                                 is_and
-                                && (filter
+                                && ((filter
                                     .contains(FilterBy::TAGS)
                                     &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                             tag_string.to_lowercase().contains(&s.to_lowercase())
-                                        }).count() > 0))
+                                        }).count() > 0)))
                                     || (filter
                                         .contains(FilterBy::SHA)
                                         && commit
