@@ -261,11 +261,11 @@ impl Revlog {
                     ));
                 } else {
                     and_vec.push((
-                        split_sub.to_string(),
+                        split_sub.trim().to_string(),
                         FilterBy::all()
                             & !FilterBy::NOT
                             & !FilterBy::CASE_SENSITIVE,
-                    ))
+                    ));
                 }
             }
             search_vec.push(and_vec.clone());
