@@ -275,7 +275,7 @@ impl Revlog {
     }
 
     pub fn filter(&mut self, filter_by: &str) -> Result<()> {
-        if filter_by != &self.filter_string {
+        if filter_by != self.filter_string {
             self.filter_string = filter_by.to_string();
             let pre_processed_string =
                 Self::pre_process_string(filter_by.to_string());
@@ -341,21 +341,18 @@ impl Revlog {
     /// Get outer matching brakets in a string
     pub fn get_ending_bracket(s: &str) -> Option<usize> {
         let mut brack_count = 0;
-        let mut char_iter = s.chars();
         let mut ending_brakcet_pos = None;
-        let mut iter_count: usize = 0;
-        while let Some(c) = char_iter.next() {
+        for (i, c) in s.chars().enumerate() {
             if c == '(' {
                 brack_count += 1;
             } else if c == ')' {
                 if brack_count == 0 {
                     // Found
-                    ending_brakcet_pos = Some(iter_count);
+                    ending_brakcet_pos = Some(i);
                     break;
                 }
                 brack_count -= 1;
             }
-            iter_count += 1;
         }
         ending_brakcet_pos
     }

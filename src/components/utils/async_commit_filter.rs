@@ -232,7 +232,7 @@ impl AsyncCommitFilterer {
     /// If the filtering string contain filtering by tags
     /// return them, else don't get the tags
     fn get_tags(
-        filter_strings: &Vec<Vec<(String, FilterBy)>>,
+        filter_strings: &[Vec<(String, FilterBy)>],
         git_tags: &mut AsyncTags,
     ) -> Result<Option<Tags>> {
         let mut contains_tags = false;
