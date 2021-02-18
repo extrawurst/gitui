@@ -379,7 +379,7 @@ impl Status {
         if let Some(branch) = self.git_branch_name.last() {
             self.queue
                 .borrow_mut()
-                .push_back(InternalEvent::Push(branch));
+                .push_back(InternalEvent::Push(branch, None));
         }
     }
 

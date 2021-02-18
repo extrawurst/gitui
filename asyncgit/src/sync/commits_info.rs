@@ -15,6 +15,11 @@ impl CommitId {
         Self(id)
     }
 
+    /// create new CommitId
+    pub fn zero() -> Self {
+        Self::new(Oid::zero())
+    }
+
     ///
     pub(crate) fn get_oid(self) -> Oid {
         self.0

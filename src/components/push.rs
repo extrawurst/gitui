@@ -15,7 +15,7 @@ use asyncgit::{
             extract_username_password, need_username_password,
             BasicAuthCredential,
         },
-        get_first_remote,
+        get_branch_upstream, get_first_remote,
     },
     AsyncNotification, AsyncPush, PushProgress, PushProgressState,
     PushRequest, CWD,
@@ -65,6 +65,31 @@ impl PushComponent {
             theme,
             key_config,
         }
+    }
+
+    /// do not push if there is no upstream for branch,
+    /// let user select one
+    pub fn push_prevent_no_upstream(
+        &mut self,
+        branch: String,
+    ) -> Result<()> {
+        self.branch = branch;
+        if get_branch_upstream(
+            CWD,
+            &format!("refs/heads/{}", self.branch.clone()),
+        )
+        .is_ok()
+        {
+            self.push(self.branch.clone())?;
+        } else {
+            // No upstream branch set, open selection
+            self.queue.borrow_mut().push_back(
+                InternalEvent::OpenUpstreamBranchPopup(
+                    self.branch.to_string(),
+                ),
+            );
+        }
+        Ok(())
     }
 
     ///

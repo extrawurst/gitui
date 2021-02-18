@@ -7,7 +7,7 @@ use crate::{
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PushComponent,
         RenameBranchComponent, ResetComponent, SelectBranchComponent,
-        StashMsgComponent, TagCommitComponent,
+        SetUpstreamComponent, StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -48,6 +48,7 @@ pub struct App {
     create_branch_popup: CreateBranchComponent,
     rename_branch_popup: RenameBranchComponent,
     select_branch_popup: SelectBranchComponent,
+    set_upstream_popoup: SetUpstreamComponent,
     cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
@@ -67,6 +68,7 @@ pub struct App {
 // public interface
 impl App {
     ///
+    #[allow(clippy::too_many_lines)]
     pub fn new(
         sender: &Sender<AsyncNotification>,
         input: Input,
@@ -126,6 +128,11 @@ impl App {
                 key_config.clone(),
             ),
             select_branch_popup: SelectBranchComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            set_upstream_popoup: SetUpstreamComponent::new(
                 queue.clone(),
                 theme.clone(),
                 key_config.clone(),
@@ -349,6 +356,7 @@ impl App {
             create_branch_popup,
             rename_branch_popup,
             select_branch_popup,
+            set_upstream_popoup,
             help,
             revlog,
             status_tab,
@@ -522,6 +530,11 @@ impl App {
             InternalEvent::SelectBranch => {
                 self.select_branch_popup.open()?;
             }
+            InternalEvent::OpenUpstreamBranchPopup(
+                local_branch_ref,
+            ) => {
+                self.set_upstream_popoup.open(local_branch_ref)?;
+            }
             InternalEvent::TabSwitch => self.set_tab(0)?,
             InternalEvent::InspectCommit(id, tags) => {
                 self.inspect_commit_popup.open(id, tags)?;
@@ -533,8 +546,13 @@ impl App {
                 self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
             }
-            InternalEvent::Push(branch) => {
-                self.push_popup.push(branch)?;
+            InternalEvent::Push(branch, upstream) => {
+                if let Some(_) = upstream {
+                    self.push_popup.push(branch)?;
+                } else {
+                    self.push_popup
+                        .push_prevent_no_upstream(branch)?;
+                }
                 flags.insert(NeedsUpdate::ALL)
             }
         };
@@ -598,6 +616,7 @@ impl App {
             || self.create_branch_popup.is_visible()
             || self.push_popup.is_visible()
             || self.select_branch_popup.is_visible()
+            || self.set_upstream_popoup.is_visible()
             || self.rename_branch_popup.is_visible()
     }
 
@@ -623,6 +642,7 @@ impl App {
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
         self.select_branch_popup.draw(f, size)?;
+        self.set_upstream_popoup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;

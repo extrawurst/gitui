@@ -24,8 +24,10 @@ pub mod utils;
 pub(crate) use branch::get_branch_name;
 pub use branch::{
     branch_compare_upstream, checkout_branch, create_branch,
-    delete_branch, get_branches_to_display, rename_branch,
-    BranchCompare, BranchForDisplay,
+    delete_branch, get_branch_upstream, get_branches_to_display,
+    get_local_branches_to_display, get_remote_branches_to_display,
+    rename_branch, set_branch_upstream, BranchCompare,
+    BranchForDisplay,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
