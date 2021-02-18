@@ -43,6 +43,7 @@ pub struct Revlog {
     branch_name: cached::BranchName,
     key_config: SharedKeyConfig,
     is_filtering: bool,
+    filter_string: String,
 }
 
 impl Revlog {
@@ -274,21 +275,26 @@ impl Revlog {
     }
 
     pub fn filter(&mut self, filter_by: &str) -> Result<()> {
-        let pre_processed_string =
-            Self::pre_process_string(filter_by.to_string());
-        let trimmed_string = pre_processed_string.trim().to_string();
-        if filter_by == "" {
-            self.async_filter.stop_filter();
-            self.is_filtering = false;
-        } else {
-            let filter_strings =
-                Self::get_what_to_filter_by(&trimmed_string);
-            self.async_filter
-                .start_filter(filter_strings)
-                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-            self.is_filtering = true;
+        if filter_by != &self.filter_string {
+            self.filter_string = filter_by.to_string();
+            let pre_processed_string =
+                Self::pre_process_string(filter_by.to_string());
+            let trimmed_string =
+                pre_processed_string.trim().to_string();
+            if filter_by == "" {
+                self.async_filter.stop_filter();
+                self.is_filtering = false;
+            } else {
+                let filter_strings =
+                    Self::get_what_to_filter_by(&trimmed_string);
+                self.async_filter
+                    .start_filter(filter_strings)
+                    .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+                self.is_filtering = true;
+            }
+            return self.update();
         }
-        self.update()
+        Ok(())
     }
 
     /// pre process string to remove any brackets
