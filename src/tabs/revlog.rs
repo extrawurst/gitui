@@ -303,6 +303,7 @@ impl Revlog {
         s
     }
 
+    /// Remove the brakcets, replacing them with the unbracketed 'full' expression
     pub fn remove_out_brackets(s: &str) -> String {
         if let Some(first_bracket) = s.find("&&(") {
             let (first, rest_of_string) =
@@ -331,7 +332,7 @@ impl Revlog {
         s.to_string()
     }
 
-    // Get outer matching brakets in a string
+    /// Get outer matching brakets in a string
     pub fn get_ending_bracket(s: &str) -> Option<usize> {
         let mut brack_count = 0;
         let mut char_iter = s.chars();
