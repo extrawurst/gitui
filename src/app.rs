@@ -192,7 +192,19 @@ impl App {
 
         self.cmdbar.borrow().draw(f, chunks_main[2]);
 
-        self.draw_tabs(f, chunks_main[0]);
+        let tab_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [Constraint::Min(57), Constraint::Length(16)]
+                    .as_ref(),
+            )
+            .split(chunks_main[0].inner(&Margin {
+                vertical: 0,
+                horizontal: 1,
+            }));
+
+        self.draw_tabs(f, tab_chunks[0]);
+        self.draw_version(f, tab_chunks[1]);
 
         //TODO: macro because of generic draw call
         match self.tab {
@@ -634,11 +646,6 @@ impl App {
 
     //TODO: make this dynamic
     fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-        let r = r.inner(&Margin {
-            vertical: 0,
-            horizontal: 1,
-        });
-
         let tabs = [
             Span::raw(strings::tab_status(&self.key_config)),
             Span::raw(strings::tab_log(&self.key_config)),
@@ -663,5 +670,26 @@ impl App {
                 .select(self.tab),
             r,
         );
+    }
+
+    fn draw_version<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+        let title = tui::widgets::Paragraph::new(
+            tui::text::Text::from(format!(
+                "GitUI v{}.{}.{}",
+                env!("CARGO_PKG_VERSION_MAJOR"),
+                env!("CARGO_PKG_VERSION_MINOR"),
+                env!("CARGO_PKG_VERSION_PATCH"),
+            )),
+        )
+        .block(
+            tui::widgets::Block::default()
+                .borders(tui::widgets::Borders::BOTTOM)
+                .style(self.theme.block(false)),
+        )
+        .style(self.theme.tab(false))
+        .alignment(tui::layout::Alignment::Right)
+        .wrap(tui::widgets::Wrap { trim: true });
+
+        f.render_widget(title, r)
     }
 }
