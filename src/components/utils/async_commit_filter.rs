@@ -105,8 +105,7 @@ impl AsyncCommitFilterer {
                         if filter.contains(FilterBy::CASE_SENSITIVE) {
                             is_and = if filter.contains(FilterBy::NOT)
                             {
-                                is_and
-                                    && ((filter
+                                 (filter
                                         .contains(FilterBy::TAGS)
                                         &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                                 !tag_string.contains(s)
@@ -126,10 +125,9 @@ impl AsyncCommitFilterer {
                                             FilterBy::MESSAGE,
                                         ) && !commit
                                             .message
-                                            .contains(s)))
+                                            .contains(s))
                             } else {
-                                is_and
-                                && ((filter
+                                (filter
                                     .contains(FilterBy::TAGS)
                                     &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                             tag_string.contains(s)
@@ -149,13 +147,12 @@ impl AsyncCommitFilterer {
                                             FilterBy::MESSAGE,
                                         ) && commit
                                             .message
-                                            .contains(s)))
+                                            .contains(s))
                             }
                         } else {
                             is_and = if filter.contains(FilterBy::NOT)
                             {
-                                is_and
-                                && ((filter
+                                (filter
                                     .contains(FilterBy::TAGS)
                                     &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                             !tag_string.to_lowercase().contains(&s.to_lowercase())
@@ -184,10 +181,9 @@ impl AsyncCommitFilterer {
                                             .to_lowercase()
                                             .contains(
                                                 &s.to_lowercase(),
-                                            )))
+                                            ))
                             } else {
-                                is_and
-                                && ((filter
+                                (filter
                                     .contains(FilterBy::TAGS)
                                     &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
                                             tag_string.to_lowercase().contains(&s.to_lowercase())
@@ -216,7 +212,7 @@ impl AsyncCommitFilterer {
                                             .to_lowercase()
                                             .contains(
                                                 &s.to_lowercase(),
-                                            )))
+                                            ))
                             }
                         }
                     }
