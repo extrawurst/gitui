@@ -472,9 +472,6 @@ impl Component for Revlog {
                     self.find_commit.toggle_visible()?;
                     self.find_commit.focus(true);
                     return Ok(true);
-                } else if k == self.key_config.focus_find_commit {
-                    self.find_commit.focus(true);
-                    return Ok(true);
                 } else if k == self.key_config.exit_popup {
                     self.filter("")?;
                     self.find_commit.clear_input();
