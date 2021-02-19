@@ -274,7 +274,6 @@ impl AsyncCommitFilterer {
         let cur_thread_mutex = Arc::clone(&self.filter_thread_mutex);
         self.is_pending_local.replace(true);
 
-        // If the search does not contain tags, do not include them
         let tags =
             Self::get_tags(&filter_strings, &mut self.git_tags)?;
 
