@@ -32,7 +32,7 @@
 - Stashing (save, apply, drop, and inspect)
 - Push to remote
 - Branch List (create, rename, delete)
-- Browse commit log, diff committed changes
+- Browse commit log, diff committed changes, search/filter commits
 - Scalable terminal UI layout
 - Async [input polling](assets/perf_compare.jpg)
 - Async git API for fluid control
