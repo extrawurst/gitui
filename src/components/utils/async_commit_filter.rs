@@ -371,12 +371,6 @@ impl AsyncCommitFilterer {
         self.filter_finished.store(true, Ordering::Relaxed);
     }
 
-    /// Use if the next item to be filtered is a substring of the previous item.
-    /// This then only searches through the previous list
-    //pub fn continue_filter(&mut self, _s: String) -> Result<()> {
-    //   Ok(())
-    //}
-
     pub fn get_filter_items(
         &mut self,
         start: usize,
