@@ -533,6 +533,8 @@ mod tests {
             true
         );
 
+        std::thread::sleep(std::time::Duration::from_millis(20));
+
         assert_eq!(
             upstream
                 .find_commit((other_repo_commit_ids[0]).into())
