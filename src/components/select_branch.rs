@@ -35,6 +35,7 @@ pub struct SelectBranchComponent {
     visible: bool,
     selection: u16,
     scroll_top: Cell<usize>,
+    current_height: Cell<u16>,
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
@@ -92,6 +93,8 @@ impl DrawableComponent for SelectBranchComponent {
                 self.branch_names.len(),
                 self.scroll_top.get(),
             );
+
+            self.current_height.set(height_in_lines as u16);
         }
 
         Ok(())
@@ -155,6 +158,10 @@ impl Component for SelectBranchComponent {
                     return self.move_selection(ScrollType::Up);
                 } else if e == self.key_config.move_up {
                     return self.move_selection(ScrollType::Down);
+                } else if e == self.key_config.page_down {
+                    return self.move_selection(ScrollType::PageDown);
+                } else if e == self.key_config.page_up {
+                    return self.move_selection(ScrollType::PageUp);
                 } else if e == self.key_config.enter {
                     if let Err(e) = self.switch_to_selected_branch() {
                         log::error!("switch branch error: {}", e);
@@ -232,6 +239,7 @@ impl SelectBranchComponent {
             queue,
             theme,
             key_config,
+            current_height: Cell::new(0),
         }
     }
     /// Get all the names of the branches in the repo
@@ -273,6 +281,12 @@ impl SelectBranchComponent {
         let mut new_selection = match scroll {
             ScrollType::Up => self.selection.saturating_add(1),
             ScrollType::Down => self.selection.saturating_sub(1),
+            ScrollType::PageDown => self
+                .selection
+                .saturating_add(self.current_height.get()),
+            ScrollType::PageUp => self
+                .selection
+                .saturating_sub(self.current_height.get()),
             _ => self.selection,
         };
 
