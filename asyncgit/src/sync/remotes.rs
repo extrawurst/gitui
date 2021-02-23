@@ -501,6 +501,10 @@ mod tests {
         LogWalker::new(&other_repo)
             .read(&mut other_repo_commit_ids, 1)
             .unwrap();
+        assert_eq!(
+            other_repo_commit_ids.contains(&repo_2_commit),
+            true
+        );
 
         // Attempt a normal push,
         // should fail as branches diverged
@@ -521,22 +525,20 @@ mod tests {
         // a normal push would not rewrite history
         let mut commit_ids = Vec::<CommitId>::new();
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
-        assert_eq!(commit_ids.contains(&repo_commit_ids[0]), true);
+        assert_eq!(commit_ids.contains(&repo_1_commit), true);
 
         // Attempt force push,
         // should work as it forces the push through
-        assert_eq!(
-            push(
-                tmp_other_repo_dir.path().to_str().unwrap(),
-                "origin",
-                "master",
-                true,
-                None,
-                None,
-            )
-            .is_err(),
-            false
-        );
+
+        push(
+            tmp_other_repo_dir.path().to_str().unwrap(),
+            "origin",
+            "master",
+            true,
+            None,
+            None,
+        )
+        .unwrap();
 
         commit_ids.clear();
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
@@ -544,16 +546,13 @@ mod tests {
         // Check that only the other repo commit is now in upstream
         assert_eq!(commit_ids.contains(&repo_2_commit), true);
 
-        assert_eq!(
-            upstream
-                .find_commit(repo_2_commit.into())
-                .unwrap()
-                .parents()
-                .next()
-                .unwrap()
-                .id()
-                == upstream_parent,
-            true
-        );
+        let new_upstream_parent = upstream
+            .find_commit(repo_2_commit.into())
+            .unwrap()
+            .parents()
+            .next()
+            .unwrap()
+            .id();
+        assert_eq!(new_upstream_parent, upstream_parent,);
     }
 }
