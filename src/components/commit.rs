@@ -12,6 +12,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
+    cached,
     sync::{self, CommitId, HookResult},
     CWD,
 };
@@ -21,13 +22,19 @@ use std::{
     io::{Read, Write},
     path::PathBuf,
 };
-use tui::{backend::Backend, layout::Rect, Frame};
+use tui::{
+    backend::Backend,
+    layout::{Alignment, Rect},
+    widgets::Paragraph,
+    Frame,
+};
 
 pub struct CommitComponent {
     input: TextInputComponent,
     amend: Option<CommitId>,
     queue: Queue,
     key_config: SharedKeyConfig,
+    git_branch_name: cached::BranchName,
 }
 
 impl DrawableComponent for CommitComponent {
@@ -36,7 +43,10 @@ impl DrawableComponent for CommitComponent {
         f: &mut Frame<B>,
         rect: Rect,
     ) -> Result<()> {
-        self.input.draw(f, rect)?;
+        if self.is_visible() {
+            self.input.draw(f, rect)?;
+            self.draw_branch_name(f);
+        }
 
         Ok(())
     }
@@ -143,6 +153,29 @@ impl CommitComponent {
                 true,
             ),
             key_config,
+            git_branch_name: cached::BranchName::new(CWD),
+        }
+    }
+
+    ///
+    pub fn update(&mut self) -> Result<()> {
+        self.git_branch_name.lookup().map(Some).unwrap_or(None);
+        Ok(())
+    }
+
+    fn draw_branch_name<B: Backend>(&self, f: &mut Frame<B>) {
+        if let Some(name) = self.git_branch_name.last() {
+            let w = Paragraph::new(format!("{{{}}}", name))
+                .alignment(Alignment::Right);
+
+            let rect = {
+                let mut rect = self.input.get_area();
+                rect.height = 1;
+                rect.width = rect.width.saturating_sub(1);
+                rect
+            };
+
+            f.render_widget(w, rect);
         }
     }
 
