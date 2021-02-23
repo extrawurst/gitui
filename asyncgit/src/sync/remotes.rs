@@ -473,7 +473,7 @@ mod tests {
         .unwrap();
 
         let upstream_parent = upstream
-            .find_commit((repo_commit_ids[0]).into())
+            .find_commit(repo_1_commit.into())
             .unwrap()
             .parents()
             .next()
@@ -546,13 +546,15 @@ mod tests {
         // Check that only the other repo commit is now in upstream
         assert_eq!(commit_ids.contains(&repo_2_commit), true);
 
-        let new_upstream_parent = upstream
-            .find_commit(repo_2_commit.into())
-            .unwrap()
-            .parents()
-            .next()
-            .unwrap()
-            .id();
+        let new_upstream_parent =
+            Repository::init_bare(tmp_upstream_dir.path())
+                .unwrap()
+                .find_commit(repo_2_commit.into())
+                .unwrap()
+                .parents()
+                .next()
+                .unwrap()
+                .id();
         assert_eq!(new_upstream_parent, upstream_parent,);
     }
 }
