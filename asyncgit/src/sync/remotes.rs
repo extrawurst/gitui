@@ -409,7 +409,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_force_push_rewrites_history() {
         use super::push;
         use std::fs::File;
@@ -536,7 +535,7 @@ mod tests {
 
         assert_eq!(
             upstream
-                .find_commit((commit_ids[0]).into())
+                .find_commit((other_repo_commit_ids[0]).into())
                 .unwrap()
                 .parents()
                 .next()
