@@ -492,7 +492,7 @@ mod tests {
         )
         .unwrap();
 
-        sync::commit(
+        let repo_2_commit = sync::commit(
             tmp_other_repo_dir.path().to_str().unwrap(),
             "repo_2_commit",
         )
@@ -542,14 +542,11 @@ mod tests {
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
 
         // Check that only the other repo commit is now in upstream
-        assert_eq!(
-            commit_ids.contains(&other_repo_commit_ids[0]),
-            true
-        );
+        assert_eq!(commit_ids.contains(&repo_2_commit), true);
 
         assert_eq!(
             upstream
-                .find_commit((commit_ids[0]).into())
+                .find_commit(repo_2_commit.into())
                 .unwrap()
                 .parents()
                 .next()
