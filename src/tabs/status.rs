@@ -376,17 +376,19 @@ impl Status {
     }
 
     fn push(&self, force: bool) {
-        if let Some(branch) = self.git_branch_name.last() {
-            if force {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ConfirmAction(Action::ForcePush(
-                        branch, force,
-                    )),
-                );
-            } else {
-                self.queue
-                    .borrow_mut()
-                    .push_back(InternalEvent::Push(branch, force));
+        if self.can_push() {
+            if let Some(branch) = self.git_branch_name.last() {
+                if force {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ConfirmAction(
+                            Action::ForcePush(branch, force),
+                        ),
+                    );
+                } else {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::Push(branch, force),
+                    );
+                }
             }
         }
     }
