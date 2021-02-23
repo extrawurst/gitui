@@ -112,9 +112,11 @@ impl Component for CommitComponent {
     }
 
     fn show(&mut self) -> Result<()> {
+        if self.amend.is_some() {
+            self.input.clear();
+        }
         self.amend = None;
 
-        self.input.clear();
         self.input
             .set_title(strings::commit_title(&self.key_config));
         self.input.show()?;
