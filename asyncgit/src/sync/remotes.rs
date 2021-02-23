@@ -260,7 +260,12 @@ fn remote_callbacks<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sync::tests::debug_cmd_print;
+    use crate::sync::{
+        self,
+        tests::{debug_cmd_print, repo_init, repo_init_bare},
+        LogWalker,
+    };
+    use std::{fs::File, io::Write, path::Path};
     use tempfile::TempDir;
 
     #[test]
@@ -315,13 +320,6 @@ mod tests {
 
     #[test]
     fn test_force_push() {
-        use super::push;
-        use std::fs::File;
-        use std::io::Write;
-
-        use crate::sync::commit::commit;
-        use crate::sync::tests::{repo_init, repo_init_bare};
-
         // This test mimics the scenario of 2 people having 2
         // local branches and both modifying the same file then
         // both pushing, sequentially
@@ -349,7 +347,7 @@ mod tests {
             File::create(tmp_repo_file_path).unwrap();
         writeln!(tmp_repo_file, "TempSomething").unwrap();
 
-        commit(
+        sync::commit(
             tmp_repo_dir.path().to_str().unwrap(),
             "repo_1_commit",
         )
@@ -371,7 +369,7 @@ mod tests {
             File::create(tmp_other_repo_file_path).unwrap();
         writeln!(tmp_other_repo_file, "TempElse").unwrap();
 
-        commit(
+        sync::commit(
             tmp_other_repo_dir.path().to_str().unwrap(),
             "repo_2_commit",
         )
@@ -409,16 +407,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_force_push_rewrites_history() {
-        use super::push;
-        use std::fs::File;
-        use std::io::Write;
-
-        use crate::sync::commit::commit;
-        use crate::sync::tests::{repo_init, repo_init_bare};
-        use crate::sync::LogWalker;
-
         // This test mimics the scenario of 2 people having 2
         // local branches and both modifying the same file then
         // both pushing, sequentially
@@ -446,14 +435,32 @@ mod tests {
             File::create(tmp_repo_file_path).unwrap();
         writeln!(tmp_repo_file, "TempSomething").unwrap();
 
-        commit(
+        sync::stage_add_file(
+            tmp_repo_dir.path().to_str().unwrap(),
+            Path::new("temp_file.txt"),
+        )
+        .unwrap();
+
+        let repo_1_commit = sync::commit(
             tmp_repo_dir.path().to_str().unwrap(),
             "repo_1_commit",
         )
         .unwrap();
 
+        //NOTE: make sure the commit actually contains that file
+        assert_eq!(
+            sync::get_commit_files(
+                tmp_repo_dir.path().to_str().unwrap(),
+                repo_1_commit
+            )
+            .unwrap()[0]
+                .path,
+            String::from("temp_file.txt")
+        );
+
         let mut repo_commit_ids = Vec::<CommitId>::new();
         LogWalker::new(&repo).read(&mut repo_commit_ids, 1).unwrap();
+        assert_eq!(repo_commit_ids.contains(&repo_1_commit), true);
 
         push(
             tmp_repo_dir.path().to_str().unwrap(),
@@ -465,29 +472,40 @@ mod tests {
         )
         .unwrap();
 
-        let upstream_parent = upstream
-            .find_commit((repo_commit_ids[0]).into())
-            .unwrap()
-            .parents()
-            .next()
-            .unwrap()
-            .id();
-
         let tmp_other_repo_file_path =
             tmp_other_repo_dir.path().join("temp_file.txt");
         let mut tmp_other_repo_file =
             File::create(tmp_other_repo_file_path).unwrap();
         writeln!(tmp_other_repo_file, "TempElse").unwrap();
 
-        commit(
+        sync::stage_add_file(
+            tmp_other_repo_dir.path().to_str().unwrap(),
+            Path::new("temp_file.txt"),
+        )
+        .unwrap();
+
+        let repo_2_commit = sync::commit(
             tmp_other_repo_dir.path().to_str().unwrap(),
             "repo_2_commit",
         )
         .unwrap();
+
+        let repo_2_parent = other_repo
+            .find_commit(repo_2_commit.into())
+            .unwrap()
+            .parents()
+            .next()
+            .unwrap()
+            .id();
+
         let mut other_repo_commit_ids = Vec::<CommitId>::new();
         LogWalker::new(&other_repo)
             .read(&mut other_repo_commit_ids, 1)
             .unwrap();
+        assert_eq!(
+            other_repo_commit_ids.contains(&repo_2_commit),
+            true
+        );
 
         // Attempt a normal push,
         // should fail as branches diverged
@@ -508,42 +526,35 @@ mod tests {
         // a normal push would not rewrite history
         let mut commit_ids = Vec::<CommitId>::new();
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
-        assert_eq!(commit_ids.contains(&repo_commit_ids[0]), true);
+        assert_eq!(commit_ids.contains(&repo_1_commit), true);
 
         // Attempt force push,
         // should work as it forces the push through
-        assert_eq!(
-            push(
-                tmp_other_repo_dir.path().to_str().unwrap(),
-                "origin",
-                "master",
-                true,
-                None,
-                None,
-            )
-            .is_err(),
-            false
-        );
+
+        push(
+            tmp_other_repo_dir.path().to_str().unwrap(),
+            "origin",
+            "master",
+            true,
+            None,
+            None,
+        )
+        .unwrap();
 
         commit_ids.clear();
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
-
         // Check that only the other repo commit is now in upstream
-        assert_eq!(
-            commit_ids.contains(&other_repo_commit_ids[0]),
-            true
-        );
+        assert_eq!(commit_ids.contains(&repo_2_commit), true);
 
-        assert_eq!(
-            upstream
-                .find_commit((commit_ids[0]).into())
+        let new_upstream_parent =
+            Repository::init_bare(tmp_upstream_dir.path())
+                .unwrap()
+                .find_commit(repo_2_commit.into())
                 .unwrap()
                 .parents()
                 .next()
                 .unwrap()
-                .id()
-                == upstream_parent,
-            true
-        );
+                .id();
+        assert_eq!(new_upstream_parent, repo_2_parent,);
     }
 }
