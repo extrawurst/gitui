@@ -472,14 +472,6 @@ mod tests {
         )
         .unwrap();
 
-        let upstream_parent = upstream
-            .find_commit(repo_1_commit.into())
-            .unwrap()
-            .parents()
-            .next()
-            .unwrap()
-            .id();
-
         let tmp_other_repo_file_path =
             tmp_other_repo_dir.path().join("temp_file.txt");
         let mut tmp_other_repo_file =
@@ -497,6 +489,15 @@ mod tests {
             "repo_2_commit",
         )
         .unwrap();
+
+        let repo_2_parent = other_repo
+            .find_commit(repo_2_commit.into())
+            .unwrap()
+            .parents()
+            .next()
+            .unwrap()
+            .id();
+
         let mut other_repo_commit_ids = Vec::<CommitId>::new();
         LogWalker::new(&other_repo)
             .read(&mut other_repo_commit_ids, 1)
@@ -542,7 +543,6 @@ mod tests {
 
         commit_ids.clear();
         LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
-
         // Check that only the other repo commit is now in upstream
         assert_eq!(commit_ids.contains(&repo_2_commit), true);
 
@@ -555,6 +555,6 @@ mod tests {
                 .next()
                 .unwrap()
                 .id();
-        assert_eq!(new_upstream_parent, upstream_parent,);
+        assert_eq!(new_upstream_parent, repo_2_parent,);
     }
 }
