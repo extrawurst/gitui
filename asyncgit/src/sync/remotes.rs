@@ -409,6 +409,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_force_push_rewrites_history() {
         use super::push;
         use std::fs::File;
