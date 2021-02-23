@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![push](assets/char_count.gif)
 
 ### Fixed
+- don't hide branch name while in commit dialog ([#529](https://github.com/extrawurst/gitui/issues/529))
 - don't discard commit message without confirmation ([#530](https://github.com/extrawurst/gitui/issues/530))
 - compilation broken on freebsd ([#461](https://github.com/extrawurst/gitui/issues/461))
 - don’t fail if `user.name` is not set [[@cruessler](https://github.com/cruessler)] ([#79](https://github.com/extrawurst/gitui/issues/79)) ([#228](https://github.com/extrawurst/gitui/issues/228))

@@ -278,6 +278,7 @@ impl App {
     pub fn update(&mut self) -> Result<()> {
         log::trace!("update");
 
+        self.commit.update()?;
         self.status_tab.update()?;
         self.revlog.update()?;
         self.stashing_tab.update()?;
