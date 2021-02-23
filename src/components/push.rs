@@ -33,6 +33,7 @@ use tui::{
 ///
 pub struct PushComponent {
     visible: bool,
+    force: bool,
     git_push: AsyncPush,
     progress: Option<PushProgress>,
     pending: bool,
@@ -53,6 +54,7 @@ impl PushComponent {
     ) -> Self {
         Self {
             queue: queue.clone(),
+            force: false,
             pending: false,
             visible: false,
             branch: String::new(),
@@ -68,8 +70,13 @@ impl PushComponent {
     }
 
     ///
-    pub fn push(&mut self, branch: String) -> Result<()> {
+    pub fn push(
+        &mut self,
+        branch: String,
+        force: bool,
+    ) -> Result<()> {
         self.branch = branch;
+        self.force = force;
         self.show()?;
         if need_username_password()? {
             let cred =
@@ -77,25 +84,27 @@ impl PushComponent {
                     BasicAuthCredential::new(None, None)
                 });
             if cred.is_complete() {
-                self.push_to_remote(Some(cred))
+                self.push_to_remote(Some(cred), force)
             } else {
                 self.input_cred.set_cred(cred);
                 self.input_cred.show()
             }
         } else {
-            self.push_to_remote(None)
+            self.push_to_remote(None, force)
         }
     }
 
     fn push_to_remote(
         &mut self,
         cred: Option<BasicAuthCredential>,
+        force: bool,
     ) -> Result<()> {
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
             remote: get_first_remote(CWD)?,
             branch: self.branch.clone(),
+            force,
             basic_credential: cred,
         })?;
         Ok(())
@@ -181,7 +190,11 @@ impl DrawableComponent for PushComponent {
                     .block(
                         Block::default()
                             .title(Span::styled(
-                                strings::PUSH_POPUP_MSG,
+                                if self.force {
+                                    strings::FORCE_PUSH_POPUP_MSG
+                                } else {
+                                    strings::PUSH_POPUP_MSG
+                                },
                                 self.theme.title(true),
                             ))
                             .borders(Borders::ALL)
@@ -233,9 +246,10 @@ impl Component for PushComponent {
                     if self.input_cred.is_visible()
                         && self.input_cred.get_cred().is_complete()
                     {
-                        self.push_to_remote(Some(
-                            self.input_cred.get_cred().clone(),
-                        ))?;
+                        self.push_to_remote(
+                            Some(self.input_cred.get_cred().clone()),
+                            self.force,
+                        )?;
                         self.input_cred.hide();
                     } else {
                         self.hide();

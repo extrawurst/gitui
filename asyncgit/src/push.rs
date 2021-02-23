@@ -90,6 +90,8 @@ pub struct PushRequest {
     ///
     pub branch: String,
     ///
+    pub force: bool,
+    ///
     pub basic_credential: Option<BasicAuthCredential>,
 }
 
@@ -164,8 +166,9 @@ impl AsyncPush {
                 CWD,
                 params.remote.as_str(),
                 params.branch.as_str(),
+                params.force,
                 params.basic_credential,
-                progress_sender.clone(),
+                Some(progress_sender.clone()),
             );
 
             progress_sender

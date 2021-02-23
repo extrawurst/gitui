@@ -124,6 +124,13 @@ mod tests {
         Ok((td, repo))
     }
 
+    /// Same as repo_init, but the repo is a bare repo (--bare)
+    pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
+        let tmp_repo_dir = TempDir::new()?;
+        let bare_repo = Repository::init_bare(tmp_repo_dir.path())?;
+        Ok((tmp_repo_dir, bare_repo))
+    }
+
     /// helper returning amount of files with changes in the (wd,stage)
     pub fn get_statuses(repo_path: &str) -> (usize, usize) {
         (

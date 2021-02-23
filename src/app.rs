@@ -493,6 +493,10 @@ impl App {
                         self.select_branch_popup.hide();
                     }
                 }
+                Action::ForcePush(branch, force) => self
+                    .queue
+                    .borrow_mut()
+                    .push_back(InternalEvent::Push(branch, force)),
             },
             InternalEvent::ConfirmAction(action) => {
                 self.reset.open(action)?;
@@ -533,8 +537,8 @@ impl App {
                 self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
             }
-            InternalEvent::Push(branch) => {
-                self.push_popup.push(branch)?;
+            InternalEvent::Push(branch, force) => {
+                self.push_popup.push(branch, force)?;
                 flags.insert(NeedsUpdate::ALL)
             }
         };
