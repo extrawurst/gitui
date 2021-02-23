@@ -61,7 +61,7 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
     let repo = utils::repo(repo_path)?;
     let remotes = repo.remotes()?;
     let remotes: Vec<String> =
-        remotes.iter().filter_map(|s| s).map(String::from).collect();
+        remotes.iter().flatten().map(String::from).collect();
 
     Ok(remotes)
 }
