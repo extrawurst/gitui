@@ -81,15 +81,16 @@ pub fn extract_cred_from_url(url: &str) -> BasicAuthCredential {
 
 #[cfg(test)]
 mod tests {
-    use crate::sync::cred::{
-        extract_cred_from_url, extract_username_password,
-        need_username_password, BasicAuthCredential,
+    use crate::sync::{
+        cred::{
+            extract_cred_from_url, extract_username_password,
+            need_username_password, BasicAuthCredential,
+        },
+        remotes::DEFAULT_REMOTE_NAME,
+        tests::repo_init,
     };
-    use crate::sync::tests::repo_init;
     use serial_test::serial;
     use std::env;
-
-    const DEFAULT_REMOTE_NAME: &str = "origin";
 
     #[test]
     fn test_credential_complete() {

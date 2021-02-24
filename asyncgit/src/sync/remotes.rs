@@ -13,6 +13,8 @@ use git2::{
 };
 use scopetime::scope_time;
 
+pub const DEFAULT_REMOTE_NAME: &str = "origin";
+
 ///
 #[derive(Debug, Clone)]
 pub enum ProgressNotification {
@@ -82,11 +84,11 @@ pub(crate) fn get_default_remote_in_repo(
     let remotes = repo.remotes()?;
 
     // if `origin` exists return that
-    if remotes
-        .iter()
-        .any(|r| r.map(|r| r == "origin").unwrap_or_default())
-    {
-        return Ok("origin".into());
+    let found_origin = remotes.iter().any(|r| {
+        r.map(|r| r == DEFAULT_REMOTE_NAME).unwrap_or_default()
+    });
+    if found_origin {
+        return Ok(DEFAULT_REMOTE_NAME.into());
     }
 
     //if only one remote exists pick that
@@ -305,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn test_first_remote() {
+    fn test_default_remote() {
         let td = TempDir::new().unwrap();
 
         debug_cmd_print(
@@ -326,6 +328,43 @@ mod tests {
         assert_eq!(
             remotes,
             vec![String::from("origin"), String::from("second")]
+        );
+
+        let first = get_default_remote_in_repo(
+            &utils::repo(repo_path).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(first, String::from("origin"));
+    }
+
+    #[test]
+    fn test_default_remote_out_of_order() {
+        let td = TempDir::new().unwrap();
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "git clone https://github.com/extrawurst/brewdump.git",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote rename origin alternate",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote add origin https://github.com/extrawurst/brewdump.git",
+        );
+
+        let repo_path = td.path().join("brewdump");
+        let repo_path = repo_path.as_os_str().to_str().unwrap();
+
+        //NOTE: aparently remotes are not chronolically sorted but alphabetically
+        let remotes = get_remotes(repo_path).unwrap();
+
+        assert_eq!(
+            remotes,
+            vec![String::from("alternate"), String::from("origin")]
         );
 
         let first = get_default_remote_in_repo(
