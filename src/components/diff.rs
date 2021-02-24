@@ -518,6 +518,16 @@ impl DiffComponent {
         );
     }
 
+    fn stage_unstage_hunk(&mut self) -> Result<()> {
+        if self.current.is_stage {
+            self.unstage_hunk()?;
+        } else {
+            self.stage_hunk()?;
+        }
+
+        Ok(())
+    }
+
     const fn is_stage(&self) -> bool {
         self.current.is_stage
     }
@@ -659,11 +669,12 @@ impl Component for DiffComponent {
                 } else if e == self.key_config.enter
                     && !self.is_immutable
                 {
-                    if self.current.is_stage {
-                        self.unstage_hunk()?;
-                    } else {
-                        self.stage_hunk()?;
-                    }
+                    try_or_popup!(
+                        self,
+                        "hunk error:",
+                        self.stage_unstage_hunk()
+                    );
+
                     Ok(true)
                 } else if e == self.key_config.status_reset_item
                     && !self.is_immutable
