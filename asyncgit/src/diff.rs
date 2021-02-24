@@ -120,11 +120,12 @@ impl AsyncDiff {
                 hash,
             );
 
-            let notify = if let Err(err) = notify {
-                log::error!("get_diff_helper error: {}", err);
-                true
-            } else {
-                false
+            let notify = match notify {
+                Err(err) => {
+                    log::error!("get_diff_helper error: {}", err);
+                    true
+                }
+                Ok(notify) => notify,
             };
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
