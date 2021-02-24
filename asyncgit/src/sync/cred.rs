@@ -1,11 +1,11 @@
 //! credentials git helper
 
+use super::remotes::get_default_remote_in_repo;
+use crate::{
+    error::{Error, Result},
+    CWD,
+};
 use git2::{Config, CredentialHelper};
-
-use crate::error::{Error, Result};
-use crate::CWD;
-
-use super::remotes::get_first_remote_in_repo;
 
 /// basic Authentication Credentials
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -34,7 +34,7 @@ impl BasicAuthCredential {
 pub fn need_username_password() -> Result<bool> {
     let repo = crate::sync::utils::repo(CWD)?;
     let url = repo
-        .find_remote(&get_first_remote_in_repo(&repo)?)?
+        .find_remote(&get_default_remote_in_repo(&repo)?)?
         .url()
         .ok_or(Error::UnknownRemote)?
         .to_owned();
@@ -46,7 +46,7 @@ pub fn need_username_password() -> Result<bool> {
 pub fn extract_username_password() -> Result<BasicAuthCredential> {
     let repo = crate::sync::utils::repo(CWD)?;
     let url = repo
-        .find_remote(&get_first_remote_in_repo(&repo)?)?
+        .find_remote(&get_default_remote_in_repo(&repo)?)?
         .url()
         .ok_or(Error::UnknownRemote)?
         .to_owned();

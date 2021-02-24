@@ -1,6 +1,8 @@
 //!
 
-use super::{remotes::get_first_remote_in_repo, utils::bytes2string};
+use super::{
+    remotes::get_default_remote_in_repo, utils::bytes2string,
+};
 use crate::{
     error::{Error, Result},
     sync::{utils, CommitId},
@@ -97,7 +99,7 @@ pub(crate) fn branch_set_upstream(
         repo.find_branch(branch_name, BranchType::Local)?;
 
     if branch.upstream().is_err() {
-        let remote = get_first_remote_in_repo(repo)?;
+        let remote = get_default_remote_in_repo(repo)?;
         let upstream_name = format!("{}/{}", remote, branch_name);
         branch.set_upstream(Some(upstream_name.as_str()))?;
     }

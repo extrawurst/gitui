@@ -66,28 +66,45 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
     Ok(remotes)
 }
 
-///
-pub fn get_first_remote(repo_path: &str) -> Result<String> {
+/// tries to find origin or the only remote that is defined if any
+/// in case of multiple remotes and none named *origin* we fail
+pub fn get_default_remote(repo_path: &str) -> Result<String> {
     let repo = utils::repo(repo_path)?;
-    get_first_remote_in_repo(&repo)
+    get_default_remote_in_repo(&repo)
 }
 
-///
-pub(crate) fn get_first_remote_in_repo(
+/// see `get_default_remote`
+pub(crate) fn get_default_remote_in_repo(
     repo: &Repository,
 ) -> Result<String> {
-    scope_time!("get_remotes");
+    scope_time!("get_default_remote_in_repo");
 
     let remotes = repo.remotes()?;
 
-    let first_remote = remotes
+    // if `origin` exists return that
+    if remotes
         .iter()
-        .next()
-        .flatten()
-        .map(String::from)
-        .ok_or_else(|| Error::Generic("no remote found".into()))?;
+        .any(|r| r.map(|r| r == "origin").unwrap_or_default())
+    {
+        return Ok("origin".into());
+    }
 
-    Ok(first_remote)
+    //if only one remote exists pick that
+    if remotes.len() == 1 {
+        let first_remote = remotes
+            .iter()
+            .next()
+            .flatten()
+            .map(String::from)
+            .ok_or_else(|| {
+                Error::Generic("no remote found".into())
+            })?;
+
+        return Ok(first_remote);
+    }
+
+    //inconclusive
+    Err(Error::NoDefaultRemoteFound)
 }
 
 ///
@@ -96,7 +113,7 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
 
     let repo = utils::repo(repo_path)?;
     let mut remote =
-        repo.find_remote(&get_first_remote_in_repo(&repo)?)?;
+        repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
 
     let mut options = FetchOptions::new();
     options.remote_callbacks(remote_callbacks(None, None));
@@ -311,7 +328,7 @@ mod tests {
             vec![String::from("origin"), String::from("second")]
         );
 
-        let first = get_first_remote_in_repo(
+        let first = get_default_remote_in_repo(
             &utils::repo(repo_path).unwrap(),
         )
         .unwrap();

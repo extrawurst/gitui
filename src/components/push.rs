@@ -15,7 +15,7 @@ use asyncgit::{
             extract_username_password, need_username_password,
             BasicAuthCredential,
         },
-        get_first_remote,
+        get_default_remote,
     },
     AsyncNotification, AsyncPush, PushProgress, PushProgressState,
     PushRequest, CWD,
@@ -102,7 +102,7 @@ impl PushComponent {
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
-            remote: get_first_remote(CWD)?,
+            remote: get_default_remote(CWD)?,
             branch: self.branch.clone(),
             force,
             basic_credential: cred,

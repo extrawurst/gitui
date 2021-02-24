@@ -12,9 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support mouse scrolling [[@WizardOhio24](https://github.com/WizardOhio24)] ([#306](https://github.com/extrawurst/gitui/issues/306)) 
 - show used char count in input texts ([#466](https://github.com/extrawurst/gitui/issues/466))
 
-![push](assets/char_count.gif)
+![charcount](assets/char_count.gif)
 
 ### Fixed
+- push defaults to 'origin' remote if it exists ([#494](https://github.com/extrawurst/gitui/issues/494))
 - support missing pageUp/down support in branchlist ([#519](https://github.com/extrawurst/gitui/issues/519))
 - don't hide branch name while in commit dialog ([#529](https://github.com/extrawurst/gitui/issues/529))
 - don't discard commit message without confirmation ([#530](https://github.com/extrawurst/gitui/issues/530))
