@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![charcount](assets/char_count.gif)
 
 ### Fixed
+- fix some potential errors when deleting files while they are being diffed ([#490](https://github.com/extrawurst/gitui/issues/490))
 - push defaults to 'origin' remote if it exists ([#494](https://github.com/extrawurst/gitui/issues/494))
 - support missing pageUp/down support in branchlist ([#519](https://github.com/extrawurst/gitui/issues/519))
 - don't hide branch name while in commit dialog ([#529](https://github.com/extrawurst/gitui/issues/529))
