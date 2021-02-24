@@ -226,7 +226,9 @@ impl CommitComponent {
     }
 
     fn commit(&mut self) -> Result<()> {
-        self.commit_msg(self.input.get_text().clone())
+        let msg = self.input.get_text().clone();
+        self.input.clear();
+        self.commit_msg(msg)
     }
 
     fn commit_msg(&mut self, msg: String) -> Result<()> {
