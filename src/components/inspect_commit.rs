@@ -122,6 +122,8 @@ impl Component for InspectCommitComponent {
                 {
                     self.details.focus(true);
                     self.diff.focus(false);
+                } else if e == self.key_config.focus_left {
+                    self.hide();
                 }
 
                 // stop key event propagation
