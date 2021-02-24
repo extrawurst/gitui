@@ -13,6 +13,8 @@ use git2::{
 };
 use scopetime::scope_time;
 
+pub const DEFAULT_REMOTE_NAME: &str = "origin";
+
 ///
 #[derive(Debug, Clone)]
 pub enum ProgressNotification {
@@ -66,28 +68,45 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
     Ok(remotes)
 }
 
-///
-pub fn get_first_remote(repo_path: &str) -> Result<String> {
+/// tries to find origin or the only remote that is defined if any
+/// in case of multiple remotes and none named *origin* we fail
+pub fn get_default_remote(repo_path: &str) -> Result<String> {
     let repo = utils::repo(repo_path)?;
-    get_first_remote_in_repo(&repo)
+    get_default_remote_in_repo(&repo)
 }
 
-///
-pub(crate) fn get_first_remote_in_repo(
+/// see `get_default_remote`
+pub(crate) fn get_default_remote_in_repo(
     repo: &Repository,
 ) -> Result<String> {
-    scope_time!("get_remotes");
+    scope_time!("get_default_remote_in_repo");
 
     let remotes = repo.remotes()?;
 
-    let first_remote = remotes
-        .iter()
-        .next()
-        .flatten()
-        .map(String::from)
-        .ok_or_else(|| Error::Generic("no remote found".into()))?;
+    // if `origin` exists return that
+    let found_origin = remotes.iter().any(|r| {
+        r.map(|r| r == DEFAULT_REMOTE_NAME).unwrap_or_default()
+    });
+    if found_origin {
+        return Ok(DEFAULT_REMOTE_NAME.into());
+    }
 
-    Ok(first_remote)
+    //if only one remote exists pick that
+    if remotes.len() == 1 {
+        let first_remote = remotes
+            .iter()
+            .next()
+            .flatten()
+            .map(String::from)
+            .ok_or_else(|| {
+                Error::Generic("no remote found".into())
+            })?;
+
+        return Ok(first_remote);
+    }
+
+    //inconclusive
+    Err(Error::NoDefaultRemoteFound)
 }
 
 ///
@@ -96,7 +115,7 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
 
     let repo = utils::repo(repo_path)?;
     let mut remote =
-        repo.find_remote(&get_first_remote_in_repo(&repo)?)?;
+        repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
 
     let mut options = FetchOptions::new();
     options.remote_callbacks(remote_callbacks(None, None));
@@ -288,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn test_first_remote() {
+    fn test_default_remote() {
         let td = TempDir::new().unwrap();
 
         debug_cmd_print(
@@ -311,7 +330,44 @@ mod tests {
             vec![String::from("origin"), String::from("second")]
         );
 
-        let first = get_first_remote_in_repo(
+        let first = get_default_remote_in_repo(
+            &utils::repo(repo_path).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(first, String::from("origin"));
+    }
+
+    #[test]
+    fn test_default_remote_out_of_order() {
+        let td = TempDir::new().unwrap();
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "git clone https://github.com/extrawurst/brewdump.git",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote rename origin alternate",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote add origin https://github.com/extrawurst/brewdump.git",
+        );
+
+        let repo_path = td.path().join("brewdump");
+        let repo_path = repo_path.as_os_str().to_str().unwrap();
+
+        //NOTE: aparently remotes are not chronolically sorted but alphabetically
+        let remotes = get_remotes(repo_path).unwrap();
+
+        assert_eq!(
+            remotes,
+            vec![String::from("alternate"), String::from("origin")]
+        );
+
+        let first = get_default_remote_in_repo(
             &utils::repo(repo_path).unwrap(),
         )
         .unwrap();
