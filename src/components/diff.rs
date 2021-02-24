@@ -11,10 +11,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
 use bytesize::ByteSize;
-use crossterm::event::{
-    Event, KeyModifiers,
-    MouseEventKind::{ScrollDown, ScrollUp},
-};
+use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 use tui::{
     backend::Backend,
@@ -632,54 +629,9 @@ impl Component for DiffComponent {
         CommandBlocking::PassingOn
     }
 
-    #[allow(clippy::too_many_lines)]
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
-            if let Event::Mouse(mouse_ev) = ev {
-                return match mouse_ev.kind {
-                    ScrollUp => {
-                        match mouse_ev.modifiers {
-                            KeyModifiers::SHIFT => {
-                                self.modify_selection(Direction::Up);
-                            }
-                            KeyModifiers::CONTROL => {
-                                self.modify_selection(Direction::Up);
-                                self.modify_selection(Direction::Up);
-                                self.modify_selection(Direction::Up);
-                            }
-                            KeyModifiers::NONE => {
-                                self.move_selection(ScrollType::Up);
-                            }
-                            _ => {}
-                        };
-                        Ok(true)
-                    }
-                    ScrollDown => {
-                        match mouse_ev.modifiers {
-                            KeyModifiers::SHIFT => {
-                                self.modify_selection(Direction::Down)
-                            }
-                            KeyModifiers::CONTROL => {
-                                self.modify_selection(
-                                    Direction::Down,
-                                );
-                                self.modify_selection(
-                                    Direction::Down,
-                                );
-                                self.modify_selection(
-                                    Direction::Down,
-                                );
-                            }
-                            KeyModifiers::NONE => {
-                                self.move_selection(ScrollType::Down);
-                            }
-                            _ => {}
-                        };
-                        Ok(true)
-                    }
-                    _ => Ok(false),
-                };
-            } else if let Event::Key(e) = ev {
+            if let Event::Key(e) = ev {
                 return if e == self.key_config.move_down {
                     self.move_selection(ScrollType::Down);
                     Ok(true)
