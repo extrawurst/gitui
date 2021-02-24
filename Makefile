@@ -5,7 +5,7 @@ profile:
 	cargo run --features=timing,pprof -- -l
 
 debug:
-	cargo run --features=timing -- -l
+	RUST_BACKTRACE=true cargo run --features=timing -- -l
 
 build-release:
 	cargo build --release
