@@ -3,7 +3,7 @@
 //TODO: remove once we have this activated on the toplevel
 #![deny(clippy::expect_used)]
 
-mod branch;
+pub mod branch;
 mod commit;
 mod commit_details;
 mod commit_files;
@@ -14,14 +14,13 @@ mod hooks;
 mod hunks;
 mod ignore;
 mod logwalker;
-mod remotes;
+pub mod remotes;
 mod reset;
 mod stash;
 pub mod status;
 mod tags;
 pub mod utils;
 
-pub(crate) use branch::get_branch_name;
 pub use branch::{
     branch_compare_upstream, checkout_branch, create_branch,
     delete_branch, get_branches_to_display, rename_branch,
@@ -40,10 +39,7 @@ pub use hooks::{
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
-pub use remotes::{
-    fetch_origin, get_default_remote, get_remotes, push,
-    ProgressNotification,
-};
+pub use remotes::{fetch_origin, get_default_remote, get_remotes};
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use tags::{get_tags, CommitTags, Tags};
