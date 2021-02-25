@@ -31,7 +31,7 @@ use anyhow::Result;
 use ui::style::SharedTheme;
 
 ///
-pub struct SelectBranchComponent {
+pub struct BranchListComponent {
     branch_names: Vec<BranchInfo>,
     visible: bool,
     selection: u16,
@@ -42,7 +42,7 @@ pub struct SelectBranchComponent {
     key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for SelectBranchComponent {
+impl DrawableComponent for BranchListComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
@@ -102,7 +102,7 @@ impl DrawableComponent for SelectBranchComponent {
     }
 }
 
-impl Component for SelectBranchComponent {
+impl Component for BranchListComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
@@ -224,7 +224,7 @@ impl Component for SelectBranchComponent {
     }
 }
 
-impl SelectBranchComponent {
+impl BranchListComponent {
     pub fn new(
         queue: Queue,
         theme: SharedTheme,

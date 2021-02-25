@@ -35,7 +35,7 @@ pub use msg::MsgComponent;
 pub use push::PushComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ResetComponent;
-pub use select_branch::SelectBranchComponent;
+pub use select_branch::BranchListComponent;
 pub use stashmsg::StashMsgComponent;
 pub use tag_commit::TagCommitComponent;
 pub use textinput::{InputType, TextInputComponent};
