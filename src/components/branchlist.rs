@@ -253,6 +253,7 @@ impl BranchListComponent {
     /// fetch list of branches
     pub fn update_branches(&mut self) -> Result<()> {
         self.branch_names = get_branches_info(CWD)?;
+        self.set_selection(self.selection)?;
         Ok(())
     }
 
@@ -269,10 +270,7 @@ impl BranchListComponent {
 
     ///
     fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
-        let num_branches: u16 = self.branch_names.len().try_into()?;
-        let num_branches = num_branches.saturating_sub(1);
-
-        let mut new_selection = match scroll {
+        let new_selection = match scroll {
             ScrollType::Up => self.selection.saturating_add(1),
             ScrollType::Down => self.selection.saturating_sub(1),
             ScrollType::PageDown => self
@@ -284,13 +282,24 @@ impl BranchListComponent {
             _ => self.selection,
         };
 
-        if new_selection > num_branches {
-            new_selection = num_branches;
-        }
-
-        self.selection = new_selection;
+        self.set_selection(new_selection)?;
 
         Ok(true)
+    }
+
+    fn set_selection(&mut self, selection: u16) -> Result<()> {
+        let num_branches: u16 = self.branch_names.len().try_into()?;
+        let num_branches = num_branches.saturating_sub(1);
+
+        let selection = if selection > num_branches {
+            num_branches
+        } else {
+            selection
+        };
+
+        self.selection = selection;
+
+        Ok(())
     }
 
     /// Get branches to display
