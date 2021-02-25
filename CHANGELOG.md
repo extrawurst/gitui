@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Breaking Change
+- MacOS config directory now uses `~/.config/gitui` [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317)) 
+
 ### Added
 - support smoother left/right toggle for commit details ([#418](https://github.com/extrawurst/gitui/issues/418))
 - support *force push* command [[@WizardOhio24](https://github.com/WizardOhio24)] ([#274](https://github.com/extrawurst/gitui/issues/274)) 
@@ -23,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - don't discard commit message without confirmation ([#530](https://github.com/extrawurst/gitui/issues/530))
 - compilation broken on freebsd ([#461](https://github.com/extrawurst/gitui/issues/461))
 - don’t fail if `user.name` is not set [[@cruessler](https://github.com/cruessler)] ([#79](https://github.com/extrawurst/gitui/issues/79)) ([#228](https://github.com/extrawurst/gitui/issues/228))
-- set MacOS config directory to ~/.config [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317)) 
 
 ## [0.11.0] - 2020-12-20
 
