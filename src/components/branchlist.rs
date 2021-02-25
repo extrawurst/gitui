@@ -6,13 +6,11 @@ use crate::{
     components::ScrollType,
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
-    strings,
+    strings, try_or_popup,
     ui::{self, calc_scroll_top},
 };
 use asyncgit::{
-    sync::{
-        checkout_branch, get_branches_to_display, BranchForDisplay,
-    },
+    sync::{checkout_branch, get_branches_info, BranchInfo},
     CWD,
 };
 use crossterm::event::Event;
@@ -33,8 +31,8 @@ use anyhow::Result;
 use ui::style::SharedTheme;
 
 ///
-pub struct SelectBranchComponent {
-    branch_names: Vec<BranchForDisplay>,
+pub struct BranchListComponent {
+    branch_names: Vec<BranchInfo>,
     visible: bool,
     selection: u16,
     scroll_top: Cell<usize>,
@@ -44,7 +42,7 @@ pub struct SelectBranchComponent {
     key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for SelectBranchComponent {
+impl DrawableComponent for BranchListComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
@@ -104,7 +102,7 @@ impl DrawableComponent for SelectBranchComponent {
     }
 }
 
-impl Component for SelectBranchComponent {
+impl Component for BranchListComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
@@ -166,15 +164,12 @@ impl Component for SelectBranchComponent {
                 } else if e == self.key_config.page_up {
                     return self.move_selection(ScrollType::PageUp);
                 } else if e == self.key_config.enter {
-                    if let Err(e) = self.switch_to_selected_branch() {
-                        log::error!("switch branch error: {}", e);
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::ShowErrorMsg(format!(
-                                "switch branch error:\n{}",
-                                e
-                            )),
-                        );
-                    }
+                    try_or_popup!(
+                        self,
+                        "switch branch error:",
+                        self.switch_to_selected_branch()
+                    );
+
                     self.hide()
                 } else if e == self.key_config.create_branch {
                     self.queue
@@ -190,7 +185,8 @@ impl Component for SelectBranchComponent {
                             cur_branch.name.clone(),
                         ),
                     );
-                    self.hide();
+
+                    self.update_branches()?;
                 } else if e == self.key_config.delete_branch
                     && !self.selection_is_cur_branch()
                 {
@@ -228,7 +224,7 @@ impl Component for SelectBranchComponent {
     }
 }
 
-impl SelectBranchComponent {
+impl BranchListComponent {
     pub fn new(
         queue: Queue,
         theme: SharedTheme,
@@ -245,10 +241,6 @@ impl SelectBranchComponent {
             current_height: Cell::new(0),
         }
     }
-    /// Get all the names of the branches in the repo
-    pub fn get_branch_names() -> Result<Vec<BranchForDisplay>> {
-        Ok(get_branches_to_display(CWD)?)
-    }
 
     ///
     pub fn open(&mut self) -> Result<()> {
@@ -258,14 +250,14 @@ impl SelectBranchComponent {
         Ok(())
     }
 
-    ////
+    /// fetch list of branches
     pub fn update_branches(&mut self) -> Result<()> {
-        self.branch_names = Self::get_branch_names()?;
+        self.branch_names = get_branches_info(CWD)?;
+        self.set_selection(self.selection)?;
         Ok(())
     }
 
-    ///
-    pub fn selection_is_cur_branch(&self) -> bool {
+    fn selection_is_cur_branch(&self) -> bool {
         self.branch_names
             .iter()
             .enumerate()
@@ -278,10 +270,7 @@ impl SelectBranchComponent {
 
     ///
     fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
-        let num_branches: u16 = self.branch_names.len().try_into()?;
-        let num_branches = num_branches.saturating_sub(1);
-
-        let mut new_selection = match scroll {
+        let new_selection = match scroll {
             ScrollType::Up => self.selection.saturating_add(1),
             ScrollType::Down => self.selection.saturating_sub(1),
             ScrollType::PageDown => self
@@ -293,13 +282,24 @@ impl SelectBranchComponent {
             _ => self.selection,
         };
 
-        if new_selection > num_branches {
-            new_selection = num_branches;
-        }
-
-        self.selection = new_selection;
+        self.set_selection(new_selection)?;
 
         Ok(true)
+    }
+
+    fn set_selection(&mut self, selection: u16) -> Result<()> {
+        let num_branches: u16 = self.branch_names.len().try_into()?;
+        let num_branches = num_branches.saturating_sub(1);
+
+        let selection = if selection > num_branches {
+            num_branches
+        } else {
+            selection
+        };
+
+        self.selection = selection;
+
+        Ok(())
     }
 
     /// Get branches to display

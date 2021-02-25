@@ -33,7 +33,7 @@ pub(crate) fn get_branch_name(repo_path: &str) -> Result<String> {
 }
 
 ///
-pub struct BranchForDisplay {
+pub struct BranchInfo {
     ///
     pub name: String,
     ///
@@ -48,12 +48,9 @@ pub struct BranchForDisplay {
     pub has_upstream: bool,
 }
 
-/// Used to return only the nessessary information for displaying a branch
-/// rather than an iterator over the actual branches
-pub fn get_branches_to_display(
-    repo_path: &str,
-) -> Result<Vec<BranchForDisplay>> {
-    scope_time!("get_branches_to_display");
+/// returns a list of `BranchInfo` with a simple summary of info about a single branch
+pub fn get_branches_info(repo_path: &str) -> Result<Vec<BranchInfo>> {
+    scope_time!("get_branches_info");
 
     let cur_repo = utils::repo(repo_path)?;
     let branches_for_display = cur_repo
@@ -62,7 +59,7 @@ pub fn get_branches_to_display(
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
 
-            Ok(BranchForDisplay {
+            Ok(BranchInfo {
                 name: bytes2string(branch.name_bytes()?)?,
                 reference: bytes2string(branch.get().name_bytes())?,
                 top_commit_message: bytes2string(
@@ -299,7 +296,7 @@ mod tests_branches {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_branches_info(repo_path)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())
@@ -317,7 +314,7 @@ mod tests_branches {
         create_branch(repo_path, "test").unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_branches_info(repo_path)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())

@@ -1,3 +1,4 @@
+mod branchlist;
 mod changes;
 mod command;
 mod commit;
@@ -14,12 +15,12 @@ mod msg;
 mod push;
 mod rename_branch;
 mod reset;
-mod select_branch;
 mod stashmsg;
 mod tag_commit;
 mod textinput;
 mod utils;
 
+pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
@@ -35,7 +36,6 @@ pub use msg::MsgComponent;
 pub use push::PushComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ResetComponent;
-pub use select_branch::SelectBranchComponent;
 pub use stashmsg::StashMsgComponent;
 pub use tag_commit::TagCommitComponent;
 pub use textinput::{InputType, TextInputComponent};

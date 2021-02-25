@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![charcount](assets/char_count.gif)
 
 ### Fixed
+- don't close branchlist every time ([#550](https://github.com/extrawurst/gitui/issues/550))
 - fixed key binding for *external exitor* in vim key bindings [[@yanganto](https://github.com/yanganto)] ([#549](https://github.com/extrawurst/gitui/issues/549))
 - fix some potential errors when deleting files while they are being diffed ([#490](https://github.com/extrawurst/gitui/issues/490))
 - push defaults to 'origin' remote if it exists ([#494](https://github.com/extrawurst/gitui/issues/494))
