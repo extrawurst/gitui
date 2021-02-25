@@ -113,6 +113,17 @@ scoop install gitui
 choco install gitui
 ```
 
+### [Nix](https://search.nixos.org/packages?channel=unstable&show=gitui&from=0&size=50&sort=relevance&query=gitui) (Nix/NixOS)
+
+Nixpkg
+```
+nix-env -iA nixpkgs.gitui
+```
+NixOS
+```
+nix-env -iA nixos.gitui
+```
+
 ## Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
