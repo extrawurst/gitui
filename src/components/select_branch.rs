@@ -10,7 +10,7 @@ use crate::{
     ui::{self, calc_scroll_top},
 };
 use asyncgit::{
-    sync::{checkout_branch, get_branches_to_display, BranchInfo},
+    sync::{checkout_branch, get_branches_info, BranchInfo},
     CWD,
 };
 use crossterm::event::Event;
@@ -242,10 +242,6 @@ impl SelectBranchComponent {
         }
     }
 
-    fn get_branch_names() -> Result<Vec<BranchInfo>> {
-        Ok(get_branches_to_display(CWD)?)
-    }
-
     ///
     pub fn open(&mut self) -> Result<()> {
         self.update_branches()?;
@@ -254,8 +250,9 @@ impl SelectBranchComponent {
         Ok(())
     }
 
-    fn update_branches(&mut self) -> Result<()> {
-        self.branch_names = Self::get_branch_names()?;
+    /// fetch list of branches
+    pub fn update_branches(&mut self) -> Result<()> {
+        self.branch_names = get_branches_info(CWD)?;
         Ok(())
     }
 

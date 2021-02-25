@@ -491,7 +491,7 @@ impl App {
                         )
                     } else {
                         flags.insert(NeedsUpdate::ALL);
-                        self.select_branch_popup.hide();
+                        self.select_branch_popup.update_branches()?;
                     }
                 }
                 Action::ForcePush(branch, force) => self

@@ -48,12 +48,9 @@ pub struct BranchInfo {
     pub has_upstream: bool,
 }
 
-/// Used to return only the nessessary information for displaying a branch
-/// rather than an iterator over the actual branches
-pub fn get_branches_to_display(
-    repo_path: &str,
-) -> Result<Vec<BranchInfo>> {
-    scope_time!("get_branches_to_display");
+/// returns a list of `BranchInfo` with a simple summary of info about a single branch
+pub fn get_branches_info(repo_path: &str) -> Result<Vec<BranchInfo>> {
+    scope_time!("get_branches_info");
 
     let cur_repo = utils::repo(repo_path)?;
     let branches_for_display = cur_repo
@@ -299,7 +296,7 @@ mod tests_branches {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_branches_info(repo_path)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())
@@ -317,7 +314,7 @@ mod tests_branches {
         create_branch(repo_path, "test").unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_branches_info(repo_path)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())
