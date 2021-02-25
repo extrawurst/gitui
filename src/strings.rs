@@ -545,7 +545,7 @@ pub mod commands {
         CommandText::new(
             format!(
                 "Reset Item [{}]",
-                key_config.get_hint(key_config.stash_drop),
+                key_config.get_hint(key_config.status_reset_item),
             ),
             "revert changes in selected file or entire path",
             CMD_GROUP_CHANGES,
