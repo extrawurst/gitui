@@ -39,11 +39,8 @@ pub struct TextInputComponent {
     key_config: SharedKeyConfig,
     cursor_position: usize,
     input_type: InputType,
-<<<<<<< HEAD
     should_use_rect: bool,
-=======
     current_area: Cell<Rect>,
->>>>>>> master
 }
 
 impl TextInputComponent {
@@ -65,11 +62,8 @@ impl TextInputComponent {
             default_msg: default_msg.to_string(),
             cursor_position: 0,
             input_type: InputType::Multiline,
-<<<<<<< HEAD
             should_use_rect: false,
-=======
             current_area: Cell::new(Rect::default()),
->>>>>>> master
         }
     }
 
