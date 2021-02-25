@@ -68,6 +68,7 @@
     select_branch: ( code: Char('b'), modifiers: ( bits: 0,),),
     delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
+    force_push: ( code: Char('P'), modifiers: ( bits: 1,),),
     fetch: ( code: Char('f'), modifiers: ( bits: 0,),),
 
     show_find_commit_text_input: ( code: Char('s'), modifiers: ( bits: 0,),),

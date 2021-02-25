@@ -11,7 +11,7 @@ use crate::{
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
-use std::{collections::HashMap, ops::Range};
+use std::{cell::Cell, collections::HashMap, ops::Range};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -39,7 +39,11 @@ pub struct TextInputComponent {
     key_config: SharedKeyConfig,
     cursor_position: usize,
     input_type: InputType,
+<<<<<<< HEAD
     should_use_rect: bool,
+=======
+    current_area: Cell<Rect>,
+>>>>>>> master
 }
 
 impl TextInputComponent {
@@ -61,7 +65,11 @@ impl TextInputComponent {
             default_msg: default_msg.to_string(),
             cursor_position: 0,
             input_type: InputType::Multiline,
+<<<<<<< HEAD
             should_use_rect: false,
+=======
+            current_area: Cell::new(Rect::default()),
+>>>>>>> master
         }
     }
 
@@ -82,6 +90,11 @@ impl TextInputComponent {
     /// Get the `msg`.
     pub const fn get_text(&self) -> &String {
         &self.msg
+    }
+
+    /// screen area (last time we got drawn)
+    pub fn get_area(&self) -> Rect {
+        self.current_area.get()
     }
 
     /// Move the cursor right one char.
@@ -309,6 +322,8 @@ impl DrawableComponent for TextInputComponent {
             if self.show_char_count {
                 self.draw_char_count(f, area);
             }
+
+            self.current_area.set(area);
         }
 
         Ok(())
@@ -511,7 +526,7 @@ mod tests {
     }
 
     #[test]
-    fn test_invisable_newline() {
+    fn test_invisible_newline() {
         let mut comp = TextInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),

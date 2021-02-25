@@ -1,11 +1,11 @@
 //! credentials git helper
 
+use super::remotes::get_default_remote_in_repo;
+use crate::{
+    error::{Error, Result},
+    CWD,
+};
 use git2::{Config, CredentialHelper};
-
-use crate::error::{Error, Result};
-use crate::CWD;
-
-use super::remotes::get_first_remote_in_repo;
 
 /// basic Authentication Credentials
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -34,7 +34,7 @@ impl BasicAuthCredential {
 pub fn need_username_password() -> Result<bool> {
     let repo = crate::sync::utils::repo(CWD)?;
     let url = repo
-        .find_remote(&get_first_remote_in_repo(&repo)?)?
+        .find_remote(&get_default_remote_in_repo(&repo)?)?
         .url()
         .ok_or(Error::UnknownRemote)?
         .to_owned();
@@ -46,7 +46,7 @@ pub fn need_username_password() -> Result<bool> {
 pub fn extract_username_password() -> Result<BasicAuthCredential> {
     let repo = crate::sync::utils::repo(CWD)?;
     let url = repo
-        .find_remote(&get_first_remote_in_repo(&repo)?)?
+        .find_remote(&get_default_remote_in_repo(&repo)?)?
         .url()
         .ok_or(Error::UnknownRemote)?
         .to_owned();
@@ -81,15 +81,16 @@ pub fn extract_cred_from_url(url: &str) -> BasicAuthCredential {
 
 #[cfg(test)]
 mod tests {
-    use crate::sync::cred::{
-        extract_cred_from_url, extract_username_password,
-        need_username_password, BasicAuthCredential,
+    use crate::sync::{
+        cred::{
+            extract_cred_from_url, extract_username_password,
+            need_username_password, BasicAuthCredential,
+        },
+        remotes::DEFAULT_REMOTE_NAME,
+        tests::repo_init,
     };
-    use crate::sync::tests::repo_init;
     use serial_test::serial;
     use std::env;
-
-    const DEFAULT_REMOTE_NAME: &str = "origin";
 
     #[test]
     fn test_credential_complete() {

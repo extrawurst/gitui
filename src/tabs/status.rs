@@ -6,7 +6,7 @@ use crate::{
         DiffComponent, DrawableComponent, FileTreeItemKind,
     },
     keys::SharedKeyConfig,
-    queue::{InternalEvent, Queue, ResetItem},
+    queue::{Action, InternalEvent, Queue, ResetItem},
     strings::{self, order},
     ui::style::SharedTheme,
 };
@@ -375,11 +375,21 @@ impl Status {
         }
     }
 
-    fn push(&self) {
-        if let Some(branch) = self.git_branch_name.last() {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Push(branch));
+    fn push(&self, force: bool) {
+        if self.can_push() {
+            if let Some(branch) = self.git_branch_name.last() {
+                if force {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ConfirmAction(
+                            Action::ForcePush(branch, force),
+                        ),
+                    );
+                } else {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::Push(branch, force),
+                    );
+                }
+            }
         }
     }
 
@@ -444,6 +454,13 @@ impl Component for Status {
 
             out.push(CommandInfo::new(
                 strings::commands::status_push(&self.key_config),
+                self.can_push(),
+                true,
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::status_force_push(
+                    &self.key_config,
+                ),
                 self.can_push(),
                 true,
             ));
@@ -553,8 +570,11 @@ impl Component for Status {
                         .borrow_mut()
                         .push_back(InternalEvent::SelectBranch);
                     Ok(true)
+                } else if k == self.key_config.force_push {
+                    self.push(true);
+                    Ok(true)
                 } else if k == self.key_config.push {
-                    self.push();
+                    self.push(false);
                     Ok(true)
                 } else if k == self.key_config.fetch {
                     self.fetch();

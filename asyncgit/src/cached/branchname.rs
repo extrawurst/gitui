@@ -1,4 +1,7 @@
-use crate::{error::Result, sync};
+use crate::{
+    error::Result,
+    sync::{self, branch::get_branch_name},
+};
 use sync::Head;
 
 ///
@@ -38,7 +41,7 @@ impl BranchName {
     }
 
     fn fetch(&mut self, head: Head) -> Result<String> {
-        let name = sync::get_branch_name(self.repo_path.as_str())?;
+        let name = get_branch_name(self.repo_path.as_str())?;
         self.last_result = Some((head, name.clone()));
         Ok(name)
     }

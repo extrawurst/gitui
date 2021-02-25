@@ -5,6 +5,7 @@ pub mod order {
 }
 
 pub static PUSH_POPUP_MSG: &str = "Push";
+pub static FORCE_PUSH_POPUP_MSG: &str = "Force Push";
 pub static PUSH_POPUP_PROGRESS_NONE: &str = "preparing...";
 pub static PUSH_POPUP_STATES_ADDING: &str = "adding objects (1/3)";
 pub static PUSH_POPUP_STATES_DELTAS: &str = "deltas (2/3)";
@@ -109,6 +110,20 @@ pub fn confirm_msg_delete_branch(
     branch_ref: &str,
 ) -> String {
     format!("Confirm deleting branch: '{}' ?", branch_ref)
+}
+pub fn confirm_title_force_push(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Force Push".to_string()
+}
+pub fn confirm_msg_force_push(
+    _key_config: &SharedKeyConfig,
+    branch_ref: &str,
+) -> String {
+    format!(
+        "Confirm force push to branch '{}' ?  This may rewrite history.",
+        branch_ref
+    )
 }
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
@@ -823,6 +838,18 @@ pub mod commands {
                 key_config.get_hint(key_config.push),
             ),
             "push to origin",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn status_force_push(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Force Push [{}]",
+                key_config.get_hint(key_config.force_push),
+            ),
+            "force push to origin",
             CMD_GROUP_GENERAL,
         )
     }

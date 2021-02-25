@@ -29,6 +29,7 @@ pub enum Action {
     ResetHunk(String, u64),
     StashDrop(CommitId),
     DeleteBranch(String),
+    ForcePush(String, bool),
 }
 
 ///
@@ -60,7 +61,7 @@ pub enum InternalEvent {
     ///
     OpenExternalEditor(Option<String>),
     ///
-    Push(String),
+    Push(String, bool),
     ///
     FilterLog(String),
 }

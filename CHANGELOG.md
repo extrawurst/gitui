@@ -8,12 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- support smoother left/right toggle for commit details ([#418](https://github.com/extrawurst/gitui/issues/418))
+- support *force push* command [[@WizardOhio24](https://github.com/WizardOhio24)] ([#274](https://github.com/extrawurst/gitui/issues/274)) 
 - show used char count in input texts ([#466](https://github.com/extrawurst/gitui/issues/466))
 
-![push](assets/char_count.gif)
+![charcount](assets/char_count.gif)
 
 ### Fixed
+- fix some potential errors when deleting files while they are being diffed ([#490](https://github.com/extrawurst/gitui/issues/490))
+- push defaults to 'origin' remote if it exists ([#494](https://github.com/extrawurst/gitui/issues/494))
+- support missing pageUp/down support in branchlist ([#519](https://github.com/extrawurst/gitui/issues/519))
+- don't hide branch name while in commit dialog ([#529](https://github.com/extrawurst/gitui/issues/529))
+- don't discard commit message without confirmation ([#530](https://github.com/extrawurst/gitui/issues/530))
 - compilation broken on freebsd ([#461](https://github.com/extrawurst/gitui/issues/461))
+- don’t fail if `user.name` is not set [[@cruessler](https://github.com/cruessler)] ([#79](https://github.com/extrawurst/gitui/issues/79)) ([#228](https://github.com/extrawurst/gitui/issues/228))
+- set MacOS config directory to ~/.config [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317)) 
 
 ## [0.11.0] - 2020-12-20
 
