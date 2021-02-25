@@ -33,7 +33,7 @@ pub(crate) fn get_branch_name(repo_path: &str) -> Result<String> {
 }
 
 ///
-pub struct BranchForDisplay {
+pub struct BranchInfo {
     ///
     pub name: String,
     ///
@@ -52,7 +52,7 @@ pub struct BranchForDisplay {
 /// rather than an iterator over the actual branches
 pub fn get_branches_to_display(
     repo_path: &str,
-) -> Result<Vec<BranchForDisplay>> {
+) -> Result<Vec<BranchInfo>> {
     scope_time!("get_branches_to_display");
 
     let cur_repo = utils::repo(repo_path)?;
@@ -62,7 +62,7 @@ pub fn get_branches_to_display(
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
 
-            Ok(BranchForDisplay {
+            Ok(BranchInfo {
                 name: bytes2string(branch.name_bytes()?)?,
                 reference: bytes2string(branch.get().name_bytes())?,
                 top_commit_message: bytes2string(
