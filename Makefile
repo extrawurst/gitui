@@ -5,7 +5,7 @@ profile:
 	cargo run --features=timing,pprof -- -l
 
 debug:
-	cargo run --features=timing -- -l
+	RUST_BACKTRACE=true cargo run --features=timing -- -l
 
 build-release:
 	cargo build --release
@@ -20,7 +20,6 @@ release-win: build-release
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
 	cargo install cargo-wix
-	cargo wix init
 	cargo wix --no-build --nocapture --output ./release/gitui.msi
 	ls -l ./release/gitui.msi 
 

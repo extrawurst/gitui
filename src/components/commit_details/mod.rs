@@ -115,12 +115,20 @@ impl DrawableComponent for CommitDetailsComponent {
         f: &mut Frame<B>,
         rect: Rect,
     ) -> Result<()> {
+        let percentages = if self.file_tree.focused() {
+            (40, 60)
+        } else if self.details.focused() {
+            (60, 40)
+        } else {
+            (40, 60)
+        };
+
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
                 [
-                    Constraint::Percentage(60),
-                    Constraint::Percentage(40),
+                    Constraint::Percentage(percentages.0),
+                    Constraint::Percentage(percentages.1),
                 ]
                 .as_ref(),
             )

@@ -4,7 +4,9 @@ use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
 
 /// identifies a single commit
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(
+    Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
+)]
 pub struct CommitId(Oid);
 
 impl CommitId {
@@ -30,9 +32,9 @@ impl ToString for CommitId {
     }
 }
 
-impl Into<Oid> for CommitId {
-    fn into(self) -> Oid {
-        self.0
+impl From<CommitId> for Oid {
+    fn from(id: CommitId) -> Self {
+        id.0
     }
 }
 

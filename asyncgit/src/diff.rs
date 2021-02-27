@@ -118,8 +118,15 @@ impl AsyncDiff {
                 arc_last,
                 arc_current,
                 hash,
-            )
-            .expect("error getting diff");
+            );
+
+            let notify = match notify {
+                Err(err) => {
+                    log::error!("get_diff_helper error: {}", err);
+                    true
+                }
+                Ok(notify) => notify,
+            };
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 

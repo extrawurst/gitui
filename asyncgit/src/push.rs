@@ -1,7 +1,10 @@
-use crate::sync::cred::BasicAuthCredential;
 use crate::{
     error::{Error, Result},
-    sync, AsyncNotification, CWD,
+    sync::{
+        cred::BasicAuthCredential, remotes::push::push,
+        remotes::push::ProgressNotification,
+    },
+    AsyncNotification, CWD,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use git2::PackBuilderStage;
@@ -11,7 +14,6 @@ use std::{
     thread,
     time::Duration,
 };
-use sync::ProgressNotification;
 use thread::JoinHandle;
 
 ///
@@ -90,6 +92,8 @@ pub struct PushRequest {
     ///
     pub branch: String,
     ///
+    pub force: bool,
+    ///
     pub basic_credential: Option<BasicAuthCredential>,
 }
 
@@ -160,12 +164,13 @@ impl AsyncPush {
                 arc_progress,
             );
 
-            let res = sync::push(
+            let res = push(
                 CWD,
                 params.remote.as_str(),
                 params.branch.as_str(),
+                params.force,
                 params.basic_credential,
-                progress_sender.clone(),
+                Some(progress_sender.clone()),
             );
 
             progress_sender

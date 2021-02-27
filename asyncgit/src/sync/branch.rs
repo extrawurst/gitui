@@ -1,10 +1,13 @@
 //!
 
+use super::{
+    remotes::get_default_remote_in_repo, utils::bytes2string,
+};
 use crate::{
     error::{Error, Result},
     sync::{utils, CommitId},
 };
-use git2::BranchType;
+use git2::{BranchType, Repository};
 use scopetime::scope_time;
 use utils::get_head_repo;
 
@@ -30,7 +33,7 @@ pub(crate) fn get_branch_name(repo_path: &str) -> Result<String> {
 }
 
 ///
-pub struct BranchForDisplay {
+pub struct BranchInfo {
     ///
     pub name: String,
     ///
@@ -41,14 +44,13 @@ pub struct BranchForDisplay {
     pub top_commit: CommitId,
     ///
     pub is_head: bool,
+    ///
+    pub has_upstream: bool,
 }
 
-/// Used to return only the nessessary information for displaying a branch
-/// rather than an iterator over the actual branches
-pub fn get_branches_to_display(
-    repo_path: &str,
-) -> Result<Vec<BranchForDisplay>> {
-    scope_time!("get_branches_to_display");
+/// returns a list of `BranchInfo` with a simple summary of info about a single branch
+pub fn get_branches_info(repo_path: &str) -> Result<Vec<BranchInfo>> {
+    scope_time!("get_branches_info");
 
     let cur_repo = utils::repo(repo_path)?;
     let branches_for_display = cur_repo
@@ -57,18 +59,15 @@ pub fn get_branches_to_display(
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
 
-            Ok(BranchForDisplay {
-                name: String::from_utf8(Vec::from(
-                    branch.name_bytes()?,
-                ))?,
-                reference: String::from_utf8(Vec::from(
-                    branch.get().name_bytes(),
-                ))?,
-                top_commit_message: String::from_utf8(Vec::from(
+            Ok(BranchInfo {
+                name: bytes2string(branch.name_bytes()?)?,
+                reference: bytes2string(branch.get().name_bytes())?,
+                top_commit_message: bytes2string(
                     top_commit.summary_bytes().unwrap_or_default(),
-                ))?,
+                )?,
                 top_commit: top_commit.id().into(),
                 is_head: branch.is_head(),
+                has_upstream: branch.upstream().is_ok(),
             })
         })
         .filter_map(Result::ok)
@@ -87,6 +86,25 @@ pub struct BranchCompare {
 }
 
 ///
+pub(crate) fn branch_set_upstream(
+    repo: &Repository,
+    branch_name: &str,
+) -> Result<()> {
+    scope_time!("branch_set_upstream");
+
+    let mut branch =
+        repo.find_branch(branch_name, BranchType::Local)?;
+
+    if branch.upstream().is_err() {
+        let remote = get_default_remote_in_repo(repo)?;
+        let upstream_name = format!("{}/{}", remote, branch_name);
+        branch.set_upstream(Some(upstream_name.as_str()))?;
+    }
+
+    Ok(())
+}
+
+///
 pub fn branch_compare_upstream(
     repo_path: &str,
     branch: &str,
@@ -96,6 +114,7 @@ pub fn branch_compare_upstream(
     let repo = utils::repo(repo_path)?;
 
     let branch = repo.find_branch(branch, BranchType::Local)?;
+
     let upstream = branch.upstream()?;
 
     let branch_commit =
@@ -156,7 +175,9 @@ pub fn checkout_branch(
             git2::build::CheckoutBuilder::new().force(),
         )) {
             // This is safe beacuse cur_ref was just found
-            repo.set_head(cur_ref.name().expect("utf8 error"))?;
+            repo.set_head(
+                bytes2string(cur_ref.name_bytes())?.as_str(),
+            )?;
             return Err(Error::Git(e));
         }
         Ok(())
@@ -212,8 +233,7 @@ pub fn create_branch(repo_path: &str, name: &str) -> Result<()> {
 
     let branch = repo.branch(name, &head_commit, false)?;
     let branch_ref = branch.into_reference();
-    let branch_ref_name =
-        String::from_utf8(branch_ref.name_bytes().to_vec())?;
+    let branch_ref_name = bytes2string(branch_ref.name_bytes())?;
     repo.set_head(branch_ref_name.as_str())?;
 
     Ok(())
@@ -270,6 +290,25 @@ mod tests_create_branch {
 }
 
 #[cfg(test)]
+mod tests_branch_compare {
+    use super::*;
+    use crate::sync::tests::repo_init;
+
+    #[test]
+    fn test_smoke() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        create_branch(repo_path, "test").unwrap();
+
+        let res = branch_compare_upstream(repo_path, "test");
+
+        assert_eq!(res.is_err(), true);
+    }
+}
+
+#[cfg(test)]
 mod tests_branches {
     use super::*;
     use crate::sync::tests::repo_init;
@@ -281,7 +320,7 @@ mod tests_branches {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_branches_info(repo_path)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())
@@ -299,7 +338,7 @@ mod tests_branches {
         create_branch(repo_path, "test").unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_branches_info(repo_path)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())

@@ -2,12 +2,13 @@ use crate::{
     accessors,
     cmdbar::CommandBar,
     components::{
-        event_pump, CommandBlocking, CommandInfo, CommitComponent,
-        Component, CreateBranchComponent, DrawableComponent,
+        event_pump, BranchListComponent, CommandBlocking,
+        CommandInfo, CommitComponent, Component,
+        CreateBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PushComponent,
-        RenameBranchComponent, ResetComponent, SelectBranchComponent,
-        StashMsgComponent, TagCommitComponent,
+        RenameBranchComponent, ResetComponent, StashMsgComponent,
+        TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -22,7 +23,7 @@ use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
 use std::{
     cell::{Cell, RefCell},
-    path::Path,
+    path::{Path, PathBuf},
     rc::Rc,
 };
 use tui::{
@@ -47,7 +48,7 @@ pub struct App {
     tag_commit_popup: TagCommitComponent,
     create_branch_popup: CreateBranchComponent,
     rename_branch_popup: RenameBranchComponent,
-    select_branch_popup: SelectBranchComponent,
+    select_branch_popup: BranchListComponent,
     cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
@@ -70,10 +71,11 @@ impl App {
     pub fn new(
         sender: &Sender<AsyncNotification>,
         input: Input,
+        theme_path: PathBuf,
     ) -> Self {
         let queue = Queue::default();
 
-        let theme = Rc::new(Theme::init());
+        let theme = Rc::new(Theme::init(theme_path));
         let key_config = Rc::new(KeyConfig::init());
 
         Self {
@@ -124,7 +126,7 @@ impl App {
                 theme.clone(),
                 key_config.clone(),
             ),
-            select_branch_popup: SelectBranchComponent::new(
+            select_branch_popup: BranchListComponent::new(
                 queue.clone(),
                 theme.clone(),
                 key_config.clone(),
@@ -224,9 +226,7 @@ impl App {
                 let new_flags = if k == self.key_config.tab_toggle {
                     self.toggle_tabs(false)?;
                     NeedsUpdate::COMMANDS
-                } else if k == self.key_config.tab_toggle_reverse
-                    || k == self.key_config.tab_toggle_reverse_windows
-                {
+                } else if k == self.key_config.tab_toggle_reverse {
                     self.toggle_tabs(true)?;
                     NeedsUpdate::COMMANDS
                 } else if k == self.key_config.tab_status
@@ -279,6 +279,7 @@ impl App {
     pub fn update(&mut self) -> Result<()> {
         log::trace!("update");
 
+        self.commit.update()?;
         self.status_tab.update()?;
         self.revlog.update()?;
         self.stashing_tab.update()?;
@@ -491,9 +492,13 @@ impl App {
                         )
                     } else {
                         flags.insert(NeedsUpdate::ALL);
-                        self.select_branch_popup.hide();
+                        self.select_branch_popup.update_branches()?;
                     }
                 }
+                Action::ForcePush(branch, force) => self
+                    .queue
+                    .borrow_mut()
+                    .push_back(InternalEvent::Push(branch, force)),
             },
             InternalEvent::ConfirmAction(action) => {
                 self.reset.open(action)?;
@@ -534,8 +539,8 @@ impl App {
                 self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
             }
-            InternalEvent::Push(branch) => {
-                self.push_popup.push(branch)?;
+            InternalEvent::Push(branch, force) => {
+                self.push_popup.push(branch, force)?;
                 flags.insert(NeedsUpdate::ALL)
             }
         };

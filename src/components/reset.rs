@@ -11,7 +11,7 @@ use anyhow::Result;
 use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
-    backend::Backend, layout::Rect, text::Span, widgets::Clear, Frame,
+    backend::Backend, layout::Rect, text::Text, widgets::Clear, Frame,
 };
 use ui::style::SharedTheme;
 
@@ -33,12 +33,12 @@ impl DrawableComponent for ResetComponent {
         if self.visible {
             let (title, msg) = self.get_text();
 
-            let txt = vec![Span::styled(
+            let txt = Text::styled(
                 Cow::from(msg),
                 self.theme.text_danger(),
-            )];
+            );
 
-            let area = ui::centered_rect(30, 20, f.size());
+            let area = ui::centered_rect(50, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
                 popup_paragraph(&title, txt, &self.theme, true),
@@ -158,6 +158,15 @@ impl ResetComponent {
                     strings::confirm_msg_delete_branch(
                         &self.key_config,
                         branch_ref,
+                    ),
+                ),
+                Action::ForcePush(branch, _force) => (
+                    strings::confirm_title_force_push(
+                        &self.key_config,
+                    ),
+                    strings::confirm_msg_force_push(
+                        &self.key_config,
+                        branch.rsplit('/').next().expect("There was no / in the head reference which is impossible in git"),
                     ),
                 ),
             };

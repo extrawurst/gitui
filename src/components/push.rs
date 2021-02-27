@@ -10,20 +10,21 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::cred::{
-        extract_username_password, need_username_password,
-        BasicAuthCredential,
+    sync::{
+        cred::{
+            extract_username_password, need_username_password,
+            BasicAuthCredential,
+        },
+        get_default_remote,
     },
-    sync::DEFAULT_REMOTE_NAME,
     AsyncNotification, AsyncPush, PushProgress, PushProgressState,
-    PushRequest,
+    PushRequest, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Style},
     text::Span,
     widgets::{Block, BorderType, Borders, Clear, Gauge},
     Frame,
@@ -32,6 +33,7 @@ use tui::{
 ///
 pub struct PushComponent {
     visible: bool,
+    force: bool,
     git_push: AsyncPush,
     progress: Option<PushProgress>,
     pending: bool,
@@ -52,6 +54,7 @@ impl PushComponent {
     ) -> Self {
         Self {
             queue: queue.clone(),
+            force: false,
             pending: false,
             visible: false,
             branch: String::new(),
@@ -67,35 +70,41 @@ impl PushComponent {
     }
 
     ///
-    pub fn push(&mut self, branch: String) -> Result<()> {
+    pub fn push(
+        &mut self,
+        branch: String,
+        force: bool,
+    ) -> Result<()> {
         self.branch = branch;
+        self.force = force;
         self.show()?;
-        if need_username_password(DEFAULT_REMOTE_NAME)? {
-            let cred = extract_username_password(DEFAULT_REMOTE_NAME)
-                .unwrap_or_else(|_| {
+        if need_username_password()? {
+            let cred =
+                extract_username_password().unwrap_or_else(|_| {
                     BasicAuthCredential::new(None, None)
                 });
             if cred.is_complete() {
-                self.push_to_remote(Some(cred))
+                self.push_to_remote(Some(cred), force)
             } else {
                 self.input_cred.set_cred(cred);
                 self.input_cred.show()
             }
         } else {
-            self.push_to_remote(None)
+            self.push_to_remote(None, force)
         }
     }
 
     fn push_to_remote(
         &mut self,
         cred: Option<BasicAuthCredential>,
+        force: bool,
     ) -> Result<()> {
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
-            //TODO: find tracking branch name
-            remote: String::from(DEFAULT_REMOTE_NAME),
+            remote: get_default_remote(CWD)?,
             branch: self.branch.clone(),
+            force,
             basic_credential: cred,
         })?;
         Ok(())
@@ -181,19 +190,18 @@ impl DrawableComponent for PushComponent {
                     .block(
                         Block::default()
                             .title(Span::styled(
-                                strings::PUSH_POPUP_MSG,
+                                if self.force {
+                                    strings::FORCE_PUSH_POPUP_MSG
+                                } else {
+                                    strings::PUSH_POPUP_MSG
+                                },
                                 self.theme.title(true),
                             ))
                             .borders(Borders::ALL)
                             .border_type(BorderType::Thick)
                             .border_style(self.theme.block(true)),
                     )
-                    .gauge_style(
-                        //TODO: use theme
-                        Style::default()
-                            .fg(Color::White)
-                            .bg(Color::Black),
-                    )
+                    .gauge_style(self.theme.push_gauge())
                     .percent(u16::from(progress)),
                 area,
             );
@@ -238,9 +246,10 @@ impl Component for PushComponent {
                     if self.input_cred.is_visible()
                         && self.input_cred.get_cred().is_complete()
                     {
-                        self.push_to_remote(Some(
-                            self.input_cred.get_cred().clone(),
-                        ))?;
+                        self.push_to_remote(
+                            Some(self.input_cred.get_cred().clone()),
+                            self.force,
+                        )?;
                         self.input_cred.hide();
                     } else {
                         self.hide();

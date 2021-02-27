@@ -1,6 +1,9 @@
 //! sync git api
 
-mod branch;
+//TODO: remove once we have this activated on the toplevel
+#![deny(clippy::expect_used)]
+
+pub mod branch;
 mod commit;
 mod commit_details;
 mod commit_files;
@@ -11,7 +14,7 @@ mod hooks;
 mod hunks;
 mod ignore;
 mod logwalker;
-mod remotes;
+pub mod remotes;
 mod reset;
 mod stash;
 mod state;
@@ -19,11 +22,10 @@ pub mod status;
 mod tags;
 pub mod utils;
 
-pub(crate) use branch::get_branch_name;
 pub use branch::{
-    branch_compare_upstream, branch_merge_upstream, checkout_branch,
-    create_branch, delete_branch, get_branches_to_display,
-    rename_branch, BranchCompare, BranchForDisplay,
+    branch_compare_upstream, checkout_branch, create_branch,
+    delete_branch, get_branches_info, rename_branch, BranchCompare,
+    BranchInfo,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
@@ -32,14 +34,13 @@ pub use commit_details::{
 pub use commit_files::get_commit_files;
 pub use commits_info::{get_commits_info, CommitId, CommitInfo};
 pub use diff::get_diff_commit;
-pub use hooks::{hooks_commit_msg, hooks_post_commit, HookResult};
+pub use hooks::{
+    hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,
+};
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
-pub use remotes::{
-    fetch_origin, get_remotes, push, ProgressNotification,
-    DEFAULT_REMOTE_NAME,
-};
+pub use remotes::{fetch_origin, get_default_remote, get_remotes};
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use state::{repo_state, RepoState};
@@ -57,8 +58,32 @@ mod tests {
     use std::process::Command;
     use tempfile::TempDir;
 
+    /// Calling `set_search_path` with an empty directory makes sure that there
+    /// is no git config interfering with our tests (for example user-local
+    /// `.gitconfig`).
+    #[allow(unsafe_code)]
+    fn sandbox_config_files() {
+        use git2::{opts::set_search_path, ConfigLevel};
+        use std::sync::Once;
+
+        static INIT: Once = Once::new();
+
+        // Adapted from https://github.com/rust-lang/cargo/pull/9035
+        INIT.call_once(|| unsafe {
+            let temp_dir = TempDir::new().unwrap();
+            let path = temp_dir.path();
+
+            set_search_path(ConfigLevel::System, &path).unwrap();
+            set_search_path(ConfigLevel::Global, &path).unwrap();
+            set_search_path(ConfigLevel::XDG, &path).unwrap();
+            set_search_path(ConfigLevel::ProgramData, &path).unwrap();
+        });
+    }
+
     ///
     pub fn repo_init_empty() -> Result<(TempDir, Repository)> {
+        sandbox_config_files();
+
         let td = TempDir::new()?;
         let repo = Repository::init(td.path())?;
         {
@@ -71,6 +96,8 @@ mod tests {
 
     ///
     pub fn repo_init() -> Result<(TempDir, Repository)> {
+        sandbox_config_files();
+
         let td = TempDir::new()?;
         let repo = Repository::init(td.path())?;
         {
@@ -93,6 +120,13 @@ mod tests {
             )?;
         }
         Ok((td, repo))
+    }
+
+    /// Same as repo_init, but the repo is a bare repo (--bare)
+    pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
+        let tmp_repo_dir = TempDir::new()?;
+        let bare_repo = Repository::init_bare(tmp_repo_dir.path())?;
+        Ok((tmp_repo_dir, bare_repo))
     }
 
     /// helper returning amount of files with changes in the (wd,stage)

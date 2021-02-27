@@ -136,6 +136,7 @@ impl StashMsgComponent {
                 key_config.clone(),
                 &strings::stash_popup_title(&key_config),
                 &strings::stash_popup_msg(&key_config),
+                true,
             ),
             key_config,
         }

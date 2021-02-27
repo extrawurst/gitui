@@ -9,16 +9,12 @@ use crate::{
     ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-    sync::{self, CommitId},
-    CWD,
-};
+use asyncgit::{sync, CWD};
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct CreateBranchComponent {
     input: TextInputComponent,
-    commit_id: Option<CommitId>,
     queue: Queue,
     key_config: SharedKeyConfig,
 }
@@ -102,15 +98,14 @@ impl CreateBranchComponent {
                 key_config.clone(),
                 &strings::create_branch_popup_title(&key_config),
                 &strings::create_branch_popup_msg(&key_config),
+                true,
             ),
-            commit_id: None,
             key_config,
         }
     }
 
     ///
     pub fn open(&mut self) -> Result<()> {
-        self.commit_id = None;
         self.show()?;
 
         Ok(())

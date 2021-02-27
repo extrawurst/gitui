@@ -1,9 +1,11 @@
 //! credentials git helper
 
+use super::remotes::get_default_remote_in_repo;
+use crate::{
+    error::{Error, Result},
+    CWD,
+};
 use git2::{Config, CredentialHelper};
-
-use crate::error::{Error, Result};
-use crate::CWD;
 
 /// basic Authentication Credentials
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -29,10 +31,10 @@ impl BasicAuthCredential {
 }
 
 /// know if username and password are needed for this url
-pub fn need_username_password(remote: &str) -> Result<bool> {
+pub fn need_username_password() -> Result<bool> {
     let repo = crate::sync::utils::repo(CWD)?;
     let url = repo
-        .find_remote(remote)?
+        .find_remote(&get_default_remote_in_repo(&repo)?)?
         .url()
         .ok_or(Error::UnknownRemote)?
         .to_owned();
@@ -41,12 +43,10 @@ pub fn need_username_password(remote: &str) -> Result<bool> {
 }
 
 /// extract username and password
-pub fn extract_username_password(
-    remote: &str,
-) -> Result<BasicAuthCredential> {
+pub fn extract_username_password() -> Result<BasicAuthCredential> {
     let repo = crate::sync::utils::repo(CWD)?;
     let url = repo
-        .find_remote(remote)?
+        .find_remote(&get_default_remote_in_repo(&repo)?)?
         .url()
         .ok_or(Error::UnknownRemote)?
         .to_owned();
@@ -81,12 +81,14 @@ pub fn extract_cred_from_url(url: &str) -> BasicAuthCredential {
 
 #[cfg(test)]
 mod tests {
-    use crate::sync::cred::{
-        extract_cred_from_url, extract_username_password,
-        need_username_password, BasicAuthCredential,
+    use crate::sync::{
+        cred::{
+            extract_cred_from_url, extract_username_password,
+            need_username_password, BasicAuthCredential,
+        },
+        remotes::DEFAULT_REMOTE_NAME,
+        tests::repo_init,
     };
-    use crate::sync::tests::repo_init;
-    use crate::sync::DEFAULT_REMOTE_NAME;
     use serial_test::serial;
     use std::env;
 
@@ -164,10 +166,7 @@ mod tests {
         repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
             .unwrap();
 
-        assert_eq!(
-            need_username_password(DEFAULT_REMOTE_NAME).unwrap(),
-            true
-        );
+        assert_eq!(need_username_password().unwrap(), true);
     }
 
     #[test]
@@ -181,10 +180,7 @@ mod tests {
         repo.remote(DEFAULT_REMOTE_NAME, "git@github.com:user/repo")
             .unwrap();
 
-        assert_eq!(
-            need_username_password(DEFAULT_REMOTE_NAME).unwrap(),
-            false
-        );
+        assert_eq!(need_username_password().unwrap(), false);
     }
 
     #[test]
@@ -198,7 +194,7 @@ mod tests {
 
         env::set_current_dir(repo_path).unwrap();
 
-        need_username_password(DEFAULT_REMOTE_NAME).unwrap();
+        need_username_password().unwrap();
     }
 
     #[test]
@@ -216,7 +212,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            extract_username_password(DEFAULT_REMOTE_NAME).unwrap(),
+            extract_username_password().unwrap(),
             BasicAuthCredential::new(
                 Some("user".to_owned()),
                 Some("pass".to_owned())
@@ -236,7 +232,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            extract_username_password(DEFAULT_REMOTE_NAME).unwrap(),
+            extract_username_password().unwrap(),
             BasicAuthCredential::new(Some("user".to_owned()), None)
         );
     }
@@ -252,6 +248,6 @@ mod tests {
 
         env::set_current_dir(repo_path).unwrap();
 
-        extract_username_password(DEFAULT_REMOTE_NAME).unwrap();
+        extract_username_password().unwrap();
     }
 }

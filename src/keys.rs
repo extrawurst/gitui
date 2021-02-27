@@ -23,7 +23,6 @@ pub struct KeyConfig {
     pub tab_stashes: KeyEvent,
     pub tab_toggle: KeyEvent,
     pub tab_toggle_reverse: KeyEvent,
-    pub tab_toggle_reverse_windows: KeyEvent,
     pub focus_workdir: KeyEvent,
     pub focus_stage: KeyEvent,
     pub focus_right: KeyEvent,
@@ -64,6 +63,7 @@ pub struct KeyConfig {
     pub select_branch: KeyEvent,
     pub delete_branch: KeyEvent,
     pub push: KeyEvent,
+    pub force_push: KeyEvent,
     pub fetch: KeyEvent,
 }
 
@@ -76,8 +76,7 @@ impl Default for KeyConfig {
 			tab_stashing: KeyEvent { code: KeyCode::Char('3'), modifiers: KeyModifiers::empty()},
 			tab_stashes: KeyEvent { code: KeyCode::Char('4'), modifiers: KeyModifiers::empty()},
 			tab_toggle: KeyEvent { code: KeyCode::Tab, modifiers: KeyModifiers::empty()},
-			tab_toggle_reverse: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::empty()},
-			tab_toggle_reverse_windows: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::SHIFT},
+			tab_toggle_reverse: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::SHIFT},
 			focus_workdir: KeyEvent { code: KeyCode::Char('w'), modifiers: KeyModifiers::empty()},
 			focus_stage: KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
 			focus_right: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::empty()},
@@ -118,10 +117,12 @@ impl Default for KeyConfig {
             select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::NONE},
             delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
+            force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
             fetch: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
         }
     }
 }
+
 impl KeyConfig {
     fn save(&self) -> Result<()> {
         let config_file = Self::get_config_file()?;
@@ -159,90 +160,103 @@ impl KeyConfig {
     }
 
     pub fn init() -> Self {
-        Self::init_internal().unwrap_or_default()
+        match Self::init_internal() {
+            Ok(v) => v,
+            Err(e) => {
+                log::error!("failed loading key binding: {}", e);
+                Self::default()
+            }
+        }
     }
-}
 
-// The hint follows apple design
-// http://xahlee.info/comp/unicode_computing_symbols.html
-pub fn get_hint(ev: KeyEvent) -> String {
-    match ev.code {
-        KeyCode::Char(c) => {
-            format!("{}{}", get_modifier_hint(ev.modifiers), c)
+    //TODO: make this configurable (https://github.com/extrawurst/gitui/issues/465)
+    #[allow(clippy::unused_self)]
+    const fn get_key_symbol(&self, k: KeyCode) -> &str {
+        match k {
+            KeyCode::Enter => "\u{23ce}",     //⏎
+            KeyCode::Left => "\u{2190}",      //←
+            KeyCode::Right => "\u{2192}",     //→
+            KeyCode::Up => "\u{2191}",        //↑
+            KeyCode::Down => "\u{2193}",      //↓
+            KeyCode::Backspace => "\u{232b}", //⌫
+            KeyCode::Home => "\u{2912}",      //⤒
+            KeyCode::End => "\u{2913}",       //⤓
+            KeyCode::PageUp => "\u{21de}",    //⇞
+            KeyCode::PageDown => "\u{21df}",  //⇟
+            KeyCode::Tab => "\u{21e5}",       //⇥
+            KeyCode::BackTab => "\u{21e4}",   //⇤
+            KeyCode::Delete => "\u{2326}",    //⌦
+            KeyCode::Insert => "\u{2380}",    //⎀
+            KeyCode::Esc => "\u{238b}",       //⎋
+            _ => "?",
         }
-        KeyCode::Enter => {
-            format!("{}\u{23ce}", get_modifier_hint(ev.modifiers)) //⏎
-        }
-        KeyCode::Left => {
-            format!("{}\u{2190}", get_modifier_hint(ev.modifiers)) //←
-        }
-        KeyCode::Right => {
-            format!("{}\u{2192}", get_modifier_hint(ev.modifiers)) //→
-        }
-        KeyCode::Up => {
-            format!("{}\u{2191}", get_modifier_hint(ev.modifiers)) //↑
-        }
-        KeyCode::Down => {
-            format!("{}\u{2193}", get_modifier_hint(ev.modifiers)) //↓
-        }
-        KeyCode::Backspace => {
-            format!("{}\u{232b}", get_modifier_hint(ev.modifiers)) //⌫
-        }
-        KeyCode::Home => {
-            format!("{}\u{2912}", get_modifier_hint(ev.modifiers)) //⤒
-        }
-        KeyCode::End => {
-            format!("{}\u{2913}", get_modifier_hint(ev.modifiers)) //⤓
-        }
-        KeyCode::PageUp => {
-            format!("{}\u{21de}", get_modifier_hint(ev.modifiers)) //⇞
-        }
-        KeyCode::PageDown => {
-            format!("{}\u{21df}", get_modifier_hint(ev.modifiers)) //⇟
-        }
-        KeyCode::Tab => {
-            format!("{}\u{21e5}", get_modifier_hint(ev.modifiers)) //⇥
-        }
-        KeyCode::BackTab => {
-            format!("{}\u{21e4}", get_modifier_hint(ev.modifiers)) //⇤
-        }
-        KeyCode::Delete => {
-            format!("{}\u{2326}", get_modifier_hint(ev.modifiers)) //⌦
-        }
-        KeyCode::Insert => {
-            format!("{}\u{2380}", get_modifier_hint(ev.modifiers)) //⎀
-        }
-        KeyCode::Esc => {
-            format!("{}\u{238b}", get_modifier_hint(ev.modifiers)) //⎋
-        }
-        KeyCode::F(u) => {
-            format!("{}F{}", get_modifier_hint(ev.modifiers), u)
-        }
-        KeyCode::Null => get_modifier_hint(ev.modifiers),
     }
-}
 
-fn get_modifier_hint(modifier: KeyModifiers) -> String {
-    match modifier {
-        KeyModifiers::CONTROL => "^".to_string(),
-        KeyModifiers::SHIFT => {
-            "\u{21e7}".to_string() //⇧
+    pub fn get_hint(&self, ev: KeyEvent) -> String {
+        match ev.code {
+            KeyCode::Down
+            | KeyCode::Up
+            | KeyCode::Right
+            | KeyCode::Left
+            | KeyCode::Enter
+            | KeyCode::Backspace
+            | KeyCode::Home
+            | KeyCode::End
+            | KeyCode::PageUp
+            | KeyCode::PageDown
+            | KeyCode::Tab
+            | KeyCode::BackTab
+            | KeyCode::Delete
+            | KeyCode::Insert
+            | KeyCode::Esc => {
+                format!(
+                    "{}{}",
+                    Self::get_modifier_hint(ev.modifiers),
+                    self.get_key_symbol(ev.code)
+                )
+            }
+            KeyCode::Char(c) => {
+                format!(
+                    "{}{}",
+                    Self::get_modifier_hint(ev.modifiers),
+                    c
+                )
+            }
+            KeyCode::F(u) => {
+                format!(
+                    "{}F{}",
+                    Self::get_modifier_hint(ev.modifiers),
+                    u
+                )
+            }
+            KeyCode::Null => Self::get_modifier_hint(ev.modifiers),
         }
-        KeyModifiers::ALT => {
-            "\u{2325}".to_string() //⌥
+    }
+
+    //TODO: make customizable (see https://github.com/extrawurst/gitui/issues/465)
+    fn get_modifier_hint(modifier: KeyModifiers) -> String {
+        match modifier {
+            KeyModifiers::CONTROL => "^".to_string(),
+            KeyModifiers::SHIFT => {
+                "\u{21e7}".to_string() //⇧
+            }
+            KeyModifiers::ALT => {
+                "\u{2325}".to_string() //⌥
+            }
+            _ => String::new(),
         }
-        _ => String::new(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{get_hint, KeyConfig};
+    use super::KeyConfig;
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     #[test]
     fn test_get_hint() {
-        let h = get_hint(KeyEvent {
+        let config = KeyConfig::default();
+        let h = config.get_hint(KeyEvent {
             code: KeyCode::Char('c'),
             modifiers: KeyModifiers::CONTROL,
         });

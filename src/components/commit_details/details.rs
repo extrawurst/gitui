@@ -180,6 +180,7 @@ impl DetailsComponent {
         }
     }
 
+    #[allow(unstable_name_collisions)]
     fn get_text_info(&self) -> Vec<Spans> {
         if let Some(ref data) = self.data {
             let mut res = vec![
@@ -247,6 +248,7 @@ impl DetailsComponent {
                 res.push(Spans::from(
                     self.style_detail(&Detail::Sha),
                 ));
+
                 res.push(Spans::from(
                     self.tags
                         .iter()
@@ -270,10 +272,7 @@ impl DetailsComponent {
         }
     }
 
-    fn move_scroll_top(
-        &mut self,
-        move_type: ScrollType,
-    ) -> Result<bool> {
+    fn move_scroll_top(&mut self, move_type: ScrollType) -> bool {
         if self.data.is_some() {
             let old = self.scroll_top.get();
             let width = self.current_size.get().0 as usize;
@@ -292,14 +291,14 @@ impl DetailsComponent {
             };
 
             if new_scroll_top > max {
-                return Ok(false);
+                return false;
             }
 
             self.scroll_top.set(new_scroll_top);
 
-            return Ok(true);
+            return true;
         }
-        Ok(false)
+        false
     }
 }
 
@@ -359,8 +358,7 @@ impl DrawableComponent for DetailsComponent {
                 f,
                 chunks[1],
                 &self.theme,
-                self.get_number_of_lines(width as usize)
-                    .saturating_sub(height as usize),
+                self.get_number_of_lines(width as usize),
                 self.scroll_top.get(),
             )
         }
@@ -397,7 +395,7 @@ impl Component for DetailsComponent {
     fn event(&mut self, event: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = event {
-                return if e == self.key_config.move_up {
+                return Ok(if e == self.key_config.move_up {
                     self.move_scroll_top(ScrollType::Up)
                 } else if e == self.key_config.move_down {
                     self.move_scroll_top(ScrollType::Down)
@@ -410,8 +408,8 @@ impl Component for DetailsComponent {
                 {
                     self.move_scroll_top(ScrollType::End)
                 } else {
-                    Ok(false)
-                };
+                    false
+                });
             }
         }
 
