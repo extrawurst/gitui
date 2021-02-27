@@ -1,5 +1,8 @@
 //!
 
+pub mod merge;
+pub mod rename;
+
 use super::{
     remotes::get_default_remote_in_repo, utils::bytes2string,
 };
@@ -129,30 +132,6 @@ pub fn branch_compare_upstream(
     Ok(BranchCompare { ahead, behind })
 }
 
-///
-pub fn branch_merge_upstream(
-    repo_path: &str,
-    branch: &str,
-) -> Result<()> {
-    scope_time!("branch_merge_upstream");
-
-    let repo = utils::repo(repo_path)?;
-
-    let branch = repo.find_branch(branch, BranchType::Local)?;
-    let upstream = branch.upstream()?;
-
-    let branch_commit = branch.into_reference().peel_to_commit()?;
-    let upstream_commit =
-        upstream.into_reference().peel_to_commit()?;
-
-    let mut index =
-        repo.merge_commits(&branch_commit, &upstream_commit, None)?;
-
-    index.write()?;
-
-    Ok(())
-}
-
 /// Modify HEAD to point to a branch then checkout head, does not work if there are uncommitted changes
 pub fn checkout_branch(
     repo_path: &str,
@@ -203,22 +182,6 @@ pub fn delete_branch(
     } else {
         return Err(Error::Generic("You cannot be on the branch you want to delete, switch branch, then delete this branch".to_string()));
     }
-    Ok(())
-}
-
-/// Rename the branch reference
-pub fn rename_branch(
-    repo_path: &str,
-    branch_ref: &str,
-    new_name: &str,
-) -> Result<()> {
-    scope_time!("delete_branch");
-
-    let repo = utils::repo(repo_path)?;
-    let branch_as_ref = repo.find_reference(branch_ref)?;
-    let mut branch = git2::Branch::wrap(branch_as_ref);
-    branch.rename(new_name, true)?;
-
     Ok(())
 }
 
@@ -425,52 +388,6 @@ mod test_delete_branch {
                 .unwrap()
                 .unwrap(),
             "master"
-        );
-    }
-}
-
-#[cfg(test)]
-mod test_rename_branch {
-    use super::*;
-    use crate::sync::tests::repo_init;
-
-    #[test]
-    fn test_rename_branch() {
-        let (_td, repo) = repo_init().unwrap();
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        create_branch(repo_path, "branch1").unwrap();
-
-        checkout_branch(repo_path, "refs/heads/branch1").unwrap();
-
-        assert_eq!(
-            repo.branches(None)
-                .unwrap()
-                .nth(0)
-                .unwrap()
-                .unwrap()
-                .0
-                .name()
-                .unwrap()
-                .unwrap(),
-            "branch1"
-        );
-
-        rename_branch(repo_path, "refs/heads/branch1", "AnotherName")
-            .unwrap();
-
-        assert_eq!(
-            repo.branches(None)
-                .unwrap()
-                .nth(0)
-                .unwrap()
-                .unwrap()
-                .0
-                .name()
-                .unwrap()
-                .unwrap(),
-            "AnotherName"
         );
     }
 }
