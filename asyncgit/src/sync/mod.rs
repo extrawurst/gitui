@@ -52,7 +52,10 @@ pub use utils::{
 
 #[cfg(test)]
 mod tests {
-    use super::status::{get_status, StatusType};
+    use super::{
+        status::{get_status, StatusType},
+        CommitId, LogWalker,
+    };
     use crate::error::Result;
     use git2::Repository;
     use std::process::Command;
@@ -122,6 +125,27 @@ mod tests {
         Ok((td, repo))
     }
 
+    ///
+    pub fn repo_clone(p: &str) -> Result<(TempDir, Repository)> {
+        sandbox_config_files();
+
+        let td = TempDir::new()?;
+
+        let td_path = td.path().as_os_str().to_str().unwrap();
+
+        debug_cmd_print(
+            td_path,
+            format!("git clone '{}' .", p).as_str(),
+        );
+        let repo = Repository::open(td.path())?;
+
+        let mut config = repo.config()?;
+        config.set_str("user.name", "name")?;
+        config.set_str("user.email", "email")?;
+
+        Ok((td, repo))
+    }
+
     /// Same as repo_init, but the repo is a bare repo (--bare)
     pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
         let tmp_repo_dir = TempDir::new()?;
@@ -145,6 +169,17 @@ mod tests {
     pub fn debug_cmd_print(path: &str, cmd: &str) {
         let cmd = debug_cmd(path, cmd);
         eprintln!("\n----\n{}", cmd);
+    }
+
+    /// helper to fetch commmit details using log walker
+    pub fn get_commit_ids(
+        r: &Repository,
+        max_count: usize,
+    ) -> Vec<CommitId> {
+        let mut commit_ids = Vec::<CommitId>::new();
+        LogWalker::new(r).read(&mut commit_ids, max_count).unwrap();
+
+        commit_ids
     }
 
     fn debug_cmd(path: &str, cmd: &str) -> String {

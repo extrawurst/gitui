@@ -20,7 +20,7 @@ pub fn rename_branch(
 }
 
 #[cfg(test)]
-mod test_rename_branch {
+mod test {
     use super::super::*;
     use super::rename_branch;
     use crate::sync::tests::repo_init;
