@@ -65,10 +65,7 @@ impl AsyncDiff {
     pub fn last(&mut self) -> Result<Option<(DiffParams, FileDiff)>> {
         let last = self.last.lock()?;
 
-        Ok(match last.clone() {
-            Some(res) => Some((res.params, res.result)),
-            None => None,
-        })
+        Ok(last.clone().map(|res| (res.params, res.result)))
     }
 
     ///
