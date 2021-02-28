@@ -133,11 +133,11 @@ mod tests {
 
         let td_path = td.path().as_os_str().to_str().unwrap();
 
-        debug_cmd_print(
+        let repo = Repository::clone(
+            format!("file://{}", p).as_str(),
             td_path,
-            format!("git clone 'file://{}' .", p).as_str(),
-        );
-        let repo = Repository::open(td.path())?;
+        )
+        .unwrap();
 
         let mut config = repo.config()?;
         config.set_str("user.name", "name")?;
