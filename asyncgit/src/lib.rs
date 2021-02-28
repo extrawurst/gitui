@@ -26,7 +26,7 @@ pub use crate::{
     diff::{AsyncDiff, DiffParams, DiffType},
     fetch::{AsyncFetch, FetchRequest},
     push::{
-        AsyncPush, PushProgress, PushRequest, RemoteProgressState,
+        AsyncPush, PushRequest, RemoteProgress, RemoteProgressState,
     },
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},

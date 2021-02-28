@@ -1,6 +1,6 @@
 use crate::{
     error::{Error, Result},
-    push::{AsyncPush, PushProgress},
+    push::{AsyncPush, RemoteProgress},
     sync::{
         cred::BasicAuthCredential,
         remotes::{fetch_origin, push::ProgressNotification},
@@ -61,7 +61,7 @@ impl AsyncFetch {
     }
 
     ///
-    pub fn progress(&self) -> Result<Option<PushProgress>> {
+    pub fn progress(&self) -> Result<Option<RemoteProgress>> {
         let res = self.progress.lock()?;
         Ok(res.as_ref().map(|progress| progress.clone().into()))
     }

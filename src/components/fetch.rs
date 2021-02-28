@@ -18,7 +18,7 @@ use asyncgit::{
         },
         get_default_remote,
     },
-    AsyncFetch, AsyncNotification, FetchRequest, PushProgress, CWD,
+    AsyncFetch, AsyncNotification, FetchRequest, RemoteProgress, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -34,7 +34,7 @@ use tui::{
 pub struct FetchComponent {
     visible: bool,
     git_fetch: AsyncFetch,
-    progress: Option<PushProgress>,
+    progress: Option<RemoteProgress>,
     pending: bool,
     branch: String,
     queue: Queue,

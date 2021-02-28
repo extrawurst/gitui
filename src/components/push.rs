@@ -17,7 +17,7 @@ use asyncgit::{
         },
         get_default_remote,
     },
-    AsyncNotification, AsyncPush, PushProgress, PushRequest,
+    AsyncNotification, AsyncPush, PushRequest, RemoteProgress,
     RemoteProgressState, CWD,
 };
 use crossbeam_channel::Sender;
@@ -35,7 +35,7 @@ pub struct PushComponent {
     visible: bool,
     force: bool,
     git_push: AsyncPush,
-    progress: Option<PushProgress>,
+    progress: Option<RemoteProgress>,
     pending: bool,
     branch: String,
     queue: Queue,

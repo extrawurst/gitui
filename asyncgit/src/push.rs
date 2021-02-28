@@ -31,14 +31,14 @@ pub enum RemoteProgressState {
 
 ///
 #[derive(Clone, Debug)]
-pub struct PushProgress {
+pub struct RemoteProgress {
     ///
     pub state: RemoteProgressState,
     ///
     pub progress: u8,
 }
 
-impl PushProgress {
+impl RemoteProgress {
     ///
     pub fn new(
         state: RemoteProgressState,
@@ -52,7 +52,7 @@ impl PushProgress {
     }
 }
 
-impl From<ProgressNotification> for PushProgress {
+impl From<ProgressNotification> for RemoteProgress {
     fn from(progress: ProgressNotification) -> Self {
         match progress {
             ProgressNotification::Packing {
@@ -60,27 +60,31 @@ impl From<ProgressNotification> for PushProgress {
                 current,
                 total,
             } => match stage {
-                PackBuilderStage::AddingObjects => PushProgress::new(
-                    RemoteProgressState::PackingAddingObject,
-                    current,
-                    total,
-                ),
-                PackBuilderStage::Deltafication => PushProgress::new(
-                    RemoteProgressState::PackingDeltafiction,
-                    current,
-                    total,
-                ),
+                PackBuilderStage::AddingObjects => {
+                    RemoteProgress::new(
+                        RemoteProgressState::PackingAddingObject,
+                        current,
+                        total,
+                    )
+                }
+                PackBuilderStage::Deltafication => {
+                    RemoteProgress::new(
+                        RemoteProgressState::PackingDeltafiction,
+                        current,
+                        total,
+                    )
+                }
             },
             ProgressNotification::PushTransfer {
                 current,
                 total,
                 ..
-            } => PushProgress::new(
+            } => RemoteProgress::new(
                 RemoteProgressState::Pushing,
                 current,
                 total,
             ),
-            _ => PushProgress::new(RemoteProgressState::Done, 1, 1),
+            _ => RemoteProgress::new(RemoteProgressState::Done, 1, 1),
         }
     }
 }
@@ -135,7 +139,7 @@ impl AsyncPush {
     }
 
     ///
-    pub fn progress(&self) -> Result<Option<PushProgress>> {
+    pub fn progress(&self) -> Result<Option<RemoteProgress>> {
         let res = self.progress.lock()?;
         Ok(res.as_ref().map(|progress| progress.clone().into()))
     }
@@ -258,7 +262,7 @@ impl AsyncPush {
         progress: Arc<Mutex<Option<ProgressNotification>>>,
         state: Option<ProgressNotification>,
     ) -> Result<()> {
-        let simple_progress: Option<PushProgress> =
+        let simple_progress: Option<RemoteProgress> =
             state.as_ref().map(|prog| prog.clone().into());
         log::info!("remote progress: {:?}", simple_progress);
         let mut progress = progress.lock()?;
@@ -293,7 +297,7 @@ mod tests {
     #[test]
     fn test_progress_zero_total() {
         let prog =
-            PushProgress::new(RemoteProgressState::Pushing, 1, 0);
+            RemoteProgress::new(RemoteProgressState::Pushing, 1, 0);
 
         assert_eq!(prog.progress, 100);
     }
@@ -301,7 +305,7 @@ mod tests {
     #[test]
     fn test_progress_rounding() {
         let prog =
-            PushProgress::new(RemoteProgressState::Pushing, 2, 10);
+            RemoteProgress::new(RemoteProgressState::Pushing, 2, 10);
 
         assert_eq!(prog.progress, 20);
     }
