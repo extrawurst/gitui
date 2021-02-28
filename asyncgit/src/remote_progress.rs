@@ -83,7 +83,7 @@ impl RemoteProgress {
                         .expect("error sending push");
 
                     //NOTE: for better debugging
-                    thread::sleep(Duration::from_millis(300));
+                    thread::sleep(Duration::from_millis(100));
 
                     if let ProgressNotification::Done = update {
                         break;
