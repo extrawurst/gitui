@@ -1,4 +1,4 @@
-//! branch features
+//! branch functions
 
 pub mod merge;
 pub mod rename;
