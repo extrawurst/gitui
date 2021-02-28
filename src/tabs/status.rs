@@ -14,7 +14,7 @@ use anyhow::Result;
 use asyncgit::{
     cached,
     sync::BranchCompare,
-    sync::{self, status::StatusType},
+    sync::{self, status::StatusType, RepoState},
     AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
     StatusParams, CWD,
 };
@@ -22,6 +22,7 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Style},
     widgets::Paragraph,
 };
 
@@ -199,20 +200,26 @@ impl Status {
         f: &mut tui::Frame<B>,
         r: tui::layout::Rect,
     ) {
-        let w = Paragraph::new(format!(
-            "{:?}",
-            asyncgit::sync::repo_state(CWD).expect("")
-        ))
-        .alignment(Alignment::Left);
+        if let Ok(state) = asyncgit::sync::repo_state(CWD) {
+            if state != RepoState::Clean {
+                let txt = format!("{:?}", state);
+                let txt_len = txt.len() as u16;
+                let w = Paragraph::new(txt)
+                    .style(Style::default().fg(Color::Red))
+                    .alignment(Alignment::Left);
 
-        let mut rect = r;
-        rect.x += 1;
-        rect.width = rect.width.saturating_sub(2);
-        rect.y += rect.height.saturating_sub(1);
-        rect.height =
-            rect.height.saturating_sub(rect.height.saturating_sub(1));
+                let mut rect = r;
+                rect.x += 1;
+                rect.width =
+                    rect.width.saturating_sub(2).min(txt_len);
+                rect.y += rect.height.saturating_sub(1);
+                rect.height = rect
+                    .height
+                    .saturating_sub(rect.height.saturating_sub(1));
 
-        f.render_widget(w, rect);
+                f.render_widget(w, rect);
+            }
+        }
     }
 
     fn can_focus_diff(&self) -> bool {
@@ -287,7 +294,7 @@ impl Status {
             self.git_status_stage
                 .fetch(StatusParams::new(StatusType::Stage, true))?;
 
-            self.check_branch_state();
+            self.branch_compare();
         }
 
         Ok(())
@@ -422,7 +429,7 @@ impl Status {
         }
     }
 
-    fn check_branch_state(&mut self) {
+    fn branch_compare(&mut self) {
         self.git_branch_state =
             self.git_branch_name.last().and_then(|branch| {
                 sync::branch_compare_upstream(CWD, branch.as_str())
