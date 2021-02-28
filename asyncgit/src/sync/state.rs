@@ -3,7 +3,7 @@ use git2::RepositoryState;
 use scopetime::scope_time;
 
 ///
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RepoState {
     ///
     Clean,
