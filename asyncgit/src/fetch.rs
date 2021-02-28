@@ -1,6 +1,5 @@
 use crate::{
     error::{Error, Result},
-    push::AsyncPush,
     sync::{
         cred::BasicAuthCredential,
         remotes::{fetch_origin, push::ProgressNotification},
@@ -75,7 +74,7 @@ impl AsyncFetch {
         }
 
         self.set_request(&params)?;
-        AsyncPush::set_progress(self.progress.clone(), None)?;
+        RemoteProgress::set_progress(self.progress.clone(), None)?;
 
         let arc_state = Arc::clone(&self.state);
         let arc_res = Arc::clone(&self.last_result);
@@ -85,7 +84,7 @@ impl AsyncFetch {
         thread::spawn(move || {
             let (progress_sender, receiver) = unbounded();
 
-            let handle = AsyncPush::spawn_receiver_thread(
+            let handle = RemoteProgress::spawn_receiver_thread(
                 sender.clone(),
                 receiver,
                 arc_progress,

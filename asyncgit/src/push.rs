@@ -6,13 +6,11 @@ use crate::{
     },
     AsyncNotification, RemoteProgress, CWD,
 };
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use crossbeam_channel::{unbounded, Sender};
 use std::{
     sync::{Arc, Mutex},
     thread,
-    time::Duration,
 };
-use thread::JoinHandle;
 
 ///
 #[derive(Default, Clone, Debug)]
@@ -78,7 +76,7 @@ impl AsyncPush {
         }
 
         self.set_request(&params)?;
-        Self::set_progress(self.progress.clone(), None)?;
+        RemoteProgress::set_progress(self.progress.clone(), None)?;
 
         let arc_state = Arc::clone(&self.state);
         let arc_res = Arc::clone(&self.last_result);
@@ -88,7 +86,7 @@ impl AsyncPush {
         thread::spawn(move || {
             let (progress_sender, receiver) = unbounded();
 
-            let handle = Self::spawn_receiver_thread(
+            let handle = RemoteProgress::spawn_receiver_thread(
                 sender.clone(),
                 receiver,
                 arc_progress,
@@ -121,44 +119,6 @@ impl AsyncPush {
         Ok(())
     }
 
-    pub(crate) fn spawn_receiver_thread(
-        sender: Sender<AsyncNotification>,
-        receiver: Receiver<ProgressNotification>,
-        progress: Arc<Mutex<Option<ProgressNotification>>>,
-    ) -> JoinHandle<()> {
-        log::info!("push progress receiver spawned");
-
-        thread::spawn(move || loop {
-            let incoming = receiver.recv();
-            match incoming {
-                Ok(update) => {
-                    Self::set_progress(
-                        progress.clone(),
-                        Some(update.clone()),
-                    )
-                    .expect("set prgoress failed");
-                    sender
-                        .send(AsyncNotification::Push)
-                        .expect("error sending push");
-
-                    //NOTE: for better debugging
-                    thread::sleep(Duration::from_millis(300));
-
-                    if let ProgressNotification::Done = update {
-                        break;
-                    }
-                }
-                Err(e) => {
-                    log::error!(
-                        "push progress receiver error: {}",
-                        e
-                    );
-                    break;
-                }
-            }
-        })
-    }
-
     fn set_request(&self, params: &PushRequest) -> Result<()> {
         let mut state = self.state.lock()?;
 
@@ -183,20 +143,6 @@ impl AsyncPush {
         Ok(())
     }
 
-    pub(crate) fn set_progress(
-        progress: Arc<Mutex<Option<ProgressNotification>>>,
-        state: Option<ProgressNotification>,
-    ) -> Result<()> {
-        let simple_progress: Option<RemoteProgress> =
-            state.as_ref().map(|prog| prog.clone().into());
-        log::info!("remote progress: {:?}", simple_progress);
-        let mut progress = progress.lock()?;
-
-        *progress = state;
-
-        Ok(())
-    }
-
     fn set_result(
         arc_result: Arc<Mutex<Option<String>>>,
         res: Result<()>,
@@ -212,27 +158,5 @@ impl AsyncPush {
         };
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::remote_progress::RemoteProgressState;
-
-    #[test]
-    fn test_progress_zero_total() {
-        let prog =
-            RemoteProgress::new(RemoteProgressState::Pushing, 1, 0);
-
-        assert_eq!(prog.progress, 100);
-    }
-
-    #[test]
-    fn test_progress_rounding() {
-        let prog =
-            RemoteProgress::new(RemoteProgressState::Pushing, 2, 10);
-
-        assert_eq!(prog.progress, 20);
     }
 }
