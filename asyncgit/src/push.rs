@@ -18,20 +18,22 @@ use thread::JoinHandle;
 
 ///
 #[derive(Clone, Debug)]
-pub enum PushProgressState {
+pub enum RemoteProgressState {
     ///
     PackingAddingObject,
     ///
     PackingDeltafiction,
     ///
     Pushing,
+    ///
+    Done,
 }
 
 ///
 #[derive(Clone, Debug)]
 pub struct PushProgress {
     ///
-    pub state: PushProgressState,
+    pub state: RemoteProgressState,
     ///
     pub progress: u8,
 }
@@ -39,7 +41,7 @@ pub struct PushProgress {
 impl PushProgress {
     ///
     pub fn new(
-        state: PushProgressState,
+        state: RemoteProgressState,
         current: usize,
         total: usize,
     ) -> Self {
@@ -59,12 +61,12 @@ impl From<ProgressNotification> for PushProgress {
                 total,
             } => match stage {
                 PackBuilderStage::AddingObjects => PushProgress::new(
-                    PushProgressState::PackingAddingObject,
+                    RemoteProgressState::PackingAddingObject,
                     current,
                     total,
                 ),
                 PackBuilderStage::Deltafication => PushProgress::new(
-                    PushProgressState::PackingDeltafiction,
+                    RemoteProgressState::PackingDeltafiction,
                     current,
                     total,
                 ),
@@ -74,12 +76,11 @@ impl From<ProgressNotification> for PushProgress {
                 total,
                 ..
             } => PushProgress::new(
-                PushProgressState::Pushing,
+                RemoteProgressState::Pushing,
                 current,
                 total,
             ),
-            //ProgressNotification::Done |
-            _ => PushProgress::new(PushProgressState::Pushing, 1, 1),
+            _ => PushProgress::new(RemoteProgressState::Done, 1, 1),
         }
     }
 }
@@ -191,7 +192,7 @@ impl AsyncPush {
         Ok(())
     }
 
-    fn spawn_receiver_thread(
+    pub(crate) fn spawn_receiver_thread(
         sender: Sender<AsyncNotification>,
         receiver: Receiver<ProgressNotification>,
         progress: Arc<Mutex<Option<ProgressNotification>>>,
@@ -253,13 +254,13 @@ impl AsyncPush {
         Ok(())
     }
 
-    fn set_progress(
+    pub(crate) fn set_progress(
         progress: Arc<Mutex<Option<ProgressNotification>>>,
         state: Option<ProgressNotification>,
     ) -> Result<()> {
         let simple_progress: Option<PushProgress> =
             state.as_ref().map(|prog| prog.clone().into());
-        log::info!("push progress: {:?}", simple_progress);
+        log::info!("remote progress: {:?}", simple_progress);
         let mut progress = progress.lock()?;
 
         *progress = state;
@@ -292,7 +293,7 @@ mod tests {
     #[test]
     fn test_progress_zero_total() {
         let prog =
-            PushProgress::new(PushProgressState::Pushing, 1, 0);
+            PushProgress::new(RemoteProgressState::Pushing, 1, 0);
 
         assert_eq!(prog.progress, 100);
     }
@@ -300,7 +301,7 @@ mod tests {
     #[test]
     fn test_progress_rounding() {
         let prog =
-            PushProgress::new(PushProgressState::Pushing, 2, 10);
+            PushProgress::new(RemoteProgressState::Pushing, 2, 10);
 
         assert_eq!(prog.progress, 20);
     }

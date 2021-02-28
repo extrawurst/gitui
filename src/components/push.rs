@@ -17,8 +17,8 @@ use asyncgit::{
         },
         get_default_remote,
     },
-    AsyncNotification, AsyncPush, PushProgress, PushProgressState,
-    PushRequest, CWD,
+    AsyncNotification, AsyncPush, PushProgress, PushRequest,
+    RemoteProgressState, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -156,16 +156,19 @@ impl PushComponent {
         )
     }
 
-    fn progress_state_name(state: &PushProgressState) -> String {
+    fn progress_state_name(state: &RemoteProgressState) -> String {
         match state {
-            PushProgressState::PackingAddingObject => {
+            RemoteProgressState::PackingAddingObject => {
                 strings::PUSH_POPUP_STATES_ADDING
             }
-            PushProgressState::PackingDeltafiction => {
+            RemoteProgressState::PackingDeltafiction => {
                 strings::PUSH_POPUP_STATES_DELTAS
             }
-            PushProgressState::Pushing => {
+            RemoteProgressState::Pushing => {
                 strings::PUSH_POPUP_STATES_PUSHING
+            }
+            RemoteProgressState::Done => {
+                strings::PUSH_POPUP_STATES_DONE
             }
         }
         .into()

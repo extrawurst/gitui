@@ -25,7 +25,9 @@ pub use crate::{
     commit_files::AsyncCommitFiles,
     diff::{AsyncDiff, DiffParams, DiffType},
     fetch::{AsyncFetch, FetchRequest},
-    push::{AsyncPush, PushProgress, PushProgressState, PushRequest},
+    push::{
+        AsyncPush, PushProgress, PushRequest, RemoteProgressState,
+    },
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
     sync::{

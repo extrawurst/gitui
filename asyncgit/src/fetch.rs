@@ -1,9 +1,13 @@
 use crate::{
     error::{Error, Result},
-    sync::{cred::BasicAuthCredential, remotes::fetch_origin},
+    push::{AsyncPush, PushProgress},
+    sync::{
+        cred::BasicAuthCredential,
+        remotes::{fetch_origin, push::ProgressNotification},
+    },
     AsyncNotification, CWD,
 };
-use crossbeam_channel::Sender;
+use crossbeam_channel::{unbounded, Sender};
 use std::{
     sync::{Arc, Mutex},
     thread,
@@ -29,6 +33,7 @@ struct FetchState {
 pub struct AsyncFetch {
     state: Arc<Mutex<Option<FetchState>>>,
     last_result: Arc<Mutex<Option<(usize, String)>>>,
+    progress: Arc<Mutex<Option<ProgressNotification>>>,
     sender: Sender<AsyncNotification>,
 }
 
@@ -38,6 +43,7 @@ impl AsyncFetch {
         Self {
             state: Arc::new(Mutex::new(None)),
             last_result: Arc::new(Mutex::new(None)),
+            progress: Arc::new(Mutex::new(None)),
             sender: sender.clone(),
         }
     }
@@ -55,6 +61,12 @@ impl AsyncFetch {
     }
 
     ///
+    pub fn progress(&self) -> Result<Option<PushProgress>> {
+        let res = self.progress.lock()?;
+        Ok(res.as_ref().map(|progress| progress.clone().into()))
+    }
+
+    ///
     pub fn request(&mut self, params: FetchRequest) -> Result<()> {
         log::trace!("request");
 
@@ -63,18 +75,34 @@ impl AsyncFetch {
         }
 
         self.set_request(&params)?;
+        AsyncPush::set_progress(self.progress.clone(), None)?;
 
         let arc_state = Arc::clone(&self.state);
         let arc_res = Arc::clone(&self.last_result);
+        let arc_progress = Arc::clone(&self.progress);
         let sender = self.sender.clone();
 
         thread::spawn(move || {
+            let (progress_sender, receiver) = unbounded();
+
+            let handle = AsyncPush::spawn_receiver_thread(
+                sender.clone(),
+                receiver,
+                arc_progress,
+            );
+
             let res = fetch_origin(
                 CWD,
                 &params.branch,
                 params.basic_credential,
-                None,
+                Some(progress_sender.clone()),
             );
+
+            progress_sender
+                .send(ProgressNotification::Done)
+                .expect("closing send failed");
+
+            handle.join().expect("joining thread failed");
 
             Self::set_result(arc_res, res).expect("result error");
 

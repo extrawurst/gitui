@@ -18,8 +18,7 @@ use asyncgit::{
         },
         get_default_remote,
     },
-    AsyncFetch, AsyncNotification, FetchRequest, PushProgress,
-    PushProgressState, CWD,
+    AsyncFetch, AsyncNotification, FetchRequest, PushProgress, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -157,28 +156,8 @@ impl FetchComponent {
     fn get_progress(&self) -> (String, u8) {
         self.progress.as_ref().map_or(
             (strings::PUSH_POPUP_PROGRESS_NONE.into(), 0),
-            |progress| {
-                (
-                    Self::progress_state_name(&progress.state),
-                    progress.progress,
-                )
-            },
+            |progress| (String::from("Fetching"), progress.progress),
         )
-    }
-
-    fn progress_state_name(state: &PushProgressState) -> String {
-        match state {
-            PushProgressState::PackingAddingObject => {
-                strings::PUSH_POPUP_STATES_ADDING
-            }
-            PushProgressState::PackingDeltafiction => {
-                strings::PUSH_POPUP_STATES_DELTAS
-            }
-            PushProgressState::Pushing => {
-                strings::PUSH_POPUP_STATES_PUSHING
-            }
-        }
-        .into()
     }
 }
 
