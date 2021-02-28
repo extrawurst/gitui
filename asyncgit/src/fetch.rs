@@ -1,11 +1,11 @@
 use crate::{
     error::{Error, Result},
-    push::{AsyncPush, RemoteProgress},
+    push::AsyncPush,
     sync::{
         cred::BasicAuthCredential,
         remotes::{fetch_origin, push::ProgressNotification},
     },
-    AsyncNotification, CWD,
+    AsyncNotification, RemoteProgress, CWD,
 };
 use crossbeam_channel::{unbounded, Sender};
 use std::{

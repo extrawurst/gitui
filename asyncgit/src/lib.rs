@@ -16,6 +16,7 @@ mod diff;
 mod error;
 mod fetch;
 mod push;
+pub mod remote_progress;
 mod revlog;
 mod status;
 pub mod sync;
@@ -25,9 +26,8 @@ pub use crate::{
     commit_files::AsyncCommitFiles,
     diff::{AsyncDiff, DiffParams, DiffType},
     fetch::{AsyncFetch, FetchRequest},
-    push::{
-        AsyncPush, PushRequest, RemoteProgress, RemoteProgressState,
-    },
+    push::{AsyncPush, PushRequest},
+    remote_progress::{RemoteProgress, RemoteProgressState},
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
     sync::{
