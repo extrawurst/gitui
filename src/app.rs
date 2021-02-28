@@ -551,7 +551,7 @@ impl App {
                 self.push_popup.push(branch, force)?;
                 flags.insert(NeedsUpdate::ALL)
             }
-            InternalEvent::Fetch(branch) => {
+            InternalEvent::Pull(branch) => {
                 self.fetch_popup.fetch(branch)?;
                 flags.insert(NeedsUpdate::ALL)
             }
