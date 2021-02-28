@@ -135,7 +135,7 @@ mod tests {
 
         debug_cmd_print(
             td_path,
-            format!("git clone '{}' .", p).as_str(),
+            format!("git clone 'file://{}' .", p).as_str(),
         );
         let repo = Repository::open(td.path())?;
 
