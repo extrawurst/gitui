@@ -64,7 +64,7 @@ pub struct KeyConfig {
     pub delete_branch: KeyEvent,
     pub push: KeyEvent,
     pub force_push: KeyEvent,
-    pub fetch: KeyEvent,
+    pub pull: KeyEvent,
 }
 
 #[rustfmt::skip]
@@ -118,7 +118,7 @@ impl Default for KeyConfig {
             delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
             force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
-            fetch: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
+            pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
         }
     }
 }

@@ -838,4 +838,14 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn status_pull(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Pull [{}]",
+                key_config.get_hint(key_config.pull),
+            ),
+            "fetch/merge",
+            CMD_GROUP_GENERAL,
+        )
+    }
 }

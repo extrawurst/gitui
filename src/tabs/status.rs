@@ -414,7 +414,7 @@ impl Status {
         }
     }
 
-    fn fetch(&self) {
+    fn pull(&self) {
         if let Some(branch) = self.git_branch_name.last() {
             self.queue
                 .borrow_mut()
@@ -468,6 +468,11 @@ impl Component for Status {
                     &self.key_config,
                 ),
                 self.can_push(),
+                true,
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::status_pull(&self.key_config),
+                true,
                 true,
             ));
         }
@@ -582,8 +587,8 @@ impl Component for Status {
                 } else if k == self.key_config.push {
                     self.push(false);
                     Ok(true)
-                } else if k == self.key_config.fetch {
-                    self.fetch();
+                } else if k == self.key_config.pull {
+                    self.pull();
                     Ok(true)
                 } else {
                     Ok(false)
