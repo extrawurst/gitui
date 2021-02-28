@@ -212,8 +212,7 @@ mod tests {
     use super::*;
     use crate::sync::{
         self,
-        tests::{repo_init, repo_init_bare},
-        LogWalker,
+        tests::{get_commit_ids, repo_init, repo_init_bare},
     };
     use std::{fs::File, io::Write, path::Path};
 
@@ -357,9 +356,8 @@ mod tests {
             String::from("temp_file.txt")
         );
 
-        let mut repo_commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(&repo).read(&mut repo_commit_ids, 1).unwrap();
-        assert_eq!(repo_commit_ids.contains(&repo_1_commit), true);
+        let commits = get_commit_ids(&repo, 1);
+        assert!(commits.contains(&repo_1_commit));
 
         push(
             tmp_repo_dir.path().to_str().unwrap(),
@@ -397,14 +395,8 @@ mod tests {
             .unwrap()
             .id();
 
-        let mut other_repo_commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(&other_repo)
-            .read(&mut other_repo_commit_ids, 1)
-            .unwrap();
-        assert_eq!(
-            other_repo_commit_ids.contains(&repo_2_commit),
-            true
-        );
+        let commits = get_commit_ids(&other_repo, 1);
+        assert!(commits.contains(&repo_2_commit));
 
         // Attempt a normal push,
         // should fail as branches diverged
@@ -423,9 +415,8 @@ mod tests {
 
         // Check that the other commit is not in upstream,
         // a normal push would not rewrite history
-        let mut commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
-        assert_eq!(commit_ids.contains(&repo_1_commit), true);
+        let commits = get_commit_ids(&upstream, 1);
+        assert!(!commits.contains(&repo_2_commit));
 
         // Attempt force push,
         // should work as it forces the push through
@@ -440,10 +431,8 @@ mod tests {
         )
         .unwrap();
 
-        commit_ids.clear();
-        LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
-        // Check that only the other repo commit is now in upstream
-        assert_eq!(commit_ids.contains(&repo_2_commit), true);
+        let commits = get_commit_ids(&upstream, 1);
+        assert!(commits.contains(&repo_2_commit));
 
         let new_upstream_parent =
             Repository::init_bare(tmp_upstream_dir.path())

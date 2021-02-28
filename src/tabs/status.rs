@@ -103,6 +103,7 @@ impl DrawableComponent for Status {
         self.index.draw(f, left_chunks[1])?;
         self.diff.draw(f, chunks[1])?;
         self.draw_branch_state(f, &left_chunks);
+        Self::draw_repo_state(f, left_chunks[0]);
 
         Ok(())
     }
@@ -192,6 +193,26 @@ impl Status {
 
             f.render_widget(w, rect);
         }
+    }
+
+    fn draw_repo_state<B: tui::backend::Backend>(
+        f: &mut tui::Frame<B>,
+        r: tui::layout::Rect,
+    ) {
+        let w = Paragraph::new(format!(
+            "{:?}",
+            asyncgit::sync::repo_state(CWD).expect("")
+        ))
+        .alignment(Alignment::Left);
+
+        let mut rect = r;
+        rect.x += 1;
+        rect.width = rect.width.saturating_sub(2);
+        rect.y += rect.height.saturating_sub(1);
+        rect.height =
+            rect.height.saturating_sub(rect.height.saturating_sub(1));
+
+        f.render_widget(w, rect);
     }
 
     fn can_focus_diff(&self) -> bool {
@@ -405,12 +426,34 @@ impl Status {
                     );
                 }
                 Ok(bytes) => {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "fetched:\n{} B",
-                            bytes
-                        )),
-                    );
+                    if bytes > 0
+                        || self
+                            .git_branch_state
+                            .as_ref()
+                            .map(|state| state.behind > 0)
+                            .unwrap_or_default()
+                    {
+                        let merge_res =
+                            sync::branch_merge_upstream_fastforward(
+                                CWD, &branch,
+                            );
+                        let msg = match merge_res {
+                            Err(err) => {
+                                format!("merge failed:\n{}", err)
+                            }
+                            Ok(_) => "merged".to_string(),
+                        };
+
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::ShowErrorMsg(msg),
+                        );
+                    } else {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::ShowErrorMsg(
+                                "nothing fetched".to_string(),
+                            ),
+                        );
+                    }
                 }
             }
         }

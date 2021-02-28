@@ -17,14 +17,16 @@ mod logwalker;
 pub mod remotes;
 mod reset;
 mod stash;
+mod state;
 pub mod status;
 mod tags;
 pub mod utils;
 
 pub use branch::{
     branch_compare_upstream, checkout_branch, create_branch,
-    delete_branch, get_branches_info, rename_branch, BranchCompare,
-    BranchInfo,
+    delete_branch, get_branches_info,
+    merge::branch_merge_upstream_fastforward, rename::rename_branch,
+    BranchCompare, BranchInfo,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
@@ -42,6 +44,7 @@ pub use logwalker::LogWalker;
 pub use remotes::{fetch_origin, get_default_remote, get_remotes};
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
+pub use state::{repo_state, RepoState};
 pub use tags::{get_tags, CommitTags, Tags};
 pub use utils::{
     get_head, get_head_tuple, is_bare_repo, is_repo, stage_add_all,
@@ -50,7 +53,10 @@ pub use utils::{
 
 #[cfg(test)]
 mod tests {
-    use super::status::{get_status, StatusType};
+    use super::{
+        status::{get_status, StatusType},
+        CommitId, LogWalker,
+    };
     use crate::error::Result;
     use git2::Repository;
     use std::process::Command;
@@ -120,6 +126,23 @@ mod tests {
         Ok((td, repo))
     }
 
+    ///
+    pub fn repo_clone(p: &str) -> Result<(TempDir, Repository)> {
+        sandbox_config_files();
+
+        let td = TempDir::new()?;
+
+        let td_path = td.path().as_os_str().to_str().unwrap();
+
+        let repo = Repository::clone(p, td_path).unwrap();
+
+        let mut config = repo.config()?;
+        config.set_str("user.name", "name")?;
+        config.set_str("user.email", "email")?;
+
+        Ok((td, repo))
+    }
+
     /// Same as repo_init, but the repo is a bare repo (--bare)
     pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
         let tmp_repo_dir = TempDir::new()?;
@@ -143,6 +166,17 @@ mod tests {
     pub fn debug_cmd_print(path: &str, cmd: &str) {
         let cmd = debug_cmd(path, cmd);
         eprintln!("\n----\n{}", cmd);
+    }
+
+    /// helper to fetch commmit details using log walker
+    pub fn get_commit_ids(
+        r: &Repository,
+        max_count: usize,
+    ) -> Vec<CommitId> {
+        let mut commit_ids = Vec::<CommitId>::new();
+        LogWalker::new(r).read(&mut commit_ids, max_count).unwrap();
+
+        commit_ids
     }
 
     fn debug_cmd(path: &str, cmd: &str) -> String {

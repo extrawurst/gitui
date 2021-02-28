@@ -1,4 +1,7 @@
-//!
+//! branch functions
+
+pub mod merge;
+pub mod rename;
 
 use super::{
     remotes::get_default_remote_in_repo, utils::bytes2string,
@@ -179,22 +182,6 @@ pub fn delete_branch(
     } else {
         return Err(Error::Generic("You cannot be on the branch you want to delete, switch branch, then delete this branch".to_string()));
     }
-    Ok(())
-}
-
-/// Rename the branch reference
-pub fn rename_branch(
-    repo_path: &str,
-    branch_ref: &str,
-    new_name: &str,
-) -> Result<()> {
-    scope_time!("delete_branch");
-
-    let repo = utils::repo(repo_path)?;
-    let branch_as_ref = repo.find_reference(branch_ref)?;
-    let mut branch = git2::Branch::wrap(branch_as_ref);
-    branch.rename(new_name, true)?;
-
     Ok(())
 }
 
@@ -401,52 +388,6 @@ mod test_delete_branch {
                 .unwrap()
                 .unwrap(),
             "master"
-        );
-    }
-}
-
-#[cfg(test)]
-mod test_rename_branch {
-    use super::*;
-    use crate::sync::tests::repo_init;
-
-    #[test]
-    fn test_rename_branch() {
-        let (_td, repo) = repo_init().unwrap();
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        create_branch(repo_path, "branch1").unwrap();
-
-        checkout_branch(repo_path, "refs/heads/branch1").unwrap();
-
-        assert_eq!(
-            repo.branches(None)
-                .unwrap()
-                .nth(0)
-                .unwrap()
-                .unwrap()
-                .0
-                .name()
-                .unwrap()
-                .unwrap(),
-            "branch1"
-        );
-
-        rename_branch(repo_path, "refs/heads/branch1", "AnotherName")
-            .unwrap();
-
-        assert_eq!(
-            repo.branches(None)
-                .unwrap()
-                .nth(0)
-                .unwrap()
-                .unwrap()
-                .0
-                .name()
-                .unwrap()
-                .unwrap(),
-            "AnotherName"
         );
     }
 }
