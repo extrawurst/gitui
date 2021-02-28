@@ -14,6 +14,7 @@ pub mod cached;
 mod commit_files;
 mod diff;
 mod error;
+mod fetch;
 mod push;
 mod revlog;
 mod status;
@@ -23,6 +24,7 @@ mod tags;
 pub use crate::{
     commit_files::AsyncCommitFiles,
     diff::{AsyncDiff, DiffParams, DiffType},
+    fetch::{AsyncFetch, FetchRequest},
     push::{AsyncPush, PushProgress, PushProgressState, PushRequest},
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
@@ -54,6 +56,8 @@ pub enum AsyncNotification {
     Tags,
     ///
     Push,
+    ///
+    Fetch,
 }
 
 /// current working director `./`

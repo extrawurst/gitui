@@ -6,6 +6,7 @@ pub mod order {
 
 pub static PUSH_POPUP_MSG: &str = "Push";
 pub static FORCE_PUSH_POPUP_MSG: &str = "Force Push";
+pub static FETCH_POPUP_MSG: &str = "Fetch";
 pub static PUSH_POPUP_PROGRESS_NONE: &str = "preparing...";
 pub static PUSH_POPUP_STATES_ADDING: &str = "adding objects (1/3)";
 pub static PUSH_POPUP_STATES_DELTAS: &str = "deltas (2/3)";

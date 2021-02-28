@@ -5,7 +5,7 @@ use crate::{
         event_pump, BranchListComponent, CommandBlocking,
         CommandInfo, CommitComponent, Component,
         CreateBranchComponent, DrawableComponent,
-        ExternalEditorComponent, HelpComponent,
+        ExternalEditorComponent, FetchComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PushComponent,
         RenameBranchComponent, ResetComponent, StashMsgComponent,
         TagCommitComponent,
@@ -45,6 +45,7 @@ pub struct App {
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
     push_popup: PushComponent,
+    fetch_popup: FetchComponent,
     tag_commit_popup: TagCommitComponent,
     create_branch_popup: CreateBranchComponent,
     rename_branch_popup: RenameBranchComponent,
@@ -106,6 +107,12 @@ impl App {
                 key_config.clone(),
             ),
             push_popup: PushComponent::new(
+                &queue,
+                sender,
+                theme.clone(),
+                key_config.clone(),
+            ),
+            fetch_popup: FetchComponent::new(
                 &queue,
                 sender,
                 theme.clone(),
@@ -302,6 +309,7 @@ impl App {
         self.revlog.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
         self.push_popup.update_git(ev)?;
+        self.fetch_popup.update_git(ev)?;
 
         //TODO: better system for this
         // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
@@ -347,6 +355,7 @@ impl App {
             inspect_commit_popup,
             external_editor_popup,
             push_popup,
+            fetch_popup,
             tag_commit_popup,
             create_branch_popup,
             rename_branch_popup,
@@ -543,6 +552,10 @@ impl App {
                 self.push_popup.push(branch, force)?;
                 flags.insert(NeedsUpdate::ALL)
             }
+            InternalEvent::Fetch(branch) => {
+                self.fetch_popup.fetch(branch)?;
+                flags.insert(NeedsUpdate::ALL)
+            }
         };
 
         Ok(flags)
@@ -603,6 +616,7 @@ impl App {
             || self.tag_commit_popup.is_visible()
             || self.create_branch_popup.is_visible()
             || self.push_popup.is_visible()
+            || self.fetch_popup.is_visible()
             || self.select_branch_popup.is_visible()
             || self.rename_branch_popup.is_visible()
     }
@@ -632,6 +646,7 @@ impl App {
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;
+        self.fetch_popup.draw(f, size)?;
         self.reset.draw(f, size)?;
         self.msg.draw(f, size)?;
 
