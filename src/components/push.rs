@@ -144,8 +144,10 @@ impl PushComponent {
         Ok(())
     }
 
-    fn get_progress(&self) -> (String, u8) {
-        self.progress.as_ref().map_or(
+    pub fn get_progress(
+        progress: &Option<RemoteProgress>,
+    ) -> (String, u8) {
+        progress.as_ref().map_or(
             (strings::PUSH_POPUP_PROGRESS_NONE.into(), 0),
             |progress| {
                 (
@@ -182,7 +184,8 @@ impl DrawableComponent for PushComponent {
         rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let (state, progress) = self.get_progress();
+            let (state, progress) =
+                Self::get_progress(&self.progress);
 
             let area = ui::centered_rect_absolute(30, 3, f.size());
 

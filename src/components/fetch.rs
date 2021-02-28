@@ -30,6 +30,8 @@ use tui::{
     Frame,
 };
 
+use super::PushComponent;
+
 ///
 pub struct FetchComponent {
     visible: bool,
@@ -118,7 +120,7 @@ impl FetchComponent {
     ///
     fn update(&mut self) -> Result<()> {
         self.pending = self.git_fetch.is_pending()?;
-        // self.progress = self.git_fetch.progress()?;
+        self.progress = self.git_fetch.progress()?;
 
         if !self.pending {
             if let Some((_bytes, err)) =
@@ -152,13 +154,6 @@ impl FetchComponent {
 
         Ok(())
     }
-
-    fn get_progress(&self) -> (String, u8) {
-        self.progress.as_ref().map_or(
-            (strings::PUSH_POPUP_PROGRESS_NONE.into(), 0),
-            |progress| (String::from("Fetching"), progress.progress),
-        )
-    }
 }
 
 impl DrawableComponent for FetchComponent {
@@ -168,7 +163,8 @@ impl DrawableComponent for FetchComponent {
         rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let (state, progress) = self.get_progress();
+            let (state, progress) =
+                PushComponent::get_progress(&self.progress);
 
             let area = ui::centered_rect_absolute(30, 3, f.size());
 
