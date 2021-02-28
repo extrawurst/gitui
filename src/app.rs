@@ -75,7 +75,6 @@ impl App {
         theme_path: PathBuf,
     ) -> Self {
         let queue = Queue::default();
-
         let theme = Rc::new(Theme::init(theme_path));
         let key_config = Rc::new(KeyConfig::init());
 

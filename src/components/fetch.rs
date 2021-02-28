@@ -125,14 +125,7 @@ impl FetchComponent {
             if let Some((_bytes, err)) =
                 self.git_fetch.last_result()?
             {
-                if !err.is_empty() {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "fetch failed:\n{}",
-                            err
-                        )),
-                    );
-                } else {
+                if err.is_empty() {
                     let merge_res =
                         sync::branch_merge_upstream_fastforward(
                             CWD,
@@ -146,6 +139,13 @@ impl FetchComponent {
                             )),
                         );
                     }
+                } else {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(format!(
+                            "fetch failed:\n{}",
+                            err
+                        )),
+                    );
                 }
             }
             self.hide();
