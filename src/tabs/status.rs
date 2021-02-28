@@ -20,6 +20,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use std::convert::TryFrom;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
@@ -203,7 +204,8 @@ impl Status {
         if let Ok(state) = asyncgit::sync::repo_state(CWD) {
             if state != RepoState::Clean {
                 let txt = format!("{:?}", state);
-                let txt_len = txt.len() as u16;
+                let txt_len = u16::try_from(txt.len())
+                    .expect("state name too long");
                 let w = Paragraph::new(txt)
                     .style(Style::default().fg(Color::Red))
                     .alignment(Alignment::Left);
