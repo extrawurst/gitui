@@ -218,21 +218,21 @@ impl Component for FetchComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
             if let Event::Key(e) = ev {
-                if e == self.key_config.exit_popup {
-                    self.hide();
-                }
-                if self.input_cred.event(ev)? {
-                    return Ok(true);
-                } else if e == self.key_config.enter {
-                    if self.input_cred.is_visible()
-                        && self.input_cred.get_cred().is_complete()
+                if self.input_cred.is_visible() {
+                    if self.input_cred.event(ev)? {
+                        return Ok(true);
+                    } else if self.input_cred.get_cred().is_complete()
                     {
                         self.fetch_from_remote(Some(
                             self.input_cred.get_cred().clone(),
                         ))?;
                         self.input_cred.hide();
-                    } else {
-                        self.hide();
+                    }
+                } else {
+                    if e == self.key_config.exit_popup {
+                        if !self.pending {
+                            self.hide();
+                        }
                     }
                 }
             }
