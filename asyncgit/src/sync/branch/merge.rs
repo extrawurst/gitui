@@ -48,8 +48,8 @@ pub fn branch_merge_upstream_fastforward(
 mod test {
     use super::*;
     use crate::sync::{
-        commit, fetch_origin,
-        remotes::push::push,
+        commit,
+        remotes::{fetch_origin, push::push},
         stage_add_file,
         tests::{
             debug_cmd_print, get_commit_ids, repo_clone,
@@ -137,6 +137,8 @@ mod test {
         let bytes = fetch_origin(
             clone1_dir.path().to_str().unwrap(),
             "master",
+            None,
+            None,
         )
         .unwrap();
         assert!(bytes > 0);
@@ -144,6 +146,8 @@ mod test {
         let bytes = fetch_origin(
             clone1_dir.path().to_str().unwrap(),
             "master",
+            None,
+            None,
         )
         .unwrap();
         assert_eq!(bytes, 0);

@@ -6,9 +6,14 @@ use crate::{
     error::{Error, Result},
     sync::utils,
 };
+use crossbeam_channel::Sender;
 use git2::{FetchOptions, Repository};
 use push::remote_callbacks;
 use scopetime::scope_time;
+
+use self::push::ProgressNotification;
+
+use super::cred::BasicAuthCredential;
 
 /// origin
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
@@ -67,7 +72,12 @@ pub(crate) fn get_default_remote_in_repo(
 }
 
 ///
-pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
+pub(crate) fn fetch_origin(
+    repo_path: &str,
+    branch: &str,
+    basic_credential: Option<BasicAuthCredential>,
+    progress_sender: Option<Sender<ProgressNotification>>,
+) -> Result<usize> {
     scope_time!("fetch_origin");
 
     let repo = utils::repo(repo_path)?;
@@ -75,7 +85,10 @@ pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
         repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
 
     let mut options = FetchOptions::new();
-    options.remote_callbacks(remote_callbacks(None, None));
+    options.remote_callbacks(remote_callbacks(
+        progress_sender,
+        basic_credential,
+    ));
 
     remote.fetch(&[branch], Some(&mut options), None)?;
 
@@ -104,7 +117,7 @@ mod tests {
 
         assert_eq!(remotes, vec![String::from("origin")]);
 
-        fetch_origin(repo_path, "master").unwrap();
+        fetch_origin(repo_path, "master", None, None).unwrap();
     }
 
     #[test]

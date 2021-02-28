@@ -416,46 +416,9 @@ impl Status {
 
     fn fetch(&self) {
         if let Some(branch) = self.git_branch_name.last() {
-            match sync::fetch_origin(CWD, branch.as_str()) {
-                Err(e) => {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "fetch error:\n{}",
-                            e
-                        )),
-                    );
-                }
-                Ok(bytes) => {
-                    if bytes > 0
-                        || self
-                            .git_branch_state
-                            .as_ref()
-                            .map(|state| state.behind > 0)
-                            .unwrap_or_default()
-                    {
-                        let merge_res =
-                            sync::branch_merge_upstream_fastforward(
-                                CWD, &branch,
-                            );
-                        let msg = match merge_res {
-                            Err(err) => {
-                                format!("merge failed:\n{}", err)
-                            }
-                            Ok(_) => "merged".to_string(),
-                        };
-
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::ShowErrorMsg(msg),
-                        );
-                    } else {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::ShowErrorMsg(
-                                "nothing fetched".to_string(),
-                            ),
-                        );
-                    }
-                }
-            }
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::Fetch(branch));
         }
     }
 

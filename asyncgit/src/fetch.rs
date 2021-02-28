@@ -1,8 +1,8 @@
 use crate::{
     error::{Error, Result},
     sync::{
-        cred::BasicAuthCredential, remotes::push::push,
-        remotes::push::ProgressNotification,
+        cred::BasicAuthCredential,
+        remotes::{fetch_origin, push::ProgressNotification},
     },
     AsyncNotification, RemoteProgress, CWD,
 };
@@ -14,31 +14,29 @@ use std::{
 
 ///
 #[derive(Default, Clone, Debug)]
-pub struct PushRequest {
+pub struct FetchRequest {
     ///
     pub remote: String,
     ///
     pub branch: String,
     ///
-    pub force: bool,
-    ///
     pub basic_credential: Option<BasicAuthCredential>,
 }
 
 #[derive(Default, Clone, Debug)]
-struct PushState {
-    request: PushRequest,
+struct FetchState {
+    request: FetchRequest,
 }
 
 ///
-pub struct AsyncPush {
-    state: Arc<Mutex<Option<PushState>>>,
-    last_result: Arc<Mutex<Option<String>>>,
+pub struct AsyncFetch {
+    state: Arc<Mutex<Option<FetchState>>>,
+    last_result: Arc<Mutex<Option<(usize, String)>>>,
     progress: Arc<Mutex<Option<ProgressNotification>>>,
     sender: Sender<AsyncNotification>,
 }
 
-impl AsyncPush {
+impl AsyncFetch {
     ///
     pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         Self {
@@ -56,7 +54,7 @@ impl AsyncPush {
     }
 
     ///
-    pub fn last_result(&self) -> Result<Option<String>> {
+    pub fn last_result(&self) -> Result<Option<(usize, String)>> {
         let res = self.last_result.lock()?;
         Ok(res.clone())
     }
@@ -68,7 +66,7 @@ impl AsyncPush {
     }
 
     ///
-    pub fn request(&mut self, params: PushRequest) -> Result<()> {
+    pub fn request(&mut self, params: FetchRequest) -> Result<()> {
         log::trace!("request");
 
         if self.is_pending()? {
@@ -92,11 +90,9 @@ impl AsyncPush {
                 arc_progress,
             );
 
-            let res = push(
+            let res = fetch_origin(
                 CWD,
-                params.remote.as_str(),
-                params.branch.as_str(),
-                params.force,
+                &params.branch,
                 params.basic_credential,
                 Some(progress_sender.clone()),
             );
@@ -112,21 +108,21 @@ impl AsyncPush {
             Self::clear_request(arc_state).expect("clear error");
 
             sender
-                .send(AsyncNotification::Push)
-                .expect("error sending push");
+                .send(AsyncNotification::Fetch)
+                .expect("AsyncNotification error");
         });
 
         Ok(())
     }
 
-    fn set_request(&self, params: &PushRequest) -> Result<()> {
+    fn set_request(&self, params: &FetchRequest) -> Result<()> {
         let mut state = self.state.lock()?;
 
         if state.is_some() {
             return Err(Error::Generic("pending request".into()));
         }
 
-        *state = Some(PushState {
+        *state = Some(FetchState {
             request: params.clone(),
         });
 
@@ -134,7 +130,7 @@ impl AsyncPush {
     }
 
     fn clear_request(
-        state: Arc<Mutex<Option<PushState>>>,
+        state: Arc<Mutex<Option<FetchState>>>,
     ) -> Result<()> {
         let mut state = state.lock()?;
 
@@ -144,16 +140,16 @@ impl AsyncPush {
     }
 
     fn set_result(
-        arc_result: Arc<Mutex<Option<String>>>,
-        res: Result<()>,
+        arc_result: Arc<Mutex<Option<(usize, String)>>>,
+        res: Result<usize>,
     ) -> Result<()> {
         let mut last_res = arc_result.lock()?;
 
         *last_res = match res {
-            Ok(_) => None,
+            Ok(bytes) => Some((bytes, String::new())),
             Err(e) => {
-                log::error!("push error: {}", e);
-                Some(e.to_string())
+                log::error!("fetch error: {}", e);
+                Some((0, e.to_string()))
             }
         };
 

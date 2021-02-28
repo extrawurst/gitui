@@ -11,14 +11,14 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     sync::{
+        self,
         cred::{
             extract_username_password, need_username_password,
             BasicAuthCredential,
         },
         get_default_remote,
     },
-    AsyncNotification, AsyncPush, PushRequest, RemoteProgress,
-    RemoteProgressState, CWD,
+    AsyncFetch, AsyncNotification, FetchRequest, RemoteProgress, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -30,11 +30,12 @@ use tui::{
     Frame,
 };
 
+use super::PushComponent;
+
 ///
-pub struct PushComponent {
+pub struct FetchComponent {
     visible: bool,
-    force: bool,
-    git_push: AsyncPush,
+    git_fetch: AsyncFetch,
     progress: Option<RemoteProgress>,
     pending: bool,
     branch: String,
@@ -44,7 +45,7 @@ pub struct PushComponent {
     input_cred: CredComponent,
 }
 
-impl PushComponent {
+impl FetchComponent {
     ///
     pub fn new(
         queue: &Queue,
@@ -54,11 +55,10 @@ impl PushComponent {
     ) -> Self {
         Self {
             queue: queue.clone(),
-            force: false,
             pending: false,
             visible: false,
             branch: String::new(),
-            git_push: AsyncPush::new(sender),
+            git_fetch: AsyncFetch::new(sender),
             progress: None,
             input_cred: CredComponent::new(
                 theme.clone(),
@@ -70,13 +70,8 @@ impl PushComponent {
     }
 
     ///
-    pub fn push(
-        &mut self,
-        branch: String,
-        force: bool,
-    ) -> Result<()> {
+    pub fn fetch(&mut self, branch: String) -> Result<()> {
         self.branch = branch;
-        self.force = force;
         self.show()?;
         if need_username_password()? {
             let cred =
@@ -84,27 +79,25 @@ impl PushComponent {
                     BasicAuthCredential::new(None, None)
                 });
             if cred.is_complete() {
-                self.push_to_remote(Some(cred), force)
+                self.fetch_from_remote(Some(cred))
             } else {
                 self.input_cred.set_cred(cred);
                 self.input_cred.show()
             }
         } else {
-            self.push_to_remote(None, force)
+            self.fetch_from_remote(None)
         }
     }
 
-    fn push_to_remote(
+    fn fetch_from_remote(
         &mut self,
         cred: Option<BasicAuthCredential>,
-        force: bool,
     ) -> Result<()> {
         self.pending = true;
         self.progress = None;
-        self.git_push.request(PushRequest {
+        self.git_fetch.request(FetchRequest {
             remote: get_default_remote(CWD)?,
             branch: self.branch.clone(),
-            force,
             basic_credential: cred,
         })?;
         Ok(())
@@ -116,7 +109,7 @@ impl PushComponent {
         ev: AsyncNotification,
     ) -> Result<()> {
         if self.is_visible() {
-            if let AsyncNotification::Push = ev {
+            if let AsyncNotification::Fetch = ev {
                 self.update()?;
             }
         }
@@ -126,58 +119,44 @@ impl PushComponent {
 
     ///
     fn update(&mut self) -> Result<()> {
-        self.pending = self.git_push.is_pending()?;
-        self.progress = self.git_push.progress()?;
+        self.pending = self.git_fetch.is_pending()?;
+        self.progress = self.git_fetch.progress()?;
 
         if !self.pending {
-            if let Some(err) = self.git_push.last_result()? {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ShowErrorMsg(format!(
-                        "push failed:\n{}",
-                        err
-                    )),
-                );
+            if let Some((_bytes, err)) =
+                self.git_fetch.last_result()?
+            {
+                if err.is_empty() {
+                    let merge_res =
+                        sync::branch_merge_upstream_fastforward(
+                            CWD,
+                            &self.branch,
+                        );
+                    if let Err(err) = merge_res {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::ShowErrorMsg(format!(
+                                "merge failed:\n{}",
+                                err
+                            )),
+                        );
+                    }
+                } else {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(format!(
+                            "fetch failed:\n{}",
+                            err
+                        )),
+                    );
+                }
             }
             self.hide();
         }
 
         Ok(())
     }
-
-    pub fn get_progress(
-        progress: &Option<RemoteProgress>,
-    ) -> (String, u8) {
-        progress.as_ref().map_or(
-            (strings::PUSH_POPUP_PROGRESS_NONE.into(), 0),
-            |progress| {
-                (
-                    Self::progress_state_name(&progress.state),
-                    progress.progress,
-                )
-            },
-        )
-    }
-
-    fn progress_state_name(state: &RemoteProgressState) -> String {
-        match state {
-            RemoteProgressState::PackingAddingObject => {
-                strings::PUSH_POPUP_STATES_ADDING
-            }
-            RemoteProgressState::PackingDeltafiction => {
-                strings::PUSH_POPUP_STATES_DELTAS
-            }
-            RemoteProgressState::Pushing => {
-                strings::PUSH_POPUP_STATES_PUSHING
-            }
-            RemoteProgressState::Done => {
-                strings::PUSH_POPUP_STATES_DONE
-            }
-        }
-        .into()
-    }
 }
 
-impl DrawableComponent for PushComponent {
+impl DrawableComponent for FetchComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
@@ -185,7 +164,7 @@ impl DrawableComponent for PushComponent {
     ) -> Result<()> {
         if self.visible {
             let (state, progress) =
-                Self::get_progress(&self.progress);
+                PushComponent::get_progress(&self.progress);
 
             let area = ui::centered_rect_absolute(30, 3, f.size());
 
@@ -196,11 +175,7 @@ impl DrawableComponent for PushComponent {
                     .block(
                         Block::default()
                             .title(Span::styled(
-                                if self.force {
-                                    strings::FORCE_PUSH_POPUP_MSG
-                                } else {
-                                    strings::PUSH_POPUP_MSG
-                                },
+                                strings::FETCH_POPUP_MSG,
                                 self.theme.title(true),
                             ))
                             .borders(Borders::ALL)
@@ -218,7 +193,7 @@ impl DrawableComponent for PushComponent {
     }
 }
 
-impl Component for PushComponent {
+impl Component for FetchComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
@@ -248,10 +223,9 @@ impl Component for PushComponent {
                         return Ok(true);
                     } else if self.input_cred.get_cred().is_complete()
                     {
-                        self.push_to_remote(
-                            Some(self.input_cred.get_cred().clone()),
-                            self.force,
-                        )?;
+                        self.fetch_from_remote(Some(
+                            self.input_cred.get_cred().clone(),
+                        ))?;
                         self.input_cred.hide();
                     }
                 } else if e == self.key_config.exit_popup
