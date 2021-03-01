@@ -127,19 +127,7 @@ impl PullComponent {
                 self.git_fetch.last_result()?
             {
                 if err.is_empty() {
-                    let merge_res =
-                        sync::branch_merge_upstream_fastforward(
-                            CWD,
-                            &self.branch,
-                        );
-                    if let Err(err) = merge_res {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::ShowErrorMsg(format!(
-                                "merge failed:\n{}",
-                                err
-                            )),
-                        );
-                    }
+                    self.do_merge()?;
                 } else {
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ShowErrorMsg(format!(
@@ -150,6 +138,28 @@ impl PullComponent {
                 }
             }
             self.hide();
+        }
+
+        Ok(())
+    }
+
+    // check if something is incoming and try a ff merge then
+    fn do_merge(&self) -> Result<()> {
+        let branch_compare =
+            sync::branch_compare_upstream(CWD, &self.branch)?;
+        if branch_compare.behind > 0 {
+            let merge_res = sync::branch_merge_upstream_fastforward(
+                CWD,
+                &self.branch,
+            );
+            if let Err(err) = merge_res {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowErrorMsg(format!(
+                        "merge failed:\n{}",
+                        err
+                    )),
+                );
+            }
         }
 
         Ok(())
