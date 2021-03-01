@@ -104,7 +104,7 @@ impl PullComponent {
     }
 
     ///
-    pub fn any_work_pending(&self) -> bool {
+    pub const fn any_work_pending(&self) -> bool {
         self.pending
     }
 
