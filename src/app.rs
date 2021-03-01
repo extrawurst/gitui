@@ -329,6 +329,8 @@ impl App {
             || self.stashing_tab.anything_pending()
             || self.inspect_commit_popup.any_work_pending()
             || self.input.is_state_changing()
+            || self.push_popup.any_work_pending()
+            || self.fetch_popup.any_work_pending()
     }
 
     ///

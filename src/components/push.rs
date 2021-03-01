@@ -144,6 +144,12 @@ impl PushComponent {
         Ok(())
     }
 
+    ///
+    pub fn any_work_pending(&self) -> bool {
+        self.pending
+    }
+
+    ///
     pub fn get_progress(
         progress: &Option<RemoteProgress>,
     ) -> (String, u8) {

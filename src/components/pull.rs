@@ -104,6 +104,11 @@ impl PullComponent {
     }
 
     ///
+    pub fn any_work_pending(&self) -> bool {
+        self.pending
+    }
+
+    ///
     pub fn update_git(
         &mut self,
         ev: AsyncNotification,
