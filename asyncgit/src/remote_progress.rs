@@ -54,9 +54,6 @@ impl RemoteProgress {
         progress: Arc<Mutex<Option<ProgressNotification>>>,
         state: Option<ProgressNotification>,
     ) -> Result<()> {
-        let simple_progress: Option<RemoteProgress> =
-            state.as_ref().map(|prog| prog.clone().into());
-        log::info!("remote progress: {:?}", simple_progress);
         let mut progress = progress.lock()?;
 
         *progress = state;
@@ -71,8 +68,6 @@ impl RemoteProgress {
         receiver: Receiver<ProgressNotification>,
         progress: Arc<Mutex<Option<ProgressNotification>>>,
     ) -> JoinHandle<()> {
-        log::info!("push progress receiver spawned");
-
         thread::spawn(move || loop {
             let incoming = receiver.recv();
             match incoming {
@@ -87,7 +82,7 @@ impl RemoteProgress {
                         .expect("Notification error");
 
                     //NOTE: for better debugging
-                    thread::sleep(Duration::from_millis(100));
+                    thread::sleep(Duration::from_millis(10));
 
                     if let ProgressNotification::Done = update {
                         break;
@@ -107,7 +102,6 @@ impl RemoteProgress {
 
 impl From<ProgressNotification> for RemoteProgress {
     fn from(progress: ProgressNotification) -> Self {
-        log::info!("ProgressNotification: {:?}", progress);
         match progress {
             ProgressNotification::Packing {
                 stage,
