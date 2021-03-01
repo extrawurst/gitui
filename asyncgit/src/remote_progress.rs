@@ -13,7 +13,7 @@ use std::{
     time::Duration,
 };
 
-/// 
+///
 #[derive(Clone, Debug)]
 pub enum RemoteProgressState {
     ///
@@ -28,7 +28,7 @@ pub enum RemoteProgressState {
     Done,
 }
 
-/// 
+///
 #[derive(Clone, Debug)]
 pub struct RemoteProgress {
     ///
