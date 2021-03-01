@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**more info in commit popup**
+
 ![chars-branch-name](assets/chars_and_branchname.gif)
 
 ### Breaking Change
