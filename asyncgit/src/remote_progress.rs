@@ -22,7 +22,9 @@ pub enum RemoteProgressState {
     PackingDeltafiction,
     ///
     Pushing,
-    ///
+    /// fetch progress
+    Transfer,
+    /// remote progress done
     Done,
 }
 
@@ -31,7 +33,7 @@ pub enum RemoteProgressState {
 pub struct RemoteProgress {
     ///
     pub state: RemoteProgressState,
-    ///
+    /// percent 0..100
     pub progress: u8,
 }
 
@@ -52,9 +54,6 @@ impl RemoteProgress {
         progress: Arc<Mutex<Option<ProgressNotification>>>,
         state: Option<ProgressNotification>,
     ) -> Result<()> {
-        let simple_progress: Option<RemoteProgress> =
-            state.as_ref().map(|prog| prog.clone().into());
-        log::info!("remote progress: {:?}", simple_progress);
         let mut progress = progress.lock()?;
 
         *progress = state;
@@ -62,13 +61,13 @@ impl RemoteProgress {
         Ok(())
     }
 
+    /// spawn thread to listen to progress notifcations coming in from blocking remote git method (fetch/push)
     pub(crate) fn spawn_receiver_thread(
+        notification_type: AsyncNotification,
         sender: Sender<AsyncNotification>,
         receiver: Receiver<ProgressNotification>,
         progress: Arc<Mutex<Option<ProgressNotification>>>,
     ) -> JoinHandle<()> {
-        log::info!("push progress receiver spawned");
-
         thread::spawn(move || loop {
             let incoming = receiver.recv();
             match incoming {
@@ -79,11 +78,11 @@ impl RemoteProgress {
                     )
                     .expect("set prgoress failed");
                     sender
-                        .send(AsyncNotification::Push)
-                        .expect("error sending push");
+                        .send(notification_type)
+                        .expect("Notification error");
 
                     //NOTE: for better debugging
-                    thread::sleep(Duration::from_millis(100));
+                    thread::sleep(Duration::from_millis(1));
 
                     if let ProgressNotification::Done = update {
                         break;
@@ -132,6 +131,15 @@ impl From<ProgressNotification> for RemoteProgress {
                 RemoteProgressState::Pushing,
                 current,
                 total,
+            ),
+            ProgressNotification::Transfer {
+                objects,
+                total_objects,
+                ..
+            } => RemoteProgress::new(
+                RemoteProgressState::Transfer,
+                objects,
+                total_objects,
             ),
             _ => RemoteProgress::new(RemoteProgressState::Done, 1, 1),
         }

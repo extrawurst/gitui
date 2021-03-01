@@ -85,6 +85,7 @@ impl AsyncFetch {
             let (progress_sender, receiver) = unbounded();
 
             let handle = RemoteProgress::spawn_receiver_thread(
+                AsyncNotification::Fetch,
                 sender.clone(),
                 receiver,
                 arc_progress,
