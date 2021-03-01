@@ -62,6 +62,7 @@ impl RemoteProgress {
         Ok(())
     }
 
+    /// spawn thread to listen to progress notifcations coming in from blocking remote git method (fetch/push)
     pub(crate) fn spawn_receiver_thread(
         notification_type: AsyncNotification,
         sender: Sender<AsyncNotification>,
