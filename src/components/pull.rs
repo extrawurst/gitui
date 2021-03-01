@@ -143,7 +143,7 @@ impl PullComponent {
         Ok(())
     }
 
-    ///
+    // check if something is incoming and try a ff merge then
     fn do_merge(&self) -> Result<()> {
         let branch_compare =
             sync::branch_compare_upstream(CWD, &self.branch)?;
