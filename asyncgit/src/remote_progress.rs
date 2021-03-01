@@ -22,7 +22,7 @@ pub enum RemoteProgressState {
     PackingDeltafiction,
     ///
     Pushing,
-    ///
+    /// fetch progress
     Transfer,
     ///
     Done,
