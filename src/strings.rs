@@ -11,6 +11,7 @@ pub static PUSH_POPUP_PROGRESS_NONE: &str = "preparing...";
 pub static PUSH_POPUP_STATES_ADDING: &str = "adding objects (1/3)";
 pub static PUSH_POPUP_STATES_DELTAS: &str = "deltas (2/3)";
 pub static PUSH_POPUP_STATES_PUSHING: &str = "pushing (3/3)";
+pub static PUSH_POPUP_STATES_TRANSFER: &str = "transfer";
 pub static PUSH_POPUP_STATES_DONE: &str = "done";
 
 pub static SELECT_BRANCH_POPUP_MSG: &str = "Switch Branch";

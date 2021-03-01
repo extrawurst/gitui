@@ -23,6 +23,8 @@ pub enum RemoteProgressState {
     ///
     Pushing,
     ///
+    Transfer,
+    ///
     Done,
 }
 
@@ -135,6 +137,15 @@ impl From<ProgressNotification> for RemoteProgress {
                 RemoteProgressState::Pushing,
                 current,
                 total,
+            ),
+            ProgressNotification::Transfer {
+                objects,
+                total_objects,
+                ..
+            } => RemoteProgress::new(
+                RemoteProgressState::Transfer,
+                objects,
+                total_objects,
             ),
             _ => RemoteProgress::new(RemoteProgressState::Done, 1, 1),
         }

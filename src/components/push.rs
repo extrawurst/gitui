@@ -169,6 +169,9 @@ impl PushComponent {
             RemoteProgressState::Pushing => {
                 strings::PUSH_POPUP_STATES_PUSHING
             }
+            RemoteProgressState::Transfer => {
+                strings::PUSH_POPUP_STATES_TRANSFER
+            }
             RemoteProgressState::Done => {
                 strings::PUSH_POPUP_STATES_DONE
             }
