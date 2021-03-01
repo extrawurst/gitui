@@ -11,17 +11,16 @@ use scopetime::scope_time;
 ///
 pub fn merge_upstream_commit(
     repo_path: &str,
-    branch: &str,
+    branch_name: &str,
 ) -> Result<CommitId> {
     scope_time!("merge_upstream_commit");
 
     let repo = utils::repo(repo_path)?;
 
-    let branch = repo.find_branch(branch, BranchType::Local)?;
+    let branch = repo.find_branch(branch_name, BranchType::Local)?;
     let upstream = branch.upstream()?;
 
-    let upstream_commit =
-        upstream.into_reference().peel_to_commit()?;
+    let upstream_commit = upstream.get().peel_to_commit()?;
 
     let annotated_upstream =
         repo.find_annotated_commit(upstream_commit.id())?;
@@ -45,7 +44,7 @@ pub fn merge_upstream_commit(
 
     repo.merge(&[&annotated_upstream], Some(&mut opt), None)?;
 
-    assert!(!repo.index().unwrap().has_conflicts());
+    assert!(!repo.index()?.has_conflicts());
 
     let signature =
         crate::sync::commit::signature_allow_undefined_name(&repo)?;
@@ -63,7 +62,12 @@ pub fn merge_upstream_commit(
             Some("HEAD"),
             &signature,
             &signature,
-            "todo",
+            format!(
+                "Merge '{}' from {}",
+                branch_name,
+                upstream.get().shorthand().unwrap_or_default()
+            )
+            .as_str(),
             &tree,
             parents.as_slice(),
         )?
@@ -158,11 +162,22 @@ mod test {
         assert_eq!(state, RepoState::Merge);
 
         let commits = get_commit_ids(&clone1, 10);
-
         assert_eq!(commits.len(), 3);
         assert_eq!(commits[0], merge_commit);
         assert_eq!(commits[1], commit1);
         assert_eq!(commits[2], commit2);
+
+        //verify commit msg
+        let details = crate::sync::get_commit_details(
+            clone1_dir.path().to_str().unwrap(),
+            merge_commit,
+        )
+        .unwrap();
+        assert!(details
+            .message
+            .unwrap()
+            .combine()
+            .starts_with("Merge 'master' from "),);
     }
 
     #[test]
