@@ -33,7 +33,7 @@ use tui::{
 use super::PushComponent;
 
 ///
-pub struct FetchComponent {
+pub struct PullComponent {
     visible: bool,
     git_fetch: AsyncFetch,
     progress: Option<RemoteProgress>,
@@ -45,7 +45,7 @@ pub struct FetchComponent {
     input_cred: CredComponent,
 }
 
-impl FetchComponent {
+impl PullComponent {
     ///
     pub fn new(
         queue: &Queue,
@@ -156,7 +156,7 @@ impl FetchComponent {
     }
 }
 
-impl DrawableComponent for FetchComponent {
+impl DrawableComponent for PullComponent {
     fn draw<B: Backend>(
         &self,
         f: &mut Frame<B>,
@@ -193,7 +193,7 @@ impl DrawableComponent for FetchComponent {
     }
 }
 
-impl Component for FetchComponent {
+impl Component for PullComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,

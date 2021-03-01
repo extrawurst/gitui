@@ -30,7 +30,7 @@ pub use commitlist::CommitList;
 pub use create_branch::CreateBranchComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
-pub use fetch::FetchComponent;
+pub use fetch::PullComponent;
 pub use filetree::FileTreeComponent;
 pub use help::HelpComponent;
 pub use inspect_commit::InspectCommitComponent;
