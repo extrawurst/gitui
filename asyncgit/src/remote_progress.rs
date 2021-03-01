@@ -24,7 +24,7 @@ pub enum RemoteProgressState {
     Pushing,
     /// fetch progress
     Transfer,
-    ///
+    /// remote progress done
     Done,
 }
 
