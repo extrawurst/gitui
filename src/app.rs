@@ -45,7 +45,7 @@ pub struct App {
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
     push_popup: PushComponent,
-    fetch_popup: PullComponent,
+    pull_popup: PullComponent,
     tag_commit_popup: TagCommitComponent,
     create_branch_popup: CreateBranchComponent,
     rename_branch_popup: RenameBranchComponent,
@@ -111,7 +111,7 @@ impl App {
                 theme.clone(),
                 key_config.clone(),
             ),
-            fetch_popup: PullComponent::new(
+            pull_popup: PullComponent::new(
                 &queue,
                 sender,
                 theme.clone(),
@@ -308,7 +308,7 @@ impl App {
         self.revlog.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
         self.push_popup.update_git(ev)?;
-        self.fetch_popup.update_git(ev)?;
+        self.pull_popup.update_git(ev)?;
 
         //TODO: better system for this
         // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
@@ -330,7 +330,7 @@ impl App {
             || self.inspect_commit_popup.any_work_pending()
             || self.input.is_state_changing()
             || self.push_popup.any_work_pending()
-            || self.fetch_popup.any_work_pending()
+            || self.pull_popup.any_work_pending()
     }
 
     ///
@@ -356,7 +356,7 @@ impl App {
             inspect_commit_popup,
             external_editor_popup,
             push_popup,
-            fetch_popup,
+            pull_popup,
             tag_commit_popup,
             create_branch_popup,
             rename_branch_popup,
@@ -554,7 +554,7 @@ impl App {
                 flags.insert(NeedsUpdate::ALL)
             }
             InternalEvent::Pull(branch) => {
-                self.fetch_popup.fetch(branch)?;
+                self.pull_popup.fetch(branch)?;
                 flags.insert(NeedsUpdate::ALL)
             }
         };
@@ -617,7 +617,7 @@ impl App {
             || self.tag_commit_popup.is_visible()
             || self.create_branch_popup.is_visible()
             || self.push_popup.is_visible()
-            || self.fetch_popup.is_visible()
+            || self.pull_popup.is_visible()
             || self.select_branch_popup.is_visible()
             || self.rename_branch_popup.is_visible()
     }
@@ -647,7 +647,7 @@ impl App {
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;
-        self.fetch_popup.draw(f, size)?;
+        self.pull_popup.draw(f, size)?;
         self.reset.draw(f, size)?;
         self.msg.draw(f, size)?;
 
