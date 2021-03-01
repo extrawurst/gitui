@@ -30,7 +30,7 @@
 - Inspect, commit, and amend changes (incl. hooks: _commit-msg_/_post-commit_)
 - Stage, unstage, revert and reset files and hunks
 - Stashing (save, apply, drop, and inspect)
-- Push to remote
+- Push/Fetch to/from remote
 - Branch List (create, rename, delete)
 - Browse commit log, diff committed changes
 - Scalable terminal UI layout
@@ -55,7 +55,7 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 
 # Known Limitations
 
-- no support for `pull` yet (see [#90](https://github.com/extrawurst/gitui/issues/90))
+- no support for conflict resolution yet (see [#485](https://github.com/extrawurst/gitui/issues/485))
 - no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 - no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
 
@@ -172,7 +172,6 @@ The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to se
 These are the high level goals before calling out `1.0`:
 
 * upstream branches ([#453](https://github.com/extrawurst/gitui/issues/453))
-* simple pull (only for ff-merge) ([#319](https://github.com/extrawurst/gitui/issues/319))
 * merging with conflicts ([#485](https://github.com/extrawurst/gitui/issues/485))
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
 * file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
