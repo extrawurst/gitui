@@ -63,6 +63,7 @@ impl RemoteProgress {
     }
 
     pub(crate) fn spawn_receiver_thread(
+        notification_type: AsyncNotification,
         sender: Sender<AsyncNotification>,
         receiver: Receiver<ProgressNotification>,
         progress: Arc<Mutex<Option<ProgressNotification>>>,
@@ -79,8 +80,8 @@ impl RemoteProgress {
                     )
                     .expect("set prgoress failed");
                     sender
-                        .send(AsyncNotification::Push)
-                        .expect("error sending push");
+                        .send(notification_type)
+                        .expect("Notification error");
 
                     //NOTE: for better debugging
                     thread::sleep(Duration::from_millis(100));
@@ -103,6 +104,7 @@ impl RemoteProgress {
 
 impl From<ProgressNotification> for RemoteProgress {
     fn from(progress: ProgressNotification) -> Self {
+        log::info!("ProgressNotification: {:?}", progress);
         match progress {
             ProgressNotification::Packing {
                 stage,
