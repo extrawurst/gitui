@@ -1,6 +1,7 @@
 //! branch functions
 
-pub mod merge;
+pub mod merge_commit;
+pub mod merge_ff;
 pub mod rename;
 
 use super::{

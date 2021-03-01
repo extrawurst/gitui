@@ -25,8 +25,8 @@ pub mod utils;
 pub use branch::{
     branch_compare_upstream, checkout_branch, create_branch,
     delete_branch, get_branches_info,
-    merge::branch_merge_upstream_fastforward, rename::rename_branch,
-    BranchCompare, BranchInfo,
+    merge_ff::branch_merge_upstream_fastforward,
+    rename::rename_branch, BranchCompare, BranchInfo,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
