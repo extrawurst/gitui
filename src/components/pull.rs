@@ -185,7 +185,7 @@ impl DrawableComponent for PullComponent {
                     .block(
                         Block::default()
                             .title(Span::styled(
-                                strings::FETCH_POPUP_MSG,
+                                strings::PULL_POPUP_MSG,
                                 self.theme.title(true),
                             ))
                             .borders(Borders::ALL)

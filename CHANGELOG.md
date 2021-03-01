@@ -7,15 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**more info in commit popup**
+
+![chars-branch-name](assets/chars_and_branchname.gif)
+
+**pull support (only ff-merge)**
+
+![pull](assets/pull.gif)
+
 ### Breaking Change
 - MacOS config directory now uses `~/.config/gitui` [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317)) 
 
 ### Added
-- support smoother left/right toggle for commit details ([#418](https://github.com/extrawurst/gitui/issues/418))
-- support *force push* command [[@WizardOhio24](https://github.com/WizardOhio24)] ([#274](https://github.com/extrawurst/gitui/issues/274)) 
+- support for pull (fetch + ff-only merge) ([#319](https://github.com/extrawurst/gitui/issues/319))
 - show used char count in input texts ([#466](https://github.com/extrawurst/gitui/issues/466))
-
-![charcount](assets/char_count.gif)
+- support smoother left/right toggle/keys for commit details ([#418](https://github.com/extrawurst/gitui/issues/418))
+- support *force push* command [[@WizardOhio24](https://github.com/WizardOhio24)] ([#274](https://github.com/extrawurst/gitui/issues/274)) 
 
 ### Fixed
 - don't close branchlist every time ([#550](https://github.com/extrawurst/gitui/issues/550))
