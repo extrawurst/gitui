@@ -79,6 +79,8 @@ pub fn merge_upstream_commit(
         )?
         .into();
 
+    repo.cleanup_state()?;
+
     Ok(commit_id)
 }
 
@@ -165,7 +167,7 @@ mod test {
         )
         .unwrap();
 
-        assert_eq!(state, RepoState::Merge);
+        assert_eq!(state, RepoState::Clean);
 
         let commits = get_commit_ids(&clone1, 10);
         assert_eq!(commits.len(), 3);
