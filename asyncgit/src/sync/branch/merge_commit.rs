@@ -89,6 +89,7 @@ mod test {
     use super::super::merge_ff::test::write_commit_file;
     use super::*;
     use crate::sync::{
+        branch_compare_upstream,
         remotes::{fetch_origin, push::push},
         tests::{
             debug_cmd_print, get_commit_ids, repo_clone,
@@ -107,6 +108,8 @@ mod test {
         let (clone2_dir, clone2) =
             repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
 
+        let clone2_dir = clone2_dir.path().to_str().unwrap();
+
         // clone1
 
         let commit1 =
@@ -123,10 +126,6 @@ mod test {
         .unwrap();
 
         // clone2
-        debug_cmd_print(
-            clone2_dir.path().to_str().unwrap(),
-            "git pull --ff",
-        );
 
         let commit2 = write_commit_file(
             &clone2,
@@ -135,52 +134,42 @@ mod test {
             "commit2",
         );
 
-        push(
-            clone2_dir.path().to_str().unwrap(),
-            "origin",
-            "master",
-            false,
-            None,
-            None,
+        //push should fail since origin diverged
+        assert!(push(
+            clone2_dir, "origin", "master", false, None, None,
         )
-        .unwrap();
+        .is_err());
 
-        // clone1 again
-
-        let bytes = fetch_origin(
-            clone1_dir.path().to_str().unwrap(),
-            "master",
-            None,
-            None,
-        )
-        .unwrap();
+        //lets fetch from origin
+        let bytes =
+            fetch_origin(clone2_dir, "master", None, None).unwrap();
         assert!(bytes > 0);
 
-        let merge_commit = merge_upstream_commit(
-            clone1_dir.path().to_str().unwrap(),
-            "master",
-        )
-        .unwrap();
+        //we should be one commit behind
+        assert_eq!(
+            branch_compare_upstream(clone2_dir, "master")
+                .unwrap()
+                .behind,
+            1
+        );
 
-        let state = crate::sync::repo_state(
-            clone1_dir.path().to_str().unwrap(),
-        )
-        .unwrap();
+        let merge_commit =
+            merge_upstream_commit(clone2_dir, "master").unwrap();
+
+        let state = crate::sync::repo_state(clone2_dir).unwrap();
 
         assert_eq!(state, RepoState::Clean);
 
-        let commits = get_commit_ids(&clone1, 10);
+        let commits = get_commit_ids(&clone2, 10);
         assert_eq!(commits.len(), 3);
         assert_eq!(commits[0], merge_commit);
-        assert_eq!(commits[1], commit1);
-        assert_eq!(commits[2], commit2);
+        assert_eq!(commits[1], commit2);
+        assert_eq!(commits[2], commit1);
 
         //verify commit msg
-        let details = crate::sync::get_commit_details(
-            clone1_dir.path().to_str().unwrap(),
-            merge_commit,
-        )
-        .unwrap();
+        let details =
+            crate::sync::get_commit_details(clone2_dir, merge_commit)
+                .unwrap();
         assert_eq!(
             details.message.unwrap().combine(),
             format!(
@@ -203,6 +192,11 @@ mod test {
         // clone1
 
         write_commit_file(&clone1, "test.bin", "test", "commit1");
+
+        debug_cmd_print(
+            clone2_dir.path().to_str().unwrap(),
+            "git status",
+        );
 
         push(
             clone1_dir.path().to_str().unwrap(),
