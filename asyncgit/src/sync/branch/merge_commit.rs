@@ -57,17 +57,23 @@ pub fn merge_upstream_commit(
     )?;
     let parents = vec![&head_commit, &upstream_commit];
 
+    let branch_refname = branch.get().name().ok_or_else(|| {
+        Error::Generic(String::from("branch refname not found"))
+    })?;
+    let buf = repo.branch_upstream_remote(branch_refname)?;
+    let remote_name = buf.as_str().ok_or_else(|| {
+        Error::Generic(String::from("remote name not found"))
+    })?;
+    let remote = repo.find_remote(remote_name)?;
+    let remote_url = remote.url().unwrap_or_default();
+
     let commit_id = repo
         .commit(
             Some("HEAD"),
             &signature,
             &signature,
-            format!(
-                "Merge '{}' from {}",
-                branch_name,
-                upstream.get().shorthand().unwrap_or_default()
-            )
-            .as_str(),
+            format!("Merge '{}' from {}", branch_name, remote_url)
+                .as_str(),
             &tree,
             parents.as_slice(),
         )?
@@ -173,11 +179,13 @@ mod test {
             merge_commit,
         )
         .unwrap();
-        assert!(details
-            .message
-            .unwrap()
-            .combine()
-            .starts_with("Merge 'master' from "),);
+        assert_eq!(
+            details.message.unwrap().combine(),
+            format!(
+                "Merge 'master' from {}",
+                r1_dir.path().to_str().unwrap()
+            )
+        );
     }
 
     #[test]
