@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![chars-branch-name](assets/chars_and_branchname.gif)
 
-**pull support (only ff-merge)**
+**pull support (ff-merge or conflict-free merge-commit)**
 
 ![pull](assets/pull.gif)
 
