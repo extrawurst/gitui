@@ -33,6 +33,7 @@ pub fn branch_merge_upstream_fastforward(
         ));
     }
 
+    //TODO: support merge on unborn
     if analysis.is_unborn() {
         return Err(Error::Generic("head is unborn".into()));
     }
@@ -45,7 +46,7 @@ pub fn branch_merge_upstream_fastforward(
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use super::*;
     use crate::sync::{
         commit,
@@ -61,7 +62,7 @@ mod test {
     use std::{fs::File, io::Write, path::Path};
 
     // write, stage and commit a file
-    fn write_commit_file(
+    pub fn write_commit_file(
         repo: &Repository,
         file: &str,
         content: &str,
@@ -85,7 +86,7 @@ mod test {
     }
 
     #[test]
-    fn test_merge() {
+    fn test_merge_fastforward() {
         let (r1_dir, _repo) = repo_init_bare().unwrap();
 
         let (clone1_dir, clone1) =
