@@ -1,3 +1,4 @@
+use super::PushComponent;
 use crate::{
     components::{
         cred::CredComponent, visibility_blocking, CommandBlocking,
@@ -5,7 +6,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
-    strings,
+    strings, try_or_popup,
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
@@ -29,8 +30,6 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Gauge},
     Frame,
 };
-
-use super::PushComponent;
 
 ///
 pub struct PullComponent {
@@ -158,11 +157,12 @@ impl PullComponent {
                 &self.branch,
             );
             if let Err(err) = merge_res {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ShowErrorMsg(format!(
-                        "merge failed:\n{}",
-                        err
-                    )),
+                log::error!("ff merge failed: {}", err);
+
+                try_or_popup!(
+                    self,
+                    "merge failed:",
+                    sync::merge_upstream_commit(CWD, &self.branch)
                 );
             }
         }

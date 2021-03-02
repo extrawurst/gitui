@@ -8,7 +8,7 @@ use crate::{
 use git2::MergeOptions;
 use scopetime::scope_time;
 
-///
+/// merge upstream using a merge commit without conflicts. fails if not possible without conflicts
 pub fn merge_upstream_commit(
     repo_path: &str,
     branch_name: &str,
@@ -57,15 +57,21 @@ pub fn merge_upstream_commit(
     )?;
     let parents = vec![&head_commit, &upstream_commit];
 
-    let branch_refname = branch.get().name().ok_or_else(|| {
-        Error::Generic(String::from("branch refname not found"))
-    })?;
-    let buf = repo.branch_upstream_remote(branch_refname)?;
-    let remote_name = buf.as_str().ok_or_else(|| {
-        Error::Generic(String::from("remote name not found"))
-    })?;
-    let remote = repo.find_remote(remote_name)?;
-    let remote_url = remote.url().unwrap_or_default();
+    //find remote url for this branch
+    let remote_url = {
+        let branch_refname =
+            branch.get().name().ok_or_else(|| {
+                Error::Generic(String::from(
+                    "branch refname not found",
+                ))
+            })?;
+        let buf = repo.branch_upstream_remote(branch_refname)?;
+        let remote =
+            repo.find_remote(buf.as_str().ok_or_else(|| {
+                Error::Generic(String::from("remote name not found"))
+            })?)?;
+        remote.url().unwrap_or_default().to_string()
+    };
 
     let commit_id = repo
         .commit(
