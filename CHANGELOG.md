@@ -7,13 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-**more info in commit popup**
-
-![chars-branch-name](assets/chars_and_branchname.gif)
-
 **pull support (ff-merge or conflict-free merge-commit)**
 
 ![pull](assets/pull.gif)
+
+**more info in commit popup**
+
+![chars-branch-name](assets/chars_and_branchname.gif)
 
 ### Breaking Change
 - MacOS config directory now uses `~/.config/gitui` [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317)) 
