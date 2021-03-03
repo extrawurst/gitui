@@ -35,7 +35,7 @@ enum Focus {
     Stage,
 }
 
-///
+/// which target are we showing a diff against
 #[derive(PartialEq, Copy, Clone)]
 enum DiffTarget {
     Stage,
