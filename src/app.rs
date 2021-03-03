@@ -34,7 +34,7 @@ use tui::{
     Frame,
 };
 
-///
+/// the main app type
 pub struct App {
     do_quit: bool,
     help: HelpComponent,
