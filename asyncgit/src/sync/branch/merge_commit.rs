@@ -179,7 +179,7 @@ mod test {
         assert_eq!(
             details.message.unwrap().combine(),
             format!(
-                "Merge 'master' from {}",
+                "Merge 'master' of {}",
                 r1_dir.path().to_str().unwrap()
             )
         );
