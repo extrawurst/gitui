@@ -78,7 +78,7 @@ pub fn merge_upstream_commit(
             Some("HEAD"),
             &signature,
             &signature,
-            format!("Merge '{}' from {}", branch_name, remote_url)
+            format!("Merge '{}' of {}", branch_name, remote_url)
                 .as_str(),
             &tree,
             parents.as_slice(),
