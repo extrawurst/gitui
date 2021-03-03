@@ -1,8 +1,14 @@
 use super::PushComponent;
-use crate::{components::{
+use crate::{
+    components::{
         cred::CredComponent, visibility_blocking, CommandBlocking,
         CommandInfo, Component, DrawableComponent,
-    }, keys::SharedKeyConfig, queue::{Action, InternalEvent, Queue}, strings, try_or_popup, ui::{self, style::SharedTheme}};
+    },
+    keys::SharedKeyConfig,
+    queue::{Action, InternalEvent, Queue},
+    strings, try_or_popup,
+    ui::{self, style::SharedTheme},
+};
 use anyhow::Result;
 use asyncgit::{
     sync::{
@@ -182,33 +188,30 @@ impl DrawableComponent for PullComponent {
         rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            if self.pending {
-                let (state, progress) =
-                    PushComponent::get_progress(&self.progress);
+            let (state, progress) =
+                PushComponent::get_progress(&self.progress);
 
-                let area =
-                    ui::centered_rect_absolute(30, 3, f.size());
+            let area = ui::centered_rect_absolute(30, 3, f.size());
 
-                f.render_widget(Clear, area);
-                f.render_widget(
-                    Gauge::default()
-                        .label(state.as_str())
-                        .block(
-                            Block::default()
-                                .title(Span::styled(
-                                    strings::PULL_POPUP_MSG,
-                                    self.theme.title(true),
-                                ))
-                                .borders(Borders::ALL)
-                                .border_type(BorderType::Thick)
-                                .border_style(self.theme.block(true)),
-                        )
-                        .gauge_style(self.theme.push_gauge())
-                        .percent(u16::from(progress)),
-                    area,
-                );
-                self.input_cred.draw(f, rect)?;
-            }
+            f.render_widget(Clear, area);
+            f.render_widget(
+                Gauge::default()
+                    .label(state.as_str())
+                    .block(
+                        Block::default()
+                            .title(Span::styled(
+                                strings::PULL_POPUP_MSG,
+                                self.theme.title(true),
+                            ))
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Thick)
+                            .border_style(self.theme.block(true)),
+                    )
+                    .gauge_style(self.theme.push_gauge())
+                    .percent(u16::from(progress)),
+                area,
+            );
+            self.input_cred.draw(f, rect)?;
         }
 
         Ok(())
