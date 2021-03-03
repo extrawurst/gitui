@@ -27,7 +27,7 @@ use tui::{
     widgets::Paragraph,
 };
 
-///
+/// what part of the screen is focused
 #[derive(PartialEq)]
 enum Focus {
     WorkDir,
