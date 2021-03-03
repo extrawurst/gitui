@@ -317,6 +317,9 @@ impl Status {
         match ev {
             AsyncNotification::Diff => self.update_diff()?,
             AsyncNotification::Status => self.update_status()?,
+            AsyncNotification::Push | AsyncNotification::Fetch => {
+                self.branch_compare()
+            }
             _ => (),
         }
 
