@@ -27,7 +27,7 @@ use tui::{
     widgets::Paragraph,
 };
 
-///
+/// what part of the screen is focused
 #[derive(PartialEq)]
 enum Focus {
     WorkDir,
@@ -35,7 +35,7 @@ enum Focus {
     Stage,
 }
 
-///
+/// which target are we showing a diff against
 #[derive(PartialEq, Copy, Clone)]
 enum DiffTarget {
     Stage,
@@ -317,6 +317,9 @@ impl Status {
         match ev {
             AsyncNotification::Diff => self.update_diff()?,
             AsyncNotification::Status => self.update_status()?,
+            AsyncNotification::Push
+            | AsyncNotification::Fetch
+            | AsyncNotification::CommitFiles => self.branch_compare(),
             _ => (),
         }
 
