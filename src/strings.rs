@@ -90,6 +90,15 @@ pub fn confirm_title_stashdrop(
 ) -> String {
     "Drop".to_string()
 }
+pub fn confirm_title_merge(_key_config: &SharedKeyConfig) -> String {
+    "Merge".to_string()
+}
+pub fn confirm_msg_merge(
+    _key_config: &SharedKeyConfig,
+    incoming: usize,
+) -> String {
+    format!("confirm merge of {} incoming commits? ", incoming)
+}
 pub fn confirm_msg_reset(_key_config: &SharedKeyConfig) -> String {
     "confirm file reset?".to_string()
 }
@@ -599,7 +608,7 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn reset_confirm(
+    pub fn confirm_action(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
         CommandText::new(
@@ -607,7 +616,7 @@ pub mod commands {
                 "Confirm [{}]",
                 key_config.get_hint(key_config.enter),
             ),
-            "resets the file in question",
+            "confirm action",
             CMD_GROUP_GENERAL,
         )
     }

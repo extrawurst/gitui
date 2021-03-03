@@ -509,6 +509,10 @@ impl App {
                     .queue
                     .borrow_mut()
                     .push_back(InternalEvent::Push(branch, force)),
+                Action::PullMerge(_) => {
+                    self.pull_popup.try_conflict_free_merge();
+                    flags.insert(NeedsUpdate::ALL);
+                }
             },
             InternalEvent::ConfirmAction(action) => {
                 self.reset.open(action)?;

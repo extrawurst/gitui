@@ -1,14 +1,8 @@
 use super::PushComponent;
-use crate::{
-    components::{
+use crate::{components::{
         cred::CredComponent, visibility_blocking, CommandBlocking,
         CommandInfo, Component, DrawableComponent,
-    },
-    keys::SharedKeyConfig,
-    queue::{InternalEvent, Queue},
-    strings, try_or_popup,
-    ui::{self, style::SharedTheme},
-};
+    }, keys::SharedKeyConfig, queue::{Action, InternalEvent, Queue}, strings, try_or_popup, ui::{self, style::SharedTheme}};
 use anyhow::Result;
 use asyncgit::{
     sync::{
@@ -131,7 +125,7 @@ impl PullComponent {
                 self.git_fetch.last_result()?
             {
                 if err.is_empty() {
-                    self.do_merge()?;
+                    self.try_ff_merge()?;
                 } else {
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ShowErrorMsg(format!(
@@ -141,14 +135,13 @@ impl PullComponent {
                     );
                 }
             }
-            self.hide();
         }
 
         Ok(())
     }
 
     // check if something is incoming and try a ff merge then
-    fn do_merge(&self) -> Result<()> {
+    fn try_ff_merge(&mut self) -> Result<()> {
         let branch_compare =
             sync::branch_compare_upstream(CWD, &self.branch)?;
         if branch_compare.behind > 0 {
@@ -157,17 +150,28 @@ impl PullComponent {
                 &self.branch,
             );
             if let Err(err) = merge_res {
-                log::error!("ff merge failed: {}", err);
-
-                try_or_popup!(
-                    self,
-                    "merge failed:",
-                    sync::merge_upstream_commit(CWD, &self.branch)
-                );
+                log::trace!("ff merge failed: {}", err);
+                self.confirm_merge(branch_compare.behind);
+            } else {
+                self.hide();
             }
         }
 
         Ok(())
+    }
+
+    pub fn try_conflict_free_merge(&self) {
+        try_or_popup!(
+            self,
+            "merge failed:",
+            sync::merge_upstream_commit(CWD, &self.branch)
+        );
+    }
+
+    fn confirm_merge(&self, incoming: usize) {
+        self.queue.borrow_mut().push_back(
+            InternalEvent::ConfirmAction(Action::PullMerge(incoming)),
+        );
     }
 }
 
@@ -178,30 +182,33 @@ impl DrawableComponent for PullComponent {
         rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            let (state, progress) =
-                PushComponent::get_progress(&self.progress);
+            if self.pending {
+                let (state, progress) =
+                    PushComponent::get_progress(&self.progress);
 
-            let area = ui::centered_rect_absolute(30, 3, f.size());
+                let area =
+                    ui::centered_rect_absolute(30, 3, f.size());
 
-            f.render_widget(Clear, area);
-            f.render_widget(
-                Gauge::default()
-                    .label(state.as_str())
-                    .block(
-                        Block::default()
-                            .title(Span::styled(
-                                strings::PULL_POPUP_MSG,
-                                self.theme.title(true),
-                            ))
-                            .borders(Borders::ALL)
-                            .border_type(BorderType::Thick)
-                            .border_style(self.theme.block(true)),
-                    )
-                    .gauge_style(self.theme.push_gauge())
-                    .percent(u16::from(progress)),
-                area,
-            );
-            self.input_cred.draw(f, rect)?;
+                f.render_widget(Clear, area);
+                f.render_widget(
+                    Gauge::default()
+                        .label(state.as_str())
+                        .block(
+                            Block::default()
+                                .title(Span::styled(
+                                    strings::PULL_POPUP_MSG,
+                                    self.theme.title(true),
+                                ))
+                                .borders(Borders::ALL)
+                                .border_type(BorderType::Thick)
+                                .border_style(self.theme.block(true)),
+                        )
+                        .gauge_style(self.theme.push_gauge())
+                        .percent(u16::from(progress)),
+                    area,
+                );
+                self.input_cred.draw(f, rect)?;
+            }
         }
 
         Ok(())
@@ -232,7 +239,7 @@ impl Component for PullComponent {
 
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
-            if let Event::Key(e) = ev {
+            if let Event::Key(_) = ev {
                 if self.input_cred.is_visible() {
                     if self.input_cred.event(ev)? {
                         return Ok(true);
@@ -243,10 +250,6 @@ impl Component for PullComponent {
                         ))?;
                         self.input_cred.hide();
                     }
-                } else if e == self.key_config.exit_popup
-                    && !self.pending
-                {
-                    self.hide();
                 }
             }
             return Ok(true);

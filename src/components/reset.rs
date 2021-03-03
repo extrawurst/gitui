@@ -57,7 +57,7 @@ impl Component for ResetComponent {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            strings::commands::reset_confirm(&self.key_config),
+            strings::commands::confirm_action(&self.key_config),
             true,
             self.visible,
         ));
@@ -168,6 +168,10 @@ impl ResetComponent {
                         &self.key_config,
                         branch.rsplit('/').next().expect("There was no / in the head reference which is impossible in git"),
                     ),
+                ),
+                Action::PullMerge(incoming) => (
+                    strings::confirm_title_merge(&self.key_config),
+                    strings::confirm_msg_merge(&self.key_config,*incoming),
                 ),
             };
         }
