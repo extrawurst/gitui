@@ -5,7 +5,7 @@ use crate::{
         CommandInfo, Component, DrawableComponent,
     },
     keys::SharedKeyConfig,
-    queue::{InternalEvent, Queue},
+    queue::{Action, InternalEvent, Queue},
     strings, try_or_popup,
     ui::{self, style::SharedTheme},
 };
@@ -131,7 +131,7 @@ impl PullComponent {
                 self.git_fetch.last_result()?
             {
                 if err.is_empty() {
-                    self.do_merge()?;
+                    self.try_ff_merge()?;
                 } else {
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ShowErrorMsg(format!(
@@ -141,14 +141,13 @@ impl PullComponent {
                     );
                 }
             }
-            self.hide();
         }
 
         Ok(())
     }
 
     // check if something is incoming and try a ff merge then
-    fn do_merge(&self) -> Result<()> {
+    fn try_ff_merge(&mut self) -> Result<()> {
         let branch_compare =
             sync::branch_compare_upstream(CWD, &self.branch)?;
         if branch_compare.behind > 0 {
@@ -157,17 +156,29 @@ impl PullComponent {
                 &self.branch,
             );
             if let Err(err) = merge_res {
-                log::error!("ff merge failed: {}", err);
-
-                try_or_popup!(
-                    self,
-                    "merge failed:",
-                    sync::merge_upstream_commit(CWD, &self.branch)
-                );
+                log::trace!("ff merge failed: {}", err);
+                self.confirm_merge(branch_compare.behind);
+            } else {
+                self.hide();
             }
         }
 
         Ok(())
+    }
+
+    pub fn try_conflict_free_merge(&self) {
+        try_or_popup!(
+            self,
+            "merge failed:",
+            sync::merge_upstream_commit(CWD, &self.branch)
+        );
+    }
+
+    fn confirm_merge(&mut self, incoming: usize) {
+        self.queue.borrow_mut().push_back(
+            InternalEvent::ConfirmAction(Action::PullMerge(incoming)),
+        );
+        self.hide();
     }
 }
 
@@ -232,7 +243,7 @@ impl Component for PullComponent {
 
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.visible {
-            if let Event::Key(e) = ev {
+            if let Event::Key(_) = ev {
                 if self.input_cred.is_visible() {
                     if self.input_cred.event(ev)? {
                         return Ok(true);
@@ -243,10 +254,6 @@ impl Component for PullComponent {
                         ))?;
                         self.input_cred.hide();
                     }
-                } else if e == self.key_config.exit_popup
-                    && !self.pending
-                {
-                    self.hide();
                 }
             }
             return Ok(true);
