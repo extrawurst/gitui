@@ -174,10 +174,11 @@ impl PullComponent {
         );
     }
 
-    fn confirm_merge(&self, incoming: usize) {
+    fn confirm_merge(&mut self, incoming: usize) {
         self.queue.borrow_mut().push_back(
             InternalEvent::ConfirmAction(Action::PullMerge(incoming)),
         );
+        self.hide();
     }
 }
 
