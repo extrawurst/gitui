@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MacOS config directory now uses `~/.config/gitui` [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317)) 
 
 ### Added
-- support for pull (fetch + ff-only merge) ([#319](https://github.com/extrawurst/gitui/issues/319))
+- support for pull (fetch + simple merging) ([#319](https://github.com/extrawurst/gitui/issues/319))
 - show used char count in input texts ([#466](https://github.com/extrawurst/gitui/issues/466))
 - support smoother left/right toggle/keys for commit details ([#418](https://github.com/extrawurst/gitui/issues/418))
 - support *force push* command [[@WizardOhio24](https://github.com/WizardOhio24)] ([#274](https://github.com/extrawurst/gitui/issues/274)) 
