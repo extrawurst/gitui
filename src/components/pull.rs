@@ -158,10 +158,10 @@ impl PullComponent {
             if let Err(err) = merge_res {
                 log::trace!("ff merge failed: {}", err);
                 self.confirm_merge(branch_compare.behind);
-            } else {
-                self.hide();
             }
         }
+
+        self.hide();
 
         Ok(())
     }
