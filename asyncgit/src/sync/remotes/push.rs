@@ -207,13 +207,12 @@ pub(crate) fn remote_callbacks<'a>(
 
 #[cfg(test)]
 mod tests {
-    use git2::Repository;
-
     use super::*;
     use crate::sync::{
         self,
         tests::{get_commit_ids, repo_init, repo_init_bare},
     };
+    use git2::Repository;
     use std::{fs::File, io::Write, path::Path};
 
     #[test]

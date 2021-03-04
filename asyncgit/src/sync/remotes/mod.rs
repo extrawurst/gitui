@@ -1,6 +1,7 @@
 //!
 
 pub(crate) mod push;
+pub(crate) mod tags;
 
 use crate::{
     error::{Error, Result},
