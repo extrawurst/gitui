@@ -57,8 +57,6 @@ pub fn merge_upstream_commit(
     )?;
     let parents = vec![&head_commit, &upstream_commit];
 
-    dbg!(&repo.merge_base(head_commit.id(), annotated_upstream.id()));
-
     //find remote url for this branch
     let remote_url = {
         let branch_refname =
