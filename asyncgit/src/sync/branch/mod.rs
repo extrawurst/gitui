@@ -2,6 +2,7 @@
 
 pub mod merge_commit;
 pub mod merge_ff;
+pub mod merge_rebase;
 pub mod rename;
 
 use super::{
