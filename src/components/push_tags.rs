@@ -5,9 +5,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
-    strings::{
-        self, PUSH_TAGS_STATES_DONE, PUSH_TAGS_STATES_PUSHING,
-    },
+    strings::{self},
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
