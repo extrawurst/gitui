@@ -1,7 +1,10 @@
 //!
 
 pub(crate) mod push;
+pub(crate) mod tags;
 
+use self::push::ProgressNotification;
+use super::cred::BasicAuthCredential;
 use crate::{
     error::{Error, Result},
     sync::utils,
@@ -10,10 +13,6 @@ use crossbeam_channel::Sender;
 use git2::{FetchOptions, Repository};
 use push::remote_callbacks;
 use scopetime::scope_time;
-
-use self::push::ProgressNotification;
-
-use super::cred::BasicAuthCredential;
 
 /// origin
 pub const DEFAULT_REMOTE_NAME: &str = "origin";

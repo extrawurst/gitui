@@ -1,6 +1,7 @@
 use super::utils;
 use crate::{
     error::Result,
+    progress::ProgressPercent,
     sync::{
         branch::branch_set_upstream, cred::BasicAuthCredential,
         CommitId,
@@ -14,7 +15,15 @@ use git2::{
 use scopetime::scope_time;
 
 ///
-#[derive(Debug, Clone)]
+pub trait AsyncProgress: Clone + Send + Sync {
+    ///
+    fn is_done(&self) -> bool;
+    ///
+    fn progress(&self) -> ProgressPercent;
+}
+
+///
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum ProgressNotification {
     ///
     UpdateTips {
@@ -52,6 +61,39 @@ pub(crate) enum ProgressNotification {
     },
     ///
     Done,
+}
+
+impl AsyncProgress for ProgressNotification {
+    fn is_done(&self) -> bool {
+        *self == ProgressNotification::Done
+    }
+    fn progress(&self) -> ProgressPercent {
+        match *self {
+            ProgressNotification::Packing {
+                stage,
+                current,
+                total,
+            } => match stage {
+                PackBuilderStage::AddingObjects => {
+                    ProgressPercent::new(current, total)
+                }
+                PackBuilderStage::Deltafication => {
+                    ProgressPercent::new(current, total)
+                }
+            },
+            ProgressNotification::PushTransfer {
+                current,
+                total,
+                ..
+            } => ProgressPercent::new(current, total),
+            ProgressNotification::Transfer {
+                objects,
+                total_objects,
+                ..
+            } => ProgressPercent::new(objects, total_objects),
+            _ => ProgressPercent::full(),
+        }
+    }
 }
 
 ///
@@ -207,13 +249,12 @@ pub(crate) fn remote_callbacks<'a>(
 
 #[cfg(test)]
 mod tests {
-    use git2::Repository;
-
     use super::*;
     use crate::sync::{
         self,
         tests::{get_commit_ids, repo_init, repo_init_bare},
     };
+    use git2::Repository;
     use std::{fs::File, io::Write, path::Path};
 
     #[test]

@@ -65,6 +65,8 @@ pub enum InternalEvent {
     Push(String, bool),
     ///
     Pull(String),
+    ///
+    PushTags,
 }
 
 ///

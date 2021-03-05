@@ -15,7 +15,9 @@ mod commit_files;
 mod diff;
 mod error;
 mod fetch;
+mod progress;
 mod push;
+mod push_tags;
 pub mod remote_progress;
 mod revlog;
 mod status;
@@ -27,6 +29,7 @@ pub use crate::{
     diff::{AsyncDiff, DiffParams, DiffType},
     fetch::{AsyncFetch, FetchRequest},
     push::{AsyncPush, PushRequest},
+    push_tags::{AsyncPushTags, PushTagsRequest},
     remote_progress::{RemoteProgress, RemoteProgressState},
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
@@ -58,6 +61,8 @@ pub enum AsyncNotification {
     Tags,
     ///
     Push,
+    ///
+    PushTags,
     ///
     Fetch,
 }

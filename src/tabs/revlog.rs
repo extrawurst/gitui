@@ -212,6 +212,11 @@ impl Component for Revlog {
                 } else if k == self.key_config.copy {
                     self.copy_commit_hash()?;
                     return Ok(true);
+                } else if k == self.key_config.push {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::PushTags);
+                    return Ok(true);
                 } else if k == self.key_config.log_tag_commit {
                     return self.selected_commit().map_or(
                         Ok(false),
@@ -289,6 +294,12 @@ impl Component for Revlog {
 
         out.push(CommandInfo::new(
             strings::commands::copy_hash(&self.key_config),
+            true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::push_tags(&self.key_config),
             true,
             self.visible || force_all,
         ));

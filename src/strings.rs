@@ -14,6 +14,11 @@ pub static PUSH_POPUP_STATES_PUSHING: &str = "pushing (3/3)";
 pub static PUSH_POPUP_STATES_TRANSFER: &str = "transfer";
 pub static PUSH_POPUP_STATES_DONE: &str = "done";
 
+pub static PUSH_TAGS_POPUP_MSG: &str = "Push Tags";
+pub static PUSH_TAGS_STATES_FETCHING: &str = "fetching";
+pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
+pub static PUSH_TAGS_STATES_DONE: &str = "done";
+
 pub static SELECT_BRANCH_POPUP_MSG: &str = "Switch Branch";
 
 pub fn title_status(key_config: &SharedKeyConfig) -> String {
@@ -338,6 +343,16 @@ pub mod commands {
                 key_config.get_hint(key_config.copy),
             ),
             "copy selected commit hash to clipboard",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn push_tags(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Push Tags [{}]",
+                key_config.get_hint(key_config.push),
+            ),
+            "push tags to remote",
             CMD_GROUP_LOG,
         )
     }
