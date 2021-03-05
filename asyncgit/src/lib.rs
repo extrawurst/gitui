@@ -13,9 +13,9 @@
 pub mod cached;
 mod commit_files;
 mod diff;
-mod progress;
 mod error;
 mod fetch;
+mod progress;
 mod push;
 mod push_tags;
 pub mod remote_progress;

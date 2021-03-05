@@ -93,7 +93,7 @@ impl AsyncPushTags {
                 CWD,
                 params.remote.as_str(),
                 params.basic_credential.clone(),
-                Some(progress_sender.clone()),
+                Some(progress_sender),
             );
 
             handle.join().expect("joining thread failed");
