@@ -5,7 +5,9 @@ use crate::{
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
-    strings,
+    strings::{
+        self, PUSH_TAGS_STATES_DONE, PUSH_TAGS_STATES_PUSHING,
+    },
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
@@ -152,9 +154,13 @@ impl PushTagsComponent {
 
     fn progress_state_name(progress: &PushTagsProgress) -> String {
         match progress {
-            PushTagsProgress::CheckRemote => "fetching",
-            PushTagsProgress::Push { .. } => "pushing",
-            PushTagsProgress::Done => "done",
+            PushTagsProgress::CheckRemote => {
+                strings::PUSH_TAGS_STATES_FETCHING
+            }
+            PushTagsProgress::Push { .. } => {
+                strings::PUSH_TAGS_STATES_PUSHING
+            }
+            PushTagsProgress::Done => strings::PUSH_TAGS_STATES_DONE,
         }
         .to_string()
     }
