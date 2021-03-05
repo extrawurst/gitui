@@ -103,6 +103,7 @@ impl AsyncPush {
                 Some(progress_sender.clone()),
             );
 
+            //TODO: move this into its own async component?
             push_tags(CWD, params.remote.as_str())
                 .expect("tags error");
 
