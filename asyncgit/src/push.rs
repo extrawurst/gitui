@@ -111,7 +111,7 @@ impl AsyncPush {
                     params.basic_credential,
                     None,
                 )
-                .expect("tags error");
+                .expect("push_tags error");
             }
 
             progress_sender
