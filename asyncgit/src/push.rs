@@ -103,7 +103,7 @@ impl AsyncPush {
                 Some(progress_sender.clone()),
             );
 
-            if res.is_ok() {
+            let res = if res.is_ok() {
                 //TODO: move this into its own async component?
                 push_tags(
                     CWD,
@@ -111,8 +111,9 @@ impl AsyncPush {
                     params.basic_credential,
                     None,
                 )
-                .expect("push_tags error");
-            }
+            } else {
+                res
+            };
 
             progress_sender
                 .send(ProgressNotification::Done)
