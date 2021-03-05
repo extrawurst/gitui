@@ -2,15 +2,47 @@
 
 use std::collections::HashSet;
 
-use super::{push::remote_callbacks, utils};
-use crate::{error::Result, sync::cred::BasicAuthCredential};
+use super::{
+    push::{remote_callbacks, AsyncProgress},
+    utils,
+};
+use crate::{
+    error::Result, progress::ProgressPercent,
+    sync::cred::BasicAuthCredential,
+};
 use crossbeam_channel::Sender;
 use git2::{Direction, PushOptions};
 use scopetime::scope_time;
 
-pub(crate) struct PushTagsProgress {
-    pub pushed: usize,
-    pub total: usize,
+///
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum PushTagsProgress {
+    /// fetching tags from remote to check which local tags need pushing
+    CheckRemote,
+    /// pushing local tags that are missing remote
+    Push {
+        ///
+        pushed: usize,
+        ///
+        total: usize,
+    },
+    /// done
+    Done,
+}
+
+impl AsyncProgress for PushTagsProgress {
+    fn progress(&self) -> ProgressPercent {
+        match self {
+            PushTagsProgress::CheckRemote => ProgressPercent::empty(),
+            PushTagsProgress::Push { pushed, total } => {
+                ProgressPercent::new(*pushed, *total)
+            }
+            PushTagsProgress::Done => ProgressPercent::full(),
+        }
+    }
+    fn is_done(&self) -> bool {
+        *self == PushTagsProgress::Done
+    }
 }
 
 /// lists the remotes tags
@@ -75,6 +107,10 @@ pub(crate) fn push_tags(
 ) -> Result<()> {
     scope_time!("push_tags");
 
+    progress_sender
+        .as_ref()
+        .map(|sender| sender.send(PushTagsProgress::CheckRemote));
+
     let tags_missing = tags_missing_remote(
         repo_path,
         remote,
@@ -86,6 +122,10 @@ pub(crate) fn push_tags(
 
     let total = tags_missing.len();
 
+    progress_sender.as_ref().map(|sender| {
+        sender.send(PushTagsProgress::Push { pushed: 0, total })
+    });
+
     for (idx, tag) in tags_missing.into_iter().enumerate() {
         let mut options = PushOptions::new();
         options.remote_callbacks(remote_callbacks(
@@ -96,9 +136,16 @@ pub(crate) fn push_tags(
         remote.push(&[tag.as_str()], Some(&mut options))?;
 
         progress_sender.as_ref().map(|sender| {
-            sender.send(PushTagsProgress { pushed: idx, total })
+            sender.send(PushTagsProgress::Push {
+                pushed: idx + 1,
+                total,
+            })
         });
     }
+
+    progress_sender
+        .as_ref()
+        .map(|sender| sender.send(PushTagsProgress::Done));
 
     Ok(())
 }

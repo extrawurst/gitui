@@ -42,7 +42,10 @@ pub use hooks::{
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
-pub use remotes::{get_default_remote, get_remotes};
+pub use remotes::{
+    get_default_remote, get_remotes, push::AsyncProgress,
+    tags::PushTagsProgress,
+};
 pub use reset::{reset_stage, reset_workdir};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use state::{repo_state, RepoState};

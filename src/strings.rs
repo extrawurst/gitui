@@ -4,6 +4,7 @@ pub mod order {
     pub static NAV: i8 = 1;
 }
 
+pub static PUSH_TAGS_POPUP_MSG: &str = "Push Tags";
 pub static PUSH_POPUP_MSG: &str = "Push";
 pub static FORCE_PUSH_POPUP_MSG: &str = "Force Push";
 pub static PULL_POPUP_MSG: &str = "Pull";
@@ -338,6 +339,16 @@ pub mod commands {
                 key_config.get_hint(key_config.copy),
             ),
             "copy selected commit hash to clipboard",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn push_tags(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Push tags [{}]",
+                key_config.get_hint(key_config.push),
+            ),
+            "push tags to remote",
             CMD_GROUP_LOG,
         )
     }

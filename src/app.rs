@@ -7,8 +7,8 @@ use crate::{
         CreateBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PullComponent,
-        PushComponent, RenameBranchComponent, ResetComponent,
-        StashMsgComponent, TagCommitComponent,
+        PushComponent, PushTagsComponent, RenameBranchComponent,
+        ResetComponent, StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -45,6 +45,7 @@ pub struct App {
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
     push_popup: PushComponent,
+    push_tags_popup: PushTagsComponent,
     pull_popup: PullComponent,
     tag_commit_popup: TagCommitComponent,
     create_branch_popup: CreateBranchComponent,
@@ -106,6 +107,12 @@ impl App {
                 key_config.clone(),
             ),
             push_popup: PushComponent::new(
+                &queue,
+                sender,
+                theme.clone(),
+                key_config.clone(),
+            ),
+            push_tags_popup: PushTagsComponent::new(
                 &queue,
                 sender,
                 theme.clone(),
@@ -308,6 +315,7 @@ impl App {
         self.revlog.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
         self.push_popup.update_git(ev)?;
+        self.push_tags_popup.update_git(ev)?;
         self.pull_popup.update_git(ev)?;
 
         //TODO: better system for this
@@ -330,6 +338,7 @@ impl App {
             || self.inspect_commit_popup.any_work_pending()
             || self.input.is_state_changing()
             || self.push_popup.any_work_pending()
+            || self.push_tags_popup.any_work_pending()
             || self.pull_popup.any_work_pending()
     }
 
@@ -356,6 +365,7 @@ impl App {
             inspect_commit_popup,
             external_editor_popup,
             push_popup,
+            push_tags_popup,
             pull_popup,
             tag_commit_popup,
             create_branch_popup,
@@ -561,6 +571,10 @@ impl App {
                 self.pull_popup.fetch(branch)?;
                 flags.insert(NeedsUpdate::ALL)
             }
+            InternalEvent::PushTags => {
+                self.push_tags_popup.push_tags()?;
+                flags.insert(NeedsUpdate::ALL)
+            }
         };
 
         Ok(flags)
@@ -621,6 +635,7 @@ impl App {
             || self.tag_commit_popup.is_visible()
             || self.create_branch_popup.is_visible()
             || self.push_popup.is_visible()
+            || self.push_tags_popup.is_visible()
             || self.pull_popup.is_visible()
             || self.select_branch_popup.is_visible()
             || self.rename_branch_popup.is_visible()
@@ -651,6 +666,7 @@ impl App {
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;
+        self.push_tags_popup.draw(f, size)?;
         self.pull_popup.draw(f, size)?;
         self.reset.draw(f, size)?;
         self.msg.draw(f, size)?;
