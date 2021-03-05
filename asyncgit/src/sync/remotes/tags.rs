@@ -1,9 +1,10 @@
+//!
+
 use super::utils;
 use crate::error::Result;
 use scopetime::scope_time;
 
 ///
-#[allow(dead_code)]
 pub(crate) fn push_tags(repo_path: &str, remote: &str) -> Result<()> {
     scope_time!("push_tags");
 

@@ -1,8 +1,9 @@
 use crate::{
     error::{Error, Result},
     sync::{
-        cred::BasicAuthCredential, remotes::push::push,
+        cred::BasicAuthCredential,
         remotes::push::ProgressNotification,
+        remotes::{push::push, tags::push_tags},
     },
     AsyncNotification, RemoteProgress, CWD,
 };
@@ -101,6 +102,9 @@ impl AsyncPush {
                 params.basic_credential,
                 Some(progress_sender.clone()),
             );
+
+            push_tags(CWD, params.remote.as_str())
+                .expect("tags error");
 
             progress_sender
                 .send(ProgressNotification::Done)
