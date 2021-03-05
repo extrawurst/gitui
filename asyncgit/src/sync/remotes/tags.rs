@@ -23,16 +23,18 @@ pub(crate) fn push_tags(
     let repo = utils::repo(repo_path)?;
     let mut remote = repo.find_remote(remote)?;
 
-    let mut options = PushOptions::new();
-    options
-        .remote_callbacks(remote_callbacks(None, basic_credential));
-    options.packbuilder_parallelism(0);
-
     let tags = repo.tag_names(None)?;
     let total = tags.len();
     for (idx, e) in tags.into_iter().enumerate() {
         if let Some(name) = e {
             let refspec = format!("refs/tags/{}", name);
+            let mut options = PushOptions::new();
+            options.remote_callbacks(remote_callbacks(
+                None,
+                basic_credential.clone(),
+            ));
+            options.packbuilder_parallelism(0);
+
             remote.push(&[refspec.as_str()], Some(&mut options))?;
         }
 
