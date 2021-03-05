@@ -25,9 +25,11 @@ pub(crate) fn push_tags(
 
     let tags = repo.tag_names(None)?;
     let total = tags.len();
+    log::debug!("start push tags: {}", total);
     for (idx, e) in tags.into_iter().enumerate() {
         if let Some(name) = e {
             let refspec = format!("refs/tags/{}", name);
+
             let mut options = PushOptions::new();
             options.remote_callbacks(remote_callbacks(
                 None,
@@ -35,9 +37,11 @@ pub(crate) fn push_tags(
             ));
             options.packbuilder_parallelism(0);
 
+            log::debug!("push tag: {}/{}", idx, total);
             remote.push(&[refspec.as_str()], Some(&mut options))?;
         }
 
+        log::debug!("send progress: {}/{}", idx, total);
         progress_sender.as_ref().map(|sender| {
             sender.send(PushTagsProgress { pushed: idx, total })
         });
