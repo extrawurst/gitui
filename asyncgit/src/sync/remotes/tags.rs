@@ -3,7 +3,7 @@
 use super::{push::remote_callbacks, utils};
 use crate::{error::Result, sync::cred::BasicAuthCredential};
 use crossbeam_channel::Sender;
-use git2::PushOptions;
+use git2::Direction;
 use scopetime::scope_time;
 
 pub(crate) struct PushTagsProgress {
@@ -22,6 +22,13 @@ pub(crate) fn push_tags(
 
     let repo = utils::repo(repo_path)?;
     let mut remote = repo.find_remote(remote)?;
+    log::debug!("push_tags: {}", remote.connected());
+    remote.connect_auth(
+        Direction::Push,
+        Some(remote_callbacks(None, basic_credential.clone())),
+        None,
+    )?;
+    log::debug!("push_tags connected: {}", remote.connected());
 
     let tags = repo.tag_names(None)?;
     let total = tags.len();
@@ -31,15 +38,13 @@ pub(crate) fn push_tags(
             log::debug!("next tag: [{}]{}", idx, name);
             let refspec = format!("refs/tags/{}", name);
 
-            log::debug!("create push options");
-            let mut options = PushOptions::new();
-            options.remote_callbacks(remote_callbacks(
-                None,
-                basic_credential.clone(),
-            ));
-
-            log::debug!("push tag: {}/{}", idx, total);
-            remote.push(&[refspec.as_str()], Some(&mut options))?;
+            log::debug!(
+                "push tag: {}/{} ({})",
+                idx,
+                total,
+                remote.connected()
+            );
+            remote.push(&[refspec.as_str()], None)?;
         }
 
         log::debug!("send progress: {}/{}", idx, total);
