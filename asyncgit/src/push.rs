@@ -103,14 +103,16 @@ impl AsyncPush {
                 Some(progress_sender.clone()),
             );
 
-            //TODO: move this into its own async component?
-            push_tags(
-                CWD,
-                params.remote.as_str(),
-                params.basic_credential,
-                None,
-            )
-            .expect("tags error");
+            if res.is_ok() {
+                //TODO: move this into its own async component?
+                push_tags(
+                    CWD,
+                    params.remote.as_str(),
+                    params.basic_credential,
+                    None,
+                )
+                .expect("tags error");
+            }
 
             progress_sender
                 .send(ProgressNotification::Done)
