@@ -338,7 +338,7 @@ fn set_panic_handlers() -> Result<()> {
             eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
             process::abort();
         })
-        .num_threads(8)
+        .num_threads(4)
         .build_global()?;
 
     Ok(())
