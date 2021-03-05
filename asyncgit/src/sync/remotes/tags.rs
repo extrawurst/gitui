@@ -1,23 +1,45 @@
 //!
 
-use super::utils;
-use crate::error::Result;
+use super::{push::remote_callbacks, utils};
+use crate::{error::Result, sync::cred::BasicAuthCredential};
+use crossbeam_channel::Sender;
+use git2::PushOptions;
 use scopetime::scope_time;
 
+pub(crate) struct PushTagsProgress {
+    pub pushed: usize,
+    pub total: usize,
+}
+
 ///
-pub(crate) fn push_tags(repo_path: &str, remote: &str) -> Result<()> {
+pub(crate) fn push_tags(
+    repo_path: &str,
+    remote: &str,
+    basic_credential: Option<BasicAuthCredential>,
+    progress_sender: Option<Sender<PushTagsProgress>>,
+) -> Result<()> {
     scope_time!("push_tags");
 
     let repo = utils::repo(repo_path)?;
     let mut remote = repo.find_remote(remote)?;
 
-    repo.tag_foreach(|_id, name| {
-        if let Ok(name) = String::from_utf8(name.into()) {
-            remote.push(&[name], None).is_ok()
-        } else {
-            true
+    let mut options = PushOptions::new();
+    options
+        .remote_callbacks(remote_callbacks(None, basic_credential));
+    options.packbuilder_parallelism(0);
+
+    let tags = repo.tag_names(None)?;
+    let total = tags.len();
+    for (idx, e) in tags.into_iter().enumerate() {
+        if let Some(name) = e {
+            let refspec = format!("refs/tags/{}", name);
+            remote.push(&[refspec.as_str()], Some(&mut options))?;
         }
-    })?;
+
+        progress_sender.as_ref().map(|sender| {
+            sender.send(PushTagsProgress { pushed: idx, total })
+        });
+    }
 
     Ok(())
 }
@@ -83,7 +105,7 @@ mod tests {
 
         push(clone1_dir, "origin", "master", false, None, None)
             .unwrap();
-        push_tags(clone1_dir, "origin").unwrap();
+        push_tags(clone1_dir, "origin", None, None).unwrap();
 
         // clone2
 
