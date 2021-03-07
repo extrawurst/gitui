@@ -9,7 +9,11 @@ use crate::{
     ui::{self, calc_scroll_top, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
+use asyncgit::{
+    hash,
+    sync::{self, diff::DiffLinePosition},
+    DiffLine, DiffLineType, FileDiff, CWD,
+};
 use bytesize::ByteSize;
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
@@ -509,6 +513,35 @@ impl DiffComponent {
         }
     }
 
+    fn reset_lines(&self) {
+        if let Some(diff) = &self.diff {
+            if self.selected_hunk.is_some() {
+                let selected_lines: Vec<DiffLinePosition> = diff
+                    .hunks
+                    .iter()
+                    .flat_map(|hunk| hunk.lines.iter())
+                    .enumerate()
+                    .filter_map(|(i, line)| {
+                        if self.selection.contains(i)
+                            && line.line_type != DiffLineType::Header
+                        {
+                            Some(line.position.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                self.queue.as_ref().borrow_mut().push_back(
+                    InternalEvent::ConfirmAction(Action::ResetLines(
+                        self.current.path.clone(),
+                        selected_lines,
+                    )),
+                );
+            }
+        }
+    }
+
     fn reset_untracked(&self) {
         self.queue.as_ref().borrow_mut().push_back(
             InternalEvent::ConfirmAction(Action::Reset(ResetItem {
@@ -685,6 +718,16 @@ impl Component for DiffComponent {
                             self.reset_untracked();
                         } else {
                             self.reset_hunk();
+                        }
+                    }
+                    Ok(true)
+                } else if e == self.key_config.status_reset_lines
+                    && !self.is_immutable
+                    && !self.is_stage()
+                {
+                    if let Some(diff) = &self.diff {
+                        if !diff.untracked {
+                            self.reset_lines();
                         }
                     }
                     Ok(true)

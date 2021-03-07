@@ -151,6 +151,10 @@ impl ResetComponent {
                     strings::confirm_title_reset(&self.key_config),
                     strings::confirm_msg_resethunk(&self.key_config),
                 ),
+                Action::ResetLines(_, lines) => (
+                    format!("discard lines"),
+                    format!("are you sure you want to discard {} selected lines?",lines.len()),
+                ),
                 Action::DeleteBranch(branch_ref) => (
                     strings::confirm_title_delete_branch(
                         &self.key_config,

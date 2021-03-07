@@ -49,41 +49,12 @@ pub fn branch_merge_upstream_fastforward(
 pub mod test {
     use super::*;
     use crate::sync::{
-        commit,
         remotes::{fetch_origin, push::push},
-        stage_add_file,
         tests::{
             debug_cmd_print, get_commit_ids, repo_clone,
-            repo_init_bare,
+            repo_init_bare, write_commit_file,
         },
-        CommitId,
     };
-    use git2::Repository;
-    use std::{fs::File, io::Write, path::Path};
-
-    // write, stage and commit a file
-    pub fn write_commit_file(
-        repo: &Repository,
-        file: &str,
-        content: &str,
-        commit_name: &str,
-    ) -> CommitId {
-        File::create(
-            repo.workdir().unwrap().join(file).to_str().unwrap(),
-        )
-        .unwrap()
-        .write_all(content.as_bytes())
-        .unwrap();
-
-        stage_add_file(
-            repo.workdir().unwrap().to_str().unwrap(),
-            Path::new(file),
-        )
-        .unwrap();
-
-        commit(repo.workdir().unwrap().to_str().unwrap(), commit_name)
-            .unwrap()
-    }
 
     #[test]
     fn test_merge_fastforward() {

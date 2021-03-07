@@ -14,8 +14,10 @@ mod hooks;
 mod hunks;
 mod ignore;
 mod logwalker;
+mod patches;
 pub mod remotes;
 mod reset;
+mod staging;
 mod stash;
 mod state;
 pub mod status;
@@ -47,6 +49,7 @@ pub use remotes::{
     tags::PushTagsProgress,
 };
 pub use reset::{reset_stage, reset_workdir};
+pub use staging::discard_lines;
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use state::{repo_state, RepoState};
 pub use tags::{get_tags, CommitTags, Tags};
@@ -58,12 +61,13 @@ pub use utils::{
 #[cfg(test)]
 mod tests {
     use super::{
+        commit, stage_add_file,
         status::{get_status, StatusType},
         CommitId, LogWalker,
     };
     use crate::error::Result;
     use git2::Repository;
-    use std::process::Command;
+    use std::{fs::File, io::Write, path::Path, process::Command};
     use tempfile::TempDir;
 
     /// Calling `set_search_path` with an empty directory makes sure that there
@@ -86,6 +90,39 @@ mod tests {
             set_search_path(ConfigLevel::XDG, &path).unwrap();
             set_search_path(ConfigLevel::ProgramData, &path).unwrap();
         });
+    }
+
+    /// write a file in repo
+    pub fn repo_write_file(
+        repo: &Repository,
+        file: &str,
+        content: &str,
+    ) {
+        File::create(
+            repo.workdir().unwrap().join(file).to_str().unwrap(),
+        )
+        .unwrap()
+        .write_all(content.as_bytes())
+        .unwrap();
+    }
+
+    /// write, stage and commit a file
+    pub fn write_commit_file(
+        repo: &Repository,
+        file: &str,
+        content: &str,
+        commit_name: &str,
+    ) -> CommitId {
+        repo_write_file(repo, file, content);
+
+        stage_add_file(
+            repo.workdir().unwrap().to_str().unwrap(),
+            Path::new(file),
+        )
+        .unwrap();
+
+        commit(repo.workdir().unwrap().to_str().unwrap(), commit_name)
+            .unwrap()
     }
 
     ///

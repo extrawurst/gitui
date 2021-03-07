@@ -1,7 +1,5 @@
 //!
 
-use std::collections::HashSet;
-
 use super::{
     push::{remote_callbacks, AsyncProgress},
     utils,
@@ -13,6 +11,7 @@ use crate::{
 use crossbeam_channel::Sender;
 use git2::{Direction, PushOptions};
 use scopetime::scope_time;
+use std::collections::HashSet;
 
 ///
 #[derive(Debug, Copy, Clone, PartialEq)]

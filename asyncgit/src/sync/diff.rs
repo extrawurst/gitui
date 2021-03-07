@@ -39,14 +39,41 @@ pub struct DiffLine {
     pub content: String,
     ///
     pub line_type: DiffLineType,
+    ///
+    pub position: DiffLinePosition,
+}
+
+///
+#[derive(Clone, Copy, Default, Hash, Debug)]
+pub struct DiffLinePosition {
+    ///
+    pub old_lineno: Option<u32>,
+    ///
+    pub new_lineno: Option<u32>,
+}
+
+impl PartialEq<&git2::DiffLine<'_>> for DiffLinePosition {
+    fn eq(&self, other: &&git2::DiffLine) -> bool {
+        other.new_lineno() == self.new_lineno
+            && other.old_lineno() == self.old_lineno
+    }
+}
+
+impl From<&git2::DiffLine<'_>> for DiffLinePosition {
+    fn from(line: &git2::DiffLine<'_>) -> Self {
+        Self {
+            old_lineno: line.old_lineno(),
+            new_lineno: line.new_lineno(),
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Hash)]
 pub(crate) struct HunkHeader {
-    old_start: u32,
-    old_lines: u32,
-    new_start: u32,
-    new_lines: u32,
+    pub old_start: u32,
+    pub old_lines: u32,
+    pub new_start: u32,
+    pub new_lines: u32,
 }
 
 impl From<DiffHunk<'_>> for HunkHeader {
@@ -89,10 +116,14 @@ pub(crate) fn get_diff_raw<'a>(
     p: &str,
     stage: bool,
     reverse: bool,
+    context: Option<u32>,
 ) -> Result<Diff<'a>> {
     // scope_time!("get_diff_raw");
 
     let mut opt = DiffOptions::new();
+    if let Some(context) = context {
+        opt.context_lines(context);
+    }
     opt.pathspec(p);
     opt.reverse(reverse);
 
@@ -133,7 +164,7 @@ pub fn get_diff(
 
     let repo = utils::repo(repo_path)?;
     let work_dir = work_dir(&repo)?;
-    let diff = get_diff_raw(&repo, &p, stage, false)?;
+    let diff = get_diff_raw(&repo, &p, stage, false, None)?;
 
     raw_diff_to_file_diff(&diff, work_dir)
 }
@@ -209,6 +240,7 @@ fn raw_diff_to_file_diff<'a>(
                 };
 
                 let diff_line = DiffLine {
+                    position: DiffLinePosition::from(&line),
                     content: String::from_utf8_lossy(line.content())
                         .to_string(),
                     line_type,
