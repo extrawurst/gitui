@@ -44,7 +44,7 @@ pub struct DiffLine {
 }
 
 ///
-#[derive(Clone, Copy, Default, Hash, Debug)]
+#[derive(Clone, Copy, Default, Hash, Debug, PartialEq, Eq)]
 pub struct DiffLinePosition {
     ///
     pub old_lineno: Option<u32>,

@@ -393,4 +393,47 @@ end
 
         assert_eq!(result_file.as_str(), FILE_3);
     }
+
+    #[test]
+    fn test_discard_if_first_selected_line_is_not_in_any_hunk() {
+        static FILE_1: &str = r"start
+end
+";
+
+        static FILE_2: &str = r"start
+1
+end
+";
+
+        static FILE_3: &str = r"start
+end
+";
+
+        let (path, repo) = repo_init().unwrap();
+        let path = path.path().to_str().unwrap();
+
+        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+
+        repo_write_file(&repo, "test.txt", FILE_2);
+
+        discard_lines(
+            path,
+            "test.txt",
+            &[
+                DiffLinePosition {
+                    old_lineno: None,
+                    new_lineno: Some(1),
+                },
+                DiffLinePosition {
+                    old_lineno: None,
+                    new_lineno: Some(2),
+                },
+            ],
+        )
+        .unwrap();
+
+        let result_file = load_file(&repo, "test.txt").unwrap();
+
+        assert_eq!(result_file.as_str(), FILE_3);
+    }
 }
