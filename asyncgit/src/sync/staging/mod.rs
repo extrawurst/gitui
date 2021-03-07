@@ -99,6 +99,7 @@ impl NewFromOldContent {
     }
 }
 
+// this is the heart of the per line discard,stage,unstage. heavily inspired by the great work in nodegit: https://github.com/nodegit/nodegit
 fn apply_selection(
     lines: &[DiffLinePosition],
     hunks: &[HunkLines],
