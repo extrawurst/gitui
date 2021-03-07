@@ -114,6 +114,7 @@ fn apply_selection(
     let char_deleted = if reverse { '+' } else { '-' };
     let char_added = if reverse { '-' } else { '+' };
 
+    let mut first_hunk_encountered = false;
     for hunk in hunks {
         let hunk_start = if reverse {
             usize::try_from(hunk.hunk.new_start)?
@@ -125,6 +126,9 @@ fn apply_selection(
                 hunk.lines.iter().any(|line| current_line == line);
 
             if in_hunk {
+                first_hunk_encountered = true;
+            }
+            if in_hunk || first_hunk_encountered {
                 // catchup until this hunk
                 new_content
                     .catchup_to_hunkstart(hunk_start, &old_lines);
@@ -333,6 +337,53 @@ end
                 DiffLinePosition {
                     old_lineno: None,
                     new_lineno: Some(2),
+                },
+            ],
+        )
+        .unwrap();
+
+        let result_file = load_file(&repo, "test.txt").unwrap();
+
+        assert_eq!(result_file.as_str(), FILE_3);
+    }
+
+    #[test]
+    fn test_discard4() {
+        static FILE_1: &str = r"start
+mid
+end
+";
+
+        static FILE_2: &str = r"start
+1
+mid
+2
+end
+";
+
+        static FILE_3: &str = r"start
+mid
+end
+";
+
+        let (path, repo) = repo_init().unwrap();
+        let path = path.path().to_str().unwrap();
+
+        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+
+        repo_write_file(&repo, "test.txt", FILE_2);
+
+        discard_lines(
+            path,
+            "test.txt",
+            &[
+                DiffLinePosition {
+                    old_lineno: None,
+                    new_lineno: Some(2),
+                },
+                DiffLinePosition {
+                    old_lineno: None,
+                    new_lineno: Some(4),
                 },
             ],
         )
