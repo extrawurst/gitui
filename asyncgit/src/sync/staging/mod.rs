@@ -7,6 +7,7 @@ use crate::error::{Error, Result};
 use git2::{DiffLine, Repository};
 use scopetime::scope_time;
 use std::{
+    collections::HashSet,
     convert::TryFrom,
     fs::File,
     io::{Read, Write},
@@ -108,8 +109,7 @@ fn apply_selection(
     reverse: bool,
 ) -> Result<String> {
     let mut new_content = NewFromOldContent::default();
-    let mut line_iter = lines.iter();
-    let current_line = line_iter.next();
+    let lines = lines.iter().collect::<HashSet<_>>();
 
     let char_deleted = if reverse { '+' } else { '-' };
     let char_added = if reverse { '-' } else { '+' };
@@ -121,57 +121,59 @@ fn apply_selection(
         } else {
             usize::try_from(hunk.hunk.old_start)?
         };
-        if let Some(current_line) = current_line.cloned() {
-            let in_hunk =
-                hunk.lines.iter().any(|line| current_line == line);
 
-            if in_hunk {
-                first_hunk_encountered = true;
-            }
-            if in_hunk || first_hunk_encountered {
-                // catchup until this hunk
-                new_content
-                    .catchup_to_hunkstart(hunk_start, &old_lines);
+        if !first_hunk_encountered {
+            let any_slection_in_hunk =
+                hunk.lines.iter().any(|line| {
+                    let line: DiffLinePosition = line.into();
+                    lines.contains(&line)
+                });
 
-                for hunk_line in &hunk.lines {
-                    let selected_line =
-                        lines.iter().any(|line| *line == hunk_line);
+            first_hunk_encountered = any_slection_in_hunk;
+        }
 
-                    log::debug!(
-                        // print!(
-                        "{} line: {} [{:?} old, {:?} new] -> {}",
-                        if selected_line { "*" } else { " " },
-                        hunk_line.origin(),
-                        hunk_line.old_lineno(),
-                        hunk_line.new_lineno(),
-                        String::from_utf8_lossy(hunk_line.content())
-                    );
+        if first_hunk_encountered {
+            // catchup until this hunk
+            new_content.catchup_to_hunkstart(hunk_start, &old_lines);
 
-                    if !is_staged && selected_line {
-                        if hunk_line.origin() == char_added {
-                            new_content.add_from_hunk(hunk_line)?;
-                            if is_staged {
-                                new_content.skip_old_line();
-                            }
-                        } else if hunk_line.origin() == char_deleted {
-                            if !is_staged {
-                                new_content.skip_old_line();
-                            }
-                        } else {
-                            todo!("should not happen, since we selected to get no context in diff, return error is still happens")
-                        }
-                    } else {
-                        if hunk_line.origin() != char_added {
-                            new_content.add_from_hunk(hunk_line)?;
-                        }
+            for hunk_line in &hunk.lines {
+                let hunk_line_pos: DiffLinePosition =
+                    hunk_line.into();
+                let selected_line = lines.contains(&hunk_line_pos);
 
-                        if is_staged
-                            && hunk_line.origin() != char_deleted
-                            || !is_staged
-                                && hunk_line.origin() != char_added
-                        {
+                log::debug!(
+                    // print!(
+                    "{} line: {} [{:?} old, {:?} new] -> {}",
+                    if selected_line { "*" } else { " " },
+                    hunk_line.origin(),
+                    hunk_line.old_lineno(),
+                    hunk_line.new_lineno(),
+                    String::from_utf8_lossy(hunk_line.content())
+                );
+
+                if !is_staged && selected_line {
+                    if hunk_line.origin() == char_added {
+                        new_content.add_from_hunk(hunk_line)?;
+                        if is_staged {
                             new_content.skip_old_line();
                         }
+                    } else if hunk_line.origin() == char_deleted {
+                        if !is_staged {
+                            new_content.skip_old_line();
+                        }
+                    } else {
+                        todo!("should not happen, since we selected to get no context in diff, return error is still happens")
+                    }
+                } else {
+                    if hunk_line.origin() != char_added {
+                        new_content.add_from_hunk(hunk_line)?;
+                    }
+
+                    if is_staged && hunk_line.origin() != char_deleted
+                        || !is_staged
+                            && hunk_line.origin() != char_added
+                    {
+                        new_content.skip_old_line();
                     }
                 }
             }
