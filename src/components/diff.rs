@@ -525,7 +525,7 @@ impl DiffComponent {
                         if self.selection.contains(i)
                             && line.line_type != DiffLineType::Header
                         {
-                            Some(line.position.clone())
+                            Some(line.position)
                         } else {
                             None
                         }
@@ -672,6 +672,7 @@ impl Component for DiffComponent {
         CommandBlocking::PassingOn
     }
 
+    #[allow(clippy::cognitive_complexity)]
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = ev {

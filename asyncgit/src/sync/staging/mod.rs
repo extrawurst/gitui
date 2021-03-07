@@ -37,20 +37,11 @@ pub fn discard_lines(
         &repo, file_path, false, false,
     )?;
 
-    // let mut index = repo.index()?;
-    // index.read(true)?;
-    // let idx = index
-    //     .get_path(Path::new(file_path), 0)
-    //     .expect("only non new files supported");
-    // let blob = repo.find_blob(idx.id)?;
-    // let indexed_content =
-    //     String::from_utf8(blob.content().into()).unwrap();
-
     let working_content = load_file(&repo, file_path)?;
     let old_lines = working_content.lines().collect::<Vec<_>>();
 
     let new_content =
-        apply_selection(lines, &hunks, old_lines, true)?;
+        apply_selection(lines, &hunks, old_lines, false, true)?;
 
     repo_write_file(&repo, file_path, new_content.as_str())?;
 
@@ -67,7 +58,7 @@ impl NewFromOldContent {
     fn add_from_hunk(&mut self, line: &DiffLine) -> Result<()> {
         let line = String::from_utf8(line.content().into())?;
 
-        let line = if line.ends_with("\n") {
+        let line = if line.ends_with('\n') {
             line[0..line.len() - 1].to_string()
         } else {
             line
@@ -82,11 +73,6 @@ impl NewFromOldContent {
         self.old_index += 1;
     }
 
-    // fn add_old_line(&mut self, old_lines: &[&str]) {
-    //     self.lines.push(old_lines[self.old_index].to_string());
-    //     self.old_index += 1;
-    // }
-
     fn catchup_to_hunkstart(
         &mut self,
         hunk_start: usize,
@@ -99,11 +85,11 @@ impl NewFromOldContent {
     }
 
     fn finish(mut self, old_lines: &[&str]) -> String {
-        for i in self.old_index..old_lines.len() {
-            self.lines.push(old_lines[i].to_string());
+        for line in old_lines.iter().skip(self.old_index) {
+            self.lines.push(line.to_string());
         }
         let lines = self.lines.join("\n");
-        if lines.ends_with("\n") {
+        if lines.ends_with('\n') {
             lines
         } else {
             let mut lines = lines;
@@ -117,10 +103,11 @@ fn apply_selection(
     lines: &[DiffLinePosition],
     hunks: &[HunkLines],
     old_lines: Vec<&str>,
+    is_staged: bool,
     reverse: bool,
 ) -> Result<String> {
     let mut new_content = NewFromOldContent::default();
-    let mut line_iter = lines.clone().into_iter();
+    let mut line_iter = lines.iter();
     let current_line = line_iter.next();
 
     let char_deleted = if reverse { '+' } else { '-' };
@@ -155,17 +142,29 @@ fn apply_selection(
                         String::from_utf8_lossy(hunk_line.content())
                     );
 
-                    if selected_line {
+                    if !is_staged && selected_line {
                         if hunk_line.origin() == char_added {
                             new_content.add_from_hunk(hunk_line)?;
+                            if is_staged {
+                                new_content.skip_old_line();
+                            }
                         } else if hunk_line.origin() == char_deleted {
-                            new_content.skip_old_line();
+                            if !is_staged {
+                                new_content.skip_old_line();
+                            }
                         } else {
-                            todo!()
+                            todo!("should not happen, since we selected to get no context in diff, return error is still happens")
                         }
                     } else {
                         if hunk_line.origin() != char_added {
                             new_content.add_from_hunk(hunk_line)?;
+                        }
+
+                        if is_staged
+                            && hunk_line.origin() != char_deleted
+                            || !is_staged
+                                && hunk_line.origin() != char_added
+                        {
                             new_content.skip_old_line();
                         }
                     }
@@ -178,7 +177,7 @@ fn apply_selection(
 }
 
 fn load_file(repo: &Repository, file_path: &str) -> Result<String> {
-    let repo_path = repo.workdir().expect("bare repo not supported");
+    let repo_path = work_dir(repo)?;
     let mut file = File::open(repo_path.join(file_path).as_path())?;
     let mut res = String::new();
     file.read_to_string(&mut res)?;
