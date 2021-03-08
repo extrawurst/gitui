@@ -74,14 +74,18 @@ impl NewFromOldContent {
         self.old_index += 1;
     }
 
+    fn add_old_line(&mut self, old_lines: &[&str]) {
+        self.lines.push(old_lines[self.old_index].to_string());
+        self.old_index += 1;
+    }
+
     fn catchup_to_hunkstart(
         &mut self,
         hunk_start: usize,
         old_lines: &[&str],
     ) {
         while hunk_start > self.old_index + 1 {
-            self.lines.push(old_lines[self.old_index].to_string());
-            self.old_index += 1;
+            self.add_old_line(old_lines);
         }
     }
 
@@ -111,12 +115,12 @@ fn apply_selection(
     let mut new_content = NewFromOldContent::default();
     let lines = lines.iter().collect::<HashSet<_>>();
 
-    let char_deleted = if reverse { '+' } else { '-' };
     let char_added = if reverse { '-' } else { '+' };
+    let char_deleted = if reverse { '+' } else { '-' };
 
     let mut first_hunk_encountered = false;
     for hunk in hunks {
-        let hunk_start = if reverse {
+        let hunk_start = if is_staged || reverse {
             usize::try_from(hunk.hunk.new_start)?
         } else {
             usize::try_from(hunk.hunk.old_start)?
@@ -151,7 +155,9 @@ fn apply_selection(
                     String::from_utf8_lossy(hunk_line.content())
                 );
 
-                if !is_staged && selected_line {
+                if (is_staged && !selected_line)
+                    || (!is_staged && selected_line)
+                {
                     if hunk_line.origin() == char_added {
                         new_content.add_from_hunk(hunk_line)?;
                         if is_staged {
@@ -162,16 +168,17 @@ fn apply_selection(
                             new_content.skip_old_line();
                         }
                     } else {
-                        todo!("should not happen, since we selected to get no context in diff, return error is still happens")
+                        new_content.add_old_line(&old_lines);
                     }
                 } else {
                     if hunk_line.origin() != char_added {
                         new_content.add_from_hunk(hunk_line)?;
                     }
 
-                    if is_staged && hunk_line.origin() != char_deleted
-                        || !is_staged
-                            && hunk_line.origin() != char_added
+                    if (is_staged
+                        && hunk_line.origin() != char_deleted)
+                        || (!is_staged
+                            && hunk_line.origin() != char_added)
                     {
                         new_content.skip_old_line();
                     }
@@ -431,6 +438,45 @@ end
                     new_lineno: Some(2),
                 },
             ],
+        )
+        .unwrap();
+
+        let result_file = load_file(&repo, "test.txt").unwrap();
+
+        assert_eq!(result_file.as_str(), FILE_3);
+    }
+
+    //this test shows that we require at least a diff context around add/removes of 1
+    #[test]
+    fn test_discard_deletions_filestart_breaking_with_zero_context() {
+        static FILE_1: &str = r"start
+mid
+end
+";
+
+        static FILE_2: &str = r"start
+end
+";
+
+        static FILE_3: &str = r"start
+mid
+end
+";
+
+        let (path, repo) = repo_init().unwrap();
+        let path = path.path().to_str().unwrap();
+
+        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+
+        repo_write_file(&repo, "test.txt", FILE_2);
+
+        discard_lines(
+            path,
+            "test.txt",
+            &[DiffLinePosition {
+                old_lineno: Some(2),
+                new_lineno: None,
+            }],
         )
         .unwrap();
 
