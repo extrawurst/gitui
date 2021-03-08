@@ -13,6 +13,18 @@ use std::{
     io::{Read, Write},
 };
 
+///
+pub fn stage_lines(
+    _repo_path: &str,
+    _file_path: &str,
+    _is_stage: bool,
+    _lines: &[DiffLinePosition],
+) -> Result<()> {
+    scope_time!("stage_lines");
+
+    Ok(())
+}
+
 /// discards specific lines in an unstaged hunk of a diff
 pub fn discard_lines(
     repo_path: &str,

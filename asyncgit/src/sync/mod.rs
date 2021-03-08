@@ -49,7 +49,7 @@ pub use remotes::{
     tags::PushTagsProgress,
 };
 pub use reset::{reset_stage, reset_workdir};
-pub use staging::discard_lines;
+pub use staging::{discard_lines, stage_lines};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use state::{repo_state, RepoState};
 pub use tags::{get_tags, CommitTags, Tags};
