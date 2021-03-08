@@ -140,15 +140,20 @@ fn apply_selection(
                     hunk_line.into();
                 let selected_line = lines.contains(&hunk_line_pos);
 
-                // log::debug!(
-                print!(
+                log::debug!(
+                    // println!(
                     "{} line: {} [{:?} old, {:?} new] -> {}",
                     if selected_line { "*" } else { " " },
                     hunk_line.origin(),
                     hunk_line.old_lineno(),
                     hunk_line.new_lineno(),
                     String::from_utf8_lossy(hunk_line.content())
+                        .trim()
                 );
+
+                if hunk_line.origin() == '<' {
+                    break;
+                }
 
                 if (is_staged && !selected_line)
                     || (!is_staged && selected_line)
@@ -470,6 +475,39 @@ end
             &[DiffLinePosition {
                 old_lineno: Some(2),
                 new_lineno: None,
+            }],
+        )
+        .unwrap();
+
+        let result_file = load_file(&repo, "test.txt").unwrap();
+
+        assert_eq!(result_file.as_str(), FILE_3);
+    }
+
+    #[test]
+    fn test_discard5() {
+        static FILE_1: &str = r"start
+";
+
+        static FILE_2: &str = r"start
+1";
+
+        static FILE_3: &str = r"start
+";
+
+        let (path, repo) = repo_init().unwrap();
+        let path = path.path().to_str().unwrap();
+
+        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+
+        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
+
+        discard_lines(
+            path,
+            "test.txt",
+            &[DiffLinePosition {
+                old_lineno: None,
+                new_lineno: Some(2),
             }],
         )
         .unwrap();
