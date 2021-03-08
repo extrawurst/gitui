@@ -107,6 +107,15 @@ pub fn confirm_msg_merge(
 pub fn confirm_msg_reset(_key_config: &SharedKeyConfig) -> String {
     "confirm file reset?".to_string()
 }
+pub fn confirm_msg_reset_lines(
+    _key_config: &SharedKeyConfig,
+    lines: usize,
+) -> String {
+    format!(
+        "are you sure you want to discard {} selected lines?",
+        lines
+    )
+}
 pub fn confirm_msg_stashdrop(
     _key_config: &SharedKeyConfig,
 ) -> String {
