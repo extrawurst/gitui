@@ -11,16 +11,53 @@ use std::{
     convert::TryFrom,
     fs::File,
     io::{Read, Write},
+    path::Path,
 };
 
 ///
 pub fn stage_lines(
-    _repo_path: &str,
-    _file_path: &str,
-    _is_stage: bool,
-    _lines: &[DiffLinePosition],
+    repo_path: &str,
+    file_path: &str,
+    is_stage: bool,
+    lines: &[DiffLinePosition],
 ) -> Result<()> {
     scope_time!("stage_lines");
+
+    if lines.is_empty() {
+        return Ok(());
+    }
+
+    let repo = repo(repo_path)?;
+
+    let mut index = repo.index()?;
+    index.read(true)?;
+    let mut idx =
+        index.get_path(Path::new(file_path), 0).ok_or_else(|| {
+            Error::Generic(String::from(
+                "only non new files supported",
+            ))
+        })?;
+    let blob = repo.find_blob(idx.id)?;
+    let indexed_content = String::from_utf8(blob.content().into())?;
+
+    let new_content = {
+        let (_patch, hunks) = get_file_diff_patch_and_hunklines(
+            &repo, file_path, is_stage, false,
+        )?;
+
+        let old_lines = indexed_content.lines().collect::<Vec<_>>();
+
+        apply_selection(lines, &hunks, old_lines, false, true)?
+    };
+
+    let blob_id = repo.blob(new_content.as_bytes())?;
+
+    idx.id = blob_id;
+    idx.file_size = new_content.as_bytes().len() as u32;
+    //TODO: can we simply use add_frombuffer?
+    index.add(&idx)?;
+
+    index.write()?;
 
     Ok(())
 }
@@ -40,6 +77,7 @@ pub fn discard_lines(
     let repo = repo(repo_path)?;
 
     //TODO: check that file is not new (status modified)
+
     let new_content = {
         let (_patch, hunks) = get_file_diff_patch_and_hunklines(
             &repo, file_path, false, false,
