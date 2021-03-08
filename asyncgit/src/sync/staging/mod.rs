@@ -47,7 +47,7 @@ pub fn stage_lines(
 
         let old_lines = indexed_content.lines().collect::<Vec<_>>();
 
-        apply_selection(lines, &hunks, old_lines, false, true)?
+        apply_selection(lines, &hunks, old_lines, is_stage, false)?
     };
 
     let blob_id = repo.blob(new_content.as_bytes())?;
