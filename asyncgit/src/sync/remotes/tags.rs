@@ -156,37 +156,8 @@ mod tests {
         self,
         remotes::{fetch_origin, push::push},
         tests::{repo_clone, repo_init_bare},
-        CommitId,
     };
-    use git2::Repository;
-    use std::{fs::File, io::Write, path::Path};
-
-    // write, stage and commit a file
-    fn write_commit_file(
-        repo: &Repository,
-        file: &str,
-        content: &str,
-        commit_name: &str,
-    ) -> CommitId {
-        File::create(
-            repo.workdir().unwrap().join(file).to_str().unwrap(),
-        )
-        .unwrap()
-        .write_all(content.as_bytes())
-        .unwrap();
-
-        sync::stage_add_file(
-            repo.workdir().unwrap().to_str().unwrap(),
-            Path::new(file),
-        )
-        .unwrap();
-
-        sync::commit(
-            repo.workdir().unwrap().to_str().unwrap(),
-            commit_name,
-        )
-        .unwrap()
-    }
+    use sync::tests::write_commit_file;
 
     #[test]
     fn test_push_pull_tags() {
