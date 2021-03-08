@@ -388,10 +388,22 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Revert hunk [{}]",
+                "Reset hunk [{}]",
                 key_config.get_hint(key_config.status_reset_item),
             ),
             "reverts selected hunk",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn diff_lines_revert(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Reset lines [{}]",
+                key_config.get_hint(key_config.status_reset_lines),
+            ),
+            "resets selected lines",
             CMD_GROUP_DIFF,
         )
     }

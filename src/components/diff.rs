@@ -522,8 +522,11 @@ impl DiffComponent {
                     .flat_map(|hunk| hunk.lines.iter())
                     .enumerate()
                     .filter_map(|(i, line)| {
+                        let is_add_or_delete = line.line_type
+                            == DiffLineType::Add
+                            || line.line_type == DiffLineType::Delete;
                         if self.selection.contains(i)
-                            && line.line_type != DiffLineType::Header
+                            && is_add_or_delete
                         {
                             Some(line.position)
                         } else {
@@ -665,6 +668,14 @@ impl Component for DiffComponent {
             out.push(CommandInfo::new(
                 strings::commands::diff_hunk_revert(&self.key_config),
                 self.selected_hunk.is_some(),
+                self.focused && !self.is_stage(),
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_revert(
+                    &self.key_config,
+                ),
+                //TODO: only if any modifications are selected
+                true,
                 self.focused && !self.is_stage(),
             ));
         }
