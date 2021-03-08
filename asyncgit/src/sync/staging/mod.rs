@@ -39,8 +39,6 @@ pub fn discard_lines(
         apply_selection(lines, &hunks, old_lines, false, true)?
     };
 
-    println!("pre repo_write_file");
-
     repo_write_file(&repo, file_path, new_content.as_str())?;
 
     Ok(())
