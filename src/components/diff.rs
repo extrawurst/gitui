@@ -491,7 +491,7 @@ impl DiffComponent {
         Ok(())
     }
 
-    fn queue_update(&mut self) {
+    fn queue_update(&self) {
         self.queue
             .as_ref()
             .borrow_mut()
@@ -537,7 +537,9 @@ impl DiffComponent {
                         self.is_stage(),
                         &selected_lines,
                     )
-                )
+                );
+
+                self.queue_update();
             }
         }
     }
