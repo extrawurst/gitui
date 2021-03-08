@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 #![deny(unused_imports)]
+#![deny(unused_must_use)]
 #![deny(clippy::cargo)]
 #![deny(clippy::pedantic)]
 #![deny(clippy::perf)]

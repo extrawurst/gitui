@@ -3,6 +3,7 @@
 #![forbid(missing_docs)]
 #![deny(unsafe_code)]
 #![deny(unused_imports)]
+#![deny(unused_must_use)]
 #![deny(clippy::all)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]

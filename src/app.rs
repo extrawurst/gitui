@@ -502,6 +502,10 @@ impl App {
                     sync::reset_hunk(CWD, path, hash)?;
                     flags.insert(NeedsUpdate::ALL);
                 }
+                Action::ResetLines(path, lines) => {
+                    sync::discard_lines(CWD, &path, &lines)?;
+                    flags.insert(NeedsUpdate::ALL);
+                }
                 Action::DeleteBranch(branch_ref) => {
                     if let Err(e) =
                         sync::delete_branch(CWD, &branch_ref)
