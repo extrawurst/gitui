@@ -25,24 +25,21 @@ pub fn discard_lines(
         return Ok(());
     }
 
-    log::debug!("discard_lines: {}", lines.len());
-    lines
-        .iter()
-        .for_each(|line| log::debug!("line: {:?}", line));
-
     let repo = repo(repo_path)?;
 
     //TODO: check that file is not new (status modified)
+    let new_content = {
+        let (_patch, hunks) = get_file_diff_patch_and_hunklines(
+            &repo, file_path, false, false,
+        )?;
 
-    let (_patch, hunks) = get_file_diff_patch_and_hunklines(
-        &repo, file_path, false, false,
-    )?;
+        let working_content = load_file(&repo, file_path)?;
+        let old_lines = working_content.lines().collect::<Vec<_>>();
 
-    let working_content = load_file(&repo, file_path)?;
-    let old_lines = working_content.lines().collect::<Vec<_>>();
+        apply_selection(lines, &hunks, old_lines, false, true)?
+    };
 
-    let new_content =
-        apply_selection(lines, &hunks, old_lines, false, true)?;
+    println!("pre repo_write_file");
 
     repo_write_file(&repo, file_path, new_content.as_str())?;
 
@@ -145,8 +142,8 @@ fn apply_selection(
                     hunk_line.into();
                 let selected_line = lines.contains(&hunk_line_pos);
 
-                log::debug!(
-                    // print!(
+                // log::debug!(
+                print!(
                     "{} line: {} [{:?} old, {:?} new] -> {}",
                     if selected_line { "*" } else { " " },
                     hunk_line.origin(),
@@ -210,7 +207,8 @@ pub(crate) fn repo_write_file(
     let file_path = dir.to_str().ok_or_else(|| {
         Error::Generic(String::from("invalid file path"))
     })?;
-    File::create(file_path)?.write_all(content.as_bytes())?;
+    let mut file = File::create(file_path)?;
+    file.write_all(content.as_bytes())?;
     Ok(())
 }
 
