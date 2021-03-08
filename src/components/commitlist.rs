@@ -97,10 +97,7 @@ impl CommitList {
     }
 
     ///
-    //TODO: make const as soon as Option::<T>::as_ref
-    // is stabilizeD to be const (not as of rust 1.47)
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn tags(&self) -> Option<&Tags> {
+    pub const fn tags(&self) -> Option<&Tags> {
         self.tags.as_ref()
     }
 
