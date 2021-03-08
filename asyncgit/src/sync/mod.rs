@@ -62,12 +62,13 @@ pub use utils::{
 mod tests {
     use super::{
         commit, stage_add_file,
+        staging::repo_write_file,
         status::{get_status, StatusType},
         CommitId, LogWalker,
     };
     use crate::error::Result;
     use git2::Repository;
-    use std::{fs::File, io::Write, path::Path, process::Command};
+    use std::{path::Path, process::Command};
     use tempfile::TempDir;
 
     /// Calling `set_search_path` with an empty directory makes sure that there
@@ -92,20 +93,6 @@ mod tests {
         });
     }
 
-    /// write a file in repo
-    pub fn repo_write_file(
-        repo: &Repository,
-        file: &str,
-        content: &str,
-    ) {
-        File::create(
-            repo.workdir().unwrap().join(file).to_str().unwrap(),
-        )
-        .unwrap()
-        .write_all(content.as_bytes())
-        .unwrap();
-    }
-
     /// write, stage and commit a file
     pub fn write_commit_file(
         repo: &Repository,
@@ -113,7 +100,7 @@ mod tests {
         content: &str,
         commit_name: &str,
     ) -> CommitId {
-        repo_write_file(repo, file, content);
+        repo_write_file(repo, file, content).unwrap();
 
         stage_add_file(
             repo.workdir().unwrap().to_str().unwrap(),

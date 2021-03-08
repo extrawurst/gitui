@@ -215,9 +215,7 @@ pub(crate) fn repo_write_file(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::sync::tests::{
-        repo_init, repo_write_file, write_commit_file,
-    };
+    use crate::sync::tests::{repo_init, write_commit_file};
 
     #[test]
     fn test_discard() {
@@ -247,7 +245,7 @@ mod test {
 
         write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2);
+        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
         discard_lines(
             path,
@@ -292,7 +290,7 @@ end
 
         write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2);
+        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
         discard_lines(
             path,
@@ -331,7 +329,7 @@ end
 
         write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2);
+        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
         discard_lines(
             path,
@@ -378,7 +376,7 @@ end
 
         write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2);
+        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
         discard_lines(
             path,
@@ -421,7 +419,7 @@ end
 
         write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2);
+        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
         discard_lines(
             path,
@@ -466,7 +464,7 @@ end
 
         write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2);
+        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
         discard_lines(
             path,
