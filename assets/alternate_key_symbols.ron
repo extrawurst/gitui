@@ -185,6 +185,12 @@
             bits: 1,
         ),
     ),
+    status_reset_lines: (
+        code: Char('d'),
+        modifiers: (
+            bits: 0,
+        ),
+    ),
     status_ignore_file: (
         code: Char('i'),
         modifiers: (
@@ -275,7 +281,13 @@
             bits: 0,
         ),
     ),
-    fetch: (
+    force_push: (
+        code: Char('P'),
+        modifiers: (
+            bits: 1,
+        ),
+    ),
+    pull: (
         code: Char('f'),
         modifiers: (
             bits: 0,
