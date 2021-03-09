@@ -2,12 +2,13 @@ use crate::{
     accessors,
     cmdbar::CommandBar,
     components::{
-        event_pump, CommandBlocking, CommandInfo, CommitComponent,
-        Component, CreateBranchComponent, DrawableComponent,
+        event_pump, BranchListComponent, CommandBlocking,
+        CommandInfo, CommitComponent, Component,
+        CreateBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
-        InspectCommitComponent, MsgComponent, PushComponent,
-        RenameBranchComponent, ResetComponent, SelectBranchComponent,
-        StashMsgComponent, TagCommitComponent,
+        InspectCommitComponent, MsgComponent, PullComponent,
+        PushComponent, PushTagsComponent, RenameBranchComponent,
+        ResetComponent, StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -33,7 +34,7 @@ use tui::{
     Frame,
 };
 
-///
+/// the main app type
 pub struct App {
     do_quit: bool,
     help: HelpComponent,
@@ -44,10 +45,12 @@ pub struct App {
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
     push_popup: PushComponent,
+    push_tags_popup: PushTagsComponent,
+    pull_popup: PullComponent,
     tag_commit_popup: TagCommitComponent,
     create_branch_popup: CreateBranchComponent,
     rename_branch_popup: RenameBranchComponent,
-    select_branch_popup: SelectBranchComponent,
+    select_branch_popup: BranchListComponent,
     cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
@@ -67,13 +70,13 @@ pub struct App {
 // public interface
 impl App {
     ///
+    #[allow(clippy::too_many_lines)]
     pub fn new(
         sender: &Sender<AsyncNotification>,
         input: Input,
         theme_path: PathBuf,
     ) -> Self {
         let queue = Queue::default();
-
         let theme = Rc::new(Theme::init(theme_path));
         let key_config = Rc::new(KeyConfig::init());
 
@@ -110,6 +113,18 @@ impl App {
                 theme.clone(),
                 key_config.clone(),
             ),
+            push_tags_popup: PushTagsComponent::new(
+                &queue,
+                sender,
+                theme.clone(),
+                key_config.clone(),
+            ),
+            pull_popup: PullComponent::new(
+                &queue,
+                sender,
+                theme.clone(),
+                key_config.clone(),
+            ),
             tag_commit_popup: TagCommitComponent::new(
                 queue.clone(),
                 theme.clone(),
@@ -125,7 +140,7 @@ impl App {
                 theme.clone(),
                 key_config.clone(),
             ),
-            select_branch_popup: SelectBranchComponent::new(
+            select_branch_popup: BranchListComponent::new(
                 queue.clone(),
                 theme.clone(),
                 key_config.clone(),
@@ -278,6 +293,7 @@ impl App {
     pub fn update(&mut self) -> Result<()> {
         log::trace!("update");
 
+        self.commit.update()?;
         self.status_tab.update()?;
         self.revlog.update()?;
         self.stashing_tab.update()?;
@@ -300,6 +316,8 @@ impl App {
         self.revlog.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
         self.push_popup.update_git(ev)?;
+        self.push_tags_popup.update_git(ev)?;
+        self.pull_popup.update_git(ev)?;
 
         //TODO: better system for this
         // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
@@ -320,6 +338,9 @@ impl App {
             || self.stashing_tab.anything_pending()
             || self.inspect_commit_popup.any_work_pending()
             || self.input.is_state_changing()
+            || self.push_popup.any_work_pending()
+            || self.push_tags_popup.any_work_pending()
+            || self.pull_popup.any_work_pending()
     }
 
     ///
@@ -345,6 +366,8 @@ impl App {
             inspect_commit_popup,
             external_editor_popup,
             push_popup,
+            push_tags_popup,
+            pull_popup,
             tag_commit_popup,
             create_branch_popup,
             rename_branch_popup,
@@ -479,6 +502,10 @@ impl App {
                     sync::reset_hunk(CWD, path, hash)?;
                     flags.insert(NeedsUpdate::ALL);
                 }
+                Action::ResetLines(path, lines) => {
+                    sync::discard_lines(CWD, &path, &lines)?;
+                    flags.insert(NeedsUpdate::ALL);
+                }
                 Action::DeleteBranch(branch_ref) => {
                     if let Err(e) =
                         sync::delete_branch(CWD, &branch_ref)
@@ -490,8 +517,16 @@ impl App {
                         )
                     } else {
                         flags.insert(NeedsUpdate::ALL);
-                        self.select_branch_popup.hide();
+                        self.select_branch_popup.update_branches()?;
                     }
+                }
+                Action::ForcePush(branch, force) => self
+                    .queue
+                    .borrow_mut()
+                    .push_back(InternalEvent::Push(branch, force)),
+                Action::PullMerge(_) => {
+                    self.pull_popup.try_conflict_free_merge();
+                    flags.insert(NeedsUpdate::ALL);
                 }
             },
             InternalEvent::ConfirmAction(action) => {
@@ -533,8 +568,16 @@ impl App {
                 self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
             }
-            InternalEvent::Push(branch) => {
-                self.push_popup.push(branch)?;
+            InternalEvent::Push(branch, force) => {
+                self.push_popup.push(branch, force)?;
+                flags.insert(NeedsUpdate::ALL)
+            }
+            InternalEvent::Pull(branch) => {
+                self.pull_popup.fetch(branch)?;
+                flags.insert(NeedsUpdate::ALL)
+            }
+            InternalEvent::PushTags => {
+                self.push_tags_popup.push_tags()?;
                 flags.insert(NeedsUpdate::ALL)
             }
         };
@@ -597,6 +640,8 @@ impl App {
             || self.tag_commit_popup.is_visible()
             || self.create_branch_popup.is_visible()
             || self.push_popup.is_visible()
+            || self.push_tags_popup.is_visible()
+            || self.pull_popup.is_visible()
             || self.select_branch_popup.is_visible()
             || self.rename_branch_popup.is_visible()
     }
@@ -626,6 +671,8 @@ impl App {
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;
+        self.push_tags_popup.draw(f, size)?;
+        self.pull_popup.draw(f, size)?;
         self.reset.draw(f, size)?;
         self.msg.draw(f, size)?;
 

@@ -1,3 +1,6 @@
+//TODO: remove once fixed https://github.com/rust-lang/rust-clippy/issues/6818
+#![allow(clippy::use_self)]
+
 use crate::get_app_config_path;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -48,6 +51,7 @@ pub struct KeyConfig {
     pub edit_file: KeyEvent,
     pub status_stage_all: KeyEvent,
     pub status_reset_item: KeyEvent,
+    pub status_reset_lines: KeyEvent,
     pub status_ignore_file: KeyEvent,
     pub stashing_save: KeyEvent,
     pub stashing_toggle_untracked: KeyEvent,
@@ -63,7 +67,8 @@ pub struct KeyConfig {
     pub select_branch: KeyEvent,
     pub delete_branch: KeyEvent,
     pub push: KeyEvent,
-    pub fetch: KeyEvent,
+    pub force_push: KeyEvent,
+    pub pull: KeyEvent,
 
     pub enter_symbol: String,
     pub left_symbol: String,
@@ -120,6 +125,7 @@ impl Default for KeyConfig {
 			edit_file: KeyEvent { code: KeyCode::Char('e'), modifiers: KeyModifiers::empty()},
 			status_stage_all: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::empty()},
 			status_reset_item: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
+            status_reset_lines: KeyEvent { code: KeyCode::Char('d'), modifiers: KeyModifiers::empty()},
 			status_ignore_file: KeyEvent { code: KeyCode::Char('i'), modifiers: KeyModifiers::empty()},
 			stashing_save: KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
 			stashing_toggle_untracked: KeyEvent { code: KeyCode::Char('u'), modifiers: KeyModifiers::empty()},
@@ -135,7 +141,8 @@ impl Default for KeyConfig {
             select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::NONE},
             delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
-            fetch: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
+            force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
+            pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
 
             enter_symbol: "\u{23ce}".into(),     //⏎
             left_symbol: "\u{2190}".into(),      //←

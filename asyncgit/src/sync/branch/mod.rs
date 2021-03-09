@@ -1,6 +1,12 @@
-//!
+//! branch functions
 
-use super::{remotes::get_first_remote_in_repo, utils::bytes2string};
+pub mod merge_commit;
+pub mod merge_ff;
+pub mod rename;
+
+use super::{
+    remotes::get_default_remote_in_repo, utils::bytes2string,
+};
 use crate::{
     error::{Error, Result},
     sync::{utils, CommitId},
@@ -31,7 +37,7 @@ pub(crate) fn get_branch_name(repo_path: &str) -> Result<String> {
 }
 
 ///
-pub struct BranchForDisplay {
+pub struct BranchInfo {
     ///
     pub name: String,
     ///
@@ -46,12 +52,9 @@ pub struct BranchForDisplay {
     pub has_upstream: bool,
 }
 
-/// Used to return only the nessessary information for displaying a branch
-/// rather than an iterator over the actual branches
-pub fn get_branches_to_display(
-    repo_path: &str,
-) -> Result<Vec<BranchForDisplay>> {
-    scope_time!("get_branches_to_display");
+/// returns a list of `BranchInfo` with a simple summary of info about a single branch
+pub fn get_branches_info(repo_path: &str) -> Result<Vec<BranchInfo>> {
+    scope_time!("get_branches_info");
 
     let cur_repo = utils::repo(repo_path)?;
     let branches_for_display = cur_repo
@@ -60,7 +63,7 @@ pub fn get_branches_to_display(
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
 
-            Ok(BranchForDisplay {
+            Ok(BranchInfo {
                 name: bytes2string(branch.name_bytes()?)?,
                 reference: bytes2string(branch.get().name_bytes())?,
                 top_commit_message: bytes2string(
@@ -97,7 +100,7 @@ pub(crate) fn branch_set_upstream(
         repo.find_branch(branch_name, BranchType::Local)?;
 
     if branch.upstream().is_err() {
-        let remote = get_first_remote_in_repo(repo)?;
+        let remote = get_default_remote_in_repo(repo)?;
         let upstream_name = format!("{}/{}", remote, branch_name);
         branch.set_upstream(Some(upstream_name.as_str()))?;
     }
@@ -180,22 +183,6 @@ pub fn delete_branch(
     } else {
         return Err(Error::Generic("You cannot be on the branch you want to delete, switch branch, then delete this branch".to_string()));
     }
-    Ok(())
-}
-
-/// Rename the branch reference
-pub fn rename_branch(
-    repo_path: &str,
-    branch_ref: &str,
-    new_name: &str,
-) -> Result<()> {
-    scope_time!("delete_branch");
-
-    let repo = utils::repo(repo_path)?;
-    let branch_as_ref = repo.find_reference(branch_ref)?;
-    let mut branch = git2::Branch::wrap(branch_as_ref);
-    branch.rename(new_name, true)?;
-
     Ok(())
 }
 
@@ -297,7 +284,7 @@ mod tests_branches {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_branches_info(repo_path)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())
@@ -315,7 +302,7 @@ mod tests_branches {
         create_branch(repo_path, "test").unwrap();
 
         assert_eq!(
-            get_branches_to_display(repo_path)
+            get_branches_info(repo_path)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())
@@ -402,52 +389,6 @@ mod test_delete_branch {
                 .unwrap()
                 .unwrap(),
             "master"
-        );
-    }
-}
-
-#[cfg(test)]
-mod test_rename_branch {
-    use super::*;
-    use crate::sync::tests::repo_init;
-
-    #[test]
-    fn test_rename_branch() {
-        let (_td, repo) = repo_init().unwrap();
-        let root = repo.path().parent().unwrap();
-        let repo_path = root.as_os_str().to_str().unwrap();
-
-        create_branch(repo_path, "branch1").unwrap();
-
-        checkout_branch(repo_path, "refs/heads/branch1").unwrap();
-
-        assert_eq!(
-            repo.branches(None)
-                .unwrap()
-                .nth(0)
-                .unwrap()
-                .unwrap()
-                .0
-                .name()
-                .unwrap()
-                .unwrap(),
-            "branch1"
-        );
-
-        rename_branch(repo_path, "refs/heads/branch1", "AnotherName")
-            .unwrap();
-
-        assert_eq!(
-            repo.branches(None)
-                .unwrap()
-                .nth(0)
-                .unwrap()
-                .unwrap()
-                .0
-                .name()
-                .unwrap()
-                .unwrap(),
-            "AnotherName"
         );
     }
 }

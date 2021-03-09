@@ -6,7 +6,7 @@ use crate::{
         DiffComponent, DrawableComponent, FileTreeItemKind,
     },
     keys::SharedKeyConfig,
-    queue::{InternalEvent, Queue, ResetItem},
+    queue::{Action, InternalEvent, Queue, ResetItem},
     strings::{self, order},
     ui::style::SharedTheme,
 };
@@ -14,18 +14,20 @@ use anyhow::Result;
 use asyncgit::{
     cached,
     sync::BranchCompare,
-    sync::{self, status::StatusType},
+    sync::{self, status::StatusType, RepoState},
     AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
     StatusParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use std::convert::TryFrom;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Style},
     widgets::Paragraph,
 };
 
-///
+/// what part of the screen is focused
 #[derive(PartialEq)]
 enum Focus {
     WorkDir,
@@ -33,7 +35,7 @@ enum Focus {
     Stage,
 }
 
-///
+/// which target are we showing a diff against
 #[derive(PartialEq, Copy, Clone)]
 enum DiffTarget {
     Stage,
@@ -103,6 +105,7 @@ impl DrawableComponent for Status {
         self.index.draw(f, left_chunks[1])?;
         self.diff.draw(f, chunks[1])?;
         self.draw_branch_state(f, &left_chunks);
+        Self::draw_repo_state(f, left_chunks[0]);
 
         Ok(())
     }
@@ -194,6 +197,33 @@ impl Status {
         }
     }
 
+    fn draw_repo_state<B: tui::backend::Backend>(
+        f: &mut tui::Frame<B>,
+        r: tui::layout::Rect,
+    ) {
+        if let Ok(state) = asyncgit::sync::repo_state(CWD) {
+            if state != RepoState::Clean {
+                let txt = format!("{:?}", state);
+                let txt_len = u16::try_from(txt.len())
+                    .expect("state name too long");
+                let w = Paragraph::new(txt)
+                    .style(Style::default().fg(Color::Red))
+                    .alignment(Alignment::Left);
+
+                let mut rect = r;
+                rect.x += 1;
+                rect.width =
+                    rect.width.saturating_sub(2).min(txt_len);
+                rect.y += rect.height.saturating_sub(1);
+                rect.height = rect
+                    .height
+                    .saturating_sub(rect.height.saturating_sub(1));
+
+                f.render_widget(w, rect);
+            }
+        }
+    }
+
     fn can_focus_diff(&self) -> bool {
         match self.focus {
             Focus::WorkDir => self.index_wd.is_file_seleted(),
@@ -266,7 +296,7 @@ impl Status {
             self.git_status_stage
                 .fetch(StatusParams::new(StatusType::Stage, true))?;
 
-            self.check_branch_state();
+            self.branch_compare();
         }
 
         Ok(())
@@ -287,6 +317,9 @@ impl Status {
         match ev {
             AsyncNotification::Diff => self.update_diff()?,
             AsyncNotification::Status => self.update_status()?,
+            AsyncNotification::Push
+            | AsyncNotification::Fetch
+            | AsyncNotification::CommitFiles => self.branch_compare(),
             _ => (),
         }
 
@@ -375,38 +408,33 @@ impl Status {
         }
     }
 
-    fn push(&self) {
-        if let Some(branch) = self.git_branch_name.last() {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Push(branch));
-        }
-    }
-
-    fn fetch(&self) {
-        if let Some(branch) = self.git_branch_name.last() {
-            match sync::fetch_origin(CWD, branch.as_str()) {
-                Err(e) => {
+    fn push(&self, force: bool) {
+        if self.can_push() {
+            if let Some(branch) = self.git_branch_name.last() {
+                if force {
                     self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "fetch error:\n{}",
-                            e
-                        )),
+                        InternalEvent::ConfirmAction(
+                            Action::ForcePush(branch, force),
+                        ),
                     );
-                }
-                Ok(bytes) => {
+                } else {
                     self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "fetched:\n{} B",
-                            bytes
-                        )),
+                        InternalEvent::Push(branch, force),
                     );
                 }
             }
         }
     }
 
-    fn check_branch_state(&mut self) {
+    fn pull(&self) {
+        if let Some(branch) = self.git_branch_name.last() {
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::Pull(branch));
+        }
+    }
+
+    fn branch_compare(&mut self) {
         self.git_branch_state =
             self.git_branch_name.last().and_then(|branch| {
                 sync::branch_compare_upstream(CWD, branch.as_str())
@@ -445,6 +473,18 @@ impl Component for Status {
             out.push(CommandInfo::new(
                 strings::commands::status_push(&self.key_config),
                 self.can_push(),
+                true,
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::status_force_push(
+                    &self.key_config,
+                ),
+                self.can_push(),
+                true,
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::status_pull(&self.key_config),
+                true,
                 true,
             ));
         }
@@ -553,11 +593,14 @@ impl Component for Status {
                         .borrow_mut()
                         .push_back(InternalEvent::SelectBranch);
                     Ok(true)
-                } else if k == self.key_config.push {
-                    self.push();
+                } else if k == self.key_config.force_push {
+                    self.push(true);
                     Ok(true)
-                } else if k == self.key_config.fetch {
-                    self.fetch();
+                } else if k == self.key_config.push {
+                    self.push(false);
+                    Ok(true)
+                } else if k == self.key_config.pull {
+                    self.pull();
                     Ok(true)
                 } else {
                     Ok(false)

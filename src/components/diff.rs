@@ -9,7 +9,11 @@ use crate::{
     ui::{self, calc_scroll_top, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
+use asyncgit::{
+    hash,
+    sync::{self, diff::DiffLinePosition},
+    DiffLine, DiffLineType, FileDiff, CWD,
+};
 use bytesize::ByteSize;
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
@@ -509,6 +513,38 @@ impl DiffComponent {
         }
     }
 
+    fn reset_lines(&self) {
+        if let Some(diff) = &self.diff {
+            if self.selected_hunk.is_some() {
+                let selected_lines: Vec<DiffLinePosition> = diff
+                    .hunks
+                    .iter()
+                    .flat_map(|hunk| hunk.lines.iter())
+                    .enumerate()
+                    .filter_map(|(i, line)| {
+                        let is_add_or_delete = line.line_type
+                            == DiffLineType::Add
+                            || line.line_type == DiffLineType::Delete;
+                        if self.selection.contains(i)
+                            && is_add_or_delete
+                        {
+                            Some(line.position)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                self.queue.as_ref().borrow_mut().push_back(
+                    InternalEvent::ConfirmAction(Action::ResetLines(
+                        self.current.path.clone(),
+                        selected_lines,
+                    )),
+                );
+            }
+        }
+    }
+
     fn reset_untracked(&self) {
         self.queue.as_ref().borrow_mut().push_back(
             InternalEvent::ConfirmAction(Action::Reset(ResetItem {
@@ -516,6 +552,16 @@ impl DiffComponent {
                 is_folder: false,
             })),
         );
+    }
+
+    fn stage_unstage_hunk(&mut self) -> Result<()> {
+        if self.current.is_stage {
+            self.unstage_hunk()?;
+        } else {
+            self.stage_hunk()?;
+        }
+
+        Ok(())
     }
 
     const fn is_stage(&self) -> bool {
@@ -624,11 +670,20 @@ impl Component for DiffComponent {
                 self.selected_hunk.is_some(),
                 self.focused && !self.is_stage(),
             ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_revert(
+                    &self.key_config,
+                ),
+                //TODO: only if any modifications are selected
+                true,
+                self.focused && !self.is_stage(),
+            ));
         }
 
         CommandBlocking::PassingOn
     }
 
+    #[allow(clippy::cognitive_complexity)]
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = ev {
@@ -659,11 +714,12 @@ impl Component for DiffComponent {
                 } else if e == self.key_config.enter
                     && !self.is_immutable
                 {
-                    if self.current.is_stage {
-                        self.unstage_hunk()?;
-                    } else {
-                        self.stage_hunk()?;
-                    }
+                    try_or_popup!(
+                        self,
+                        "hunk error:",
+                        self.stage_unstage_hunk()
+                    );
+
                     Ok(true)
                 } else if e == self.key_config.status_reset_item
                     && !self.is_immutable
@@ -674,6 +730,16 @@ impl Component for DiffComponent {
                             self.reset_untracked();
                         } else {
                             self.reset_hunk();
+                        }
+                    }
+                    Ok(true)
+                } else if e == self.key_config.status_reset_lines
+                    && !self.is_immutable
+                    && !self.is_stage()
+                {
+                    if let Some(diff) = &self.diff {
+                        if !diff.untracked {
+                            self.reset_lines();
                         }
                     }
                     Ok(true)

@@ -112,7 +112,7 @@ impl AsyncTags {
         {
             let mut last = arc_last.lock()?;
             let now = Instant::now();
-            *last = Some((now, TagsResult { tags, hash }));
+            *last = Some((now, TagsResult { hash, tags }));
         }
 
         Ok(true)

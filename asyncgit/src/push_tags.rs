@@ -1,8 +1,8 @@
 use crate::{
     error::{Error, Result},
     sync::{
-        cred::BasicAuthCredential, remotes::push::push,
-        remotes::push::ProgressNotification,
+        cred::BasicAuthCredential,
+        remotes::tags::{push_tags, PushTagsProgress},
     },
     AsyncNotification, RemoteProgress, CWD,
 };
@@ -14,31 +14,27 @@ use std::{
 
 ///
 #[derive(Default, Clone, Debug)]
-pub struct PushRequest {
+pub struct PushTagsRequest {
     ///
     pub remote: String,
-    ///
-    pub branch: String,
-    ///
-    pub force: bool,
     ///
     pub basic_credential: Option<BasicAuthCredential>,
 }
 
 #[derive(Default, Clone, Debug)]
 struct PushState {
-    request: PushRequest,
+    request: PushTagsRequest,
 }
 
 ///
-pub struct AsyncPush {
+pub struct AsyncPushTags {
     state: Arc<Mutex<Option<PushState>>>,
     last_result: Arc<Mutex<Option<String>>>,
-    progress: Arc<Mutex<Option<ProgressNotification>>>,
+    progress: Arc<Mutex<Option<PushTagsProgress>>>,
     sender: Sender<AsyncNotification>,
 }
 
-impl AsyncPush {
+impl AsyncPushTags {
     ///
     pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         Self {
@@ -62,13 +58,13 @@ impl AsyncPush {
     }
 
     ///
-    pub fn progress(&self) -> Result<Option<RemoteProgress>> {
+    pub fn progress(&self) -> Result<Option<PushTagsProgress>> {
         let res = self.progress.lock()?;
-        Ok(res.as_ref().map(|progress| progress.clone().into()))
+        Ok(*res)
     }
 
     ///
-    pub fn request(&mut self, params: PushRequest) -> Result<()> {
+    pub fn request(&mut self, params: PushTagsRequest) -> Result<()> {
         log::trace!("request");
 
         if self.is_pending()? {
@@ -87,24 +83,18 @@ impl AsyncPush {
             let (progress_sender, receiver) = unbounded();
 
             let handle = RemoteProgress::spawn_receiver_thread(
-                AsyncNotification::Push,
+                AsyncNotification::PushTags,
                 sender.clone(),
                 receiver,
                 arc_progress,
             );
 
-            let res = push(
+            let res = push_tags(
                 CWD,
                 params.remote.as_str(),
-                params.branch.as_str(),
-                params.force,
                 params.basic_credential.clone(),
-                Some(progress_sender.clone()),
+                Some(progress_sender),
             );
-
-            progress_sender
-                .send(ProgressNotification::Done)
-                .expect("closing send failed");
 
             handle.join().expect("joining thread failed");
 
@@ -113,14 +103,14 @@ impl AsyncPush {
             Self::clear_request(arc_state).expect("clear error");
 
             sender
-                .send(AsyncNotification::Push)
+                .send(AsyncNotification::PushTags)
                 .expect("error sending push");
         });
 
         Ok(())
     }
 
-    fn set_request(&self, params: &PushRequest) -> Result<()> {
+    fn set_request(&self, params: &PushTagsRequest) -> Result<()> {
         let mut state = self.state.lock()?;
 
         if state.is_some() {

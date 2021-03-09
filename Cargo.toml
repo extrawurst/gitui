@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.11.0"
+version = "0.12.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
@@ -20,11 +20,11 @@ keywords = [
 
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
-asyncgit = { path = "./asyncgit", version = "0.11" }
+asyncgit = { path = "./asyncgit", version = "0.12" }
 crossterm = { version = "0.19", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
 tui = { version = "0.14", default-features = false, features = ['crossterm', 'serde'] }
-bytesize = { version = "1.0.1", default-features = false}
+bytesize = { version = "1.0", default-features = false}
 itertools = "0.10"
 rayon-core = "1.9"
 log = "0.4"
@@ -37,7 +37,7 @@ chrono = "0.4"
 backtrace = "0.3"
 ron = "0.6"
 serde = "1.0"
-anyhow = "1.0.38"
+anyhow = "1.0"
 unicode-width = "0.1"
 textwrap = "0.13"
 

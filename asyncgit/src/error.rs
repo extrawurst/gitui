@@ -1,4 +1,4 @@
-use std::string::FromUtf8Error;
+use std::{num::TryFromIntError, string::FromUtf8Error};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -12,6 +12,9 @@ pub enum Error {
     #[error("git: remote url not found")]
     UnknownRemote,
 
+    #[error("git: inconclusive remotes")]
+    NoDefaultRemoteFound,
+
     #[error("git: work dir error")]
     NoWorkDir,
 
@@ -23,6 +26,9 @@ pub enum Error {
 
     #[error("utf8 error:{0}")]
     Utf8Error(#[from] FromUtf8Error),
+
+    #[error("TryFromInt error:{0}")]
+    IntError(#[from] TryFromIntError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

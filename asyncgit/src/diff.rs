@@ -65,10 +65,7 @@ impl AsyncDiff {
     pub fn last(&mut self) -> Result<Option<(DiffParams, FileDiff)>> {
         let last = self.last.lock()?;
 
-        Ok(match last.clone() {
-            Some(res) => Some((res.params, res.result)),
-            None => None,
-        })
+        Ok(last.clone().map(|res| (res.params, res.result)))
     }
 
     ///
@@ -118,8 +115,15 @@ impl AsyncDiff {
                 arc_last,
                 arc_current,
                 hash,
-            )
-            .expect("error getting diff");
+            );
+
+            let notify = match notify {
+                Err(err) => {
+                    log::error!("get_diff_helper error: {}", err);
+                    true
+                }
+                Ok(notify) => notify,
+            };
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 

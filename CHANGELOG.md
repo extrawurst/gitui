@@ -8,11 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- show used char count in input texts ([#466](https://github.com/extrawurst/gitui/issues/466))
+- support discarding diff by lines ([#59](https://github.com/extrawurst/gitui/issues/59))
+- support for pushing tags ([#568](https://github.com/extrawurst/gitui/issues/568))
 
-![push](assets/char_count.gif)
+## [0.12.0] - 2020-03-03
+
+**pull support (ff-merge or conflict-free merge-commit)**
+
+![pull](assets/pull.gif)
+
+**more info in commit popup**
+
+![chars-branch-name](assets/chars_and_branchname.gif)
+
+### Breaking Change
+- MacOS config directory now uses `~/.config/gitui` [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317)) 
+
+### Added
+- support for pull (fetch + simple merging) ([#319](https://github.com/extrawurst/gitui/issues/319))
+- show used char count in input texts ([#466](https://github.com/extrawurst/gitui/issues/466))
+- support smoother left/right toggle/keys for commit details ([#418](https://github.com/extrawurst/gitui/issues/418))
+- support *force push* command [[@WizardOhio24](https://github.com/WizardOhio24)] ([#274](https://github.com/extrawurst/gitui/issues/274)) 
 
 ### Fixed
+- don't close branchlist every time ([#550](https://github.com/extrawurst/gitui/issues/550))
+- fixed key binding for *external exitor* in vim key bindings [[@yanganto](https://github.com/yanganto)] ([#549](https://github.com/extrawurst/gitui/issues/549))
+- fix some potential errors when deleting files while they are being diffed ([#490](https://github.com/extrawurst/gitui/issues/490))
+- push defaults to 'origin' remote if it exists ([#494](https://github.com/extrawurst/gitui/issues/494))
+- support missing pageUp/down support in branchlist ([#519](https://github.com/extrawurst/gitui/issues/519))
+- don't hide branch name while in commit dialog ([#529](https://github.com/extrawurst/gitui/issues/529))
+- don't discard commit message without confirmation ([#530](https://github.com/extrawurst/gitui/issues/530))
 - compilation broken on freebsd ([#461](https://github.com/extrawurst/gitui/issues/461))
 - don’t fail if `user.name` is not set [[@cruessler](https://github.com/cruessler)] ([#79](https://github.com/extrawurst/gitui/issues/79)) ([#228](https://github.com/extrawurst/gitui/issues/228))
 
