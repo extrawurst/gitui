@@ -132,9 +132,12 @@ impl Theme {
             StatusItemType::Deleted => {
                 Style::default().fg(self.diff_file_removed)
             }
-            StatusItemType::Renamed | StatusItemType::Conflicted => {
+            StatusItemType::Renamed => {
                 Style::default().fg(self.diff_file_moved)
             }
+            StatusItemType::Conflicted => Style::default()
+                .fg(self.diff_file_modified)
+                .add_modifier(Modifier::BOLD),
             StatusItemType::Typechange => Style::default(),
         };
 
