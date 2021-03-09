@@ -57,7 +57,7 @@ impl StashList {
 
     fn apply_stash(&mut self) {
         if let Some(e) = self.list.selected_entry() {
-            match sync::stash_apply(CWD, e.id) {
+            match sync::stash_apply(CWD, e.id, false) {
                 Ok(_) => {
                     self.queue
                         .borrow_mut()
