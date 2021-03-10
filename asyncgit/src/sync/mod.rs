@@ -62,8 +62,8 @@ pub use utils::{
 mod tests {
     use super::{
         commit, stage_add_file,
-        staging::repo_write_file,
         status::{get_status, StatusType},
+        utils::repo_write_file,
         CommitId, LogWalker,
     };
     use crate::error::Result;
