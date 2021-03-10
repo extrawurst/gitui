@@ -461,36 +461,34 @@ impl Component for Status {
                 force_all,
                 self.components().as_slice(),
             );
-
-            out.push(CommandInfo::new(
-                strings::commands::open_branch_select_popup(
-                    &self.key_config,
-                ),
-                true,
-                true,
-            ));
-
             out.push(CommandInfo::new(
                 strings::commands::status_push(&self.key_config),
                 self.can_push(),
-                true,
+                self.can_push(),
             ));
             out.push(CommandInfo::new(
                 strings::commands::status_force_push(
                     &self.key_config,
                 ),
                 self.can_push(),
-                true,
-            ));
-            out.push(CommandInfo::new(
-                strings::commands::status_pull(&self.key_config),
-                true,
-                true,
+                self.can_push(),
             ));
         }
 
         {
             let focus_on_diff = self.focus == Focus::Diff;
+            out.push(CommandInfo::new(
+                strings::commands::status_pull(&self.key_config),
+                !focus_on_diff,
+                !focus_on_diff,
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::open_branch_select_popup(
+                    &self.key_config,
+                ),
+                !focus_on_diff,
+                !focus_on_diff,
+            ));
             out.push(CommandInfo::new(
                 strings::commands::edit_item(&self.key_config),
                 if focus_on_diff {

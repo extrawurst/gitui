@@ -639,12 +639,6 @@ impl Component for DiffComponent {
             self.focused,
         ));
 
-        out.push(CommandInfo::new(
-            strings::commands::copy(&self.key_config),
-            true,
-            self.focused,
-        ));
-
         out.push(
             CommandInfo::new(
                 strings::commands::diff_home_end(&self.key_config),
@@ -679,6 +673,12 @@ impl Component for DiffComponent {
                 self.focused && !self.is_stage(),
             ));
         }
+
+        out.push(CommandInfo::new(
+            strings::commands::copy(&self.key_config),
+            true,
+            self.focused,
+        ));
 
         CommandBlocking::PassingOn
     }
