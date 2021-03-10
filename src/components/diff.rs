@@ -491,7 +491,7 @@ impl DiffComponent {
         Ok(())
     }
 
-    fn queue_update(&mut self) {
+    fn queue_update(&self) {
         self.queue
             .as_ref()
             .borrow_mut()
@@ -514,10 +514,41 @@ impl DiffComponent {
     }
 
     fn reset_lines(&self) {
+        self.queue.as_ref().borrow_mut().push_back(
+            InternalEvent::ConfirmAction(Action::ResetLines(
+                self.current.path.clone(),
+                self.selected_lines(),
+            )),
+        );
+    }
+
+    fn stage_lines(&self) {
         if let Some(diff) = &self.diff {
-            if self.selected_hunk.is_some() {
-                let selected_lines: Vec<DiffLinePosition> = diff
-                    .hunks
+            //TODO: support untracked files aswell
+            if !diff.untracked {
+                let selected_lines = self.selected_lines();
+
+                try_or_popup!(
+                    self,
+                    "(un)stage lines:",
+                    sync::stage_lines(
+                        CWD,
+                        &self.current.path,
+                        self.is_stage(),
+                        &selected_lines,
+                    )
+                );
+
+                self.queue_update();
+            }
+        }
+    }
+
+    fn selected_lines(&self) -> Vec<DiffLinePosition> {
+        self.diff
+            .as_ref()
+            .map(|diff| {
+                diff.hunks
                     .iter()
                     .flat_map(|hunk| hunk.lines.iter())
                     .enumerate()
@@ -533,16 +564,9 @@ impl DiffComponent {
                             None
                         }
                     })
-                    .collect();
-
-                self.queue.as_ref().borrow_mut().push_back(
-                    InternalEvent::ConfirmAction(Action::ResetLines(
-                        self.current.path.clone(),
-                        selected_lines,
-                    )),
-                );
-            }
-        }
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     fn reset_untracked(&self) {
@@ -678,6 +702,20 @@ impl Component for DiffComponent {
                 true,
                 self.focused && !self.is_stage(),
             ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_stage(&self.key_config),
+                //TODO: only if any modifications are selected
+                true,
+                self.focused && !self.is_stage(),
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_unstage(
+                    &self.key_config,
+                ),
+                //TODO: only if any modifications are selected
+                true,
+                self.focused && self.is_stage(),
+            ));
         }
 
         CommandBlocking::PassingOn
@@ -733,11 +771,17 @@ impl Component for DiffComponent {
                         }
                     }
                     Ok(true)
+                } else if e == self.key_config.diff_stage_lines
+                    && !self.is_immutable
+                {
+                    self.stage_lines();
+                    Ok(true)
                 } else if e == self.key_config.status_reset_lines
                     && !self.is_immutable
                     && !self.is_stage()
                 {
                     if let Some(diff) = &self.diff {
+                        //TODO: reset untracked lines
                         if !diff.untracked {
                             self.reset_lines();
                         }

@@ -157,6 +157,7 @@ pub(crate) fn get_diff_raw<'a>(
 /// returns diff of a specific file either in `stage` or workdir
 pub fn get_diff(
     repo_path: &str,
+    //TODO: make &str
     p: String,
     stage: bool,
 ) -> Result<FileDiff> {

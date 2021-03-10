@@ -118,11 +118,11 @@ mod tests {
     use super::*;
     use crate::sync::{
         commit, get_commit_files, get_commits_info, stage_add_file,
-        staging::repo_write_file,
         tests::{
             debug_cmd_print, get_statuses, repo_init,
             write_commit_file,
         },
+        utils::repo_write_file,
     };
     use std::{fs::File, io::Write, path::Path};
 

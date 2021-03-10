@@ -49,7 +49,7 @@ pub use remotes::{
     tags::PushTagsProgress,
 };
 pub use reset::{reset_stage, reset_workdir};
-pub use staging::discard_lines;
+pub use staging::{discard_lines, stage_lines};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use state::{repo_state, RepoState};
 pub use tags::{get_tags, CommitTags, Tags};
@@ -62,8 +62,8 @@ pub use utils::{
 mod tests {
     use super::{
         commit, stage_add_file,
-        staging::repo_write_file,
         status::{get_status, StatusType},
+        utils::repo_write_file,
         CommitId, LogWalker,
     };
     use crate::error::Result;

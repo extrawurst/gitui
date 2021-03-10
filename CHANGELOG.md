@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- `[s]` key repurposed to trigger line based (un)stage
+
 ### Added
-- support discarding diff by lines ([#59](https://github.com/extrawurst/gitui/issues/59))
+- support stage/unstage selected lines ([#59](https://github.com/extrawurst/gitui/issues/59))
+- support discarding selected lines ([#59](https://github.com/extrawurst/gitui/issues/59))
 - support for pushing tags ([#568](https://github.com/extrawurst/gitui/issues/568))
 - visualize *conflicted* files differently ([#576](https://github.com/extrawurst/gitui/issues/576))
 

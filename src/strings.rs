@@ -21,20 +21,14 @@ pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
 pub static SELECT_BRANCH_POPUP_MSG: &str = "Switch Branch";
 
-pub fn title_status(key_config: &SharedKeyConfig) -> String {
-    format!(
-        "Unstaged Changes [{}]",
-        key_config.get_hint(key_config.focus_workdir)
-    )
+pub fn title_status(_key_config: &SharedKeyConfig) -> String {
+    "Unstaged Changes".to_string()
 }
 pub fn title_diff(_key_config: &SharedKeyConfig) -> String {
     "Diff: ".to_string()
 }
-pub fn title_index(key_config: &SharedKeyConfig) -> String {
-    format!(
-        "Staged Changes [{}]",
-        key_config.get_hint(key_config.focus_stage)
-    )
+pub fn title_index(_key_config: &SharedKeyConfig) -> String {
+    "Staged Changes".to_string()
 }
 pub fn tab_status(key_config: &SharedKeyConfig) -> String {
     format!("Status [{}]", key_config.get_hint(key_config.tab_status))
@@ -416,6 +410,30 @@ pub mod commands {
             CMD_GROUP_DIFF,
         )
     }
+    pub fn diff_lines_stage(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Stage lines [{}]",
+                key_config.get_hint(key_config.diff_stage_lines),
+            ),
+            "stage selected lines",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn diff_lines_unstage(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Unstage lines [{}]",
+                key_config.get_hint(key_config.diff_stage_lines),
+            ),
+            "unstage selected lines",
+            CMD_GROUP_DIFF,
+        )
+    }
     pub fn diff_hunk_remove(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
@@ -460,18 +478,6 @@ pub mod commands {
         )
         .hide_help()
     }
-    pub fn select_staging(
-        key_config: &SharedKeyConfig,
-    ) -> CommandText {
-        CommandText::new(
-            format!(
-                "To stage [{}]",
-                key_config.get_hint(key_config.focus_stage),
-            ),
-            "focus/select staging area",
-            CMD_GROUP_GENERAL,
-        )
-    }
     pub fn select_status(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
@@ -482,18 +488,6 @@ pub mod commands {
                 key_config.get_hint(key_config.tab_log),
             ),
             "focus/select file tree of staged or unstaged files",
-            CMD_GROUP_GENERAL,
-        )
-    }
-    pub fn select_unstaged(
-        key_config: &SharedKeyConfig,
-    ) -> CommandText {
-        CommandText::new(
-            format!(
-                "To unstaged [{}]",
-                key_config.get_hint(key_config.focus_workdir),
-            ),
-            "focus/select unstaged area",
             CMD_GROUP_GENERAL,
         )
     }

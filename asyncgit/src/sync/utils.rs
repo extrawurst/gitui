@@ -4,7 +4,7 @@ use super::CommitId;
 use crate::error::{Error, Result};
 use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
-use std::path::Path;
+use std::{fs::File, io::Write, path::Path};
 
 ///
 #[derive(PartialEq, Debug, Clone)]
@@ -167,9 +167,24 @@ pub fn get_config_string(
         Ok(entry.value().map(|s| s.to_string()))
     }
 }
-/// helper function
+
 pub(crate) fn bytes2string(bytes: &[u8]) -> Result<String> {
     Ok(String::from_utf8(bytes.to_vec())?)
+}
+
+/// write a file in repo
+pub(crate) fn repo_write_file(
+    repo: &Repository,
+    file: &str,
+    content: &str,
+) -> Result<()> {
+    let dir = work_dir(repo)?.join(file);
+    let file_path = dir.to_str().ok_or_else(|| {
+        Error::Generic(String::from("invalid file path"))
+    })?;
+    let mut file = File::create(file_path)?;
+    file.write_all(content.as_bytes())?;
+    Ok(())
 }
 
 #[cfg(test)]
