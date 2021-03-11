@@ -59,13 +59,14 @@ pub fn merge_upstream_rebase(
 
 #[cfg(test)]
 mod test {
-    use super::super::merge_ff::test::write_commit_file;
     use super::*;
     use crate::sync::{
         branch_compare_upstream, get_commits_info,
         remotes::{fetch_origin, push::push},
-        tests::debug_cmd_print,
-        tests::{get_commit_ids, repo_clone, repo_init_bare},
+        tests::{
+            debug_cmd_print, get_commit_ids, repo_clone,
+            repo_init_bare, write_commit_file,
+        },
         RepoState,
     };
     use git2::Repository;
