@@ -172,7 +172,6 @@ The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to se
 
 These are the high level goals before calling out `1.0`:
 
-* rebase merging
 * upstream branches ([#453](https://github.com/extrawurst/gitui/issues/453))
 * merging with conflicts ([#485](https://github.com/extrawurst/gitui/issues/485))
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
