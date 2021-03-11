@@ -2,6 +2,7 @@
 
 pub mod merge_commit;
 pub mod merge_ff;
+pub mod merge_rebase;
 pub mod rename;
 
 use super::{
@@ -106,6 +107,20 @@ pub(crate) fn branch_set_upstream(
     }
 
     Ok(())
+}
+
+/// returns whether the pull merge strategy is set to rebase
+pub fn config_is_pull_rebase(repo_path: &str) -> Result<bool> {
+    let repo = utils::repo(repo_path)?;
+    let config = repo.config()?;
+
+    if let Ok(rebase) = config.get_entry("pull.rebase") {
+        let value =
+            rebase.value().map(String::from).unwrap_or_default();
+        return Ok(value == "true");
+    };
+
+    Ok(false)
 }
 
 ///
