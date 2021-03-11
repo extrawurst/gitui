@@ -27,7 +27,6 @@ pub fn merge_upstream_rebase(
 
     let rebase = repo.rebase(
         Some(&annotated_branch),
-        // None,
         Some(&annotated_upstream),
         None,
         None,
