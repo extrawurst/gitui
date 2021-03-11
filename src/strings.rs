@@ -94,9 +94,9 @@ pub fn confirm_title_merge(
     rebase: bool,
 ) -> String {
     if rebase {
-        "Merge (rebase)".to_string()
+        "Merge (via rebase)".to_string()
     } else {
-        "Merge".to_string()
+        "Merge (via commit)".to_string()
     }
 }
 pub fn confirm_msg_merge(
@@ -105,9 +105,9 @@ pub fn confirm_msg_merge(
     rebase: bool,
 ) -> String {
     if rebase {
-        format!("rebase onto {} incoming commits?", incoming)
+        format!("Rebase onto {} incoming commits?", incoming)
     } else {
-        format!("merge of {} incoming commits?", incoming)
+        format!("Merge of {} incoming commits?", incoming)
     }
 }
 pub fn confirm_msg_reset(_key_config: &SharedKeyConfig) -> String {
