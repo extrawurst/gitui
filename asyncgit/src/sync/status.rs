@@ -18,6 +18,8 @@ pub enum StatusItemType {
     Renamed,
     ///
     Typechange,
+    ///
+    Conflicted,
 }
 
 impl From<Status> for StatusItemType {
@@ -30,6 +32,8 @@ impl From<Status> for StatusItemType {
             Self::Renamed
         } else if s.is_index_typechange() || s.is_wt_typechange() {
             Self::Typechange
+        } else if s.is_conflicted() {
+            Self::Conflicted
         } else {
             Self::Modified
         }

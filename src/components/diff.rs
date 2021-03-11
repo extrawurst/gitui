@@ -9,7 +9,11 @@ use crate::{
     ui::{self, calc_scroll_top, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
+use asyncgit::{
+    hash,
+    sync::{self, diff::DiffLinePosition},
+    DiffLine, DiffLineType, FileDiff, CWD,
+};
 use bytesize::ByteSize;
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
@@ -487,7 +491,7 @@ impl DiffComponent {
         Ok(())
     }
 
-    fn queue_update(&mut self) {
+    fn queue_update(&self) {
         self.queue
             .as_ref()
             .borrow_mut()
@@ -507,6 +511,62 @@ impl DiffComponent {
                 );
             }
         }
+    }
+
+    fn reset_lines(&self) {
+        self.queue.as_ref().borrow_mut().push_back(
+            InternalEvent::ConfirmAction(Action::ResetLines(
+                self.current.path.clone(),
+                self.selected_lines(),
+            )),
+        );
+    }
+
+    fn stage_lines(&self) {
+        if let Some(diff) = &self.diff {
+            //TODO: support untracked files aswell
+            if !diff.untracked {
+                let selected_lines = self.selected_lines();
+
+                try_or_popup!(
+                    self,
+                    "(un)stage lines:",
+                    sync::stage_lines(
+                        CWD,
+                        &self.current.path,
+                        self.is_stage(),
+                        &selected_lines,
+                    )
+                );
+
+                self.queue_update();
+            }
+        }
+    }
+
+    fn selected_lines(&self) -> Vec<DiffLinePosition> {
+        self.diff
+            .as_ref()
+            .map(|diff| {
+                diff.hunks
+                    .iter()
+                    .flat_map(|hunk| hunk.lines.iter())
+                    .enumerate()
+                    .filter_map(|(i, line)| {
+                        let is_add_or_delete = line.line_type
+                            == DiffLineType::Add
+                            || line.line_type == DiffLineType::Delete;
+                        if self.selection.contains(i)
+                            && is_add_or_delete
+                        {
+                            Some(line.position)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     fn reset_untracked(&self) {
@@ -634,11 +694,34 @@ impl Component for DiffComponent {
                 self.selected_hunk.is_some(),
                 self.focused && !self.is_stage(),
             ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_revert(
+                    &self.key_config,
+                ),
+                //TODO: only if any modifications are selected
+                true,
+                self.focused && !self.is_stage(),
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_stage(&self.key_config),
+                //TODO: only if any modifications are selected
+                true,
+                self.focused && !self.is_stage(),
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_unstage(
+                    &self.key_config,
+                ),
+                //TODO: only if any modifications are selected
+                true,
+                self.focused && self.is_stage(),
+            ));
         }
 
         CommandBlocking::PassingOn
     }
 
+    #[allow(clippy::cognitive_complexity)]
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = ev {
@@ -685,6 +768,22 @@ impl Component for DiffComponent {
                             self.reset_untracked();
                         } else {
                             self.reset_hunk();
+                        }
+                    }
+                    Ok(true)
+                } else if e == self.key_config.diff_stage_lines
+                    && !self.is_immutable
+                {
+                    self.stage_lines();
+                    Ok(true)
+                } else if e == self.key_config.status_reset_lines
+                    && !self.is_immutable
+                    && !self.is_stage()
+                {
+                    if let Some(diff) = &self.diff {
+                        //TODO: reset untracked lines
+                        if !diff.untracked {
+                            self.reset_lines();
                         }
                     }
                     Ok(true)

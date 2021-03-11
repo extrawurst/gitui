@@ -7,7 +7,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue, ResetItem},
-    strings::{self, order},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -522,26 +522,6 @@ impl Component for Status {
             .hidden(),
         );
 
-        out.push(
-            CommandInfo::new(
-                strings::commands::select_staging(&self.key_config),
-                true,
-                (self.visible && self.focus == Focus::WorkDir)
-                    || force_all,
-            )
-            .order(order::NAV),
-        );
-
-        out.push(
-            CommandInfo::new(
-                strings::commands::select_unstaged(&self.key_config),
-                true,
-                (self.visible && self.focus == Focus::Stage)
-                    || force_all,
-            )
-            .order(order::NAV),
-        );
-
         visibility_blocking(self)
     }
 
@@ -553,11 +533,7 @@ impl Component for Status {
             }
 
             if let Event::Key(k) = ev {
-                return if k == self.key_config.focus_workdir {
-                    self.switch_focus(Focus::WorkDir)
-                } else if k == self.key_config.focus_stage {
-                    self.switch_focus(Focus::Stage)
-                } else if k == self.key_config.edit_file
+                return if k == self.key_config.edit_file
                     && (self.can_focus_diff()
                         || self.focus == Focus::Diff)
                 {

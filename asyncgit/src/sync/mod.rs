@@ -14,8 +14,10 @@ mod hooks;
 mod hunks;
 mod ignore;
 mod logwalker;
+mod patches;
 pub mod remotes;
 mod reset;
+mod staging;
 mod stash;
 mod state;
 pub mod status;
@@ -42,8 +44,12 @@ pub use hooks::{
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
-pub use remotes::{get_default_remote, get_remotes};
+pub use remotes::{
+    get_default_remote, get_remotes, push::AsyncProgress,
+    tags::PushTagsProgress,
+};
 pub use reset::{reset_stage, reset_workdir};
+pub use staging::{discard_lines, stage_lines};
 pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
 pub use state::{repo_state, RepoState};
 pub use tags::{get_tags, CommitTags, Tags};
@@ -55,12 +61,14 @@ pub use utils::{
 #[cfg(test)]
 mod tests {
     use super::{
+        commit, stage_add_file,
         status::{get_status, StatusType},
+        utils::repo_write_file,
         CommitId, LogWalker,
     };
     use crate::error::Result;
     use git2::Repository;
-    use std::process::Command;
+    use std::{path::Path, process::Command};
     use tempfile::TempDir;
 
     /// Calling `set_search_path` with an empty directory makes sure that there
@@ -83,6 +91,25 @@ mod tests {
             set_search_path(ConfigLevel::XDG, &path).unwrap();
             set_search_path(ConfigLevel::ProgramData, &path).unwrap();
         });
+    }
+
+    /// write, stage and commit a file
+    pub fn write_commit_file(
+        repo: &Repository,
+        file: &str,
+        content: &str,
+        commit_name: &str,
+    ) -> CommitId {
+        repo_write_file(repo, file, content).unwrap();
+
+        stage_add_file(
+            repo.workdir().unwrap().to_str().unwrap(),
+            Path::new(file),
+        )
+        .unwrap();
+
+        commit(repo.workdir().unwrap().to_str().unwrap(), commit_name)
+            .unwrap()
     }
 
     ///

@@ -154,6 +154,7 @@ This will log to:
 - macOS: `$HOME/Library/Caches/gitui/gitui.log`
 - Linux using `XDG`: `$XDG_CACHE_HOME/gitui/gitui.log`
 - Linux: `$HOME/.cache/gitui/gitui.log`
+- Windows: `%LOCALAPPDATA%/gitui/gitui.log`
 
 # Color Theme
 

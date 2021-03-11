@@ -19,7 +19,7 @@ pub fn stage_hunk(
 
     let repo = repo(repo_path)?;
 
-    let diff = get_diff_raw(&repo, &file_path, false, false)?;
+    let diff = get_diff_raw(&repo, &file_path, false, false, None)?;
 
     let mut opt = ApplyOptions::new();
     opt.hunk_callback(|hunk| {
@@ -46,7 +46,7 @@ pub fn reset_hunk(
 
     let repo = repo(repo_path)?;
 
-    let diff = get_diff_raw(&repo, &file_path, false, false)?;
+    let diff = get_diff_raw(&repo, &file_path, false, false, None)?;
 
     let hunk_index = find_hunk_index(&diff, hunk_hash);
     if let Some(hunk_index) = hunk_index {
@@ -58,7 +58,8 @@ pub fn reset_hunk(
             res
         });
 
-        let diff = get_diff_raw(&repo, &file_path, false, true)?;
+        let diff =
+            get_diff_raw(&repo, &file_path, false, true, None)?;
 
         repo.apply(&diff, ApplyLocation::WorkDir, Some(&mut opt))?;
 
@@ -104,7 +105,7 @@ pub fn unstage_hunk(
 
     let repo = repo(repo_path)?;
 
-    let diff = get_diff_raw(&repo, &file_path, true, false)?;
+    let diff = get_diff_raw(&repo, &file_path, true, false, None)?;
     let diff_count_positive = diff.deltas().len();
 
     let hunk_index = find_hunk_index(&diff, hunk_hash);
@@ -113,7 +114,7 @@ pub fn unstage_hunk(
         Ok,
     )?;
 
-    let diff = get_diff_raw(&repo, &file_path, true, true)?;
+    let diff = get_diff_raw(&repo, &file_path, true, true, None)?;
 
     if diff.deltas().len() != diff_count_positive {
         return Err(Error::Generic(format!(

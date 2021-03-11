@@ -142,6 +142,7 @@ impl FileTreeComponent {
             StatusItemType::Deleted => '-',
             StatusItemType::Renamed => 'R',
             StatusItemType::Typechange => ' ',
+            StatusItemType::Conflicted => '!',
         }
     }
 
