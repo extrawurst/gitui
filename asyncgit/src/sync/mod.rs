@@ -25,11 +25,12 @@ mod tags;
 pub mod utils;
 
 pub use branch::{
-    branch_compare_upstream, checkout_branch, create_branch,
-    delete_branch, get_branches_info,
+    branch_compare_upstream, checkout_branch, config_is_pull_rebase,
+    create_branch, delete_branch, get_branches_info,
     merge_commit::merge_upstream_commit,
     merge_ff::branch_merge_upstream_fastforward,
-    rename::rename_branch, BranchCompare, BranchInfo,
+    merge_rebase::merge_upstream_rebase, rename::rename_branch,
+    BranchCompare, BranchInfo,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{

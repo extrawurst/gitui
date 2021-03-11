@@ -524,8 +524,8 @@ impl App {
                     .queue
                     .borrow_mut()
                     .push_back(InternalEvent::Push(branch, force)),
-                Action::PullMerge(_) => {
-                    self.pull_popup.try_conflict_free_merge();
+                Action::PullMerge { rebase, .. } => {
+                    self.pull_popup.try_conflict_free_merge(rebase);
                     flags.insert(NeedsUpdate::ALL);
                 }
             },

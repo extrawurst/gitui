@@ -89,14 +89,26 @@ pub fn confirm_title_stashdrop(
 ) -> String {
     "Drop".to_string()
 }
-pub fn confirm_title_merge(_key_config: &SharedKeyConfig) -> String {
-    "Merge".to_string()
+pub fn confirm_title_merge(
+    _key_config: &SharedKeyConfig,
+    rebase: bool,
+) -> String {
+    if rebase {
+        "Merge (rebase)".to_string()
+    } else {
+        "Merge".to_string()
+    }
 }
 pub fn confirm_msg_merge(
     _key_config: &SharedKeyConfig,
     incoming: usize,
+    rebase: bool,
 ) -> String {
-    format!("confirm merge of {} incoming commits? ", incoming)
+    if rebase {
+        format!("rebase onto {} incoming commits?", incoming)
+    } else {
+        format!("merge of {} incoming commits?", incoming)
+    }
 }
 pub fn confirm_msg_reset(_key_config: &SharedKeyConfig) -> String {
     "confirm file reset?".to_string()

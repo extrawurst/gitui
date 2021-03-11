@@ -31,7 +31,7 @@ pub enum Action {
     StashDrop(CommitId),
     DeleteBranch(String),
     ForcePush(String, bool),
-    PullMerge(usize),
+    PullMerge { incoming: usize, rebase: bool },
 }
 
 ///
