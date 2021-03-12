@@ -19,9 +19,16 @@ use utils::get_head_repo;
 /// returns the branch-name head is currently pointing to
 /// this might be expensive, see `cached::BranchName`
 pub(crate) fn get_branch_name(repo_path: &str) -> Result<String> {
-    scope_time!("get_branch_name");
-
     let repo = utils::repo(repo_path)?;
+
+    Ok(get_branch_name_repo(&repo)?)
+}
+
+/// ditto
+pub(crate) fn get_branch_name_repo(
+    repo: &Repository,
+) -> Result<String> {
+    scope_time!("get_branch_name_repo");
 
     let iter = repo.branches(None)?;
 

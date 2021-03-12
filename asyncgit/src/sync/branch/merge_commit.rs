@@ -162,8 +162,9 @@ mod test {
             merge_upstream_commit(clone2_dir, "master").unwrap();
 
         let state = crate::sync::repo_state(clone2_dir).unwrap();
-
         assert_eq!(state, RepoState::Clean);
+
+        assert!(!clone2.head_detached().unwrap());
 
         let commits = get_commit_ids(&clone2, 10);
         assert_eq!(commits.len(), 3);

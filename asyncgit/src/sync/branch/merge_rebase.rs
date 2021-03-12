@@ -15,6 +15,12 @@ pub fn merge_upstream_rebase(
     scope_time!("merge_upstream_rebase");
 
     let repo = utils::repo(repo_path)?;
+    if super::get_branch_name_repo(&repo)? != branch_name {
+        return Err(Error::Generic(String::from(
+            "can only rebase in head branch",
+        )));
+    }
+
     let branch = repo.find_branch(branch_name, BranchType::Local)?;
     let upstream = branch.upstream()?;
     let upstream_commit = upstream.get().peel_to_commit()?;
@@ -24,36 +30,34 @@ pub fn merge_upstream_rebase(
     let branch_commit = branch.get().peel_to_commit()?;
     let annotated_branch =
         repo.find_annotated_commit(branch_commit.id())?;
+    dbg!(annotated_branch.id());
 
-    let rebase = repo.rebase(
-        Some(&annotated_branch),
-        Some(&annotated_upstream),
-        None,
-        None,
-    )?;
+    let mut rebase =
+        repo.rebase(None, Some(&annotated_upstream), None, None)?;
 
     let signature =
         crate::sync::commit::signature_allow_undefined_name(&repo)?;
 
-    for e in rebase {
-        let _op = e?;
-        // dbg!(op.id());
-        // dbg!(op.kind());
+    while let Some(op) = rebase.next() {
+        let op = op?;
+        dbg!(op.id());
+
+        if repo.index()?.has_conflicts() {
+            rebase.abort()?;
+            return Err(Error::Generic(String::from(
+                "conflicts while merging",
+            )));
+        }
+
+        let commit = rebase.commit(None, &signature, None)?;
+        dbg!(commit);
     }
 
-    let mut rebase = repo.open_rebase(None)?;
+    rebase.finish(Some(&signature))?;
 
-    if repo.index()?.has_conflicts() {
-        rebase.abort()?;
+    repo.index()?.read(true)?;
 
-        Err(Error::Generic(String::from("conflicts while merging")))
-    } else {
-        rebase.commit(None, &signature, None)?;
-
-        rebase.finish(Some(&signature))?;
-
-        Ok(())
-    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -97,8 +101,12 @@ mod test {
         let _commit1 =
             write_commit_file(&clone1, "test.txt", "test", "commit1");
 
+        assert_eq!(clone1.head_detached().unwrap(), false);
+
         push(clone1_dir, "origin", "master", false, None, None)
             .unwrap();
+
+        assert_eq!(clone1.head_detached().unwrap(), false);
 
         // clone2
 
@@ -114,8 +122,12 @@ mod test {
             "commit2",
         );
 
+        assert_eq!(clone2.head_detached().unwrap(), false);
+
         push(clone2_dir, "origin", "master", false, None, None)
             .unwrap();
+
+        assert_eq!(clone2.head_detached().unwrap(), false);
 
         // clone1
 
@@ -125,6 +137,8 @@ mod test {
             "test",
             "commit3",
         );
+
+        assert_eq!(clone1.head_detached().unwrap(), false);
 
         //lets fetch from origin
         let bytes =
@@ -141,12 +155,13 @@ mod test {
 
         // debug_cmd_print(clone1_dir, "git log");
 
+        assert_eq!(clone1.head_detached().unwrap(), false);
+
         merge_upstream_rebase(clone1_dir, "master").unwrap();
 
         debug_cmd_print(clone1_dir, "git log");
 
         let state = crate::sync::repo_state(clone1_dir).unwrap();
-
         assert_eq!(state, RepoState::Clean);
 
         let commits = get_commit_msgs(&clone1);
@@ -158,6 +173,8 @@ mod test {
                 String::from("commit1")
             ]
         );
+
+        assert_eq!(clone1.head_detached().unwrap(), false);
     }
 
     #[test]
