@@ -169,20 +169,27 @@ impl DiffComponent {
         let hash = hash(&diff);
 
         if self.current.hash != hash {
+            let reset_selection = self.current.path != path;
+
             self.current = Current {
                 path,
                 is_stage,
                 hash,
             };
 
-            self.selected_hunk = Self::find_selected_hunk(
-                &diff,
-                self.selection.get_start(),
-            );
-
             self.diff = Some(diff);
-            self.scroll_top.set(0);
-            self.selection = Selection::Single(0);
+
+            if reset_selection {
+                self.scroll_top.set(0);
+                self.selection = Selection::Single(0);
+                self.update_selection(0);
+            } else {
+                let old_selection = match self.selection {
+                    Selection::Single(line) => line,
+                    Selection::Multiple(start, _) => start,
+                };
+                self.update_selection(old_selection);
+            }
         }
 
         Ok(())
@@ -215,10 +222,15 @@ impl DiffComponent {
                 }
             };
 
+            self.update_selection(new_start);
+        }
+    }
+
+    fn update_selection(&mut self, new_start: usize) {
+        if let Some(diff) = &self.diff {
+            let max = diff.lines.saturating_sub(1) as usize;
             let new_start = cmp::min(max, new_start);
-
             self.selection = Selection::Single(new_start);
-
             self.selected_hunk =
                 Self::find_selected_hunk(diff, new_start);
         }
