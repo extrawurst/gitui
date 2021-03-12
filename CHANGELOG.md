@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support for pushing tags ([#568](https://github.com/extrawurst/gitui/issues/568))
 - visualize *conflicted* files differently ([#576](https://github.com/extrawurst/gitui/issues/576))
 
+### Fixed
+- keep diff line selection after staging/unstaging/discarding ([#583](https://github.com/extrawurst/gitui/issues/583))
+
 ## [0.12.0] - 2020-03-03
 
 **pull support (ff-merge or conflict-free merge-commit)**
