@@ -27,11 +27,6 @@ pub fn merge_upstream_rebase(
     let annotated_upstream =
         repo.find_annotated_commit(upstream_commit.id())?;
 
-    let branch_commit = branch.get().peel_to_commit()?;
-    let annotated_branch =
-        repo.find_annotated_commit(branch_commit.id())?;
-    dbg!(annotated_branch.id());
-
     let mut rebase =
         repo.rebase(None, Some(&annotated_upstream), None, None)?;
 
@@ -39,8 +34,8 @@ pub fn merge_upstream_rebase(
         crate::sync::commit::signature_allow_undefined_name(&repo)?;
 
     while let Some(op) = rebase.next() {
-        let op = op?;
-        dbg!(op.id());
+        let _op = op?;
+        // dbg!(op.id());
 
         if repo.index()?.has_conflicts() {
             rebase.abort()?;
@@ -49,13 +44,10 @@ pub fn merge_upstream_rebase(
             )));
         }
 
-        let commit = rebase.commit(None, &signature, None)?;
-        dbg!(commit);
+        rebase.commit(None, &signature, None)?;
     }
 
     rebase.finish(Some(&signature))?;
-
-    repo.index()?.read(true)?;
 
     Ok(())
 }
@@ -168,6 +160,64 @@ mod test {
         assert_eq!(
             commits,
             vec![
+                String::from("commit3"),
+                String::from("commit2"),
+                String::from("commit1")
+            ]
+        );
+
+        assert_eq!(clone1.head_detached().unwrap(), false);
+    }
+
+    #[test]
+    fn test_merge_multiple() {
+        let (r1_dir, _repo) = repo_init_bare().unwrap();
+
+        let (clone1_dir, clone1) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+        let clone1_dir = clone1_dir.path().to_str().unwrap();
+
+        // clone1
+
+        write_commit_file(&clone1, "test.txt", "test", "commit1");
+
+        push(clone1_dir, "origin", "master", false, None, None)
+            .unwrap();
+
+        // clone2
+
+        let (clone2_dir, clone2) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+        let clone2_dir = clone2_dir.path().to_str().unwrap();
+
+        write_commit_file(&clone2, "test2.txt", "test", "commit2");
+
+        push(clone2_dir, "origin", "master", false, None, None)
+            .unwrap();
+
+        // clone1
+
+        write_commit_file(&clone1, "test3.txt", "test", "commit3");
+        write_commit_file(&clone1, "test4.txt", "test", "commit4");
+
+        //lets fetch from origin
+
+        fetch_origin(clone1_dir, "master", None, None).unwrap();
+
+        merge_upstream_rebase(clone1_dir, "master").unwrap();
+
+        debug_cmd_print(clone1_dir, "git log");
+
+        let state = crate::sync::repo_state(clone1_dir).unwrap();
+        assert_eq!(state, RepoState::Clean);
+
+        let commits = get_commit_msgs(&clone1);
+        assert_eq!(
+            commits,
+            vec![
+                String::from("commit4"),
                 String::from("commit3"),
                 String::from("commit2"),
                 String::from("commit1")
