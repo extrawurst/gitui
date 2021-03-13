@@ -5,12 +5,12 @@ use crate::get_app_config_path;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ron::{
-    de::from_bytes,
+    self,
     ser::{to_string_pretty, PrettyConfig},
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{Read, Write},
     path::PathBuf,
     rc::Rc,
@@ -127,15 +127,14 @@ impl Default for KeyConfig {
 }
 
 impl KeyConfig {
-    fn save(&self) -> Result<()> {
-        let config_file = Self::get_config_file()?;
-        let mut file = File::create(config_file)?;
+    fn save(&self, file: PathBuf) -> Result<()> {
+        let mut file = File::create(file)?;
         let data = to_string_pretty(self, PrettyConfig::default())?;
         file.write_all(data.as_bytes())?;
         Ok(())
     }
 
-    fn get_config_file() -> Result<PathBuf> {
+    pub fn get_config_file() -> Result<PathBuf> {
         let app_home = get_app_config_path()?;
         Ok(app_home.join("key_config.ron"))
     }
@@ -144,31 +143,31 @@ impl KeyConfig {
         let mut f = File::open(config_file)?;
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer)?;
-        Ok(from_bytes(&buffer)?)
+        Ok(ron::de::from_bytes(&buffer)?)
     }
 
-    fn init_internal() -> Result<Self> {
-        let file = Self::get_config_file()?;
+    pub fn init(file: PathBuf) -> Result<Self> {
         if file.exists() {
-            Ok(Self::read_file(file)?)
-        } else {
-            let def = Self::default();
-            if def.save().is_err() {
-                log::warn!(
-                    "failed to store default key config to disk."
-                )
-            }
-            Ok(def)
-        }
-    }
+            match Self::read_file(file.clone()) {
+                Err(e) => {
+                    let config_path = file.clone();
+                    let config_path_old =
+                        format!("{}.old", file.to_string_lossy());
+                    fs::rename(
+                        config_path.clone(),
+                        config_path_old.clone(),
+                    )?;
 
-    pub fn init() -> Self {
-        match Self::init_internal() {
-            Ok(v) => v,
-            Err(e) => {
-                log::error!("failed loading key binding: {}", e);
-                Self::default()
+                    Self::default().save(file)?;
+
+                    Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
+                        e,config_path_old,config_path.to_string_lossy()))
+                }
+                Ok(res) => Ok(res),
             }
+        } else {
+            Self::default().save(file)?;
+            Ok(Self::default())
         }
     }
 

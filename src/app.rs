@@ -23,7 +23,7 @@ use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
 use std::{
     cell::{Cell, RefCell},
-    path::{Path, PathBuf},
+    path::Path,
     rc::Rc,
 };
 use tui::{
@@ -74,11 +74,12 @@ impl App {
     pub fn new(
         sender: &Sender<AsyncNotification>,
         input: Input,
-        theme_path: PathBuf,
+        theme: Theme,
+        key_config: KeyConfig,
     ) -> Self {
         let queue = Queue::default();
-        let theme = Rc::new(Theme::init(theme_path));
-        let key_config = Rc::new(KeyConfig::init());
+        let theme = Rc::new(theme);
+        let key_config = Rc::new(key_config);
 
         Self {
             input,
