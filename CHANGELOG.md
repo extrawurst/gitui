@@ -11,8 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![by-line-ops](assets/by-line-ops.gif)
 
-TESET
-
 ### Changed
 - `[s]` key repurposed to trigger line based (un)stage
 
