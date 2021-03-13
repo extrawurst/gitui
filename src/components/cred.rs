@@ -105,7 +105,9 @@ impl Component for CredComponent {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
                     self.hide();
+                    return Ok(true);
                 }
+
                 if self.input_username.event(ev)?
                     || self.input_password.event(ev)?
                 {
@@ -139,6 +141,7 @@ impl Component for CredComponent {
                     }
                 }
             }
+
             return Ok(true);
         }
         Ok(false)
