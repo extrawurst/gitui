@@ -43,6 +43,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use input::{Input, InputEvent, InputState};
+use keys::KeyConfig;
 use profiler::Profiler;
 use scopeguard::defer;
 use scopetime::scope_time;
@@ -61,6 +62,7 @@ use tui::{
     backend::{Backend, CrosstermBackend},
     Terminal,
 };
+use ui::style::Theme;
 
 static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
@@ -88,6 +90,13 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    let key_config = KeyConfig::init(KeyConfig::get_config_file()?)
+        .map_err(|e| eprintln!("KeyConfig loading error: {}", e))
+        .unwrap_or_default();
+    let theme = Theme::init(cliargs.theme)
+        .map_err(|e| eprintln!("Theme loading error: {}", e))
+        .unwrap_or_default();
+
     setup_terminal()?;
     defer! {
         shutdown_terminal().expect("shutdown failed");
@@ -105,7 +114,7 @@ fn main() -> Result<()> {
     let ticker = tick(TICK_INTERVAL);
     let spinner_ticker = tick(SPINNER_INTERVAL);
 
-    let mut app = App::new(&tx_git, input, cliargs.theme);
+    let mut app = App::new(&tx_git, input, theme, key_config);
 
     let mut spinner = Spinner::default();
     let mut first_update = true;
