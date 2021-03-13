@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**stage/unstage/discard by line**
+
+![by-line-ops](assets/by-line-ops.gif)
+
 ### Changed
 - `[s]` key repurposed to trigger line based (un)stage
 
