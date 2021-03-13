@@ -788,7 +788,7 @@ impl Component for DiffComponent {
                 {
                     self.stage_lines();
                     Ok(true)
-                } else if e == self.key_config.status_reset_lines
+                } else if e == self.key_config.diff_reset_lines
                     && !self.is_immutable
                     && !self.is_stage()
                 {

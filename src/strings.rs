@@ -416,7 +416,7 @@ pub mod commands {
         CommandText::new(
             format!(
                 "Reset lines [{}]",
-                key_config.get_hint(key_config.status_reset_lines),
+                key_config.get_hint(key_config.diff_reset_lines),
             ),
             "resets selected lines",
             CMD_GROUP_DIFF,

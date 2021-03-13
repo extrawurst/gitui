@@ -49,8 +49,9 @@
 
     status_stage_all: ( code: Char('a'), modifiers: ( bits: 0,),),
     status_reset_item: ( code: Char('U'), modifiers: ( bits: 1,),),
-    status_reset_lines: ( code: Char('u'), modifiers: ( bits: 0,),),
     status_ignore_file: ( code: Char('i'), modifiers: ( bits: 0,),),
+    
+    diff_reset_lines: ( code: Char('u'), modifiers: ( bits: 0,),),
     diff_stage_lines: ( code: Char('s'), modifiers: ( bits: 0,),),
 
     stashing_save: ( code: Char('w'), modifiers: ( bits: 0,),),
