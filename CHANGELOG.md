@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - keep diff line selection after staging/unstaging/discarding ([#583](https://github.com/extrawurst/gitui/issues/583))
 - fix pull deadlocking when aborting credentials input ([#586](https://github.com/extrawurst/gitui/issues/586))
+- error diagnostics for config loading ([#589](https://github.com/extrawurst/gitui/issues/589))
 
 ## [0.12.0] - 2020-03-03
 
