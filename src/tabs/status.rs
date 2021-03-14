@@ -232,6 +232,10 @@ impl Status {
         }
     }
 
+    fn is_focus_on_diff(&self) -> bool {
+        self.focus == Focus::Diff
+    }
+
     fn switch_focus(&mut self, f: Focus) -> Result<bool> {
         if self.focus != f {
             self.focus = f;
@@ -455,6 +459,8 @@ impl Component for Status {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
+        let focus_on_diff = self.is_focus_on_diff();
+
         if self.visible || force_all {
             command_pump(
                 out,
@@ -467,30 +473,29 @@ impl Component for Status {
                     &self.key_config,
                 ),
                 true,
-                true,
+                !focus_on_diff,
             ));
 
             out.push(CommandInfo::new(
                 strings::commands::status_push(&self.key_config),
                 self.can_push(),
-                true,
+                !focus_on_diff,
             ));
             out.push(CommandInfo::new(
                 strings::commands::status_force_push(
                     &self.key_config,
                 ),
-                self.can_push(),
                 true,
+                self.can_push() && !focus_on_diff,
             ));
             out.push(CommandInfo::new(
                 strings::commands::status_pull(&self.key_config),
                 true,
-                true,
+                !focus_on_diff,
             ));
         }
 
         {
-            let focus_on_diff = self.focus == Focus::Diff;
             out.push(CommandInfo::new(
                 strings::commands::edit_item(&self.key_config),
                 if focus_on_diff {
@@ -510,17 +515,18 @@ impl Component for Status {
                 self.can_focus_diff(),
                 (self.visible && !focus_on_diff) || force_all,
             ));
-        }
 
-        out.push(
-            CommandInfo::new(
-                strings::commands::select_status(&self.key_config),
-                true,
-                (self.visible && self.focus == Focus::Diff)
-                    || force_all,
-            )
-            .hidden(),
-        );
+            out.push(
+                CommandInfo::new(
+                    strings::commands::select_status(
+                        &self.key_config,
+                    ),
+                    true,
+                    (self.visible && !focus_on_diff) || force_all,
+                )
+                .hidden(),
+            );
+        }
 
         visibility_blocking(self)
     }
@@ -535,7 +541,7 @@ impl Component for Status {
             if let Event::Key(k) = ev {
                 return if k == self.key_config.edit_file
                     && (self.can_focus_diff()
-                        || self.focus == Focus::Diff)
+                        || self.is_focus_on_diff())
                 {
                     if let Some((path, _)) = self.selected_path() {
                         self.queue.borrow_mut().push_back(
@@ -564,18 +570,27 @@ impl Component for Status {
                     && !self.index_wd.is_empty()
                 {
                     self.switch_focus(Focus::WorkDir)
-                } else if k == self.key_config.select_branch {
+                } else if k == self.key_config.select_branch
+                    && !self.is_focus_on_diff()
+                {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::SelectBranch);
                     Ok(true)
-                } else if k == self.key_config.force_push {
+                } else if k == self.key_config.force_push
+                    && !self.is_focus_on_diff()
+                    && self.can_push()
+                {
                     self.push(true);
                     Ok(true)
-                } else if k == self.key_config.push {
+                } else if k == self.key_config.push
+                    && !self.is_focus_on_diff()
+                {
                     self.push(false);
                     Ok(true)
-                } else if k == self.key_config.pull {
+                } else if k == self.key_config.pull
+                    && !self.is_focus_on_diff()
+                {
                     self.pull();
                     Ok(true)
                 } else {

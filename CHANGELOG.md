@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `[s]` key repurposed to trigger line based (un)stage
+- cleanup status/diff commands to be more context sensitive ([#572](https://github.com/extrawurst/gitui/issues/572))
 
 ### Added
 - support pull via rebase (using config `pull.rebase`) ([#566](https://github.com/extrawurst/gitui/issues/566))
