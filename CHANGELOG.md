@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.13.0] - 2020-03-15 - Happy Birthday GitUI 🥳
 
+Thanks for your interest and support over this year! Read more about the 1 year anniversary reflections of this project on my [blog](https://blog.extrawurst.org/general/programming/rust/2021/03/15/gitui-a-year-in-opensource.html).
+
 **stage/unstage/discard by line**
 
 ![by-line-ops](assets/by-line-ops.gif)
