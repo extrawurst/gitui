@@ -69,14 +69,10 @@ All support is welcomed! Sponsors as well! ❤️
 
 For the time being this product is in alpha and is not considered production ready. However, for personal use it is reasonably stable and is being used while developing itself.
 
-### Arch Linux
-
-There is an [AUR package](https://aur.archlinux.org/packages/gitui/) for `gitui`:
+### [Arch Linux](https://archlinux.org/packages/community/x86_64/gitui/)
 
 ```sh
-git clone https://aur.archlinux.org/gitui.git
-cd gitui
-makepkg -si
+pacman -S gitui
 ```
 
 ### Fedora
