@@ -58,28 +58,40 @@ pub struct BranchInfo {
     pub is_head: bool,
     ///
     pub has_upstream: bool,
+    ///
+    pub remote: Option<String>,
 }
 
 /// returns a list of `BranchInfo` with a simple summary of info about a single branch
 pub fn get_branches_info(repo_path: &str) -> Result<Vec<BranchInfo>> {
     scope_time!("get_branches_info");
 
-    let cur_repo = utils::repo(repo_path)?;
-    let branches_for_display = cur_repo
+    let repo = utils::repo(repo_path)?;
+    let branches_for_display = repo
         .branches(Some(BranchType::Local))?
         .map(|b| {
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
+            let reference = bytes2string(branch.get().name_bytes())?;
+            let upstream = branch.upstream();
+
+            let remote = repo
+                .branch_upstream_remote(&reference)
+                .ok()
+                .as_ref()
+                .and_then(|buf| buf.as_str())
+                .map(String::from);
 
             Ok(BranchInfo {
                 name: bytes2string(branch.name_bytes()?)?,
-                reference: bytes2string(branch.get().name_bytes())?,
+                reference,
                 top_commit_message: bytes2string(
                     top_commit.summary_bytes().unwrap_or_default(),
                 )?,
                 top_commit: top_commit.id().into(),
                 is_head: branch.is_head(),
-                has_upstream: branch.upstream().is_ok(),
+                has_upstream: upstream.is_ok(),
+                remote,
             })
         })
         .filter_map(Result::ok)
@@ -297,7 +309,14 @@ mod tests_branch_compare {
 #[cfg(test)]
 mod tests_branches {
     use super::*;
-    use crate::sync::tests::repo_init;
+    use crate::sync::{
+        remotes::{get_remotes, push::push},
+        rename_branch,
+        tests::{
+            debug_cmd_print, repo_clone, repo_init, repo_init_bare,
+            write_commit_file,
+        },
+    };
 
     #[test]
     fn test_smoke() {
@@ -331,6 +350,67 @@ mod tests_branches {
                 .collect::<Vec<_>>(),
             vec!["master", "test"]
         );
+    }
+
+    fn clone_branch_commit_push(target: &str, branch_name: &str) {
+        let (dir, repo) = repo_clone(target).unwrap();
+        let dir = dir.path().to_str().unwrap();
+
+        write_commit_file(&repo, "f1.txt", "foo", "c1");
+        rename_branch(dir, "refs/heads/master", branch_name).unwrap();
+        push(dir, "origin", branch_name, false, None, None).unwrap();
+    }
+
+    #[test]
+    fn test_remotes_of_branches() {
+        let (r1_path, _remote1) = repo_init_bare().unwrap();
+        let (r2_path, _remote2) = repo_init_bare().unwrap();
+        let (_r, repo) = repo_init().unwrap();
+
+        let r1_path = r1_path.path().to_str().unwrap();
+        let r2_path = r2_path.path().to_str().unwrap();
+
+        //Note: create those test branches in our remotes
+        clone_branch_commit_push(r1_path, "r1branch");
+        clone_branch_commit_push(r2_path, "r2branch");
+
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        //add the remotes
+        repo.remote("r1", r1_path).unwrap();
+        repo.remote("r2", r2_path).unwrap();
+
+        //verify we got the remotes
+        let remotes = get_remotes(repo_path).unwrap();
+        assert_eq!(
+            remotes,
+            vec![String::from("r1"), String::from("r2")]
+        );
+
+        //verify we got only master right now
+        let branches = get_branches_info(repo_path).unwrap();
+        assert_eq!(branches.len(), 1);
+        assert_eq!(branches[0].name, String::from("master"));
+
+        //pull stuff from the two remotes
+        debug_cmd_print(repo_path, "git pull r1");
+        debug_cmd_print(repo_path, "git pull r2");
+
+        //create local tracking branches
+        debug_cmd_print(
+            repo_path,
+            "git checkout --track r1/r1branch",
+        );
+        debug_cmd_print(
+            repo_path,
+            "git checkout --track r2/r2branch",
+        );
+
+        let branches = get_branches_info(repo_path).unwrap();
+        assert_eq!(branches.len(), 3);
+        assert_eq!(branches[1].remote.as_ref().unwrap(), "r1");
+        assert_eq!(branches[2].remote.as_ref().unwrap(), "r2");
     }
 }
 
