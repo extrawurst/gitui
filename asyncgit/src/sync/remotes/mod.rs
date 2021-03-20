@@ -186,4 +186,42 @@ mod tests {
         .unwrap();
         assert_eq!(first, String::from("origin"));
     }
+
+    #[test]
+    fn test_default_remote_inconclusive() {
+        let td = TempDir::new().unwrap();
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "git clone https://github.com/extrawurst/brewdump.git",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote rename origin alternate",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote add someremote https://github.com/extrawurst/brewdump.git",
+        );
+
+        let repo_path = td.path().join("brewdump");
+        let repo_path = repo_path.as_os_str().to_str().unwrap();
+
+        let remotes = get_remotes(repo_path).unwrap();
+        assert_eq!(
+            remotes,
+            vec![
+                String::from("alternate"),
+                String::from("someremote")
+            ]
+        );
+
+        let res = get_default_remote_in_repo(
+            &utils::repo(repo_path).unwrap(),
+        );
+        assert_eq!(res.is_err(), true);
+        assert!(matches!(res, Err(Error::NoDefaultRemoteFound)));
+    }
 }
