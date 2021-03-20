@@ -37,7 +37,7 @@ enum Focus {
 
 /// focus can toggle between workdir and stage
 impl Focus {
-    fn toggled_focus(&self) -> Self {
+    const fn toggled_focus(&self) -> Self {
         match self {
             Self::WorkDir => Self::Stage,
             Self::Stage => Self::WorkDir,
@@ -247,7 +247,7 @@ impl Status {
         self.focus == Focus::Diff
     }
 
-    fn can_toggle_workarea(&self) -> bool {
+    const fn can_toggle_workarea(&self) -> bool {
         !matches!(self.focus, Focus::Diff)
     }
 
