@@ -442,6 +442,27 @@ mod tests_branches {
             String::from("r2")
         );
     }
+
+    #[test]
+    fn test_branch_remote_no_upstream() {
+        let (_r, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert_eq!(
+            get_branch_remote(repo_path, "master").unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn test_branch_remote_no_branch() {
+        let (_r, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        assert!(get_branch_remote(repo_path, "foo").is_err());
+    }
 }
 
 #[cfg(test)]
