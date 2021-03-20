@@ -35,6 +35,17 @@ enum Focus {
     Stage,
 }
 
+/// focus can toggle between workdir and stage
+impl Focus {
+    fn toggled_focus(&self) -> Focus {
+        match self {
+            Focus::WorkDir => Focus::Stage,
+            Focus::Stage => Focus::WorkDir,
+            Focus::Diff => Focus::Diff,
+        }
+    }
+}
+
 /// which target are we showing a diff against
 #[derive(PartialEq, Copy, Clone)]
 enum DiffTarget {
@@ -234,6 +245,13 @@ impl Status {
 
     fn is_focus_on_diff(&self) -> bool {
         self.focus == Focus::Diff
+    }
+
+    fn can_toggle_workarea(&self) -> bool {
+        match self.focus {
+            Focus::Diff => false,
+            _ => true,
+        }
     }
 
     fn switch_focus(&mut self, f: Focus) -> Result<bool> {
@@ -515,6 +533,16 @@ impl Component for Status {
                 self.can_focus_diff(),
                 (self.visible && !focus_on_diff) || force_all,
             ));
+            out.push(
+                CommandInfo::new(
+                    strings::commands::toggle_workarea(
+                        &self.key_config,
+                    ),
+                    if focus_on_diff { false } else { true },
+                    (self.visible && !focus_on_diff) || force_all,
+                )
+                .order(strings::order::NAV),
+            );
 
             out.push(
                 CommandInfo::new(
@@ -551,6 +579,10 @@ impl Component for Status {
                         );
                     }
                     Ok(true)
+                } else if k == self.key_config.toggle_workarea
+                    && self.can_toggle_workarea()
+                {
+                    self.switch_focus(self.focus.toggled_focus())
                 } else if k == self.key_config.focus_right
                     && self.can_focus_diff()
                 {

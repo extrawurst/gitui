@@ -503,6 +503,18 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn toggle_workarea(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Toggle Workarea [{}]",
+                key_config.get_hint(key_config.toggle_workarea),
+            ),
+            "toggle the focus between staging and workdir",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn commit_open(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(
