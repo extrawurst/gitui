@@ -128,6 +128,22 @@ pub(crate) fn branch_set_upstream(
     Ok(())
 }
 
+/// returns remote of the upstream tracking branch for `branch`
+pub fn get_branch_remote(
+    repo_path: &str,
+    branch: &str,
+) -> Result<Option<String>> {
+    let repo = utils::repo(repo_path)?;
+    let branch = repo.find_branch(branch, BranchType::Local)?;
+    let reference = bytes2string(branch.get().name_bytes())?;
+    let remote_name = repo.branch_upstream_remote(&reference).ok();
+    if let Some(remote_name) = remote_name {
+        Ok(Some(bytes2string(remote_name.as_ref())?))
+    } else {
+        Ok(None)
+    }
+}
+
 /// returns whether the pull merge strategy is set to rebase
 pub fn config_is_pull_rebase(repo_path: &str) -> Result<bool> {
     let repo = utils::repo(repo_path)?;
@@ -411,6 +427,20 @@ mod tests_branches {
         assert_eq!(branches.len(), 3);
         assert_eq!(branches[1].remote.as_ref().unwrap(), "r1");
         assert_eq!(branches[2].remote.as_ref().unwrap(), "r2");
+
+        assert_eq!(
+            get_branch_remote(repo_path, "r1branch")
+                .unwrap()
+                .unwrap(),
+            String::from("r1")
+        );
+
+        assert_eq!(
+            get_branch_remote(repo_path, "r2branch")
+                .unwrap()
+                .unwrap(),
+            String::from("r2")
+        );
     }
 }
 
