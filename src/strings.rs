@@ -503,15 +503,27 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn toggle_workarea(
+    pub fn select_staging(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Toggle Workarea [{}]",
+                "To stage [{}]",
                 key_config.get_hint(key_config.toggle_workarea),
             ),
-            "toggle the focus between staging and workdir",
+            "focus/select staging area",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn select_unstaged(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "To unstaged [{}]",
+                key_config.get_hint(key_config.toggle_workarea),
+            ),
+            "focus/select unstaged area",
             CMD_GROUP_GENERAL,
         )
     }

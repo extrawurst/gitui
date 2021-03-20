@@ -247,10 +247,6 @@ impl Status {
         self.focus == Focus::Diff
     }
 
-    const fn can_toggle_workarea(&self) -> bool {
-        !matches!(self.focus, Focus::Diff)
-    }
-
     fn switch_focus(&mut self, f: Focus) -> Result<bool> {
         if self.focus != f {
             self.focus = f;
@@ -532,11 +528,27 @@ impl Component for Status {
             ));
             out.push(
                 CommandInfo::new(
-                    strings::commands::toggle_workarea(
+                    strings::commands::select_staging(
                         &self.key_config,
                     ),
                     !focus_on_diff,
-                    (self.visible && !focus_on_diff) || force_all,
+                    (self.visible
+                        && !focus_on_diff
+                        && self.focus == Focus::WorkDir)
+                        || force_all,
+                )
+                .order(strings::order::NAV),
+            );
+            out.push(
+                CommandInfo::new(
+                    strings::commands::select_unstaged(
+                        &self.key_config,
+                    ),
+                    !focus_on_diff,
+                    (self.visible
+                        && !focus_on_diff
+                        && self.focus == Focus::Stage)
+                        || force_all,
                 )
                 .order(strings::order::NAV),
             );
@@ -577,7 +589,7 @@ impl Component for Status {
                     }
                     Ok(true)
                 } else if k == self.key_config.toggle_workarea
-                    && self.can_toggle_workarea()
+                    && !self.is_focus_on_diff()
                 {
                     self.switch_focus(self.focus.toggled_focus())
                 } else if k == self.key_config.focus_right
