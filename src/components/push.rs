@@ -107,7 +107,13 @@ impl PushComponent {
             remote
         } else {
             log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
-            get_default_remote(CWD)?
+            let remote = get_default_remote(CWD)?;
+            log::info!(
+                "push: branch '{}' to remote '{}'",
+                self.branch,
+                remote
+            );
+            remote
         };
 
         self.pending = true;
