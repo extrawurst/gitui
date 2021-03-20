@@ -37,11 +37,11 @@ enum Focus {
 
 /// focus can toggle between workdir and stage
 impl Focus {
-    fn toggled_focus(&self) -> Focus {
+    fn toggled_focus(&self) -> Self {
         match self {
-            Focus::WorkDir => Focus::Stage,
-            Focus::Stage => Focus::WorkDir,
-            Focus::Diff => Focus::Diff,
+            Self::WorkDir => Self::Stage,
+            Self::Stage => Self::WorkDir,
+            Self::Diff => Self::Diff,
         }
     }
 }
@@ -248,10 +248,7 @@ impl Status {
     }
 
     fn can_toggle_workarea(&self) -> bool {
-        match self.focus {
-            Focus::Diff => false,
-            _ => true,
-        }
+        !matches!(self.focus, Focus::Diff)
     }
 
     fn switch_focus(&mut self, f: Focus) -> Result<bool> {
@@ -538,7 +535,7 @@ impl Component for Status {
                     strings::commands::toggle_workarea(
                         &self.key_config,
                     ),
-                    if focus_on_diff { false } else { true },
+                    !focus_on_diff,
                     (self.visible && !focus_on_diff) || force_all,
                 )
                 .order(strings::order::NAV),
