@@ -15,7 +15,7 @@ use asyncgit::{
             extract_username_password, need_username_password,
             BasicAuthCredential,
         },
-        get_default_remote,
+        get_branch_remote, get_default_remote,
     },
     AsyncNotification, AsyncPush, PushRequest, RemoteProgress,
     RemoteProgressState, CWD,
@@ -78,6 +78,7 @@ impl PushComponent {
         self.branch = branch;
         self.force = force;
         self.show()?;
+
         if need_username_password()? {
             let cred =
                 extract_username_password().unwrap_or_else(|_| {
@@ -99,10 +100,26 @@ impl PushComponent {
         cred: Option<BasicAuthCredential>,
         force: bool,
     ) -> Result<()> {
+        let remote = if let Some(remote) =
+            get_branch_remote(CWD, &self.branch)?
+        {
+            log::info!("push: branch '{}' has upstream for remote '{}' - using that",self.branch,remote);
+            remote
+        } else {
+            log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
+            let remote = get_default_remote(CWD)?;
+            log::info!(
+                "push: branch '{}' to remote '{}'",
+                self.branch,
+                remote
+            );
+            remote
+        };
+
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
-            remote: get_default_remote(CWD)?,
+            remote,
             branch: self.branch.clone(),
             force,
             basic_credential: cred,
