@@ -35,6 +35,17 @@ enum Focus {
     Stage,
 }
 
+/// focus can toggle between workdir and stage
+impl Focus {
+    const fn toggled_focus(&self) -> Self {
+        match self {
+            Self::WorkDir => Self::Stage,
+            Self::Stage => Self::WorkDir,
+            Self::Diff => Self::Diff,
+        }
+    }
+}
+
 /// which target are we showing a diff against
 #[derive(PartialEq, Copy, Clone)]
 enum DiffTarget {
@@ -515,6 +526,32 @@ impl Component for Status {
                 self.can_focus_diff(),
                 (self.visible && !focus_on_diff) || force_all,
             ));
+            out.push(
+                CommandInfo::new(
+                    strings::commands::select_staging(
+                        &self.key_config,
+                    ),
+                    !focus_on_diff,
+                    (self.visible
+                        && !focus_on_diff
+                        && self.focus == Focus::WorkDir)
+                        || force_all,
+                )
+                .order(strings::order::NAV),
+            );
+            out.push(
+                CommandInfo::new(
+                    strings::commands::select_unstaged(
+                        &self.key_config,
+                    ),
+                    !focus_on_diff,
+                    (self.visible
+                        && !focus_on_diff
+                        && self.focus == Focus::Stage)
+                        || force_all,
+                )
+                .order(strings::order::NAV),
+            );
 
             out.push(
                 CommandInfo::new(
@@ -551,6 +588,10 @@ impl Component for Status {
                         );
                     }
                     Ok(true)
+                } else if k == self.key_config.toggle_workarea
+                    && !self.is_focus_on_diff()
+                {
+                    self.switch_focus(self.focus.toggled_focus())
                 } else if k == self.key_config.focus_right
                     && self.can_focus_diff()
                 {

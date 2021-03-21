@@ -16,6 +16,7 @@
 
     tab_toggle: ( code: Tab, modifiers: ( bits: 0,),),
     tab_toggle_reverse: ( code: BackTab, modifiers: ( bits: 1,),),
+    toggle_workarea: ( code: Char('w'), modifiers: (bits: 0,),),
 
     focus_right: ( code: Char('l'), modifiers: ( bits: 0,),),
     focus_left: ( code: Char('h'), modifiers: ( bits: 0,),),

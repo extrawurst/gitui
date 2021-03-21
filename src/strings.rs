@@ -503,6 +503,30 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn select_staging(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "To stage [{}]",
+                key_config.get_hint(key_config.toggle_workarea),
+            ),
+            "focus/select staging area",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn select_unstaged(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "To unstaged [{}]",
+                key_config.get_hint(key_config.toggle_workarea),
+            ),
+            "focus/select unstaged area",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn commit_open(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(
