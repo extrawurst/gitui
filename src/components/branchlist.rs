@@ -14,6 +14,7 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
+use unicode_truncate::UnicodeTruncateStr;
 use std::{
     cell::Cell,
     convert::{TryFrom, TryInto},
@@ -334,7 +335,7 @@ impl BranchListComponent {
             let mut commit_message =
                 displaybranch.top_commit_message.clone();
             if commit_message.len() > commit_message_length {
-                commit_message.truncate(
+                commit_message.unicode_truncate(
                     commit_message_length
                         .saturating_sub(THREE_DOTS_LENGTH),
                 );
@@ -343,7 +344,7 @@ impl BranchListComponent {
 
             let mut branch_name = displaybranch.name.clone();
             if branch_name.len() > branch_name_length {
-                branch_name.truncate(
+                branch_name.unicode_truncate(
                     branch_name_length
                         .saturating_sub(THREE_DOTS_LENGTH),
                 );
