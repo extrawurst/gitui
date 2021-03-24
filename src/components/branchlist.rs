@@ -14,7 +14,6 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
-use unicode_truncate::UnicodeTruncateStr;
 use std::{
     cell::Cell,
     convert::{TryFrom, TryInto},
@@ -26,6 +25,7 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
+use unicode_truncate::UnicodeTruncateStr;
 
 use crate::ui::Size;
 use anyhow::Result;
