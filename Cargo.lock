@@ -366,6 +366,7 @@ dependencies = [
  "simplelog",
  "textwrap 0.13.4",
  "tui",
+ "unicode-truncate",
  "unicode-width",
  "which",
 ]
@@ -1172,6 +1173,14 @@ name = "unicode-segmentation"
 version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb0d2e7be6ae3a5fa87eed5fb451aff96f2573d2694942e40543ae0bbe19c796"
+
+[[package]]
+name = "unicode-truncate"
+version = "0.2.0"
+source = "git+https://github.com/Aetf/unicode-truncate.git#b1821b0af6801b81e1f1f900526748754f8cd44f"
+dependencies = [
+ "unicode-width",
+]
 
 [[package]]
 name = "unicode-width"
