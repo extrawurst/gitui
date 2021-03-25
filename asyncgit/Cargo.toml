@@ -19,6 +19,7 @@ crossbeam-channel = "0.5"
 log = "0.4"
 thiserror = "1.0"
 url = "2.2"
+unicode-truncate = "0.2.0"
 
 [dev-dependencies]
 tempfile = "3.2"

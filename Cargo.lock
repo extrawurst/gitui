@@ -54,6 +54,7 @@ dependencies = [
  "serial_test",
  "tempfile",
  "thiserror",
+ "unicode-truncate",
  "url",
 ]
 
@@ -1177,7 +1178,8 @@ checksum = "bb0d2e7be6ae3a5fa87eed5fb451aff96f2573d2694942e40543ae0bbe19c796"
 [[package]]
 name = "unicode-truncate"
 version = "0.2.0"
-source = "git+https://github.com/Aetf/unicode-truncate.git#b1821b0af6801b81e1f1f900526748754f8cd44f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a04be5ca5f7a4a7270ffea82bc41c59b87c611ed04f20e77c338e8d3c2348e42"
 dependencies = [
  "unicode-width",
 ]

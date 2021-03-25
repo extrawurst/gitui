@@ -2,6 +2,7 @@ use super::utils::repo;
 use crate::error::Result;
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
+use unicode_truncate::UnicodeTruncateStr;
 
 /// identifies a single commit
 #[derive(
@@ -99,32 +100,18 @@ pub fn get_message(
     message_length_limit: Option<usize>,
 ) -> String {
     let msg = String::from_utf8_lossy(c.message_bytes());
-    let msg = msg.trim_start();
+    let msg = msg.trim();
 
     if let Some(limit) = message_length_limit {
-        limit_str(msg, limit).to_string()
+        msg.unicode_truncate(limit).0.to_string()
     } else {
         msg.to_string()
     }
 }
 
-#[inline]
-fn limit_str(s: &str, limit: usize) -> &str {
-    if let Some(first) = s.lines().next() {
-        let mut limit = limit.min(first.len());
-        while !first.is_char_boundary(limit) {
-            limit += 1
-        }
-        &first[0..limit]
-    } else {
-        ""
-    }
-}
-
 #[cfg(test)]
 mod tests {
-
-    use super::{get_commits_info, limit_str};
+    use super::get_commits_info;
     use crate::error::Result;
     use crate::sync::{
         commit, stage_add_file, tests::repo_init_empty,
@@ -182,14 +169,5 @@ mod tests {
         assert_eq!(res[0].message.starts_with("test msg"), true);
 
         Ok(())
-    }
-
-    #[test]
-    fn test_limit_string_utf8() {
-        assert_eq!(limit_str("里里", 1), "里");
-
-        let test_src = "导入按钮由选文件改为选目录，因为整个过程中要用到多个mdb文件，这些文件是在程序里写死的，暂且这么来做，有时间了后 再做调整";
-        let test_dst = "导入按钮由选文";
-        assert_eq!(limit_str(test_src, 20), test_dst);
     }
 }
