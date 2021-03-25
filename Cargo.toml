@@ -72,3 +72,6 @@ codegen-units = 1
 # makes their debug profile slow
 [profile.dev.package."tui"]
 opt-level = 3
+
+[profile.dev]
+split-debuginfo = "unpacked"
