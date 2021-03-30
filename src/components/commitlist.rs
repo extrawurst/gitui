@@ -97,7 +97,7 @@ impl CommitList {
     }
 
     ///
-    pub const fn tags(&self) -> Option<&Tags> {
+    pub fn tags(&self) -> Option<&Tags> {
         self.tags.as_ref()
     }
 
