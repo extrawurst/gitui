@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [nightly, stable]
+        rust: [nightly, stable, '1.50']
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 
@@ -68,13 +68,19 @@ jobs:
 
   build-linux-musl:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [nightly, stable, '1.50']
+    continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
     - uses: actions/checkout@master
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: ${{ matrix.rust }}
         profile: minimal
+        default: true
         target: x86_64-unknown-linux-musl
     - name: Setup MUSL
       run: |
