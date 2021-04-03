@@ -108,6 +108,49 @@ mod test {
     }
 
     #[test]
+    fn test_panic_stage_no_newline() {
+        static FILE_1: &str = r"a = 1
+b = 2";
+
+        static FILE_2: &str = r"a = 2
+b = 3
+c = 4";
+
+        let (path, repo) = repo_init().unwrap();
+        let path = path.path().to_str().unwrap();
+
+        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+
+        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
+
+        stage_lines(
+            path,
+            "test.txt",
+            false,
+            &[
+                DiffLinePosition {
+                    old_lineno: Some(1),
+                    new_lineno: None,
+                },
+                DiffLinePosition {
+                    old_lineno: Some(2),
+                    new_lineno: None,
+                },
+            ],
+        )
+        .unwrap();
+
+        let diff =
+            get_diff(path, String::from("test.txt"), true).unwrap();
+
+        assert_eq!(diff.lines, 5);
+        assert_eq!(
+            diff.hunks[0].lines[0].content,
+            String::from("@@ -1,2 +1 @@\n")
+        );
+    }
+
+    #[test]
     fn test_unstage() {
         static FILE_1: &str = r"0
 ";

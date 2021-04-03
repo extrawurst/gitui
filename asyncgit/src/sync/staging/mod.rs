@@ -121,7 +121,9 @@ pub(crate) fn apply_selection(
                         .trim()
                 );
 
-                if hunk_line.origin() == '<' {
+                if hunk_line.origin() == '<'
+                    || hunk_line.origin() == '>'
+                {
                     break;
                 }
 
