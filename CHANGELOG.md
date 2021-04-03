@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - push branch to its tracking remote ([#597](https://github.com/extrawurst/gitui/issues/597))
+- fixed panic when staging lines involving missing newline eof ([#605](https://github.com/extrawurst/gitui/issues/605))
 
 ## [0.13.0] - 2020-03-15 - Happy Birthday GitUI 🥳
 
