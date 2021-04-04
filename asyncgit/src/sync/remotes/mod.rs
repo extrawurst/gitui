@@ -10,7 +10,7 @@ use crate::{
     sync::utils,
 };
 use crossbeam_channel::Sender;
-use git2::{FetchOptions, Repository};
+use git2::{Direction, FetchOptions, Repository};
 use push::remote_callbacks;
 use scopetime::scope_time;
 
@@ -27,6 +27,36 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
         remotes.iter().flatten().map(String::from).collect();
 
     Ok(remotes)
+}
+
+///
+pub fn get_remote_branches(
+    repo_path: &str,
+    remote: &str,
+) -> Result<Vec<String>> {
+    scope_time!("get_remote_branches");
+
+    let repo = utils::repo(repo_path)?;
+
+    let mut remote = repo.find_remote(remote)?;
+
+    remote.connect(Direction::Fetch)?;
+
+    let list = remote.list()?;
+
+    let res = list
+        .iter()
+        .filter_map(|entry| {
+            let name = entry.name();
+            if name.starts_with("refs/heads/") {
+                Some(String::from(name))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    Ok(res)
 }
 
 /// tries to find origin or the only remote that is defined if any
@@ -97,7 +127,15 @@ pub(crate) fn fetch_origin(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sync::tests::debug_cmd_print;
+    use crate::sync::{
+        branch::get_branches_info,
+        create_branch,
+        remotes::push::push,
+        tests::{
+            debug_cmd_print, repo_clone, repo_init_bare,
+            write_commit_file,
+        },
+    };
     use tempfile::TempDir;
 
     #[test]
@@ -223,5 +261,47 @@ mod tests {
         );
         assert_eq!(res.is_err(), true);
         assert!(matches!(res, Err(Error::NoDefaultRemoteFound)));
+    }
+
+    #[test]
+    fn test_remote_branches() {
+        let (r1_dir, _repo) = repo_init_bare().unwrap();
+
+        let (clone1_dir, clone1) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+        let clone1_dir = clone1_dir.path().to_str().unwrap();
+
+        // clone1
+
+        write_commit_file(&clone1, "test.txt", "test", "commit1");
+
+        push(clone1_dir, "origin", "master", false, None, None)
+            .unwrap();
+
+        create_branch(clone1_dir, "foo").unwrap();
+
+        write_commit_file(&clone1, "test.txt", "test2", "commit2");
+
+        push(clone1_dir, "origin", "foo", false, None, None).unwrap();
+
+        // clone2
+
+        let (clone2_dir, _clone2) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+        let clone2_dir = clone2_dir.path().to_str().unwrap();
+
+        let local_branches = get_branches_info(clone2_dir).unwrap();
+
+        assert_eq!(local_branches.len(), 1);
+
+        let branches =
+            get_remote_branches(clone2_dir, "origin").unwrap();
+
+        assert_eq!(
+            &branches,
+            &["refs/heads/foo", "refs/heads/master",]
+        );
     }
 }
