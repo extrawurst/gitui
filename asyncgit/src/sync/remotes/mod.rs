@@ -33,6 +33,7 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
 pub fn get_remote_branches(
     repo_path: &str,
     remote: &str,
+    basic_credential: Option<BasicAuthCredential>,
 ) -> Result<Vec<String>> {
     scope_time!("get_remote_branches");
 
@@ -40,7 +41,11 @@ pub fn get_remote_branches(
 
     let mut remote = repo.find_remote(remote)?;
 
-    remote.connect(Direction::Fetch)?;
+    remote.connect_auth(
+        Direction::Fetch,
+        Some(remote_callbacks(None, basic_credential)),
+        None,
+    )?;
 
     let list = remote.list()?;
 
@@ -297,7 +302,7 @@ mod tests {
         assert_eq!(local_branches.len(), 1);
 
         let branches =
-            get_remote_branches(clone2_dir, "origin").unwrap();
+            get_remote_branches(clone2_dir, "origin", None).unwrap();
 
         assert_eq!(
             &branches,
