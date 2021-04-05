@@ -280,7 +280,7 @@ pub fn checkout_remote_branch(
         let mut new_branch = repo.branch("new_b", &commit, false)?;
         new_branch.set_upstream(Some(&branch.name))?;
 
-        repo.set_head(&branch.reference)?;
+        repo.set_head("new_b")?;
 
         if let Err(e) = repo.checkout_head(Some(
             git2::build::CheckoutBuilder::new().force(),
