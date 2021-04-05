@@ -879,6 +879,21 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn toggle_branch_popup(
+        key_config: &SharedKeyConfig,
+        local: bool,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "{} Branches [{}]",
+                if local { "Remote" } else { "Local" },
+                key_config
+                    .get_hint(key_config.toggle_remote_branches),
+            ),
+            "toggle branch type (remote/local)",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn open_branch_select_popup(
         key_config: &SharedKeyConfig,
     ) -> CommandText {

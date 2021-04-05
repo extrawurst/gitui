@@ -21,7 +21,7 @@ impl CommitId {
         self.0
     }
 
-    ///
+    /// 7 chars short hash
     pub fn get_short_string(&self) -> String {
         self.to_string().chars().take(7).collect()
     }

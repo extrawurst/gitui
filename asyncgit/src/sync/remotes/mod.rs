@@ -322,7 +322,8 @@ mod tests {
 
         let clone2_dir = clone2_dir.path().to_str().unwrap();
 
-        let local_branches = get_branches_info(clone2_dir).unwrap();
+        let local_branches =
+            get_branches_info(clone2_dir, true).unwrap();
 
         assert_eq!(local_branches.len(), 1);
 

@@ -29,6 +29,7 @@ use unicode_truncate::UnicodeTruncateStr;
 ///
 pub struct BranchListComponent {
     branches: Vec<BranchInfo>,
+    local: bool,
     visible: bool,
     selection: u16,
     scroll_top: Cell<usize>,
@@ -124,7 +125,7 @@ impl Component for BranchListComponent {
                     &self.key_config,
                 ),
                 true,
-                true,
+                self.local,
             ));
 
             out.push(CommandInfo::new(
@@ -132,12 +133,21 @@ impl Component for BranchListComponent {
                     &self.key_config,
                 ),
                 !self.selection_is_cur_branch(),
-                true,
+                self.local,
             ));
 
             out.push(CommandInfo::new(
                 strings::commands::rename_branch_popup(
                     &self.key_config,
+                ),
+                true,
+                self.local,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::toggle_branch_popup(
+                    &self.key_config,
+                    self.local,
                 ),
                 true,
                 true,
@@ -196,6 +206,10 @@ impl Component for BranchListComponent {
                             ),
                         ),
                     );
+                } else if e == self.key_config.toggle_remote_branches
+                {
+                    self.local = !self.local;
+                    self.update_branches()?;
                 }
             }
 
@@ -228,6 +242,7 @@ impl BranchListComponent {
     ) -> Self {
         Self {
             branches: Vec::new(),
+            local: true,
             visible: false,
             selection: 0,
             scroll_top: Cell::new(0),
@@ -248,7 +263,7 @@ impl BranchListComponent {
 
     /// fetch list of branches
     pub fn update_branches(&mut self) -> Result<()> {
-        self.branches = get_branches_info(CWD)?;
+        self.branches = get_branches_info(CWD, self.local)?;
         self.set_selection(self.selection)?;
         Ok(())
     }
@@ -258,7 +273,12 @@ impl BranchListComponent {
             .iter()
             .enumerate()
             .filter(|(index, b)| {
-                b.is_head && *index == self.selection as usize
+                b.local_details()
+                    .map(|details| {
+                        details.is_head
+                            && *index == self.selection as usize
+                    })
+                    .unwrap_or_default()
             })
             .count()
             > 0
@@ -349,9 +369,16 @@ impl BranchListComponent {
             let selected =
                 self.selection as usize - self.scroll_top.get() == i;
 
-            let is_head_str =
-                if displaybranch.is_head { "*" } else { " " };
-            let has_upstream_str = if displaybranch.has_upstream {
+            let is_head = displaybranch
+                .local_details()
+                .map(|details| details.is_head)
+                .unwrap_or_default();
+            let is_head_str = if is_head { "*" } else { " " };
+            let has_upstream_str = if displaybranch
+                .local_details()
+                .map(|details| details.has_upstream)
+                .unwrap_or_default()
+            {
                 "\u{2191}"
             } else {
                 " "
@@ -378,7 +405,7 @@ impl BranchListComponent {
                     branch_name,
                     w = branch_name_length
                 ),
-                theme.branch(selected, displaybranch.is_head),
+                theme.branch(selected, is_head),
             );
 
             txt.push(Spans::from(vec![
