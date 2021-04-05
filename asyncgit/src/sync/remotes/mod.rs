@@ -3,16 +3,18 @@
 pub(crate) mod push;
 pub(crate) mod tags;
 
-use self::push::ProgressNotification;
-use super::cred::BasicAuthCredential;
 use crate::{
     error::{Error, Result},
-    sync::utils,
+    sync::{
+        cred::BasicAuthCredential,
+        remotes::push::ProgressNotification, utils,
+    },
 };
 use crossbeam_channel::Sender;
 use git2::{Direction, FetchOptions, Repository};
 use push::remote_callbacks;
 use scopetime::scope_time;
+use std::collections::HashMap;
 
 /// origin
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
@@ -30,14 +32,37 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
 }
 
 ///
-pub fn get_remote_branches(
+pub fn get_remotes_branches(
     repo_path: &str,
+    basic_credential: Option<BasicAuthCredential>,
+) -> Result<HashMap<String, Vec<String>>> {
+    scope_time!("get_remotes_branches");
+
+    let repo = utils::repo(repo_path)?;
+
+    let remotes = repo.remotes()?;
+
+    let mut res = HashMap::with_capacity(remotes.len());
+    for remote in &remotes {
+        if let Some(remote) = remote {
+            let branches = get_remote_branches(
+                &repo,
+                remote,
+                basic_credential.clone(),
+            )?;
+            res.insert(String::from(remote), branches);
+        }
+    }
+
+    Ok(res)
+}
+
+fn get_remote_branches(
+    repo: &Repository,
     remote: &str,
     basic_credential: Option<BasicAuthCredential>,
 ) -> Result<Vec<String>> {
     scope_time!("get_remote_branches");
-
-    let repo = utils::repo(repo_path)?;
 
     let mut remote = repo.find_remote(remote)?;
 
@@ -292,7 +317,7 @@ mod tests {
 
         // clone2
 
-        let (clone2_dir, _clone2) =
+        let (clone2_dir, clone2) =
             repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
 
         let clone2_dir = clone2_dir.path().to_str().unwrap();
@@ -302,7 +327,7 @@ mod tests {
         assert_eq!(local_branches.len(), 1);
 
         let branches =
-            get_remote_branches(clone2_dir, "origin", None).unwrap();
+            get_remote_branches(&clone2, "origin", None).unwrap();
 
         assert_eq!(
             &branches,
