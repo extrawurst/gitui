@@ -15,10 +15,7 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
-use std::{
-    cell::Cell,
-    convert::{TryFrom, TryInto},
-};
+use std::{cell::Cell, convert::TryInto};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -94,7 +91,7 @@ impl DrawableComponent for BranchListComponent {
                 self.scroll_top.get(),
             );
 
-            self.current_height.set(u16::try_from(height_in_lines)?);
+            self.current_height.set(height_in_lines.try_into()?);
         }
 
         Ok(())
