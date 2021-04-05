@@ -277,8 +277,8 @@ pub fn checkout_remote_branch(
 
     if statuses.is_empty() {
         let commit = repo.find_commit(branch.top_commit.into())?;
-        let _new_branch = repo.branch("new_b", &commit, false)?;
-        // new_branch.set_upstream(Some(""))?;
+        let mut new_branch = repo.branch("new_b", &commit, false)?;
+        new_branch.set_upstream(Some(&branch.name))?;
 
         repo.set_head(&branch.reference)?;
 
