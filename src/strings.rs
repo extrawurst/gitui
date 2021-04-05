@@ -879,6 +879,18 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn select_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Checkout [{}]",
+                key_config.get_hint(key_config.enter),
+            ),
+            "checkout branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn toggle_branch_popup(
         key_config: &SharedKeyConfig,
         local: bool,

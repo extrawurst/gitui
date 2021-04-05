@@ -11,7 +11,10 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::{checkout_branch, get_branches_info, BranchInfo},
+    sync::{
+        branch::checkout_remote_branch, checkout_branch,
+        get_branches_info, BranchInfo,
+    },
     CWD,
 };
 use crossterm::event::Event;
@@ -117,6 +120,14 @@ impl Component for BranchListComponent {
             out.push(CommandInfo::new(
                 strings::commands::close_popup(&self.key_config),
                 true,
+                true,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::select_branch_popup(
+                    &self.key_config,
+                ),
+                !self.selection_is_cur_branch(),
                 true,
             ));
 
@@ -421,10 +432,18 @@ impl BranchListComponent {
 
     ///
     fn switch_to_selected_branch(&self) -> Result<()> {
-        checkout_branch(
-            asyncgit::CWD,
-            &self.branches[self.selection as usize].reference,
-        )?;
+        if self.local {
+            checkout_branch(
+                asyncgit::CWD,
+                &self.branches[self.selection as usize].reference,
+            )?;
+        } else {
+            checkout_remote_branch(
+                CWD,
+                &self.branches[self.selection as usize],
+            )?;
+        }
+
         self.queue
             .borrow_mut()
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));

@@ -258,9 +258,42 @@ pub fn checkout_branch(
         }
         Ok(())
     } else {
-        Err(Error::Generic(
-            format!("Cannot change branch. There are unstaged/staged changes which have not been committed/stashed. There is {:?} changes preventing checking out a different branch.",  statuses.len()),
-        ))
+        Err(Error::UncommittedChanges)
+    }
+}
+
+///
+pub fn checkout_remote_branch(
+    repo_path: &str,
+    branch: &BranchInfo,
+) -> Result<()> {
+    scope_time!("checkout_remtote_branch");
+
+    let repo = utils::repo(repo_path)?;
+    let cur_ref = repo.head()?;
+    let statuses = repo.statuses(Some(
+        git2::StatusOptions::new().include_ignored(false),
+    ))?;
+
+    if statuses.is_empty() {
+        let commit = repo.find_commit(branch.top_commit.into())?;
+        let _new_branch = repo.branch("new_b", &commit, false)?;
+        // new_branch.set_upstream(Some(""))?;
+
+        repo.set_head(&branch.reference)?;
+
+        if let Err(e) = repo.checkout_head(Some(
+            git2::build::CheckoutBuilder::new().force(),
+        )) {
+            // This is safe beacuse cur_ref was just found
+            repo.set_head(
+                bytes2string(cur_ref.name_bytes())?.as_str(),
+            )?;
+            return Err(Error::Git(e));
+        }
+        Ok(())
+    } else {
+        Err(Error::UncommittedChanges)
     }
 }
 
