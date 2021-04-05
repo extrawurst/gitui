@@ -7,8 +7,9 @@ use crate::{
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
     strings, try_or_popup,
-    ui::{self, calc_scroll_top},
+    ui::{self, calc_scroll_top, Size},
 };
+use anyhow::Result;
 use asyncgit::{
     sync::{checkout_branch, get_branches_info, BranchInfo},
     CWD,
@@ -25,15 +26,12 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
-use unicode_truncate::UnicodeTruncateStr;
-
-use crate::ui::Size;
-use anyhow::Result;
 use ui::style::SharedTheme;
+use unicode_truncate::UnicodeTruncateStr;
 
 ///
 pub struct BranchListComponent {
-    branch_names: Vec<BranchInfo>,
+    branches: Vec<BranchInfo>,
     visible: bool,
     selection: u16,
     scroll_top: Cell<usize>,
@@ -92,7 +90,7 @@ impl DrawableComponent for BranchListComponent {
                 f,
                 area,
                 &self.theme,
-                self.branch_names.len(),
+                self.branches.len(),
                 self.scroll_top.get(),
             );
 
@@ -179,7 +177,7 @@ impl Component for BranchListComponent {
                     self.hide();
                 } else if e == self.key_config.rename_branch {
                     let cur_branch =
-                        &self.branch_names[self.selection as usize];
+                        &self.branches[self.selection as usize];
                     self.queue.borrow_mut().push_back(
                         InternalEvent::RenameBranch(
                             cur_branch.reference.clone(),
@@ -194,7 +192,7 @@ impl Component for BranchListComponent {
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ConfirmAction(
                             Action::DeleteBranch(
-                                self.branch_names
+                                self.branches
                                     [self.selection as usize]
                                     .reference
                                     .clone(),
@@ -232,7 +230,7 @@ impl BranchListComponent {
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
-            branch_names: Vec::new(),
+            branches: Vec::new(),
             visible: false,
             selection: 0,
             scroll_top: Cell::new(0),
@@ -253,13 +251,13 @@ impl BranchListComponent {
 
     /// fetch list of branches
     pub fn update_branches(&mut self) -> Result<()> {
-        self.branch_names = get_branches_info(CWD)?;
+        self.branches = get_branches_info(CWD)?;
         self.set_selection(self.selection)?;
         Ok(())
     }
 
     fn selection_is_cur_branch(&self) -> bool {
-        self.branch_names
+        self.branches
             .iter()
             .enumerate()
             .filter(|(index, b)| {
@@ -289,7 +287,7 @@ impl BranchListComponent {
     }
 
     fn set_selection(&mut self, selection: u16) -> Result<()> {
-        let num_branches: u16 = self.branch_names.len().try_into()?;
+        let num_branches: u16 = self.branches.len().try_into()?;
         let num_branches = num_branches.saturating_sub(1);
 
         let selection = if selection > num_branches {
@@ -326,7 +324,7 @@ impl BranchListComponent {
         let mut txt = Vec::new();
 
         for (i, displaybranch) in self
-            .branch_names
+            .branches
             .iter()
             .skip(self.scroll_top.get())
             .take(height)
@@ -401,7 +399,7 @@ impl BranchListComponent {
     fn switch_to_selected_branch(&self) -> Result<()> {
         checkout_branch(
             asyncgit::CWD,
-            &self.branch_names[self.selection as usize].reference,
+            &self.branches[self.selection as usize].reference,
         )?;
         self.queue
             .borrow_mut()
