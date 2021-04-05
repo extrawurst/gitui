@@ -281,10 +281,8 @@ pub fn checkout_remote_branch(
         new_branch.set_upstream(Some(&branch.name))?;
 
         repo.set_head(
-            new_branch
-                .into_reference()
-                .name()
-                .expect("TODO: make error"),
+            bytes2string(new_branch.into_reference().name_bytes())?
+                .as_str(),
         )?;
 
         if let Err(e) = repo.checkout_head(Some(
