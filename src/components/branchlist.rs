@@ -49,8 +49,8 @@ impl DrawableComponent for BranchListComponent {
         rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            const PERCENT_SIZE: Size = Size::new(60, 25);
-            const MIN_SIZE: Size = Size::new(50, 20);
+            const PERCENT_SIZE: Size = Size::new(80, 25);
+            const MIN_SIZE: Size = Size::new(60, 20);
 
             let area = ui::centered_rect(
                 PERCENT_SIZE.width,
@@ -338,9 +338,8 @@ impl BranchListComponent {
         const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
         const THREE_DOTS_LENGTH: usize = 3; // "..."
 
-        // branch name = 30% of area size
         let branch_name_length: usize =
-            width_available as usize * 30 / 100;
+            width_available as usize * 40 / 100;
         // commit message takes up the remaining width
         let commit_message_length: usize = (width_available as usize)
             .saturating_sub(COMMIT_HASH_LENGTH)
@@ -367,11 +366,16 @@ impl BranchListComponent {
             }
 
             let mut branch_name = displaybranch.name.clone();
-            if branch_name.len() > branch_name_length {
-                branch_name.unicode_truncate(
-                    branch_name_length
-                        .saturating_sub(THREE_DOTS_LENGTH),
-                );
+            if branch_name.len()
+                > branch_name_length.saturating_sub(THREE_DOTS_LENGTH)
+            {
+                branch_name = branch_name
+                    .unicode_truncate(
+                        branch_name_length
+                            .saturating_sub(THREE_DOTS_LENGTH),
+                    )
+                    .0
+                    .to_string();
                 branch_name += "...";
             }
 
