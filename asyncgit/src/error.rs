@@ -18,6 +18,9 @@ pub enum Error {
     #[error("git: work dir error")]
     NoWorkDir,
 
+    #[error("git: uncommitted changes")]
+    UncommittedChanges,
+
     #[error("io error:{0}")]
     Io(#[from] std::io::Error),
 

@@ -70,6 +70,7 @@
     rename_branch: ( code: Char('r'), modifiers: ( bits: 0,),),
     select_branch: ( code: Char('b'), modifiers: ( bits: 0,),),
     delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
+    toggle_remote_branches: ( code: Char('t'), modifiers: ( bits: 0,),),
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
     force_push: ( code: Char('P'), modifiers: ( bits: 1,),),
     pull: ( code: Char('f'), modifiers: ( bits: 0,),),

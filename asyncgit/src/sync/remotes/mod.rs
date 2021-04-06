@@ -3,11 +3,12 @@
 pub(crate) mod push;
 pub(crate) mod tags;
 
-use self::push::ProgressNotification;
-use super::cred::BasicAuthCredential;
 use crate::{
     error::{Error, Result},
-    sync::utils,
+    sync::{
+        cred::BasicAuthCredential,
+        remotes::push::ProgressNotification, utils,
+    },
 };
 use crossbeam_channel::Sender;
 use git2::{FetchOptions, Repository};

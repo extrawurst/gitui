@@ -19,7 +19,14 @@ pub static PUSH_TAGS_STATES_FETCHING: &str = "fetching";
 pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
 pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
-pub static SELECT_BRANCH_POPUP_MSG: &str = "Switch Branch";
+pub fn title_branches(local: bool) -> String {
+    if local {
+        "Branches (local)"
+    } else {
+        "Branches (remote)"
+    }
+    .to_string()
+}
 
 pub fn title_status(_key_config: &SharedKeyConfig) -> String {
     "Unstaged Changes".to_string()
@@ -876,6 +883,33 @@ pub mod commands {
                 key_config.get_hint(key_config.delete_branch),
             ),
             "delete a branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn select_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Checkout [{}]",
+                key_config.get_hint(key_config.enter),
+            ),
+            "checkout branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn toggle_branch_popup(
+        key_config: &SharedKeyConfig,
+        local: bool,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "{} Branches [{}]",
+                if local { "Remote" } else { "Local" },
+                key_config
+                    .get_hint(key_config.toggle_remote_branches),
+            ),
+            "toggle branch type (remote/local)",
             CMD_GROUP_GENERAL,
         )
     }

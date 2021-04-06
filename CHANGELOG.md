@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `[w]` key to toggle between staging/workdir [[@terhechte](https://github.com/terhechte)] ([#595](https://github.com/extrawurst/gitui/issues/595))
+- view/checkout remote branches ([#617](https://github.com/extrawurst/gitui/issues/617))
 
 ### Fixed
 - push branch to its tracking remote ([#597](https://github.com/extrawurst/gitui/issues/597))

@@ -45,6 +45,27 @@ pub(crate) fn get_branch_name_repo(
 }
 
 ///
+#[derive(Debug)]
+pub struct LocalBranch {
+    ///
+    pub is_head: bool,
+    ///
+    pub has_upstream: bool,
+    ///
+    pub remote: Option<String>,
+}
+
+///
+#[derive(Debug)]
+pub enum BranchDetails {
+    ///
+    Local(LocalBranch),
+    ///
+    Remote,
+}
+
+///
+#[derive(Debug)]
 pub struct BranchInfo {
     ///
     pub name: String,
@@ -55,20 +76,37 @@ pub struct BranchInfo {
     ///
     pub top_commit: CommitId,
     ///
-    pub is_head: bool,
-    ///
-    pub has_upstream: bool,
-    ///
-    pub remote: Option<String>,
+    pub details: BranchDetails,
 }
 
-/// returns a list of `BranchInfo` with a simple summary of info about a single branch
-pub fn get_branches_info(repo_path: &str) -> Result<Vec<BranchInfo>> {
+impl BranchInfo {
+    /// returns details about local branch or None
+    pub fn local_details(&self) -> Option<&LocalBranch> {
+        if let BranchDetails::Local(details) = &self.details {
+            return Some(details);
+        }
+
+        None
+    }
+}
+
+/// returns a list of `BranchInfo` with a simple summary on each branch
+/// `local` filters for local branches otherwise remote branches will be returned
+pub fn get_branches_info(
+    repo_path: &str,
+    local: bool,
+) -> Result<Vec<BranchInfo>> {
     scope_time!("get_branches_info");
 
+    let filter = if local {
+        BranchType::Local
+    } else {
+        BranchType::Remote
+    };
+
     let repo = utils::repo(repo_path)?;
-    let branches_for_display = repo
-        .branches(Some(BranchType::Local))?
+    let mut branches_for_display: Vec<BranchInfo> = repo
+        .branches(Some(filter))?
         .map(|b| {
             let branch = b?.0;
             let top_commit = branch.get().peel_to_commit()?;
@@ -82,6 +120,16 @@ pub fn get_branches_info(repo_path: &str) -> Result<Vec<BranchInfo>> {
                 .and_then(|buf| buf.as_str())
                 .map(String::from);
 
+            let details = if local {
+                BranchDetails::Local(LocalBranch {
+                    is_head: branch.is_head(),
+                    has_upstream: upstream.is_ok(),
+                    remote,
+                })
+            } else {
+                BranchDetails::Remote
+            };
+
             Ok(BranchInfo {
                 name: bytes2string(branch.name_bytes()?)?,
                 reference,
@@ -89,13 +137,13 @@ pub fn get_branches_info(repo_path: &str) -> Result<Vec<BranchInfo>> {
                     top_commit.summary_bytes().unwrap_or_default(),
                 )?,
                 top_commit: top_commit.id().into(),
-                is_head: branch.is_head(),
-                has_upstream: upstream.is_ok(),
-                remote,
+                details,
             })
         })
         .filter_map(Result::ok)
         .collect();
+
+    branches_for_display.sort_by(|a, b| a.name.cmp(&b.name));
 
     Ok(branches_for_display)
 }
@@ -212,10 +260,52 @@ pub fn checkout_branch(
         }
         Ok(())
     } else {
-        Err(Error::Generic(
-            format!("Cannot change branch. There are unstaged/staged changes which have not been committed/stashed. There is {:?} changes preventing checking out a different branch.",  statuses.len()),
-        ))
+        Err(Error::UncommittedChanges)
     }
+}
+
+///
+pub fn checkout_remote_branch(
+    repo_path: &str,
+    branch: &BranchInfo,
+) -> Result<()> {
+    scope_time!("checkout_remote_branch");
+
+    let repo = utils::repo(repo_path)?;
+    let cur_ref = repo.head()?;
+
+    if !repo
+        .statuses(Some(
+            git2::StatusOptions::new().include_ignored(false),
+        ))?
+        .is_empty()
+    {
+        return Err(Error::UncommittedChanges);
+    }
+
+    let name = if let Some(pos) = branch.name.rfind('/') {
+        branch.name[pos..].to_string()
+    } else {
+        branch.name.clone()
+    };
+
+    let commit = repo.find_commit(branch.top_commit.into())?;
+    let mut new_branch = repo.branch(&name, &commit, false)?;
+    new_branch.set_upstream(Some(&branch.name))?;
+
+    repo.set_head(
+        bytes2string(new_branch.into_reference().name_bytes())?
+            .as_str(),
+    )?;
+
+    if let Err(e) = repo.checkout_head(Some(
+        git2::build::CheckoutBuilder::new().force(),
+    )) {
+        // This is safe beacuse cur_ref was just found
+        repo.set_head(bytes2string(cur_ref.name_bytes())?.as_str())?;
+        return Err(Error::Git(e));
+    }
+    Ok(())
 }
 
 /// The user must not be on the branch for the branch to be deleted
@@ -341,7 +431,7 @@ mod tests_branches {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         assert_eq!(
-            get_branches_info(repo_path)
+            get_branches_info(repo_path, true)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())
@@ -359,7 +449,7 @@ mod tests_branches {
         create_branch(repo_path, "test").unwrap();
 
         assert_eq!(
-            get_branches_info(repo_path)
+            get_branches_info(repo_path, true)
                 .unwrap()
                 .iter()
                 .map(|b| b.name.clone())
@@ -405,7 +495,7 @@ mod tests_branches {
         );
 
         //verify we got only master right now
-        let branches = get_branches_info(repo_path).unwrap();
+        let branches = get_branches_info(repo_path, true).unwrap();
         assert_eq!(branches.len(), 1);
         assert_eq!(branches[0].name, String::from("master"));
 
@@ -423,10 +513,26 @@ mod tests_branches {
             "git checkout --track r2/r2branch",
         );
 
-        let branches = get_branches_info(repo_path).unwrap();
+        let branches = get_branches_info(repo_path, true).unwrap();
         assert_eq!(branches.len(), 3);
-        assert_eq!(branches[1].remote.as_ref().unwrap(), "r1");
-        assert_eq!(branches[2].remote.as_ref().unwrap(), "r2");
+        assert_eq!(
+            branches[1]
+                .local_details()
+                .unwrap()
+                .remote
+                .as_ref()
+                .unwrap(),
+            "r1"
+        );
+        assert_eq!(
+            branches[2]
+                .local_details()
+                .unwrap()
+                .remote
+                .as_ref()
+                .unwrap(),
+            "r2"
+        );
 
         assert_eq!(
             get_branch_remote(repo_path, "r1branch")
@@ -543,5 +649,97 @@ mod test_delete_branch {
                 .unwrap(),
             "master"
         );
+    }
+}
+
+#[cfg(test)]
+mod test_remote_branches {
+    use super::*;
+    use crate::sync::remotes::push::push;
+    use crate::sync::tests::{
+        repo_clone, repo_init_bare, write_commit_file,
+    };
+
+    #[test]
+    fn test_remote_branches() {
+        let (r1_dir, _repo) = repo_init_bare().unwrap();
+
+        let (clone1_dir, clone1) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+        let clone1_dir = clone1_dir.path().to_str().unwrap();
+
+        // clone1
+
+        write_commit_file(&clone1, "test.txt", "test", "commit1");
+
+        push(clone1_dir, "origin", "master", false, None, None)
+            .unwrap();
+
+        create_branch(clone1_dir, "foo").unwrap();
+
+        write_commit_file(&clone1, "test.txt", "test2", "commit2");
+
+        push(clone1_dir, "origin", "foo", false, None, None).unwrap();
+
+        // clone2
+
+        let (clone2_dir, _clone2) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+        let clone2_dir = clone2_dir.path().to_str().unwrap();
+
+        let local_branches =
+            get_branches_info(clone2_dir, true).unwrap();
+
+        assert_eq!(local_branches.len(), 1);
+
+        let branches = get_branches_info(clone2_dir, false).unwrap();
+        assert_eq!(dbg!(&branches).len(), 3);
+        assert_eq!(&branches[0].name, "origin/HEAD");
+        assert_eq!(&branches[1].name, "origin/foo");
+        assert_eq!(&branches[2].name, "origin/master");
+    }
+
+    #[test]
+    fn test_checkout_remote_branch() {
+        let (r1_dir, _repo) = repo_init_bare().unwrap();
+
+        let (clone1_dir, clone1) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+        let clone1_dir = clone1_dir.path().to_str().unwrap();
+
+        // clone1
+
+        write_commit_file(&clone1, "test.txt", "test", "commit1");
+        push(clone1_dir, "origin", "master", false, None, None)
+            .unwrap();
+        create_branch(clone1_dir, "foo").unwrap();
+        write_commit_file(&clone1, "test.txt", "test2", "commit2");
+        push(clone1_dir, "origin", "foo", false, None, None).unwrap();
+
+        // clone2
+
+        let (clone2_dir, _clone2) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+        let clone2_dir = clone2_dir.path().to_str().unwrap();
+
+        let local_branches =
+            get_branches_info(clone2_dir, true).unwrap();
+
+        assert_eq!(local_branches.len(), 1);
+
+        let branches = get_branches_info(clone2_dir, false).unwrap();
+
+        // checkout origin/foo
+        checkout_remote_branch(clone2_dir, &branches[1]).unwrap();
+
+        assert_eq!(
+            get_branches_info(clone2_dir, true).unwrap().len(),
+            2
+        );
+
+        assert_eq!(&get_branch_name(clone2_dir).unwrap(), "foo");
     }
 }
