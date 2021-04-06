@@ -19,7 +19,14 @@ pub static PUSH_TAGS_STATES_FETCHING: &str = "fetching";
 pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
 pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
-pub static SELECT_BRANCH_POPUP_MSG: &str = "Switch Branch";
+pub fn title_branches(local: bool) -> String {
+    if local {
+        "Branches (local)"
+    } else {
+        "Branches (remote)"
+    }
+    .to_string()
+}
 
 pub fn title_status(_key_config: &SharedKeyConfig) -> String {
     "Unstaged Changes".to_string()

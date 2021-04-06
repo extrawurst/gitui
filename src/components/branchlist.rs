@@ -79,7 +79,7 @@ impl DrawableComponent for BranchListComponent {
                 ))
                 .block(
                     Block::default()
-                        .title(strings::SELECT_BRANCH_POPUP_MSG)
+                        .title(strings::title_branches(self.local))
                         .border_type(BorderType::Thick)
                         .borders(Borders::ALL),
                 )
@@ -186,8 +186,6 @@ impl Component for BranchListComponent {
                         "switch branch error:",
                         self.switch_to_selected_branch()
                     );
-
-                    self.hide()
                 } else if e == self.key_config.create_branch {
                     self.queue
                         .borrow_mut()
@@ -431,17 +429,19 @@ impl BranchListComponent {
     }
 
     ///
-    fn switch_to_selected_branch(&self) -> Result<()> {
+    fn switch_to_selected_branch(&mut self) -> Result<()> {
         if self.local {
             checkout_branch(
                 asyncgit::CWD,
                 &self.branches[self.selection as usize].reference,
             )?;
+            self.hide()
         } else {
             checkout_remote_branch(
                 CWD,
                 &self.branches[self.selection as usize],
             )?;
+            self.update_branches()?;
         }
 
         self.queue
