@@ -105,7 +105,7 @@ pub fn get_branches_info(
     };
 
     let repo = utils::repo(repo_path)?;
-    let branches_for_display = repo
+    let mut branches_for_display: Vec<BranchInfo> = repo
         .branches(Some(filter))?
         .map(|b| {
             let branch = b?.0;
@@ -142,6 +142,8 @@ pub fn get_branches_info(
         })
         .filter_map(Result::ok)
         .collect();
+
+    branches_for_display.sort_by(|a, b| a.name.cmp(&b.name));
 
     Ok(branches_for_display)
 }
@@ -694,8 +696,8 @@ mod test_remote_branches {
 
         let branches = get_branches_info(clone2_dir, false).unwrap();
         assert_eq!(dbg!(&branches).len(), 3);
-        assert_eq!(&branches[0].name, "origin/foo");
-        assert_eq!(&branches[1].name, "origin/HEAD");
+        assert_eq!(&branches[0].name, "origin/HEAD");
+        assert_eq!(&branches[1].name, "origin/foo");
         assert_eq!(&branches[2].name, "origin/master");
     }
 
@@ -731,7 +733,7 @@ mod test_remote_branches {
         let branches = get_branches_info(clone2_dir, false).unwrap();
 
         // checkout origin/foo
-        checkout_remote_branch(clone2_dir, &branches[0]).unwrap();
+        checkout_remote_branch(clone2_dir, &branches[1]).unwrap();
 
         assert_eq!(
             get_branches_info(clone2_dir, true).unwrap().len(),
