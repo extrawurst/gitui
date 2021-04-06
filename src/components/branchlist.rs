@@ -441,6 +441,7 @@ impl BranchListComponent {
                 CWD,
                 &self.branches[self.selection as usize],
             )?;
+            self.local = true;
             self.update_branches()?;
         }
 
