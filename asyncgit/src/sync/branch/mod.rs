@@ -267,37 +267,43 @@ pub fn checkout_remote_branch(
     repo_path: &str,
     branch: &BranchInfo,
 ) -> Result<()> {
-    scope_time!("checkout_remtote_branch");
+    scope_time!("checkout_remote_branch");
 
     let repo = utils::repo(repo_path)?;
     let cur_ref = repo.head()?;
-    let statuses = repo.statuses(Some(
-        git2::StatusOptions::new().include_ignored(false),
-    ))?;
 
-    if statuses.is_empty() {
-        let commit = repo.find_commit(branch.top_commit.into())?;
-        let mut new_branch = repo.branch("new_b", &commit, false)?;
-        new_branch.set_upstream(Some(&branch.name))?;
-
-        repo.set_head(
-            bytes2string(new_branch.into_reference().name_bytes())?
-                .as_str(),
-        )?;
-
-        if let Err(e) = repo.checkout_head(Some(
-            git2::build::CheckoutBuilder::new().force(),
-        )) {
-            // This is safe beacuse cur_ref was just found
-            repo.set_head(
-                bytes2string(cur_ref.name_bytes())?.as_str(),
-            )?;
-            return Err(Error::Git(e));
-        }
-        Ok(())
-    } else {
-        Err(Error::UncommittedChanges)
+    if !repo
+        .statuses(Some(
+            git2::StatusOptions::new().include_ignored(false),
+        ))?
+        .is_empty()
+    {
+        return Err(Error::UncommittedChanges);
     }
+
+    let name = if let Some(pos) = branch.name.rfind('/') {
+        branch.name[pos..].to_string()
+    } else {
+        branch.name.clone()
+    };
+
+    let commit = repo.find_commit(branch.top_commit.into())?;
+    let mut new_branch = repo.branch(&name, &commit, false)?;
+    new_branch.set_upstream(Some(&branch.name))?;
+
+    repo.set_head(
+        bytes2string(new_branch.into_reference().name_bytes())?
+            .as_str(),
+    )?;
+
+    if let Err(e) = repo.checkout_head(Some(
+        git2::build::CheckoutBuilder::new().force(),
+    )) {
+        // This is safe beacuse cur_ref was just found
+        repo.set_head(bytes2string(cur_ref.name_bytes())?.as_str())?;
+        return Err(Error::Git(e));
+    }
+    Ok(())
 }
 
 /// The user must not be on the branch for the branch to be deleted
@@ -687,10 +693,51 @@ mod test_remote_branches {
         assert_eq!(local_branches.len(), 1);
 
         let branches = get_branches_info(clone2_dir, false).unwrap();
-        assert_eq!(dbg!(branches).len(), 3);
-        // assert_eq!(
-        //     &branches,
-        //     &["refs/heads/foo", "refs/heads/master",]
-        // );
+        assert_eq!(dbg!(&branches).len(), 3);
+        assert_eq!(&branches[0].name, "origin/foo");
+        assert_eq!(&branches[1].name, "origin/HEAD");
+        assert_eq!(&branches[2].name, "origin/master");
+    }
+
+    #[test]
+    fn test_checkout_remote_branch() {
+        let (r1_dir, _repo) = repo_init_bare().unwrap();
+
+        let (clone1_dir, clone1) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+        let clone1_dir = clone1_dir.path().to_str().unwrap();
+
+        // clone1
+
+        write_commit_file(&clone1, "test.txt", "test", "commit1");
+        push(clone1_dir, "origin", "master", false, None, None)
+            .unwrap();
+        create_branch(clone1_dir, "foo").unwrap();
+        write_commit_file(&clone1, "test.txt", "test2", "commit2");
+        push(clone1_dir, "origin", "foo", false, None, None).unwrap();
+
+        // clone2
+
+        let (clone2_dir, _clone2) =
+            repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+        let clone2_dir = clone2_dir.path().to_str().unwrap();
+
+        let local_branches =
+            get_branches_info(clone2_dir, true).unwrap();
+
+        assert_eq!(local_branches.len(), 1);
+
+        let branches = get_branches_info(clone2_dir, false).unwrap();
+
+        // checkout origin/foo
+        checkout_remote_branch(clone2_dir, &branches[0]).unwrap();
+
+        assert_eq!(
+            get_branches_info(clone2_dir, true).unwrap().len(),
+            2
+        );
+
+        assert_eq!(&get_branch_name(clone2_dir).unwrap(), "foo");
     }
 }
