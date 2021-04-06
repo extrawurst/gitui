@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `[w]` key to toggle between staging/workdir [[@terhechte](https://github.com/terhechte)] ([#595](https://github.com/extrawurst/gitui/issues/595))
 - view/checkout remote branches ([#617](https://github.com/extrawurst/gitui/issues/617))
 
+![checkout-remote](assets/checkout-remote.gif)
+
 ### Fixed
 - push branch to its tracking remote ([#597](https://github.com/extrawurst/gitui/issues/597))
 - fixed panic when staging lines involving missing newline eof ([#605](https://github.com/extrawurst/gitui/issues/605))
