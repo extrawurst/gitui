@@ -99,6 +99,7 @@ impl PullComponent {
             branch: self.branch.clone(),
             basic_credential: cred,
         })?;
+
         Ok(())
     }
 
@@ -133,6 +134,8 @@ impl PullComponent {
                 if err.is_empty() {
                     self.try_ff_merge()?;
                 } else {
+                    self.pending = false;
+                    self.hide();
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ShowErrorMsg(format!(
                             "fetch failed:\n{}",
