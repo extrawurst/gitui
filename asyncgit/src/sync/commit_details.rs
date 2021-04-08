@@ -60,7 +60,7 @@ impl CommitMessage {
     ///
     pub fn combine(self) -> String {
         if let Some(body) = self.body {
-            format!("{}{}", self.subject, body)
+            format!("{}\n{}", self.subject, body)
         } else {
             self.subject
         }
@@ -155,6 +155,15 @@ mod tests {
 
         assert_eq!(msg.subject, String::from("foo"),);
         assert_eq!(msg.body, Some(String::from("bar\ntest")),);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_commit_message_combine() -> Result<()> {
+        let msg = CommitMessage::from("foo\nbar\r\ntest");
+
+        assert_eq!(msg.combine(), String::from("foo\nbar\ntest"));
 
         Ok(())
     }
