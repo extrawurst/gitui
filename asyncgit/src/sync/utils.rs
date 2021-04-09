@@ -188,6 +188,25 @@ pub(crate) fn repo_write_file(
 }
 
 #[cfg(test)]
+pub(crate) fn repo_read_file(
+    repo: &Repository,
+    file: &str,
+) -> Result<String> {
+    use std::io::Read;
+
+    let dir = work_dir(repo)?.join(file);
+    let file_path = dir.to_str().ok_or_else(|| {
+        Error::Generic(String::from("invalid file path"))
+    })?;
+
+    let mut file = File::open(file_path)?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)?;
+
+    Ok(String::from_utf8(buffer)?)
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::sync::{

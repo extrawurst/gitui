@@ -147,6 +147,10 @@ impl ResetComponent {
                     ),
                     strings::confirm_msg_stashdrop(&self.key_config),
                 ),
+                Action::StashPop(_) => (
+                    strings::confirm_title_stashpop(&self.key_config),
+                    strings::confirm_msg_stashpop(&self.key_config),
+                ),
                 Action::ResetHunk(_, _) => (
                     strings::confirm_title_reset(&self.key_config),
                     strings::confirm_msg_resethunk(&self.key_config),

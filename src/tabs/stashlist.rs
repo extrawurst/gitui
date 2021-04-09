@@ -83,6 +83,14 @@ impl StashList {
         }
     }
 
+    fn pop_stash(&mut self) {
+        if let Some(e) = self.list.selected_entry() {
+            self.queue.borrow_mut().push_back(
+                InternalEvent::ConfirmAction(Action::StashPop(e.id)),
+            );
+        }
+    }
+
     fn inspect(&mut self) {
         if let Some(e) = self.list.selected_entry() {
             self.queue
@@ -91,9 +99,37 @@ impl StashList {
         }
     }
 
-    ///
-    pub fn drop(id: CommitId) -> bool {
+    /// Called when a pending stash action has been confirmed
+    pub fn action_confirmed(&self, action: &Action) -> bool {
+        match *action {
+            Action::StashDrop(id) => Self::drop(id),
+            Action::StashPop(id) => self.pop(id),
+            _ => false,
+        }
+    }
+
+    fn drop(id: CommitId) -> bool {
         sync::stash_drop(CWD, id).is_ok()
+    }
+
+    fn pop(&self, id: CommitId) -> bool {
+        match sync::stash_pop(CWD, id) {
+            Ok(_) => {
+                self.queue
+                    .borrow_mut()
+                    .push_back(InternalEvent::TabSwitch);
+                true
+            }
+            Err(e) => {
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowErrorMsg(format!(
+                        "stash pop error:\n{}",
+                        e,
+                    )),
+                );
+                true
+            }
+        }
     }
 }
 
@@ -120,6 +156,11 @@ impl Component for StashList {
 
             let selection_valid =
                 self.list.selected_entry().is_some();
+            out.push(CommandInfo::new(
+                strings::commands::stashlist_pop(&self.key_config),
+                selection_valid,
+                true,
+            ));
             out.push(CommandInfo::new(
                 strings::commands::stashlist_apply(&self.key_config),
                 selection_valid,
@@ -150,6 +191,8 @@ impl Component for StashList {
 
             if let Event::Key(k) = ev {
                 if k == self.key_config.enter {
+                    self.pop_stash()
+                } else if k == self.key_config.stash_apply {
                     self.apply_stash()
                 } else if k == self.key_config.stash_drop {
                     self.drop_stash()

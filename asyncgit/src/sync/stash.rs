@@ -45,6 +45,19 @@ pub fn stash_drop(repo_path: &str, stash_id: CommitId) -> Result<()> {
 }
 
 ///
+pub fn stash_pop(repo_path: &str, stash_id: CommitId) -> Result<()> {
+    scope_time!("stash_pop");
+
+    let mut repo = repo(repo_path)?;
+
+    let index = get_stash_index(&mut repo, stash_id.into())?;
+
+    repo.stash_pop(index, None)?;
+
+    Ok(())
+}
+
+///
 pub fn stash_apply(
     repo_path: &str,
     stash_id: CommitId,
@@ -122,7 +135,7 @@ mod tests {
             debug_cmd_print, get_statuses, repo_init,
             write_commit_file,
         },
-        utils::repo_write_file,
+        utils::{repo_read_file, repo_write_file},
     };
     use std::{fs::File, io::Write, path::Path};
 
@@ -285,5 +298,73 @@ mod tests {
         let res = stash_apply(repo_path, id, true);
 
         assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_stash_pop_no_conflict() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        write_commit_file(&repo, "test.txt", "test", "c1");
+
+        repo_write_file(&repo, "test.txt", "test2").unwrap();
+
+        let id =
+            stash_save(repo_path, Some("foo"), true, false).unwrap();
+
+        let res = stash_pop(repo_path, id);
+
+        assert!(res.is_ok());
+        assert_eq!(
+            repo_read_file(&repo, "test.txt").unwrap(),
+            "test2"
+        );
+    }
+
+    #[test]
+    fn test_stash_pop_conflict() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        repo_write_file(&repo, "test.txt", "test").unwrap();
+
+        let id =
+            stash_save(repo_path, Some("foo"), true, false).unwrap();
+
+        repo_write_file(&repo, "test.txt", "test2").unwrap();
+
+        let res = stash_pop(repo_path, id);
+
+        assert!(res.is_err());
+        assert_eq!(
+            repo_read_file(&repo, "test.txt").unwrap(),
+            "test2"
+        );
+    }
+
+    #[test]
+    fn test_stash_pop_conflict_after_commit() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        write_commit_file(&repo, "test.txt", "test", "c1");
+
+        repo_write_file(&repo, "test.txt", "test2").unwrap();
+
+        let id =
+            stash_save(repo_path, Some("foo"), true, false).unwrap();
+
+        repo_write_file(&repo, "test.txt", "test3").unwrap();
+
+        let res = stash_pop(repo_path, id);
+
+        assert!(res.is_err());
+        assert_eq!(
+            repo_read_file(&repo, "test.txt").unwrap(),
+            "test3"
+        );
     }
 }
