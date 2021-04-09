@@ -96,6 +96,11 @@ pub fn confirm_title_stashdrop(
 ) -> String {
     "Drop".to_string()
 }
+pub fn confirm_title_stashpop(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Pop".to_string()
+}
 pub fn confirm_title_merge(
     _key_config: &SharedKeyConfig,
     rebase: bool,
@@ -133,6 +138,10 @@ pub fn confirm_msg_stashdrop(
     _key_config: &SharedKeyConfig,
 ) -> String {
     "confirm stash drop?".to_string()
+}
+pub fn confirm_msg_stashpop(_key_config: &SharedKeyConfig) -> String {
+    "The stash will be applied and then remove from the stash list. Confirm stash pop?"
+        .to_string()
 }
 pub fn confirm_msg_resethunk(
     _key_config: &SharedKeyConfig,
@@ -748,7 +757,7 @@ pub mod commands {
         CommandText::new(
             format!(
                 "Apply [{}]",
-                key_config.get_hint(key_config.enter),
+                key_config.get_hint(key_config.stash_apply),
             ),
             "apply selected stash",
             CMD_GROUP_STASHES,
@@ -763,6 +772,18 @@ pub mod commands {
                 key_config.get_hint(key_config.stash_drop),
             ),
             "drop selected stash",
+            CMD_GROUP_STASHES,
+        )
+    }
+    pub fn stashlist_pop(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Pop [{}]",
+                key_config.get_hint(key_config.enter),
+            ),
+            "pop selected stash",
             CMD_GROUP_STASHES,
         )
     }

@@ -494,8 +494,8 @@ impl App {
                         flags.insert(NeedsUpdate::ALL);
                     }
                 }
-                Action::StashDrop(s) => {
-                    if StashList::drop(s) {
+                Action::StashDrop(_) | Action::StashPop(_) => {
+                    if self.stashlist_tab.action_confirmed(&action) {
                         flags.insert(NeedsUpdate::ALL);
                     }
                 }

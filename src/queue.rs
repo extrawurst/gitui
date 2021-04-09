@@ -29,6 +29,7 @@ pub enum Action {
     ResetHunk(String, u64),
     ResetLines(String, Vec<DiffLinePosition>),
     StashDrop(CommitId),
+    StashPop(CommitId),
     DeleteBranch(String),
     ForcePush(String, bool),
     PullMerge { incoming: usize, rebase: bool },

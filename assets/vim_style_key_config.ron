@@ -59,6 +59,7 @@
     stashing_toggle_untracked: ( code: Char('u'), modifiers: ( bits: 0,),),
     stashing_toggle_index: ( code: Char('m'), modifiers: ( bits: 0,),),
 
+    stash_apply: ( code: Char('a'), modifiers: ( bits: 0,),),
     stash_open: ( code: Char('l'), modifiers: ( bits: 0,),),
     stash_drop: ( code: Char('D'), modifiers: ( bits: 1,),),
 
