@@ -3,6 +3,7 @@
 //TODO: remove once we have this activated on the toplevel
 #![deny(clippy::expect_used)]
 
+pub mod blame;
 pub mod branch;
 mod commit;
 mod commit_details;
@@ -24,6 +25,7 @@ pub mod status;
 mod tags;
 pub mod utils;
 
+pub use blame::{blame_file, BlameHunk, FileBlame};
 pub use branch::{
     branch_compare_upstream, checkout_branch, config_is_pull_rebase,
     create_branch, delete_branch, get_branch_remote,
@@ -37,7 +39,9 @@ pub use commit_details::{
     get_commit_details, CommitDetails, CommitMessage,
 };
 pub use commit_files::get_commit_files;
-pub use commits_info::{get_commits_info, CommitId, CommitInfo};
+pub use commits_info::{
+    get_commit_info, get_commits_info, CommitId, CommitInfo,
+};
 pub use diff::get_diff_commit;
 pub use hooks::{
     hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,

@@ -1,3 +1,4 @@
+mod blame_file;
 mod branchlist;
 mod changes;
 mod command;
@@ -22,6 +23,7 @@ mod tag_commit;
 mod textinput;
 mod utils;
 
+pub use blame_file::BlameFileComponent;
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};

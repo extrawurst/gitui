@@ -388,6 +388,11 @@ impl Component for FileTreeComponent {
             )
             .order(order::NAV),
         );
+        out.push(CommandInfo::new(
+            strings::commands::blame_file(&self.key_config),
+            self.selection_file().is_some(),
+            self.focused || force_all,
+        ));
 
         CommandBlocking::PassingOn
     }
@@ -395,7 +400,20 @@ impl Component for FileTreeComponent {
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = ev {
-                return if e == self.key_config.move_down {
+                return if e == self.key_config.blame {
+                    match (&self.queue, self.selection_file()) {
+                        (Some(queue), Some(status_item)) => {
+                            queue.borrow_mut().push_back(
+                                InternalEvent::BlameFile(
+                                    status_item.path,
+                                ),
+                            );
+
+                            Ok(true)
+                        }
+                        _ => Ok(false),
+                    }
+                } else if e == self.key_config.move_down {
                     Ok(self.move_selection(MoveSelection::Down))
                 } else if e == self.key_config.move_up {
                     Ok(self.move_selection(MoveSelection::Up))
