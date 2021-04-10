@@ -1,8 +1,8 @@
 use super::utils::logitems::{ItemBatch, LogEntry};
 use crate::{
     components::{
-        CommandBlocking, CommandInfo, Component, DrawableComponent,
-        ScrollType,
+        utils::string_width_align, CommandBlocking, CommandInfo,
+        Component, DrawableComponent, ScrollType,
     },
     keys::SharedKeyConfig,
     strings,
@@ -22,7 +22,6 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
-use unicode_width::UnicodeWidthStr;
 
 const ELEMENTS_PER_LINE: usize = 10;
 
@@ -381,29 +380,6 @@ impl Component for CommitList {
         ));
         CommandBlocking::PassingOn
     }
-}
-
-#[inline]
-fn string_width_align(s: &str, width: usize) -> String {
-    static POSTFIX: &str = "..";
-
-    let len = UnicodeWidthStr::width(s);
-    let width_wo_postfix = width.saturating_sub(POSTFIX.len());
-
-    if (len >= width_wo_postfix && len <= width)
-        || (len <= width_wo_postfix)
-    {
-        format!("{:w$}", s, w = width)
-    } else {
-        let mut s = s.to_string();
-        s.truncate(find_truncate_point(&s, width_wo_postfix));
-        format!("{}{}", s, POSTFIX)
-    }
-}
-
-#[inline]
-fn find_truncate_point(s: &str, chars: usize) -> usize {
-    s.chars().take(chars).map(char::len_utf8).sum()
 }
 
 #[cfg(test)]

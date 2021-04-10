@@ -170,6 +170,9 @@ pub fn confirm_msg_force_push(
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
 }
+pub fn blame_title(_key_config: &SharedKeyConfig) -> String {
+    "Blame".to_string()
+}
 pub fn tag_commit_popup_title(
     _key_config: &SharedKeyConfig,
 ) -> String {
@@ -814,6 +817,16 @@ pub mod commands {
                 key_config.get_hint(key_config.focus_right),
             ),
             "inspect selected commit in detail",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn blame_file(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Blame [{}]",
+                key_config.get_hint(key_config.blame),
+            ),
+            "open blame view of selected file",
             CMD_GROUP_LOG,
         )
     }

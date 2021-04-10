@@ -56,6 +56,8 @@ pub enum InternalEvent {
     ///
     TagCommit(CommitId),
     ///
+    BlameFile(String),
+    ///
     CreateBranch,
     ///
     RenameBranch(String, String),

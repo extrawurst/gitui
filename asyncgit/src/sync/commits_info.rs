@@ -96,6 +96,26 @@ pub fn get_commits_info(
 }
 
 ///
+pub fn get_commit_info(
+    repo_path: &str,
+    commit_id: &CommitId,
+) -> Result<CommitInfo> {
+    scope_time!("get_commit_info");
+
+    let repo = repo(repo_path)?;
+
+    let commit = repo.find_commit((*commit_id).into())?;
+    let author = commit.author();
+
+    Ok(CommitInfo {
+        message: commit.message().unwrap_or("").into(),
+        author: author.name().unwrap_or("<unknown>").into(),
+        time: commit.time().seconds(),
+        id: CommitId(commit.id()),
+    })
+}
+
+///
 pub fn get_message(
     c: &Commit,
     message_length_limit: Option<usize>,
