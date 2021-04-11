@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - ask to pop stash by default (*apply* using `[a]` now) [[@brunogouveia](https://github.com/brunogouveia)] ([#574](https://github.com/extrawurst/gitui/issues/574))
 
+![stash_pop](assets/stash_pop.gif)
+
 ### Added
 - `[w]` key to toggle between staging/workdir [[@terhechte](https://github.com/terhechte)] ([#595](https://github.com/extrawurst/gitui/issues/595))
 - view/checkout remote branches ([#617](https://github.com/extrawurst/gitui/issues/617))
