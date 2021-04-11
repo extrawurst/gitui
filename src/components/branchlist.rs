@@ -21,9 +21,11 @@ use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
 use tui::{
     backend::Backend,
-    layout::{Alignment, Rect},
+    layout::{
+        Alignment, Constraint, Direction, Layout, Margin, Rect,
+    },
     text::{Span, Spans, Text},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Tabs},
     Frame,
 };
 use ui::style::SharedTheme;
@@ -49,7 +51,7 @@ impl DrawableComponent for BranchListComponent {
         rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            const PERCENT_SIZE: Size = Size::new(80, 25);
+            const PERCENT_SIZE: Size = Size::new(80, 50);
             const MIN_SIZE: Size = Size::new(60, 20);
 
             let area = ui::centered_rect(
@@ -61,8 +63,32 @@ impl DrawableComponent for BranchListComponent {
                 ui::rect_inside(MIN_SIZE, f.size().into(), area);
             let area = area.intersection(rect);
 
-            let height_in_lines =
-                (area.height as usize).saturating_sub(2);
+            f.render_widget(Clear, area);
+
+            f.render_widget(
+                Block::default()
+                    .title(strings::title_branches())
+                    .border_type(BorderType::Thick)
+                    .borders(Borders::ALL),
+                area,
+            );
+
+            let area = area.inner(&Margin {
+                vertical: 1,
+                horizontal: 1,
+            });
+
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(
+                    [Constraint::Length(2), Constraint::Min(1)]
+                        .as_ref(),
+                )
+                .split(area);
+
+            self.draw_tabs(f, chunks[0]);
+
+            let height_in_lines = chunks[1].height as usize;
 
             self.scroll_top.set(calc_scroll_top(
                 self.scroll_top.get(),
@@ -70,26 +96,22 @@ impl DrawableComponent for BranchListComponent {
                 self.selection as usize,
             ));
 
-            f.render_widget(Clear, area);
             f.render_widget(
                 Paragraph::new(self.get_text(
                     &self.theme,
                     area.width,
                     height_in_lines,
                 ))
-                .block(
-                    Block::default()
-                        .title(strings::title_branches(self.local))
-                        .border_type(BorderType::Thick)
-                        .borders(Borders::ALL),
-                )
                 .alignment(Alignment::Left),
-                area,
+                chunks[1],
             );
+
+            let mut r = chunks[1];
+            r.width += 1;
 
             ui::draw_scrollbar(
                 f,
-                area,
+                r,
                 &self.theme,
                 self.branches.len(),
                 self.scroll_top.get(),
@@ -215,8 +237,7 @@ impl Component for BranchListComponent {
                             ),
                         ),
                     );
-                } else if e == self.key_config.toggle_remote_branches
-                {
+                } else if e == self.key_config.tab_toggle {
                     self.local = !self.local;
                     self.update_branches()?;
                 }
@@ -461,5 +482,27 @@ impl BranchListComponent {
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));
 
         Ok(())
+    }
+
+    fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+        let tabs = [Span::raw("Local"), Span::raw("Remote")]
+            .iter()
+            .cloned()
+            .map(Spans::from)
+            .collect();
+
+        f.render_widget(
+            Tabs::new(tabs)
+                .block(
+                    Block::default()
+                        .borders(Borders::BOTTOM)
+                        .border_style(self.theme.block(false)),
+                )
+                .style(self.theme.tab(false))
+                .highlight_style(self.theme.tab(true))
+                .divider(strings::tab_divider(&self.key_config))
+                .select(if self.local { 0 } else { 1 }),
+            r,
+        );
     }
 }
