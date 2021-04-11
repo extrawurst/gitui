@@ -273,6 +273,13 @@ impl BranchListComponent {
     /// fetch list of branches
     pub fn update_branches(&mut self) -> Result<()> {
         self.branches = get_branches_info(CWD, self.local)?;
+        //remove remote branch called `HEAD`
+        if !self.local {
+            self.branches
+                .iter()
+                .position(|b| b.name.ends_with("/HEAD"))
+                .map(|idx| self.branches.remove(idx));
+        }
         self.set_selection(self.selection)?;
         Ok(())
     }
