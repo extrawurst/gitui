@@ -146,6 +146,15 @@ impl Component for BranchListComponent {
             ));
 
             out.push(CommandInfo::new(
+                strings::commands::toggle_branch_popup(
+                    &self.key_config,
+                    self.local,
+                ),
+                true,
+                true,
+            ));
+
+            out.push(CommandInfo::new(
                 strings::commands::select_branch_popup(
                     &self.key_config,
                 ),
@@ -175,15 +184,6 @@ impl Component for BranchListComponent {
                 ),
                 true,
                 self.local,
-            ));
-
-            out.push(CommandInfo::new(
-                strings::commands::toggle_branch_popup(
-                    &self.key_config,
-                    self.local,
-                ),
-                true,
-                true,
             ));
         }
         visibility_blocking(self)
