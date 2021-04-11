@@ -88,36 +88,7 @@ impl DrawableComponent for BranchListComponent {
 
             self.draw_tabs(f, chunks[0]);
 
-            let height_in_lines = chunks[1].height as usize;
-
-            self.scroll_top.set(calc_scroll_top(
-                self.scroll_top.get(),
-                height_in_lines,
-                self.selection as usize,
-            ));
-
-            f.render_widget(
-                Paragraph::new(self.get_text(
-                    &self.theme,
-                    area.width,
-                    height_in_lines,
-                ))
-                .alignment(Alignment::Left),
-                chunks[1],
-            );
-
-            let mut r = chunks[1];
-            r.width += 1;
-
-            ui::draw_scrollbar(
-                f,
-                r,
-                &self.theme,
-                self.branches.len(),
-                self.scroll_top.get(),
-            );
-
-            self.current_height.set(height_in_lines.try_into()?);
+            self.draw_list(f, chunks[1])?;
         }
 
         Ok(())
@@ -504,5 +475,44 @@ impl BranchListComponent {
                 .select(if self.local { 0 } else { 1 }),
             r,
         );
+    }
+
+    fn draw_list<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        r: Rect,
+    ) -> Result<()> {
+        let height_in_lines = r.height as usize;
+
+        self.scroll_top.set(calc_scroll_top(
+            self.scroll_top.get(),
+            height_in_lines,
+            self.selection as usize,
+        ));
+
+        f.render_widget(
+            Paragraph::new(self.get_text(
+                &self.theme,
+                r.width,
+                height_in_lines,
+            ))
+            .alignment(Alignment::Left),
+            r,
+        );
+
+        let mut r = r;
+        r.width += 1;
+
+        ui::draw_scrollbar(
+            f,
+            r,
+            &self.theme,
+            self.branches.len(),
+            self.scroll_top.get(),
+        );
+
+        self.current_height.set(height_in_lines.try_into()?);
+
+        Ok(())
     }
 }
