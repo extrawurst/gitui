@@ -272,10 +272,8 @@ mod tests {
     #[test]
     fn test_load_vim_style_example() {
         assert_eq!(
-            KeyConfig::read_file(
-                "assets/vim_style_key_config.ron".into()
-            )
-            .is_ok(),
+            KeyConfig::read_file("vim_style_key_config.ron".into())
+                .is_ok(),
             true
         );
     }

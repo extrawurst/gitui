@@ -21,7 +21,7 @@
 
 <h5 align="center">Blazing fast terminal client for git written in Rust</h1>
 
-![](assets/demo.gif)
+![](demo.gif)
 
 # Features
 
