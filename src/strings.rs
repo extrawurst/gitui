@@ -140,7 +140,7 @@ pub fn confirm_msg_stashdrop(
     "confirm stash drop?".to_string()
 }
 pub fn confirm_msg_stashpop(_key_config: &SharedKeyConfig) -> String {
-    "The stash will be applied and then remove from the stash list. Confirm stash pop?"
+    "The stash will be applied and removed from the stash list. Confirm stash pop?"
         .to_string()
 }
 pub fn confirm_msg_resethunk(
