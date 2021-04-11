@@ -21,9 +21,11 @@ use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
 use tui::{
     backend::Backend,
-    layout::{Alignment, Rect},
+    layout::{
+        Alignment, Constraint, Direction, Layout, Margin, Rect,
+    },
     text::{Span, Spans, Text},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Tabs},
     Frame,
 };
 use ui::style::SharedTheme;
@@ -49,7 +51,7 @@ impl DrawableComponent for BranchListComponent {
         rect: Rect,
     ) -> Result<()> {
         if self.visible {
-            const PERCENT_SIZE: Size = Size::new(80, 25);
+            const PERCENT_SIZE: Size = Size::new(80, 50);
             const MIN_SIZE: Size = Size::new(60, 20);
 
             let area = ui::centered_rect(
@@ -61,41 +63,32 @@ impl DrawableComponent for BranchListComponent {
                 ui::rect_inside(MIN_SIZE, f.size().into(), area);
             let area = area.intersection(rect);
 
-            let height_in_lines =
-                (area.height as usize).saturating_sub(2);
-
-            self.scroll_top.set(calc_scroll_top(
-                self.scroll_top.get(),
-                height_in_lines,
-                self.selection as usize,
-            ));
-
             f.render_widget(Clear, area);
+
             f.render_widget(
-                Paragraph::new(self.get_text(
-                    &self.theme,
-                    area.width,
-                    height_in_lines,
-                ))
-                .block(
-                    Block::default()
-                        .title(strings::title_branches(self.local))
-                        .border_type(BorderType::Thick)
-                        .borders(Borders::ALL),
+                Block::default()
+                    .title(strings::title_branches())
+                    .border_type(BorderType::Thick)
+                    .borders(Borders::ALL),
+                area,
+            );
+
+            let area = area.inner(&Margin {
+                vertical: 1,
+                horizontal: 1,
+            });
+
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(
+                    [Constraint::Length(2), Constraint::Min(1)]
+                        .as_ref(),
                 )
-                .alignment(Alignment::Left),
-                area,
-            );
+                .split(area);
 
-            ui::draw_scrollbar(
-                f,
-                area,
-                &self.theme,
-                self.branches.len(),
-                self.scroll_top.get(),
-            );
+            self.draw_tabs(f, chunks[0]);
 
-            self.current_height.set(height_in_lines.try_into()?);
+            self.draw_list(f, chunks[1])?;
         }
 
         Ok(())
@@ -119,6 +112,15 @@ impl Component for BranchListComponent {
 
             out.push(CommandInfo::new(
                 strings::commands::close_popup(&self.key_config),
+                true,
+                true,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::toggle_branch_popup(
+                    &self.key_config,
+                    self.local,
+                ),
                 true,
                 true,
             ));
@@ -153,15 +155,6 @@ impl Component for BranchListComponent {
                 ),
                 true,
                 self.local,
-            ));
-
-            out.push(CommandInfo::new(
-                strings::commands::toggle_branch_popup(
-                    &self.key_config,
-                    self.local,
-                ),
-                true,
-                true,
             ));
         }
         visibility_blocking(self)
@@ -215,8 +208,7 @@ impl Component for BranchListComponent {
                             ),
                         ),
                     );
-                } else if e == self.key_config.toggle_remote_branches
-                {
+                } else if e == self.key_config.tab_toggle {
                     self.local = !self.local;
                     self.update_branches()?;
                 }
@@ -459,6 +451,67 @@ impl BranchListComponent {
         self.queue
             .borrow_mut()
             .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+
+        Ok(())
+    }
+
+    fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+        let tabs = [Span::raw("Local"), Span::raw("Remote")]
+            .iter()
+            .cloned()
+            .map(Spans::from)
+            .collect();
+
+        f.render_widget(
+            Tabs::new(tabs)
+                .block(
+                    Block::default()
+                        .borders(Borders::BOTTOM)
+                        .border_style(self.theme.block(false)),
+                )
+                .style(self.theme.tab(false))
+                .highlight_style(self.theme.tab(true))
+                .divider(strings::tab_divider(&self.key_config))
+                .select(if self.local { 0 } else { 1 }),
+            r,
+        );
+    }
+
+    fn draw_list<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        r: Rect,
+    ) -> Result<()> {
+        let height_in_lines = r.height as usize;
+
+        self.scroll_top.set(calc_scroll_top(
+            self.scroll_top.get(),
+            height_in_lines,
+            self.selection as usize,
+        ));
+
+        f.render_widget(
+            Paragraph::new(self.get_text(
+                &self.theme,
+                r.width,
+                height_in_lines,
+            ))
+            .alignment(Alignment::Left),
+            r,
+        );
+
+        let mut r = r;
+        r.width += 1;
+
+        ui::draw_scrollbar(
+            f,
+            r,
+            &self.theme,
+            self.branches.len(),
+            self.scroll_top.get(),
+        );
+
+        self.current_height.set(height_in_lines.try_into()?);
 
         Ok(())
     }

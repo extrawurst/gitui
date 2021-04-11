@@ -19,15 +19,9 @@ pub static PUSH_TAGS_STATES_FETCHING: &str = "fetching";
 pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
 pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
-pub fn title_branches(local: bool) -> String {
-    if local {
-        "Branches (local)"
-    } else {
-        "Branches (remote)"
-    }
-    .to_string()
+pub fn title_branches() -> String {
+    "Branches".to_string()
 }
-
 pub fn title_status(_key_config: &SharedKeyConfig) -> String {
     "Unstaged Changes".to_string()
 }
@@ -925,10 +919,9 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "{} Branches [{}]",
+                "{} [{}]",
                 if local { "Remote" } else { "Local" },
-                key_config
-                    .get_hint(key_config.toggle_remote_branches),
+                key_config.get_hint(key_config.tab_toggle),
             ),
             "toggle branch type (remote/local)",
             CMD_GROUP_GENERAL,
