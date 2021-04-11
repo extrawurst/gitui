@@ -43,7 +43,7 @@ dependencies = [
 
 [[package]]
 name = "asyncgit"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "crossbeam-channel",
  "git2",
