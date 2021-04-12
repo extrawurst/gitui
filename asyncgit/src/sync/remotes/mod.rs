@@ -73,7 +73,7 @@ pub(crate) fn get_default_remote_in_repo(
 }
 
 ///
-pub(crate) fn fetch_origin(
+pub(crate) fn fetch(
     repo_path: &str,
     branch: &str,
     basic_credential: Option<BasicAuthCredential>,
@@ -123,7 +123,7 @@ mod tests {
 
         assert_eq!(remotes, vec![String::from("origin")]);
 
-        fetch_origin(repo_path, "master", None, None).unwrap();
+        fetch(repo_path, "master", None, None).unwrap();
     }
 
     #[test]

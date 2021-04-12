@@ -95,7 +95,7 @@ mod test {
     use super::*;
     use crate::sync::{
         branch_compare_upstream,
-        remotes::{fetch_origin, push::push},
+        remotes::{fetch, push::push},
         tests::{
             debug_cmd_print, get_commit_ids, repo_clone,
             repo_init_bare, write_commit_file,
@@ -146,8 +146,7 @@ mod test {
         .is_err());
 
         //lets fetch from origin
-        let bytes =
-            fetch_origin(clone2_dir, "master", None, None).unwrap();
+        let bytes = fetch(clone2_dir, "master", None, None).unwrap();
         assert!(bytes > 0);
 
         //we should be one commit behind
@@ -218,7 +217,7 @@ mod test {
 
         write_commit_file(&clone2, "test.bin", "foobar", "commit2");
 
-        let bytes = fetch_origin(
+        let bytes = fetch(
             clone2_dir.path().to_str().unwrap(),
             "master",
             None,

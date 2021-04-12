@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- fetch crashed when no upstream of branch is set ([#637](https://github.com/extrawurst/gitui/issues/637))
+
 ## [0.14.0] - 2020-04-11
 
 ### Added
