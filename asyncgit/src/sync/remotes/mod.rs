@@ -11,7 +11,7 @@ use crate::{
     },
 };
 use crossbeam_channel::Sender;
-use git2::{FetchOptions, Repository};
+use git2::{BranchType, FetchOptions, Repository};
 use push::remote_callbacks;
 use scopetime::scope_time;
 
@@ -81,8 +81,13 @@ pub(crate) fn fetch_origin(
     scope_time!("fetch_origin");
 
     let repo = utils::repo(repo_path)?;
-    let mut remote =
-        repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
+    let branch_ref = repo
+        .find_branch(branch, BranchType::Local)?
+        .into_reference();
+    let branch_ref = branch_ref.name().expect("TODO");
+    let remote_name = repo.branch_upstream_remote(branch_ref)?;
+    let remote_name = remote_name.as_str().expect("TODO");
+    let mut remote = repo.find_remote(remote_name)?;
 
     let mut options = FetchOptions::new();
     options.remote_callbacks(remote_callbacks(
