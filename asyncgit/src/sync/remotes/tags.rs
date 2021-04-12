@@ -154,7 +154,7 @@ mod tests {
     use super::*;
     use crate::sync::{
         self,
-        remotes::{fetch_origin, push::push},
+        remotes::{fetch, push::push},
         tests::{repo_clone, repo_init_bare},
     };
     use sync::tests::write_commit_file;
@@ -195,8 +195,7 @@ mod tests {
         assert_eq!(sync::get_tags(clone2_dir).unwrap().len(), 0);
 
         //lets fetch from origin
-        let bytes =
-            fetch_origin(clone2_dir, "master", None, None).unwrap();
+        let bytes = fetch(clone2_dir, "master", None, None).unwrap();
         assert!(bytes > 0);
 
         sync::merge_upstream_commit(clone2_dir, "master").unwrap();
