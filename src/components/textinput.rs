@@ -340,6 +340,7 @@ impl Component for TextInputComponent {
 
                 let is_ctrl =
                     e.modifiers.contains(KeyModifiers::CONTROL);
+                let is_alt = e.modifiers.contains(KeyModifiers::ALT);
 
                 match e.code {
                     KeyCode::Char(c) if !is_ctrl => {
@@ -371,6 +372,14 @@ impl Component for TextInputComponent {
                     }
                     KeyCode::End => {
                         self.cursor_position = self.msg.len();
+                        return Ok(true);
+                    }
+                    KeyCode::Enter if is_alt => {
+                        // Alt+enter inserts newline.
+                        // Note shift+enter is not supported:
+                        // https://github.com/crossterm-rs/crossterm/issues/400
+                        self.msg.insert(self.cursor_position, '\n');
+                        self.incr_cursor();
                         return Ok(true);
                     }
                     _ => (),
