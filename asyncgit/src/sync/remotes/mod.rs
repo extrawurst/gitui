@@ -14,6 +14,7 @@ use crossbeam_channel::Sender;
 use git2::{BranchType, FetchOptions, Repository};
 use push::remote_callbacks;
 use scopetime::scope_time;
+use utils::bytes2string;
 
 /// origin
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
@@ -84,10 +85,10 @@ pub(crate) fn fetch_origin(
     let branch_ref = repo
         .find_branch(branch, BranchType::Local)?
         .into_reference();
-    let branch_ref = branch_ref.name().expect("TODO");
-    let remote_name = repo.branch_upstream_remote(branch_ref)?;
-    let remote_name = remote_name.as_str().expect("TODO");
-    let mut remote = repo.find_remote(remote_name)?;
+    let branch_ref = bytes2string(branch_ref.name_bytes())?;
+    let remote_name = repo.branch_upstream_remote(&branch_ref)?;
+    let remote_name = bytes2string(&*remote_name)?;
+    let mut remote = repo.find_remote(&remote_name)?;
 
     let mut options = FetchOptions::new();
     options.remote_callbacks(remote_callbacks(
