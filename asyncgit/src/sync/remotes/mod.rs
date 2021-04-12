@@ -72,7 +72,7 @@ pub(crate) fn get_default_remote_in_repo(
     Err(Error::NoDefaultRemoteFound)
 }
 
-///
+/// fetches from upstream/remote for `branch`
 pub(crate) fn fetch(
     repo_path: &str,
     branch: &str,
