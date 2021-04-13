@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.15.0] - 2021-04-13
+
+### Fixed
+- Fixed remote checkout error when a local branch exists ([#632](https://github.com/extrawurst/gitui/issues/632))
+
 ## [0.14.0] - 2020-04-11
 
 ### Added
