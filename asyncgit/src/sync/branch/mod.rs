@@ -292,9 +292,14 @@ pub fn checkout_remote_branch(
     let commit = repo.find_commit(branch.top_commit.into())?;
 
     // find existing local branch for the remote branch
-    let branch_to_checkout = if let Ok(matched_local_branch) = repo.find_branch(&name, BranchType::Local) {
-
-        let local_branch_upstream_name = matched_local_branch.upstream()?.name()?.unwrap().to_string();
+    let branch_to_checkout = if let Ok(matched_local_branch) =
+        repo.find_branch(&name, BranchType::Local)
+    {
+        let local_branch_upstream_name = matched_local_branch
+            .upstream()?
+            .name()?
+            .expect("Failed to get upstream branch name")
+            .to_string();
 
         // check if the requested branch's full name matches the local's upstream
         if branch.name == local_branch_upstream_name {
@@ -304,12 +309,12 @@ pub fn checkout_remote_branch(
                 Error::Generic(
                     format!(
                         "A local branch exists with the name {}, but a different upstream: {} instead of {}",
-                        matched_local_branch.name()?.unwrap(),
+                        matched_local_branch.name()?.expect("Failed to get branch name"),
                         local_branch_upstream_name,
                         branch.name
                     )
                 )
-            )
+            );
         }
     } else {
         let mut new_branch = repo.branch(&name, &commit, false)?;
@@ -318,8 +323,10 @@ pub fn checkout_remote_branch(
     };
 
     repo.set_head(
-        bytes2string(branch_to_checkout.into_reference().name_bytes())?
-            .as_str(),
+        bytes2string(
+            branch_to_checkout.into_reference().name_bytes(),
+        )?
+        .as_str(),
     )?;
 
     if let Err(e) = repo.checkout_head(Some(
