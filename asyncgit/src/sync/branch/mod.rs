@@ -295,26 +295,29 @@ pub fn checkout_remote_branch(
     let branch_to_checkout = if let Ok(matched_local_branch) =
         repo.find_branch(&name, BranchType::Local)
     {
-        let local_branch_upstream_name = matched_local_branch
-            .upstream()?
-            .name()?
-            .expect("Failed to get upstream branch name")
-            .to_string();
-
-        // check if the requested branch's full name matches the local's upstream
-        if branch.name == local_branch_upstream_name {
-            matched_local_branch
-        } else {
-            return Err(
-                Error::Generic(
-                    format!(
-                        "A local branch exists with the name {}, but a different upstream: {} instead of {}",
-                        matched_local_branch.name()?.expect("Failed to get branch name"),
-                        local_branch_upstream_name,
-                        branch.name
+        if let Some(local_branch_upstream_name) =
+            matched_local_branch.upstream()?.name()?
+        {
+            // check if the requested branch's full name matches the local's upstream
+            if branch.name == local_branch_upstream_name.to_string() {
+                matched_local_branch
+            } else {
+                return Err(
+                    Error::Generic(
+                        format!(
+                            "A local branch exists with the name {}, but a different upstream: {} instead of {}",
+                            matched_local_branch.name()?.unwrap_or(""),
+                            local_branch_upstream_name.to_string(),
+                            branch.name
+                        )
                     )
-                )
-            );
+                );
+            }
+        } else {
+            return Err(Error::Generic(
+                "Unable to get upstream branch info for local branch"
+                    .to_string(),
+            ));
         }
     } else {
         let mut new_branch = repo.branch(&name, &commit, false)?;
