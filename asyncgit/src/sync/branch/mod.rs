@@ -299,7 +299,7 @@ pub fn checkout_remote_branch(
             matched_local_branch.upstream()?.name()?
         {
             // check if the requested branch's full name matches the local's upstream
-            if branch.name == local_branch_upstream_name.to_string() {
+            if branch.name == *local_branch_upstream_name {
                 matched_local_branch
             } else {
                 return Err(
