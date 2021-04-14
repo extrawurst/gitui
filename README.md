@@ -34,7 +34,6 @@
 - Branch List (create, rename, delete, checkout, remotes)
 - Browse commit log, diff committed changes
 - Scalable terminal UI layout
-- Async [input polling](assets/perf_compare.jpg)
 - Async git API for fluid control
 
 # Benchmarks
