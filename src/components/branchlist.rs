@@ -129,7 +129,8 @@ impl Component for BranchListComponent {
                 strings::commands::select_branch_popup(
                     &self.key_config,
                 ),
-                !self.selection_is_cur_branch(),
+                !self.selection_is_cur_branch()
+                    && self.valid_selection(),
                 true,
             ));
 
@@ -179,12 +180,16 @@ impl Component for BranchListComponent {
                         "switch branch error:",
                         self.switch_to_selected_branch()
                     );
-                } else if e == self.key_config.create_branch {
+                } else if e == self.key_config.create_branch
+                    && self.local
+                {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
                     self.hide();
-                } else if e == self.key_config.rename_branch {
+                } else if e == self.key_config.rename_branch
+                    && self.valid_selection()
+                {
                     let cur_branch =
                         &self.branches[self.selection as usize];
                     self.queue.borrow_mut().push_back(
@@ -197,6 +202,7 @@ impl Component for BranchListComponent {
                     self.update_branches()?;
                 } else if e == self.key_config.delete_branch
                     && !self.selection_is_cur_branch()
+                    && self.valid_selection()
                 {
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ConfirmAction(
@@ -274,6 +280,10 @@ impl BranchListComponent {
         }
         self.set_selection(self.selection)?;
         Ok(())
+    }
+
+    fn valid_selection(&self) -> bool {
+        !self.branches.is_empty()
     }
 
     fn selection_is_cur_branch(&self) -> bool {
@@ -433,6 +443,10 @@ impl BranchListComponent {
 
     ///
     fn switch_to_selected_branch(&mut self) -> Result<()> {
+        if !self.valid_selection() {
+            anyhow::bail!("no valid branch selected");
+        }
+
         if self.local {
             checkout_branch(
                 asyncgit::CWD,
