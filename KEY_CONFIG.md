@@ -9,8 +9,8 @@ This file allows changing every key binding.
 
 The config file format based on the [Ron file format](https://github.com/ron-rs/ron).
 The location of the file depends on your OS:
-* `$HOME/Library/Application Support/gitui/key_config.ron` (mac)
+* `$HOME/.config/gitui/key_config.ron` (mac)
 * `$XDG_CONFIG_HOME/gitui/key_config.ron` (linux using XDG)
 * `$HOME/.config/gitui/key_config.ron` (linux)
 
-Here is a [vim style key config](assets/vim_style_key_config.ron) with `h`, `j`, `k`, `l` to navigate. Use it to copy the content into `key_config.ron` to get vim style key bindings.
+Here is a [vim style key config](vim_style_key_config.ron) with `h`, `j`, `k`, `l` to navigate. Use it to copy the content into `key_config.ron` to get vim style key bindings.

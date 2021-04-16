@@ -5,27 +5,31 @@ pub mod order {
 }
 
 pub static PUSH_POPUP_MSG: &str = "Push";
+pub static FORCE_PUSH_POPUP_MSG: &str = "Force Push";
+pub static PULL_POPUP_MSG: &str = "Pull";
 pub static PUSH_POPUP_PROGRESS_NONE: &str = "preparing...";
 pub static PUSH_POPUP_STATES_ADDING: &str = "adding objects (1/3)";
 pub static PUSH_POPUP_STATES_DELTAS: &str = "deltas (2/3)";
 pub static PUSH_POPUP_STATES_PUSHING: &str = "pushing (3/3)";
+pub static PUSH_POPUP_STATES_TRANSFER: &str = "transfer";
+pub static PUSH_POPUP_STATES_DONE: &str = "done";
 
-pub static SELECT_BRANCH_POPUP_MSG: &str = "Switch Branch";
+pub static PUSH_TAGS_POPUP_MSG: &str = "Push Tags";
+pub static PUSH_TAGS_STATES_FETCHING: &str = "fetching";
+pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
+pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
-pub fn title_status(key_config: &SharedKeyConfig) -> String {
-    format!(
-        "Unstaged Changes [{}]",
-        key_config.get_hint(key_config.focus_workdir)
-    )
+pub fn title_branches() -> String {
+    "Branches".to_string()
+}
+pub fn title_status(_key_config: &SharedKeyConfig) -> String {
+    "Unstaged Changes".to_string()
 }
 pub fn title_diff(_key_config: &SharedKeyConfig) -> String {
     "Diff: ".to_string()
 }
-pub fn title_index(key_config: &SharedKeyConfig) -> String {
-    format!(
-        "Staged Changes [{}]",
-        key_config.get_hint(key_config.focus_stage)
-    )
+pub fn title_index(_key_config: &SharedKeyConfig) -> String {
+    "Staged Changes".to_string()
 }
 pub fn tab_status(key_config: &SharedKeyConfig) -> String {
     format!("Status [{}]", key_config.get_hint(key_config.tab_status))
@@ -86,13 +90,52 @@ pub fn confirm_title_stashdrop(
 ) -> String {
     "Drop".to_string()
 }
+pub fn confirm_title_stashpop(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Pop".to_string()
+}
+pub fn confirm_title_merge(
+    _key_config: &SharedKeyConfig,
+    rebase: bool,
+) -> String {
+    if rebase {
+        "Merge (via rebase)".to_string()
+    } else {
+        "Merge (via commit)".to_string()
+    }
+}
+pub fn confirm_msg_merge(
+    _key_config: &SharedKeyConfig,
+    incoming: usize,
+    rebase: bool,
+) -> String {
+    if rebase {
+        format!("Rebase onto {} incoming commits?", incoming)
+    } else {
+        format!("Merge of {} incoming commits?", incoming)
+    }
+}
 pub fn confirm_msg_reset(_key_config: &SharedKeyConfig) -> String {
     "confirm file reset?".to_string()
+}
+pub fn confirm_msg_reset_lines(
+    _key_config: &SharedKeyConfig,
+    lines: usize,
+) -> String {
+    format!(
+        "are you sure you want to discard {} selected lines?",
+        lines
+    )
 }
 pub fn confirm_msg_stashdrop(
     _key_config: &SharedKeyConfig,
 ) -> String {
     "confirm stash drop?".to_string()
+}
+pub fn confirm_msg_stashpop(_key_config: &SharedKeyConfig) -> String {
+    "The stash will be applied and removed from the stash list. Confirm stash pop?"
+        .to_string()
 }
 pub fn confirm_msg_resethunk(
     _key_config: &SharedKeyConfig,
@@ -109,6 +152,20 @@ pub fn confirm_msg_delete_branch(
     branch_ref: &str,
 ) -> String {
     format!("Confirm deleting branch: '{}' ?", branch_ref)
+}
+pub fn confirm_title_force_push(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Force Push".to_string()
+}
+pub fn confirm_msg_force_push(
+    _key_config: &SharedKeyConfig,
+    branch_ref: &str,
+) -> String {
+    format!(
+        "Confirm force push to branch '{}' ?  This may rewrite history.",
+        branch_ref
+    )
 }
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
@@ -314,6 +371,16 @@ pub mod commands {
             CMD_GROUP_LOG,
         )
     }
+    pub fn push_tags(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Push Tags [{}]",
+                key_config.get_hint(key_config.push),
+            ),
+            "push tags to remote",
+            CMD_GROUP_LOG,
+        )
+    }
     pub fn diff_home_end(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
@@ -346,10 +413,46 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Revert hunk [{}]",
+                "Reset hunk [{}]",
                 key_config.get_hint(key_config.status_reset_item),
             ),
             "reverts selected hunk",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn diff_lines_revert(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Reset lines [{}]",
+                key_config.get_hint(key_config.diff_reset_lines),
+            ),
+            "resets selected lines",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn diff_lines_stage(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Stage lines [{}]",
+                key_config.get_hint(key_config.diff_stage_lines),
+            ),
+            "stage selected lines",
+            CMD_GROUP_DIFF,
+        )
+    }
+    pub fn diff_lines_unstage(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Unstage lines [{}]",
+                key_config.get_hint(key_config.diff_stage_lines),
+            ),
+            "unstage selected lines",
             CMD_GROUP_DIFF,
         )
     }
@@ -397,18 +500,6 @@ pub mod commands {
         )
         .hide_help()
     }
-    pub fn select_staging(
-        key_config: &SharedKeyConfig,
-    ) -> CommandText {
-        CommandText::new(
-            format!(
-                "To stage [{}]",
-                key_config.get_hint(key_config.focus_stage),
-            ),
-            "focus/select staging area",
-            CMD_GROUP_GENERAL,
-        )
-    }
     pub fn select_status(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
@@ -422,13 +513,25 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn select_staging(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "To stage [{}]",
+                key_config.get_hint(key_config.toggle_workarea),
+            ),
+            "focus/select staging area",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn select_unstaged(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
         CommandText::new(
             format!(
                 "To unstaged [{}]",
-                key_config.get_hint(key_config.focus_workdir),
+                key_config.get_hint(key_config.toggle_workarea),
             ),
             "focus/select unstaged area",
             CMD_GROUP_GENERAL,
@@ -542,7 +645,7 @@ pub mod commands {
         CommandText::new(
             format!(
                 "Reset Item [{}]",
-                key_config.get_hint(key_config.stash_drop),
+                key_config.get_hint(key_config.status_reset_item),
             ),
             "revert changes in selected file or entire path",
             CMD_GROUP_CHANGES,
@@ -593,7 +696,7 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
-    pub fn reset_confirm(
+    pub fn confirm_action(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
         CommandText::new(
@@ -601,7 +704,7 @@ pub mod commands {
                 "Confirm [{}]",
                 key_config.get_hint(key_config.enter),
             ),
-            "resets the file in question",
+            "confirm action",
             CMD_GROUP_GENERAL,
         )
     }
@@ -660,7 +763,7 @@ pub mod commands {
         CommandText::new(
             format!(
                 "Apply [{}]",
-                key_config.get_hint(key_config.enter),
+                key_config.get_hint(key_config.stash_apply),
             ),
             "apply selected stash",
             CMD_GROUP_STASHES,
@@ -675,6 +778,18 @@ pub mod commands {
                 key_config.get_hint(key_config.stash_drop),
             ),
             "drop selected stash",
+            CMD_GROUP_STASHES,
+        )
+    }
+    pub fn stashlist_pop(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Pop [{}]",
+                key_config.get_hint(key_config.enter),
+            ),
+            "pop selected stash",
             CMD_GROUP_STASHES,
         )
     }
@@ -798,6 +913,32 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn select_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Checkout [{}]",
+                key_config.get_hint(key_config.enter),
+            ),
+            "checkout branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn toggle_branch_popup(
+        key_config: &SharedKeyConfig,
+        local: bool,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "{} [{}]",
+                if local { "Remote" } else { "Local" },
+                key_config.get_hint(key_config.tab_toggle),
+            ),
+            "toggle branch type (remote/local)",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn open_branch_select_popup(
         key_config: &SharedKeyConfig,
     ) -> CommandText {
@@ -818,6 +959,28 @@ pub mod commands {
                 key_config.get_hint(key_config.push),
             ),
             "push to origin",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn status_force_push(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Force Push [{}]",
+                key_config.get_hint(key_config.force_push),
+            ),
+            "force push to origin",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn status_pull(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Pull [{}]",
+                key_config.get_hint(key_config.pull),
+            ),
+            "fetch/merge",
             CMD_GROUP_GENERAL,
         )
     }

@@ -21,20 +21,19 @@
 
 <h5 align="center">Blazing fast terminal client for git written in Rust</h1>
 
-![](assets/demo.gif)
+![](demo.gif)
 
 # Features
 
 - Fast and intuitive **keyboard only** control
 - Context based help (**no need to memorize** tons of hot-keys)
 - Inspect, commit, and amend changes (incl. hooks: _commit-msg_/_post-commit_)
-- Stage, unstage, revert and reset files and hunks
-- Stashing (save, apply, drop, and inspect)
-- Push to remote
-- Branch List (create, rename, delete)
+- Stage, unstage, revert and reset files, hunks and lines
+- Stashing (save, pop, apply, drop, and inspect)
+- Push/Fetch to/from remote
+- Branch List (create, rename, delete, checkout, remotes)
 - Browse commit log, diff committed changes
 - Scalable terminal UI layout
-- Async [input polling](assets/perf_compare.jpg)
 - Async git API for fluid control
 
 # Benchmarks
@@ -55,7 +54,7 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 
 # Known Limitations
 
-- no support for `pull` yet (see [#90](https://github.com/extrawurst/gitui/issues/90))
+- no support for conflict resolution yet (see [#485](https://github.com/extrawurst/gitui/issues/485))
 - no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 - no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
 
@@ -69,14 +68,10 @@ All support is welcomed! Sponsors as well! ❤️
 
 For the time being this product is in alpha and is not considered production ready. However, for personal use it is reasonably stable and is being used while developing itself.
 
-### Arch Linux
-
-There is an [AUR package](https://aur.archlinux.org/packages/gitui/) for `gitui`:
+### [Arch Linux](https://archlinux.org/packages/community/x86_64/gitui/)
 
 ```sh
-git clone https://aur.archlinux.org/gitui.git
-cd gitui
-makepkg -si
+pacman -S gitui
 ```
 
 ### Fedora
@@ -113,6 +108,17 @@ scoop install gitui
 choco install gitui
 ```
 
+### [Nix](https://search.nixos.org/packages?channel=unstable&show=gitui&from=0&size=50&sort=relevance&query=gitui) (Nix/NixOS)
+
+Nixpkg
+```
+nix-env -iA nixpkgs.gitui
+```
+NixOS
+```
+nix-env -iA nixos.gitui
+```
+
 ## Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
@@ -143,6 +149,7 @@ This will log to:
 - macOS: `$HOME/Library/Caches/gitui/gitui.log`
 - Linux using `XDG`: `$XDG_CACHE_HOME/gitui/gitui.log`
 - Linux: `$HOME/.cache/gitui/gitui.log`
+- Windows: `%LOCALAPPDATA%/gitui/gitui.log`
 
 # Color Theme
 
@@ -160,9 +167,6 @@ The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to se
 
 These are the high level goals before calling out `1.0`:
 
-* upstream branches ([#453](https://github.com/extrawurst/gitui/issues/453))
-* force push ([#274](https://github.com/extrawurst/gitui/issues/274))
-* simple pull (only for ff-merge) ([#319](https://github.com/extrawurst/gitui/issues/319))
 * merging with conflicts ([#485](https://github.com/extrawurst/gitui/issues/485))
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
 * file history log ([#381](https://github.com/extrawurst/gitui/issues/381))

@@ -3,6 +3,7 @@
 #![forbid(missing_docs)]
 #![deny(unsafe_code)]
 #![deny(unused_imports)]
+#![deny(unused_must_use)]
 #![deny(clippy::all)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
@@ -14,7 +15,11 @@ pub mod cached;
 mod commit_files;
 mod diff;
 mod error;
+mod fetch;
+mod progress;
 mod push;
+mod push_tags;
+pub mod remote_progress;
 mod revlog;
 mod status;
 pub mod sync;
@@ -23,7 +28,10 @@ mod tags;
 pub use crate::{
     commit_files::AsyncCommitFiles,
     diff::{AsyncDiff, DiffParams, DiffType},
-    push::{AsyncPush, PushProgress, PushProgressState, PushRequest},
+    fetch::{AsyncFetch, FetchRequest},
+    push::{AsyncPush, PushRequest},
+    push_tags::{AsyncPushTags, PushTagsRequest},
+    remote_progress::{RemoteProgress, RemoteProgressState},
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
     sync::{
@@ -54,6 +62,10 @@ pub enum AsyncNotification {
     Tags,
     ///
     Push,
+    ///
+    PushTags,
+    ///
+    Fetch,
 }
 
 /// current working director `./`

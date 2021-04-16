@@ -142,6 +142,7 @@ impl FileTreeComponent {
             StatusItemType::Deleted => '-',
             StatusItemType::Renamed => 'R',
             StatusItemType::Typechange => ' ',
+            StatusItemType::Conflicted => '!',
         }
     }
 
@@ -321,7 +322,6 @@ impl DrawableComponent for FileTreeComponent {
                 r,
                 self.title.as_str(),
                 items.into_iter(),
-                None,
                 self.focused,
                 &self.theme,
             );
@@ -365,7 +365,6 @@ impl DrawableComponent for FileTreeComponent {
                 r,
                 self.title.as_str(),
                 items,
-                Some(select),
                 self.focused,
                 &self.theme,
             );
