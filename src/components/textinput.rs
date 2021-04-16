@@ -336,6 +336,12 @@ impl Component for TextInputComponent {
                 if e == self.key_config.exit_popup {
                     self.hide();
                     return Ok(true);
+                } else if e == self.key_config.enter
+                    && self.input_type == InputType::Multiline
+                {
+                    self.msg.insert(self.cursor_position, '\n');
+                    self.incr_cursor();
+                    return Ok(true);
                 }
 
                 let is_ctrl =
@@ -346,16 +352,6 @@ impl Component for TextInputComponent {
                         self.msg.insert(self.cursor_position, c);
                         self.incr_cursor();
                         return Ok(true);
-                    }
-                    KeyCode::Enter => {
-                        if self.input_type == InputType::Multiline
-                            && e.modifiers.contains(KeyModifiers::ALT)
-                        {
-                            self.msg
-                                .insert(self.cursor_position, '\n');
-                            self.incr_cursor();
-                            return Ok(true);
-                        }
                     }
                     KeyCode::Delete => {
                         if self.cursor_position < self.msg.len() {

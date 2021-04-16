@@ -62,7 +62,7 @@ impl Component for CommitComponent {
 
         if self.is_visible() || force_all {
             out.push(CommandInfo::new(
-                strings::commands::commit_enter(&self.key_config),
+                strings::commands::apply_commit(&self.key_config),
                 self.can_commit(),
                 true,
             ));
@@ -93,12 +93,10 @@ impl Component for CommitComponent {
 
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.is_visible() {
-            if self.input.event(ev)? {
-                return Ok(true);
-            }
-
             if let Event::Key(e) = ev {
-                if e == self.key_config.enter && self.can_commit() {
+                if e == self.key_config.apply_commit
+                    && self.can_commit()
+                {
                     self.commit()?;
                 } else if e == self.key_config.commit_amend
                     && self.can_amend()
@@ -110,6 +108,9 @@ impl Component for CommitComponent {
                     );
                     self.hide();
                 } else {
+                    if self.input.event(ev)? {
+                        return Ok(true);
+                    }
                 }
                 // stop key event propagation
                 return Ok(true);
