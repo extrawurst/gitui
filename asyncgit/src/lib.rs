@@ -15,12 +15,11 @@
 #![deny(clippy::match_like_matches_macro)]
 #![deny(clippy::needless_update)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::must_use_candidate)]
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
 //TODO:
-#![allow(clippy::must_use_candidate)]
 #![allow(clippy::missing_errors_doc)]
-#![allow(clippy::doc_markdown)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::redundant_pub_crate)]
 #![allow(clippy::cast_possible_wrap)]

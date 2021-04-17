@@ -11,7 +11,7 @@ use unicode_truncate::UnicodeTruncateStr;
 pub struct CommitId(Oid);
 
 impl CommitId {
-    /// create new CommitId
+    /// create new `CommitId`
     pub const fn new(id: Oid) -> Self {
         Self(id)
     }

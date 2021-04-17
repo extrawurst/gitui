@@ -13,7 +13,7 @@ const HOOK_PRE_COMMIT: &str = ".git/hooks/pre-commit";
 const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
 const HOOK_COMMIT_MSG_TEMP_FILE: &str = ".git/COMMIT_EDITMSG";
 
-/// this hook is documented here https://git-scm.com/docs/githooks#_commit_msg
+/// this hook is documented here <https://git-scm.com/docs/githooks#_commit_msg>
 /// we use the same convention as other git clients to create a temp file containing
 /// the commit message at `.git/COMMIT_EDITMSG` and pass it's relative path as the only
 /// parameter to the hook script.
@@ -46,7 +46,7 @@ pub fn hooks_commit_msg(
     }
 }
 
-/// this hook is documented here https://git-scm.com/docs/githooks#_pre_commit
+/// this hook is documented here <https://git-scm.com/docs/githooks#_pre_commit>
 ///
 pub fn hooks_pre_commit(repo_path: &str) -> Result<HookResult> {
     scope_time!("hooks_pre_commit");
@@ -102,7 +102,7 @@ pub enum HookResult {
 }
 
 /// this function calls hook scripts based on conventions documented here
-/// https://git-scm.com/docs/githooks
+/// see <https://git-scm.com/docs/githooks>
 fn run_hook(
     path: &str,
     hook_script: &str,

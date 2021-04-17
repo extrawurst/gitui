@@ -30,7 +30,7 @@ pub fn amend(
     Ok(CommitId::new(new_id))
 }
 
-/// Wrap Repository::signature to allow unknown user.name.
+/// Wrap `Repository::signature` to allow unknown user.name.
 ///
 /// See <https://github.com/extrawurst/gitui/issues/79>.
 pub(crate) fn signature_allow_undefined_name(
