@@ -52,7 +52,7 @@ impl RemoteProgress {
     }
 
     ///
-    pub fn get_progress_percent(&self) -> u8 {
+    pub const fn get_progress_percent(&self) -> u8 {
         self.progress.progress
     }
 

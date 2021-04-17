@@ -18,11 +18,11 @@ pub struct BasicAuthCredential {
 
 impl BasicAuthCredential {
     ///
-    pub fn is_complete(&self) -> bool {
+    pub const fn is_complete(&self) -> bool {
         self.username.is_some() && self.password.is_some()
     }
     ///
-    pub fn new(
+    pub const fn new(
         username: Option<String>,
         password: Option<String>,
     ) -> Self {

@@ -18,11 +18,11 @@ impl ProgressPercent {
         Self { progress }
     }
     ///
-    pub fn empty() -> Self {
+    pub const fn empty() -> Self {
         Self { progress: 0 }
     }
     ///
-    pub fn full() -> Self {
+    pub const fn full() -> Self {
         Self { progress: 100 }
     }
 }

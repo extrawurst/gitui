@@ -12,12 +12,12 @@ pub struct CommitId(Oid);
 
 impl CommitId {
     /// create new CommitId
-    pub fn new(id: Oid) -> Self {
+    pub const fn new(id: Oid) -> Self {
         Self(id)
     }
 
     ///
-    pub(crate) fn get_oid(self) -> Oid {
+    pub(crate) const fn get_oid(self) -> Oid {
         self.0
     }
 

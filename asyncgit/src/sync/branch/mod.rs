@@ -81,7 +81,7 @@ pub struct BranchInfo {
 
 impl BranchInfo {
     /// returns details about local branch or None
-    pub fn local_details(&self) -> Option<&LocalBranch> {
+    pub const fn local_details(&self) -> Option<&LocalBranch> {
         if let BranchDetails::Local(details) = &self.details {
             return Some(details);
         }

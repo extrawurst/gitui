@@ -25,13 +25,12 @@
 #![allow(clippy::option_if_let_else)]
 #![allow(clippy::manual_ok_or)]
 #![allow(clippy::doc_markdown)]
+#![allow(clippy::too_many_lines)]
+#![allow(clippy::redundant_pub_crate)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_precision_loss)]
-#![allow(clippy::too_many_lines)]
-#![allow(clippy::redundant_pub_crate)]
-#![allow(clippy::missing_const_for_fn)]
 
 pub mod cached;
 mod commit_files;
