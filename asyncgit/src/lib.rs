@@ -21,7 +21,6 @@
 #![allow(clippy::needless_pass_by_value)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::missing_errors_doc)]
-#![allow(clippy::map_unwrap_or)]
 #![allow(clippy::doc_markdown)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::redundant_pub_crate)]

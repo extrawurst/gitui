@@ -55,8 +55,7 @@ impl AsyncTags {
 
         Ok(last
             .as_ref()
-            .map(|(last_time, _)| last_time.elapsed() > dur)
-            .unwrap_or(true))
+            .map_or(true, |(last_time, _)| last_time.elapsed() > dur))
     }
 
     ///
