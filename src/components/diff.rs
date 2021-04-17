@@ -252,25 +252,21 @@ impl DiffComponent {
 
     fn copy_selection(&self) {
         if let Some(diff) = &self.diff {
-            let lines_to_copy: Vec<&str> = diff
-                .hunks
-                .iter()
-                .flat_map(|hunk| hunk.lines.iter())
-                .enumerate()
-                .filter_map(|(i, line)| {
-                    if self.selection.contains(i) {
-                        Some(
-                            line.content
-                                .trim_matches(|c| {
-                                    c == '\n' || c == '\r'
-                                })
-                                .as_ref(),
-                        )
-                    } else {
-                        None
-                    }
-                })
-                .collect();
+            let lines_to_copy: Vec<&str> =
+                diff.hunks
+                    .iter()
+                    .flat_map(|hunk| hunk.lines.iter())
+                    .enumerate()
+                    .filter_map(|(i, line)| {
+                        if self.selection.contains(i) {
+                            Some(line.content.trim_matches(|c| {
+                                c == '\n' || c == '\r'
+                            }))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
 
             try_or_popup!(
                 self,
