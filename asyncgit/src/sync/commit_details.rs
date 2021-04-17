@@ -45,7 +45,7 @@ impl CommitMessage {
         };
 
         let body: Vec<String> =
-            lines.map(|line| line.to_string()).collect();
+            lines.map(std::string::ToString::to_string).collect();
 
         Self {
             subject,

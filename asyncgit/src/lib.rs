@@ -8,6 +8,7 @@
 #![deny(clippy::all)]
 #![deny(clippy::cargo)]
 #![deny(clippy::pedantic)]
+//TODO:
 // #![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
@@ -17,10 +18,10 @@
 #![allow(clippy::module_name_repetitions)]
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
+//TODO:
 #![allow(clippy::needless_pass_by_value)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::missing_errors_doc)]
-#![allow(clippy::redundant_closure_for_method_calls)]
 #![allow(clippy::map_unwrap_or)]
 #![allow(clippy::option_if_let_else)]
 #![allow(clippy::manual_ok_or)]

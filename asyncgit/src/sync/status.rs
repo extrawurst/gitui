@@ -116,7 +116,7 @@ pub fn get_status(
             Some(diff) => diff
                 .new_file()
                 .path()
-                .and_then(|x| x.to_str())
+                .and_then(Path::to_str)
                 .map(String::from)
                 .ok_or_else(|| {
                     Error::Generic(

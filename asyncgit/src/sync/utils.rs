@@ -162,7 +162,7 @@ pub fn get_config_string(
     };
 
     if entry.has_value() {
-        Ok(entry.value().map(|s| s.to_string()))
+        Ok(entry.value().map(std::string::ToString::to_string))
     } else {
         Ok(None)
     }

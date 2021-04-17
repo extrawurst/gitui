@@ -117,7 +117,7 @@ pub fn get_branches_info(
                 .branch_upstream_remote(&reference)
                 .ok()
                 .as_ref()
-                .and_then(|buf| buf.as_str())
+                .and_then(git2::Buf::as_str)
                 .map(String::from);
 
             let details = if local {
