@@ -78,8 +78,8 @@ impl AsyncTags {
         self.pending.fetch_add(1, Ordering::Relaxed);
 
         rayon_core::spawn(move || {
-            let notify = AsyncTags::getter(arc_last)
-                .expect("error getting tags");
+            let notify =
+                Self::getter(arc_last).expect("error getting tags");
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 

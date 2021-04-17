@@ -26,7 +26,7 @@ impl BasicAuthCredential {
         username: Option<String>,
         password: Option<String>,
     ) -> Self {
-        BasicAuthCredential { username, password }
+        Self { username, password }
     }
 }
 

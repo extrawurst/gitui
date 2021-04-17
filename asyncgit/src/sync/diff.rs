@@ -28,7 +28,7 @@ pub enum DiffLineType {
 
 impl Default for DiffLineType {
     fn default() -> Self {
-        DiffLineType::None
+        Self::None
     }
 }
 

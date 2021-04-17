@@ -30,7 +30,6 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::too_many_lines)]
-#![allow(clippy::use_self)]
 #![allow(clippy::redundant_pub_crate)]
 #![allow(clippy::missing_const_for_fn)]
 

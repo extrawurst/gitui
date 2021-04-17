@@ -65,11 +65,11 @@ pub(crate) enum ProgressNotification {
 
 impl AsyncProgress for ProgressNotification {
     fn is_done(&self) -> bool {
-        *self == ProgressNotification::Done
+        *self == Self::Done
     }
     fn progress(&self) -> ProgressPercent {
         match *self {
-            ProgressNotification::Packing {
+            Self::Packing {
                 stage,
                 current,
                 total,
@@ -79,12 +79,10 @@ impl AsyncProgress for ProgressNotification {
                     ProgressPercent::new(current, total)
                 }
             },
-            ProgressNotification::PushTransfer {
-                current,
-                total,
-                ..
-            } => ProgressPercent::new(current, total),
-            ProgressNotification::Transfer {
+            Self::PushTransfer { current, total, .. } => {
+                ProgressPercent::new(current, total)
+            }
+            Self::Transfer {
                 objects,
                 total_objects,
                 ..

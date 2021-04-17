@@ -110,7 +110,7 @@ impl AsyncDiff {
         self.pending.fetch_add(1, Ordering::Relaxed);
 
         rayon_core::spawn(move || {
-            let notify = AsyncDiff::get_diff_helper(
+            let notify = Self::get_diff_helper(
                 params,
                 arc_last,
                 arc_current,

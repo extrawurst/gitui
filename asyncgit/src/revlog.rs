@@ -121,12 +121,8 @@ impl AsyncLog {
         rayon_core::spawn(move || {
             scope_time!("async::revlog");
 
-            AsyncLog::fetch_helper(
-                arc_current,
-                arc_background,
-                &sender,
-            )
-            .expect("failed to fetch");
+            Self::fetch_helper(arc_current, arc_background, &sender)
+                .expect("failed to fetch");
 
             arc_pending.store(false, Ordering::Relaxed);
 

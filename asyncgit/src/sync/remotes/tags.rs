@@ -32,15 +32,15 @@ pub enum PushTagsProgress {
 impl AsyncProgress for PushTagsProgress {
     fn progress(&self) -> ProgressPercent {
         match self {
-            PushTagsProgress::CheckRemote => ProgressPercent::empty(),
-            PushTagsProgress::Push { pushed, total } => {
+            Self::CheckRemote => ProgressPercent::empty(),
+            Self::Push { pushed, total } => {
                 ProgressPercent::new(*pushed, *total)
             }
-            PushTagsProgress::Done => ProgressPercent::full(),
+            Self::Done => ProgressPercent::full(),
         }
     }
     fn is_done(&self) -> bool {
-        *self == PushTagsProgress::Done
+        *self == Self::Done
     }
 }
 

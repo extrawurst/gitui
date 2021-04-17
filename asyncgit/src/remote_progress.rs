@@ -116,26 +116,22 @@ impl From<ProgressNotification> for RemoteProgress {
                 current,
                 total,
             } => match stage {
-                PackBuilderStage::AddingObjects => {
-                    RemoteProgress::new(
-                        RemoteProgressState::PackingAddingObject,
-                        current,
-                        total,
-                    )
-                }
-                PackBuilderStage::Deltafication => {
-                    RemoteProgress::new(
-                        RemoteProgressState::PackingDeltafiction,
-                        current,
-                        total,
-                    )
-                }
+                PackBuilderStage::AddingObjects => Self::new(
+                    RemoteProgressState::PackingAddingObject,
+                    current,
+                    total,
+                ),
+                PackBuilderStage::Deltafication => Self::new(
+                    RemoteProgressState::PackingDeltafiction,
+                    current,
+                    total,
+                ),
             },
             ProgressNotification::PushTransfer {
                 current,
                 total,
                 ..
-            } => RemoteProgress::new(
+            } => Self::new(
                 RemoteProgressState::Pushing,
                 current,
                 total,
@@ -144,12 +140,12 @@ impl From<ProgressNotification> for RemoteProgress {
                 objects,
                 total_objects,
                 ..
-            } => RemoteProgress::new(
+            } => Self::new(
                 RemoteProgressState::Transfer,
                 objects,
                 total_objects,
             ),
-            _ => RemoteProgress::new(RemoteProgressState::Done, 1, 1),
+            _ => Self::new(RemoteProgressState::Done, 1, 1),
         }
     }
 }
