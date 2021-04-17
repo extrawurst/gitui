@@ -81,7 +81,7 @@ pub struct BranchInfo {
 
 impl BranchInfo {
     /// returns details about local branch or None
-    pub fn local_details(&self) -> Option<&LocalBranch> {
+    pub const fn local_details(&self) -> Option<&LocalBranch> {
         if let BranchDetails::Local(details) = &self.details {
             return Some(details);
         }
@@ -283,11 +283,10 @@ pub fn checkout_remote_branch(
         return Err(Error::UncommittedChanges);
     }
 
-    let name = if let Some(pos) = branch.name.rfind('/') {
-        branch.name[pos..].to_string()
-    } else {
-        branch.name.clone()
-    };
+    let name = branch.name.rfind('/').map_or_else(
+        || branch.name.clone(),
+        |pos| branch.name[pos..].to_string(),
+    );
 
     let commit = repo.find_commit(branch.top_commit.into())?;
     let mut new_branch = repo.branch(&name, &commit, false)?;

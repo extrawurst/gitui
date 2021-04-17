@@ -43,7 +43,7 @@ pub fn stage_lines(
 
         let old_lines = indexed_content.lines().collect::<Vec<_>>();
 
-        apply_selection(lines, &hunks, old_lines, is_stage, false)?
+        apply_selection(lines, &hunks, &old_lines, is_stage, false)?
     };
 
     let blob_id = repo.blob(new_content.as_bytes())?;
@@ -97,8 +97,7 @@ mod test {
         )
         .unwrap();
 
-        let diff =
-            get_diff(path, String::from("test.txt"), true).unwrap();
+        let diff = get_diff(path, "test.txt", true).unwrap();
 
         assert_eq!(diff.lines, 3);
         assert_eq!(
@@ -140,8 +139,7 @@ c = 4";
         )
         .unwrap();
 
-        let diff =
-            get_diff(path, String::from("test.txt"), true).unwrap();
+        let diff = get_diff(path, "test.txt", true).unwrap();
 
         assert_eq!(diff.lines, 5);
         assert_eq!(
@@ -174,8 +172,7 @@ c = 4";
 
         assert_eq!(get_statuses(path), (0, 1));
 
-        let diff_before =
-            get_diff(path, String::from("test.txt"), true).unwrap();
+        let diff_before = get_diff(path, "test.txt", true).unwrap();
 
         assert_eq!(diff_before.lines, 5);
 
@@ -192,8 +189,7 @@ c = 4";
 
         assert_eq!(get_statuses(path), (1, 1));
 
-        let diff =
-            get_diff(path, String::from("test.txt"), true).unwrap();
+        let diff = get_diff(path, "test.txt", true).unwrap();
 
         assert_eq!(diff.lines, 4);
     }

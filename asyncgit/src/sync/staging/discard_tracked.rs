@@ -32,7 +32,7 @@ pub fn discard_lines(
         let working_content = load_file(&repo, file_path)?;
         let old_lines = working_content.lines().collect::<Vec<_>>();
 
-        apply_selection(lines, &hunks, old_lines, false, true)?
+        apply_selection(lines, &hunks, &old_lines, false, true)?
     };
 
     repo_write_file(&repo, file_path, new_content.as_str())?;

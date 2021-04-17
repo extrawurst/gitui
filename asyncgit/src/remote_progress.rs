@@ -52,12 +52,12 @@ impl RemoteProgress {
     }
 
     ///
-    pub fn get_progress_percent(&self) -> u8 {
+    pub const fn get_progress_percent(&self) -> u8 {
         self.progress.progress
     }
 
     pub(crate) fn set_progress<T>(
-        progress: Arc<Mutex<Option<T>>>,
+        progress: &Arc<Mutex<Option<T>>>,
         state: Option<T>,
     ) -> Result<()> {
         let mut progress = progress.lock()?;
@@ -81,7 +81,7 @@ impl RemoteProgress {
             match incoming {
                 Ok(update) => {
                     Self::set_progress(
-                        progress.clone(),
+                        &progress,
                         Some(update.clone()),
                     )
                     .expect("set progress failed");
@@ -116,26 +116,22 @@ impl From<ProgressNotification> for RemoteProgress {
                 current,
                 total,
             } => match stage {
-                PackBuilderStage::AddingObjects => {
-                    RemoteProgress::new(
-                        RemoteProgressState::PackingAddingObject,
-                        current,
-                        total,
-                    )
-                }
-                PackBuilderStage::Deltafication => {
-                    RemoteProgress::new(
-                        RemoteProgressState::PackingDeltafiction,
-                        current,
-                        total,
-                    )
-                }
+                PackBuilderStage::AddingObjects => Self::new(
+                    RemoteProgressState::PackingAddingObject,
+                    current,
+                    total,
+                ),
+                PackBuilderStage::Deltafication => Self::new(
+                    RemoteProgressState::PackingDeltafiction,
+                    current,
+                    total,
+                ),
             },
             ProgressNotification::PushTransfer {
                 current,
                 total,
                 ..
-            } => RemoteProgress::new(
+            } => Self::new(
                 RemoteProgressState::Pushing,
                 current,
                 total,
@@ -144,12 +140,12 @@ impl From<ProgressNotification> for RemoteProgress {
                 objects,
                 total_objects,
                 ..
-            } => RemoteProgress::new(
+            } => Self::new(
                 RemoteProgressState::Transfer,
                 objects,
                 total_objects,
             ),
-            _ => RemoteProgress::new(RemoteProgressState::Done, 1, 1),
+            _ => Self::new(RemoteProgressState::Done, 1, 1),
         }
     }
 }

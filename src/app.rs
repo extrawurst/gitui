@@ -500,7 +500,7 @@ impl App {
                     }
                 }
                 Action::ResetHunk(path, hash) => {
-                    sync::reset_hunk(CWD, path, hash)?;
+                    sync::reset_hunk(CWD, &path, hash)?;
                     flags.insert(NeedsUpdate::ALL);
                 }
                 Action::ResetLines(path, lines) => {

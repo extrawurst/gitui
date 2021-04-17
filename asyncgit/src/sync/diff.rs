@@ -28,7 +28,7 @@ pub enum DiffLineType {
 
 impl Default for DiffLineType {
     fn default() -> Self {
-        DiffLineType::None
+        Self::None
     }
 }
 
@@ -129,7 +129,7 @@ pub(crate) fn get_diff_raw<'a>(
 
     let diff = if stage {
         // diff against head
-        if let Ok(id) = get_head_repo(&repo) {
+        if let Ok(id) = get_head_repo(repo) {
             let parent = repo.find_commit(id.into())?;
 
             let tree = parent.tree()?;
@@ -157,15 +157,14 @@ pub(crate) fn get_diff_raw<'a>(
 /// returns diff of a specific file either in `stage` or workdir
 pub fn get_diff(
     repo_path: &str,
-    //TODO: make &str
-    p: String,
+    p: &str,
     stage: bool,
 ) -> Result<FileDiff> {
     scope_time!("get_diff");
 
     let repo = utils::repo(repo_path)?;
     let work_dir = work_dir(&repo)?;
-    let diff = get_diff_raw(&repo, &p, stage, false, None)?;
+    let diff = get_diff_raw(&repo, p, stage, false, None)?;
 
     raw_diff_to_file_diff(&diff, work_dir)
 }
@@ -374,9 +373,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
-        let diff =
-            get_diff(repo_path, "foo/bar.txt".to_string(), false)
-                .unwrap();
+        let diff = get_diff(repo_path, "foo/bar.txt", false).unwrap();
 
         assert_eq!(diff.hunks.len(), 1);
         assert_eq!(diff.hunks[0].lines[1].content, "test\n");
@@ -402,12 +399,9 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (0, 1));
 
-        let diff = get_diff(
-            repo_path,
-            String::from(file_path.to_str().unwrap()),
-            true,
-        )
-        .unwrap();
+        let diff =
+            get_diff(repo_path, file_path.to_str().unwrap(), true)
+                .unwrap();
 
         assert_eq!(diff.hunks.len(), 1);
     }
@@ -473,8 +467,7 @@ mod tests {
 
         assert_eq!(get_statuses(repo_path), (1, 1));
 
-        let res = get_diff(repo_path, "bar.txt".to_string(), false)
-            .unwrap();
+        let res = get_diff(repo_path, "bar.txt", false).unwrap();
 
         assert_eq!(res.hunks.len(), 2)
     }
@@ -495,7 +488,7 @@ mod tests {
 
         let diff = get_diff(
             sub_path.to_str().unwrap(),
-            String::from(file_path.to_str().unwrap()),
+            file_path.to_str().unwrap(),
             false,
         )
         .unwrap();
@@ -519,12 +512,9 @@ mod tests {
         File::create(&root.join(file_path))?
             .write_all(b"\x00\x02")?;
 
-        let diff = get_diff(
-            repo_path,
-            String::from(file_path.to_str().unwrap()),
-            false,
-        )
-        .unwrap();
+        let diff =
+            get_diff(repo_path, file_path.to_str().unwrap(), false)
+                .unwrap();
 
         dbg!(&diff);
         assert_eq!(diff.sizes, (1, 2));
@@ -543,12 +533,9 @@ mod tests {
         File::create(&root.join(file_path))?
             .write_all(b"\x00\xc7")?;
 
-        let diff = get_diff(
-            repo_path,
-            String::from(file_path.to_str().unwrap()),
-            false,
-        )
-        .unwrap();
+        let diff =
+            get_diff(repo_path, file_path.to_str().unwrap(), false)
+                .unwrap();
 
         dbg!(&diff);
         assert_eq!(diff.sizes, (0, 2));

@@ -38,6 +38,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(error: std::sync::PoisonError<T>) -> Self {
-        Error::Generic(format!("poison error: {}", error))
+        Self::Generic(format!("poison error: {}", error))
     }
 }

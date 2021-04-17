@@ -53,17 +53,16 @@ pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
 
 ///
 pub(crate) fn work_dir(repo: &Repository) -> Result<&Path> {
-    repo.workdir().map_or(Err(Error::NoWorkDir), |dir| Ok(dir))
+    repo.workdir().ok_or(Error::NoWorkDir)
 }
 
 ///
 pub fn repo_work_dir(repo_path: &str) -> Result<String> {
     let repo = repo(repo_path)?;
-    if let Some(workdir) = work_dir(&repo)?.to_str() {
-        Ok(workdir.to_string())
-    } else {
-        Err(Error::Generic("invalid workdir".to_string()))
-    }
+    work_dir(&repo)?.to_str().map_or_else(
+        || Err(Error::Generic("invalid workdir".to_string())),
+        |workdir| Ok(workdir.to_string()),
+    )
 }
 
 ///
@@ -95,11 +94,7 @@ pub fn get_head_repo(repo: &Repository) -> Result<CommitId> {
 
     let head = repo.head()?.target();
 
-    if let Some(head_id) = head {
-        Ok(head_id.into())
-    } else {
-        Err(Error::NoHead)
-    }
+    head.map_or(Err(Error::NoHead), |head_id| Ok(head_id.into()))
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)

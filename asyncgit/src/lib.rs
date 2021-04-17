@@ -8,29 +8,23 @@
 #![deny(clippy::all)]
 #![deny(clippy::cargo)]
 #![deny(clippy::pedantic)]
-//TODO:
-// #![deny(clippy::nursery)]
+#![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 #![deny(clippy::perf)]
 #![deny(clippy::match_like_matches_macro)]
 #![deny(clippy::needless_update)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::must_use_candidate)]
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
 //TODO:
-#![allow(clippy::needless_pass_by_value)]
-#![allow(clippy::must_use_candidate)]
 #![allow(clippy::missing_errors_doc)]
-#![allow(clippy::map_unwrap_or)]
-#![allow(clippy::option_if_let_else)]
-#![allow(clippy::manual_ok_or)]
-#![allow(clippy::doc_markdown)]
+#![allow(clippy::too_many_lines)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_precision_loss)]
-#![allow(clippy::too_many_lines)]
 
 pub mod cached;
 mod commit_files;
