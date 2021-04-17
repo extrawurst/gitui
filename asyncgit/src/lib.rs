@@ -8,8 +8,7 @@
 #![deny(clippy::all)]
 #![deny(clippy::cargo)]
 #![deny(clippy::pedantic)]
-//TODO:
-// #![deny(clippy::nursery)]
+#![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 #![deny(clippy::perf)]
@@ -31,6 +30,9 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::too_many_lines)]
+#![allow(clippy::use_self)]
+#![allow(clippy::redundant_pub_crate)]
+#![allow(clippy::missing_const_for_fn)]
 
 pub mod cached;
 mod commit_files;

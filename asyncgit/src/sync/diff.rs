@@ -129,7 +129,7 @@ pub(crate) fn get_diff_raw<'a>(
 
     let diff = if stage {
         // diff against head
-        if let Ok(id) = get_head_repo(&repo) {
+        if let Ok(id) = get_head_repo(repo) {
             let parent = repo.find_commit(id.into())?;
 
             let tree = parent.tree()?;

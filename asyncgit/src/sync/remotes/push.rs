@@ -226,7 +226,7 @@ pub(crate) fn remote_callbacks<'a>(
                     username: Some(user),
                     password: Some(pwd),
                 }) if allowed_types.is_user_pass_plaintext() => {
-                    Cred::userpass_plaintext(&user, &pwd)
+                    Cred::userpass_plaintext(user, pwd)
                 }
                 Some(BasicAuthCredential {
                     username: Some(user),

@@ -157,7 +157,7 @@ impl AsyncLog {
             if res_is_err || entries.len() <= 1 {
                 break;
             }
-            Self::notify(&sender);
+            Self::notify(sender);
 
             let sleep_duration =
                 if arc_background.load(Ordering::Relaxed) {

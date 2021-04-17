@@ -28,7 +28,7 @@ pub fn is_stash_commit(
     id: &CommitId,
 ) -> Result<bool> {
     let stashes = get_stashes(repo_path)?;
-    Ok(stashes.contains(&id))
+    Ok(stashes.contains(id))
 }
 
 ///

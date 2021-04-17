@@ -15,8 +15,7 @@ pub(crate) fn get_file_diff_patch_and_hunklines<'a>(
     is_staged: bool,
     reverse: bool,
 ) -> Result<(Patch<'a>, Vec<HunkLines<'a>>)> {
-    let diff =
-        get_diff_raw(&repo, file, is_staged, reverse, Some(1))?;
+    let diff = get_diff_raw(repo, file, is_staged, reverse, Some(1))?;
     let patches = get_patches(&diff)?;
     if patches.len() > 1 {
         return Err(Error::Generic(String::from("patch error")));
@@ -64,7 +63,7 @@ fn get_patches<'a>(diff: &Diff<'a>) -> Result<Vec<Patch<'a>>> {
 
     let mut res = Vec::with_capacity(count);
     for idx in 0..count {
-        let p = Patch::from_diff(&diff, idx)?;
+        let p = Patch::from_diff(diff, idx)?;
         if let Some(p) = p {
             res.push(p);
         }

@@ -162,7 +162,7 @@ pub(crate) fn apply_selection(
     Ok(new_content.finish(&old_lines))
 }
 
-pub(crate) fn load_file(
+pub fn load_file(
     repo: &Repository,
     file_path: &str,
 ) -> Result<String> {
