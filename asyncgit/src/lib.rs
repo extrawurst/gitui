@@ -19,8 +19,6 @@
 #![allow(clippy::missing_errors_doc)]
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
-//TODO:
-#![allow(clippy::cast_precision_loss)]
 
 pub mod cached;
 mod commit_files;
