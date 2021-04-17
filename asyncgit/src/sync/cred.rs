@@ -72,7 +72,7 @@ pub fn extract_cred_from_url(url: &str) -> BasicAuthCredential {
             } else {
                 Some(url.username().to_owned())
             },
-            url.password().map(|pwd| pwd.to_owned()),
+            url.password().map(std::borrow::ToOwned::to_owned),
         )
     } else {
         BasicAuthCredential::new(None, None)

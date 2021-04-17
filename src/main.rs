@@ -1,6 +1,8 @@
 #![forbid(unsafe_code)]
 #![deny(unused_imports)]
 #![deny(unused_must_use)]
+#![deny(dead_code)]
+#![deny(clippy::all)]
 #![deny(clippy::cargo)]
 #![deny(clippy::pedantic)]
 #![deny(clippy::perf)]
@@ -8,6 +10,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 #![deny(clippy::match_like_matches_macro)]
+#![deny(clippy::needless_update)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::multiple_crate_versions)]
 

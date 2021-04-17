@@ -44,7 +44,9 @@ pub fn merge_upstream_commit(
 
     repo.merge(&[&annotated_upstream], Some(&mut opt), None)?;
 
-    assert!(!repo.index()?.has_conflicts());
+    if repo.index()?.has_conflicts() {
+        return Err(Error::Generic("creates conflicts".into()));
+    }
 
     let signature =
         crate::sync::commit::signature_allow_undefined_name(&repo)?;

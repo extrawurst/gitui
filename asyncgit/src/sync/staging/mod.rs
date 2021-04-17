@@ -57,7 +57,7 @@ impl NewFromOldContent {
 
     fn finish(mut self, old_lines: &[&str]) -> String {
         for line in old_lines.iter().skip(self.old_index) {
-            self.lines.push(line.to_string());
+            self.lines.push((*line).to_string());
         }
         let lines = self.lines.join("\n");
         if lines.ends_with(NEWLINE) {

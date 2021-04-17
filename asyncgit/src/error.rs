@@ -28,10 +28,10 @@ pub enum Error {
     Git(#[from] git2::Error),
 
     #[error("utf8 error:{0}")]
-    Utf8Error(#[from] FromUtf8Error),
+    Utf8Conversion(#[from] FromUtf8Error),
 
     #[error("TryFromInt error:{0}")]
-    IntError(#[from] TryFromIntError),
+    IntConversion(#[from] TryFromIntError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

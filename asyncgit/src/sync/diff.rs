@@ -225,12 +225,13 @@ fn raw_diff_to_file_diff<'a>(
 
                 match current_hunk {
                     None => current_hunk = Some(hunk_header),
-                    Some(h) if h != hunk_header => {
-                        adder(&h, &current_lines);
-                        current_lines.clear();
-                        current_hunk = Some(hunk_header)
+                    Some(h) => {
+                        if h != hunk_header {
+                            adder(&h, &current_lines);
+                            current_lines.clear();
+                            current_hunk = Some(hunk_header)
+                        }
                     }
-                    _ => (),
                 }
 
                 let line_type = match line.origin() {
