@@ -74,10 +74,8 @@ impl AsyncProgress for ProgressNotification {
                 current,
                 total,
             } => match stage {
-                PackBuilderStage::AddingObjects => {
-                    ProgressPercent::new(current, total)
-                }
-                PackBuilderStage::Deltafication => {
+                PackBuilderStage::AddingObjects
+                | PackBuilderStage::Deltafication => {
                     ProgressPercent::new(current, total)
                 }
             },

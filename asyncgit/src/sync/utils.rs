@@ -161,10 +161,10 @@ pub fn get_config_string(
         Err(_) => return Ok(None),
     };
 
-    if !entry.has_value() {
-        Ok(None)
-    } else {
+    if entry.has_value() {
         Ok(entry.value().map(|s| s.to_string()))
+    } else {
+        Ok(None)
     }
 }
 

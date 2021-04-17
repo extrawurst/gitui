@@ -318,11 +318,10 @@ pub fn delete_branch(
     let repo = utils::repo(repo_path)?;
     let branch_as_ref = repo.find_reference(branch_ref)?;
     let mut branch = git2::Branch::wrap(branch_as_ref);
-    if !branch.is_head() {
-        branch.delete()?;
-    } else {
+    if branch.is_head() {
         return Err(Error::Generic("You cannot be on the branch you want to delete, switch branch, then delete this branch".to_string()));
     }
+    branch.delete()?;
     Ok(())
 }
 
