@@ -327,6 +327,13 @@ impl Component for TextInputComponent {
             )
             .order(1),
         );
+
+        out.push(CommandInfo::new(
+            strings::commands::commit_new_line(&self.key_config),
+            true,
+            self.visible,
+        ));
+
         visibility_blocking(self)
     }
 
