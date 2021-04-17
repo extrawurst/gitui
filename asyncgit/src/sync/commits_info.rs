@@ -79,11 +79,10 @@ pub fn get_commits_info(
     let res = commits
         .map(|c: Commit| {
             let message = get_message(&c, Some(message_length_limit));
-            let author = if let Some(name) = c.author().name() {
-                String::from(name)
-            } else {
-                String::from("<unknown>")
-            };
+            let author = c.author().name().map_or_else(
+                || String::from("<unknown>"),
+                String::from,
+            );
             CommitInfo {
                 message,
                 author,
@@ -104,11 +103,10 @@ pub fn get_message(
     let msg = String::from_utf8_lossy(c.message_bytes());
     let msg = msg.trim();
 
-    if let Some(limit) = message_length_limit {
-        msg.unicode_truncate(limit).0.to_string()
-    } else {
-        msg.to_string()
-    }
+    message_length_limit.map_or_else(
+        || msg.to_string(),
+        |limit| msg.unicode_truncate(limit).0.to_string(),
+    )
 }
 
 #[cfg(test)]

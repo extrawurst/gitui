@@ -38,11 +38,10 @@ impl CommitMessage {
     ///
     pub fn from(s: &str) -> Self {
         let mut lines = s.lines();
-        let subject = if let Some(subject) = lines.next() {
-            subject.to_string()
-        } else {
-            String::new()
-        };
+        let subject = lines.next().map_or_else(
+            String::new,
+            std::string::ToString::to_string,
+        );
 
         let body: Vec<String> =
             lines.map(std::string::ToString::to_string).collect();

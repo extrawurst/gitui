@@ -35,11 +35,8 @@ impl AsyncCommitFiles {
     ) -> Result<Option<(CommitId, ResultType)>> {
         let c = self.current.lock()?;
 
-        if let Some(c) = c.as_ref() {
-            Ok(Some((c.0, c.1.clone())))
-        } else {
-            Ok(None)
-        }
+        c.as_ref()
+            .map_or(Ok(None), |c| Ok(Some((c.0, c.1.clone()))))
     }
 
     ///

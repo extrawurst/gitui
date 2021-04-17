@@ -23,12 +23,10 @@ pub fn stage_hunk(
 
     let mut opt = ApplyOptions::new();
     opt.hunk_callback(|hunk| {
-        if let Some(hunk) = hunk {
+        hunk.map_or(false, |hunk| {
             let header = HunkHeader::from(hunk);
             hash(&header) == hunk_hash
-        } else {
-            false
-        }
+        })
     });
 
     repo.apply(&diff, ApplyLocation::Index, Some(&mut opt))?;
