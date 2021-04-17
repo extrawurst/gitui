@@ -147,9 +147,10 @@ fn is_executable(path: PathBuf) -> bool {
 }
 
 #[cfg(windows)]
+#[allow(clippy::missing_const_for_fn)]
 /// windows does not consider bash scripts to be executable so we consider everything
 /// to be executable (which is not far from the truth for windows platform.)
-const fn is_executable(_: PathBuf) -> bool {
+fn is_executable(_: PathBuf) -> bool {
     true
 }
 
