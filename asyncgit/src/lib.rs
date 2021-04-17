@@ -20,7 +20,6 @@
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
 //TODO:
-#![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_precision_loss)]
 

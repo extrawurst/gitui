@@ -2,6 +2,8 @@
 
 use std::cmp;
 
+use easy_cast::CastFloat;
+
 ///
 #[derive(Clone, Debug)]
 pub struct ProgressPercent {
@@ -14,7 +16,7 @@ impl ProgressPercent {
     pub fn new(current: usize, total: usize) -> Self {
         let total = cmp::max(current, total) as f32;
         let progress = current as f32 / total * 100.0;
-        let progress = progress as u8;
+        let progress = progress.cast_nearest();
         Self { progress }
     }
     ///
