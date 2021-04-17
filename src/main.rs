@@ -11,7 +11,6 @@
 #![deny(clippy::panic)]
 #![deny(clippy::match_like_matches_macro)]
 #![deny(clippy::needless_update)]
-#![deny(clippy::from_over_into)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::multiple_crate_versions)]
 

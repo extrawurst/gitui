@@ -14,7 +14,6 @@
 #![deny(clippy::perf)]
 #![deny(clippy::match_like_matches_macro)]
 #![deny(clippy::needless_update)]
-#![deny(clippy::from_over_into)]
 #![allow(clippy::module_name_repetitions)]
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
