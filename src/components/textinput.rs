@@ -571,6 +571,7 @@ impl DrawableComponent for TextInputComponent {
 }
 
 impl Component for TextInputComponent {
+<<<<<<< HEAD
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -678,6 +679,100 @@ impl Component for TextInputComponent {
 
 		Ok(())
 	}
+=======
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        _force_all: bool,
+    ) -> CommandBlocking {
+        out.push(
+            CommandInfo::new(
+                strings::commands::close_popup(&self.key_config),
+                true,
+                self.visible,
+            )
+            .order(1),
+        );
+
+        out.push(CommandInfo::new(
+            strings::commands::commit_new_line(&self.key_config),
+            true,
+            self.visible,
+        ));
+
+        visibility_blocking(self)
+    }
+
+    fn event(&mut self, ev: Event) -> Result<bool> {
+        if self.visible {
+            if let Event::Key(e) = ev {
+                if e == self.key_config.exit_popup {
+                    self.hide();
+                    return Ok(true);
+                } else if e == self.key_config.enter
+                    && self.input_type == InputType::Multiline
+                {
+                    self.msg.insert(self.cursor_position, '\n');
+                    self.incr_cursor();
+                    return Ok(true);
+                }
+
+                let is_ctrl =
+                    e.modifiers.contains(KeyModifiers::CONTROL);
+
+                match e.code {
+                    KeyCode::Char(c) if !is_ctrl => {
+                        self.msg.insert(self.cursor_position, c);
+                        self.incr_cursor();
+                        return Ok(true);
+                    }
+                    KeyCode::Delete => {
+                        if self.cursor_position < self.msg.len() {
+                            self.msg.remove(self.cursor_position);
+                        }
+                        return Ok(true);
+                    }
+                    KeyCode::Backspace => {
+                        self.backspace();
+                        return Ok(true);
+                    }
+                    KeyCode::Left => {
+                        self.decr_cursor();
+                        return Ok(true);
+                    }
+                    KeyCode::Right => {
+                        self.incr_cursor();
+                        return Ok(true);
+                    }
+                    KeyCode::Home => {
+                        self.cursor_position = 0;
+                        return Ok(true);
+                    }
+                    KeyCode::End => {
+                        self.cursor_position = self.msg.len();
+                        return Ok(true);
+                    }
+                    _ => (),
+                };
+            }
+        }
+        Ok(false)
+    }
+
+    fn is_visible(&self) -> bool {
+        self.visible
+    }
+
+    fn hide(&mut self) {
+        self.visible = false
+    }
+
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+
+        Ok(())
+    }
+>>>>>>> commit via ctrl+o
 }
 
 #[cfg(test)]
