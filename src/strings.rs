@@ -559,11 +559,11 @@ pub mod commands {
             CMD_GROUP_COMMIT,
         )
     }
-    pub fn apply_commit(key_config: &SharedKeyConfig) -> CommandText {
+    pub fn commit(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(
                 "Commit [{}]",
-                key_config.get_hint(key_config.apply_commit),
+                key_config.get_hint(key_config.commit),
             ),
             "commit (available when commit message is non-empty)",
             CMD_GROUP_COMMIT,
@@ -575,7 +575,7 @@ pub mod commands {
         CommandText::new(
             format!(
                 "New Line [{}]",
-                key_config.get_hint(key_config.commit_new_line),
+                key_config.get_hint(key_config.enter),
             ),
             "make a new line in the commit message",
             CMD_GROUP_COMMIT,

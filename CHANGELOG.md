@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- `enter` adds *newline* to commit msg (*commit* via `ctrl+o` now) [[@WizardOhio24](https://github.com/WizardOhio24)] ([#509](https://github.com/extrawurst/gitui/issues/509))
+
 ### Fixed
 - fetch crashed when no upstream of branch is set ([#637](https://github.com/extrawurst/gitui/issues/637))
 - `enter` key panics in empty remote branch list ([#643](https://github.com/extrawurst/gitui/issues/643))
