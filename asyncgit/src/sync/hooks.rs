@@ -149,7 +149,7 @@ fn is_executable(path: PathBuf) -> bool {
 #[cfg(windows)]
 /// windows does not consider bash scripts to be executable so we consider everything
 /// to be executable (which is not far from the truth for windows platform.)
-fn is_executable(_: PathBuf) -> bool {
+const fn is_executable(_: PathBuf) -> bool {
     true
 }
 
