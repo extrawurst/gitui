@@ -53,7 +53,7 @@ pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
 
 ///
 pub(crate) fn work_dir(repo: &Repository) -> Result<&Path> {
-    repo.workdir().map_or(Err(Error::NoWorkDir), |dir| Ok(dir))
+    repo.workdir().ok_or(Error::NoWorkDir)
 }
 
 ///
