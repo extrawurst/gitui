@@ -121,8 +121,12 @@ impl AsyncLog {
         rayon_core::spawn(move || {
             scope_time!("async::revlog");
 
-            Self::fetch_helper(arc_current, arc_background, &sender)
-                .expect("failed to fetch");
+            Self::fetch_helper(
+                &arc_current,
+                &arc_background,
+                &sender,
+            )
+            .expect("failed to fetch");
 
             arc_pending.store(false, Ordering::Relaxed);
 
@@ -133,8 +137,8 @@ impl AsyncLog {
     }
 
     fn fetch_helper(
-        arc_current: Arc<Mutex<Vec<CommitId>>>,
-        arc_background: Arc<AtomicBool>,
+        arc_current: &Arc<Mutex<Vec<CommitId>>>,
+        arc_background: &Arc<AtomicBool>,
         sender: &Sender<AsyncNotification>,
     ) -> Result<()> {
         let mut entries = Vec::with_capacity(LIMIT_COUNT);

@@ -74,7 +74,7 @@ impl NewFromOldContent {
 pub(crate) fn apply_selection(
     lines: &[DiffLinePosition],
     hunks: &[HunkLines],
-    old_lines: Vec<&str>,
+    old_lines: &[&str],
     is_staged: bool,
     reverse: bool,
 ) -> Result<String> {
@@ -103,7 +103,7 @@ pub(crate) fn apply_selection(
         }
 
         if first_hunk_encountered {
-            new_content.catchup_to_hunkstart(hunk_start, &old_lines);
+            new_content.catchup_to_hunkstart(hunk_start, old_lines);
 
             for hunk_line in &hunk.lines {
                 let hunk_line_pos: DiffLinePosition =
@@ -140,7 +140,7 @@ pub(crate) fn apply_selection(
                             new_content.skip_old_line();
                         }
                     } else {
-                        new_content.add_old_line(&old_lines);
+                        new_content.add_old_line(old_lines);
                     }
                 } else {
                     if hunk_line.origin() != char_added {
@@ -159,7 +159,7 @@ pub(crate) fn apply_selection(
         }
     }
 
-    Ok(new_content.finish(&old_lines))
+    Ok(new_content.finish(old_lines))
 }
 
 pub fn load_file(

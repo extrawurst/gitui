@@ -78,7 +78,7 @@ impl AsyncTags {
 
         rayon_core::spawn(move || {
             let notify =
-                Self::getter(arc_last).expect("error getting tags");
+                Self::getter(&arc_last).expect("error getting tags");
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
@@ -95,13 +95,13 @@ impl AsyncTags {
     }
 
     fn getter(
-        arc_last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
+        arc_last: &Arc<Mutex<Option<(Instant, TagsResult)>>>,
     ) -> Result<bool> {
         let tags = sync::get_tags(CWD)?;
 
         let hash = hash(&tags);
 
-        if Self::last_hash(arc_last.clone())
+        if Self::last_hash(arc_last)
             .map(|last| last == hash)
             .unwrap_or_default()
         {
@@ -118,7 +118,7 @@ impl AsyncTags {
     }
 
     fn last_hash(
-        last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
+        last: &Arc<Mutex<Option<(Instant, TagsResult)>>>,
     ) -> Option<u64> {
         last.lock()
             .ok()

@@ -57,7 +57,7 @@ impl RemoteProgress {
     }
 
     pub(crate) fn set_progress<T>(
-        progress: Arc<Mutex<Option<T>>>,
+        progress: &Arc<Mutex<Option<T>>>,
         state: Option<T>,
     ) -> Result<()> {
         let mut progress = progress.lock()?;
@@ -81,7 +81,7 @@ impl RemoteProgress {
             match incoming {
                 Ok(update) => {
                     Self::set_progress(
-                        progress.clone(),
+                        &progress,
                         Some(update.clone()),
                     )
                     .expect("set progress failed");

@@ -68,7 +68,7 @@ impl AsyncCommitFiles {
         self.pending.fetch_add(1, Ordering::Relaxed);
 
         rayon_core::spawn(move || {
-            Self::fetch_helper(id, arc_current)
+            Self::fetch_helper(id, &arc_current)
                 .expect("failed to fetch");
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
@@ -83,7 +83,7 @@ impl AsyncCommitFiles {
 
     fn fetch_helper(
         id: CommitId,
-        arc_current: Arc<
+        arc_current: &Arc<
             Mutex<Option<Request<CommitId, ResultType>>>,
         >,
     ) -> Result<()> {

@@ -469,11 +469,7 @@ impl DiffComponent {
         if let Some(diff) = &self.diff {
             if let Some(hunk) = self.selected_hunk {
                 let hash = diff.hunks[hunk].header_hash;
-                sync::unstage_hunk(
-                    CWD,
-                    self.current.path.clone(),
-                    hash,
-                )?;
+                sync::unstage_hunk(CWD, &self.current.path, hash)?;
                 self.queue_update();
             }
         }
@@ -484,12 +480,14 @@ impl DiffComponent {
     fn stage_hunk(&mut self) -> Result<()> {
         if let Some(diff) = &self.diff {
             if let Some(hunk) = self.selected_hunk {
-                let path = self.current.path.clone();
                 if diff.untracked {
-                    sync::stage_add_file(CWD, Path::new(&path))?;
+                    sync::stage_add_file(
+                        CWD,
+                        Path::new(&self.current.path),
+                    )?;
                 } else {
                     let hash = diff.hunks[hunk].header_hash;
-                    sync::stage_hunk(CWD, path, hash)?;
+                    sync::stage_hunk(CWD, &self.current.path, hash)?;
                 }
 
                 self.queue_update();

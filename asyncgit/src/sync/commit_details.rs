@@ -16,7 +16,7 @@ pub struct CommitSignature {
 
 impl CommitSignature {
     /// convert from git2-rs `Signature`
-    pub fn from(s: Signature<'_>) -> Self {
+    pub fn from(s: &Signature<'_>) -> Self {
         Self {
             name: s.name().unwrap_or("").to_string(),
             email: s.email().unwrap_or("").to_string(),
@@ -89,8 +89,8 @@ pub fn get_commit_details(
 
     let commit = repo.find_commit(id.into())?;
 
-    let author = CommitSignature::from(commit.author());
-    let committer = CommitSignature::from(commit.committer());
+    let author = CommitSignature::from(&commit.author());
+    let committer = CommitSignature::from(&commit.committer());
     let committer = if author == committer {
         None
     } else {

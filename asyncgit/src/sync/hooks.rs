@@ -4,7 +4,7 @@ use scopetime::scope_time;
 use std::{
     fs::File,
     io::{Read, Write},
-    path::{Path, PathBuf},
+    path::Path,
     process::Command,
 };
 
@@ -89,7 +89,7 @@ fn hook_runable(path: &str, hook: &str) -> bool {
     let path = Path::new(path);
     let path = path.join(hook);
 
-    path.exists() && is_executable(path)
+    path.exists() && is_executable(&path)
 }
 
 ///
@@ -135,7 +135,7 @@ fn run_hook(
 }
 
 #[cfg(not(windows))]
-fn is_executable(path: PathBuf) -> bool {
+fn is_executable(path: &Path) -> bool {
     use std::os::unix::fs::PermissionsExt;
     let metadata = match path.metadata() {
         Ok(metadata) => metadata,
@@ -147,10 +147,9 @@ fn is_executable(path: PathBuf) -> bool {
 }
 
 #[cfg(windows)]
-#[allow(clippy::missing_const_for_fn)]
 /// windows does not consider bash scripts to be executable so we consider everything
 /// to be executable (which is not far from the truth for windows platform.)
-fn is_executable(_: PathBuf) -> bool {
+const fn is_executable(_: &Path) -> bool {
     true
 }
 

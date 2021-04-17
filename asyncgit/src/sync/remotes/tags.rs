@@ -142,9 +142,9 @@ pub(crate) fn push_tags(
         });
     }
 
-    progress_sender
-        .as_ref()
-        .map(|sender| sender.send(PushTagsProgress::Done));
+    drop(basic_credential);
+
+    progress_sender.map(|sender| sender.send(PushTagsProgress::Done));
 
     Ok(())
 }
