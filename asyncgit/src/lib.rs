@@ -21,7 +21,6 @@
 //TODO:
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::too_many_lines)]
-#![allow(clippy::redundant_pub_crate)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_possible_truncation)]

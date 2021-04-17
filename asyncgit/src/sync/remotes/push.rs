@@ -24,7 +24,7 @@ pub trait AsyncProgress: Clone + Send + Sync {
 
 ///
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum ProgressNotification {
+pub enum ProgressNotification {
     ///
     UpdateTips {
         ///
@@ -92,7 +92,7 @@ impl AsyncProgress for ProgressNotification {
     }
 }
 
-///
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn push(
     repo_path: &str,
     remote: &str,
@@ -128,6 +128,7 @@ pub(crate) fn push(
     Ok(())
 }
 
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn remote_callbacks<'a>(
     sender: Option<Sender<ProgressNotification>>,
     basic_credential: Option<BasicAuthCredential>,

@@ -98,7 +98,7 @@ fn tags_missing_remote(
 }
 
 ///
-pub(crate) fn push_tags(
+pub fn push_tags(
     repo_path: &str,
     remote: &str,
     basic_credential: Option<BasicAuthCredential>,

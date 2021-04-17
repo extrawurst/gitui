@@ -2,13 +2,13 @@ use super::diff::{get_diff_raw, HunkHeader};
 use crate::error::{Error, Result};
 use git2::{Diff, DiffLine, Patch, Repository};
 
-//
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) struct HunkLines<'a> {
     pub hunk: HunkHeader,
     pub lines: Vec<DiffLine<'a>>,
 }
 
-///
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn get_file_diff_patch_and_hunklines<'a>(
     repo: &'a Repository,
     file: &str,
