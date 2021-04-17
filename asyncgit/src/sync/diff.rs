@@ -6,6 +6,7 @@ use super::{
     CommitId,
 };
 use crate::{error::Error, error::Result, hash};
+use easy_cast::Conv;
 use git2::{
     Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
     Repository,
@@ -186,6 +187,8 @@ pub fn get_diff_commit(
 }
 
 ///
+//TODO: refactor into helper type with the inline closures as dedicated functions
+#[allow(clippy::too_many_lines)]
 fn raw_diff_to_file_diff<'a>(
     diff: &'a Diff,
     work_dir: &Path,
@@ -216,8 +219,9 @@ fn raw_diff_to_file_diff<'a>(
                     delta.old_file().size(),
                     delta.new_file().size(),
                 );
-                res.size_delta = (res.sizes.1 as i64)
-                    .saturating_sub(res.sizes.0 as i64);
+                //TODO: use try_conv
+                res.size_delta = (i64::conv(res.sizes.1))
+                    .saturating_sub(i64::conv(res.sizes.0));
             }
             if let Some(hunk) = hunk {
                 let hunk_header = HunkHeader::from(hunk);

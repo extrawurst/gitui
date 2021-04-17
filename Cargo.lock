@@ -46,6 +46,7 @@ name = "asyncgit"
 version = "0.14.0"
 dependencies = [
  "crossbeam-channel",
+ "easy-cast",
  "git2",
  "invalidstring",
  "log",
@@ -293,6 +294,12 @@ dependencies = [
  "redox_users",
  "winapi",
 ]
+
+[[package]]
+name = "easy-cast"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bd102ee8c418348759919b83b81cdbdc933ffe29740b903df448b4bafaa348e"
 
 [[package]]
 name = "either"

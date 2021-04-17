@@ -1,5 +1,6 @@
 //!
 
+use easy_cast::{Conv, ConvFloat};
 use std::cmp;
 
 ///
@@ -12,9 +13,9 @@ pub struct ProgressPercent {
 impl ProgressPercent {
     ///
     pub fn new(current: usize, total: usize) -> Self {
-        let total = cmp::max(current, total) as f32;
-        let progress = current as f32 / total * 100.0;
-        let progress = progress as u8;
+        let total = f64::conv(cmp::max(current, total));
+        let progress = f64::conv(current) / total * 100.0;
+        let progress = u8::conv_nearest(progress);
         Self { progress }
     }
     ///

@@ -32,6 +32,9 @@ pub enum Error {
 
     #[error("TryFromInt error:{0}")]
     IntConversion(#[from] TryFromIntError),
+
+    #[error("EasyCast error:{0}")]
+    EasyCast(#[from] easy_cast::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

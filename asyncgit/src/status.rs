@@ -14,11 +14,11 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-fn current_tick() -> u64 {
+fn current_tick() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("time before unix epoch!")
-        .as_millis() as u64
+        .as_millis()
 }
 
 #[derive(Default, Hash, Clone)]
@@ -29,7 +29,7 @@ pub struct Status {
 ///
 #[derive(Default, Hash, Copy, Clone, PartialEq)]
 pub struct StatusParams {
-    tick: u64,
+    tick: u128,
     status_type: StatusType,
     include_untracked: bool,
 }
