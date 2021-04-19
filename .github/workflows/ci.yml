@@ -94,6 +94,7 @@ jobs:
       run: |
         cargo install cargo-modify
         cargo modify
+        
     - name: Setup MUSL
       run: |
         sudo apt-get -qq install musl-tools
