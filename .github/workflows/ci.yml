@@ -45,6 +45,12 @@ jobs:
         profile: minimal
         components: clippy
 
+    - name: New Resolver
+      if: matrix.rust != '1.50'
+      run: |
+        cargo install cargo-modify
+        cargo modify
+
     - name: Build Debug
       run: |
         cargo build
@@ -82,6 +88,12 @@ jobs:
         profile: minimal
         default: true
         target: x86_64-unknown-linux-musl
+
+    - name: New Resolver
+      if: matrix.rust != '1.50'
+      run: |
+        cargo install cargo-modify
+        cargo modify
     - name: Setup MUSL
       run: |
         sudo apt-get -qq install musl-tools
