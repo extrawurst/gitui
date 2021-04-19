@@ -45,6 +45,12 @@ jobs:
         profile: minimal
         components: clippy
 
+    - name: New Resolver
+      if: matrix.rust != '1.50'
+      run: |
+        cargo install cargo-modify
+        cargo modify new-resolver
+
     - name: Build Debug
       run: |
         cargo build
@@ -92,6 +98,14 @@ jobs:
         profile: minimal
         default: true
         target: x86_64-unknown-linux-musl
+
+    # TODO: remove once we depend on 1.51 as a msrv and resolver is supported by default
+    - name: New Resolver
+      if: matrix.rust != '1.50'
+      run: |
+        cargo install cargo-modify
+        cargo modify new-resolver
+
     - name: Setup MUSL
       run: |
         sudo apt-get -qq install musl-tools
