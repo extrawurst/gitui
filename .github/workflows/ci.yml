@@ -49,7 +49,7 @@ jobs:
       if: matrix.rust != '1.50'
       run: |
         cargo install cargo-modify
-        cargo modify
+        cargo modify new-resolver
 
     - name: Build Debug
       run: |
@@ -64,6 +64,10 @@ jobs:
 
     - name: Build Release
       run: make build-release
+
+    - name: Binary Size
+      run: |
+        ls -l ./target/release/gitui
 
     - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
@@ -93,8 +97,8 @@ jobs:
       if: matrix.rust != '1.50'
       run: |
         cargo install cargo-modify
-        cargo modify
-        
+        cargo modify new-resolver
+
     - name: Setup MUSL
       run: |
         sudo apt-get -qq install musl-tools
@@ -106,6 +110,7 @@ jobs:
       run: |
         make build-linux-musl-release
         ./target/x86_64-unknown-linux-musl/release/gitui --version
+        ls -l ./target/x86_64-unknown-linux-musl/release/gitui
     - name: Test
       run: |
         make test-linux-musl

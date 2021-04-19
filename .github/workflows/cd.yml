@@ -31,7 +31,7 @@ jobs:
       if: matrix.rust != '1.50'
       run: |
         cargo install cargo-modify
-        cargo modify
+        cargo modify new-resolver
 
     - name: Build
       run: cargo build
