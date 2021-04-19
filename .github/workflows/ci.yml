@@ -59,9 +59,15 @@ jobs:
     - name: Build Release
       run: make build-release
 
-    - name: Binary Size
+    - name: Binary Size (unix)
+      if: matrix.os != 'windows-latest'
       run: |
         ls -l ./target/release/gitui
+    
+    - name: Binary Size (win)
+      if: matrix.os == 'windows-latest'
+      run: |
+        ls -l ./target/release/gitui.exe
 
     - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
