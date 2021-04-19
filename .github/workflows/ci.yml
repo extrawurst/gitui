@@ -59,6 +59,10 @@ jobs:
     - name: Build Release
       run: make build-release
 
+    - name: Binary Size
+      run: |
+        ls -l ./target/release/gitui
+
     - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
       run: |
@@ -93,6 +97,7 @@ jobs:
       run: |
         make build-linux-musl-release
         ./target/x86_64-unknown-linux-musl/release/gitui --version
+        ls -l ./target/x86_64-unknown-linux-musl/release/gitui
     - name: Test
       run: |
         make test-linux-musl
