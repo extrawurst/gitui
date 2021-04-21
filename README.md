@@ -176,7 +176,7 @@ This will log to:
 - Linux: `$HOME/.cache/gitui/gitui.log`
 - Windows: `%LOCALAPPDATA%/gitui/gitui.log`
 
-## 9. <a name="theme"></a> Color Theme <sup>[Top ▲](#table-of-contents)</sup>
+# 9. <a name="theme"></a> Color Theme <sup style="font-size: small">[Top ▲](#table-of-contents)</sup>
 
 ![](assets/light-theme.png)
 
