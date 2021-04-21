@@ -23,7 +23,21 @@
 
 ![](demo.gif)
 
-# Features
+## <a name="table-of-contents"></a> Table of Contents
+
+1. [Features](#features)
+2. [Benchmarks](#bench)
+3. [Motivation](#motivation)
+4. [Roadmap](#roadmap)
+5. [Limitations](#limitations)
+6. [Installation](#installation)
+7. [Build](#build)
+8. [Diagnostics](#diagnostics)
+9. [Color Theme](#theme)
+10. [Key Bindings](#bindings)
+11. [Inspiration](#inspiration)
+
+## 1. <a name="features"></a> Features <sup>[Top ▲](#table-of-contents)</sup>
 
 - Fast and intuitive **keyboard only** control
 - Context based help (**no need to memorize** tons of hot-keys)
@@ -36,7 +50,7 @@
 - Scalable terminal UI layout
 - Async git API for fluid control
 
-# Benchmarks
+## 2. <a name="bench"></a> Benchmarks <sup>[Top ▲](#table-of-contents)</sup>
 
 For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([slides](https://github.com/extrawurst/gitui-presentation)) I compared `lazygit`,`tig` and `gitui` by parsing the entire Linux git repository (which contains over 900k commits):
 
@@ -46,13 +60,24 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 | `lazygit` | 57 s        | 2.6         | 16          | Yes       | Sometimes |
 | `tig`     | 4 m 20 s    | 1.3         | **0.6** ✅  | Sometimes | **No** ✅ |
 
-# Motivation
+## 3. <a name="motivation"></a> Motivation <sup>[Top ▲](#table-of-contents)</sup>
 
 I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index, commit, diff, stash and log.
 
 Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool to help with features I use the most.
 
-# Known Limitations
+## 4. <a name="roadmap"></a> Road(map) to 1.0 <sup>[Top ▲](#table-of-contents)</sup>
+
+These are the high level goals before calling out `1.0`:
+
+* merging with conflicts ([#485](https://github.com/extrawurst/gitui/issues/485))
+* log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
+* file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
+* more tag support ([#483](https://github.com/extrawurst/gitui/issues/483))
+* file blame ([#484](https://github.com/extrawurst/gitui/issues/484))
+* visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
+
+## 5. <a name="limitations"></a> Known Limitations <sup>[Top ▲](#table-of-contents)</sup>
 
 - no support for conflict resolution yet (see [#485](https://github.com/extrawurst/gitui/issues/485))
 - no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
@@ -64,7 +89,7 @@ Currently, this tool does not fully substitute the _git shell_, however both too
 
 All support is welcomed! Sponsors as well! ❤️
 
-# Installation
+## 6. <a name="installation"></a> Installation <sup>[Top ▲](#table-of-contents)</sup>
 
 For the time being this product is in alpha and is not considered production ready. However, for personal use it is reasonably stable and is being used while developing itself.
 
@@ -129,7 +154,7 @@ Binaries available for:
 - macOS
 - Windows
 
-# Build
+## 7. <a name="build"></a> Build <sup>[Top ▲](#table-of-contents)</sup>
 
 ### Requirements
 
@@ -140,7 +165,7 @@ Binaries available for:
 
 The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui`
 
-# Diagnostics
+## 8. <a name="diagnostics"></a> Diagnostics <sup>[Top ▲](#table-of-contents)</sup>
 
 To run with logging enabled run `gitui -l`.
 
@@ -151,7 +176,7 @@ This will log to:
 - Linux: `$HOME/.cache/gitui/gitui.log`
 - Windows: `%LOCALAPPDATA%/gitui/gitui.log`
 
-# Color Theme
+## 9. <a name="theme"></a> Color Theme <sup>[Top ▲](#table-of-contents)</sup>
 
 ![](assets/light-theme.png)
 
@@ -159,22 +184,11 @@ This will log to:
 
 However, you can customize everything to your liking: See [Themes](THEMES.md).
 
-# Key Bindings
+## 10. <a name="bindings"></a> Key Bindings <sup>[Top ▲](#table-of-contents)</sup>
 
 The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to set them to `vim`-like bindings.
 
-# Road(map) to 1.0
-
-These are the high level goals before calling out `1.0`:
-
-* merging with conflicts ([#485](https://github.com/extrawurst/gitui/issues/485))
-* log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
-* file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
-* more tag support ([#483](https://github.com/extrawurst/gitui/issues/483))
-* file blame ([#484](https://github.com/extrawurst/gitui/issues/484))
-* visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
-
-# Inspiration
+## 11. <a name="inspiration"></a> Inspiration <sup>[Top ▲](#table-of-contents)</sup>
 
 - [lazygit](https://github.com/jesseduffield/lazygit)
 - [tig](https://github.com/jonas/tig)
