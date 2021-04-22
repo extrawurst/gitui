@@ -18,6 +18,7 @@ use std::convert::TryInto;
 use tui::{
     backend::Backend,
     layout::{Constraint, Rect},
+    symbols::line::VERTICAL,
     text::Span,
     widgets::{Block, Borders, Cell, Clear, Row, Table, TableState},
     Frame,
@@ -37,10 +38,12 @@ pub struct BlameFileComponent {
 static COMMIT_ID: &str = "HEAD";
 static NO_COMMIT_ID: &str = "0000000";
 static NO_AUTHOR: &str = "<no author>";
-static AUTHOR_WIDTH: usize = 20;
+static MIN_AUTHOR_WIDTH: usize = 3;
+static MAX_AUTHOR_WIDTH: usize = 20;
 
 fn get_author_width(width: usize) -> usize {
-    (width.saturating_sub(19) / 3).max(3).min(AUTHOR_WIDTH)
+    (width.saturating_sub(19) / 3)
+        .clamp(MIN_AUTHOR_WIDTH, MAX_AUTHOR_WIDTH)
 }
 
 const fn number_of_digits(number: usize) -> usize {
@@ -279,10 +282,10 @@ impl BlameFileComponent {
 
         let line_number_width = self.get_line_number_width();
         cells.push(
-            // U+2502 is BOX DRAWINGS LIGHT VERTICAL.
             Cell::from(format!(
-                "{:>line_number_width$}\u{2502}",
+                "{:>line_number_width$}{}",
                 line_number,
+                VERTICAL,
                 line_number_width = line_number_width,
             ))
             .style(self.theme.text(true, false)),
@@ -312,7 +315,7 @@ impl BlameFileComponent {
         let author = format!(
             "{:author_width$}",
             truncated_author,
-            author_width = AUTHOR_WIDTH
+            author_width = MAX_AUTHOR_WIDTH
         );
         let time = blame_hunk.map_or_else(
             || "".into(),
