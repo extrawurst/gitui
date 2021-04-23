@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - blame a file [[@cruessler](https://github.com/cruessler)] ([#484](https://github.com/extrawurst/gitui/issues/484))
 
 ### Fixed
+- debug print when adding a file to ignore
 - fetch crashed when no upstream of branch is set ([#637](https://github.com/extrawurst/gitui/issues/637))
 - `enter` key panics in empty remote branch list ([#643](https://github.com/extrawurst/gitui/issues/643))
 
