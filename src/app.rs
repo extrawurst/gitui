@@ -95,6 +95,7 @@ impl App {
                 key_config.clone(),
             ),
             blame_file_popup: BlameFileComponent::new(
+                &queue,
                 &strings::blame_title(&key_config),
                 theme.clone(),
                 key_config.clone(),

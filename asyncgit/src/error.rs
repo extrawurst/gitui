@@ -21,6 +21,9 @@ pub enum Error {
     #[error("git: uncommitted changes")]
     UncommittedChanges,
 
+    #[error("git: can\u{2019}t run blame on a binary file")]
+    NoBlameOnBinaryFile,
+
     #[error("io error:{0}")]
     Io(#[from] std::io::Error),
 
