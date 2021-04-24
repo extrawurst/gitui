@@ -1,7 +1,10 @@
 //! Sync git API for fetching a file blame
 
 use super::{utils, CommitId};
-use crate::{error::Result, sync::get_commit_info};
+use crate::{
+    error::{Error, Result},
+    sync::get_commit_info,
+};
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
@@ -22,10 +25,12 @@ pub struct BlameHunk {
     pub end_line: usize,
 }
 
-/// A `BlameFile` represents as a collection of hunks. This resembles `git2`’s
-/// API.
-#[derive(Default, Clone, Debug)]
+/// A `BlameFile` represents a collection of lines. This is targeted at how the
+/// data will be used by the UI.
+#[derive(Clone, Debug)]
 pub struct FileBlame {
+    ///
+    pub commit_id: CommitId,
     ///
     pub path: String,
     ///
@@ -33,17 +38,34 @@ pub struct FileBlame {
 }
 
 ///
+pub enum BlameAt {
+    ///
+    Head,
+    ///
+    Commit(CommitId),
+}
+
+///
 pub fn blame_file(
     repo_path: &str,
     file_path: &str,
-    commit_id: &str,
+    blame_at: &BlameAt,
 ) -> Result<FileBlame> {
     let repo = utils::repo(repo_path)?;
+    let commit_id = match blame_at {
+        BlameAt::Head => utils::get_head_repo(&repo)?,
+        BlameAt::Commit(commit_id) => *commit_id,
+    };
 
-    let spec = format!("{}:{}", commit_id, file_path);
+    let spec = format!("{}:{}", commit_id.to_string(), file_path);
     let blame = repo.blame_file(Path::new(file_path), None)?;
     let object = repo.revparse_single(&spec)?;
     let blob = repo.find_blob(object.id())?;
+
+    if blob.is_binary() {
+        return Err(Error::NoBlameOnBinaryFile);
+    }
+
     let reader = BufReader::new(blob.content());
 
     let lines: Vec<(Option<BlameHunk>, String)> = reader
@@ -84,6 +106,7 @@ pub fn blame_file(
         .collect();
 
     let file_blame = FileBlame {
+        commit_id,
         path: file_path.into(),
         lines,
     };
@@ -96,7 +119,7 @@ mod tests {
     use crate::error::Result;
     use crate::sync::{
         blame_file, commit, stage_add_file, tests::repo_init_empty,
-        BlameHunk,
+        BlameAt, BlameHunk,
     };
     use std::{
         fs::{File, OpenOptions},
@@ -112,7 +135,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         assert!(matches!(
-            blame_file(&repo_path, "foo", "HEAD"),
+            blame_file(&repo_path, "foo", &BlameAt::Head),
             Err(_)
         ));
 
@@ -122,7 +145,7 @@ mod tests {
         stage_add_file(repo_path, file_path)?;
         commit(repo_path, "first commit")?;
 
-        let blame = blame_file(&repo_path, "foo", "HEAD")?;
+        let blame = blame_file(&repo_path, "foo", &BlameAt::Head)?;
 
         assert!(matches!(
             blame.lines.as_slice(),
@@ -146,7 +169,7 @@ mod tests {
         stage_add_file(repo_path, file_path)?;
         commit(repo_path, "second commit")?;
 
-        let blame = blame_file(&repo_path, "foo", "HEAD")?;
+        let blame = blame_file(&repo_path, "foo", &BlameAt::Head)?;
 
         assert!(matches!(
             blame.lines.as_slice(),
@@ -173,14 +196,14 @@ mod tests {
 
         file.write(b"line 3\n")?;
 
-        let blame = blame_file(&repo_path, "foo", "HEAD")?;
+        let blame = blame_file(&repo_path, "foo", &BlameAt::Head)?;
 
         assert_eq!(blame.lines.len(), 2);
 
         stage_add_file(repo_path, file_path)?;
         commit(repo_path, "third commit")?;
 
-        let blame = blame_file(&repo_path, "foo", "HEAD")?;
+        let blame = blame_file(&repo_path, "foo", &BlameAt::Head)?;
 
         assert_eq!(blame.lines.len(), 3);
 

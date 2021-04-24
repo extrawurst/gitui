@@ -25,7 +25,7 @@ pub mod status;
 mod tags;
 pub mod utils;
 
-pub use blame::{blame_file, BlameHunk, FileBlame};
+pub use blame::{blame_file, BlameAt, BlameHunk, FileBlame};
 pub use branch::{
     branch_compare_upstream, checkout_branch, config_is_pull_rebase,
     create_branch, delete_branch, get_branch_remote,

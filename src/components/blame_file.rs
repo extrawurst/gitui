@@ -5,12 +5,13 @@ use super::{
 use crate::{
     components::{utils::string_width_align, ScrollType},
     keys::SharedKeyConfig,
+    queue::{InternalEvent, Queue},
     strings,
-    ui::style::SharedTheme,
+    ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::{blame_file, BlameHunk, FileBlame},
+    sync::{blame_file, BlameAt, BlameHunk, CommitId, FileBlame},
     CWD,
 };
 use crossterm::event::Event;
@@ -27,6 +28,7 @@ use tui::{
 pub struct BlameFileComponent {
     title: String,
     theme: SharedTheme,
+    queue: Queue,
     visible: bool,
     path: Option<String>,
     file_blame: Option<FileBlame>,
@@ -35,7 +37,6 @@ pub struct BlameFileComponent {
     current_height: std::cell::Cell<usize>,
 }
 
-static COMMIT_ID: &str = "HEAD";
 static NO_COMMIT_ID: &str = "0000000";
 static NO_AUTHOR: &str = "<no author>";
 static MIN_AUTHOR_WIDTH: usize = 3;
@@ -70,14 +71,22 @@ impl DrawableComponent for BlameFileComponent {
                 .as_deref()
                 .unwrap_or("<no path for blame available>");
 
-            let title = if self.file_blame.is_some() {
-                format!("{} -- {} -- {}", self.title, path, COMMIT_ID)
-            } else {
-                format!(
-                    "{} -- {} -- <no blame available>",
-                    self.title, path
-                )
-            };
+            let title = self.file_blame.as_ref().map_or_else(
+                || {
+                    format!(
+                        "{} -- {} -- <no blame available>",
+                        self.title, path
+                    )
+                },
+                |file_blame| {
+                    format!(
+                        "{} -- {} -- {}",
+                        self.title,
+                        path,
+                        file_blame.commit_id.get_short_string()
+                    )
+                },
+            );
 
             let rows = self.get_rows(area.width.into());
             let author_width = get_author_width(area.width.into());
@@ -97,6 +106,8 @@ impl DrawableComponent for BlameFileComponent {
                 Constraint::Min(0),
             ];
 
+            let number_of_rows = rows.len();
+
             let table = Table::new(rows)
                 .widths(&constraints)
                 .column_spacing(1)
@@ -115,6 +126,26 @@ impl DrawableComponent for BlameFileComponent {
 
             f.render_widget(Clear, area);
             f.render_stateful_widget(table, area, &mut table_state);
+
+            ui::draw_scrollbar(
+                f,
+                area,
+                &self.theme,
+                number_of_rows,
+                // April 2021: we don’t have access to `table_state.offset`
+                // (it’s private), so we use `table_state.selected()` as a
+                // replacement.
+                //
+                // Other widgets, for example `BranchListComponent`, manage
+                // scroll state themselves and use `self.scroll_top` in this
+                // situation.
+                //
+                // There are plans to change `render_stateful_widgets`, so this
+                // might be acceptable as an interim solution.
+                //
+                // https://github.com/fdehau/tui-rs/issues/448
+                table_state.selected().unwrap_or(0),
+            );
 
             self.table_state.set(table_state);
             self.current_height.set(area.height.into());
@@ -143,7 +174,17 @@ impl Component for BlameFileComponent {
                 CommandInfo::new(
                     strings::commands::scroll(&self.key_config),
                     true,
+                    self.file_blame.is_some(),
+                )
+                .order(1),
+            );
+            out.push(
+                CommandInfo::new(
+                    strings::commands::log_details_open(
+                        &self.key_config,
+                    ),
                     true,
+                    self.file_blame.is_some(),
                 )
                 .order(1),
             );
@@ -176,6 +217,20 @@ impl Component for BlameFileComponent {
                     self.move_selection(ScrollType::PageDown);
                 } else if key == self.key_config.page_up {
                     self.move_selection(ScrollType::PageUp);
+                } else if key == self.key_config.focus_right {
+                    self.hide();
+
+                    return self.selected_commit().map_or(
+                        Ok(false),
+                        |id| {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::InspectCommit(
+                                    id, None,
+                                ),
+                            );
+                            Ok(true)
+                        },
+                    );
                 }
 
                 return Ok(true);
@@ -203,6 +258,7 @@ impl Component for BlameFileComponent {
 impl BlameFileComponent {
     ///
     pub fn new(
+        queue: &Queue,
         title: &str,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
@@ -210,6 +266,7 @@ impl BlameFileComponent {
         Self {
             title: String::from(title),
             theme,
+            queue: queue.clone(),
             visible: false,
             path: None,
             file_blame: None,
@@ -222,7 +279,7 @@ impl BlameFileComponent {
     ///
     pub fn open(&mut self, path: &str) -> Result<()> {
         self.path = Some(path.into());
-        self.file_blame = blame_file(CWD, path, COMMIT_ID).ok();
+        self.file_blame = blame_file(CWD, path, &BlameAt::Head).ok();
         self.table_state.get_mut().select(Some(0));
 
         self.show()?;
@@ -322,9 +379,20 @@ impl BlameFileComponent {
             |hunk| utils::time_to_string(hunk.time, true),
         );
 
+        let is_blamed_commit = self
+            .file_blame
+            .as_ref()
+            .and_then(|file_blame| {
+                blame_hunk.map(|hunk| {
+                    file_blame.commit_id == hunk.commit_id
+                })
+            })
+            .unwrap_or(false);
+
         vec![
-            Cell::from(commit_hash)
-                .style(self.theme.commit_hash(false)),
+            Cell::from(commit_hash).style(
+                self.theme.commit_hash_in_blame(is_blamed_commit),
+            ),
             Cell::from(time).style(self.theme.commit_time(false)),
             Cell::from(author).style(self.theme.commit_author(false)),
         ]
@@ -371,5 +439,23 @@ impl BlameFileComponent {
         self.table_state.set(table_state);
 
         needs_update
+    }
+
+    fn selected_commit(&self) -> Option<CommitId> {
+        self.file_blame.as_ref().and_then(|file_blame| {
+            let table_state = self.table_state.take();
+
+            let commit_id =
+                table_state.selected().and_then(|selected| {
+                    file_blame.lines[selected]
+                        .0
+                        .as_ref()
+                        .map(|hunk| hunk.commit_id)
+                });
+
+            self.table_state.set(table_state);
+
+            commit_id
+        })
     }
 }
