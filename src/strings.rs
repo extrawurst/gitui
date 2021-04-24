@@ -1,7 +1,8 @@
 use crate::keys::SharedKeyConfig;
 
 pub mod order {
-    pub static NAV: i8 = 1;
+    pub static NAV: i8 = 2;
+    pub static RARE_ACTION: i8 = 1;
 }
 
 pub static PUSH_POPUP_MSG: &str = "Push";
@@ -585,7 +586,7 @@ pub mod commands {
     pub fn edit_item(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(
-                "Edit Item [{}]",
+                "Edit [{}]",
                 key_config.get_hint(key_config.edit_file),
             ),
             "edit the currently selected file in an external editor",
@@ -595,7 +596,7 @@ pub mod commands {
     pub fn stage_item(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(
-                "Stage Item [{}]",
+                "Stage [{}]",
                 key_config.get_hint(key_config.enter),
             ),
             "stage currently selected file or entire path",
@@ -615,7 +616,7 @@ pub mod commands {
     pub fn unstage_item(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(
-                "Unstage Item [{}]",
+                "Unstage [{}]",
                 key_config.get_hint(key_config.enter),
             ),
             "unstage currently selected file or entire path",
@@ -635,7 +636,7 @@ pub mod commands {
     pub fn reset_item(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(
-                "Reset Item [{}]",
+                "Reset [{}]",
                 key_config.get_hint(key_config.status_reset_item),
             ),
             "revert changes in selected file or entire path",

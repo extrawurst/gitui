@@ -516,16 +516,26 @@ impl Component for Status {
                 },
                 self.visible || force_all,
             ));
-            out.push(CommandInfo::new(
-                strings::commands::diff_focus_left(&self.key_config),
-                true,
-                (self.visible && focus_on_diff) || force_all,
-            ));
-            out.push(CommandInfo::new(
-                strings::commands::diff_focus_right(&self.key_config),
-                self.can_focus_diff(),
-                (self.visible && !focus_on_diff) || force_all,
-            ));
+            out.push(
+                CommandInfo::new(
+                    strings::commands::diff_focus_left(
+                        &self.key_config,
+                    ),
+                    true,
+                    (self.visible && focus_on_diff) || force_all,
+                )
+                .order(strings::order::NAV),
+            );
+            out.push(
+                CommandInfo::new(
+                    strings::commands::diff_focus_right(
+                        &self.key_config,
+                    ),
+                    self.can_focus_diff(),
+                    (self.visible && !focus_on_diff) || force_all,
+                )
+                .order(strings::order::NAV),
+            );
             out.push(
                 CommandInfo::new(
                     strings::commands::select_staging(

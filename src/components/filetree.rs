@@ -388,11 +388,14 @@ impl Component for FileTreeComponent {
             )
             .order(order::NAV),
         );
-        out.push(CommandInfo::new(
-            strings::commands::blame_file(&self.key_config),
-            self.selection_file().is_some(),
-            self.focused || force_all,
-        ));
+        out.push(
+            CommandInfo::new(
+                strings::commands::blame_file(&self.key_config),
+                self.selection_file().is_some(),
+                self.focused || force_all,
+            )
+            .order(order::RARE_ACTION),
+        );
 
         CommandBlocking::PassingOn
     }
