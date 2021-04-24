@@ -50,6 +50,7 @@ pub enum BlameAt {
 pub fn blame_file(
     repo_path: &str,
     file_path: &str,
+    //TODO: remove until we actually use this on specific commits, right now not even the unittests cover this
     blame_at: &BlameAt,
 ) -> Result<FileBlame> {
     let repo = utils::repo(repo_path)?;
