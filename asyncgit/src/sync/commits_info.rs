@@ -115,18 +115,21 @@ pub fn get_commit_info(
     })
 }
 
-///
-pub fn get_message(
+/// if `message_limit` is set the message will be
+/// limited to the first line and truncated to fit
+pub(crate) fn get_message(
     c: &Commit,
-    message_length_limit: Option<usize>,
+    message_limit: Option<usize>,
 ) -> String {
     let msg = String::from_utf8_lossy(c.message_bytes());
     let msg = msg.trim();
 
-    message_length_limit.map_or_else(
-        || msg.to_string(),
-        |limit| msg.unicode_truncate(limit).0.to_string(),
-    )
+    if let Some(limit) = message_limit {
+        let msg = msg.lines().next().unwrap_or_default();
+        msg.unicode_truncate(limit).0.to_string()
+    } else {
+        msg.to_string()
+    }
 }
 
 #[cfg(test)]
