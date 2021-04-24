@@ -115,17 +115,21 @@ pub fn get_commit_info(
     })
 }
 
-///
+/// if `message_limit` is set the message will be
+/// limited to the first line and truncated to fit
 pub fn get_message(
     c: &Commit,
-    message_length_limit: Option<usize>,
+    message_limit: Option<usize>,
 ) -> String {
     let msg = String::from_utf8_lossy(c.message_bytes());
     let msg = msg.trim();
 
-    message_length_limit.map_or_else(
+    message_limit.map_or_else(
         || msg.to_string(),
-        |limit| msg.unicode_truncate(limit).0.to_string(),
+        |limit| {
+            let msg = msg.lines().next().unwrap_or_default();
+            msg.unicode_truncate(limit).0.to_string()
+        },
     )
 }
 
@@ -160,6 +164,25 @@ mod tests {
         assert_eq!(res[0].message.as_str(), "commit2");
         assert_eq!(res[0].author.as_str(), "name");
         assert_eq!(res[1].message.as_str(), "commit1");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_log_first_msg_line() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?.write_all(b"a")?;
+        stage_add_file(repo_path, file_path).unwrap();
+        let c1 = commit(repo_path, "subject\nbody").unwrap();
+
+        let res = get_commits_info(repo_path, &vec![c1], 50).unwrap();
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].message.as_str(), "subject");
 
         Ok(())
     }
