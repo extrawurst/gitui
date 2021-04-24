@@ -164,6 +164,7 @@ pub trait Component {
     ) -> CommandBlocking;
 
     /// returns true if event propagation needs to end (event was consumed)
+    //TODO: lets introduce an enum `EventState` as `enum EventState { Consumed, NotConsumed }` instead of bool
     fn event(&mut self, ev: Event) -> Result<bool>;
 
     ///
