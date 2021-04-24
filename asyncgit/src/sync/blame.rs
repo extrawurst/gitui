@@ -3,8 +3,9 @@
 use super::{utils, CommitId};
 use crate::{
     error::{Error, Result},
-    sync::get_commit_info,
+    sync::get_commits_info,
 };
+use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
@@ -70,6 +71,19 @@ pub fn blame_file(
 
     let reader = BufReader::new(blob.content());
 
+    let unique_commit_ids: HashSet<_> = blame
+        .iter()
+        .map(|hunk| CommitId::new(hunk.final_commit_id()))
+        .collect();
+    let mut commit_ids = Vec::with_capacity(unique_commit_ids.len());
+    commit_ids.extend(unique_commit_ids);
+
+    let commit_infos = get_commits_info(repo_path, &commit_ids, 0)?;
+    let unique_commit_infos: HashMap<_, _> = commit_infos
+        .iter()
+        .map(|commit_info| (commit_info.id, commit_info))
+        .collect();
+
     let lines: Vec<(Option<BlameHunk>, String)> = reader
         .lines()
         .enumerate()
@@ -85,8 +99,8 @@ pub fn blame_file(
                 let end_line =
                     start_line.saturating_add(hunk.lines_in_hunk());
 
-                if let Ok(commit_info) =
-                    get_commit_info(repo_path, &commit_id)
+                if let Some(commit_info) =
+                    unique_commit_infos.get(&commit_id)
                 {
                     let hunk = BlameHunk {
                         commit_id,
