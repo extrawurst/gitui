@@ -1,7 +1,8 @@
 use crate::{
     components::{
         dialog_paragraph, utils::time_to_string, CommandBlocking,
-        CommandInfo, Component, DrawableComponent, ScrollType,
+        CommandInfo, Component, DrawableComponent, EventState,
+        ScrollType,
     },
     keys::SharedKeyConfig,
     strings::{self, order},
@@ -409,28 +410,28 @@ impl Component for DetailsComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, event: Event) -> Result<bool> {
+    fn event(&mut self, event: Event) -> Result<EventState> {
         if self.focused {
             if let Event::Key(e) = event {
                 return Ok(if e == self.key_config.move_up {
-                    self.move_scroll_top(ScrollType::Up)
+                    self.move_scroll_top(ScrollType::Up).into()
                 } else if e == self.key_config.move_down {
-                    self.move_scroll_top(ScrollType::Down)
+                    self.move_scroll_top(ScrollType::Down).into()
                 } else if e == self.key_config.home
                     || e == self.key_config.shift_up
                 {
-                    self.move_scroll_top(ScrollType::Home)
+                    self.move_scroll_top(ScrollType::Home).into()
                 } else if e == self.key_config.end
                     || e == self.key_config.shift_down
                 {
-                    self.move_scroll_top(ScrollType::End)
+                    self.move_scroll_top(ScrollType::End).into()
                 } else {
-                    false
+                    EventState::NotConsumed
                 });
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn focused(&self) -> bool {

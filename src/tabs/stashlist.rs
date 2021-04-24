@@ -1,7 +1,7 @@
 use crate::{
     components::{
         visibility_blocking, CommandBlocking, CommandInfo,
-        CommitList, Component, DrawableComponent,
+        CommitList, Component, DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue},
@@ -183,10 +183,13 @@ impl Component for StashList {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: crossterm::event::Event) -> Result<bool> {
+    fn event(
+        &mut self,
+        ev: crossterm::event::Event,
+    ) -> Result<EventState> {
         if self.visible {
-            if self.list.event(ev)? {
-                return Ok(true);
+            if self.list.event(ev)?.is_consumed() {
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(k) = ev {
@@ -203,7 +206,7 @@ impl Component for StashList {
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

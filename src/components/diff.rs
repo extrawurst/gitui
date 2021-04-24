@@ -2,7 +2,7 @@ use super::{
     CommandBlocking, Direction, DrawableComponent, ScrollType,
 };
 use crate::{
-    components::{CommandInfo, Component},
+    components::{CommandInfo, Component, EventState},
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings, try_or_popup,
@@ -728,33 +728,33 @@ impl Component for DiffComponent {
     }
 
     #[allow(clippy::cognitive_complexity)]
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.focused {
             if let Event::Key(e) = ev {
                 return if e == self.key_config.move_down {
                     self.move_selection(ScrollType::Down);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.shift_down {
                     self.modify_selection(Direction::Down);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.shift_up {
                     self.modify_selection(Direction::Up);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.end {
                     self.move_selection(ScrollType::End);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.home {
                     self.move_selection(ScrollType::Home);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.move_up {
                     self.move_selection(ScrollType::Up);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.page_up {
                     self.move_selection(ScrollType::PageUp);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.page_down {
                     self.move_selection(ScrollType::PageDown);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.enter
                     && !self.is_immutable
                 {
@@ -764,7 +764,7 @@ impl Component for DiffComponent {
                         self.stage_unstage_hunk()
                     );
 
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.status_reset_item
                     && !self.is_immutable
                     && !self.is_stage()
@@ -776,12 +776,12 @@ impl Component for DiffComponent {
                             self.reset_hunk();
                         }
                     }
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.diff_stage_lines
                     && !self.is_immutable
                 {
                     self.stage_lines();
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.diff_reset_lines
                     && !self.is_immutable
                     && !self.is_stage()
@@ -792,17 +792,17 @@ impl Component for DiffComponent {
                             self.reset_lines();
                         }
                     }
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.copy {
                     self.copy_selection();
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else {
-                    Ok(false)
+                    Ok(EventState::NotConsumed)
                 };
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn focused(&self) -> bool {

@@ -2,7 +2,7 @@ mod details;
 
 use super::{
     command_pump, event_pump, CommandBlocking, CommandInfo,
-    Component, DrawableComponent, FileTreeComponent,
+    Component, DrawableComponent, EventState, FileTreeComponent,
 };
 use crate::{
     accessors, keys::SharedKeyConfig, queue::Queue, strings,
@@ -158,9 +158,11 @@ impl Component for CommitDetailsComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
-        if event_pump(ev, self.components_mut().as_mut_slice())? {
-            return Ok(true);
+    fn event(&mut self, ev: Event) -> Result<EventState> {
+        if event_pump(ev, self.components_mut().as_mut_slice())?
+            .is_consumed()
+        {
+            return Ok(EventState::Consumed);
         }
 
         if self.focused() {
@@ -170,20 +172,20 @@ impl Component for CommitDetailsComponent {
                 {
                     self.details.focus(false);
                     self.file_tree.focus(true);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.focus_above
                     && self.file_tree.focused()
                 {
                     self.file_tree.focus(false);
                     self.details.focus(true);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else {
-                    Ok(false)
+                    Ok(EventState::NotConsumed)
                 };
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

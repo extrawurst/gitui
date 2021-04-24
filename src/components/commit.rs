@@ -1,7 +1,7 @@
 use super::{
     textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
-    ExternalEditorComponent,
+    EventState, ExternalEditorComponent,
 };
 use crate::{
     get_app_config_path,
@@ -85,10 +85,10 @@ impl Component for CommitComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.is_visible() {
-            if self.input.event(ev)? {
-                return Ok(true);
+            if self.input.event(ev)?.is_consumed() {
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(e) = ev {
@@ -106,11 +106,11 @@ impl Component for CommitComponent {
                 } else {
                 }
                 // stop key event propagation
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
