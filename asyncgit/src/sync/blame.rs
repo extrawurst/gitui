@@ -58,13 +58,15 @@ pub fn blame_file(
     };
 
     let spec = format!("{}:{}", commit_id.to_string(), file_path);
-    let blame = repo.blame_file(Path::new(file_path), None)?;
+
     let object = repo.revparse_single(&spec)?;
     let blob = repo.find_blob(object.id())?;
 
     if blob.is_binary() {
         return Err(Error::NoBlameOnBinaryFile);
     }
+
+    let blame = repo.blame_file(Path::new(file_path), None)?;
 
     let reader = BufReader::new(blob.content());
 
