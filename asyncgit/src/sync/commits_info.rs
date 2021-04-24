@@ -169,6 +169,25 @@ mod tests {
     }
 
     #[test]
+    fn test_log_first_msg_line() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?.write_all(b"a")?;
+        stage_add_file(repo_path, file_path).unwrap();
+        let c1 = commit(repo_path, "subject\nbody").unwrap();
+
+        let res = get_commits_info(repo_path, &vec![c1], 50).unwrap();
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].message.as_str(), "subject");
+
+        Ok(())
+    }
+
+    #[test]
     fn test_invalid_utf8() -> Result<()> {
         let file_path = Path::new("foo");
         let (_td, repo) = repo_init_empty().unwrap();
