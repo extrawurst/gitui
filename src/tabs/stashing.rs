@@ -73,7 +73,7 @@ impl Stashing {
     ///
     pub fn update(&mut self) -> Result<()> {
         if self.visible {
-            self.git_status.fetch(StatusParams::new(
+            self.git_status.fetch(&StatusParams::new(
                 StatusType::Both,
                 self.options.stash_untracked,
             ))?;

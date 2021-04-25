@@ -1,6 +1,7 @@
 use super::utils;
 use crate::{
     error::Result,
+    progress::ProgressPercent,
     sync::{
         branch::branch_set_upstream, cred::BasicAuthCredential,
         CommitId,
@@ -14,8 +15,16 @@ use git2::{
 use scopetime::scope_time;
 
 ///
-#[derive(Debug, Clone)]
-pub(crate) enum ProgressNotification {
+pub trait AsyncProgress: Clone + Send + Sync {
+    ///
+    fn is_done(&self) -> bool;
+    ///
+    fn progress(&self) -> ProgressPercent;
+}
+
+///
+#[derive(Debug, Clone, PartialEq)]
+pub enum ProgressNotification {
     ///
     UpdateTips {
         ///
@@ -54,7 +63,36 @@ pub(crate) enum ProgressNotification {
     Done,
 }
 
-///
+impl AsyncProgress for ProgressNotification {
+    fn is_done(&self) -> bool {
+        *self == Self::Done
+    }
+    fn progress(&self) -> ProgressPercent {
+        match *self {
+            Self::Packing {
+                stage,
+                current,
+                total,
+            } => match stage {
+                PackBuilderStage::AddingObjects
+                | PackBuilderStage::Deltafication => {
+                    ProgressPercent::new(current, total)
+                }
+            },
+            Self::PushTransfer { current, total, .. } => {
+                ProgressPercent::new(current, total)
+            }
+            Self::Transfer {
+                objects,
+                total_objects,
+                ..
+            } => ProgressPercent::new(objects, total_objects),
+            _ => ProgressPercent::full(),
+        }
+    }
+}
+
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn push(
     repo_path: &str,
     remote: &str,
@@ -90,6 +128,7 @@ pub(crate) fn push(
     Ok(())
 }
 
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn remote_callbacks<'a>(
     sender: Option<Sender<ProgressNotification>>,
     basic_credential: Option<BasicAuthCredential>,
@@ -186,7 +225,7 @@ pub(crate) fn remote_callbacks<'a>(
                     username: Some(user),
                     password: Some(pwd),
                 }) if allowed_types.is_user_pass_plaintext() => {
-                    Cred::userpass_plaintext(&user, &pwd)
+                    Cred::userpass_plaintext(user, pwd)
                 }
                 Some(BasicAuthCredential {
                     username: Some(user),
@@ -207,14 +246,12 @@ pub(crate) fn remote_callbacks<'a>(
 
 #[cfg(test)]
 mod tests {
-    use git2::Repository;
-
     use super::*;
     use crate::sync::{
         self,
-        tests::{repo_init, repo_init_bare},
-        LogWalker,
+        tests::{get_commit_ids, repo_init, repo_init_bare},
     };
+    use git2::Repository;
     use std::{fs::File, io::Write, path::Path};
 
     #[test]
@@ -357,9 +394,8 @@ mod tests {
             String::from("temp_file.txt")
         );
 
-        let mut repo_commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(&repo).read(&mut repo_commit_ids, 1).unwrap();
-        assert_eq!(repo_commit_ids.contains(&repo_1_commit), true);
+        let commits = get_commit_ids(&repo, 1);
+        assert!(commits.contains(&repo_1_commit));
 
         push(
             tmp_repo_dir.path().to_str().unwrap(),
@@ -397,14 +433,8 @@ mod tests {
             .unwrap()
             .id();
 
-        let mut other_repo_commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(&other_repo)
-            .read(&mut other_repo_commit_ids, 1)
-            .unwrap();
-        assert_eq!(
-            other_repo_commit_ids.contains(&repo_2_commit),
-            true
-        );
+        let commits = get_commit_ids(&other_repo, 1);
+        assert!(commits.contains(&repo_2_commit));
 
         // Attempt a normal push,
         // should fail as branches diverged
@@ -423,9 +453,8 @@ mod tests {
 
         // Check that the other commit is not in upstream,
         // a normal push would not rewrite history
-        let mut commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
-        assert_eq!(commit_ids.contains(&repo_1_commit), true);
+        let commits = get_commit_ids(&upstream, 1);
+        assert!(!commits.contains(&repo_2_commit));
 
         // Attempt force push,
         // should work as it forces the push through
@@ -440,10 +469,8 @@ mod tests {
         )
         .unwrap();
 
-        commit_ids.clear();
-        LogWalker::new(&upstream).read(&mut commit_ids, 1).unwrap();
-        // Check that only the other repo commit is now in upstream
-        assert_eq!(commit_ids.contains(&repo_2_commit), true);
+        let commits = get_commit_ids(&upstream, 1);
+        assert!(commits.contains(&repo_2_commit));
 
         let new_upstream_parent =
             Repository::init_bare(tmp_upstream_dir.path())

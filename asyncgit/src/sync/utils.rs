@@ -4,7 +4,7 @@ use super::CommitId;
 use crate::error::{Error, Result};
 use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
-use std::path::Path;
+use std::{fs::File, io::Write, path::Path};
 
 ///
 #[derive(PartialEq, Debug, Clone)]
@@ -53,17 +53,16 @@ pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
 
 ///
 pub(crate) fn work_dir(repo: &Repository) -> Result<&Path> {
-    repo.workdir().map_or(Err(Error::NoWorkDir), |dir| Ok(dir))
+    repo.workdir().ok_or(Error::NoWorkDir)
 }
 
 ///
 pub fn repo_work_dir(repo_path: &str) -> Result<String> {
     let repo = repo(repo_path)?;
-    if let Some(workdir) = work_dir(&repo)?.to_str() {
-        Ok(workdir.to_string())
-    } else {
-        Err(Error::Generic("invalid workdir".to_string()))
-    }
+    work_dir(&repo)?.to_str().map_or_else(
+        || Err(Error::Generic("invalid workdir".to_string())),
+        |workdir| Ok(workdir.to_string()),
+    )
 }
 
 ///
@@ -95,11 +94,7 @@ pub fn get_head_repo(repo: &Repository) -> Result<CommitId> {
 
     let head = repo.head()?.target();
 
-    if let Some(head_id) = head {
-        Ok(head_id.into())
-    } else {
-        Err(Error::NoHead)
-    }
+    head.map_or(Err(Error::NoHead), |head_id| Ok(head_id.into()))
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
@@ -161,15 +156,49 @@ pub fn get_config_string(
         Err(_) => return Ok(None),
     };
 
-    if !entry.has_value() {
-        Ok(None)
+    if entry.has_value() {
+        Ok(entry.value().map(std::string::ToString::to_string))
     } else {
-        Ok(entry.value().map(|s| s.to_string()))
+        Ok(None)
     }
 }
-/// helper function
+
 pub(crate) fn bytes2string(bytes: &[u8]) -> Result<String> {
     Ok(String::from_utf8(bytes.to_vec())?)
+}
+
+/// write a file in repo
+pub(crate) fn repo_write_file(
+    repo: &Repository,
+    file: &str,
+    content: &str,
+) -> Result<()> {
+    let dir = work_dir(repo)?.join(file);
+    let file_path = dir.to_str().ok_or_else(|| {
+        Error::Generic(String::from("invalid file path"))
+    })?;
+    let mut file = File::create(file_path)?;
+    file.write_all(content.as_bytes())?;
+    Ok(())
+}
+
+#[cfg(test)]
+pub(crate) fn repo_read_file(
+    repo: &Repository,
+    file: &str,
+) -> Result<String> {
+    use std::io::Read;
+
+    let dir = work_dir(repo)?.join(file);
+    let file_path = dir.to_str().ok_or_else(|| {
+        Error::Generic(String::from("invalid file path"))
+    })?;
+
+    let mut file = File::open(file_path)?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)?;
+
+    Ok(String::from_utf8(buffer)?)
 }
 
 #[cfg(test)]

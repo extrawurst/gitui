@@ -46,8 +46,6 @@ fn file_ends_with_newline(file: &Path) -> Result<bool> {
     let mut last_char = String::with_capacity(1);
     file.read_to_string(&mut last_char)?;
 
-    dbg!(&last_char);
-
     Ok(last_char == "\n")
 }
 

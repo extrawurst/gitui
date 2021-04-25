@@ -16,9 +16,8 @@
 
     tab_toggle: ( code: Tab, modifiers: ( bits: 0,),),
     tab_toggle_reverse: ( code: BackTab, modifiers: ( bits: 1,),),
+    toggle_workarea: ( code: Char('w'), modifiers: (bits: 0,),),
 
-    focus_workdir: ( code: Char('w'), modifiers: ( bits: 0,),),
-    focus_stage: ( code: Char('s'), modifiers: ( bits: 0,),),
     focus_right: ( code: Char('l'), modifiers: ( bits: 0,),),
     focus_left: ( code: Char('h'), modifiers: ( bits: 0,),),
     focus_above: ( code: Char('k'), modifiers: ( bits: 0,),),
@@ -28,7 +27,9 @@
     exit_popup: ( code: Esc, modifiers: ( bits: 0,),),
 
     open_commit: ( code: Char('c'), modifiers: ( bits: 0,),),
-    open_commit_editor: ( code: Char('E'), modifiers: ( bits: 1,),),
+
+    // Note: the shift modifier does not work for open_commit_editor
+    open_commit_editor: ( code: Char('e'), modifiers: ( bits: 2,),),
     open_help: ( code: F(1), modifiers: ( bits: 0,),),
 
     move_left: ( code: Char('h'), modifiers: ( bits: 0,),),
@@ -44,24 +45,28 @@
     shift_down: ( code: Char('J'), modifiers: ( bits: 1,),),
 
     enter: ( code: Enter, modifiers: ( bits: 0,),),
+    blame: ( code: Char('B'), modifiers: ( bits: 1,),),
 
     edit_file: ( code: Char('I'), modifiers: ( bits: 1,),),
 
     status_stage_all: ( code: Char('a'), modifiers: ( bits: 0,),),
-
     status_reset_item: ( code: Char('U'), modifiers: ( bits: 1,),),
     status_ignore_file: ( code: Char('i'), modifiers: ( bits: 0,),),
+    
+    diff_reset_lines: ( code: Char('u'), modifiers: ( bits: 0,),),
+    diff_stage_lines: ( code: Char('s'), modifiers: ( bits: 0,),),
 
     stashing_save: ( code: Char('w'), modifiers: ( bits: 0,),),
     stashing_toggle_untracked: ( code: Char('u'), modifiers: ( bits: 0,),),
     stashing_toggle_index: ( code: Char('m'), modifiers: ( bits: 0,),),
 
+    stash_apply: ( code: Char('a'), modifiers: ( bits: 0,),),
     stash_open: ( code: Char('l'), modifiers: ( bits: 0,),),
     stash_drop: ( code: Char('D'), modifiers: ( bits: 1,),),
 
     cmd_bar_toggle: ( code: Char('.'), modifiers: ( bits: 0,),),
     log_tag_commit: ( code: Char('t'), modifiers: ( bits: 0,),),
-    commit_amend: ( code: Char('A'), modifiers: ( bits: 1,),),
+    commit_amend: ( code: Char('a'), modifiers: ( bits: 2,),),
     copy: ( code: Char('y'), modifiers: ( bits: 0,),),
     create_branch: ( code: Char('c'), modifiers: ( bits: 0,),),
     rename_branch: ( code: Char('r'), modifiers: ( bits: 0,),),
@@ -69,7 +74,7 @@
     delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
     force_push: ( code: Char('P'), modifiers: ( bits: 1,),),
-    fetch: ( code: Char('f'), modifiers: ( bits: 0,),),
+    pull: ( code: Char('f'), modifiers: ( bits: 0,),),
 
     show_find_commit_text_input: ( code: Char('s'), modifiers: ( bits: 0,),),
     focus_find_commit: ( code: Char('j'), modifiers: ( bits: 3,),),

@@ -10,7 +10,7 @@ pub struct LogWalker<'a> {
 
 impl<'a> LogWalker<'a> {
     ///
-    pub fn new(repo: &'a Repository) -> Self {
+    pub const fn new(repo: &'a Repository) -> Self {
         Self {
             repo,
             revwalk: None,

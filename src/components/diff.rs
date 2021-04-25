@@ -9,7 +9,11 @@ use crate::{
     ui::{self, calc_scroll_top, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::{hash, sync, DiffLine, DiffLineType, FileDiff, CWD};
+use asyncgit::{
+    hash,
+    sync::{self, diff::DiffLinePosition},
+    DiffLine, DiffLineType, FileDiff, CWD,
+};
 use bytesize::ByteSize;
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, cmp, path::Path};
@@ -165,20 +169,27 @@ impl DiffComponent {
         let hash = hash(&diff);
 
         if self.current.hash != hash {
+            let reset_selection = self.current.path != path;
+
             self.current = Current {
                 path,
                 is_stage,
                 hash,
             };
 
-            self.selected_hunk = Self::find_selected_hunk(
-                &diff,
-                self.selection.get_start(),
-            );
-
             self.diff = Some(diff);
-            self.scroll_top.set(0);
-            self.selection = Selection::Single(0);
+
+            if reset_selection {
+                self.scroll_top.set(0);
+                self.selection = Selection::Single(0);
+                self.update_selection(0);
+            } else {
+                let old_selection = match self.selection {
+                    Selection::Single(line) => line,
+                    Selection::Multiple(start, _) => start,
+                };
+                self.update_selection(old_selection);
+            }
         }
 
         Ok(())
@@ -211,10 +222,15 @@ impl DiffComponent {
                 }
             };
 
+            self.update_selection(new_start);
+        }
+    }
+
+    fn update_selection(&mut self, new_start: usize) {
+        if let Some(diff) = &self.diff {
+            let max = diff.lines.saturating_sub(1) as usize;
             let new_start = cmp::min(max, new_start);
-
             self.selection = Selection::Single(new_start);
-
             self.selected_hunk =
                 Self::find_selected_hunk(diff, new_start);
         }
@@ -236,25 +252,21 @@ impl DiffComponent {
 
     fn copy_selection(&self) {
         if let Some(diff) = &self.diff {
-            let lines_to_copy: Vec<&str> = diff
-                .hunks
-                .iter()
-                .flat_map(|hunk| hunk.lines.iter())
-                .enumerate()
-                .filter_map(|(i, line)| {
-                    if self.selection.contains(i) {
-                        Some(
-                            line.content
-                                .trim_matches(|c| {
-                                    c == '\n' || c == '\r'
-                                })
-                                .as_ref(),
-                        )
-                    } else {
-                        None
-                    }
-                })
-                .collect();
+            let lines_to_copy: Vec<&str> =
+                diff.hunks
+                    .iter()
+                    .flat_map(|hunk| hunk.lines.iter())
+                    .enumerate()
+                    .filter_map(|(i, line)| {
+                        if self.selection.contains(i) {
+                            Some(line.content.trim_matches(|c| {
+                                c == '\n' || c == '\r'
+                            }))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
 
             try_or_popup!(
                 self,
@@ -457,11 +469,7 @@ impl DiffComponent {
         if let Some(diff) = &self.diff {
             if let Some(hunk) = self.selected_hunk {
                 let hash = diff.hunks[hunk].header_hash;
-                sync::unstage_hunk(
-                    CWD,
-                    self.current.path.clone(),
-                    hash,
-                )?;
+                sync::unstage_hunk(CWD, &self.current.path, hash)?;
                 self.queue_update();
             }
         }
@@ -472,12 +480,14 @@ impl DiffComponent {
     fn stage_hunk(&mut self) -> Result<()> {
         if let Some(diff) = &self.diff {
             if let Some(hunk) = self.selected_hunk {
-                let path = self.current.path.clone();
                 if diff.untracked {
-                    sync::stage_add_file(CWD, Path::new(&path))?;
+                    sync::stage_add_file(
+                        CWD,
+                        Path::new(&self.current.path),
+                    )?;
                 } else {
                     let hash = diff.hunks[hunk].header_hash;
-                    sync::stage_hunk(CWD, path, hash)?;
+                    sync::stage_hunk(CWD, &self.current.path, hash)?;
                 }
 
                 self.queue_update();
@@ -487,7 +497,7 @@ impl DiffComponent {
         Ok(())
     }
 
-    fn queue_update(&mut self) {
+    fn queue_update(&self) {
         self.queue
             .as_ref()
             .borrow_mut()
@@ -507,6 +517,62 @@ impl DiffComponent {
                 );
             }
         }
+    }
+
+    fn reset_lines(&self) {
+        self.queue.as_ref().borrow_mut().push_back(
+            InternalEvent::ConfirmAction(Action::ResetLines(
+                self.current.path.clone(),
+                self.selected_lines(),
+            )),
+        );
+    }
+
+    fn stage_lines(&self) {
+        if let Some(diff) = &self.diff {
+            //TODO: support untracked files aswell
+            if !diff.untracked {
+                let selected_lines = self.selected_lines();
+
+                try_or_popup!(
+                    self,
+                    "(un)stage lines:",
+                    sync::stage_lines(
+                        CWD,
+                        &self.current.path,
+                        self.is_stage(),
+                        &selected_lines,
+                    )
+                );
+
+                self.queue_update();
+            }
+        }
+    }
+
+    fn selected_lines(&self) -> Vec<DiffLinePosition> {
+        self.diff
+            .as_ref()
+            .map(|diff| {
+                diff.hunks
+                    .iter()
+                    .flat_map(|hunk| hunk.lines.iter())
+                    .enumerate()
+                    .filter_map(|(i, line)| {
+                        let is_add_or_delete = line.line_type
+                            == DiffLineType::Add
+                            || line.line_type == DiffLineType::Delete;
+                        if self.selection.contains(i)
+                            && is_add_or_delete
+                        {
+                            Some(line.position)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     fn reset_untracked(&self) {
@@ -603,12 +669,6 @@ impl Component for DiffComponent {
             self.focused,
         ));
 
-        out.push(CommandInfo::new(
-            strings::commands::copy(&self.key_config),
-            true,
-            self.focused,
-        ));
-
         out.push(
             CommandInfo::new(
                 strings::commands::diff_home_end(&self.key_config),
@@ -634,11 +694,40 @@ impl Component for DiffComponent {
                 self.selected_hunk.is_some(),
                 self.focused && !self.is_stage(),
             ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_revert(
+                    &self.key_config,
+                ),
+                //TODO: only if any modifications are selected
+                true,
+                self.focused && !self.is_stage(),
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_stage(&self.key_config),
+                //TODO: only if any modifications are selected
+                true,
+                self.focused && !self.is_stage(),
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::diff_lines_unstage(
+                    &self.key_config,
+                ),
+                //TODO: only if any modifications are selected
+                true,
+                self.focused && self.is_stage(),
+            ));
         }
+
+        out.push(CommandInfo::new(
+            strings::commands::copy(&self.key_config),
+            true,
+            self.focused,
+        ));
 
         CommandBlocking::PassingOn
     }
 
+    #[allow(clippy::cognitive_complexity)]
     fn event(&mut self, ev: Event) -> Result<bool> {
         if self.focused {
             if let Event::Key(e) = ev {
@@ -685,6 +774,22 @@ impl Component for DiffComponent {
                             self.reset_untracked();
                         } else {
                             self.reset_hunk();
+                        }
+                    }
+                    Ok(true)
+                } else if e == self.key_config.diff_stage_lines
+                    && !self.is_immutable
+                {
+                    self.stage_lines();
+                    Ok(true)
+                } else if e == self.key_config.diff_reset_lines
+                    && !self.is_immutable
+                    && !self.is_stage()
+                {
+                    if let Some(diff) = &self.diff {
+                        //TODO: reset untracked lines
+                        if !diff.untracked {
+                            self.reset_lines();
                         }
                     }
                     Ok(true)

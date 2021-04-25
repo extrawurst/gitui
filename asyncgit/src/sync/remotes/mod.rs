@@ -1,14 +1,20 @@
 //!
 
 pub(crate) mod push;
+pub(crate) mod tags;
 
 use crate::{
     error::{Error, Result},
-    sync::utils,
+    sync::{
+        cred::BasicAuthCredential,
+        remotes::push::ProgressNotification, utils,
+    },
 };
-use git2::{FetchOptions, Repository};
+use crossbeam_channel::Sender;
+use git2::{BranchType, FetchOptions, Repository};
 use push::remote_callbacks;
 use scopetime::scope_time;
+use utils::bytes2string;
 
 /// origin
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
@@ -66,16 +72,29 @@ pub(crate) fn get_default_remote_in_repo(
     Err(Error::NoDefaultRemoteFound)
 }
 
-///
-pub fn fetch_origin(repo_path: &str, branch: &str) -> Result<usize> {
+/// fetches from upstream/remote for `branch`
+pub(crate) fn fetch(
+    repo_path: &str,
+    branch: &str,
+    basic_credential: Option<BasicAuthCredential>,
+    progress_sender: Option<Sender<ProgressNotification>>,
+) -> Result<usize> {
     scope_time!("fetch_origin");
 
     let repo = utils::repo(repo_path)?;
-    let mut remote =
-        repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
+    let branch_ref = repo
+        .find_branch(branch, BranchType::Local)?
+        .into_reference();
+    let branch_ref = bytes2string(branch_ref.name_bytes())?;
+    let remote_name = repo.branch_upstream_remote(&branch_ref)?;
+    let remote_name = bytes2string(&*remote_name)?;
+    let mut remote = repo.find_remote(&remote_name)?;
 
     let mut options = FetchOptions::new();
-    options.remote_callbacks(remote_callbacks(None, None));
+    options.remote_callbacks(remote_callbacks(
+        progress_sender,
+        basic_credential,
+    ));
 
     remote.fetch(&[branch], Some(&mut options), None)?;
 
@@ -104,7 +123,7 @@ mod tests {
 
         assert_eq!(remotes, vec![String::from("origin")]);
 
-        fetch_origin(repo_path, "master").unwrap();
+        fetch(repo_path, "master", None, None).unwrap();
     }
 
     #[test]
@@ -173,5 +192,43 @@ mod tests {
         )
         .unwrap();
         assert_eq!(first, String::from("origin"));
+    }
+
+    #[test]
+    fn test_default_remote_inconclusive() {
+        let td = TempDir::new().unwrap();
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "git clone https://github.com/extrawurst/brewdump.git",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote rename origin alternate",
+        );
+
+        debug_cmd_print(
+            td.path().as_os_str().to_str().unwrap(),
+            "cd brewdump && git remote add someremote https://github.com/extrawurst/brewdump.git",
+        );
+
+        let repo_path = td.path().join("brewdump");
+        let repo_path = repo_path.as_os_str().to_str().unwrap();
+
+        let remotes = get_remotes(repo_path).unwrap();
+        assert_eq!(
+            remotes,
+            vec![
+                String::from("alternate"),
+                String::from("someremote")
+            ]
+        );
+
+        let res = get_default_remote_in_repo(
+            &utils::repo(repo_path).unwrap(),
+        );
+        assert_eq!(res.is_err(), true);
+        assert!(matches!(res, Err(Error::NoDefaultRemoteFound)));
     }
 }

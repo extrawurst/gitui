@@ -1,3 +1,5 @@
+mod blame_file;
+mod branchlist;
 mod changes;
 mod command;
 mod commit;
@@ -12,15 +14,18 @@ mod find_commit;
 mod help;
 mod inspect_commit;
 mod msg;
+mod pull;
 mod push;
+mod push_tags;
 mod rename_branch;
 mod reset;
-mod select_branch;
 mod stashmsg;
 mod tag_commit;
 mod textinput;
 mod utils;
 
+pub use blame_file::BlameFileComponent;
+pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
@@ -34,10 +39,11 @@ pub use find_commit::FindCommitComponent;
 pub use help::HelpComponent;
 pub use inspect_commit::InspectCommitComponent;
 pub use msg::MsgComponent;
+pub use pull::PullComponent;
 pub use push::PushComponent;
+pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ResetComponent;
-pub use select_branch::SelectBranchComponent;
 pub use stashmsg::StashMsgComponent;
 pub use tag_commit::TagCommitComponent;
 pub use textinput::{InputType, TextInputComponent};
@@ -161,6 +167,7 @@ pub trait Component {
     ) -> CommandBlocking;
 
     /// returns true if event propagation needs to end (event was consumed)
+    //TODO: lets introduce an enum `EventState` as `enum EventState { Consumed, NotConsumed }` instead of bool
     fn event(&mut self, ev: Event) -> Result<bool>;
 
     ///

@@ -57,7 +57,7 @@ impl Component for ResetComponent {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            strings::commands::reset_confirm(&self.key_config),
+            strings::commands::confirm_action(&self.key_config),
             true,
             self.visible,
         ));
@@ -147,9 +147,17 @@ impl ResetComponent {
                     ),
                     strings::confirm_msg_stashdrop(&self.key_config),
                 ),
+                Action::StashPop(_) => (
+                    strings::confirm_title_stashpop(&self.key_config),
+                    strings::confirm_msg_stashpop(&self.key_config),
+                ),
                 Action::ResetHunk(_, _) => (
                     strings::confirm_title_reset(&self.key_config),
                     strings::confirm_msg_resethunk(&self.key_config),
+                ),
+                Action::ResetLines(_, lines) => (
+                    strings::confirm_title_reset(&self.key_config),
+                    strings::confirm_msg_reset_lines(&self.key_config,lines.len()),
                 ),
                 Action::DeleteBranch(branch_ref) => (
                     strings::confirm_title_delete_branch(
@@ -168,6 +176,10 @@ impl ResetComponent {
                         &self.key_config,
                         branch.rsplit('/').next().expect("There was no / in the head reference which is impossible in git"),
                     ),
+                ),
+                Action::PullMerge{incoming,rebase} => (
+                    strings::confirm_title_merge(&self.key_config,*rebase),
+                    strings::confirm_msg_merge(&self.key_config,*incoming,*rebase),
                 ),
             };
         }

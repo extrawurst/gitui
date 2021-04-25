@@ -30,10 +30,11 @@ pub fn amend(
     Ok(CommitId::new(new_id))
 }
 
-/// Wrap Repository::signature to allow unknown user.name.
+/// Wrap `Repository::signature` to allow unknown user.name.
 ///
 /// See <https://github.com/extrawurst/gitui/issues/79>.
-fn signature_allow_undefined_name(
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) fn signature_allow_undefined_name(
     repo: &Repository,
 ) -> std::result::Result<Signature<'_>, git2::Error> {
     let signature = repo.signature();

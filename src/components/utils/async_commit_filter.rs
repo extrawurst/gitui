@@ -1,6 +1,6 @@
 use anyhow::Result;
 use asyncgit::{
-    sync::{self, limit_str, CommitId, CommitInfo, Tags},
+    sync::{self, CommitId, CommitInfo, Tags},
     AsyncLog, AsyncNotification, AsyncTags, CWD,
 };
 use bitflags::bitflags;
@@ -16,6 +16,7 @@ use std::{
     thread,
     time::Duration,
 };
+use unicode_truncate::UnicodeTruncateStr;
 
 const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(10);
 const FILTER_SLEEP_DURATION_FAILED_LOCK: Duration =
@@ -417,8 +418,11 @@ impl AsyncCommitFilterer {
         let max = max.min(len);
         let mut commits_requested = fc[min..max].to_vec();
         for c in &mut commits_requested {
-            c.message = limit_str(&c.message, message_length_limit)
-                .to_string();
+            c.message = c
+                .message
+                .unicode_truncate(message_length_limit)
+                .0
+                .to_owned();
         }
         Ok(commits_requested)
     }

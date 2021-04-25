@@ -1,10 +1,10 @@
 [package]
 name = "gitui"
-version = "0.11.0"
+version = "0.14.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
-exclude = [".github/*",".vscode/*"]
+exclude = [".github/*",".vscode/*","assets/*"]
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
@@ -20,15 +20,15 @@ keywords = [
 
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
-asyncgit = { path = "./asyncgit", version = "0.11" }
+asyncgit = { path = "./asyncgit", version = "0.14" }
 crossterm = { version = "0.19", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
 tui = { version = "0.14", default-features = false, features = ['crossterm', 'serde'] }
-bytesize = { version = "1.0.1", default-features = false}
+bytesize = { version = "1.0", default-features = false}
 itertools = "0.10"
 rayon-core = "1.9"
 log = "0.4"
-simplelog = { version = "0.9", default-features = false }
+simplelog = { version = "0.10", default-features = false }
 dirs-next = "2.0"
 crossbeam-channel = "0.5"
 scopeguard = "1.1"
@@ -37,13 +37,14 @@ chrono = "0.4"
 backtrace = "0.3"
 ron = "0.6"
 serde = "1.0"
-anyhow = "1.0.38"
+anyhow = "1.0"
 unicode-width = "0.1"
 textwrap = "0.13"
 parking_lot = "0.11"
+unicode-truncate = "0.2.0"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
-which = "4.0"
+which = "4.1"
 
 # pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]
@@ -72,3 +73,6 @@ codegen-units = 1
 # makes their debug profile slow
 [profile.dev.package."tui"]
 opt-level = 3
+
+[profile.dev]
+split-debuginfo = "unpacked"
