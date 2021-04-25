@@ -1,6 +1,6 @@
 use super::{
     utils, visibility_blocking, CommandBlocking, CommandInfo,
-    Component, DrawableComponent,
+    Component, DrawableComponent, EventState,
 };
 use crate::{
     components::{utils::string_width_align, ScrollType},
@@ -182,7 +182,7 @@ impl Component for BlameFileComponent {
     fn event(
         &mut self,
         event: crossterm::event::Event,
-    ) -> Result<bool> {
+    ) -> Result<EventState> {
         if self.is_visible() {
             if let Event::Key(key) = event {
                 if key == self.key_config.exit_popup {
@@ -207,23 +207,23 @@ impl Component for BlameFileComponent {
                     self.hide();
 
                     return self.selected_commit().map_or(
-                        Ok(false),
+                        Ok(EventState::NotConsumed),
                         |id| {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::InspectCommit(
                                     id, None,
                                 ),
                             );
-                            Ok(true)
+                            Ok(EventState::Consumed)
                         },
                     );
                 }
 
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
