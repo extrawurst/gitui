@@ -5,6 +5,7 @@ use crate::{
     error::{Error, Result},
     sync::get_commits_info,
 };
+use scopetime::scope_time;
 use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -53,6 +54,8 @@ pub fn blame_file(
     //TODO: remove until we actually use this on specific commits, right now not even the unittests cover this
     blame_at: &BlameAt,
 ) -> Result<FileBlame> {
+    scope_time!("blame_file");
+
     let repo = utils::repo(repo_path)?;
     let commit_id = match blame_at {
         BlameAt::Head => utils::get_head_repo(&repo)?,
