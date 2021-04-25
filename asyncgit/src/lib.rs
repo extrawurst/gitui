@@ -20,6 +20,7 @@
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
 
+mod blame;
 pub mod cached;
 mod commit_files;
 mod diff;
@@ -35,6 +36,7 @@ pub mod sync;
 mod tags;
 
 pub use crate::{
+    blame::{AsyncBlame, BlameParams},
     commit_files::AsyncCommitFiles,
     diff::{AsyncDiff, DiffParams, DiffType},
     fetch::{AsyncFetch, FetchRequest},
@@ -75,6 +77,8 @@ pub enum AsyncNotification {
     PushTags,
     ///
     Fetch,
+    ///
+    Blame,
 }
 
 /// current working directory `./`
