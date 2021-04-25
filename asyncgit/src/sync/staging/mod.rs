@@ -8,7 +8,7 @@ use super::{
     diff::DiffLinePosition, patches::HunkLines, utils::work_dir,
 };
 use crate::error::Result;
-use git2::{DiffLine, Repository};
+use git2::{DiffLine, DiffLineType, Repository};
 use std::{
     collections::HashSet, convert::TryFrom, fs::File, io::Read,
 };
@@ -82,8 +82,16 @@ pub(crate) fn apply_selection(
     let mut new_content = NewFromOldContent::default();
     let lines = lines.iter().collect::<HashSet<_>>();
 
-    let char_added = if reverse { '-' } else { '+' };
-    let char_deleted = if reverse { '+' } else { '-' };
+    let added = if reverse {
+        DiffLineType::Deletion
+    } else {
+        DiffLineType::Addition
+    };
+    let deleted = if reverse {
+        DiffLineType::Addition
+    } else {
+        DiffLineType::Deletion
+    };
 
     let mut first_hunk_encountered = false;
     for hunk in hunks {
@@ -122,8 +130,10 @@ pub(crate) fn apply_selection(
                         .trim()
                 );
 
-                if hunk_line.origin() == '<'
-                    || hunk_line.origin() == '>'
+                if hunk_line.origin_value()
+                    == DiffLineType::DeleteEOFNL
+                    || hunk_line.origin_value()
+                        == DiffLineType::AddEOFNL
                 {
                     break;
                 }
@@ -131,12 +141,12 @@ pub(crate) fn apply_selection(
                 if (is_staged && !selected_line)
                     || (!is_staged && selected_line)
                 {
-                    if hunk_line.origin() == char_added {
+                    if hunk_line.origin_value() == added {
                         new_content.add_from_hunk(hunk_line)?;
                         if is_staged {
                             new_content.skip_old_line();
                         }
-                    } else if hunk_line.origin() == char_deleted {
+                    } else if hunk_line.origin_value() == deleted {
                         if !is_staged {
                             new_content.skip_old_line();
                         }
@@ -144,14 +154,14 @@ pub(crate) fn apply_selection(
                         new_content.add_old_line(old_lines);
                     }
                 } else {
-                    if hunk_line.origin() != char_added {
+                    if hunk_line.origin_value() != added {
                         new_content.add_from_hunk(hunk_line)?;
                     }
 
                     if (is_staged
-                        && hunk_line.origin() != char_deleted)
+                        && hunk_line.origin_value() != deleted)
                         || (!is_staged
-                            && hunk_line.origin() != char_added)
+                            && hunk_line.origin_value() != added)
                     {
                         new_content.skip_old_line();
                     }
