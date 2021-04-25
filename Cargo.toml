@@ -40,7 +40,6 @@ serde = "1.0"
 anyhow = "1.0"
 unicode-width = "0.1"
 textwrap = "0.13"
-parking_lot = "0.11"
 unicode-truncate = "0.2.0"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]

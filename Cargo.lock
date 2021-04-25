@@ -365,7 +365,6 @@ dependencies = [
  "dirs-next",
  "itertools",
  "log",
- "parking_lot",
  "pprof",
  "rayon-core",
  "ron",

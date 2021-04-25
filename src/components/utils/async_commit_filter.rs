@@ -5,13 +5,12 @@ use asyncgit::{
 };
 use bitflags::bitflags;
 use crossbeam_channel::{Sender, TryRecvError};
-use parking_lot::Mutex;
 use std::convert::TryFrom;
 use std::{
     cell::RefCell,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
-        Arc,
+        Arc, Mutex,
     },
     thread,
     time::Duration,
@@ -313,11 +312,11 @@ impl AsyncCommitFilterer {
 
         rayon_core::spawn(move || {
             // Only 1 thread can filter at a time
-            let _c = cur_thread_mutex.lock();
-            let _p = prev_thread_mutex.lock();
+            let _c = cur_thread_mutex.lock().unwrap();
+            let _p = prev_thread_mutex.lock().unwrap();
             filter_finished.store(false, Ordering::Relaxed);
             filter_count.store(0, Ordering::Relaxed);
-            filtered_commits.lock().clear();
+            filtered_commits.lock().unwrap().clear();
             let mut cur_index: usize = 0;
             loop {
                 match rx.try_recv() {
@@ -357,8 +356,9 @@ impl AsyncCommitFilterer {
                                             filtered.len(),
                                             Ordering::Relaxed,
                                         );
-                                        let mut fc =
-                                            filtered_commits.lock();
+                                        let mut fc = filtered_commits
+                                            .lock()
+                                            .unwrap();
                                         fc.append(&mut filtered);
                                         drop(fc);
                                         cur_index += SLICE_SIZE;
@@ -411,7 +411,7 @@ impl AsyncCommitFilterer {
         amount: usize,
         message_length_limit: usize,
     ) -> Result<Vec<CommitInfo>> {
-        let fc = self.filtered_commits.lock();
+        let fc = self.filtered_commits.lock().unwrap();
         let len = fc.len();
         let min = start.min(len);
         let max = min + amount;
