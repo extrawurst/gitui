@@ -6,6 +6,7 @@ use asyncgit::{
 use bitflags::bitflags;
 use crossbeam_channel::{Sender, TryRecvError};
 use parking_lot::Mutex;
+use std::convert::TryFrom;
 use std::{
     cell::RefCell,
     sync::{
@@ -29,6 +30,38 @@ bitflags! {
         const NOT = 0b0000_1000;
         const CASE_SENSITIVE = 0b0001_0000;
         const TAGS = 0b0010_0000;
+    }
+}
+
+impl FilterBy {
+    pub fn everywhere() -> Self {
+        Self::all() & !Self::NOT & !Self::CASE_SENSITIVE
+    }
+
+    pub fn exclude_modifiers(self) -> Self {
+        self & !Self::NOT & !Self::CASE_SENSITIVE
+    }
+}
+
+impl Default for FilterBy {
+    fn default() -> Self {
+        Self::all() & !Self::NOT & !Self::CASE_SENSITIVE
+    }
+}
+
+impl TryFrom<char> for FilterBy {
+    type Error = anyhow::Error;
+
+    fn try_from(v: char) -> Result<Self, Self::Error> {
+        match v {
+            's' => Ok(Self::SHA),
+            'a' => Ok(Self::AUTHOR),
+            'm' => Ok(Self::MESSAGE),
+            '!' => Ok(Self::NOT),
+            'c' => Ok(Self::CASE_SENSITIVE),
+            't' => Ok(Self::TAGS),
+            _ => Err(anyhow::anyhow!(format!("Unknown flag: {}", v))),
+        }
     }
 }
 

@@ -20,6 +20,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use std::convert::TryFrom;
 use std::time::Duration;
 use sync::CommitTags;
 use tui::{
@@ -203,70 +204,53 @@ impl Revlog {
         })
     }
 
+    /// Parses search string into individual sub-searches.
+    /// Each sub-search is a tuple of (string-to-search, flags-where-to-search)
+    ///
+    /// Returns vec of vec of sub-searches.
+    /// Where search results:
+    ///   1. from outer vec should be combined via 'disjunction' (or);
+    ///   2. from inter vec should be combined via 'conjunction' (and).
+    ///
+    /// Currently parentheses in the `filter_by_str` are not supported.
+    /// They should be removed by `Self::pre_process_string`.
     fn get_what_to_filter_by(
         filter_by_str: &str,
     ) -> Vec<Vec<(String, FilterBy)>> {
-        let mut search_vec = vec![];
+        let mut search_vec = Vec::new();
         let mut and_vec = Vec::new();
         for or in filter_by_str.split("||") {
-            for split_sub in or.split("&&") {
-                if let Some(':') = split_sub.chars().next() {
-                    let mut to_filter_by = FilterBy::empty();
-                    let mut split_str =
-                        split_sub.split(' ').collect::<Vec<&str>>();
-                    if split_str.len() == 1 {
-                        split_str.push("");
-                    }
-                    let first = split_str[0];
-                    if first.contains('s') {
-                        to_filter_by |= FilterBy::SHA;
-                    }
-                    if first.contains('a') {
-                        to_filter_by |= FilterBy::AUTHOR;
-                    }
-                    if first.contains('m') {
-                        to_filter_by |= FilterBy::MESSAGE;
-                    }
-                    if first.contains('c') {
-                        to_filter_by |= FilterBy::CASE_SENSITIVE;
-                    }
-                    if first.contains('t') {
-                        to_filter_by |= FilterBy::TAGS;
-                    }
-                    if first.contains('!') {
-                        to_filter_by |= FilterBy::NOT;
-                    }
-
-                    if to_filter_by.is_empty() {
-                        to_filter_by = FilterBy::all()
-                            & !FilterBy::NOT
-                            & !FilterBy::CASE_SENSITIVE;
-                    } else if to_filter_by
-                        == FilterBy::CASE_SENSITIVE & FilterBy::NOT
-                    {
-                        FilterBy::all();
-                    } else if to_filter_by == FilterBy::NOT {
-                        to_filter_by = FilterBy::all()
-                            & !FilterBy::CASE_SENSITIVE
-                            & !FilterBy::TAGS;
-                    } else if to_filter_by == FilterBy::CASE_SENSITIVE
-                    {
-                        to_filter_by =
-                            FilterBy::all() & !FilterBy::NOT;
-                    };
-
+            for split_sub in or.split("&&").map(str::trim) {
+                if !split_sub.starts_with(":") {
                     and_vec.push((
-                        split_str[1..].join(" ").trim().to_string(),
-                        to_filter_by,
+                        split_sub.to_string(),
+                        FilterBy::everywhere(),
                     ));
-                } else {
-                    and_vec.push((
-                        split_sub.trim().to_string(),
-                        FilterBy::all()
-                            & !FilterBy::NOT
-                            & !FilterBy::CASE_SENSITIVE,
-                    ));
+                    continue;
                 }
+
+                let mut split_str = split_sub.splitn(2, ' ');
+                let first = split_str.next().unwrap();
+                let mut to_filter_by = first.chars().skip(1).fold(
+                    FilterBy::empty(),
+                    |acc, ch| {
+                        acc | FilterBy::try_from(ch)
+                            .unwrap_or(FilterBy::empty())
+                    },
+                );
+
+                if to_filter_by.exclude_modifiers().is_empty() {
+                    to_filter_by |= FilterBy::everywhere();
+                }
+
+                and_vec.push((
+                    split_str
+                        .next()
+                        .unwrap_or(&"")
+                        .trim_start()
+                        .to_string(),
+                    to_filter_by,
+                ));
             }
             search_vec.push(and_vec.clone());
             and_vec.clear();
