@@ -89,10 +89,7 @@ impl DetailsComponent {
 
         if let Some(ref body) = message.body {
             let wrapped_message: Vec<Cow<'_, str>> =
-                textwrap::wrap(body, width)
-                    .into_iter()
-                    .skip(1)
-                    .collect();
+                textwrap::wrap(body, width).into_iter().collect();
 
             (wrapped_title, wrapped_message)
         } else {
@@ -101,10 +98,10 @@ impl DetailsComponent {
     }
 
     fn get_wrapped_lines(
-        &self,
+        data: &Option<CommitDetails>,
         width: usize,
     ) -> WrappedCommitMessage<'_> {
-        if let Some(ref data) = self.data {
+        if let Some(ref data) = data {
             if let Some(ref message) = data.message {
                 return Self::wrap_commit_details(message, width);
             }
@@ -113,9 +110,12 @@ impl DetailsComponent {
         (vec![], vec![])
     }
 
-    fn get_number_of_lines(&self, width: usize) -> usize {
+    fn get_number_of_lines(
+        details: &Option<CommitDetails>,
+        width: usize,
+    ) -> usize {
         let (wrapped_title, wrapped_message) =
-            self.get_wrapped_lines(width);
+            Self::get_wrapped_lines(details, width);
 
         wrapped_title.len() + wrapped_message.len()
     }
@@ -134,7 +134,7 @@ impl DetailsComponent {
         height: usize,
     ) -> Vec<Spans> {
         let (wrapped_title, wrapped_message) =
-            self.get_wrapped_lines(width);
+            Self::get_wrapped_lines(&self.data, width);
 
         [&wrapped_title[..], &wrapped_message[..]]
             .concat()
@@ -278,7 +278,8 @@ impl DetailsComponent {
             let width = self.current_size.get().0 as usize;
             let height = self.current_size.get().1 as usize;
 
-            let number_of_lines = self.get_number_of_lines(width);
+            let number_of_lines =
+                Self::get_number_of_lines(&self.data, width);
 
             let max = number_of_lines.saturating_sub(height) as usize;
 
@@ -358,7 +359,7 @@ impl DrawableComponent for DetailsComponent {
                 f,
                 chunks[1],
                 &self.theme,
-                self.get_number_of_lines(width as usize),
+                Self::get_number_of_lines(&self.data, width as usize),
                 self.scroll_top.get(),
             )
         }
@@ -376,7 +377,8 @@ impl Component for DetailsComponent {
         // visibility_blocking(self)
 
         let width = self.current_size.get().0 as usize;
-        let number_of_lines = self.get_number_of_lines(width);
+        let number_of_lines =
+            Self::get_number_of_lines(&self.data, width);
 
         out.push(
             CommandInfo::new(
@@ -426,7 +428,7 @@ impl Component for DetailsComponent {
             let height = self.current_size.get().1 as usize;
 
             self.scroll_top.set(
-                self.get_number_of_lines(width)
+                Self::get_number_of_lines(&self.data, width)
                     .saturating_sub(height),
             );
         }
@@ -489,5 +491,30 @@ mod tests {
             get_wrapped_lines(&message_with_body, 14),
             vec!["Commit message", "First line", "Second line"]
         );
+    }
+}
+
+#[cfg(test)]
+mod test_line_count {
+    use super::*;
+
+    #[test]
+    fn test_smoke() {
+        let commit = CommitDetails {
+            message: Some(CommitMessage {
+                subject: String::from("subject line"),
+                body: Some(String::from("body lone")),
+            }),
+            ..CommitDetails::default()
+        };
+        let lines = DetailsComponent::get_number_of_lines(
+            &Some(commit.clone()),
+            50,
+        );
+        assert_eq!(lines, 2);
+
+        let lines =
+            DetailsComponent::get_number_of_lines(&Some(commit), 8);
+        assert_eq!(lines, 4);
     }
 }
