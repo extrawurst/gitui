@@ -551,3 +551,153 @@ impl Component for Revlog {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::Revlog;
+    use crate::components::async_commit_filter::FilterBy;
+
+    #[test]
+    fn test_get_what_to_filter_by_flags() {
+        assert_eq!(
+            Revlog::get_what_to_filter_by("foo"),
+            vec![vec![("foo".to_owned(), FilterBy::everywhere())]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":s foo"),
+            vec![vec![("foo".to_owned(), FilterBy::SHA)]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":sm foo"),
+            vec![vec![(
+                "foo".to_owned(),
+                FilterBy::SHA | FilterBy::MESSAGE
+            )]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":samt foo"),
+            vec![vec![("foo".to_owned(), FilterBy::everywhere())]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":!csamt foo"),
+            vec![vec![("foo".to_owned(), FilterBy::all())]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":!c foo"),
+            vec![vec![("foo".to_owned(), FilterBy::all())]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":! foo"),
+            vec![vec![(
+                "foo".to_owned(),
+                FilterBy::everywhere() | FilterBy::NOT
+            )]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":c foo"),
+            vec![vec![(
+                "foo".to_owned(),
+                FilterBy::everywhere() | FilterBy::CASE_SENSITIVE
+            )]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":!m foo"),
+            vec![vec![(
+                "foo".to_owned(),
+                FilterBy::MESSAGE | FilterBy::NOT
+            )]]
+        );
+    }
+
+    #[test]
+    fn test_get_what_to_filter_by_log_op() {
+        assert_eq!(
+            Revlog::get_what_to_filter_by("foo && bar"),
+            vec![vec![
+                ("foo".to_owned(), FilterBy::everywhere()),
+                ("bar".to_owned(), FilterBy::everywhere())
+            ]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by("foo || bar"),
+            vec![
+                vec![("foo".to_owned(), FilterBy::everywhere())],
+                vec![("bar".to_owned(), FilterBy::everywhere())]
+            ]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by("foo && bar || :m baz"),
+            vec![
+                vec![
+                    ("foo".to_owned(), FilterBy::everywhere()),
+                    ("bar".to_owned(), FilterBy::everywhere())
+                ],
+                vec![("baz".to_owned(), FilterBy::MESSAGE)]
+            ]
+        );
+    }
+
+    #[test]
+    fn test_get_what_to_filter_by_spaces() {
+        assert_eq!(
+            Revlog::get_what_to_filter_by("foo&&bar"),
+            vec![vec![
+                ("foo".to_owned(), FilterBy::everywhere()),
+                ("bar".to_owned(), FilterBy::everywhere())
+            ]]
+        );
+        assert_eq!(
+            Revlog::get_what_to_filter_by("  foo  &&  bar  "),
+            vec![vec![
+                ("foo".to_owned(), FilterBy::everywhere()),
+                ("bar".to_owned(), FilterBy::everywhere())
+            ]]
+        );
+
+        assert_eq!(
+            Revlog::get_what_to_filter_by("  foo  bar   baz "),
+            vec![vec![(
+                "foo  bar   baz".to_owned(),
+                FilterBy::everywhere()
+            )]]
+        );
+        assert_eq!(
+            Revlog::get_what_to_filter_by(" :m  foo  bar   baz "),
+            vec![vec![(
+                "foo  bar   baz".to_owned(),
+                FilterBy::MESSAGE
+            )]]
+        );
+        assert_eq!(
+            Revlog::get_what_to_filter_by(
+                " :m  foo  bar   baz && qwe   t "
+            ),
+            vec![vec![
+                ("foo  bar   baz".to_owned(), FilterBy::MESSAGE),
+                ("qwe   t".to_owned(), FilterBy::everywhere())
+            ]]
+        );
+    }
+
+    #[test]
+    fn test_get_what_to_filter_by_invalid_flags_ignored() {
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":q foo"),
+            vec![vec![("foo".to_owned(), FilterBy::everywhere())]]
+        );
+        assert_eq!(
+            Revlog::get_what_to_filter_by(":mq foo"),
+            vec![vec![("foo".to_owned(), FilterBy::MESSAGE)]]
+        );
+    }
+}
