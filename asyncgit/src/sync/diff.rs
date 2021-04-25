@@ -27,6 +27,19 @@ pub enum DiffLineType {
     Delete,
 }
 
+impl From<git2::DiffLineType> for DiffLineType {
+    fn from(line_type: git2::DiffLineType) -> Self {
+        match line_type {
+            git2::DiffLineType::HunkHeader => Self::Header,
+            git2::DiffLineType::DeleteEOFNL
+            | git2::DiffLineType::Deletion => Self::Delete,
+            git2::DiffLineType::AddEOFNL
+            | git2::DiffLineType::Addition => Self::Add,
+            _ => Self::None,
+        }
+    }
+}
+
 impl Default for DiffLineType {
     fn default() -> Self {
         Self::None
@@ -237,18 +250,11 @@ fn raw_diff_to_file_diff<'a>(
                     }
                 }
 
-                let line_type = match line.origin() {
-                    'H' => DiffLineType::Header,
-                    '<' | '-' => DiffLineType::Delete,
-                    '>' | '+' => DiffLineType::Add,
-                    _ => DiffLineType::None,
-                };
-
                 let diff_line = DiffLine {
                     position: DiffLinePosition::from(&line),
                     content: String::from_utf8_lossy(line.content())
                         .to_string(),
-                    line_type,
+                    line_type: line.origin_value().into(),
                 };
 
                 current_lines.push(diff_line);
