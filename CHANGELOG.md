@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fetch crashed when no upstream of branch is set ([#637](https://github.com/extrawurst/gitui/issues/637))
 - `enter` key panics in empty remote branch list ([#643](https://github.com/extrawurst/gitui/issues/643))
 
+### Internal
+- cleanup some stringly typed code [[@wandernauta](https://github.com/wandernauta)] ([#655](https://github.com/extrawurst/gitui/issues/655))
+
 ## [0.14.0] - 2020-04-11
 
 ### Added
