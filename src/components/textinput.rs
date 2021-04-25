@@ -377,7 +377,7 @@ impl Component for TextInputComponent {
                 };
             }
         }
-        return Ok(EventState::NotConsumed);
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
