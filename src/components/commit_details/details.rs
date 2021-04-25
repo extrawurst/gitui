@@ -39,6 +39,7 @@ pub struct DetailsComponent {
     current_size: Cell<(u16, u16)>,
     scroll_top: Cell<usize>,
     key_config: SharedKeyConfig,
+    scroll_to_bottom_on_redraw: Cell<bool>,
 }
 
 type WrappedCommitMessage<'a> =
@@ -58,6 +59,7 @@ impl DetailsComponent {
             focused,
             current_size: Cell::new((0, 0)),
             scroll_top: Cell::new(0),
+            scroll_to_bottom_on_redraw: Cell::new(false),
             key_config,
         }
     }
@@ -291,7 +293,9 @@ impl DetailsComponent {
                 _ => old,
             };
 
-            if new_scroll_top > max {
+            let new_scroll_top = new_scroll_top.clamp(0, max);
+
+            if new_scroll_top == old {
                 return false;
             }
 
@@ -336,6 +340,17 @@ impl DrawableComponent for DetailsComponent {
         let height = chunks[1].height.saturating_sub(border_width);
 
         self.current_size.set((width, height));
+
+        if self.scroll_to_bottom_on_redraw.get() {
+            self.scroll_top.set(
+                Self::get_number_of_lines(
+                    &self.data,
+                    usize::from(width),
+                )
+                .saturating_sub(usize::from(height)),
+            );
+            self.scroll_to_bottom_on_redraw.set(false);
+        }
 
         let wrapped_lines = self.get_wrapped_text_message(
             width as usize,
@@ -424,13 +439,7 @@ impl Component for DetailsComponent {
 
     fn focus(&mut self, focus: bool) {
         if focus {
-            let width = self.current_size.get().0 as usize;
-            let height = self.current_size.get().1 as usize;
-
-            self.scroll_top.set(
-                Self::get_number_of_lines(&self.data, width)
-                    .saturating_sub(height),
-            );
+            self.scroll_to_bottom_on_redraw.set(true);
         }
 
         self.focused = focus;
@@ -477,7 +486,7 @@ mod tests {
         );
 
         let message_with_body = CommitMessage::from(
-            "Commit message\n\nFirst line\nSecond line",
+            "Commit message\nFirst line\nSecond line",
         );
 
         assert_eq!(
