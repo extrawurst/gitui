@@ -96,6 +96,7 @@ impl App {
             ),
             blame_file_popup: BlameFileComponent::new(
                 &queue,
+                sender,
                 &strings::blame_title(&key_config),
                 theme.clone(),
                 key_config.clone(),
@@ -322,6 +323,7 @@ impl App {
         self.status_tab.update_git(ev)?;
         self.stashing_tab.update_git(ev)?;
         self.revlog.update_git(ev)?;
+        self.blame_file_popup.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
         self.push_popup.update_git(ev)?;
         self.push_tags_popup.update_git(ev)?;
@@ -344,6 +346,7 @@ impl App {
         self.status_tab.anything_pending()
             || self.revlog.any_work_pending()
             || self.stashing_tab.anything_pending()
+            || self.blame_file_popup.any_work_pending()
             || self.inspect_commit_popup.any_work_pending()
             || self.input.is_state_changing()
             || self.push_popup.any_work_pending()

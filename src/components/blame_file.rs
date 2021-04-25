@@ -11,9 +11,10 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::{blame_file, BlameAt, BlameHunk, CommitId, FileBlame},
-    CWD,
+    sync::{BlameHunk, CommitId, FileBlame},
+    AsyncBlame, AsyncNotification, BlameParams,
 };
+use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use std::convert::TryInto;
 use tui::{
@@ -29,8 +30,9 @@ pub struct BlameFileComponent {
     title: String,
     theme: SharedTheme,
     queue: Queue,
+    async_blame: AsyncBlame,
     visible: bool,
-    path: Option<String>,
+    file_path: Option<String>,
     file_blame: Option<FileBlame>,
     table_state: std::cell::Cell<TableState>,
     key_config: SharedKeyConfig,
@@ -66,27 +68,7 @@ impl DrawableComponent for BlameFileComponent {
         area: Rect,
     ) -> Result<()> {
         if self.is_visible() {
-            let path: &str = self
-                .path
-                .as_deref()
-                .unwrap_or("<no path for blame available>");
-
-            let title = self.file_blame.as_ref().map_or_else(
-                || {
-                    format!(
-                        "{} -- {} -- <no blame available>",
-                        self.title, path
-                    )
-                },
-                |file_blame| {
-                    format!(
-                        "{} -- {} -- {}",
-                        self.title,
-                        path,
-                        file_blame.commit_id.get_short_string()
-                    )
-                },
-            );
+            let title = self.get_title();
 
             let rows = self.get_rows(area.width.into());
             let author_width = get_author_width(area.width.into());
@@ -131,7 +113,11 @@ impl DrawableComponent for BlameFileComponent {
                 f,
                 area,
                 &self.theme,
-                number_of_rows,
+                // April 2021: `draw_scrollbar` assumes that the last parameter
+                // is `scroll_top`.  Therefore, it subtracts the area’s height
+                // before calculating the position of the scrollbar. To account
+                // for that, we add the current height.
+                number_of_rows + (area.height as usize),
                 // April 2021: we don’t have access to `table_state.offset`
                 // (it’s private), so we use `table_state.selected()` as a
                 // replacement.
@@ -259,6 +245,7 @@ impl BlameFileComponent {
     ///
     pub fn new(
         queue: &Queue,
+        sender: &Sender<AsyncNotification>,
         title: &str,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
@@ -266,9 +253,10 @@ impl BlameFileComponent {
         Self {
             title: String::from(title),
             theme,
+            async_blame: AsyncBlame::new(sender),
             queue: queue.clone(),
             visible: false,
-            path: None,
+            file_path: None,
             file_blame: None,
             table_state: std::cell::Cell::new(TableState::default()),
             key_config,
@@ -277,14 +265,91 @@ impl BlameFileComponent {
     }
 
     ///
-    pub fn open(&mut self, path: &str) -> Result<()> {
-        self.path = Some(path.into());
-        self.file_blame = blame_file(CWD, path, &BlameAt::Head).ok();
+    pub fn open(&mut self, file_path: &str) -> Result<()> {
+        self.file_path = Some(file_path.into());
+        self.file_blame = None;
         self.table_state.get_mut().select(Some(0));
-
         self.show()?;
 
+        self.update()?;
+
         Ok(())
+    }
+
+    ///
+    pub fn any_work_pending(&self) -> bool {
+        self.async_blame.is_pending()
+    }
+
+    ///
+    pub fn update_git(
+        &mut self,
+        event: AsyncNotification,
+    ) -> Result<()> {
+        if self.is_visible() {
+            if let AsyncNotification::Blame = event {
+                self.update()?
+            }
+        }
+
+        Ok(())
+    }
+
+    fn update(&mut self) -> Result<()> {
+        if self.is_visible() {
+            if let Some(file_path) = &self.file_path {
+                let blame_params = BlameParams {
+                    file_path: file_path.into(),
+                };
+
+                if let Some((
+                    previous_blame_params,
+                    last_file_blame,
+                )) = self.async_blame.last()?
+                {
+                    if previous_blame_params == blame_params {
+                        self.file_blame = Some(last_file_blame);
+
+                        return Ok(());
+                    }
+                }
+
+                self.async_blame.request(blame_params)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    ///
+    fn get_title(&self) -> String {
+        match (
+            self.any_work_pending(),
+            self.file_path.as_ref(),
+            self.file_blame.as_ref(),
+        ) {
+            (true, Some(file_path), _) => {
+                format!(
+                    "{} -- {} -- <waiting for blame>",
+                    self.title, file_path
+                )
+            }
+            (false, Some(file_path), Some(file_blame)) => {
+                format!(
+                    "{} -- {} -- {}",
+                    self.title,
+                    file_path,
+                    file_blame.commit_id.get_short_string()
+                )
+            }
+            (false, Some(file_path), None) => {
+                format!(
+                    "{} -- {} -- <no blame available>",
+                    self.title, file_path
+                )
+            }
+            _ => format!("{} -- <no blame available>", self.title),
+        }
     }
 
     ///
