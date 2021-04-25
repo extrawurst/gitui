@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - debug print when adding a file to ignore
+- fix scrolling long messages in commit details view ([#663](https://github.com/extrawurst/gitui/issues/663))
 - limit log messages in log tab ([#652](https://github.com/extrawurst/gitui/issues/652))
 - fetch crashed when no upstream of branch is set ([#637](https://github.com/extrawurst/gitui/issues/637))
 - `enter` key panics in empty remote branch list ([#643](https://github.com/extrawurst/gitui/issues/643))
