@@ -330,7 +330,7 @@ impl BlameFileComponent {
         ) {
             (true, Some(file_path), _) => {
                 format!(
-                    "{} -- {} -- <waiting for blame>",
+                    "{} -- {} -- <calculating.. (who is to blame?)>",
                     self.title, file_path
                 )
             }
