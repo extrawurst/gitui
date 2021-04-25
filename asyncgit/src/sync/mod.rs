@@ -36,7 +36,7 @@ pub use branch::{
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
-    get_commit_details, CommitDetails, CommitMessage,
+    get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };
 pub use commit_files::get_commit_files;
 pub use commits_info::{
