@@ -131,6 +131,12 @@ impl Component for CommitComponent {
         self.input
             .set_title(strings::commit_title(&self.key_config));
 
+        self.commit_template =
+            get_config_string(CWD, "commit.template")
+                .ok()
+                .flatten()
+                .and_then(|path| read_to_string(path).ok());
+
         if self.is_empty() {
             if let Some(s) = &self.commit_template {
                 self.input.set_text(s.clone());
@@ -169,14 +175,6 @@ impl CommitComponent {
     ///
     pub fn update(&mut self) -> Result<()> {
         self.git_branch_name.lookup().map(Some).unwrap_or(None);
-
-        self.commit_template.get_or_insert_with(|| {
-            get_config_string(CWD, "commit.template")
-                .ok()
-                .unwrap_or(None)
-                .and_then(|path| read_to_string(path).ok())
-                .unwrap_or_else(String::new)
-        });
 
         Ok(())
     }
