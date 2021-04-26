@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - blame a file [[@cruessler](https://github.com/cruessler)] ([#484](https://github.com/extrawurst/gitui/issues/484))
+- support commit.template [[@wandernauta](https://github.com/wandernauta)] ([#546](https://github.com/extrawurst/gitui/issues/546))
 
 ### Fixed
 - debug print when adding a file to ignore
