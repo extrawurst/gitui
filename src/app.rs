@@ -243,7 +243,9 @@ impl App {
 
             let mut flags = NeedsUpdate::empty();
 
-            if event_pump(ev, self.components_mut().as_mut_slice())? {
+            if event_pump(ev, self.components_mut().as_mut_slice())?
+                .is_consumed()
+            {
                 flags.insert(NeedsUpdate::COMMANDS);
             } else if let Event::Key(k) = ev {
                 let new_flags = if k == self.key_config.tab_toggle {

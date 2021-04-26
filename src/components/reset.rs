@@ -1,7 +1,7 @@
 use crate::{
     components::{
         popup_paragraph, visibility_blocking, CommandBlocking,
-        CommandInfo, Component, DrawableComponent,
+        CommandInfo, Component, DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue},
@@ -70,7 +70,7 @@ impl Component for ResetComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
@@ -79,11 +79,11 @@ impl Component for ResetComponent {
                     self.confirm();
                 }
 
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

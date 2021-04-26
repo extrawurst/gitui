@@ -1,7 +1,7 @@
 use crate::{
     components::{
         cred::CredComponent, visibility_blocking, CommandBlocking,
-        CommandInfo, Component, DrawableComponent,
+        CommandInfo, Component, DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
@@ -223,7 +223,7 @@ impl Component for PushTagsComponent {
         }
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if self.input_cred.is_visible() {
@@ -243,9 +243,9 @@ impl Component for PushTagsComponent {
                     self.hide();
                 }
             }
-            return Ok(true);
+            return Ok(EventState::Consumed);
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
