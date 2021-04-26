@@ -43,7 +43,7 @@ impl StashList {
 
     ///
     pub fn update(&mut self) -> Result<()> {
-        if self.visible {
+        if self.is_visible() {
             let stashes = sync::get_stashes(CWD)?;
             let commits =
                 sync::get_commits_info(CWD, stashes.as_slice(), 100)?;
@@ -187,7 +187,7 @@ impl Component for StashList {
         &mut self,
         ev: crossterm::event::Event,
     ) -> Result<EventState> {
-        if self.visible {
+        if self.is_visible() {
             if self.list.event(ev)?.is_consumed() {
                 return Ok(EventState::Consumed);
             }

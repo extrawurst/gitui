@@ -72,7 +72,7 @@ impl Stashing {
 
     ///
     pub fn update(&mut self) -> Result<()> {
-        if self.visible {
+        if self.is_visible() {
             self.git_status.fetch(&StatusParams::new(
                 StatusType::Both,
                 self.options.stash_untracked,
@@ -92,7 +92,7 @@ impl Stashing {
         &mut self,
         ev: AsyncNotification,
     ) -> Result<()> {
-        if self.visible {
+        if self.is_visible() {
             if let AsyncNotification::Status = ev {
                 let status = self.git_status.last()?;
                 self.index.update(&status.items)?;

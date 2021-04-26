@@ -77,7 +77,7 @@ impl Revlog {
 
     ///
     pub fn update(&mut self) -> Result<()> {
-        if self.visible {
+        if self.is_visible() {
             let log_changed =
                 self.git_log.fetch()? == FetchStatus::Started;
 
