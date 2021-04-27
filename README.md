@@ -75,7 +75,6 @@ These are the high level goals before calling out `1.0`:
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
 * file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
 * more tag support ([#483](https://github.com/extrawurst/gitui/issues/483))
-* file blame ([#484](https://github.com/extrawurst/gitui/issues/484))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
