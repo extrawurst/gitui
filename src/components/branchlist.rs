@@ -505,6 +505,7 @@ impl BranchListComponent {
         r: Rect,
     ) -> Result<()> {
         let height_in_lines = r.height as usize;
+        self.current_height.set(height_in_lines.try_into()?);
 
         self.scroll_top.set(calc_scroll_top(
             self.scroll_top.get(),
@@ -524,16 +525,16 @@ impl BranchListComponent {
 
         let mut r = r;
         r.width += 1;
+        r.height += 2;
+        r.y = r.y.saturating_sub(1);
 
         ui::draw_scrollbar(
             f,
             r,
             &self.theme,
-            self.branches.len(),
+            self.branches.len().saturating_sub(height_in_lines),
             self.scroll_top.get(),
         );
-
-        self.current_height.set(height_in_lines.try_into()?);
 
         Ok(())
     }
