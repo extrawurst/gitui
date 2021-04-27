@@ -1,7 +1,7 @@
 use crate::{
     error::Result,
     hash,
-    sync::{self, BlameAt, FileBlame},
+    sync::{self, FileBlame},
     AsyncNotification, CWD,
 };
 use crossbeam_channel::Sender;
@@ -138,11 +138,8 @@ impl AsyncBlame {
         arc_current: &Arc<Mutex<Request<u64, FileBlame>>>,
         hash: u64,
     ) -> Result<bool> {
-        let file_blame = sync::blame::blame_file(
-            CWD,
-            &params.file_path,
-            &BlameAt::Head,
-        )?;
+        let file_blame =
+            sync::blame::blame_file(CWD, &params.file_path)?;
 
         let mut notify = false;
         {
