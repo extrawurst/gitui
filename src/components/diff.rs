@@ -237,16 +237,12 @@ impl DiffComponent {
     }
 
     fn lines_count(&self) -> usize {
-        self.diff
-            .as_ref()
-            .map_or(0, |diff| diff.lines.saturating_sub(1))
+        self.diff.as_ref().map_or(0, |diff| diff.lines)
     }
 
     fn modify_selection(&mut self, direction: Direction) {
-        if let Some(diff) = &self.diff {
-            let max = diff.lines.saturating_sub(1);
-
-            self.selection.modify(direction, max);
+        if self.diff.is_some() {
+            self.selection.modify(direction, self.lines_count());
         }
     }
 
@@ -610,9 +606,11 @@ impl DrawableComponent for DiffComponent {
             r.height.saturating_sub(2),
         ));
 
+        let current_height = self.current_size.get().1;
+
         self.scroll_top.set(calc_scroll_top(
             self.scroll_top.get(),
-            self.current_size.get().1 as usize,
+            current_height as usize,
             self.selection.get_end(),
         ));
 
@@ -628,7 +626,7 @@ impl DrawableComponent for DiffComponent {
                 self.theme.text(false, false),
             )])]
         } else {
-            self.get_text(r.width, self.current_size.get().1)
+            self.get_text(r.width, current_height)
         };
 
         f.render_widget(
@@ -648,7 +646,8 @@ impl DrawableComponent for DiffComponent {
                 f,
                 r,
                 &self.theme,
-                self.lines_count(),
+                self.lines_count()
+                    .saturating_sub(usize::from(current_height)),
                 self.scroll_top.get(),
             );
         }
