@@ -103,8 +103,6 @@ impl Revlog {
 
                 self.commit_details.set_commit(commit, tags)?;
             }
-
-            //self.list.set_selection(cur_selection);
         }
 
         Ok(())

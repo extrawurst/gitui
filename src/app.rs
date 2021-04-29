@@ -543,8 +543,6 @@ impl App {
             InternalEvent::OpenCommit => {
                 self.external_editor =
                     Some((None, EditorSource::Commit));
-
-                // self.cur_editor_visible = EditorSource::Commit;
                 self.commit.show()?;
             }
             InternalEvent::PopupStashing(opts) => {
