@@ -4,7 +4,7 @@ use super::{
     CommandBlocking, DrawableComponent,
 };
 use crate::{
-    components::{CommandInfo, Component},
+    components::{CommandInfo, Component, EventState},
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings, try_or_popup,
@@ -236,9 +236,9 @@ impl Component for ChangesComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
-        if self.files.event(ev)? {
-            return Ok(true);
+    fn event(&mut self, ev: Event) -> Result<EventState> {
+        if self.files.event(ev)?.is_consumed() {
+            return Ok(EventState::Consumed);
         }
 
         if self.focused() {
@@ -250,7 +250,7 @@ impl Component for ChangesComponent {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::OpenCommit);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.enter {
                     try_or_popup!(
                         self,
@@ -261,7 +261,7 @@ impl Component for ChangesComponent {
                     self.queue.borrow_mut().push_back(
                         InternalEvent::Update(NeedsUpdate::ALL),
                     );
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.status_stage_all
                     && !self.is_empty()
                 {
@@ -274,23 +274,23 @@ impl Component for ChangesComponent {
                     } else {
                         self.stage_remove_all()?;
                     }
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.status_reset_item
                     && self.is_working_dir
                 {
-                    Ok(self.dispatch_reset_workdir())
+                    Ok(self.dispatch_reset_workdir().into())
                 } else if e == self.key_config.status_ignore_file
                     && self.is_working_dir
                     && !self.is_empty()
                 {
-                    Ok(self.add_to_ignore())
+                    Ok(self.add_to_ignore().into())
                 } else {
-                    Ok(false)
+                    Ok(EventState::NotConsumed)
                 };
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn focused(&self) -> bool {

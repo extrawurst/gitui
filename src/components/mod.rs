@@ -1,3 +1,5 @@
+mod blame_file;
+mod branchlist;
 mod changes;
 mod command;
 mod commit;
@@ -11,7 +13,9 @@ mod filetree;
 mod help;
 mod inspect_commit;
 mod msg;
+mod pull;
 mod push;
+mod push_tags;
 mod rename_branch;
 mod reset;
 mod reword;
@@ -21,6 +25,8 @@ mod tag_commit;
 mod textinput;
 mod utils;
 
+pub use blame_file::BlameFileComponent;
+pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
@@ -33,7 +39,9 @@ pub use filetree::FileTreeComponent;
 pub use help::HelpComponent;
 pub use inspect_commit::InspectCommitComponent;
 pub use msg::MsgComponent;
+pub use pull::PullComponent;
 pub use push::PushComponent;
+pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ResetComponent;
 pub use reword::RewordComponent;
@@ -46,6 +54,7 @@ pub use utils::filetree::FileTreeItemKind;
 use crate::ui::style::Theme;
 use anyhow::Result;
 use crossterm::event::Event;
+use std::convert::From;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -79,14 +88,14 @@ macro_rules! accessors {
 pub fn event_pump(
     ev: Event,
     components: &mut [&mut dyn Component],
-) -> Result<bool> {
+) -> Result<EventState> {
     for c in components {
-        if c.event(ev)? {
-            return Ok(true);
+        if c.event(ev)?.is_consumed() {
+            return Ok(EventState::Consumed);
         }
     }
 
-    Ok(false)
+    Ok(EventState::NotConsumed)
 }
 
 /// helper fn to simplify delegating command
@@ -150,6 +159,29 @@ pub trait DrawableComponent {
     ) -> Result<()>;
 }
 
+///
+#[derive(PartialEq)]
+pub enum EventState {
+    Consumed,
+    NotConsumed,
+}
+
+impl EventState {
+    pub fn is_consumed(&self) -> bool {
+        *self == Self::Consumed
+    }
+}
+
+impl From<bool> for EventState {
+    fn from(consumed: bool) -> Self {
+        if consumed {
+            Self::Consumed
+        } else {
+            Self::NotConsumed
+        }
+    }
+}
+
 /// base component trait
 pub trait Component {
     ///
@@ -159,8 +191,8 @@ pub trait Component {
         force_all: bool,
     ) -> CommandBlocking;
 
-    /// returns true if event propagation needs to end (event was consumed)
-    fn event(&mut self, ev: Event) -> Result<bool>;
+    ///
+    fn event(&mut self, ev: Event) -> Result<EventState>;
 
     ///
     fn focused(&self) -> bool {

@@ -1,6 +1,7 @@
 use super::{
     textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
+    EventState,
 };
 use crate::{
     keys::SharedKeyConfig,
@@ -9,16 +10,12 @@ use crate::{
     ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-    sync::{self, CommitId},
-    CWD,
-};
+use asyncgit::{sync, CWD};
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct CreateBranchComponent {
     input: TextInputComponent,
-    commit_id: Option<CommitId>,
     queue: Queue,
     key_config: SharedKeyConfig,
 }
@@ -56,10 +53,10 @@ impl Component for CreateBranchComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.is_visible() {
-            if self.input.event(ev)? {
-                return Ok(true);
+            if self.input.event(ev)?.is_consumed() {
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(e) = ev {
@@ -67,10 +64,10 @@ impl Component for CreateBranchComponent {
                     self.create_branch();
                 }
 
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
@@ -104,14 +101,12 @@ impl CreateBranchComponent {
                 &strings::create_branch_popup_msg(&key_config),
                 true,
             ),
-            commit_id: None,
             key_config,
         }
     }
 
     ///
     pub fn open(&mut self) -> Result<()> {
-        self.commit_id = None;
         self.show()?;
 
         Ok(())

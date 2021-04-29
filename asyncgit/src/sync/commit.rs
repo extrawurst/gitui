@@ -30,23 +30,31 @@ pub fn amend(
     Ok(CommitId::new(new_id))
 }
 
-/// Wrap Repository::signature to allow unknown user.name.
+/// Wrap `Repository::signature` to allow unknown user.name.
 ///
 /// See <https://github.com/extrawurst/gitui/issues/79>.
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn signature_allow_undefined_name(
     repo: &Repository,
 ) -> std::result::Result<Signature<'_>, git2::Error> {
-    match repo.signature() {
-        Err(e) if e.code() == ErrorCode::NotFound => {
-            let config = repo.config()?;
-            Signature::now(
-                config.get_str("user.name").unwrap_or("unknown"),
-                config.get_str("user.email")?,
-            )
-        }
+    let signature = repo.signature();
 
-        v => v,
+    if let Err(ref e) = signature {
+        if e.code() == ErrorCode::NotFound {
+            let config = repo.config()?;
+
+            if let (Err(_), Ok(email_entry)) = (
+                config.get_entry("user.name"),
+                config.get_entry("user.email"),
+            ) {
+                if let Some(email) = email_entry.value() {
+                    return Signature::now("unknown", email);
+                }
+            };
+        }
     }
+
+    signature
 }
 
 /// this does not run any git hooks
@@ -242,6 +250,88 @@ mod tests {
             get_tags(repo_path).unwrap()[&new_id],
             vec!["second-tag", "tag"]
         );
+
+        Ok(())
+    }
+
+    /// Beware: this test has to be run with a `$HOME/.gitconfig` that has
+    /// `user.email` not set. Otherwise, git falls back to the value of
+    /// `user.email` in `$HOME/.gitconfig` and this test fails.
+    ///
+    /// As of February 2021, `repo_init_empty` sets all git config locations
+    /// to an empty temporary directory, so this constraint is met.
+    #[test]
+    fn test_empty_email() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?
+            .write_all(b"test\nfoo")?;
+
+        stage_add_file(repo_path, file_path)?;
+
+        repo.config()?.remove("user.email")?;
+
+        let error = commit(repo_path, "commit msg");
+
+        assert!(matches!(error, Err(_)));
+
+        repo.config()?.set_str("user.email", "email")?;
+
+        let success = commit(repo_path, "commit msg");
+
+        assert!(matches!(success, Ok(_)));
+        assert_eq!(count_commits(&repo, 10), 1);
+
+        let details =
+            get_commit_details(repo_path, success.unwrap()).unwrap();
+
+        assert_eq!(details.author.name, "name");
+        assert_eq!(details.author.email, "email");
+
+        Ok(())
+    }
+
+    /// See comment to `test_empty_email`.
+    #[test]
+    fn test_empty_name() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?
+            .write_all(b"test\nfoo")?;
+
+        stage_add_file(repo_path, file_path)?;
+
+        repo.config()?.remove("user.name")?;
+
+        let mut success = commit(repo_path, "commit msg");
+
+        assert!(matches!(success, Ok(_)));
+        assert_eq!(count_commits(&repo, 10), 1);
+
+        let mut details =
+            get_commit_details(repo_path, success.unwrap()).unwrap();
+
+        assert_eq!(details.author.name, "unknown");
+        assert_eq!(details.author.email, "email");
+
+        repo.config()?.set_str("user.name", "name")?;
+
+        success = commit(repo_path, "commit msg");
+
+        assert!(matches!(success, Ok(_)));
+        assert_eq!(count_commits(&repo, 10), 2);
+
+        details =
+            get_commit_details(repo_path, success.unwrap()).unwrap();
+
+        assert_eq!(details.author.name, "name");
+        assert_eq!(details.author.email, "email");
 
         Ok(())
     }

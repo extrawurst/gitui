@@ -1,7 +1,7 @@
 use crate::{
     components::{
         visibility_blocking, CommandBlocking, CommandInfo, Component,
-        DrawableComponent,
+        DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     strings,
@@ -171,12 +171,12 @@ impl Component for ExternalEditorComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, _ev: Event) -> Result<bool> {
+    fn event(&mut self, _ev: Event) -> Result<EventState> {
         if self.visible {
-            return Ok(true);
+            return Ok(EventState::Consumed);
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
