@@ -6,6 +6,7 @@ use crate::{
         patches::get_file_diff_patch_and_hunklines, utils::repo,
     },
 };
+use easy_cast::Conv;
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -43,13 +44,13 @@ pub fn stage_lines(
 
         let old_lines = indexed_content.lines().collect::<Vec<_>>();
 
-        apply_selection(lines, &hunks, old_lines, is_stage, false)?
+        apply_selection(lines, &hunks, &old_lines, is_stage, false)?
     };
 
     let blob_id = repo.blob(new_content.as_bytes())?;
 
     idx.id = blob_id;
-    idx.file_size = new_content.as_bytes().len() as u32;
+    idx.file_size = u32::try_conv(new_content.as_bytes().len())?;
     //TODO: can we simply use add_frombuffer?
     index.add(&idx)?;
 
@@ -97,8 +98,7 @@ mod test {
         )
         .unwrap();
 
-        let diff =
-            get_diff(path, String::from("test.txt"), true).unwrap();
+        let diff = get_diff(path, "test.txt", true).unwrap();
 
         assert_eq!(diff.lines, 3);
         assert_eq!(
@@ -140,8 +140,7 @@ c = 4";
         )
         .unwrap();
 
-        let diff =
-            get_diff(path, String::from("test.txt"), true).unwrap();
+        let diff = get_diff(path, "test.txt", true).unwrap();
 
         assert_eq!(diff.lines, 5);
         assert_eq!(
@@ -174,8 +173,7 @@ c = 4";
 
         assert_eq!(get_statuses(path), (0, 1));
 
-        let diff_before =
-            get_diff(path, String::from("test.txt"), true).unwrap();
+        let diff_before = get_diff(path, "test.txt", true).unwrap();
 
         assert_eq!(diff_before.lines, 5);
 
@@ -192,8 +190,7 @@ c = 4";
 
         assert_eq!(get_statuses(path), (1, 1));
 
-        let diff =
-            get_diff(path, String::from("test.txt"), true).unwrap();
+        let diff = get_diff(path, "test.txt", true).unwrap();
 
         assert_eq!(diff.lines, 4);
     }

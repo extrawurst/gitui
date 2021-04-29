@@ -4,7 +4,7 @@ use git2::Signature;
 use scopetime::scope_time;
 
 ///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct CommitSignature {
     ///
     pub name: String,
@@ -16,7 +16,7 @@ pub struct CommitSignature {
 
 impl CommitSignature {
     /// convert from git2-rs `Signature`
-    pub fn from(s: Signature<'_>) -> Self {
+    pub fn from(s: &Signature<'_>) -> Self {
         Self {
             name: s.name().unwrap_or("").to_string(),
             email: s.email().unwrap_or("").to_string(),
@@ -27,6 +27,7 @@ impl CommitSignature {
 }
 
 ///
+#[derive(Default, Clone)]
 pub struct CommitMessage {
     /// first line
     pub subject: String,
@@ -38,14 +39,13 @@ impl CommitMessage {
     ///
     pub fn from(s: &str) -> Self {
         let mut lines = s.lines();
-        let subject = if let Some(subject) = lines.next() {
-            subject.to_string()
-        } else {
-            String::new()
-        };
+        let subject = lines.next().map_or_else(
+            String::new,
+            std::string::ToString::to_string,
+        );
 
         let body: Vec<String> =
-            lines.map(|line| line.to_string()).collect();
+            lines.map(std::string::ToString::to_string).collect();
 
         Self {
             subject,
@@ -68,6 +68,7 @@ impl CommitMessage {
 }
 
 ///
+#[derive(Default, Clone)]
 pub struct CommitDetails {
     ///
     pub author: CommitSignature,
@@ -90,8 +91,8 @@ pub fn get_commit_details(
 
     let commit = repo.find_commit(id.into())?;
 
-    let author = CommitSignature::from(commit.author());
-    let committer = CommitSignature::from(commit.committer());
+    let author = CommitSignature::from(&commit.author());
+    let committer = CommitSignature::from(&commit.committer());
     let committer = if author == committer {
         None
     } else {

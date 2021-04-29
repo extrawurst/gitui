@@ -12,23 +12,21 @@ use scopetime::scope_time;
 ///
 pub fn stage_hunk(
     repo_path: &str,
-    file_path: String,
+    file_path: &str,
     hunk_hash: u64,
 ) -> Result<()> {
     scope_time!("stage_hunk");
 
     let repo = repo(repo_path)?;
 
-    let diff = get_diff_raw(&repo, &file_path, false, false, None)?;
+    let diff = get_diff_raw(&repo, file_path, false, false, None)?;
 
     let mut opt = ApplyOptions::new();
     opt.hunk_callback(|hunk| {
-        if let Some(hunk) = hunk {
+        hunk.map_or(false, |hunk| {
             let header = HunkHeader::from(hunk);
             hash(&header) == hunk_hash
-        } else {
-            false
-        }
+        })
     });
 
     repo.apply(&diff, ApplyLocation::Index, Some(&mut opt))?;
@@ -39,14 +37,14 @@ pub fn stage_hunk(
 /// this will fail for an all untracked file
 pub fn reset_hunk(
     repo_path: &str,
-    file_path: String,
+    file_path: &str,
     hunk_hash: u64,
 ) -> Result<()> {
     scope_time!("reset_hunk");
 
     let repo = repo(repo_path)?;
 
-    let diff = get_diff_raw(&repo, &file_path, false, false, None)?;
+    let diff = get_diff_raw(&repo, file_path, false, false, None)?;
 
     let hunk_index = find_hunk_index(&diff, hunk_hash);
     if let Some(hunk_index) = hunk_index {
@@ -58,8 +56,7 @@ pub fn reset_hunk(
             res
         });
 
-        let diff =
-            get_diff_raw(&repo, &file_path, false, true, None)?;
+        let diff = get_diff_raw(&repo, file_path, false, true, None)?;
 
         repo.apply(&diff, ApplyLocation::WorkDir, Some(&mut opt))?;
 
@@ -98,14 +95,14 @@ fn find_hunk_index(diff: &Diff, hunk_hash: u64) -> Option<usize> {
 ///
 pub fn unstage_hunk(
     repo_path: &str,
-    file_path: String,
+    file_path: &str,
     hunk_hash: u64,
 ) -> Result<bool> {
     scope_time!("revert_hunk");
 
     let repo = repo(repo_path)?;
 
-    let diff = get_diff_raw(&repo, &file_path, true, false, None)?;
+    let diff = get_diff_raw(&repo, file_path, true, false, None)?;
     let diff_count_positive = diff.deltas().len();
 
     let hunk_index = find_hunk_index(&diff, hunk_hash);
@@ -114,7 +111,7 @@ pub fn unstage_hunk(
         Ok,
     )?;
 
-    let diff = get_diff_raw(&repo, &file_path, true, true, None)?;
+    let diff = get_diff_raw(&repo, file_path, true, true, None)?;
 
     if diff.deltas().len() != diff_count_positive {
         return Err(Error::Generic(format!(
@@ -174,13 +171,13 @@ mod tests {
 
         let diff = get_diff(
             sub_path.to_str().unwrap(),
-            String::from(file_path.to_str().unwrap()),
+            file_path.to_str().unwrap(),
             false,
         )?;
 
         assert!(reset_hunk(
             repo_path,
-            String::from(file_path.to_str().unwrap()),
+            file_path.to_str().unwrap(),
             diff.hunks[0].header_hash,
         )
         .is_err());

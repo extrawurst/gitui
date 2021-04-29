@@ -1,7 +1,7 @@
 use super::{
     textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
-    ExternalEditorComponent,
+    EventState, ExternalEditorComponent,
 };
 use crate::{
     get_app_config_path,
@@ -13,12 +13,12 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     cached,
-    sync::{self, CommitId, HookResult},
+    sync::{self, utils::get_config_string, CommitId, HookResult},
     CWD,
 };
 use crossterm::event::Event;
 use std::{
-    fs::File,
+    fs::{read_to_string, File},
     io::{Read, Write},
     path::PathBuf,
 };
@@ -35,6 +35,7 @@ pub struct CommitComponent {
     queue: Queue,
     key_config: SharedKeyConfig,
     git_branch_name: cached::BranchName,
+    commit_template: Option<String>,
 }
 
 impl DrawableComponent for CommitComponent {
@@ -85,8 +86,12 @@ impl Component for CommitComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.is_visible() {
+            if self.input.event(ev)?.is_consumed() {
+                return Ok(EventState::Consumed);
+            }
+
             if let Event::Key(e) = ev {
                 if e == self.key_config.commit && self.can_commit() {
                     self.commit()?;
@@ -103,11 +108,11 @@ impl Component for CommitComponent {
                     return Ok(true);
                 }
                 // stop key event propagation
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
@@ -126,6 +131,19 @@ impl Component for CommitComponent {
 
         self.input
             .set_title(strings::commit_title(&self.key_config));
+
+        self.commit_template =
+            get_config_string(CWD, "commit.template")
+                .ok()
+                .flatten()
+                .and_then(|path| read_to_string(path).ok());
+
+        if self.is_empty() {
+            if let Some(s) = &self.commit_template {
+                self.input.set_text(s.clone());
+            }
+        }
+
         self.input.show()?;
 
         Ok(())
@@ -151,12 +169,14 @@ impl CommitComponent {
             ),
             key_config,
             git_branch_name: cached::BranchName::new(CWD),
+            commit_template: None,
         }
     }
 
     ///
     pub fn update(&mut self) -> Result<()> {
         self.git_branch_name.lookup().map(Some).unwrap_or(None);
+
         Ok(())
     }
 
@@ -288,13 +308,22 @@ impl CommitComponent {
     }
 
     fn can_commit(&self) -> bool {
-        !self.input.get_text().is_empty()
+        !self.is_empty() && self.is_changed()
     }
 
     fn can_amend(&self) -> bool {
         self.amend.is_none()
             && sync::get_head(CWD).is_ok()
-            && self.input.get_text().is_empty()
+            && (self.is_empty() || !self.is_changed())
+    }
+
+    fn is_empty(&self) -> bool {
+        self.input.get_text().is_empty()
+    }
+
+    fn is_changed(&self) -> bool {
+        Some(self.input.get_text().trim())
+            != self.commit_template.as_ref().map(|s| s.trim())
     }
 
     fn amend(&mut self) -> Result<()> {

@@ -229,6 +229,19 @@ impl Theme {
         )
     }
 
+    pub fn commit_hash_in_blame(
+        &self,
+        is_blamed_commit: bool,
+    ) -> Style {
+        if is_blamed_commit {
+            Style::default()
+                .fg(self.commit_hash)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(self.commit_hash)
+        }
+    }
+
     pub fn push_gauge(&self) -> Style {
         Style::default()
             .fg(self.push_gauge_fg)

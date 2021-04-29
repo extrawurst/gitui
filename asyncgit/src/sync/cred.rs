@@ -18,15 +18,15 @@ pub struct BasicAuthCredential {
 
 impl BasicAuthCredential {
     ///
-    pub fn is_complete(&self) -> bool {
+    pub const fn is_complete(&self) -> bool {
         self.username.is_some() && self.password.is_some()
     }
     ///
-    pub fn new(
+    pub const fn new(
         username: Option<String>,
         password: Option<String>,
     ) -> Self {
-        BasicAuthCredential { username, password }
+        Self { username, password }
     }
 }
 
@@ -72,7 +72,7 @@ pub fn extract_cred_from_url(url: &str) -> BasicAuthCredential {
             } else {
                 Some(url.username().to_owned())
             },
-            url.password().map(|pwd| pwd.to_owned()),
+            url.password().map(std::borrow::ToOwned::to_owned),
         )
     } else {
         BasicAuthCredential::new(None, None)

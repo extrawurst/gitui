@@ -1,8 +1,8 @@
 use crate::{
     error::Result,
     hash,
-    sync::{self, CommitId},
-    AsyncNotification, FileDiff, CWD,
+    sync::{self, FileBlame},
+    AsyncNotification, CWD,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -15,22 +15,9 @@ use std::{
 
 ///
 #[derive(Hash, Clone, PartialEq)]
-pub enum DiffType {
-    /// diff in a given commit
-    Commit(CommitId),
-    /// diff against staged file
-    Stage,
-    /// diff against file in workdir
-    WorkDir,
-}
-
-///
-#[derive(Hash, Clone, PartialEq)]
-pub struct DiffParams {
-    /// path to the file to diff
-    pub path: String,
-    /// what kind of diff
-    pub diff_type: DiffType,
+pub struct BlameParams {
+    /// path to the file to blame
+    pub file_path: String,
 }
 
 struct Request<R, A>(R, Option<A>);
@@ -43,14 +30,14 @@ struct LastResult<P, R> {
 }
 
 ///
-pub struct AsyncDiff {
-    current: Arc<Mutex<Request<u64, FileDiff>>>,
-    last: Arc<Mutex<Option<LastResult<DiffParams, FileDiff>>>>,
+pub struct AsyncBlame {
+    current: Arc<Mutex<Request<u64, FileBlame>>>,
+    last: Arc<Mutex<Option<LastResult<BlameParams, FileBlame>>>>,
     sender: Sender<AsyncNotification>,
     pending: Arc<AtomicUsize>,
 }
 
-impl AsyncDiff {
+impl AsyncBlame {
     ///
     pub fn new(sender: &Sender<AsyncNotification>) -> Self {
         Self {
@@ -62,10 +49,14 @@ impl AsyncDiff {
     }
 
     ///
-    pub fn last(&mut self) -> Result<Option<(DiffParams, FileDiff)>> {
+    pub fn last(
+        &mut self,
+    ) -> Result<Option<(BlameParams, FileBlame)>> {
         let last = self.last.lock()?;
 
-        Ok(last.clone().map(|res| (res.params, res.result)))
+        Ok(last.clone().map(|last_result| {
+            (last_result.params, last_result.result)
+        }))
     }
 
     ///
@@ -85,8 +76,8 @@ impl AsyncDiff {
     ///
     pub fn request(
         &mut self,
-        params: DiffParams,
-    ) -> Result<Option<FileDiff>> {
+        params: BlameParams,
+    ) -> Result<Option<FileBlame>> {
         log::trace!("request");
 
         let hash = hash(&params);
@@ -110,7 +101,7 @@ impl AsyncDiff {
         self.pending.fetch_add(1, Ordering::Relaxed);
 
         rayon_core::spawn(move || {
-            let notify = Self::get_diff_helper(
+            let notify = Self::get_blame_helper(
                 params,
                 &arc_last,
                 &arc_current,
@@ -119,7 +110,7 @@ impl AsyncDiff {
 
             let notify = match notify {
                 Err(err) => {
-                    log::error!("get_diff_helper error: {}", err);
+                    log::error!("get_blame_helper error: {}", err);
                     true
                 }
                 Ok(notify) => notify,
@@ -129,43 +120,32 @@ impl AsyncDiff {
 
             sender
                 .send(if notify {
-                    AsyncNotification::Diff
+                    AsyncNotification::Blame
                 } else {
                     AsyncNotification::FinishUnchanged
                 })
-                .expect("error sending diff");
+                .expect("error sending blame");
         });
 
         Ok(None)
     }
 
-    fn get_diff_helper(
-        params: DiffParams,
+    fn get_blame_helper(
+        params: BlameParams,
         arc_last: &Arc<
-            Mutex<Option<LastResult<DiffParams, FileDiff>>>,
+            Mutex<Option<LastResult<BlameParams, FileBlame>>>,
         >,
-        arc_current: &Arc<Mutex<Request<u64, FileDiff>>>,
+        arc_current: &Arc<Mutex<Request<u64, FileBlame>>>,
         hash: u64,
     ) -> Result<bool> {
-        let res = match params.diff_type {
-            DiffType::Stage => {
-                sync::diff::get_diff(CWD, &params.path, true)?
-            }
-            DiffType::WorkDir => {
-                sync::diff::get_diff(CWD, &params.path, false)?
-            }
-            DiffType::Commit(id) => sync::diff::get_diff_commit(
-                CWD,
-                id,
-                params.path.clone(),
-            )?,
-        };
+        let file_blame =
+            sync::blame::blame_file(CWD, &params.file_path)?;
 
         let mut notify = false;
         {
             let mut current = arc_current.lock()?;
             if current.0 == hash {
-                current.1 = Some(res.clone());
+                current.1 = Some(file_blame.clone());
                 notify = true;
             }
         }
@@ -173,7 +153,7 @@ impl AsyncDiff {
         {
             let mut last = arc_last.lock()?;
             *last = Some(LastResult {
-                result: res,
+                result: file_blame,
                 hash,
                 params,
             });
@@ -182,8 +162,12 @@ impl AsyncDiff {
         Ok(notify)
     }
 
-    fn get_last_param(&self) -> Result<Option<DiffParams>> {
-        Ok(self.last.lock()?.clone().map(|e| e.params))
+    fn get_last_param(&self) -> Result<Option<BlameParams>> {
+        Ok(self
+            .last
+            .lock()?
+            .clone()
+            .map(|last_result| last_result.params))
     }
 
     fn clear_current(&mut self) -> Result<()> {

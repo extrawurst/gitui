@@ -32,15 +32,15 @@ pub enum PushTagsProgress {
 impl AsyncProgress for PushTagsProgress {
     fn progress(&self) -> ProgressPercent {
         match self {
-            PushTagsProgress::CheckRemote => ProgressPercent::empty(),
-            PushTagsProgress::Push { pushed, total } => {
+            Self::CheckRemote => ProgressPercent::empty(),
+            Self::Push { pushed, total } => {
                 ProgressPercent::new(*pushed, *total)
             }
-            PushTagsProgress::Done => ProgressPercent::full(),
+            Self::Done => ProgressPercent::full(),
         }
     }
     fn is_done(&self) -> bool {
-        *self == PushTagsProgress::Done
+        *self == Self::Done
     }
 }
 
@@ -98,7 +98,7 @@ fn tags_missing_remote(
 }
 
 ///
-pub(crate) fn push_tags(
+pub fn push_tags(
     repo_path: &str,
     remote: &str,
     basic_credential: Option<BasicAuthCredential>,
@@ -142,9 +142,9 @@ pub(crate) fn push_tags(
         });
     }
 
-    progress_sender
-        .as_ref()
-        .map(|sender| sender.send(PushTagsProgress::Done));
+    drop(basic_credential);
+
+    progress_sender.map(|sender| sender.send(PushTagsProgress::Done));
 
     Ok(())
 }

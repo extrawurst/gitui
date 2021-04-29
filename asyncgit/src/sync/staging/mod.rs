@@ -8,7 +8,7 @@ use super::{
     diff::DiffLinePosition, patches::HunkLines, utils::work_dir,
 };
 use crate::error::Result;
-use git2::{DiffLine, Repository};
+use git2::{DiffLine, DiffLineType, Repository};
 use std::{
     collections::HashSet, convert::TryFrom, fs::File, io::Read,
 };
@@ -57,7 +57,7 @@ impl NewFromOldContent {
 
     fn finish(mut self, old_lines: &[&str]) -> String {
         for line in old_lines.iter().skip(self.old_index) {
-            self.lines.push(line.to_string());
+            self.lines.push((*line).to_string());
         }
         let lines = self.lines.join("\n");
         if lines.ends_with(NEWLINE) {
@@ -71,18 +71,27 @@ impl NewFromOldContent {
 }
 
 // this is the heart of the per line discard,stage,unstage. heavily inspired by the great work in nodegit: https://github.com/nodegit/nodegit
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn apply_selection(
     lines: &[DiffLinePosition],
     hunks: &[HunkLines],
-    old_lines: Vec<&str>,
+    old_lines: &[&str],
     is_staged: bool,
     reverse: bool,
 ) -> Result<String> {
     let mut new_content = NewFromOldContent::default();
     let lines = lines.iter().collect::<HashSet<_>>();
 
-    let char_added = if reverse { '-' } else { '+' };
-    let char_deleted = if reverse { '+' } else { '-' };
+    let added = if reverse {
+        DiffLineType::Deletion
+    } else {
+        DiffLineType::Addition
+    };
+    let deleted = if reverse {
+        DiffLineType::Addition
+    } else {
+        DiffLineType::Deletion
+    };
 
     let mut first_hunk_encountered = false;
     for hunk in hunks {
@@ -103,7 +112,7 @@ pub(crate) fn apply_selection(
         }
 
         if first_hunk_encountered {
-            new_content.catchup_to_hunkstart(hunk_start, &old_lines);
+            new_content.catchup_to_hunkstart(hunk_start, old_lines);
 
             for hunk_line in &hunk.lines {
                 let hunk_line_pos: DiffLinePosition =
@@ -121,8 +130,10 @@ pub(crate) fn apply_selection(
                         .trim()
                 );
 
-                if hunk_line.origin() == '<'
-                    || hunk_line.origin() == '>'
+                if hunk_line.origin_value()
+                    == DiffLineType::DeleteEOFNL
+                    || hunk_line.origin_value()
+                        == DiffLineType::AddEOFNL
                 {
                     break;
                 }
@@ -130,27 +141,27 @@ pub(crate) fn apply_selection(
                 if (is_staged && !selected_line)
                     || (!is_staged && selected_line)
                 {
-                    if hunk_line.origin() == char_added {
+                    if hunk_line.origin_value() == added {
                         new_content.add_from_hunk(hunk_line)?;
                         if is_staged {
                             new_content.skip_old_line();
                         }
-                    } else if hunk_line.origin() == char_deleted {
+                    } else if hunk_line.origin_value() == deleted {
                         if !is_staged {
                             new_content.skip_old_line();
                         }
                     } else {
-                        new_content.add_old_line(&old_lines);
+                        new_content.add_old_line(old_lines);
                     }
                 } else {
-                    if hunk_line.origin() != char_added {
+                    if hunk_line.origin_value() != added {
                         new_content.add_from_hunk(hunk_line)?;
                     }
 
                     if (is_staged
-                        && hunk_line.origin() != char_deleted)
+                        && hunk_line.origin_value() != deleted)
                         || (!is_staged
-                            && hunk_line.origin() != char_added)
+                            && hunk_line.origin_value() != added)
                     {
                         new_content.skip_old_line();
                     }
@@ -159,10 +170,10 @@ pub(crate) fn apply_selection(
         }
     }
 
-    Ok(new_content.finish(&old_lines))
+    Ok(new_content.finish(old_lines))
 }
 
-pub(crate) fn load_file(
+pub fn load_file(
     repo: &Repository,
     file_path: &str,
 ) -> Result<String> {

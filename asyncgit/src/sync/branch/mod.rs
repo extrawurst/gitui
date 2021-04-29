@@ -81,7 +81,7 @@ pub struct BranchInfo {
 
 impl BranchInfo {
     /// returns details about local branch or None
-    pub fn local_details(&self) -> Option<&LocalBranch> {
+    pub const fn local_details(&self) -> Option<&LocalBranch> {
         if let BranchDetails::Local(details) = &self.details {
             return Some(details);
         }
@@ -117,7 +117,7 @@ pub fn get_branches_info(
                 .branch_upstream_remote(&reference)
                 .ok()
                 .as_ref()
-                .and_then(|buf| buf.as_str())
+                .and_then(git2::Buf::as_str)
                 .map(String::from);
 
             let details = if local {
@@ -283,11 +283,10 @@ pub fn checkout_remote_branch(
         return Err(Error::UncommittedChanges);
     }
 
-    let name = if let Some(pos) = branch.name.rfind('/') {
-        branch.name[pos..].to_string()
-    } else {
-        branch.name.clone()
-    };
+    let name = branch.name.rfind('/').map_or_else(
+        || branch.name.clone(),
+        |pos| branch.name[pos..].to_string(),
+    );
 
     let commit = repo.find_commit(branch.top_commit.into())?;
     let mut new_branch = repo.branch(&name, &commit, false)?;
@@ -318,11 +317,10 @@ pub fn delete_branch(
     let repo = utils::repo(repo_path)?;
     let branch_as_ref = repo.find_reference(branch_ref)?;
     let mut branch = git2::Branch::wrap(branch_as_ref);
-    if !branch.is_head() {
-        branch.delete()?;
-    } else {
+    if branch.is_head() {
         return Err(Error::Generic("You cannot be on the branch you want to delete, switch branch, then delete this branch".to_string()));
     }
+    branch.delete()?;
     Ok(())
 }
 

@@ -9,10 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `enter` adds *newline* to commit msg (*commit* via `ctrl+o` now) [[@WizardOhio24](https://github.com/WizardOhio24)] ([#509](https://github.com/extrawurst/gitui/issues/509))
+## [0.15.0] - 2020-04-27
+
+**file blame**
+
+![blame](assets/blame.gif)
+
+### Added
+- blame a file [[@cruessler](https://github.com/cruessler)] ([#484](https://github.com/extrawurst/gitui/issues/484))
+- support commit.template [[@wandernauta](https://github.com/wandernauta)] ([#546](https://github.com/extrawurst/gitui/issues/546))
 
 ### Fixed
+- debug print when adding a file to ignore
+- fix scrolling long messages in commit details view ([#663](https://github.com/extrawurst/gitui/issues/663))
+- limit log messages in log tab ([#652](https://github.com/extrawurst/gitui/issues/652))
 - fetch crashed when no upstream of branch is set ([#637](https://github.com/extrawurst/gitui/issues/637))
 - `enter` key panics in empty remote branch list ([#643](https://github.com/extrawurst/gitui/issues/643))
+
+### Internal
+- cleanup some stringly typed code [[@wandernauta](https://github.com/wandernauta)] ([#655](https://github.com/extrawurst/gitui/issues/655))
+- introduce EventState enum (removing bool for even propagation) [[@tisorlawan](https://github.com/tisorlawan)] ([#665](https://github.com/extrawurst/gitui/issues/665))
 
 ## [0.14.0] - 2020-04-11
 

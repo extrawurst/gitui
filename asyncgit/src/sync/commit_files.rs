@@ -38,7 +38,7 @@ pub fn get_commit_files(
     Ok(res)
 }
 
-///
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn get_commit_diff(
     repo: &Repository,
     id: CommitId,

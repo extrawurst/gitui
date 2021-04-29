@@ -3,7 +3,8 @@ use crate::{
     components::{
         command_pump, event_pump, visibility_blocking,
         ChangesComponent, CommandBlocking, CommandInfo, Component,
-        DiffComponent, DrawableComponent, FileTreeItemKind,
+        DiffComponent, DrawableComponent, EventState,
+        FileTreeItemKind,
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue, ResetItem},
@@ -20,6 +21,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use std::convert::Into;
 use std::convert::TryFrom;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
@@ -304,12 +306,12 @@ impl Status {
 
         if self.is_visible() {
             self.git_diff.refresh()?;
-            self.git_status_workdir.fetch(StatusParams::new(
+            self.git_status_workdir.fetch(&StatusParams::new(
                 StatusType::WorkingDir,
                 true,
             ))?;
             self.git_status_stage
-                .fetch(StatusParams::new(StatusType::Stage, true))?;
+                .fetch(&StatusParams::new(StatusType::Stage, true))?;
 
             self.branch_compare();
         }
@@ -516,16 +518,26 @@ impl Component for Status {
                 },
                 self.visible || force_all,
             ));
-            out.push(CommandInfo::new(
-                strings::commands::diff_focus_left(&self.key_config),
-                true,
-                (self.visible && focus_on_diff) || force_all,
-            ));
-            out.push(CommandInfo::new(
-                strings::commands::diff_focus_right(&self.key_config),
-                self.can_focus_diff(),
-                (self.visible && !focus_on_diff) || force_all,
-            ));
+            out.push(
+                CommandInfo::new(
+                    strings::commands::diff_focus_left(
+                        &self.key_config,
+                    ),
+                    true,
+                    (self.visible && focus_on_diff) || force_all,
+                )
+                .order(strings::order::NAV),
+            );
+            out.push(
+                CommandInfo::new(
+                    strings::commands::diff_focus_right(
+                        &self.key_config,
+                    ),
+                    self.can_focus_diff(),
+                    (self.visible && !focus_on_diff) || force_all,
+                )
+                .order(strings::order::NAV),
+            );
             out.push(
                 CommandInfo::new(
                     strings::commands::select_staging(
@@ -568,11 +580,16 @@ impl Component for Status {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: crossterm::event::Event) -> Result<bool> {
+    fn event(
+        &mut self,
+        ev: crossterm::event::Event,
+    ) -> Result<EventState> {
         if self.visible {
-            if event_pump(ev, self.components_mut().as_mut_slice())? {
+            if event_pump(ev, self.components_mut().as_mut_slice())?
+                .is_consumed()
+            {
                 self.git_action_executed = true;
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(k) = ev {
@@ -587,60 +604,62 @@ impl Component for Status {
                             )),
                         );
                     }
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if k == self.key_config.toggle_workarea
                     && !self.is_focus_on_diff()
                 {
                     self.switch_focus(self.focus.toggled_focus())
+                        .map(Into::into)
                 } else if k == self.key_config.focus_right
                     && self.can_focus_diff()
                 {
-                    self.switch_focus(Focus::Diff)
+                    self.switch_focus(Focus::Diff).map(Into::into)
                 } else if k == self.key_config.focus_left {
                     self.switch_focus(match self.diff_target {
                         DiffTarget::Stage => Focus::Stage,
                         DiffTarget::WorkingDir => Focus::WorkDir,
                     })
+                    .map(Into::into)
                 } else if k == self.key_config.move_down
                     && self.focus == Focus::WorkDir
                     && !self.index.is_empty()
                 {
-                    self.switch_focus(Focus::Stage)
+                    self.switch_focus(Focus::Stage).map(Into::into)
                 } else if k == self.key_config.move_up
                     && self.focus == Focus::Stage
                     && !self.index_wd.is_empty()
                 {
-                    self.switch_focus(Focus::WorkDir)
+                    self.switch_focus(Focus::WorkDir).map(Into::into)
                 } else if k == self.key_config.select_branch
                     && !self.is_focus_on_diff()
                 {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::SelectBranch);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if k == self.key_config.force_push
                     && !self.is_focus_on_diff()
                     && self.can_push()
                 {
                     self.push(true);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if k == self.key_config.push
                     && !self.is_focus_on_diff()
                 {
                     self.push(false);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if k == self.key_config.pull
                     && !self.is_focus_on_diff()
                 {
                     self.pull();
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else {
-                    Ok(false)
+                    Ok(EventState::NotConsumed)
                 };
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

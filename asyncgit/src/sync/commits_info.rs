@@ -11,13 +11,13 @@ use unicode_truncate::UnicodeTruncateStr;
 pub struct CommitId(Oid);
 
 impl CommitId {
-    /// create new CommitId
-    pub fn new(id: Oid) -> Self {
+    /// create new `CommitId`
+    pub const fn new(id: Oid) -> Self {
         Self(id)
     }
 
     ///
-    pub(crate) fn get_oid(self) -> Oid {
+    pub(crate) const fn get_oid(self) -> Oid {
         self.0
     }
 
@@ -79,11 +79,10 @@ pub fn get_commits_info(
     let res = commits
         .map(|c: Commit| {
             let message = get_message(&c, Some(message_length_limit));
-            let author = if let Some(name) = c.author().name() {
-                String::from(name)
-            } else {
-                String::from("<unknown>")
-            };
+            let author = c.author().name().map_or_else(
+                || String::from("<unknown>"),
+                String::from,
+            );
             CommitInfo {
                 message,
                 author,
@@ -97,18 +96,41 @@ pub fn get_commits_info(
 }
 
 ///
+pub fn get_commit_info(
+    repo_path: &str,
+    commit_id: &CommitId,
+) -> Result<CommitInfo> {
+    scope_time!("get_commit_info");
+
+    let repo = repo(repo_path)?;
+
+    let commit = repo.find_commit((*commit_id).into())?;
+    let author = commit.author();
+
+    Ok(CommitInfo {
+        message: commit.message().unwrap_or("").into(),
+        author: author.name().unwrap_or("<unknown>").into(),
+        time: commit.time().seconds(),
+        id: CommitId(commit.id()),
+    })
+}
+
+/// if `message_limit` is set the message will be
+/// limited to the first line and truncated to fit
 pub fn get_message(
     c: &Commit,
-    message_length_limit: Option<usize>,
+    message_limit: Option<usize>,
 ) -> String {
     let msg = String::from_utf8_lossy(c.message_bytes());
     let msg = msg.trim();
 
-    if let Some(limit) = message_length_limit {
-        msg.unicode_truncate(limit).0.to_string()
-    } else {
-        msg.to_string()
-    }
+    message_limit.map_or_else(
+        || msg.to_string(),
+        |limit| {
+            let msg = msg.lines().next().unwrap_or_default();
+            msg.unicode_truncate(limit).0.to_string()
+        },
+    )
 }
 
 #[cfg(test)]
@@ -142,6 +164,25 @@ mod tests {
         assert_eq!(res[0].message.as_str(), "commit2");
         assert_eq!(res[0].author.as_str(), "name");
         assert_eq!(res[1].message.as_str(), "commit1");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_log_first_msg_line() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?.write_all(b"a")?;
+        stage_add_file(repo_path, file_path).unwrap();
+        let c1 = commit(repo_path, "subject\nbody").unwrap();
+
+        let res = get_commits_info(repo_path, &vec![c1], 50).unwrap();
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].message.as_str(), "subject");
 
         Ok(())
     }

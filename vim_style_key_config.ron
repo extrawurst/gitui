@@ -45,6 +45,7 @@
     shift_down: ( code: Char('J'), modifiers: ( bits: 1,),),
 
     enter: ( code: Enter, modifiers: ( bits: 0,),),
+    blame: ( code: Char('B'), modifiers: ( bits: 1,),),
 
     edit_file: ( code: Char('I'), modifiers: ( bits: 1,),),
 

@@ -2,8 +2,8 @@ use crate::{
     accessors,
     cmdbar::CommandBar,
     components::{
-        event_pump, BranchListComponent, CommandBlocking,
-        CommandInfo, CommitComponent, Component,
+        event_pump, BlameFileComponent, BranchListComponent,
+        CommandBlocking, CommandInfo, CommitComponent, Component,
         CreateBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PullComponent,
@@ -41,6 +41,7 @@ pub struct App {
     msg: MsgComponent,
     reset: ResetComponent,
     commit: CommitComponent,
+    blame_file_popup: BlameFileComponent,
     stashmsg_popup: StashMsgComponent,
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
@@ -90,6 +91,13 @@ impl App {
             ),
             commit: CommitComponent::new(
                 queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            blame_file_popup: BlameFileComponent::new(
+                &queue,
+                sender,
+                &strings::blame_title(&key_config),
                 theme.clone(),
                 key_config.clone(),
             ),
@@ -235,7 +243,9 @@ impl App {
 
             let mut flags = NeedsUpdate::empty();
 
-            if event_pump(ev, self.components_mut().as_mut_slice())? {
+            if event_pump(ev, self.components_mut().as_mut_slice())?
+                .is_consumed()
+            {
                 flags.insert(NeedsUpdate::COMMANDS);
             } else if let Event::Key(k) = ev {
                 let new_flags = if k == self.key_config.tab_toggle {
@@ -315,6 +325,7 @@ impl App {
         self.status_tab.update_git(ev)?;
         self.stashing_tab.update_git(ev)?;
         self.revlog.update_git(ev)?;
+        self.blame_file_popup.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
         self.push_popup.update_git(ev)?;
         self.push_tags_popup.update_git(ev)?;
@@ -337,6 +348,7 @@ impl App {
         self.status_tab.anything_pending()
             || self.revlog.any_work_pending()
             || self.stashing_tab.anything_pending()
+            || self.blame_file_popup.any_work_pending()
             || self.inspect_commit_popup.any_work_pending()
             || self.input.is_state_changing()
             || self.push_popup.any_work_pending()
@@ -363,6 +375,7 @@ impl App {
             msg,
             reset,
             commit,
+            blame_file_popup,
             stashmsg_popup,
             inspect_commit_popup,
             external_editor_popup,
@@ -488,48 +501,9 @@ impl App {
     ) -> Result<NeedsUpdate> {
         let mut flags = NeedsUpdate::empty();
         match ev {
-            InternalEvent::ConfirmedAction(action) => match action {
-                Action::Reset(r) => {
-                    if self.status_tab.reset(&r) {
-                        flags.insert(NeedsUpdate::ALL);
-                    }
-                }
-                Action::StashDrop(_) | Action::StashPop(_) => {
-                    if self.stashlist_tab.action_confirmed(&action) {
-                        flags.insert(NeedsUpdate::ALL);
-                    }
-                }
-                Action::ResetHunk(path, hash) => {
-                    sync::reset_hunk(CWD, path, hash)?;
-                    flags.insert(NeedsUpdate::ALL);
-                }
-                Action::ResetLines(path, lines) => {
-                    sync::discard_lines(CWD, &path, &lines)?;
-                    flags.insert(NeedsUpdate::ALL);
-                }
-                Action::DeleteBranch(branch_ref) => {
-                    if let Err(e) =
-                        sync::delete_branch(CWD, &branch_ref)
-                    {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::ShowErrorMsg(
-                                e.to_string(),
-                            ),
-                        )
-                    } else {
-                        flags.insert(NeedsUpdate::ALL);
-                        self.select_branch_popup.update_branches()?;
-                    }
-                }
-                Action::ForcePush(branch, force) => self
-                    .queue
-                    .borrow_mut()
-                    .push_back(InternalEvent::Push(branch, force)),
-                Action::PullMerge { rebase, .. } => {
-                    self.pull_popup.try_conflict_free_merge(rebase);
-                    flags.insert(NeedsUpdate::ALL);
-                }
-            },
+            InternalEvent::ConfirmedAction(action) => {
+                self.process_confirmed_action(action, &mut flags)?;
+            }
             InternalEvent::ConfirmAction(action) => {
                 self.reset.open(action)?;
                 flags.insert(NeedsUpdate::COMMANDS);
@@ -547,6 +521,10 @@ impl App {
             }
             InternalEvent::TagCommit(id) => {
                 self.tag_commit_popup.open(id)?;
+            }
+            InternalEvent::BlameFile(path) => {
+                self.blame_file_popup.open(&path)?;
+                flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
             }
             InternalEvent::CreateBranch => {
                 self.create_branch_popup.open()?;
@@ -584,6 +562,54 @@ impl App {
         };
 
         Ok(flags)
+    }
+
+    fn process_confirmed_action(
+        &mut self,
+        action: Action,
+        flags: &mut NeedsUpdate,
+    ) -> Result<()> {
+        match action {
+            Action::Reset(r) => {
+                if self.status_tab.reset(&r) {
+                    flags.insert(NeedsUpdate::ALL);
+                }
+            }
+            Action::StashDrop(_) | Action::StashPop(_) => {
+                if self.stashlist_tab.action_confirmed(&action) {
+                    flags.insert(NeedsUpdate::ALL);
+                }
+            }
+            Action::ResetHunk(path, hash) => {
+                sync::reset_hunk(CWD, &path, hash)?;
+                flags.insert(NeedsUpdate::ALL);
+            }
+            Action::ResetLines(path, lines) => {
+                sync::discard_lines(CWD, &path, &lines)?;
+                flags.insert(NeedsUpdate::ALL);
+            }
+            Action::DeleteBranch(branch_ref) => {
+                if let Err(e) = sync::delete_branch(CWD, &branch_ref)
+                {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(e.to_string()),
+                    )
+                } else {
+                    flags.insert(NeedsUpdate::ALL);
+                    self.select_branch_popup.update_branches()?;
+                }
+            }
+            Action::ForcePush(branch, force) => self
+                .queue
+                .borrow_mut()
+                .push_back(InternalEvent::Push(branch, force)),
+            Action::PullMerge { rebase, .. } => {
+                self.pull_popup.try_conflict_free_merge(rebase);
+                flags.insert(NeedsUpdate::ALL);
+            }
+        };
+
+        Ok(())
     }
 
     fn commands(&self, force_all: bool) -> Vec<CommandInfo> {
@@ -637,6 +663,7 @@ impl App {
             || self.msg.is_visible()
             || self.stashmsg_popup.is_visible()
             || self.inspect_commit_popup.is_visible()
+            || self.blame_file_popup.is_visible()
             || self.external_editor_popup.is_visible()
             || self.tag_commit_popup.is_visible()
             || self.create_branch_popup.is_visible()
@@ -666,6 +693,7 @@ impl App {
         self.stashmsg_popup.draw(f, size)?;
         self.help.draw(f, size)?;
         self.inspect_commit_popup.draw(f, size)?;
+        self.blame_file_popup.draw(f, size)?;
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
         self.select_branch_popup.draw(f, size)?;
