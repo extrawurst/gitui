@@ -45,8 +45,8 @@ pub(crate) fn get_branch_name_repo(
 }
 
 /// Gets the current branch the user is on.
-/// Returns none if they are not on a branch and Err
-/// if there was a problem finding the branch
+/// Returns none if they are not on a branch
+/// and Err if there was a problem finding the branch
 pub(crate) fn get_cur_branch(
     repo: &Repository,
 ) -> Result<Option<git2::Branch>> {

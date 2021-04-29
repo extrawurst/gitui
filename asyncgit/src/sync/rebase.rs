@@ -1,6 +1,6 @@
 //!
 
-use super::branch::get_head_refname;
+use super::branch::{get_branch_name, get_head_refname};
 use super::commit::signature_allow_undefined_name;
 use crate::{
     error::Error,
