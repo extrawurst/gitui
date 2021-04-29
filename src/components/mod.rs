@@ -19,7 +19,6 @@ mod push_tags;
 mod rename_branch;
 mod reset;
 mod reword;
-mod select_branch;
 mod stashmsg;
 mod tag_commit;
 mod textinput;
