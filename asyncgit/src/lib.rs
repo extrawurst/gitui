@@ -3,27 +3,46 @@
 #![forbid(missing_docs)]
 #![deny(unsafe_code)]
 #![deny(unused_imports)]
+#![deny(unused_must_use)]
+#![deny(dead_code)]
 #![deny(clippy::all)]
+#![deny(clippy::cargo)]
+#![deny(clippy::pedantic)]
+#![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 #![deny(clippy::perf)]
+#![deny(clippy::match_like_matches_macro)]
+#![deny(clippy::needless_update)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::missing_errors_doc)]
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
 
+mod blame;
 pub mod cached;
 mod commit_files;
 mod diff;
 mod error;
+mod fetch;
+mod progress;
 mod push;
+mod push_tags;
+pub mod remote_progress;
 mod revlog;
 mod status;
 pub mod sync;
 mod tags;
 
 pub use crate::{
+    blame::{AsyncBlame, BlameParams},
     commit_files::AsyncCommitFiles,
     diff::{AsyncDiff, DiffParams, DiffType},
-    push::{AsyncPush, PushProgress, PushProgressState, PushRequest},
+    fetch::{AsyncFetch, FetchRequest},
+    push::{AsyncPush, PushRequest},
+    push_tags::{AsyncPushTags, PushTagsRequest},
+    remote_progress::{RemoteProgress, RemoteProgressState},
     revlog::{AsyncLog, FetchStatus},
     status::{AsyncStatus, StatusParams},
     sync::{
@@ -54,9 +73,15 @@ pub enum AsyncNotification {
     Tags,
     ///
     Push,
+    ///
+    PushTags,
+    ///
+    Fetch,
+    ///
+    Blame,
 }
 
-/// current working director `./`
+/// current working directory `./`
 pub static CWD: &str = "./";
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait

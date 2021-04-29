@@ -1,6 +1,6 @@
 [package]
 name = "asyncgit"
-version = "0.11.0"
+version = "0.15.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 edition = "2018"
 description = "allow using git2 in a asynchronous context"
@@ -19,6 +19,8 @@ crossbeam-channel = "0.5"
 log = "0.4"
 thiserror = "1.0"
 url = "2.2"
+unicode-truncate = "0.2.0"
+easy-cast = "0.4"
 
 [dev-dependencies]
 tempfile = "3.2"

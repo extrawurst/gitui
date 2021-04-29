@@ -38,7 +38,7 @@ pub fn get_commit_files(
     Ok(res)
 }
 
-///
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn get_commit_diff(
     repo: &Repository,
     id: CommitId,
@@ -54,17 +54,16 @@ pub(crate) fn get_commit_diff(
         None
     };
 
-    let mut opt = pathspec.as_ref().map(|p| {
-        let mut opts = DiffOptions::new();
-        opts.pathspec(p);
-        opts.show_binary(true);
-        opts
-    });
+    let mut opts = DiffOptions::new();
+    if let Some(p) = &pathspec {
+        opts.pathspec(p.clone());
+    }
+    opts.show_binary(true);
 
     let mut diff = repo.diff_tree_to_tree(
         parent.as_ref(),
         Some(&commit_tree),
-        opt.as_mut(),
+        Some(&mut opts),
     )?;
 
     if is_stash_commit(

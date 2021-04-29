@@ -10,7 +10,7 @@ pub struct LogWalker<'a> {
 
 impl<'a> LogWalker<'a> {
     ///
-    pub fn new(repo: &'a Repository) -> Self {
+    pub const fn new(repo: &'a Repository) -> Self {
         Self {
             repo,
             revwalk: None,
@@ -32,14 +32,12 @@ impl<'a> LogWalker<'a> {
         }
 
         if let Some(ref mut walk) = self.revwalk {
-            for id in walk {
-                if let Ok(id) = id {
-                    out.push(id.into());
-                    count += 1;
+            for id in walk.into_iter().flatten() {
+                out.push(id.into());
+                count += 1;
 
-                    if count == limit {
-                        break;
-                    }
+                if count == limit {
+                    break;
                 }
             }
         }

@@ -3,6 +3,7 @@ use crate::{
     components::{
         popup_paragraph, popup_paragraph_commit, visibility_blocking,
         CommandBlocking, CommandInfo, Component, DrawableComponent,
+        EventState,
     },
     keys::SharedKeyConfig,
     strings,
@@ -11,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
-use std::{collections::HashMap, ops::Range};
+use std::{cell::Cell, collections::HashMap, ops::Range};
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -40,6 +41,7 @@ pub struct TextInputComponent {
     cursor_position: usize,
     input_type: InputType,
     for_commit: bool,
+    current_area: Cell<Rect>,
 }
 
 impl TextInputComponent {
@@ -62,6 +64,7 @@ impl TextInputComponent {
             cursor_position: 0,
             input_type: InputType::Multiline,
             for_commit: false,
+            current_area: Cell::new(Rect::default()),
         }
     }
 
@@ -88,6 +91,11 @@ impl TextInputComponent {
     /// Get the `msg`.
     pub const fn get_text(&self) -> &String {
         &self.msg
+    }
+
+    /// screen area (last time we got drawn)
+    pub fn get_area(&self) -> Rect {
+        self.current_area.get()
     }
 
     /// Move the cursor right one char.
@@ -321,6 +329,8 @@ impl DrawableComponent for TextInputComponent {
             if self.show_char_count {
                 self.draw_char_count(f, area);
             }
+
+            self.current_area.set(area);
         }
 
         Ok(())
@@ -344,12 +354,12 @@ impl Component for TextInputComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
                     self.hide();
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 }
 
                 let is_ctrl =
@@ -359,39 +369,39 @@ impl Component for TextInputComponent {
                     KeyCode::Char(c) if !is_ctrl => {
                         self.msg.insert(self.cursor_position, c);
                         self.incr_cursor();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Delete => {
                         if self.cursor_position < self.msg.len() {
                             self.msg.remove(self.cursor_position);
                         }
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Backspace => {
                         self.backspace();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Left => {
                         self.decr_cursor();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Right => {
                         self.incr_cursor();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Home => {
                         self.cursor_position = 0;
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::End => {
                         self.cursor_position = self.msg.len();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     _ => (),
                 };
             }
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
@@ -523,7 +533,7 @@ mod tests {
     }
 
     #[test]
-    fn test_invisable_newline() {
+    fn test_invisible_newline() {
         let mut comp = TextInputComponent::new(
             SharedTheme::default(),
             SharedKeyConfig::default(),

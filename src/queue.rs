@@ -1,5 +1,5 @@
 use crate::tabs::StashingOptions;
-use asyncgit::sync::{CommitId, CommitTags};
+use asyncgit::sync::{diff::DiffLinePosition, CommitId, CommitTags};
 use bitflags::bitflags;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
@@ -27,8 +27,12 @@ pub struct ResetItem {
 pub enum Action {
     Reset(ResetItem),
     ResetHunk(String, u64),
+    ResetLines(String, Vec<DiffLinePosition>),
     StashDrop(CommitId),
+    StashPop(CommitId),
     DeleteBranch(String),
+    ForcePush(String, bool),
+    PullMerge { incoming: usize, rebase: bool },
 }
 
 ///
@@ -52,6 +56,8 @@ pub enum InternalEvent {
     ///
     TagCommit(CommitId),
     ///
+    BlameFile(String),
+    ///
     CreateBranch,
     ///
     RenameBranch(String, String),
@@ -60,7 +66,11 @@ pub enum InternalEvent {
     ///
     OpenExternalEditor(Option<String>),
     ///
-    Push(String),
+    Push(String, bool),
+    ///
+    Pull(String),
+    ///
+    PushTags,
 }
 
 ///
