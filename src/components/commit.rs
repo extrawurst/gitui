@@ -165,7 +165,7 @@ impl CommitComponent {
                 "",
                 &strings::commit_msg(&key_config),
                 true,
-            )
+            ),
             key_config,
             git_branch_name: cached::BranchName::new(CWD),
             commit_template: None,
