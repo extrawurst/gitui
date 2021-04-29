@@ -7,8 +7,9 @@ use crate::{
         CreateBranchComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PullComponent,
-        PushComponent, PushTagsComponent, RenameBranchComponent, RewordComponent
-        ResetComponent, StashMsgComponent, TagCommitComponent,
+        PushComponent, PushTagsComponent, RenameBranchComponent,
+        ResetComponent, RewordComponent, StashMsgComponent,
+        TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
