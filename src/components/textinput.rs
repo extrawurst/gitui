@@ -250,8 +250,10 @@ impl TextInputComponent {
             f.render_widget(w, rect);
 
             if count > 50 {
+                //use std::convert::TryInto;
+                use std::convert::TryFrom;
                 // Show >50 warning
-                let w = Paragraph::new(format!("[>50]"))
+                let w = Paragraph::new("[>50]".to_string())
                     .alignment(Alignment::Left)
                     .style(
                         self.theme.text_danger(), // .patch(theme.block(focused)),
@@ -265,7 +267,14 @@ impl TextInputComponent {
                 rect_warning.x += rect.width;
                 //rect_warning.x -= 10;
                 rect_warning.x = rect_warning.x.saturating_sub(
-                    1 + 11 + count.to_string().len() as u16,
+                    1 + 11
+                        + u16::try_from(
+                            count
+                            .to_string()
+                            .len()
+                        ).expect("Practically can't fail")
+                            //.try_into()
+                            //.expect("Practically can't fail"),
                 );
                 rect_warning.width = 5;
                 rect_warning.height = 1;
