@@ -44,6 +44,32 @@ pub(crate) fn get_branch_name_repo(
     Err(Error::NoHead)
 }
 
+/// Gets the current branch the user is on.
+/// Returns none if they are not on a branch and Err
+/// if there was a problem finding the branch
+pub(crate) fn get_cur_branch(
+    repo: &Repository,
+) -> Result<Option<git2::Branch>> {
+    for b in repo.branches(None)? {
+        let branch = b?.0;
+        if branch.is_head() {
+            return Ok(Some(branch));
+        }
+    }
+    Ok(None)
+}
+
+/// Convenience function to get the current branch reference
+pub fn get_head_refname(repo_path: &str) -> Result<Option<String>> {
+    let repo = utils::repo(repo_path)?;
+    if let Ok(Some(b)) = get_cur_branch(&repo) {
+        return Ok(Some(String::from_utf8(
+            b.get().name_bytes().to_vec(),
+        )?));
+    }
+    Ok(None)
+}
+
 ///
 #[derive(Debug)]
 pub struct LocalBranch {

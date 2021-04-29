@@ -44,7 +44,6 @@ pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ResetComponent;
 pub use reword::RewordComponent;
-pub use select_branch::SelectBranchComponent;
 pub use stashmsg::StashMsgComponent;
 pub use tag_commit::TagCommitComponent;
 pub use textinput::{InputType, TextInputComponent};

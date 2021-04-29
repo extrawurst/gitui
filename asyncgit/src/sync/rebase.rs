@@ -92,9 +92,8 @@ fn reword_internal(
         rebase.next();
         if parent_commit_oid.is_none() {
             return Err(Error::NoParent);
-        } else {
-            target = rebase.commit(None, &sig, Some(message))?;
         }
+        target = rebase.commit(None, &sig, Some(message))?;
 
         // Set target to top commit, don't know when the rebase will end
         // so have to loop till end
