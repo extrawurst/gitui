@@ -234,48 +234,11 @@ fn dialog_paragraph<'a>(
         .alignment(Alignment::Left)
 }
 
-fn popup_paragraph_commit<'a, T>(
-    title: &'a str,
-    content: T,
-    theme: &Theme,
-    focused: bool,
-    commit_first_line_length: usize,
-) -> Paragraph<'a>
-where
-    T: Into<Text<'a>>,
-{
-    let text = content.into();
-
-    let mut border_style = theme.block(focused);
-
-    popup_paragraph_inner(
-        title,
-        text,
-        theme,
-        focused,
-        Some(border_style),
-    )
-}
-
 fn popup_paragraph<'a, T>(
     title: &'a str,
     content: T,
     theme: &Theme,
     focused: bool,
-) -> Paragraph<'a>
-where
-    T: Into<Text<'a>>,
-{
-    popup_paragraph_inner(title, content, theme, focused, None)
-}
-
-/// Use `popup_paragraph` or `popup_paragraph_commit` depending on need, they call this
-fn popup_paragraph_inner<'a, T>(
-    title: &'a str,
-    content: T,
-    theme: &Theme,
-    focused: bool,
-    border_style: Option<tui::style::Style>,
 ) -> Paragraph<'a>
 where
     T: Into<Text<'a>>,
@@ -286,10 +249,7 @@ where
                 .title(Span::styled(title, theme.title(focused)))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Thick)
-                .border_style(
-                    border_style
-                        .unwrap_or_else(|| theme.block(focused)),
-                ),
+                .border_style(theme.block(focused)),
         )
         .alignment(Alignment::Left)
         .wrap(Wrap { trim: true })

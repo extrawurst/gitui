@@ -1,9 +1,8 @@
 use crate::ui::Size;
 use crate::{
     components::{
-        popup_paragraph, popup_paragraph_commit, visibility_blocking,
-        CommandBlocking, CommandInfo, Component, DrawableComponent,
-        EventState,
+        popup_paragraph, visibility_blocking, CommandBlocking,
+        CommandInfo, Component, DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     strings,
@@ -266,8 +265,15 @@ impl TextInputComponent {
 
                 rect_warning.x = rect_warning.x.saturating_sub(
                     1 + 11
-                        + u16::try_from(count.to_string().len())
-                            .expect("Practically can't fail"),
+                        + u16::try_from(
+                            count
+                                .to_string()
+                                .split('\n')
+                                .next()
+                                .expect("Cannot fail")
+                                .len(),
+                        )
+                        .expect("Practically cannot fail"),
                 );
                 rect_warning.width = 5;
                 rect_warning.height = 1;
@@ -329,26 +335,12 @@ impl DrawableComponent for TextInputComponent {
             f.render_widget(Clear, area);
 
             f.render_widget(
-                if self.for_commit {
-                    popup_paragraph_commit(
-                        self.title.as_str(),
-                        txt,
-                        &self.theme,
-                        true,
-                        self.msg
-                            .split('\n')
-                            .next()
-                            .expect("Cannot fail")
-                            .len(),
-                    )
-                } else {
-                    popup_paragraph(
-                        self.title.as_str(),
-                        txt,
-                        &self.theme,
-                        true,
-                    )
-                },
+                popup_paragraph(
+                    self.title.as_str(),
+                    txt,
+                    &self.theme,
+                    true,
+                ),
                 area,
             );
 
