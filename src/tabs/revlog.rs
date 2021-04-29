@@ -234,7 +234,7 @@ impl Component for Revlog {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::RewordCommit(id),
                             );
-                            return Ok(EventState::Consumed);
+                            Ok(EventState::Consumed)
                         },
                     );
                 } else if k == self.key_config.focus_right
