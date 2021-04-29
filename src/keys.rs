@@ -47,11 +47,8 @@ pub struct KeyConfig {
     pub shift_up: KeyEvent,
     pub shift_down: KeyEvent,
     pub enter: KeyEvent,
-<<<<<<< HEAD
     pub reword: KeyEvent,
-=======
     pub blame: KeyEvent,
->>>>>>> master
     pub edit_file: KeyEvent,
     pub status_stage_all: KeyEvent,
     pub status_reset_item: KeyEvent,
