@@ -249,10 +249,6 @@ impl Theme {
             .bg(self.push_gauge_bg)
     }
 
-    pub const fn commit_first_line_max_len(&self) -> Option<usize> {
-        self.commit_first_line_max_len
-    }
-
     // This will only be called when theme.ron doesn't already exists
     fn save(&self, theme_file: PathBuf) -> Result<()> {
         let mut file = File::create(theme_file)?;

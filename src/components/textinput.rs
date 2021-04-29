@@ -248,6 +248,31 @@ impl TextInputComponent {
                 .saturating_sub(rect.height.saturating_sub(1));
 
             f.render_widget(w, rect);
+
+            if count > 50 {
+                // Show >50 warning
+                let w = Paragraph::new(format!("[>50]"))
+                    .alignment(Alignment::Left)
+                    .style(
+                        self.theme.text_danger(), // .patch(theme.block(focused)),
+                    );
+
+                let mut rect_warning = {
+                    let mut rect_w = r;
+                    rect_w.y += rect_w.height.saturating_sub(1);
+                    rect_w
+                };
+                rect_warning.x += rect.width;
+                //rect_warning.x -= 10;
+                rect_warning.x = rect_warning.x.saturating_sub(
+                    1 + 11 + count.to_string().len() as u16,
+                );
+                rect_warning.width = 5;
+                rect_warning.height = 1;
+                //rect.width = rect.width.saturating_sub(2);
+
+                f.render_widget(w, rect_warning);
+            }
         }
     }
 }
