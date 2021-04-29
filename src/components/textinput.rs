@@ -39,7 +39,6 @@ pub struct TextInputComponent {
     key_config: SharedKeyConfig,
     cursor_position: usize,
     input_type: InputType,
-    for_commit: bool,
     current_area: Cell<Rect>,
 }
 
@@ -62,15 +61,8 @@ impl TextInputComponent {
             default_msg: default_msg.to_string(),
             cursor_position: 0,
             input_type: InputType::Multiline,
-            for_commit: false,
             current_area: Cell::new(Rect::default()),
         }
-    }
-
-    ///
-    pub const fn for_commit(mut self) -> Self {
-        self.for_commit = true;
-        self
     }
 
     pub const fn with_input_type(
