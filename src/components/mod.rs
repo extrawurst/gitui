@@ -244,15 +244,9 @@ fn popup_paragraph_commit<'a, T>(
 where
     T: Into<Text<'a>>,
 {
-    println!("{}", commit_first_line_length);
-
     let text = content.into();
 
     let mut border_style = theme.block(focused);
-
-    if commit_first_line_length > 50 {
-        //border_style = theme.text_danger().patch(border_style);
-    }
 
     popup_paragraph_inner(
         title,
