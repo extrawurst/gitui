@@ -101,7 +101,7 @@ impl Component for CommitComponent {
                     );
                     self.hide();
                 } else if self.input.event(ev)? {
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 }
                 // stop key event propagation
                 return Ok(true);

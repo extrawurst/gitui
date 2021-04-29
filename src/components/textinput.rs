@@ -714,7 +714,7 @@ impl Component for TextInputComponent {
                 {
                     self.msg.insert(self.cursor_position, '\n');
                     self.incr_cursor();
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 }
 
                 let is_ctrl =
