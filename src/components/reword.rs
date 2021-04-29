@@ -1,7 +1,7 @@
 use super::{
     externaleditor::show_editor, textinput::TextInputComponent,
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent,
+    DrawableComponent, EventState,
 };
 use crate::{
     app::EditorSource,
@@ -66,10 +66,10 @@ impl Component for RewordComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.is_visible() {
-            if self.input.event(ev)? {
-                return Ok(true);
+            if let Ok(EventState::Consumed) = self.input.event(ev) {
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(e) = ev {
@@ -85,10 +85,10 @@ impl Component for RewordComponent {
                     self.hide();
                 }
 
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

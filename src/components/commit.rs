@@ -1,7 +1,7 @@
 use super::{
     externaleditor::show_editor, textinput::TextInputComponent,
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, EventState, ExternalEditorComponent,
+    DrawableComponent, EventState,
 };
 use crate::{
     app::EditorSource,
@@ -17,11 +17,7 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
-use std::{
-    fs::{read_to_string, File},
-    io::{Read, Write},
-    path::PathBuf,
-};
+use std::fs::read_to_string;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},

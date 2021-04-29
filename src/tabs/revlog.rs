@@ -231,12 +231,12 @@ impl Component for Revlog {
                     );
                 } else if k == self.key_config.reword {
                     return self.selected_commit().map_or(
-                        Ok(false),
+                        Ok(EventState::NotConsumed),
                         |id| {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::RewordCommit(id),
                             );
-                            Ok(true)
+                            return Ok(EventState::Consumed);
                         },
                     );
                 } else if k == self.key_config.focus_right
