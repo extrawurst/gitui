@@ -17,6 +17,7 @@ use asyncgit::{
     CWD,
 };
 use crossterm::event::Event;
+use easy_cast::Cast;
 use std::{
     fs::{read_to_string, File},
     io::{Read, Write},
@@ -36,7 +37,10 @@ pub struct CommitComponent {
     key_config: SharedKeyConfig,
     git_branch_name: cached::BranchName,
     commit_template: Option<String>,
+    theme: SharedTheme,
 }
+
+const FIRST_LINE_LIMIT: usize = 50;
 
 impl DrawableComponent for CommitComponent {
     fn draw<B: Backend>(
@@ -47,6 +51,7 @@ impl DrawableComponent for CommitComponent {
         if self.is_visible() {
             self.input.draw(f, rect)?;
             self.draw_branch_name(f);
+            self.draw_warnings(f);
         }
 
         Ok(())
@@ -160,7 +165,7 @@ impl CommitComponent {
             queue,
             amend: None,
             input: TextInputComponent::new(
-                theme,
+                theme.clone(),
                 key_config.clone(),
                 "",
                 &strings::commit_msg(&key_config),
@@ -169,6 +174,7 @@ impl CommitComponent {
             key_config,
             git_branch_name: cached::BranchName::new(CWD),
             commit_template: None,
+            theme,
         }
     }
 
@@ -188,6 +194,37 @@ impl CommitComponent {
                 let mut rect = self.input.get_area();
                 rect.height = 1;
                 rect.width = rect.width.saturating_sub(1);
+                rect
+            };
+
+            f.render_widget(w, rect);
+        }
+    }
+
+    fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
+        let first_line = self
+            .input
+            .get_text()
+            .lines()
+            .next()
+            .map(|line| line.len())
+            .unwrap_or_default();
+
+        if first_line > FIRST_LINE_LIMIT {
+            let msg = strings::commit_first_line_warning(first_line);
+            let msg_length: u16 = msg.len().cast();
+            let w =
+                Paragraph::new(msg).style(self.theme.text_danger());
+
+            let rect = {
+                let mut rect = self.input.get_area();
+                rect.y = rect.y + rect.height.saturating_sub(1);
+                rect.height = 1;
+                let offset =
+                    rect.width.saturating_sub(msg_length + 1);
+                rect.width = rect.width.saturating_sub(offset + 1);
+                rect.x = rect.x + offset;
+
                 rect
             };
 
