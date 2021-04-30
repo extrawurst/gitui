@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**commit subject length warning**
+
+![warning](assets/commit-msg-length-limit.gif)
+
+## Added
+- warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
+
 ## [0.15.0] - 2020-04-27
 
 **file blame**

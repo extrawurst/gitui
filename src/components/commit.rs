@@ -207,7 +207,7 @@ impl CommitComponent {
             .get_text()
             .lines()
             .next()
-            .map(|line| line.len())
+            .map(str::len)
             .unwrap_or_default();
 
         if first_line > FIRST_LINE_LIMIT {
@@ -218,12 +218,12 @@ impl CommitComponent {
 
             let rect = {
                 let mut rect = self.input.get_area();
-                rect.y = rect.y + rect.height.saturating_sub(1);
+                rect.y += rect.height.saturating_sub(1);
                 rect.height = 1;
                 let offset =
                     rect.width.saturating_sub(msg_length + 1);
                 rect.width = rect.width.saturating_sub(offset + 1);
-                rect.x = rect.x + offset;
+                rect.x += offset;
 
                 rect
             };
