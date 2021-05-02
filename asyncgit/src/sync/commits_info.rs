@@ -5,7 +5,9 @@ use scopetime::scope_time;
 use unicode_truncate::UnicodeTruncateStr;
 
 /// identifies a single commit
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(
+    Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
+)]
 pub struct CommitId(Oid);
 
 impl CommitId {
