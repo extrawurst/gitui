@@ -201,7 +201,9 @@ fn draw<B: Backend>(
         if let Err(e) = app.draw(&mut f) {
             log::error!("failed to draw: {:?}", e)
         }
-    })
+    })?;
+
+    Ok(())
 }
 
 fn valid_path() -> Result<bool> {
