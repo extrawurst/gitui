@@ -35,7 +35,8 @@
 8. [Diagnostics](#diagnostics)
 9. [Color Theme](#theme)
 10. [Key Bindings](#bindings)
-11. [Inspiration](#inspiration)
+11. [Sponsoring](#sponsoring)
+12. [Inspiration](#inspiration)
 
 ## 1. <a name="features"></a> Features <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -74,7 +75,6 @@ These are the high level goals before calling out `1.0`:
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
 * file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
 * more tag support ([#483](https://github.com/extrawurst/gitui/issues/483))
-* file blame ([#484](https://github.com/extrawurst/gitui/issues/484))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
@@ -188,7 +188,12 @@ However, you can customize everything to your liking: See [Themes](THEMES.md).
 
 The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to set them to `vim`-like bindings.
 
-## 11. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 11. <a name="sponsoring"></a> Sponsoring <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+[![github](https://img.shields.io/badge/-GitHub%20Sponsors-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/extrawurst)
+[![buy-me-a-coffee](https://img.shields.io/badge/-Buy%20Me%20a%20Coffee-ffdd00?logo=Buy%20Me%20A%20Coffee&logoColor=000000)](https://www.buymeacoffee.com/extrawurst)
+
+## 12. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - [lazygit](https://github.com/jesseduffield/lazygit)
 - [tig](https://github.com/jonas/tig)

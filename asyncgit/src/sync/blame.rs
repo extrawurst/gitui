@@ -40,27 +40,15 @@ pub struct FileBlame {
 }
 
 ///
-pub enum BlameAt {
-    ///
-    Head,
-    ///
-    Commit(CommitId),
-}
-
-///
 pub fn blame_file(
     repo_path: &str,
     file_path: &str,
-    //TODO: remove until we actually use this on specific commits, right now not even the unittests cover this
-    blame_at: &BlameAt,
 ) -> Result<FileBlame> {
     scope_time!("blame_file");
 
     let repo = utils::repo(repo_path)?;
-    let commit_id = match blame_at {
-        BlameAt::Head => utils::get_head_repo(&repo)?,
-        BlameAt::Commit(commit_id) => *commit_id,
-    };
+
+    let commit_id = utils::get_head_repo(&repo)?;
 
     let spec = format!("{}:{}", commit_id.to_string(), file_path);
 
@@ -136,10 +124,10 @@ pub fn blame_file(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::error::Result;
     use crate::sync::{
-        blame_file, commit, stage_add_file, tests::repo_init_empty,
-        BlameAt, BlameHunk,
+        commit, stage_add_file, tests::repo_init_empty,
     };
     use std::{
         fs::{File, OpenOptions},
@@ -154,10 +142,7 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        assert!(matches!(
-            blame_file(&repo_path, "foo", &BlameAt::Head),
-            Err(_)
-        ));
+        assert!(matches!(blame_file(&repo_path, "foo"), Err(_)));
 
         File::create(&root.join(file_path))?
             .write_all(b"line 1\n")?;
@@ -165,7 +150,7 @@ mod tests {
         stage_add_file(repo_path, file_path)?;
         commit(repo_path, "first commit")?;
 
-        let blame = blame_file(&repo_path, "foo", &BlameAt::Head)?;
+        let blame = blame_file(&repo_path, "foo")?;
 
         assert!(matches!(
             blame.lines.as_slice(),
@@ -189,7 +174,7 @@ mod tests {
         stage_add_file(repo_path, file_path)?;
         commit(repo_path, "second commit")?;
 
-        let blame = blame_file(&repo_path, "foo", &BlameAt::Head)?;
+        let blame = blame_file(&repo_path, "foo")?;
 
         assert!(matches!(
             blame.lines.as_slice(),
@@ -216,14 +201,14 @@ mod tests {
 
         file.write(b"line 3\n")?;
 
-        let blame = blame_file(&repo_path, "foo", &BlameAt::Head)?;
+        let blame = blame_file(&repo_path, "foo")?;
 
         assert_eq!(blame.lines.len(), 2);
 
         stage_add_file(repo_path, file_path)?;
         commit(repo_path, "third commit")?;
 
-        let blame = blame_file(&repo_path, "foo", &BlameAt::Head)?;
+        let blame = blame_file(&repo_path, "foo")?;
 
         assert_eq!(blame.lines.len(), 3);
 

@@ -1,7 +1,7 @@
 use super::{
     textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
-    ExternalEditorComponent,
+    EventState, ExternalEditorComponent,
 };
 use crate::{
     get_app_config_path,
@@ -13,12 +13,13 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     cached,
-    sync::{self, CommitId, HookResult},
+    sync::{self, utils::get_config_string, CommitId, HookResult},
     CWD,
 };
 use crossterm::event::Event;
+use easy_cast::Cast;
 use std::{
-    fs::File,
+    fs::{read_to_string, File},
     io::{Read, Write},
     path::PathBuf,
 };
@@ -35,7 +36,11 @@ pub struct CommitComponent {
     queue: Queue,
     key_config: SharedKeyConfig,
     git_branch_name: cached::BranchName,
+    commit_template: Option<String>,
+    theme: SharedTheme,
 }
+
+const FIRST_LINE_LIMIT: usize = 50;
 
 impl DrawableComponent for CommitComponent {
     fn draw<B: Backend>(
@@ -46,6 +51,7 @@ impl DrawableComponent for CommitComponent {
         if self.is_visible() {
             self.input.draw(f, rect)?;
             self.draw_branch_name(f);
+            self.draw_warnings(f);
         }
 
         Ok(())
@@ -85,10 +91,10 @@ impl Component for CommitComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.is_visible() {
-            if self.input.event(ev)? {
-                return Ok(true);
+            if self.input.event(ev)?.is_consumed() {
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(e) = ev {
@@ -106,11 +112,11 @@ impl Component for CommitComponent {
                 } else {
                 }
                 // stop key event propagation
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
@@ -129,6 +135,19 @@ impl Component for CommitComponent {
 
         self.input
             .set_title(strings::commit_title(&self.key_config));
+
+        self.commit_template =
+            get_config_string(CWD, "commit.template")
+                .ok()
+                .flatten()
+                .and_then(|path| read_to_string(path).ok());
+
+        if self.is_empty() {
+            if let Some(s) = &self.commit_template {
+                self.input.set_text(s.clone());
+            }
+        }
+
         self.input.show()?;
 
         Ok(())
@@ -146,7 +165,7 @@ impl CommitComponent {
             queue,
             amend: None,
             input: TextInputComponent::new(
-                theme,
+                theme.clone(),
                 key_config.clone(),
                 "",
                 &strings::commit_msg(&key_config),
@@ -154,12 +173,15 @@ impl CommitComponent {
             ),
             key_config,
             git_branch_name: cached::BranchName::new(CWD),
+            commit_template: None,
+            theme,
         }
     }
 
     ///
     pub fn update(&mut self) -> Result<()> {
         self.git_branch_name.lookup().map(Some).unwrap_or(None);
+
         Ok(())
     }
 
@@ -172,6 +194,37 @@ impl CommitComponent {
                 let mut rect = self.input.get_area();
                 rect.height = 1;
                 rect.width = rect.width.saturating_sub(1);
+                rect
+            };
+
+            f.render_widget(w, rect);
+        }
+    }
+
+    fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
+        let first_line = self
+            .input
+            .get_text()
+            .lines()
+            .next()
+            .map(str::len)
+            .unwrap_or_default();
+
+        if first_line > FIRST_LINE_LIMIT {
+            let msg = strings::commit_first_line_warning(first_line);
+            let msg_length: u16 = msg.len().cast();
+            let w =
+                Paragraph::new(msg).style(self.theme.text_danger());
+
+            let rect = {
+                let mut rect = self.input.get_area();
+                rect.y += rect.height.saturating_sub(1);
+                rect.height = 1;
+                let offset =
+                    rect.width.saturating_sub(msg_length + 1);
+                rect.width = rect.width.saturating_sub(offset + 1);
+                rect.x += offset;
+
                 rect
             };
 
@@ -291,13 +344,22 @@ impl CommitComponent {
     }
 
     fn can_commit(&self) -> bool {
-        !self.input.get_text().is_empty()
+        !self.is_empty() && self.is_changed()
     }
 
     fn can_amend(&self) -> bool {
         self.amend.is_none()
             && sync::get_head(CWD).is_ok()
-            && self.input.get_text().is_empty()
+            && (self.is_empty() || !self.is_changed())
+    }
+
+    fn is_empty(&self) -> bool {
+        self.input.get_text().is_empty()
+    }
+
+    fn is_changed(&self) -> bool {
+        Some(self.input.get_text().trim())
+            != self.commit_template.as_ref().map(|s| s.trim())
     }
 
     fn amend(&mut self) -> Result<()> {

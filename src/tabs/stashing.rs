@@ -3,7 +3,7 @@ use crate::{
     components::{
         command_pump, event_pump, visibility_blocking,
         CommandBlocking, CommandInfo, Component, DrawableComponent,
-        FileTreeComponent,
+        EventState, FileTreeComponent,
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
@@ -72,7 +72,7 @@ impl Stashing {
 
     ///
     pub fn update(&mut self) -> Result<()> {
-        if self.visible {
+        if self.is_visible() {
             self.git_status.fetch(&StatusParams::new(
                 StatusType::Both,
                 self.options.stash_untracked,
@@ -92,7 +92,7 @@ impl Stashing {
         &mut self,
         ev: AsyncNotification,
     ) -> Result<()> {
-        if self.visible {
+        if self.is_visible() {
             if let AsyncNotification::Status = ev {
                 let status = self.git_status.last()?;
                 self.index.update(&status.items)?;
@@ -208,10 +208,15 @@ impl Component for Stashing {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: crossterm::event::Event) -> Result<bool> {
+    fn event(
+        &mut self,
+        ev: crossterm::event::Event,
+    ) -> Result<EventState> {
         if self.visible {
-            if event_pump(ev, self.components_mut().as_mut_slice())? {
-                return Ok(true);
+            if event_pump(ev, self.components_mut().as_mut_slice())?
+                .is_consumed()
+            {
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(k) = ev {
@@ -222,26 +227,26 @@ impl Component for Stashing {
                         InternalEvent::PopupStashing(self.options),
                     );
 
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if k == self.key_config.stashing_toggle_index {
                     self.options.keep_index =
                         !self.options.keep_index;
                     self.update()?;
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if k
                     == self.key_config.stashing_toggle_untracked
                 {
                     self.options.stash_untracked =
                         !self.options.stash_untracked;
                     self.update()?;
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else {
-                    Ok(false)
+                    Ok(EventState::NotConsumed)
                 };
             };
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

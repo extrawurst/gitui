@@ -2,7 +2,7 @@ use super::utils::logitems::{ItemBatch, LogEntry};
 use crate::{
     components::{
         utils::string_width_align, CommandBlocking, CommandInfo,
-        Component, DrawableComponent, ScrollType,
+        Component, DrawableComponent, EventState, ScrollType,
     },
     keys::SharedKeyConfig,
     strings,
@@ -341,7 +341,7 @@ impl DrawableComponent for CommitList {
 }
 
 impl Component for CommitList {
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if let Event::Key(k) = ev {
             let selection_changed = if k == self.key_config.move_up {
                 self.move_selection(ScrollType::Up)?
@@ -362,10 +362,10 @@ impl Component for CommitList {
             } else {
                 false
             };
-            return Ok(selection_changed);
+            return Ok(selection_changed.into());
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn commands(

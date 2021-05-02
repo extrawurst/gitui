@@ -7,8 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**commit subject length warning**
+
+![warning](assets/commit-msg-length-limit.gif)
+
+## Added
+- warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
+
+## [0.15.0] - 2020-04-27
+
+**file blame**
+
+![blame](assets/blame.gif)
+
 ### Added
 - blame a file [[@cruessler](https://github.com/cruessler)] ([#484](https://github.com/extrawurst/gitui/issues/484))
+- support commit.template [[@wandernauta](https://github.com/wandernauta)] ([#546](https://github.com/extrawurst/gitui/issues/546))
 
 ### Fixed
 - debug print when adding a file to ignore
@@ -19,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 - cleanup some stringly typed code [[@wandernauta](https://github.com/wandernauta)] ([#655](https://github.com/extrawurst/gitui/issues/655))
+- introduce EventState enum (removing bool for even propagation) [[@tisorlawan](https://github.com/tisorlawan)] ([#665](https://github.com/extrawurst/gitui/issues/665))
 
 ## [0.14.0] - 2020-04-11
 

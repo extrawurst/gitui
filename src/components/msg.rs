@@ -1,6 +1,6 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent,
+    DrawableComponent, EventState,
 };
 use crate::{keys::SharedKeyConfig, strings, ui};
 use crossterm::event::Event;
@@ -89,16 +89,16 @@ impl Component for MsgComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.enter {
                     self.hide();
                 }
             }
-            Ok(true)
+            Ok(EventState::Consumed)
         } else {
-            Ok(false)
+            Ok(EventState::NotConsumed)
         }
     }
 

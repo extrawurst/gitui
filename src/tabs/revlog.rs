@@ -5,7 +5,7 @@ use crate::{
         },
         visibility_blocking, CommandBlocking, CommandInfo,
         CommitDetailsComponent, CommitList, Component,
-        DrawableComponent, FindCommitComponent,
+        DrawableComponent, EventState, FindCommitComponent,
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
@@ -100,7 +100,7 @@ impl Revlog {
 
     ///
     pub fn update(&mut self) -> Result<()> {
-        if self.visible {
+        if self.is_visible() {
             let log_changed = if self.is_filtering {
                 self.list.set_total_count(self.async_filter.count());
                 self.async_filter.fetch() == FilterStatus::Filtering
@@ -400,44 +400,44 @@ impl DrawableComponent for Revlog {
 }
 
 impl Component for Revlog {
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             let mut event_used = self.find_commit.event(ev)?;
-            if !event_used {
+            if !event_used.is_consumed() {
                 event_used = self.list.event(ev)?;
             }
 
-            if event_used {
+            if event_used.is_consumed() {
                 self.update()?;
-                return Ok(true);
+                return Ok(EventState::Consumed);
             } else if let Event::Key(k) = ev {
                 if k == self.key_config.enter {
                     self.commit_details.toggle_visible()?;
                     self.update()?;
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 } else if k == self.key_config.copy {
                     self.copy_commit_hash()?;
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 } else if k == self.key_config.push {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::PushTags);
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 } else if k == self.key_config.log_tag_commit {
                     return self.selected_commit().map_or(
-                        Ok(false),
+                        Ok(EventState::NotConsumed),
                         |id| {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::TagCommit(id),
                             );
-                            Ok(true)
+                            Ok(EventState::Consumed)
                         },
                     );
                 } else if k == self.key_config.focus_right
                     && self.commit_details.is_visible()
                 {
                     return self.selected_commit().map_or(
-                        Ok(false),
+                        Ok(EventState::NotConsumed),
                         |id| {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::InspectCommit(
@@ -447,20 +447,20 @@ impl Component for Revlog {
                                     )),
                                 ),
                             );
-                            Ok(true)
+                            Ok(EventState::Consumed)
                         },
                     );
                 } else if k == self.key_config.select_branch {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::SelectBranch);
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 } else if k
                     == self.key_config.show_find_commit_text_input
                 {
                     self.find_commit.toggle_visible()?;
                     self.find_commit.focus(true);
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 } else if k == self.key_config.exit_popup {
                     self.filter("")?;
                     self.find_commit.clear_input();
@@ -469,7 +469,7 @@ impl Component for Revlog {
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn commands(

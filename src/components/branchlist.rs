@@ -1,6 +1,6 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent,
+    DrawableComponent, EventState,
 };
 use crate::{
     components::ScrollType,
@@ -161,19 +161,27 @@ impl Component for BranchListComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
                     self.hide()
                 } else if e == self.key_config.move_down {
-                    return self.move_selection(ScrollType::Up);
+                    return self
+                        .move_selection(ScrollType::Up)
+                        .map(Into::into);
                 } else if e == self.key_config.move_up {
-                    return self.move_selection(ScrollType::Down);
+                    return self
+                        .move_selection(ScrollType::Down)
+                        .map(Into::into);
                 } else if e == self.key_config.page_down {
-                    return self.move_selection(ScrollType::PageDown);
+                    return self
+                        .move_selection(ScrollType::PageDown)
+                        .map(Into::into);
                 } else if e == self.key_config.page_up {
-                    return self.move_selection(ScrollType::PageUp);
+                    return self
+                        .move_selection(ScrollType::PageUp)
+                        .map(Into::into);
                 } else if e == self.key_config.enter {
                     try_or_popup!(
                         self,
@@ -220,9 +228,9 @@ impl Component for BranchListComponent {
                 }
             }
 
-            Ok(true)
+            Ok(EventState::Consumed)
         } else {
-            Ok(false)
+            Ok(EventState::NotConsumed)
         }
     }
 
@@ -497,6 +505,7 @@ impl BranchListComponent {
         r: Rect,
     ) -> Result<()> {
         let height_in_lines = r.height as usize;
+        self.current_height.set(height_in_lines.try_into()?);
 
         self.scroll_top.set(calc_scroll_top(
             self.scroll_top.get(),
@@ -516,16 +525,16 @@ impl BranchListComponent {
 
         let mut r = r;
         r.width += 1;
+        r.height += 2;
+        r.y = r.y.saturating_sub(1);
 
         ui::draw_scrollbar(
             f,
             r,
             &self.theme,
-            self.branches.len(),
+            self.branches.len().saturating_sub(height_in_lines),
             self.scroll_top.get(),
         );
-
-        self.current_height.set(height_in_lines.try_into()?);
 
         Ok(())
     }

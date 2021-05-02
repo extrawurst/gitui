@@ -1,6 +1,6 @@
 use super::{
     textinput::TextInputComponent, CommandBlocking, CommandInfo,
-    Component, DrawableComponent,
+    Component, DrawableComponent, EventState,
 };
 use crate::{
     keys::SharedKeyConfig,
@@ -40,26 +40,26 @@ impl Component for FindCommitComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.is_visible() && self.focused() {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
                     // Prevent text input closing
                     self.focus(false);
                     self.visible = false;
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 }
             }
-            if self.input.event(ev)? {
+            if self.input.event(ev)?.is_consumed() {
                 self.queue.borrow_mut().push_back(
                     InternalEvent::FilterLog(
                         self.input.get_text().to_string(),
                     ),
                 );
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

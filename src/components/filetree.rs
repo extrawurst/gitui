@@ -6,7 +6,7 @@ use super::{
     CommandBlocking, DrawableComponent,
 };
 use crate::{
-    components::{CommandInfo, Component},
+    components::{CommandInfo, Component, EventState},
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings::{self, order},
@@ -400,7 +400,7 @@ impl Component for FileTreeComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.focused {
             if let Event::Key(e) = ev {
                 return if e == self.key_config.blame {
@@ -412,33 +412,40 @@ impl Component for FileTreeComponent {
                                 ),
                             );
 
-                            Ok(true)
+                            Ok(EventState::Consumed)
                         }
-                        _ => Ok(false),
+                        _ => Ok(EventState::NotConsumed),
                     }
                 } else if e == self.key_config.move_down {
                     Ok(self.move_selection(MoveSelection::Down))
+                        .map(Into::into)
                 } else if e == self.key_config.move_up {
-                    Ok(self.move_selection(MoveSelection::Up))
+                    Ok(self.move_selection(MoveSelection::Up).into())
                 } else if e == self.key_config.home
                     || e == self.key_config.shift_up
                 {
-                    Ok(self.move_selection(MoveSelection::Home))
+                    Ok(self
+                        .move_selection(MoveSelection::Home)
+                        .into())
                 } else if e == self.key_config.end
                     || e == self.key_config.shift_down
                 {
-                    Ok(self.move_selection(MoveSelection::End))
+                    Ok(self.move_selection(MoveSelection::End).into())
                 } else if e == self.key_config.move_left {
-                    Ok(self.move_selection(MoveSelection::Left))
+                    Ok(self
+                        .move_selection(MoveSelection::Left)
+                        .into())
                 } else if e == self.key_config.move_right {
-                    Ok(self.move_selection(MoveSelection::Right))
+                    Ok(self
+                        .move_selection(MoveSelection::Right)
+                        .into())
                 } else {
-                    Ok(false)
+                    Ok(EventState::NotConsumed)
                 };
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn focused(&self) -> bool {

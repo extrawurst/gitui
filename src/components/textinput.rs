@@ -2,7 +2,7 @@ use crate::ui::Size;
 use crate::{
     components::{
         popup_paragraph, visibility_blocking, CommandBlocking,
-        CommandInfo, Component, DrawableComponent,
+        CommandInfo, Component, DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     strings,
@@ -341,12 +341,12 @@ impl Component for TextInputComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
                     self.hide();
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
                 }
 
                 let is_ctrl =
@@ -356,39 +356,39 @@ impl Component for TextInputComponent {
                     KeyCode::Char(c) if !is_ctrl => {
                         self.msg.insert(self.cursor_position, c);
                         self.incr_cursor();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Delete => {
                         if self.cursor_position < self.msg.len() {
                             self.msg.remove(self.cursor_position);
                         }
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Backspace => {
                         self.backspace();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Left => {
                         self.decr_cursor();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Right => {
                         self.incr_cursor();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::Home => {
                         self.cursor_position = 0;
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     KeyCode::End => {
                         self.cursor_position = self.msg.len();
-                        return Ok(true);
+                        return Ok(EventState::Consumed);
                     }
                     _ => (),
                 };
             }
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
