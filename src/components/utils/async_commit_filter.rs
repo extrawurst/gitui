@@ -74,7 +74,6 @@ pub enum FilterStatus {
 pub struct AsyncCommitFilterer {
     git_log: AsyncLog,
     git_tags: AsyncTags,
-    filter_strings: Vec<Vec<(String, FilterBy)>>,
     filtered_commits: Arc<Mutex<Vec<CommitInfo>>>,
     filter_count: Arc<AtomicUsize>,
     filter_finished: Arc<AtomicBool>,
@@ -91,7 +90,6 @@ impl AsyncCommitFilterer {
         sender: &Sender<AsyncNotification>,
     ) -> Self {
         Self {
-            filter_strings: Vec::new(),
             git_log,
             git_tags,
             filtered_commits: Arc::new(Mutex::new(Vec::new())),
@@ -288,8 +286,6 @@ impl AsyncCommitFilterer {
         filter_strings: Vec<Vec<(String, FilterBy)>>,
     ) -> Result<()> {
         self.stop_filter();
-
-        self.filter_strings = filter_strings.clone();
 
         let filtered_commits = Arc::clone(&self.filtered_commits);
         let filter_count = Arc::clone(&self.filter_count);
