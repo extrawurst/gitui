@@ -30,16 +30,17 @@ impl From<CommitInfo> for LogEntry {
 }
 
 impl LogEntry {
-    pub fn time_to_string(&self) -> String {
-        let now = Local::now();
+    pub fn time_to_string(&self, now: DateTime<Local>) -> String {
         let delta = now - self.time;
-        if delta < Duration::hours(1) {
+        if delta < Duration::minutes(10) {
             let delta_str = if delta < Duration::minutes(1) {
-                format!("{}s ago", delta.num_seconds())
+                "<1m ago".to_string()
             } else {
                 format!("{}m ago", delta.num_minutes())
             };
             format!("{: <10}", delta_str)
+        } else if self.time.date() == now.date() {
+            self.time.format("%T  ").to_string()
         } else {
             self.time.format("%Y-%m-%d").to_string()
         }

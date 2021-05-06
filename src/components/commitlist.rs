@@ -11,6 +11,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::sync::Tags;
+use chrono::{DateTime, Local};
 use crossterm::event::Event;
 use std::{
     borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
@@ -193,6 +194,7 @@ impl CommitList {
         tags: Option<String>,
         theme: &Theme,
         width: usize,
+        now: DateTime<Local>,
     ) -> Spans<'a> {
         let mut txt: Vec<Span> = Vec::new();
         txt.reserve(ELEMENTS_PER_LINE);
@@ -211,7 +213,7 @@ impl CommitList {
 
         // commit timestamp
         txt.push(Span::styled(
-            Cow::from(e.time_to_string()),
+            Cow::from(e.time_to_string(now)),
             theme.commit_time(selected),
         ));
 
@@ -254,6 +256,8 @@ impl CommitList {
 
         let mut txt: Vec<Spans> = Vec::with_capacity(height);
 
+        let now = Local::now();
+
         for (idx, e) in self
             .items
             .iter()
@@ -272,6 +276,7 @@ impl CommitList {
                 tags,
                 &self.theme,
                 width,
+                now,
             ));
         }
 
