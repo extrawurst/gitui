@@ -1,11 +1,11 @@
-use super::time_to_string;
 use asyncgit::sync::{CommitId, CommitInfo};
+use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use std::slice::Iter;
 
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 
 pub struct LogEntry {
-    pub time: String,
+    pub time: DateTime<Local>,
     pub author: String,
     pub msg: String,
     pub hash_short: String,
@@ -14,13 +14,25 @@ pub struct LogEntry {
 
 impl From<CommitInfo> for LogEntry {
     fn from(c: CommitInfo) -> Self {
+        let time =
+            DateTime::<Local>::from(DateTime::<Utc>::from_utc(
+                NaiveDateTime::from_timestamp(c.time, 0),
+                Utc,
+            ));
         Self {
             author: c.author,
             msg: c.message,
-            time: time_to_string(c.time, true),
+            time,
             hash_short: c.id.get_short_string(),
             id: c.id,
         }
+    }
+}
+
+impl LogEntry {
+    pub fn time_to_string(&self) -> String {
+        // let now = Local::now();
+        self.time.format("%Y-%m-%d").to_string()
     }
 }
 

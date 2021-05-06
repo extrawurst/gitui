@@ -211,7 +211,7 @@ impl CommitList {
 
         // commit timestamp
         txt.push(Span::styled(
-            Cow::from(e.time.as_str()),
+            Cow::from(e.time_to_string()),
             theme.commit_time(selected),
         ));
 
