@@ -36,7 +36,7 @@ impl LogEntry {
             let delta_str = if delta < Duration::minutes(1) {
                 "<1m ago".to_string()
             } else {
-                format!("{}m ago", delta.num_minutes())
+                format!("{:0>2}m ago", delta.num_minutes())
             };
             format!("{: <10}", delta_str)
         } else if self.time.date() == now.date() {
