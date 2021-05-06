@@ -32,7 +32,7 @@ impl From<CommitInfo> for LogEntry {
 impl LogEntry {
     pub fn time_to_string(&self, now: DateTime<Local>) -> String {
         let delta = now - self.time;
-        if delta < Duration::minutes(10) {
+        if delta < Duration::minutes(30) {
             let delta_str = if delta < Duration::minutes(1) {
                 "<1m ago".to_string()
             } else {
