@@ -1,5 +1,5 @@
 use asyncgit::sync::{CommitId, CommitInfo};
-use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
 use std::slice::Iter;
 
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
@@ -31,8 +31,18 @@ impl From<CommitInfo> for LogEntry {
 
 impl LogEntry {
     pub fn time_to_string(&self) -> String {
-        // let now = Local::now();
-        self.time.format("%Y-%m-%d").to_string()
+        let now = Local::now();
+        let delta = now - self.time;
+        if delta < Duration::hours(1) {
+            let delta_str = if delta < Duration::minutes(1) {
+                format!("{}s ago", delta.num_seconds())
+            } else {
+                format!("{}m ago", delta.num_minutes())
+            };
+            format!("{: <10}", delta_str)
+        } else {
+            self.time.format("%Y-%m-%d").to_string()
+        }
     }
 }
 
