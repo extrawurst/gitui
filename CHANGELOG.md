@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Added
 - warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
 
+## Changed
+- smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682))
+
 ## [0.15.0] - 2020-04-27
 
 **file blame**
