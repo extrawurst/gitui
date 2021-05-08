@@ -268,7 +268,7 @@ impl Component for ChangesComponent {
                     if self.is_working_dir {
                         try_or_popup!(
                             self,
-                            "staging error:",
+                            "staging all error:",
                             self.index_add_all()
                         );
                     } else {
