@@ -221,7 +221,7 @@ impl Revlog {
         let mut and_vec = Vec::new();
         for or in filter_by_str.split("||") {
             for split_sub in or.split("&&").map(str::trim) {
-                if !split_sub.starts_with(":") {
+                if !split_sub.starts_with(':') {
                     and_vec.push((
                         split_sub.to_string(),
                         FilterBy::everywhere(),
@@ -230,12 +230,14 @@ impl Revlog {
                 }
 
                 let mut split_str = split_sub.splitn(2, ' ');
-                let first = split_str.next().unwrap();
+                let first = split_str
+                    .next()
+                    .expect("Split must return at least one element");
                 let mut to_filter_by = first.chars().skip(1).fold(
                     FilterBy::empty(),
                     |acc, ch| {
                         acc | FilterBy::try_from(ch)
-                            .unwrap_or(FilterBy::empty())
+                            .unwrap_or_else(|_| FilterBy::empty())
                     },
                 );
 
@@ -246,7 +248,7 @@ impl Revlog {
                 and_vec.push((
                     split_str
                         .next()
-                        .unwrap_or(&"")
+                        .unwrap_or("")
                         .trim_start()
                         .to_string(),
                     to_filter_by,
@@ -265,7 +267,7 @@ impl Revlog {
                 Self::pre_process_string(filter_by.to_string());
             let trimmed_string =
                 pre_processed_string.trim().to_string();
-            if filter_by == "" {
+            if filter_by.is_empty() {
                 self.async_filter.stop_filter();
                 self.is_filtering = false;
             } else {

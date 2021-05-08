@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Error, Result};
 use asyncgit::{
     sync::{self, CommitId, CommitInfo, Tags},
     AsyncLog, AsyncNotification, AsyncTags, CWD,
@@ -308,11 +308,12 @@ impl AsyncCommitFilterer {
 
         rayon_core::spawn(move || {
             // Only 1 thread can filter at a time
-            let _c = cur_thread_mutex.lock().unwrap();
-            let _p = prev_thread_mutex.lock().unwrap();
+            let _c = cur_thread_mutex.lock().expect("mutex poisoned");
+            let _p =
+                prev_thread_mutex.lock().expect("mutex poisoned");
             filter_finished.store(false, Ordering::Relaxed);
             filter_count.store(0, Ordering::Relaxed);
-            filtered_commits.lock().unwrap().clear();
+            filtered_commits.lock().expect("mutex poisoned").clear();
             let mut cur_index: usize = 0;
             loop {
                 match rx.try_recv() {
@@ -354,7 +355,7 @@ impl AsyncCommitFilterer {
                                         );
                                         let mut fc = filtered_commits
                                             .lock()
-                                            .unwrap();
+                                            .expect("mutex poisoned");
                                         fc.append(&mut filtered);
                                         drop(fc);
                                         cur_index += SLICE_SIZE;
@@ -407,7 +408,10 @@ impl AsyncCommitFilterer {
         amount: usize,
         message_length_limit: usize,
     ) -> Result<Vec<CommitInfo>> {
-        let fc = self.filtered_commits.lock().unwrap();
+        let fc = self
+            .filtered_commits
+            .lock()
+            .map_err(|_| Error::msg("mutex poisoned"))?;
         let len = fc.len();
         let min = start.min(len);
         let max = min + amount;
