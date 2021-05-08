@@ -387,6 +387,7 @@ mod tests {
     #[test]
     fn test_stage_long_filepath() {
         let (_td, repo) = repo_init().unwrap();
+        let repo_path = repo.workdir().unwrap().to_str().unwrap();
 
         repo.config()
             .unwrap()
@@ -396,15 +397,20 @@ mod tests {
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
 
         debug_cmd_print(
-            repo.workdir().unwrap().to_str().unwrap(),
+            repo_path,
             format!("touch {}", file_name).as_str(),
         );
 
-        stage_add_file(
-            repo.workdir().unwrap().to_str().unwrap(),
-            Path::new(file_name),
-        )
-        .unwrap();
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        let files =
+            get_status(repo_path, StatusType::WorkingDir, true)
+                .unwrap();
+
+        stage_add_file(repo_path, Path::new(files[0].path.as_str()))
+            .unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 1));
     }
 
     #[test]
@@ -421,7 +427,7 @@ mod tests {
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
 
         debug_cmd_print(
-            repo.workdir().unwrap().to_str().unwrap(),
+            repo_path,
             format!("touch {}", file_name).as_str(),
         );
 
