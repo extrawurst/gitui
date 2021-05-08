@@ -204,12 +204,16 @@ pub(crate) fn repo_read_file(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sync::{
-        commit,
-        status::{get_status, StatusType},
-        tests::{
-            debug_cmd_print, get_statuses, repo_init, repo_init_empty,
+    use crate::{
+        sync::{
+            commit,
+            status::{get_status, StatusType},
+            tests::{
+                debug_cmd_print, get_statuses, repo_init,
+                repo_init_empty,
+            },
         },
+        CWD,
     };
     use std::{
         fs::{self, remove_file, File},
@@ -396,45 +400,21 @@ mod tests {
 
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
 
+        std::env::set_current_dir(repo_path).unwrap();
+
         debug_cmd_print(
             repo_path,
             format!("touch {}", file_name).as_str(),
         );
 
-        assert_eq!(get_statuses(repo_path), (1, 0));
+        assert_eq!(get_statuses(CWD), (1, 0));
 
         let files =
-            get_status(repo_path, StatusType::WorkingDir, true)
-                .unwrap();
+            get_status(CWD, StatusType::WorkingDir, true).unwrap();
 
-        stage_add_file(repo_path, Path::new(files[0].path.as_str()))
+        stage_add_file(CWD, Path::new(files[0].path.as_str()))
             .unwrap();
 
-        assert_eq!(get_statuses(repo_path), (0, 1));
-    }
-
-    #[test]
-    fn test_stage_all_long_filepath() {
-        let (_td, repo) = repo_init().unwrap();
-
-        let repo_path = repo.workdir().unwrap().to_str().unwrap();
-
-        repo.config()
-            .unwrap()
-            .set_bool("core.longpaths", true)
-            .unwrap();
-
-        let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
-
-        debug_cmd_print(
-            repo_path,
-            format!("touch {}", file_name).as_str(),
-        );
-
-        assert_eq!(get_statuses(repo_path), (1, 0));
-
-        stage_add_all(repo_path, "*").unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 1));
+        assert_eq!(get_statuses(CWD), (0, 1));
     }
 }
