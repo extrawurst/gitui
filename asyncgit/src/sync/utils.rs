@@ -388,6 +388,10 @@ mod tests {
     fn test_stage_long_filepath() {
         let (_td, repo) = repo_init().unwrap();
 
+        repo.config()
+            .unwrap()
+            .set_bool("core.longpaths", true)
+            .unwrap();
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
         repo_write_file(&repo, file_name, "foobar").unwrap();
 
