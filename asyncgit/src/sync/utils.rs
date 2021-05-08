@@ -388,12 +388,21 @@ mod tests {
     fn test_stage_long_filepath() {
         let (_td, repo) = repo_init().unwrap();
 
-        repo.config()
-            .unwrap()
-            .set_bool("core.longpaths", true)
-            .unwrap();
+        // repo.config()
+        //     .unwrap()
+        //     .set_bool("core.longpaths", true)
+        //     .unwrap();
+
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
-        repo_write_file(&repo, file_name, "foobar").unwrap();
+
+        {
+            let dir = work_dir(&repo).unwrap().join(file_name);
+            let file_path = dir.to_str().unwrap();
+            let _file = File::create(file_path).unwrap();
+            // file.write_all(content.as_bytes())?;
+        }
+
+        // repo_write_file(&repo, file_name, "foobar").unwrap();
 
         stage_add_file(
             repo.workdir().unwrap().to_str().unwrap(),
