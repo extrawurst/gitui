@@ -383,4 +383,18 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_stage_long_filepath() {
+        let (_td, repo) = repo_init().unwrap();
+
+        let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
+        repo_write_file(&repo, file_name, "foobar").unwrap();
+
+        stage_add_file(
+            repo.workdir().unwrap().to_str().unwrap(),
+            Path::new(file_name),
+        )
+        .unwrap();
+    }
 }
