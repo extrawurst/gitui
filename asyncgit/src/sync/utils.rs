@@ -395,14 +395,10 @@ mod tests {
 
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
 
-        {
-            let dir = work_dir(&repo).unwrap().join(file_name);
-            let file_path = dir.to_str().unwrap();
-            let _file = File::create(file_path).unwrap();
-            // file.write_all(content.as_bytes())?;
-        }
-
-        // repo_write_file(&repo, file_name, "foobar").unwrap();
+        debug_cmd_print(
+            repo.workdir().unwrap().to_str().unwrap(),
+            format!("touch {}", file_name).as_str(),
+        );
 
         stage_add_file(
             repo.workdir().unwrap().to_str().unwrap(),
