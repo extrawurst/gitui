@@ -9,6 +9,7 @@ to change the colors of the default theme you have to modify `theme.ron` file
 * `$HOME/Library/Application Support/gitui/theme.ron` (mac)
 * `$XDG_CONFIG_HOME/gitui/theme.ron` (linux using XDG)
 * `$HOME/.config/gitui/theme.ron` (linux)
+* `%APPDATA%/gitui/theme.ron` (Windows)
 
 Alternatively you may make a theme in the same directory mentioned above with and select with the `-t` flag followed by the name of the file in the directory. E.g. If you are on linux calling `gitui -t arc.ron` wil use `$XDG_CONFIG_HOME/gitui/arc.ron` or `$HOME/.config/gitui/arc.ron`
 
