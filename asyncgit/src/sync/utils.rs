@@ -406,4 +406,29 @@ mod tests {
         )
         .unwrap();
     }
+
+    #[test]
+    fn test_stage_all_long_filepath() {
+        let (_td, repo) = repo_init().unwrap();
+
+        let repo_path = repo.workdir().unwrap().to_str().unwrap();
+
+        repo.config()
+            .unwrap()
+            .set_bool("core.longpaths", true)
+            .unwrap();
+
+        let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
+
+        debug_cmd_print(
+            repo.workdir().unwrap().to_str().unwrap(),
+            format!("touch {}", file_name).as_str(),
+        );
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        stage_add_all(repo_path, "*").unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 1));
+    }
 }
