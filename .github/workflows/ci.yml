@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [windows-latest]
         rust: [nightly, stable, '1.50']
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust == 'nightly' }}
@@ -85,78 +85,78 @@ jobs:
         cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
         ls -l ./target/wix/gitui.msi
 
-  build-linux-musl:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        rust: [nightly, stable, '1.50']
-    continue-on-error: ${{ matrix.rust == 'nightly' }}
-    steps:
-    - uses: actions/checkout@master
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        profile: minimal
-        default: true
-        target: x86_64-unknown-linux-musl
+  # build-linux-musl:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       rust: [nightly, stable, '1.50']
+  #   continue-on-error: ${{ matrix.rust == 'nightly' }}
+  #   steps:
+  #   - uses: actions/checkout@master
+  #   - name: Install Rust
+  #     uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: ${{ matrix.rust }}
+  #       profile: minimal
+  #       default: true
+  #       target: x86_64-unknown-linux-musl
 
-    # TODO: remove once we depend on 1.51 as a msrv and resolver is supported by default
-    - name: New Resolver
-      if: matrix.rust != '1.50'
-      run: |
-        cargo install cargo-modify --force
-        cargo modify new-resolver
+  #   # TODO: remove once we depend on 1.51 as a msrv and resolver is supported by default
+  #   - name: New Resolver
+  #     if: matrix.rust != '1.50'
+  #     run: |
+  #       cargo install cargo-modify --force
+  #       cargo modify new-resolver
 
-    - name: Setup MUSL
-      run: |
-        sudo apt-get -qq install musl-tools
-    - name: Build Debug
-      run: |
-        make build-linux-musl-debug
-        ./target/x86_64-unknown-linux-musl/debug/gitui --version
-    - name: Build Release
-      run: |
-        make build-linux-musl-release
-        ./target/x86_64-unknown-linux-musl/release/gitui --version
-        ls -l ./target/x86_64-unknown-linux-musl/release/gitui
-    - name: Test
-      run: |
-        make test-linux-musl
+  #   - name: Setup MUSL
+  #     run: |
+  #       sudo apt-get -qq install musl-tools
+  #   - name: Build Debug
+  #     run: |
+  #       make build-linux-musl-debug
+  #       ./target/x86_64-unknown-linux-musl/debug/gitui --version
+  #   - name: Build Release
+  #     run: |
+  #       make build-linux-musl-release
+  #       ./target/x86_64-unknown-linux-musl/release/gitui --version
+  #       ls -l ./target/x86_64-unknown-linux-musl/release/gitui
+  #   - name: Test
+  #     run: |
+  #       make test-linux-musl
 
-  rustfmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        components: rustfmt
-    - run: cargo fmt -- --check
+  # rustfmt:
+  #   name: Rustfmt
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@master
+  #   - name: Install Rust
+  #     uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #       components: rustfmt
+  #   - run: cargo fmt -- --check
 
-  sec:
-    name: Security audit
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/audit-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+  # sec:
+  #   name: Security audit
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - uses: actions-rs/audit-check@v1
+  #     with:
+  #       token: ${{ secrets.GITHUB_TOKEN }}
 
-  log-test:
-    name: Changelog Test
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Extract release notes
-      id: extract_release_notes
-      uses: ffurrer2/extract-release-notes@v1
-      with:
-        release_notes_file: ./release-notes.txt
-    - uses: actions/upload-artifact@v1
-      with:
-        name: release-notes.txt
-        path: ./release-notes.txt
+  # log-test:
+  #   name: Changelog Test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@master
+  #   - name: Extract release notes
+  #     id: extract_release_notes
+  #     uses: ffurrer2/extract-release-notes@v1
+  #     with:
+  #       release_notes_file: ./release-notes.txt
+  #   - uses: actions/upload-artifact@v1
+  #     with:
+  #       name: release-notes.txt
+  #       path: ./release-notes.txt
