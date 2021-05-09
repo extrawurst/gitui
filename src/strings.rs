@@ -918,6 +918,18 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn merge_branch_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Merge [{}]",
+                key_config.get_hint(key_config.merge_branch),
+            ),
+            "merge a branch",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn select_branch_popup(
         key_config: &SharedKeyConfig,
     ) -> CommandText {

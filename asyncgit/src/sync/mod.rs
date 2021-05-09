@@ -29,7 +29,8 @@ pub use blame::{blame_file, BlameHunk, FileBlame};
 pub use branch::{
     branch_compare_upstream, checkout_branch, config_is_pull_rebase,
     create_branch, delete_branch, get_branch_remote,
-    get_branches_info, merge_commit::merge_upstream_commit,
+    get_branches_info, merge_commit::merge_branch,
+    merge_commit::merge_upstream_commit,
     merge_ff::branch_merge_upstream_fastforward,
     merge_rebase::merge_upstream_rebase, rename::rename_branch,
     BranchCompare, BranchInfo,
