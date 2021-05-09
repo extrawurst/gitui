@@ -239,6 +239,7 @@ impl Component for BranchListComponent {
                         "merge branch error:",
                         self.merge_branch()
                     );
+                    self.hide();
                 } else if e == self.key_config.tab_toggle {
                     self.local = !self.local;
                     self.update_branches()?;
