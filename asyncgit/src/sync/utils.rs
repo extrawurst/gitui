@@ -58,7 +58,13 @@ pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
 ///
 pub(crate) fn work_dir(repo: &Repository) -> Result<PathBuf> {
     let path = repo.workdir().ok_or(Error::NoWorkDir)?;
-    Ok(path.canonicalize()?)
+
+    //Note: only canonicalize on windows to support long paths
+    #[cfg(windows)]
+    return Ok(path.canonicalize()?);
+
+    #[cfg(not(windows))]
+    return Ok(path.into());
 }
 
 ///
