@@ -8,7 +8,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue, ResetItem},
-    strings,
+    strings, try_or_popup,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -465,6 +465,16 @@ impl Status {
             .as_ref()
             .map_or(true, |state| state.ahead > 0)
     }
+
+    fn can_abort_merge() -> bool {
+        sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+            == RepoState::Merge
+    }
+
+    fn abort_merge(&self) -> Result<()> {
+        sync::abort_merge(CWD)?;
+        Ok(())
+    }
 }
 
 impl Component for Status {
@@ -506,6 +516,12 @@ impl Component for Status {
                 strings::commands::status_pull(&self.key_config),
                 true,
                 !focus_on_diff,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::abort_merge(&self.key_config),
+                true,
+                Self::can_abort_merge() || force_all,
             ));
         }
 
@@ -653,6 +669,16 @@ impl Component for Status {
                     && !self.is_focus_on_diff()
                 {
                     self.pull();
+                    Ok(EventState::Consumed)
+                } else if k == self.key_config.abort_merge
+                    && Self::can_abort_merge()
+                {
+                    try_or_popup!(
+                        self,
+                        "abort merge error:",
+                        self.abort_merge()
+                    );
+
                     Ok(EventState::Consumed)
                 } else {
                     Ok(EventState::NotConsumed)

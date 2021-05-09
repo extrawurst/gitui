@@ -520,6 +520,16 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn abort_merge(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Abort merge [{}]",
+                key_config.get_hint(key_config.abort_merge),
+            ),
+            "abort ongoing merge",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn select_staging(
         key_config: &SharedKeyConfig,
     ) -> CommandText {

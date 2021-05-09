@@ -72,6 +72,7 @@ pub struct KeyConfig {
     pub push: KeyEvent,
     pub force_push: KeyEvent,
     pub pull: KeyEvent,
+    pub abort_merge: KeyEvent,
 }
 
 #[rustfmt::skip]
@@ -122,14 +123,15 @@ impl Default for KeyConfig {
 			log_tag_commit: KeyEvent { code: KeyCode::Char('t'), modifiers: KeyModifiers::empty()},
 			commit_amend: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
             copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
-            create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::NONE},
-            rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::NONE},
-            select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::NONE},
+            create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::empty()},
+            rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::empty()},
+            select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
             delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
-            merge_branch: KeyEvent{code: KeyCode::Char('m'), modifiers: KeyModifiers::NONE},
+            merge_branch: KeyEvent{code: KeyCode::Char('m'), modifiers: KeyModifiers::empty()},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
             force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
             pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
+            abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
         }
     }
 }
