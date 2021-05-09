@@ -607,6 +607,10 @@ impl App {
                 self.pull_popup.try_conflict_free_merge(rebase);
                 flags.insert(NeedsUpdate::ALL);
             }
+            Action::AbortMerge => {
+                self.status_tab.abort_merge();
+                flags.insert(NeedsUpdate::ALL);
+            }
         };
 
         Ok(())

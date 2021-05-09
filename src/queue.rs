@@ -33,6 +33,7 @@ pub enum Action {
     DeleteBranch(String),
     ForcePush(String, bool),
     PullMerge { incoming: usize, rebase: bool },
+    AbortMerge,
 }
 
 ///
