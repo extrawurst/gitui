@@ -59,12 +59,7 @@ pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
 pub(crate) fn work_dir(repo: &Repository) -> Result<PathBuf> {
     let path = repo.workdir().ok_or(Error::NoWorkDir)?;
 
-    //Note: only canonicalize on windows to support long paths
-    #[cfg(windows)]
-    return Ok(path.canonicalize()?);
-
-    #[cfg(not(windows))]
-    return Ok(path.into());
+    Ok(path.into())
 }
 
 ///
@@ -184,7 +179,13 @@ pub(crate) fn repo_write_file(
     file: &str,
     content: &str,
 ) -> Result<()> {
-    let dir = work_dir(repo)?.join(file);
+    let dir = work_dir(repo)?;
+
+    //Note: only canonicalize on windows to support long paths
+    #[cfg(windows)]
+    let dir = dir.canonicalize()?;
+
+    let dir = dir.join(file);
     let file_path = dir.to_str().ok_or_else(|| {
         Error::Generic(String::from("invalid file path"))
     })?;
