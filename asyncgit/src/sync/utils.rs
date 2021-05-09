@@ -167,7 +167,7 @@ pub(crate) fn bytes2string(bytes: &[u8]) -> Result<String> {
     Ok(String::from_utf8(bytes.to_vec())?)
 }
 
-/// write a file in repo
+/// write a file in repo (just for testing)
 pub(crate) fn repo_write_file(
     repo: &Repository,
     file: &str,
@@ -180,6 +180,25 @@ pub(crate) fn repo_write_file(
     let mut file = File::create(file_path)?;
     file.write_all(content.as_bytes())?;
     Ok(())
+}
+
+/// write a file in repo (just for testing)
+#[allow(clippy::unwrap_used)]
+#[cfg(test)]
+pub(crate) fn repo_write_file_panics(
+    repo: &Repository,
+    file: &str,
+    content: &str,
+) {
+    let dir = work_dir(repo).unwrap().join(file);
+    let file_path = dir.to_str().unwrap();
+
+    //Note:: convert to long path
+    #[cfg(windows)]
+    let file_path = format!("{}{}", r#"\\?\"#, file_path);
+
+    let mut file = File::create(file_path).unwrap();
+    file.write_all(content.as_bytes()).unwrap();
 }
 
 #[cfg(test)]
@@ -396,10 +415,7 @@ mod tests {
 
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
 
-        debug_cmd_print(
-            repo_path,
-            format!("touch {}", file_name).as_str(),
-        );
+        repo_write_file_panics(&repo, file_name, "");
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
@@ -426,10 +442,7 @@ mod tests {
 
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
 
-        debug_cmd_print(
-            repo_path,
-            format!("touch {}", file_name).as_str(),
-        );
+        repo_write_file_panics(&repo, file_name, "");
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
