@@ -393,7 +393,7 @@ mod tests {
 
 #[cfg(test)]
 mod test_long_paths {
-    use std::path::Path;
+    use std::{fs::create_dir_all, path::Path};
 
     use crate::sync::{
         stage_add_file,
@@ -407,6 +407,10 @@ mod test_long_paths {
             "{}.txt",
             std::iter::repeat("a").take(255 - 4).collect::<String>()
         )
+    }
+
+    fn long_folder_name() -> String {
+        std::iter::repeat("f").take(255).collect::<String>()
     }
 
     #[test]
@@ -431,6 +435,45 @@ mod test_long_paths {
 
         stage_add_file(repo_path, Path::new(files[0].path.as_str()))
             .unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 1));
+    }
+
+    #[test]
+    fn test_stage_long_folder() {
+        let (_td, repo) = repo_init().unwrap();
+        let repo_path = repo.workdir().unwrap().to_str().unwrap();
+
+        repo.config()
+            .unwrap()
+            .set_bool("core.longpaths", true)
+            .unwrap();
+
+        let folder_name = long_folder_name();
+
+        let folder = repo.workdir().unwrap();
+        let folder = folder.join(folder_name.clone());
+        let folder = folder.to_str().unwrap();
+
+        create_dir_all(folder).unwrap();
+
+        let file_name =
+            Path::new(&folder_name).join(long_file_name_255());
+        let file_name = file_name.to_str().unwrap();
+
+        repo_write_file(&repo, file_name, "").unwrap();
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        let files =
+            get_status(repo_path, StatusType::WorkingDir, true)
+                .unwrap();
+
+        stage_add_file(
+            repo_path,
+            dbg!(Path::new(files[0].path.as_str())),
+        )
+        .unwrap();
 
         assert_eq!(get_statuses(repo_path), (0, 1));
     }
