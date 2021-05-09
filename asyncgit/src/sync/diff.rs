@@ -180,7 +180,7 @@ pub fn get_diff(
     let work_dir = work_dir(&repo)?;
     let diff = get_diff_raw(&repo, p, stage, false, None)?;
 
-    raw_diff_to_file_diff(&diff, work_dir)
+    raw_diff_to_file_diff(&diff, &work_dir)
 }
 
 /// returns diff of a specific file inside a commit
@@ -196,7 +196,7 @@ pub fn get_diff_commit(
     let work_dir = work_dir(&repo)?;
     let diff = get_commit_diff(&repo, id, Some(p))?;
 
-    raw_diff_to_file_diff(&diff, work_dir)
+    raw_diff_to_file_diff(&diff, &work_dir)
 }
 
 ///

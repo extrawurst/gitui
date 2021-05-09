@@ -4,7 +4,11 @@ use super::CommitId;
 use crate::error::{Error, Result};
 use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
-use std::{fs::File, io::Write, path::Path};
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 ///
 #[derive(PartialEq, Debug, Clone)]
@@ -52,8 +56,9 @@ pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
 }
 
 ///
-pub(crate) fn work_dir(repo: &Repository) -> Result<&Path> {
-    repo.workdir().ok_or(Error::NoWorkDir)
+pub(crate) fn work_dir(repo: &Repository) -> Result<PathBuf> {
+    let path = repo.workdir().ok_or(Error::NoWorkDir)?;
+    Ok(path.canonicalize()?)
 }
 
 ///
@@ -167,7 +172,7 @@ pub(crate) fn bytes2string(bytes: &[u8]) -> Result<String> {
     Ok(String::from_utf8(bytes.to_vec())?)
 }
 
-/// write a file in repo (just for testing)
+/// write a file in repo
 pub(crate) fn repo_write_file(
     repo: &Repository,
     file: &str,
@@ -180,25 +185,6 @@ pub(crate) fn repo_write_file(
     let mut file = File::create(file_path)?;
     file.write_all(content.as_bytes())?;
     Ok(())
-}
-
-/// write a file in repo (just for testing)
-#[allow(clippy::unwrap_used)]
-#[cfg(test)]
-pub(crate) fn repo_write_file_panics(
-    repo: &Repository,
-    file: &str,
-    content: &str,
-) {
-    let dir = work_dir(repo).unwrap().join(file);
-    let file_path = dir.to_str().unwrap();
-
-    //Note:: convert to long path
-    #[cfg(windows)]
-    let file_path = format!("{}{}", r#"\\?\"#, file_path);
-
-    let mut file = File::create(file_path).unwrap();
-    file.write_all(content.as_bytes()).unwrap();
 }
 
 #[cfg(test)]
@@ -415,7 +401,7 @@ mod tests {
 
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
 
-        repo_write_file_panics(&repo, file_name, "");
+        repo_write_file(&repo, file_name, "").unwrap();
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
@@ -442,7 +428,7 @@ mod tests {
 
         let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
 
-        repo_write_file_panics(&repo, file_name, "");
+        repo_write_file(&repo, file_name, "").unwrap();
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
