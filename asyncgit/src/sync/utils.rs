@@ -395,9 +395,28 @@ mod tests {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod test_long_paths {
+    use std::path::Path;
+
+    use crate::sync::{
+        stage_add_file,
+        status::{get_status, StatusType},
+        tests::{get_statuses, repo_init},
+        utils::repo_write_file,
+    };
+
+    fn long_file_name_255() -> String {
+        format!(
+            "{}.txt",
+            std::iter::repeat("a").take(255 - 4).collect::<String>()
+        )
+    }
 
     #[test]
-    fn test_stage_long_filepath() {
+    fn test_stage_long_filename() {
         let (_td, repo) = repo_init().unwrap();
         let repo_path = repo.workdir().unwrap().to_str().unwrap();
 
@@ -406,9 +425,9 @@ mod tests {
             .set_bool("core.longpaths", true)
             .unwrap();
 
-        let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
+        let file_name = long_file_name_255();
 
-        repo_write_file(&repo, file_name, "").unwrap();
+        repo_write_file(&repo, &file_name, "").unwrap();
 
         assert_eq!(get_statuses(repo_path), (1, 0));
 
@@ -418,28 +437,6 @@ mod tests {
 
         stage_add_file(repo_path, Path::new(files[0].path.as_str()))
             .unwrap();
-
-        assert_eq!(get_statuses(repo_path), (0, 1));
-    }
-
-    #[test]
-    fn test_stage_all_long_filepath() {
-        let (_td, repo) = repo_init().unwrap();
-
-        let repo_path = repo.workdir().unwrap().to_str().unwrap();
-
-        repo.config()
-            .unwrap()
-            .set_bool("core.longpaths", true)
-            .unwrap();
-
-        let file_name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt";
-
-        repo_write_file(&repo, file_name, "").unwrap();
-
-        assert_eq!(get_statuses(repo_path), (1, 0));
-
-        stage_add_all(repo_path, file_name).unwrap();
 
         assert_eq!(get_statuses(repo_path), (0, 1));
     }
