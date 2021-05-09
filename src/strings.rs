@@ -122,10 +122,10 @@ pub fn confirm_msg_merge(
 }
 
 pub fn confirm_title_abortmerge() -> String {
-    "Abort merge".to_string()
+    "Abort merge?".to_string()
 }
 pub fn confirm_msg_abortmerge() -> String {
-    "Abort merge?".to_string()
+    "This will revert all changes. Are you sure?".to_string()
 }
 pub fn confirm_msg_reset() -> String {
     "confirm file reset?".to_string()

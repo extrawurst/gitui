@@ -472,7 +472,14 @@ impl Status {
     }
 
     pub fn abort_merge(&self) {
-        try_or_popup!(self, "abort merge", sync::abort_merge(CWD))
+        try_or_popup!(self, "abort merge", Self::abort_merge_reset())
+    }
+
+    fn abort_merge_reset() -> Result<()> {
+        sync::reset_stage(CWD, "*")?;
+        sync::reset_workdir(CWD, "*")?;
+        sync::abort_merge(CWD)?;
+        Ok(())
     }
 }
 
