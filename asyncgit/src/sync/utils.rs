@@ -423,7 +423,18 @@ mod test_long_paths {
             .set_bool("core.longpaths", true)
             .unwrap();
 
-        let file_name = long_file_name_255();
+        let folder_name =
+            String::from("some_not_so_long_folder_name");
+
+        let folder = repo.workdir().unwrap();
+        let folder = folder.join(folder_name.clone());
+        let folder = folder.to_str().unwrap();
+
+        create_dir_all(folder).unwrap();
+
+        let file_name =
+            Path::new(&folder_name).join(long_file_name_255());
+        let file_name = file_name.to_str().unwrap();
 
         repo_write_file(&repo, &file_name, "").unwrap();
 
