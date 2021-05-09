@@ -118,7 +118,7 @@ impl DrawableComponent for Status {
         self.index.draw(f, left_chunks[1])?;
         self.diff.draw(f, chunks[1])?;
         self.draw_branch_state(f, &left_chunks);
-        Self::draw_repo_state(f, left_chunks[0]);
+        Self::draw_repo_state(f, left_chunks[0])?;
 
         Ok(())
     }
@@ -213,12 +213,11 @@ impl Status {
     fn draw_repo_state<B: tui::backend::Backend>(
         f: &mut tui::Frame<B>,
         r: tui::layout::Rect,
-    ) {
+    ) -> Result<()> {
         if let Ok(state) = asyncgit::sync::repo_state(CWD) {
             if state != RepoState::Clean {
                 let txt = format!("{:?}", state);
-                let txt_len = u16::try_from(txt.len())
-                    .expect("state name too long");
+                let txt_len = u16::try_from(txt.len())?;
                 let w = Paragraph::new(txt)
                     .style(Style::default().fg(Color::Red))
                     .alignment(Alignment::Left);
@@ -235,6 +234,8 @@ impl Status {
                 f.render_widget(w, rect);
             }
         }
+
+        Ok(())
     }
 
     fn can_focus_diff(&self) -> bool {
