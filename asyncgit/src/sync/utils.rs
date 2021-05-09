@@ -4,11 +4,7 @@ use super::CommitId;
 use crate::error::{Error, Result};
 use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
-use std::{
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{fs::File, io::Write, path::Path};
 
 ///
 #[derive(PartialEq, Debug, Clone)]
@@ -56,10 +52,8 @@ pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
 }
 
 ///
-pub(crate) fn work_dir(repo: &Repository) -> Result<PathBuf> {
-    let path = repo.workdir().ok_or(Error::NoWorkDir)?;
-
-    Ok(path.into())
+pub(crate) fn work_dir(repo: &Repository) -> Result<&Path> {
+    repo.workdir().ok_or(Error::NoWorkDir)
 }
 
 ///
