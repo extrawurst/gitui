@@ -86,7 +86,7 @@ pub fn stash_popup_title(_key_config: &SharedKeyConfig) -> String {
 pub fn stash_popup_msg(_key_config: &SharedKeyConfig) -> String {
     "type name (optional)".to_string()
 }
-pub fn confirm_title_reset(_key_config: &SharedKeyConfig) -> String {
+pub fn confirm_title_reset() -> String {
     "Reset".to_string()
 }
 pub fn confirm_title_stashdrop(
@@ -120,13 +120,17 @@ pub fn confirm_msg_merge(
         format!("Merge of {} incoming commits?", incoming)
     }
 }
-pub fn confirm_msg_reset(_key_config: &SharedKeyConfig) -> String {
+
+pub fn confirm_title_abortmerge() -> String {
+    "Abort merge".to_string()
+}
+pub fn confirm_msg_abortmerge() -> String {
+    "Abort merge?".to_string()
+}
+pub fn confirm_msg_reset() -> String {
     "confirm file reset?".to_string()
 }
-pub fn confirm_msg_reset_lines(
-    _key_config: &SharedKeyConfig,
-    lines: usize,
-) -> String {
+pub fn confirm_msg_reset_lines(lines: usize) -> String {
     format!(
         "are you sure you want to discard {} selected lines?",
         lines

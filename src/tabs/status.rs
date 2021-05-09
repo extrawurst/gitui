@@ -471,9 +471,8 @@ impl Status {
             == RepoState::Merge
     }
 
-    fn abort_merge(&self) -> Result<()> {
-        sync::abort_merge(CWD)?;
-        Ok(())
+    pub fn abort_merge(&self) {
+        try_or_popup!(self, "abort merge", sync::abort_merge(CWD))
     }
 }
 
@@ -673,10 +672,10 @@ impl Component for Status {
                 } else if k == self.key_config.abort_merge
                     && Self::can_abort_merge()
                 {
-                    try_or_popup!(
-                        self,
-                        "abort merge error:",
-                        self.abort_merge()
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ConfirmAction(
+                            Action::AbortMerge,
+                        ),
                     );
 
                     Ok(EventState::Consumed)
