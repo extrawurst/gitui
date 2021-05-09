@@ -481,6 +481,52 @@ impl Status {
         sync::abort_merge(CWD)?;
         Ok(())
     }
+
+    fn commands_nav(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) {
+        let focus_on_diff = self.is_focus_on_diff();
+        out.push(
+            CommandInfo::new(
+                strings::commands::diff_focus_left(&self.key_config),
+                true,
+                (self.visible && focus_on_diff) || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+        out.push(
+            CommandInfo::new(
+                strings::commands::diff_focus_right(&self.key_config),
+                self.can_focus_diff(),
+                (self.visible && !focus_on_diff) || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+        out.push(
+            CommandInfo::new(
+                strings::commands::select_staging(&self.key_config),
+                !focus_on_diff,
+                (self.visible
+                    && !focus_on_diff
+                    && self.focus == Focus::WorkDir)
+                    || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+        out.push(
+            CommandInfo::new(
+                strings::commands::select_unstaged(&self.key_config),
+                !focus_on_diff,
+                (self.visible
+                    && !focus_on_diff
+                    && self.focus == Focus::Stage)
+                    || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+    }
 }
 
 impl Component for Status {
@@ -541,52 +587,6 @@ impl Component for Status {
                 },
                 self.visible || force_all,
             ));
-            out.push(
-                CommandInfo::new(
-                    strings::commands::diff_focus_left(
-                        &self.key_config,
-                    ),
-                    true,
-                    (self.visible && focus_on_diff) || force_all,
-                )
-                .order(strings::order::NAV),
-            );
-            out.push(
-                CommandInfo::new(
-                    strings::commands::diff_focus_right(
-                        &self.key_config,
-                    ),
-                    self.can_focus_diff(),
-                    (self.visible && !focus_on_diff) || force_all,
-                )
-                .order(strings::order::NAV),
-            );
-            out.push(
-                CommandInfo::new(
-                    strings::commands::select_staging(
-                        &self.key_config,
-                    ),
-                    !focus_on_diff,
-                    (self.visible
-                        && !focus_on_diff
-                        && self.focus == Focus::WorkDir)
-                        || force_all,
-                )
-                .order(strings::order::NAV),
-            );
-            out.push(
-                CommandInfo::new(
-                    strings::commands::select_unstaged(
-                        &self.key_config,
-                    ),
-                    !focus_on_diff,
-                    (self.visible
-                        && !focus_on_diff
-                        && self.focus == Focus::Stage)
-                        || force_all,
-                )
-                .order(strings::order::NAV),
-            );
 
             out.push(
                 CommandInfo::new(
@@ -598,6 +598,8 @@ impl Component for Status {
                 )
                 .hidden(),
             );
+
+            self.commands_nav(out, force_all);
         }
 
         visibility_blocking(self)
