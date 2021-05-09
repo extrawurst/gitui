@@ -1,15 +1,21 @@
 use crate::{
     error::{Error, Result},
-    sync::utils,
+    sync::{reset_stage, reset_workdir, utils},
 };
 use git2::{BranchType, MergeOptions};
 use scopetime::scope_time;
 
-///
+/// does these steps:
+/// * reset all staged changes,
+/// * revert all changes in workdir
+/// * cleanup repo merge state
 pub fn abort_merge(repo_path: &str) -> Result<()> {
     scope_time!("cleanup_state");
 
     let repo = utils::repo(repo_path)?;
+
+    reset_stage(repo_path, "*")?;
+    reset_workdir(repo_path, "*")?;
 
     repo.cleanup_state()?;
 
