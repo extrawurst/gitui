@@ -1,6 +1,6 @@
 use crate::notify_mutex::NotifyableMutex;
 use anyhow::Result;
-use crossbeam_channel::{unbounded, Receiver};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use crossterm::event::{self, Event};
 use std::{
     process,
@@ -48,7 +48,7 @@ impl Input {
 
         thread::spawn(move || {
             if let Err(e) =
-                Self::input_loop(arc_desired, arc_current, tx)
+                Self::input_loop(&arc_desired, &arc_current, &tx)
             {
                 log::error!("input thread error: {}", e);
                 process::abort();
@@ -91,9 +91,9 @@ impl Input {
     }
 
     fn input_loop(
-        arc_desired: Arc<NotifyableMutex<bool>>,
-        arc_current: Arc<AtomicBool>,
-        tx: crossbeam_channel::Sender<InputEvent>,
+        arc_desired: &Arc<NotifyableMutex<bool>>,
+        arc_current: &Arc<AtomicBool>,
+        tx: &Sender<InputEvent>,
     ) -> Result<()> {
         loop {
             if arc_desired.get() {
