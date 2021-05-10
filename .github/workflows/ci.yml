@@ -38,7 +38,7 @@ jobs:
 
     - name: MacOS Workaround
       if: matrix.os == 'macos-latest'
-      run: cargo clean --locked -p serde_derive -p thiserror
+      run: cargo clean --locked --offline -p serde_derive -p thiserror
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
