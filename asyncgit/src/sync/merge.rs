@@ -62,3 +62,32 @@ pub fn merge_branch(repo_path: &str, branch: &str) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sync::{
+        create_branch,
+        tests::{repo_init, write_commit_file},
+    };
+
+    #[test]
+    fn test_smoke() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        let c1 =
+            write_commit_file(&repo, "test.txt", "test", "commit1");
+
+        create_branch(repo_path, "foo").unwrap();
+
+        write_commit_file(&repo, "test.txt", "test2", "commit2");
+
+        merge_branch(repo_path, "master").unwrap();
+
+        let mergeheads = merge_state_info(repo_path).unwrap();
+
+        assert_eq!(mergeheads[0], c1);
+    }
+}
