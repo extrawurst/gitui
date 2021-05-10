@@ -1,9 +1,24 @@
 use crate::{
     error::{Error, Result},
-    sync::{reset_stage, reset_workdir, utils},
+    sync::{reset_stage, reset_workdir, utils, CommitId},
 };
 use git2::{BranchType, MergeOptions};
 use scopetime::scope_time;
+
+///
+pub fn merge_state_info(repo_path: &str) -> Result<Vec<CommitId>> {
+    scope_time!("merge_state_info");
+
+    let mut repo = utils::repo(repo_path)?;
+
+    let mut ids: Vec<CommitId> = Vec::new();
+    repo.mergehead_foreach(|id| {
+        ids.push(CommitId::from(*id));
+        true
+    })?;
+
+    Ok(ids)
+}
 
 /// does these steps:
 /// * reset all staged changes,
