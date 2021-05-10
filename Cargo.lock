@@ -313,6 +313,7 @@ checksum = "f6503fe142514ca4799d4c26297c4248239fe8838d827db6bd6065c6ed29a6ce"
 [[package]]
 name = "git2"
 version = "0.13.18"
+source = "git+https://github.com/extrawurst/git2-rs.git?rev=4619405#461940586fe586c3527314e1954708f645efd2c5"
 dependencies = [
  "bitflags",
  "libc",
@@ -466,6 +467,7 @@ checksum = "18794a8ad5b29321f790b55d93dfba91e125cb1a9edbd4f8e3150acc771c1a5e"
 [[package]]
 name = "libgit2-sys"
 version = "0.12.19+1.1.0"
+source = "git+https://github.com/extrawurst/git2-rs.git?rev=4619405#461940586fe586c3527314e1954708f645efd2c5"
 dependencies = [
  "cc",
  "libc",
