@@ -202,7 +202,6 @@ impl Component for BranchListComponent {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
-                    self.hide();
                 } else if e == self.key_config.rename_branch
                     && self.valid_selection()
                 {
