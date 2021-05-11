@@ -21,6 +21,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use itertools::Itertools;
 use std::convert::Into;
 use std::convert::TryFrom;
 use tui::{
@@ -214,9 +215,19 @@ impl Status {
         f: &mut tui::Frame<B>,
         r: tui::layout::Rect,
     ) -> Result<()> {
-        if let Ok(state) = asyncgit::sync::repo_state(CWD) {
+        if let Ok(state) = sync::repo_state(CWD) {
             if state != RepoState::Clean {
-                let txt = format!("{:?}", state);
+                let ids =
+                    sync::merge_state_info(CWD).unwrap_or_default();
+                let ids = format!(
+                    "({})",
+                    ids.iter()
+                        .map(|id| sync::CommitId::get_short_string(
+                            id
+                        ))
+                        .join(",")
+                );
+                let txt = format!("{:?} {}", state, ids);
                 let txt_len = u16::try_from(txt.len())?;
                 let w = Paragraph::new(txt)
                     .style(Style::default().fg(Color::Red))
