@@ -45,9 +45,8 @@ pub fn merge_branch(repo_path: &str, branch: &str) -> Result<()> {
 
     let branch = repo.find_branch(branch, BranchType::Local)?;
 
-    let id = branch.into_reference().peel_to_commit()?;
-
-    let annotated = repo.find_annotated_commit(id.id())?;
+    let annotated =
+        repo.reference_to_annotated_commit(&branch.into_reference())?;
 
     let (analysis, _) = repo.merge_analysis(&[&annotated])?;
 
