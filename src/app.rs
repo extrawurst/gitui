@@ -132,6 +132,7 @@ impl App {
                 sender,
                 theme.clone(),
                 key_config.clone(),
+                cred_popup.clone(),
             ),
             pull_popup: PullComponent::new(
                 &queue,
