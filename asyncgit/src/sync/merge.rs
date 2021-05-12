@@ -7,7 +7,7 @@ use crate::{
         reset_workdir, utils, CommitId,
     },
 };
-use git2::{BranchType, Commit, MergeOptions};
+use git2::{BranchType, Commit, MergeOptions, Repository};
 use scopetime::scope_time;
 
 ///
@@ -48,6 +48,16 @@ pub fn merge_branch(repo_path: &str, branch: &str) -> Result<()> {
 
     let repo = utils::repo(repo_path)?;
 
+    merge_branch_repo(&repo, branch)?;
+
+    Ok(())
+}
+
+///
+pub fn merge_branch_repo(
+    repo: &Repository,
+    branch: &str,
+) -> Result<()> {
     let branch = repo.find_branch(branch, BranchType::Local)?;
 
     let annotated =
