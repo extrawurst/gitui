@@ -14,7 +14,10 @@ use crate::{
     strings,
     ui::style::SharedTheme,
 };
+use std::cell::RefCell;
+use std::rc::Rc;
 
+pub type SharedCredComponent = Rc<RefCell<CredComponent>>;
 ///
 pub struct CredComponent {
     visible: bool,
