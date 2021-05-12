@@ -475,6 +475,9 @@ impl App {
         if flags.contains(NeedsUpdate::COMMANDS) {
             self.update_commands();
         }
+        if flags.contains(NeedsUpdate::BRANCHES) {
+            self.select_branch_popup.update_branches()?;
+        }
 
         Ok(())
     }

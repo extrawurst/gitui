@@ -123,7 +123,7 @@ impl CreateBranchComponent {
         match res {
             Ok(_) => {
                 self.queue.borrow_mut().push_back(
-                    InternalEvent::Update(NeedsUpdate::ALL),
+                    InternalEvent::Update(NeedsUpdate::BRANCHES),
                 );
             }
             Err(e) => {
