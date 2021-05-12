@@ -62,8 +62,11 @@ pub fn msg_opening_editor(_key_config: &SharedKeyConfig) -> String {
 pub fn msg_title_error(_key_config: &SharedKeyConfig) -> String {
     "Error".to_string()
 }
-pub fn commit_title(_key_config: &SharedKeyConfig) -> String {
+pub fn commit_title() -> String {
     "Commit".to_string()
+}
+pub fn commit_title_merge() -> String {
+    "Commit (Merge)".to_string()
 }
 pub fn commit_title_amend(_key_config: &SharedKeyConfig) -> String {
     "Commit (Amend)".to_string()

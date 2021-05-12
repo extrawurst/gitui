@@ -1,8 +1,13 @@
+use std::fs::read_to_string;
+
 use crate::{
     error::{Error, Result},
-    sync::{reset_stage, reset_workdir, utils, CommitId},
+    sync::{
+        branch::merge_commit::commit_merge_with_head, reset_stage,
+        reset_workdir, utils, CommitId,
+    },
 };
-use git2::{BranchType, MergeOptions};
+use git2::{BranchType, Commit, MergeOptions};
 use scopetime::scope_time;
 
 ///
@@ -60,6 +65,40 @@ pub fn merge_branch(repo_path: &str, branch: &str) -> Result<()> {
     repo.merge(&[&annotated], Some(&mut opt), None)?;
 
     Ok(())
+}
+
+///
+pub fn merge_msg(repo_path: &str) -> Result<String> {
+    scope_time!("merge_msg");
+
+    let repo = utils::repo(repo_path)?;
+
+    let msg_file = repo.path().join("MERGE_MSG");
+
+    let content = read_to_string(msg_file).unwrap_or_default();
+
+    Ok(content)
+}
+
+///
+pub fn merge_commit(
+    repo_path: &str,
+    msg: &str,
+    ids: &[CommitId],
+) -> Result<CommitId> {
+    scope_time!("merge_commit");
+
+    let repo = utils::repo(repo_path)?;
+
+    let mut commits: Vec<Commit> = Vec::new();
+
+    for id in ids {
+        commits.push(repo.find_commit((*id).into())?);
+    }
+
+    let id = commit_merge_with_head(&repo, &commits, msg)?;
+
+    Ok(id)
 }
 
 #[cfg(test)]
