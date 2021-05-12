@@ -2,9 +2,12 @@ use std::fs::read_to_string;
 
 use crate::{
     error::{Error, Result},
-    sync::{commit, reset_stage, reset_workdir, utils, CommitId},
+    sync::{
+        branch::merge_commit::commit_merge_with_head, reset_stage,
+        reset_workdir, utils, CommitId,
+    },
 };
-use git2::{BranchType, MergeOptions};
+use git2::{BranchType, Commit, MergeOptions};
 use scopetime::scope_time;
 
 ///
@@ -81,28 +84,21 @@ pub fn merge_msg(repo_path: &str) -> Result<String> {
 pub fn merge_commit(
     repo_path: &str,
     msg: &str,
-    _ids: &[CommitId],
+    ids: &[CommitId],
 ) -> Result<CommitId> {
     scope_time!("merge_commit");
 
-    commit(repo_path, msg)
-    // let repo = utils::repo(repo_path)?;
+    let repo = utils::repo(repo_path)?;
 
-    // let branch = repo.find_branch(branch, BranchType::Local)?;
+    let mut commits: Vec<Commit> = Vec::new();
 
-    // let annotated =
-    //     repo.reference_to_annotated_commit(&branch.into_reference())?;
+    for id in ids {
+        commits.push(repo.find_commit((*id).into())?);
+    }
 
-    // let (analysis, _) = repo.merge_analysis(&[&annotated])?;
+    let id = commit_merge_with_head(&repo, &commits, msg)?;
 
-    // //TODO: support merge on unborn
-    // if analysis.is_unborn() {
-    //     return Err(Error::Generic("head is unborn".into()));
-    // }
-
-    // let mut opt = MergeOptions::default();
-
-    // repo.merge(&[&annotated], Some(&mut opt), None)?;
+    Ok(id)
 }
 
 #[cfg(test)]

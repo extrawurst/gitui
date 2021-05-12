@@ -5,7 +5,7 @@ use crate::{
     error::{Error, Result},
     sync::{utils, CommitId},
 };
-use git2::MergeOptions;
+use git2::{Commit, MergeOptions};
 use scopetime::scope_time;
 
 /// merge upstream using a merge commit without conflicts. fails if not possible without conflicts
@@ -48,18 +48,6 @@ pub fn merge_upstream_commit(
         return Err(Error::Generic("creates conflicts".into()));
     }
 
-    let signature =
-        crate::sync::commit::signature_allow_undefined_name(&repo)?;
-    let mut index = repo.index()?;
-    let tree_id = index.write_tree()?;
-    let tree = repo.find_tree(tree_id)?;
-
-    let head_commit = repo.find_commit(
-        crate::sync::utils::get_head_repo(&repo)?.into(),
-    )?;
-    let parents = vec![&head_commit, &upstream_commit];
-
-    //find remote url for this branch
     let remote_url = {
         let branch_refname =
             branch.get().name().ok_or_else(|| {
@@ -75,20 +63,43 @@ pub fn merge_upstream_commit(
         remote.url().unwrap_or_default().to_string()
     };
 
+    let commit_id = commit_merge_with_head(
+        &repo,
+        &[upstream_commit],
+        format!("Merge '{}' of {}", branch_name, remote_url).as_str(),
+    )?;
+
+    Ok(commit_id)
+}
+
+pub(crate) fn commit_merge_with_head(
+    repo: &git2::Repository,
+    commits: &[Commit],
+    msg: &str,
+) -> Result<CommitId> {
+    let signature =
+        crate::sync::commit::signature_allow_undefined_name(repo)?;
+    let mut index = repo.index()?;
+    let tree_id = index.write_tree()?;
+    let tree = repo.find_tree(tree_id)?;
+    let head_commit = repo.find_commit(
+        crate::sync::utils::get_head_repo(repo)?.into(),
+    )?;
+
+    let mut parents = vec![&head_commit];
+    parents.extend(commits);
+
     let commit_id = repo
         .commit(
             Some("HEAD"),
             &signature,
             &signature,
-            format!("Merge '{}' of {}", branch_name, remote_url)
-                .as_str(),
+            msg,
             &tree,
             parents.as_slice(),
         )?
         .into();
-
     repo.cleanup_state()?;
-
     Ok(commit_id)
 }
 
