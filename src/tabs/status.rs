@@ -218,7 +218,7 @@ impl Status {
         if let Ok(state) = sync::repo_state(CWD) {
             if state != RepoState::Clean {
                 let ids =
-                    sync::merge_state_info(CWD).unwrap_or_default();
+                    sync::mergehead_ids(CWD).unwrap_or_default();
                 let ids = format!(
                     "({})",
                     ids.iter()

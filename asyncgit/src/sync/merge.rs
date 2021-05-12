@@ -6,8 +6,8 @@ use git2::{BranchType, MergeOptions};
 use scopetime::scope_time;
 
 ///
-pub fn merge_state_info(repo_path: &str) -> Result<Vec<CommitId>> {
-    scope_time!("merge_state_info");
+pub fn mergehead_ids(repo_path: &str) -> Result<Vec<CommitId>> {
+    scope_time!("mergehead_ids");
 
     let mut repo = utils::repo(repo_path)?;
 
@@ -86,7 +86,7 @@ mod tests {
 
         merge_branch(repo_path, "master").unwrap();
 
-        let mergeheads = merge_state_info(repo_path).unwrap();
+        let mergeheads = mergehead_ids(repo_path).unwrap();
 
         assert_eq!(mergeheads[0], c1);
     }
