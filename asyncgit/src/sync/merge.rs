@@ -1,3 +1,5 @@
+use std::fs::read_to_string;
+
 use crate::{
     error::{Error, Result},
     sync::{commit, reset_stage, reset_workdir, utils, CommitId},
@@ -63,10 +65,16 @@ pub fn merge_branch(repo_path: &str, branch: &str) -> Result<()> {
 }
 
 ///
-pub fn merge_msg(_repo_path: &str) -> Result<String> {
+pub fn merge_msg(repo_path: &str) -> Result<String> {
     scope_time!("merge_msg");
 
-    Ok(String::from("todo"))
+    let repo = utils::repo(repo_path)?;
+
+    let msg_file = repo.path().join("MERGE_MSG");
+
+    let content = read_to_string(msg_file)?;
+
+    Ok(content)
 }
 
 ///

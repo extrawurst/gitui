@@ -147,23 +147,24 @@ impl Component for CommitComponent {
         self.mode = if sync::repo_state(CWD)? == RepoState::Merge {
             let ids = sync::mergehead_ids(CWD)?;
             self.input.set_title(strings::commit_title_merge());
+            self.input.set_text(sync::merge_msg(CWD)?);
             Mode::Merge(ids)
         } else {
+            self.commit_template =
+                get_config_string(CWD, "commit.template")
+                    .ok()
+                    .flatten()
+                    .and_then(|path| read_to_string(path).ok());
+
+            if self.is_empty() {
+                if let Some(s) = &self.commit_template {
+                    self.input.set_text(s.clone());
+                }
+            }
+
             self.input.set_title(strings::commit_title());
             Mode::Normal
         };
-
-        self.commit_template =
-            get_config_string(CWD, "commit.template")
-                .ok()
-                .flatten()
-                .and_then(|path| read_to_string(path).ok());
-
-        if self.is_empty() {
-            if let Some(s) = &self.commit_template {
-                self.input.set_text(s.clone());
-            }
-        }
 
         self.input.show()?;
 
