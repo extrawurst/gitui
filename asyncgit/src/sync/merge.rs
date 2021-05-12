@@ -1,6 +1,6 @@
 use crate::{
     error::{Error, Result},
-    sync::{reset_stage, reset_workdir, utils, CommitId},
+    sync::{commit, reset_stage, reset_workdir, utils, CommitId},
 };
 use git2::{BranchType, MergeOptions};
 use scopetime::scope_time;
@@ -60,6 +60,41 @@ pub fn merge_branch(repo_path: &str, branch: &str) -> Result<()> {
     repo.merge(&[&annotated], Some(&mut opt), None)?;
 
     Ok(())
+}
+
+///
+pub fn merge_msg(_repo_path: &str) -> Result<String> {
+    scope_time!("merge_msg");
+
+    Ok(String::from("todo"))
+}
+
+///
+pub fn merge_commit(
+    repo_path: &str,
+    msg: &str,
+    _ids: &[CommitId],
+) -> Result<CommitId> {
+    scope_time!("merge_commit");
+
+    commit(repo_path, msg)
+    // let repo = utils::repo(repo_path)?;
+
+    // let branch = repo.find_branch(branch, BranchType::Local)?;
+
+    // let annotated =
+    //     repo.reference_to_annotated_commit(&branch.into_reference())?;
+
+    // let (analysis, _) = repo.merge_analysis(&[&annotated])?;
+
+    // //TODO: support merge on unborn
+    // if analysis.is_unborn() {
+    //     return Err(Error::Generic("head is unborn".into()));
+    // }
+
+    // let mut opt = MergeOptions::default();
+
+    // repo.merge(&[&annotated], Some(&mut opt), None)?;
 }
 
 #[cfg(test)]
