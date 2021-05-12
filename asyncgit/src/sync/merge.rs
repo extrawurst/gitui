@@ -72,7 +72,7 @@ pub fn merge_msg(repo_path: &str) -> Result<String> {
 
     let msg_file = repo.path().join("MERGE_MSG");
 
-    let content = read_to_string(msg_file)?;
+    let content = read_to_string(msg_file).unwrap_or_default();
 
     Ok(content)
 }
