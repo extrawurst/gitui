@@ -13,7 +13,10 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     cached,
-    sync::{self, utils::get_config_string, CommitId, HookResult},
+    sync::{
+        self, utils::get_config_string, CommitId, HookResult,
+        RepoState,
+    },
     CWD,
 };
 use crossterm::event::Event;
@@ -30,9 +33,15 @@ use tui::{
     Frame,
 };
 
+enum Mode {
+    Normal,
+    Amend(CommitId),
+    Merge(Vec<CommitId>),
+}
+
 pub struct CommitComponent {
     input: TextInputComponent,
-    amend: Option<CommitId>,
+    mode: Mode,
     queue: Queue,
     key_config: SharedKeyConfig,
     git_branch_name: cached::BranchName,
@@ -128,25 +137,34 @@ impl Component for CommitComponent {
     }
 
     fn show(&mut self) -> Result<()> {
-        if self.amend.is_some() {
+        //only clear text if it was not a normal commit dlg before, so to preserve old commit msg that was edited
+        if !matches!(self.mode, Mode::Normal) {
             self.input.clear();
         }
-        self.amend = None;
 
-        self.input
-            .set_title(strings::commit_title(&self.key_config));
+        self.mode = Mode::Normal;
 
-        self.commit_template =
-            get_config_string(CWD, "commit.template")
-                .ok()
-                .flatten()
-                .and_then(|path| read_to_string(path).ok());
+        self.mode = if sync::repo_state(CWD)? == RepoState::Merge {
+            let ids = sync::mergehead_ids(CWD)?;
+            self.input.set_title(strings::commit_title_merge());
+            self.input.set_text(sync::merge_msg(CWD)?);
+            Mode::Merge(ids)
+        } else {
+            self.commit_template =
+                get_config_string(CWD, "commit.template")
+                    .ok()
+                    .flatten()
+                    .and_then(|path| read_to_string(path).ok());
 
-        if self.is_empty() {
-            if let Some(s) = &self.commit_template {
-                self.input.set_text(s.clone());
+            if self.is_empty() {
+                if let Some(s) = &self.commit_template {
+                    self.input.set_text(s.clone());
+                }
             }
-        }
+
+            self.input.set_title(strings::commit_title());
+            Mode::Normal
+        };
 
         self.input.show()?;
 
@@ -163,7 +181,8 @@ impl CommitComponent {
     ) -> Self {
         Self {
             queue,
-            amend: None,
+            mode: Mode::Normal,
+
             input: TextInputComponent::new(
                 theme.clone(),
                 key_config.clone(),
@@ -281,10 +300,10 @@ impl CommitComponent {
     fn commit(&mut self) -> Result<()> {
         let msg = self.input.get_text().clone();
         self.input.clear();
-        self.commit_msg(msg)
+        self.commit_with_msg(msg)
     }
 
-    fn commit_msg(&mut self, msg: String) -> Result<()> {
+    fn commit_with_msg(&mut self, msg: String) -> Result<()> {
         if let HookResult::NotOk(e) = sync::hooks_pre_commit(CWD)? {
             log::error!("pre-commit hook error: {}", e);
             self.queue.borrow_mut().push_back(
@@ -309,10 +328,12 @@ impl CommitComponent {
             return Ok(());
         }
 
-        let res = self.amend.map_or_else(
-            || sync::commit(CWD, &msg),
-            |amend| sync::amend(CWD, amend, &msg),
-        );
+        let res = match &self.mode {
+            Mode::Normal => sync::commit(CWD, &msg),
+            Mode::Amend(amend) => sync::amend(CWD, *amend, &msg),
+            Mode::Merge(ids) => sync::merge_commit(CWD, &msg, ids),
+        };
+
         if let Err(e) = res {
             log::error!("commit error: {}", &e);
             self.queue.borrow_mut().push_back(
@@ -348,7 +369,7 @@ impl CommitComponent {
     }
 
     fn can_amend(&self) -> bool {
-        self.amend.is_none()
+        matches!(self.mode, Mode::Normal)
             && sync::get_head(CWD).is_ok()
             && (self.is_empty() || !self.is_changed())
     }
@@ -363,16 +384,19 @@ impl CommitComponent {
     }
 
     fn amend(&mut self) -> Result<()> {
-        let id = sync::get_head(CWD)?;
-        self.amend = Some(id);
+        if self.can_amend() {
+            let id = sync::get_head(CWD)?;
+            self.mode = Mode::Amend(id);
 
-        let details = sync::get_commit_details(CWD, id)?;
+            let details = sync::get_commit_details(CWD, id)?;
 
-        self.input
-            .set_title(strings::commit_title_amend(&self.key_config));
+            self.input.set_title(strings::commit_title_amend(
+                &self.key_config,
+            ));
 
-        if let Some(msg) = details.message {
-            self.input.set_text(msg.combine());
+            if let Some(msg) = details.message {
+                self.input.set_text(msg.combine());
+            }
         }
 
         Ok(())

@@ -15,6 +15,7 @@ mod hooks;
 mod hunks;
 mod ignore;
 mod logwalker;
+mod merge;
 mod patches;
 pub mod remotes;
 mod reset;
@@ -49,6 +50,9 @@ pub use hooks::{
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
+pub use merge::{
+    abort_merge, merge_branch, merge_commit, merge_msg, mergehead_ids,
+};
 pub use remotes::{
     get_default_remote, get_remotes, push::AsyncProgress,
     tags::PushTagsProgress,

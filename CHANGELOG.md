@@ -12,10 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![warning](assets/commit-msg-length-limit.gif)
 
 ## Added
+- merging arbitrary branch, commit merges ([#485](https://github.com/extrawurst/gitui/issues/485))
 - warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
 
 ## Changed
-- smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682))
+- smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
+- create-branch popup aligned with rename-branch [[@bruceCoelho](https://github.com/bruceCoelho)] ([#679](https://github.com/extrawurst/gitui/issues/679))
 
 ## [0.15.0] - 2020-04-27
 

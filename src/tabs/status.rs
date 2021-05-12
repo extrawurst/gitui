@@ -8,7 +8,7 @@ use crate::{
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue, ResetItem},
-    strings,
+    strings, try_or_popup,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -21,6 +21,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use itertools::Itertools;
 use std::convert::Into;
 use std::convert::TryFrom;
 use tui::{
@@ -118,7 +119,7 @@ impl DrawableComponent for Status {
         self.index.draw(f, left_chunks[1])?;
         self.diff.draw(f, chunks[1])?;
         self.draw_branch_state(f, &left_chunks);
-        Self::draw_repo_state(f, left_chunks[0]);
+        Self::draw_repo_state(f, left_chunks[0])?;
 
         Ok(())
     }
@@ -213,12 +214,21 @@ impl Status {
     fn draw_repo_state<B: tui::backend::Backend>(
         f: &mut tui::Frame<B>,
         r: tui::layout::Rect,
-    ) {
-        if let Ok(state) = asyncgit::sync::repo_state(CWD) {
+    ) -> Result<()> {
+        if let Ok(state) = sync::repo_state(CWD) {
             if state != RepoState::Clean {
-                let txt = format!("{:?}", state);
-                let txt_len = u16::try_from(txt.len())
-                    .expect("state name too long");
+                let ids =
+                    sync::mergehead_ids(CWD).unwrap_or_default();
+                let ids = format!(
+                    "({})",
+                    ids.iter()
+                        .map(|id| sync::CommitId::get_short_string(
+                            id
+                        ))
+                        .join(",")
+                );
+                let txt = format!("{:?} {}", state, ids);
+                let txt_len = u16::try_from(txt.len())?;
                 let w = Paragraph::new(txt)
                     .style(Style::default().fg(Color::Red))
                     .alignment(Alignment::Left);
@@ -235,6 +245,8 @@ impl Status {
                 f.render_widget(w, rect);
             }
         }
+
+        Ok(())
     }
 
     fn can_focus_diff(&self) -> bool {
@@ -464,6 +476,61 @@ impl Status {
             .as_ref()
             .map_or(true, |state| state.ahead > 0)
     }
+
+    fn can_abort_merge() -> bool {
+        sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+            == RepoState::Merge
+    }
+
+    pub fn abort_merge(&self) {
+        try_or_popup!(self, "abort merge", sync::abort_merge(CWD))
+    }
+
+    fn commands_nav(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) {
+        let focus_on_diff = self.is_focus_on_diff();
+        out.push(
+            CommandInfo::new(
+                strings::commands::diff_focus_left(&self.key_config),
+                true,
+                (self.visible && focus_on_diff) || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+        out.push(
+            CommandInfo::new(
+                strings::commands::diff_focus_right(&self.key_config),
+                self.can_focus_diff(),
+                (self.visible && !focus_on_diff) || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+        out.push(
+            CommandInfo::new(
+                strings::commands::select_staging(&self.key_config),
+                !focus_on_diff,
+                (self.visible
+                    && !focus_on_diff
+                    && self.focus == Focus::WorkDir)
+                    || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+        out.push(
+            CommandInfo::new(
+                strings::commands::select_unstaged(&self.key_config),
+                !focus_on_diff,
+                (self.visible
+                    && !focus_on_diff
+                    && self.focus == Focus::Stage)
+                    || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+    }
 }
 
 impl Component for Status {
@@ -506,6 +573,12 @@ impl Component for Status {
                 true,
                 !focus_on_diff,
             ));
+
+            out.push(CommandInfo::new(
+                strings::commands::abort_merge(&self.key_config),
+                true,
+                Self::can_abort_merge() || force_all,
+            ));
         }
 
         {
@@ -518,52 +591,6 @@ impl Component for Status {
                 },
                 self.visible || force_all,
             ));
-            out.push(
-                CommandInfo::new(
-                    strings::commands::diff_focus_left(
-                        &self.key_config,
-                    ),
-                    true,
-                    (self.visible && focus_on_diff) || force_all,
-                )
-                .order(strings::order::NAV),
-            );
-            out.push(
-                CommandInfo::new(
-                    strings::commands::diff_focus_right(
-                        &self.key_config,
-                    ),
-                    self.can_focus_diff(),
-                    (self.visible && !focus_on_diff) || force_all,
-                )
-                .order(strings::order::NAV),
-            );
-            out.push(
-                CommandInfo::new(
-                    strings::commands::select_staging(
-                        &self.key_config,
-                    ),
-                    !focus_on_diff,
-                    (self.visible
-                        && !focus_on_diff
-                        && self.focus == Focus::WorkDir)
-                        || force_all,
-                )
-                .order(strings::order::NAV),
-            );
-            out.push(
-                CommandInfo::new(
-                    strings::commands::select_unstaged(
-                        &self.key_config,
-                    ),
-                    !focus_on_diff,
-                    (self.visible
-                        && !focus_on_diff
-                        && self.focus == Focus::Stage)
-                        || force_all,
-                )
-                .order(strings::order::NAV),
-            );
 
             out.push(
                 CommandInfo::new(
@@ -575,6 +602,8 @@ impl Component for Status {
                 )
                 .hidden(),
             );
+
+            self.commands_nav(out, force_all);
         }
 
         visibility_blocking(self)
@@ -652,6 +681,16 @@ impl Component for Status {
                     && !self.is_focus_on_diff()
                 {
                     self.pull();
+                    Ok(EventState::Consumed)
+                } else if k == self.key_config.abort_merge
+                    && Self::can_abort_merge()
+                {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ConfirmAction(
+                            Action::AbortMerge,
+                        ),
+                    );
+
                     Ok(EventState::Consumed)
                 } else {
                     Ok(EventState::NotConsumed)

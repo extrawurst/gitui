@@ -11,6 +11,8 @@
 #![deny(clippy::needless_update)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::multiple_crate_versions)]
+//TODO:
+// #![deny(clippy::expect_used)]
 
 mod app;
 mod clipboard;
@@ -100,7 +102,7 @@ fn main() -> Result<()> {
 
     setup_terminal()?;
     defer! {
-        shutdown_terminal().expect("shutdown failed");
+        shutdown_terminal();
     }
 
     set_panic_handlers()?;
@@ -181,10 +183,19 @@ fn setup_terminal() -> Result<()> {
     Ok(())
 }
 
-fn shutdown_terminal() -> Result<()> {
-    io::stdout().execute(LeaveAlternateScreen)?;
-    disable_raw_mode()?;
-    Ok(())
+fn shutdown_terminal() {
+    let leave_screen =
+        io::stdout().execute(LeaveAlternateScreen).map(|_f| ());
+
+    if let Err(e) = leave_screen {
+        eprintln!("leave_screen failed:\n{}", e);
+    }
+
+    let leave_raw_mode = disable_raw_mode();
+
+    if let Err(e) = leave_raw_mode {
+        eprintln!("leave_raw_mode failed:\n{}", e);
+    }
 }
 
 fn draw<B: Backend>(
@@ -336,19 +347,20 @@ fn set_panic_handlers() -> Result<()> {
     // regular panic handler
     panic::set_hook(Box::new(|e| {
         let backtrace = Backtrace::new();
+        //TODO: create macro to do both in one
         log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
-        shutdown_terminal().expect("shutdown failed inside panic");
         eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+        shutdown_terminal();
     }));
 
     // global threadpool
     rayon_core::ThreadPoolBuilder::new()
         .panic_handler(|e| {
             let backtrace = Backtrace::new();
+            //TODO: create macro to do both in one
             log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
-            shutdown_terminal()
-                .expect("shutdown failed inside panic");
             eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+            shutdown_terminal();
             process::abort();
         })
         .num_threads(4)
