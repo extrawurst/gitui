@@ -239,6 +239,9 @@ impl Component for BranchListComponent {
                         self.merge_branch()
                     );
                     self.hide();
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::Update(NeedsUpdate::ALL),
+                    );
                 } else if e == self.key_config.tab_toggle {
                     self.local = !self.local;
                     self.update_branches()?;
