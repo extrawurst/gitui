@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**merge branch, merge commit**
+
+![merge-commit](assets/merge-commit-abort.gif)
+
 **commit subject length warning**
 
 ![warning](assets/commit-msg-length-limit.gif)
 
 ## Added
-- merging arbitrary branch, commit merges ([#485](https://github.com/extrawurst/gitui/issues/485))
+- merging branches, pull-merge with conflicts, commit merges ([#485](https://github.com/extrawurst/gitui/issues/485))
 - warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
 
 ## Changed
