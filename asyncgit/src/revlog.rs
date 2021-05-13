@@ -69,6 +69,14 @@ impl AsyncLog {
     }
 
     ///
+    pub fn position(&self, id: CommitId) -> Result<Option<usize>> {
+        let list = self.current.lock()?;
+        let position = list.iter().position(|&x| x == id);
+
+        Ok(position)
+    }
+
+    ///
     pub fn is_pending(&self) -> bool {
         self.pending.load(Ordering::Relaxed)
     }

@@ -9,7 +9,7 @@ use crate::{
         InspectCommitComponent, MsgComponent, PullComponent,
         PushComponent, PushTagsComponent, RenameBranchComponent,
         ResetComponent, RevisionFilesComponent, StashMsgComponent,
-        TagCommitComponent,
+        TagCommitComponent, TagListComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -54,6 +54,7 @@ pub struct App {
     create_branch_popup: CreateBranchComponent,
     rename_branch_popup: RenameBranchComponent,
     select_branch_popup: BranchListComponent,
+    tags_popup: TagListComponent,
     cmdbar: RefCell<CommandBar>,
     tab: usize,
     revlog: Revlog,
@@ -159,6 +160,11 @@ impl App {
             ),
             select_branch_popup: BranchListComponent::new(
                 queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            tags_popup: TagListComponent::new(
+                &queue,
                 theme.clone(),
                 key_config.clone(),
             ),
@@ -397,6 +403,7 @@ impl App {
             rename_branch_popup,
             select_branch_popup,
             revision_files_popup,
+            tags_popup,
             help,
             revlog,
             status_tab,
@@ -550,10 +557,25 @@ impl App {
             InternalEvent::SelectBranch => {
                 self.select_branch_popup.open()?;
             }
+            InternalEvent::Tags => {
+                self.tags_popup.open()?;
+            }
             InternalEvent::TabSwitch => self.set_tab(0)?,
             InternalEvent::InspectCommit(id, tags) => {
                 self.inspect_commit_popup.open(id, tags)?;
                 flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
+            }
+            InternalEvent::SelectCommitInRevlog(id) => {
+                if let Err(error) = self.revlog.select_commit(id) {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(
+                            error.to_string(),
+                        ),
+                    )
+                } else {
+                    self.tags_popup.hide();
+                    flags.insert(NeedsUpdate::ALL)
+                }
             }
             InternalEvent::OpenExternalEditor(path) => {
                 self.input.set_polling(false);
@@ -618,6 +640,18 @@ impl App {
                 } else {
                     flags.insert(NeedsUpdate::ALL);
                     self.select_branch_popup.update_branches()?;
+                }
+            }
+            Action::DeleteTag(tag_name) => {
+                if let Err(error) = sync::delete_tag(CWD, &tag_name) {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ShowErrorMsg(
+                            error.to_string(),
+                        ),
+                    )
+                } else {
+                    flags.insert(NeedsUpdate::ALL);
+                    self.tags_popup.update_tags()?;
                 }
             }
             Action::ForcePush(branch, force) => self
@@ -696,6 +730,7 @@ impl App {
             || self.push_tags_popup.is_visible()
             || self.pull_popup.is_visible()
             || self.select_branch_popup.is_visible()
+            || self.tags_popup.is_visible()
             || self.rename_branch_popup.is_visible()
             || self.revision_files_popup.is_visible()
     }
@@ -723,6 +758,7 @@ impl App {
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
         self.select_branch_popup.draw(f, size)?;
+        self.tags_popup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
         self.revision_files_popup.draw(f, size)?;

@@ -56,7 +56,7 @@
     status_stage_all: ( code: Char('a'), modifiers: ( bits: 0,),),
     status_reset_item: ( code: Char('U'), modifiers: ( bits: 1,),),
     status_ignore_file: ( code: Char('i'), modifiers: ( bits: 0,),),
-    
+
     diff_reset_lines: ( code: Char('u'), modifiers: ( bits: 0,),),
     diff_stage_lines: ( code: Char('s'), modifiers: ( bits: 0,),),
 
@@ -78,6 +78,10 @@
     delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
     merge_branch: ( code: Char('m'), modifiers: ( bits: 0,),),
     abort_merge: ( code: Char('M'), modifiers: ( bits: 1,),),
+
+    tags: ( code: Char('T'), modifiers: ( bits: 1,),),
+    delete_tag: ( code: Char('D'), modifiers: ( bits: 1,),),
+    select_tag: ( code: Enter, modifiers: ( bits: 0,),),
 
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
     force_push: ( code: Char('P'), modifiers: ( bits: 1,),),
