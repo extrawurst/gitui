@@ -64,7 +64,10 @@ pub use stash::{
     get_stashes, stash_apply, stash_drop, stash_pop, stash_save,
 };
 pub use state::{repo_state, RepoState};
-pub use tags::{get_tags, CommitTags, Tags};
+pub use tags::{
+    delete_tag, get_tags, get_tags_with_metadata, CommitTags,
+    TagWithMetadata, Tags,
+};
 pub use tree::{tree_file_content, tree_files, TreeFile};
 pub use utils::{
     get_head, get_head_tuple, is_bare_repo, is_repo, repo_dir,

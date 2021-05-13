@@ -168,6 +168,15 @@ impl ResetComponent {
                         branch_ref,
                     ),
                 ),
+                Action::DeleteTag(tag_name) => (
+                    strings::confirm_title_delete_tag(
+                        &self.key_config,
+                    ),
+                    strings::confirm_msg_delete_tag(
+                        &self.key_config,
+                        tag_name,
+                    ),
+                ),
                 Action::ForcePush(branch, _force) => (
                     strings::confirm_title_force_push(
                         &self.key_config,

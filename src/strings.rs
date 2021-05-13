@@ -23,6 +23,9 @@ pub static PUSH_TAGS_STATES_DONE: &str = "done";
 pub fn title_branches() -> String {
     "Branches".to_string()
 }
+pub fn title_tags() -> String {
+    "Tags".to_string()
+}
 pub fn title_status(_key_config: &SharedKeyConfig) -> String {
     "Unstaged Changes".to_string()
 }
@@ -164,6 +167,17 @@ pub fn confirm_msg_delete_branch(
     branch_ref: &str,
 ) -> String {
     format!("Confirm deleting branch: '{}' ?", branch_ref)
+}
+pub fn confirm_title_delete_tag(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Delete Tag".to_string()
+}
+pub fn confirm_msg_delete_tag(
+    _key_config: &SharedKeyConfig,
+    tag_name: &str,
+) -> String {
+    format!("Confirm deleting Tag: '{}' ?", tag_name)
 }
 pub fn confirm_title_force_push(
     _key_config: &SharedKeyConfig,
@@ -995,6 +1009,41 @@ pub mod commands {
                 key_config.get_hint(key_config.select_branch),
             ),
             "open select branch popup",
+            CMD_GROUP_GENERAL,
+        )
+    }
+
+    pub fn open_tags_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Tags [{}]",
+                key_config.get_hint(key_config.tags),
+            ),
+            "open tags popup",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn delete_tag_popup(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Delete [{}]",
+                key_config.get_hint(key_config.delete_tag),
+            ),
+            "delete a tag",
+            CMD_GROUP_GENERAL,
+        )
+    }
+    pub fn select_tag(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Select commit [{}]",
+                key_config.get_hint(key_config.select_tag),
+            ),
+            "Select commit in revlog",
             CMD_GROUP_GENERAL,
         )
     }

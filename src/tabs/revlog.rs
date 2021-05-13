@@ -166,6 +166,18 @@ impl Revlog {
             tags.and_then(|tags| tags.get(&commit).cloned())
         })
     }
+
+    pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
+        let position = self.git_log.position(id)?;
+
+        if let Some(position) = position {
+            self.list.select_entry(position);
+
+            Ok(())
+        } else {
+            anyhow::bail!("Could not select commit in revlog. It might not be loaded yet or it might be on a different branch.");
+        }
+    }
 }
 
 impl DrawableComponent for Revlog {
@@ -259,6 +271,11 @@ impl Component for Revlog {
                             Ok(EventState::Consumed)
                         },
                     );
+                } else if k == self.key_config.tags {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::Tags);
+                    return Ok(EventState::Consumed);
                 }
             }
         }
@@ -298,6 +315,12 @@ impl Component for Revlog {
             strings::commands::open_branch_select_popup(
                 &self.key_config,
             ),
+            true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::open_tags_popup(&self.key_config),
             true,
             self.visible || force_all,
         ));

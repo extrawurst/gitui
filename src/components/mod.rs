@@ -22,6 +22,7 @@ mod revision_files;
 mod stashmsg;
 mod syntax_text;
 mod tag_commit;
+mod taglist;
 mod textinput;
 mod utils;
 
@@ -48,6 +49,7 @@ pub use revision_files::RevisionFilesComponent;
 pub use stashmsg::StashMsgComponent;
 pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;
+pub use taglist::TagListComponent;
 pub use textinput::{InputType, TextInputComponent};
 pub use utils::filetree::FileTreeItemKind;
 
