@@ -1,5 +1,12 @@
 use anyhow::Result;
-use bugreport::{bugreport, collector::*, format::Markdown};
+use bugreport::{
+    bugreport,
+    collector::{
+        CommandLine, CompileTimeInformation, EnvironmentVariables,
+        FileContent, OperatingSystem, SoftwareVersion,
+    },
+    format::Markdown,
+};
 
 use crate::get_app_config_path;
 
