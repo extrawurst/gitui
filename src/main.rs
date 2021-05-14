@@ -15,6 +15,7 @@
 // #![deny(clippy::expect_used)]
 
 mod app;
+mod bug_report;
 mod clipboard;
 mod cmdbar;
 mod components;
@@ -313,6 +314,11 @@ fn process_cmdline() -> Result<CliArgs> {
                 .long("logging"),
         )
         .arg(
+            Arg::with_name("bugreport")
+                .help("Generate a bug report")
+                .long("bugreport"),
+        )
+        .arg(
             Arg::with_name("directory")
                 .help("Set the working directory")
                 .short("d")
@@ -321,10 +327,13 @@ fn process_cmdline() -> Result<CliArgs> {
         );
 
     let arg_matches = app.get_matches();
+    if arg_matches.is_present("bugreport") {
+        bug_report::generate_bugreport()?;
+        std::process::exit(0);
+    }
     if arg_matches.is_present("logging") {
         setup_logging()?;
     }
-
     if arg_matches.is_present("directory") {
         let directory =
             arg_matches.value_of("directory").unwrap_or(".");
