@@ -562,6 +562,9 @@ impl App {
                 self.push_tags_popup.push_tags()?;
                 flags.insert(NeedsUpdate::ALL)
             }
+            InternalEvent::StatusLastFileMoved => {
+                self.status_tab.last_file_moved()?;
+            }
         };
 
         Ok(flags)

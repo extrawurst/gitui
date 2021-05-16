@@ -437,6 +437,13 @@ impl Status {
         }
     }
 
+    pub fn last_file_moved(&mut self) -> Result<()> {
+        if !self.is_focus_on_diff() && self.is_visible() {
+            self.switch_focus(self.focus.toggled_focus())?;
+        }
+        Ok(())
+    }
+
     fn push(&self, force: bool) {
         if self.can_push() {
             if let Some(branch) = self.git_branch_name.last() {
