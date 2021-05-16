@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Added
 - merging branches, pull-merge with conflicts, commit merges ([#485](https://github.com/extrawurst/gitui/issues/485))
 - warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
+- `--bugreport` cmd line arg to help diagnostics [[@zcorniere](https://github.com/zcorniere)] ([#695](https://github.com/extrawurst/gitui/issues/695))
 
 ## Changed
 - smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
