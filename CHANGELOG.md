@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Changed
 - smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
 - create-branch popup aligned with rename-branch [[@bruceCoelho](https://github.com/bruceCoelho)] ([#679](https://github.com/extrawurst/gitui/issues/679))
+- smart focus change after staging all files ([#706](https://github.com/extrawurst/gitui/issues/706))
 
 ## [0.15.0] - 2020-04-27
 
