@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     cached,
-    sync::{self, CommitId},
+    sync::{self, get_branches_info, CommitId},
     AsyncLog, AsyncNotification, AsyncTags, FetchStatus, CWD,
 };
 use crossbeam_channel::Sender;
@@ -95,6 +95,12 @@ impl Revlog {
 
             self.list.set_branch(
                 self.branch_name.lookup().map(Some).unwrap_or(None),
+            );
+
+            self.list.set_local_branch_list(
+                get_branches_info(CWD, true)
+                    .map(Some)
+                    .unwrap_or(None),
             );
 
             if self.commit_details.is_visible() {
