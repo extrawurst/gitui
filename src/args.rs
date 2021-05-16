@@ -74,7 +74,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 }
 
 fn setup_logging() -> Result<()> {
-    let mut path = get_app_config_path()?;
+    let mut path = get_app_cache_path()?;
     path.push("gitui.log");
 
     let _ = WriteLogger::init(
@@ -84,6 +84,15 @@ fn setup_logging() -> Result<()> {
     );
 
     Ok(())
+}
+
+fn get_app_cache_path() -> Result<PathBuf> {
+    let mut path = dirs_next::cache_dir()
+        .ok_or_else(|| anyhow!("failed to find os cache dir."))?;
+
+    path.push("gitui");
+    fs::create_dir_all(&path)?;
+    Ok(path)
 }
 
 pub fn get_app_config_path() -> Result<PathBuf> {
