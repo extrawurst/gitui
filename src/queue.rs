@@ -48,6 +48,8 @@ pub enum InternalEvent {
     ShowErrorMsg(String),
     ///
     Update(NeedsUpdate),
+    ///
+    StatusLastFileMoved,
     /// open commit msg input
     OpenCommit,
     ///
