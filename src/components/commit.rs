@@ -4,7 +4,7 @@ use super::{
     EventState, ExternalEditorComponent,
 };
 use crate::{
-    get_app_config_path,
+    args::get_app_config_path,
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,

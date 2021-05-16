@@ -1,7 +1,6 @@
 //TODO: remove once fixed https://github.com/rust-lang/rust-clippy/issues/6818
 #![allow(clippy::use_self)]
 
-use crate::get_app_config_path;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ron::{
@@ -15,6 +14,8 @@ use std::{
     path::PathBuf,
     rc::Rc,
 };
+
+use crate::args::get_app_config_path;
 
 pub type SharedKeyConfig = Rc<KeyConfig>;
 
