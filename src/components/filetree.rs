@@ -439,6 +439,19 @@ impl Component for FileTreeComponent {
                     Ok(self
                         .move_selection(MoveSelection::Right)
                         .into())
+                } else if e == self.key_config.tree_collapse_recursive
+                {
+                    Ok(self
+                        .move_selection(
+                            MoveSelection::CollapseRecursive,
+                        )
+                        .into())
+                } else if e == self.key_config.tree_expand_recursive {
+                    Ok(self
+                        .move_selection(
+                            MoveSelection::ExpandRecursive,
+                        )
+                        .into())
                 } else {
                     Ok(EventState::NotConsumed)
                 };

@@ -23,6 +23,8 @@ pub enum MoveSelection {
     Down,
     Left,
     Right,
+    CollapseRecursive,
+    ExpandRecursive,
     Home,
     End,
 }
@@ -138,6 +140,12 @@ impl StatusTree {
                 MoveSelection::Left => self.selection_left(selection),
                 MoveSelection::Right => {
                     self.selection_right(selection)
+                }
+                MoveSelection::CollapseRecursive => {
+                    self.collapse_recursive(selection, true)
+                }
+                MoveSelection::ExpandRecursive => {
+                    self.collapse_recursive(selection, false)
                 }
                 MoveSelection::Home => SelectionChange::new(0, false),
                 MoveSelection::End => self.selection_end(),
@@ -297,7 +305,7 @@ impl StatusTree {
             FileTreeItemKind::Path(PathCollapsed(collapsed))
                 if collapsed =>
             {
-                self.expand(&item_path, current_selection);
+                self.expand(&item_path, current_selection, false);
                 return SelectionChange::new(current_selection, true);
             }
             FileTreeItemKind::Path(PathCollapsed(collapsed))
@@ -305,6 +313,29 @@ impl StatusTree {
             {
                 return self
                     .selection_updown(current_selection, false);
+            }
+            _ => (),
+        }
+
+        SelectionChange::new(current_selection, false)
+    }
+
+    fn collapse_recursive(
+        &mut self,
+        current_selection: usize,
+        collapse: bool,
+    ) -> SelectionChange {
+        let item_kind = self.tree[current_selection].kind.clone();
+        let item_path =
+            self.tree[current_selection].info.full_path.clone();
+
+        match item_kind {
+            FileTreeItemKind::Path(PathCollapsed(_)) => {
+                if collapse {
+                    self.collapse(&item_path, current_selection, true)
+                } else {
+                    self.expand(&item_path, current_selection, true)
+                }
             }
             _ => (),
         }
@@ -335,14 +366,19 @@ impl StatusTree {
         } else if matches!(item_kind,  FileTreeItemKind::Path(PathCollapsed(collapsed))
         if !collapsed)
         {
-            self.collapse(&item_path, current_selection);
+            self.collapse(&item_path, current_selection, false);
             SelectionChange::new(current_selection, true)
         } else {
             SelectionChange::new(current_selection, false)
         }
     }
 
-    fn collapse(&mut self, path: &str, index: usize) {
+    fn collapse(
+        &mut self,
+        path: &str,
+        index: usize,
+        recursive: bool,
+    ) {
         if let FileTreeItemKind::Path(PathCollapsed(
             ref mut collapsed,
         )) = self.tree[index].kind
@@ -353,7 +389,20 @@ impl StatusTree {
         let path = format!("{}/", path);
 
         for i in index + 1..self.tree.len() {
+            let multiple = self.tree.multiple_items_at_path(i);
             let item = &mut self.tree[i];
+
+            if recursive {
+                if let FileTreeItemKind::Path(PathCollapsed(
+                    ref mut collapsed,
+                )) = item.kind
+                {
+                    if !multiple {
+                        *collapsed = true;
+                    }
+                }
+            }
+
             let item_path = &item.info.full_path;
             if item_path.starts_with(&path) {
                 item.info.visible = false
@@ -363,7 +412,12 @@ impl StatusTree {
         }
     }
 
-    fn expand(&mut self, path: &str, current_index: usize) {
+    fn expand(
+        &mut self,
+        path: &str,
+        current_index: usize,
+        recursive: bool,
+    ) {
         if let FileTreeItemKind::Path(PathCollapsed(
             ref mut collapsed,
         )) = self.tree[current_index].kind
@@ -371,8 +425,27 @@ impl StatusTree {
             *collapsed = false;
         }
 
-        let path = format!("{}/", path);
+        if recursive {
+            for i in current_index + 1..self.tree.len() {
+                let item = &mut self.tree[i];
 
+                if let FileTreeItemKind::Path(PathCollapsed(
+                    ref mut collapsed,
+                )) = item.kind
+                {
+                    *collapsed = false;
+                }
+
+                let item_path = &item.info.full_path;
+                if item_path.starts_with(&path) {
+                    // item.info.visible = false
+                } else {
+                    break;
+                }
+            }
+        }
+
+        let path = format!("{}/", path);
         self.update_visibility(
             Some(path.as_str()),
             current_index + 1,
@@ -495,7 +568,7 @@ mod tests {
         let mut res = StatusTree::default();
         res.update(&string_vec_to_status(&["a/b", "c"])).unwrap();
 
-        res.collapse("a/b", 0);
+        res.collapse("a/b", 0, false);
 
         res.selection = Some(2);
 
@@ -523,7 +596,7 @@ mod tests {
         ]))
         .unwrap();
 
-        res.collapse("a", 0);
+        res.collapse("a", 0, false);
 
         assert_eq!(
             res.all_collapsed().iter().collect::<Vec<_>>(),
@@ -577,7 +650,7 @@ mod tests {
         let mut res = StatusTree::default();
         res.update(&items).unwrap();
 
-        res.collapse(&String::from("a/b"), 1);
+        res.collapse(&String::from("a/b"), 1, false);
 
         let visibles = get_visibles(&res);
 
@@ -591,7 +664,7 @@ mod tests {
             ]
         );
 
-        res.expand(&String::from("a/b"), 1);
+        res.expand(&String::from("a/b"), 1, false);
 
         let visibles = get_visibles(&res);
 
@@ -622,8 +695,8 @@ mod tests {
         let mut res = StatusTree::default();
         res.update(&items).unwrap();
 
-        res.collapse(&String::from("b"), 1);
-        res.collapse(&String::from("a"), 0);
+        res.collapse(&String::from("b"), 1, false);
+        res.collapse(&String::from("a"), 0, false);
 
         assert_eq!(
             get_visibles(&res),
@@ -636,7 +709,7 @@ mod tests {
             ]
         );
 
-        res.expand(&String::from("a"), 0);
+        res.expand(&String::from("a"), 0, false);
 
         assert_eq!(
             get_visibles(&res),
@@ -665,7 +738,7 @@ mod tests {
         let mut res = StatusTree::default();
         res.update(&items).unwrap();
 
-        res.collapse(&String::from("a"), 0);
+        res.collapse(&String::from("a"), 0, false);
 
         let visibles = get_visibles(&res);
 
@@ -695,7 +768,7 @@ mod tests {
         let mut res = StatusTree::default();
         res.update(&items).unwrap();
 
-        res.collapse(&String::from("a/b"), 1);
+        res.collapse(&String::from("a/b"), 1, false);
 
         let visibles = get_visibles(&res);
 
@@ -709,7 +782,7 @@ mod tests {
             ]
         );
 
-        res.collapse(&String::from("a"), 0);
+        res.collapse(&String::from("a"), 0, false);
 
         let visibles = get_visibles(&res);
 
@@ -723,7 +796,7 @@ mod tests {
             ]
         );
 
-        res.expand(&String::from("a"), 0);
+        res.expand(&String::from("a"), 0, false);
 
         let visibles = get_visibles(&res);
 
@@ -752,7 +825,7 @@ mod tests {
 
         let mut res = StatusTree::default();
         res.update(&items).unwrap();
-        res.collapse(&String::from("a/b"), 1);
+        res.collapse(&String::from("a/b"), 1, false);
         res.selection = Some(1);
 
         assert!(res.move_selection(MoveSelection::Down));

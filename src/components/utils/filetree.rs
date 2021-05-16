@@ -222,6 +222,7 @@ impl FileTreeItems {
         Ok(())
     }
 
+    //TODO: cache this
     pub fn multiple_items_at_path(&self, index: usize) -> bool {
         let tree_items = self.items();
         let mut idx_temp_inner;
