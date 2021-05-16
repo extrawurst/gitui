@@ -40,6 +40,8 @@
     move_down: ( code: Char('j'), modifiers: ( bits: 0,),),
     page_up: ( code: Char('b'), modifiers: ( bits: 2,),),
     page_down: ( code: Char('f'), modifiers: ( bits: 2,),),
+    tree_collapse_recursive: ( code: Left, modifiers: ( bits: 1,),),
+    tree_expand_recursive: ( code: Right, modifiers: ( bits: 1,),),
 
     shift_up: ( code: Char('K'), modifiers: ( bits: 1,),),
     shift_down: ( code: Char('J'), modifiers: ( bits: 1,),),

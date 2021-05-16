@@ -329,15 +329,12 @@ impl StatusTree {
         let item_path =
             self.tree[current_selection].info.full_path.clone();
 
-        match item_kind {
-            FileTreeItemKind::Path(PathCollapsed(_)) => {
-                if collapse {
-                    self.collapse(&item_path, current_selection, true)
-                } else {
-                    self.expand(&item_path, current_selection, true)
-                }
+        if let FileTreeItemKind::Path(PathCollapsed(_)) = item_kind {
+            if collapse {
+                self.collapse(&item_path, current_selection, true)
+            } else {
+                self.expand(&item_path, current_selection, true)
             }
-            _ => (),
         }
 
         SelectionChange::new(current_selection, false)
