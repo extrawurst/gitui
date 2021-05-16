@@ -10,9 +10,10 @@ use crate::{
     ui::style::{SharedTheme, Theme},
 };
 use anyhow::Result;
-use asyncgit::sync::Tags;
+use asyncgit::sync::{BranchInfo, CommitId, Tags};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
+use std::collections::BTreeMap;
 use std::{
     borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
 };
@@ -26,11 +27,14 @@ use tui::{
 
 const ELEMENTS_PER_LINE: usize = 10;
 
+type Branches = BTreeMap<CommitId, Vec<BranchInfo>>;
+
 ///
 pub struct CommitList {
     title: String,
     selection: usize,
     branch: Option<String>,
+    local_branch_list: Option<Branches>,
     count_total: usize,
     items: ItemBatch,
     scroll_state: (Instant, f32),
@@ -52,6 +56,7 @@ impl CommitList {
             items: ItemBatch::default(),
             selection: 0,
             branch: None,
+            local_branch_list: None,
             count_total: 0,
             scroll_state: (Instant::now(), 0_f32),
             tags: None,
@@ -71,6 +76,27 @@ impl CommitList {
     ///
     pub fn set_branch(&mut self, name: Option<String>) {
         self.branch = name;
+    }
+
+    ///
+    pub fn set_local_branch_list(
+        &mut self,
+        branch_list: Option<Vec<BranchInfo>>,
+    ) {
+        let mut res = Branches::new();
+        let mut adder = |key: CommitId, value: BranchInfo| {
+            if let Some(key) = res.get_mut(&key) {
+                key.push(value)
+            } else {
+                res.insert(key, vec![value]);
+            }
+        };
+
+        for branch in branch_list.unwrap_or_default() {
+            adder(branch.top_commit, branch);
+        }
+
+        self.local_branch_list = Some(res);
     }
 
     ///
@@ -192,6 +218,7 @@ impl CommitList {
         e: &'a LogEntry,
         selected: bool,
         tags: Option<String>,
+        local_branches: Option<String>,
         theme: &Theme,
         width: usize,
         now: DateTime<Local>,
@@ -230,6 +257,16 @@ impl CommitList {
         ));
 
         txt.push(splitter.clone());
+
+        // branches
+        txt.push(Span::styled(
+            Cow::from(if let Some(branches) = local_branches {
+                format!(" {}", branches)
+            } else {
+                String::from("")
+            }),
+            theme.branch_in_log(selected),
+        ));
 
         // commit tags
         txt.push(Span::styled(
@@ -270,10 +307,22 @@ impl CommitList {
                 .as_ref()
                 .and_then(|t| t.get(&e.id))
                 .map(|tags| tags.join(" "));
+            let branches = self
+                .local_branch_list
+                .as_ref()
+                .and_then(|b| b.get(&e.id))
+                .map(|branches| {
+                    branches
+                        .iter()
+                        .map(|b| b.name.to_string())
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                });
             txt.push(Self::get_entry_to_add(
                 e,
                 idx + self.scroll_top.get() == selection,
                 tags,
+                branches,
                 &self.theme,
                 width,
                 now,
