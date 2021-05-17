@@ -4,10 +4,14 @@ use git2::{Oid, Repository, Tree};
 use scopetime::scope_time;
 use std::path::{Path, PathBuf};
 
+/// `tree_files` returns a list of `FileTree`
 #[derive(Debug, PartialEq)]
 pub struct TreeFile {
+    /// path of this file
     pub path: PathBuf,
+    /// unix filemode
     pub filemode: i32,
+    // internal object id
     id: Oid,
 }
 
