@@ -1,9 +1,10 @@
-use super::utils::bytes2string;
+use super::{utils::bytes2string, CommitId};
 use crate::{error::Result, sync::utils::repo};
 use git2::{Oid, Repository, Tree};
 use scopetime::scope_time;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, PartialEq)]
 pub struct TreeFile {
     pub path: PathBuf,
     pub filemode: i32,
@@ -11,13 +12,16 @@ pub struct TreeFile {
 }
 
 ///
-//TODO: allow any commit
-pub fn tree_files(repo_path: &str) -> Result<Vec<TreeFile>> {
+pub fn tree_files(
+    repo_path: &str,
+    commit: CommitId,
+) -> Result<Vec<TreeFile>> {
     scope_time!("tree_files");
 
     let repo = repo(repo_path)?;
 
-    let tree = repo.head()?.peel_to_tree()?;
+    let commit = repo.find_commit(commit.into())?;
+    let tree = commit.tree()?;
 
     let mut files: Vec<TreeFile> = Vec::new();
 
@@ -73,6 +77,7 @@ fn tree_recurse(
 mod tests {
     use super::*;
     use crate::sync::tests::{repo_init, write_commit_file};
+    use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
     fn test_smoke() {
@@ -80,17 +85,24 @@ mod tests {
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
-        write_commit_file(&repo, "test.txt", "content", "c1");
+        let c1 =
+            write_commit_file(&repo, "test.txt", "content", "c1");
 
-        let files = tree_files(repo_path).unwrap();
+        let files = tree_files(repo_path, c1).unwrap();
 
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].path, PathBuf::from("./test.txt"));
 
-        write_commit_file(&repo, "test.txt", "content2", "c2");
+        let c2 =
+            write_commit_file(&repo, "test.txt", "content2", "c2");
 
         let content =
             tree_file_content(repo_path, &files[0]).unwrap();
         assert_eq!(&content, "content");
+
+        let files_c2 = tree_files(repo_path, c2).unwrap();
+
+        assert_eq!(files_c2.len(), 1);
+        assert_ne!(files_c2[0], files[0]);
     }
 }
