@@ -864,6 +864,18 @@ pub mod commands {
             CMD_GROUP_LOG,
         )
     }
+    pub fn inspect_file_tree(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Files [{}]",
+                key_config.get_hint(key_config.open_file_tree),
+            ),
+            "inspect file tree at specific revision",
+            CMD_GROUP_LOG,
+        )
+    }
     pub fn tag_commit_confirm_msg(
         key_config: &SharedKeyConfig,
     ) -> CommandText {

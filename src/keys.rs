@@ -71,6 +71,7 @@ pub struct KeyConfig {
     pub delete_branch: KeyEvent,
     pub merge_branch: KeyEvent,
     pub push: KeyEvent,
+    pub open_file_tree: KeyEvent,
     pub force_push: KeyEvent,
     pub pull: KeyEvent,
     pub abort_merge: KeyEvent,
@@ -127,12 +128,13 @@ impl Default for KeyConfig {
             create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::empty()},
             rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::empty()},
             select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
-            delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
-            merge_branch: KeyEvent{code: KeyCode::Char('m'), modifiers: KeyModifiers::empty()},
+            delete_branch: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
+            merge_branch: KeyEvent { code: KeyCode::Char('m'), modifiers: KeyModifiers::empty()},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
             force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
             pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
             abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
+            open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
         }
     }
 }
