@@ -467,6 +467,16 @@ impl Component for Revlog {
                     self.filter("")?;
                     self.find_commit.clear_input();
                     self.update()?;
+                } else if k == self.key_config.open_file_tree {
+                    return self.selected_commit().map_or(
+                        Ok(EventState::NotConsumed),
+                        |id| {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::OpenFileTree(id),
+                            );
+                            Ok(EventState::Consumed)
+                        },
+                    );
                 }
             }
         }
@@ -498,7 +508,7 @@ impl Component for Revlog {
 
         out.push(CommandInfo::new(
             strings::commands::log_tag_commit(&self.key_config),
-            true,
+            self.selected_commit().is_some(),
             self.visible || force_all,
         ));
 
@@ -512,7 +522,7 @@ impl Component for Revlog {
 
         out.push(CommandInfo::new(
             strings::commands::copy_hash(&self.key_config),
-            true,
+            self.selected_commit().is_some(),
             self.visible || force_all,
         ));
 
@@ -525,6 +535,12 @@ impl Component for Revlog {
         out.push(CommandInfo::new(
             strings::commands::find_commit(&self.key_config),
             true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::inspect_file_tree(&self.key_config),
+            self.selected_commit().is_some(),
             self.visible || force_all,
         ));
 

@@ -55,11 +55,11 @@
 
 For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([slides](https://github.com/extrawurst/gitui-presentation)) I compared `lazygit`,`tig` and `gitui` by parsing the entire Linux git repository (which contains over 900k commits):
 
-|           | Time        | Memory (GB) | Binary (MB) | Freezes   | Crashes   |
-| --------- | ----------- | ----------- | ----------- | --------- | --------- |
-| `gitui`   | **24 s** ✅ | **0.17** ✅ | 1.4         | **No** ✅ | **No** ✅ |
-| `lazygit` | 57 s        | 2.6         | 16          | Yes       | Sometimes |
-| `tig`     | 4 m 20 s    | 1.3         | **0.6** ✅  | Sometimes | **No** ✅ |
+|           | Time       | Memory (GB) | Binary (MB) | Freezes   | Crashes   |
+| --------- | ---------- | ----------- | ----------- | --------- | --------- |
+| `gitui`   | **24 s** ✅ | **0.17** ✅  | 1.4         | **No** ✅  | **No** ✅  |
+| `lazygit` | 57 s       | 2.6         | 16          | Yes       | Sometimes |
+| `tig`     | 4 m 20 s   | 1.3         | **0.6** ✅   | Sometimes | **No** ✅  |
 
 ## 3. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -71,11 +71,11 @@ Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com
 
 These are the high level goals before calling out `1.0`:
 
-* merging with conflicts ([#485](https://github.com/extrawurst/gitui/issues/485))
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
 * file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
 * more tag support ([#483](https://github.com/extrawurst/gitui/issues/483))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
+* inspect file tree at specific revision ([#714](https://github.com/extrawurst/gitui/issues/714))
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 

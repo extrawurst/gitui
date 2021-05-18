@@ -4,7 +4,10 @@ use super::{
     DrawableComponent, EventState,
 };
 use crate::{
-    accessors, keys::SharedKeyConfig, queue::Queue, strings,
+    accessors,
+    keys::SharedKeyConfig,
+    queue::{InternalEvent, Queue},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -22,6 +25,7 @@ use tui::{
 };
 
 pub struct InspectCommitComponent {
+    queue: Queue,
     commit_id: Option<CommitId>,
     tags: Option<CommitTags>,
     diff: DiffComponent,
@@ -98,6 +102,14 @@ impl Component for InspectCommitComponent {
                 true,
                 self.diff.focused() || force_all,
             ));
+
+            out.push(CommandInfo::new(
+                strings::commands::inspect_file_tree(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));
         }
 
         visibility_blocking(self)
@@ -124,6 +136,13 @@ impl Component for InspectCommitComponent {
                 {
                     self.details.focus(true);
                     self.diff.focus(false);
+                } else if e == self.key_config.open_file_tree {
+                    if let Some(commit) = self.commit_id {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::OpenFileTree(commit),
+                        );
+                        self.hide();
+                    }
                 } else if e == self.key_config.focus_left {
                     self.hide();
                 }
@@ -162,6 +181,7 @@ impl InspectCommitComponent {
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
+            queue: queue.clone(),
             details: CommitDetailsComponent::new(
                 queue,
                 sender,

@@ -46,7 +46,7 @@ fmt:
 clippy:
 	touch src/main.rs
 	cargo clean -p gitui -p asyncgit -p scopetime
-	cargo clippy --all-features
+	cargo clippy --workspace --all-features
 
 clippy-nightly:
 	touch src/main.rs

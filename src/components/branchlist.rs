@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     sync::{
-        branch::checkout_remote_branch, checkout_branch,
+        self, branch::checkout_remote_branch, checkout_branch,
         get_branches_info, BranchInfo,
     },
     CWD,
@@ -151,6 +151,14 @@ impl Component for BranchListComponent {
             ));
 
             out.push(CommandInfo::new(
+                strings::commands::merge_branch_popup(
+                    &self.key_config,
+                ),
+                !self.selection_is_cur_branch(),
+                self.local,
+            ));
+
+            out.push(CommandInfo::new(
                 strings::commands::rename_branch_popup(
                     &self.key_config,
                 ),
@@ -194,7 +202,6 @@ impl Component for BranchListComponent {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::CreateBranch);
-                    self.hide();
                 } else if e == self.key_config.rename_branch
                     && self.valid_selection()
                 {
@@ -221,6 +228,19 @@ impl Component for BranchListComponent {
                                     .clone(),
                             ),
                         ),
+                    );
+                } else if e == self.key_config.merge_branch
+                    && !self.selection_is_cur_branch()
+                    && self.valid_selection()
+                {
+                    try_or_popup!(
+                        self,
+                        "merge branch error:",
+                        self.merge_branch()
+                    );
+                    self.hide();
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::Update(NeedsUpdate::ALL),
                     );
                 } else if e == self.key_config.tab_toggle {
                     self.local = !self.local;
@@ -292,6 +312,16 @@ impl BranchListComponent {
 
     fn valid_selection(&self) -> bool {
         !self.branches.is_empty()
+    }
+
+    fn merge_branch(&self) -> Result<()> {
+        if let Some(branch) =
+            self.branches.get(usize::from(self.selection))
+        {
+            sync::merge_branch(CWD, &branch.name)?;
+        }
+
+        Ok(())
     }
 
     fn selection_is_cur_branch(&self) -> bool {

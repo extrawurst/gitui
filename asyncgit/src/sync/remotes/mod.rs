@@ -104,20 +104,16 @@ pub(crate) fn fetch(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sync::tests::debug_cmd_print;
-    use tempfile::TempDir;
+    use crate::sync::tests::{
+        debug_cmd_print, repo_clone, repo_init,
+    };
 
     #[test]
     fn test_smoke() {
-        let td = TempDir::new().unwrap();
-
-        debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "git clone https://github.com/extrawurst/brewdump.git",
-        );
-
-        let repo_path = td.path().join("brewdump");
-        let repo_path = repo_path.as_os_str().to_str().unwrap();
+        let (remote_dir, _remote) = repo_init().unwrap();
+        let remote_path = remote_dir.path().to_str().unwrap();
+        let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
+        let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
 
         let remotes = get_remotes(repo_path).unwrap();
 
@@ -128,20 +124,15 @@ mod tests {
 
     #[test]
     fn test_default_remote() {
-        let td = TempDir::new().unwrap();
+        let (remote_dir, _remote) = repo_init().unwrap();
+        let remote_path = remote_dir.path().to_str().unwrap();
+        let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
+        let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
 
         debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "git clone https://github.com/extrawurst/brewdump.git",
+            repo_path,
+            &format!("git remote add second {}", remote_path)[..],
         );
-
-        debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "cd brewdump && git remote add second https://github.com/extrawurst/brewdump.git",
-        );
-
-        let repo_path = td.path().join("brewdump");
-        let repo_path = repo_path.as_os_str().to_str().unwrap();
 
         let remotes = get_remotes(repo_path).unwrap();
 
@@ -159,25 +150,20 @@ mod tests {
 
     #[test]
     fn test_default_remote_out_of_order() {
-        let td = TempDir::new().unwrap();
+        let (remote_dir, _remote) = repo_init().unwrap();
+        let remote_path = remote_dir.path().to_str().unwrap();
+        let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
+        let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
 
         debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "git clone https://github.com/extrawurst/brewdump.git",
+            repo_path,
+            "git remote rename origin alternate",
         );
 
         debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "cd brewdump && git remote rename origin alternate",
+            repo_path,
+            &format!("git remote add origin {}", remote_path)[..],
         );
-
-        debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "cd brewdump && git remote add origin https://github.com/extrawurst/brewdump.git",
-        );
-
-        let repo_path = td.path().join("brewdump");
-        let repo_path = repo_path.as_os_str().to_str().unwrap();
 
         //NOTE: aparently remotes are not chronolically sorted but alphabetically
         let remotes = get_remotes(repo_path).unwrap();
@@ -196,25 +182,20 @@ mod tests {
 
     #[test]
     fn test_default_remote_inconclusive() {
-        let td = TempDir::new().unwrap();
+        let (remote_dir, _remote) = repo_init().unwrap();
+        let remote_path = remote_dir.path().to_str().unwrap();
+        let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
+        let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
 
         debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "git clone https://github.com/extrawurst/brewdump.git",
+            repo_path,
+            "git remote rename origin alternate",
         );
 
         debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "cd brewdump && git remote rename origin alternate",
+            repo_path,
+            &format!("git remote add someremote {}", remote_path)[..],
         );
-
-        debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "cd brewdump && git remote add someremote https://github.com/extrawurst/brewdump.git",
-        );
-
-        let repo_path = td.path().join("brewdump");
-        let repo_path = repo_path.as_os_str().to_str().unwrap();
 
         let remotes = get_remotes(repo_path).unwrap();
         assert_eq!(
