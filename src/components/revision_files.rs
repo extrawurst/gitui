@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent, EventState,
@@ -15,6 +17,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use filetree::FileTree;
 use tui::{
     backend::Backend, layout::Rect, text::Span, widgets::Clear, Frame,
 };
@@ -24,6 +27,7 @@ pub struct RevisionFilesComponent {
     theme: SharedTheme,
     // queue: Queue,
     files: Vec<TreeFile>,
+    tree: FileTree,
     revision: Option<CommitId>,
     visible: bool,
     key_config: SharedKeyConfig,
@@ -40,6 +44,7 @@ impl RevisionFilesComponent {
     ) -> Self {
         Self {
             title: String::new(),
+            tree: FileTree::default(),
             theme,
             files: Vec::new(),
             revision: None,
@@ -53,6 +58,12 @@ impl RevisionFilesComponent {
     ///
     pub fn open(&mut self, commit: CommitId) -> Result<()> {
         self.files = sync::tree_files(CWD, commit)?;
+        let filenames: Vec<&str> = self
+            .files
+            .iter()
+            .map(|f| f.path.to_str().unwrap_or_default())
+            .collect();
+        self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
         self.revision = Some(commit);
         self.title = format!(
             "File Tree at {}",
@@ -73,12 +84,16 @@ impl DrawableComponent for RevisionFilesComponent {
         area: Rect,
     ) -> Result<()> {
         if self.is_visible() {
-            let items = self.files.iter().map(|f| {
-                Span::styled(
-                    f.path.to_string_lossy(),
-                    self.theme.text(true, false),
-                )
-            });
+            let items = self
+                .tree
+                .iterate(0, usize::from(area.height))
+                .map(|index| {
+                    let path = &self.files[index];
+                    Span::styled(
+                        path.path.to_string_lossy().to_string(),
+                        self.theme.text(true, false),
+                    )
+                });
 
             f.render_widget(Clear, area);
             ui::draw_list(
