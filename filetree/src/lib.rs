@@ -78,17 +78,19 @@ impl FileTreeItem {
             item_path.ancestors().count().saturating_sub(2),
         )?;
 
-        let filename = item_path.file_name().map_or_else(
-            || Err(Error::InvalidFilePath(path.to_string())),
-            Ok,
-        )?;
-
-        let filename = filename.to_string_lossy().to_string();
+        let filename = item_path
+            .file_name()
+            .map_or_else(
+                || Err(Error::InvalidFilePath(path.to_string())),
+                Ok,
+            )?
+            .to_string_lossy()
+            .to_string();
 
         Ok(Self {
             info: TreeItemInfo::new(
                 indent,
-                filename.clone(),
+                filename,
                 item_path.to_string_lossy().to_string(),
             ),
             kind: FileTreeItemKind::File,
@@ -123,7 +125,7 @@ impl FileTreeItem {
         })
     }
 
-    fn is_path(&self) -> bool {
+    const fn is_path(&self) -> bool {
         matches!(self.kind, FileTreeItemKind::Path(_))
     }
 }
@@ -203,12 +205,12 @@ impl FileTree {
     }
 
     /// iterates visible elements
-    pub fn iterate(
+    pub const fn iterate(
         &self,
         start: usize,
         amount: usize,
     ) -> TreeIterator<'_> {
-        TreeIterator::new(&self, start, amount)
+        TreeIterator::new(self, start, amount)
     }
 
     ///
