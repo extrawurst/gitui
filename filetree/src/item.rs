@@ -40,14 +40,12 @@ impl TreeItemInfo {
     }
 
     ///
-    #[cfg(test)]
     pub fn path(&self) -> &str {
         &self.path
     }
 
     ///
-    #[cfg(test)]
-    pub fn indent(&self) -> u8 {
+    pub const fn indent(&self) -> u8 {
         self.indent
     }
 }
@@ -66,6 +64,13 @@ pub enum FileTreeItemKind {
 impl FileTreeItemKind {
     pub const fn is_path(&self) -> bool {
         matches!(self, FileTreeItemKind::Path(_))
+    }
+
+    pub const fn is_path_collapsed(&self) -> bool {
+        match self {
+            FileTreeItemKind::Path(collapsed) => collapsed.0,
+            _ => false,
+        }
     }
 }
 

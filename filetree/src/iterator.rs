@@ -1,4 +1,4 @@
-use crate::FileTree;
+use crate::{item::FileTreeItem, FileTree};
 
 pub struct TreeIterator<'a> {
     tree: &'a FileTree,
@@ -23,7 +23,7 @@ impl<'a> TreeIterator<'a> {
 }
 
 impl<'a> Iterator for TreeIterator<'a> {
-    type Item = usize;
+    type Item = (usize, &'a FileTreeItem);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.increments.unwrap_or_default() < self.amount {
@@ -48,7 +48,10 @@ impl<'a> Iterator for TreeIterator<'a> {
                 let elem = &self.tree.items[self.index];
 
                 if elem.info().is_visible() {
-                    return Some(self.index);
+                    return Some((
+                        self.index,
+                        &self.tree.items[self.index],
+                    ));
                 }
             }
         }

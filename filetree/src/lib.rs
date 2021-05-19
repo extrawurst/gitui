@@ -6,7 +6,7 @@
 #![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
 #![deny(clippy::expect_used)]
 #![deny(clippy::filetype_is_file)]
-// #![deny(clippy::cargo)]
+#![deny(clippy::cargo)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::panic)]
 #![deny(clippy::match_like_matches_macro)]
@@ -20,9 +20,10 @@ mod item;
 mod iterator;
 
 use error::{Error, Result};
-use item::FileTreeItem;
 use iterator::TreeIterator;
 use std::{collections::BTreeSet, path::Path, usize};
+
+pub use item::{FileTreeItem, TreeItemInfo};
 
 ///
 #[derive(Default)]
@@ -282,9 +283,9 @@ mod tests {
 
         let mut it = tree.iterate(0, 10);
 
-        assert_eq!(it.next(), Some(0));
-        assert_eq!(it.next(), Some(2));
-        assert_eq!(it.next(), Some(3));
+        assert_eq!(it.next().unwrap().0, 0);
+        assert_eq!(it.next().unwrap().0, 2);
+        assert_eq!(it.next().unwrap().0, 3);
         assert_eq!(it.next(), None);
     }
 }

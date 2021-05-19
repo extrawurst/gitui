@@ -22,6 +22,10 @@ use tui::{
     backend::Backend, layout::Rect, text::Span, widgets::Clear, Frame,
 };
 
+const PATH_COLLAPSED: &str = "\u{25b8}"; //▸
+const PATH_EXPANDED: &str = "\u{25be}"; //▾
+const EMPTY_STR: &str = "";
+
 pub struct RevisionFilesComponent {
     title: String,
     theme: SharedTheme,
@@ -87,12 +91,36 @@ impl DrawableComponent for RevisionFilesComponent {
             let items = self
                 .tree
                 .iterate(0, usize::from(area.height))
-                .map(|index| {
-                    let path = &self.files[index];
-                    Span::styled(
-                        path.path.to_string_lossy().to_string(),
-                        self.theme.text(true, false),
-                    )
+                .map(|(_index, item)| {
+                    let path = item.info().path();
+                    let indent = item.info().indent();
+
+                    let indent_str = if indent == 0 {
+                        String::from("")
+                    } else {
+                        format!(
+                            "{:w$}",
+                            " ",
+                            w = (indent as usize) * 2
+                        )
+                    };
+
+                    let path_arrow = if item.kind().is_path() {
+                        if item.kind().is_path_collapsed() {
+                            PATH_COLLAPSED
+                        } else {
+                            PATH_EXPANDED
+                        }
+                    } else {
+                        EMPTY_STR
+                    };
+
+                    let path = format!(
+                        "{}{}{}",
+                        indent_str, path_arrow, path
+                    );
+
+                    Span::styled(path, self.theme.text(true, false))
                 });
 
             f.render_widget(Clear, area);
