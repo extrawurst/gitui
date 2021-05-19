@@ -213,20 +213,6 @@ impl FileTree {
         TreeIterator::new(self, start, amount)
     }
 
-    ///
-    // pub(crate) fn find_parent_index(&self, index: usize) -> usize {
-    //     let item_indent = &self.items[index].info.indent;
-    //     let mut parent_index = index;
-    //     while item_indent <= &self.items[parent_index].info.indent {
-    //         if parent_index == 0 {
-    //             return 0;
-    //         }
-    //         parent_index -= 1;
-    //     }
-
-    //     parent_index
-    // }
-
     fn push_dirs<'a>(
         item_path: &'a Path,
         nodes: &mut Vec<FileTreeItem>,
