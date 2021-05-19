@@ -16,142 +16,13 @@
 #![allow(clippy::missing_errors_doc)]
 
 mod error;
+mod item;
 mod iterator;
 
 use error::{Error, Result};
+use item::FileTreeItem;
 use iterator::TreeIterator;
-use std::{
-    collections::BTreeSet, convert::TryFrom, path::Path, usize,
-};
-
-/// holds the information shared among all `FileTreeItem` in a `FileTree`
-#[derive(Debug, Clone)]
-struct TreeItemInfo {
-    /// indent level
-    indent: u8,
-    /// currently visible depending on the folder collapse states
-    visible: bool,
-    /// just the last path element
-    path: String,
-    /// the full path
-    full_path: String,
-}
-
-impl TreeItemInfo {
-    const fn new(
-        indent: u8,
-        path: String,
-        full_path: String,
-    ) -> Self {
-        Self {
-            indent,
-            visible: true,
-            path,
-            full_path,
-        }
-    }
-}
-
-/// attribute used to indicate the collapse/expand state of a path item
-#[derive(PartialEq, Debug, Copy, Clone)]
-struct PathCollapsed(pub bool);
-
-/// `FileTreeItem` can be of two kinds
-#[derive(PartialEq, Debug, Clone)]
-enum FileTreeItemKind {
-    Path(PathCollapsed),
-    File,
-}
-
-/// `FileTreeItem` can be of two kinds: see `FileTreeItem` but shares an info
-#[derive(Debug, Clone)]
-struct FileTreeItem {
-    info: TreeItemInfo,
-    kind: FileTreeItemKind,
-}
-
-impl FileTreeItem {
-    fn new_file(path: &str) -> Result<Self> {
-        let item_path = Path::new(&path);
-
-        let indent = u8::try_from(
-            item_path.ancestors().count().saturating_sub(2),
-        )?;
-
-        let filename = item_path
-            .file_name()
-            .map_or_else(
-                || Err(Error::InvalidFilePath(path.to_string())),
-                Ok,
-            )?
-            .to_string_lossy()
-            .to_string();
-
-        Ok(Self {
-            info: TreeItemInfo::new(
-                indent,
-                filename,
-                item_path.to_string_lossy().to_string(),
-            ),
-            kind: FileTreeItemKind::File,
-        })
-    }
-
-    fn new_path(
-        path: &Path,
-        path_string: String,
-        collapsed: bool,
-    ) -> Result<Self> {
-        let indent =
-            u8::try_from(path.ancestors().count().saturating_sub(2))?;
-
-        let last_path_component =
-            path.components().last().map_or_else(
-                || Err(Error::InvalidPath(path.to_path_buf())),
-                Ok,
-            )?;
-        let last_path_component = last_path_component
-            .as_os_str()
-            .to_string_lossy()
-            .to_string();
-
-        Ok(Self {
-            info: TreeItemInfo::new(
-                indent,
-                last_path_component,
-                path_string,
-            ),
-            kind: FileTreeItemKind::Path(PathCollapsed(collapsed)),
-        })
-    }
-
-    const fn is_path(&self) -> bool {
-        matches!(self.kind, FileTreeItemKind::Path(_))
-    }
-}
-
-impl Eq for FileTreeItem {}
-
-impl PartialEq for FileTreeItem {
-    fn eq(&self, other: &Self) -> bool {
-        self.info.full_path.eq(&other.info.full_path)
-    }
-}
-
-impl PartialOrd for FileTreeItem {
-    fn partial_cmp(
-        &self,
-        other: &Self,
-    ) -> Option<std::cmp::Ordering> {
-        self.info.full_path.partial_cmp(&other.info.full_path)
-    }
-}
-
-impl Ord for FileTreeItem {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.info.path.cmp(&other.info.path)
-    }
-}
+use std::{collections::BTreeSet, path::Path, usize};
 
 ///
 #[derive(Default)]
@@ -249,18 +120,17 @@ impl FileTree {
     }
 
     pub fn collapse(&mut self, index: usize) {
-        if self.items[index].is_path() {
-            self.items[index].kind =
-                FileTreeItemKind::Path(PathCollapsed(true));
+        if self.items[index].kind().is_path() {
+            self.items[index].collapse_path();
 
             let path =
-                format!("{}/", self.items[index].info.full_path);
+                format!("{}/", self.items[index].info().full_path());
 
             for i in index + 1..self.items.len() {
                 let item = &mut self.items[i];
-                let item_path = &item.info.full_path;
+                let item_path = &item.info().full_path();
                 if item_path.starts_with(&path) {
-                    item.info.visible = false
+                    item.hide();
                 } else {
                     return;
                 }
@@ -282,18 +152,10 @@ mod tests {
 
         let res = FileTree::new(&items, &BTreeSet::new()).unwrap();
 
-        assert_eq!(
-            res.items,
-            vec![FileTreeItem {
-                info: TreeItemInfo {
-                    path: items[0].to_string(),
-                    full_path: items[0].to_string(),
-                    indent: 0,
-                    visible: true,
-                },
-                kind: FileTreeItemKind::File
-            }]
-        );
+        assert!(res.items[0].info().is_visible());
+        assert_eq!(res.items[0].info().indent(), 0);
+        assert_eq!(res.items[0].info().path(), items[0]);
+        assert_eq!(res.items[0].info().full_path(), items[0]);
 
         let items = vec![
             "file.txt",  //
@@ -304,7 +166,7 @@ mod tests {
 
         assert_eq!(res.items.len(), 2);
         assert_eq!(res.items.len(), res.len());
-        assert_eq!(res.items[1].info.path, items[1].to_string());
+        assert_eq!(res.items[1].info().path(), items[1].to_string());
     }
 
     #[test]
@@ -317,7 +179,7 @@ mod tests {
             .unwrap()
             .items
             .iter()
-            .map(|i| i.info.full_path.clone())
+            .map(|i| i.info().full_path().to_string())
             .collect::<Vec<_>>();
 
         assert_eq!(
@@ -336,7 +198,7 @@ mod tests {
         let mut res = list
             .items
             .iter()
-            .map(|i| (i.info.indent, i.info.path.as_str()));
+            .map(|i| (i.info().indent(), i.info().path()));
 
         assert_eq!(res.next(), Some((0, "a")));
         assert_eq!(res.next(), Some((1, "b")));
@@ -354,7 +216,7 @@ mod tests {
         let mut res = list
             .items
             .iter()
-            .map(|i| (i.info.indent, i.info.path.as_str()));
+            .map(|i| (i.info().indent(), i.info().path()));
 
         assert_eq!(res.next(), Some((0, "a")));
         assert_eq!(res.next(), Some((1, "b")));
@@ -376,7 +238,7 @@ mod tests {
         let res = tree
             .items
             .iter()
-            .map(|i| i.info.full_path.clone())
+            .map(|i| i.info().full_path().to_string())
             .collect::<Vec<_>>();
 
         assert_eq!(
@@ -399,11 +261,11 @@ mod tests {
         let mut tree =
             FileTree::new(&items, &BTreeSet::new()).unwrap();
 
-        assert!(tree.items[1].info.visible);
+        assert!(tree.items[1].info().is_visible());
 
         tree.collapse(0);
 
-        assert!(!tree.items[1].info.visible);
+        assert!(!tree.items[1].info().is_visible());
     }
 
     #[test]

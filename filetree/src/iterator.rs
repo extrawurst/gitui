@@ -47,7 +47,7 @@ impl<'a> Iterator for TreeIterator<'a> {
 
                 let elem = &self.tree.items[self.index];
 
-                if elem.info.visible {
+                if elem.info().is_visible() {
                     return Some(self.index);
                 }
             }
