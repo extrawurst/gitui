@@ -3,6 +3,13 @@ name = "filetree"
 version = "0.1.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 edition = "2018"
+description = "filetree abstraction based on a sorted path list"
+homepage = "https://github.com/extrawurst/gitui"
+repository = "https://github.com/extrawurst/gitui"
+readme = "README.md"
+license-file = "LICENSE.md"
+categories = ["command-line-utilities"]
+keywords = ["gui","cli","terminal","ui"]
 
 [dependencies]
 thiserror = "1.0"
