@@ -132,10 +132,8 @@ impl FileTree {
             for i in index + 1..self.items.len() {
                 let item = &mut self.items[i];
 
-                if recursive {
-                    if item.kind().is_path() {
-                        item.collapse_path();
-                    }
+                if recursive && item.kind().is_path() {
+                    item.collapse_path();
                 }
 
                 let item_path = &item.info().full_path();
