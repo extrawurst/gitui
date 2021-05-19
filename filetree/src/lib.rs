@@ -220,7 +220,7 @@ impl FileTree {
         collapsed: &BTreeSet<&String>,
     ) -> Result<()> {
         let mut ancestors =
-            { item_path.ancestors().skip(1).collect::<Vec<_>>() };
+            item_path.ancestors().skip(1).collect::<Vec<_>>();
         ancestors.reverse();
 
         for c in &ancestors {
