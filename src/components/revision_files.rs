@@ -66,6 +66,8 @@ impl RevisionFilesComponent {
             .map(|f| f.path.to_str().unwrap_or_default())
             .collect();
         self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
+        self.tree.collapse(0, true);
+        self.tree.expand(0);
         self.revision = Some(commit);
         self.title = format!(
             "File Tree at [{}]",

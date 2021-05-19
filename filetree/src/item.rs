@@ -48,6 +48,10 @@ impl TreeItemInfo {
     pub const fn indent(&self) -> u8 {
         self.indent
     }
+
+    pub fn set_visible(&mut self, visible: bool) {
+        self.visible = visible;
+    }
 }
 
 /// attribute used to indicate the collapse/expand state of a path item
@@ -142,6 +146,11 @@ impl FileTreeItem {
     }
 
     ///
+    pub fn info_mut(&mut self) -> &mut TreeItemInfo {
+        &mut self.info
+    }
+
+    ///
     pub const fn kind(&self) -> &FileTreeItemKind {
         &self.kind
     }
@@ -149,6 +158,11 @@ impl FileTreeItem {
     ///
     pub fn collapse_path(&mut self) {
         self.kind = FileTreeItemKind::Path(PathCollapsed(true));
+    }
+
+    ///
+    pub fn expand_path(&mut self) {
+        self.kind = FileTreeItemKind::Path(PathCollapsed(false));
     }
 
     ///

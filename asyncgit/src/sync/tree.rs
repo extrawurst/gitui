@@ -15,7 +15,7 @@ pub struct TreeFile {
     id: Oid,
 }
 
-///
+/// guarantees sorting the result
 pub fn tree_files(
     repo_path: &str,
     commit: CommitId,
@@ -30,6 +30,12 @@ pub fn tree_files(
     let mut files: Vec<TreeFile> = Vec::new();
 
     tree_recurse(&repo, &PathBuf::from("./"), &tree, &mut files)?;
+
+    files.sort_by(|a, b| {
+        let path_a_lc = a.path.to_str().map(str::to_lowercase);
+        let path_b_lc = b.path.to_str().map(str::to_lowercase);
+        path_a_lc.cmp(&path_b_lc)
+    });
 
     Ok(files)
 }

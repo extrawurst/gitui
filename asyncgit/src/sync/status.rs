@@ -88,7 +88,7 @@ impl From<StatusType> for StatusShow {
     }
 }
 
-///
+/// gurantees sorting
 pub fn get_status(
     repo_path: &str,
     status_type: StatusType,

@@ -25,6 +25,8 @@ use std::{collections::BTreeSet, path::Path, usize};
 
 pub use item::{FileTreeItem, TreeItemInfo};
 
+use crate::item::{FileTreeItemKind, PathCollapsed};
+
 ///
 #[derive(Default)]
 pub struct FileTree {
@@ -120,7 +122,7 @@ impl FileTree {
             .to_string())
     }
 
-    pub fn collapse(&mut self, index: usize) {
+    pub fn collapse(&mut self, index: usize, recursive: bool) {
         if self.items[index].kind().is_path() {
             self.items[index].collapse_path();
 
@@ -129,9 +131,77 @@ impl FileTree {
 
             for i in index + 1..self.items.len() {
                 let item = &mut self.items[i];
+
+                if recursive {
+                    if item.kind().is_path() {
+                        item.collapse_path();
+                    }
+                }
+
                 let item_path = &item.info().full_path();
+
                 if item_path.starts_with(&path) {
                     item.hide();
+                } else {
+                    return;
+                }
+            }
+        }
+    }
+
+    pub fn expand(&mut self, index: usize) {
+        if self.items[index].kind().is_path() {
+            self.items[index].expand_path();
+            let full_path =
+                format!("{}/", self.items[index].info().full_path());
+
+            self.update_visibility(
+                Some(full_path.as_str()),
+                index + 1,
+                false,
+            );
+        }
+    }
+
+    fn update_visibility(
+        &mut self,
+        prefix: Option<&str>,
+        start_idx: usize,
+        set_defaults: bool,
+    ) {
+        // if we are in any subpath that is collapsed we keep skipping over it
+        let mut inner_collapsed: Option<String> = None;
+
+        for i in start_idx..self.items.len() {
+            if let Some(ref collapsed_path) = inner_collapsed {
+                let p = self.items[i].info().full_path();
+                if p.starts_with(collapsed_path) {
+                    if set_defaults {
+                        self.items[i].info_mut().set_visible(false);
+                    }
+                    // we are still in a collapsed inner path
+                    continue;
+                }
+                inner_collapsed = None;
+            }
+
+            let item_kind = self.items[i].kind().clone();
+            let item_path = self.items[i].info().full_path();
+
+            if matches!(item_kind, FileTreeItemKind::Path(PathCollapsed(collapsed)) if collapsed)
+            {
+                // we encountered an inner path that is still collapsed
+                inner_collapsed = Some(format!("{}/", &item_path));
+            }
+
+            if prefix
+                .map_or(true, |prefix| item_path.starts_with(prefix))
+            {
+                self.items[i].info_mut().set_visible(true);
+            } else {
+                // if we do not set defaults we can early out
+                if set_defaults {
+                    self.items[i].info_mut().set_visible(false);
                 } else {
                     return;
                 }
@@ -264,7 +334,7 @@ mod tests {
 
         assert!(tree.items[1].info().is_visible());
 
-        tree.collapse(0);
+        tree.collapse(0, false);
 
         assert!(!tree.items[1].info().is_visible());
     }
@@ -279,7 +349,7 @@ mod tests {
         let mut tree =
             FileTree::new(&items, &BTreeSet::new()).unwrap();
 
-        tree.collapse(0);
+        tree.collapse(0, false);
 
         let mut it = tree.iterate(0, 10);
 
