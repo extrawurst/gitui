@@ -144,6 +144,20 @@ impl Theme {
         self.apply_select(style, selected)
     }
 
+    pub fn file_tree_item(
+        &self,
+        is_folder: bool,
+        selected: bool,
+    ) -> Style {
+        let style = if is_folder {
+            Style::default()
+        } else {
+            Style::default().fg(self.diff_file_modified)
+        };
+
+        self.apply_select(style, selected)
+    }
+
     fn apply_select(&self, style: Style, selected: bool) -> Style {
         if selected {
             style.bg(self.selection_bg)

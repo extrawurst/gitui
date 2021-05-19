@@ -22,14 +22,13 @@ use tui::{
     backend::Backend, layout::Rect, text::Span, widgets::Clear, Frame,
 };
 
-const PATH_COLLAPSED: &str = "\u{25b8}"; //▸
-const PATH_EXPANDED: &str = "\u{25be}"; //▾
+const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
+const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 const EMPTY_STR: &str = "";
 
 pub struct RevisionFilesComponent {
     title: String,
     theme: SharedTheme,
-    // queue: Queue,
     files: Vec<TreeFile>,
     tree: FileTree,
     revision: Option<CommitId>,
@@ -52,7 +51,6 @@ impl RevisionFilesComponent {
             theme,
             files: Vec::new(),
             revision: None,
-            // queue: queue.clone(),
             visible: false,
             key_config,
             current_height: std::cell::Cell::new(0),
@@ -70,7 +68,7 @@ impl RevisionFilesComponent {
         self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
         self.revision = Some(commit);
         self.title = format!(
-            "File Tree at {}",
+            "File Tree at [{}]",
             self.revision
                 .map(|c| c.get_short_string())
                 .unwrap_or_default()
@@ -78,6 +76,34 @@ impl RevisionFilesComponent {
         self.show()?;
 
         Ok(())
+    }
+
+    fn tree_item_to_span<'a>(
+        item: &'a filetree::FileTreeItem,
+        theme: &SharedTheme,
+    ) -> Span<'a> {
+        let path = item.info().path();
+        let indent = item.info().indent();
+
+        let indent_str = if indent == 0 {
+            String::from("")
+        } else {
+            format!("{:w$}", " ", w = (indent as usize) * 2)
+        };
+
+        let is_path = item.kind().is_path();
+        let path_arrow = if is_path {
+            if item.kind().is_path_collapsed() {
+                FOLDER_ICON_COLLAPSED
+            } else {
+                FOLDER_ICON_EXPANDED
+            }
+        } else {
+            EMPTY_STR
+        };
+
+        let path = format!("{}{}{}", indent_str, path_arrow, path);
+        Span::styled(path, theme.file_tree_item(is_path, false))
     }
 }
 
@@ -92,35 +118,7 @@ impl DrawableComponent for RevisionFilesComponent {
                 .tree
                 .iterate(0, usize::from(area.height))
                 .map(|(_index, item)| {
-                    let path = item.info().path();
-                    let indent = item.info().indent();
-
-                    let indent_str = if indent == 0 {
-                        String::from("")
-                    } else {
-                        format!(
-                            "{:w$}",
-                            " ",
-                            w = (indent as usize) * 2
-                        )
-                    };
-
-                    let path_arrow = if item.kind().is_path() {
-                        if item.kind().is_path_collapsed() {
-                            PATH_COLLAPSED
-                        } else {
-                            PATH_EXPANDED
-                        }
-                    } else {
-                        EMPTY_STR
-                    };
-
-                    let path = format!(
-                        "{}{}{}",
-                        indent_str, path_arrow, path
-                    );
-
-                    Span::styled(path, self.theme.text(true, false))
+                    Self::tree_item_to_span(item, &self.theme)
                 });
 
             f.render_widget(Clear, area);
