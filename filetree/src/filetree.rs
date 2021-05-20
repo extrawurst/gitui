@@ -15,6 +15,7 @@ pub enum MoveSelection {
     End,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct VisualSelection {
     pub count: usize,
     pub index: usize,
@@ -25,6 +26,8 @@ pub struct VisualSelection {
 pub struct FileTree {
     items: FileTreeItems,
     selection: Option<usize>,
+    // caches the absolute selection translated to visual index
+    visual_selection: Option<VisualSelection>,
 }
 
 impl FileTree {
@@ -33,12 +36,14 @@ impl FileTree {
         list: &[&str],
         collapsed: &BTreeSet<&String>,
     ) -> Result<Self> {
-        let selection = if list.is_empty() { None } else { Some(0) };
-
-        Ok(Self {
+        let mut new_self = Self {
             items: FileTreeItems::new(list, collapsed)?,
-            selection,
-        })
+            selection: if list.is_empty() { None } else { Some(0) },
+            visual_selection: None,
+        };
+        new_self.visual_selection = new_self.calc_visual_selection();
+
+        Ok(new_self)
     }
 
     ///
@@ -79,27 +84,29 @@ impl FileTree {
     }
 
     ///
-    //TODO:cache
-    pub fn visual_selection(&self) -> VisualSelection {
-        let mut count = 0;
-        let mut selection = 0;
-        for (index, _item) in self.items.iterate(0, self.items.len())
-        {
-            if self
-                .selection
-                .map(|selection| selection == index)
-                .unwrap_or_default()
+    pub const fn visual_selection(&self) -> Option<&VisualSelection> {
+        self.visual_selection.as_ref()
+    }
+
+    fn calc_visual_selection(&self) -> Option<VisualSelection> {
+        self.selection.map(|selection_absolute| {
+            let mut count = 0;
+            let mut visual_index = 0;
+            for (index, _item) in
+                self.items.iterate(0, self.items.len())
             {
-                selection = count;
+                if selection_absolute == index {
+                    visual_index = count;
+                }
+
+                count += 1;
             }
 
-            count += 1;
-        }
-
-        VisualSelection {
-            index: selection,
-            count,
-        }
+            VisualSelection {
+                index: visual_index,
+                count,
+            }
+        })
     }
 
     ///
@@ -127,6 +134,7 @@ impl FileTree {
 
             if changed_index {
                 self.selection = new_index;
+                self.visual_selection = self.calc_visual_selection();
             }
 
             changed_index || new_index.is_some()
@@ -440,9 +448,10 @@ mod test {
         let mut tree =
             FileTree::new(&items, &BTreeSet::new()).unwrap();
 
-        tree.items.collapse(1, false);
-        tree.selection = Some(4);
-        let s = tree.visual_selection();
+        tree.selection = Some(1);
+        assert!(tree.move_selection(MoveSelection::Left));
+        assert!(tree.move_selection(MoveSelection::Down));
+        let s = tree.visual_selection().unwrap();
 
         assert_eq!(s.count, 3);
         assert_eq!(s.index, 2);

@@ -127,11 +127,16 @@ impl DrawableComponent for RevisionFilesComponent {
 
             let selection = self.tree.visual_selection();
 
-            self.scroll_top.set(ui::calc_scroll_top(
-                self.scroll_top.get(),
-                tree_height,
-                selection.index,
-            ));
+            selection.map_or_else(
+                || self.scroll_top.set(0),
+                |selection| {
+                    self.scroll_top.set(ui::calc_scroll_top(
+                        self.scroll_top.get(),
+                        tree_height,
+                        selection.index,
+                    ))
+                },
+            );
 
             let items = self
                 .tree
