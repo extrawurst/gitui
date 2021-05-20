@@ -66,8 +66,7 @@ impl RevisionFilesComponent {
             .map(|f| f.path.to_str().unwrap_or_default())
             .collect();
         self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
-        self.tree.collapse(0, true);
-        self.tree.expand(0);
+        self.tree.collapse_but_root();
         self.revision = Some(commit);
         self.title = format!(
             "File Tree at [{}]",
@@ -182,6 +181,18 @@ impl Component for RevisionFilesComponent {
                     self.move_selection(MoveSelection::Down)
                 } else if key == self.key_config.move_up {
                     self.move_selection(MoveSelection::Up)
+                } else if key == self.key_config.move_right {
+                    self.move_selection(MoveSelection::Right)
+                } else if key == self.key_config.move_left {
+                    self.move_selection(MoveSelection::Left)
+                } else if key == self.key_config.home
+                    || key == self.key_config.shift_up
+                {
+                    self.move_selection(MoveSelection::Top)
+                } else if key == self.key_config.end
+                    || key == self.key_config.shift_down
+                {
+                    self.move_selection(MoveSelection::End)
                 } else {
                     false
                 };

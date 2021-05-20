@@ -9,10 +9,10 @@ use std::collections::BTreeSet;
 pub enum MoveSelection {
     Up,
     Down,
-    // Left,
-    // Right,
-    // Home,
-    // End,
+    Left,
+    Right,
+    Top,
+    End,
 }
 
 /// wraps `FileTreeItems` as a datastore and adds selection functionality
@@ -36,19 +36,10 @@ impl FileTree {
         })
     }
 
-    /// how many individual items (files/paths) are in the list
-    pub fn len(&self) -> usize {
-        self.items.len()
-    }
-
     ///
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
-    }
-
-    /// how many files were added to this list
-    pub const fn file_count(&self) -> usize {
-        self.items.file_count()
+    pub fn collapse_but_root(&mut self) {
+        self.items.collapse(0, true);
+        self.items.expand(0);
     }
 
     /// iterates visible elements
@@ -64,16 +55,6 @@ impl FileTree {
     }
 
     ///
-    pub fn collapse(&mut self, index: usize, recursive: bool) {
-        self.items.collapse(index, recursive);
-    }
-
-    ///
-    pub fn expand(&mut self, index: usize) {
-        self.items.expand(index);
-    }
-
-    ///
     pub fn move_selection(&mut self, dir: MoveSelection) -> bool {
         self.selection.map_or(false, |selection| {
             let new_index = match dir {
@@ -83,27 +64,65 @@ impl FileTree {
                 MoveSelection::Down => {
                     self.selection_updown(selection, false)
                 }
-                // MoveSelection::Left => self.selection_left(selection),
-                // MoveSelection::Right => {
-                //     self.selection_right(selection)
-                // }
-                // MoveSelection::Home => SelectionChange::new(0, false),
-                // MoveSelection::End => self.selection_end(),
+                MoveSelection::Left => self.selection_left(selection),
+                MoveSelection::Right => {
+                    self.selection_right(selection)
+                }
+                MoveSelection::Top => {
+                    Self::selection_start(selection)
+                }
+                MoveSelection::End => self.selection_end(selection),
             };
 
-            let changed_index = new_index != selection;
+            let changed_index =
+                new_index.map(|i| i != selection).unwrap_or_default();
 
-            self.selection = Some(new_index);
+            if changed_index {
+                self.selection = new_index;
+            }
 
-            changed_index
+            changed_index || new_index.is_some()
         })
+    }
+
+    const fn selection_start(current_index: usize) -> Option<usize> {
+        if current_index == 0 {
+            None
+        } else {
+            Some(0)
+        }
+    }
+
+    fn selection_end(&self, current_index: usize) -> Option<usize> {
+        let items_max = self.items.len().saturating_sub(1);
+
+        let mut new_index = items_max;
+
+        loop {
+            if self.is_visible_index(new_index) {
+                break;
+            }
+
+            if new_index == 0 {
+                break;
+            }
+
+            new_index = new_index.saturating_sub(1);
+            new_index = std::cmp::min(new_index, items_max);
+        }
+
+        if new_index == current_index {
+            None
+        } else {
+            Some(new_index)
+        }
     }
 
     fn selection_updown(
         &self,
         current_index: usize,
         up: bool,
-    ) -> usize {
+    ) -> Option<usize> {
         let mut index = current_index;
 
         loop {
@@ -119,7 +138,7 @@ impl FileTree {
                     break;
                 }
 
-                if new_index >= self.len() {
+                if new_index >= self.items.len() {
                     break;
                 }
 
@@ -131,7 +150,67 @@ impl FileTree {
             }
         }
 
-        index
+        if index == current_index {
+            None
+        } else {
+            Some(index)
+        }
+    }
+
+    fn select_parent(
+        &mut self,
+        current_index: usize,
+    ) -> Option<usize> {
+        let indent =
+            self.items.tree_items[current_index].info().indent();
+
+        let mut index = current_index;
+
+        while let Some(selection) = self.selection_updown(index, true)
+        {
+            index = selection;
+
+            if self.items.tree_items[index].info().indent() < indent {
+                break;
+            }
+        }
+
+        if index == current_index {
+            None
+        } else {
+            Some(index)
+        }
+    }
+
+    fn selection_left(
+        &mut self,
+        current_index: usize,
+    ) -> Option<usize> {
+        let item = &mut self.items.tree_items[current_index];
+
+        if item.kind().is_path() && !item.kind().is_path_collapsed() {
+            self.items.collapse(current_index, false);
+            return Some(current_index);
+        }
+
+        self.select_parent(current_index)
+    }
+
+    fn selection_right(
+        &mut self,
+        current_selection: usize,
+    ) -> Option<usize> {
+        let item = &mut self.items.tree_items[current_selection];
+
+        if item.kind().is_path() {
+            if item.kind().is_path_collapsed() {
+                self.items.expand(current_selection);
+                return Some(current_selection);
+            }
+            return self.selection_updown(current_selection, false);
+        }
+
+        None
     }
 
     fn is_visible_index(&self, index: usize) -> bool {
@@ -182,11 +261,117 @@ mod test {
         let mut tree =
             FileTree::new(&items, &BTreeSet::new()).unwrap();
 
-        tree.collapse(1, false);
+        tree.items.collapse(1, false);
         tree.selection = Some(1);
 
         assert!(tree.move_selection(MoveSelection::Down));
 
         assert_eq!(tree.selection, Some(3));
+    }
+
+    #[test]
+    fn test_selection_left_collapse() {
+        let items = vec![
+            "a/b/c", //
+            "a/d",   //
+        ];
+
+        //0 a/
+        //1   b/
+        //2     c
+        //3   d
+
+        let mut tree =
+            FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.selection = Some(1);
+
+        //collapses 1
+        assert!(tree.move_selection(MoveSelection::Left));
+        // index will not change
+        assert_eq!(tree.selection, Some(1));
+
+        assert!(tree.items.tree_items[1].kind().is_path_collapsed());
+        assert!(!tree.items.tree_items[2].info().is_visible());
+    }
+
+    #[test]
+    fn test_selection_left_parent() {
+        let items = vec![
+            "a/b/c", //
+            "a/d",   //
+        ];
+
+        //0 a/
+        //1   b/
+        //2     c
+        //3   d
+
+        let mut tree =
+            FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.selection = Some(2);
+
+        assert!(tree.move_selection(MoveSelection::Left));
+        assert_eq!(tree.selection, Some(1));
+
+        assert!(tree.move_selection(MoveSelection::Left));
+        assert_eq!(tree.selection, Some(1));
+
+        assert!(tree.move_selection(MoveSelection::Left));
+        assert_eq!(tree.selection, Some(0));
+    }
+
+    #[test]
+    fn test_selection_right_expand() {
+        let items = vec![
+            "a/b/c", //
+            "a/d",   //
+        ];
+
+        //0 a/
+        //1   b/
+        //2     c
+        //3   d
+
+        let mut tree =
+            FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.items.collapse(1, false);
+        tree.items.collapse(0, false);
+        tree.selection = Some(0);
+
+        assert!(tree.move_selection(MoveSelection::Right));
+        assert_eq!(tree.selection, Some(0));
+        assert!(!tree.items.tree_items[0].kind().is_path_collapsed());
+
+        assert!(tree.move_selection(MoveSelection::Right));
+        assert_eq!(tree.selection, Some(1));
+        assert!(tree.items.tree_items[1].kind().is_path_collapsed());
+
+        assert!(tree.move_selection(MoveSelection::Right));
+        assert_eq!(tree.selection, Some(1));
+        assert!(!tree.items.tree_items[1].kind().is_path_collapsed());
+    }
+
+    #[test]
+    fn test_selection_top() {
+        let items = vec![
+            "a/b/c", //
+            "a/d",   //
+        ];
+
+        //0 a/
+        //1   b/
+        //2     c
+        //3   d
+
+        let mut tree =
+            FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.selection = Some(3);
+
+        assert!(tree.move_selection(MoveSelection::Top));
+        assert_eq!(tree.selection, Some(0));
     }
 }
