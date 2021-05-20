@@ -77,6 +77,8 @@ pub enum InternalEvent {
     ///
     PushTags,
     ///
+    FilterLog(String),
+    ///
     OpenFileTree(CommitId),
 }
 

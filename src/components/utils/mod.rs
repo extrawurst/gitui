@@ -1,6 +1,7 @@
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use unicode_width::UnicodeWidthStr;
 
+pub mod async_commit_filter;
 pub mod filetree;
 pub mod logitems;
 pub mod statustree;

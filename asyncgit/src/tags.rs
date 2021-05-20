@@ -22,6 +22,7 @@ struct TagsResult {
 }
 
 ///
+#[derive(Clone)]
 pub struct AsyncTags {
     last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
     sender: Sender<AsyncNotification>,

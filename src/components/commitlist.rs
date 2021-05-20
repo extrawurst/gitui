@@ -84,8 +84,8 @@ impl CommitList {
     }
 
     ///
-    pub fn set_count_total(&mut self, total: usize) {
-        self.count_total = total;
+    pub fn set_total_count(&mut self, count: usize) {
+        self.count_total = count;
         self.selection =
             cmp::min(self.selection, self.selection_max());
     }

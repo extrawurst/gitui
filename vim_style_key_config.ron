@@ -79,6 +79,9 @@
     force_push: ( code: Char('P'), modifiers: ( bits: 1,),),
     pull: ( code: Char('f'), modifiers: ( bits: 0,),),
 
+    show_find_commit_text_input: ( code: Char('s'), modifiers: ( bits: 0,),),
+    focus_find_commit: ( code: Char('j'), modifiers: ( bits: 3,),),
+
     open_file_tree: ( code: Char('F'), modifiers: ( bits: 1,),),
 
     //removed in 0.11

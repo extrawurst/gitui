@@ -182,6 +182,12 @@ pub fn confirm_msg_force_push(
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
     "Commit".to_string()
 }
+pub fn find_commit_title(_key_config: &SharedKeyConfig) -> String {
+    "Find Commit".to_string()
+}
+pub fn find_commit_msg(_key_config: &SharedKeyConfig) -> String {
+    "Search Sha, Author and Message".to_string()
+}
 pub fn blame_title(_key_config: &SharedKeyConfig) -> String {
     "Blame".to_string()
 }
@@ -386,6 +392,7 @@ pub mod commands {
             CMD_GROUP_LOG,
         )
     }
+
     pub fn push_tags(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(
@@ -396,6 +403,19 @@ pub mod commands {
             CMD_GROUP_LOG,
         )
     }
+
+    pub fn find_commit(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Find Commit [{}]",
+                key_config
+                    .get_hint(key_config.show_find_commit_text_input),
+            ),
+            "show find commit box to search by sha, author or message",
+            CMD_GROUP_LOG,
+        )
+    }
+
     pub fn diff_home_end(
         key_config: &SharedKeyConfig,
     ) -> CommandText {

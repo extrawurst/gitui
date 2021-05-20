@@ -47,7 +47,7 @@
 - Stashing (save, pop, apply, drop, and inspect)
 - Push/Fetch to/from remote
 - Branch List (create, rename, delete, checkout, remotes)
-- Browse commit log, diff committed changes
+- Browse commit log, diff committed changes, search/filter commits
 - Scalable terminal UI layout
 - Async git API for fluid control
 

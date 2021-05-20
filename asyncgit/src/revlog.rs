@@ -27,6 +27,7 @@ pub enum FetchStatus {
 }
 
 ///
+#[derive(Clone)]
 pub struct AsyncLog {
     current: Arc<Mutex<Vec<CommitId>>>,
     sender: Sender<AsyncNotification>,
