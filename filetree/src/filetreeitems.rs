@@ -4,12 +4,13 @@ use crate::{
     FileTreeItem,
 };
 use crate::{error::Result, treeitems_iter::TreeItemsIterator};
-use std::{collections::BTreeSet, path::Path};
+use std::{collections::BTreeSet, path::Path, usize};
 
 ///
 #[derive(Default)]
 pub struct FileTreeItems {
     pub tree_items: Vec<FileTreeItem>,
+    //TODO: actually needded?
     files: usize,
 }
 
@@ -47,11 +48,7 @@ impl FileTreeItems {
         self.tree_items.len()
     }
 
-    ///
-    pub fn is_empty(&self) -> bool {
-        self.tree_items.is_empty()
-    }
-
+    //TODO: actually needded?
     /// how many files were added to this list
     pub const fn file_count(&self) -> usize {
         self.files
@@ -61,9 +58,9 @@ impl FileTreeItems {
     pub const fn iterate(
         &self,
         start: usize,
-        amount: usize,
+        max_amount: usize,
     ) -> TreeItemsIterator<'_> {
-        TreeItemsIterator::new(self, start, amount)
+        TreeItemsIterator::new(self, start, max_amount)
     }
 
     fn push_dirs<'a>(

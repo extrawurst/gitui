@@ -2,7 +2,7 @@ use crate::{
     error::Result, filetreeitems::FileTreeItems,
     tree_iter::TreeIterator,
 };
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, usize};
 
 ///
 #[derive(Copy, Clone, Debug)]
@@ -13,6 +13,11 @@ pub enum MoveSelection {
     Right,
     Top,
     End,
+}
+
+pub struct VisualSelection {
+    pub count: usize,
+    pub index: usize,
 }
 
 /// wraps `FileTreeItems` as a datastore and adds selection functionality
@@ -42,16 +47,59 @@ impl FileTree {
         self.items.expand(0);
     }
 
-    /// iterates visible elements
-    pub const fn iterate(
+    /// iterates visible elements starting from `start_index_visual`
+    pub fn iterate(
         &self,
-        start: usize,
-        amount: usize,
+        start_index_visual: usize,
+        max_amount: usize,
     ) -> TreeIterator<'_> {
+        let start = self
+            .visual_index_to_absolute(start_index_visual)
+            .unwrap_or_default();
         TreeIterator::new(
-            self.items.iterate(start, amount),
+            self.items.iterate(start, max_amount),
             self.selection,
         )
+    }
+
+    fn visual_index_to_absolute(
+        &self,
+        visual_index: usize,
+    ) -> Option<usize> {
+        self.items
+            .iterate(0, self.items.len())
+            .enumerate()
+            .find_map(|(i, (abs, _))| {
+                if i == visual_index {
+                    Some(abs)
+                } else {
+                    None
+                }
+            })
+    }
+
+    ///
+    //TODO:cache
+    pub fn visual_selection(&self) -> VisualSelection {
+        let mut count = 0;
+        let mut selection = 0;
+        for (index, _item) in self.items.iterate(0, self.items.len())
+        {
+            if self
+                .selection
+                .map(|selection| selection == index)
+                .unwrap_or_default()
+            {
+                selection = count;
+            }
+
+            count += 1;
+        }
+
+        VisualSelection {
+            index: selection,
+            count,
+        }
     }
 
     ///
@@ -373,5 +421,30 @@ mod test {
 
         assert!(tree.move_selection(MoveSelection::Top));
         assert_eq!(tree.selection, Some(0));
+    }
+
+    #[test]
+    fn test_visible_selection() {
+        let items = vec![
+            "a/b/c",  //
+            "a/b/c2", //
+            "a/d",    //
+        ];
+
+        //0 a/
+        //1   b/
+        //2     c
+        //3     c2
+        //4   d
+
+        let mut tree =
+            FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.items.collapse(1, false);
+        tree.selection = Some(4);
+        let s = tree.visual_selection();
+
+        assert_eq!(s.count, 3);
+        assert_eq!(s.index, 2);
     }
 }

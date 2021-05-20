@@ -4,17 +4,17 @@ pub struct TreeItemsIterator<'a> {
     tree: &'a FileTreeItems,
     index: usize,
     increments: Option<usize>,
-    amount: usize,
+    max_amount: usize,
 }
 
 impl<'a> TreeItemsIterator<'a> {
     pub const fn new(
         tree: &'a FileTreeItems,
         start: usize,
-        amount: usize,
+        max_amount: usize,
     ) -> Self {
         TreeItemsIterator {
-            amount,
+            max_amount,
             increments: None,
             index: start,
             tree,
@@ -26,7 +26,7 @@ impl<'a> Iterator for TreeItemsIterator<'a> {
     type Item = (usize, &'a FileTreeItem);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.increments.unwrap_or_default() < self.amount {
+        if self.increments.unwrap_or_default() < self.max_amount {
             let items = &self.tree.tree_items;
 
             let mut init = self.increments.is_none();

@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, convert::From};
+use std::{cell::Cell, collections::BTreeSet, convert::From};
 
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -31,6 +31,7 @@ pub struct RevisionFilesComponent {
     theme: SharedTheme,
     files: Vec<TreeFile>,
     tree: FileTree,
+    scroll_top: Cell<usize>,
     revision: Option<CommitId>,
     visible: bool,
     key_config: SharedKeyConfig,
@@ -49,6 +50,7 @@ impl RevisionFilesComponent {
             title: String::new(),
             tree: FileTree::default(),
             theme,
+            scroll_top: Cell::new(0),
             files: Vec::new(),
             revision: None,
             visible: false,
@@ -120,9 +122,20 @@ impl DrawableComponent for RevisionFilesComponent {
         area: Rect,
     ) -> Result<()> {
         if self.is_visible() {
+            let tree_height =
+                usize::from(area.height.saturating_sub(2));
+
+            let selection = self.tree.visual_selection();
+
+            self.scroll_top.set(ui::calc_scroll_top(
+                self.scroll_top.get(),
+                tree_height,
+                selection.index,
+            ));
+
             let items = self
                 .tree
-                .iterate(0, usize::from(area.height))
+                .iterate(self.scroll_top.get(), tree_height)
                 .map(|(item, selected)| {
                     Self::tree_item_to_span(
                         item,
@@ -136,6 +149,13 @@ impl DrawableComponent for RevisionFilesComponent {
                 f,
                 area,
                 &self.title,
+                // &format!(
+                //     "{}/{} (height: {}) (top: {})",
+                //     selection.index,
+                //     selection.count,
+                //     tree_height,
+                //     self.scroll_top.get()
+                // ),
                 items,
                 true,
                 &self.theme,
