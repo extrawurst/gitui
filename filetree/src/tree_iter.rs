@@ -1,4 +1,4 @@
-use crate::{item::FileTreeItem, iterator::TreeItemsIterator};
+use crate::{item::FileTreeItem, treeitems_iter::TreeItemsIterator};
 
 pub struct TreeIterator<'a> {
     item_iter: TreeItemsIterator<'a>,

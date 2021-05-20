@@ -3,7 +3,7 @@ use crate::{
     item::{FileTreeItemKind, PathCollapsed},
     FileTreeItem,
 };
-use crate::{error::Result, iterator::TreeItemsIterator};
+use crate::{error::Result, treeitems_iter::TreeItemsIterator};
 use std::{collections::BTreeSet, path::Path};
 
 ///

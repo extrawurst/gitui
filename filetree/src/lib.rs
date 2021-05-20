@@ -19,8 +19,8 @@ mod error;
 mod filetree;
 mod filetreeitems;
 mod item;
-mod iterator;
 mod tree_iter;
+mod treeitems_iter;
 
 pub use crate::{
     filetree::FileTree,
