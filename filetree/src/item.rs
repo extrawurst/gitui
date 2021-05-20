@@ -67,13 +67,13 @@ pub enum FileTreeItemKind {
 
 impl FileTreeItemKind {
     pub const fn is_path(&self) -> bool {
-        matches!(self, FileTreeItemKind::Path(_))
+        matches!(self, Self::Path(_))
     }
 
     pub const fn is_path_collapsed(&self) -> bool {
         match self {
-            FileTreeItemKind::Path(collapsed) => collapsed.0,
-            _ => false,
+            Self::Path(collapsed) => collapsed.0,
+            Self::File => false,
         }
     }
 }
