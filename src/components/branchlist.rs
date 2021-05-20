@@ -147,7 +147,7 @@ impl Component for BranchListComponent {
                     &self.key_config,
                 ),
                 !self.selection_is_cur_branch(),
-                self.local,
+                true,
             ));
 
             out.push(CommandInfo::new(
