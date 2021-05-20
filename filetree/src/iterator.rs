@@ -1,19 +1,19 @@
-use crate::{item::FileTreeItem, FileTree};
+use crate::{filetreeitems::FileTreeItems, item::FileTreeItem};
 
-pub struct TreeIterator<'a> {
-    tree: &'a FileTree,
+pub struct TreeItemsIterator<'a> {
+    tree: &'a FileTreeItems,
     index: usize,
     increments: Option<usize>,
     amount: usize,
 }
 
-impl<'a> TreeIterator<'a> {
+impl<'a> TreeItemsIterator<'a> {
     pub const fn new(
-        tree: &'a FileTree,
+        tree: &'a FileTreeItems,
         start: usize,
         amount: usize,
     ) -> Self {
-        TreeIterator {
+        TreeItemsIterator {
             amount,
             increments: None,
             index: start,
@@ -22,11 +22,13 @@ impl<'a> TreeIterator<'a> {
     }
 }
 
-impl<'a> Iterator for TreeIterator<'a> {
+impl<'a> Iterator for TreeItemsIterator<'a> {
     type Item = (usize, &'a FileTreeItem);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.increments.unwrap_or_default() < self.amount {
+            let items = &self.tree.tree_items;
+
             let mut init = self.increments.is_none();
 
             if let Some(i) = self.increments.as_mut() {
@@ -45,13 +47,10 @@ impl<'a> Iterator for TreeIterator<'a> {
                     break;
                 }
 
-                let elem = &self.tree.items[self.index];
+                let elem = &items[self.index];
 
                 if elem.info().is_visible() {
-                    return Some((
-                        self.index,
-                        &self.tree.items[self.index],
-                    ));
+                    return Some((self.index, &items[self.index]));
                 }
             }
         }

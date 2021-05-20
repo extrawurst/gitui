@@ -83,6 +83,7 @@ impl RevisionFilesComponent {
     fn tree_item_to_span<'a>(
         item: &'a filetree::FileTreeItem,
         theme: &SharedTheme,
+        selected: bool,
     ) -> Span<'a> {
         let path = item.info().path();
         let indent = item.info().indent();
@@ -105,7 +106,7 @@ impl RevisionFilesComponent {
         };
 
         let path = format!("{}{}{}", indent_str, path_arrow, path);
-        Span::styled(path, theme.file_tree_item(is_path, false))
+        Span::styled(path, theme.file_tree_item(is_path, selected))
     }
 }
 
@@ -119,8 +120,12 @@ impl DrawableComponent for RevisionFilesComponent {
             let items = self
                 .tree
                 .iterate(0, usize::from(area.height))
-                .map(|(_index, item)| {
-                    Self::tree_item_to_span(item, &self.theme)
+                .map(|(item, selected)| {
+                    Self::tree_item_to_span(
+                        item,
+                        &self.theme,
+                        selected,
+                    )
                 });
 
             f.render_widget(Clear, area);

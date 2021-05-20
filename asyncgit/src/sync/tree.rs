@@ -43,6 +43,7 @@ fn sort_file_list(files: &mut Vec<TreeFile>) {
     files.sort_by(|a, b| path_cmp(&a.path, &b.path));
 }
 
+// applies topologically order on paths sorting
 fn path_cmp(a: &Path, b: &Path) -> Ordering {
     let mut comp_a = a.components().into_iter().peekable();
     let mut comp_b = b.components().into_iter().peekable();
