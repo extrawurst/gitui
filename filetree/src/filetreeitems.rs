@@ -194,7 +194,7 @@ impl FileTreeItems {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
@@ -350,7 +350,7 @@ mod tests {
         assert_eq!(it.next(), None);
     }
 
-    fn get_visibles(tree: &FileTreeItems) -> Vec<bool> {
+    pub fn get_visibles(tree: &FileTreeItems) -> Vec<bool> {
         tree.tree_items
             .iter()
             .map(|e| e.info().is_visible())

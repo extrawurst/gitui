@@ -24,5 +24,6 @@ mod treeitems_iter;
 
 pub use crate::{
     filetree::FileTree,
+    filetree::MoveSelection,
     item::{FileTreeItem, TreeItemInfo},
 };

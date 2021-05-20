@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, convert::From};
 
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -17,7 +17,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use filetree::FileTree;
+use filetree::{FileTree, MoveSelection};
 use tui::{
     backend::Backend, layout::Rect, text::Span, widgets::Clear, Frame,
 };
@@ -108,6 +108,10 @@ impl RevisionFilesComponent {
         let path = format!("{}{}{}", indent_str, path_arrow, path);
         Span::styled(path, theme.file_tree_item(is_path, selected))
     }
+
+    fn move_selection(&mut self, dir: MoveSelection) -> bool {
+        self.tree.move_selection(dir)
+    }
 }
 
 impl DrawableComponent for RevisionFilesComponent {
@@ -171,11 +175,18 @@ impl Component for RevisionFilesComponent {
     ) -> Result<EventState> {
         if self.is_visible() {
             if let Event::Key(key) = event {
-                if key == self.key_config.exit_popup {
+                let consumed = if key == self.key_config.exit_popup {
                     self.hide();
-                }
+                    true
+                } else if key == self.key_config.move_down {
+                    self.move_selection(MoveSelection::Down)
+                } else if key == self.key_config.move_up {
+                    self.move_selection(MoveSelection::Up)
+                } else {
+                    false
+                };
 
-                return Ok(EventState::Consumed);
+                return Ok(consumed.into());
             }
         }
 
