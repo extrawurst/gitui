@@ -19,13 +19,12 @@ mod error;
 mod item;
 mod iterator;
 
-use error::{Error, Result};
-use iterator::TreeIterator;
-use std::{collections::BTreeSet, path::Path, usize};
-
 pub use item::{FileTreeItem, TreeItemInfo};
 
 use crate::item::{FileTreeItemKind, PathCollapsed};
+use error::{Error, Result};
+use iterator::TreeIterator;
+use std::{collections::BTreeSet, path::Path, usize};
 
 ///
 #[derive(Default)]
@@ -355,5 +354,188 @@ mod tests {
         assert_eq!(it.next().unwrap().0, 2);
         assert_eq!(it.next().unwrap().0, 3);
         assert_eq!(it.next(), None);
+    }
+
+    fn get_visibles(tree: &FileTree) -> Vec<bool> {
+        tree.items
+            .iter()
+            .map(|e| e.info().is_visible())
+            .collect::<Vec<_>>()
+    }
+
+    #[test]
+    fn test_expand() {
+        let items = vec![
+            "a/b/c", //
+            "a/d",   //
+        ];
+
+        //0 a/
+        //1   b/
+        //2     c
+        //3   d
+
+        let mut tree =
+            FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.collapse(1, false);
+
+        let visibles = get_visibles(&tree);
+
+        assert_eq!(
+            visibles,
+            vec![
+                true,  //
+                true,  //
+                false, //
+                true,
+            ]
+        );
+
+        tree.expand(1);
+
+        let visibles = get_visibles(&tree);
+
+        assert_eq!(
+            visibles,
+            vec![
+                true, //
+                true, //
+                true, //
+                true,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_expand_bug() {
+        let items = vec![
+            "a/b/c",  //
+            "a/b2/d", //
+        ];
+
+        //0 a/
+        //1   b/
+        //2     c
+        //3   b2/
+        //4     d
+
+        let mut tree =
+            FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.collapse(1, false);
+        tree.collapse(0, false);
+
+        assert_eq!(
+            get_visibles(&tree),
+            vec![
+                true,  //
+                false, //
+                false, //
+                false, //
+                false,
+            ]
+        );
+
+        tree.expand(0);
+
+        assert_eq!(
+            get_visibles(&tree),
+            vec![
+                true,  //
+                true,  //
+                false, //
+                true,  //
+                true,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_collapse_too_much() {
+        let items = vec![
+            "a/b",  //
+            "a2/c", //
+        ];
+
+        //0 a/
+        //1   b
+        //2 a2/
+        //3   c
+
+        let mut tree =
+            FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.collapse(0, false);
+
+        let visibles = get_visibles(&tree);
+
+        assert_eq!(
+            visibles,
+            vec![
+                true,  //
+                false, //
+                true,  //
+                true,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_expand_with_collapsed_sub_parts() {
+        let items = vec![
+            "a/b/c", //
+            "a/d",   //
+        ];
+
+        //0 a/
+        //1   b/
+        //2     c
+        //3   d
+
+        let mut tree =
+            FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.collapse(1, false);
+
+        let visibles = get_visibles(&tree);
+
+        assert_eq!(
+            visibles,
+            vec![
+                true,  //
+                true,  //
+                false, //
+                true,
+            ]
+        );
+
+        tree.collapse(0, false);
+
+        let visibles = get_visibles(&tree);
+
+        assert_eq!(
+            visibles,
+            vec![
+                true,  //
+                false, //
+                false, //
+                false,
+            ]
+        );
+
+        tree.expand(0);
+
+        let visibles = get_visibles(&tree);
+
+        assert_eq!(
+            visibles,
+            vec![
+                true,  //
+                true,  //
+                false, //
+                true,
+            ]
+        );
     }
 }
