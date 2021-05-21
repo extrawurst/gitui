@@ -4,13 +4,16 @@ use crate::{
     FileTreeItem,
 };
 use crate::{error::Result, treeitems_iter::TreeItemsIterator};
-use std::{collections::BTreeSet, path::Path, usize};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+    usize,
+};
 
 ///
 #[derive(Default)]
 pub struct FileTreeItems {
     pub tree_items: Vec<FileTreeItem>,
-    //TODO: actually needded?
     files: usize,
 }
 
@@ -20,8 +23,22 @@ impl FileTreeItems {
         list: &[&str],
         collapsed: &BTreeSet<&String>,
     ) -> Result<Self> {
+        let (mut items, paths) = Self::create_items(list, collapsed)?;
+
+        Self::fold_paths(&mut items, &paths);
+
+        Ok(Self {
+            tree_items: items,
+            files: list.len(),
+        })
+    }
+
+    fn create_items<'a>(
+        list: &'a [&str],
+        collapsed: &BTreeSet<&String>,
+    ) -> Result<(Vec<FileTreeItem>, BTreeMap<&'a Path, usize>)> {
         let mut items = Vec::with_capacity(list.len());
-        let mut paths_added = BTreeSet::new();
+        let mut paths_added: BTreeMap<&Path, usize> = BTreeMap::new();
 
         for e in list {
             {
@@ -37,10 +54,7 @@ impl FileTreeItems {
             items.push(FileTreeItem::new_file(e)?);
         }
 
-        Ok(Self {
-            tree_items: items,
-            files: list.len(),
-        })
+        Ok((items, paths_added))
     }
 
     /// how many individual items (files/paths) are in the list
@@ -48,7 +62,6 @@ impl FileTreeItems {
         self.tree_items.len()
     }
 
-    //TODO: actually needded?
     /// how many files were added to this list
     pub const fn file_count(&self) -> usize {
         self.files
@@ -66,7 +79,9 @@ impl FileTreeItems {
     fn push_dirs<'a>(
         item_path: &'a Path,
         nodes: &mut Vec<FileTreeItem>,
-        paths_added: &mut BTreeSet<&'a Path>,
+        // helps to only add new nodes for paths that were not added before
+        // we also count the number of children a node has for later folding
+        paths_added: &mut BTreeMap<&'a Path, usize>,
         collapsed: &BTreeSet<&String>,
     ) -> Result<()> {
         let mut ancestors =
@@ -74,8 +89,17 @@ impl FileTreeItems {
         ancestors.reverse();
 
         for c in &ancestors {
-            if c.parent().is_some() && !paths_added.contains(c) {
-                paths_added.insert(c);
+            if c.parent().is_some() && !paths_added.contains_key(c) {
+                // add node and set count to have no children
+                paths_added.entry(c).or_insert(0);
+
+                // increase the number of children in the parent node count
+                if let Some(parent) = c.parent() {
+                    if !parent.as_os_str().is_empty() {
+                        *paths_added.entry(parent).or_insert(0) += 1;
+                    }
+                }
+
                 let path_string = Self::path_to_string(c)?;
                 let is_collapsed = collapsed.contains(&path_string);
                 nodes.push(FileTreeItem::new_path(
@@ -84,6 +108,11 @@ impl FileTreeItems {
                     is_collapsed,
                 )?);
             }
+        }
+
+        // increase child count in parent node (the above ancenstor ignores the leaf component)
+        if let Some(parent) = item_path.parent() {
+            *paths_added.entry(parent).or_insert(0) += 1;
         }
 
         Ok(())
@@ -188,10 +217,67 @@ impl FileTreeItems {
             }
         }
     }
+
+    fn fold_paths(
+        items: &mut Vec<FileTreeItem>,
+        paths: &BTreeMap<&Path, usize>,
+    ) {
+        let mut i = 0;
+
+        while i < items.len() {
+            let item = &items[i];
+            if item.kind().is_path() {
+                let children =
+                    paths.get(&Path::new(item.info().full_path()));
+
+                if let Some(children) = children {
+                    if *children == 1 {
+                        if i + 1 >= items.len() {
+                            return;
+                        }
+
+                        if items
+                            .get(i + 1)
+                            .map(|item| item.kind().is_path())
+                            .unwrap_or_default()
+                        {
+                            let next_item = items.remove(i + 1);
+                            let item_mut = &mut items[i];
+                            item_mut.fold(next_item);
+
+                            let prefix = item_mut
+                                .info()
+                                .full_path()
+                                .to_owned();
+
+                            Self::unindent(items, &prefix, i + 1);
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            i += 1;
+        }
+    }
+
+    fn unindent(
+        items: &mut Vec<FileTreeItem>,
+        prefix: &str,
+        start: usize,
+    ) {
+        for elem in items.iter_mut().skip(start) {
+            if elem.info().full_path().starts_with(prefix) {
+                elem.info_mut().unindent();
+            } else {
+                return;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
@@ -226,6 +312,60 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn test_push_path() {
+        let mut items = Vec::new();
+        let mut paths: BTreeMap<&Path, usize> = BTreeMap::new();
+
+        FileTreeItems::push_dirs(
+            Path::new("a/b/c"),
+            &mut items,
+            &mut paths,
+            &BTreeSet::new(),
+        )
+        .unwrap();
+
+        assert_eq!(*paths.get(&Path::new("a")).unwrap(), 1);
+
+        FileTreeItems::push_dirs(
+            Path::new("a/b2/c"),
+            &mut items,
+            &mut paths,
+            &BTreeSet::new(),
+        )
+        .unwrap();
+
+        assert_eq!(*paths.get(&Path::new("a")).unwrap(), 2);
+    }
+
+    #[test]
+    fn test_push_path2() {
+        let mut items = Vec::new();
+        let mut paths: BTreeMap<&Path, usize> = BTreeMap::new();
+
+        FileTreeItems::push_dirs(
+            Path::new("a/b/c"),
+            &mut items,
+            &mut paths,
+            &BTreeSet::new(),
+        )
+        .unwrap();
+
+        assert_eq!(*paths.get(&Path::new("a")).unwrap(), 1);
+        assert_eq!(*paths.get(&Path::new("a/b")).unwrap(), 1);
+
+        FileTreeItems::push_dirs(
+            Path::new("a/b/d"),
+            &mut items,
+            &mut paths,
+            &BTreeSet::new(),
+        )
+        .unwrap();
+
+        assert_eq!(*paths.get(&Path::new("a")).unwrap(), 1);
+        assert_eq!(*paths.get(&Path::new("a/b")).unwrap(), 2);
+    }
+
+    #[test]
     fn test_folder() {
         let items = vec![
             "a/file.txt", //
@@ -257,9 +397,8 @@ pub(crate) mod tests {
             .iter()
             .map(|i| (i.info().indent(), i.info().path()));
 
-        assert_eq!(res.next(), Some((0, "a")));
-        assert_eq!(res.next(), Some((1, "b")));
-        assert_eq!(res.next(), Some((2, "file.txt")));
+        assert_eq!(res.next(), Some((0, "a/b")));
+        assert_eq!(res.next(), Some((1, "file.txt")));
     }
 
     #[test]
@@ -528,5 +667,129 @@ pub(crate) mod tests {
                 true,
             ]
         );
+    }
+}
+
+#[cfg(test)]
+mod test_merging {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_merge_simple() {
+        let list = vec!["a/b/c"];
+        let (mut items, paths) =
+            FileTreeItems::create_items(&list, &BTreeSet::new())
+                .unwrap();
+
+        assert_eq!(items.len(), 3);
+
+        FileTreeItems::fold_paths(&mut items, &paths);
+
+        assert_eq!(items.len(), 2);
+    }
+
+    #[test]
+    fn test_merge_simple2() {
+        let list = vec![
+            "a/b/c", //
+            "a/b/d",
+        ];
+        let (mut items, paths) =
+            FileTreeItems::create_items(&list, &BTreeSet::new())
+                .unwrap();
+
+        assert_eq!(paths.len(), 2);
+        assert_eq!(*paths.get(&Path::new("a")).unwrap(), 1);
+        assert_eq!(*paths.get(&Path::new("a/b")).unwrap(), 2);
+        assert_eq!(items.len(), 4);
+
+        FileTreeItems::fold_paths(&mut items, &paths);
+
+        assert_eq!(items.len(), 3);
+    }
+
+    #[test]
+    fn test_merge_indent() {
+        let list = vec![
+            "a/b/c/d", //
+            "a/e/f",
+        ];
+
+        //0:0 a/
+        //1:1   b/c
+        //2:2     d
+        //3:1   e/
+        //4:2     f
+
+        let (mut items, paths) =
+            FileTreeItems::create_items(&list, &BTreeSet::new())
+                .unwrap();
+
+        assert_eq!(items.len(), 6);
+
+        assert_eq!(paths.len(), 4);
+        assert_eq!(*paths.get(&Path::new("a")).unwrap(), 2);
+        assert_eq!(*paths.get(&Path::new("a/b")).unwrap(), 1);
+        assert_eq!(*paths.get(&Path::new("a/b/c")).unwrap(), 1);
+        assert_eq!(*paths.get(&Path::new("a/e")).unwrap(), 1);
+
+        FileTreeItems::fold_paths(&mut items, dbg!(&paths));
+
+        let indents: Vec<u8> =
+            items.iter().map(|i| i.info().indent()).collect();
+        assert_eq!(indents, vec![0, 1, 2, 1, 2]);
+    }
+
+    #[test]
+    fn test_merge_single_paths() {
+        let items = vec![
+            "a/b/c", //
+            "a/b/d", //
+        ];
+
+        //0 a/b/
+        //1   c
+        //2   d
+
+        let tree =
+            FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
+
+        let mut it = tree
+            .iterate(0, 10)
+            .map(|(_, item)| item.info().full_path());
+
+        assert_eq!(it.next().unwrap(), "a/b");
+        assert_eq!(it.next().unwrap(), "a/b/c");
+        assert_eq!(it.next().unwrap(), "a/b/d");
+        assert_eq!(it.next(), None);
+    }
+
+    #[test]
+    fn test_merge_nothing() {
+        let items = vec![
+            "a/b/c",  //
+            "a/b2/d", //
+        ];
+
+        //0 a/
+        //1   b/
+        //2     c
+        //3   b2/
+        //4     d
+
+        let tree =
+            FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
+
+        let mut it = tree
+            .iterate(0, 10)
+            .map(|(_, item)| item.info().full_path());
+
+        assert_eq!(it.next().unwrap(), "a");
+        assert_eq!(it.next().unwrap(), "a/b");
+        assert_eq!(it.next().unwrap(), "a/b/c");
+        assert_eq!(it.next().unwrap(), "a/b2");
+        assert_eq!(it.next().unwrap(), "a/b2/d");
+        assert_eq!(it.next(), None);
     }
 }

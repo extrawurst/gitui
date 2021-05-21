@@ -49,6 +49,11 @@ impl TreeItemInfo {
         self.indent
     }
 
+    ///
+    pub fn unindent(&mut self) {
+        self.indent = self.indent.saturating_sub(1);
+    }
+
     pub fn set_visible(&mut self, visible: bool) {
         self.visible = visible;
     }
@@ -138,6 +143,13 @@ impl FileTreeItem {
             ),
             kind: FileTreeItemKind::Path(PathCollapsed(collapsed)),
         })
+    }
+
+    ///
+    pub fn fold(&mut self, next: Self) {
+        self.info.path =
+            format!("{}/{}", self.info.path, next.info.path);
+        self.info.full_path = next.info.full_path;
     }
 
     ///
