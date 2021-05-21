@@ -92,9 +92,7 @@ impl Theme {
 
     pub fn tab(&self, selected: bool) -> Style {
         if selected {
-            self.text(true, false)
-                .fg(Color::White)
-                .add_modifier(Modifier::UNDERLINED)
+            self.text(true, false).add_modifier(Modifier::UNDERLINED)
         } else {
             self.text(false, false)
         }
