@@ -154,13 +154,34 @@ impl FileTreeItems {
         }
     }
 
-    pub fn expand(&mut self, index: usize) {
+    pub fn expand(&mut self, index: usize, recursive: bool) {
         if self.tree_items[index].kind().is_path() {
             self.tree_items[index].expand_path();
+
             let full_path = format!(
                 "{}/",
                 self.tree_items[index].info().full_path()
             );
+
+            if recursive {
+                for i in index + 1..self.tree_items.len() {
+                    let item = &mut self.tree_items[i];
+
+                    if !item
+                        .info()
+                        .full_path()
+                        .starts_with(&full_path)
+                    {
+                        break;
+                    }
+
+                    if item.kind().is_path()
+                        && item.kind().is_path_collapsed()
+                    {
+                        item.expand_path();
+                    }
+                }
+            }
 
             self.update_visibility(
                 Some(full_path.as_str()),
@@ -522,7 +543,7 @@ mod tests {
             ]
         );
 
-        tree.expand(1);
+        tree.expand(1, false);
 
         let visibles = get_visibles(&tree);
 
@@ -567,7 +588,7 @@ mod tests {
             ]
         );
 
-        tree.expand(0);
+        tree.expand(0, false);
 
         assert_eq!(
             get_visibles(&tree),
@@ -654,7 +675,7 @@ mod tests {
             ]
         );
 
-        tree.expand(0);
+        tree.expand(0, false);
 
         let visibles = get_visibles(&tree);
 

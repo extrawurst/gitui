@@ -218,6 +218,15 @@ impl Component for RevisionFilesComponent {
                     || key == self.key_config.shift_down
                 {
                     self.move_selection(MoveSelection::End)
+                } else if key
+                    == self.key_config.tree_collapse_recursive
+                {
+                    self.tree.collapse_recursive();
+                    true
+                } else if key == self.key_config.tree_expand_recursive
+                {
+                    self.tree.expand_recursive();
+                    true
                 } else {
                     false
                 };

@@ -49,7 +49,7 @@ impl FileTree {
     ///
     pub fn collapse_but_root(&mut self) {
         self.items.collapse(0, true);
-        self.items.expand(0);
+        self.items.expand(0, false);
     }
 
     /// iterates visible elements starting from `start_index_visual`
@@ -139,6 +139,18 @@ impl FileTree {
 
             changed_index || new_index.is_some()
         })
+    }
+
+    pub fn collapse_recursive(&mut self) {
+        if let Some(selection) = self.selection {
+            self.items.collapse(selection, true);
+        }
+    }
+
+    pub fn expand_recursive(&mut self) {
+        if let Some(selection) = self.selection {
+            self.items.expand(selection, true);
+        }
     }
 
     const fn selection_start(current_index: usize) -> Option<usize> {
@@ -260,7 +272,7 @@ impl FileTree {
 
         if item.kind().is_path() {
             if item.kind().is_path_collapsed() {
-                self.items.expand(current_selection);
+                self.items.expand(current_selection, false);
                 return Some(current_selection);
             }
             return self.selection_updown(current_selection, false);
