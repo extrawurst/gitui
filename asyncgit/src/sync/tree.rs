@@ -68,7 +68,7 @@ fn path_cmp(a: &Path, b: &Path) -> Ordering {
     }
 }
 
-///
+/// will only work on utf8 content
 pub fn tree_file_content(
     repo_path: &str,
     file: &TreeFile,
@@ -78,6 +78,11 @@ pub fn tree_file_content(
     let repo = repo(repo_path)?;
 
     let blob = repo.find_blob(file.id)?;
+
+    if blob.is_binary() {
+        return Ok(String::new());
+    }
+
     let content = String::from_utf8(blob.content().into())?;
 
     Ok(content)

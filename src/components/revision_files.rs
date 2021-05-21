@@ -1,4 +1,6 @@
-use std::{cell::Cell, collections::BTreeSet, convert::From};
+use std::{
+    cell::Cell, collections::BTreeSet, convert::From, path::Path,
+};
 
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -19,7 +21,11 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetree::{FileTree, MoveSelection};
 use tui::{
-    backend::Backend, layout::Rect, text::Span, widgets::Clear, Frame,
+    backend::Backend,
+    layout::{Constraint, Direction, Layout, Rect},
+    text::{Span, Text},
+    widgets::{Block, Borders, Clear, Paragraph, Wrap},
+    Frame,
 };
 
 const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
@@ -31,12 +37,12 @@ pub struct RevisionFilesComponent {
     title: String,
     theme: SharedTheme,
     files: Vec<TreeFile>,
+    current_file: Option<(String, String)>,
     tree: FileTree,
     scroll_top: Cell<usize>,
     revision: Option<CommitId>,
     visible: bool,
     key_config: SharedKeyConfig,
-    current_height: std::cell::Cell<usize>,
 }
 
 impl RevisionFilesComponent {
@@ -53,11 +59,11 @@ impl RevisionFilesComponent {
             tree: FileTree::default(),
             theme,
             scroll_top: Cell::new(0),
+            current_file: None,
             files: Vec::new(),
             revision: None,
             visible: false,
             key_config,
-            current_height: std::cell::Cell::new(0),
         }
     }
 
@@ -125,6 +131,42 @@ impl RevisionFilesComponent {
             true
         })
     }
+
+    fn selection_changed(&mut self) -> Result<()> {
+        if let Some(file) = self.tree.selected_file().map(|file| {
+            file.full_path()
+                .strip_prefix("./")
+                .unwrap_or_default()
+                .to_string()
+        }) {
+            let already_loaded = self
+                .current_file
+                .as_ref()
+                .map(|(current_file, _)| current_file == &file)
+                .unwrap_or_default();
+
+            if !already_loaded {
+                self.load_file(file)?;
+            }
+        } else {
+            self.current_file = None;
+        }
+
+        Ok(())
+    }
+
+    fn load_file(&mut self, path: String) -> Result<()> {
+        if let Some(item) = self
+            .files
+            .iter()
+            .find(|f| f.path.ends_with(Path::new(&path)))
+        {
+            let content = sync::tree_file_content(CWD, item)?;
+            self.current_file = Some((path, content));
+        }
+
+        Ok(())
+    }
 }
 
 impl DrawableComponent for RevisionFilesComponent {
@@ -134,11 +176,21 @@ impl DrawableComponent for RevisionFilesComponent {
         area: Rect,
     ) -> Result<()> {
         if self.is_visible() {
-            let tree_height =
-                usize::from(area.height.saturating_sub(2));
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(40),
+                        Constraint::Percentage(60),
+                    ]
+                    .as_ref(),
+                )
+                .split(area);
+
+            let tree_height = usize::from(chunks[0].height);
 
             let selection = self.tree.visual_selection();
-
             selection.map_or_else(
                 || self.scroll_top.set(0),
                 |selection| {
@@ -162,16 +214,34 @@ impl DrawableComponent for RevisionFilesComponent {
                 });
 
             f.render_widget(Clear, area);
-            ui::draw_list(
-                f,
+            f.render_widget(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(Span::styled(
+                        &self.title,
+                        self.theme.title(true),
+                    ))
+                    .border_style(self.theme.block(true)),
                 area,
-                &self.title,
-                items,
-                true,
-                &self.theme,
             );
 
-            self.current_height.set(area.height.into());
+            ui::draw_list_block(
+                f,
+                chunks[0],
+                Block::default()
+                    .borders(Borders::RIGHT)
+                    .border_style(self.theme.block(true)),
+                items,
+            );
+
+            let content = Paragraph::new(Text::from(
+                self.current_file
+                    .as_ref()
+                    .map(|(_, content)| content.as_str())
+                    .unwrap_or_default(),
+            ))
+            .wrap(Wrap { trim: false });
+            f.render_widget(content, chunks[1]);
         }
 
         Ok(())
@@ -225,8 +295,15 @@ impl Component for RevisionFilesComponent {
                     } else {
                         false
                     }
+                } else if tree_nav(
+                    &mut self.tree,
+                    &self.key_config,
+                    key,
+                ) {
+                    self.selection_changed()?;
+                    true
                 } else {
-                    tree_nav(&mut self.tree, &self.key_config, key)
+                    false
                 };
 
                 return Ok(consumed.into());
