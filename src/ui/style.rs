@@ -92,7 +92,9 @@ impl Theme {
 
     pub fn tab(&self, selected: bool) -> Style {
         if selected {
-            self.text(true, false).add_modifier(Modifier::UNDERLINED)
+            self.text(true, false)
+                .fg(self.selected_tab)
+                .add_modifier(Modifier::UNDERLINED)
         } else {
             self.text(false, false)
         }
@@ -304,7 +306,7 @@ impl Theme {
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            selected_tab: Color::Yellow,
+            selected_tab: Color::Reset,
             command_fg: Color::White,
             selection_bg: Color::Blue,
             cmdbar_extra_lines_bg: Color::Blue,
