@@ -321,6 +321,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
+name = "filetree"
+version = "0.1.0"
+dependencies = [
+ "pretty_assertions",
+ "thiserror",
+]
+
+[[package]]
 name = "form_urlencoded"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -400,6 +408,7 @@ dependencies = [
  "crossterm",
  "dirs-next",
  "easy-cast",
+ "filetree",
  "itertools",
  "log",
  "pprof",

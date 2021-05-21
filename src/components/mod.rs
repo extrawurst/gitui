@@ -24,6 +24,7 @@ mod tag_commit;
 mod textinput;
 mod utils;
 
+pub use self::filetree::FileTreeComponent;
 pub use blame_file::BlameFileComponent;
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
@@ -34,7 +35,6 @@ pub use commitlist::CommitList;
 pub use create_branch::CreateBranchComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
-pub use filetree::FileTreeComponent;
 pub use help::HelpComponent;
 pub use inspect_commit::InspectCommitComponent;
 pub use msg::MsgComponent;

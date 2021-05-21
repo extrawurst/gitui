@@ -2,7 +2,10 @@ use super::{utils::bytes2string, CommitId};
 use crate::{error::Result, sync::utils::repo};
 use git2::{Oid, Repository, Tree};
 use scopetime::scope_time;
-use std::path::{Path, PathBuf};
+use std::{
+    cmp::Ordering,
+    path::{Path, PathBuf},
+};
 
 /// `tree_files` returns a list of `FileTree`
 #[derive(Debug, PartialEq)]
@@ -15,7 +18,7 @@ pub struct TreeFile {
     id: Oid,
 }
 
-///
+/// guarantees sorting the result
 pub fn tree_files(
     repo_path: &str,
     commit: CommitId,
@@ -31,7 +34,38 @@ pub fn tree_files(
 
     tree_recurse(&repo, &PathBuf::from("./"), &tree, &mut files)?;
 
+    sort_file_list(&mut files);
+
     Ok(files)
+}
+
+fn sort_file_list(files: &mut Vec<TreeFile>) {
+    files.sort_by(|a, b| path_cmp(&a.path, &b.path));
+}
+
+// applies topologically order on paths sorting
+fn path_cmp(a: &Path, b: &Path) -> Ordering {
+    let mut comp_a = a.components().into_iter().peekable();
+    let mut comp_b = b.components().into_iter().peekable();
+
+    loop {
+        let a = comp_a.next();
+        let b = comp_b.next();
+
+        let a_is_file = comp_a.peek().is_none();
+        let b_is_file = comp_b.peek().is_none();
+
+        if a_is_file && !b_is_file {
+            return Ordering::Greater;
+        } else if !a_is_file && b_is_file {
+            return Ordering::Less;
+        }
+
+        let cmp = a.cmp(&b);
+        if cmp != Ordering::Equal {
+            return cmp;
+        }
+    }
 }
 
 ///
@@ -108,5 +142,100 @@ mod tests {
 
         assert_eq!(files_c2.len(), 1);
         assert_ne!(files_c2[0], files[0]);
+    }
+
+    #[test]
+    fn test_sorting() {
+        let mut list = vec!["file", "folder/file", "folder/afile"]
+            .iter()
+            .map(|f| TreeFile {
+                path: PathBuf::from(f),
+                filemode: 0,
+                id: Oid::zero(),
+            })
+            .collect();
+
+        sort_file_list(&mut list);
+
+        assert_eq!(
+            list.iter()
+                .map(|f| f.path.to_string_lossy())
+                .collect::<Vec<_>>(),
+            vec![
+                String::from("folder/afile"),
+                String::from("folder/file"),
+                String::from("file")
+            ]
+        );
+    }
+
+    #[test]
+    fn test_sorting_folders() {
+        let mut list = vec!["bfolder/file", "afolder/file"]
+            .iter()
+            .map(|f| TreeFile {
+                path: PathBuf::from(f),
+                filemode: 0,
+                id: Oid::zero(),
+            })
+            .collect();
+
+        sort_file_list(&mut list);
+
+        assert_eq!(
+            list.iter()
+                .map(|f| f.path.to_string_lossy())
+                .collect::<Vec<_>>(),
+            vec![
+                String::from("afolder/file"),
+                String::from("bfolder/file"),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_sorting_folders2() {
+        let mut list = vec!["bfolder/sub/file", "afolder/file"]
+            .iter()
+            .map(|f| TreeFile {
+                path: PathBuf::from(f),
+                filemode: 0,
+                id: Oid::zero(),
+            })
+            .collect();
+
+        sort_file_list(&mut list);
+
+        assert_eq!(
+            list.iter()
+                .map(|f| f.path.to_string_lossy())
+                .collect::<Vec<_>>(),
+            vec![
+                String::from("afolder/file"),
+                String::from("bfolder/sub/file"),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_path_cmp() {
+        assert_eq!(
+            path_cmp(
+                &PathBuf::from("bfolder/sub/file"),
+                &PathBuf::from("afolder/file")
+            ),
+            Ordering::Greater
+        );
+    }
+
+    #[test]
+    fn test_path_file_cmp() {
+        assert_eq!(
+            path_cmp(
+                &PathBuf::from("a"),
+                &PathBuf::from("afolder/file")
+            ),
+            Ordering::Greater
+        );
     }
 }
