@@ -1,6 +1,6 @@
 use crate::{
     error::Result, filetreeitems::FileTreeItems,
-    tree_iter::TreeIterator,
+    tree_iter::TreeIterator, TreeItemInfo,
 };
 use std::{collections::BTreeSet, usize};
 
@@ -75,6 +75,18 @@ impl FileTree {
     ///
     pub const fn visual_selection(&self) -> Option<&VisualSelection> {
         self.visual_selection.as_ref()
+    }
+
+    ///
+    pub fn selected_file(&self) -> Option<&TreeItemInfo> {
+        self.selection.and_then(|index| {
+            let item = &self.items.tree_items[index];
+            if item.kind().is_path() {
+                None
+            } else {
+                Some(item.info())
+            }
+        })
     }
 
     ///

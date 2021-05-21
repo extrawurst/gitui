@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     keys::SharedKeyConfig,
-    queue::Queue,
+    queue::{InternalEvent, Queue},
     strings::{self, order},
     ui::{self, style::SharedTheme},
 };
@@ -27,6 +27,7 @@ const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 const EMPTY_STR: &str = "";
 
 pub struct RevisionFilesComponent {
+    queue: Queue,
     title: String,
     theme: SharedTheme,
     files: Vec<TreeFile>,
@@ -41,12 +42,13 @@ pub struct RevisionFilesComponent {
 impl RevisionFilesComponent {
     ///
     pub fn new(
-        _queue: &Queue,
+        queue: &Queue,
         _sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
+            queue: queue.clone(),
             title: String::new(),
             tree: FileTree::default(),
             theme,
@@ -108,6 +110,20 @@ impl RevisionFilesComponent {
 
         let path = format!("{}{}{}", indent_str, path_arrow, path);
         Span::styled(path, theme.file_tree_item(is_path, selected))
+    }
+
+    fn blame(&self) -> bool {
+        self.tree.selected_file().map_or(false, |file| {
+            self.queue.borrow_mut().push_back(
+                InternalEvent::BlameFile(
+                    file.full_path()
+                        .strip_prefix("./")
+                        .unwrap_or_default()
+                        .to_string(),
+                ),
+            );
+            true
+        })
     }
 }
 
@@ -178,6 +194,15 @@ impl Component for RevisionFilesComponent {
                 .order(1),
             );
 
+            out.push(
+                CommandInfo::new(
+                    strings::commands::blame_file(&self.key_config),
+                    self.tree.selected_file().is_some(),
+                    true,
+                )
+                .order(order::NAV),
+            );
+
             tree_nav_cmds(&self.tree, &self.key_config, out);
         }
 
@@ -193,6 +218,13 @@ impl Component for RevisionFilesComponent {
                 let consumed = if key == self.key_config.exit_popup {
                     self.hide();
                     true
+                } else if key == self.key_config.blame {
+                    if self.blame() {
+                        self.hide();
+                        true
+                    } else {
+                        false
+                    }
                 } else {
                     tree_nav(&mut self.tree, &self.key_config, key)
                 };
