@@ -7,7 +7,7 @@ use super::{
 use crate::{
     keys::SharedKeyConfig,
     queue::Queue,
-    strings,
+    strings::{self, order},
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
@@ -109,10 +109,6 @@ impl RevisionFilesComponent {
         let path = format!("{}{}{}", indent_str, path_arrow, path);
         Span::styled(path, theme.file_tree_item(is_path, selected))
     }
-
-    fn move_selection(&mut self, dir: MoveSelection) -> bool {
-        self.tree.move_selection(dir)
-    }
 }
 
 impl DrawableComponent for RevisionFilesComponent {
@@ -154,13 +150,6 @@ impl DrawableComponent for RevisionFilesComponent {
                 f,
                 area,
                 &self.title,
-                // &format!(
-                //     "{}/{} (height: {}) (top: {})",
-                //     selection.index,
-                //     selection.count,
-                //     tree_height,
-                //     self.scroll_top.get()
-                // ),
                 items,
                 true,
                 &self.theme,
@@ -188,6 +177,8 @@ impl Component for RevisionFilesComponent {
                 )
                 .order(1),
             );
+
+            tree_nav_cmds(&self.tree, &self.key_config, out);
         }
 
         visibility_blocking(self)
@@ -202,33 +193,8 @@ impl Component for RevisionFilesComponent {
                 let consumed = if key == self.key_config.exit_popup {
                     self.hide();
                     true
-                } else if key == self.key_config.move_down {
-                    self.move_selection(MoveSelection::Down)
-                } else if key == self.key_config.move_up {
-                    self.move_selection(MoveSelection::Up)
-                } else if key == self.key_config.move_right {
-                    self.move_selection(MoveSelection::Right)
-                } else if key == self.key_config.move_left {
-                    self.move_selection(MoveSelection::Left)
-                } else if key == self.key_config.home
-                    || key == self.key_config.shift_up
-                {
-                    self.move_selection(MoveSelection::Top)
-                } else if key == self.key_config.end
-                    || key == self.key_config.shift_down
-                {
-                    self.move_selection(MoveSelection::End)
-                } else if key
-                    == self.key_config.tree_collapse_recursive
-                {
-                    self.tree.collapse_recursive();
-                    true
-                } else if key == self.key_config.tree_expand_recursive
-                {
-                    self.tree.expand_recursive();
-                    true
                 } else {
-                    false
+                    tree_nav(&mut self.tree, &self.key_config, key)
                 };
 
                 return Ok(consumed.into());
@@ -250,5 +216,50 @@ impl Component for RevisionFilesComponent {
         self.visible = true;
 
         Ok(())
+    }
+}
+
+//TODO: reuse for other tree usages
+fn tree_nav_cmds(
+    tree: &FileTree,
+    key_config: &SharedKeyConfig,
+    out: &mut Vec<CommandInfo>,
+) {
+    out.push(
+        CommandInfo::new(
+            strings::commands::navigate_tree(key_config),
+            !tree.is_empty(),
+            true,
+        )
+        .order(order::NAV),
+    );
+}
+
+//TODO: reuse for other tree usages
+fn tree_nav(
+    tree: &mut FileTree,
+    key_config: &SharedKeyConfig,
+    key: crossterm::event::KeyEvent,
+) -> bool {
+    if key == key_config.move_down {
+        tree.move_selection(MoveSelection::Down)
+    } else if key == key_config.move_up {
+        tree.move_selection(MoveSelection::Up)
+    } else if key == key_config.move_right {
+        tree.move_selection(MoveSelection::Right)
+    } else if key == key_config.move_left {
+        tree.move_selection(MoveSelection::Left)
+    } else if key == key_config.home || key == key_config.shift_up {
+        tree.move_selection(MoveSelection::Top)
+    } else if key == key_config.end || key == key_config.shift_down {
+        tree.move_selection(MoveSelection::End)
+    } else if key == key_config.tree_collapse_recursive {
+        tree.collapse_recursive();
+        true
+    } else if key == key_config.tree_expand_recursive {
+        tree.expand_recursive();
+        true
+    } else {
+        false
     }
 }

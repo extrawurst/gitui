@@ -47,6 +47,11 @@ impl FileTree {
     }
 
     ///
+    pub const fn is_empty(&self) -> bool {
+        self.items.file_count() == 0
+    }
+
+    ///
     pub fn collapse_but_root(&mut self) {
         self.items.collapse(0, true);
         self.items.expand(0, false);
@@ -67,46 +72,23 @@ impl FileTree {
         )
     }
 
-    fn visual_index_to_absolute(
-        &self,
-        visual_index: usize,
-    ) -> Option<usize> {
-        self.items
-            .iterate(0, self.items.len())
-            .enumerate()
-            .find_map(|(i, (abs, _))| {
-                if i == visual_index {
-                    Some(abs)
-                } else {
-                    None
-                }
-            })
-    }
-
     ///
     pub const fn visual_selection(&self) -> Option<&VisualSelection> {
         self.visual_selection.as_ref()
     }
 
-    fn calc_visual_selection(&self) -> Option<VisualSelection> {
-        self.selection.map(|selection_absolute| {
-            let mut count = 0;
-            let mut visual_index = 0;
-            for (index, _item) in
-                self.items.iterate(0, self.items.len())
-            {
-                if selection_absolute == index {
-                    visual_index = count;
-                }
+    ///
+    pub fn collapse_recursive(&mut self) {
+        if let Some(selection) = self.selection {
+            self.items.collapse(selection, true);
+        }
+    }
 
-                count += 1;
-            }
-
-            VisualSelection {
-                index: visual_index,
-                count,
-            }
-        })
+    ///
+    pub fn expand_recursive(&mut self) {
+        if let Some(selection) = self.selection {
+            self.items.expand(selection, true);
+        }
     }
 
     ///
@@ -141,16 +123,41 @@ impl FileTree {
         })
     }
 
-    pub fn collapse_recursive(&mut self) {
-        if let Some(selection) = self.selection {
-            self.items.collapse(selection, true);
-        }
+    fn visual_index_to_absolute(
+        &self,
+        visual_index: usize,
+    ) -> Option<usize> {
+        self.items
+            .iterate(0, self.items.len())
+            .enumerate()
+            .find_map(|(i, (abs, _))| {
+                if i == visual_index {
+                    Some(abs)
+                } else {
+                    None
+                }
+            })
     }
 
-    pub fn expand_recursive(&mut self) {
-        if let Some(selection) = self.selection {
-            self.items.expand(selection, true);
-        }
+    fn calc_visual_selection(&self) -> Option<VisualSelection> {
+        self.selection.map(|selection_absolute| {
+            let mut count = 0;
+            let mut visual_index = 0;
+            for (index, _item) in
+                self.items.iterate(0, self.items.len())
+            {
+                if selection_absolute == index {
+                    visual_index = count;
+                }
+
+                count += 1;
+            }
+
+            VisualSelection {
+                index: visual_index,
+                count,
+            }
+        })
     }
 
     const fn selection_start(current_index: usize) -> Option<usize> {

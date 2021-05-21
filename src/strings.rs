@@ -351,7 +351,7 @@ pub mod commands {
                 key_config.get_hint(key_config.move_right),
                 key_config.get_hint(key_config.move_left)
             ),
-            "navigate tree view",
+            "navigate tree view, collapse, expand",
             CMD_GROUP_GENERAL,
         )
     }
