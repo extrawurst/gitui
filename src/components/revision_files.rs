@@ -300,15 +300,11 @@ impl Component for RevisionFilesComponent {
     ) -> Result<EventState> {
         if self.is_visible() {
             if let Event::Key(key) = event {
-                let consumed = if key == self.key_config.exit_popup {
+                if key == self.key_config.exit_popup {
                     self.hide();
-                    true
                 } else if key == self.key_config.blame {
                     if self.blame() {
                         self.hide();
-                        true
-                    } else {
-                        false
                     }
                 } else if tree_nav(
                     &mut self.tree,
@@ -316,13 +312,10 @@ impl Component for RevisionFilesComponent {
                     key,
                 ) {
                     self.selection_changed();
-                    true
-                } else {
-                    false
-                };
-
-                return Ok(consumed.into());
+                }
             }
+
+            return Ok(EventState::Consumed);
         }
 
         Ok(EventState::NotConsumed)
