@@ -480,6 +480,7 @@ dependencies = [
  "easy-cast",
  "filetree",
  "itertools",
+ "lazy_static",
  "log",
  "pprof",
  "rayon-core",

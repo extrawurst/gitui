@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use std::{ffi::OsStr, ops::Range, path::Path};
 use syntect::{
     highlighting::{
@@ -17,39 +18,35 @@ pub struct SyntaxText {
     lines: Vec<SyntaxLine>,
 }
 
+lazy_static! {
+    static ref SYNTAX_SET: SyntaxSet =
+        SyntaxSet::load_defaults_nonewlines();
+    static ref THEME_SET: ThemeSet = ThemeSet::load_defaults();
+}
+
 impl SyntaxText {
     pub fn new(text: String, file_path: &Path) -> Self {
-        //TODO: lazy load
-        let ps = SyntaxSet::load_defaults_nonewlines();
-        let ts = ThemeSet::load_defaults();
-        // log::debug!(
-        //     "syntaxes: {:?}",
-        //     ps.syntaxes()
-        //         .iter()
-        //         .map(|s| s.name.clone())
-        //         .collect::<Vec<_>>()
-        // );
-
         let mut state = {
             let syntax = file_path
                 .extension()
                 .and_then(OsStr::to_str)
                 .map_or_else(
                     || {
-                        ps.find_syntax_by_path(
+                        SYNTAX_SET.find_syntax_by_path(
                             file_path.to_str().unwrap_or_default(),
                         )
                     },
-                    |ext| ps.find_syntax_by_extension(ext),
+                    |ext| SYNTAX_SET.find_syntax_by_extension(ext),
                 );
 
-            ParseState::new(
-                syntax.unwrap_or_else(|| ps.find_syntax_plain_text()),
-            )
+            ParseState::new(syntax.unwrap_or_else(|| {
+                SYNTAX_SET.find_syntax_plain_text()
+            }))
         };
 
-        let highlighter =
-            Highlighter::new(&ts.themes["base16-eighties.dark"]);
+        let highlighter = Highlighter::new(
+            &THEME_SET.themes["base16-eighties.dark"],
+        );
 
         let mut syntax_lines: Vec<SyntaxLine> = Vec::new();
 
@@ -57,7 +54,7 @@ impl SyntaxText {
             HighlightState::new(&highlighter, ScopeStack::new());
 
         for (number, line) in text.lines().enumerate() {
-            let ops = state.parse_line(line, &ps);
+            let ops = state.parse_line(line, &SYNTAX_SET);
             let iter = RangedHighlightIterator::new(
                 &mut highlight_state,
                 &ops[..],
