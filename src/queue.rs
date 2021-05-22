@@ -12,6 +12,8 @@ bitflags! {
         const DIFF = 0b010;
         /// commands might need updating (app::update_commands)
         const COMMANDS = 0b100;
+        /// branches have changed
+        const BRANCHES = 0b1000;
     }
 }
 
@@ -29,9 +31,11 @@ pub enum Action {
     ResetHunk(String, u64),
     ResetLines(String, Vec<DiffLinePosition>),
     StashDrop(CommitId),
+    StashPop(CommitId),
     DeleteBranch(String),
     ForcePush(String, bool),
-    PullMerge(usize),
+    PullMerge { incoming: usize, rebase: bool },
+    AbortMerge,
 }
 
 ///
@@ -44,6 +48,8 @@ pub enum InternalEvent {
     ShowErrorMsg(String),
     ///
     Update(NeedsUpdate),
+    ///
+    StatusLastFileMoved,
     /// open commit msg input
     OpenCommit,
     ///
@@ -54,6 +60,8 @@ pub enum InternalEvent {
     InspectCommit(CommitId, Option<CommitTags>),
     ///
     TagCommit(CommitId),
+    ///
+    BlameFile(String),
     ///
     CreateBranch,
     ///
@@ -68,6 +76,8 @@ pub enum InternalEvent {
     Pull(String),
     ///
     PushTags,
+    ///
+    OpenFileTree(CommitId),
 }
 
 ///

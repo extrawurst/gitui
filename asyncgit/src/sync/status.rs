@@ -18,6 +18,8 @@ pub enum StatusItemType {
     Renamed,
     ///
     Typechange,
+    ///
+    Conflicted,
 }
 
 impl From<Status> for StatusItemType {
@@ -30,6 +32,8 @@ impl From<Status> for StatusItemType {
             Self::Renamed
         } else if s.is_index_typechange() || s.is_wt_typechange() {
             Self::Typechange
+        } else if s.is_conflicted() {
+            Self::Conflicted
         } else {
             Self::Modified
         }
@@ -39,11 +43,11 @@ impl From<Status> for StatusItemType {
 impl From<Delta> for StatusItemType {
     fn from(d: Delta) -> Self {
         match d {
-            Delta::Added => StatusItemType::New,
-            Delta::Deleted => StatusItemType::Deleted,
-            Delta::Renamed => StatusItemType::Renamed,
-            Delta::Typechange => StatusItemType::Typechange,
-            _ => StatusItemType::Modified,
+            Delta::Added => Self::New,
+            Delta::Deleted => Self::Deleted,
+            Delta::Renamed => Self::Renamed,
+            Delta::Typechange => Self::Typechange,
+            _ => Self::Modified,
         }
     }
 }
@@ -70,21 +74,21 @@ pub enum StatusType {
 
 impl Default for StatusType {
     fn default() -> Self {
-        StatusType::WorkingDir
+        Self::WorkingDir
     }
 }
 
 impl From<StatusType> for StatusShow {
     fn from(s: StatusType) -> Self {
         match s {
-            StatusType::WorkingDir => StatusShow::Workdir,
-            StatusType::Stage => StatusShow::Index,
-            StatusType::Both => StatusShow::IndexAndWorkdir,
+            StatusType::WorkingDir => Self::Workdir,
+            StatusType::Stage => Self::Index,
+            StatusType::Both => Self::IndexAndWorkdir,
         }
     }
 }
 
-///
+/// gurantees sorting
 pub fn get_status(
     repo_path: &str,
     status_type: StatusType,
@@ -112,7 +116,7 @@ pub fn get_status(
             Some(diff) => diff
                 .new_file()
                 .path()
-                .and_then(|x| x.to_str())
+                .and_then(Path::to_str)
                 .map(String::from)
                 .ok_or_else(|| {
                     Error::Generic(

@@ -1,6 +1,7 @@
 use super::{
     textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
+    EventState,
 };
 use crate::{
     keys::SharedKeyConfig,
@@ -52,10 +53,10 @@ impl Component for CreateBranchComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.is_visible() {
-            if self.input.event(ev)? {
-                return Ok(true);
+            if self.input.event(ev)?.is_consumed() {
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(e) = ev {
@@ -63,10 +64,10 @@ impl Component for CreateBranchComponent {
                     self.create_branch();
                 }
 
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
@@ -122,7 +123,7 @@ impl CreateBranchComponent {
         match res {
             Ok(_) => {
                 self.queue.borrow_mut().push_back(
-                    InternalEvent::Update(NeedsUpdate::ALL),
+                    InternalEvent::Update(NeedsUpdate::BRANCHES),
                 );
             }
             Err(e) => {

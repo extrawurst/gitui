@@ -2,6 +2,7 @@ use super::utils::repo;
 use crate::error::Result;
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
+use unicode_truncate::UnicodeTruncateStr;
 
 /// identifies a single commit
 #[derive(
@@ -10,22 +11,24 @@ use scopetime::scope_time;
 pub struct CommitId(Oid);
 
 impl CommitId {
-    /// create new CommitId
-    pub fn new(id: Oid) -> Self {
+    /// create new `CommitId`
+    pub const fn new(id: Oid) -> Self {
         Self(id)
     }
 
     ///
-    pub(crate) fn get_oid(self) -> Oid {
+    pub(crate) const fn get_oid(self) -> Oid {
         self.0
     }
 
-    ///
+    /// 7 chars short hash
     pub fn get_short_string(&self) -> String {
         self.to_string().chars().take(7).collect()
     }
 }
 
+//TODO: remove once clippy fixed: https://github.com/rust-lang/rust-clippy/issues/6983
+#[allow(clippy::wrong_self_convention)]
 impl ToString for CommitId {
     fn to_string(&self) -> String {
         self.0.to_string()
@@ -76,11 +79,10 @@ pub fn get_commits_info(
     let res = commits
         .map(|c: Commit| {
             let message = get_message(&c, Some(message_length_limit));
-            let author = if let Some(name) = c.author().name() {
-                String::from(name)
-            } else {
-                String::from("<unknown>")
-            };
+            let author = c.author().name().map_or_else(
+                || String::from("<unknown>"),
+                String::from,
+            );
             CommitInfo {
                 message,
                 author,
@@ -94,37 +96,46 @@ pub fn get_commits_info(
 }
 
 ///
-pub fn get_message(
-    c: &Commit,
-    message_length_limit: Option<usize>,
-) -> String {
-    let msg = String::from_utf8_lossy(c.message_bytes());
-    let msg = msg.trim_start();
+pub fn get_commit_info(
+    repo_path: &str,
+    commit_id: &CommitId,
+) -> Result<CommitInfo> {
+    scope_time!("get_commit_info");
 
-    if let Some(limit) = message_length_limit {
-        limit_str(msg, limit).to_string()
-    } else {
-        msg.to_string()
-    }
+    let repo = repo(repo_path)?;
+
+    let commit = repo.find_commit((*commit_id).into())?;
+    let author = commit.author();
+
+    Ok(CommitInfo {
+        message: commit.message().unwrap_or("").into(),
+        author: author.name().unwrap_or("<unknown>").into(),
+        time: commit.time().seconds(),
+        id: CommitId(commit.id()),
+    })
 }
 
-#[inline]
-fn limit_str(s: &str, limit: usize) -> &str {
-    if let Some(first) = s.lines().next() {
-        let mut limit = limit.min(first.len());
-        while !first.is_char_boundary(limit) {
-            limit += 1
-        }
-        &first[0..limit]
-    } else {
-        ""
-    }
+/// if `message_limit` is set the message will be
+/// limited to the first line and truncated to fit
+pub fn get_message(
+    c: &Commit,
+    message_limit: Option<usize>,
+) -> String {
+    let msg = String::from_utf8_lossy(c.message_bytes());
+    let msg = msg.trim();
+
+    message_limit.map_or_else(
+        || msg.to_string(),
+        |limit| {
+            let msg = msg.lines().next().unwrap_or_default();
+            msg.unicode_truncate(limit).0.to_string()
+        },
+    )
 }
 
 #[cfg(test)]
 mod tests {
-
-    use super::{get_commits_info, limit_str};
+    use super::get_commits_info;
     use crate::error::Result;
     use crate::sync::{
         commit, stage_add_file, tests::repo_init_empty,
@@ -158,6 +169,25 @@ mod tests {
     }
 
     #[test]
+    fn test_log_first_msg_line() -> Result<()> {
+        let file_path = Path::new("foo");
+        let (_td, repo) = repo_init_empty().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        File::create(&root.join(file_path))?.write_all(b"a")?;
+        stage_add_file(repo_path, file_path).unwrap();
+        let c1 = commit(repo_path, "subject\nbody").unwrap();
+
+        let res = get_commits_info(repo_path, &vec![c1], 50).unwrap();
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].message.as_str(), "subject");
+
+        Ok(())
+    }
+
+    #[test]
     fn test_invalid_utf8() -> Result<()> {
         let file_path = Path::new("foo");
         let (_td, repo) = repo_init_empty().unwrap();
@@ -182,14 +212,5 @@ mod tests {
         assert_eq!(res[0].message.starts_with("test msg"), true);
 
         Ok(())
-    }
-
-    #[test]
-    fn test_limit_string_utf8() {
-        assert_eq!(limit_str("里里", 1), "里");
-
-        let test_src = "导入按钮由选文件改为选目录，因为整个过程中要用到多个mdb文件，这些文件是在程序里写死的，暂且这么来做，有时间了后 再做调整";
-        let test_dst = "导入按钮由选文";
-        assert_eq!(limit_str(test_src, 20), test_dst);
     }
 }

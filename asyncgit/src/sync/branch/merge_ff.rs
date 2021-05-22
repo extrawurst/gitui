@@ -25,12 +25,16 @@ pub fn branch_merge_upstream_fastforward(
     let annotated =
         repo.find_annotated_commit(upstream_commit.id())?;
 
-    let (analysis, _) = repo.merge_analysis(&[&annotated])?;
+    let (analysis, pref) = repo.merge_analysis(&[&annotated])?;
 
     if !analysis.is_fast_forward() {
         return Err(Error::Generic(
             "fast forward merge not possible".into(),
         ));
+    }
+
+    if pref.is_no_fast_forward() {
+        return Err(Error::Generic("fast forward not wanted".into()));
     }
 
     //TODO: support merge on unborn
@@ -49,7 +53,7 @@ pub fn branch_merge_upstream_fastforward(
 pub mod test {
     use super::*;
     use crate::sync::{
-        remotes::{fetch_origin, push::push},
+        remotes::{fetch, push::push},
         tests::{
             debug_cmd_print, get_commit_ids, repo_clone,
             repo_init_bare, write_commit_file,
@@ -106,7 +110,7 @@ pub mod test {
 
         // clone1 again
 
-        let bytes = fetch_origin(
+        let bytes = fetch(
             clone1_dir.path().to_str().unwrap(),
             "master",
             None,
@@ -115,7 +119,7 @@ pub mod test {
         .unwrap();
         assert!(bytes > 0);
 
-        let bytes = fetch_origin(
+        let bytes = fetch(
             clone1_dir.path().to_str().unwrap(),
             "master",
             None,

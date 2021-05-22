@@ -1,20 +1,21 @@
 //TODO: remove once fixed https://github.com/rust-lang/rust-clippy/issues/6818
 #![allow(clippy::use_self)]
 
-use crate::get_app_config_path;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ron::{
-    de::from_bytes,
+    self,
     ser::{to_string_pretty, PrettyConfig},
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{Read, Write},
     path::PathBuf,
     rc::Rc,
 };
+
+use crate::args::get_app_config_path;
 
 pub type SharedKeyConfig = Rc<KeyConfig>;
 
@@ -26,8 +27,7 @@ pub struct KeyConfig {
     pub tab_stashes: KeyEvent,
     pub tab_toggle: KeyEvent,
     pub tab_toggle_reverse: KeyEvent,
-    pub focus_workdir: KeyEvent,
-    pub focus_stage: KeyEvent,
+    pub toggle_workarea: KeyEvent,
     pub focus_right: KeyEvent,
     pub focus_left: KeyEvent,
     pub focus_above: KeyEvent,
@@ -39,6 +39,8 @@ pub struct KeyConfig {
     pub open_help: KeyEvent,
     pub move_left: KeyEvent,
     pub move_right: KeyEvent,
+    pub tree_collapse_recursive: KeyEvent,
+    pub tree_expand_recursive: KeyEvent,
     pub home: KeyEvent,
     pub end: KeyEvent,
     pub move_up: KeyEvent,
@@ -48,14 +50,17 @@ pub struct KeyConfig {
     pub shift_up: KeyEvent,
     pub shift_down: KeyEvent,
     pub enter: KeyEvent,
+    pub blame: KeyEvent,
     pub edit_file: KeyEvent,
     pub status_stage_all: KeyEvent,
     pub status_reset_item: KeyEvent,
-    pub status_reset_lines: KeyEvent,
     pub status_ignore_file: KeyEvent,
+    pub diff_stage_lines: KeyEvent,
+    pub diff_reset_lines: KeyEvent,
     pub stashing_save: KeyEvent,
     pub stashing_toggle_untracked: KeyEvent,
     pub stashing_toggle_index: KeyEvent,
+    pub stash_apply: KeyEvent,
     pub stash_open: KeyEvent,
     pub stash_drop: KeyEvent,
     pub cmd_bar_toggle: KeyEvent,
@@ -66,9 +71,12 @@ pub struct KeyConfig {
     pub rename_branch: KeyEvent,
     pub select_branch: KeyEvent,
     pub delete_branch: KeyEvent,
+    pub merge_branch: KeyEvent,
     pub push: KeyEvent,
+    pub open_file_tree: KeyEvent,
     pub force_push: KeyEvent,
     pub pull: KeyEvent,
+    pub abort_merge: KeyEvent,
 
     pub enter_symbol: String,
     pub left_symbol: String,
@@ -100,8 +108,7 @@ impl Default for KeyConfig {
 			tab_stashes: KeyEvent { code: KeyCode::Char('4'), modifiers: KeyModifiers::empty()},
 			tab_toggle: KeyEvent { code: KeyCode::Tab, modifiers: KeyModifiers::empty()},
 			tab_toggle_reverse: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::SHIFT},
-			focus_workdir: KeyEvent { code: KeyCode::Char('w'), modifiers: KeyModifiers::empty()},
-			focus_stage: KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
+            toggle_workarea: KeyEvent { code: KeyCode::Char('w'), modifiers: KeyModifiers::empty()},
 			focus_right: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::empty()},
 			focus_left: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::empty()},
 			focus_above: KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::empty()},
@@ -113,6 +120,8 @@ impl Default for KeyConfig {
 			open_help: KeyEvent { code: KeyCode::Char('h'), modifiers: KeyModifiers::empty()},
 			move_left: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::empty()},
 			move_right: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::empty()},
+            tree_collapse_recursive: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::SHIFT},
+            tree_expand_recursive: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::SHIFT},
 			home: KeyEvent { code: KeyCode::Home, modifiers: KeyModifiers::empty()},
 			end: KeyEvent { code: KeyCode::End, modifiers: KeyModifiers::empty()},
 			move_up: KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::empty()},
@@ -122,27 +131,33 @@ impl Default for KeyConfig {
 			shift_up: KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::SHIFT},
 			shift_down: KeyEvent { code: KeyCode::Down, modifiers: KeyModifiers::SHIFT},
 			enter: KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::empty()},
+			blame: KeyEvent { code: KeyCode::Char('B'), modifiers: KeyModifiers::SHIFT},
 			edit_file: KeyEvent { code: KeyCode::Char('e'), modifiers: KeyModifiers::empty()},
 			status_stage_all: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::empty()},
 			status_reset_item: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
-            status_reset_lines: KeyEvent { code: KeyCode::Char('d'), modifiers: KeyModifiers::empty()},
+            diff_reset_lines: KeyEvent { code: KeyCode::Char('d'), modifiers: KeyModifiers::empty()},
 			status_ignore_file: KeyEvent { code: KeyCode::Char('i'), modifiers: KeyModifiers::empty()},
+            diff_stage_lines: KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
 			stashing_save: KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
 			stashing_toggle_untracked: KeyEvent { code: KeyCode::Char('u'), modifiers: KeyModifiers::empty()},
 			stashing_toggle_index: KeyEvent { code: KeyCode::Char('i'), modifiers: KeyModifiers::empty()},
+			stash_apply: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::empty()},
 			stash_open: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::empty()},
 			stash_drop: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
 			cmd_bar_toggle: KeyEvent { code: KeyCode::Char('.'), modifiers: KeyModifiers::empty()},
 			log_tag_commit: KeyEvent { code: KeyCode::Char('t'), modifiers: KeyModifiers::empty()},
 			commit_amend: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
             copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
-            create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::NONE},
-            rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::NONE},
-            select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::NONE},
-            delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
+            create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::empty()},
+            rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::empty()},
+            select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
+            delete_branch: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
+            merge_branch: KeyEvent { code: KeyCode::Char('m'), modifiers: KeyModifiers::empty()},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
             force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
             pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
+            abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
+            open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
 
             enter_symbol: "\u{23ce}".into(),     //⏎
             left_symbol: "\u{2190}".into(),      //←
@@ -167,15 +182,14 @@ impl Default for KeyConfig {
 }
 
 impl KeyConfig {
-    fn save(&self) -> Result<()> {
-        let config_file = Self::get_config_file()?;
-        let mut file = File::create(config_file)?;
+    fn save(&self, file: PathBuf) -> Result<()> {
+        let mut file = File::create(file)?;
         let data = to_string_pretty(self, PrettyConfig::default())?;
         file.write_all(data.as_bytes())?;
         Ok(())
     }
 
-    fn get_config_file() -> Result<PathBuf> {
+    pub fn get_config_file() -> Result<PathBuf> {
         let app_home = get_app_config_path()?;
         Ok(app_home.join("key_config.ron"))
     }
@@ -184,31 +198,31 @@ impl KeyConfig {
         let mut f = File::open(config_file)?;
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer)?;
-        Ok(from_bytes(&buffer)?)
+        Ok(ron::de::from_bytes(&buffer)?)
     }
 
-    fn init_internal() -> Result<Self> {
-        let file = Self::get_config_file()?;
+    pub fn init(file: PathBuf) -> Result<Self> {
         if file.exists() {
-            Ok(Self::read_file(file)?)
-        } else {
-            let def = Self::default();
-            if def.save().is_err() {
-                log::warn!(
-                    "failed to store default key config to disk."
-                )
-            }
-            Ok(def)
-        }
-    }
+            match Self::read_file(file.clone()) {
+                Err(e) => {
+                    let config_path = file.clone();
+                    let config_path_old =
+                        format!("{}.old", file.to_string_lossy());
+                    fs::rename(
+                        config_path.clone(),
+                        config_path_old.clone(),
+                    )?;
 
-    pub fn init() -> Self {
-        match Self::init_internal() {
-            Ok(v) => v,
-            Err(e) => {
-                log::error!("failed loading key binding: {}", e);
-                Self::default()
+                    Self::default().save(file)?;
+
+                    Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
+                        e,config_path_old,config_path.to_string_lossy()))
+                }
+                Ok(res) => Ok(res),
             }
+        } else {
+            Self::default().save(file)?;
+            Ok(Self::default())
         }
     }
 
@@ -304,10 +318,8 @@ mod tests {
     #[test]
     fn test_load_vim_style_example() {
         assert_eq!(
-            KeyConfig::read_file(
-                "assets/vim_style_key_config.ron".into()
-            )
-            .is_ok(),
+            KeyConfig::read_file("vim_style_key_config.ron".into())
+                .is_ok(),
             true
         );
     }

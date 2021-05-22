@@ -14,11 +14,11 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-fn current_tick() -> u64 {
+fn current_tick() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("time before unix epoch!")
-        .as_millis() as u64
+        .as_millis()
 }
 
 #[derive(Default, Hash, Clone)]
@@ -27,9 +27,9 @@ pub struct Status {
 }
 
 ///
-#[derive(Default, Hash, Clone, PartialEq)]
+#[derive(Default, Hash, Copy, Clone, PartialEq)]
 pub struct StatusParams {
-    tick: u64,
+    tick: u128,
     status_type: StatusType,
     include_untracked: bool,
 }
@@ -83,7 +83,7 @@ impl AsyncStatus {
     ///
     pub fn fetch(
         &mut self,
-        params: StatusParams,
+        params: &StatusParams,
     ) -> Result<Option<Status>> {
         if self.is_pending() {
             log::trace!("request blocked, still pending");
@@ -124,8 +124,8 @@ impl AsyncStatus {
                 status_type,
                 include_untracked,
                 hash_request,
-                arc_current,
-                arc_last,
+                &arc_current,
+                &arc_last,
             )
             .is_ok();
 
@@ -145,8 +145,8 @@ impl AsyncStatus {
         status_type: StatusType,
         include_untracked: bool,
         hash_request: u64,
-        arc_current: Arc<Mutex<Request<u64, Status>>>,
-        arc_last: Arc<Mutex<Status>>,
+        arc_current: &Arc<Mutex<Request<u64, Status>>>,
+        arc_last: &Arc<Mutex<Status>>,
     ) -> Result<()> {
         let res = Self::get_status(status_type, include_untracked)?;
         log::trace!(

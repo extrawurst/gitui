@@ -3,6 +3,7 @@
 //TODO: remove once we have this activated on the toplevel
 #![deny(clippy::expect_used)]
 
+pub mod blame;
 pub mod branch;
 mod commit;
 mod commit_details;
@@ -14,6 +15,7 @@ mod hooks;
 mod hunks;
 mod ignore;
 mod logwalker;
+mod merge;
 mod patches;
 pub mod remotes;
 mod reset;
@@ -22,21 +24,26 @@ mod stash;
 mod state;
 pub mod status;
 mod tags;
+mod tree;
 pub mod utils;
 
+pub use blame::{blame_file, BlameHunk, FileBlame};
 pub use branch::{
-    branch_compare_upstream, checkout_branch, create_branch,
-    delete_branch, get_branches_info,
-    merge_commit::merge_upstream_commit,
+    branch_compare_upstream, checkout_branch, config_is_pull_rebase,
+    create_branch, delete_branch, get_branch_remote,
+    get_branches_info, merge_commit::merge_upstream_commit,
     merge_ff::branch_merge_upstream_fastforward,
-    rename::rename_branch, BranchCompare, BranchInfo,
+    merge_rebase::merge_upstream_rebase, rename::rename_branch,
+    BranchCompare, BranchInfo,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{
-    get_commit_details, CommitDetails, CommitMessage,
+    get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };
 pub use commit_files::get_commit_files;
-pub use commits_info::{get_commits_info, CommitId, CommitInfo};
+pub use commits_info::{
+    get_commit_info, get_commits_info, CommitId, CommitInfo,
+};
 pub use diff::get_diff_commit;
 pub use hooks::{
     hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,
@@ -44,15 +51,21 @@ pub use hooks::{
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
+pub use merge::{
+    abort_merge, merge_branch, merge_commit, merge_msg, mergehead_ids,
+};
 pub use remotes::{
     get_default_remote, get_remotes, push::AsyncProgress,
     tags::PushTagsProgress,
 };
 pub use reset::{reset_stage, reset_workdir};
-pub use staging::discard_lines;
-pub use stash::{get_stashes, stash_apply, stash_drop, stash_save};
+pub use staging::{discard_lines, stage_lines};
+pub use stash::{
+    get_stashes, stash_apply, stash_drop, stash_pop, stash_save,
+};
 pub use state::{repo_state, RepoState};
 pub use tags::{get_tags, CommitTags, Tags};
+pub use tree::{tree_file_content, tree_files, TreeFile};
 pub use utils::{
     get_head, get_head_tuple, is_bare_repo, is_repo, stage_add_all,
     stage_add_file, stage_addremoved, Head,
@@ -62,8 +75,8 @@ pub use utils::{
 mod tests {
     use super::{
         commit, stage_add_file,
-        staging::repo_write_file,
         status::{get_status, StatusType},
+        utils::repo_write_file,
         CommitId, LogWalker,
     };
     use crate::error::Result;

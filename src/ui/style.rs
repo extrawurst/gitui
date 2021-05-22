@@ -9,7 +9,7 @@ use ron::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{Read, Write},
     path::PathBuf,
     rc::Rc,
@@ -93,7 +93,7 @@ impl Theme {
     pub fn tab(&self, selected: bool) -> Style {
         if selected {
             self.text(true, false)
-                .fg(Color::White)
+                .fg(self.selected_tab)
                 .add_modifier(Modifier::UNDERLINED)
         } else {
             self.text(false, false)
@@ -135,7 +135,24 @@ impl Theme {
             StatusItemType::Renamed => {
                 Style::default().fg(self.diff_file_moved)
             }
+            StatusItemType::Conflicted => Style::default()
+                .fg(self.diff_file_modified)
+                .add_modifier(Modifier::BOLD),
             StatusItemType::Typechange => Style::default(),
+        };
+
+        self.apply_select(style, selected)
+    }
+
+    pub fn file_tree_item(
+        &self,
+        is_folder: bool,
+        selected: bool,
+    ) -> Style {
+        let style = if is_folder {
+            Style::default()
+        } else {
+            Style::default().fg(self.diff_file_modified)
         };
 
         self.apply_select(style, selected)
@@ -226,6 +243,19 @@ impl Theme {
         )
     }
 
+    pub fn commit_hash_in_blame(
+        &self,
+        is_blamed_commit: bool,
+    ) -> Style {
+        if is_blamed_commit {
+            Style::default()
+                .fg(self.commit_hash)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(self.commit_hash)
+        }
+    }
+
     pub fn push_gauge(&self) -> Style {
         Style::default()
             .fg(self.push_gauge_fg)
@@ -247,28 +277,36 @@ impl Theme {
         Ok(from_bytes(&buffer)?)
     }
 
-    fn init_internal(theme: PathBuf) -> Result<Self> {
-        if theme.exists() {
-            Ok(Self::read_file(theme)?)
-        } else {
-            // This will only be called when theme.ron doesn't already exists
-            let def = Self::default();
-            if def.save(theme).is_err() {
-                log::warn!("failed to store default theme to disk.")
-            }
-            Ok(def)
-        }
-    }
+    pub fn init(file: PathBuf) -> Result<Self> {
+        if file.exists() {
+            match Self::read_file(file.clone()) {
+                Err(e) => {
+                    let config_path = file.clone();
+                    let config_path_old =
+                        format!("{}.old", file.to_string_lossy());
+                    fs::rename(
+                        config_path.clone(),
+                        config_path_old.clone(),
+                    )?;
 
-    pub fn init(theme_path: PathBuf) -> Self {
-        Self::init_internal(theme_path).unwrap_or_default()
+                    Self::default().save(file)?;
+
+                    Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
+                        e,config_path_old,config_path.to_string_lossy()))
+                }
+                Ok(res) => Ok(res),
+            }
+        } else {
+            Self::default().save(file)?;
+            Ok(Self::default())
+        }
     }
 }
 
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            selected_tab: Color::Yellow,
+            selected_tab: Color::Reset,
             command_fg: Color::White,
             selection_bg: Color::Blue,
             cmdbar_extra_lines_bg: Color::Blue,

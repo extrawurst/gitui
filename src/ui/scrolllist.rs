@@ -73,3 +73,15 @@ pub fn draw_list<'b, B: Backend, L>(
     );
     f.render_widget(list, r)
 }
+
+pub fn draw_list_block<'b, B: Backend, L>(
+    f: &mut Frame<B>,
+    r: Rect,
+    block: Block<'b>,
+    items: L,
+) where
+    L: Iterator<Item = Span<'b>>,
+{
+    let list = ScrollableList::new(items).block(block);
+    f.render_widget(list, r)
+}

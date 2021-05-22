@@ -16,9 +16,9 @@ pub enum RepoState {
 impl From<RepositoryState> for RepoState {
     fn from(state: RepositoryState) -> Self {
         match state {
-            RepositoryState::Clean => RepoState::Clean,
-            RepositoryState::Merge => RepoState::Merge,
-            _ => RepoState::Other,
+            RepositoryState::Clean => Self::Clean,
+            RepositoryState::Merge => Self::Merge,
+            _ => Self::Other,
         }
     }
 }

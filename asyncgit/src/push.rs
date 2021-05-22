@@ -76,7 +76,7 @@ impl AsyncPush {
         }
 
         self.set_request(&params)?;
-        RemoteProgress::set_progress(self.progress.clone(), None)?;
+        RemoteProgress::set_progress(&self.progress, None)?;
 
         let arc_state = Arc::clone(&self.state);
         let arc_res = Arc::clone(&self.last_result);
@@ -108,9 +108,9 @@ impl AsyncPush {
 
             handle.join().expect("joining thread failed");
 
-            Self::set_result(arc_res, res).expect("result error");
+            Self::set_result(&arc_res, res).expect("result error");
 
-            Self::clear_request(arc_state).expect("clear error");
+            Self::clear_request(&arc_state).expect("clear error");
 
             sender
                 .send(AsyncNotification::Push)
@@ -135,7 +135,7 @@ impl AsyncPush {
     }
 
     fn clear_request(
-        state: Arc<Mutex<Option<PushState>>>,
+        state: &Arc<Mutex<Option<PushState>>>,
     ) -> Result<()> {
         let mut state = state.lock()?;
 
@@ -145,7 +145,7 @@ impl AsyncPush {
     }
 
     fn set_result(
-        arc_result: Arc<Mutex<Option<String>>>,
+        arc_result: &Arc<Mutex<Option<String>>>,
         res: Result<()>,
     ) -> Result<()> {
         let mut last_res = arc_result.lock()?;

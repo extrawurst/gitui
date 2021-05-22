@@ -1,7 +1,7 @@
 use crate::{
     components::{
         cred::CredComponent, visibility_blocking, CommandBlocking,
-        CommandInfo, Component, DrawableComponent,
+        CommandInfo, Component, DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
@@ -15,7 +15,7 @@ use asyncgit::{
             extract_username_password, need_username_password,
             BasicAuthCredential,
         },
-        get_default_remote,
+        get_branch_remote, get_default_remote,
     },
     AsyncNotification, AsyncPush, PushRequest, RemoteProgress,
     RemoteProgressState, CWD,
@@ -78,6 +78,7 @@ impl PushComponent {
         self.branch = branch;
         self.force = force;
         self.show()?;
+
         if need_username_password()? {
             let cred =
                 extract_username_password().unwrap_or_else(|_| {
@@ -99,10 +100,26 @@ impl PushComponent {
         cred: Option<BasicAuthCredential>,
         force: bool,
     ) -> Result<()> {
+        let remote = if let Some(remote) =
+            get_branch_remote(CWD, &self.branch)?
+        {
+            log::info!("push: branch '{}' has upstream for remote '{}' - using that",self.branch,remote);
+            remote
+        } else {
+            log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
+            let remote = get_default_remote(CWD)?;
+            log::info!(
+                "push: branch '{}' to remote '{}'",
+                self.branch,
+                remote
+            );
+            remote
+        };
+
         self.pending = true;
         self.progress = None;
         self.git_push.request(PushRequest {
-            remote: get_default_remote(CWD)?,
+            remote,
             branch: self.branch.clone(),
             force,
             basic_credential: cred,
@@ -249,13 +266,14 @@ impl Component for PushComponent {
         }
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if self.input_cred.is_visible() {
-                    if self.input_cred.event(ev)? {
-                        return Ok(true);
-                    } else if self.input_cred.get_cred().is_complete()
+                    self.input_cred.event(ev)?;
+
+                    if self.input_cred.get_cred().is_complete()
+                        || !self.input_cred.is_visible()
                     {
                         self.push_to_remote(
                             Some(self.input_cred.get_cred().clone()),
@@ -269,9 +287,9 @@ impl Component for PushComponent {
                     self.hide();
                 }
             }
-            return Ok(true);
+            return Ok(EventState::Consumed);
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

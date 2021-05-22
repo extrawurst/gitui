@@ -3,16 +3,18 @@
 pub(crate) mod push;
 pub(crate) mod tags;
 
-use self::push::ProgressNotification;
-use super::cred::BasicAuthCredential;
 use crate::{
     error::{Error, Result},
-    sync::utils,
+    sync::{
+        cred::BasicAuthCredential,
+        remotes::push::ProgressNotification, utils,
+    },
 };
 use crossbeam_channel::Sender;
-use git2::{FetchOptions, Repository};
+use git2::{BranchType, FetchOptions, Repository};
 use push::remote_callbacks;
 use scopetime::scope_time;
+use utils::bytes2string;
 
 /// origin
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
@@ -70,8 +72,8 @@ pub(crate) fn get_default_remote_in_repo(
     Err(Error::NoDefaultRemoteFound)
 }
 
-///
-pub(crate) fn fetch_origin(
+/// fetches from upstream/remote for `branch`
+pub(crate) fn fetch(
     repo_path: &str,
     branch: &str,
     basic_credential: Option<BasicAuthCredential>,
@@ -80,8 +82,13 @@ pub(crate) fn fetch_origin(
     scope_time!("fetch_origin");
 
     let repo = utils::repo(repo_path)?;
-    let mut remote =
-        repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
+    let branch_ref = repo
+        .find_branch(branch, BranchType::Local)?
+        .into_reference();
+    let branch_ref = bytes2string(branch_ref.name_bytes())?;
+    let remote_name = repo.branch_upstream_remote(&branch_ref)?;
+    let remote_name = bytes2string(&*remote_name)?;
+    let mut remote = repo.find_remote(&remote_name)?;
 
     let mut options = FetchOptions::new();
     options.remote_callbacks(remote_callbacks(
@@ -97,44 +104,35 @@ pub(crate) fn fetch_origin(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sync::tests::debug_cmd_print;
-    use tempfile::TempDir;
+    use crate::sync::tests::{
+        debug_cmd_print, repo_clone, repo_init,
+    };
 
     #[test]
     fn test_smoke() {
-        let td = TempDir::new().unwrap();
-
-        debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "git clone https://github.com/extrawurst/brewdump.git",
-        );
-
-        let repo_path = td.path().join("brewdump");
-        let repo_path = repo_path.as_os_str().to_str().unwrap();
+        let (remote_dir, _remote) = repo_init().unwrap();
+        let remote_path = remote_dir.path().to_str().unwrap();
+        let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
+        let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
 
         let remotes = get_remotes(repo_path).unwrap();
 
         assert_eq!(remotes, vec![String::from("origin")]);
 
-        fetch_origin(repo_path, "master", None, None).unwrap();
+        fetch(repo_path, "master", None, None).unwrap();
     }
 
     #[test]
     fn test_default_remote() {
-        let td = TempDir::new().unwrap();
+        let (remote_dir, _remote) = repo_init().unwrap();
+        let remote_path = remote_dir.path().to_str().unwrap();
+        let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
+        let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
 
         debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "git clone https://github.com/extrawurst/brewdump.git",
+            repo_path,
+            &format!("git remote add second {}", remote_path)[..],
         );
-
-        debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "cd brewdump && git remote add second https://github.com/extrawurst/brewdump.git",
-        );
-
-        let repo_path = td.path().join("brewdump");
-        let repo_path = repo_path.as_os_str().to_str().unwrap();
 
         let remotes = get_remotes(repo_path).unwrap();
 
@@ -152,25 +150,20 @@ mod tests {
 
     #[test]
     fn test_default_remote_out_of_order() {
-        let td = TempDir::new().unwrap();
+        let (remote_dir, _remote) = repo_init().unwrap();
+        let remote_path = remote_dir.path().to_str().unwrap();
+        let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
+        let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
 
         debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "git clone https://github.com/extrawurst/brewdump.git",
+            repo_path,
+            "git remote rename origin alternate",
         );
 
         debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "cd brewdump && git remote rename origin alternate",
+            repo_path,
+            &format!("git remote add origin {}", remote_path)[..],
         );
-
-        debug_cmd_print(
-            td.path().as_os_str().to_str().unwrap(),
-            "cd brewdump && git remote add origin https://github.com/extrawurst/brewdump.git",
-        );
-
-        let repo_path = td.path().join("brewdump");
-        let repo_path = repo_path.as_os_str().to_str().unwrap();
 
         //NOTE: aparently remotes are not chronolically sorted but alphabetically
         let remotes = get_remotes(repo_path).unwrap();
@@ -185,5 +178,38 @@ mod tests {
         )
         .unwrap();
         assert_eq!(first, String::from("origin"));
+    }
+
+    #[test]
+    fn test_default_remote_inconclusive() {
+        let (remote_dir, _remote) = repo_init().unwrap();
+        let remote_path = remote_dir.path().to_str().unwrap();
+        let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
+        let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
+
+        debug_cmd_print(
+            repo_path,
+            "git remote rename origin alternate",
+        );
+
+        debug_cmd_print(
+            repo_path,
+            &format!("git remote add someremote {}", remote_path)[..],
+        );
+
+        let remotes = get_remotes(repo_path).unwrap();
+        assert_eq!(
+            remotes,
+            vec![
+                String::from("alternate"),
+                String::from("someremote")
+            ]
+        );
+
+        let res = get_default_remote_in_repo(
+            &utils::repo(repo_path).unwrap(),
+        );
+        assert_eq!(res.is_err(), true);
+        assert!(matches!(res, Err(Error::NoDefaultRemoteFound)));
     }
 }

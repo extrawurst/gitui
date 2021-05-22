@@ -7,9 +7,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**merge branch, merge commit**
+
+![merge-commit](assets/merge-commit-abort.gif)
+
+**commit subject length warning**
+
+![warning](assets/commit-msg-length-limit.gif)
+
+## Added
+- merging branches, pull-merge with conflicts, commit merges ([#485](https://github.com/extrawurst/gitui/issues/485))
+- warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
+- `--bugreport` cmd line arg to help diagnostics [[@zcorniere](https://github.com/zcorniere)] ([#695](https://github.com/extrawurst/gitui/issues/695))
+- inspect file tree at a specific revision ([#714](https://github.com/extrawurst/gitui/issues/714))
+
+## Changed
+- smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
+- create-branch popup aligned with rename-branch [[@bruceCoelho](https://github.com/bruceCoelho)] ([#679](https://github.com/extrawurst/gitui/issues/679))
+- smart focus change after staging all files ([#706](https://github.com/extrawurst/gitui/issues/706))
+
+## Fixed
+- selected-tab color broken in light theme [[@Cottser](https://github.com/Cottser)] ([#719](https://github.com/extrawurst/gitui/issues/719))
+
+## [0.15.0] - 2020-04-27
+
+**file blame**
+
+![blame](assets/blame.gif)
+
 ### Added
-- support discarding diff by lines ([#59](https://github.com/extrawurst/gitui/issues/59))
+- blame a file [[@cruessler](https://github.com/cruessler)] ([#484](https://github.com/extrawurst/gitui/issues/484))
+- support commit.template [[@wandernauta](https://github.com/wandernauta)] ([#546](https://github.com/extrawurst/gitui/issues/546))
+
+### Fixed
+- debug print when adding a file to ignore
+- fix scrolling long messages in commit details view ([#663](https://github.com/extrawurst/gitui/issues/663))
+- limit log messages in log tab ([#652](https://github.com/extrawurst/gitui/issues/652))
+- fetch crashed when no upstream of branch is set ([#637](https://github.com/extrawurst/gitui/issues/637))
+- `enter` key panics in empty remote branch list ([#643](https://github.com/extrawurst/gitui/issues/643))
+
+### Internal
+- cleanup some stringly typed code [[@wandernauta](https://github.com/wandernauta)] ([#655](https://github.com/extrawurst/gitui/issues/655))
+- introduce EventState enum (removing bool for even propagation) [[@tisorlawan](https://github.com/tisorlawan)] ([#665](https://github.com/extrawurst/gitui/issues/665))
+
+## [0.14.0] - 2020-04-11
+
+### Added
+- `[w]` key to toggle between staging/workdir [[@terhechte](https://github.com/terhechte)] ([#595](https://github.com/extrawurst/gitui/issues/595))
+- view/checkout remote branches ([#617](https://github.com/extrawurst/gitui/issues/617))
+
+![checkout-remote](assets/checkout-remote.gif)
+
+### Changed
+- ask to pop stash by default (*apply* using `[a]` now) [[@brunogouveia](https://github.com/brunogouveia)] ([#574](https://github.com/extrawurst/gitui/issues/574))
+
+![stash_pop](assets/stash_pop.gif)
+
+### Fixed
+- push branch to its tracking remote ([#597](https://github.com/extrawurst/gitui/issues/597))
+- fixed panic when staging lines involving missing newline eof ([#605](https://github.com/extrawurst/gitui/issues/605))
+- fixed pull/fetch deadlocking when it fails ([#624](https://github.com/extrawurst/gitui/issues/624))
+
+## [0.13.0] - 2020-03-15 - Happy Birthday GitUI 🥳
+
+Thanks for your interest and support over this year! Read more about the 1 year anniversary reflections of this project on my [blog](https://blog.extrawurst.org/general/programming/rust/2021/03/15/gitui-a-year-in-opensource.html).
+
+**stage/unstage/discard by line**
+
+![by-line-ops](assets/by-line-ops.gif)
+
+**push tags**
+
+![push-tags](assets/push_tags.gif)
+
+### Changed
+- `[s]` key repurposed to trigger line based (un)stage
+- cleanup status/diff commands to be more context sensitive ([#572](https://github.com/extrawurst/gitui/issues/572))
+
+### Added
+- support pull via rebase (using config `pull.rebase`) ([#566](https://github.com/extrawurst/gitui/issues/566))
+- support stage/unstage selected lines ([#59](https://github.com/extrawurst/gitui/issues/59))
+- support discarding selected lines ([#59](https://github.com/extrawurst/gitui/issues/59))
 - support for pushing tags ([#568](https://github.com/extrawurst/gitui/issues/568))
+- visualize *conflicted* files differently ([#576](https://github.com/extrawurst/gitui/issues/576))
+
+### Fixed
+- keep diff line selection after staging/unstaging/discarding ([#583](https://github.com/extrawurst/gitui/issues/583))
+- fix pull deadlocking when aborting credentials input ([#586](https://github.com/extrawurst/gitui/issues/586))
+- error diagnostics for config loading ([#589](https://github.com/extrawurst/gitui/issues/589))
 
 ## [0.12.0] - 2020-03-03
 

@@ -2,7 +2,7 @@ use super::PushComponent;
 use crate::{
     components::{
         cred::CredComponent, visibility_blocking, CommandBlocking,
-        CommandInfo, Component, DrawableComponent,
+        CommandInfo, Component, DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue},
@@ -99,6 +99,7 @@ impl PullComponent {
             branch: self.branch.clone(),
             basic_credential: cred,
         })?;
+
         Ok(())
     }
 
@@ -133,6 +134,8 @@ impl PullComponent {
                 if err.is_empty() {
                     self.try_ff_merge()?;
                 } else {
+                    self.pending = false;
+                    self.hide();
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ShowErrorMsg(format!(
                             "fetch failed:\n{}",
@@ -151,12 +154,12 @@ impl PullComponent {
         let branch_compare =
             sync::branch_compare_upstream(CWD, &self.branch)?;
         if branch_compare.behind > 0 {
-            let merge_res = sync::branch_merge_upstream_fastforward(
+            let ff_res = sync::branch_merge_upstream_fastforward(
                 CWD,
                 &self.branch,
             );
-            if let Err(err) = merge_res {
-                log::trace!("ff merge failed: {}", err);
+            if let Err(err) = ff_res {
+                log::trace!("ff failed: {}", err);
                 self.confirm_merge(branch_compare.behind);
             }
         }
@@ -166,17 +169,29 @@ impl PullComponent {
         Ok(())
     }
 
-    pub fn try_conflict_free_merge(&self) {
-        try_or_popup!(
-            self,
-            "merge failed:",
-            sync::merge_upstream_commit(CWD, &self.branch)
-        );
+    pub fn try_conflict_free_merge(&self, rebase: bool) {
+        if rebase {
+            try_or_popup!(
+                self,
+                "rebase failed:",
+                sync::merge_upstream_rebase(CWD, &self.branch)
+            );
+        } else {
+            try_or_popup!(
+                self,
+                "merge failed:",
+                sync::merge_upstream_commit(CWD, &self.branch)
+            );
+        }
     }
 
     fn confirm_merge(&mut self, incoming: usize) {
         self.queue.borrow_mut().push_back(
-            InternalEvent::ConfirmAction(Action::PullMerge(incoming)),
+            InternalEvent::ConfirmAction(Action::PullMerge {
+                incoming,
+                rebase: sync::config_is_pull_rebase(CWD)
+                    .unwrap_or_default(),
+            }),
         );
         self.hide();
     }
@@ -241,13 +256,14 @@ impl Component for PullComponent {
         }
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(_) = ev {
                 if self.input_cred.is_visible() {
-                    if self.input_cred.event(ev)? {
-                        return Ok(true);
-                    } else if self.input_cred.get_cred().is_complete()
+                    self.input_cred.event(ev)?;
+
+                    if self.input_cred.get_cred().is_complete()
+                        || !self.input_cred.is_visible()
                     {
                         self.fetch_from_remote(Some(
                             self.input_cred.get_cred().clone(),
@@ -256,9 +272,9 @@ impl Component for PullComponent {
                     }
                 }
             }
-            return Ok(true);
+            return Ok(EventState::Consumed);
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

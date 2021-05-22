@@ -24,7 +24,7 @@ pub trait AsyncProgress: Clone + Send + Sync {
 
 ///
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum ProgressNotification {
+pub enum ProgressNotification {
     ///
     UpdateTips {
         ///
@@ -65,28 +65,24 @@ pub(crate) enum ProgressNotification {
 
 impl AsyncProgress for ProgressNotification {
     fn is_done(&self) -> bool {
-        *self == ProgressNotification::Done
+        *self == Self::Done
     }
     fn progress(&self) -> ProgressPercent {
         match *self {
-            ProgressNotification::Packing {
+            Self::Packing {
                 stage,
                 current,
                 total,
             } => match stage {
-                PackBuilderStage::AddingObjects => {
-                    ProgressPercent::new(current, total)
-                }
-                PackBuilderStage::Deltafication => {
+                PackBuilderStage::AddingObjects
+                | PackBuilderStage::Deltafication => {
                     ProgressPercent::new(current, total)
                 }
             },
-            ProgressNotification::PushTransfer {
-                current,
-                total,
-                ..
-            } => ProgressPercent::new(current, total),
-            ProgressNotification::Transfer {
+            Self::PushTransfer { current, total, .. } => {
+                ProgressPercent::new(current, total)
+            }
+            Self::Transfer {
                 objects,
                 total_objects,
                 ..
@@ -96,7 +92,7 @@ impl AsyncProgress for ProgressNotification {
     }
 }
 
-///
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn push(
     repo_path: &str,
     remote: &str,
@@ -132,6 +128,7 @@ pub(crate) fn push(
     Ok(())
 }
 
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn remote_callbacks<'a>(
     sender: Option<Sender<ProgressNotification>>,
     basic_credential: Option<BasicAuthCredential>,
@@ -228,7 +225,7 @@ pub(crate) fn remote_callbacks<'a>(
                     username: Some(user),
                     password: Some(pwd),
                 }) if allowed_types.is_user_pass_plaintext() => {
-                    Cred::userpass_plaintext(&user, &pwd)
+                    Cred::userpass_plaintext(user, pwd)
                 }
                 Some(BasicAuthCredential {
                     username: Some(user),
