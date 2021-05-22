@@ -1,7 +1,3 @@
-use std::{
-    cell::Cell, collections::BTreeSet, convert::From, path::Path,
-};
-
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
     DrawableComponent, EventState,
@@ -20,10 +16,22 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetree::{FileTree, MoveSelection};
+use itertools::Either;
+use std::{
+    cell::Cell, collections::BTreeSet, convert::From, ffi::OsStr,
+    ops::Range, path::Path,
+};
+use syntect::{
+    highlighting::{
+        HighlightState, Highlighter, RangedHighlightIterator, Style,
+        ThemeSet,
+    },
+    parsing::{ParseState, ScopeStack, SyntaxSet},
+};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
-    text::{Span, Text},
+    text::{Span, Spans, Text},
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
@@ -32,12 +40,116 @@ const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
 const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 const EMPTY_STR: &str = "";
 
+pub struct SyntaxLine {
+    items: Vec<(Style, usize, Range<usize>)>,
+}
+
+pub struct SyntaxText {
+    text: String,
+    lines: Vec<SyntaxLine>,
+}
+
+impl SyntaxText {
+    pub fn new(text: String, file_path: &Path) -> Self {
+        //TODO: lazy load
+        let ps = SyntaxSet::load_defaults_nonewlines();
+        let ts = ThemeSet::load_defaults();
+        // log::debug!(
+        //     "syntaxes: {:?}",
+        //     ps.syntaxes()
+        //         .iter()
+        //         .map(|s| s.name.clone())
+        //         .collect::<Vec<_>>()
+        // );
+
+        let mut state = {
+            let syntax = file_path
+                .extension()
+                .and_then(OsStr::to_str)
+                .map_or_else(
+                    || {
+                        ps.find_syntax_by_path(
+                            file_path.to_str().unwrap_or_default(),
+                        )
+                    },
+                    |ext| ps.find_syntax_by_extension(ext),
+                );
+
+            ParseState::new(
+                syntax.unwrap_or_else(|| ps.find_syntax_plain_text()),
+            )
+        };
+
+        let highlighter =
+            Highlighter::new(&ts.themes["base16-eighties.dark"]);
+
+        let mut syntax_lines: Vec<SyntaxLine> = Vec::new();
+
+        let mut highlight_state =
+            HighlightState::new(&highlighter, ScopeStack::new());
+
+        for (number, line) in text.lines().enumerate() {
+            let ops = state.parse_line(line, &ps);
+            let iter = RangedHighlightIterator::new(
+                &mut highlight_state,
+                &ops[..],
+                line,
+                &highlighter,
+            );
+
+            syntax_lines.push(SyntaxLine {
+                items: iter
+                    .map(|(style, _, range)| (style, number, range))
+                    .collect(),
+            });
+        }
+
+        Self {
+            text,
+            lines: syntax_lines,
+        }
+    }
+}
+
+impl<'a> From<&'a SyntaxText> for tui::text::Text<'a> {
+    fn from(v: &'a SyntaxText) -> Self {
+        let mut text = Text::default();
+
+        for (syntax_line, line_content) in
+            v.lines.iter().zip(v.text.lines())
+        {
+            let mut line_span = Spans::default();
+
+            for (style, _, range) in &syntax_line.items {
+                let item_content = &line_content[range.clone()];
+                let item_style = syntact_style_to_tui(style);
+
+                line_span
+                    .0
+                    .push(Span::styled(item_content, item_style));
+            }
+
+            text.lines.push(line_span);
+        }
+
+        text
+    }
+}
+
+fn syntact_style_to_tui(style: &Style) -> tui::style::Style {
+    tui::style::Style::default().fg(tui::style::Color::Rgb(
+        style.foreground.r,
+        style.foreground.g,
+        style.foreground.b,
+    ))
+}
+
 pub struct RevisionFilesComponent {
     queue: Queue,
     title: String,
     theme: SharedTheme,
     files: Vec<TreeFile>,
-    current_file: Option<(String, String)>,
+    current_file: Option<(String, Either<SyntaxText, String>)>,
     tree: FileTree,
     scroll_top: Cell<usize>,
     revision: Option<CommitId>,
@@ -154,19 +266,26 @@ impl RevisionFilesComponent {
     }
 
     fn load_file(&mut self, path: String) {
-        if let Some(item) = self
-            .files
-            .iter()
-            .find(|f| f.path.ends_with(Path::new(&path)))
+        let path_path = Path::new(&path);
+        if let Some(item) =
+            self.files.iter().find(|f| f.path.ends_with(path_path))
         {
             match sync::tree_file_content(CWD, item) {
                 Ok(content) => {
-                    self.current_file = Some((path, content))
+                    self.current_file = Some((
+                        path.clone(),
+                        Either::Left(SyntaxText::new(
+                            content, path_path,
+                        )),
+                    ))
                 }
                 Err(e) => {
                     self.current_file = Some((
                         path,
-                        format!("error loading file: {}", e),
+                        Either::Right(format!(
+                            "error loading file: {}",
+                            e
+                        )),
                     ))
                 }
             }
@@ -239,12 +358,15 @@ impl DrawableComponent for RevisionFilesComponent {
                 items,
             );
 
-            let content = Paragraph::new(Text::from(
-                self.current_file
-                    .as_ref()
-                    .map(|(_, content)| content.as_str())
-                    .unwrap_or_default(),
-            ))
+            let content = Paragraph::new(
+                self.current_file.as_ref().map_or_else(
+                    || Text::from(""),
+                    |(_, content)| match content {
+                        Either::Left(syn) => syn.into(),
+                        Either::Right(s) => Text::from(s.as_str()),
+                    },
+                ),
+            )
             .wrap(Wrap { trim: false });
             f.render_widget(content, chunks[1]);
         }
