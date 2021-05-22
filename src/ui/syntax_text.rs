@@ -1,5 +1,12 @@
+use async_utils::AsyncJob;
 use lazy_static::lazy_static;
-use std::{ffi::OsStr, ops::Range, path::Path};
+use scopetime::scope_time;
+use std::{
+    ffi::OsStr,
+    ops::Range,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 use syntect::{
     highlighting::{
         HighlightState, Highlighter, RangedHighlightIterator, Style,
@@ -9,13 +16,18 @@ use syntect::{
 };
 use tui::text::{Span, Spans};
 
+//TODO: no clone, make user consume result
+#[derive(Clone)]
 struct SyntaxLine {
     items: Vec<(Style, usize, Range<usize>)>,
 }
 
+//TODO: no clone, make user consume result
+#[derive(Clone)]
 pub struct SyntaxText {
     text: String,
     lines: Vec<SyntaxLine>,
+    path: PathBuf,
 }
 
 lazy_static! {
@@ -26,6 +38,9 @@ lazy_static! {
 
 impl SyntaxText {
     pub fn new(text: String, file_path: &Path) -> Self {
+        scope_time!("syntax_highlighting");
+        log::debug!("syntax: {:?}", file_path);
+
         let mut state = {
             let syntax = file_path
                 .extension()
@@ -72,7 +87,13 @@ impl SyntaxText {
         Self {
             text,
             lines: syntax_lines,
+            path: file_path.into(),
         }
+    }
+
+    ///
+    pub fn path(&self) -> &Path {
+        &self.path
     }
 }
 
@@ -109,4 +130,28 @@ fn syntact_style_to_tui(style: &Style) -> tui::style::Style {
         style.foreground.g,
         style.foreground.b,
     ))
+}
+
+#[derive(Clone, Default)]
+pub struct AsyncSyntaxJob {
+    pub input: Option<(String, String)>,
+    pub text: Arc<Option<SyntaxText>>,
+}
+
+impl AsyncSyntaxJob {
+    pub fn new(content: String, path: String) -> Self {
+        Self {
+            input: Some((content, path)),
+            text: Arc::new(None),
+        }
+    }
+}
+
+impl AsyncJob for AsyncSyntaxJob {
+    fn run(&mut self) {
+        if let Some((text, path)) = self.input.take() {
+            let syntax = SyntaxText::new(text, Path::new(&path));
+            self.text = Arc::new(Some(syntax));
+        }
+    }
 }

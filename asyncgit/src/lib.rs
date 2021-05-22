@@ -77,6 +77,9 @@ pub enum AsyncNotification {
     Fetch,
     ///
     Blame,
+    ///
+    //TODO: this does not belong here
+    SyntaxHighlighting,
 }
 
 /// current working directory `./`

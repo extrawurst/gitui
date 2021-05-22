@@ -6,9 +6,10 @@ use crate::{
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
     strings::{self, order},
-    ui::{self, style::SharedTheme},
+    ui::{self, style::SharedTheme, AsyncSyntaxJob},
 };
 use anyhow::Result;
+use async_utils::AsyncSingleJob;
 use asyncgit::{
     sync::{self, CommitId, TreeFile},
     AsyncNotification, CWD,
@@ -36,8 +37,11 @@ pub struct RevisionFilesComponent {
     queue: Queue,
     title: String,
     theme: SharedTheme,
+    //TODO: store TreeFiles in `tree`
     files: Vec<TreeFile>,
     current_file: Option<(String, Either<ui::SyntaxText, String>)>,
+    async_highlighting:
+        AsyncSingleJob<AsyncSyntaxJob, AsyncNotification>,
     tree: FileTree,
     scroll_top: Cell<usize>,
     revision: Option<CommitId>,
@@ -49,7 +53,7 @@ impl RevisionFilesComponent {
     ///
     pub fn new(
         queue: &Queue,
-        _sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -57,6 +61,10 @@ impl RevisionFilesComponent {
             queue: queue.clone(),
             title: String::new(),
             tree: FileTree::default(),
+            async_highlighting: AsyncSingleJob::new(
+                sender.clone(),
+                AsyncNotification::SyntaxHighlighting,
+            ),
             theme,
             scroll_top: Cell::new(0),
             current_file: None,
@@ -87,6 +95,28 @@ impl RevisionFilesComponent {
         self.show()?;
 
         Ok(())
+    }
+
+    ///
+    pub fn update(&mut self, ev: AsyncNotification) {
+        if ev == AsyncNotification::SyntaxHighlighting {
+            if let Some(job) = self.async_highlighting.get_last() {
+                if let Some((path, content)) =
+                    self.current_file.as_mut()
+                {
+                    if let Some(syntax) = (*job.text).clone() {
+                        if syntax.path() == Path::new(path) {
+                            *content = Either::Left(syntax);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ///
+    pub fn any_work_pending(&self) -> bool {
+        self.async_highlighting.is_pending()
     }
 
     fn tree_item_to_span<'a>(
@@ -133,6 +163,7 @@ impl RevisionFilesComponent {
     }
 
     fn selection_changed(&mut self) {
+        //TODO: retrieve TreeFile from tree datastructure
         if let Some(file) = self.tree.selected_file().map(|file| {
             file.full_path()
                 .strip_prefix("./")
@@ -158,14 +189,18 @@ impl RevisionFilesComponent {
         if let Some(item) =
             self.files.iter().find(|f| f.path.ends_with(path_path))
         {
+            //TODO: fetch file content async aswell
             match sync::tree_file_content(CWD, item) {
                 Ok(content) => {
-                    self.current_file = Some((
-                        path.clone(),
-                        Either::Left(ui::SyntaxText::new(
-                            content, path_path,
-                        )),
-                    ))
+                    self.async_highlighting.spawn(
+                        AsyncSyntaxJob::new(
+                            content.clone(),
+                            path.clone(),
+                        ),
+                    );
+
+                    self.current_file =
+                        Some((path, Either::Right(content)))
                 }
                 Err(e) => {
                     self.current_file = Some((
