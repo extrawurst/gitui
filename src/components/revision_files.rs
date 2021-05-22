@@ -132,7 +132,7 @@ impl RevisionFilesComponent {
         })
     }
 
-    fn selection_changed(&mut self) -> Result<()> {
+    fn selection_changed(&mut self) {
         if let Some(file) = self.tree.selected_file().map(|file| {
             file.full_path()
                 .strip_prefix("./")
@@ -146,26 +146,31 @@ impl RevisionFilesComponent {
                 .unwrap_or_default();
 
             if !already_loaded {
-                self.load_file(file)?;
+                self.load_file(file);
             }
         } else {
             self.current_file = None;
         }
-
-        Ok(())
     }
 
-    fn load_file(&mut self, path: String) -> Result<()> {
+    fn load_file(&mut self, path: String) {
         if let Some(item) = self
             .files
             .iter()
             .find(|f| f.path.ends_with(Path::new(&path)))
         {
-            let content = sync::tree_file_content(CWD, item)?;
-            self.current_file = Some((path, content));
+            match sync::tree_file_content(CWD, item) {
+                Ok(content) => {
+                    self.current_file = Some((path, content))
+                }
+                Err(e) => {
+                    self.current_file = Some((
+                        path,
+                        format!("error loading file: {}", e),
+                    ))
+                }
+            }
         }
-
-        Ok(())
     }
 }
 
@@ -300,7 +305,7 @@ impl Component for RevisionFilesComponent {
                     &self.key_config,
                     key,
                 ) {
-                    self.selection_changed()?;
+                    self.selection_changed();
                     true
                 } else {
                     false

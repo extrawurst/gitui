@@ -1,5 +1,8 @@
 use super::{utils::bytes2string, CommitId};
-use crate::{error::Result, sync::utils::repo};
+use crate::{
+    error::{Error, Result},
+    sync::utils::repo,
+};
 use git2::{Oid, Repository, Tree};
 use scopetime::scope_time;
 use std::{
@@ -80,10 +83,10 @@ pub fn tree_file_content(
     let blob = repo.find_blob(file.id)?;
 
     if blob.is_binary() {
-        return Ok(String::new());
+        return Err(Error::BinaryFile);
     }
 
-    let content = String::from_utf8(blob.content().into())?;
+    let content = String::from_utf8_lossy(blob.content()).to_string();
 
     Ok(content)
 }
