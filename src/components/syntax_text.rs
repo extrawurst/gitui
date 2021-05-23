@@ -5,8 +5,8 @@ use super::{
 use crate::{
     keys::SharedKeyConfig,
     ui::{
-        self, AsyncSyntaxJob, ParagraphState, ScrollPos,
-        StatefulParagraph,
+        self, style::SharedTheme, AsyncSyntaxJob, ParagraphState,
+        ScrollPos, StatefulParagraph,
     },
 };
 use anyhow::Result;
@@ -20,7 +20,11 @@ use crossterm::event::Event;
 use itertools::Either;
 use std::{cell::Cell, convert::From, path::Path};
 use tui::{
-    backend::Backend, layout::Rect, text::Text, widgets::Wrap, Frame,
+    backend::Backend,
+    layout::Rect,
+    text::Text,
+    widgets::{Block, Borders, Wrap},
+    Frame,
 };
 
 pub struct SyntaxTextComponent {
@@ -29,6 +33,8 @@ pub struct SyntaxTextComponent {
         AsyncSingleJob<AsyncSyntaxJob, AsyncNotification>,
     key_config: SharedKeyConfig,
     scroll_top: Cell<u16>,
+    focused: bool,
+    theme: SharedTheme,
 }
 
 impl SyntaxTextComponent {
@@ -36,6 +42,7 @@ impl SyntaxTextComponent {
     pub fn new(
         sender: &Sender<AsyncNotification>,
         key_config: SharedKeyConfig,
+        theme: SharedTheme,
     ) -> Self {
         Self {
             async_highlighting: AsyncSingleJob::new(
@@ -44,7 +51,9 @@ impl SyntaxTextComponent {
             ),
             current_file: None,
             scroll_top: Cell::new(0),
+            focused: false,
             key_config,
+            theme,
         }
     }
 
@@ -125,8 +134,19 @@ impl DrawableComponent for SyntaxTextComponent {
             },
         );
 
-        let content =
-            StatefulParagraph::new(text).wrap(Wrap { trim: false });
+        let content = StatefulParagraph::new(text)
+            .wrap(Wrap { trim: false })
+            .block(
+                Block::default()
+                    .title(
+                        self.current_file
+                            .as_ref()
+                            .map(|(name, _)| name.clone())
+                            .unwrap_or_default(),
+                    )
+                    .borders(Borders::ALL)
+                    .border_style(self.theme.title(self.focused())),
+            );
 
         let mut state = ParagraphState::default();
         state.set_scroll(ScrollPos::new(0, self.scroll_top.get()));
@@ -168,5 +188,15 @@ impl Component for SyntaxTextComponent {
         }
 
         Ok(EventState::NotConsumed)
+    }
+
+    ///
+    fn focused(&self) -> bool {
+        self.focused
+    }
+
+    /// focus/unfocus this component depending on param
+    fn focus(&mut self, focus: bool) {
+        self.focused = focus
     }
 }
