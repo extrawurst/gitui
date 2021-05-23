@@ -483,6 +483,7 @@ impl TextInputComponent {
     current_area: Cell<Rect>,
     scroll: usize,
     cur_line: usize,
+    scroll_max: usize,
 }
 
 impl TextInputComponent {
@@ -507,6 +508,7 @@ impl TextInputComponent {
             current_area: Cell::new(Rect::default()),
             scroll: 0,
             cur_line: 0,
+            scroll_max: 0,
         }
     }
 
@@ -586,6 +588,11 @@ impl TextInputComponent {
     fn backspace(&mut self) {
         if self.cursor_position > 0 {
             self.decr_cursor();
+            if self.msg.chars().nth(self.cursor_position)
+                == Some('\n')
+            {
+                self.scroll_max -= 1;
+            }
             self.msg.remove(self.cursor_position);
         }
     }
@@ -732,6 +739,7 @@ fn text_append<'a>(txt: Text<'a>, append: Text<'a>) -> Text<'a> {
 }
 
 impl DrawableComponent for TextInputComponent {
+<<<<<<< HEAD
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -808,6 +816,63 @@ impl DrawableComponent for TextInputComponent {
 
 		Ok(())
 	}
+=======
+    fn draw<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        _rect: Rect,
+    ) -> Result<()> {
+        if self.visible {
+            let txt = if self.msg.is_empty() {
+                Text::styled(
+                    self.default_msg.as_str(),
+                    self.theme.text(false, false),
+                )
+            } else {
+                self.get_draw_text()
+            };
+
+            let area = match self.input_type {
+                InputType::Multiline => {
+                    let area = ui::centered_rect(60, 20, f.size());
+                    ui::rect_inside(
+                        Size::new(10, 3),
+                        f.size().into(),
+                        area,
+                    )
+                }
+                _ => ui::centered_rect_absolute(32, 3, f.size()),
+            };
+
+            f.render_widget(Clear, area);
+            f.render_widget(
+                popup_paragraph(
+                    self.title.as_str(),
+                    txt,
+                    &self.theme,
+                    true,
+                ),
+                area,
+            );
+
+            if self.show_char_count {
+                self.draw_char_count(f, area);
+            }
+
+            ui::draw_scrollbar(
+                f,
+                area,
+                &self.theme,
+                self.scroll_max,
+                self.scroll,
+            );
+
+            self.current_area.set(area);
+        }
+
+        Ok(())
+    }
+>>>>>>> Add scrollbar
 }
 
 impl Component for TextInputComponent {
@@ -954,6 +1019,7 @@ impl Component for TextInputComponent {
                 {
                     self.msg.insert(self.cursor_position, '\n');
                     self.incr_cursor();
+                    self.scroll_max += 1;
                     return Ok(EventState::Consumed);
                 }
 
