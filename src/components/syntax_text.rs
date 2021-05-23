@@ -4,7 +4,10 @@ use super::{
 };
 use crate::{
     keys::SharedKeyConfig,
-    ui::{self, AsyncSyntaxJob},
+    ui::{
+        self, style::SharedTheme, AsyncSyntaxJob, ParagraphState,
+        ScrollPos, StatefulParagraph,
+    },
 };
 use anyhow::Result;
 use async_utils::AsyncSingleJob;
@@ -20,7 +23,7 @@ use tui::{
     backend::Backend,
     layout::Rect,
     text::Text,
-    widgets::{Paragraph, Wrap},
+    widgets::{Block, Borders, Wrap},
     Frame,
 };
 
@@ -30,6 +33,8 @@ pub struct SyntaxTextComponent {
         AsyncSingleJob<AsyncSyntaxJob, AsyncNotification>,
     key_config: SharedKeyConfig,
     scroll_top: Cell<u16>,
+    focused: bool,
+    theme: SharedTheme,
 }
 
 impl SyntaxTextComponent {
@@ -37,6 +42,7 @@ impl SyntaxTextComponent {
     pub fn new(
         sender: &Sender<AsyncNotification>,
         key_config: SharedKeyConfig,
+        theme: SharedTheme,
     ) -> Self {
         Self {
             async_highlighting: AsyncSingleJob::new(
@@ -45,7 +51,9 @@ impl SyntaxTextComponent {
             ),
             current_file: None,
             scroll_top: Cell::new(0),
+            focused: false,
             key_config,
+            theme,
         }
     }
 
@@ -126,10 +134,30 @@ impl DrawableComponent for SyntaxTextComponent {
             },
         );
 
-        let content = Paragraph::new(text)
-            .scroll((self.scroll_top.get(), 0))
-            .wrap(Wrap { trim: false });
-        f.render_widget(content, area);
+        let content = StatefulParagraph::new(text)
+            .wrap(Wrap { trim: false })
+            .block(
+                Block::default()
+                    .title(
+                        self.current_file
+                            .as_ref()
+                            .map(|(name, _)| name.clone())
+                            .unwrap_or_default(),
+                    )
+                    .borders(Borders::ALL)
+                    .border_style(self.theme.title(self.focused())),
+            );
+
+        let mut state = ParagraphState::default();
+        state.set_scroll(ScrollPos::new(0, self.scroll_top.get()));
+
+        f.render_stateful_widget(content, area, &mut state);
+
+        self.scroll_top.set(
+            self.scroll_top
+                .get()
+                .min(state.lines().saturating_sub(area.height)),
+        );
 
         Ok(())
     }
@@ -160,5 +188,15 @@ impl Component for SyntaxTextComponent {
         }
 
         Ok(EventState::NotConsumed)
+    }
+
+    ///
+    fn focused(&self) -> bool {
+        self.focused
+    }
+
+    /// focus/unfocus this component depending on param
+    fn focus(&mut self, focus: bool) {
+        self.focused = focus
     }
 }

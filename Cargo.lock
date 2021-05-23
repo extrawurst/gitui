@@ -504,6 +504,7 @@ dependencies = [
  "syntect",
  "textwrap 0.13.4",
  "tui",
+ "unicode-segmentation",
  "unicode-truncate",
  "unicode-width",
  "which",

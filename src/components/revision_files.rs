@@ -68,6 +68,7 @@ impl RevisionFilesComponent {
             current_file: SyntaxTextComponent::new(
                 sender,
                 key_config.clone(),
+                theme.clone(),
             ),
             theme,
             files: Vec::new(),
@@ -90,7 +91,7 @@ impl RevisionFilesComponent {
         self.tree.collapse_but_root();
         self.revision = Some(commit);
         self.title = format!(
-            "File Tree at [{}]",
+            "Files at [{}]",
             self.revision
                 .map(|c| c.get_short_string())
                 .unwrap_or_default()
@@ -221,21 +222,23 @@ impl DrawableComponent for RevisionFilesComponent {
             f.render_widget(Clear, area);
             f.render_widget(
                 Block::default()
-                    .borders(Borders::ALL)
+                    .borders(Borders::TOP)
                     .title(Span::styled(
-                        &self.title,
+                        format!(" {}", self.title),
                         self.theme.title(true),
                     ))
                     .border_style(self.theme.block(true)),
                 area,
             );
 
+            let is_tree_focused = matches!(self.focus, Focus::Tree);
+
             ui::draw_list_block(
                 f,
                 chunks[0],
                 Block::default()
-                    .borders(Borders::RIGHT)
-                    .border_style(self.theme.block(true)),
+                    .borders(Borders::ALL)
+                    .border_style(self.theme.block(is_tree_focused)),
                 items,
             );
 
@@ -298,8 +301,14 @@ impl Component for RevisionFilesComponent {
                 } else if key == self.key_config.move_right {
                     if is_tree_focused {
                         self.focus = Focus::File;
-                    } else {
+                        self.current_file.focus(true);
+                        self.focus(true);
+                    }
+                } else if key == self.key_config.move_left {
+                    if !is_tree_focused {
                         self.focus = Focus::Tree;
+                        self.current_file.focus(false);
+                        self.focus(false);
                     }
                 } else if !is_tree_focused {
                     self.current_file.event(event)?;

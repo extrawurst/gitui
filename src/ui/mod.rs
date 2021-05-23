@@ -1,10 +1,15 @@
+mod reflow;
 mod scrollbar;
 mod scrolllist;
+mod stateful_paragraph;
 pub mod style;
 mod syntax_text;
 
 pub use scrollbar::draw_scrollbar;
 pub use scrolllist::{draw_list, draw_list_block};
+pub use stateful_paragraph::{
+    ParagraphState, ScrollPos, StatefulParagraph,
+};
 pub use syntax_text::{AsyncSyntaxJob, SyntaxText};
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
