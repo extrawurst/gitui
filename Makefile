@@ -51,7 +51,7 @@ clippy:
 clippy-nightly:
 	touch src/main.rs
 	cargo clean -p gitui -p asyncgit -p scopetime -p filetree -p async_utils
-	cargo +nightly clippy --all-features
+	cargo +nightly clippy --workspace --all-features
 
 check: fmt clippy test
 
