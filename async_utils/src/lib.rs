@@ -1,4 +1,7 @@
+mod error;
+
 use crossbeam_channel::Sender;
+use error::Result;
 use std::sync::{Arc, Mutex};
 
 pub trait AsyncJob: Send + Sync + Clone {
@@ -70,7 +73,9 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
             let self_arc = self.clone();
 
             rayon_core::spawn(move || {
-                self_arc.run_job(task);
+                if let Err(e) = self_arc.run_job(task) {
+                    log::error!("async job error: {}", e);
+                }
             });
 
             return true;
@@ -79,11 +84,10 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
         false
     }
 
-    //TODO: return Result
-    fn run_job(&self, mut task: J) {
+    fn run_job(&self, mut task: J) -> Result<()> {
         //limit the pending scope
         {
-            let _pending = self.pending.lock().expect("");
+            let _pending = self.pending.lock()?;
 
             task.run();
 
@@ -91,10 +95,12 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
                 *last = Some(task);
             }
 
-            self.sender.send(self.notification).expect("send failed");
+            self.sender.send(self.notification)?;
         }
 
         self.check_for_job();
+
+        Ok(())
     }
 
     ///

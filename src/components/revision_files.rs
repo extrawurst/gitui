@@ -42,7 +42,6 @@ pub struct RevisionFilesComponent {
     theme: SharedTheme,
     //TODO: store TreeFiles in `tree`
     files: Vec<TreeFile>,
-    // current_file: Option<(String, Either<ui::SyntaxText, String>)>,
     current_file: SyntaxTextComponent,
     tree: FileTree,
     scroll_top: Cell<usize>,
