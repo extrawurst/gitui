@@ -187,6 +187,18 @@ impl DrawableComponent for SyntaxTextComponent {
 
         self.scroll(None);
 
+        if self.focused() {
+            ui::draw_scrollbar(
+                f,
+                area,
+                &self.theme,
+                usize::from(state.lines().saturating_sub(
+                    state.height().saturating_sub(2),
+                )),
+                usize::from(state.scroll().y),
+            );
+        }
+
         Ok(())
     }
 }

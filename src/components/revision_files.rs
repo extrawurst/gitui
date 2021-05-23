@@ -197,14 +197,18 @@ impl DrawableComponent for RevisionFilesComponent {
                 usize::from(chunks[0].height.saturating_sub(2));
 
             let selection = self.tree.visual_selection();
-            selection.map_or_else(
-                || self.scroll_top.set(0),
+            let visual_count = selection.map_or_else(
+                || {
+                    self.scroll_top.set(0);
+                    0
+                },
                 |selection| {
                     self.scroll_top.set(ui::calc_scroll_top(
                         self.scroll_top.get(),
                         tree_height,
                         selection.index,
-                    ))
+                    ));
+                    selection.count
                 },
             );
 
@@ -241,6 +245,16 @@ impl DrawableComponent for RevisionFilesComponent {
                     .border_style(self.theme.block(is_tree_focused)),
                 items,
             );
+
+            if is_tree_focused {
+                ui::draw_scrollbar(
+                    f,
+                    chunks[0],
+                    &self.theme,
+                    visual_count.saturating_sub(tree_height),
+                    self.scroll_top.get(),
+                );
+            }
 
             self.current_file.draw(f, chunks[1])?;
         }
