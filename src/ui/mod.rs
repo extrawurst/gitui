@@ -1,9 +1,11 @@
 mod scrollbar;
 mod scrolllist;
 pub mod style;
+mod syntax_text;
 
 pub use scrollbar::draw_scrollbar;
 pub use scrolllist::{draw_list, draw_list_block};
+pub use syntax_text::{AsyncSyntaxJob, SyntaxText};
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
 /// return the scroll position (line) necessary to have the `selection` in view if it is not already
