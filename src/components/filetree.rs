@@ -417,8 +417,9 @@ impl Component for FileTreeComponent {
                         _ => Ok(EventState::NotConsumed),
                     }
                 } else if e == self.key_config.move_down {
-                    Ok(self.move_selection(MoveSelection::Down))
-                        .map(Into::into)
+                    Ok(self
+                        .move_selection(MoveSelection::Down)
+                        .into())
                 } else if e == self.key_config.move_up {
                     Ok(self.move_selection(MoveSelection::Up).into())
                 } else if e == self.key_config.home

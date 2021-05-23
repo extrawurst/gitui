@@ -13,6 +13,8 @@ bitflags! {
         const DIFF = 0b010;
         /// commands might need updating (app::update_commands)
         const COMMANDS = 0b100;
+        /// branches have changed
+        const BRANCHES = 0b1000;
     }
 }
 
@@ -34,6 +36,7 @@ pub enum Action {
     DeleteBranch(String),
     ForcePush(String, bool),
     PullMerge { incoming: usize, rebase: bool },
+    AbortMerge,
 }
 
 ///
@@ -46,6 +49,8 @@ pub enum InternalEvent {
     ShowErrorMsg(String),
     ///
     Update(NeedsUpdate),
+    ///
+    StatusLastFileMoved,
     /// open commit msg input
     OpenCommit,
     ///
@@ -74,6 +79,8 @@ pub enum InternalEvent {
     Pull(String),
     ///
     PushTags,
+    ///
+    OpenFileTree(CommitId),
 }
 
 ///

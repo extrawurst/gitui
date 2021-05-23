@@ -1,7 +1,6 @@
 //TODO: remove once fixed https://github.com/rust-lang/rust-clippy/issues/6818
 #![allow(clippy::use_self)]
 
-use crate::get_app_config_path;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ron::{
@@ -15,6 +14,8 @@ use std::{
     path::PathBuf,
     rc::Rc,
 };
+
+use crate::args::get_app_config_path;
 
 pub type SharedKeyConfig = Rc<KeyConfig>;
 
@@ -38,6 +39,8 @@ pub struct KeyConfig {
     pub open_help: KeyEvent,
     pub move_left: KeyEvent,
     pub move_right: KeyEvent,
+    pub tree_collapse_recursive: KeyEvent,
+    pub tree_expand_recursive: KeyEvent,
     pub home: KeyEvent,
     pub end: KeyEvent,
     pub move_up: KeyEvent,
@@ -69,9 +72,12 @@ pub struct KeyConfig {
     pub rename_branch: KeyEvent,
     pub select_branch: KeyEvent,
     pub delete_branch: KeyEvent,
+    pub merge_branch: KeyEvent,
     pub push: KeyEvent,
+    pub open_file_tree: KeyEvent,
     pub force_push: KeyEvent,
     pub pull: KeyEvent,
+    pub abort_merge: KeyEvent,
 }
 
 #[rustfmt::skip]
@@ -96,6 +102,8 @@ impl Default for KeyConfig {
 			open_help: KeyEvent { code: KeyCode::Char('h'), modifiers: KeyModifiers::empty()},
 			move_left: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::empty()},
 			move_right: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::empty()},
+            tree_collapse_recursive: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::SHIFT},
+            tree_expand_recursive: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::SHIFT},
 			home: KeyEvent { code: KeyCode::Home, modifiers: KeyModifiers::empty()},
 			end: KeyEvent { code: KeyCode::End, modifiers: KeyModifiers::empty()},
 			move_up: KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::empty()},
@@ -123,13 +131,16 @@ impl Default for KeyConfig {
 			log_tag_commit: KeyEvent { code: KeyCode::Char('t'), modifiers: KeyModifiers::empty()},
 			commit_amend: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
             copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
-            create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::NONE},
-            rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::NONE},
-            select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::NONE},
-            delete_branch: KeyEvent{code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
+            create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::empty()},
+            rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::empty()},
+            select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
+            delete_branch: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
+            merge_branch: KeyEvent { code: KeyCode::Char('m'), modifiers: KeyModifiers::empty()},
             push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
             force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
             pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
+            abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
+            open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
         }
     }
 }

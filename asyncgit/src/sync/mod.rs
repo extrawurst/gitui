@@ -15,6 +15,7 @@ mod hooks;
 mod hunks;
 mod ignore;
 mod logwalker;
+mod merge;
 mod patches;
 mod rebase;
 pub mod remotes;
@@ -24,6 +25,7 @@ mod stash;
 mod state;
 pub mod status;
 mod tags;
+mod tree;
 pub mod utils;
 
 pub use blame::{blame_file, BlameHunk, FileBlame};
@@ -50,6 +52,9 @@ pub use hooks::{
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::LogWalker;
+pub use merge::{
+    abort_merge, merge_branch, merge_commit, merge_msg, mergehead_ids,
+};
 pub use rebase::reword;
 pub use remotes::{
     get_default_remote, get_remotes, push::AsyncProgress,
@@ -62,6 +67,7 @@ pub use stash::{
 };
 pub use state::{repo_state, RepoState};
 pub use tags::{get_tags, CommitTags, Tags};
+pub use tree::{tree_file_content, tree_files, TreeFile};
 pub use utils::{
     get_head, get_head_tuple, is_bare_repo, is_repo, stage_add_all,
     stage_add_file, stage_addremoved, Head,

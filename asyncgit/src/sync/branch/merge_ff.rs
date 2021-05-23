@@ -25,12 +25,16 @@ pub fn branch_merge_upstream_fastforward(
     let annotated =
         repo.find_annotated_commit(upstream_commit.id())?;
 
-    let (analysis, _) = repo.merge_analysis(&[&annotated])?;
+    let (analysis, pref) = repo.merge_analysis(&[&annotated])?;
 
     if !analysis.is_fast_forward() {
         return Err(Error::Generic(
             "fast forward merge not possible".into(),
         ));
+    }
+
+    if pref.is_no_fast_forward() {
+        return Err(Error::Generic("fast forward not wanted".into()));
     }
 
     //TODO: support merge on unborn

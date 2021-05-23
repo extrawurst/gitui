@@ -8,7 +8,7 @@ use crate::{
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PullComponent,
         PushComponent, PushTagsComponent, RenameBranchComponent,
-        ResetComponent, RewordComponent, StashMsgComponent,
+        ResetComponent, RevisionFilesComponent, RewordComponent, StashMsgComponent,
         TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
@@ -53,6 +53,7 @@ pub struct App {
     stashmsg_popup: StashMsgComponent,
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
+    revision_files_popup: RevisionFilesComponent,
     push_popup: PushComponent,
     push_tags_popup: PushTagsComponent,
     pull_popup: PullComponent,
@@ -107,6 +108,12 @@ impl App {
                 &queue,
                 sender,
                 &strings::blame_title(&key_config),
+                theme.clone(),
+                key_config.clone(),
+            ),
+            revision_files_popup: RevisionFilesComponent::new(
+                &queue,
+                sender,
                 theme.clone(),
                 key_config.clone(),
             ),
@@ -355,6 +362,7 @@ impl App {
         self.push_popup.update_git(ev)?;
         self.push_tags_popup.update_git(ev)?;
         self.pull_popup.update_git(ev)?;
+        self.revision_files_popup.update(ev);
 
         //TODO: better system for this
         // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
@@ -379,6 +387,7 @@ impl App {
             || self.push_popup.any_work_pending()
             || self.push_tags_popup.any_work_pending()
             || self.pull_popup.any_work_pending()
+            || self.revision_files_popup.any_work_pending()
     }
 
     ///
@@ -412,6 +421,7 @@ impl App {
             create_branch_popup,
             rename_branch_popup,
             select_branch_popup,
+            revision_files_popup,
             help,
             revlog,
             status_tab,
@@ -500,6 +510,9 @@ impl App {
         }
         if flags.contains(NeedsUpdate::COMMANDS) {
             self.update_commands();
+        }
+        if flags.contains(NeedsUpdate::BRANCHES) {
+            self.select_branch_popup.update_branches()?;
         }
 
         Ok(())
@@ -596,6 +609,13 @@ impl App {
                 self.push_tags_popup.push_tags()?;
                 flags.insert(NeedsUpdate::ALL)
             }
+            InternalEvent::StatusLastFileMoved => {
+                self.status_tab.last_file_moved()?;
+            }
+            InternalEvent::OpenFileTree(c) => {
+                self.revision_files_popup.open(c)?;
+                flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
+            }
         };
 
         Ok(flags)
@@ -642,6 +662,10 @@ impl App {
                 .push_back(InternalEvent::Push(branch, force)),
             Action::PullMerge { rebase, .. } => {
                 self.pull_popup.try_conflict_free_merge(rebase);
+                flags.insert(NeedsUpdate::ALL);
+            }
+            Action::AbortMerge => {
+                self.status_tab.abort_merge();
                 flags.insert(NeedsUpdate::ALL);
             }
         };
@@ -709,7 +733,11 @@ impl App {
             || self.pull_popup.is_visible()
             || self.select_branch_popup.is_visible()
             || self.rename_branch_popup.is_visible()
+<<<<<<< HEAD
             || self.reword_popup.is_visible()
+=======
+            || self.revision_files_popup.is_visible()
+>>>>>>> master
     }
 
     fn draw_popups<B: Backend>(
@@ -738,6 +766,7 @@ impl App {
         self.reword_popup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
+        self.revision_files_popup.draw(f, size)?;
         self.push_popup.draw(f, size)?;
         self.push_tags_popup.draw(f, size)?;
         self.pull_popup.draw(f, size)?;

@@ -93,7 +93,7 @@ impl Theme {
     pub fn tab(&self, selected: bool) -> Style {
         if selected {
             self.text(true, false)
-                .fg(Color::White)
+                .fg(self.selected_tab)
                 .add_modifier(Modifier::UNDERLINED)
         } else {
             self.text(false, false)
@@ -139,6 +139,20 @@ impl Theme {
                 .fg(self.diff_file_modified)
                 .add_modifier(Modifier::BOLD),
             StatusItemType::Typechange => Style::default(),
+        };
+
+        self.apply_select(style, selected)
+    }
+
+    pub fn file_tree_item(
+        &self,
+        is_folder: bool,
+        selected: bool,
+    ) -> Style {
+        let style = if is_folder {
+            Style::default()
+        } else {
+            Style::default().fg(self.diff_file_modified)
         };
 
         self.apply_select(style, selected)
@@ -292,7 +306,7 @@ impl Theme {
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            selected_tab: Color::Yellow,
+            selected_tab: Color::Reset,
             command_fg: Color::White,
             selection_bg: Color::Blue,
             cmdbar_extra_lines_bg: Color::Blue,
