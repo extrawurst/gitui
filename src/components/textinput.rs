@@ -104,7 +104,7 @@ impl TextInputComponent {
                 self.cur_line += 1;
                 if self.cur_line
                     > (self.current_area.get().height as usize)
-                        .saturating_sub(3usize)
+                        .saturating_sub(3_usize)
                 {
                     self.scroll += 1;
                 }
