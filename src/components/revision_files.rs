@@ -31,6 +31,11 @@ const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
 const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 const EMPTY_STR: &str = "";
 
+enum Focus {
+    Tree,
+    File,
+}
+
 pub struct RevisionFilesComponent {
     queue: Queue,
     title: String,
@@ -43,6 +48,7 @@ pub struct RevisionFilesComponent {
     scroll_top: Cell<usize>,
     revision: Option<CommitId>,
     visible: bool,
+    focus: Focus,
     key_config: SharedKeyConfig,
 }
 
@@ -67,6 +73,7 @@ impl RevisionFilesComponent {
             files: Vec::new(),
             revision: None,
             visible: false,
+            focus: Focus::Tree,
             key_config,
         }
     }
@@ -276,18 +283,26 @@ impl Component for RevisionFilesComponent {
     ) -> Result<EventState> {
         if self.is_visible() {
             if let Event::Key(key) = event {
+                let is_tree_focused =
+                    matches!(self.focus, Focus::Tree);
                 if key == self.key_config.exit_popup {
                     self.hide();
+                } else if is_tree_focused
+                    && tree_nav(&mut self.tree, &self.key_config, key)
+                {
+                    self.selection_changed();
                 } else if key == self.key_config.blame {
                     if self.blame() {
                         self.hide();
                     }
-                } else if tree_nav(
-                    &mut self.tree,
-                    &self.key_config,
-                    key,
-                ) {
-                    self.selection_changed();
+                } else if key == self.key_config.move_right {
+                    if is_tree_focused {
+                        self.focus = Focus::File;
+                    } else {
+                        self.focus = Focus::Tree;
+                    }
+                } else if !is_tree_focused {
+                    self.current_file.event(event)?;
                 }
             }
 

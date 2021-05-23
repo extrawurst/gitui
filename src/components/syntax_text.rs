@@ -13,8 +13,9 @@ use asyncgit::{
     AsyncNotification, CWD,
 };
 use crossbeam_channel::Sender;
+use crossterm::event::Event;
 use itertools::Either;
-use std::{convert::From, path::Path};
+use std::{cell::Cell, convert::From, path::Path};
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -27,7 +28,8 @@ pub struct SyntaxTextComponent {
     current_file: Option<(String, Either<ui::SyntaxText, String>)>,
     async_highlighting:
         AsyncSingleJob<AsyncSyntaxJob, AsyncNotification>,
-    _key_config: SharedKeyConfig,
+    key_config: SharedKeyConfig,
+    scroll_top: Cell<u16>,
 }
 
 impl SyntaxTextComponent {
@@ -42,7 +44,8 @@ impl SyntaxTextComponent {
                 AsyncNotification::SyntaxHighlighting,
             ),
             current_file: None,
-            _key_config: key_config,
+            scroll_top: Cell::new(0),
+            key_config,
         }
     }
 
@@ -115,14 +118,16 @@ impl DrawableComponent for SyntaxTextComponent {
         f: &mut Frame<B>,
         area: Rect,
     ) -> Result<()> {
-        let content =
-            Paragraph::new(self.current_file.as_ref().map_or_else(
-                || Text::from(""),
-                |(_, content)| match content {
-                    Either::Left(syn) => syn.into(),
-                    Either::Right(s) => Text::from(s.as_str()),
-                },
-            ))
+        let text = self.current_file.as_ref().map_or_else(
+            || Text::from(""),
+            |(_, content)| match content {
+                Either::Left(syn) => syn.into(),
+                Either::Right(s) => Text::from(s.as_str()),
+            },
+        );
+
+        let content = Paragraph::new(text)
+            .scroll((self.scroll_top.get(), 0))
             .wrap(Wrap { trim: false });
         f.render_widget(content, area);
 
@@ -142,9 +147,18 @@ impl Component for SyntaxTextComponent {
 
     fn event(
         &mut self,
-        _event: crossterm::event::Event,
+        event: crossterm::event::Event,
     ) -> Result<EventState> {
-        //TODO: scrolling
+        if let Event::Key(key) = event {
+            if key == self.key_config.move_down {
+                self.scroll_top
+                    .set(self.scroll_top.get().saturating_add(1));
+            } else if key == self.key_config.move_up {
+                self.scroll_top
+                    .set(self.scroll_top.get().saturating_sub(1));
+            }
+        }
+
         Ok(EventState::NotConsumed)
     }
 }
