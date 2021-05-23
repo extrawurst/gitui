@@ -51,7 +51,6 @@ pub fn stage_lines(
 
     idx.id = blob_id;
     idx.file_size = u32::try_conv(new_content.as_bytes().len())?;
-    //TODO: can we simply use add_frombuffer?
     index.add(&idx)?;
 
     index.write()?;
