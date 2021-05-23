@@ -1,15 +1,14 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, EventState,
+    DrawableComponent, EventState, SyntaxTextComponent,
 };
 use crate::{
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
     strings::{self, order},
-    ui::{self, style::SharedTheme, AsyncSyntaxJob},
+    ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
-use async_utils::AsyncSingleJob;
 use asyncgit::{
     sync::{self, CommitId, TreeFile},
     AsyncNotification, CWD,
@@ -17,15 +16,14 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetree::{FileTree, MoveSelection};
-use itertools::Either;
 use std::{
     cell::Cell, collections::BTreeSet, convert::From, path::Path,
 };
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
-    text::{Span, Text},
-    widgets::{Block, Borders, Clear, Paragraph, Wrap},
+    text::Span,
+    widgets::{Block, Borders, Clear},
     Frame,
 };
 
@@ -39,9 +37,8 @@ pub struct RevisionFilesComponent {
     theme: SharedTheme,
     //TODO: store TreeFiles in `tree`
     files: Vec<TreeFile>,
-    current_file: Option<(String, Either<ui::SyntaxText, String>)>,
-    async_highlighting:
-        AsyncSingleJob<AsyncSyntaxJob, AsyncNotification>,
+    // current_file: Option<(String, Either<ui::SyntaxText, String>)>,
+    current_file: SyntaxTextComponent,
     tree: FileTree,
     scroll_top: Cell<usize>,
     revision: Option<CommitId>,
@@ -61,13 +58,12 @@ impl RevisionFilesComponent {
             queue: queue.clone(),
             title: String::new(),
             tree: FileTree::default(),
-            async_highlighting: AsyncSingleJob::new(
-                sender.clone(),
-                AsyncNotification::SyntaxHighlighting,
+            scroll_top: Cell::new(0),
+            current_file: SyntaxTextComponent::new(
+                sender,
+                key_config.clone(),
             ),
             theme,
-            scroll_top: Cell::new(0),
-            current_file: None,
             files: Vec::new(),
             revision: None,
             visible: false,
@@ -99,24 +95,12 @@ impl RevisionFilesComponent {
 
     ///
     pub fn update(&mut self, ev: AsyncNotification) {
-        if ev == AsyncNotification::SyntaxHighlighting {
-            if let Some(job) = self.async_highlighting.get_last() {
-                if let Some((path, content)) =
-                    self.current_file.as_mut()
-                {
-                    if let Some(syntax) = (*job.text).clone() {
-                        if syntax.path() == Path::new(path) {
-                            *content = Either::Left(syntax);
-                        }
-                    }
-                }
-            }
-        }
+        self.current_file.update(ev);
     }
 
     ///
     pub fn any_work_pending(&self) -> bool {
-        self.async_highlighting.is_pending()
+        self.current_file.any_work_pending()
     }
 
     fn tree_item_to_span<'a>(
@@ -170,48 +154,15 @@ impl RevisionFilesComponent {
                 .unwrap_or_default()
                 .to_string()
         }) {
-            let already_loaded = self
-                .current_file
-                .as_ref()
-                .map(|(current_file, _)| current_file == &file)
-                .unwrap_or_default();
-
-            if !already_loaded {
-                self.load_file(file);
+            if let Some(item) = self
+                .files
+                .iter()
+                .find(|f| f.path.ends_with(Path::new(&file)))
+            {
+                self.current_file.load_file(file, item);
             }
         } else {
-            self.current_file = None;
-        }
-    }
-
-    fn load_file(&mut self, path: String) {
-        let path_path = Path::new(&path);
-        if let Some(item) =
-            self.files.iter().find(|f| f.path.ends_with(path_path))
-        {
-            //TODO: fetch file content async aswell
-            match sync::tree_file_content(CWD, item) {
-                Ok(content) => {
-                    self.async_highlighting.spawn(
-                        AsyncSyntaxJob::new(
-                            content.clone(),
-                            path.clone(),
-                        ),
-                    );
-
-                    self.current_file =
-                        Some((path, Either::Right(content)))
-                }
-                Err(e) => {
-                    self.current_file = Some((
-                        path,
-                        Either::Right(format!(
-                            "error loading file: {}",
-                            e
-                        )),
-                    ))
-                }
-            }
+            self.current_file.clear();
         }
     }
 }
@@ -281,17 +232,7 @@ impl DrawableComponent for RevisionFilesComponent {
                 items,
             );
 
-            let content = Paragraph::new(
-                self.current_file.as_ref().map_or_else(
-                    || Text::from(""),
-                    |(_, content)| match content {
-                        Either::Left(syn) => syn.into(),
-                        Either::Right(s) => Text::from(s.as_str()),
-                    },
-                ),
-            )
-            .wrap(Wrap { trim: false });
-            f.render_widget(content, chunks[1]);
+            self.current_file.draw(f, chunks[1])?;
         }
 
         Ok(())
