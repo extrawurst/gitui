@@ -133,8 +133,11 @@ impl DrawableComponent for SyntaxTextComponent {
 
         f.render_stateful_widget(content, area, &mut state);
 
-        self.scroll_top
-            .set(self.scroll_top.get().min(state.lines()));
+        self.scroll_top.set(
+            self.scroll_top
+                .get()
+                .min(state.lines().saturating_sub(area.height)),
+        );
 
         Ok(())
     }

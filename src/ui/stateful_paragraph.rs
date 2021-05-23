@@ -204,10 +204,3 @@ impl<'a> StatefulWidget for StatefulParagraph<'a> {
         state.lines = y;
     }
 }
-
-impl<'a> Widget for StatefulParagraph<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let mut state = ParagraphState::default();
-        StatefulWidget::render(self, area, buf, &mut state);
-    }
-}
