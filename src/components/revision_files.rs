@@ -172,6 +172,72 @@ impl RevisionFilesComponent {
             self.current_file.clear();
         }
     }
+
+    fn draw_tree<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        area: Rect,
+    ) -> Result<()> {
+        let tree_height = usize::from(area.height.saturating_sub(2));
+
+        let selection = self.tree.visual_selection();
+        let visual_count = selection.map_or_else(
+            || {
+                self.scroll_top.set(0);
+                0
+            },
+            |selection| {
+                self.scroll_top.set(ui::calc_scroll_top(
+                    self.scroll_top.get(),
+                    tree_height,
+                    selection.index,
+                ));
+                selection.count
+            },
+        );
+
+        let items = self
+            .tree
+            .iterate(self.scroll_top.get(), tree_height)
+            .map(|(item, selected)| {
+                Self::tree_item_to_span(item, &self.theme, selected)
+            });
+
+        f.render_widget(Clear, area);
+        f.render_widget(
+            Block::default()
+                .borders(Borders::TOP)
+                .title(Span::styled(
+                    format!(" {}", self.title),
+                    self.theme.title(true),
+                ))
+                .border_style(self.theme.block(true)),
+            area,
+        );
+
+        let is_tree_focused = matches!(self.focus, Focus::Tree);
+
+        ui::draw_list_block(
+            f,
+            area,
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(self.theme.block(is_tree_focused)),
+            items,
+        );
+
+        if is_tree_focused {
+            ui::draw_scrollbar(
+                f,
+                area,
+                &self.theme,
+                visual_count.saturating_sub(tree_height),
+                self.scroll_top.get(),
+            );
+        }
+
+        Ok(())
+    }
 }
 
 impl DrawableComponent for RevisionFilesComponent {
@@ -193,68 +259,7 @@ impl DrawableComponent for RevisionFilesComponent {
                 )
                 .split(area);
 
-            let tree_height =
-                usize::from(chunks[0].height.saturating_sub(2));
-
-            let selection = self.tree.visual_selection();
-            let visual_count = selection.map_or_else(
-                || {
-                    self.scroll_top.set(0);
-                    0
-                },
-                |selection| {
-                    self.scroll_top.set(ui::calc_scroll_top(
-                        self.scroll_top.get(),
-                        tree_height,
-                        selection.index,
-                    ));
-                    selection.count
-                },
-            );
-
-            let items = self
-                .tree
-                .iterate(self.scroll_top.get(), tree_height)
-                .map(|(item, selected)| {
-                    Self::tree_item_to_span(
-                        item,
-                        &self.theme,
-                        selected,
-                    )
-                });
-
-            f.render_widget(Clear, area);
-            f.render_widget(
-                Block::default()
-                    .borders(Borders::TOP)
-                    .title(Span::styled(
-                        format!(" {}", self.title),
-                        self.theme.title(true),
-                    ))
-                    .border_style(self.theme.block(true)),
-                area,
-            );
-
-            let is_tree_focused = matches!(self.focus, Focus::Tree);
-
-            ui::draw_list_block(
-                f,
-                chunks[0],
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_style(self.theme.block(is_tree_focused)),
-                items,
-            );
-
-            if is_tree_focused {
-                ui::draw_scrollbar(
-                    f,
-                    chunks[0],
-                    &self.theme,
-                    visual_count.saturating_sub(tree_height),
-                    self.scroll_top.get(),
-                );
-            }
+            self.draw_tree(f, chunks[0])?;
 
             self.current_file.draw(f, chunks[1])?;
         }
