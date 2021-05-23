@@ -33,6 +33,7 @@ pub enum InputType {
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
 pub struct TextInputComponent {
+<<<<<<< HEAD
 	title: String,
 	default_msg: String,
 	msg: String,
@@ -469,6 +470,245 @@ impl TextInputComponent {
 			f.render_widget(w, rect);
 		}
 	}
+=======
+    title: String,
+    default_msg: String,
+    msg: String,
+    visible: bool,
+    show_char_count: bool,
+    theme: SharedTheme,
+    key_config: SharedKeyConfig,
+    cursor_position: usize,
+    input_type: InputType,
+    current_area: Cell<Rect>,
+    scroll: usize,
+    cur_line: usize,
+}
+
+impl TextInputComponent {
+    ///
+    pub fn new(
+        theme: SharedTheme,
+        key_config: SharedKeyConfig,
+        title: &str,
+        default_msg: &str,
+        show_char_count: bool,
+    ) -> Self {
+        Self {
+            msg: String::new(),
+            visible: false,
+            theme,
+            key_config,
+            show_char_count,
+            title: title.to_string(),
+            default_msg: default_msg.to_string(),
+            cursor_position: 0,
+            input_type: InputType::Multiline,
+            current_area: Cell::new(Rect::default()),
+            scroll: 0,
+            cur_line: 0,
+        }
+    }
+
+    pub const fn with_input_type(
+        mut self,
+        input_type: InputType,
+    ) -> Self {
+        self.input_type = input_type;
+        self
+    }
+
+    /// Clear the `msg`.
+    pub fn clear(&mut self) {
+        self.msg.clear();
+        self.cursor_position = 0;
+    }
+
+    /// Get the `msg`.
+    pub const fn get_text(&self) -> &String {
+        &self.msg
+    }
+
+    /// screen area (last time we got drawn)
+    pub fn get_area(&self) -> Rect {
+        self.current_area.get()
+    }
+
+    /// Move the cursor right one char.
+    fn incr_cursor(&mut self) {
+        if let Some(pos) = self.next_char_position() {
+            if self.msg.chars().nth(self.cursor_position)
+                == Some('\n')
+            {
+                self.cur_line += 1;
+                if self.cur_line
+                    > (self.current_area.get().height as usize)
+                        .saturating_sub(3usize)
+                {
+                    self.scroll += 1;
+                }
+            }
+            self.cursor_position = pos;
+        }
+    }
+
+    /// Move the cursor left one char.
+    fn decr_cursor(&mut self) {
+        let mut index = self.cursor_position.saturating_sub(1);
+        while index > 0 && !self.msg.is_char_boundary(index) {
+            index -= 1;
+        }
+        self.cursor_position = index;
+        if self.msg.chars().nth(index) == Some('\n') {
+            self.cur_line -= 1;
+            if self.cur_line < self.scroll {
+                self.scroll -= 1;
+            }
+        }
+    }
+
+    /// Get the position of the next char, or, if the cursor points
+    /// to the last char, the `msg.len()`.
+    /// Returns None when the cursor is already at `msg.len()`.
+    fn next_char_position(&self) -> Option<usize> {
+        if self.cursor_position >= self.msg.len() {
+            return None;
+        }
+        let mut index = self.cursor_position.saturating_add(1);
+        while index < self.msg.len()
+            && !self.msg.is_char_boundary(index)
+        {
+            index += 1;
+        }
+        Some(index)
+    }
+
+    fn backspace(&mut self) {
+        if self.cursor_position > 0 {
+            self.decr_cursor();
+            self.msg.remove(self.cursor_position);
+        }
+    }
+
+    /// Set the `msg`.
+    pub fn set_text(&mut self, msg: String) {
+        self.msg = msg;
+        self.cursor_position = 0;
+    }
+
+    /// Set the `title`.
+    pub fn set_title(&mut self, t: String) {
+        self.title = t;
+    }
+
+    fn get_draw_text(&self) -> Text {
+        let style = self.theme.text(true, false);
+
+        let mut txt = Text::default();
+
+        // The portion of the text before the cursor is added
+        // if the cursor is not at the first character.
+        if self.cursor_position > 0 {
+            let text_before_cursor: String = self
+                .get_msg(0..self.cursor_position)
+                .lines()
+                .skip(self.scroll)
+                .intersperse("\n")
+                .collect();
+            let ends_in_nl = text_before_cursor.ends_with('\n');
+            txt = text_append(
+                txt,
+                Text::styled(text_before_cursor, style),
+            );
+            if ends_in_nl {
+                txt.lines.push(Spans::default());
+                // txt = text_append(txt, Text::styled("\n\r", style));
+            }
+        }
+
+        let cursor_str = self
+            .next_char_position()
+            // if the cursor is at the end of the msg
+            // a whitespace is used to underline
+            .map_or(" ".to_owned(), |pos| {
+                self.get_msg(self.cursor_position..pos)
+            });
+
+        let cursor_highlighting = {
+            let mut h = HashMap::with_capacity(2);
+            h.insert("\n", "\u{21b5}\n\r");
+            h.insert(" ", "\u{00B7}");
+            h
+        };
+
+        if let Some(substitute) =
+            cursor_highlighting.get(cursor_str.as_str())
+        {
+            txt = text_append(
+                txt,
+                Text::styled(
+                    substitute.to_owned(),
+                    self.theme
+                        .text(false, false)
+                        .add_modifier(Modifier::UNDERLINED),
+                ),
+            );
+        } else {
+            txt = text_append(
+                txt,
+                Text::styled(
+                    cursor_str,
+                    style.add_modifier(Modifier::UNDERLINED),
+                ),
+            );
+        }
+
+        // The final portion of the text is added if there are
+        // still remaining characters.
+        if let Some(pos) = self.next_char_position() {
+            if pos < self.msg.len() {
+                txt = text_append(
+                    txt,
+                    Text::styled(
+                        self.get_msg(pos..self.msg.len()),
+                        style,
+                    ),
+                );
+            }
+        }
+
+        txt
+    }
+
+    fn get_msg(&self, range: Range<usize>) -> String {
+        match self.input_type {
+            InputType::Password => range.map(|_| "*").join(""),
+            _ => self.msg[range].to_owned(),
+        }
+    }
+
+    fn draw_char_count<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+        let count = self.msg.len();
+        if count > 0 {
+            let w = Paragraph::new(format!("[{} chars]", count))
+                .alignment(Alignment::Right);
+
+            let mut rect = {
+                let mut rect = r;
+                rect.y += rect.height.saturating_sub(1);
+                rect
+            };
+
+            rect.x += 1;
+            rect.width = rect.width.saturating_sub(2);
+            rect.height = rect
+                .height
+                .saturating_sub(rect.height.saturating_sub(1));
+
+            f.render_widget(w, rect);
+        }
+    }
+>>>>>>> Add scrolling behaviour
 }
 
 // merges last line of `txt` with first of `append` so we do not generate unneeded newlines
