@@ -40,6 +40,8 @@ pub struct TextInputComponent {
     cursor_position: usize,
     input_type: InputType,
     current_area: Cell<Rect>,
+    scroll: usize,
+    cur_line: usize,
 }
 
 impl TextInputComponent {
@@ -62,6 +64,8 @@ impl TextInputComponent {
             cursor_position: 0,
             input_type: InputType::Multiline,
             current_area: Cell::new(Rect::default()),
+            scroll: 0,
+            cur_line: 0,
         }
     }
 
@@ -92,6 +96,17 @@ impl TextInputComponent {
     /// Move the cursor right one char.
     fn incr_cursor(&mut self) {
         if let Some(pos) = self.next_char_position() {
+            if self.msg.chars().nth(self.cursor_position)
+                == Some('\n')
+            {
+                self.cur_line += 1;
+                if self.cur_line
+                    > (self.current_area.get().height as usize)
+                        .saturating_sub(3usize)
+                {
+                    self.scroll += 1;
+                }
+            }
             self.cursor_position = pos;
         }
     }
@@ -103,6 +118,12 @@ impl TextInputComponent {
             index -= 1;
         }
         self.cursor_position = index;
+        if self.msg.chars().nth(index) == Some('\n') {
+            self.cur_line -= 1;
+            if self.cur_line < self.scroll {
+                self.scroll -= 1;
+            }
+        }
     }
 
     /// Get the position of the next char, or, if the cursor points
@@ -143,11 +164,16 @@ impl TextInputComponent {
         let style = self.theme.text(true, false);
 
         let mut txt = Text::default();
+
         // The portion of the text before the cursor is added
         // if the cursor is not at the first character.
         if self.cursor_position > 0 {
-            let text_before_cursor =
-                self.get_msg(0..self.cursor_position);
+            let text_before_cursor: String = self
+                .get_msg(0..self.cursor_position)
+                .lines()
+                .skip(self.scroll)
+                .intersperse("\n")
+                .collect();
             let ends_in_nl = text_before_cursor.ends_with('\n');
             txt = text_append(
                 txt,
