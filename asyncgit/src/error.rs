@@ -24,6 +24,9 @@ pub enum Error {
     #[error("git: can\u{2019}t run blame on a binary file")]
     NoBlameOnBinaryFile,
 
+    #[error("binary file")]
+    BinaryFile,
+
     #[error("io error:{0}")]
     Io(#[from] std::io::Error),
 

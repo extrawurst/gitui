@@ -87,6 +87,12 @@ impl ChangesComponent {
                         _ => sync::stage_add_file(CWD, path)?,
                     };
 
+                    if self.is_empty() {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::StatusLastFileMoved,
+                        );
+                    }
+
                     return Ok(true);
                 }
 
@@ -268,12 +274,15 @@ impl Component for ChangesComponent {
                     if self.is_working_dir {
                         try_or_popup!(
                             self,
-                            "staging error:",
+                            "staging all error:",
                             self.index_add_all()
                         );
                     } else {
                         self.stage_remove_all()?;
                     }
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::StatusLastFileMoved,
+                    );
                     Ok(EventState::Consumed)
                 } else if e == self.key_config.status_reset_item
                     && self.is_working_dir

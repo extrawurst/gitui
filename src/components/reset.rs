@@ -138,8 +138,8 @@ impl ResetComponent {
         if let Some(ref a) = self.target {
             return match a {
                 Action::Reset(_) => (
-                    strings::confirm_title_reset(&self.key_config),
-                    strings::confirm_msg_reset(&self.key_config),
+                    strings::confirm_title_reset(),
+                    strings::confirm_msg_reset(),
                 ),
                 Action::StashDrop(_) => (
                     strings::confirm_title_stashdrop(
@@ -152,12 +152,12 @@ impl ResetComponent {
                     strings::confirm_msg_stashpop(&self.key_config),
                 ),
                 Action::ResetHunk(_, _) => (
-                    strings::confirm_title_reset(&self.key_config),
+                    strings::confirm_title_reset(),
                     strings::confirm_msg_resethunk(&self.key_config),
                 ),
                 Action::ResetLines(_, lines) => (
-                    strings::confirm_title_reset(&self.key_config),
-                    strings::confirm_msg_reset_lines(&self.key_config,lines.len()),
+                    strings::confirm_title_reset(),
+                    strings::confirm_msg_reset_lines(lines.len()),
                 ),
                 Action::DeleteBranch(branch_ref) => (
                     strings::confirm_title_delete_branch(
@@ -180,6 +180,10 @@ impl ResetComponent {
                 Action::PullMerge{incoming,rebase} => (
                     strings::confirm_title_merge(&self.key_config,*rebase),
                     strings::confirm_msg_merge(&self.key_config,*incoming,*rebase),
+                ),
+                Action::AbortMerge => (
+                    strings::confirm_title_abortmerge(),
+                    strings::confirm_msg_abortmerge(),
                 ),
             };
         }
