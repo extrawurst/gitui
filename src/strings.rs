@@ -77,7 +77,7 @@ pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {
 pub fn commit_first_line_warning(count: usize) -> String {
     format!("[subject length: {}]", count)
 }
-pub fn commit_editor_msg(_key_config: &SharedKeyConfig) -> String {
+pub fn commit_editor_msg() -> String {
     r##"
 # Edit your commit message
 # Lines starting with '#' will be ignored"##

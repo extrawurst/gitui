@@ -8,8 +8,8 @@ use crate::{
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PullComponent,
         PushComponent, PushTagsComponent, RenameBranchComponent,
-        ResetComponent, RevisionFilesComponent, RewordComponent, StashMsgComponent,
-        TagCommitComponent,
+        ResetComponent, RevisionFilesComponent, RewordComponent,
+        StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -733,11 +733,8 @@ impl App {
             || self.pull_popup.is_visible()
             || self.select_branch_popup.is_visible()
             || self.rename_branch_popup.is_visible()
-<<<<<<< HEAD
             || self.reword_popup.is_visible()
-=======
             || self.revision_files_popup.is_visible()
->>>>>>> master
     }
 
     fn draw_popups<B: Backend>(

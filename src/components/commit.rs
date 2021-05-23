@@ -5,7 +5,6 @@ use super::{
 };
 use crate::{
     app::EditorSource,
-    args::get_app_config_path,
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
@@ -22,11 +21,7 @@ use asyncgit::{
 };
 use crossterm::event::Event;
 use easy_cast::Cast;
-use std::{
-    fs::{read_to_string, File},
-    io::{Read, Write},
-    path::PathBuf,
-};
+use std::fs::read_to_string;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
