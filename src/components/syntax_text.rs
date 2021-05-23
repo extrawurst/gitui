@@ -4,6 +4,7 @@ use super::{
 };
 use crate::{
     keys::SharedKeyConfig,
+    strings,
     ui::{
         self, style::SharedTheme, AsyncSyntaxJob, ParagraphState,
         ScrollPos, StatefulParagraph,
@@ -32,7 +33,7 @@ pub struct SyntaxTextComponent {
     async_highlighting:
         AsyncSingleJob<AsyncSyntaxJob, AsyncNotification>,
     key_config: SharedKeyConfig,
-    scroll_top: Cell<u16>,
+    paragraph_state: Cell<ParagraphState>,
     focused: bool,
     theme: SharedTheme,
 }
@@ -50,7 +51,7 @@ impl SyntaxTextComponent {
                 AsyncNotification::SyntaxHighlighting,
             ),
             current_file: None,
-            scroll_top: Cell::new(0),
+            paragraph_state: Cell::new(ParagraphState::default()),
             focused: false,
             key_config,
             theme,
@@ -118,6 +119,36 @@ impl SyntaxTextComponent {
             }
         }
     }
+
+    fn scroll(&self, down: Option<bool>) {
+        let mut state = self.paragraph_state.get();
+        let new_scroll_pos = down.map_or_else(
+            || state.scroll().y,
+            |down| {
+                if down {
+                    state.scroll().y.saturating_add(1)
+                } else {
+                    state.scroll().y.saturating_sub(1)
+                }
+            },
+        );
+
+        let new_scroll_pos = new_scroll_pos.min(
+            state
+                .lines()
+                .saturating_sub(state.height().saturating_sub(2)),
+        );
+
+        if new_scroll_pos == state.scroll().y {
+            return;
+        }
+
+        state.set_scroll(ScrollPos {
+            x: 0,
+            y: new_scroll_pos,
+        });
+        self.paragraph_state.set(state);
+    }
 }
 
 impl DrawableComponent for SyntaxTextComponent {
@@ -148,16 +179,13 @@ impl DrawableComponent for SyntaxTextComponent {
                     .border_style(self.theme.title(self.focused())),
             );
 
-        let mut state = ParagraphState::default();
-        state.set_scroll(ScrollPos::new(0, self.scroll_top.get()));
+        let mut state = self.paragraph_state.get();
 
         f.render_stateful_widget(content, area, &mut state);
 
-        self.scroll_top.set(
-            self.scroll_top
-                .get()
-                .min(state.lines().saturating_sub(area.height)),
-        );
+        self.paragraph_state.set(state);
+
+        self.scroll(None);
 
         Ok(())
     }
@@ -166,10 +194,19 @@ impl DrawableComponent for SyntaxTextComponent {
 impl Component for SyntaxTextComponent {
     fn commands(
         &self,
-        _out: &mut Vec<CommandInfo>,
-        _force_all: bool,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
     ) -> CommandBlocking {
-        //TODO: scrolling
+        if self.focused() || force_all {
+            out.push(
+                CommandInfo::new(
+                    strings::commands::scroll(&self.key_config),
+                    true,
+                    true,
+                )
+                .order(strings::order::NAV),
+            );
+        }
         CommandBlocking::PassingOn
     }
 
@@ -179,11 +216,9 @@ impl Component for SyntaxTextComponent {
     ) -> Result<EventState> {
         if let Event::Key(key) = event {
             if key == self.key_config.move_down {
-                self.scroll_top
-                    .set(self.scroll_top.get().saturating_add(1));
+                self.scroll(Some(true));
             } else if key == self.key_config.move_up {
-                self.scroll_top
-                    .set(self.scroll_top.get().saturating_sub(1));
+                self.scroll(Some(false));
             }
         }
 

@@ -45,8 +45,8 @@ pub struct StatefulParagraph<'a> {
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct ScrollPos {
-    x: u16,
-    y: u16,
+    pub x: u16,
+    pub y: u16,
 }
 
 impl ScrollPos {
@@ -61,11 +61,17 @@ pub struct ParagraphState {
     scroll: ScrollPos,
     /// after all wrapping this is the amount of lines
     lines: u16,
+    /// last visible height
+    height: u16,
 }
 
 impl ParagraphState {
     pub const fn lines(self) -> u16 {
         self.lines
+    }
+
+    pub const fn height(self) -> u16 {
+        self.height
     }
 
     pub const fn scroll(self) -> ScrollPos {
@@ -202,5 +208,6 @@ impl<'a> StatefulWidget for StatefulParagraph<'a> {
         }
 
         state.lines = y;
+        state.height = area.height;
     }
 }

@@ -193,7 +193,8 @@ impl DrawableComponent for RevisionFilesComponent {
                 )
                 .split(area);
 
-            let tree_height = usize::from(chunks[0].height);
+            let tree_height =
+                usize::from(chunks[0].height.saturating_sub(2));
 
             let selection = self.tree.visual_selection();
             selection.map_or_else(
@@ -264,16 +265,21 @@ impl Component for RevisionFilesComponent {
                 .order(1),
             );
 
-            out.push(
-                CommandInfo::new(
-                    strings::commands::blame_file(&self.key_config),
-                    self.tree.selected_file().is_some(),
-                    true,
-                )
-                .order(order::NAV),
-            );
-
-            tree_nav_cmds(&self.tree, &self.key_config, out);
+            if matches!(self.focus, Focus::Tree) || force_all {
+                out.push(
+                    CommandInfo::new(
+                        strings::commands::blame_file(
+                            &self.key_config,
+                        ),
+                        self.tree.selected_file().is_some(),
+                        true,
+                    )
+                    .order(order::NAV),
+                );
+                tree_nav_cmds(&self.tree, &self.key_config, out);
+            } else {
+                self.current_file.commands(out, force_all);
+            }
         }
 
         visibility_blocking(self)
