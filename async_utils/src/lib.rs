@@ -33,14 +33,19 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
         self.pending.try_lock().is_err()
     }
 
-    /// makes sure `next` is cleared
-    pub fn cancel(&mut self) {
+    /// makes sure `next` is cleared and returns `true` if it actually canceled something
+    pub fn cancel(&mut self) -> bool {
         if let Ok(mut next) = self.next.lock() {
-            *next = None;
+            if next.is_some() {
+                *next = None;
+                return true;
+            }
         }
+
+        false
     }
 
-    /// makes sure `next` is cleared
+    /// return clone of last result
     pub fn get_last(&self) -> Option<J> {
         if let Ok(last) = self.last.lock() {
             last.clone()
@@ -50,15 +55,15 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
     }
 
     ///
-    pub fn spawn(&mut self, task: J) {
+    pub fn spawn(&mut self, task: J) -> bool {
         self.schedule_next(task);
-        self.check_for_job();
+        self.check_for_job()
     }
 
     ///
-    pub fn check_for_job(&self) {
+    pub fn check_for_job(&self) -> bool {
         if self.is_pending() {
-            return;
+            return false;
         }
 
         if let Some(task) = self.take_next() {
@@ -67,9 +72,14 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
             rayon_core::spawn(move || {
                 self_arc.run_job(task);
             });
+
+            return true;
         }
+
+        false
     }
 
+    //TODO: return Result
     fn run_job(&self, mut task: J) {
         //limit the pending scope
         {
@@ -122,6 +132,7 @@ mod test {
     impl AsyncJob for TestJob {
         fn run(&mut self) {
             sleep(Duration::from_millis(100));
+
             self.v.fetch_add(
                 self.value_to_add,
                 std::sync::atomic::Ordering::Relaxed,
@@ -143,8 +154,10 @@ mod test {
             value_to_add: 1,
         };
 
+        assert!(job.spawn(task.clone()));
+        sleep(Duration::from_millis(1));
         for _ in 0..5 {
-            job.spawn(task.clone());
+            assert!(!job.spawn(task.clone()));
         }
 
         let _foo = receiver.recv().unwrap();
@@ -169,10 +182,13 @@ mod test {
             value_to_add: 1,
         };
 
+        assert!(job.spawn(task.clone()));
+        sleep(Duration::from_millis(1));
+
         for _ in 0..5 {
-            job.spawn(task.clone());
+            assert!(!job.spawn(task.clone()));
         }
-        job.cancel();
+        assert!(job.cancel());
 
         let _foo = receiver.recv().unwrap();
 
