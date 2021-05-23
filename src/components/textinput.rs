@@ -42,6 +42,7 @@ pub struct TextInputComponent {
     current_area: Cell<Rect>,
     scroll: usize,
     cur_line: usize,
+    scroll_max: usize,
 }
 
 impl TextInputComponent {
@@ -66,6 +67,7 @@ impl TextInputComponent {
             current_area: Cell::new(Rect::default()),
             scroll: 0,
             cur_line: 0,
+            scroll_max: 0,
         }
     }
 
@@ -145,6 +147,11 @@ impl TextInputComponent {
     fn backspace(&mut self) {
         if self.cursor_position > 0 {
             self.decr_cursor();
+            if self.msg.chars().nth(self.cursor_position)
+                == Some('\n')
+            {
+                self.scroll_max -= 1;
+            }
             self.msg.remove(self.cursor_position);
         }
     }
@@ -332,6 +339,14 @@ impl DrawableComponent for TextInputComponent {
                 self.draw_char_count(f, area);
             }
 
+            ui::draw_scrollbar(
+                f,
+                area,
+                &self.theme,
+                self.scroll_max,
+                self.scroll,
+            );
+
             self.current_area.set(area);
         }
 
@@ -374,6 +389,7 @@ impl Component for TextInputComponent {
                 {
                     self.msg.insert(self.cursor_position, '\n');
                     self.incr_cursor();
+                    self.scroll_max += 1;
                     return Ok(EventState::Consumed);
                 }
 
