@@ -4,7 +4,10 @@ use super::{
 };
 use crate::{
     keys::SharedKeyConfig,
-    ui::{self, AsyncSyntaxJob},
+    ui::{
+        self, AsyncSyntaxJob, ParagraphState, ScrollPos,
+        StatefulParagraph,
+    },
 };
 use anyhow::Result;
 use async_utils::AsyncSingleJob;
@@ -17,11 +20,7 @@ use crossterm::event::Event;
 use itertools::Either;
 use std::{cell::Cell, convert::From, path::Path};
 use tui::{
-    backend::Backend,
-    layout::Rect,
-    text::Text,
-    widgets::{Paragraph, Wrap},
-    Frame,
+    backend::Backend, layout::Rect, text::Text, widgets::Wrap, Frame,
 };
 
 pub struct SyntaxTextComponent {
@@ -126,10 +125,16 @@ impl DrawableComponent for SyntaxTextComponent {
             },
         );
 
-        let content = Paragraph::new(text)
-            .scroll((self.scroll_top.get(), 0))
-            .wrap(Wrap { trim: false });
-        f.render_widget(content, area);
+        let content =
+            StatefulParagraph::new(text).wrap(Wrap { trim: false });
+
+        let mut state = ParagraphState::default();
+        state.set_scroll(ScrollPos::new(0, self.scroll_top.get()));
+
+        f.render_stateful_widget(content, area, &mut state);
+
+        self.scroll_top
+            .set(self.scroll_top.get().min(state.lines()));
 
         Ok(())
     }
