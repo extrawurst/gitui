@@ -1,57 +1,60 @@
 //TODO: remove once fixed https://github.com/rust-lang/rust-clippy/issues/6818
 #![allow(clippy::use_self)]
 
-use anyhow::Result;
-use asyncgit::{DiffLineType, StatusItemType};
-use ron::{
-    de::from_bytes,
-    ser::{to_string_pretty, PrettyConfig},
-};
-use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::{Read, Write},
     path::PathBuf,
     rc::Rc,
 };
+
+use anyhow::Result;
+use ron::{
+    de::from_bytes,
+    ser::{PrettyConfig, to_string_pretty},
+};
+use serde::{Deserialize, Serialize};
 use tui::style::{Color, Modifier, Style};
+
+use asyncgit::{DiffLineType, StatusItemType};
 
 pub type SharedTheme = Rc<Theme>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Theme {
+    #[serde(with = "Color", default = "Theme::default_selected_tab")]
     selected_tab: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_command_fg")]
     command_fg: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_selection_bg")]
     selection_bg: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_cmdbar_extra_lines_bg")]
     cmdbar_extra_lines_bg: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_disabled_fg")]
     disabled_fg: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_diff_line_add")]
     diff_line_add: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_diff_line_delete")]
     diff_line_delete: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_diff_file_added")]
     diff_file_added: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_diff_file_removed")]
     diff_file_removed: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_diff_file_moved")]
     diff_file_moved: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_diff_file_modified")]
     diff_file_modified: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_commit_hash")]
     commit_hash: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_commit_time")]
     commit_time: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_commit_author")]
     commit_author: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_danger_fg")]
     danger_fg: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_push_gauge_bg")]
     push_gauge_bg: Color,
-    #[serde(with = "Color")]
+    #[serde(with = "Color", default = "Theme::default_push_gauge_fg")]
     push_gauge_fg: Color,
 }
 
@@ -217,11 +220,11 @@ impl Theme {
         } else {
             Style::default().fg(self.disabled_fg)
         }
-        .bg(if line == 0 {
-            self.selection_bg
-        } else {
-            self.cmdbar_extra_lines_bg
-        })
+            .bg(if line == 0 {
+                self.selection_bg
+            } else {
+                self.cmdbar_extra_lines_bg
+            })
     }
 
     pub fn commit_hash(&self, selected: bool) -> Style {
@@ -301,28 +304,68 @@ impl Theme {
             Ok(Self::default())
         }
     }
+
+    fn default_selected_tab() -> Color { Color::Reset }
+    fn default_command_fg() -> Color { Color::White }
+    fn default_selection_bg() -> Color { Color::Blue }
+    fn default_cmdbar_extra_lines_bg() -> Color { Color::Blue }
+    fn default_disabled_fg() -> Color { Color::DarkGray }
+    fn default_diff_line_add() -> Color { Color::Green }
+    fn default_diff_line_delete() -> Color { Color::Red }
+    fn default_diff_file_added() -> Color { Color::LightGreen }
+    fn default_diff_file_removed() -> Color { Color::LightRed }
+    fn default_diff_file_moved() -> Color { Color::LightMagenta }
+    fn default_diff_file_modified() -> Color { Color::Yellow }
+    fn default_commit_hash() -> Color { Color::Magenta }
+    fn default_commit_time() -> Color { Color::LightCyan }
+    fn default_commit_author() -> Color { Color::Green }
+    fn default_danger_fg() -> Color { Color::Red }
+    fn default_push_gauge_bg() -> Color { Color::Blue }
+    fn default_push_gauge_fg() -> Color { Color::Reset }
 }
 
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            selected_tab: Color::Reset,
-            command_fg: Color::White,
-            selection_bg: Color::Blue,
-            cmdbar_extra_lines_bg: Color::Blue,
-            disabled_fg: Color::DarkGray,
-            diff_line_add: Color::Green,
-            diff_line_delete: Color::Red,
-            diff_file_added: Color::LightGreen,
-            diff_file_removed: Color::LightRed,
-            diff_file_moved: Color::LightMagenta,
-            diff_file_modified: Color::Yellow,
-            commit_hash: Color::Magenta,
-            commit_time: Color::LightCyan,
-            commit_author: Color::Green,
-            danger_fg: Color::Red,
-            push_gauge_bg: Color::Blue,
-            push_gauge_fg: Color::Reset,
+            selected_tab: Self::default_selected_tab(),
+            command_fg: Self::default_command_fg(),
+            selection_bg: Self::default_selection_bg(),
+            cmdbar_extra_lines_bg: Self::default_cmdbar_extra_lines_bg(),
+            disabled_fg: Self::default_disabled_fg(),
+            diff_line_add: Self::default_diff_line_add(),
+            diff_line_delete: Self::default_diff_line_delete(),
+            diff_file_added: Self::default_diff_file_added(),
+            diff_file_removed: Self::default_diff_file_removed(),
+            diff_file_moved: Self::default_diff_file_moved(),
+            diff_file_modified: Self::default_diff_file_modified(),
+            commit_hash: Self::default_commit_hash(),
+            commit_time: Self::default_commit_time(),
+            commit_author: Self::default_commit_author(),
+            danger_fg: Self::default_danger_fg(),
+            push_gauge_bg: Self::default_push_gauge_bg(),
+            push_gauge_fg: Self::default_push_gauge_fg(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tui::style::Color;
+
+    use super::Theme;
+
+    #[test]
+    fn test_theme_fields_use_default_values_if_missing_during_deserialization() {
+        let input = "( selection_bg: Green, )";
+        let result: ron::Result<Theme> = ron::de::from_str(input);
+
+        assert_eq!(result.is_ok(), true);
+        let config = result.unwrap();
+
+        let expected_selection_bg = Color::Green;
+        assert_eq!(config.selection_bg, expected_selection_bg);
+
+        let expected_command_fg = Color::White;
+        assert_eq!(config.command_fg, expected_command_fg);
     }
 }
