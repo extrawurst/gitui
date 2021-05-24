@@ -365,7 +365,6 @@ mod tests {
         let expected_selection_bg = Color::Green;
         assert_eq!(config.selection_bg, expected_selection_bg);
 
-        let expected_command_fg = Color::White;
-        assert_eq!(config.command_fg, expected_command_fg);
+        assert_eq!(config.command_fg, Theme::default_command_fg());
     }
 }

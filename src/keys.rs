@@ -418,7 +418,6 @@ mod tests {
         let expected_tab_status = KeyEvent { code: KeyCode::Char('6'), modifiers: KeyModifiers::SHIFT };
         assert_eq!(config.tab_status, expected_tab_status);
 
-        let expected_default_tab_log = KeyEvent { code: KeyCode::Char('2'), modifiers: KeyModifiers::empty() };
-        assert_eq!(config.tab_log, expected_default_tab_log);
+        assert_eq!(config.tab_log, KeyConfig::default_tab_log());
     }
 }
