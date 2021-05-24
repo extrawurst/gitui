@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Fixed
 - selected-tab color broken in light theme [[@Cottser](https://github.com/Cottser)] ([#719](https://github.com/extrawurst/gitui/issues/719))
+- proper tmp file location to externally edit commit msg ([#518](https://github.com/extrawurst/gitui/issues/518))
 
 ## [0.15.0] - 2020-04-27
 
