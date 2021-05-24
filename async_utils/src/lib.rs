@@ -66,10 +66,10 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
         false
     }
 
-    /// return clone of last result
-    pub fn get_last(&self) -> Option<J> {
-        if let Ok(last) = self.last.lock() {
-            last.clone()
+    ///
+    pub fn take_last(&self) -> Option<J> {
+        if let Ok(mut last) = self.last.lock() {
+            last.take()
         } else {
             None
         }

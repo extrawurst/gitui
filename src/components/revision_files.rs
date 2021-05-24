@@ -173,11 +173,7 @@ impl RevisionFilesComponent {
         }
     }
 
-    fn draw_tree<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        area: Rect,
-    ) -> Result<()> {
+    fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
         let tree_height = usize::from(area.height.saturating_sub(2));
 
         let selection = self.tree.visual_selection();
@@ -203,18 +199,6 @@ impl RevisionFilesComponent {
                 Self::tree_item_to_span(item, &self.theme, selected)
             });
 
-        f.render_widget(Clear, area);
-        f.render_widget(
-            Block::default()
-                .borders(Borders::TOP)
-                .title(Span::styled(
-                    format!(" {}", self.title),
-                    self.theme.title(true),
-                ))
-                .border_style(self.theme.block(true)),
-            area,
-        );
-
         let is_tree_focused = matches!(self.focus, Focus::Tree);
 
         ui::draw_list_block(
@@ -235,8 +219,6 @@ impl RevisionFilesComponent {
                 self.scroll_top.get(),
             );
         }
-
-        Ok(())
     }
 }
 
@@ -259,7 +241,19 @@ impl DrawableComponent for RevisionFilesComponent {
                 )
                 .split(area);
 
-            self.draw_tree(f, chunks[0])?;
+            f.render_widget(Clear, area);
+            f.render_widget(
+                Block::default()
+                    .borders(Borders::TOP)
+                    .title(Span::styled(
+                        format!(" {}", self.title),
+                        self.theme.title(true),
+                    ))
+                    .border_style(self.theme.block(true)),
+                area,
+            );
+
+            self.draw_tree(f, chunks[0]);
 
             self.current_file.draw(f, chunks[1])?;
         }

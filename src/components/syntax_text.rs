@@ -61,11 +61,11 @@ impl SyntaxTextComponent {
     ///
     pub fn update(&mut self, ev: AsyncNotification) {
         if ev == AsyncNotification::SyntaxHighlighting {
-            if let Some(job) = self.async_highlighting.get_last() {
+            if let Some(job) = self.async_highlighting.take_last() {
                 if let Some((path, content)) =
                     self.current_file.as_mut()
                 {
-                    if let Some(syntax) = (*job.text).clone() {
+                    if let Some(syntax) = job.result() {
                         if syntax.path() == Path::new(path) {
                             *content = Either::Left(syntax);
                         }
