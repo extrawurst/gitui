@@ -6,8 +6,8 @@ use crate::{
     keys::SharedKeyConfig,
     strings,
     ui::{
-        self, style::SharedTheme, AsyncSyntaxJob, ParagraphState,
-        ScrollPos, StatefulParagraph,
+        self, common_nav, style::SharedTheme, AsyncSyntaxJob,
+        ParagraphState, ScrollPos, StatefulParagraph,
     },
 };
 use anyhow::Result;
@@ -18,6 +18,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use filetree::MoveSelection;
 use itertools::Either;
 use std::{cell::Cell, convert::From, path::Path};
 use tui::{
@@ -120,27 +121,41 @@ impl SyntaxTextComponent {
         }
     }
 
-    fn scroll(&self, down: Option<bool>) {
-        let mut state = self.paragraph_state.get();
-        let new_scroll_pos = down.map_or_else(
-            || state.scroll().y,
-            |down| {
-                if down {
-                    state.scroll().y.saturating_add(1)
-                } else {
-                    state.scroll().y.saturating_sub(1)
-                }
-            },
-        );
+    fn scroll(&self, nav: MoveSelection) -> bool {
+        let state = self.paragraph_state.get();
 
-        let new_scroll_pos = new_scroll_pos.min(
+        let new_scroll_pos = match nav {
+            MoveSelection::Down => state.scroll().y.saturating_add(1),
+            MoveSelection::Up => state.scroll().y.saturating_sub(1),
+            MoveSelection::Top => 0,
+            MoveSelection::End => state
+                .lines()
+                .saturating_sub(state.height().saturating_sub(2)),
+            MoveSelection::PageUp => state
+                .scroll()
+                .y
+                .saturating_sub(state.height().saturating_sub(2)),
+            MoveSelection::PageDown => state
+                .scroll()
+                .y
+                .saturating_add(state.height().saturating_sub(2)),
+            _ => state.scroll().y,
+        };
+
+        self.set_scroll(new_scroll_pos)
+    }
+
+    fn set_scroll(&self, pos: u16) -> bool {
+        let mut state = self.paragraph_state.get();
+
+        let new_scroll_pos = pos.min(
             state
                 .lines()
                 .saturating_sub(state.height().saturating_sub(2)),
         );
 
         if new_scroll_pos == state.scroll().y {
-            return;
+            return false;
         }
 
         state.set_scroll(ScrollPos {
@@ -148,6 +163,8 @@ impl SyntaxTextComponent {
             y: new_scroll_pos,
         });
         self.paragraph_state.set(state);
+
+        true
     }
 }
 
@@ -185,7 +202,7 @@ impl DrawableComponent for SyntaxTextComponent {
 
         self.paragraph_state.set(state);
 
-        self.scroll(None);
+        self.set_scroll(state.scroll().y);
 
         if self.focused() {
             ui::draw_scrollbar(
@@ -227,10 +244,11 @@ impl Component for SyntaxTextComponent {
         event: crossterm::event::Event,
     ) -> Result<EventState> {
         if let Event::Key(key) = event {
-            if key == self.key_config.move_down {
-                self.scroll(Some(true));
-            } else if key == self.key_config.move_up {
-                self.scroll(Some(false));
+            if let Some(nav) = common_nav(key, &self.key_config) {
+                return Ok(self
+                    .scroll(nav)
+                    .then(|| EventState::Consumed)
+                    .unwrap_or(EventState::NotConsumed));
             }
         }
 

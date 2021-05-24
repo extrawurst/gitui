@@ -6,7 +6,7 @@ use crate::{
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
     strings::{self, order},
-    ui::{self, style::SharedTheme},
+    ui::{self, common_nav, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -15,7 +15,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use filetree::{FileTree, MoveSelection};
+use filetree::FileTree;
 use std::{
     cell::Cell, collections::BTreeSet, convert::From, path::Path,
 };
@@ -376,18 +376,8 @@ fn tree_nav(
     key_config: &SharedKeyConfig,
     key: crossterm::event::KeyEvent,
 ) -> bool {
-    if key == key_config.move_down {
-        tree.move_selection(MoveSelection::Down)
-    } else if key == key_config.move_up {
-        tree.move_selection(MoveSelection::Up)
-    } else if key == key_config.move_right {
-        tree.move_selection(MoveSelection::Right)
-    } else if key == key_config.move_left {
-        tree.move_selection(MoveSelection::Left)
-    } else if key == key_config.home || key == key_config.shift_up {
-        tree.move_selection(MoveSelection::Top)
-    } else if key == key_config.end || key == key_config.shift_down {
-        tree.move_selection(MoveSelection::End)
+    if let Some(common_nav) = common_nav(key, key_config) {
+        tree.move_selection(common_nav)
     } else if key == key_config.tree_collapse_recursive {
         tree.collapse_recursive();
         true
