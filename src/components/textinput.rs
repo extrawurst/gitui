@@ -698,6 +698,7 @@ impl TextInputComponent {
         self.title = t;
     }
 
+    #[allow(unstable_name_collisions)]
     fn get_draw_text(&self) -> Text {
         let style = self.theme.text(true, false);
 
