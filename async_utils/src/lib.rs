@@ -1,4 +1,25 @@
+// #![forbid(missing_docs)]
+#![deny(unsafe_code)]
+#![deny(unused_imports)]
+#![deny(unused_must_use)]
+#![deny(dead_code)]
+#![deny(unstable_name_collisions)]
+#![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::filetype_is_file)]
+#![deny(clippy::cargo)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::panic)]
+#![deny(clippy::match_like_matches_macro)]
+#![deny(clippy::needless_update)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::missing_errors_doc)]
+
+mod error;
+
 use crossbeam_channel::Sender;
+use error::Result;
 use std::sync::{Arc, Mutex};
 
 pub trait AsyncJob: Send + Sync + Clone {
@@ -45,10 +66,10 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
         false
     }
 
-    /// return clone of last result
-    pub fn get_last(&self) -> Option<J> {
-        if let Ok(last) = self.last.lock() {
-            last.clone()
+    ///
+    pub fn take_last(&self) -> Option<J> {
+        if let Ok(mut last) = self.last.lock() {
+            last.take()
         } else {
             None
         }
@@ -70,7 +91,9 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
             let self_arc = self.clone();
 
             rayon_core::spawn(move || {
-                self_arc.run_job(task);
+                if let Err(e) = self_arc.run_job(task) {
+                    log::error!("async job error: {}", e);
+                }
             });
 
             return true;
@@ -79,11 +102,10 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
         false
     }
 
-    //TODO: return Result
-    fn run_job(&self, mut task: J) {
+    fn run_job(&self, mut task: J) -> Result<()> {
         //limit the pending scope
         {
-            let _pending = self.pending.lock().expect("");
+            let _pending = self.pending.lock()?;
 
             task.run();
 
@@ -91,10 +113,12 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
                 *last = Some(task);
             }
 
-            self.sender.send(self.notification).expect("send failed");
+            self.sender.send(self.notification)?;
         }
 
         self.check_for_job();
+
+        Ok(())
     }
 
     ///

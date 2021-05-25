@@ -23,14 +23,16 @@
     focus_above: ( code: Char('k'), modifiers: ( bits: 0,),),
     focus_below: ( code: Char('j'), modifiers: ( bits: 0,),),
 
+    open_help: ( code: F(1), modifiers: ( bits: 0,),),
+
     exit: ( code: Char('Q'), modifiers: ( bits: 1,),),
     exit_popup: ( code: Esc, modifiers: ( bits: 0,),),
 
     open_commit: ( code: Char('c'), modifiers: ( bits: 0,),),
-
     // Note: the shift modifier does not work for open_commit_editor
+    // Also just plain text characters will not work because the commit 
+    // msg editor will interpret them as text input
     open_commit_editor: ( code: Char('e'), modifiers: ( bits: 2,),),
-    open_help: ( code: F(1), modifiers: ( bits: 0,),),
 
     move_left: ( code: Char('h'), modifiers: ( bits: 0,),),
     move_right: ( code: Char('l'), modifiers: ( bits: 0,),),

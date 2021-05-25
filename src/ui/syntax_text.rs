@@ -5,7 +5,7 @@ use std::{
     ffi::OsStr,
     ops::Range,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 use syntect::{
     highlighting::{
@@ -145,27 +145,50 @@ fn syntact_style_to_tui(style: &Style) -> tui::style::Style {
     res
 }
 
+enum JobState {
+    Request((String, String)),
+    Response(SyntaxText),
+}
+
 #[derive(Clone, Default)]
 pub struct AsyncSyntaxJob {
-    //TODO: can we merge input and text into a single enum to represent the state transition?
-    pub input: Option<(String, String)>,
-    pub text: Arc<Option<SyntaxText>>,
+    state: Arc<Mutex<Option<JobState>>>,
 }
 
 impl AsyncSyntaxJob {
     pub fn new(content: String, path: String) -> Self {
         Self {
-            input: Some((content, path)),
-            text: Arc::new(None),
+            state: Arc::new(Mutex::new(Some(JobState::Request((
+                content, path,
+            ))))),
         }
+    }
+
+    pub fn result(&self) -> Option<SyntaxText> {
+        if let Ok(mut state) = self.state.lock() {
+            if let Some(state) = state.take() {
+                return match state {
+                    JobState::Request(_) => None,
+                    JobState::Response(text) => Some(text),
+                };
+            }
+        }
+
+        None
     }
 }
 
 impl AsyncJob for AsyncSyntaxJob {
     fn run(&mut self) {
-        if let Some((text, path)) = self.input.take() {
-            let syntax = SyntaxText::new(text, Path::new(&path));
-            self.text = Arc::new(Some(syntax));
+        if let Ok(mut state) = self.state.lock() {
+            *state = state.take().map(|state| match state {
+                JobState::Request((content, path)) => {
+                    let syntax =
+                        SyntaxText::new(content, Path::new(&path));
+                    JobState::Response(syntax)
+                }
+                JobState::Response(res) => JobState::Response(res),
+            });
         }
     }
 }

@@ -4,7 +4,6 @@ use super::{
     EventState, ExternalEditorComponent,
 };
 use crate::{
-    args::get_app_config_path,
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
@@ -24,7 +23,6 @@ use easy_cast::Cast;
 use std::{
     fs::{read_to_string, File},
     io::{Read, Write},
-    path::PathBuf,
 };
 use tui::{
     backend::Backend,
@@ -252,13 +250,10 @@ impl CommitComponent {
     }
 
     pub fn show_editor(&mut self) -> Result<()> {
-        const COMMIT_MSG_FILE_NAME: &str = "COMMITMSG_EDITOR";
-        //TODO: use a tmpfile here
-        let mut config_path: PathBuf = get_app_config_path()?;
-        config_path.push(COMMIT_MSG_FILE_NAME);
+        let file_path = sync::repo_dir(CWD)?.join("COMMIT_EDITMSG");
 
         {
-            let mut file = File::create(&config_path)?;
+            let mut file = File::create(&file_path)?;
             file.write_fmt(format_args!(
                 "{}\n",
                 self.input.get_text()
@@ -269,14 +264,14 @@ impl CommitComponent {
             )?;
         }
 
-        ExternalEditorComponent::open_file_in_editor(&config_path)?;
+        ExternalEditorComponent::open_file_in_editor(&file_path)?;
 
         let mut message = String::new();
 
-        let mut file = File::open(&config_path)?;
+        let mut file = File::open(&file_path)?;
         file.read_to_string(&mut message)?;
         drop(file);
-        std::fs::remove_file(&config_path)?;
+        std::fs::remove_file(&file_path)?;
 
         let message: String = message
             .lines()

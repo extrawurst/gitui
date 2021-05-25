@@ -304,8 +304,12 @@ impl TextInputComponent {
                 Text::styled(text_before_cursor, style),
             );
             if ends_in_nl {
+<<<<<<< HEAD
                 //txt.lines.push(Spans::default());
                 txt = text_append(txt, Text::styled("\n\r", style));
+=======
+                txt.lines.push(Spans::default());
+>>>>>>> master
             }
         }
 
