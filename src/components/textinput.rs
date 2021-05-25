@@ -700,12 +700,22 @@ impl TextInputComponent {
     }
 
     fn backspace(&mut self) {
+        const BORDER_SIZE: usize = 1;
         if self.cursor_position > 0 {
             self.decr_cursor();
             if self.msg.chars().nth(self.cursor_position)
                 == Some('\n')
             {
                 self.scroll_max -= 1;
+
+                if !(self.scroll_max
+                    < (self.frame_height.get() as usize)
+                        .saturating_sub(BORDER_SIZE * 2)
+                    && self.scroll_max >= 3)
+                {
+                    self.scroll_top =
+                        self.scroll_top.saturating_sub(1);
+                }
             }
             self.msg.remove(self.cursor_position);
         }
