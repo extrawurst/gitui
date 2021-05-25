@@ -591,7 +591,7 @@ impl TextInputComponent {
     }
 
     /// See `decr_cursor`
-    fn decr_cursor_multiline(&mut self) {
+    fn decr_cursor_multiline(&mut self, index: usize) {
         if self.msg.chars().nth(index) == Some('\n') {
             self.cur_line -= 1;
             if self.cur_line < self.scroll_top {
@@ -608,7 +608,7 @@ impl TextInputComponent {
         }
         self.cursor_position = index;
         if self.input_type == InputType::Multiline {
-            self.decr_cursor_multiline();
+            self.decr_cursor_multiline(index);
         }
     }
 
@@ -716,6 +716,7 @@ impl TextInputComponent {
 
     /// Backspace for multiline textinputs
     fn multiline_backspace(&mut self) {
+        const BORDER_SIZE: usize = 1;
         if self.msg.chars().nth(self.cursor_position) == Some('\n') {
             self.scroll_max -= 1;
             if !(self.scroll_max
@@ -729,7 +730,6 @@ impl TextInputComponent {
     }
 
     fn backspace(&mut self) {
-        const BORDER_SIZE: usize = 1;
         if self.cursor_position > 0 {
             self.decr_cursor();
             if self.input_type == InputType::Multiline {
