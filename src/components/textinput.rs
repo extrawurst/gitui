@@ -176,7 +176,6 @@ impl TextInputComponent {
         //
         let mut nearest_newline: usize = 0;
         let mut prev_line_newline_loc = 0;
-        let mut c_p = 1;
 
         for (i, c) in self.msg.chars().enumerate() {
             //if !self.msg.is_char_boundary(i) {
@@ -267,7 +266,7 @@ impl TextInputComponent {
         if self.cursor_position > 0 {
             let text_before_cursor: String = self
                 .get_msg(0..self.cursor_position)
-                .split("\n")
+                .split('\n')
                 .skip(self.scroll_top)
                 .intersperse("\n")
                 .collect();
