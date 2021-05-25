@@ -118,9 +118,8 @@ impl Component for CommitComponent {
                         InternalEvent::OpenExternalEditor(None),
                     );
                     self.hide();
-                } else if self.input.event(ev)?.is_consumed() {
-                    return Ok(EventState::Consumed);
                 }
+
                 // stop key event propagation
                 return Ok(EventState::Consumed);
             }
