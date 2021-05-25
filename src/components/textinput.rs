@@ -128,6 +128,77 @@ impl TextInputComponent {
         }
     }
 
+    /// Move the cursor up a line
+    fn line_up_cursor(&mut self) {
+        let mut nearest_newline: usize = 0;
+        let mut prev_line_newline_loc = 0;
+        for (i, c) in self.msg.chars().enumerate() {
+            //if !self.msg.is_char_boundary(i) {
+            if c == '\n' {
+                prev_line_newline_loc = nearest_newline;
+                nearest_newline = i;
+                //  }
+            }
+
+            if i > self.cursor_position {
+                break;
+            }
+        }
+        self.cursor_position = (prev_line_newline_loc
+            + self.cursor_position)
+            .saturating_sub(nearest_newline);
+        //.saturating_sub(1);
+
+        while !self.msg.is_char_boundary(self.cursor_position) {
+            self.cursor_position += 1;
+        }
+        //if self.msg.chars().nth(self.cursor_position) == Some('\n') {
+        //    self.scroll_max -= 1;
+        //}
+        self.cur_line -= 1;
+        if self.cur_line < self.scroll {
+            self.scroll -= 1;
+        }
+    }
+
+    /// Move the cursor down a line
+    fn line_down_cursor(&mut self) {
+        //
+        let mut nearest_newline: usize = 0;
+        let mut prev_line_newline_loc = 0;
+        let mut c_p = 1;
+
+        for (i, c) in self.msg.chars().enumerate() {
+            //if !self.msg.is_char_boundary(i) {
+            if c == '\n' {
+                prev_line_newline_loc = nearest_newline;
+                nearest_newline = i;
+                //  }
+                if nearest_newline > self.cursor_position {
+                    break;
+                }
+            }
+        }
+        self.cursor_position = (self
+            .cursor_position
+            .saturating_sub(prev_line_newline_loc))
+        .saturating_add(nearest_newline);
+
+        if self.cursor_position < self.msg.len() {
+            while !self.msg.is_char_boundary(self.cursor_position) {
+                self.cursor_position += 1;
+            }
+        }
+
+        self.cur_line += 1;
+        if self.cur_line
+            > self.scroll + (self.current_area.get().height as usize)
+        //.saturating_sub(3_usize)
+        {
+            self.scroll += 1;
+        }
+    }
+
     /// Get the position of the next char, or, if the cursor points
     /// to the last char, the `msg.len()`.
     /// Returns None when the cursor is already at `msg.len()`.
@@ -418,6 +489,14 @@ impl Component for TextInputComponent {
                     }
                     KeyCode::Right => {
                         self.incr_cursor();
+                        return Ok(EventState::Consumed);
+                    }
+                    KeyCode::Up => {
+                        self.line_up_cursor();
+                        return Ok(EventState::Consumed);
+                    }
+                    KeyCode::Down => {
+                        self.line_down_cursor();
                         return Ok(EventState::Consumed);
                     }
                     KeyCode::Home => {
