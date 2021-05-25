@@ -146,7 +146,7 @@ impl TextInputComponent {
                 //  }
             }
 
-            if i > self.cursor_position {
+            if i >= self.cursor_position {
                 break;
             }
         }
@@ -154,6 +154,10 @@ impl TextInputComponent {
             + self.cursor_position)
             .saturating_sub(nearest_newline);
         //.saturating_sub(1);
+        if prev_line_newline_loc == 0 {
+            self.cursor_position =
+                self.cursor_position.saturating_sub(1);
+        }
 
         while !self.msg.is_char_boundary(self.cursor_position) {
             self.cursor_position += 1;
@@ -161,9 +165,9 @@ impl TextInputComponent {
         //if self.msg.chars().nth(self.cursor_position) == Some('\n') {
         //    self.scroll_max -= 1;
         //}
-        self.cur_line -= 1;
+        self.cur_line = self.cur_line.saturating_sub(1);
         if self.cur_line < self.scroll_top {
-            self.scroll_top -= 1;
+            self.scroll_top = self.scroll_top.saturating_sub(1);
         }
     }
 
@@ -190,19 +194,27 @@ impl TextInputComponent {
             .saturating_sub(prev_line_newline_loc))
         .saturating_add(nearest_newline);
 
+        if prev_line_newline_loc == 0 {
+            self.cursor_position += 1;
+        }
+
         if self.cursor_position < self.msg.len() {
             while !self.msg.is_char_boundary(self.cursor_position) {
                 self.cursor_position += 1;
             }
+        } else {
+            self.cursor_position = self.msg.len().saturating_sub(1);
         }
 
-        self.cur_line += 1;
-        if self.cur_line
-            > self.scroll_top
-                + (self.current_area.get().height as usize)
-        //.saturating_sub(3_usize)
-        {
-            self.scroll_top += 1;
+        if self.cur_line < self.scroll_max {
+            self.cur_line += 1;
+            if self.cur_line
+                > self.scroll_top
+                    + (self.current_area.get().height as usize)
+                        .saturating_sub(3_usize)
+            {
+                self.scroll_top += 1;
+            }
         }
     }
 
