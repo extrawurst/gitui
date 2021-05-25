@@ -462,13 +462,17 @@ impl DrawableComponent for TextInputComponent {
                 self.draw_char_count(f, area);
             }
 
-            ui::draw_scrollbar(
-                f,
-                area,
-                &self.theme,
-                self.scroll_max,
-                self.cur_line,
-            );
+            if self.input_type == InputType::Multiline
+                && self.scroll_max > self.frame_height.get()
+            {
+                ui::draw_scrollbar(
+                    f,
+                    area,
+                    &self.theme,
+                    self.scroll_max,
+                    self.cur_line,
+                );
+            }
 
             self.current_area.set(area);
             self.frame_height.set(f.size().height as usize);
