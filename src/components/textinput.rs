@@ -98,6 +98,7 @@ impl TextInputComponent {
         self.current_area.get()
     }
 
+    /// Only for multiline
     fn insert_new_line(&mut self) {
         self.msg.insert(self.cursor_position, '\n');
         self.incr_cursor();
@@ -117,21 +118,36 @@ impl TextInputComponent {
         }
     }
 
+    /// See `incr_cursor`
+    fn incr_cursor_multiline(&mut self) {
+        if self.msg.chars().nth(self.cursor_position) == Some('\n') {
+            self.cur_line += 1;
+            if self.cur_line
+                > (self.current_area.get().height as usize)
+                    .saturating_sub(3_usize)
+            {
+                self.scroll_top += 1;
+            }
+        }
+    }
+
     /// Move the cursor right one char.
     fn incr_cursor(&mut self) {
         if let Some(pos) = self.next_char_position() {
-            if self.msg.chars().nth(self.cursor_position)
-                == Some('\n')
-            {
-                self.cur_line += 1;
-                if self.cur_line
-                    > (self.current_area.get().height as usize)
-                        .saturating_sub(3_usize)
-                {
-                    self.scroll_top += 1;
-                }
+            if self.input_type == InputType::Multiline {
+                self.incr_cursor_multiline();
             }
             self.cursor_position = pos;
+        }
+    }
+
+    /// See `decr_cursor`
+    fn decr_cursor_multiline(&mut self) {
+        if self.msg.chars().nth(index) == Some('\n') {
+            self.cur_line -= 1;
+            if self.cur_line < self.scroll_top {
+                self.scroll_top -= 1;
+            }
         }
     }
 
@@ -142,15 +158,13 @@ impl TextInputComponent {
             index -= 1;
         }
         self.cursor_position = index;
-        if self.msg.chars().nth(index) == Some('\n') {
-            self.cur_line -= 1;
-            if self.cur_line < self.scroll_top {
-                self.scroll_top -= 1;
-            }
+        if self.input_type == InputType::Multiline {
+            self.decr_cursor_multiline();
         }
     }
 
-    /// Move the cursor up a line
+    /// Move the cursor up a line.
+    /// Only for multi-line textinputs
     fn line_up_cursor(&mut self) {
         let mut nearest_newline: usize = 0;
         let mut prev_line_newline_loc = 0;
@@ -181,7 +195,8 @@ impl TextInputComponent {
         }
     }
 
-    /// Move the cursor down a line
+    /// Move the cursor down a line.
+    /// Only for multi-line textinputs
     fn line_down_cursor(&mut self) {
         //
         let mut nearest_newline: usize = 0;
@@ -250,23 +265,26 @@ impl TextInputComponent {
         Some(index)
     }
 
+    /// Backspace for multiline textinputs
+    fn multiline_backspace(&mut self) {
+        if self.msg.chars().nth(self.cursor_position) == Some('\n') {
+            self.scroll_max -= 1;
+            if !(self.scroll_max
+                < (self.frame_height.get() as usize)
+                    .saturating_sub(BORDER_SIZE * 2)
+                && self.scroll_max >= 3)
+            {
+                self.scroll_top = self.scroll_top.saturating_sub(1);
+            }
+        }
+    }
+
     fn backspace(&mut self) {
         const BORDER_SIZE: usize = 1;
         if self.cursor_position > 0 {
             self.decr_cursor();
-            if self.msg.chars().nth(self.cursor_position)
-                == Some('\n')
-            {
-                self.scroll_max -= 1;
-
-                if !(self.scroll_max
-                    < (self.frame_height.get() as usize)
-                        .saturating_sub(BORDER_SIZE * 2)
-                    && self.scroll_max >= 3)
-                {
-                    self.scroll_top =
-                        self.scroll_top.saturating_sub(1);
-                }
+            if self.input_type == InputType::Multiline {
+                self.multiline_backspace();
             }
             self.msg.remove(self.cursor_position);
         }
@@ -558,11 +576,17 @@ impl Component for TextInputComponent {
                         self.incr_cursor();
                         return Ok(EventState::Consumed);
                     }
-                    KeyCode::Up => {
+                    KeyCode::Up
+                        if self.input_type
+                            == InputType::Multiline =>
+                    {
                         self.line_up_cursor();
                         return Ok(EventState::Consumed);
                     }
-                    KeyCode::Down => {
+                    KeyCode::Down
+                        if self.input_type
+                            == InputType::Multiline =>
+                    {
                         self.line_down_cursor();
                         return Ok(EventState::Consumed);
                     }
