@@ -549,11 +549,11 @@ impl TextInputComponent {
 
     /// Only for multiline
     fn insert_new_line(&mut self) {
+        const BORDER_SIZE: usize = 1;
+
         self.msg.insert(self.cursor_position, '\n');
         self.incr_cursor();
         self.scroll_max += 1;
-
-        const BORDER_SIZE: usize = 1;
 
         // if the text box height increased,
         // componsate by scrolling up one
