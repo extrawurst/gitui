@@ -16,7 +16,7 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
     style::Modifier,
-    text::{Spans, Text},
+    text::Text,
     widgets::{Clear, Paragraph},
     Frame,
 };
@@ -40,7 +40,7 @@ pub struct TextInputComponent {
     cursor_position: usize,
     input_type: InputType,
     current_area: Cell<Rect>,
-    scroll: usize,
+    scroll_top: usize,
     cur_line: usize,
     scroll_max: usize,
 }
@@ -65,7 +65,7 @@ impl TextInputComponent {
             cursor_position: 0,
             input_type: InputType::Multiline,
             current_area: Cell::new(Rect::default()),
-            scroll: 0,
+            scroll_top: 0,
             cur_line: 0,
             scroll_max: 0,
         }
@@ -95,6 +95,12 @@ impl TextInputComponent {
         self.current_area.get()
     }
 
+    fn insert_new_line(&mut self) {
+        self.msg.insert(self.cursor_position, '\n');
+        self.incr_cursor();
+        self.scroll_max += 1;
+    }
+
     /// Move the cursor right one char.
     fn incr_cursor(&mut self) {
         if let Some(pos) = self.next_char_position() {
@@ -106,7 +112,7 @@ impl TextInputComponent {
                     > (self.current_area.get().height as usize)
                         .saturating_sub(3_usize)
                 {
-                    self.scroll += 1;
+                    self.scroll_top += 1;
                 }
             }
             self.cursor_position = pos;
@@ -122,8 +128,8 @@ impl TextInputComponent {
         self.cursor_position = index;
         if self.msg.chars().nth(index) == Some('\n') {
             self.cur_line -= 1;
-            if self.cur_line < self.scroll {
-                self.scroll -= 1;
+            if self.cur_line < self.scroll_top {
+                self.scroll_top -= 1;
             }
         }
     }
@@ -156,8 +162,8 @@ impl TextInputComponent {
         //    self.scroll_max -= 1;
         //}
         self.cur_line -= 1;
-        if self.cur_line < self.scroll {
-            self.scroll -= 1;
+        if self.cur_line < self.scroll_top {
+            self.scroll_top -= 1;
         }
     }
 
@@ -192,10 +198,11 @@ impl TextInputComponent {
 
         self.cur_line += 1;
         if self.cur_line
-            > self.scroll + (self.current_area.get().height as usize)
+            > self.scroll_top
+                + (self.current_area.get().height as usize)
         //.saturating_sub(3_usize)
         {
-            self.scroll += 1;
+            self.scroll_top += 1;
         }
     }
 
@@ -248,8 +255,8 @@ impl TextInputComponent {
         if self.cursor_position > 0 {
             let text_before_cursor: String = self
                 .get_msg(0..self.cursor_position)
-                .lines()
-                .skip(self.scroll)
+                .split("\n")
+                .skip(self.scroll_top)
                 .intersperse("\n")
                 .collect();
             let ends_in_nl = text_before_cursor.ends_with('\n');
@@ -258,8 +265,8 @@ impl TextInputComponent {
                 Text::styled(text_before_cursor, style),
             );
             if ends_in_nl {
-                txt.lines.push(Spans::default());
-                // txt = text_append(txt, Text::styled("\n\r", style));
+                //txt.lines.push(Spans::default());
+                txt = text_append(txt, Text::styled("\n\r", style));
             }
         }
 
@@ -415,7 +422,7 @@ impl DrawableComponent for TextInputComponent {
                 area,
                 &self.theme,
                 self.scroll_max,
-                self.scroll,
+                self.scroll_top,
             );
 
             self.current_area.set(area);
@@ -458,9 +465,7 @@ impl Component for TextInputComponent {
                 } else if e == self.key_config.enter
                     && self.input_type == InputType::Multiline
                 {
-                    self.msg.insert(self.cursor_position, '\n');
-                    self.incr_cursor();
-                    self.scroll_max += 1;
+                    self.insert_new_line();
                     return Ok(EventState::Consumed);
                 }
 
