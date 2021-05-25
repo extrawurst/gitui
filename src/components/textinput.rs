@@ -15,6 +15,7 @@ use core::cmp::{max, min};
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
 use std::{cell::Cell, collections::HashMap, ops::Range};
+use tui::text::Spans;
 use tui::{
 <<<<<<< HEAD
 	backend::Backend,
@@ -771,8 +772,7 @@ impl TextInputComponent {
                 Text::styled(text_before_cursor, style),
             );
             if ends_in_nl {
-                //txt.lines.push(Spans::default());
-                txt = text_append(txt, Text::styled("\n\r", style));
+                txt.lines.push(Spans::default());
             }
         }
 
