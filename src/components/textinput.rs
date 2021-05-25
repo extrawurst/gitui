@@ -304,12 +304,8 @@ impl TextInputComponent {
                 Text::styled(text_before_cursor, style),
             );
             if ends_in_nl {
-<<<<<<< HEAD
                 //txt.lines.push(Spans::default());
                 txt = text_append(txt, Text::styled("\n\r", style));
-=======
-                txt.lines.push(Spans::default());
->>>>>>> master
             }
         }
 
@@ -511,11 +507,13 @@ impl Component for TextInputComponent {
             .order(1),
         );
 
-        out.push(CommandInfo::new(
-            strings::commands::commit_new_line(&self.key_config),
-            true,
-            self.visible,
-        ));
+        if self.input_type == InputType::Multiline {
+            out.push(CommandInfo::new(
+                strings::commands::commit_new_line(&self.key_config),
+                true,
+                self.visible,
+            ));
+        }
 
         visibility_blocking(self)
     }
