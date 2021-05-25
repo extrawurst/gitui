@@ -9,6 +9,7 @@ use crate::{
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
+use core::cmp::{max, min};
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
 use std::{cell::Cell, collections::HashMap, ops::Range};
@@ -40,9 +41,10 @@ pub struct TextInputComponent {
     cursor_position: usize,
     input_type: InputType,
     current_area: Cell<Rect>,
-    scroll_top: usize,
-    cur_line: usize,
-    scroll_max: usize,
+    scroll_top: usize, // The current scroll from the top
+    cur_line: usize,   // The current line
+    scroll_max: usize, // The number of lines
+    frame_height: Cell<usize>,
 }
 
 impl TextInputComponent {
@@ -68,6 +70,7 @@ impl TextInputComponent {
             scroll_top: 0,
             cur_line: 0,
             scroll_max: 0,
+            frame_height: Cell::new(0),
         }
     }
 
@@ -99,6 +102,19 @@ impl TextInputComponent {
         self.msg.insert(self.cursor_position, '\n');
         self.incr_cursor();
         self.scroll_max += 1;
+
+        const BORDER_SIZE: usize = 1;
+
+        // if the text box height increased,
+        // componsate by scrolling up one
+        if self.scroll_max
+            < (self.frame_height.get() as usize)
+                .saturating_sub(BORDER_SIZE * 2)
+            && self.scroll_max >= 3
+        {
+            self.scroll_top = self.scroll_top.saturating_sub(1);
+            //self.cur_line = self.cur_line.saturating_sub(1);
+        }
     }
 
     /// Move the cursor right one char.
@@ -171,19 +187,28 @@ impl TextInputComponent {
         let mut nearest_newline: usize = 0;
         let mut prev_line_newline_loc = 0;
 
+        let mut chars_not_printed = 0;
+
         for (i, c) in self.msg.chars().enumerate() {
             if c == '\n' {
+                chars_not_printed = 0;
                 prev_line_newline_loc = nearest_newline;
                 nearest_newline = i;
                 if nearest_newline > self.cursor_position {
                     break;
                 }
             }
+            // if !self.msg.is_char_boundary(i) {
+            // self.msg.is_char_boundary(i) c.is_alphanumeric() {
+            // unprintable
+            //    chars_not_printed += 1;
+            // }
         }
-        self.cursor_position = (self
+        self.cursor_position = self
             .cursor_position
-            .saturating_sub(prev_line_newline_loc))
-        .saturating_add(nearest_newline);
+            .saturating_sub(prev_line_newline_loc)
+            .saturating_add(nearest_newline);
+        // .saturating_add(chars_not_printed);
 
         if prev_line_newline_loc == 0 {
             self.cursor_position += 1;
@@ -384,6 +409,7 @@ impl DrawableComponent for TextInputComponent {
         f: &mut Frame<B>,
         _rect: Rect,
     ) -> Result<()> {
+        use std::convert::TryInto;
         if self.visible {
             let txt = if self.msg.is_empty() {
                 Text::styled(
@@ -398,7 +424,22 @@ impl DrawableComponent for TextInputComponent {
                 InputType::Multiline => {
                     let area = ui::centered_rect(60, 20, f.size());
                     ui::rect_inside(
-                        Size::new(10, 3),
+                        Size::new(
+                            10,
+                            min(
+                                max(
+                                    3,
+                                    self.msg
+                                        .chars()
+                                        .filter(|x| *x == '\n')
+                                        .count()
+                                        .saturating_add(3)
+                                        .try_into()
+                                        .expect("Cannot fail"),
+                                ),
+                                f.size().height,
+                            ),
+                        ),
                         f.size().into(),
                         area,
                     )
@@ -430,6 +471,7 @@ impl DrawableComponent for TextInputComponent {
             );
 
             self.current_area.set(area);
+            self.frame_height.set(f.size().height as usize);
         }
 
         Ok(())
