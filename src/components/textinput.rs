@@ -155,7 +155,6 @@ impl TextInputComponent {
             );
             if ends_in_nl {
                 txt.lines.push(Spans::default());
-                // txt = text_append(txt, Text::styled("\n\r", style));
             }
         }
 
