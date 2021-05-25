@@ -589,11 +589,9 @@ impl TextInputComponent {
         let mut nearest_newline: usize = 0;
         let mut prev_line_newline_loc = 0;
         for (i, c) in self.msg.chars().enumerate() {
-            //if !self.msg.is_char_boundary(i) {
             if c == '\n' {
                 prev_line_newline_loc = nearest_newline;
                 nearest_newline = i;
-                //  }
             }
 
             if i >= self.cursor_position {
@@ -603,7 +601,6 @@ impl TextInputComponent {
         self.cursor_position = (prev_line_newline_loc
             + self.cursor_position)
             .saturating_sub(nearest_newline);
-        //.saturating_sub(1);
         if prev_line_newline_loc == 0 {
             self.cursor_position =
                 self.cursor_position.saturating_sub(1);
@@ -612,9 +609,6 @@ impl TextInputComponent {
         while !self.msg.is_char_boundary(self.cursor_position) {
             self.cursor_position += 1;
         }
-        //if self.msg.chars().nth(self.cursor_position) == Some('\n') {
-        //    self.scroll_max -= 1;
-        //}
         self.cur_line = self.cur_line.saturating_sub(1);
         if self.cur_line < self.scroll_top {
             self.scroll_top = self.scroll_top.saturating_sub(1);
@@ -628,11 +622,9 @@ impl TextInputComponent {
         let mut prev_line_newline_loc = 0;
 
         for (i, c) in self.msg.chars().enumerate() {
-            //if !self.msg.is_char_boundary(i) {
             if c == '\n' {
                 prev_line_newline_loc = nearest_newline;
                 nearest_newline = i;
-                //  }
                 if nearest_newline > self.cursor_position {
                     break;
                 }
