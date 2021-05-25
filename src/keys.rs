@@ -229,21 +229,27 @@ impl KeyConfig {
             | KeyCode::BackTab
             | KeyCode::Delete
             | KeyCode::Insert
-            | KeyCode::Esc => format!(
-                "{}{}",
-                Self::get_modifier_hint(ev.modifiers),
-                self.get_key_symbol(ev.code)
-            ),
-            KeyCode::Char(c) => format!(
-                "{}{}",
-                Self::get_modifier_hint(ev.modifiers),
-                c
-            ),
-            KeyCode::F(u) => format!(
-                "{}F{}",
-                Self::get_modifier_hint(ev.modifiers),
-                u
-            ),
+            | KeyCode::Esc => {
+                format!(
+                    "{}{}",
+                    Self::get_modifier_hint(ev.modifiers),
+                    self.get_key_symbol(ev.code)
+                )
+            }
+            KeyCode::Char(c) => {
+                format!(
+                    "{}{}",
+                    Self::get_modifier_hint(ev.modifiers),
+                    c
+                )
+            }
+            KeyCode::F(u) => {
+                format!(
+                    "{}F{}",
+                    Self::get_modifier_hint(ev.modifiers),
+                    u
+                )
+            }
             KeyCode::Null => Self::get_modifier_hint(ev.modifiers),
         }
     }
