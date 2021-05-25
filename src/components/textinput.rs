@@ -238,7 +238,7 @@ impl TextInputComponent {
             self.cursor_position = self.msg.len().saturating_sub(1);
         }
 
-        if self.cur_line < self.scroll_max {
+        if self.cur_line < self.scroll_max.saturating_sub(2) {
             self.cur_line += 1;
             if self.cur_line
                 > self.scroll_top
