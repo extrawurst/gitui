@@ -2,6 +2,7 @@
 #![deny(unused_imports)]
 #![deny(unused_must_use)]
 #![deny(dead_code)]
+#![deny(unstable_name_collisions)]
 #![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
 #![deny(clippy::filetype_is_file)]
 #![deny(clippy::cargo)]

@@ -13,6 +13,8 @@ pub enum MoveSelection {
     Right,
     Top,
     End,
+    PageDown,
+    PageUp,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -121,6 +123,9 @@ impl FileTree {
                     Self::selection_start(selection)
                 }
                 MoveSelection::End => self.selection_end(selection),
+                MoveSelection::PageDown | MoveSelection::PageUp => {
+                    None
+                }
             };
 
             let changed_index =

@@ -1,31 +1,29 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, EventState,
+    DrawableComponent, EventState, SyntaxTextComponent,
 };
 use crate::{
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
     strings::{self, order},
-    ui::{self, style::SharedTheme, AsyncSyntaxJob},
+    ui::{self, common_nav, style::SharedTheme},
 };
 use anyhow::Result;
-use async_utils::AsyncSingleJob;
 use asyncgit::{
     sync::{self, CommitId, TreeFile},
     AsyncNotification, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use filetree::{FileTree, MoveSelection};
-use itertools::Either;
+use filetree::FileTree;
 use std::{
     cell::Cell, collections::BTreeSet, convert::From, path::Path,
 };
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
-    text::{Span, Text},
-    widgets::{Block, Borders, Clear, Paragraph, Wrap},
+    text::Span,
+    widgets::{Block, Borders, Clear},
     Frame,
 };
 
@@ -33,19 +31,23 @@ const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
 const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 const EMPTY_STR: &str = "";
 
+enum Focus {
+    Tree,
+    File,
+}
+
 pub struct RevisionFilesComponent {
     queue: Queue,
     title: String,
     theme: SharedTheme,
     //TODO: store TreeFiles in `tree`
     files: Vec<TreeFile>,
-    current_file: Option<(String, Either<ui::SyntaxText, String>)>,
-    async_highlighting:
-        AsyncSingleJob<AsyncSyntaxJob, AsyncNotification>,
+    current_file: SyntaxTextComponent,
     tree: FileTree,
     scroll_top: Cell<usize>,
     revision: Option<CommitId>,
     visible: bool,
+    focus: Focus,
     key_config: SharedKeyConfig,
 }
 
@@ -61,16 +63,17 @@ impl RevisionFilesComponent {
             queue: queue.clone(),
             title: String::new(),
             tree: FileTree::default(),
-            async_highlighting: AsyncSingleJob::new(
-                sender.clone(),
-                AsyncNotification::SyntaxHighlighting,
+            scroll_top: Cell::new(0),
+            current_file: SyntaxTextComponent::new(
+                sender,
+                key_config.clone(),
+                theme.clone(),
             ),
             theme,
-            scroll_top: Cell::new(0),
-            current_file: None,
             files: Vec::new(),
             revision: None,
             visible: false,
+            focus: Focus::Tree,
             key_config,
         }
     }
@@ -87,7 +90,7 @@ impl RevisionFilesComponent {
         self.tree.collapse_but_root();
         self.revision = Some(commit);
         self.title = format!(
-            "File Tree at [{}]",
+            "Files at [{}]",
             self.revision
                 .map(|c| c.get_short_string())
                 .unwrap_or_default()
@@ -99,24 +102,12 @@ impl RevisionFilesComponent {
 
     ///
     pub fn update(&mut self, ev: AsyncNotification) {
-        if ev == AsyncNotification::SyntaxHighlighting {
-            if let Some(job) = self.async_highlighting.get_last() {
-                if let Some((path, content)) =
-                    self.current_file.as_mut()
-                {
-                    if let Some(syntax) = (*job.text).clone() {
-                        if syntax.path() == Path::new(path) {
-                            *content = Either::Left(syntax);
-                        }
-                    }
-                }
-            }
-        }
+        self.current_file.update(ev);
     }
 
     ///
     pub fn any_work_pending(&self) -> bool {
-        self.async_highlighting.is_pending()
+        self.current_file.any_work_pending()
     }
 
     fn tree_item_to_span<'a>(
@@ -170,48 +161,63 @@ impl RevisionFilesComponent {
                 .unwrap_or_default()
                 .to_string()
         }) {
-            let already_loaded = self
-                .current_file
-                .as_ref()
-                .map(|(current_file, _)| current_file == &file)
-                .unwrap_or_default();
-
-            if !already_loaded {
-                self.load_file(file);
+            if let Some(item) = self
+                .files
+                .iter()
+                .find(|f| f.path.ends_with(Path::new(&file)))
+            {
+                self.current_file.load_file(file, item);
             }
         } else {
-            self.current_file = None;
+            self.current_file.clear();
         }
     }
 
-    fn load_file(&mut self, path: String) {
-        let path_path = Path::new(&path);
-        if let Some(item) =
-            self.files.iter().find(|f| f.path.ends_with(path_path))
-        {
-            //TODO: fetch file content async aswell
-            match sync::tree_file_content(CWD, item) {
-                Ok(content) => {
-                    self.async_highlighting.spawn(
-                        AsyncSyntaxJob::new(
-                            content.clone(),
-                            path.clone(),
-                        ),
-                    );
+    fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
+        let tree_height = usize::from(area.height.saturating_sub(2));
 
-                    self.current_file =
-                        Some((path, Either::Right(content)))
-                }
-                Err(e) => {
-                    self.current_file = Some((
-                        path,
-                        Either::Right(format!(
-                            "error loading file: {}",
-                            e
-                        )),
-                    ))
-                }
-            }
+        let selection = self.tree.visual_selection();
+        let visual_count = selection.map_or_else(
+            || {
+                self.scroll_top.set(0);
+                0
+            },
+            |selection| {
+                self.scroll_top.set(ui::calc_scroll_top(
+                    self.scroll_top.get(),
+                    tree_height,
+                    selection.index,
+                ));
+                selection.count
+            },
+        );
+
+        let items = self
+            .tree
+            .iterate(self.scroll_top.get(), tree_height)
+            .map(|(item, selected)| {
+                Self::tree_item_to_span(item, &self.theme, selected)
+            });
+
+        let is_tree_focused = matches!(self.focus, Focus::Tree);
+
+        ui::draw_list_block(
+            f,
+            area,
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(self.theme.block(is_tree_focused)),
+            items,
+        );
+
+        if is_tree_focused {
+            ui::draw_scrollbar(
+                f,
+                area,
+                &self.theme,
+                visual_count.saturating_sub(tree_height),
+                self.scroll_top.get(),
+            );
         }
     }
 }
@@ -235,63 +241,21 @@ impl DrawableComponent for RevisionFilesComponent {
                 )
                 .split(area);
 
-            let tree_height = usize::from(chunks[0].height);
-
-            let selection = self.tree.visual_selection();
-            selection.map_or_else(
-                || self.scroll_top.set(0),
-                |selection| {
-                    self.scroll_top.set(ui::calc_scroll_top(
-                        self.scroll_top.get(),
-                        tree_height,
-                        selection.index,
-                    ))
-                },
-            );
-
-            let items = self
-                .tree
-                .iterate(self.scroll_top.get(), tree_height)
-                .map(|(item, selected)| {
-                    Self::tree_item_to_span(
-                        item,
-                        &self.theme,
-                        selected,
-                    )
-                });
-
             f.render_widget(Clear, area);
             f.render_widget(
                 Block::default()
-                    .borders(Borders::ALL)
+                    .borders(Borders::TOP)
                     .title(Span::styled(
-                        &self.title,
+                        format!(" {}", self.title),
                         self.theme.title(true),
                     ))
                     .border_style(self.theme.block(true)),
                 area,
             );
 
-            ui::draw_list_block(
-                f,
-                chunks[0],
-                Block::default()
-                    .borders(Borders::RIGHT)
-                    .border_style(self.theme.block(true)),
-                items,
-            );
+            self.draw_tree(f, chunks[0]);
 
-            let content = Paragraph::new(
-                self.current_file.as_ref().map_or_else(
-                    || Text::from(""),
-                    |(_, content)| match content {
-                        Either::Left(syn) => syn.into(),
-                        Either::Right(s) => Text::from(s.as_str()),
-                    },
-                ),
-            )
-            .wrap(Wrap { trim: false });
-            f.render_widget(content, chunks[1]);
+            self.current_file.draw(f, chunks[1])?;
         }
 
         Ok(())
@@ -314,16 +278,21 @@ impl Component for RevisionFilesComponent {
                 .order(1),
             );
 
-            out.push(
-                CommandInfo::new(
-                    strings::commands::blame_file(&self.key_config),
-                    self.tree.selected_file().is_some(),
-                    true,
-                )
-                .order(order::NAV),
-            );
-
-            tree_nav_cmds(&self.tree, &self.key_config, out);
+            if matches!(self.focus, Focus::Tree) || force_all {
+                out.push(
+                    CommandInfo::new(
+                        strings::commands::blame_file(
+                            &self.key_config,
+                        ),
+                        self.tree.selected_file().is_some(),
+                        true,
+                    )
+                    .order(order::NAV),
+                );
+                tree_nav_cmds(&self.tree, &self.key_config, out);
+            } else {
+                self.current_file.commands(out, force_all);
+            }
         }
 
         visibility_blocking(self)
@@ -335,18 +304,32 @@ impl Component for RevisionFilesComponent {
     ) -> Result<EventState> {
         if self.is_visible() {
             if let Event::Key(key) = event {
+                let is_tree_focused =
+                    matches!(self.focus, Focus::Tree);
                 if key == self.key_config.exit_popup {
                     self.hide();
+                } else if is_tree_focused
+                    && tree_nav(&mut self.tree, &self.key_config, key)
+                {
+                    self.selection_changed();
                 } else if key == self.key_config.blame {
                     if self.blame() {
                         self.hide();
                     }
-                } else if tree_nav(
-                    &mut self.tree,
-                    &self.key_config,
-                    key,
-                ) {
-                    self.selection_changed();
+                } else if key == self.key_config.move_right {
+                    if is_tree_focused {
+                        self.focus = Focus::File;
+                        self.current_file.focus(true);
+                        self.focus(true);
+                    }
+                } else if key == self.key_config.move_left {
+                    if !is_tree_focused {
+                        self.focus = Focus::Tree;
+                        self.current_file.focus(false);
+                        self.focus(false);
+                    }
+                } else if !is_tree_focused {
+                    self.current_file.event(event)?;
                 }
             }
 
@@ -393,18 +376,8 @@ fn tree_nav(
     key_config: &SharedKeyConfig,
     key: crossterm::event::KeyEvent,
 ) -> bool {
-    if key == key_config.move_down {
-        tree.move_selection(MoveSelection::Down)
-    } else if key == key_config.move_up {
-        tree.move_selection(MoveSelection::Up)
-    } else if key == key_config.move_right {
-        tree.move_selection(MoveSelection::Right)
-    } else if key == key_config.move_left {
-        tree.move_selection(MoveSelection::Left)
-    } else if key == key_config.home || key == key_config.shift_up {
-        tree.move_selection(MoveSelection::Top)
-    } else if key == key_config.end || key == key_config.shift_down {
-        tree.move_selection(MoveSelection::End)
+    if let Some(common_nav) = common_nav(key, key_config) {
+        tree.move_selection(common_nav)
     } else if key == key_config.tree_collapse_recursive {
         tree.collapse_recursive();
         true
