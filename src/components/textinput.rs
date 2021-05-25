@@ -951,7 +951,7 @@ impl DrawableComponent for TextInputComponent {
                 area,
                 &self.theme,
                 self.scroll_max,
-                self.scroll_top,
+                self.cur_line,
             );
 
             self.current_area.set(area);
