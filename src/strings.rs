@@ -68,7 +68,7 @@ pub fn commit_title() -> String {
 pub fn commit_title_merge() -> String {
     "Commit (Merge)".to_string()
 }
-pub fn commit_title_amend(_key_config: &SharedKeyConfig) -> String {
+pub fn commit_title_amend() -> String {
     "Commit (Amend)".to_string()
 }
 pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {

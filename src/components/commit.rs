@@ -385,9 +385,7 @@ impl CommitComponent {
 
             let details = sync::get_commit_details(CWD, id)?;
 
-            self.input.set_title(strings::commit_title_amend(
-                &self.key_config,
-            ));
+            self.input.set_title(strings::commit_title_amend());
 
             if let Some(msg) = details.message {
                 self.input.set_text(msg.combine());
