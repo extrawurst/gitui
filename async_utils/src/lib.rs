@@ -1,8 +1,12 @@
 // #![forbid(missing_docs)]
 #![deny(unsafe_code)]
-#![deny(unused_imports)]
-#![deny(unused_must_use)]
-#![deny(dead_code)]
+#![deny(
+    unused_imports,
+    unused_must_use,
+    dead_code,
+    unstable_name_collisions,
+    unused_assignments
+)]
 #![deny(unstable_name_collisions)]
 #![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
 #![deny(clippy::expect_used)]
