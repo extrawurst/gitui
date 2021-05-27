@@ -6,7 +6,7 @@ use super::{
 use crate::{
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings,
+    strings, try_or_popup,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -106,7 +106,11 @@ impl Component for CommitComponent {
 
             if let Event::Key(e) = ev {
                 if e == self.key_config.enter && self.can_commit() {
-                    self.commit()?;
+                    try_or_popup!(
+                        self,
+                        "commit error:",
+                        self.commit()
+                    );
                 } else if e == self.key_config.commit_amend
                     && self.can_amend()
                 {
@@ -293,6 +297,16 @@ impl CommitComponent {
     }
 
     fn commit(&mut self) -> Result<()> {
+        let gpgsign = get_config_string(CWD, "commit.gpgsign")
+            .ok()
+            .flatten()
+            .and_then(|path| path.parse::<bool>().ok())
+            .unwrap_or_default();
+
+        if gpgsign {
+            anyhow::bail!("gpgsign currently not supported");
+        }
+
         let msg = self.input.get_text().clone();
         self.input.clear();
         self.commit_with_msg(msg)
