@@ -101,6 +101,7 @@ macro_rules! any_popup_visible {
 macro_rules! draw_popups {
     ($self:ident, [$($element:ident),+]) => {
         fn draw_popups<B: Backend>(& $self, mut f: &mut Frame<B>) -> Result<()>{
+            //TODO: move the layout part out and feed it into `draw_popups`
             let size = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
