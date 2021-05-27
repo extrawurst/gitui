@@ -17,6 +17,7 @@ mod ignore;
 mod logwalker;
 mod merge;
 mod patches;
+mod rebase;
 pub mod remotes;
 mod reset;
 mod staging;
@@ -54,6 +55,7 @@ pub use logwalker::LogWalker;
 pub use merge::{
     abort_merge, merge_branch, merge_commit, merge_msg, mergehead_ids,
 };
+pub use rebase::reword;
 pub use remotes::{
     get_default_remote, get_remotes, push::AsyncProgress,
     tags::PushTagsProgress,

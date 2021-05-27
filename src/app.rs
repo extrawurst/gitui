@@ -8,8 +8,8 @@ use crate::{
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PullComponent,
         PushComponent, PushTagsComponent, RenameBranchComponent,
-        ResetComponent, RevisionFilesComponent, StashMsgComponent,
-        TagCommitComponent,
+        ResetComponent, RevisionFilesComponent, RewordComponent,
+        StashMsgComponent, TagCommitComponent,
     },
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
@@ -18,7 +18,7 @@ use crate::{
     tabs::{Revlog, StashList, Stashing, Status},
     ui::style::{SharedTheme, Theme},
 };
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
@@ -35,7 +35,14 @@ use tui::{
     Frame,
 };
 
-/// the main app type
+/// Used to determine where the user should
+/// be put when the external editor is closed
+pub enum EditorSource {
+    Commit,
+    Reword,
+}
+
+///
 pub struct App {
     do_quit: bool,
     help: HelpComponent,
@@ -51,6 +58,7 @@ pub struct App {
     push_tags_popup: PushTagsComponent,
     pull_popup: PullComponent,
     tag_commit_popup: TagCommitComponent,
+    reword_popup: RewordComponent,
     create_branch_popup: CreateBranchComponent,
     rename_branch_popup: RenameBranchComponent,
     select_branch_popup: BranchListComponent,
@@ -64,10 +72,10 @@ pub struct App {
     theme: SharedTheme,
     key_config: SharedKeyConfig,
     input: Input,
+    external_editor: Option<(Option<String>, EditorSource)>,
 
     // "Flags"
     requires_redraw: Cell<bool>,
-    file_to_open: Option<String>,
 }
 
 // public interface
@@ -147,6 +155,11 @@ impl App {
                 theme.clone(),
                 key_config.clone(),
             ),
+            reword_popup: RewordComponent::new(
+                queue.clone(),
+                theme.clone(),
+                key_config.clone(),
+            ),
             create_branch_popup: CreateBranchComponent::new(
                 queue.clone(),
                 theme.clone(),
@@ -200,7 +213,7 @@ impl App {
             theme,
             key_config,
             requires_redraw: Cell::new(false),
-            file_to_open: None,
+            external_editor: None,
         }
     }
 
@@ -283,13 +296,24 @@ impl App {
         } else if let InputEvent::State(polling_state) = ev {
             self.external_editor_popup.hide();
             if let InputState::Paused = polling_state {
-                let result = match self.file_to_open.take() {
-                    Some(path) => {
-                        ExternalEditorComponent::open_file_in_editor(
-                            Path::new(&path),
-                        )
+                let result = if let Some(ee) = &self.external_editor {
+                    match &ee.0 {
+                        Some(path) => {
+                            ExternalEditorComponent::open_file_in_editor(
+                                Path::new(&path)
+                            )
+                        },
+                        None => match ee.1 {
+                            EditorSource::Commit => {
+                                self.commit.show_editor()
+                            }
+                            EditorSource::Reword => {
+                                self.reword_popup.show_editor()
+                            }
+                        },
                     }
-                    None => self.commit.show_editor(),
+                } else {
+                    Err(anyhow!("There was no editor path or return path selected, the app external editor was set to null, put in a bug report at https://github.com/extrawurst/gitui and detail what you tried to do, this is most likely an error"))
                 };
 
                 if let Err(e) = result {
@@ -393,6 +417,7 @@ impl App {
             push_tags_popup,
             pull_popup,
             tag_commit_popup,
+            reword_popup,
             create_branch_popup,
             rename_branch_popup,
             select_branch_popup,
@@ -528,13 +553,22 @@ impl App {
                     .insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
             }
             InternalEvent::Update(u) => flags.insert(u),
-            InternalEvent::OpenCommit => self.commit.show()?,
+            InternalEvent::OpenCommit => {
+                self.external_editor =
+                    Some((None, EditorSource::Commit));
+                self.commit.show()?;
+            }
             InternalEvent::PopupStashing(opts) => {
                 self.stashmsg_popup.options(opts);
                 self.stashmsg_popup.show()?
             }
             InternalEvent::TagCommit(id) => {
                 self.tag_commit_popup.open(id)?;
+            }
+            InternalEvent::RewordCommit(id) => {
+                self.external_editor =
+                    Some((None, EditorSource::Reword));
+                self.reword_popup.open(id)?;
             }
             InternalEvent::BlameFile(path) => {
                 self.blame_file_popup.open(&path)?;
@@ -555,10 +589,12 @@ impl App {
                 self.inspect_commit_popup.open(id, tags)?;
                 flags.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS)
             }
-            InternalEvent::OpenExternalEditor(path) => {
+            InternalEvent::OpenExternalEditor(
+                _path,
+                _editor_source,
+            ) => {
                 self.input.set_polling(false);
                 self.external_editor_popup.show()?;
-                self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS)
             }
             InternalEvent::Push(branch, force) => {
@@ -697,6 +733,7 @@ impl App {
             || self.pull_popup.is_visible()
             || self.select_branch_popup.is_visible()
             || self.rename_branch_popup.is_visible()
+            || self.reword_popup.is_visible()
             || self.revision_files_popup.is_visible()
     }
 
@@ -723,6 +760,7 @@ impl App {
         self.external_editor_popup.draw(f, size)?;
         self.tag_commit_popup.draw(f, size)?;
         self.select_branch_popup.draw(f, size)?;
+        self.reword_popup.draw(f, size)?;
         self.create_branch_popup.draw(f, size)?;
         self.rename_branch_popup.draw(f, size)?;
         self.revision_files_popup.draw(f, size)?;

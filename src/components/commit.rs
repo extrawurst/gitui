@@ -1,9 +1,10 @@
 use super::{
-    textinput::TextInputComponent, visibility_blocking,
-    CommandBlocking, CommandInfo, Component, DrawableComponent,
-    EventState, ExternalEditorComponent,
+    externaleditor::show_editor, textinput::TextInputComponent,
+    visibility_blocking, CommandBlocking, CommandInfo, Component,
+    DrawableComponent, EventState,
 };
 use crate::{
+    app::EditorSource,
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
     strings,
@@ -20,10 +21,7 @@ use asyncgit::{
 };
 use crossterm::event::Event;
 use easy_cast::Cast;
-use std::{
-    fs::{read_to_string, File},
-    io::{Read, Write},
-};
+use std::fs::read_to_string;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
@@ -113,7 +111,10 @@ impl Component for CommitComponent {
                     self.amend()?;
                 } else if e == self.key_config.open_commit_editor {
                     self.queue.borrow_mut().push_back(
-                        InternalEvent::OpenExternalEditor(None),
+                        InternalEvent::OpenExternalEditor(
+                            None,
+                            EditorSource::Commit,
+                        ),
                     );
                     self.hide();
                 } else {
@@ -249,42 +250,11 @@ impl CommitComponent {
         }
     }
 
+    /// Open external editor
     pub fn show_editor(&mut self) -> Result<()> {
-        let file_path = sync::repo_dir(CWD)?.join("COMMIT_EDITMSG");
-
-        {
-            let mut file = File::create(&file_path)?;
-            file.write_fmt(format_args!(
-                "{}\n",
-                self.input.get_text()
-            ))?;
-            file.write_all(
-                strings::commit_editor_msg(&self.key_config)
-                    .as_bytes(),
-            )?;
-        }
-
-        ExternalEditorComponent::open_file_in_editor(&file_path)?;
-
-        let mut message = String::new();
-
-        let mut file = File::open(&file_path)?;
-        file.read_to_string(&mut message)?;
-        drop(file);
-        std::fs::remove_file(&file_path)?;
-
-        let message: String = message
-            .lines()
-            .flat_map(|l| {
-                if l.starts_with('#') {
-                    vec![]
-                } else {
-                    vec![l, "\n"]
-                }
-            })
-            .collect();
-
-        let message = message.trim().to_string();
+        let message = show_editor(Some(self.input.get_text()))?
+            .trim()
+            .to_string();
 
         self.input.set_text(message);
         self.input.show()?;

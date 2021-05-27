@@ -502,6 +502,7 @@ dependencies = [
  "serde",
  "simplelog",
  "syntect",
+ "tempfile",
  "textwrap 0.13.4",
  "tui",
  "unicode-segmentation",

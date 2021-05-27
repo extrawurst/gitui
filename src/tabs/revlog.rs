@@ -227,6 +227,16 @@ impl Component for Revlog {
                             Ok(EventState::Consumed)
                         },
                     );
+                } else if k == self.key_config.reword {
+                    return self.selected_commit().map_or(
+                        Ok(EventState::NotConsumed),
+                        |id| {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::RewordCommit(id),
+                            );
+                            Ok(EventState::Consumed)
+                        },
+                    );
                 } else if k == self.key_config.focus_right
                     && self.commit_details.is_visible()
                 {
@@ -295,7 +305,13 @@ impl Component for Revlog {
         ));
 
         out.push(CommandInfo::new(
-            strings::commands::open_branch_select_popup(
+            strings::commands::reword_commit(&self.key_config),
+            true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::open_branch_create_popup(
                 &self.key_config,
             ),
             true,

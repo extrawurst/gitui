@@ -18,6 +18,12 @@ pub enum Error {
     #[error("git: work dir error")]
     NoWorkDir,
 
+    #[error("git: no parent of commit found")]
+    NoParent,
+
+    #[error("git: not on a branch")]
+    NoBranch,
+
     #[error("git: uncommitted changes")]
     UncommittedChanges,
 

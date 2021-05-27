@@ -80,6 +80,7 @@
     abort_merge: ( code: Char('M'), modifiers: ( bits: 1,),),
 
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
+    reword: ( code: Char('r'), modifiers: ( bits: 0,),),
     force_push: ( code: Char('P'), modifiers: ( bits: 1,),),
     pull: ( code: Char('f'), modifiers: ( bits: 0,),),
 

@@ -1,3 +1,4 @@
+use crate::app::EditorSource;
 use crate::tabs::StashingOptions;
 use asyncgit::sync::{diff::DiffLinePosition, CommitId, CommitTags};
 use bitflags::bitflags;
@@ -61,6 +62,8 @@ pub enum InternalEvent {
     ///
     TagCommit(CommitId),
     ///
+    RewordCommit(CommitId),
+    ///
     BlameFile(String),
     ///
     CreateBranch,
@@ -69,7 +72,7 @@ pub enum InternalEvent {
     ///
     SelectBranch,
     ///
-    OpenExternalEditor(Option<String>),
+    OpenExternalEditor(Option<String>, EditorSource),
     ///
     Push(String, bool),
     ///

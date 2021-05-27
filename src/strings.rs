@@ -77,7 +77,7 @@ pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {
 pub fn commit_first_line_warning(count: usize) -> String {
     format!("[subject length: {}]", count)
 }
-pub fn commit_editor_msg(_key_config: &SharedKeyConfig) -> String {
+pub fn commit_editor_msg() -> String {
     r##"
 # Edit your commit message
 # Lines starting with '#' will be ignored"##
@@ -192,6 +192,12 @@ pub fn tag_commit_popup_title(
 }
 pub fn tag_commit_popup_msg(_key_config: &SharedKeyConfig) -> String {
     "type tag".to_string()
+}
+pub fn reword_popup_title(_key_config: &SharedKeyConfig) -> String {
+    "reword".to_string()
+}
+pub fn reword_popup_msg(_key_config: &SharedKeyConfig) -> String {
+    "new message".to_string()
 }
 pub fn stashlist_title(_key_config: &SharedKeyConfig) -> String {
     "Stashes".to_string()
@@ -885,6 +891,30 @@ pub mod commands {
                 key_config.get_hint(key_config.enter),
             ),
             "tag commit",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn reword_commit_confirm_msg(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Reword [{}]",
+                key_config.get_hint(key_config.enter),
+            ),
+            "reword commit",
+            CMD_GROUP_LOG,
+        )
+    }
+    pub fn reword_commit(
+        key_config: &SharedKeyConfig,
+    ) -> CommandText {
+        CommandText::new(
+            format!(
+                "Reword [{}]",
+                key_config.get_hint(key_config.reword),
+            ),
+            "reword commit",
             CMD_GROUP_LOG,
         )
     }

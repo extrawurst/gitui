@@ -18,7 +18,13 @@ use crossterm::{
 };
 use scopeguard::defer;
 use std::ffi::OsStr;
-use std::{env, io, path::Path, process::Command};
+use std::{
+    env,
+    io::{self, Read, Write},
+    path::Path,
+    process::Command,
+};
+use tempfile::NamedTempFile;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -186,4 +192,35 @@ impl Component for ExternalEditorComponent {
 
         Ok(())
     }
+}
+
+pub fn show_editor(with_text: Option<&String>) -> Result<String> {
+    let temp_file = NamedTempFile::new()?;
+    {
+        let mut file = temp_file.reopen()?;
+        if let Some(text) = with_text {
+            file.write_fmt(format_args!("{}\n", text))?;
+        }
+        file.write_all(strings::commit_editor_msg().as_bytes())?;
+    }
+
+    ExternalEditorComponent::open_file_in_editor(temp_file.path())?;
+
+    let mut message = String::new();
+
+    let mut file = temp_file.reopen()?;
+    file.read_to_string(&mut message)?;
+
+    let message: String = message
+        .lines()
+        .flat_map(|l| {
+            if l.starts_with('#') {
+                vec![]
+            } else {
+                vec![l, "\n"]
+            }
+        })
+        .collect();
+
+    Ok(message.trim().to_string())
 }
