@@ -75,7 +75,7 @@ impl Component for CommitComponent {
 
         if self.is_visible() || force_all {
             out.push(CommandInfo::new(
-                strings::commands::commit_enter(&self.key_config),
+                strings::commands::commit(&self.key_config),
                 self.can_commit(),
                 true,
             ));
@@ -105,7 +105,7 @@ impl Component for CommitComponent {
             }
 
             if let Event::Key(e) = ev {
-                if e == self.key_config.enter && self.can_commit() {
+                if e == self.key_config.commit && self.can_commit() {
                     self.commit()?;
                 } else if e == self.key_config.commit_amend
                     && self.can_amend()
@@ -116,8 +116,8 @@ impl Component for CommitComponent {
                         InternalEvent::OpenExternalEditor(None),
                     );
                     self.hide();
-                } else {
                 }
+
                 // stop key event propagation
                 return Ok(EventState::Consumed);
             }

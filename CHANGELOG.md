@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - inspect file tree at a specific revision ([#714](https://github.com/extrawurst/gitui/issues/714))
 
 ## Changed
+- `enter` adds *newline* to commit msg (*commit* via `ctrl+o` now) [[@WizardOhio24](https://github.com/WizardOhio24)] ([#509](https://github.com/extrawurst/gitui/issues/509))
 - smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
 - create-branch popup aligned with rename-branch [[@bruceCoelho](https://github.com/bruceCoelho)] ([#679](https://github.com/extrawurst/gitui/issues/679))
 - smart focus change after staging all files ([#706](https://github.com/extrawurst/gitui/issues/706))

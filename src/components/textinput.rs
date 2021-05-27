@@ -9,14 +9,16 @@ use crate::{
     ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
+use core::cmp::{max, min};
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
 use std::{cell::Cell, collections::HashMap, ops::Range};
+use tui::text::Spans;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
     style::Modifier,
-    text::{Spans, Text},
+    text::Text,
     widgets::{Clear, Paragraph},
     Frame,
 };
@@ -40,6 +42,10 @@ pub struct TextInputComponent {
     cursor_position: usize,
     input_type: InputType,
     current_area: Cell<Rect>,
+    scroll_top: usize, // The current scroll from the top
+    cur_line: usize,   // The current line
+    scroll_max: usize, // The number of lines
+    frame_height: Cell<usize>,
 }
 
 impl TextInputComponent {
@@ -62,6 +68,10 @@ impl TextInputComponent {
             cursor_position: 0,
             input_type: InputType::Multiline,
             current_area: Cell::new(Rect::default()),
+            scroll_top: 0,
+            cur_line: 0,
+            scroll_max: 0,
+            frame_height: Cell::new(0),
         }
     }
 
@@ -89,10 +99,56 @@ impl TextInputComponent {
         self.current_area.get()
     }
 
+    /// Only for multiline
+    fn insert_new_line(&mut self) {
+        const BORDER_SIZE: usize = 1;
+
+        self.msg.insert(self.cursor_position, '\n');
+        self.incr_cursor();
+        self.scroll_max += 1;
+
+        // if the text box height increased,
+        // componsate by scrolling up one
+        if self.scroll_max
+            < (self.frame_height.get() as usize)
+                .saturating_sub(BORDER_SIZE * 2)
+            && self.scroll_max >= 3
+        {
+            self.scroll_top = self.scroll_top.saturating_sub(1);
+            //self.cur_line = self.cur_line.saturating_sub(1);
+        }
+    }
+
+    /// See `incr_cursor`
+    fn incr_cursor_multiline(&mut self) {
+        if self.msg.chars().nth(self.cursor_position) == Some('\n') {
+            self.cur_line += 1;
+            if self.cur_line
+                > (self.current_area.get().height as usize)
+                    .saturating_sub(3_usize)
+            {
+                self.scroll_top += 1;
+            }
+        }
+    }
+
     /// Move the cursor right one char.
     fn incr_cursor(&mut self) {
         if let Some(pos) = self.next_char_position() {
+            if self.input_type == InputType::Multiline {
+                self.incr_cursor_multiline();
+            }
             self.cursor_position = pos;
+        }
+    }
+
+    /// See `decr_cursor`
+    fn decr_cursor_multiline(&mut self, index: usize) {
+        if self.msg.chars().nth(index) == Some('\n') {
+            self.cur_line -= 1;
+            if self.cur_line < self.scroll_top {
+                self.scroll_top -= 1;
+            }
         }
     }
 
@@ -103,6 +159,95 @@ impl TextInputComponent {
             index -= 1;
         }
         self.cursor_position = index;
+        if self.input_type == InputType::Multiline {
+            self.decr_cursor_multiline(index);
+        }
+    }
+
+    /// Move the cursor up a line.
+    /// Only for multi-line textinputs
+    fn line_up_cursor(&mut self) {
+        let mut nearest_newline: usize = 0;
+        let mut prev_line_newline_loc = 0;
+        for (i, c) in self.msg.chars().enumerate() {
+            if c == '\n' {
+                prev_line_newline_loc = nearest_newline;
+                nearest_newline = i;
+            }
+
+            if i >= self.cursor_position {
+                break;
+            }
+        }
+        self.cursor_position = (prev_line_newline_loc
+            + self.cursor_position)
+            .saturating_sub(nearest_newline);
+        if prev_line_newline_loc == 0 {
+            self.cursor_position =
+                self.cursor_position.saturating_sub(1);
+        }
+
+        while !self.msg.is_char_boundary(self.cursor_position) {
+            self.cursor_position += 1;
+        }
+        self.cur_line = self.cur_line.saturating_sub(1);
+        if self.cur_line < self.scroll_top {
+            self.scroll_top = self.scroll_top.saturating_sub(1);
+        }
+    }
+
+    /// Move the cursor down a line.
+    /// Only for multi-line textinputs
+    fn line_down_cursor(&mut self) {
+        //
+        let mut nearest_newline: usize = 0;
+        let mut prev_line_newline_loc = 0;
+
+        let mut chars_not_printed = 0;
+
+        for (i, c) in self.msg.chars().enumerate() {
+            if c == '\n' {
+                chars_not_printed = 0;
+                prev_line_newline_loc = nearest_newline;
+                nearest_newline = i;
+                if nearest_newline > self.cursor_position {
+                    break;
+                }
+            }
+            // if !self.msg.is_char_boundary(i) {
+            // self.msg.is_char_boundary(i) c.is_alphanumeric() {
+            // unprintable
+            //    chars_not_printed += 1;
+            // }
+        }
+        self.cursor_position = self
+            .cursor_position
+            .saturating_sub(prev_line_newline_loc)
+            .saturating_add(nearest_newline);
+        // .saturating_add(chars_not_printed);
+
+        if prev_line_newline_loc == 0 {
+            self.cursor_position += 1;
+        }
+
+        if self.cursor_position < self.msg.len() {
+            while !self.msg.is_char_boundary(self.cursor_position) {
+                self.cursor_position += 1;
+            }
+        } else {
+            self.cursor_position = self.msg.len().saturating_sub(1);
+        }
+
+        if self.cur_line < self.scroll_max.saturating_sub(2) {
+            self.cur_line += 1;
+            if self.cur_line
+                > self.scroll_top
+                    + (self.current_area.get().height as usize)
+                        .saturating_sub(3_usize)
+            {
+                self.scroll_top += 1;
+            }
+        }
     }
 
     /// Get the position of the next char, or, if the cursor points
@@ -121,9 +266,27 @@ impl TextInputComponent {
         Some(index)
     }
 
+    /// Backspace for multiline textinputs
+    fn multiline_backspace(&mut self) {
+        const BORDER_SIZE: usize = 1;
+        if self.msg.chars().nth(self.cursor_position) == Some('\n') {
+            self.scroll_max -= 1;
+            if !(self.scroll_max
+                < (self.frame_height.get() as usize)
+                    .saturating_sub(BORDER_SIZE * 2)
+                && self.scroll_max >= 3)
+            {
+                self.scroll_top = self.scroll_top.saturating_sub(1);
+            }
+        }
+    }
+
     fn backspace(&mut self) {
         if self.cursor_position > 0 {
             self.decr_cursor();
+            if self.input_type == InputType::Multiline {
+                self.multiline_backspace();
+            }
             self.msg.remove(self.cursor_position);
         }
     }
@@ -139,15 +302,21 @@ impl TextInputComponent {
         self.title = t;
     }
 
+    #[allow(unstable_name_collisions)]
     fn get_draw_text(&self) -> Text {
         let style = self.theme.text(true, false);
 
         let mut txt = Text::default();
+
         // The portion of the text before the cursor is added
         // if the cursor is not at the first character.
         if self.cursor_position > 0 {
-            let text_before_cursor =
-                self.get_msg(0..self.cursor_position);
+            let text_before_cursor: String = self
+                .get_msg(0..self.cursor_position)
+                .split('\n')
+                .skip(self.scroll_top)
+                .intersperse("\n")
+                .collect();
             let ends_in_nl = text_before_cursor.ends_with('\n');
             txt = text_append(
                 txt,
@@ -268,6 +437,7 @@ impl DrawableComponent for TextInputComponent {
         f: &mut Frame<B>,
         _rect: Rect,
     ) -> Result<()> {
+        use std::convert::TryInto;
         if self.visible {
             let txt = if self.msg.is_empty() {
                 Text::styled(
@@ -282,7 +452,22 @@ impl DrawableComponent for TextInputComponent {
                 InputType::Multiline => {
                     let area = ui::centered_rect(60, 20, f.size());
                     ui::rect_inside(
-                        Size::new(10, 3),
+                        Size::new(
+                            10,
+                            min(
+                                max(
+                                    3,
+                                    self.msg
+                                        .chars()
+                                        .filter(|x| *x == '\n')
+                                        .count()
+                                        .saturating_add(3)
+                                        .try_into()
+                                        .expect("Cannot fail"),
+                                ),
+                                f.size().height,
+                            ),
+                        ),
                         f.size().into(),
                         area,
                     )
@@ -305,7 +490,20 @@ impl DrawableComponent for TextInputComponent {
                 self.draw_char_count(f, area);
             }
 
+            if self.input_type == InputType::Multiline
+                && self.scroll_max > self.frame_height.get()
+            {
+                ui::draw_scrollbar(
+                    f,
+                    area,
+                    &self.theme,
+                    self.scroll_max,
+                    self.cur_line,
+                );
+            }
+
             self.current_area.set(area);
+            self.frame_height.set(f.size().height as usize);
         }
 
         Ok(())
@@ -326,6 +524,15 @@ impl Component for TextInputComponent {
             )
             .order(1),
         );
+
+        if self.input_type == InputType::Multiline {
+            out.push(CommandInfo::new(
+                strings::commands::commit_new_line(&self.key_config),
+                true,
+                self.visible,
+            ));
+        }
+
         visibility_blocking(self)
     }
 
@@ -334,6 +541,11 @@ impl Component for TextInputComponent {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
                     self.hide();
+                    return Ok(EventState::Consumed);
+                } else if e == self.key_config.enter
+                    && self.input_type == InputType::Multiline
+                {
+                    self.insert_new_line();
                     return Ok(EventState::Consumed);
                 }
 
@@ -362,6 +574,20 @@ impl Component for TextInputComponent {
                     }
                     KeyCode::Right => {
                         self.incr_cursor();
+                        return Ok(EventState::Consumed);
+                    }
+                    KeyCode::Up
+                        if self.input_type
+                            == InputType::Multiline =>
+                    {
+                        self.line_up_cursor();
+                        return Ok(EventState::Consumed);
+                    }
+                    KeyCode::Down
+                        if self.input_type
+                            == InputType::Multiline =>
+                    {
+                        self.line_down_cursor();
                         return Ok(EventState::Consumed);
                     }
                     KeyCode::Home => {
