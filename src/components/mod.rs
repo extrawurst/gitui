@@ -1,3 +1,5 @@
+mod blame_file;
+mod branchlist;
 mod changes;
 mod command;
 mod commit;
@@ -11,18 +13,22 @@ mod filetree;
 mod help;
 mod inspect_commit;
 mod msg;
+mod pull;
 mod push;
+mod push_tags;
 mod rename_branch;
 mod reset;
-mod select_branch;
+mod revision_files;
 mod stashmsg;
+mod syntax_text;
 mod tag_commit;
+mod taglist;
 mod textinput;
 mod utils;
 
-use anyhow::Result;
-use crossterm::event::Event;
-
+pub use self::filetree::FileTreeComponent;
+pub use blame_file::BlameFileComponent;
+pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
@@ -31,24 +37,30 @@ pub use commitlist::CommitList;
 pub use create_branch::CreateBranchComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
-pub use filetree::FileTreeComponent;
 pub use help::HelpComponent;
 pub use inspect_commit::InspectCommitComponent;
 pub use msg::MsgComponent;
+pub use pull::PullComponent;
 pub use push::PushComponent;
+pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ResetComponent;
-pub use select_branch::SelectBranchComponent;
+pub use revision_files::RevisionFilesComponent;
 pub use stashmsg::StashMsgComponent;
+pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;
+pub use taglist::TagListComponent;
 pub use textinput::{InputType, TextInputComponent};
 pub use utils::filetree::FileTreeItemKind;
 
 use crate::ui::style::Theme;
+use anyhow::Result;
+use crossterm::event::Event;
+use std::convert::From;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    text::{Span, Spans, Text},
+    text::{Span, Text},
     widgets::{Block, BorderType, Borders, Paragraph, Wrap},
     Frame,
 };
@@ -121,14 +133,14 @@ macro_rules! setup_popups {
 pub fn event_pump(
     ev: Event,
     components: &mut [&mut dyn Component],
-) -> Result<bool> {
+) -> Result<EventState> {
     for c in components {
-        if c.event(ev)? {
-            return Ok(true);
+        if c.event(ev)?.is_consumed() {
+            return Ok(EventState::Consumed);
         }
     }
 
-    Ok(false)
+    Ok(EventState::NotConsumed)
 }
 
 /// helper fn to simplify delegating command
@@ -192,6 +204,29 @@ pub trait DrawableComponent {
     ) -> Result<()>;
 }
 
+///
+#[derive(PartialEq)]
+pub enum EventState {
+    Consumed,
+    NotConsumed,
+}
+
+impl EventState {
+    pub fn is_consumed(&self) -> bool {
+        *self == Self::Consumed
+    }
+}
+
+impl From<bool> for EventState {
+    fn from(consumed: bool) -> Self {
+        if consumed {
+            Self::Consumed
+        } else {
+            Self::NotConsumed
+        }
+    }
+}
+
 /// base component trait
 pub trait Component {
     ///
@@ -201,8 +236,8 @@ pub trait Component {
         force_all: bool,
     ) -> CommandBlocking;
 
-    /// returns true if event propagation needs to end (event was consumed)
-    fn event(&mut self, ev: Event) -> Result<bool>;
+    ///
+    fn event(&mut self, ev: Event) -> Result<EventState>;
 
     ///
     fn focused(&self) -> bool {
@@ -248,13 +283,16 @@ fn dialog_paragraph<'a>(
         .alignment(Alignment::Left)
 }
 
-fn popup_paragraph<'a>(
+fn popup_paragraph<'a, T>(
     title: &'a str,
-    content: Vec<Span<'a>>,
+    content: T,
     theme: &Theme,
     focused: bool,
-) -> Paragraph<'a> {
-    Paragraph::new(Spans::from(content))
+) -> Paragraph<'a>
+where
+    T: Into<Text<'a>>,
+{
+    Paragraph::new(content.into())
         .block(
             Block::default()
                 .title(Span::styled(title, theme.title(focused)))

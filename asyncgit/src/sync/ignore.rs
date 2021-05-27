@@ -4,7 +4,7 @@ use scopetime::scope_time;
 use std::{
     fs::{File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
-    path::PathBuf,
+    path::Path,
 };
 
 static GITIGNORE: &str = ".gitignore";
@@ -18,7 +18,7 @@ pub fn add_to_ignore(
 
     let repo = repo(repo_path)?;
 
-    let ignore_file = work_dir(&repo).join(GITIGNORE);
+    let ignore_file = work_dir(&repo)?.join(GITIGNORE);
 
     let optional_newline = ignore_file.exists()
         && !file_ends_with_newline(&ignore_file)?;
@@ -38,15 +38,13 @@ pub fn add_to_ignore(
     Ok(())
 }
 
-fn file_ends_with_newline(file: &PathBuf) -> Result<bool> {
+fn file_ends_with_newline(file: &Path) -> Result<bool> {
     let mut file = File::open(file)?;
     let size = file.metadata()?.len();
 
     file.seek(SeekFrom::Start(size.saturating_sub(1)))?;
     let mut last_char = String::with_capacity(1);
     file.read_to_string(&mut last_char)?;
-
-    dbg!(&last_char);
 
     Ok(last_char == "\n")
 }

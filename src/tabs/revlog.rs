@@ -2,7 +2,7 @@ use crate::{
     components::{
         visibility_blocking, CommandBlocking, CommandInfo,
         CommitDetailsComponent, CommitList, Component,
-        DrawableComponent,
+        DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
@@ -77,7 +77,7 @@ impl Revlog {
 
     ///
     pub fn update(&mut self) -> Result<()> {
-        if self.visible {
+        if self.is_visible() {
             let log_changed =
                 self.git_log.fetch()? == FetchStatus::Started;
 
@@ -151,6 +151,11 @@ impl Revlog {
         self.list.selected_entry().map(|e| e.id)
     }
 
+    fn copy_commit_hash(&self) -> Result<()> {
+        self.list.copy_entry_hash()?;
+        Ok(())
+    }
+
     fn selected_commit_tags(
         &self,
         commit: &Option<CommitId>,
@@ -160,6 +165,18 @@ impl Revlog {
         commit.and_then(|commit| {
             tags.and_then(|tags| tags.get(&commit).cloned())
         })
+    }
+
+    pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
+        let position = self.git_log.position(id)?;
+
+        if let Some(position) = position {
+            self.list.select_entry(position);
+
+            Ok(())
+        } else {
+            anyhow::bail!("Could not select commit in revlog. It might not be loaded yet or it might be on a different branch.");
+        }
     }
 }
 
@@ -192,33 +209,41 @@ impl DrawableComponent for Revlog {
 }
 
 impl Component for Revlog {
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             let event_used = self.list.event(ev)?;
 
-            if event_used {
+            if event_used.is_consumed() {
                 self.update()?;
-                return Ok(true);
+                return Ok(EventState::Consumed);
             } else if let Event::Key(k) = ev {
                 if k == self.key_config.enter {
                     self.commit_details.toggle_visible()?;
                     self.update()?;
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
+                } else if k == self.key_config.copy {
+                    self.copy_commit_hash()?;
+                    return Ok(EventState::Consumed);
+                } else if k == self.key_config.push {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::PushTags);
+                    return Ok(EventState::Consumed);
                 } else if k == self.key_config.log_tag_commit {
                     return self.selected_commit().map_or(
-                        Ok(false),
+                        Ok(EventState::NotConsumed),
                         |id| {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::TagCommit(id),
                             );
-                            Ok(true)
+                            Ok(EventState::Consumed)
                         },
                     );
                 } else if k == self.key_config.focus_right
                     && self.commit_details.is_visible()
                 {
                     return self.selected_commit().map_or(
-                        Ok(false),
+                        Ok(EventState::NotConsumed),
                         |id| {
                             self.queue.borrow_mut().push_back(
                                 InternalEvent::InspectCommit(
@@ -228,19 +253,34 @@ impl Component for Revlog {
                                     )),
                                 ),
                             );
-                            Ok(true)
+                            Ok(EventState::Consumed)
                         },
                     );
                 } else if k == self.key_config.select_branch {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::SelectBranch);
-                    return Ok(true);
+                    return Ok(EventState::Consumed);
+                } else if k == self.key_config.open_file_tree {
+                    return self.selected_commit().map_or(
+                        Ok(EventState::NotConsumed),
+                        |id| {
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::OpenFileTree(id),
+                            );
+                            Ok(EventState::Consumed)
+                        },
+                    );
+                } else if k == self.key_config.tags {
+                    self.queue
+                        .borrow_mut()
+                        .push_back(InternalEvent::Tags);
+                    return Ok(EventState::Consumed);
                 }
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn commands(
@@ -267,7 +307,7 @@ impl Component for Revlog {
 
         out.push(CommandInfo::new(
             strings::commands::log_tag_commit(&self.key_config),
-            true,
+            self.selected_commit().is_some(),
             self.visible || force_all,
         ));
 
@@ -276,6 +316,30 @@ impl Component for Revlog {
                 &self.key_config,
             ),
             true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::open_tags_popup(&self.key_config),
+            true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::copy_hash(&self.key_config),
+            self.selected_commit().is_some(),
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::push_tags(&self.key_config),
+            true,
+            self.visible || force_all,
+        ));
+
+        out.push(CommandInfo::new(
+            strings::commands::inspect_file_tree(&self.key_config),
+            self.selected_commit().is_some(),
             self.visible || force_all,
         ));
 

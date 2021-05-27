@@ -4,7 +4,11 @@ use super::CommitId;
 use crate::error::{Error, Result};
 use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
-use std::path::Path;
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 ///
 #[derive(PartialEq, Debug, Clone)]
@@ -52,18 +56,23 @@ pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
 }
 
 ///
-pub(crate) fn work_dir(repo: &Repository) -> &Path {
-    repo.workdir().expect("unable to query workdir")
+pub(crate) fn work_dir(repo: &Repository) -> Result<&Path> {
+    repo.workdir().ok_or(Error::NoWorkDir)
+}
+
+/// path to .git folder
+pub fn repo_dir(repo_path: &str) -> Result<PathBuf> {
+    let repo = repo(repo_path)?;
+    Ok(repo.path().to_owned())
 }
 
 ///
 pub fn repo_work_dir(repo_path: &str) -> Result<String> {
     let repo = repo(repo_path)?;
-    if let Some(workdir) = work_dir(&repo).to_str() {
-        Ok(workdir.to_string())
-    } else {
-        Err(Error::Generic("invalid workdir".to_string()))
-    }
+    work_dir(&repo)?.to_str().map_or_else(
+        || Err(Error::Generic("invalid workdir".to_string())),
+        |workdir| Ok(workdir.to_string()),
+    )
 }
 
 ///
@@ -84,8 +93,7 @@ pub fn get_head_tuple(repo_path: &str) -> Result<Head> {
 ///
 pub fn get_head_refname(repo: &Repository) -> Result<String> {
     let head = repo.head()?;
-    let name_bytes = head.name_bytes();
-    let ref_name = String::from_utf8(name_bytes.to_vec())?;
+    let ref_name = bytes2string(head.name_bytes())?;
 
     Ok(ref_name)
 }
@@ -96,11 +104,7 @@ pub fn get_head_repo(repo: &Repository) -> Result<CommitId> {
 
     let head = repo.head()?.target();
 
-    if let Some(head_id) = head {
-        Ok(head_id.into())
-    } else {
-        Err(Error::NoHead)
-    }
+    head.map_or(Err(Error::NoHead), |head_id| Ok(head_id.into()))
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
@@ -145,6 +149,68 @@ pub fn stage_addremoved(repo_path: &str, path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// get string from config
+pub fn get_config_string(
+    repo_path: &str,
+    key: &str,
+) -> Result<Option<String>> {
+    let repo = repo(repo_path)?;
+    let cfg = repo.config()?;
+
+    // this code doesnt match what the doc says regarding what
+    // gets returned when but it actually works
+    let entry_res = cfg.get_entry(key);
+
+    let entry = match entry_res {
+        Ok(ent) => ent,
+        Err(_) => return Ok(None),
+    };
+
+    if entry.has_value() {
+        Ok(entry.value().map(std::string::ToString::to_string))
+    } else {
+        Ok(None)
+    }
+}
+
+pub(crate) fn bytes2string(bytes: &[u8]) -> Result<String> {
+    Ok(String::from_utf8(bytes.to_vec())?)
+}
+
+/// write a file in repo
+pub(crate) fn repo_write_file(
+    repo: &Repository,
+    file: &str,
+    content: &str,
+) -> Result<()> {
+    let dir = work_dir(repo)?.join(file);
+    let file_path = dir.to_str().ok_or_else(|| {
+        Error::Generic(String::from("invalid file path"))
+    })?;
+    let mut file = File::create(file_path)?;
+    file.write_all(content.as_bytes())?;
+    Ok(())
+}
+
+#[cfg(test)]
+pub(crate) fn repo_read_file(
+    repo: &Repository,
+    file: &str,
+) -> Result<String> {
+    use std::io::Read;
+
+    let dir = work_dir(repo)?.join(file);
+    let file_path = dir.to_str().ok_or_else(|| {
+        Error::Generic(String::from("invalid file path"))
+    })?;
+
+    let mut file = File::open(file_path)?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)?;
+
+    Ok(String::from_utf8(buffer)?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -173,7 +239,23 @@ mod tests {
             false
         );
     }
+    #[test]
+    fn test_get_config() {
+        let bad_dir_cfg =
+            get_config_string("oodly_noodly", "this.doesnt.exist");
+        assert!(bad_dir_cfg.is_err());
 
+        let (_td, repo) = repo_init().unwrap();
+        let path = repo.path();
+        let rpath = path.as_os_str().to_str().unwrap();
+        let bad_cfg = get_config_string(rpath, "this.doesnt.exist");
+        assert!(bad_cfg.is_ok());
+        assert!(bad_cfg.unwrap().is_none());
+        // repo init sets user.name
+        let good_cfg = get_config_string(rpath, "user.name");
+        assert!(good_cfg.is_ok());
+        assert!(good_cfg.unwrap().is_some());
+    }
     #[test]
     fn test_staging_one_file() {
         let file_path = Path::new("file1.txt");

@@ -1,7 +1,7 @@
 use crate::{
     components::{
         popup_paragraph, visibility_blocking, CommandBlocking,
-        CommandInfo, Component, DrawableComponent,
+        CommandInfo, Component, DrawableComponent, EventState,
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue},
@@ -11,7 +11,7 @@ use anyhow::Result;
 use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
-    backend::Backend, layout::Rect, text::Span, widgets::Clear, Frame,
+    backend::Backend, layout::Rect, text::Text, widgets::Clear, Frame,
 };
 use ui::style::SharedTheme;
 
@@ -33,12 +33,12 @@ impl DrawableComponent for ResetComponent {
         if self.visible {
             let (title, msg) = self.get_text();
 
-            let txt = vec![Span::styled(
+            let txt = Text::styled(
                 Cow::from(msg),
                 self.theme.text_danger(),
-            )];
+            );
 
-            let area = ui::centered_rect(30, 20, f.size());
+            let area = ui::centered_rect(50, 20, f.size());
             f.render_widget(Clear, area);
             f.render_widget(
                 popup_paragraph(&title, txt, &self.theme, true),
@@ -57,7 +57,7 @@ impl Component for ResetComponent {
         _force_all: bool,
     ) -> CommandBlocking {
         out.push(CommandInfo::new(
-            strings::commands::reset_confirm(&self.key_config),
+            strings::commands::confirm_action(&self.key_config),
             true,
             self.visible,
         ));
@@ -70,7 +70,7 @@ impl Component for ResetComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
@@ -79,11 +79,11 @@ impl Component for ResetComponent {
                     self.confirm();
                 }
 
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
@@ -138,8 +138,8 @@ impl ResetComponent {
         if let Some(ref a) = self.target {
             return match a {
                 Action::Reset(_) => (
-                    strings::confirm_title_reset(&self.key_config),
-                    strings::confirm_msg_reset(&self.key_config),
+                    strings::confirm_title_reset(),
+                    strings::confirm_msg_reset(),
                 ),
                 Action::StashDrop(_) => (
                     strings::confirm_title_stashdrop(
@@ -147,9 +147,17 @@ impl ResetComponent {
                     ),
                     strings::confirm_msg_stashdrop(&self.key_config),
                 ),
+                Action::StashPop(_) => (
+                    strings::confirm_title_stashpop(&self.key_config),
+                    strings::confirm_msg_stashpop(&self.key_config),
+                ),
                 Action::ResetHunk(_, _) => (
-                    strings::confirm_title_reset(&self.key_config),
+                    strings::confirm_title_reset(),
                     strings::confirm_msg_resethunk(&self.key_config),
+                ),
+                Action::ResetLines(_, lines) => (
+                    strings::confirm_title_reset(),
+                    strings::confirm_msg_reset_lines(lines.len()),
                 ),
                 Action::DeleteBranch(branch_ref) => (
                     strings::confirm_title_delete_branch(
@@ -159,6 +167,32 @@ impl ResetComponent {
                         &self.key_config,
                         branch_ref,
                     ),
+                ),
+                Action::DeleteTag(tag_name) => (
+                    strings::confirm_title_delete_tag(
+                        &self.key_config,
+                    ),
+                    strings::confirm_msg_delete_tag(
+                        &self.key_config,
+                        tag_name,
+                    ),
+                ),
+                Action::ForcePush(branch, _force) => (
+                    strings::confirm_title_force_push(
+                        &self.key_config,
+                    ),
+                    strings::confirm_msg_force_push(
+                        &self.key_config,
+                        branch.rsplit('/').next().expect("There was no / in the head reference which is impossible in git"),
+                    ),
+                ),
+                Action::PullMerge{incoming,rebase} => (
+                    strings::confirm_title_merge(&self.key_config,*rebase),
+                    strings::confirm_msg_merge(&self.key_config,*incoming,*rebase),
+                ),
+                Action::AbortMerge => (
+                    strings::confirm_title_abortmerge(),
+                    strings::confirm_msg_abortmerge(),
                 ),
             };
         }

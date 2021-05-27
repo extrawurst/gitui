@@ -1,7 +1,8 @@
 use crate::{
     components::{
         dialog_paragraph, utils::time_to_string, CommandBlocking,
-        CommandInfo, Component, DrawableComponent, ScrollType,
+        CommandInfo, Component, DrawableComponent, EventState,
+        ScrollType,
     },
     keys::SharedKeyConfig,
     strings::{self, order},
@@ -39,6 +40,7 @@ pub struct DetailsComponent {
     current_size: Cell<(u16, u16)>,
     scroll_top: Cell<usize>,
     key_config: SharedKeyConfig,
+    scroll_to_bottom_on_redraw: Cell<bool>,
 }
 
 type WrappedCommitMessage<'a> =
@@ -58,6 +60,7 @@ impl DetailsComponent {
             focused,
             current_size: Cell::new((0, 0)),
             scroll_top: Cell::new(0),
+            scroll_to_bottom_on_redraw: Cell::new(false),
             key_config,
         }
     }
@@ -89,10 +92,7 @@ impl DetailsComponent {
 
         if let Some(ref body) = message.body {
             let wrapped_message: Vec<Cow<'_, str>> =
-                textwrap::wrap(body, width)
-                    .into_iter()
-                    .skip(1)
-                    .collect();
+                textwrap::wrap(body, width).into_iter().collect();
 
             (wrapped_title, wrapped_message)
         } else {
@@ -101,10 +101,10 @@ impl DetailsComponent {
     }
 
     fn get_wrapped_lines(
-        &self,
+        data: &Option<CommitDetails>,
         width: usize,
     ) -> WrappedCommitMessage<'_> {
-        if let Some(ref data) = self.data {
+        if let Some(ref data) = data {
             if let Some(ref message) = data.message {
                 return Self::wrap_commit_details(message, width);
             }
@@ -113,9 +113,12 @@ impl DetailsComponent {
         (vec![], vec![])
     }
 
-    fn get_number_of_lines(&self, width: usize) -> usize {
+    fn get_number_of_lines(
+        details: &Option<CommitDetails>,
+        width: usize,
+    ) -> usize {
         let (wrapped_title, wrapped_message) =
-            self.get_wrapped_lines(width);
+            Self::get_wrapped_lines(details, width);
 
         wrapped_title.len() + wrapped_message.len()
     }
@@ -134,7 +137,7 @@ impl DetailsComponent {
         height: usize,
     ) -> Vec<Spans> {
         let (wrapped_title, wrapped_message) =
-            self.get_wrapped_lines(width);
+            Self::get_wrapped_lines(&self.data, width);
 
         [&wrapped_title[..], &wrapped_message[..]]
             .concat()
@@ -180,6 +183,7 @@ impl DetailsComponent {
         }
     }
 
+    #[allow(unstable_name_collisions)]
     fn get_text_info(&self) -> Vec<Spans> {
         if let Some(ref data) = self.data {
             let mut res = vec![
@@ -247,6 +251,7 @@ impl DetailsComponent {
                 res.push(Spans::from(
                     self.style_detail(&Detail::Sha),
                 ));
+
                 res.push(Spans::from(
                     self.tags
                         .iter()
@@ -270,16 +275,14 @@ impl DetailsComponent {
         }
     }
 
-    fn move_scroll_top(
-        &mut self,
-        move_type: ScrollType,
-    ) -> Result<bool> {
+    fn move_scroll_top(&mut self, move_type: ScrollType) -> bool {
         if self.data.is_some() {
             let old = self.scroll_top.get();
             let width = self.current_size.get().0 as usize;
             let height = self.current_size.get().1 as usize;
 
-            let number_of_lines = self.get_number_of_lines(width);
+            let number_of_lines =
+                Self::get_number_of_lines(&self.data, width);
 
             let max = number_of_lines.saturating_sub(height) as usize;
 
@@ -291,15 +294,17 @@ impl DetailsComponent {
                 _ => old,
             };
 
-            if new_scroll_top > max {
-                return Ok(false);
+            let new_scroll_top = new_scroll_top.clamp(0, max);
+
+            if new_scroll_top == old {
+                return false;
             }
 
             self.scroll_top.set(new_scroll_top);
 
-            return Ok(true);
+            return true;
         }
-        Ok(false)
+        false
     }
 }
 
@@ -337,6 +342,17 @@ impl DrawableComponent for DetailsComponent {
 
         self.current_size.set((width, height));
 
+        if self.scroll_to_bottom_on_redraw.get() {
+            self.scroll_top.set(
+                Self::get_number_of_lines(
+                    &self.data,
+                    usize::from(width),
+                )
+                .saturating_sub(usize::from(height)),
+            );
+            self.scroll_to_bottom_on_redraw.set(false);
+        }
+
         let wrapped_lines = self.get_wrapped_text_message(
             width as usize,
             height as usize,
@@ -359,8 +375,7 @@ impl DrawableComponent for DetailsComponent {
                 f,
                 chunks[1],
                 &self.theme,
-                self.get_number_of_lines(width as usize)
-                    .saturating_sub(height as usize),
+                Self::get_number_of_lines(&self.data, width as usize),
                 self.scroll_top.get(),
             )
         }
@@ -378,7 +393,8 @@ impl Component for DetailsComponent {
         // visibility_blocking(self)
 
         let width = self.current_size.get().0 as usize;
-        let number_of_lines = self.get_number_of_lines(width);
+        let number_of_lines =
+            Self::get_number_of_lines(&self.data, width);
 
         out.push(
             CommandInfo::new(
@@ -394,28 +410,28 @@ impl Component for DetailsComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, event: Event) -> Result<bool> {
+    fn event(&mut self, event: Event) -> Result<EventState> {
         if self.focused {
             if let Event::Key(e) = event {
-                return if e == self.key_config.move_up {
-                    self.move_scroll_top(ScrollType::Up)
+                return Ok(if e == self.key_config.move_up {
+                    self.move_scroll_top(ScrollType::Up).into()
                 } else if e == self.key_config.move_down {
-                    self.move_scroll_top(ScrollType::Down)
+                    self.move_scroll_top(ScrollType::Down).into()
                 } else if e == self.key_config.home
                     || e == self.key_config.shift_up
                 {
-                    self.move_scroll_top(ScrollType::Home)
+                    self.move_scroll_top(ScrollType::Home).into()
                 } else if e == self.key_config.end
                     || e == self.key_config.shift_down
                 {
-                    self.move_scroll_top(ScrollType::End)
+                    self.move_scroll_top(ScrollType::End).into()
                 } else {
-                    Ok(false)
-                };
+                    EventState::NotConsumed
+                });
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn focused(&self) -> bool {
@@ -424,13 +440,7 @@ impl Component for DetailsComponent {
 
     fn focus(&mut self, focus: bool) {
         if focus {
-            let width = self.current_size.get().0 as usize;
-            let height = self.current_size.get().1 as usize;
-
-            self.scroll_top.set(
-                self.get_number_of_lines(width)
-                    .saturating_sub(height),
-            );
+            self.scroll_to_bottom_on_redraw.set(true);
         }
 
         self.focused = focus;
@@ -477,7 +487,7 @@ mod tests {
         );
 
         let message_with_body = CommitMessage::from(
-            "Commit message\n\nFirst line\nSecond line",
+            "Commit message\nFirst line\nSecond line",
         );
 
         assert_eq!(
@@ -491,5 +501,30 @@ mod tests {
             get_wrapped_lines(&message_with_body, 14),
             vec!["Commit message", "First line", "Second line"]
         );
+    }
+}
+
+#[cfg(test)]
+mod test_line_count {
+    use super::*;
+
+    #[test]
+    fn test_smoke() {
+        let commit = CommitDetails {
+            message: Some(CommitMessage {
+                subject: String::from("subject line"),
+                body: Some(String::from("body lone")),
+            }),
+            ..CommitDetails::default()
+        };
+        let lines = DetailsComponent::get_number_of_lines(
+            &Some(commit.clone()),
+            50,
+        );
+        assert_eq!(lines, 2);
+
+        let lines =
+            DetailsComponent::get_number_of_lines(&Some(commit), 8);
+        assert_eq!(lines, 4);
     }
 }

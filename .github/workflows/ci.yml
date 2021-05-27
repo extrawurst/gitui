@@ -8,18 +8,37 @@ on:
   pull_request:
     branches: [ master ]
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [nightly, stable]
+        rust: [nightly, stable, '1.50']
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Restore cargo cache
+      uses: actions/cache@v2
+      env:
+        cache-name: ci
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          ~/.cargo/bin
+          target
+        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}-${{ hashFiles('Cargo.lock') }}
+
+    - name: MacOS Workaround
+      if: matrix.os == 'macos-latest'
+      run: cargo clean -p serde_derive -p thiserror
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
@@ -29,9 +48,14 @@ jobs:
         profile: minimal
         components: clippy
 
+    - name: New Resolver
+      if: matrix.rust != '1.50'
+      run: |
+        cargo install cargo-modify --force
+        cargo modify new-resolver
+
     - name: Build Debug
       run: |
-        rustc --version
         cargo build
 
     - name: Run tests
@@ -39,30 +63,52 @@ jobs:
 
     - name: Run clippy
       run: |
-        cargo clean
         make clippy
 
     - name: Build Release
       run: make build-release
 
+    - name: Binary Size (unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        ls -l ./target/release/gitui
+    
+    - name: Binary Size (win)
+      if: matrix.os == 'windows-latest'
+      run: |
+        ls -l ./target/release/gitui.exe
+
     - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
       run: |
         cargo install cargo-wix
-        cargo wix init
         cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
         ls -l ./target/wix/gitui.msi
 
   build-linux-musl:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [nightly, stable, '1.50']
+    continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
     - uses: actions/checkout@master
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: ${{ matrix.rust }}
         profile: minimal
+        default: true
         target: x86_64-unknown-linux-musl
+
+    # TODO: remove once we depend on 1.51 as a msrv and resolver is supported by default
+    - name: New Resolver
+      if: matrix.rust != '1.50'
+      run: |
+        cargo install cargo-modify --force
+        cargo modify new-resolver
+
     - name: Setup MUSL
       run: |
         sudo apt-get -qq install musl-tools
@@ -74,6 +120,7 @@ jobs:
       run: |
         make build-linux-musl-release
         ./target/x86_64-unknown-linux-musl/release/gitui --version
+        ls -l ./target/x86_64-unknown-linux-musl/release/gitui
     - name: Test
       run: |
         make test-linux-musl

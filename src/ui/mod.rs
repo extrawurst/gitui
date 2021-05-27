@@ -1,10 +1,20 @@
+mod reflow;
 mod scrollbar;
 mod scrolllist;
+mod stateful_paragraph;
 pub mod style;
+mod syntax_text;
 
+use filetree::MoveSelection;
 pub use scrollbar::draw_scrollbar;
-pub use scrolllist::draw_list;
+pub use scrolllist::{draw_list, draw_list_block};
+pub use stateful_paragraph::{
+    ParagraphState, ScrollPos, StatefulParagraph,
+};
+pub use syntax_text::{AsyncSyntaxJob, SyntaxText};
 use tui::layout::{Constraint, Direction, Layout, Rect};
+
+use crate::keys::SharedKeyConfig;
 
 /// return the scroll position (line) necessary to have the `selection` in view if it is not already
 pub const fn calc_scroll_top(
@@ -34,9 +44,12 @@ impl Size {
     }
 }
 
-impl Into<Size> for Rect {
-    fn into(self) -> Size {
-        Size::new(self.width, self.height)
+impl From<Rect> for Size {
+    fn from(r: Rect) -> Self {
+        Self {
+            width: r.width,
+            height: r.height,
+        }
     }
 }
 
@@ -98,4 +111,30 @@ pub fn centered_rect_absolute(
         width.min(r.width),
         height.min(r.height),
     )
+}
+
+///
+pub fn common_nav(
+    key: crossterm::event::KeyEvent,
+    key_config: &SharedKeyConfig,
+) -> Option<MoveSelection> {
+    if key == key_config.move_down {
+        Some(MoveSelection::Down)
+    } else if key == key_config.move_up {
+        Some(MoveSelection::Up)
+    } else if key == key_config.page_up {
+        Some(MoveSelection::PageUp)
+    } else if key == key_config.page_down {
+        Some(MoveSelection::PageDown)
+    } else if key == key_config.move_right {
+        Some(MoveSelection::Right)
+    } else if key == key_config.move_left {
+        Some(MoveSelection::Left)
+    } else if key == key_config.home || key == key_config.shift_up {
+        Some(MoveSelection::Top)
+    } else if key == key_config.end || key == key_config.shift_down {
+        Some(MoveSelection::End)
+    } else {
+        None
+    }
 }

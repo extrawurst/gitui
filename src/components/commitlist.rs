@@ -1,8 +1,8 @@
 use super::utils::logitems::{ItemBatch, LogEntry};
 use crate::{
     components::{
-        CommandBlocking, CommandInfo, Component, DrawableComponent,
-        ScrollType,
+        utils::string_width_align, CommandBlocking, CommandInfo,
+        Component, DrawableComponent, EventState, ScrollType,
     },
     keys::SharedKeyConfig,
     strings,
@@ -11,6 +11,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::sync::Tags;
+use chrono::{DateTime, Local};
 use crossterm::event::Event;
 use std::{
     borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
@@ -22,7 +23,6 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
-use unicode_width::UnicodeWidthStr;
 
 const ELEMENTS_PER_LINE: usize = 10;
 
@@ -97,10 +97,7 @@ impl CommitList {
     }
 
     ///
-    //TODO: make const as soon as Option::<T>::as_ref
-    // is stabilizeD to be const (not as of rust 1.47)
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn tags(&self) -> Option<&Tags> {
+    pub const fn tags(&self) -> Option<&Tags> {
         self.tags.as_ref()
     }
 
@@ -119,6 +116,15 @@ impl CommitList {
         self.items.iter().nth(
             self.selection.saturating_sub(self.items.index_offset()),
         )
+    }
+
+    pub fn copy_entry_hash(&self) -> Result<()> {
+        if let Some(e) = self.items.iter().nth(
+            self.selection.saturating_sub(self.items.index_offset()),
+        ) {
+            crate::clipboard::copy_string(&e.hash_short)?;
+        }
+        Ok(())
     }
 
     fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
@@ -188,6 +194,7 @@ impl CommitList {
         tags: Option<String>,
         theme: &Theme,
         width: usize,
+        now: DateTime<Local>,
     ) -> Spans<'a> {
         let mut txt: Vec<Span> = Vec::new();
         txt.reserve(ELEMENTS_PER_LINE);
@@ -206,7 +213,7 @@ impl CommitList {
 
         // commit timestamp
         txt.push(Span::styled(
-            Cow::from(e.time.as_str()),
+            Cow::from(e.time_to_string(now)),
             theme.commit_time(selected),
         ));
 
@@ -249,6 +256,8 @@ impl CommitList {
 
         let mut txt: Vec<Spans> = Vec::with_capacity(height);
 
+        let now = Local::now();
+
         for (idx, e) in self
             .items
             .iter()
@@ -267,6 +276,7 @@ impl CommitList {
                 tags,
                 &self.theme,
                 width,
+                now,
             ));
         }
 
@@ -276,6 +286,10 @@ impl CommitList {
     #[allow(clippy::missing_const_for_fn)]
     fn relative_selection(&self) -> usize {
         self.selection.saturating_sub(self.items.index_offset())
+    }
+
+    pub fn select_entry(&mut self, position: usize) {
+        self.selection = position;
     }
 }
 
@@ -336,7 +350,7 @@ impl DrawableComponent for CommitList {
 }
 
 impl Component for CommitList {
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if let Event::Key(k) = ev {
             let selection_changed = if k == self.key_config.move_up {
                 self.move_selection(ScrollType::Up)?
@@ -357,10 +371,10 @@ impl Component for CommitList {
             } else {
                 false
             };
-            return Ok(selection_changed);
+            return Ok(selection_changed.into());
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn commands(
@@ -375,29 +389,6 @@ impl Component for CommitList {
         ));
         CommandBlocking::PassingOn
     }
-}
-
-#[inline]
-fn string_width_align(s: &str, width: usize) -> String {
-    static POSTFIX: &str = "..";
-
-    let len = UnicodeWidthStr::width(s);
-    let width_wo_postfix = width.saturating_sub(POSTFIX.len());
-
-    if (len >= width_wo_postfix && len <= width)
-        || (len <= width_wo_postfix)
-    {
-        format!("{:w$}", s, w = width)
-    } else {
-        let mut s = s.to_string();
-        s.truncate(find_truncate_point(&s, width_wo_postfix));
-        format!("{}{}", s, POSTFIX)
-    }
-}
-
-#[inline]
-fn find_truncate_point(s: &str, chars: usize) -> usize {
-    s.chars().take(chars).map(char::len_utf8).sum()
 }
 
 #[cfg(test)]

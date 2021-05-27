@@ -1,6 +1,6 @@
 [package]
 name = "asyncgit"
-version = "0.10.0"
+version = "0.15.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 edition = "2018"
 description = "allow using git2 in a asynchronous context"
@@ -14,13 +14,18 @@ keywords = ["git"]
 [dependencies]
 scopetime = { path = "../scopetime", version = "0.1" }
 git2 = { version = "0.13", features = ["vendored-openssl"] }
+# git2 = { path = "../../github/git2-rs", features = ["vendored-openssl"]}
+# git2 = { git="https://github.com/extrawurst/git2-rs.git", rev="513a8c9", features = ["vendored-openssl"]}
 rayon-core = "1.9"
 crossbeam-channel = "0.5"
 log = "0.4"
 thiserror = "1.0"
-url = "2.1"
+url = "2.2"
+unicode-truncate = "0.2.0"
+easy-cast = "0.4"
 
 [dev-dependencies]
-tempfile = "3.1"
+tempfile = "3.2"
 invalidstring = { path = "../invalidstring", version = "0.1" }
-serial_test = "0.5.0"
+serial_test = "0.5.1"
+pretty_assertions = "0.7"

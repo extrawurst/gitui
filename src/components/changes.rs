@@ -4,7 +4,7 @@ use super::{
     CommandBlocking, DrawableComponent,
 };
 use crate::{
-    components::{CommandInfo, Component},
+    components::{CommandInfo, Component, EventState},
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings, try_or_popup,
@@ -87,21 +87,27 @@ impl ChangesComponent {
                         _ => sync::stage_add_file(CWD, path)?,
                     };
 
-                    return Ok(true);
-                } else {
-                    //TODO: check if we can handle the one file case with it aswell
-                    sync::stage_add_all(
-                        CWD,
-                        tree_item.info.full_path.as_str(),
-                    )?;
+                    if self.is_empty() {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::StatusLastFileMoved,
+                        );
+                    }
 
                     return Ok(true);
                 }
-            } else {
-                let path = tree_item.info.full_path.as_str();
-                sync::reset_stage(CWD, path)?;
+
+                //TODO: check if we can handle the one file case with it aswell
+                sync::stage_add_all(
+                    CWD,
+                    tree_item.info.full_path.as_str(),
+                )?;
+
                 return Ok(true);
             }
+
+            let path = tree_item.info.full_path.as_str();
+            sync::reset_stage(CWD, path)?;
+            return Ok(true);
         }
 
         Ok(false)
@@ -236,9 +242,9 @@ impl Component for ChangesComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
-        if self.files.event(ev)? {
-            return Ok(true);
+    fn event(&mut self, ev: Event) -> Result<EventState> {
+        if self.files.event(ev)?.is_consumed() {
+            return Ok(EventState::Consumed);
         }
 
         if self.focused() {
@@ -250,7 +256,7 @@ impl Component for ChangesComponent {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::OpenCommit);
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.enter {
                     try_or_popup!(
                         self,
@@ -261,36 +267,39 @@ impl Component for ChangesComponent {
                     self.queue.borrow_mut().push_back(
                         InternalEvent::Update(NeedsUpdate::ALL),
                     );
-                    Ok(true)
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.status_stage_all
                     && !self.is_empty()
                 {
                     if self.is_working_dir {
                         try_or_popup!(
                             self,
-                            "staging error:",
+                            "staging all error:",
                             self.index_add_all()
                         );
                     } else {
                         self.stage_remove_all()?;
                     }
-                    Ok(true)
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::StatusLastFileMoved,
+                    );
+                    Ok(EventState::Consumed)
                 } else if e == self.key_config.status_reset_item
                     && self.is_working_dir
                 {
-                    Ok(self.dispatch_reset_workdir())
+                    Ok(self.dispatch_reset_workdir().into())
                 } else if e == self.key_config.status_ignore_file
                     && self.is_working_dir
                     && !self.is_empty()
                 {
-                    Ok(self.add_to_ignore())
+                    Ok(self.add_to_ignore().into())
                 } else {
-                    Ok(false)
+                    Ok(EventState::NotConsumed)
                 };
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn focused(&self) -> bool {

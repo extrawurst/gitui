@@ -3,29 +3,34 @@ use crate::{
     components::{
         command_pump, event_pump, visibility_blocking,
         ChangesComponent, CommandBlocking, CommandInfo, Component,
-        DiffComponent, DrawableComponent, FileTreeItemKind,
+        DiffComponent, DrawableComponent, EventState,
+        FileTreeItemKind,
     },
     keys::SharedKeyConfig,
-    queue::{InternalEvent, Queue, ResetItem},
-    strings::{self, order},
+    queue::{Action, InternalEvent, Queue, ResetItem},
+    strings, try_or_popup,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
     cached,
     sync::BranchCompare,
-    sync::{self, status::StatusType},
+    sync::{self, status::StatusType, RepoState},
     AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
     StatusParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use itertools::Itertools;
+use std::convert::Into;
+use std::convert::TryFrom;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Style},
     widgets::Paragraph,
 };
 
-///
+/// what part of the screen is focused
 #[derive(PartialEq)]
 enum Focus {
     WorkDir,
@@ -33,7 +38,18 @@ enum Focus {
     Stage,
 }
 
-///
+/// focus can toggle between workdir and stage
+impl Focus {
+    const fn toggled_focus(&self) -> Self {
+        match self {
+            Self::WorkDir => Self::Stage,
+            Self::Stage => Self::WorkDir,
+            Self::Diff => Self::Diff,
+        }
+    }
+}
+
+/// which target are we showing a diff against
 #[derive(PartialEq, Copy, Clone)]
 enum DiffTarget {
     Stage,
@@ -50,7 +66,7 @@ pub struct Status {
     git_diff: AsyncDiff,
     git_status_workdir: AsyncStatus,
     git_status_stage: AsyncStatus,
-    git_branch_state: BranchCompare,
+    git_branch_state: Option<BranchCompare>,
     git_branch_name: cached::BranchName,
     queue: Queue,
     git_action_executed: bool,
@@ -103,6 +119,7 @@ impl DrawableComponent for Status {
         self.index.draw(f, left_chunks[1])?;
         self.diff.draw(f, chunks[1])?;
         self.draw_branch_state(f, &left_chunks);
+        Self::draw_repo_state(f, left_chunks[0])?;
 
         Ok(())
     }
@@ -149,7 +166,7 @@ impl Status {
             git_status_workdir: AsyncStatus::new(sender.clone()),
             git_status_stage: AsyncStatus::new(sender.clone()),
             git_action_executed: false,
-            git_branch_state: BranchCompare::default(),
+            git_branch_state: None,
             git_branch_name: cached::BranchName::new(CWD),
             key_config,
         }
@@ -161,11 +178,18 @@ impl Status {
         chunks: &[tui::layout::Rect],
     ) {
         if let Some(branch_name) = self.git_branch_name.last() {
+            let ahead_behind =
+                if let Some(state) = &self.git_branch_state {
+                    format!(
+                        "\u{2191}{} \u{2193}{} ",
+                        state.ahead, state.behind,
+                    )
+                } else {
+                    String::new()
+                };
             let w = Paragraph::new(format!(
-                "\u{2191}{} \u{2193}{} {{{}}}",
-                self.git_branch_state.ahead,
-                self.git_branch_state.behind,
-                branch_name
+                "{}{{{}}}",
+                ahead_behind, branch_name
             ))
             .alignment(Alignment::Right);
 
@@ -187,12 +211,54 @@ impl Status {
         }
     }
 
+    fn draw_repo_state<B: tui::backend::Backend>(
+        f: &mut tui::Frame<B>,
+        r: tui::layout::Rect,
+    ) -> Result<()> {
+        if let Ok(state) = sync::repo_state(CWD) {
+            if state != RepoState::Clean {
+                let ids =
+                    sync::mergehead_ids(CWD).unwrap_or_default();
+                let ids = format!(
+                    "({})",
+                    ids.iter()
+                        .map(|id| sync::CommitId::get_short_string(
+                            id
+                        ))
+                        .join(",")
+                );
+                let txt = format!("{:?} {}", state, ids);
+                let txt_len = u16::try_from(txt.len())?;
+                let w = Paragraph::new(txt)
+                    .style(Style::default().fg(Color::Red))
+                    .alignment(Alignment::Left);
+
+                let mut rect = r;
+                rect.x += 1;
+                rect.width =
+                    rect.width.saturating_sub(2).min(txt_len);
+                rect.y += rect.height.saturating_sub(1);
+                rect.height = rect
+                    .height
+                    .saturating_sub(rect.height.saturating_sub(1));
+
+                f.render_widget(w, rect);
+            }
+        }
+
+        Ok(())
+    }
+
     fn can_focus_diff(&self) -> bool {
         match self.focus {
             Focus::WorkDir => self.index_wd.is_file_seleted(),
             Focus::Stage => self.index.is_file_seleted(),
             Focus::Diff => false,
         }
+    }
+
+    fn is_focus_on_diff(&self) -> bool {
+        self.focus == Focus::Diff
     }
 
     fn switch_focus(&mut self, f: Focus) -> Result<bool> {
@@ -252,14 +318,14 @@ impl Status {
 
         if self.is_visible() {
             self.git_diff.refresh()?;
-            self.git_status_workdir.fetch(StatusParams::new(
+            self.git_status_workdir.fetch(&StatusParams::new(
                 StatusType::WorkingDir,
                 true,
             ))?;
             self.git_status_stage
-                .fetch(StatusParams::new(StatusType::Stage, true))?;
+                .fetch(&StatusParams::new(StatusType::Stage, true))?;
 
-            self.check_branch_state();
+            self.branch_compare();
         }
 
         Ok(())
@@ -280,6 +346,9 @@ impl Status {
         match ev {
             AsyncNotification::Diff => self.update_diff()?,
             AsyncNotification::Status => self.update_status()?,
+            AsyncNotification::Push
+            | AsyncNotification::Fetch
+            | AsyncNotification::CommitFiles => self.branch_compare(),
             _ => (),
         }
 
@@ -368,51 +437,106 @@ impl Status {
         }
     }
 
-    fn push(&self) {
-        if let Some(branch) = self.git_branch_name.last() {
-            let branch = format!("refs/heads/{}", branch);
-
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Push(branch));
+    pub fn last_file_moved(&mut self) -> Result<()> {
+        if !self.is_focus_on_diff() && self.is_visible() {
+            self.switch_focus(self.focus.toggled_focus())?;
         }
+        Ok(())
     }
 
-    fn fetch(&self) {
-        if let Some(branch) = self.git_branch_name.last() {
-            match sync::fetch_origin(CWD, branch.as_str()) {
-                Err(e) => {
+    fn push(&self, force: bool) {
+        if self.can_push() {
+            if let Some(branch) = self.git_branch_name.last() {
+                if force {
                     self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "fetch error:\n{}",
-                            e
-                        )),
+                        InternalEvent::ConfirmAction(
+                            Action::ForcePush(branch, force),
+                        ),
                     );
-                }
-                Ok(bytes) => {
+                } else {
                     self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "fetched:\n{} B",
-                            bytes
-                        )),
+                        InternalEvent::Push(branch, force),
                     );
                 }
             }
         }
     }
 
-    fn check_branch_state(&mut self) {
-        self.git_branch_state = self.git_branch_name.last().map_or(
-            BranchCompare::default(),
-            |branch| {
-                sync::branch_compare_upstream(CWD, branch.as_str())
-                    .unwrap_or_default()
-            },
-        );
+    fn pull(&self) {
+        if let Some(branch) = self.git_branch_name.last() {
+            self.queue
+                .borrow_mut()
+                .push_back(InternalEvent::Pull(branch));
+        }
     }
 
-    const fn can_push(&self) -> bool {
-        self.git_branch_state.ahead > 0
+    fn branch_compare(&mut self) {
+        self.git_branch_state =
+            self.git_branch_name.last().and_then(|branch| {
+                sync::branch_compare_upstream(CWD, branch.as_str())
+                    .ok()
+            });
+    }
+
+    fn can_push(&self) -> bool {
+        self.git_branch_state
+            .as_ref()
+            .map_or(true, |state| state.ahead > 0)
+    }
+
+    fn can_abort_merge() -> bool {
+        sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+            == RepoState::Merge
+    }
+
+    pub fn abort_merge(&self) {
+        try_or_popup!(self, "abort merge", sync::abort_merge(CWD))
+    }
+
+    fn commands_nav(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) {
+        let focus_on_diff = self.is_focus_on_diff();
+        out.push(
+            CommandInfo::new(
+                strings::commands::diff_focus_left(&self.key_config),
+                true,
+                (self.visible && focus_on_diff) || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+        out.push(
+            CommandInfo::new(
+                strings::commands::diff_focus_right(&self.key_config),
+                self.can_focus_diff(),
+                (self.visible && !focus_on_diff) || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+        out.push(
+            CommandInfo::new(
+                strings::commands::select_staging(&self.key_config),
+                !focus_on_diff,
+                (self.visible
+                    && !focus_on_diff
+                    && self.focus == Focus::WorkDir)
+                    || force_all,
+            )
+            .order(strings::order::NAV),
+        );
+        out.push(
+            CommandInfo::new(
+                strings::commands::select_unstaged(&self.key_config),
+                !focus_on_diff,
+                (self.visible
+                    && !focus_on_diff
+                    && self.focus == Focus::Stage)
+                    || force_all,
+            )
+            .order(strings::order::NAV),
+        );
     }
 }
 
@@ -422,6 +546,8 @@ impl Component for Status {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
+        let focus_on_diff = self.is_focus_on_diff();
+
         if self.visible || force_all {
             command_pump(
                 out,
@@ -434,18 +560,35 @@ impl Component for Status {
                     &self.key_config,
                 ),
                 true,
-                true,
+                !focus_on_diff,
             ));
 
             out.push(CommandInfo::new(
                 strings::commands::status_push(&self.key_config),
                 self.can_push(),
+                !focus_on_diff,
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::status_force_push(
+                    &self.key_config,
+                ),
                 true,
+                self.can_push() && !focus_on_diff,
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::status_pull(&self.key_config),
+                true,
+                !focus_on_diff,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::abort_merge(&self.key_config),
+                true,
+                Self::can_abort_merge() || force_all,
             ));
         }
 
         {
-            let focus_on_diff = self.focus == Focus::Diff;
             out.push(CommandInfo::new(
                 strings::commands::edit_item(&self.key_config),
                 if focus_on_diff {
@@ -455,66 +598,40 @@ impl Component for Status {
                 },
                 self.visible || force_all,
             ));
-            out.push(CommandInfo::new(
-                strings::commands::diff_focus_left(&self.key_config),
-                true,
-                (self.visible && focus_on_diff) || force_all,
-            ));
-            out.push(CommandInfo::new(
-                strings::commands::diff_focus_right(&self.key_config),
-                self.can_focus_diff(),
-                (self.visible && !focus_on_diff) || force_all,
-            ));
+
+            out.push(
+                CommandInfo::new(
+                    strings::commands::select_status(
+                        &self.key_config,
+                    ),
+                    true,
+                    (self.visible && !focus_on_diff) || force_all,
+                )
+                .hidden(),
+            );
+
+            self.commands_nav(out, force_all);
         }
-
-        out.push(
-            CommandInfo::new(
-                strings::commands::select_status(&self.key_config),
-                true,
-                (self.visible && self.focus == Focus::Diff)
-                    || force_all,
-            )
-            .hidden(),
-        );
-
-        out.push(
-            CommandInfo::new(
-                strings::commands::select_staging(&self.key_config),
-                true,
-                (self.visible && self.focus == Focus::WorkDir)
-                    || force_all,
-            )
-            .order(order::NAV),
-        );
-
-        out.push(
-            CommandInfo::new(
-                strings::commands::select_unstaged(&self.key_config),
-                true,
-                (self.visible && self.focus == Focus::Stage)
-                    || force_all,
-            )
-            .order(order::NAV),
-        );
 
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: crossterm::event::Event) -> Result<bool> {
+    fn event(
+        &mut self,
+        ev: crossterm::event::Event,
+    ) -> Result<EventState> {
         if self.visible {
-            if event_pump(ev, self.components_mut().as_mut_slice())? {
+            if event_pump(ev, self.components_mut().as_mut_slice())?
+                .is_consumed()
+            {
                 self.git_action_executed = true;
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(k) = ev {
-                return if k == self.key_config.focus_workdir {
-                    self.switch_focus(Focus::WorkDir)
-                } else if k == self.key_config.focus_stage {
-                    self.switch_focus(Focus::Stage)
-                } else if k == self.key_config.edit_file
+                return if k == self.key_config.edit_file
                     && (self.can_focus_diff()
-                        || self.focus == Focus::Diff)
+                        || self.is_focus_on_diff())
                 {
                     if let Some((path, _)) = self.selected_path() {
                         self.queue.borrow_mut().push_back(
@@ -523,44 +640,72 @@ impl Component for Status {
                             )),
                         );
                     }
-                    Ok(true)
+                    Ok(EventState::Consumed)
+                } else if k == self.key_config.toggle_workarea
+                    && !self.is_focus_on_diff()
+                {
+                    self.switch_focus(self.focus.toggled_focus())
+                        .map(Into::into)
                 } else if k == self.key_config.focus_right
                     && self.can_focus_diff()
                 {
-                    self.switch_focus(Focus::Diff)
+                    self.switch_focus(Focus::Diff).map(Into::into)
                 } else if k == self.key_config.focus_left {
                     self.switch_focus(match self.diff_target {
                         DiffTarget::Stage => Focus::Stage,
                         DiffTarget::WorkingDir => Focus::WorkDir,
                     })
+                    .map(Into::into)
                 } else if k == self.key_config.move_down
                     && self.focus == Focus::WorkDir
                     && !self.index.is_empty()
                 {
-                    self.switch_focus(Focus::Stage)
+                    self.switch_focus(Focus::Stage).map(Into::into)
                 } else if k == self.key_config.move_up
                     && self.focus == Focus::Stage
                     && !self.index_wd.is_empty()
                 {
-                    self.switch_focus(Focus::WorkDir)
-                } else if k == self.key_config.select_branch {
+                    self.switch_focus(Focus::WorkDir).map(Into::into)
+                } else if k == self.key_config.select_branch
+                    && !self.is_focus_on_diff()
+                {
                     self.queue
                         .borrow_mut()
                         .push_back(InternalEvent::SelectBranch);
-                    Ok(true)
-                } else if k == self.key_config.push {
-                    self.push();
-                    Ok(true)
-                } else if k == self.key_config.fetch {
-                    self.fetch();
-                    Ok(true)
+                    Ok(EventState::Consumed)
+                } else if k == self.key_config.force_push
+                    && !self.is_focus_on_diff()
+                    && self.can_push()
+                {
+                    self.push(true);
+                    Ok(EventState::Consumed)
+                } else if k == self.key_config.push
+                    && !self.is_focus_on_diff()
+                {
+                    self.push(false);
+                    Ok(EventState::Consumed)
+                } else if k == self.key_config.pull
+                    && !self.is_focus_on_diff()
+                {
+                    self.pull();
+                    Ok(EventState::Consumed)
+                } else if k == self.key_config.abort_merge
+                    && Self::can_abort_merge()
+                {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::ConfirmAction(
+                            Action::AbortMerge,
+                        ),
+                    );
+
+                    Ok(EventState::Consumed)
                 } else {
-                    Ok(false)
+                    Ok(EventState::NotConsumed)
                 };
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {

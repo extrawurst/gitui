@@ -1,6 +1,7 @@
 use super::{
     textinput::TextInputComponent, visibility_blocking,
     CommandBlocking, CommandInfo, Component, DrawableComponent,
+    EventState,
 };
 use crate::{
     keys::SharedKeyConfig,
@@ -56,10 +57,10 @@ impl Component for TagCommitComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.is_visible() {
-            if self.input.event(ev)? {
-                return Ok(true);
+            if self.input.event(ev)?.is_consumed() {
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(e) = ev {
@@ -67,10 +68,10 @@ impl Component for TagCommitComponent {
                     self.tag()
                 }
 
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
@@ -102,6 +103,7 @@ impl TagCommitComponent {
                 key_config.clone(),
                 &strings::tag_commit_popup_title(&key_config),
                 &strings::tag_commit_popup_msg(&key_config),
+                true,
             ),
             commit_id: None,
             key_config,

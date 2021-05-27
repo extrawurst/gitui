@@ -7,7 +7,6 @@ use crossbeam_channel::Sender;
 use git2::Oid;
 use scopetime::scope_time;
 use std::{
-    iter::FromIterator,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
@@ -66,7 +65,15 @@ impl AsyncLog {
         let min = start_index.min(list_len);
         let max = min + amount;
         let max = max.min(list_len);
-        Ok(Vec::from_iter(list[min..max].iter().cloned()))
+        Ok(list[min..max].to_vec())
+    }
+
+    ///
+    pub fn position(&self, id: CommitId) -> Result<Option<usize>> {
+        let list = self.current.lock()?;
+        let position = list.iter().position(|&x| x == id);
+
+        Ok(position)
     }
 
     ///
@@ -122,9 +129,9 @@ impl AsyncLog {
         rayon_core::spawn(move || {
             scope_time!("async::revlog");
 
-            AsyncLog::fetch_helper(
-                arc_current,
-                arc_background,
+            Self::fetch_helper(
+                &arc_current,
+                &arc_background,
                 &sender,
             )
             .expect("failed to fetch");
@@ -138,8 +145,8 @@ impl AsyncLog {
     }
 
     fn fetch_helper(
-        arc_current: Arc<Mutex<Vec<CommitId>>>,
-        arc_background: Arc<AtomicBool>,
+        arc_current: &Arc<Mutex<Vec<CommitId>>>,
+        arc_background: &Arc<AtomicBool>,
         sender: &Sender<AsyncNotification>,
     ) -> Result<()> {
         let mut entries = Vec::with_capacity(LIMIT_COUNT);
@@ -157,17 +164,16 @@ impl AsyncLog {
 
             if res_is_err || entries.len() <= 1 {
                 break;
-            } else {
-                Self::notify(&sender);
-
-                let sleep_duration =
-                    if arc_background.load(Ordering::Relaxed) {
-                        SLEEP_BACKGROUND
-                    } else {
-                        SLEEP_FOREGROUND
-                    };
-                thread::sleep(sleep_duration);
             }
+            Self::notify(sender);
+
+            let sleep_duration =
+                if arc_background.load(Ordering::Relaxed) {
+                    SLEEP_BACKGROUND
+                } else {
+                    SLEEP_FOREGROUND
+                };
+            thread::sleep(sleep_duration);
         }
 
         Ok(())

@@ -1,18 +1,18 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent,
+    DrawableComponent, EventState,
 };
 use crate::{keys::SharedKeyConfig, strings, ui};
 use crossterm::event::Event;
+use std::convert::TryFrom;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    text::{Span, Spans},
+    text::Span,
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
 use ui::style::SharedTheme;
-
 pub struct MsgComponent {
     title: String,
     msg: String,
@@ -32,17 +32,30 @@ impl DrawableComponent for MsgComponent {
         if !self.visible {
             return Ok(());
         }
-        let txt = Spans::from(
-            self.msg
-                .split('\n')
-                .map(|string| Span::raw::<String>(string.to_string()))
-                .collect::<Vec<Span>>(),
-        );
 
-        let area = ui::centered_rect_absolute(65, 25, f.size());
+        // determine the maximum width of text block
+        let lens = self
+            .msg
+            .split('\n')
+            .map(str::len)
+            .collect::<Vec<usize>>();
+        let mut max = lens.iter().max().expect("max") + 2;
+        if max > std::u16::MAX as usize {
+            max = std::u16::MAX as usize;
+        }
+        let mut width =
+            u16::try_from(max).expect("cant fail due to check above");
+        // dont overflow screen, and dont get too narrow
+        if width > f.size().width {
+            width = f.size().width
+        } else if width < 60 {
+            width = 60
+        }
+
+        let area = ui::centered_rect_absolute(width, 25, f.size());
         f.render_widget(Clear, area);
         f.render_widget(
-            Paragraph::new(txt)
+            Paragraph::new(self.msg.clone())
                 .block(
                     Block::default()
                         .title(Span::styled(
@@ -76,16 +89,16 @@ impl Component for MsgComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.enter {
                     self.hide();
                 }
             }
-            Ok(true)
+            Ok(EventState::Consumed)
         } else {
-            Ok(false)
+            Ok(EventState::NotConsumed)
         }
     }
 

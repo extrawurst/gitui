@@ -65,10 +65,7 @@ impl AsyncDiff {
     pub fn last(&mut self) -> Result<Option<(DiffParams, FileDiff)>> {
         let last = self.last.lock()?;
 
-        Ok(match last.clone() {
-            Some(res) => Some((res.params, res.result)),
-            None => None,
-        })
+        Ok(last.clone().map(|res| (res.params, res.result)))
     }
 
     ///
@@ -113,13 +110,20 @@ impl AsyncDiff {
         self.pending.fetch_add(1, Ordering::Relaxed);
 
         rayon_core::spawn(move || {
-            let notify = AsyncDiff::get_diff_helper(
+            let notify = Self::get_diff_helper(
                 params,
-                arc_last,
-                arc_current,
+                &arc_last,
+                &arc_current,
                 hash,
-            )
-            .expect("error getting diff");
+            );
+
+            let notify = match notify {
+                Err(err) => {
+                    log::error!("get_diff_helper error: {}", err);
+                    true
+                }
+                Ok(notify) => notify,
+            };
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
@@ -137,18 +141,18 @@ impl AsyncDiff {
 
     fn get_diff_helper(
         params: DiffParams,
-        arc_last: Arc<
+        arc_last: &Arc<
             Mutex<Option<LastResult<DiffParams, FileDiff>>>,
         >,
-        arc_current: Arc<Mutex<Request<u64, FileDiff>>>,
+        arc_current: &Arc<Mutex<Request<u64, FileDiff>>>,
         hash: u64,
     ) -> Result<bool> {
         let res = match params.diff_type {
             DiffType::Stage => {
-                sync::diff::get_diff(CWD, params.path.clone(), true)?
+                sync::diff::get_diff(CWD, &params.path, true)?
             }
             DiffType::WorkDir => {
-                sync::diff::get_diff(CWD, params.path.clone(), false)?
+                sync::diff::get_diff(CWD, &params.path, false)?
             }
             DiffType::Commit(id) => sync::diff::get_diff_commit(
                 CWD,

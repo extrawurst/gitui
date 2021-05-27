@@ -7,33 +7,163 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**merge branch, merge commit**
+
+![merge-commit](assets/merge-commit-abort.gif)
+
+**commit subject length warning**
+
+![warning](assets/commit-msg-length-limit.gif)
+
+## Added
+- merging branches, pull-merge with conflicts, commit merges ([#485](https://github.com/extrawurst/gitui/issues/485))
+- warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
+- `--bugreport` cmd line arg to help diagnostics [[@zcorniere](https://github.com/zcorniere)] ([#695](https://github.com/extrawurst/gitui/issues/695))
+- inspect file tree at a specific revision ([#714](https://github.com/extrawurst/gitui/issues/714))
+- tags-list-popup (delete-tag, go to tagged commit) [[@cruessler](https://github.com/cruessler)] ([#483](https://github.com/extrawurst/gitui/issues/483))
+
+## Changed
+- smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
+- create-branch popup aligned with rename-branch [[@bruceCoelho](https://github.com/bruceCoelho)] ([#679](https://github.com/extrawurst/gitui/issues/679))
+- smart focus change after staging all files ([#706](https://github.com/extrawurst/gitui/issues/706))
+- do not allow to commit when `gpgsign` enabled ([#740](https://github.com/extrawurst/gitui/issues/740))
+
+## Fixed
+- selected-tab color broken in light theme [[@Cottser](https://github.com/Cottser)] ([#719](https://github.com/extrawurst/gitui/issues/719))
+- proper tmp file location to externally edit commit msg ([#518](https://github.com/extrawurst/gitui/issues/518))
+
+## [0.15.0] - 2020-04-27
+
+**file blame**
+
+![blame](assets/blame.gif)
+
 ### Added
-- added windows scoop recipe ([#164](https://github.com/extrawurst/gitui/issues/164))
-- added gitui to [chocolatey](https://chocolatey.org/packages/gitui) on windows by [@nils-a](https://github.com/nils-a)
-- added windows installer (msi) to release [[@pm100](https://github.com/pm100)] ([#360](https://github.com/extrawurst/gitui/issues/360))
+- blame a file [[@cruessler](https://github.com/cruessler)] ([#484](https://github.com/extrawurst/gitui/issues/484))
+- support commit.template [[@wandernauta](https://github.com/wandernauta)] ([#546](https://github.com/extrawurst/gitui/issues/546))
+
+### Fixed
+- debug print when adding a file to ignore
+- fix scrolling long messages in commit details view ([#663](https://github.com/extrawurst/gitui/issues/663))
+- limit log messages in log tab ([#652](https://github.com/extrawurst/gitui/issues/652))
+- fetch crashed when no upstream of branch is set ([#637](https://github.com/extrawurst/gitui/issues/637))
+- `enter` key panics in empty remote branch list ([#643](https://github.com/extrawurst/gitui/issues/643))
+
+### Internal
+- cleanup some stringly typed code [[@wandernauta](https://github.com/wandernauta)] ([#655](https://github.com/extrawurst/gitui/issues/655))
+- introduce EventState enum (removing bool for even propagation) [[@tisorlawan](https://github.com/tisorlawan)] ([#665](https://github.com/extrawurst/gitui/issues/665))
+
+## [0.14.0] - 2020-04-11
+
+### Added
+- `[w]` key to toggle between staging/workdir [[@terhechte](https://github.com/terhechte)] ([#595](https://github.com/extrawurst/gitui/issues/595))
+- view/checkout remote branches ([#617](https://github.com/extrawurst/gitui/issues/617))
+
+![checkout-remote](assets/checkout-remote.gif)
+
+### Changed
+- ask to pop stash by default (*apply* using `[a]` now) [[@brunogouveia](https://github.com/brunogouveia)] ([#574](https://github.com/extrawurst/gitui/issues/574))
+
+![stash_pop](assets/stash_pop.gif)
+
+### Fixed
+- push branch to its tracking remote ([#597](https://github.com/extrawurst/gitui/issues/597))
+- fixed panic when staging lines involving missing newline eof ([#605](https://github.com/extrawurst/gitui/issues/605))
+- fixed pull/fetch deadlocking when it fails ([#624](https://github.com/extrawurst/gitui/issues/624))
+
+## [0.13.0] - 2020-03-15 - Happy Birthday GitUI 🥳
+
+Thanks for your interest and support over this year! Read more about the 1 year anniversary reflections of this project on my [blog](https://blog.extrawurst.org/general/programming/rust/2021/03/15/gitui-a-year-in-opensource.html).
+
+**stage/unstage/discard by line**
+
+![by-line-ops](assets/by-line-ops.gif)
+
+**push tags**
+
+![push-tags](assets/push_tags.gif)
+
+### Changed
+- `[s]` key repurposed to trigger line based (un)stage
+- cleanup status/diff commands to be more context sensitive ([#572](https://github.com/extrawurst/gitui/issues/572))
+
+### Added
+- support pull via rebase (using config `pull.rebase`) ([#566](https://github.com/extrawurst/gitui/issues/566))
+- support stage/unstage selected lines ([#59](https://github.com/extrawurst/gitui/issues/59))
+- support discarding selected lines ([#59](https://github.com/extrawurst/gitui/issues/59))
+- support for pushing tags ([#568](https://github.com/extrawurst/gitui/issues/568))
+- visualize *conflicted* files differently ([#576](https://github.com/extrawurst/gitui/issues/576))
+
+### Fixed
+- keep diff line selection after staging/unstaging/discarding ([#583](https://github.com/extrawurst/gitui/issues/583))
+- fix pull deadlocking when aborting credentials input ([#586](https://github.com/extrawurst/gitui/issues/586))
+- error diagnostics for config loading ([#589](https://github.com/extrawurst/gitui/issues/589))
+
+## [0.12.0] - 2020-03-03
+
+**pull support (ff-merge or conflict-free merge-commit)**
+
+![pull](assets/pull.gif)
+
+**more info in commit popup**
+
+![chars-branch-name](assets/chars_and_branchname.gif)
+
+### Breaking Change
+- MacOS config directory now uses `~/.config/gitui` [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317)) 
+
+### Added
+- support for pull (fetch + simple merging) ([#319](https://github.com/extrawurst/gitui/issues/319))
+- show used char count in input texts ([#466](https://github.com/extrawurst/gitui/issues/466))
+- support smoother left/right toggle/keys for commit details ([#418](https://github.com/extrawurst/gitui/issues/418))
+- support *force push* command [[@WizardOhio24](https://github.com/WizardOhio24)] ([#274](https://github.com/extrawurst/gitui/issues/274)) 
+
+### Fixed
+- don't close branchlist every time ([#550](https://github.com/extrawurst/gitui/issues/550))
+- fixed key binding for *external exitor* in vim key bindings [[@yanganto](https://github.com/yanganto)] ([#549](https://github.com/extrawurst/gitui/issues/549))
+- fix some potential errors when deleting files while they are being diffed ([#490](https://github.com/extrawurst/gitui/issues/490))
+- push defaults to 'origin' remote if it exists ([#494](https://github.com/extrawurst/gitui/issues/494))
+- support missing pageUp/down support in branchlist ([#519](https://github.com/extrawurst/gitui/issues/519))
+- don't hide branch name while in commit dialog ([#529](https://github.com/extrawurst/gitui/issues/529))
+- don't discard commit message without confirmation ([#530](https://github.com/extrawurst/gitui/issues/530))
+- compilation broken on freebsd ([#461](https://github.com/extrawurst/gitui/issues/461))
+- don’t fail if `user.name` is not set [[@cruessler](https://github.com/cruessler)] ([#79](https://github.com/extrawurst/gitui/issues/79)) ([#228](https://github.com/extrawurst/gitui/issues/228))
+
+## [0.11.0] - 2020-12-20
+
+### Added
 - push to remote ([#265](https://github.com/extrawurst/gitui/issues/265)) ([#267](https://github.com/extrawurst/gitui/issues/267))
 
 ![push](assets/push.gif)
 
-- incoming/outgoing commits to upstream ([#362](https://github.com/extrawurst/gitui/issues/362))
+- number of incoming/outgoing commits to upstream ([#362](https://github.com/extrawurst/gitui/issues/362))
 - new branch list popup incl. checkout/delete/rename [[@WizardOhio24](https://github.com/WizardOhio24)] ([#303](https://github.com/extrawurst/gitui/issues/303)) ([#323](https://github.com/extrawurst/gitui/issues/323))
 
 ![branches](assets/branches.gif)
 
+- compact treeview [[@WizardOhio24](https://github.com/WizardOhio24)] ([#192](https://github.com/extrawurst/gitui/issues/192))
+
+![tree](assets/compact-tree.png)
+
 - scrollbar in long commit messages [[@timaliberdov](https://github.com/timaliberdov)] ([#308](https://github.com/extrawurst/gitui/issues/308))
+- added windows scoop recipe ([#164](https://github.com/extrawurst/gitui/issues/164))
+- added gitui to [chocolatey](https://chocolatey.org/packages/gitui) on windows by [@nils-a](https://github.com/nils-a)
+- added gitui gentoo instructions to readme [[@dm9pZCAq](https://github.com/dm9pZCAq)] ([#430](https://github.com/extrawurst/gitui/pull/430))
+- added windows installer (msi) to release [[@pm100](https://github.com/pm100)] ([#360](https://github.com/extrawurst/gitui/issues/360))
+- command to copy commit hash [[@yanganto](https://github.com/yanganto)] ([#281](https://github.com/extrawurst/gitui/issues/281))
 
 ### Changed
 - upgrade `dirs` to `dirs-next` / remove cfg migration code ([#351](https://github.com/extrawurst/gitui/issues/351)) ([#366](https://github.com/extrawurst/gitui/issues/366))
 - do not highlight selection in diff view when not focused ([#270](https://github.com/extrawurst/gitui/issues/270))
 - copy to clipboard using `xclip`(linux), `pbcopy`(mac) or `clip`(win) [[@cruessler](https://github.com/cruessler)] ([#262](https://github.com/extrawurst/gitui/issues/262))
-- compact treeview [[@WizardOhio24](https://github.com/WizardOhio24)] ([#192](https://github.com/extrawurst/gitui/issues/192))
-
-![tree](assets/compact-tree.png)
 
 ### Fixed
 - crash when changing git repo while gitui is open ([#271](https://github.com/extrawurst/gitui/issues/271))
+- remove workaround for color serialization [[@1wilkens](https://github.com/1wilkens)] ([#149](https://github.com/extrawurst/gitui/issues/149))
 - crash on small terminal size ([#307](https://github.com/extrawurst/gitui/issues/307))
 - fix vim keybindings uppercase handling [[@yanganto](https://github.com/yanganto)] ([#286](https://github.com/extrawurst/gitui/issues/286))
+- remove shift tab windows workaround [[@nils-a](https://github.com/nils-a)] ([#112](https://github.com/extrawurst/gitui/issues/112))
+- core.editor is ignored [[@pm100](https://github.com/pm100)] ([#414](https://github.com/extrawurst/gitui/issues/414))
 
 ## [0.10.1] - 2020-09-01
 

@@ -1,11 +1,12 @@
 use super::style::SharedTheme;
+use easy_cast::CastFloat;
 use std::convert::TryFrom;
 use tui::{
     backend::Backend,
     buffer::Buffer,
     layout::{Margin, Rect},
     style::Style,
-    symbols::{block::FULL, line::THICK_VERTICAL},
+    symbols::{block::FULL, line::DOUBLE_VERTICAL},
     widgets::Widget,
     Frame,
 };
@@ -31,36 +32,40 @@ impl Scrollbar {
 
 impl Widget for Scrollbar {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        if area.height <= 2 {
+            return;
+        }
+
+        if self.max == 0 {
+            return;
+        }
+
         let right = area.right().saturating_sub(1);
         if right <= area.left() {
             return;
         };
 
-        let area = area.inner(&Margin {
-            horizontal: 0,
-            vertical: 1,
-        });
+        let (bar_top, bar_height) = {
+            let scrollbar_area = area.inner(&Margin {
+                horizontal: 0,
+                vertical: 1,
+            });
 
-        if area.height < 4 {
-            return;
-        }
+            (scrollbar_area.top(), scrollbar_area.height)
+        };
 
-        if area.height > self.max {
-            return;
-        }
-
-        for y in area.top()..area.bottom() {
-            buf.set_string(right, y, THICK_VERTICAL, self.style_bar);
+        for y in bar_top..(bar_top + bar_height) {
+            buf.set_string(right, y, DOUBLE_VERTICAL, self.style_bar);
         }
 
         let progress = f32::from(self.pos) / f32::from(self.max);
-        let pos = f32::from(area.height.saturating_sub(1)) * progress;
-        //TODO: any better way for this?
-        #[allow(clippy::cast_sign_loss)]
-        #[allow(clippy::cast_possible_truncation)]
-        let pos = pos as u16;
+        let progress = if progress > 1.0 { 1.0 } else { progress };
+        let pos = f32::from(bar_height) * progress;
 
-        buf.set_string(right, area.top() + pos, FULL, self.style_pos);
+        let pos: u16 = pos.cast_nearest();
+        let pos = pos.saturating_sub(1);
+
+        buf.set_string(right, bar_top + pos, FULL, self.style_pos);
     }
 }
 

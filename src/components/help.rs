@@ -1,6 +1,6 @@
 use super::{
     visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent,
+    DrawableComponent, EventState,
 };
 use crate::{keys::SharedKeyConfig, strings, ui, version::Version};
 use anyhow::Result;
@@ -121,7 +121,7 @@ impl Component for HelpComponent {
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
@@ -134,16 +134,16 @@ impl Component for HelpComponent {
                 }
             }
 
-            Ok(true)
+            Ok(EventState::Consumed)
         } else if let Event::Key(k) = ev {
             if k == self.key_config.open_help {
                 self.show()?;
-                Ok(true)
+                Ok(EventState::Consumed)
             } else {
-                Ok(false)
+                Ok(EventState::NotConsumed)
             }
         } else {
-            Ok(false)
+            Ok(EventState::NotConsumed)
         }
     }
 

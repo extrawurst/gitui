@@ -1,5 +1,5 @@
 use crate::tabs::StashingOptions;
-use asyncgit::sync::{CommitId, CommitTags};
+use asyncgit::sync::{diff::DiffLinePosition, CommitId, CommitTags};
 use bitflags::bitflags;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
@@ -12,6 +12,8 @@ bitflags! {
         const DIFF = 0b010;
         /// commands might need updating (app::update_commands)
         const COMMANDS = 0b100;
+        /// branches have changed
+        const BRANCHES = 0b1000;
     }
 }
 
@@ -27,8 +29,14 @@ pub struct ResetItem {
 pub enum Action {
     Reset(ResetItem),
     ResetHunk(String, u64),
+    ResetLines(String, Vec<DiffLinePosition>),
     StashDrop(CommitId),
+    StashPop(CommitId),
     DeleteBranch(String),
+    DeleteTag(String),
+    ForcePush(String, bool),
+    PullMerge { incoming: usize, rebase: bool },
+    AbortMerge,
 }
 
 ///
@@ -41,6 +49,8 @@ pub enum InternalEvent {
     ShowErrorMsg(String),
     ///
     Update(NeedsUpdate),
+    ///
+    StatusLastFileMoved,
     /// open commit msg input
     OpenCommit,
     ///
@@ -50,7 +60,13 @@ pub enum InternalEvent {
     ///
     InspectCommit(CommitId, Option<CommitTags>),
     ///
+    SelectCommitInRevlog(CommitId),
+    ///
     TagCommit(CommitId),
+    ///
+    Tags,
+    ///
+    BlameFile(String),
     ///
     CreateBranch,
     ///
@@ -60,7 +76,13 @@ pub enum InternalEvent {
     ///
     OpenExternalEditor(Option<String>),
     ///
-    Push(String),
+    Push(String, bool),
+    ///
+    Pull(String),
+    ///
+    PushTags,
+    ///
+    OpenFileTree(CommitId),
 }
 
 ///

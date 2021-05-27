@@ -1,10 +1,13 @@
 use super::{
     command_pump, event_pump, visibility_blocking, CommandBlocking,
     CommandInfo, CommitDetailsComponent, Component, DiffComponent,
-    DrawableComponent,
+    DrawableComponent, EventState,
 };
 use crate::{
-    accessors, keys::SharedKeyConfig, queue::Queue, strings,
+    accessors,
+    keys::SharedKeyConfig,
+    queue::{InternalEvent, Queue},
+    strings,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -22,6 +25,7 @@ use tui::{
 };
 
 pub struct InspectCommitComponent {
+    queue: Queue,
     commit_id: Option<CommitId>,
     tags: Option<CommitTags>,
     diff: DiffComponent,
@@ -98,15 +102,25 @@ impl Component for InspectCommitComponent {
                 true,
                 self.diff.focused() || force_all,
             ));
+
+            out.push(CommandInfo::new(
+                strings::commands::inspect_file_tree(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));
         }
 
         visibility_blocking(self)
     }
 
-    fn event(&mut self, ev: Event) -> Result<bool> {
+    fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.is_visible() {
-            if event_pump(ev, self.components_mut().as_mut_slice())? {
-                return Ok(true);
+            if event_pump(ev, self.components_mut().as_mut_slice())?
+                .is_consumed()
+            {
+                return Ok(EventState::Consumed);
             }
 
             if let Event::Key(e) = ev {
@@ -122,14 +136,22 @@ impl Component for InspectCommitComponent {
                 {
                     self.details.focus(true);
                     self.diff.focus(false);
+                } else if e == self.key_config.open_file_tree {
+                    if let Some(commit) = self.commit_id {
+                        self.queue.borrow_mut().push_back(
+                            InternalEvent::OpenFileTree(commit),
+                        );
+                        self.hide();
+                    }
+                } else if e == self.key_config.focus_left {
+                    self.hide();
                 }
 
-                // stop key event propagation
-                return Ok(true);
+                return Ok(EventState::Consumed);
             }
         }
 
-        Ok(false)
+        Ok(EventState::NotConsumed)
     }
 
     fn is_visible(&self) -> bool {
@@ -159,6 +181,7 @@ impl InspectCommitComponent {
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
+            queue: queue.clone(),
             details: CommitDetailsComponent::new(
                 queue,
                 sender,

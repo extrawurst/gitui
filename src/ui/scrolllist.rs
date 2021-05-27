@@ -18,8 +18,6 @@ where
     block: Option<Block<'b>>,
     /// Items to be displayed
     items: L,
-    /// Index of the scroll position
-    scroll: usize,
     /// Base style of the widget
     style: Style,
 }
@@ -32,18 +30,12 @@ where
         Self {
             block: None,
             items,
-            scroll: 0,
             style: Style::default(),
         }
     }
 
     fn block(mut self, block: Block<'b>) -> Self {
         self.block = Some(block);
-        self
-    }
-
-    fn scroll(mut self, index: usize) -> Self {
-        self.scroll = index;
         self
     }
 }
@@ -68,19 +60,28 @@ pub fn draw_list<'b, B: Backend, L>(
     r: Rect,
     title: &'b str,
     items: L,
-    select: Option<usize>,
     selected: bool,
     theme: &SharedTheme,
 ) where
     L: Iterator<Item = Span<'b>>,
 {
-    let list = ScrollableList::new(items)
-        .block(
-            Block::default()
-                .title(Span::styled(title, theme.title(selected)))
-                .borders(Borders::ALL)
-                .border_style(theme.block(selected)),
-        )
-        .scroll(select.unwrap_or_default());
+    let list = ScrollableList::new(items).block(
+        Block::default()
+            .title(Span::styled(title, theme.title(selected)))
+            .borders(Borders::ALL)
+            .border_style(theme.block(selected)),
+    );
+    f.render_widget(list, r)
+}
+
+pub fn draw_list_block<'b, B: Backend, L>(
+    f: &mut Frame<B>,
+    r: Rect,
+    block: Block<'b>,
+    items: L,
+) where
+    L: Iterator<Item = Span<'b>>,
+{
+    let list = ScrollableList::new(items).block(block);
     f.render_widget(list, r)
 }

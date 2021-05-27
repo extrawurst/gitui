@@ -1,5 +1,7 @@
 use super::{stash::is_stash_commit, utils::repo, CommitId};
-use crate::{error::Result, StatusItem, StatusItemType};
+use crate::{
+    error::Error, error::Result, StatusItem, StatusItemType,
+};
 use git2::{Diff, DiffDelta, DiffOptions, Repository};
 use scopetime::scope_time;
 
@@ -36,7 +38,7 @@ pub fn get_commit_files(
     Ok(res)
 }
 
-///
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) fn get_commit_diff(
     repo: &Repository,
     id: CommitId,
@@ -52,21 +54,23 @@ pub(crate) fn get_commit_diff(
         None
     };
 
-    let mut opt = pathspec.as_ref().map(|p| {
-        let mut opts = DiffOptions::new();
-        opts.pathspec(p);
-        opts.show_binary(true);
-        opts
-    });
+    let mut opts = DiffOptions::new();
+    if let Some(p) = &pathspec {
+        opts.pathspec(p.clone());
+    }
+    opts.show_binary(true);
 
     let mut diff = repo.diff_tree_to_tree(
         parent.as_ref(),
         Some(&commit_tree),
-        opt.as_mut(),
+        Some(&mut opts),
     )?;
 
     if is_stash_commit(
-        repo.path().to_str().expect("repo path utf8 err"),
+        repo.path().to_str().map_or_else(
+            || Err(Error::Generic("repo path utf8 err".to_owned())),
+            Ok,
+        )?,
         &id,
     )? {
         if let Ok(untracked_commit) = commit.parent_id(2) {
