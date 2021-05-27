@@ -14,6 +14,7 @@ use crate::{
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
+    setup_popups,
     strings::{self, order},
     tabs::{Revlog, StashList, Stashing, Status},
     ui::style::{SharedTheme, Theme},
@@ -412,6 +413,29 @@ impl App {
         ]
     );
 
+    setup_popups!(
+        self,
+        [
+            commit,
+            help,
+            reset,
+            msg,
+            stashmsg_popup,
+            inspect_commit_popup,
+            blame_file_popup,
+            external_editor_popup,
+            tag_commit_popup,
+            create_branch_popup,
+            push_popup,
+            push_tags_popup,
+            pull_popup,
+            select_branch_popup,
+            tags_popup,
+            rename_branch_popup,
+            revision_files_popup
+        ]
+    );
+
     fn check_quit_key(&mut self, ev: Event) -> bool {
         if let Event::Key(e) = ev {
             if e == self.key_config.exit {
@@ -712,63 +736,6 @@ impl App {
         );
 
         res
-    }
-
-    //TODO: make this automatic, i keep forgetting to add popups here
-    fn any_popup_visible(&self) -> bool {
-        self.commit.is_visible()
-            || self.help.is_visible()
-            || self.reset.is_visible()
-            || self.msg.is_visible()
-            || self.stashmsg_popup.is_visible()
-            || self.inspect_commit_popup.is_visible()
-            || self.blame_file_popup.is_visible()
-            || self.external_editor_popup.is_visible()
-            || self.tag_commit_popup.is_visible()
-            || self.create_branch_popup.is_visible()
-            || self.push_popup.is_visible()
-            || self.push_tags_popup.is_visible()
-            || self.pull_popup.is_visible()
-            || self.select_branch_popup.is_visible()
-            || self.tags_popup.is_visible()
-            || self.rename_branch_popup.is_visible()
-            || self.revision_files_popup.is_visible()
-    }
-
-    fn draw_popups<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-    ) -> Result<()> {
-        let size = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Min(1),
-                    Constraint::Length(self.cmdbar.borrow().height()),
-                ]
-                .as_ref(),
-            )
-            .split(f.size())[0];
-
-        self.commit.draw(f, size)?;
-        self.stashmsg_popup.draw(f, size)?;
-        self.help.draw(f, size)?;
-        self.inspect_commit_popup.draw(f, size)?;
-        self.blame_file_popup.draw(f, size)?;
-        self.external_editor_popup.draw(f, size)?;
-        self.tag_commit_popup.draw(f, size)?;
-        self.select_branch_popup.draw(f, size)?;
-        self.tags_popup.draw(f, size)?;
-        self.create_branch_popup.draw(f, size)?;
-        self.rename_branch_popup.draw(f, size)?;
-        self.revision_files_popup.draw(f, size)?;
-        self.push_popup.draw(f, size)?;
-        self.push_tags_popup.draw(f, size)?;
-        self.pull_popup.draw(f, size)?;
-        self.reset.draw(f, size)?;
-        self.msg.draw(f, size)?;
-
-        Ok(())
     }
 
     //TODO: make this dynamic
