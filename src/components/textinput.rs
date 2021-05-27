@@ -110,9 +110,9 @@ impl TextInputComponent {
         // if the text box height increased,
         // componsate by scrolling up one
         if self.scroll_max
-            < (self.frame_height.get() as usize)
+            < (self.frame_height.get())
                 .saturating_sub(BORDER_SIZE * 2)
-            && self.scroll_max >= 3
+        //&& self.scroll_max >= 3
         {
             self.scroll_top = self.scroll_top.saturating_sub(1);
             //self.cur_line = self.cur_line.saturating_sub(1);
@@ -123,9 +123,9 @@ impl TextInputComponent {
     fn incr_cursor_multiline(&mut self) {
         if self.msg.chars().nth(self.cursor_position) == Some('\n') {
             self.cur_line += 1;
-            if self.cur_line
-                > (self.current_area.get().height as usize)
-                    .saturating_sub(3_usize)
+            if self.cur_line.saturating_sub(self.scroll_top)
+                > (self.frame_height.get()).saturating_sub(3)
+            //
             {
                 self.scroll_top += 1;
             }
@@ -145,9 +145,9 @@ impl TextInputComponent {
     /// See `decr_cursor`
     fn decr_cursor_multiline(&mut self, index: usize) {
         if self.msg.chars().nth(index) == Some('\n') {
-            self.cur_line -= 1;
+            self.cur_line = self.cur_line.saturating_sub(1);
             if self.cur_line < self.scroll_top {
-                self.scroll_top -= 1;
+                self.scroll_top = self.scroll_top.saturating_sub(1);
             }
         }
     }
@@ -183,8 +183,8 @@ impl TextInputComponent {
             + self.cursor_position)
             .saturating_sub(nearest_newline);
         if prev_line_newline_loc == 0 {
-            self.cursor_position =
-                self.cursor_position.saturating_sub(1);
+            self.cursor_position = 0;
+            //self.cursor_position.saturating_sub(1);
         }
 
         while !self.msg.is_char_boundary(self.cursor_position) {
@@ -214,19 +214,24 @@ impl TextInputComponent {
                     break;
                 }
             }
-            // if !self.msg.is_char_boundary(i) {
-            // self.msg.is_char_boundary(i) c.is_alphanumeric() {
-            // unprintable
-            //    chars_not_printed += 1;
-            // }
+
+            // To capture unicode multi-byte characters
+            //chars_not_printed += c.len_utf8() - 1;
+            if !self.msg.is_char_boundary(i) {
+                // self.msg.is_char_boundary(i) c.is_alphanumeric() {
+                // unprintable
+                chars_not_printed += 1;
+            }
         }
         self.cursor_position = self
             .cursor_position
             .saturating_sub(prev_line_newline_loc)
-            .saturating_add(nearest_newline);
-        // .saturating_add(chars_not_printed);
+            .saturating_add(nearest_newline)
+            .saturating_add(chars_not_printed);
 
-        if prev_line_newline_loc == 0 {
+        if prev_line_newline_loc == 0
+            && self.cursor_position < self.msg.len().saturating_sub(1)
+        {
             self.cursor_position += 1;
         }
 
@@ -289,6 +294,32 @@ impl TextInputComponent {
             }
             self.msg.remove(self.cursor_position);
         }
+    }
+
+    /// See `delete_key`, this is the multi-line part
+    fn delete_key_multiline(&mut self) {
+        if self.msg.get(self.cursor_position..self.cursor_position)
+            == Some("\n")
+        {
+            self.scroll_max = self.scroll_max.saturating_sub(1);
+
+            // If the max scroll is within current frame height, scroll up one
+            if self.scroll_max
+                < self.scroll_top.saturating_add(
+                    self.frame_height.get().saturating_sub(2),
+                )
+            {
+                self.scroll_top = self.scroll_top.saturating_sub(1);
+            }
+        }
+    }
+
+    /// Triggered when the delete key is pressed
+    fn delete_key(&mut self) {
+        if self.input_type == InputType::Multiline {
+            self.delete_key_multiline();
+        }
+        self.msg.remove(self.cursor_position);
     }
 
     /// Set the `msg`.
@@ -560,7 +591,7 @@ impl Component for TextInputComponent {
                     }
                     KeyCode::Delete => {
                         if self.cursor_position < self.msg.len() {
-                            self.msg.remove(self.cursor_position);
+                            self.delete_key();
                         }
                         return Ok(EventState::Consumed);
                     }
