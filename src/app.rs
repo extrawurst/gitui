@@ -1,5 +1,5 @@
 use crate::{
-    accessors, any_popup_visible,
+    accessors,
     cmdbar::CommandBar,
     components::{
         event_pump, BlameFileComponent, BranchListComponent,
@@ -11,7 +11,6 @@ use crate::{
         ResetComponent, RevisionFilesComponent, StashMsgComponent,
         TagCommitComponent, TagListComponent,
     },
-    draw_popups,
     input::{Input, InputEvent, InputState},
     keys::{KeyConfig, SharedKeyConfig},
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
