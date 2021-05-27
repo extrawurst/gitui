@@ -201,7 +201,6 @@ impl Component for StashList {
                     self.drop_stash()
                 } else if k == self.key_config.stash_open {
                     self.inspect()
-                } else {
                 }
             }
         }

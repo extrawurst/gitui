@@ -11,8 +11,9 @@
 (
     tab_status: ( code: Char('1'), modifiers: ( bits: 0,),),
     tab_log: ( code: Char('2'), modifiers: ( bits: 0,),),
-    tab_stashing: ( code: Char('3'), modifiers: ( bits: 0,),),
-    tab_stashes: ( code: Char('4'), modifiers: ( bits: 0,),),
+    tab_files: ( code: Char('3'), modifiers: ( bits: 0,),),
+    tab_stashing: ( code: Char('4'), modifiers: ( bits: 0,),),
+    tab_stashes: ( code: Char('5'), modifiers: ( bits: 0,),),
 
     tab_toggle: ( code: Tab, modifiers: ( bits: 0,),),
     tab_toggle_reverse: ( code: BackTab, modifiers: ( bits: 1,),),

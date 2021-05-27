@@ -23,6 +23,7 @@ pub type SharedKeyConfig = Rc<KeyConfig>;
 pub struct KeyConfig {
     pub tab_status: KeyEvent,
     pub tab_log: KeyEvent,
+    pub tab_files: KeyEvent,
     pub tab_stashing: KeyEvent,
     pub tab_stashes: KeyEvent,
     pub tab_toggle: KeyEvent,
@@ -88,8 +89,9 @@ impl Default for KeyConfig {
         Self {
 			tab_status: KeyEvent { code: KeyCode::Char('1'), modifiers: KeyModifiers::empty()},
 			tab_log: KeyEvent { code: KeyCode::Char('2'), modifiers: KeyModifiers::empty()},
-			tab_stashing: KeyEvent { code: KeyCode::Char('3'), modifiers: KeyModifiers::empty()},
-			tab_stashes: KeyEvent { code: KeyCode::Char('4'), modifiers: KeyModifiers::empty()},
+            tab_files: KeyEvent { code: KeyCode::Char('3'), modifiers: KeyModifiers::empty()},
+			tab_stashing: KeyEvent { code: KeyCode::Char('4'), modifiers: KeyModifiers::empty()},
+			tab_stashes: KeyEvent { code: KeyCode::Char('5'), modifiers: KeyModifiers::empty()},
 			tab_toggle: KeyEvent { code: KeyCode::Tab, modifiers: KeyModifiers::empty()},
 			tab_toggle_reverse: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::SHIFT},
             toggle_workarea: KeyEvent { code: KeyCode::Char('w'), modifiers: KeyModifiers::empty()},

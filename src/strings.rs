@@ -41,6 +41,9 @@ pub fn tab_status(key_config: &SharedKeyConfig) -> String {
 pub fn tab_log(key_config: &SharedKeyConfig) -> String {
     format!("Log [{}]", key_config.get_hint(key_config.tab_log))
 }
+pub fn tab_files(key_config: &SharedKeyConfig) -> String {
+    format!("Files [{}]", key_config.get_hint(key_config.tab_files))
+}
 pub fn tab_stashing(key_config: &SharedKeyConfig) -> String {
     format!(
         "Stashing [{}]",

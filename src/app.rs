@@ -8,7 +8,7 @@ use crate::{
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PullComponent,
         PushComponent, PushTagsComponent, RenameBranchComponent,
-        ResetComponent, RevisionFilesComponent, StashMsgComponent,
+        ResetComponent, RevisionFilesPopup, StashMsgComponent,
         TagCommitComponent, TagListComponent,
     },
     input::{Input, InputEvent, InputState},
@@ -16,7 +16,7 @@ use crate::{
     queue::{Action, InternalEvent, NeedsUpdate, Queue},
     setup_popups,
     strings::{self, order},
-    tabs::{Revlog, StashList, Stashing, Status},
+    tabs::{FilesTab, Revlog, StashList, Stashing, Status},
     ui::style::{SharedTheme, Theme},
 };
 use anyhow::{bail, Result};
@@ -47,7 +47,7 @@ pub struct App {
     stashmsg_popup: StashMsgComponent,
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
-    revision_files_popup: RevisionFilesComponent,
+    revision_files_popup: RevisionFilesPopup,
     push_popup: PushComponent,
     push_tags_popup: PushTagsComponent,
     pull_popup: PullComponent,
@@ -62,6 +62,7 @@ pub struct App {
     status_tab: Status,
     stashing_tab: Stashing,
     stashlist_tab: StashList,
+    files_tab: FilesTab,
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
@@ -105,7 +106,7 @@ impl App {
                 theme.clone(),
                 key_config.clone(),
             ),
-            revision_files_popup: RevisionFilesComponent::new(
+            revision_files_popup: RevisionFilesPopup::new(
                 &queue,
                 sender,
                 theme.clone(),
@@ -203,6 +204,12 @@ impl App {
                 theme.clone(),
                 key_config.clone(),
             ),
+            files_tab: FilesTab::new(
+                sender,
+                &queue,
+                theme.clone(),
+                key_config.clone(),
+            ),
             queue,
             theme,
             key_config,
@@ -237,8 +244,9 @@ impl App {
         match self.tab {
             0 => self.status_tab.draw(f, chunks_main[1])?,
             1 => self.revlog.draw(f, chunks_main[1])?,
-            2 => self.stashing_tab.draw(f, chunks_main[1])?,
-            3 => self.stashlist_tab.draw(f, chunks_main[1])?,
+            2 => self.files_tab.draw(f, chunks_main[1])?,
+            3 => self.stashing_tab.draw(f, chunks_main[1])?,
+            4 => self.stashlist_tab.draw(f, chunks_main[1])?,
             _ => bail!("unknown tab"),
         };
 
@@ -271,6 +279,7 @@ impl App {
                     NeedsUpdate::COMMANDS
                 } else if k == self.key_config.tab_status
                     || k == self.key_config.tab_log
+                    || k == self.key_config.tab_files
                     || k == self.key_config.tab_stashing
                     || k == self.key_config.tab_stashes
                 {
@@ -322,6 +331,7 @@ impl App {
         self.commit.update()?;
         self.status_tab.update()?;
         self.revlog.update()?;
+        self.files_tab.update()?;
         self.stashing_tab.update()?;
         self.stashlist_tab.update()?;
 
@@ -339,6 +349,7 @@ impl App {
 
         self.status_tab.update_git(ev)?;
         self.stashing_tab.update_git(ev)?;
+        self.files_tab.update_git(ev)?;
         self.revlog.update_git(ev)?;
         self.blame_file_popup.update_git(ev)?;
         self.inspect_commit_popup.update_git(ev)?;
@@ -364,6 +375,7 @@ impl App {
         self.status_tab.anything_pending()
             || self.revlog.any_work_pending()
             || self.stashing_tab.anything_pending()
+            || self.files_tab.anything_pending()
             || self.blame_file_popup.any_work_pending()
             || self.inspect_commit_popup.any_work_pending()
             || self.input.is_state_changing()
@@ -408,6 +420,7 @@ impl App {
             help,
             revlog,
             status_tab,
+            files_tab,
             stashing_tab,
             stashlist_tab
         ]
@@ -450,6 +463,7 @@ impl App {
         vec![
             &mut self.status_tab,
             &mut self.revlog,
+            &mut self.files_tab,
             &mut self.stashing_tab,
             &mut self.stashlist_tab,
         ]
@@ -471,10 +485,12 @@ impl App {
             self.set_tab(0)?
         } else if k == self.key_config.tab_log {
             self.set_tab(1)?
-        } else if k == self.key_config.tab_stashing {
+        } else if k == self.key_config.tab_files {
             self.set_tab(2)?
-        } else if k == self.key_config.tab_stashes {
+        } else if k == self.key_config.tab_stashing {
             self.set_tab(3)?
+        } else if k == self.key_config.tab_stashes {
+            self.set_tab(4)?
         }
 
         Ok(())
@@ -748,6 +764,7 @@ impl App {
         let tabs = [
             Span::raw(strings::tab_status(&self.key_config)),
             Span::raw(strings::tab_log(&self.key_config)),
+            Span::raw(strings::tab_files(&self.key_config)),
             Span::raw(strings::tab_stashing(&self.key_config)),
             Span::raw(strings::tab_stashes(&self.key_config)),
         ]
