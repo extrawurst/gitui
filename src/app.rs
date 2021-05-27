@@ -417,17 +417,23 @@ impl App {
     setup_popups!(
         self,
         [
+            commit,
             help,
             reset,
             msg,
             stashmsg_popup,
             inspect_commit_popup,
+            blame_file_popup,
             external_editor_popup,
             tag_commit_popup,
             create_branch_popup,
             push_popup,
+            push_tags_popup,
+            pull_popup,
             select_branch_popup,
-            rename_branch_popup
+            tags_popup,
+            rename_branch_popup,
+            revision_files_popup
         ]
     );
 
