@@ -11,16 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![merge-commit](assets/merge-commit-abort.gif)
 
+**tag list popup**
+
+![tagslist](assets/tags-list-popup.gif)
+
 **commit subject length warning**
 
 ![warning](assets/commit-msg-length-limit.gif)
 
 ## Added
 - merging branches, pull-merge with conflicts, commit merges ([#485](https://github.com/extrawurst/gitui/issues/485))
+- tags-list-popup (delete-tag, go to tagged commit) [[@cruessler](https://github.com/cruessler)] ([#483](https://github.com/extrawurst/gitui/issues/483))
+- inspect file tree tab ([#743](https://github.com/extrawurst/gitui/issues/743))
+- file tree popup (for a specific revision) ([#714](https://github.com/extrawurst/gitui/issues/714))
 - warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
 - `--bugreport` cmd line arg to help diagnostics [[@zcorniere](https://github.com/zcorniere)] ([#695](https://github.com/extrawurst/gitui/issues/695))
-- inspect file tree at a specific revision ([#714](https://github.com/extrawurst/gitui/issues/714))
-- tags-list-popup (delete-tag, go to tagged commit) [[@cruessler](https://github.com/cruessler)] ([#483](https://github.com/extrawurst/gitui/issues/483))
 
 ## Changed
 - smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
