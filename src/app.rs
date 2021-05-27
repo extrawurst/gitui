@@ -8,7 +8,7 @@ use crate::{
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PullComponent,
         PushComponent, PushTagsComponent, RenameBranchComponent,
-        ResetComponent, RevisionFilesComponent, StashMsgComponent,
+        ResetComponent, RevisionFilesPopup, StashMsgComponent,
         TagCommitComponent, TagListComponent,
     },
     input::{Input, InputEvent, InputState},
@@ -47,7 +47,7 @@ pub struct App {
     stashmsg_popup: StashMsgComponent,
     inspect_commit_popup: InspectCommitComponent,
     external_editor_popup: ExternalEditorComponent,
-    revision_files_popup: RevisionFilesComponent,
+    revision_files_popup: RevisionFilesPopup,
     push_popup: PushComponent,
     push_tags_popup: PushTagsComponent,
     pull_popup: PullComponent,
@@ -106,7 +106,7 @@ impl App {
                 theme.clone(),
                 key_config.clone(),
             ),
-            revision_files_popup: RevisionFilesComponent::new(
+            revision_files_popup: RevisionFilesPopup::new(
                 &queue,
                 sender,
                 theme.clone(),

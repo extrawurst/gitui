@@ -7,14 +7,14 @@
 use crate::{
     components::{
         visibility_blocking, CommandBlocking, CommandInfo, Component,
-        DrawableComponent, EventState,
+        DrawableComponent, EventState, RevisionFilesComponent,
     },
     keys::SharedKeyConfig,
     queue::Queue,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::AsyncNotification;
+use asyncgit::{sync, AsyncNotification, CWD};
 use crossbeam_channel::Sender;
 
 pub struct FilesTab {
@@ -22,20 +22,27 @@ pub struct FilesTab {
     theme: SharedTheme,
     queue: Queue,
     key_config: SharedKeyConfig,
+    files: RevisionFilesComponent,
 }
 
 impl FilesTab {
     ///
     pub fn new(
-        _sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncNotification>,
         queue: &Queue,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
             visible: false,
-            theme,
             queue: queue.clone(),
+            files: RevisionFilesComponent::new(
+                queue,
+                sender,
+                theme.clone(),
+                key_config.clone(),
+            ),
+            theme,
             key_config,
         }
     }
@@ -43,7 +50,7 @@ impl FilesTab {
     ///
     pub fn update(&mut self) -> Result<()> {
         if self.is_visible() {
-            //check if head changed
+            self.files.set_commit(sync::get_head(CWD)?)?;
         }
 
         Ok(())
@@ -51,17 +58,16 @@ impl FilesTab {
 
     ///
     pub fn anything_pending(&self) -> bool {
-        //TODO
-        false
+        self.files.any_work_pending()
     }
 
     ///
     pub fn update_git(
         &mut self,
-        _ev: AsyncNotification,
+        ev: AsyncNotification,
     ) -> Result<()> {
         if self.is_visible() {
-            //forward
+            self.files.update(ev);
         }
 
         Ok(())
@@ -71,9 +77,12 @@ impl FilesTab {
 impl DrawableComponent for FilesTab {
     fn draw<B: tui::backend::Backend>(
         &self,
-        _f: &mut tui::Frame<B>,
-        _rect: tui::layout::Rect,
+        f: &mut tui::Frame<B>,
+        rect: tui::layout::Rect,
     ) -> Result<()> {
+        if self.is_visible() {
+            self.files.draw(f, rect)?;
+        }
         Ok(())
     }
 }
@@ -81,11 +90,11 @@ impl DrawableComponent for FilesTab {
 impl Component for FilesTab {
     fn commands(
         &self,
-        _out: &mut Vec<CommandInfo>,
+        out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
         if self.visible || force_all {
-            //
+            return self.files.commands(out, force_all);
         }
 
         visibility_blocking(self)
@@ -93,10 +102,10 @@ impl Component for FilesTab {
 
     fn event(
         &mut self,
-        _ev: crossterm::event::Event,
+        ev: crossterm::event::Event,
     ) -> Result<EventState> {
         if self.visible {
-            //
+            return self.files.event(ev);
         }
 
         Ok(EventState::NotConsumed)
