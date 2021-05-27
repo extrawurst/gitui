@@ -1,4 +1,8 @@
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    clippy::missing_const_for_fn,
+    clippy::unused_self
+)]
 
 use crate::{
     components::{
