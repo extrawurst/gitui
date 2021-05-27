@@ -49,131 +49,6 @@ pub struct CommitComponent {
 
 const FIRST_LINE_LIMIT: usize = 50;
 
-impl DrawableComponent for CommitComponent {
-    fn draw<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        rect: Rect,
-    ) -> Result<()> {
-        if self.is_visible() {
-            self.input.draw(f, rect)?;
-            self.draw_branch_name(f);
-            self.draw_warnings(f);
-        }
-
-        Ok(())
-    }
-}
-
-impl Component for CommitComponent {
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
-    ) -> CommandBlocking {
-        self.input.commands(out, force_all);
-
-        if self.is_visible() || force_all {
-            out.push(CommandInfo::new(
-                strings::commands::commit_enter(&self.key_config),
-                self.can_commit(),
-                true,
-            ));
-
-            out.push(CommandInfo::new(
-                strings::commands::commit_amend(&self.key_config),
-                self.can_amend(),
-                true,
-            ));
-
-            out.push(CommandInfo::new(
-                strings::commands::commit_open_editor(
-                    &self.key_config,
-                ),
-                true,
-                true,
-            ));
-        }
-
-        visibility_blocking(self)
-    }
-
-    fn event(&mut self, ev: Event) -> Result<EventState> {
-        if self.is_visible() {
-            if self.input.event(ev)?.is_consumed() {
-                return Ok(EventState::Consumed);
-            }
-
-            if let Event::Key(e) = ev {
-                if e == self.key_config.enter && self.can_commit() {
-                    try_or_popup!(
-                        self,
-                        "commit error:",
-                        self.commit()
-                    );
-                } else if e == self.key_config.commit_amend
-                    && self.can_amend()
-                {
-                    self.amend()?;
-                } else if e == self.key_config.open_commit_editor {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::OpenExternalEditor(None),
-                    );
-                    self.hide();
-                } else {
-                }
-                // stop key event propagation
-                return Ok(EventState::Consumed);
-            }
-        }
-
-        Ok(EventState::NotConsumed)
-    }
-
-    fn is_visible(&self) -> bool {
-        self.input.is_visible()
-    }
-
-    fn hide(&mut self) {
-        self.input.hide()
-    }
-
-    fn show(&mut self) -> Result<()> {
-        //only clear text if it was not a normal commit dlg before, so to preserve old commit msg that was edited
-        if !matches!(self.mode, Mode::Normal) {
-            self.input.clear();
-        }
-
-        self.mode = Mode::Normal;
-
-        self.mode = if sync::repo_state(CWD)? == RepoState::Merge {
-            let ids = sync::mergehead_ids(CWD)?;
-            self.input.set_title(strings::commit_title_merge());
-            self.input.set_text(sync::merge_msg(CWD)?);
-            Mode::Merge(ids)
-        } else {
-            self.commit_template =
-                get_config_string(CWD, "commit.template")
-                    .ok()
-                    .flatten()
-                    .and_then(|path| read_to_string(path).ok());
-
-            if self.is_empty() {
-                if let Some(s) = &self.commit_template {
-                    self.input.set_text(s.clone());
-                }
-            }
-
-            self.input.set_title(strings::commit_title());
-            Mode::Normal
-        };
-
-        self.input.show()?;
-
-        Ok(())
-    }
-}
-
 impl CommitComponent {
     ///
     pub fn new(
@@ -405,6 +280,131 @@ impl CommitComponent {
                 self.input.set_text(msg.combine());
             }
         }
+
+        Ok(())
+    }
+}
+
+impl DrawableComponent for CommitComponent {
+    fn draw<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        rect: Rect,
+    ) -> Result<()> {
+        if self.is_visible() {
+            self.input.draw(f, rect)?;
+            self.draw_branch_name(f);
+            self.draw_warnings(f);
+        }
+
+        Ok(())
+    }
+}
+
+impl Component for CommitComponent {
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) -> CommandBlocking {
+        self.input.commands(out, force_all);
+
+        if self.is_visible() || force_all {
+            out.push(CommandInfo::new(
+                strings::commands::commit_enter(&self.key_config),
+                self.can_commit(),
+                true,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::commit_amend(&self.key_config),
+                self.can_amend(),
+                true,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::commit_open_editor(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));
+        }
+
+        visibility_blocking(self)
+    }
+
+    fn event(&mut self, ev: Event) -> Result<EventState> {
+        if self.is_visible() {
+            if self.input.event(ev)?.is_consumed() {
+                return Ok(EventState::Consumed);
+            }
+
+            if let Event::Key(e) = ev {
+                if e == self.key_config.enter && self.can_commit() {
+                    try_or_popup!(
+                        self,
+                        "commit error:",
+                        self.commit()
+                    );
+                } else if e == self.key_config.commit_amend
+                    && self.can_amend()
+                {
+                    self.amend()?;
+                } else if e == self.key_config.open_commit_editor {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::OpenExternalEditor(None),
+                    );
+                    self.hide();
+                } else {
+                }
+                // stop key event propagation
+                return Ok(EventState::Consumed);
+            }
+        }
+
+        Ok(EventState::NotConsumed)
+    }
+
+    fn is_visible(&self) -> bool {
+        self.input.is_visible()
+    }
+
+    fn hide(&mut self) {
+        self.input.hide()
+    }
+
+    fn show(&mut self) -> Result<()> {
+        //only clear text if it was not a normal commit dlg before, so to preserve old commit msg that was edited
+        if !matches!(self.mode, Mode::Normal) {
+            self.input.clear();
+        }
+
+        self.mode = Mode::Normal;
+
+        self.mode = if sync::repo_state(CWD)? == RepoState::Merge {
+            let ids = sync::mergehead_ids(CWD)?;
+            self.input.set_title(strings::commit_title_merge());
+            self.input.set_text(sync::merge_msg(CWD)?);
+            Mode::Merge(ids)
+        } else {
+            self.commit_template =
+                get_config_string(CWD, "commit.template")
+                    .ok()
+                    .flatten()
+                    .and_then(|path| read_to_string(path).ok());
+
+            if self.is_empty() {
+                if let Some(s) = &self.commit_template {
+                    self.input.set_text(s.clone());
+                }
+            }
+
+            self.input.set_title(strings::commit_title());
+            Mode::Normal
+        };
+
+        self.input.show()?;
 
         Ok(())
     }
