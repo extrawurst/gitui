@@ -304,7 +304,7 @@ impl CommitComponent {
             .unwrap_or_default();
 
         if gpgsign {
-            anyhow::bail!("gpgsign currently not supported");
+            anyhow::bail!("config commit.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
         }
 
         let msg = self.input.get_text().clone();
