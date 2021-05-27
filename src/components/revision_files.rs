@@ -274,24 +274,28 @@ impl Component for RevisionFilesComponent {
                 && tree_nav(&mut self.tree, &self.key_config, key)
             {
                 self.selection_changed();
+                return Ok(EventState::Consumed);
             } else if key == self.key_config.blame {
                 if self.blame() {
                     self.hide();
+                    return Ok(EventState::Consumed);
                 }
             } else if key == self.key_config.move_right {
                 if is_tree_focused {
                     self.focus = Focus::File;
                     self.current_file.focus(true);
                     self.focus(true);
+                    return Ok(EventState::Consumed);
                 }
             } else if key == self.key_config.move_left {
                 if !is_tree_focused {
                     self.focus = Focus::Tree;
                     self.current_file.focus(false);
                     self.focus(false);
+                    return Ok(EventState::Consumed);
                 }
             } else if !is_tree_focused {
-                self.current_file.event(event)?;
+                return self.current_file.event(event);
             }
         }
 
