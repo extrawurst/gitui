@@ -374,7 +374,7 @@ dependencies = [
 
 [[package]]
 name = "filetreelist"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "pretty_assertions",
  "thiserror",
