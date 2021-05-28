@@ -79,6 +79,7 @@ These are the high level goals before calling out `1.0`:
 
 - no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 - no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
+- no support for GPG signing (see [#97](https://github.com/extrawurst/gitui/issues/97))
 
 Currently, this tool does not fully substitute the _git shell_, however both tools work well in tandem.
 
