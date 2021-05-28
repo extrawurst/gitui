@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.16.0] - 2021-05-28
+
 **merge branch, merge commit**
 
 ![merge-commit](assets/merge-commit-abort.gif)
@@ -41,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - selected-tab color broken in light theme [[@Cottser](https://github.com/Cottser)] ([#719](https://github.com/extrawurst/gitui/issues/719))
 - proper tmp file location to externally edit commit msg ([#518](https://github.com/extrawurst/gitui/issues/518))
 
-## [0.15.0] - 2020-04-27
+## [0.15.0] - 2021-04-27
 
 **file blame**
 
@@ -62,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup some stringly typed code [[@wandernauta](https://github.com/wandernauta)] ([#655](https://github.com/extrawurst/gitui/issues/655))
 - introduce EventState enum (removing bool for even propagation) [[@tisorlawan](https://github.com/tisorlawan)] ([#665](https://github.com/extrawurst/gitui/issues/665))
 
-## [0.14.0] - 2020-04-11
+## [0.14.0] - 2021-04-11
 
 ### Added
 - `[w]` key to toggle between staging/workdir [[@terhechte](https://github.com/terhechte)] ([#595](https://github.com/extrawurst/gitui/issues/595))
@@ -80,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fixed panic when staging lines involving missing newline eof ([#605](https://github.com/extrawurst/gitui/issues/605))
 - fixed pull/fetch deadlocking when it fails ([#624](https://github.com/extrawurst/gitui/issues/624))
 
-## [0.13.0] - 2020-03-15 - Happy Birthday GitUI 🥳
+## [0.13.0] - 2021-03-15 - Happy Birthday GitUI 🥳
 
 Thanks for your interest and support over this year! Read more about the 1 year anniversary reflections of this project on my [blog](https://blog.extrawurst.org/general/programming/rust/2021/03/15/gitui-a-year-in-opensource.html).
 
@@ -108,7 +110,7 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 - fix pull deadlocking when aborting credentials input ([#586](https://github.com/extrawurst/gitui/issues/586))
 - error diagnostics for config loading ([#589](https://github.com/extrawurst/gitui/issues/589))
 
-## [0.12.0] - 2020-03-03
+## [0.12.0] - 2021-03-03
 
 **pull support (ff-merge or conflict-free merge-commit)**
 
@@ -138,7 +140,7 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 - compilation broken on freebsd ([#461](https://github.com/extrawurst/gitui/issues/461))
 - don’t fail if `user.name` is not set [[@cruessler](https://github.com/cruessler)] ([#79](https://github.com/extrawurst/gitui/issues/79)) ([#228](https://github.com/extrawurst/gitui/issues/228))
 
-## [0.11.0] - 2020-12-20
+## [0.11.0] - 2021-12-20
 
 ### Added
 - push to remote ([#265](https://github.com/extrawurst/gitui/issues/265)) ([#267](https://github.com/extrawurst/gitui/issues/267))
