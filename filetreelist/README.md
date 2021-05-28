@@ -6,4 +6,4 @@ This crate is designed as part of the [gitui](http://gitui.org) project.
 
 It is the main driver behind the file tree feature:
 
-![demo](demo.gif)
+![demo](./demo.gif)
