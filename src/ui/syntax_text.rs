@@ -16,14 +16,10 @@ use syntect::{
 };
 use tui::text::{Span, Spans};
 
-//TODO: no clone, make user consume result
-#[derive(Clone)]
 struct SyntaxLine {
     items: Vec<(Style, usize, Range<usize>)>,
 }
 
-//TODO: no clone, make user consume result
-#[derive(Clone)]
 pub struct SyntaxText {
     text: String,
     lines: Vec<SyntaxLine>,
