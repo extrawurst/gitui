@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![tagslist](assets/tags-list-popup.gif)
 
+**revision file tree**
+
+![filetree](assets/revision-file-tree.gif)
+
 **commit subject length warning**
 
 ![warning](assets/commit-msg-length-limit.gif)
