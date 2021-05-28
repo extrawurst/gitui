@@ -1,4 +1,4 @@
-use async_utils::AsyncJob;
+use asyncgit::asyncjob::AsyncJob;
 use lazy_static::lazy_static;
 use scopetime::scope_time;
 use std::{

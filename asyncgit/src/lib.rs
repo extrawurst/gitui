@@ -22,6 +22,7 @@
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
 
+pub mod asyncjob;
 mod blame;
 pub mod cached;
 mod commit_files;

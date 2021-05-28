@@ -50,3 +50,9 @@ impl<T> From<std::sync::PoisonError<T>> for Error {
         Self::Generic(format!("poison error: {}", error))
     }
 }
+
+impl<T> From<crossbeam_channel::SendError<T>> for Error {
+    fn from(error: crossbeam_channel::SendError<T>) -> Self {
+        Self::Generic(format!("send error: {}", error))
+    }
+}

@@ -45,12 +45,12 @@ fmt:
 
 clippy:
 	touch src/main.rs
-	cargo clean -p gitui -p asyncgit -p scopetime -p filetree -p async_utils
+	cargo clean -p gitui -p asyncgit -p scopetime -p filetree
 	cargo clippy --workspace --all-features
 
 clippy-nightly:
 	touch src/main.rs
-	cargo clean -p gitui -p asyncgit -p scopetime -p filetree -p async_utils
+	cargo clean -p gitui -p asyncgit -p scopetime -p filetree
 	cargo +nightly clippy --workspace --all-features
 
 check: fmt clippy test

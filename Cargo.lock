@@ -60,17 +60,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async_utils"
-version = "0.1.0"
-dependencies = [
- "crossbeam-channel",
- "log",
- "pretty_assertions",
- "rayon-core",
- "thiserror",
-]
-
-[[package]]
 name = "asyncgit"
 version = "0.16.0"
 dependencies = [
@@ -478,7 +467,6 @@ name = "gitui"
 version = "0.15.0"
 dependencies = [
  "anyhow",
- "async_utils",
  "asyncgit",
  "backtrace",
  "bitflags",

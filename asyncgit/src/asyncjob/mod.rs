@@ -1,35 +1,19 @@
-// #![forbid(missing_docs)]
-#![deny(unsafe_code)]
-#![deny(
-    unused_imports,
-    unused_must_use,
-    dead_code,
-    unstable_name_collisions,
-    unused_assignments
-)]
-#![deny(unstable_name_collisions)]
-#![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
+//! provides `AsyncJob` trait and `AsyncSingleJob` struct
+
 #![deny(clippy::expect_used)]
-#![deny(clippy::filetype_is_file)]
-#![deny(clippy::cargo)]
-#![deny(clippy::unwrap_used)]
-#![deny(clippy::panic)]
-#![deny(clippy::match_like_matches_macro)]
-#![deny(clippy::needless_update)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::must_use_candidate)]
-#![allow(clippy::missing_errors_doc)]
 
-mod error;
-
+use crate::error::Result;
 use crossbeam_channel::Sender;
-use error::Result;
 use std::sync::{Arc, Mutex};
 
+/// trait that defines an async task we can run on a threadpool
 pub trait AsyncJob: Send + Sync + Clone {
+    /// can run a synchronous time intensive task
     fn run(&mut self);
 }
 
+/// Abstraction for a FIFO task queue that will only queue up **one** `next` job.
+/// It keeps overwriting the next job until it is actually taken to be processed
 #[derive(Debug, Clone)]
 pub struct AsyncSingleJob<J: AsyncJob, T: Copy + Send + 'static> {
     next: Arc<Mutex<Option<J>>>,
@@ -70,7 +54,7 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
         false
     }
 
-    ///
+    /// take out last finished job
     pub fn take_last(&self) -> Option<J> {
         if let Ok(mut last) = self.last.lock() {
             last.take()
@@ -79,14 +63,13 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
         }
     }
 
-    ///
+    /// spawns `task` if nothing is running currently, otherwise schedules as `next` overwriting if `next` was set before
     pub fn spawn(&mut self, task: J) -> bool {
         self.schedule_next(task);
         self.check_for_job()
     }
 
-    ///
-    pub fn check_for_job(&self) -> bool {
+    fn check_for_job(&self) -> bool {
         if self.is_pending() {
             return false;
         }
@@ -125,14 +108,12 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
         Ok(())
     }
 
-    ///
     fn schedule_next(&mut self, task: J) {
         if let Ok(mut next) = self.next.lock() {
             *next = Some(task);
         }
     }
 
-    ///
     fn take_next(&self) -> Option<J> {
         if let Ok(mut next) = self.next.lock() {
             next.take()

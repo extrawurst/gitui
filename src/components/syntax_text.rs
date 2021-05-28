@@ -11,7 +11,7 @@ use crate::{
     },
 };
 use anyhow::Result;
-use async_utils::AsyncSingleJob;
+use asyncgit::asyncjob::AsyncSingleJob;
 use asyncgit::{
     sync::{self, TreeFile},
     AsyncNotification, CWD,
