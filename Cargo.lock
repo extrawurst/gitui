@@ -61,7 +61,7 @@ dependencies = [
 
 [[package]]
 name = "asyncgit"
-version = "0.16.0"
+version = "0.16.1"
 dependencies = [
  "crossbeam-channel",
  "easy-cast",
