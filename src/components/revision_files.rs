@@ -194,10 +194,20 @@ impl RevisionFilesComponent {
 
         let is_tree_focused = matches!(self.focus, Focus::Tree);
 
+        let title = format!(
+            "Files at [{}]",
+            self.revision
+                .map(|c| c.get_short_string())
+                .unwrap_or_default()
+        );
         ui::draw_list_block(
             f,
             area,
             Block::default()
+                .title(Span::styled(
+                    title,
+                    self.theme.title(is_tree_focused),
+                ))
                 .borders(Borders::ALL)
                 .border_style(self.theme.block(is_tree_focused)),
             items,
@@ -223,7 +233,6 @@ impl DrawableComponent for RevisionFilesComponent {
     ) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .margin(1)
             .constraints(
                 [
                     Constraint::Percentage(40),

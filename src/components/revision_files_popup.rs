@@ -13,17 +13,9 @@ use anyhow::Result;
 use asyncgit::{sync::CommitId, AsyncNotification};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{
-    backend::Backend,
-    layout::Rect,
-    text::Span,
-    widgets::{Block, Borders, Clear},
-    Frame,
-};
+use tui::{backend::Backend, layout::Rect, widgets::Clear, Frame};
 
 pub struct RevisionFilesPopup {
-    title: String,
-    theme: SharedTheme,
     visible: bool,
     key_config: SharedKeyConfig,
     files: RevisionFilesComponent,
@@ -38,14 +30,12 @@ impl RevisionFilesPopup {
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
-            title: String::new(),
             files: RevisionFilesComponent::new(
                 queue,
                 sender,
-                theme.clone(),
+                theme,
                 key_config.clone(),
             ),
-            theme,
             visible: false,
             key_config,
         }
@@ -54,8 +44,6 @@ impl RevisionFilesPopup {
     ///
     pub fn open(&mut self, commit: CommitId) -> Result<()> {
         self.files.set_commit(commit)?;
-        self.title =
-            format!("Files at [{}]", commit.get_short_string());
         self.show()?;
 
         Ok(())
@@ -80,16 +68,16 @@ impl DrawableComponent for RevisionFilesPopup {
     ) -> Result<()> {
         if self.is_visible() {
             f.render_widget(Clear, area);
-            f.render_widget(
-                Block::default()
-                    .borders(Borders::TOP)
-                    .title(Span::styled(
-                        format!(" {}", self.title),
-                        self.theme.title(true),
-                    ))
-                    .border_style(self.theme.block(true)),
-                area,
-            );
+            // f.render_widget(
+            //     Block::default()
+            //         .borders(Borders::TOP)
+            //         .title(Span::styled(
+            //             format!(" {}", self.title),
+            //             self.theme.title(true),
+            //         ))
+            //         .border_style(self.theme.block(true)),
+            //     area,
+            // );
 
             self.files.draw(f, area)?;
         }
