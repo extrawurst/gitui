@@ -373,7 +373,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "filetree"
+name = "filetreelist"
 version = "0.1.0"
 dependencies = [
  "pretty_assertions",
@@ -478,7 +478,7 @@ dependencies = [
  "crossterm",
  "dirs-next",
  "easy-cast",
- "filetree",
+ "filetreelist",
  "itertools",
  "lazy_static",
  "log",

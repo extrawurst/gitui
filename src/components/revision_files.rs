@@ -15,7 +15,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use filetree::FileTree;
+use filetreelist::{FileTree, FileTreeItem};
 use std::{
     cell::Cell, collections::BTreeSet, convert::From, path::Path,
 };
@@ -104,7 +104,7 @@ impl RevisionFilesComponent {
     }
 
     fn tree_item_to_span<'a>(
-        item: &'a filetree::FileTreeItem,
+        item: &'a FileTreeItem,
         theme: &SharedTheme,
         selected: bool,
     ) -> Span<'a> {

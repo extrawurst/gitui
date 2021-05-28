@@ -18,7 +18,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use filetree::MoveSelection;
+use filetreelist::MoveSelection;
 use itertools::Either;
 use std::{cell::Cell, convert::From, path::Path};
 use tui::{

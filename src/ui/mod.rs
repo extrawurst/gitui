@@ -5,7 +5,7 @@ mod stateful_paragraph;
 pub mod style;
 mod syntax_text;
 
-use filetree::MoveSelection;
+use filetreelist::MoveSelection;
 pub use scrollbar::draw_scrollbar;
 pub use scrolllist::{draw_list, draw_list_block};
 pub use stateful_paragraph::{
