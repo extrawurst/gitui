@@ -325,8 +325,11 @@ pub fn delete_branch(
 }
 
 /// checks that the branch name is valid
-pub fn branch_name_is_valid(name: &str) -> bool {
-    git2::Branch::name_is_valid(name)
+pub fn branch_name_is_valid(name: &str) -> Result<bool> {
+    match git2::Branch::name_is_valid(name) {
+        Ok(v) => Ok(v),
+        Err(e) => Err(Error::Git(e)),
+    }
 }
 
 /// creates a new branch pointing to current HEAD commit and updating HEAD to new branch

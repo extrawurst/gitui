@@ -68,27 +68,33 @@ impl Component for CreateBranchComponent {
             if let Event::Key(e) = ev {
                 if e == self.key_config.enter {
                     let branch_name = self.input.get_text();
-                    let already_exists: bool =
-                        match branch_already_exists(branch_name) {
-                            Ok(v) => v,
-                            Err(e) => {
-                                log::error!("create branch: {}", e,);
-                                self.queue.borrow_mut().push_back(
-                                    InternalEvent::ShowErrorMsg(
-                                        format!(
-                            "create branch error:\n{}",
-                            e,
-                        ),
-                                    ),
-                                );
-                                false
-                            }
-                        };
+                    let mut can_create: bool = true;
+                    match branch_already_exists(branch_name) {
+                        Ok(v) => can_create &= !v,
+                        Err(e) => {
+                            log::error!("create branch: {}", e,);
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::ShowErrorMsg(format!(
+                                    "create branch error:\n{}",
+                                    e,
+                                )),
+                            );
+                        }
+                    };
 
-                    if sync::branch_name_is_valid(
-                        branch_name.as_str(),
-                    ) && !already_exists
-                    {
+                    match sync::branch_name_is_valid(branch_name) {
+                        Ok(v) => can_create &= v,
+                        Err(e) => {
+                            log::error!("create branch: {}", e,);
+                            self.queue.borrow_mut().push_back(
+                                InternalEvent::ShowErrorMsg(format!(
+                                    "create branch error:\n{}",
+                                    e,
+                                )),
+                            );
+                        }
+                    }
+                    if can_create {
                         self.create_branch();
                     }
                 }
@@ -171,13 +177,30 @@ impl CreateBranchComponent {
     // mostly copied from commit.rs, maybe could be refactored?
     fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
         let branch_name = self.input.get_text().as_str();
+        let invalid_name: bool;
+        match sync::branch_name_is_valid(branch_name) {
+            Ok(v) => {
+                invalid_name = !v;
+            }
+            Err(e) => {
+                invalid_name = true;
+                log::error!("create branch: {}", e,);
+                self.queue.borrow_mut().push_back(
+                    InternalEvent::ShowErrorMsg(format!(
+                        "create branch error:\n{}",
+                        e,
+                    )),
+                );
+            }
+        }
+
         let already_exists: bool;
         match branch_already_exists(branch_name) {
             Ok(v) => {
                 already_exists = v;
             }
             Err(e) => {
-                already_exists = false;
+                already_exists = true;
                 log::error!("create branch: {}", e,);
                 self.queue.borrow_mut().push_back(
                     InternalEvent::ShowErrorMsg(format!(
@@ -191,7 +214,7 @@ impl CreateBranchComponent {
         let msg;
         if branch_name.len() == 0 {
             return;
-        } else if !sync::branch_name_is_valid(branch_name) {
+        } else if invalid_name {
             msg = strings::branch_invalid_name_warning();
         } else if already_exists {
             msg = strings::branch_already_exists();
