@@ -1,6 +1,6 @@
 use super::CommitId;
 use crate::error::Result;
-use git2::{Repository, Revwalk};
+use git2::{Repository, Revwalk, Sort};
 
 ///
 pub struct LogWalker<'a> {
@@ -27,7 +27,10 @@ impl<'a> LogWalker<'a> {
 
         if self.revwalk.is_none() {
             let mut walk = self.repo.revwalk()?;
+
             walk.push_head()?;
+            walk.set_sorting(Sort::TIME)?;
+
             self.revwalk = Some(walk);
         }
 
