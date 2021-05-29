@@ -237,6 +237,12 @@ pub fn create_branch_popup_msg(
 ) -> String {
     "type branch name".to_string()
 }
+pub fn branch_already_exists() -> String {
+    "[branch with this name already exists]".to_string()
+}
+pub fn branch_invalid_name_warning() -> String {
+    "[invalid branch name]".to_string()
+}
 pub fn username_popup_title(_key_config: &SharedKeyConfig) -> String {
     "Username".to_string()
 }
