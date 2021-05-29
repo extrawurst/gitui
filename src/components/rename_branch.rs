@@ -144,7 +144,7 @@ impl RenameBranchComponent {
                         .push_back(InternalEvent::SelectBranch);
                 }
                 Err(e) => {
-                    log::error!("create branch: {}", e,);
+                    log::error!("rename branch: {}", e,);
                     self.queue.borrow_mut().push_back(
                         InternalEvent::ShowErrorMsg(format!(
                             "rename branch error:\n{}",
