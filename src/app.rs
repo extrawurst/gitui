@@ -260,10 +260,6 @@ impl App {
         log::trace!("event: {:?}", ev);
 
         if let InputEvent::Input(ev) = ev {
-            if self.check_quit_key(ev) {
-                return Ok(());
-            }
-
             let mut flags = NeedsUpdate::empty();
 
             if event_pump(ev, self.components_mut().as_mut_slice())?
@@ -271,6 +267,10 @@ impl App {
             {
                 flags.insert(NeedsUpdate::COMMANDS);
             } else if let Event::Key(k) = ev {
+                if self.check_quit_key(ev) {
+                    return Ok(());
+                }
+
                 let new_flags = if k == self.key_config.tab_toggle {
                     self.toggle_tabs(false)?;
                     NeedsUpdate::COMMANDS
