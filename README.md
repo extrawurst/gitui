@@ -19,15 +19,15 @@
 [s6]: https://img.shields.io/twitter/follow/extrawurst?label=follow&style=social
 [l6]: https://twitter.com/intent/follow?screen_name=extrawurst
 
-<h5 align="center">Blazing fast terminal client for git written in Rust</h1>
+<h5 align="center">GitUI provides you with the comfort of a git GUI but right in your terminal</h1>
 
 ![](demo.gif)
 
 ## <a name="table-of-contents"></a> Table of Contents
 
 1. [Features](#features)
-2. [Benchmarks](#bench)
-3. [Motivation](#motivation)
+2. [Motivation](#motivation)
+3. [Benchmarks](#bench)
 4. [Roadmap](#roadmap)
 5. [Limitations](#limitations)
 6. [Installation](#installation)
@@ -51,7 +51,15 @@
 - Scalable terminal UI layout
 - Async git API for fluid control
 
-## 2. <a name="bench"></a> Benchmarks <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 2. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+I do most of my git work in a terminal but I frequently found myself using git GUIs for some use-cases like: index, commit, diff, stash, blame and log.
+
+Unfortunately popular git GUIs all fail on giant repositories or become unresponsive and unusable. 
+
+GitUI provides you with the user experience and comfort of a git GUI but right in your terminal while being portable, fast, free and opensource.
+
+## 3. <a name="bench"></a> Benchmarks <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([slides](https://github.com/extrawurst/gitui-presentation)) I compared `lazygit`,`tig` and `gitui` by parsing the entire Linux git repository (which contains over 900k commits):
 
@@ -60,12 +68,6 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 | `gitui`   | **24 s** ✅ | **0.17** ✅  | 1.4         | **No** ✅  | **No** ✅  |
 | `lazygit` | 57 s       | 2.6         | 16          | Yes       | Sometimes |
 | `tig`     | 4 m 20 s   | 1.3         | **0.6** ✅   | Sometimes | **No** ✅  |
-
-## 3. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
-
-I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index, commit, diff, stash and log.
-
-Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool to help with features I use the most.
 
 ## 4. <a name="roadmap"></a> Road(map) to 1.0 <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
