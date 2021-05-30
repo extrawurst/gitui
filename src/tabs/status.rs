@@ -320,10 +320,12 @@ impl Status {
             self.git_diff.refresh()?;
             self.git_status_workdir.fetch(&StatusParams::new(
                 StatusType::WorkingDir,
-                true,
+                false,
             ))?;
-            self.git_status_stage
-                .fetch(&StatusParams::new(StatusType::Stage, true))?;
+            self.git_status_stage.fetch(&StatusParams::new(
+                StatusType::Stage,
+                false,
+            ))?;
 
             self.branch_compare();
         }
