@@ -3,9 +3,16 @@ use crate::error::Result;
 use git2::{Repository, Revwalk, Sort};
 
 ///
+pub enum Mode {
+    HeadOnly,
+    AllRefs,
+}
+
+///
 pub struct LogWalker<'a> {
     repo: &'a Repository,
     revwalk: Option<Revwalk<'a>>,
+    mode: Mode,
 }
 
 impl<'a> LogWalker<'a> {
@@ -14,7 +21,15 @@ impl<'a> LogWalker<'a> {
         Self {
             repo,
             revwalk: None,
+            mode: Mode::HeadOnly,
         }
+    }
+
+    ///
+    pub const fn mode(self, mode: Mode) -> Self {
+        let mut res = self;
+        res.mode = mode;
+        res
     }
 
     ///
@@ -28,7 +43,12 @@ impl<'a> LogWalker<'a> {
         if self.revwalk.is_none() {
             let mut walk = self.repo.revwalk()?;
 
-            walk.push_head()?;
+            if matches!(self.mode, Mode::HeadOnly) {
+                walk.push_head()?;
+            } else {
+                walk.push_glob("*")?;
+            }
+
             walk.set_sorting(Sort::TIME)?;
 
             self.revwalk = Some(walk);
@@ -53,9 +73,12 @@ impl<'a> LogWalker<'a> {
 mod tests {
     use super::*;
     use crate::sync::{
-        commit, get_commits_info, stage_add_file,
-        tests::repo_init_empty,
+        checkout_branch, commit, create_branch, get_commits_info,
+        stage_add_file,
+        tests::{repo_init_empty, write_commit_file_at},
     };
+    use git2::Time;
+    use pretty_assertions::assert_eq;
     use std::{fs::File, io::Write, path::Path};
 
     #[test]
@@ -112,5 +135,61 @@ mod tests {
         assert_eq!(items.len(), 0);
 
         Ok(())
+    }
+
+    fn walk_all_commits(repo: &Repository) -> Vec<CommitId> {
+        let mut items = Vec::new();
+        let mut walk = LogWalker::new(&repo).mode(Mode::AllRefs);
+        walk.read(&mut items, 10).unwrap();
+        items
+    }
+
+    #[test]
+    fn test_multiple_branches() {
+        let (td, repo) = repo_init_empty().unwrap();
+        let repo_path = td.path().to_string_lossy();
+
+        let c1 = write_commit_file_at(
+            &repo,
+            "test.txt",
+            "",
+            "c1",
+            Time::new(1, 0),
+        );
+
+        let items = walk_all_commits(&repo);
+
+        assert_eq!(items, vec![c1]);
+
+        let b1 = create_branch(&repo_path, "b1").unwrap();
+
+        let c2 = write_commit_file_at(
+            &repo,
+            "test2.txt",
+            "",
+            "c2",
+            Time::new(2, 0),
+        );
+
+        let items = walk_all_commits(&repo);
+        assert_eq!(items, vec![c2, c1]);
+
+        let _b2 = create_branch(&repo_path, "b2").unwrap();
+
+        let c3 = write_commit_file_at(
+            &repo,
+            "test3.txt",
+            "",
+            "c3",
+            Time::new(3, 0),
+        );
+
+        let items = walk_all_commits(&repo);
+        assert_eq!(items, vec![c3, c2, c1]);
+
+        checkout_branch(&repo_path, &b1).unwrap();
+
+        let items = walk_all_commits(&repo);
+        assert_eq!(items, vec![c3, c2, c1]);
     }
 }
