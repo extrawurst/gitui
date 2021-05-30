@@ -104,7 +104,7 @@ pub fn get_status(
             .update_index(true)
             .include_untracked(include_untracked)
             .renames_head_to_index(true)
-            .recurse_untracked_dirs(true),
+            .recurse_untracked_dirs(include_untracked),
     ))?;
 
     let mut res = Vec::with_capacity(statuses.len());
