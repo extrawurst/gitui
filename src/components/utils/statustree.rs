@@ -5,6 +5,8 @@ use anyhow::Result;
 use asyncgit::StatusItem;
 use std::{cmp, collections::BTreeSet};
 
+//TODO: use new `filetreelist` crate
+
 ///
 #[derive(Default)]
 pub struct StatusTree {

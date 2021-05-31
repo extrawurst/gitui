@@ -1,3 +1,5 @@
+//TODO: remove in favour of new `filetreelist` crate
+
 use anyhow::{bail, Result};
 use asyncgit::StatusItem;
 use std::{

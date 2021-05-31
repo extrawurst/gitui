@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.15.0"
+version = "0.16.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
@@ -20,8 +20,8 @@ keywords = [
 
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
-asyncgit = { path = "./asyncgit", version = "0.15" }
-filetree = { path = "./filetree" }
+asyncgit = { path = "./asyncgit", version = "0.16.1" }
+filetreelist = { path = "./filetreelist", version = "0.1" }
 crossterm = { version = "0.19", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
 tui = { version = "0.15", default-features = false, features = ['crossterm', 'serde'] }
@@ -42,8 +42,11 @@ anyhow = "1.0"
 unicode-width = "0.1"
 textwrap = "0.13"
 unicode-truncate = "0.2"
+unicode-segmentation = "1.7"
 easy-cast = "0.4"
 bugreport = "0.4"
+lazy_static = "1.4"
+syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"]}
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.1"
@@ -63,6 +66,7 @@ timing=["scopetime/enabled"]
 members=[
     "asyncgit",
     "scopetime",
+    "filetreelist",
 ]
 
 [profile.release]

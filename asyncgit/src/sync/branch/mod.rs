@@ -325,7 +325,7 @@ pub fn delete_branch(
 }
 
 /// creates a new branch pointing to current HEAD commit and updating HEAD to new branch
-pub fn create_branch(repo_path: &str, name: &str) -> Result<()> {
+pub fn create_branch(repo_path: &str, name: &str) -> Result<String> {
     scope_time!("create_branch");
 
     let repo = utils::repo(repo_path)?;
@@ -338,7 +338,7 @@ pub fn create_branch(repo_path: &str, name: &str) -> Result<()> {
     let branch_ref_name = bytes2string(branch_ref.name_bytes())?;
     repo.set_head(branch_ref_name.as_str())?;
 
-    Ok(())
+    Ok(branch_ref_name)
 }
 
 #[cfg(test)]

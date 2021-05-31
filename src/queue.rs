@@ -33,6 +33,7 @@ pub enum Action {
     StashDrop(CommitId),
     StashPop(CommitId),
     DeleteBranch(String),
+    DeleteTag(String),
     ForcePush(String, bool),
     PullMerge { incoming: usize, rebase: bool },
     AbortMerge,
@@ -59,7 +60,11 @@ pub enum InternalEvent {
     ///
     InspectCommit(CommitId, Option<CommitTags>),
     ///
+    SelectCommitInRevlog(CommitId),
+    ///
     TagCommit(CommitId),
+    ///
+    Tags,
     ///
     BlameFile(String),
     ///

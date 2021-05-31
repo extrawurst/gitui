@@ -1,5 +1,5 @@
-use super::{get_head, utils::repo, CommitId};
-use crate::error::Result;
+use super::{utils::repo, CommitId};
+use crate::{error::Result, sync::utils::get_head_repo};
 use git2::{ErrorCode, ObjectType, Repository, Signature};
 use scopetime::scope_time;
 
@@ -68,7 +68,7 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
     let tree_id = index.write_tree()?;
     let tree = repo.find_tree(tree_id)?;
 
-    let parents = if let Ok(id) = get_head(repo_path) {
+    let parents = if let Ok(id) = get_head_repo(&repo) {
         vec![repo.find_commit(id.into())?]
     } else {
         Vec::new()

@@ -19,8 +19,11 @@ mod push_tags;
 mod rename_branch;
 mod reset;
 mod revision_files;
+mod revision_files_popup;
 mod stashmsg;
+mod syntax_text;
 mod tag_commit;
+mod taglist;
 mod textinput;
 mod utils;
 
@@ -44,8 +47,11 @@ pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ResetComponent;
 pub use revision_files::RevisionFilesComponent;
+pub use revision_files_popup::RevisionFilesPopup;
 pub use stashmsg::StashMsgComponent;
+pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;
+pub use taglist::TagListComponent;
 pub use textinput::{InputType, TextInputComponent};
 pub use utils::filetree::FileTreeItemKind;
 
@@ -79,6 +85,50 @@ macro_rules! accessors {
                 $(&mut $self.$element,)+
             ]
         }
+    };
+}
+
+/// creates a function to determine if any popup is visible
+#[macro_export]
+macro_rules! any_popup_visible {
+    ($self:ident, [$($element:ident),+]) => {
+        fn any_popup_visible(& $self) -> bool{
+            ($($self.$element.is_visible()) || +)
+        }
+    };
+}
+
+/// creates the draw popup function
+#[macro_export]
+macro_rules! draw_popups {
+    ($self:ident, [$($element:ident),+]) => {
+        fn draw_popups<B: Backend>(& $self, mut f: &mut Frame<B>) -> Result<()>{
+            //TODO: move the layout part out and feed it into `draw_popups`
+            let size = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Min(1),
+                    Constraint::Length($self.cmdbar.borrow().height()),
+                ]
+                .as_ref(),
+            )
+            .split(f.size())[0];
+
+            ($($self.$element.draw(&mut f, size)?) , +);
+
+            return Ok(());
+        }
+    };
+}
+
+/// simply calls
+/// any_popup_visible!() and draw_popups!() macros
+#[macro_export]
+macro_rules! setup_popups {
+    ($self:ident, [$($element:ident),+]) => {
+        crate::any_popup_visible!($self, [$($element),+]);
+        crate::draw_popups!($self, [ $($element),+ ]);
     };
 }
 

@@ -7,9 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Fixed
+- wrong file with same name shown in file tree ([#748](https://github.com/extrawurst/gitui/issues/748))
+
+## [0.16.0] - 2021-05-28
+
 **merge branch, merge commit**
 
 ![merge-commit](assets/merge-commit-abort.gif)
+
+**tag list popup**
+
+![tagslist](assets/tags-list-popup.gif)
+
+**revision file tree**
+
+![filetree](assets/revision-file-tree.gif)
 
 **commit subject length warning**
 
@@ -17,19 +30,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 - merging branches, pull-merge with conflicts, commit merges ([#485](https://github.com/extrawurst/gitui/issues/485))
+- tags-list-popup (delete-tag, go to tagged commit) [[@cruessler](https://github.com/cruessler)] ([#483](https://github.com/extrawurst/gitui/issues/483))
+- inspect file tree tab ([#743](https://github.com/extrawurst/gitui/issues/743))
+- file tree popup (for a specific revision) ([#714](https://github.com/extrawurst/gitui/issues/714))
 - warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
 - `--bugreport` cmd line arg to help diagnostics [[@zcorniere](https://github.com/zcorniere)] ([#695](https://github.com/extrawurst/gitui/issues/695))
-- inspect file tree at a specific revision ([#714](https://github.com/extrawurst/gitui/issues/714))
 
 ## Changed
 - smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
 - create-branch popup aligned with rename-branch [[@bruceCoelho](https://github.com/bruceCoelho)] ([#679](https://github.com/extrawurst/gitui/issues/679))
 - smart focus change after staging all files ([#706](https://github.com/extrawurst/gitui/issues/706))
+- do not allow to commit when `gpgsign` enabled ([#740](https://github.com/extrawurst/gitui/issues/740))
 
 ## Fixed
 - selected-tab color broken in light theme [[@Cottser](https://github.com/Cottser)] ([#719](https://github.com/extrawurst/gitui/issues/719))
+- proper tmp file location to externally edit commit msg ([#518](https://github.com/extrawurst/gitui/issues/518))
 
-## [0.15.0] - 2020-04-27
+## [0.15.0] - 2021-04-27
 
 **file blame**
 
@@ -50,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup some stringly typed code [[@wandernauta](https://github.com/wandernauta)] ([#655](https://github.com/extrawurst/gitui/issues/655))
 - introduce EventState enum (removing bool for even propagation) [[@tisorlawan](https://github.com/tisorlawan)] ([#665](https://github.com/extrawurst/gitui/issues/665))
 
-## [0.14.0] - 2020-04-11
+## [0.14.0] - 2021-04-11
 
 ### Added
 - `[w]` key to toggle between staging/workdir [[@terhechte](https://github.com/terhechte)] ([#595](https://github.com/extrawurst/gitui/issues/595))
@@ -68,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fixed panic when staging lines involving missing newline eof ([#605](https://github.com/extrawurst/gitui/issues/605))
 - fixed pull/fetch deadlocking when it fails ([#624](https://github.com/extrawurst/gitui/issues/624))
 
-## [0.13.0] - 2020-03-15 - Happy Birthday GitUI 🥳
+## [0.13.0] - 2021-03-15 - Happy Birthday GitUI 🥳
 
 Thanks for your interest and support over this year! Read more about the 1 year anniversary reflections of this project on my [blog](https://blog.extrawurst.org/general/programming/rust/2021/03/15/gitui-a-year-in-opensource.html).
 
@@ -96,7 +113,7 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 - fix pull deadlocking when aborting credentials input ([#586](https://github.com/extrawurst/gitui/issues/586))
 - error diagnostics for config loading ([#589](https://github.com/extrawurst/gitui/issues/589))
 
-## [0.12.0] - 2020-03-03
+## [0.12.0] - 2021-03-03
 
 **pull support (ff-merge or conflict-free merge-commit)**
 
@@ -126,7 +143,7 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 - compilation broken on freebsd ([#461](https://github.com/extrawurst/gitui/issues/461))
 - don’t fail if `user.name` is not set [[@cruessler](https://github.com/cruessler)] ([#79](https://github.com/extrawurst/gitui/issues/79)) ([#228](https://github.com/extrawurst/gitui/issues/228))
 
-## [0.11.0] - 2020-12-20
+## [0.11.0] - 2021-12-20
 
 ### Added
 - push to remote ([#265](https://github.com/extrawurst/gitui/issues/265)) ([#267](https://github.com/extrawurst/gitui/issues/267))

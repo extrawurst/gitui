@@ -1,7 +1,11 @@
 #![forbid(unsafe_code)]
-#![deny(unused_imports)]
-#![deny(unused_must_use)]
-#![deny(dead_code)]
+#![deny(
+    unused_imports,
+    unused_must_use,
+    dead_code,
+    unstable_name_collisions,
+    unused_assignments
+)]
 #![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
 #![deny(clippy::filetype_is_file)]
 #![deny(clippy::cargo)]

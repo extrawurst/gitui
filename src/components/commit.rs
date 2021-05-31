@@ -4,10 +4,9 @@ use super::{
     EventState, ExternalEditorComponent,
 };
 use crate::{
-    args::get_app_config_path,
     keys::SharedKeyConfig,
     queue::{InternalEvent, NeedsUpdate, Queue},
-    strings,
+    strings, try_or_popup,
     ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -24,7 +23,6 @@ use easy_cast::Cast;
 use std::{
     fs::{read_to_string, File},
     io::{Read, Write},
-    path::PathBuf,
 };
 use tui::{
     backend::Backend,
@@ -50,127 +48,6 @@ pub struct CommitComponent {
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
-
-impl DrawableComponent for CommitComponent {
-    fn draw<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        rect: Rect,
-    ) -> Result<()> {
-        if self.is_visible() {
-            self.input.draw(f, rect)?;
-            self.draw_branch_name(f);
-            self.draw_warnings(f);
-        }
-
-        Ok(())
-    }
-}
-
-impl Component for CommitComponent {
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
-    ) -> CommandBlocking {
-        self.input.commands(out, force_all);
-
-        if self.is_visible() || force_all {
-            out.push(CommandInfo::new(
-                strings::commands::commit_enter(&self.key_config),
-                self.can_commit(),
-                true,
-            ));
-
-            out.push(CommandInfo::new(
-                strings::commands::commit_amend(&self.key_config),
-                self.can_amend(),
-                true,
-            ));
-
-            out.push(CommandInfo::new(
-                strings::commands::commit_open_editor(
-                    &self.key_config,
-                ),
-                true,
-                true,
-            ));
-        }
-
-        visibility_blocking(self)
-    }
-
-    fn event(&mut self, ev: Event) -> Result<EventState> {
-        if self.is_visible() {
-            if self.input.event(ev)?.is_consumed() {
-                return Ok(EventState::Consumed);
-            }
-
-            if let Event::Key(e) = ev {
-                if e == self.key_config.enter && self.can_commit() {
-                    self.commit()?;
-                } else if e == self.key_config.commit_amend
-                    && self.can_amend()
-                {
-                    self.amend()?;
-                } else if e == self.key_config.open_commit_editor {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::OpenExternalEditor(None),
-                    );
-                    self.hide();
-                } else {
-                }
-                // stop key event propagation
-                return Ok(EventState::Consumed);
-            }
-        }
-
-        Ok(EventState::NotConsumed)
-    }
-
-    fn is_visible(&self) -> bool {
-        self.input.is_visible()
-    }
-
-    fn hide(&mut self) {
-        self.input.hide()
-    }
-
-    fn show(&mut self) -> Result<()> {
-        //only clear text if it was not a normal commit dlg before, so to preserve old commit msg that was edited
-        if !matches!(self.mode, Mode::Normal) {
-            self.input.clear();
-        }
-
-        self.mode = Mode::Normal;
-
-        self.mode = if sync::repo_state(CWD)? == RepoState::Merge {
-            let ids = sync::mergehead_ids(CWD)?;
-            self.input.set_title(strings::commit_title_merge());
-            self.input.set_text(sync::merge_msg(CWD)?);
-            Mode::Merge(ids)
-        } else {
-            self.commit_template =
-                get_config_string(CWD, "commit.template")
-                    .ok()
-                    .flatten()
-                    .and_then(|path| read_to_string(path).ok());
-
-            if self.is_empty() {
-                if let Some(s) = &self.commit_template {
-                    self.input.set_text(s.clone());
-                }
-            }
-
-            self.input.set_title(strings::commit_title());
-            Mode::Normal
-        };
-
-        self.input.show()?;
-
-        Ok(())
-    }
-}
 
 impl CommitComponent {
     ///
@@ -252,13 +129,10 @@ impl CommitComponent {
     }
 
     pub fn show_editor(&mut self) -> Result<()> {
-        const COMMIT_MSG_FILE_NAME: &str = "COMMITMSG_EDITOR";
-        //TODO: use a tmpfile here
-        let mut config_path: PathBuf = get_app_config_path()?;
-        config_path.push(COMMIT_MSG_FILE_NAME);
+        let file_path = sync::repo_dir(CWD)?.join("COMMIT_EDITMSG");
 
         {
-            let mut file = File::create(&config_path)?;
+            let mut file = File::create(&file_path)?;
             file.write_fmt(format_args!(
                 "{}\n",
                 self.input.get_text()
@@ -269,14 +143,14 @@ impl CommitComponent {
             )?;
         }
 
-        ExternalEditorComponent::open_file_in_editor(&config_path)?;
+        ExternalEditorComponent::open_file_in_editor(&file_path)?;
 
         let mut message = String::new();
 
-        let mut file = File::open(&config_path)?;
+        let mut file = File::open(&file_path)?;
         file.read_to_string(&mut message)?;
         drop(file);
-        std::fs::remove_file(&config_path)?;
+        std::fs::remove_file(&file_path)?;
 
         let message: String = message
             .lines()
@@ -298,6 +172,16 @@ impl CommitComponent {
     }
 
     fn commit(&mut self) -> Result<()> {
+        let gpgsign = get_config_string(CWD, "commit.gpgsign")
+            .ok()
+            .flatten()
+            .and_then(|path| path.parse::<bool>().ok())
+            .unwrap_or_default();
+
+        if gpgsign {
+            anyhow::bail!("config commit.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
+        }
+
         let msg = self.input.get_text().clone();
         self.input.clear();
         self.commit_with_msg(msg)
@@ -390,14 +274,137 @@ impl CommitComponent {
 
             let details = sync::get_commit_details(CWD, id)?;
 
-            self.input.set_title(strings::commit_title_amend(
-                &self.key_config,
-            ));
+            self.input.set_title(strings::commit_title_amend());
 
             if let Some(msg) = details.message {
                 self.input.set_text(msg.combine());
             }
         }
+
+        Ok(())
+    }
+}
+
+impl DrawableComponent for CommitComponent {
+    fn draw<B: Backend>(
+        &self,
+        f: &mut Frame<B>,
+        rect: Rect,
+    ) -> Result<()> {
+        if self.is_visible() {
+            self.input.draw(f, rect)?;
+            self.draw_branch_name(f);
+            self.draw_warnings(f);
+        }
+
+        Ok(())
+    }
+}
+
+impl Component for CommitComponent {
+    fn commands(
+        &self,
+        out: &mut Vec<CommandInfo>,
+        force_all: bool,
+    ) -> CommandBlocking {
+        self.input.commands(out, force_all);
+
+        if self.is_visible() || force_all {
+            out.push(CommandInfo::new(
+                strings::commands::commit_enter(&self.key_config),
+                self.can_commit(),
+                true,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::commit_amend(&self.key_config),
+                self.can_amend(),
+                true,
+            ));
+
+            out.push(CommandInfo::new(
+                strings::commands::commit_open_editor(
+                    &self.key_config,
+                ),
+                true,
+                true,
+            ));
+        }
+
+        visibility_blocking(self)
+    }
+
+    fn event(&mut self, ev: Event) -> Result<EventState> {
+        if self.is_visible() {
+            if self.input.event(ev)?.is_consumed() {
+                return Ok(EventState::Consumed);
+            }
+
+            if let Event::Key(e) = ev {
+                if e == self.key_config.enter && self.can_commit() {
+                    try_or_popup!(
+                        self,
+                        "commit error:",
+                        self.commit()
+                    );
+                } else if e == self.key_config.commit_amend
+                    && self.can_amend()
+                {
+                    self.amend()?;
+                } else if e == self.key_config.open_commit_editor {
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::OpenExternalEditor(None),
+                    );
+                    self.hide();
+                } else {
+                }
+                // stop key event propagation
+                return Ok(EventState::Consumed);
+            }
+        }
+
+        Ok(EventState::NotConsumed)
+    }
+
+    fn is_visible(&self) -> bool {
+        self.input.is_visible()
+    }
+
+    fn hide(&mut self) {
+        self.input.hide()
+    }
+
+    fn show(&mut self) -> Result<()> {
+        //only clear text if it was not a normal commit dlg before, so to preserve old commit msg that was edited
+        if !matches!(self.mode, Mode::Normal) {
+            self.input.clear();
+        }
+
+        self.mode = Mode::Normal;
+
+        self.mode = if sync::repo_state(CWD)? == RepoState::Merge {
+            let ids = sync::mergehead_ids(CWD)?;
+            self.input.set_title(strings::commit_title_merge());
+            self.input.set_text(sync::merge_msg(CWD)?);
+            Mode::Merge(ids)
+        } else {
+            self.commit_template =
+                get_config_string(CWD, "commit.template")
+                    .ok()
+                    .flatten()
+                    .and_then(|path| read_to_string(path).ok());
+
+            if self.is_empty() {
+                if let Some(s) = &self.commit_template {
+                    self.input.set_text(s.clone());
+                }
+            }
+
+            self.input.set_title(strings::commit_title());
+            Mode::Normal
+        };
+
+        self.input.show()?;
 
         Ok(())
     }

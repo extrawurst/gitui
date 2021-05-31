@@ -94,13 +94,15 @@ pub(crate) fn commit_merge_with_head(
 
 #[cfg(test)]
 mod test {
+    use git2::Time;
+
     use super::*;
     use crate::sync::{
         branch_compare_upstream,
         remotes::{fetch, push::push},
         tests::{
             debug_cmd_print, get_commit_ids, repo_clone,
-            repo_init_bare, write_commit_file,
+            repo_init_bare, write_commit_file, write_commit_file_at,
         },
         RepoState,
     };
@@ -119,8 +121,13 @@ mod test {
 
         // clone1
 
-        let commit1 =
-            write_commit_file(&clone1, "test.txt", "test", "commit1");
+        let commit1 = write_commit_file_at(
+            &clone1,
+            "test.txt",
+            "test",
+            "commit1",
+            Time::new(1, 0),
+        );
 
         push(
             clone1_dir.path().to_str().unwrap(),
@@ -134,11 +141,12 @@ mod test {
 
         // clone2
 
-        let commit2 = write_commit_file(
+        let commit2 = write_commit_file_at(
             &clone2,
             "test2.txt",
             "test",
             "commit2",
+            Time::new(2, 0),
         );
 
         //push should fail since origin diverged

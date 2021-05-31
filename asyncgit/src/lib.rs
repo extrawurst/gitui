@@ -1,10 +1,14 @@
 //! asyncgit
 
 #![forbid(missing_docs)]
-#![deny(unsafe_code)]
-#![deny(unused_imports)]
-#![deny(unused_must_use)]
-#![deny(dead_code)]
+#![deny(
+    unused_imports,
+    unused_must_use,
+    dead_code,
+    unstable_name_collisions,
+    unused_assignments
+)]
+#![deny(unstable_name_collisions)]
 #![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
 #![deny(clippy::filetype_is_file)]
 #![deny(clippy::cargo)]
@@ -18,6 +22,7 @@
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
 
+pub mod asyncjob;
 mod blame;
 pub mod cached;
 mod commit_files;
@@ -77,6 +82,9 @@ pub enum AsyncNotification {
     Fetch,
     ///
     Blame,
+    ///
+    //TODO: this does not belong here
+    SyntaxHighlighting,
 }
 
 /// current working directory `./`

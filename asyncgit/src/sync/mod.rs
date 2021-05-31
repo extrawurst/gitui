@@ -64,11 +64,14 @@ pub use stash::{
     get_stashes, stash_apply, stash_drop, stash_pop, stash_save,
 };
 pub use state::{repo_state, RepoState};
-pub use tags::{get_tags, CommitTags, Tags};
+pub use tags::{
+    delete_tag, get_tags, get_tags_with_metadata, CommitTags,
+    TagWithMetadata, Tags,
+};
 pub use tree::{tree_file_content, tree_files, TreeFile};
 pub use utils::{
-    get_head, get_head_tuple, is_bare_repo, is_repo, stage_add_all,
-    stage_add_file, stage_addremoved, Head,
+    get_head, get_head_tuple, is_bare_repo, is_repo, repo_dir,
+    stage_add_all, stage_add_file, stage_addremoved, Head,
 };
 
 #[cfg(test)]
@@ -76,7 +79,7 @@ mod tests {
     use super::{
         commit, stage_add_file,
         status::{get_status, StatusType},
-        utils::repo_write_file,
+        utils::{get_head_repo, repo, repo_write_file},
         CommitId, LogWalker,
     };
     use crate::error::Result;
@@ -123,6 +126,59 @@ mod tests {
 
         commit(repo.workdir().unwrap().to_str().unwrap(), commit_name)
             .unwrap()
+    }
+
+    /// write, stage and commit a file giving the commit a specific timestamp
+    pub fn write_commit_file_at(
+        repo: &Repository,
+        file: &str,
+        content: &str,
+        commit_name: &str,
+        time: git2::Time,
+    ) -> CommitId {
+        repo_write_file(repo, file, content).unwrap();
+
+        let path = repo.workdir().unwrap().to_str().unwrap();
+
+        stage_add_file(path, Path::new(file)).unwrap();
+
+        commit_at(path, commit_name, time)
+    }
+
+    fn commit_at(
+        repo_path: &str,
+        msg: &str,
+        time: git2::Time,
+    ) -> CommitId {
+        let repo = repo(repo_path).unwrap();
+
+        let signature =
+            git2::Signature::new("name", "email", &time).unwrap();
+        let mut index = repo.index().unwrap();
+        let tree_id = index.write_tree().unwrap();
+        let tree = repo.find_tree(tree_id).unwrap();
+
+        let parents = if let Ok(id) = get_head_repo(&repo) {
+            vec![repo.find_commit(id.into()).unwrap()]
+        } else {
+            Vec::new()
+        };
+
+        let parents = parents.iter().collect::<Vec<_>>();
+
+        let commit = repo
+            .commit(
+                Some("HEAD"),
+                &signature,
+                &signature,
+                msg,
+                &tree,
+                parents.as_slice(),
+            )
+            .unwrap()
+            .into();
+
+        commit
     }
 
     ///

@@ -287,6 +287,10 @@ impl CommitList {
     fn relative_selection(&self) -> usize {
         self.selection.saturating_sub(self.items.index_offset())
     }
+
+    pub fn select_entry(&mut self, position: usize) {
+        self.selection = position;
+    }
 }
 
 impl DrawableComponent for CommitList {

@@ -11,8 +11,9 @@
 (
     tab_status: ( code: Char('1'), modifiers: ( bits: 0,),),
     tab_log: ( code: Char('2'), modifiers: ( bits: 0,),),
-    tab_stashing: ( code: Char('3'), modifiers: ( bits: 0,),),
-    tab_stashes: ( code: Char('4'), modifiers: ( bits: 0,),),
+    tab_files: ( code: Char('3'), modifiers: ( bits: 0,),),
+    tab_stashing: ( code: Char('4'), modifiers: ( bits: 0,),),
+    tab_stashes: ( code: Char('5'), modifiers: ( bits: 0,),),
 
     tab_toggle: ( code: Tab, modifiers: ( bits: 0,),),
     tab_toggle_reverse: ( code: BackTab, modifiers: ( bits: 1,),),
@@ -23,14 +24,16 @@
     focus_above: ( code: Char('k'), modifiers: ( bits: 0,),),
     focus_below: ( code: Char('j'), modifiers: ( bits: 0,),),
 
+    open_help: ( code: F(1), modifiers: ( bits: 0,),),
+
     exit: ( code: Char('Q'), modifiers: ( bits: 1,),),
     exit_popup: ( code: Esc, modifiers: ( bits: 0,),),
 
     open_commit: ( code: Char('c'), modifiers: ( bits: 0,),),
-
     // Note: the shift modifier does not work for open_commit_editor
+    // Also just plain text characters will not work because the commit 
+    // msg editor will interpret them as text input
     open_commit_editor: ( code: Char('e'), modifiers: ( bits: 2,),),
-    open_help: ( code: F(1), modifiers: ( bits: 0,),),
 
     move_left: ( code: Char('h'), modifiers: ( bits: 0,),),
     move_right: ( code: Char('l'), modifiers: ( bits: 0,),),
@@ -54,7 +57,7 @@
     status_stage_all: ( code: Char('a'), modifiers: ( bits: 0,),),
     status_reset_item: ( code: Char('U'), modifiers: ( bits: 1,),),
     status_ignore_file: ( code: Char('i'), modifiers: ( bits: 0,),),
-    
+
     diff_reset_lines: ( code: Char('u'), modifiers: ( bits: 0,),),
     diff_stage_lines: ( code: Char('s'), modifiers: ( bits: 0,),),
 
@@ -76,6 +79,10 @@
     delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
     merge_branch: ( code: Char('m'), modifiers: ( bits: 0,),),
     abort_merge: ( code: Char('M'), modifiers: ( bits: 1,),),
+
+    tags: ( code: Char('T'), modifiers: ( bits: 1,),),
+    delete_tag: ( code: Char('D'), modifiers: ( bits: 1,),),
+    select_tag: ( code: Enter, modifiers: ( bits: 0,),),
 
     push: ( code: Char('p'), modifiers: ( bits: 0,),),
     force_push: ( code: Char('P'), modifiers: ( bits: 1,),),

@@ -1,16 +1,12 @@
-use std::{
-    cell::Cell, collections::BTreeSet, convert::From, path::Path,
-};
-
 use super::{
-    visibility_blocking, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, EventState,
+    CommandBlocking, CommandInfo, Component, DrawableComponent,
+    EventState, SyntaxTextComponent,
 };
 use crate::{
     keys::SharedKeyConfig,
     queue::{InternalEvent, Queue},
     strings::{self, order},
-    ui::{self, style::SharedTheme},
+    ui::{self, common_nav, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -19,12 +15,15 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use filetree::{FileTree, MoveSelection};
+use filetreelist::{FileTree, FileTreeItem};
+use std::{
+    cell::Cell, collections::BTreeSet, convert::From, path::Path,
+};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
-    text::{Span, Text},
-    widgets::{Block, Borders, Clear, Paragraph, Wrap},
+    text::Span,
+    widgets::{Block, Borders},
     Frame,
 };
 
@@ -32,16 +31,21 @@ const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
 const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 const EMPTY_STR: &str = "";
 
+enum Focus {
+    Tree,
+    File,
+}
+
 pub struct RevisionFilesComponent {
     queue: Queue,
-    title: String,
     theme: SharedTheme,
+    //TODO: store TreeFiles in `tree`
     files: Vec<TreeFile>,
-    current_file: Option<(String, String)>,
+    current_file: SyntaxTextComponent,
     tree: FileTree,
     scroll_top: Cell<usize>,
     revision: Option<CommitId>,
-    visible: bool,
+    focus: Focus,
     key_config: SharedKeyConfig,
 }
 
@@ -49,48 +53,58 @@ impl RevisionFilesComponent {
     ///
     pub fn new(
         queue: &Queue,
-        _sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
         Self {
             queue: queue.clone(),
-            title: String::new(),
             tree: FileTree::default(),
-            theme,
             scroll_top: Cell::new(0),
-            current_file: None,
+            current_file: SyntaxTextComponent::new(
+                sender,
+                key_config.clone(),
+                theme.clone(),
+            ),
+            theme,
             files: Vec::new(),
             revision: None,
-            visible: false,
+            focus: Focus::Tree,
             key_config,
         }
     }
 
     ///
-    pub fn open(&mut self, commit: CommitId) -> Result<()> {
-        self.files = sync::tree_files(CWD, commit)?;
-        let filenames: Vec<&str> = self
-            .files
-            .iter()
-            .map(|f| f.path.to_str().unwrap_or_default())
-            .collect();
-        self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
-        self.tree.collapse_but_root();
-        self.revision = Some(commit);
-        self.title = format!(
-            "File Tree at [{}]",
-            self.revision
-                .map(|c| c.get_short_string())
-                .unwrap_or_default()
-        );
-        self.show()?;
+    pub fn set_commit(&mut self, commit: CommitId) -> Result<()> {
+        let same_id =
+            self.revision.map(|c| c == commit).unwrap_or_default();
+        if !same_id {
+            self.files = sync::tree_files(CWD, commit)?;
+            let filenames: Vec<&str> = self
+                .files
+                .iter()
+                .map(|f| f.path.to_str().unwrap_or_default())
+                .collect();
+            self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
+            self.tree.collapse_but_root();
+            self.revision = Some(commit);
+        }
 
         Ok(())
     }
 
+    ///
+    pub fn update(&mut self, ev: AsyncNotification) {
+        self.current_file.update(ev);
+    }
+
+    ///
+    pub fn any_work_pending(&self) -> bool {
+        self.current_file.any_work_pending()
+    }
+
     fn tree_item_to_span<'a>(
-        item: &'a filetree::FileTreeItem,
+        item: &'a FileTreeItem,
         theme: &SharedTheme,
         selected: bool,
     ) -> Span<'a> {
@@ -133,43 +147,82 @@ impl RevisionFilesComponent {
     }
 
     fn selection_changed(&mut self) {
-        if let Some(file) = self.tree.selected_file().map(|file| {
-            file.full_path()
-                .strip_prefix("./")
-                .unwrap_or_default()
-                .to_string()
-        }) {
-            let already_loaded = self
-                .current_file
-                .as_ref()
-                .map(|(current_file, _)| current_file == &file)
-                .unwrap_or_default();
-
-            if !already_loaded {
-                self.load_file(file);
+        //TODO: retrieve TreeFile from tree datastructure
+        if let Some(file) = self
+            .tree
+            .selected_file()
+            .map(|file| file.full_path().to_string())
+        {
+            let path = Path::new(&file);
+            if let Some(item) =
+                self.files.iter().find(|f| f.path == path)
+            {
+                if let Ok(path) = path.strip_prefix("./") {
+                    return self.current_file.load_file(
+                        path.to_string_lossy().to_string(),
+                        item,
+                    );
+                }
             }
-        } else {
-            self.current_file = None;
+            self.current_file.clear();
         }
     }
 
-    fn load_file(&mut self, path: String) {
-        if let Some(item) = self
-            .files
-            .iter()
-            .find(|f| f.path.ends_with(Path::new(&path)))
-        {
-            match sync::tree_file_content(CWD, item) {
-                Ok(content) => {
-                    self.current_file = Some((path, content))
-                }
-                Err(e) => {
-                    self.current_file = Some((
-                        path,
-                        format!("error loading file: {}", e),
-                    ))
-                }
-            }
+    fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
+        let tree_height = usize::from(area.height.saturating_sub(2));
+
+        let selection = self.tree.visual_selection();
+        let visual_count = selection.map_or_else(
+            || {
+                self.scroll_top.set(0);
+                0
+            },
+            |selection| {
+                self.scroll_top.set(ui::calc_scroll_top(
+                    self.scroll_top.get(),
+                    tree_height,
+                    selection.index,
+                ));
+                selection.count
+            },
+        );
+
+        let items = self
+            .tree
+            .iterate(self.scroll_top.get(), tree_height)
+            .map(|(item, selected)| {
+                Self::tree_item_to_span(item, &self.theme, selected)
+            });
+
+        let is_tree_focused = matches!(self.focus, Focus::Tree);
+
+        let title = format!(
+            "Files at [{}]",
+            self.revision
+                .map(|c| c.get_short_string())
+                .unwrap_or_default()
+        );
+        ui::draw_list_block(
+            f,
+            area,
+            Block::default()
+                .title(Span::styled(
+                    title,
+                    self.theme.title(is_tree_focused),
+                ))
+                .borders(Borders::ALL)
+                .border_style(self.theme.block(is_tree_focused)),
+            items,
+        );
+
+        if is_tree_focused {
+            ui::draw_scrollbar(
+                f,
+                area,
+                &self.theme,
+                visual_count.saturating_sub(tree_height),
+                self.scroll_top.get(),
+            );
         }
     }
 }
@@ -180,74 +233,20 @@ impl DrawableComponent for RevisionFilesComponent {
         f: &mut Frame<B>,
         area: Rect,
     ) -> Result<()> {
-        if self.is_visible() {
-            let chunks = Layout::default()
-                .direction(Direction::Horizontal)
-                .margin(1)
-                .constraints(
-                    [
-                        Constraint::Percentage(40),
-                        Constraint::Percentage(60),
-                    ]
-                    .as_ref(),
-                )
-                .split(area);
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    Constraint::Percentage(40),
+                    Constraint::Percentage(60),
+                ]
+                .as_ref(),
+            )
+            .split(area);
 
-            let tree_height = usize::from(chunks[0].height);
+        self.draw_tree(f, chunks[0]);
 
-            let selection = self.tree.visual_selection();
-            selection.map_or_else(
-                || self.scroll_top.set(0),
-                |selection| {
-                    self.scroll_top.set(ui::calc_scroll_top(
-                        self.scroll_top.get(),
-                        tree_height,
-                        selection.index,
-                    ))
-                },
-            );
-
-            let items = self
-                .tree
-                .iterate(self.scroll_top.get(), tree_height)
-                .map(|(item, selected)| {
-                    Self::tree_item_to_span(
-                        item,
-                        &self.theme,
-                        selected,
-                    )
-                });
-
-            f.render_widget(Clear, area);
-            f.render_widget(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(Span::styled(
-                        &self.title,
-                        self.theme.title(true),
-                    ))
-                    .border_style(self.theme.block(true)),
-                area,
-            );
-
-            ui::draw_list_block(
-                f,
-                chunks[0],
-                Block::default()
-                    .borders(Borders::RIGHT)
-                    .border_style(self.theme.block(true)),
-                items,
-            );
-
-            let content = Paragraph::new(Text::from(
-                self.current_file
-                    .as_ref()
-                    .map(|(_, content)| content.as_str())
-                    .unwrap_or_default(),
-            ))
-            .wrap(Wrap { trim: false });
-            f.render_widget(content, chunks[1]);
-        }
+        self.current_file.draw(f, chunks[1])?;
 
         Ok(())
     }
@@ -259,16 +258,7 @@ impl Component for RevisionFilesComponent {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
-        if self.is_visible() || force_all {
-            out.push(
-                CommandInfo::new(
-                    strings::commands::close_popup(&self.key_config),
-                    true,
-                    true,
-                )
-                .order(1),
-            );
-
+        if matches!(self.focus, Focus::Tree) || force_all {
             out.push(
                 CommandInfo::new(
                     strings::commands::blame_file(&self.key_config),
@@ -277,59 +267,50 @@ impl Component for RevisionFilesComponent {
                 )
                 .order(order::NAV),
             );
-
             tree_nav_cmds(&self.tree, &self.key_config, out);
+        } else {
+            self.current_file.commands(out, force_all);
         }
 
-        visibility_blocking(self)
+        CommandBlocking::PassingOn
     }
 
     fn event(
         &mut self,
         event: crossterm::event::Event,
     ) -> Result<EventState> {
-        if self.is_visible() {
-            if let Event::Key(key) = event {
-                let consumed = if key == self.key_config.exit_popup {
+        if let Event::Key(key) = event {
+            let is_tree_focused = matches!(self.focus, Focus::Tree);
+            if is_tree_focused
+                && tree_nav(&mut self.tree, &self.key_config, key)
+            {
+                self.selection_changed();
+                return Ok(EventState::Consumed);
+            } else if key == self.key_config.blame {
+                if self.blame() {
                     self.hide();
-                    true
-                } else if key == self.key_config.blame {
-                    if self.blame() {
-                        self.hide();
-                        true
-                    } else {
-                        false
-                    }
-                } else if tree_nav(
-                    &mut self.tree,
-                    &self.key_config,
-                    key,
-                ) {
-                    self.selection_changed();
-                    true
-                } else {
-                    false
-                };
-
-                return Ok(consumed.into());
+                    return Ok(EventState::Consumed);
+                }
+            } else if key == self.key_config.move_right {
+                if is_tree_focused {
+                    self.focus = Focus::File;
+                    self.current_file.focus(true);
+                    self.focus(true);
+                    return Ok(EventState::Consumed);
+                }
+            } else if key == self.key_config.move_left {
+                if !is_tree_focused {
+                    self.focus = Focus::Tree;
+                    self.current_file.focus(false);
+                    self.focus(false);
+                    return Ok(EventState::Consumed);
+                }
+            } else if !is_tree_focused {
+                return self.current_file.event(event);
             }
         }
 
         Ok(EventState::NotConsumed)
-    }
-
-    fn is_visible(&self) -> bool {
-        self.visible
-    }
-
-    fn hide(&mut self) {
-        self.visible = false
-    }
-
-    fn show(&mut self) -> Result<()> {
-        self.visible = true;
-
-        Ok(())
     }
 }
 
@@ -355,18 +336,8 @@ fn tree_nav(
     key_config: &SharedKeyConfig,
     key: crossterm::event::KeyEvent,
 ) -> bool {
-    if key == key_config.move_down {
-        tree.move_selection(MoveSelection::Down)
-    } else if key == key_config.move_up {
-        tree.move_selection(MoveSelection::Up)
-    } else if key == key_config.move_right {
-        tree.move_selection(MoveSelection::Right)
-    } else if key == key_config.move_left {
-        tree.move_selection(MoveSelection::Left)
-    } else if key == key_config.home || key == key_config.shift_up {
-        tree.move_selection(MoveSelection::Top)
-    } else if key == key_config.end || key == key_config.shift_down {
-        tree.move_selection(MoveSelection::End)
+    if let Some(common_nav) = common_nav(key, key_config) {
+        tree.move_selection(common_nav)
     } else if key == key_config.tree_collapse_recursive {
         tree.collapse_recursive();
         true

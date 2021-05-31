@@ -1,15 +1,15 @@
 [package]
-name = "filetree"
-version = "0.1.0"
+name = "filetreelist"
+version = "0.1.1"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 edition = "2018"
-description = "filetree abstraction based on a sorted path list"
+description = "filetree abstraction based on a sorted path list, supports key based navigation events, folding, scrolling and more"
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
 license-file = "LICENSE.md"
 categories = ["command-line-utilities"]
-keywords = ["gui","cli","terminal","ui"]
+keywords = ["gui","cli","terminal","ui","tui"]
 
 [dependencies]
 thiserror = "1.0"

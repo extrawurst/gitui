@@ -19,6 +19,9 @@ use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
 use tui::{backend::Backend, layout::Rect, text::Span, Frame};
 
+//TODO: rename so that its clear this only works for Statuses
+//TODO: use new `filetreelist` crate
+
 ///
 pub struct FileTreeComponent {
     title: String,
