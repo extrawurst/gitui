@@ -44,7 +44,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use input::{Input, InputEvent, InputState};
-use keys::KeyConfig;
+use keys::{KeyConfig, SymbolConfig};
 use profiler::Profiler;
 use scopeguard::defer;
 use scopetime::scope_time;
@@ -82,9 +82,12 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let key_config = KeyConfig::init(KeyConfig::get_config_file()?)
-        .map_err(|e| eprintln!("KeyConfig loading error: {}", e))
-        .unwrap_or_default();
+    let key_config = KeyConfig::init(
+        KeyConfig::get_config_file()?,
+        SymbolConfig::get_config_file()?,
+    )
+    .map_err(|e| eprintln!("KeyConfig loading error: {}", e))
+    .unwrap_or_default();
     let theme = Theme::init(cliargs.theme)
         .map_err(|e| eprintln!("Theme loading error: {}", e))
         .unwrap_or_default();
