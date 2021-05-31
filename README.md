@@ -76,6 +76,7 @@ These are the high level goals before calling out `1.0`:
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
 * file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
+* interactive rebase ([#32](https://github.com/extrawurst/gitui/issues/32))
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -85,7 +86,7 @@ These are the high level goals before calling out `1.0`:
 
 Currently, this tool does not fully substitute the _git shell_, however both tools work well in tandem.
 
-`gitui` currently lacks essential features in git like push, pull, and checkout. The priorities are the basics (add, commit), and on features that are making me mad when done on the _git shell_, like stashes and hunks. Eventually, I will be able to work on features that could lead to making `gitui` a one stop solution to get rid of the shell entirely - but for that I need help - this is just a spare time project right now.
+The priorities for `gitui` are on features that are making me mad when done on the _git shell_, like stashing, staging lines or hunks. Eventually, I will be able to work on making `gitui` a one stop solution - but for that I need help - this is just a spare time project for now.
 
 All support is welcomed! Sponsors as well! ❤️
 
