@@ -3,9 +3,9 @@
 use crate::{
     error::Error,
     error::Result,
-    sync::utils::{self, get_config_string_repo},
+    sync::{config::untracked_files_config, utils},
 };
-use git2::{Delta, Repository, Status, StatusOptions, StatusShow};
+use git2::{Delta, Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -90,40 +90,6 @@ impl From<StatusType> for StatusShow {
             StatusType::Both => Self::IndexAndWorkdir,
         }
     }
-}
-
-// see https://git-scm.com/docs/git-config#Documentation/git-config.txt-statusshowUntrackedFiles
-enum ShowUntrackedFilesConfig {
-    No,
-    Normal,
-    All,
-}
-
-impl ShowUntrackedFilesConfig {
-    const fn include_untracked(&self) -> bool {
-        matches!(self, Self::Normal | Self::All)
-    }
-
-    const fn recurse_untracked_dirs(&self) -> bool {
-        matches!(self, Self::All)
-    }
-}
-
-fn untracked_files_config(
-    repo: &Repository,
-) -> Result<ShowUntrackedFilesConfig> {
-    let show_untracked_files =
-        get_config_string_repo(repo, "status.showUntrackedFiles")?;
-
-    if let Some(show_untracked_files) = show_untracked_files {
-        if &show_untracked_files == "no" {
-            return Ok(ShowUntrackedFilesConfig::No);
-        } else if &show_untracked_files == "normal" {
-            return Ok(ShowUntrackedFilesConfig::Normal);
-        }
-    }
-
-    Ok(ShowUntrackedFilesConfig::All)
 }
 
 /// gurantees sorting

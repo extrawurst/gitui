@@ -13,8 +13,7 @@ use anyhow::Result;
 use asyncgit::{
     cached,
     sync::{
-        self, utils::get_config_string, CommitId, HookResult,
-        RepoState,
+        self, get_config_string, CommitId, HookResult, RepoState,
     },
     CWD,
 };

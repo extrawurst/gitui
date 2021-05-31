@@ -9,7 +9,8 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use asyncgit::{
-    sync::utils::get_config_string, sync::utils::repo_work_dir, CWD,
+    sync::{get_config_string, utils::repo_work_dir},
+    CWD,
 };
 use crossterm::{
     event::Event,

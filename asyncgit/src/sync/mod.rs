@@ -9,6 +9,7 @@ mod commit;
 mod commit_details;
 mod commit_files;
 mod commits_info;
+mod config;
 pub mod cred;
 pub mod diff;
 mod hooks;
@@ -44,6 +45,7 @@ pub use commit_files::get_commit_files;
 pub use commits_info::{
     get_commit_info, get_commits_info, CommitId, CommitInfo,
 };
+pub use config::get_config_string;
 pub use diff::get_diff_commit;
 pub use hooks::{
     hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,
