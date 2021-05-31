@@ -459,8 +459,8 @@ mod tests {
                 .unwrap();
         }
 
-        let res = get_status(repo_path, StatusType::WorkingDir, true)
-            .unwrap();
+        let res =
+            get_status(repo_path, StatusType::WorkingDir).unwrap();
         assert_eq!(res.len(), 1);
         assert_eq!(res[0].path, "bar.txt");
 

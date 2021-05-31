@@ -1,7 +1,11 @@
 //! sync git api for fetching a status
 
-use crate::{error::Error, error::Result, sync::utils};
-use git2::{Delta, Status, StatusOptions, StatusShow};
+use crate::{
+    error::Error,
+    error::Result,
+    sync::utils::{self, get_config_string_repo},
+};
+use git2::{Delta, Repository, Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -88,24 +92,62 @@ impl From<StatusType> for StatusShow {
     }
 }
 
+// see https://git-scm.com/docs/git-config#Documentation/git-config.txt-statusshowUntrackedFiles
+enum ShowUntrackedFilesConfig {
+    No,
+    Normal,
+    All,
+}
+
+impl ShowUntrackedFilesConfig {
+    const fn include_untracked(&self) -> bool {
+        matches!(self, Self::Normal | Self::All)
+    }
+
+    const fn recurse_untracked_dirs(&self) -> bool {
+        matches!(self, Self::All)
+    }
+}
+
+fn untracked_files_config(
+    repo: &Repository,
+) -> Result<ShowUntrackedFilesConfig> {
+    let show_untracked_files =
+        get_config_string_repo(repo, "status.showUntrackedFiles")?;
+
+    if let Some(show_untracked_files) = show_untracked_files {
+        if &show_untracked_files == "no" {
+            return Ok(ShowUntrackedFilesConfig::No);
+        } else if &show_untracked_files == "normal" {
+            return Ok(ShowUntrackedFilesConfig::Normal);
+        }
+    }
+
+    Ok(ShowUntrackedFilesConfig::All)
+}
+
 /// gurantees sorting
 pub fn get_status(
     repo_path: &str,
     status_type: StatusType,
-    include_untracked: bool,
 ) -> Result<Vec<StatusItem>> {
     scope_time!("get_status");
 
     let repo = utils::repo(repo_path)?;
 
-    let statuses = repo.statuses(Some(
-        StatusOptions::default()
-            .show(status_type.into())
-            .update_index(true)
-            .include_untracked(include_untracked)
-            .renames_head_to_index(true)
-            .recurse_untracked_dirs(include_untracked),
-    ))?;
+    let show_untracked = untracked_files_config(&repo)?;
+
+    let mut options = StatusOptions::default();
+    options
+        .show(status_type.into())
+        .update_index(true)
+        .include_untracked(show_untracked.include_untracked())
+        .renames_head_to_index(true)
+        .recurse_untracked_dirs(
+            show_untracked.recurse_untracked_dirs(),
+        );
+
+    let statuses = repo.statuses(Some(&mut options))?;
 
     let mut res = Vec::with_capacity(statuses.len());
 
