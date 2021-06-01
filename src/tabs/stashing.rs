@@ -12,8 +12,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-    sync::status::StatusType, AsyncNotification, AsyncStatus,
-    StatusParams,
+    sync::{self, status::StatusType},
+    AsyncNotification, AsyncStatus, StatusParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -73,10 +73,8 @@ impl Stashing {
     ///
     pub fn update(&mut self) -> Result<()> {
         if self.is_visible() {
-            self.git_status.fetch(&StatusParams::new(
-                StatusType::Both,
-                self.options.stash_untracked,
-            ))?;
+            self.git_status
+                .fetch(&StatusParams::new(StatusType::Both))?;
         }
 
         Ok(())
@@ -258,6 +256,12 @@ impl Component for Stashing {
     }
 
     fn show(&mut self) -> Result<()> {
+        let config_untracked_files =
+            sync::untracked_files_config(CWD)?;
+
+        self.options.stash_untracked =
+            !config_untracked_files.include_none();
+
         self.visible = true;
         self.update()?;
         Ok(())

@@ -45,7 +45,10 @@ pub use commit_files::get_commit_files;
 pub use commits_info::{
     get_commit_info, get_commits_info, CommitId, CommitInfo,
 };
-pub use config::get_config_string;
+pub use config::{
+    get_config_string, untracked_files_config,
+    ShowUntrackedFilesConfig,
+};
 pub use diff::get_diff_commit;
 pub use hooks::{
     hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,

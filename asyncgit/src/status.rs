@@ -31,19 +31,14 @@ pub struct Status {
 pub struct StatusParams {
     tick: u128,
     status_type: StatusType,
-    include_untracked: bool,
 }
 
 impl StatusParams {
     ///
-    pub fn new(
-        status_type: StatusType,
-        include_untracked: bool,
-    ) -> Self {
+    pub fn new(status_type: StatusType) -> Self {
         Self {
             tick: current_tick(),
             status_type,
-            include_untracked,
         }
     }
 }

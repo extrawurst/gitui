@@ -4,23 +4,34 @@ use git2::Repository;
 use scopetime::scope_time;
 
 // see https://git-scm.com/docs/git-config#Documentation/git-config.txt-statusshowUntrackedFiles
+/// represents the `status.showUntrackedFiles` git config state
 pub enum ShowUntrackedFilesConfig {
+    ///
     No,
+    ///
     Normal,
+    ///
     All,
 }
 
 impl ShowUntrackedFilesConfig {
+    ///
+    pub const fn include_none(&self) -> bool {
+        matches!(self, Self::No)
+    }
+
+    ///
     pub const fn include_untracked(&self) -> bool {
         matches!(self, Self::Normal | Self::All)
     }
 
+    ///
     pub const fn recurse_untracked_dirs(&self) -> bool {
         matches!(self, Self::All)
     }
 }
 
-pub fn untracked_files_config(
+pub fn untracked_files_config_repo(
     repo: &Repository,
 ) -> Result<ShowUntrackedFilesConfig> {
     let show_untracked_files =
@@ -35,6 +46,14 @@ pub fn untracked_files_config(
     }
 
     Ok(ShowUntrackedFilesConfig::All)
+}
+
+///
+pub fn untracked_files_config(
+    repo_path: &str,
+) -> Result<ShowUntrackedFilesConfig> {
+    let repo = repo(repo_path)?;
+    untracked_files_config_repo(&repo)
 }
 
 /// get string from config

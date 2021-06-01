@@ -3,7 +3,7 @@
 use crate::{
     error::Error,
     error::Result,
-    sync::{config::untracked_files_config, utils},
+    sync::{config::untracked_files_config_repo, utils},
 };
 use git2::{Delta, Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
@@ -101,7 +101,7 @@ pub fn get_status(
 
     let repo = utils::repo(repo_path)?;
 
-    let show_untracked = untracked_files_config(&repo)?;
+    let show_untracked = untracked_files_config_repo(&repo)?;
 
     let mut options = StatusOptions::default();
     options

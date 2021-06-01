@@ -3,7 +3,7 @@
 use super::CommitId;
 use crate::{
     error::{Error, Result},
-    sync::config::untracked_files_config,
+    sync::config::untracked_files_config_repo,
 };
 use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
@@ -132,7 +132,7 @@ pub fn stage_add_all(repo_path: &str, pattern: &str) -> Result<()> {
 
     let mut index = repo.index()?;
 
-    let config = untracked_files_config(&repo)?;
+    let config = untracked_files_config_repo(&repo)?;
 
     if config.include_untracked() || config.recurse_untracked_dirs() {
         index.add_all(
