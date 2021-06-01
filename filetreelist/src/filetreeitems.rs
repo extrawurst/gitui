@@ -37,7 +37,7 @@ impl FileTreeItems {
         list: &'a [&str],
         collapsed: &BTreeSet<&String>,
     ) -> Result<(Vec<FileTreeItem>, HashMap<&'a Path, usize>)> {
-        // scope_time!("create_items");
+        // scopetime::scope_time!("create_items");
 
         let mut items = Vec::with_capacity(list.len());
         let mut paths_added: HashMap<&Path, usize> =
@@ -94,7 +94,7 @@ impl FileTreeItems {
         for c in &ancestors {
             if c.parent().is_some() && !paths_added.contains_key(c) {
                 // add node and set count to have no children
-                paths_added.entry(c).or_insert(0);
+                paths_added.insert(c, 0);
 
                 // increase the number of children in the parent node count
                 if let Some(parent) = c.parent() {
