@@ -12,6 +12,7 @@ categories = ["command-line-utilities"]
 keywords = ["gui","cli","terminal","ui","tui"]
 
 [dependencies]
+scopetime = { path = "../scopetime", version = "0.1" }
 thiserror = "1.0"
 
 [dev-dependencies]
