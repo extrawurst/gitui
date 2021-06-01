@@ -134,14 +134,14 @@ pub fn stage_add_all(repo_path: &str, pattern: &str) -> Result<()> {
 
     let config = untracked_files_config_repo(&repo)?;
 
-    if config.include_untracked() || config.recurse_untracked_dirs() {
+    if config.include_none() {
+        index.update_all(vec![pattern], None)?;
+    } else {
         index.add_all(
             vec![pattern],
             IndexAddOption::DEFAULT,
             None,
         )?;
-    } else {
-        index.update_all(vec![pattern], None)?;
     }
 
     index.write()?;
@@ -278,6 +278,33 @@ mod tests {
 
         assert_eq!(status_count(StatusType::WorkingDir), 1);
         assert_eq!(status_count(StatusType::Stage), 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_not_staging_untracked_folder() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        fs::create_dir_all(&root.join("a/d"))?;
+        File::create(&root.join(Path::new("a/d/f1.txt")))?
+            .write_all(b"foo")?;
+        File::create(&root.join(Path::new("a/d/f2.txt")))?
+            .write_all(b"foo")?;
+        File::create(&root.join(Path::new("f3.txt")))?
+            .write_all(b"foo")?;
+
+        assert_eq!(get_statuses(repo_path), (3, 0));
+
+        repo.config()?.set_str("status.showUntrackedFiles", "no")?;
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
+
+        stage_add_all(repo_path, "*").unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
 
         Ok(())
     }
