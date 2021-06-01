@@ -212,7 +212,7 @@ impl CreateBranchComponent {
         }
 
         let msg;
-        if branch_name.len() == 0 {
+        if branch_name.is_empty() {
             return;
         } else if invalid_name {
             msg = strings::branch_invalid_name_warning();
@@ -246,17 +246,17 @@ fn branch_already_exists(branch_name: &str) -> Result<bool> {
 
     match res {
         Ok(branches) => {
-            for i in 0..branches.len() {
-                if branches[i].name == branch_name {
+            for branch in &branches {
+                if branch.name == branch_name {
                     return Ok(true);
                 }
             }
-            return Ok(false);
+            Ok(false)
         }
         Err(_) => {
-            return Err(anyhow!(
+            Err(anyhow!(
                 "Couldn't find branches for repo in CWD"
-            ));
+            ))
         }
     }
 }
