@@ -1,7 +1,10 @@
 //! sync git api (various methods)
 
 use super::CommitId;
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    sync::config::untracked_files_config_repo,
+};
 use git2::{IndexAddOption, Repository, RepositoryOpenFlags};
 use scopetime::scope_time;
 use std::{
@@ -129,7 +132,18 @@ pub fn stage_add_all(repo_path: &str, pattern: &str) -> Result<()> {
 
     let mut index = repo.index()?;
 
-    index.add_all(vec![pattern], IndexAddOption::DEFAULT, None)?;
+    let config = untracked_files_config_repo(&repo)?;
+
+    if config.include_none() {
+        index.update_all(vec![pattern], None)?;
+    } else {
+        index.add_all(
+            vec![pattern],
+            IndexAddOption::DEFAULT,
+            None,
+        )?;
+    }
+
     index.write()?;
 
     Ok(())
@@ -147,30 +161,6 @@ pub fn stage_addremoved(repo_path: &str, path: &Path) -> Result<()> {
     index.write()?;
 
     Ok(())
-}
-
-/// get string from config
-pub fn get_config_string(
-    repo_path: &str,
-    key: &str,
-) -> Result<Option<String>> {
-    let repo = repo(repo_path)?;
-    let cfg = repo.config()?;
-
-    // this code doesnt match what the doc says regarding what
-    // gets returned when but it actually works
-    let entry_res = cfg.get_entry(key);
-
-    let entry = match entry_res {
-        Ok(ent) => ent,
-        Err(_) => return Ok(None),
-    };
-
-    if entry.has_value() {
-        Ok(entry.value().map(std::string::ToString::to_string))
-    } else {
-        Ok(None)
-    }
 }
 
 pub(crate) fn bytes2string(bytes: &[u8]) -> Result<String> {
@@ -239,23 +229,7 @@ mod tests {
             false
         );
     }
-    #[test]
-    fn test_get_config() {
-        let bad_dir_cfg =
-            get_config_string("oodly_noodly", "this.doesnt.exist");
-        assert!(bad_dir_cfg.is_err());
 
-        let (_td, repo) = repo_init().unwrap();
-        let path = repo.path();
-        let rpath = path.as_os_str().to_str().unwrap();
-        let bad_cfg = get_config_string(rpath, "this.doesnt.exist");
-        assert!(bad_cfg.is_ok());
-        assert!(bad_cfg.unwrap().is_none());
-        // repo init sets user.name
-        let good_cfg = get_config_string(rpath, "user.name");
-        assert!(good_cfg.is_ok());
-        assert!(good_cfg.unwrap().is_some());
-    }
     #[test]
     fn test_staging_one_file() {
         let file_path = Path::new("file1.txt");
@@ -287,7 +261,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s, true).unwrap().len()
+            get_status(repo_path, s).unwrap().len()
         };
 
         fs::create_dir_all(&root.join("a/d"))?;
@@ -309,6 +283,33 @@ mod tests {
     }
 
     #[test]
+    fn test_not_staging_untracked_folder() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        fs::create_dir_all(&root.join("a/d"))?;
+        File::create(&root.join(Path::new("a/d/f1.txt")))?
+            .write_all(b"foo")?;
+        File::create(&root.join(Path::new("a/d/f2.txt")))?
+            .write_all(b"foo")?;
+        File::create(&root.join(Path::new("f3.txt")))?
+            .write_all(b"foo")?;
+
+        assert_eq!(get_statuses(repo_path), (3, 0));
+
+        repo.config()?.set_str("status.showUntrackedFiles", "no")?;
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
+
+        stage_add_all(repo_path, "*").unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 0));
+
+        Ok(())
+    }
+
+    #[test]
     fn test_staging_deleted_file() {
         let file_path = Path::new("file1.txt");
         let (_td, repo) = repo_init().unwrap();
@@ -316,7 +317,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s, true).unwrap().len()
+            get_status(repo_path, s).unwrap().len()
         };
 
         let full_path = &root.join(file_path);
@@ -350,7 +351,7 @@ mod tests {
         let repo_path = root.as_os_str().to_str().unwrap();
 
         let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s, true).unwrap().len()
+            get_status(repo_path, s).unwrap().len()
         };
 
         let sub = &root.join("sub");

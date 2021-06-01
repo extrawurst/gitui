@@ -1,6 +1,10 @@
 //! sync git api for fetching a status
 
-use crate::{error::Error, error::Result, sync::utils};
+use crate::{
+    error::Error,
+    error::Result,
+    sync::{config::untracked_files_config_repo, utils},
+};
 use git2::{Delta, Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 use std::path::Path;
@@ -92,20 +96,24 @@ impl From<StatusType> for StatusShow {
 pub fn get_status(
     repo_path: &str,
     status_type: StatusType,
-    include_untracked: bool,
 ) -> Result<Vec<StatusItem>> {
     scope_time!("get_status");
 
     let repo = utils::repo(repo_path)?;
 
-    let statuses = repo.statuses(Some(
-        StatusOptions::default()
-            .show(status_type.into())
-            .update_index(true)
-            .include_untracked(include_untracked)
-            .renames_head_to_index(true)
-            .recurse_untracked_dirs(true),
-    ))?;
+    let show_untracked = untracked_files_config_repo(&repo)?;
+
+    let mut options = StatusOptions::default();
+    options
+        .show(status_type.into())
+        .update_index(true)
+        .include_untracked(show_untracked.include_untracked())
+        .renames_head_to_index(true)
+        .recurse_untracked_dirs(
+            show_untracked.recurse_untracked_dirs(),
+        );
+
+    let statuses = repo.statuses(Some(&mut options))?;
 
     let mut res = Vec::with_capacity(statuses.len());
 

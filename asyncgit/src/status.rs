@@ -31,19 +31,14 @@ pub struct Status {
 pub struct StatusParams {
     tick: u128,
     status_type: StatusType,
-    include_untracked: bool,
 }
 
 impl StatusParams {
     ///
-    pub fn new(
-        status_type: StatusType,
-        include_untracked: bool,
-    ) -> Self {
+    pub fn new(status_type: StatusType) -> Self {
         Self {
             tick: current_tick(),
             status_type,
-            include_untracked,
         }
     }
 }
@@ -93,10 +88,9 @@ impl AsyncStatus {
         let hash_request = hash(&params);
 
         log::trace!(
-            "request: [hash: {}] (type: {:?}, untracked: {})",
+            "request: [hash: {}] (type: {:?})",
             hash_request,
             params.status_type,
-            params.include_untracked,
         );
 
         {
@@ -115,14 +109,12 @@ impl AsyncStatus {
         let sender = self.sender.clone();
         let arc_pending = Arc::clone(&self.pending);
         let status_type = params.status_type;
-        let include_untracked = params.include_untracked;
 
         self.pending.fetch_add(1, Ordering::Relaxed);
 
         rayon_core::spawn(move || {
             let ok = Self::fetch_helper(
                 status_type,
-                include_untracked,
                 hash_request,
                 &arc_current,
                 &arc_last,
@@ -143,17 +135,15 @@ impl AsyncStatus {
 
     fn fetch_helper(
         status_type: StatusType,
-        include_untracked: bool,
         hash_request: u64,
         arc_current: &Arc<Mutex<Request<u64, Status>>>,
         arc_last: &Arc<Mutex<Status>>,
     ) -> Result<()> {
-        let res = Self::get_status(status_type, include_untracked)?;
+        let res = Self::get_status(status_type)?;
         log::trace!(
-            "status fetched: {} (type: {:?}, untracked: {})",
+            "status fetched: {} (type: {:?})",
             hash_request,
             status_type,
-            include_untracked
         );
 
         {
@@ -171,16 +161,9 @@ impl AsyncStatus {
         Ok(())
     }
 
-    fn get_status(
-        status_type: StatusType,
-        include_untracked: bool,
-    ) -> Result<Status> {
+    fn get_status(status_type: StatusType) -> Result<Status> {
         Ok(Status {
-            items: sync::status::get_status(
-                CWD,
-                status_type,
-                include_untracked,
-            )?,
+            items: sync::status::get_status(CWD, status_type)?,
         })
     }
 }

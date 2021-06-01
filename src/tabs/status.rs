@@ -318,12 +318,10 @@ impl Status {
 
         if self.is_visible() {
             self.git_diff.refresh()?;
-            self.git_status_workdir.fetch(&StatusParams::new(
-                StatusType::WorkingDir,
-                true,
-            ))?;
+            self.git_status_workdir
+                .fetch(&StatusParams::new(StatusType::WorkingDir))?;
             self.git_status_stage
-                .fetch(&StatusParams::new(StatusType::Stage, true))?;
+                .fetch(&StatusParams::new(StatusType::Stage))?;
 
             self.branch_compare();
         }

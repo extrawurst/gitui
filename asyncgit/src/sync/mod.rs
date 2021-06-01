@@ -9,6 +9,7 @@ mod commit;
 mod commit_details;
 mod commit_files;
 mod commits_info;
+mod config;
 pub mod cred;
 pub mod diff;
 mod hooks;
@@ -43,6 +44,10 @@ pub use commit_details::{
 pub use commit_files::get_commit_files;
 pub use commits_info::{
     get_commit_info, get_commits_info, CommitId, CommitInfo,
+};
+pub use config::{
+    get_config_string, untracked_files_config,
+    ShowUntrackedFilesConfig,
 };
 pub use diff::get_diff_commit;
 pub use hooks::{
@@ -250,12 +255,10 @@ mod tests {
     /// helper returning amount of files with changes in the (wd,stage)
     pub fn get_statuses(repo_path: &str) -> (usize, usize) {
         (
-            get_status(repo_path, StatusType::WorkingDir, true)
+            get_status(repo_path, StatusType::WorkingDir)
                 .unwrap()
                 .len(),
-            get_status(repo_path, StatusType::Stage, true)
-                .unwrap()
-                .len(),
+            get_status(repo_path, StatusType::Stage).unwrap().len(),
         )
     }
 
