@@ -118,6 +118,7 @@ mod tests {
         create_branch,
         tests::{repo_init, write_commit_file},
     };
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_smoke() {
@@ -133,6 +134,10 @@ mod tests {
         write_commit_file(&repo, "test.txt", "test2", "commit2");
 
         merge_branch(repo_path, "master").unwrap();
+
+        let msg = merge_msg(repo_path).unwrap();
+
+        assert_eq!(&msg[0..12], "Merge branch");
 
         let mergeheads = mergehead_ids(repo_path).unwrap();
 
