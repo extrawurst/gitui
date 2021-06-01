@@ -1,5 +1,3 @@
-use std::fs::read_to_string;
-
 use crate::{
     error::{Error, Result},
     sync::{
@@ -82,10 +80,7 @@ pub fn merge_msg(repo_path: &str) -> Result<String> {
     scope_time!("merge_msg");
 
     let repo = utils::repo(repo_path)?;
-
-    let msg_file = repo.path().join("MERGE_MSG");
-
-    let content = read_to_string(msg_file).unwrap_or_default();
+    let content = repo.message()?;
 
     Ok(content)
 }
