@@ -1,11 +1,14 @@
 
 .PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
+ARGS=-l
+# ARGS=-l -d <some_path>
+
 profile:
-	cargo run --features=timing,pprof -- -l
+	cargo run --features=timing,pprof -- ${ARGS}
 
 debug:
-	RUST_BACKTRACE=true cargo run --features=timing -- -l
+	RUST_BACKTRACE=true cargo run --features=timing -- ${ARGS}
 
 build-release:
 	cargo build --release

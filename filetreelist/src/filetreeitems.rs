@@ -5,7 +5,7 @@ use crate::{
 };
 use crate::{error::Result, treeitems_iter::TreeItemsIterator};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeSet, HashMap},
     path::Path,
     usize,
 };
@@ -36,9 +36,12 @@ impl FileTreeItems {
     fn create_items<'a>(
         list: &'a [&str],
         collapsed: &BTreeSet<&String>,
-    ) -> Result<(Vec<FileTreeItem>, BTreeMap<&'a Path, usize>)> {
+    ) -> Result<(Vec<FileTreeItem>, HashMap<&'a Path, usize>)> {
+        // scope_time!("create_items");
+
         let mut items = Vec::with_capacity(list.len());
-        let mut paths_added: BTreeMap<&Path, usize> = BTreeMap::new();
+        let mut paths_added: HashMap<&Path, usize> =
+            HashMap::with_capacity(list.len());
 
         for e in list {
             {
@@ -81,7 +84,7 @@ impl FileTreeItems {
         nodes: &mut Vec<FileTreeItem>,
         // helps to only add new nodes for paths that were not added before
         // we also count the number of children a node has for later folding
-        paths_added: &mut BTreeMap<&'a Path, usize>,
+        paths_added: &mut HashMap<&'a Path, usize>,
         collapsed: &BTreeSet<&String>,
     ) -> Result<()> {
         let mut ancestors =
@@ -241,7 +244,7 @@ impl FileTreeItems {
 
     fn fold_paths(
         items: &mut Vec<FileTreeItem>,
-        paths: &BTreeMap<&Path, usize>,
+        paths: &HashMap<&Path, usize>,
     ) {
         let mut i = 0;
 
@@ -335,7 +338,7 @@ mod tests {
     #[test]
     fn test_push_path() {
         let mut items = Vec::new();
-        let mut paths: BTreeMap<&Path, usize> = BTreeMap::new();
+        let mut paths: HashMap<&Path, usize> = HashMap::new();
 
         FileTreeItems::push_dirs(
             Path::new("a/b/c"),
@@ -361,7 +364,7 @@ mod tests {
     #[test]
     fn test_push_path2() {
         let mut items = Vec::new();
-        let mut paths: BTreeMap<&Path, usize> = BTreeMap::new();
+        let mut paths: HashMap<&Path, usize> = HashMap::new();
 
         FileTreeItems::push_dirs(
             Path::new("a/b/c"),
