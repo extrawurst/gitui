@@ -2,7 +2,7 @@ use crate::{
     error::Result, filetreeitems::FileTreeItems,
     tree_iter::TreeIterator, TreeItemInfo,
 };
-use std::{collections::BTreeSet, usize};
+use std::{collections::BTreeSet, path::Path, usize};
 
 ///
 #[derive(Copy, Clone, Debug)]
@@ -35,7 +35,7 @@ pub struct FileTree {
 impl FileTree {
     ///
     pub fn new(
-        list: &[&str],
+        list: &[&Path],
         collapsed: &BTreeSet<&String>,
     ) -> Result<Self> {
         let mut new_self = Self {
@@ -318,12 +318,12 @@ impl FileTree {
 mod test {
     use crate::{FileTree, MoveSelection};
     use pretty_assertions::assert_eq;
-    use std::collections::BTreeSet;
+    use std::{collections::BTreeSet, path::Path};
 
     #[test]
     fn test_selection() {
         let items = vec![
-            "a/b", //
+            Path::new("a/b"), //
         ];
 
         let mut tree =
@@ -341,8 +341,8 @@ mod test {
     #[test]
     fn test_selection_skips_collapsed() {
         let items = vec![
-            "a/b/c", //
-            "a/d",   //
+            Path::new("a/b/c"), //
+            Path::new("a/d"),   //
         ];
 
         //0 a/
@@ -364,8 +364,8 @@ mod test {
     #[test]
     fn test_selection_left_collapse() {
         let items = vec![
-            "a/b/c", //
-            "a/d",   //
+            Path::new("a/b/c"), //
+            Path::new("a/d"),   //
         ];
 
         //0 a/
@@ -390,8 +390,8 @@ mod test {
     #[test]
     fn test_selection_left_parent() {
         let items = vec![
-            "a/b/c", //
-            "a/d",   //
+            Path::new("a/b/c"), //
+            Path::new("a/d"),   //
         ];
 
         //0 a/
@@ -417,8 +417,8 @@ mod test {
     #[test]
     fn test_selection_right_expand() {
         let items = vec![
-            "a/b/c", //
-            "a/d",   //
+            Path::new("a/b/c"), //
+            Path::new("a/d"),   //
         ];
 
         //0 a/
@@ -449,8 +449,8 @@ mod test {
     #[test]
     fn test_selection_top() {
         let items = vec![
-            "a/b/c", //
-            "a/d",   //
+            Path::new("a/b/c"), //
+            Path::new("a/d"),   //
         ];
 
         //0 a/
@@ -470,9 +470,9 @@ mod test {
     #[test]
     fn test_visible_selection() {
         let items = vec![
-            "a/b/c",  //
-            "a/b/c2", //
-            "a/d",    //
+            Path::new("a/b/c"),  //
+            Path::new("a/b/c2"), //
+            Path::new("a/d"),    //
         ];
 
         //0 a/
