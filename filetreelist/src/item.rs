@@ -42,7 +42,7 @@ impl TreeItemInfo {
 
     ///
     pub fn full_path(&self) -> &Path {
-        Path::new(&self.full_path)
+        self.full_path.as_path()
     }
 
     /// like `path` but as `&str`
