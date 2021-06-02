@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   
 ## Fixed
 - wrong file with same name shown in file tree ([#748](https://github.com/extrawurst/gitui/issues/748))
+- filetree collapsing broken on windows ([#761](https://github.com/extrawurst/gitui/issues/761))
 
 ### Internal
 - use git_repository_message [[@kosayoda](https://github.com/kosayoda)] ([#751](https://github.com/extrawurst/gitui/issues/751))
