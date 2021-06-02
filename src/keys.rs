@@ -24,7 +24,7 @@ trait Save {
 }
 
 fn handle_error_and_default<T: Save + Default>(
-    e: Error,
+    e: &Error,
     file: PathBuf,
 ) -> Result<T> {
     let config_path = file.clone();
@@ -113,7 +113,7 @@ impl SymbolConfig {
     fn init(file: PathBuf) -> Result<Self> {
         if file.exists() {
             match read_file(file.clone()) {
-                Err(e) => handle_error_and_default(e, file),
+                Err(e) => handle_error_and_default(&e, file),
                 Ok(res) => Ok(res),
             }
         } else {
@@ -289,7 +289,7 @@ impl KeyConfig {
     fn init_key_config(file: PathBuf) -> Result<Self> {
         if file.exists() {
             match read_file(file.clone()) {
-                Err(e) => handle_error_and_default(e, file),
+                Err(e) => handle_error_and_default(&e, file),
                 Ok(res) => Ok(res),
             }
         } else {
