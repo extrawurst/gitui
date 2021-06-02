@@ -222,9 +222,9 @@ mod tests {
 
         assert_eq!(a.info.full_path_str(), "a/b");
         assert_eq!(
-            a.info.folded.as_ref().unwrap().to_str().unwrap(),
-            "a/b"
+            &a.info.folded.as_ref().unwrap(),
+            &Path::new("a/b")
         );
-        assert_eq!(a.info.path_str(), "a/b");
+        assert_eq!(a.info.path(), Path::new("a/b"));
     }
 }
