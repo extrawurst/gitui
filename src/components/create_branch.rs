@@ -9,7 +9,6 @@ use crate::{
     strings,
     ui::style::SharedTheme,
 };
-use anyhow::anyhow;
 use anyhow::Result;
 use asyncgit::{sync, CWD};
 use crossterm::event::Event;
@@ -145,7 +144,16 @@ impl CreateBranchComponent {
         }
     }
 
-    // mostly copied from commit.rs, maybe could be refactored?
+    fn branch_already_exists(&self) -> Result<bool> {
+        let branches = sync::get_branches_info(CWD, true)?;
+        for branch in &branches {
+            if branch.name == self.input.get_text().as_str() {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
         let branch_name = self.input.get_text().as_str();
         let invalid_name: bool;
@@ -166,7 +174,7 @@ impl CreateBranchComponent {
         }
 
         let already_exists: bool;
-        match branch_already_exists(branch_name) {
+        match self.branch_already_exists() {
             Ok(v) => {
                 already_exists = v;
             }
@@ -208,24 +216,5 @@ impl CreateBranchComponent {
         };
 
         f.render_widget(w, rect);
-    }
-}
-
-// should this be inside CreateBranchComponent for error handling?
-fn branch_already_exists(branch_name: &str) -> Result<bool> {
-    let res = sync::get_branches_info(CWD, true);
-
-    match res {
-        Ok(branches) => {
-            for branch in &branches {
-                if branch.name == branch_name {
-                    return Ok(true);
-                }
-            }
-            Ok(false)
-        }
-        Err(_) => {
-            Err(anyhow!("Couldn't find branches for repo in CWD"))
-        }
     }
 }
