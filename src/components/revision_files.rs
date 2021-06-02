@@ -80,11 +80,8 @@ impl RevisionFilesComponent {
             self.revision.map(|c| c == commit).unwrap_or_default();
         if !same_id {
             self.files = sync::tree_files(CWD, commit)?;
-            let filenames: Vec<&str> = self
-                .files
-                .iter()
-                .map(|f| f.path.to_str().unwrap_or_default())
-                .collect();
+            let filenames: Vec<&Path> =
+                self.files.iter().map(|f| f.path.as_path()).collect();
             self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
             self.tree.collapse_but_root();
             self.revision = Some(commit);
@@ -108,7 +105,7 @@ impl RevisionFilesComponent {
         theme: &SharedTheme,
         selected: bool,
     ) -> Span<'a> {
-        let path = item.info().path();
+        let path = item.info().path_str();
         let indent = item.info().indent();
 
         let indent_str = if indent == 0 {
@@ -136,7 +133,7 @@ impl RevisionFilesComponent {
         self.tree.selected_file().map_or(false, |file| {
             self.queue.borrow_mut().push_back(
                 InternalEvent::BlameFile(
-                    file.full_path()
+                    file.full_path_str()
                         .strip_prefix("./")
                         .unwrap_or_default()
                         .to_string(),
@@ -151,7 +148,7 @@ impl RevisionFilesComponent {
         if let Some(file) = self
             .tree
             .selected_file()
-            .map(|file| file.full_path().to_string())
+            .map(|file| file.full_path_str().to_string())
         {
             let path = Path::new(&file);
             if let Some(item) =

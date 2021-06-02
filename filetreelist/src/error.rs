@@ -6,9 +6,6 @@ pub enum Error {
     #[error("InvalidPath: `{0}`")]
     InvalidPath(PathBuf),
 
-    #[error("InvalidFilePath: `{0}`")]
-    InvalidFilePath(String),
-
     #[error("TryFromInt error:{0}")]
     IntConversion(#[from] TryFromIntError),
 }
