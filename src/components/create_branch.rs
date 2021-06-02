@@ -254,9 +254,7 @@ fn branch_already_exists(branch_name: &str) -> Result<bool> {
             Ok(false)
         }
         Err(_) => {
-            Err(anyhow!(
-                "Couldn't find branches for repo in CWD"
-            ))
+            Err(anyhow!("Couldn't find branches for repo in CWD"))
         }
     }
 }
