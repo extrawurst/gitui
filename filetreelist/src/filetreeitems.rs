@@ -414,10 +414,10 @@ mod tests {
         let mut res = list
             .tree_items
             .iter()
-            .map(|i| (i.info().indent(), i.info().path_str()));
+            .map(|i| (i.info().indent(), i.info().path()));
 
-        assert_eq!(res.next(), Some((0, "a/b")));
-        assert_eq!(res.next(), Some((1, "file.txt")));
+        assert_eq!(res.next(), Some((0, Path::new("a/b"))));
+        assert_eq!(res.next(), Some((1, Path::new("file.txt"))));
     }
 
     #[test]
