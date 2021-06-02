@@ -6,7 +6,7 @@ use crate::{
 use crate::{error::Result, treeitems_iter::TreeItemsIterator};
 use std::{
     collections::{BTreeSet, HashMap},
-    path::Path,
+    path::{Path, PathBuf},
     usize,
 };
 
@@ -134,9 +134,8 @@ impl FileTreeItems {
         if self.tree_items[index].kind().is_path() {
             self.tree_items[index].collapse_path();
 
-            let path = format!(
-                "{}/",
-                self.tree_items[index].info().full_path()
+            let path = PathBuf::from(
+                self.tree_items[index].info().full_path(),
             );
 
             for i in index + 1..self.tree_items.len() {
@@ -146,7 +145,7 @@ impl FileTreeItems {
                     item.collapse_path();
                 }
 
-                let item_path = &item.info().full_path();
+                let item_path = Path::new(item.info().full_path());
 
                 if item_path.starts_with(&path) {
                     item.hide();
@@ -161,18 +160,15 @@ impl FileTreeItems {
         if self.tree_items[index].kind().is_path() {
             self.tree_items[index].expand_path();
 
-            let full_path = format!(
-                "{}/",
-                self.tree_items[index].info().full_path()
+            let full_path = PathBuf::from(
+                self.tree_items[index].info().full_path(),
             );
 
             if recursive {
                 for i in index + 1..self.tree_items.len() {
                     let item = &mut self.tree_items[i];
 
-                    if !item
-                        .info()
-                        .full_path()
+                    if !Path::new(item.info().full_path())
                         .starts_with(&full_path)
                     {
                         break;
@@ -187,7 +183,7 @@ impl FileTreeItems {
             }
 
             self.update_visibility(
-                Some(full_path.as_str()),
+                &Some(full_path),
                 index + 1,
                 false,
             );
@@ -196,16 +192,17 @@ impl FileTreeItems {
 
     fn update_visibility(
         &mut self,
-        prefix: Option<&str>,
+        prefix: &Option<PathBuf>,
         start_idx: usize,
         set_defaults: bool,
     ) {
         // if we are in any subpath that is collapsed we keep skipping over it
-        let mut inner_collapsed: Option<String> = None;
+        let mut inner_collapsed: Option<PathBuf> = None;
 
         for i in start_idx..self.tree_items.len() {
             if let Some(ref collapsed_path) = inner_collapsed {
-                let p = self.tree_items[i].info().full_path();
+                let p =
+                    Path::new(self.tree_items[i].info().full_path());
                 if p.starts_with(collapsed_path) {
                     if set_defaults {
                         self.tree_items[i]
@@ -219,15 +216,17 @@ impl FileTreeItems {
             }
 
             let item_kind = self.tree_items[i].kind().clone();
-            let item_path = self.tree_items[i].info().full_path();
+            let item_path =
+                Path::new(self.tree_items[i].info().full_path());
 
             if matches!(item_kind, FileTreeItemKind::Path(PathCollapsed(collapsed)) if collapsed)
             {
                 // we encountered an inner path that is still collapsed
-                inner_collapsed = Some(format!("{}/", &item_path));
+                inner_collapsed = Some(item_path.into());
             }
 
             if prefix
+                .as_ref()
                 .map_or(true, |prefix| item_path.starts_with(prefix))
             {
                 self.tree_items[i].info_mut().set_visible(true);
