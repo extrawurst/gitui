@@ -151,11 +151,10 @@ impl AsyncLog {
     ) -> Result<()> {
         let mut entries = Vec::with_capacity(LIMIT_COUNT);
         let r = repo(CWD)?;
-        let mut walker = LogWalker::new(&r);
+        let mut walker = LogWalker::new(&r, LIMIT_COUNT);
         loop {
             entries.clear();
-            let res_is_err =
-                walker.read(&mut entries, LIMIT_COUNT).is_err();
+            let res_is_err = walker.read(&mut entries).is_err();
 
             if !res_is_err {
                 let mut current = arc_current.lock()?;
