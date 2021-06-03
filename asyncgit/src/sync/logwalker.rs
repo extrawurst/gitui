@@ -1,6 +1,6 @@
 use super::CommitId;
 use crate::error::Result;
-use git2::{Repository, Revwalk, Sort};
+use git2::{Repository, Revwalk};
 
 ///
 pub enum Mode {
@@ -43,13 +43,13 @@ impl<'a> LogWalker<'a> {
         if self.revwalk.is_none() {
             let mut walk = self.repo.revwalk()?;
 
+            // note: setting a sorting sifnificantly slows down big revwalks
+
             if matches!(self.mode, Mode::HeadOnly) {
                 walk.push_head()?;
             } else {
                 walk.push_glob("*")?;
             }
-
-            walk.set_sorting(Sort::TIME)?;
 
             self.revwalk = Some(walk);
         }
@@ -185,11 +185,11 @@ mod tests {
         );
 
         let items = walk_all_commits(&repo);
-        assert_eq!(items, vec![c3, c2, c1]);
+        assert_eq!(items, vec![c2, c3, c1]);
 
         checkout_branch(&repo_path, &b1).unwrap();
 
         let items = walk_all_commits(&repo);
-        assert_eq!(items, vec![c3, c2, c1]);
+        assert_eq!(items, vec![c2, c3, c1]);
     }
 }
