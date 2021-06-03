@@ -22,6 +22,8 @@ pub struct CreateBranchComponent {
     queue: Queue,
     key_config: SharedKeyConfig,
     theme: SharedTheme,
+    invalid_name: bool,
+    already_exists: bool,
 }
 
 impl DrawableComponent for CreateBranchComponent {
@@ -65,6 +67,7 @@ impl Component for CreateBranchComponent {
             }
 
             if let Event::Key(e) = ev {
+                self.validate_input()?;
                 if e == self.key_config.enter {
                     self.create_branch()
                 }
@@ -108,6 +111,8 @@ impl CreateBranchComponent {
             ),
             key_config,
             theme,
+            invalid_name: false,
+            already_exists: false,
         }
     }
 
@@ -144,58 +149,32 @@ impl CreateBranchComponent {
         }
     }
 
-    fn branch_already_exists(&self) -> Result<bool> {
+    fn validate_input(&mut self) -> Result<()> {
+        let branch_name = self.input.get_text().as_str();
+
+        self.already_exists = false;
+        self.invalid_name = false;
+
         let branches = sync::get_branches_info(CWD, true)?;
         for branch in &branches {
             if branch.name == self.input.get_text().as_str() {
-                return Ok(true);
+                self.already_exists = true;
             }
         }
-        Ok(false)
+        self.invalid_name = sync::branch_name_is_valid(branch_name)?;
+
+        Ok(())
     }
 
     fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
         let branch_name = self.input.get_text().as_str();
-        let invalid_name: bool;
-        match sync::branch_name_is_valid(branch_name) {
-            Ok(v) => {
-                invalid_name = !v;
-            }
-            Err(e) => {
-                invalid_name = true;
-                log::error!("create branch: {}", e,);
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ShowErrorMsg(format!(
-                        "create branch error:\n{}",
-                        e,
-                    )),
-                );
-            }
-        }
-
-        let already_exists: bool;
-        match self.branch_already_exists() {
-            Ok(v) => {
-                already_exists = v;
-            }
-            Err(e) => {
-                already_exists = true;
-                log::error!("create branch: {}", e,);
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ShowErrorMsg(format!(
-                        "create branch error:\n{}",
-                        e,
-                    )),
-                );
-            }
-        }
 
         let msg;
         if branch_name.is_empty() {
             return;
-        } else if invalid_name {
+        } else if self.invalid_name {
             msg = strings::branch_invalid_name_warning();
-        } else if already_exists {
+        } else if self.already_exists {
             msg = strings::branch_already_exists();
         } else {
             return;
