@@ -468,6 +468,10 @@ impl Status {
         }
     }
 
+    fn undo_last_commit(&self) {
+        sync::utils::undo_last_commit(CWD).unwrap();
+    }
+
     fn branch_compare(&mut self) {
         self.git_branch_state =
             self.git_branch_name.last().and_then(|branch| {
@@ -580,6 +584,12 @@ impl Component for Status {
             ));
 
             out.push(CommandInfo::new(
+                strings::commands::undo_commit(&self.key_config),
+                true,
+                !focus_on_diff,
+            ));
+
+            out.push(CommandInfo::new(
                 strings::commands::abort_merge(&self.key_config),
                 true,
                 Self::can_abort_merge() || force_all,
@@ -686,6 +696,11 @@ impl Component for Status {
                     && !self.is_focus_on_diff()
                 {
                     self.pull();
+                    Ok(EventState::Consumed)
+                } else if k == self.key_config.undo_commit
+                    && !self.is_focus_on_diff()
+                {
+                    self.undo_last_commit();
                     Ok(EventState::Consumed)
                 } else if k == self.key_config.abort_merge
                     && Self::can_abort_merge()

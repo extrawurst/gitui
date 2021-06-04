@@ -149,6 +149,21 @@ pub fn stage_add_all(repo_path: &str, pattern: &str) -> Result<()> {
     Ok(())
 }
 
+/// Undo last commit in repo
+pub fn undo_last_commit(repo_path: &str) -> Result<()> {
+    let repo = repo(repo_path)?;
+    let previous_commit = repo.revparse_single("HEAD~")?;
+
+    Repository::reset(
+        &repo,
+        &previous_commit,
+        git2::ResetType::Soft,
+        None,
+    )?;
+
+    Ok(())
+}
+
 /// stage a removed file
 pub fn stage_addremoved(repo_path: &str, path: &Path) -> Result<()> {
     scope_time!("stage_addremoved");
