@@ -274,7 +274,10 @@ mod tests {
         max_count: usize,
     ) -> Vec<CommitId> {
         let mut commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(r, max_count).read(&mut commit_ids).unwrap();
+        LogWalker::new(r, max_count)
+            .unwrap()
+            .read(&mut commit_ids)
+            .unwrap();
 
         commit_ids
     }
