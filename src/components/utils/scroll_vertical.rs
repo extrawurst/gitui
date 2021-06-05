@@ -2,7 +2,10 @@ use std::cell::Cell;
 
 use tui::{backend::Backend, layout::Rect, Frame};
 
-use crate::ui::{draw_scrollbar, style::SharedTheme};
+use crate::{
+    components::ScrollType,
+    ui::{draw_scrollbar, style::SharedTheme},
+};
 
 pub struct VerticalScroll {
     top: Cell<usize>,
@@ -25,6 +28,29 @@ impl VerticalScroll {
         self.top.set(0);
     }
 
+    pub fn move_top(&self, move_type: ScrollType) -> bool {
+        let old = self.top.get();
+        let max = self.max_top.get();
+
+        let new_scroll_top = match move_type {
+            ScrollType::Down => old.saturating_add(1),
+            ScrollType::Up => old.saturating_sub(1),
+            ScrollType::Home => 0,
+            ScrollType::End => max,
+            _ => old,
+        };
+
+        let new_scroll_top = new_scroll_top.clamp(0, max);
+
+        if new_scroll_top == old {
+            return false;
+        }
+
+        self.top.set(new_scroll_top);
+
+        true
+    }
+
     pub fn update(
         &self,
         selection: usize,
@@ -43,6 +69,14 @@ impl VerticalScroll {
         self.max_top.set(new_max);
 
         new_top
+    }
+
+    pub fn update_no_selection(
+        &self,
+        line_count: usize,
+        visual_height: usize,
+    ) -> usize {
+        self.update(self.get(), line_count, visual_height)
     }
 
     pub fn draw<B: Backend>(

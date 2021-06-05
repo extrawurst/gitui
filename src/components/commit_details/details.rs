@@ -1,12 +1,13 @@
 use crate::{
     components::{
-        dialog_paragraph, utils::time_to_string, CommandBlocking,
-        CommandInfo, Component, DrawableComponent, EventState,
-        ScrollType,
+        dialog_paragraph,
+        utils::{scroll_vertical::VerticalScroll, time_to_string},
+        CommandBlocking, CommandInfo, Component, DrawableComponent,
+        EventState, ScrollType,
     },
     keys::SharedKeyConfig,
     strings::{self, order},
-    ui::{self, style::SharedTheme},
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -37,10 +38,9 @@ pub struct DetailsComponent {
     tags: Vec<String>,
     theme: SharedTheme,
     focused: bool,
-    current_size: Cell<(u16, u16)>,
-    scroll_top: Cell<usize>,
+    current_width: Cell<u16>,
+    scroll: VerticalScroll,
     key_config: SharedKeyConfig,
-    scroll_to_bottom_on_redraw: Cell<bool>,
 }
 
 type WrappedCommitMessage<'a> =
@@ -58,9 +58,8 @@ impl DetailsComponent {
             tags: Vec::new(),
             theme,
             focused,
-            current_size: Cell::new((0, 0)),
-            scroll_top: Cell::new(0),
-            scroll_to_bottom_on_redraw: Cell::new(false),
+            current_width: Cell::new(0),
+            scroll: VerticalScroll::new(),
             key_config,
         }
     }
@@ -75,7 +74,7 @@ impl DetailsComponent {
         self.data =
             id.and_then(|id| sync::get_commit_details(CWD, id).ok());
 
-        self.scroll_top.set(0);
+        self.scroll.reset();
 
         if let Some(tags) = tags {
             self.tags.extend(tags);
@@ -141,7 +140,7 @@ impl DetailsComponent {
             .concat()
             .iter()
             .enumerate()
-            .skip(self.scroll_top.get())
+            .skip(self.scroll.get())
             .take(height)
             .map(|(i, line)| {
                 Spans::from(vec![Span::styled(
@@ -275,34 +274,10 @@ impl DetailsComponent {
 
     fn move_scroll_top(&mut self, move_type: ScrollType) -> bool {
         if self.data.is_some() {
-            let old = self.scroll_top.get();
-            let width = self.current_size.get().0 as usize;
-            let height = self.current_size.get().1 as usize;
-
-            let number_of_lines =
-                Self::get_number_of_lines(&self.data, width);
-
-            let max = number_of_lines.saturating_sub(height) as usize;
-
-            let new_scroll_top = match move_type {
-                ScrollType::Down => old.saturating_add(1),
-                ScrollType::Up => old.saturating_sub(1),
-                ScrollType::Home => 0,
-                ScrollType::End => max,
-                _ => old,
-            };
-
-            let new_scroll_top = new_scroll_top.clamp(0, max);
-
-            if new_scroll_top == old {
-                return false;
-            }
-
-            self.scroll_top.set(new_scroll_top);
-
-            return true;
+            self.scroll.move_top(move_type)
+        } else {
+            false
         }
-        false
     }
 }
 
@@ -312,6 +287,9 @@ impl DrawableComponent for DetailsComponent {
         f: &mut Frame<B>,
         rect: Rect,
     ) -> Result<()> {
+        const CANSCROLL_STRING: &str = "[\u{2026}]";
+        const EMPTY_STRING: &str = "";
+
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
@@ -338,28 +316,35 @@ impl DrawableComponent for DetailsComponent {
         let width = chunks[1].width.saturating_sub(border_width);
         let height = chunks[1].height.saturating_sub(border_width);
 
-        self.current_size.set((width, height));
-
-        if self.scroll_to_bottom_on_redraw.get() {
-            self.scroll_top.set(
-                Self::get_number_of_lines(
-                    &self.data,
-                    usize::from(width),
-                )
-                .saturating_sub(usize::from(height)),
-            );
-            self.scroll_to_bottom_on_redraw.set(false);
-        }
+        self.current_width.set(width);
 
         let wrapped_lines = self.get_wrapped_text_message(
             width as usize,
             height as usize,
         );
 
+        let number_of_lines =
+            Self::get_number_of_lines(&self.data, usize::from(width));
+
+        self.scroll.update_no_selection(
+            number_of_lines,
+            usize::from(height),
+        );
+
+        let can_scroll = usize::from(height) < number_of_lines;
+
         f.render_widget(
             dialog_paragraph(
-                &strings::commit::details_message_title(
-                    &self.key_config,
+                &format!(
+                    "{} {}",
+                    strings::commit::details_message_title(
+                        &self.key_config,
+                    ),
+                    if !self.focused && can_scroll {
+                        CANSCROLL_STRING
+                    } else {
+                        EMPTY_STRING
+                    }
                 ),
                 Text::from(wrapped_lines),
                 &self.theme,
@@ -369,13 +354,7 @@ impl DrawableComponent for DetailsComponent {
         );
 
         if self.focused {
-            ui::draw_scrollbar(
-                f,
-                chunks[1],
-                &self.theme,
-                Self::get_number_of_lines(&self.data, width as usize),
-                self.scroll_top.get(),
-            );
+            self.scroll.draw(f, chunks[1], &self.theme);
         }
 
         Ok(())
@@ -388,9 +367,7 @@ impl Component for DetailsComponent {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
-        // visibility_blocking(self)
-
-        let width = self.current_size.get().0 as usize;
+        let width = usize::from(self.current_width.get());
         let number_of_lines =
             Self::get_number_of_lines(&self.data, width);
 
@@ -437,10 +414,6 @@ impl Component for DetailsComponent {
     }
 
     fn focus(&mut self, focus: bool) {
-        if focus {
-            self.scroll_to_bottom_on_redraw.set(true);
-        }
-
         self.focused = focus;
     }
 }
