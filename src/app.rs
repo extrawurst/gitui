@@ -4,7 +4,7 @@ use crate::{
     components::{
         event_pump, BlameFileComponent, BranchListComponent,
         CommandBlocking, CommandInfo, CommitComponent, Component,
-        CreateBranchComponent, DrawableComponent,
+        CreateBranchComponent, CredComponent, DrawableComponent,
         ExternalEditorComponent, HelpComponent,
         InspectCommitComponent, MsgComponent, PullComponent,
         PushComponent, PushTagsComponent, RenameBranchComponent,
@@ -86,6 +86,10 @@ impl App {
         let queue = Queue::default();
         let theme = Rc::new(theme);
         let key_config = Rc::new(key_config);
+        let cred_popup = Rc::new(RefCell::new(CredComponent::new(
+            theme.clone(),
+            key_config.clone(),
+        )));
 
         Self {
             input,
@@ -132,18 +136,21 @@ impl App {
                 sender,
                 theme.clone(),
                 key_config.clone(),
+                cred_popup.clone(),
             ),
             push_tags_popup: PushTagsComponent::new(
                 &queue,
                 sender,
                 theme.clone(),
                 key_config.clone(),
+                cred_popup.clone(),
             ),
             pull_popup: PullComponent::new(
                 &queue,
                 sender,
                 theme.clone(),
                 key_config.clone(),
+                cred_popup,
             ),
             tag_commit_popup: TagCommitComponent::new(
                 queue.clone(),

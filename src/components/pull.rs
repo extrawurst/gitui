@@ -1,8 +1,9 @@
 use super::PushComponent;
 use crate::{
     components::{
-        cred::CredComponent, visibility_blocking, CommandBlocking,
-        CommandInfo, Component, DrawableComponent, EventState,
+        cred::SharedCredComponent, visibility_blocking,
+        CommandBlocking, CommandInfo, Component, DrawableComponent,
+        EventState,
     },
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, Queue},
@@ -41,7 +42,7 @@ pub struct PullComponent {
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
-    input_cred: CredComponent,
+    input_cred: SharedCredComponent,
 }
 
 impl PullComponent {
@@ -51,6 +52,7 @@ impl PullComponent {
         sender: &Sender<AsyncNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
+        input_cred: SharedCredComponent,
     ) -> Self {
         Self {
             queue: queue.clone(),
@@ -59,10 +61,7 @@ impl PullComponent {
             branch: String::new(),
             git_fetch: AsyncFetch::new(sender),
             progress: None,
-            input_cred: CredComponent::new(
-                theme.clone(),
-                key_config.clone(),
-            ),
+            input_cred,
             theme,
             key_config,
         }
@@ -80,8 +79,8 @@ impl PullComponent {
             if cred.is_complete() {
                 self.fetch_from_remote(Some(cred))
             } else {
-                self.input_cred.set_cred(cred);
-                self.input_cred.show()
+                self.input_cred.borrow_mut().set_cred(cred);
+                self.input_cred.borrow_mut().show()
             }
         } else {
             self.fetch_from_remote(None)
@@ -227,7 +226,7 @@ impl DrawableComponent for PullComponent {
                     .percent(u16::from(progress)),
                 area,
             );
-            self.input_cred.draw(f, rect)?;
+            self.input_cred.borrow().draw(f, rect)?;
         }
 
         Ok(())
@@ -244,8 +243,8 @@ impl Component for PullComponent {
             out.clear();
         }
 
-        if self.input_cred.is_visible() {
-            self.input_cred.commands(out, force_all)
+        if self.input_cred.borrow().is_visible() {
+            self.input_cred.borrow().commands(out, force_all)
         } else {
             out.push(CommandInfo::new(
                 strings::commands::close_msg(&self.key_config),
@@ -259,16 +258,23 @@ impl Component for PullComponent {
     fn event(&mut self, ev: Event) -> Result<EventState> {
         if self.visible {
             if let Event::Key(_) = ev {
-                if self.input_cred.is_visible() {
-                    self.input_cred.event(ev)?;
+                if self.input_cred.borrow().is_visible() {
+                    self.input_cred.borrow_mut().event(ev)?;
 
-                    if self.input_cred.get_cred().is_complete()
-                        || !self.input_cred.is_visible()
+                    if self
+                        .input_cred
+                        .borrow()
+                        .get_cred()
+                        .is_complete()
+                        || !self.input_cred.borrow().is_visible()
                     {
-                        self.fetch_from_remote(Some(
-                            self.input_cred.get_cred().clone(),
-                        ))?;
-                        self.input_cred.hide();
+                        let cred = self
+                            .input_cred
+                            .borrow()
+                            .get_cred()
+                            .clone();
+                        self.fetch_from_remote(Some(cred))?;
+                        self.input_cred.borrow_mut().hide();
                     }
                 }
             }

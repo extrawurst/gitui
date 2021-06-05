@@ -36,6 +36,7 @@ pub use commit::CommitComponent;
 pub use commit_details::CommitDetailsComponent;
 pub use commitlist::CommitList;
 pub use create_branch::CreateBranchComponent;
+pub use cred::CredComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
 pub use help::HelpComponent;
