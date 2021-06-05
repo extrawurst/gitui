@@ -21,6 +21,10 @@ impl VerticalScroll {
         self.top.get()
     }
 
+    pub fn reset(&self) {
+        self.top.set(0);
+    }
+
     pub fn update(
         &self,
         selection: usize,
