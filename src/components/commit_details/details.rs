@@ -140,7 +140,7 @@ impl DetailsComponent {
             .concat()
             .iter()
             .enumerate()
-            .skip(self.scroll.get())
+            .skip(self.scroll.get_top())
             .take(height)
             .map(|(i, line)| {
                 Spans::from(vec![Span::styled(

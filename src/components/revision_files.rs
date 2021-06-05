@@ -182,7 +182,7 @@ impl RevisionFilesComponent {
 
         let items = self
             .tree
-            .iterate(self.scroll.get(), tree_height)
+            .iterate(self.scroll.get_top(), tree_height)
             .map(|(item, selected)| {
                 Self::tree_item_to_span(item, &self.theme, selected)
             });

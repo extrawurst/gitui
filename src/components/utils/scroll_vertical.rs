@@ -20,7 +20,7 @@ impl VerticalScroll {
         }
     }
 
-    pub fn get(&self) -> usize {
+    pub fn get_top(&self) -> usize {
         self.top.get()
     }
 
@@ -58,7 +58,7 @@ impl VerticalScroll {
         visual_height: usize,
     ) -> usize {
         let new_top = calc_scroll_top(
-            self.get(),
+            self.get_top(),
             visual_height,
             selection,
             selection_max,
@@ -76,7 +76,7 @@ impl VerticalScroll {
         line_count: usize,
         visual_height: usize,
     ) -> usize {
-        self.update(self.get(), line_count, visual_height)
+        self.update(self.get_top(), line_count, visual_height)
     }
 
     pub fn draw<B: Backend>(

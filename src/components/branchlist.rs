@@ -402,7 +402,7 @@ impl BranchListComponent {
         for (i, displaybranch) in self
             .branches
             .iter()
-            .skip(self.scroll.get())
+            .skip(self.scroll.get_top())
             .take(height)
             .enumerate()
         {
@@ -430,8 +430,9 @@ impl BranchListComponent {
                 branch_name += THREE_DOTS;
             }
 
-            let selected =
-                (self.selection as usize - self.scroll.get()) == i;
+            let selected = (self.selection as usize
+                - self.scroll.get_top())
+                == i;
 
             let is_head = displaybranch
                 .local_details()

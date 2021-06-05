@@ -337,7 +337,7 @@ impl DiffComponent {
                     Span::raw(Cow::from(")")),
                 ])]);
             } else {
-                let min = self.scroll.get();
+                let min = self.scroll.get_top();
                 let max = min + height as usize;
 
                 let mut line_cursor = 0_usize;
