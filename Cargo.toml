@@ -55,6 +55,9 @@ which = "4.1"
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.4", features = ["flamegraph"], optional = true }
 
+[dev-dependencies]
+pretty_assertions = "0.7"
+
 [badges]
 maintenance = { status = "actively-developed" }
 

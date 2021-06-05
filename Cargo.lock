@@ -484,6 +484,7 @@ dependencies = [
  "lazy_static",
  "log",
  "pprof",
+ "pretty_assertions",
  "rayon-core",
  "ron",
  "scopeguard",
