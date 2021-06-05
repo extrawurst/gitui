@@ -173,7 +173,7 @@ impl Component for BranchListComponent {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
-                    self.hide()
+                    self.hide();
                 } else if e == self.key_config.move_down {
                     return self
                         .move_selection(ScrollType::Up)
@@ -259,7 +259,7 @@ impl Component for BranchListComponent {
     }
 
     fn hide(&mut self) {
-        self.visible = false
+        self.visible = false;
     }
 
     fn show(&mut self) -> Result<()> {
@@ -490,7 +490,7 @@ impl BranchListComponent {
                 asyncgit::CWD,
                 &self.branches[self.selection as usize].reference,
             )?;
-            self.hide()
+            self.hide();
         } else {
             checkout_remote_branch(
                 CWD,

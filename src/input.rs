@@ -69,7 +69,7 @@ impl Input {
 
     ///
     pub fn set_polling(&mut self, enabled: bool) {
-        self.desired_state.set_and_notify(enabled)
+        self.desired_state.set_and_notify(enabled);
     }
 
     fn shall_poll(&self) -> bool {
@@ -111,7 +111,7 @@ impl Input {
                 if arc_current.load(Ordering::Relaxed) {
                     log::info!("input polling suspended");
 
-                    tx.send(InputEvent::State(InputState::Paused))?
+                    tx.send(InputEvent::State(InputState::Paused))?;
                 }
 
                 arc_current.store(false, Ordering::Relaxed);

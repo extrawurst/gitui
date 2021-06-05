@@ -147,15 +147,13 @@ impl DiffComponent {
         (self.current.path.clone(), self.current.is_stage)
     }
     ///
-    pub fn clear(&mut self, pending: bool) -> Result<()> {
+    pub fn clear(&mut self, pending: bool) {
         self.current = Current::default();
         self.diff = None;
         self.scroll_top.set(0);
         self.selection = Selection::Single(0);
         self.selected_hunk = None;
         self.pending = pending;
-
-        Ok(())
     }
     ///
     pub fn update(
@@ -163,7 +161,7 @@ impl DiffComponent {
         path: String,
         is_stage: bool,
         diff: FileDiff,
-    ) -> Result<()> {
+    ) {
         self.pending = false;
 
         let hash = hash(&diff);
@@ -191,8 +189,6 @@ impl DiffComponent {
                 self.update_selection(old_selection);
             }
         }
-
-        Ok(())
     }
 
     fn move_selection(&mut self, move_type: ScrollType) {
@@ -808,6 +804,6 @@ impl Component for DiffComponent {
         self.focused
     }
     fn focus(&mut self, focus: bool) {
-        self.focused = focus
+        self.focused = focus;
     }
 }

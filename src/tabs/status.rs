@@ -399,7 +399,7 @@ impl Status {
                 // maybe the diff changed (outside file change)
                 if let Some((params, last)) = self.git_diff.last()? {
                     if params == diff_params {
-                        self.diff.update(path, is_stage, last)?;
+                        self.diff.update(path, is_stage, last);
                     }
                 }
             } else {
@@ -407,13 +407,13 @@ impl Status {
                 if let Some(diff) =
                     self.git_diff.request(diff_params)?
                 {
-                    self.diff.update(path, is_stage, diff)?;
+                    self.diff.update(path, is_stage, diff);
                 } else {
-                    self.diff.clear(true)?;
+                    self.diff.clear(true);
                 }
             }
         } else {
-            self.diff.clear(false)?;
+            self.diff.clear(false);
         }
 
         Ok(())
@@ -488,7 +488,7 @@ impl Status {
     }
 
     pub fn abort_merge(&self) {
-        try_or_popup!(self, "abort merge", sync::abort_merge(CWD))
+        try_or_popup!(self, "abort merge", sync::abort_merge(CWD));
     }
 
     fn commands_nav(

@@ -74,10 +74,8 @@ impl CommitComponent {
     }
 
     ///
-    pub fn update(&mut self) -> Result<()> {
-        self.git_branch_name.lookup().map(Some).unwrap_or(None);
-
-        Ok(())
+    pub fn update(&mut self) {
+        self.git_branch_name.lookup().ok();
     }
 
     fn draw_branch_name<B: Backend>(&self, f: &mut Frame<B>) {
@@ -370,7 +368,7 @@ impl Component for CommitComponent {
     }
 
     fn hide(&mut self) {
-        self.input.hide()
+        self.input.hide();
     }
 
     fn show(&mut self) -> Result<()> {

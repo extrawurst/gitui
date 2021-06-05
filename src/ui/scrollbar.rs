@@ -78,5 +78,5 @@ pub fn draw_scrollbar<B: Backend>(
 ) {
     let mut widget = Scrollbar::new(max, pos);
     widget.style_pos = theme.scroll_bar_pos();
-    f.render_widget(widget, r)
+    f.render_widget(widget, r);
 }

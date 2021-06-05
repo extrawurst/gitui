@@ -62,15 +62,10 @@ impl FilesTab {
     }
 
     ///
-    pub fn update_git(
-        &mut self,
-        ev: AsyncNotification,
-    ) -> Result<()> {
+    pub fn update_git(&mut self, ev: AsyncNotification) {
         if self.is_visible() {
             self.files.update(ev);
         }
-
-        Ok(())
     }
 }
 

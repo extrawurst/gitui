@@ -83,7 +83,7 @@ impl AsyncLog {
 
     ///
     pub fn set_background(&mut self) {
-        self.background.store(true, Ordering::Relaxed)
+        self.background.store(true, Ordering::Relaxed);
     }
 
     ///

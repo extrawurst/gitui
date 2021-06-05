@@ -112,7 +112,7 @@ impl Component for StashMsgComponent {
     }
 
     fn hide(&mut self) {
-        self.input.hide()
+        self.input.hide();
     }
 
     fn show(&mut self) -> Result<()> {

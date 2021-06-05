@@ -227,9 +227,9 @@ impl InspectCommitComponent {
     ) -> Result<()> {
         if self.is_visible() {
             if let AsyncNotification::CommitFiles = ev {
-                self.update()?
+                self.update()?;
             } else if let AsyncNotification::Diff = ev {
-                self.update_diff()?
+                self.update_diff()?;
             }
         }
 
@@ -251,18 +251,18 @@ impl InspectCommitComponent {
                         self.git_diff.last()?
                     {
                         if params == diff_params {
-                            self.diff.update(f.path, false, last)?;
+                            self.diff.update(f.path, false, last);
                             return Ok(());
                         }
                     }
 
                     self.git_diff.request(diff_params)?;
-                    self.diff.clear(true)?;
+                    self.diff.clear(true);
                     return Ok(());
                 }
             }
 
-            self.diff.clear(false)?;
+            self.diff.clear(false);
         }
 
         Ok(())

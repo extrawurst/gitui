@@ -118,7 +118,7 @@ pub fn stash_save(
         options.insert(StashFlags::INCLUDE_UNTRACKED);
     }
     if keep_index {
-        options.insert(StashFlags::KEEP_INDEX)
+        options.insert(StashFlags::KEEP_INDEX);
     }
 
     let id = repo.stash_save2(&sig, message, Some(options))?;

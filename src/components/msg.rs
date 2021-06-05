@@ -47,9 +47,9 @@ impl DrawableComponent for MsgComponent {
             u16::try_from(max).expect("cant fail due to check above");
         // dont overflow screen, and dont get too narrow
         if width > f.size().width {
-            width = f.size().width
+            width = f.size().width;
         } else if width < 60 {
-            width = 60
+            width = 60;
         }
 
         let area = ui::centered_rect_absolute(width, 25, f.size());
@@ -107,7 +107,7 @@ impl Component for MsgComponent {
     }
 
     fn hide(&mut self) {
-        self.visible = false
+        self.visible = false;
     }
 
     fn show(&mut self) -> Result<()> {

@@ -257,7 +257,7 @@ fn text_append<'a>(txt: Text<'a>, append: Text<'a>) -> Text<'a> {
             }
         }
     } else {
-        txt = append
+        txt = append;
     }
     txt
 }
@@ -384,7 +384,7 @@ impl Component for TextInputComponent {
     }
 
     fn hide(&mut self) {
-        self.visible = false
+        self.visible = false;
     }
 
     fn show(&mut self) -> Result<()> {

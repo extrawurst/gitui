@@ -69,7 +69,7 @@ impl DetailsComponent {
         &mut self,
         id: Option<CommitId>,
         tags: Option<CommitTags>,
-    ) -> Result<()> {
+    ) {
         self.tags.clear();
 
         self.data =
@@ -78,10 +78,8 @@ impl DetailsComponent {
         self.scroll_top.set(0);
 
         if let Some(tags) = tags {
-            self.tags.extend(tags)
+            self.tags.extend(tags);
         }
-
-        Ok(())
     }
 
     fn wrap_commit_details(
@@ -377,7 +375,7 @@ impl DrawableComponent for DetailsComponent {
                 &self.theme,
                 Self::get_number_of_lines(&self.data, width as usize),
                 self.scroll_top.get(),
-            )
+            );
         }
 
         Ok(())

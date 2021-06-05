@@ -82,7 +82,7 @@ impl ChangesComponent {
                     let path = Path::new(i.path.as_str());
                     match i.status {
                         StatusItemType::Deleted => {
-                            sync::stage_addremoved(CWD, path)?
+                            sync::stage_addremoved(CWD, path)?;
                         }
                         _ => sync::stage_add_file(CWD, path)?,
                     };
@@ -306,6 +306,6 @@ impl Component for ChangesComponent {
         self.files.focused()
     }
     fn focus(&mut self, focus: bool) {
-        self.files.focus(focus)
+        self.files.focus(focus);
     }
 }

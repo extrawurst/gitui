@@ -1,4 +1,3 @@
-use anyhow::Result;
 use bugreport::{
     bugreport,
     collector::{
@@ -8,7 +7,7 @@ use bugreport::{
     format::Markdown,
 };
 
-pub fn generate_bugreport() -> Result<()> {
+pub fn generate_bugreport() {
     bugreport!()
         .info(SoftwareVersion::default())
         .info(OperatingSystem::default())
@@ -21,5 +20,4 @@ pub fn generate_bugreport() -> Result<()> {
         ]))
         .info(CommandLine::default())
         .print::<Markdown>();
-    Ok(())
 }
