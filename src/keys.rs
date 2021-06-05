@@ -49,48 +49,48 @@ where
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SymbolConfig {
-    pub enter_symbol: String,
-    pub left_symbol: String,
-    pub right_symbol: String,
-    pub up_symbol: String,
-    pub down_symbol: String,
-    pub backspace_symbol: String,
-    pub home_symbol: String,
-    pub end_symbol: String,
-    pub page_up_symbol: String,
-    pub page_down_symbol: String,
-    pub tab_symbol: String,
-    pub back_tab_symbol: String,
-    pub delete_symbol: String,
-    pub insert_symbol: String,
-    pub esc_symbol: String,
-    pub control_symbol: String,
-    pub shift_symbol: String,
-    pub alt_symbol: String,
+    pub enter: String,
+    pub left: String,
+    pub right: String,
+    pub up: String,
+    pub down: String,
+    pub backspace: String,
+    pub home: String,
+    pub end: String,
+    pub page_up: String,
+    pub page_down: String,
+    pub tab: String,
+    pub back_tab: String,
+    pub delete: String,
+    pub insert: String,
+    pub esc: String,
+    pub control: String,
+    pub shift: String,
+    pub alt: String,
 }
 
 #[rustfmt::skip]
 impl Default for SymbolConfig {
     fn default() -> Self {
         Self {
-            enter_symbol: "\u{23ce}".into(),     //⏎
-            left_symbol: "\u{2190}".into(),      //←
-            right_symbol: "\u{2192}".into(),     //→
-            up_symbol: "\u{2191}".into(),        //↑
-            down_symbol: "\u{2193}".into(),      //↓
-            backspace_symbol: "\u{232b}".into(), //⌫
-            home_symbol: "\u{2912}".into(),      //⤒
-            end_symbol: "\u{2913}".into(),       //⤓
-            page_up_symbol: "\u{21de}".into(),   //⇞
-            page_down_symbol: "\u{21df}".into(), //⇟
-            tab_symbol: "\u{21e5}".into(),       //⇥
-            back_tab_symbol: "\u{21e4}".into(),  //⇤
-            delete_symbol: "\u{2326}".into(),    //⌦
-            insert_symbol: "\u{2380}".into(),    //⎀
-            esc_symbol: "\u{238b}".into(),       //⎋
-            control_symbol: "^".into(),
-            shift_symbol: "\u{21e7}".into(),     //⇧
-            alt_symbol: "\u{2325}".into(),       //⌥
+            enter: "\u{23ce}".into(),     //⏎
+            left: "\u{2190}".into(),      //←
+            right: "\u{2192}".into(),     //→
+            up: "\u{2191}".into(),        //↑
+            down: "\u{2193}".into(),      //↓
+            backspace: "\u{232b}".into(), //⌫
+            home: "\u{2912}".into(),      //⤒
+            end: "\u{2913}".into(),       //⤓
+            page_up: "\u{21de}".into(),   //⇞
+            page_down: "\u{21df}".into(), //⇟
+            tab: "\u{21e5}".into(),       //⇥
+            back_tab: "\u{21e4}".into(),  //⇤
+            delete: "\u{2326}".into(),    //⌦
+            insert: "\u{2380}".into(),    //⎀
+            esc: "\u{238b}".into(),       //⎋
+            control: "^".into(),
+            shift: "\u{21e7}".into(),     //⇧
+            alt: "\u{2325}".into(),       //⌥
         }
     }
 }
@@ -300,21 +300,21 @@ impl KeyConfig {
 
     fn get_key_symbol(&self, k: KeyCode) -> &str {
         match k {
-            KeyCode::Enter => &self.symbols.enter_symbol,
-            KeyCode::Left => &self.symbols.left_symbol,
-            KeyCode::Right => &self.symbols.right_symbol,
-            KeyCode::Up => &self.symbols.up_symbol,
-            KeyCode::Down => &self.symbols.down_symbol,
-            KeyCode::Backspace => &self.symbols.backspace_symbol,
-            KeyCode::Home => &self.symbols.home_symbol,
-            KeyCode::End => &self.symbols.end_symbol,
-            KeyCode::PageUp => &self.symbols.page_up_symbol,
-            KeyCode::PageDown => &self.symbols.page_down_symbol,
-            KeyCode::Tab => &self.symbols.tab_symbol,
-            KeyCode::BackTab => &self.symbols.back_tab_symbol,
-            KeyCode::Delete => &self.symbols.delete_symbol,
-            KeyCode::Insert => &self.symbols.insert_symbol,
-            KeyCode::Esc => &self.symbols.esc_symbol,
+            KeyCode::Enter => &self.symbols.enter,
+            KeyCode::Left => &self.symbols.left,
+            KeyCode::Right => &self.symbols.right,
+            KeyCode::Up => &self.symbols.up,
+            KeyCode::Down => &self.symbols.down,
+            KeyCode::Backspace => &self.symbols.backspace,
+            KeyCode::Home => &self.symbols.home,
+            KeyCode::End => &self.symbols.end,
+            KeyCode::PageUp => &self.symbols.page_up,
+            KeyCode::PageDown => &self.symbols.page_down,
+            KeyCode::Tab => &self.symbols.tab,
+            KeyCode::BackTab => &self.symbols.back_tab,
+            KeyCode::Delete => &self.symbols.delete,
+            KeyCode::Insert => &self.symbols.insert,
+            KeyCode::Esc => &self.symbols.esc,
             _ => "?",
         }
     }
@@ -364,9 +364,9 @@ impl KeyConfig {
 
     fn get_modifier_hint(&self, modifier: KeyModifiers) -> &str {
         match modifier {
-            KeyModifiers::CONTROL => &self.symbols.control_symbol,
-            KeyModifiers::SHIFT => &self.symbols.shift_symbol,
-            KeyModifiers::ALT => &self.symbols.alt_symbol,
+            KeyModifiers::CONTROL => &self.symbols.control,
+            KeyModifiers::SHIFT => &self.symbols.shift,
+            KeyModifiers::ALT => &self.symbols.alt,
             _ => "",
         }
     }
