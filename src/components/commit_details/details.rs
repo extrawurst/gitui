@@ -40,6 +40,7 @@ pub struct DetailsComponent {
     focused: bool,
     current_width: Cell<u16>,
     scroll: VerticalScroll,
+    scroll_to_bottom_next_draw: Cell<bool>,
     key_config: SharedKeyConfig,
 }
 
@@ -58,6 +59,7 @@ impl DetailsComponent {
             tags: Vec::new(),
             theme,
             focused,
+            scroll_to_bottom_next_draw: Cell::new(false),
             current_width: Cell::new(0),
             scroll: VerticalScroll::new(),
             key_config,
@@ -318,11 +320,6 @@ impl DrawableComponent for DetailsComponent {
 
         self.current_width.set(width);
 
-        let wrapped_lines = self.get_wrapped_text_message(
-            width as usize,
-            height as usize,
-        );
-
         let number_of_lines =
             Self::get_number_of_lines(&self.data, usize::from(width));
 
@@ -330,6 +327,11 @@ impl DrawableComponent for DetailsComponent {
             number_of_lines,
             usize::from(height),
         );
+
+        if self.scroll_to_bottom_next_draw.get() {
+            self.scroll.move_top(ScrollType::End);
+            self.scroll_to_bottom_next_draw.set(false);
+        }
 
         let can_scroll = usize::from(height) < number_of_lines;
 
@@ -346,7 +348,10 @@ impl DrawableComponent for DetailsComponent {
                         EMPTY_STRING
                     }
                 ),
-                Text::from(wrapped_lines),
+                Text::from(self.get_wrapped_text_message(
+                    width as usize,
+                    height as usize,
+                )),
                 &self.theme,
                 self.focused,
             ),
@@ -414,6 +419,12 @@ impl Component for DetailsComponent {
     }
 
     fn focus(&mut self, focus: bool) {
+        if focus {
+            self.scroll_to_bottom_next_draw.set(true);
+        } else {
+            self.scroll.reset();
+        }
+
         self.focused = focus;
     }
 }

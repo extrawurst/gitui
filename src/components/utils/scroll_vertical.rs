@@ -101,7 +101,7 @@ const fn calc_scroll_top(
     selection: usize,
     selection_max: usize,
 ) -> usize {
-    if selection_max < height_in_lines {
+    if selection_max <= height_in_lines {
         return 0;
     }
 
