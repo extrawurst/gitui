@@ -48,11 +48,11 @@ jobs:
         profile: minimal
         components: clippy
 
-    - name: New Resolver
-      if: matrix.rust != '1.50'
-      run: |
-        cargo install cargo-modify --force
-        cargo modify new-resolver
+    # - name: New Resolver
+    #   if: matrix.rust != '1.50'
+    #   run: |
+    #     cargo install cargo-modify --force
+    #     cargo modify new-resolver
 
     - name: Build Debug
       run: |
