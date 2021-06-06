@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Added
 - honor `config.showUntrackedFiles` improving speed with a lot of untracked items ([#752](https://github.com/extrawurst/gitui/issues/752))
 - improve performance when opening filetree-tab ([#756](https://github.com/extrawurst/gitui/issues/756))
+- undo-last-commit command under `[U]` key [[@remique](https://github.com/remique)] ([#758](https://github.com/extrawurst/gitui/issues/758))
   
 ## Fixed
 - wrong file with same name shown in file tree ([#748](https://github.com/extrawurst/gitui/issues/748))

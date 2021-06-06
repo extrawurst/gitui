@@ -7,7 +7,7 @@ use crate::{
         FileTreeItemKind,
     },
     keys::SharedKeyConfig,
-    queue::{Action, InternalEvent, Queue, ResetItem},
+    queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings, try_or_popup,
     ui::style::SharedTheme,
 };
@@ -469,7 +469,11 @@ impl Status {
     }
 
     fn undo_last_commit(&self) {
-        sync::utils::undo_last_commit(CWD).unwrap();
+        try_or_popup!(
+            self,
+            "undo commit failed:",
+            sync::utils::undo_last_commit(CWD)
+        );
     }
 
     fn branch_compare(&mut self) {
@@ -701,6 +705,9 @@ impl Component for Status {
                     && !self.is_focus_on_diff()
                 {
                     self.undo_last_commit();
+                    self.queue.borrow_mut().push_back(
+                        InternalEvent::Update(NeedsUpdate::ALL),
+                    );
                     Ok(EventState::Consumed)
                 } else if k == self.key_config.abort_merge
                     && Self::can_abort_merge()

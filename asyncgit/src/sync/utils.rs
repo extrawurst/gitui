@@ -298,6 +298,54 @@ mod tests {
     }
 
     #[test]
+    fn test_undo_commit_empty_repo() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        // expect to fail
+        assert!(undo_last_commit(repo_path).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_undo_commit() -> Result<()> {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+        let file_path = Path::new("file1.txt");
+
+        let status_count = |s: StatusType| -> usize {
+            get_status(repo_path, s).unwrap().len()
+        };
+
+        let full_path = &root.join(file_path);
+        File::create(full_path)
+            .unwrap()
+            .write_all(b"first commit content")
+            .unwrap();
+
+        stage_add_file(repo_path, file_path).unwrap();
+        commit(repo_path, "first commit").unwrap();
+
+        let second_file_path = Path::new("file2.txt");
+        let full_path = &root.join(second_file_path);
+        File::create(full_path)
+            .unwrap()
+            .write_all(b"second commit content")
+            .unwrap();
+        stage_add_file(repo_path, second_file_path).unwrap();
+        commit(repo_path, "second commit").unwrap();
+
+        // Should be 1 file in staged
+        assert!(undo_last_commit(repo_path).is_ok());
+        assert_eq!(status_count(StatusType::Stage), 1);
+
+        Ok(())
+    }
+
+    #[test]
     fn test_not_staging_untracked_folder() -> Result<()> {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();

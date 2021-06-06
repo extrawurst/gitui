@@ -34,6 +34,7 @@
     // Also just plain text characters will not work because the commit 
     // msg editor will interpret them as text input
     open_commit_editor: ( code: Char('e'), modifiers: ( bits: 2,),),
+    undo_commit: ( code: Char('U'), modifiers: ( bits: 1,),),
 
     move_left: ( code: Char('h'), modifiers: ( bits: 0,),),
     move_right: ( code: Char('l'), modifiers: ( bits: 0,),),
