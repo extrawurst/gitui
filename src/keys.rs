@@ -1,13 +1,13 @@
 //TODO: remove once fixed https://github.com/rust-lang/rust-clippy/issues/6818
 #![allow(clippy::use_self)]
 
-use anyhow::Result;
+use anyhow::{Error, Result};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ron::{
     self,
     ser::{to_string_pretty, PrettyConfig},
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::{Read, Write},
@@ -18,6 +18,110 @@ use std::{
 use crate::args::get_app_config_path;
 
 pub type SharedKeyConfig = Rc<KeyConfig>;
+
+trait Save {
+    fn save(&self, path: PathBuf) -> Result<()>;
+}
+
+fn handle_error_and_default<T: Save + Default>(
+    e: &Error,
+    file: PathBuf,
+) -> Result<T> {
+    let config_path = file.clone();
+    let config_path_old = format!("{}.old", file.to_string_lossy());
+    fs::rename(config_path.clone(), config_path_old.clone())?;
+
+    T::default().save(file)?;
+
+    Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
+                        e,config_path_old,config_path.to_string_lossy()))
+}
+
+fn read_file<T>(config_file: PathBuf) -> Result<T>
+where
+    T: DeserializeOwned,
+{
+    let mut f = File::open(config_file)?;
+    let mut buffer = Vec::new();
+    f.read_to_end(&mut buffer)?;
+    Ok(ron::de::from_bytes(&buffer)?)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SymbolConfig {
+    pub enter: String,
+    pub left: String,
+    pub right: String,
+    pub up: String,
+    pub down: String,
+    pub backspace: String,
+    pub home: String,
+    pub end: String,
+    pub page_up: String,
+    pub page_down: String,
+    pub tab: String,
+    pub back_tab: String,
+    pub delete: String,
+    pub insert: String,
+    pub esc: String,
+    pub control: String,
+    pub shift: String,
+    pub alt: String,
+}
+
+#[rustfmt::skip]
+impl Default for SymbolConfig {
+    fn default() -> Self {
+        Self {
+            enter: "\u{23ce}".into(),     //⏎
+            left: "\u{2190}".into(),      //←
+            right: "\u{2192}".into(),     //→
+            up: "\u{2191}".into(),        //↑
+            down: "\u{2193}".into(),      //↓
+            backspace: "\u{232b}".into(), //⌫
+            home: "\u{2912}".into(),      //⤒
+            end: "\u{2913}".into(),       //⤓
+            page_up: "\u{21de}".into(),   //⇞
+            page_down: "\u{21df}".into(), //⇟
+            tab: "\u{21e5}".into(),       //⇥
+            back_tab: "\u{21e4}".into(),  //⇤
+            delete: "\u{2326}".into(),    //⌦
+            insert: "\u{2380}".into(),    //⎀
+            esc: "\u{238b}".into(),       //⎋
+            control: "^".into(),
+            shift: "\u{21e7}".into(),     //⇧
+            alt: "\u{2325}".into(),       //⌥
+        }
+    }
+}
+
+impl Save for SymbolConfig {
+    fn save(&self, file: PathBuf) -> Result<()> {
+        let mut file = File::create(file)?;
+        let data = to_string_pretty(self, PrettyConfig::default())?;
+        file.write_all(data.as_bytes())?;
+        Ok(())
+    }
+}
+
+impl SymbolConfig {
+    pub fn get_config_file() -> Result<PathBuf> {
+        let app_home = get_app_config_path()?;
+        Ok(app_home.join("symbol_config.ron"))
+    }
+
+    fn init(file: PathBuf) -> Result<Self> {
+        if file.exists() {
+            match read_file(file.clone()) {
+                Err(e) => handle_error_and_default(&e, file),
+                Ok(res) => Ok(res),
+            }
+        } else {
+            Self::default().save(file)?;
+            Ok(Self::default())
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KeyConfig {
@@ -81,6 +185,9 @@ pub struct KeyConfig {
     pub force_push: KeyEvent,
     pub pull: KeyEvent,
     pub abort_merge: KeyEvent,
+
+    #[serde(skip)]
+    symbols: SymbolConfig,
 }
 
 #[rustfmt::skip]
@@ -147,47 +254,42 @@ impl Default for KeyConfig {
             pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
             abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
             open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
+
+            symbols: SymbolConfig::default(),
         }
     }
 }
 
-impl KeyConfig {
+impl Save for KeyConfig {
     fn save(&self, file: PathBuf) -> Result<()> {
         let mut file = File::create(file)?;
         let data = to_string_pretty(self, PrettyConfig::default())?;
         file.write_all(data.as_bytes())?;
         Ok(())
     }
+}
 
+impl KeyConfig {
     pub fn get_config_file() -> Result<PathBuf> {
         let app_home = get_app_config_path()?;
         Ok(app_home.join("key_config.ron"))
     }
 
-    fn read_file(config_file: PathBuf) -> Result<Self> {
-        let mut f = File::open(config_file)?;
-        let mut buffer = Vec::new();
-        f.read_to_end(&mut buffer)?;
-        Ok(ron::de::from_bytes(&buffer)?)
+    pub fn init(
+        key_config_file: PathBuf,
+        symbol_config_file: PathBuf,
+    ) -> Result<Self> {
+        let mut key_config_file =
+            Self::init_key_config(key_config_file)?;
+        key_config_file.symbols =
+            SymbolConfig::init(symbol_config_file)?;
+        Ok(key_config_file)
     }
 
-    pub fn init(file: PathBuf) -> Result<Self> {
+    fn init_key_config(file: PathBuf) -> Result<Self> {
         if file.exists() {
-            match Self::read_file(file.clone()) {
-                Err(e) => {
-                    let config_path = file.clone();
-                    let config_path_old =
-                        format!("{}.old", file.to_string_lossy());
-                    fs::rename(
-                        config_path.clone(),
-                        config_path_old.clone(),
-                    )?;
-
-                    Self::default().save(file)?;
-
-                    Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
-                        e,config_path_old,config_path.to_string_lossy()))
-                }
+            match read_file(file.clone()) {
+                Err(e) => handle_error_and_default(&e, file),
                 Ok(res) => Ok(res),
             }
         } else {
@@ -196,25 +298,23 @@ impl KeyConfig {
         }
     }
 
-    //TODO: make this configurable (https://github.com/extrawurst/gitui/issues/465)
-    #[allow(clippy::unused_self)]
-    const fn get_key_symbol(&self, k: KeyCode) -> &str {
+    fn get_key_symbol(&self, k: KeyCode) -> &str {
         match k {
-            KeyCode::Enter => "\u{23ce}",     //⏎
-            KeyCode::Left => "\u{2190}",      //←
-            KeyCode::Right => "\u{2192}",     //→
-            KeyCode::Up => "\u{2191}",        //↑
-            KeyCode::Down => "\u{2193}",      //↓
-            KeyCode::Backspace => "\u{232b}", //⌫
-            KeyCode::Home => "\u{2912}",      //⤒
-            KeyCode::End => "\u{2913}",       //⤓
-            KeyCode::PageUp => "\u{21de}",    //⇞
-            KeyCode::PageDown => "\u{21df}",  //⇟
-            KeyCode::Tab => "\u{21e5}",       //⇥
-            KeyCode::BackTab => "\u{21e4}",   //⇤
-            KeyCode::Delete => "\u{2326}",    //⌦
-            KeyCode::Insert => "\u{2380}",    //⎀
-            KeyCode::Esc => "\u{238b}",       //⎋
+            KeyCode::Enter => &self.symbols.enter,
+            KeyCode::Left => &self.symbols.left,
+            KeyCode::Right => &self.symbols.right,
+            KeyCode::Up => &self.symbols.up,
+            KeyCode::Down => &self.symbols.down,
+            KeyCode::Backspace => &self.symbols.backspace,
+            KeyCode::Home => &self.symbols.home,
+            KeyCode::End => &self.symbols.end,
+            KeyCode::PageUp => &self.symbols.page_up,
+            KeyCode::PageDown => &self.symbols.page_down,
+            KeyCode::Tab => &self.symbols.tab,
+            KeyCode::BackTab => &self.symbols.back_tab,
+            KeyCode::Delete => &self.symbols.delete,
+            KeyCode::Insert => &self.symbols.insert,
+            KeyCode::Esc => &self.symbols.esc,
             _ => "?",
         }
     }
@@ -238,39 +338,36 @@ impl KeyConfig {
             | KeyCode::Esc => {
                 format!(
                     "{}{}",
-                    Self::get_modifier_hint(ev.modifiers),
+                    self.get_modifier_hint(ev.modifiers),
                     self.get_key_symbol(ev.code)
                 )
             }
             KeyCode::Char(c) => {
                 format!(
                     "{}{}",
-                    Self::get_modifier_hint(ev.modifiers),
+                    self.get_modifier_hint(ev.modifiers),
                     c
                 )
             }
             KeyCode::F(u) => {
                 format!(
                     "{}F{}",
-                    Self::get_modifier_hint(ev.modifiers),
+                    self.get_modifier_hint(ev.modifiers),
                     u
                 )
             }
-            KeyCode::Null => Self::get_modifier_hint(ev.modifiers),
+            KeyCode::Null => {
+                self.get_modifier_hint(ev.modifiers).into()
+            }
         }
     }
 
-    //TODO: make customizable (see https://github.com/extrawurst/gitui/issues/465)
-    fn get_modifier_hint(modifier: KeyModifiers) -> String {
+    fn get_modifier_hint(&self, modifier: KeyModifiers) -> &str {
         match modifier {
-            KeyModifiers::CONTROL => "^".to_string(),
-            KeyModifiers::SHIFT => {
-                "\u{21e7}".to_string() //⇧
-            }
-            KeyModifiers::ALT => {
-                "\u{2325}".to_string() //⌥
-            }
-            _ => String::new(),
+            KeyModifiers::CONTROL => &self.symbols.control,
+            KeyModifiers::SHIFT => &self.symbols.shift,
+            KeyModifiers::ALT => &self.symbols.alt,
+            _ => "",
         }
     }
 }
@@ -278,6 +375,7 @@ impl KeyConfig {
 #[cfg(test)]
 mod tests {
     use super::KeyConfig;
+    use crate::keys::{read_file, SymbolConfig};
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     #[test]
@@ -293,9 +391,20 @@ mod tests {
     #[test]
     fn test_load_vim_style_example() {
         assert_eq!(
-            KeyConfig::read_file("vim_style_key_config.ron".into())
+            read_file::<KeyConfig>("vim_style_key_config.ron".into())
                 .is_ok(),
             true
         );
+    }
+
+    #[test]
+    fn test_load_alternate_symbol_example() {
+        assert_eq!(
+            read_file::<SymbolConfig>(
+                "assets/alternate_key_symbols.ron".into()
+            )
+            .is_ok(),
+            true
+        )
     }
 }
