@@ -61,7 +61,7 @@ dependencies = [
 
 [[package]]
 name = "asyncgit"
-version = "0.16.1"
+version = "0.16.2"
 dependencies = [
  "crossbeam-channel",
  "easy-cast",
@@ -374,7 +374,7 @@ dependencies = [
 
 [[package]]
 name = "filetreelist"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "pretty_assertions",
  "scopetime",
@@ -465,7 +465,7 @@ dependencies = [
 
 [[package]]
 name = "gitui"
-version = "0.16.0"
+version = "0.16.1"
 dependencies = [
  "anyhow",
  "asyncgit",
