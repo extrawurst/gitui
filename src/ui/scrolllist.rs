@@ -71,7 +71,7 @@ pub fn draw_list<'b, B: Backend, L>(
             .borders(Borders::ALL)
             .border_style(theme.block(selected)),
     );
-    f.render_widget(list, r)
+    f.render_widget(list, r);
 }
 
 pub fn draw_list_block<'b, B: Backend, L>(
@@ -83,5 +83,5 @@ pub fn draw_list_block<'b, B: Backend, L>(
     L: Iterator<Item = Span<'b>>,
 {
     let list = ScrollableList::new(items).block(block);
-    f.render_widget(list, r)
+    f.render_widget(list, r);
 }

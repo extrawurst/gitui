@@ -106,7 +106,7 @@ impl SyntaxTextComponent {
                     );
 
                     self.current_file =
-                        Some((path, Either::Right(content)))
+                        Some((path, Either::Right(content)));
                 }
                 Err(e) => {
                     self.current_file = Some((
@@ -115,7 +115,7 @@ impl SyntaxTextComponent {
                             "error loading file: {}",
                             e
                         )),
-                    ))
+                    ));
                 }
             }
         }
@@ -262,6 +262,6 @@ impl Component for SyntaxTextComponent {
 
     /// focus/unfocus this component depending on param
     fn focus(&mut self, focus: bool) {
-        self.focused = focus
+        self.focused = focus;
     }
 }

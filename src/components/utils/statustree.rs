@@ -358,7 +358,7 @@ impl StatusTree {
             let item = &mut self.tree[i];
             let item_path = &item.info.full_path;
             if item_path.starts_with(&path) {
-                item.info.visible = false
+                item.info.visible = false;
             } else {
                 return;
             }
@@ -416,7 +416,7 @@ impl StatusTree {
             if prefix
                 .map_or(true, |prefix| item_path.starts_with(prefix))
             {
-                self.tree[i].info.visible = true
+                self.tree[i].info.visible = true;
             } else {
                 // if we do not set defaults we can early out
                 if set_defaults {

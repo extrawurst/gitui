@@ -1,12 +1,13 @@
 use super::{
-    CommandBlocking, Direction, DrawableComponent, ScrollType,
+    utils::scroll_vertical::VerticalScroll, CommandBlocking,
+    Direction, DrawableComponent, ScrollType,
 };
 use crate::{
     components::{CommandInfo, Component, EventState},
     keys::SharedKeyConfig,
     queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
     strings, try_or_popup,
-    ui::{self, calc_scroll_top, style::SharedTheme},
+    ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -105,7 +106,7 @@ pub struct DiffComponent {
     current_size: Cell<(u16, u16)>,
     focused: bool,
     current: Current,
-    scroll_top: Cell<usize>,
+    scroll: VerticalScroll,
     queue: Queue,
     theme: SharedTheme,
     key_config: SharedKeyConfig,
@@ -129,7 +130,7 @@ impl DiffComponent {
             diff: None,
             current_size: Cell::new((0, 0)),
             selection: Selection::Single(0),
-            scroll_top: Cell::new(0),
+            scroll: VerticalScroll::new(),
             theme,
             key_config,
             is_immutable,
@@ -147,15 +148,13 @@ impl DiffComponent {
         (self.current.path.clone(), self.current.is_stage)
     }
     ///
-    pub fn clear(&mut self, pending: bool) -> Result<()> {
+    pub fn clear(&mut self, pending: bool) {
         self.current = Current::default();
         self.diff = None;
-        self.scroll_top.set(0);
+        self.scroll.reset();
         self.selection = Selection::Single(0);
         self.selected_hunk = None;
         self.pending = pending;
-
-        Ok(())
     }
     ///
     pub fn update(
@@ -163,7 +162,7 @@ impl DiffComponent {
         path: String,
         is_stage: bool,
         diff: FileDiff,
-    ) -> Result<()> {
+    ) {
         self.pending = false;
 
         let hash = hash(&diff);
@@ -180,7 +179,7 @@ impl DiffComponent {
             self.diff = Some(diff);
 
             if reset_selection {
-                self.scroll_top.set(0);
+                self.scroll.reset();
                 self.selection = Selection::Single(0);
                 self.update_selection(0);
             } else {
@@ -191,8 +190,6 @@ impl DiffComponent {
                 self.update_selection(old_selection);
             }
         }
-
-        Ok(())
     }
 
     fn move_selection(&mut self, move_type: ScrollType) {
@@ -340,7 +337,7 @@ impl DiffComponent {
                     Span::raw(Cow::from(")")),
                 ])]);
             } else {
-                let min = self.scroll_top.get();
+                let min = self.scroll.get_top();
                 let max = min + height as usize;
 
                 let mut line_cursor = 0_usize;
@@ -608,11 +605,11 @@ impl DrawableComponent for DiffComponent {
 
         let current_height = self.current_size.get().1;
 
-        self.scroll_top.set(calc_scroll_top(
-            self.scroll_top.get(),
-            current_height as usize,
+        self.scroll.update(
             self.selection.get_end(),
-        ));
+            self.lines_count(),
+            usize::from(current_height),
+        );
 
         let title = format!(
             "{}{}",
@@ -641,15 +638,9 @@ impl DrawableComponent for DiffComponent {
             ),
             r,
         );
+
         if self.focused {
-            ui::draw_scrollbar(
-                f,
-                r,
-                &self.theme,
-                self.lines_count()
-                    .saturating_sub(usize::from(current_height)),
-                self.scroll_top.get(),
-            );
+            self.scroll.draw(f, r, &self.theme);
         }
 
         Ok(())
@@ -808,6 +799,6 @@ impl Component for DiffComponent {
         self.focused
     }
     fn focus(&mut self, focus: bool) {
-        self.focused = focus
+        self.focused = focus;
     }
 }

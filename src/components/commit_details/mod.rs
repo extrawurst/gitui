@@ -75,7 +75,7 @@ impl CommitDetailsComponent {
         id: Option<CommitId>,
         tags: Option<CommitTags>,
     ) -> Result<()> {
-        self.details.set_commit(id, tags)?;
+        self.details.set_commit(id, tags);
 
         if let Some(id) = id {
             if let Some((fetched_id, res)) =

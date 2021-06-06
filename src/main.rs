@@ -144,13 +144,13 @@ fn main() -> Result<()> {
                         //Note: external ed closed, we need to re-hide cursor
                         terminal.hide_cursor()?;
                     }
-                    app.event(ev)?
+                    app.event(ev)?;
                 }
                 QueueEvent::Tick => app.update()?,
                 QueueEvent::GitEvent(ev)
                     if ev != AsyncNotification::FinishUnchanged =>
                 {
-                    app.update_git(ev)?
+                    app.update_git(ev)?;
                 }
                 QueueEvent::GitEvent(..) => (),
                 QueueEvent::SpinnerUpdate => unreachable!(),
@@ -201,7 +201,7 @@ fn draw<B: Backend>(
 
     terminal.draw(|mut f| {
         if let Err(e) = app.draw(&mut f) {
-            log::error!("failed to draw: {:?}", e)
+            log::error!("failed to draw: {:?}", e);
         }
     })?;
 

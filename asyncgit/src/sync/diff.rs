@@ -245,7 +245,7 @@ fn raw_diff_to_file_diff<'a>(
                         if h != hunk_header {
                             adder(&h, &current_lines);
                             current_lines.clear();
-                            current_hunk = Some(hunk_header)
+                            current_hunk = Some(hunk_header);
                         }
                     }
                 }

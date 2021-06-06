@@ -143,7 +143,7 @@ impl FileTreeItem {
             *folded = folded.join(next.info.path());
         } else {
             self.info.folded =
-                Some(self.info.path().join(next.info.path()))
+                Some(self.info.path().join(next.info.path()));
         }
 
         self.info.full_path = next.info.full_path;

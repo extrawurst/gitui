@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.16.0"
+version = "0.16.1"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
@@ -20,7 +20,7 @@ keywords = [
 
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
-asyncgit = { path = "./asyncgit", version = "0.16.1" }
+asyncgit = { path = "./asyncgit", version = "0.16" }
 filetreelist = { path = "./filetreelist", version = "0.1" }
 crossterm = { version = "0.19", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
@@ -54,6 +54,9 @@ which = "4.1"
 # pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.4", features = ["flamegraph"], optional = true }
+
+[dev-dependencies]
+pretty_assertions = "0.7"
 
 [badges]
 maintenance = { status = "actively-developed" }

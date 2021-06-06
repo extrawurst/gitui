@@ -125,11 +125,11 @@ impl Component for HelpComponent {
         if self.visible {
             if let Event::Key(e) = ev {
                 if e == self.key_config.exit_popup {
-                    self.hide()
+                    self.hide();
                 } else if e == self.key_config.move_down {
-                    self.move_selection(true)
+                    self.move_selection(true);
                 } else if e == self.key_config.move_up {
-                    self.move_selection(false)
+                    self.move_selection(false);
                 } else {
                 }
             }
@@ -152,7 +152,7 @@ impl Component for HelpComponent {
     }
 
     fn hide(&mut self) {
-        self.visible = false
+        self.visible = false;
     }
 
     fn show(&mut self) -> Result<()> {

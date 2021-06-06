@@ -1,5 +1,5 @@
-use std::io;
-use tui::{backend::Backend, buffer::Cell, Terminal};
+use std::{cell::Cell, char, io};
+use tui::{backend::Backend, Terminal};
 
 // static SPINNER_CHARS: &[char] = &['◢', '◣', '◤', '◥'];
 // static SPINNER_CHARS: &[char] = &['⢹', '⢺', '⢼', '⣸', '⣇', '⡧', '⡗', '⡏'];
@@ -7,10 +7,20 @@ static SPINNER_CHARS: &[char] =
     &['⣷', '⣯', '⣟', '⡿', '⢿', '⣻', '⣽', '⣾'];
 
 ///
-#[derive(Default)]
 pub struct Spinner {
     idx: usize,
-    pending: bool,
+    active: bool,
+    last_char: Cell<char>,
+}
+
+impl Default for Spinner {
+    fn default() -> Self {
+        Self {
+            idx: 0,
+            active: false,
+            last_char: Cell::new(' '),
+        }
+    }
 }
 
 impl Spinner {
@@ -21,8 +31,8 @@ impl Spinner {
     }
 
     ///
-    pub fn set_state(&mut self, pending: bool) {
-        self.pending = pending;
+    pub fn set_state(&mut self, active: bool) {
+        self.active = active;
     }
 
     /// draws or removes spinner char depending on `pending` state
@@ -32,17 +42,22 @@ impl Spinner {
     ) -> io::Result<()> {
         let idx = self.idx;
 
-        let c: Cell = Cell::default()
-            .set_char(if self.pending {
-                SPINNER_CHARS[idx]
-            } else {
-                ' '
-            })
-            .clone();
-        terminal
-            .backend_mut()
-            .draw(vec![(0_u16, 0_u16, &c)].into_iter())?;
-        tui::backend::Backend::flush(terminal.backend_mut())?;
+        let char_to_draw =
+            if self.active { SPINNER_CHARS[idx] } else { ' ' };
+
+        if self.last_char.get() != char_to_draw {
+            self.last_char.set(char_to_draw);
+
+            let c = tui::buffer::Cell::default()
+                .set_char(char_to_draw)
+                .clone();
+
+            terminal
+                .backend_mut()
+                .draw(vec![(0_u16, 0_u16, &c)].into_iter())?;
+
+            tui::backend::Backend::flush(terminal.backend_mut())?;
+        }
 
         Ok(())
     }

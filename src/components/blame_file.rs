@@ -231,7 +231,7 @@ impl Component for BlameFileComponent {
     }
 
     fn hide(&mut self) {
-        self.visible = false
+        self.visible = false;
     }
 
     fn show(&mut self) -> Result<()> {
@@ -288,7 +288,7 @@ impl BlameFileComponent {
     ) -> Result<()> {
         if self.is_visible() {
             if let AsyncNotification::Blame = event {
-                self.update()?
+                self.update()?;
             }
         }
 

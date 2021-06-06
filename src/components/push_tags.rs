@@ -253,7 +253,7 @@ impl Component for PushTagsComponent {
     }
 
     fn hide(&mut self) {
-        self.visible = false
+        self.visible = false;
     }
 
     fn show(&mut self) -> Result<()> {

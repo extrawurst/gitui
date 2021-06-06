@@ -158,7 +158,7 @@ impl Component for TagListComponent {
         if self.visible {
             if let Event::Key(key) = event {
                 if key == self.key_config.exit_popup {
-                    self.hide()
+                    self.hide();
                 } else if key == self.key_config.move_up {
                     self.move_selection(ScrollType::Up);
                 } else if key == self.key_config.move_down {
@@ -215,7 +215,7 @@ impl Component for TagListComponent {
     }
 
     fn hide(&mut self) {
-        self.visible = false
+        self.visible = false;
     }
 
     fn show(&mut self) -> Result<()> {

@@ -31,7 +31,7 @@ pub fn get_tags(repo_path: &str) -> Result<Tags> {
     let mut res = Tags::new();
     let mut adder = |key, value: String| {
         if let Some(key) = res.get_mut(&key) {
-            key.push(value)
+            key.push(value);
         } else {
             res.insert(key, vec![value]);
         }

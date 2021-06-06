@@ -1,6 +1,6 @@
 [package]
 name = "asyncgit"
-version = "0.16.1"
+version = "0.16.2"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 edition = "2018"
 description = "allow using git2 in a asynchronous context"

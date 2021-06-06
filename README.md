@@ -77,6 +77,7 @@ These are the high level goals before calling out `1.0`:
 * file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
 * interactive rebase ([#32](https://github.com/extrawurst/gitui/issues/32))
+* notify-based change detection ([#1](https://github.com/extrawurst/gitui/issues/1))
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 

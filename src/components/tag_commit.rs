@@ -65,7 +65,7 @@ impl Component for TagCommitComponent {
 
             if let Event::Key(e) = ev {
                 if e == self.key_config.enter {
-                    self.tag()
+                    self.tag();
                 }
 
                 return Ok(EventState::Consumed);
@@ -79,7 +79,7 @@ impl Component for TagCommitComponent {
     }
 
     fn hide(&mut self) {
-        self.input.hide()
+        self.input.hide();
     }
 
     fn show(&mut self) -> Result<()> {

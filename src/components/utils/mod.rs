@@ -3,6 +3,7 @@ use unicode_width::UnicodeWidthStr;
 
 pub mod filetree;
 pub mod logitems;
+pub mod scroll_vertical;
 pub mod statustree;
 
 /// macro to simplify running code that might return Err.

@@ -49,7 +49,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 
     let arg_matches = app.get_matches();
     if arg_matches.is_present("bugreport") {
-        bug_report::generate_bugreport()?;
+        bug_report::generate_bugreport();
         std::process::exit(0);
     }
     if arg_matches.is_present("logging") {
