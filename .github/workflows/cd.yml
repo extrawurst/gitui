@@ -27,11 +27,6 @@ jobs:
         profile: minimal
         components: clippy
 
-    - name: New Resolver
-      run: |
-        cargo install cargo-modify --force
-        cargo modify new-resolver
-
     - name: Build
       run: cargo build
     - name: Run tests
