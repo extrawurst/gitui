@@ -17,6 +17,7 @@ keywords = [
     "terminal",
     "ui",
 ]
+resolver = "2"
 
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
