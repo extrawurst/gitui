@@ -16,6 +16,8 @@ use push::remote_callbacks;
 use scopetime::scope_time;
 use utils::bytes2string;
 
+pub use tags::tags_missing_remote;
+
 /// origin
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
 

@@ -11,9 +11,13 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
+    asyncjob::AsyncSingleJob,
+    remotes::AsyncRemoteTagsJob,
+    sync::cred::{extract_username_password, need_username_password},
     sync::{get_tags_with_metadata, TagWithMetadata},
-    CWD,
+    AsyncGitNotification, CWD,
 };
+use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use std::convert::TryInto;
 use tui::{
@@ -36,6 +40,9 @@ pub struct TagListComponent {
     visible: bool,
     table_state: std::cell::Cell<TableState>,
     current_height: std::cell::Cell<usize>,
+    missing_remote_tags: Option<Vec<String>>,
+    async_remote_tags:
+        AsyncSingleJob<AsyncRemoteTagsJob, AsyncGitNotification>,
     key_config: SharedKeyConfig,
 }
 
@@ -65,6 +72,8 @@ impl DrawableComponent for TagListComponent {
                 });
 
             let constraints = [
+                // symbol if tag is not yet on remote and can be pushed
+                Constraint::Length(1),
                 // tag name
                 Constraint::Length(tag_name_width.try_into()?),
                 // commit date
@@ -230,6 +239,7 @@ impl Component for TagListComponent {
 impl TagListComponent {
     pub fn new(
         queue: &Queue,
+        sender: &Sender<AsyncGitNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -240,6 +250,11 @@ impl TagListComponent {
             visible: false,
             table_state: std::cell::Cell::new(TableState::default()),
             current_height: std::cell::Cell::new(0),
+            missing_remote_tags: None,
+            async_remote_tags: AsyncSingleJob::new(
+                sender.clone(),
+                AsyncGitNotification::RemoteTags,
+            ),
             key_config,
         }
     }
@@ -251,7 +266,39 @@ impl TagListComponent {
 
         self.update_tags()?;
 
+        let basic_credential = if need_username_password()? {
+            let credential = extract_username_password()?;
+
+            if credential.is_complete() {
+                Some(credential)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        self.async_remote_tags
+            .spawn(AsyncRemoteTagsJob::new(basic_credential));
+
         Ok(())
+    }
+
+    ///
+    pub fn update(&mut self, event: AsyncGitNotification) {
+        if event == AsyncGitNotification::RemoteTags {
+            if let Some(job) = self.async_remote_tags.take_last() {
+                if let Some(Ok(missing_remote_tags)) = job.result() {
+                    self.missing_remote_tags =
+                        Some(missing_remote_tags);
+                }
+            }
+        }
+    }
+
+    ///
+    pub fn any_work_pending(&self) -> bool {
+        self.async_remote_tags.is_pending()
     }
 
     /// fetch list of tags
@@ -307,7 +354,27 @@ impl TagListComponent {
 
     ///
     fn get_row(&self, tag: &TagWithMetadata) -> Row {
+        const UPSTREAM_SYMBOL: &str = "\u{2191}";
+        const EMPTY_SYMBOL: &str = " ";
+
+        let is_tag_missing_on_remote = self
+            .missing_remote_tags
+            .as_ref()
+            .map_or(false, |missing_remote_tags| {
+                let remote_tag = format!("refs/tags/{}", tag.name);
+
+                missing_remote_tags.contains(&remote_tag)
+            });
+
+        let has_remote_str = if is_tag_missing_on_remote {
+            UPSTREAM_SYMBOL
+        } else {
+            EMPTY_SYMBOL
+        };
+
         let cells: Vec<Cell> = vec![
+            Cell::from(has_remote_str)
+                .style(self.theme.commit_author(false)),
             Cell::from(tag.name.clone())
                 .style(self.theme.text(true, false)),
             Cell::from(utils::time_to_string(tag.time, true))
