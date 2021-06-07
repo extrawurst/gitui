@@ -68,6 +68,7 @@ dependencies = [
  "git2",
  "invalidstring",
  "log",
+ "openssl-sys",
  "pretty_assertions",
  "rayon-core",
  "scopetime",

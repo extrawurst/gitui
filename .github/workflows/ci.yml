@@ -78,6 +78,11 @@ jobs:
       run: |
         ls -l ./target/release/gitui.exe
 
+    - name: Binary dependencies (mac)
+      if: matrix.os == 'macos-latest'
+      run: |
+        otool -L ./target/release/gitui
+
     - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
       run: |
