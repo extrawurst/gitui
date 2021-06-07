@@ -221,9 +221,11 @@ mod tests {
     use super::*;
     use crate::sync::{
         commit,
+        diff::get_diff,
         status::{get_status, StatusType},
         tests::{
-            debug_cmd_print, get_statuses, repo_init, repo_init_empty,
+            debug_cmd_print, get_statuses, repo_init,
+            repo_init_empty, write_commit_file,
         },
     };
     use std::{
@@ -298,51 +300,40 @@ mod tests {
     }
 
     #[test]
-    fn test_undo_commit_empty_repo() -> Result<()> {
+    fn test_undo_commit_empty_repo() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
 
         // expect to fail
         assert!(undo_last_commit(repo_path).is_err());
-
-        Ok(())
     }
 
     #[test]
-    fn test_undo_commit() -> Result<()> {
+    fn test_undo_commit() {
         let (_td, repo) = repo_init().unwrap();
         let root = repo.path().parent().unwrap();
         let repo_path = root.as_os_str().to_str().unwrap();
-        let file_path = Path::new("file1.txt");
 
-        let status_count = |s: StatusType| -> usize {
-            get_status(repo_path, s).unwrap().len()
-        };
-
-        let full_path = &root.join(file_path);
-        File::create(full_path)
-            .unwrap()
-            .write_all(b"first commit content")
-            .unwrap();
-
-        stage_add_file(repo_path, file_path).unwrap();
-        commit(repo_path, "first commit").unwrap();
-
-        let second_file_path = Path::new("file2.txt");
-        let full_path = &root.join(second_file_path);
-        File::create(full_path)
-            .unwrap()
-            .write_all(b"second commit content")
-            .unwrap();
-        stage_add_file(repo_path, second_file_path).unwrap();
-        commit(repo_path, "second commit").unwrap();
-
-        // Should be 1 file in staged
+        // write commit file test.txt
+        let c1 =
+            write_commit_file(&repo, "test.txt", "content1", "c1");
+        let _c2 =
+            write_commit_file(&repo, "test.txt", "content2", "c2");
         assert!(undo_last_commit(repo_path).is_ok());
-        assert_eq!(status_count(StatusType::Stage), 1);
 
-        Ok(())
+        // Make sure that HEAD points to c1
+        assert_eq!(c1, get_head_repo(&repo).unwrap());
+
+        // Make sure that now we have 1 file staged
+        assert_eq!(get_statuses(repo_path), (0, 1));
+
+        // And that file is test.txt
+        let diff = get_diff(repo_path, "test.txt", true).unwrap();
+        assert_eq!(
+            diff.hunks[0].lines[0].content,
+            String::from("@@ -1 +1 @@\n")
+        );
     }
 
     #[test]

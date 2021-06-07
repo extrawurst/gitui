@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- undo-last-commit command under `[U]` key [[@remique](https://github.com/remique)] ([#758](https://github.com/extrawurst/gitui/issues/758))
+
 ## [0.16.1] - 2021-06-06
 
 ## Added
@@ -15,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - indicator for longer commit message than displayed ([#773](https://github.com/extrawurst/gitui/issues/773))
 
 ![msg-len](assets/long-msg-indicator.gif)
-- undo-last-commit command under `[U]` key [[@remique](https://github.com/remique)] ([#758](https://github.com/extrawurst/gitui/issues/758))
   
 ## Fixed
 - wrong file with same name shown in file tree ([#748](https://github.com/extrawurst/gitui/issues/748))
