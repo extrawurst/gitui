@@ -15,10 +15,9 @@ impl<T> NotifyableMutex<T> {
     }
 
     ///
-    #[allow(clippy::needless_pass_by_value)]
     pub fn wait(&self, condition: T)
     where
-        T: PartialEq,
+        T: PartialEq + Copy,
     {
         let mut data = self.data.0.lock().expect("lock err");
         while *data != condition {
