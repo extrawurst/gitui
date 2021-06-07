@@ -4,7 +4,7 @@ use crate::{
         cred::BasicAuthCredential,
         remotes::tags::{push_tags, PushTagsProgress},
     },
-    AsyncNotification, RemoteProgress, CWD,
+    AsyncGitNotification, RemoteProgress, CWD,
 };
 use crossbeam_channel::{unbounded, Sender};
 use std::{
@@ -31,12 +31,12 @@ pub struct AsyncPushTags {
     state: Arc<Mutex<Option<PushState>>>,
     last_result: Arc<Mutex<Option<String>>>,
     progress: Arc<Mutex<Option<PushTagsProgress>>>,
-    sender: Sender<AsyncNotification>,
+    sender: Sender<AsyncGitNotification>,
 }
 
 impl AsyncPushTags {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
         Self {
             state: Arc::new(Mutex::new(None)),
             last_result: Arc::new(Mutex::new(None)),
@@ -83,7 +83,7 @@ impl AsyncPushTags {
             let (progress_sender, receiver) = unbounded();
 
             let handle = RemoteProgress::spawn_receiver_thread(
-                AsyncNotification::PushTags,
+                AsyncGitNotification::PushTags,
                 sender.clone(),
                 receiver,
                 arc_progress,
@@ -103,7 +103,7 @@ impl AsyncPushTags {
             Self::clear_request(&arc_state).expect("clear error");
 
             sender
-                .send(AsyncNotification::PushTags)
+                .send(AsyncGitNotification::PushTags)
                 .expect("error sending push");
         });
 

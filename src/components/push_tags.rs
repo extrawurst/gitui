@@ -17,7 +17,7 @@ use asyncgit::{
         },
         get_default_remote, AsyncProgress, PushTagsProgress,
     },
-    AsyncNotification, AsyncPushTags, PushTagsRequest, CWD,
+    AsyncGitNotification, AsyncPushTags, PushTagsRequest, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -45,7 +45,7 @@ impl PushTagsComponent {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -99,10 +99,10 @@ impl PushTagsComponent {
     ///
     pub fn update_git(
         &mut self,
-        ev: AsyncNotification,
+        ev: AsyncGitNotification,
     ) -> Result<()> {
         if self.is_visible() {
-            if let AsyncNotification::PushTags = ev {
+            if let AsyncGitNotification::PushTags = ev {
                 self.update()?;
             }
         }

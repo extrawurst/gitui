@@ -20,7 +20,7 @@ use crate::{
     ui::style::{SharedTheme, Theme},
 };
 use anyhow::{bail, Result};
-use asyncgit::{sync, AsyncNotification, CWD};
+use asyncgit::{sync, AsyncGitNotification, CWD};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
 use std::{
@@ -78,7 +78,7 @@ impl App {
     ///
     #[allow(clippy::too_many_lines)]
     pub fn new(
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         input: Input,
         theme: Theme,
         key_config: KeyConfig,
@@ -343,7 +343,7 @@ impl App {
     ///
     pub fn update_git(
         &mut self,
-        ev: AsyncNotification,
+        ev: AsyncGitNotification,
     ) -> Result<()> {
         log::trace!("update_git: {:?}", ev);
 

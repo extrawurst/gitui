@@ -14,7 +14,7 @@ use anyhow::Result;
 use asyncgit::{
     asyncjob::AsyncSingleJob,
     sync::{self, TreeFile},
-    AsyncNotification, CWD,
+    AsyncGitNotification, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -32,7 +32,7 @@ use tui::{
 pub struct SyntaxTextComponent {
     current_file: Option<(String, Either<ui::SyntaxText, String>)>,
     async_highlighting:
-        AsyncSingleJob<AsyncSyntaxJob, AsyncNotification>,
+        AsyncSingleJob<AsyncSyntaxJob, AsyncGitNotification>,
     key_config: SharedKeyConfig,
     paragraph_state: Cell<ParagraphState>,
     focused: bool,
@@ -42,14 +42,14 @@ pub struct SyntaxTextComponent {
 impl SyntaxTextComponent {
     ///
     pub fn new(
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         key_config: SharedKeyConfig,
         theme: SharedTheme,
     ) -> Self {
         Self {
             async_highlighting: AsyncSingleJob::new(
                 sender.clone(),
-                AsyncNotification::SyntaxHighlighting,
+                AsyncGitNotification::SyntaxHighlighting,
             ),
             current_file: None,
             paragraph_state: Cell::new(ParagraphState::default()),
@@ -60,8 +60,8 @@ impl SyntaxTextComponent {
     }
 
     ///
-    pub fn update(&mut self, ev: AsyncNotification) {
-        if ev == AsyncNotification::SyntaxHighlighting {
+    pub fn update(&mut self, ev: AsyncGitNotification) {
+        if ev == AsyncGitNotification::SyntaxHighlighting {
             if let Some(job) = self.async_highlighting.take_last() {
                 if let Some((path, content)) =
                     self.current_file.as_mut()

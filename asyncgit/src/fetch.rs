@@ -4,7 +4,7 @@ use crate::{
         cred::BasicAuthCredential,
         remotes::{fetch, push::ProgressNotification},
     },
-    AsyncNotification, RemoteProgress, CWD,
+    AsyncGitNotification, RemoteProgress, CWD,
 };
 use crossbeam_channel::{unbounded, Sender};
 use std::{
@@ -33,12 +33,12 @@ pub struct AsyncFetch {
     state: Arc<Mutex<Option<FetchState>>>,
     last_result: Arc<Mutex<Option<(usize, String)>>>,
     progress: Arc<Mutex<Option<ProgressNotification>>>,
-    sender: Sender<AsyncNotification>,
+    sender: Sender<AsyncGitNotification>,
 }
 
 impl AsyncFetch {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
         Self {
             state: Arc::new(Mutex::new(None)),
             last_result: Arc::new(Mutex::new(None)),
@@ -85,7 +85,7 @@ impl AsyncFetch {
             let (progress_sender, receiver) = unbounded();
 
             let handle = RemoteProgress::spawn_receiver_thread(
-                AsyncNotification::Fetch,
+                AsyncGitNotification::Fetch,
                 sender.clone(),
                 receiver,
                 arc_progress,
@@ -109,7 +109,7 @@ impl AsyncFetch {
             Self::clear_request(&arc_state).expect("clear error");
 
             sender
-                .send(AsyncNotification::Fetch)
+                .send(AsyncGitNotification::Fetch)
                 .expect("AsyncNotification error");
         });
 

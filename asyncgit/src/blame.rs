@@ -2,7 +2,7 @@ use crate::{
     error::Result,
     hash,
     sync::{self, FileBlame},
-    AsyncNotification, CWD,
+    AsyncGitNotification, CWD,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -33,13 +33,13 @@ struct LastResult<P, R> {
 pub struct AsyncBlame {
     current: Arc<Mutex<Request<u64, FileBlame>>>,
     last: Arc<Mutex<Option<LastResult<BlameParams, FileBlame>>>>,
-    sender: Sender<AsyncNotification>,
+    sender: Sender<AsyncGitNotification>,
     pending: Arc<AtomicUsize>,
 }
 
 impl AsyncBlame {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
         Self {
             current: Arc::new(Mutex::new(Request(0, None))),
             last: Arc::new(Mutex::new(None)),
@@ -120,9 +120,9 @@ impl AsyncBlame {
 
             sender
                 .send(if notify {
-                    AsyncNotification::Blame
+                    AsyncGitNotification::Blame
                 } else {
-                    AsyncNotification::FinishUnchanged
+                    AsyncGitNotification::FinishUnchanged
                 })
                 .expect("error sending blame");
         });

@@ -2,7 +2,7 @@ use crate::{
     error::Result,
     hash,
     sync::{self},
-    AsyncNotification, CWD,
+    AsyncGitNotification, CWD,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -24,13 +24,13 @@ struct TagsResult {
 ///
 pub struct AsyncTags {
     last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
-    sender: Sender<AsyncNotification>,
+    sender: Sender<AsyncGitNotification>,
     pending: Arc<AtomicUsize>,
 }
 
 impl AsyncTags {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
         Self {
             last: Arc::new(Mutex::new(None)),
             sender: sender.clone(),
@@ -84,9 +84,9 @@ impl AsyncTags {
 
             sender
                 .send(if notify {
-                    AsyncNotification::Tags
+                    AsyncGitNotification::Tags
                 } else {
-                    AsyncNotification::FinishUnchanged
+                    AsyncGitNotification::FinishUnchanged
                 })
                 .expect("error sending notify");
         });

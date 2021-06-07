@@ -1,7 +1,7 @@
 use crate::{
     error::Result,
     sync::{self, CommitId},
-    AsyncNotification, StatusItem, CWD,
+    AsyncGitNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
 use std::sync::{
@@ -15,13 +15,13 @@ struct Request<R, A>(R, A);
 ///
 pub struct AsyncCommitFiles {
     current: Arc<Mutex<Option<Request<CommitId, ResultType>>>>,
-    sender: Sender<AsyncNotification>,
+    sender: Sender<AsyncGitNotification>,
     pending: Arc<AtomicUsize>,
 }
 
 impl AsyncCommitFiles {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
         Self {
             current: Arc::new(Mutex::new(None)),
             sender: sender.clone(),
@@ -74,7 +74,7 @@ impl AsyncCommitFiles {
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
             sender
-                .send(AsyncNotification::CommitFiles)
+                .send(AsyncGitNotification::CommitFiles)
                 .expect("error sending");
         });
 

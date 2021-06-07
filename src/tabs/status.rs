@@ -16,8 +16,8 @@ use asyncgit::{
     cached,
     sync::BranchCompare,
     sync::{self, status::StatusType, RepoState},
-    AsyncDiff, AsyncNotification, AsyncStatus, DiffParams, DiffType,
-    StatusParams, CWD,
+    AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
+    DiffType, StatusParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -131,7 +131,7 @@ impl Status {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -339,14 +339,16 @@ impl Status {
     ///
     pub fn update_git(
         &mut self,
-        ev: AsyncNotification,
+        ev: AsyncGitNotification,
     ) -> Result<()> {
         match ev {
-            AsyncNotification::Diff => self.update_diff()?,
-            AsyncNotification::Status => self.update_status()?,
-            AsyncNotification::Push
-            | AsyncNotification::Fetch
-            | AsyncNotification::CommitFiles => self.branch_compare(),
+            AsyncGitNotification::Diff => self.update_diff()?,
+            AsyncGitNotification::Status => self.update_status()?,
+            AsyncGitNotification::Push
+            | AsyncGitNotification::Fetch
+            | AsyncGitNotification::CommitFiles => {
+                self.branch_compare()
+            }
             _ => (),
         }
 

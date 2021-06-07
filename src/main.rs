@@ -37,7 +37,7 @@ mod version;
 
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
-use asyncgit::AsyncNotification;
+use asyncgit::AsyncGitNotification;
 use backtrace::Backtrace;
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
@@ -72,7 +72,7 @@ static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
 pub enum QueueEvent {
     Tick,
     SpinnerUpdate,
-    GitEvent(AsyncNotification),
+    GitEvent(AsyncGitNotification),
     InputEvent(InputEvent),
 }
 
@@ -148,7 +148,8 @@ fn main() -> Result<()> {
                 }
                 QueueEvent::Tick => app.update()?,
                 QueueEvent::GitEvent(ev)
-                    if ev != AsyncNotification::FinishUnchanged =>
+                    if ev
+                        != AsyncGitNotification::FinishUnchanged =>
                 {
                     app.update_git(ev)?;
                 }
@@ -215,7 +216,7 @@ fn valid_path() -> Result<bool> {
 
 fn select_event(
     rx_input: &Receiver<InputEvent>,
-    rx_git: &Receiver<AsyncNotification>,
+    rx_git: &Receiver<AsyncGitNotification>,
     rx_ticker: &Receiver<Instant>,
     rx_spinner: &Receiver<Instant>,
 ) -> Result<QueueEvent> {

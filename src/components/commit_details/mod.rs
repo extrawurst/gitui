@@ -11,7 +11,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     sync::{CommitId, CommitTags},
-    AsyncCommitFiles, AsyncNotification,
+    AsyncCommitFiles, AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -36,7 +36,7 @@ impl CommitDetailsComponent {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {

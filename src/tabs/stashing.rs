@@ -13,7 +13,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     sync::{self, status::StatusType},
-    AsyncNotification, AsyncStatus, StatusParams, CWD,
+    AsyncGitNotification, AsyncStatus, StatusParams, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -45,7 +45,7 @@ impl Stashing {
 
     ///
     pub fn new(
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         queue: &Queue,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
@@ -88,10 +88,10 @@ impl Stashing {
     ///
     pub fn update_git(
         &mut self,
-        ev: AsyncNotification,
+        ev: AsyncGitNotification,
     ) -> Result<()> {
         if self.is_visible() {
-            if let AsyncNotification::Status = ev {
+            if let AsyncGitNotification::Status = ev {
                 let status = self.git_status.last()?;
                 self.index.update(&status.items)?;
             }

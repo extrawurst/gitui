@@ -2,7 +2,7 @@ use crate::{
     error::Result,
     hash,
     sync::{self, CommitId},
-    AsyncNotification, FileDiff, CWD,
+    AsyncGitNotification, FileDiff, CWD,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -46,13 +46,13 @@ struct LastResult<P, R> {
 pub struct AsyncDiff {
     current: Arc<Mutex<Request<u64, FileDiff>>>,
     last: Arc<Mutex<Option<LastResult<DiffParams, FileDiff>>>>,
-    sender: Sender<AsyncNotification>,
+    sender: Sender<AsyncGitNotification>,
     pending: Arc<AtomicUsize>,
 }
 
 impl AsyncDiff {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
         Self {
             current: Arc::new(Mutex::new(Request(0, None))),
             last: Arc::new(Mutex::new(None)),
@@ -129,9 +129,9 @@ impl AsyncDiff {
 
             sender
                 .send(if notify {
-                    AsyncNotification::Diff
+                    AsyncGitNotification::Diff
                 } else {
-                    AsyncNotification::FinishUnchanged
+                    AsyncGitNotification::FinishUnchanged
                 })
                 .expect("error sending diff");
         });

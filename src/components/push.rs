@@ -17,7 +17,7 @@ use asyncgit::{
         },
         get_branch_remote, get_default_remote,
     },
-    AsyncNotification, AsyncPush, PushRequest, RemoteProgress,
+    AsyncGitNotification, AsyncPush, PushRequest, RemoteProgress,
     RemoteProgressState, CWD,
 };
 use crossbeam_channel::Sender;
@@ -48,7 +48,7 @@ impl PushComponent {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -130,10 +130,10 @@ impl PushComponent {
     ///
     pub fn update_git(
         &mut self,
-        ev: AsyncNotification,
+        ev: AsyncGitNotification,
     ) -> Result<()> {
         if self.is_visible() {
-            if let AsyncNotification::Push = ev {
+            if let AsyncGitNotification::Push = ev {
                 self.update()?;
             }
         }

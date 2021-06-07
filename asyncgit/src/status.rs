@@ -2,7 +2,7 @@ use crate::{
     error::Result,
     hash,
     sync::{self, status::StatusType},
-    AsyncNotification, StatusItem, CWD,
+    AsyncGitNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -49,13 +49,13 @@ struct Request<R, A>(R, Option<A>);
 pub struct AsyncStatus {
     current: Arc<Mutex<Request<u64, Status>>>,
     last: Arc<Mutex<Status>>,
-    sender: Sender<AsyncNotification>,
+    sender: Sender<AsyncGitNotification>,
     pending: Arc<AtomicUsize>,
 }
 
 impl AsyncStatus {
     ///
-    pub fn new(sender: Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: Sender<AsyncGitNotification>) -> Self {
         Self {
             current: Arc::new(Mutex::new(Request(0, None))),
             last: Arc::new(Mutex::new(Status::default())),
@@ -125,7 +125,7 @@ impl AsyncStatus {
 
             if ok {
                 sender
-                    .send(AsyncNotification::Status)
+                    .send(AsyncGitNotification::Status)
                     .expect("error sending status");
             }
         });

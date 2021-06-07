@@ -1,7 +1,7 @@
 use crate::{
     error::Result,
     sync::{utils::repo, CommitId, LogWalker},
-    AsyncNotification, CWD,
+    AsyncGitNotification, CWD,
 };
 use crossbeam_channel::Sender;
 use git2::Oid;
@@ -29,7 +29,7 @@ pub enum FetchStatus {
 ///
 pub struct AsyncLog {
     current: Arc<Mutex<Vec<CommitId>>>,
-    sender: Sender<AsyncNotification>,
+    sender: Sender<AsyncGitNotification>,
     pending: Arc<AtomicBool>,
     background: Arc<AtomicBool>,
 }
@@ -40,7 +40,7 @@ static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
 impl AsyncLog {
     ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
+    pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
         Self {
             current: Arc::new(Mutex::new(Vec::new())),
             sender: sender.clone(),
@@ -147,7 +147,7 @@ impl AsyncLog {
     fn fetch_helper(
         arc_current: &Arc<Mutex<Vec<CommitId>>>,
         arc_background: &Arc<AtomicBool>,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
     ) -> Result<()> {
         let mut entries = Vec::with_capacity(LIMIT_COUNT);
         let r = repo(CWD)?;
@@ -183,7 +183,9 @@ impl AsyncLog {
         Ok(())
     }
 
-    fn notify(sender: &Sender<AsyncNotification>) {
-        sender.send(AsyncNotification::Log).expect("error sending");
+    fn notify(sender: &Sender<AsyncGitNotification>) {
+        sender
+            .send(AsyncGitNotification::Log)
+            .expect("error sending");
     }
 }

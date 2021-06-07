@@ -19,7 +19,8 @@ use asyncgit::{
         },
         get_default_remote,
     },
-    AsyncFetch, AsyncNotification, FetchRequest, RemoteProgress, CWD,
+    AsyncFetch, AsyncGitNotification, FetchRequest, RemoteProgress,
+    CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -48,7 +49,7 @@ impl PullComponent {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -111,10 +112,10 @@ impl PullComponent {
     ///
     pub fn update_git(
         &mut self,
-        ev: AsyncNotification,
+        ev: AsyncGitNotification,
     ) -> Result<()> {
         if self.is_visible() {
-            if let AsyncNotification::Fetch = ev {
+            if let AsyncGitNotification::Fetch = ev {
                 self.update()?;
             }
         }

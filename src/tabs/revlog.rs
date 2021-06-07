@@ -13,7 +13,7 @@ use anyhow::Result;
 use asyncgit::{
     cached,
     sync::{self, CommitId},
-    AsyncLog, AsyncNotification, AsyncTags, FetchStatus, CWD,
+    AsyncGitNotification, AsyncLog, AsyncTags, FetchStatus, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -43,7 +43,7 @@ impl Revlog {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -111,13 +111,13 @@ impl Revlog {
     ///
     pub fn update_git(
         &mut self,
-        ev: AsyncNotification,
+        ev: AsyncGitNotification,
     ) -> Result<()> {
         if self.visible {
             match ev {
-                AsyncNotification::CommitFiles
-                | AsyncNotification::Log => self.update()?,
-                AsyncNotification::Tags => {
+                AsyncGitNotification::CommitFiles
+                | AsyncGitNotification::Log => self.update()?,
+                AsyncGitNotification::Tags => {
                     if let Some(tags) = self.git_tags.last()? {
                         self.list.set_tags(tags);
                         self.update()?;

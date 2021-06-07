@@ -4,7 +4,7 @@ use crate::{
     error::Result,
     progress::ProgressPercent,
     sync::remotes::push::{AsyncProgress, ProgressNotification},
-    AsyncNotification,
+    AsyncGitNotification,
 };
 use crossbeam_channel::{Receiver, Sender};
 use git2::PackBuilderStage;
@@ -71,8 +71,8 @@ impl RemoteProgress {
     pub(crate) fn spawn_receiver_thread<
         T: 'static + AsyncProgress,
     >(
-        notification_type: AsyncNotification,
-        sender: Sender<AsyncNotification>,
+        notification_type: AsyncGitNotification,
+        sender: Sender<AsyncGitNotification>,
         receiver: Receiver<T>,
         progress: Arc<Mutex<Option<T>>>,
     ) -> JoinHandle<()> {

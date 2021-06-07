@@ -10,7 +10,7 @@ use crate::{
     ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{sync::CommitId, AsyncNotification};
+use asyncgit::{sync::CommitId, AsyncGitNotification};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, widgets::Clear, Frame};
@@ -25,7 +25,7 @@ impl RevisionFilesPopup {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -50,7 +50,7 @@ impl RevisionFilesPopup {
     }
 
     ///
-    pub fn update(&mut self, ev: AsyncNotification) {
+    pub fn update(&mut self, ev: AsyncGitNotification) {
         self.files.update(ev);
     }
 

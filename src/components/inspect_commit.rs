@@ -13,7 +13,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     sync::{CommitId, CommitTags},
-    AsyncDiff, AsyncNotification, DiffParams, DiffType,
+    AsyncDiff, AsyncGitNotification, DiffParams, DiffType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -176,7 +176,7 @@ impl InspectCommitComponent {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -223,12 +223,12 @@ impl InspectCommitComponent {
     ///
     pub fn update_git(
         &mut self,
-        ev: AsyncNotification,
+        ev: AsyncGitNotification,
     ) -> Result<()> {
         if self.is_visible() {
-            if let AsyncNotification::CommitFiles = ev {
+            if let AsyncGitNotification::CommitFiles = ev {
                 self.update()?;
-            } else if let AsyncNotification::Diff = ev {
+            } else if let AsyncGitNotification::Diff = ev {
                 self.update_diff()?;
             }
         }
