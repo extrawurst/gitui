@@ -28,7 +28,6 @@ jobs:
         components: clippy
 
     - name: New Resolver
-      if: matrix.rust != '1.50'
       run: |
         cargo install cargo-modify --force
         cargo modify new-resolver
