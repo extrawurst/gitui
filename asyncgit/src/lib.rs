@@ -33,6 +33,8 @@ mod progress;
 mod push;
 mod push_tags;
 pub mod remote_progress;
+///
+pub mod remotes;
 mod revlog;
 mod status;
 pub mod sync;
@@ -85,6 +87,9 @@ pub enum AsyncGitNotification {
     ///
     //TODO: this does not belong here
     SyntaxHighlighting,
+    ///
+    //TODO: this does not belong here
+    RemoteTags,
 }
 
 /// current working directory `./`

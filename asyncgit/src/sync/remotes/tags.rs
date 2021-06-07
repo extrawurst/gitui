@@ -73,7 +73,7 @@ fn remote_tag_refs(
 }
 
 /// lists the remotes tags missing
-fn tags_missing_remote(
+pub fn tags_missing_remote(
     repo_path: &str,
     remote: &str,
     basic_credential: Option<BasicAuthCredential>,

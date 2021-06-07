@@ -167,6 +167,7 @@ impl App {
             ),
             tags_popup: TagListComponent::new(
                 &queue,
+                sender,
                 theme.clone(),
                 key_config.clone(),
             ),
@@ -357,6 +358,7 @@ impl App {
         self.push_tags_popup.update_git(ev)?;
         self.pull_popup.update_git(ev)?;
         self.revision_files_popup.update(ev);
+        self.tags_popup.update(ev);
 
         //TODO: better system for this
         // can we simply process the queue here and everyone just uses the queue to schedule a cmd update?
@@ -383,6 +385,7 @@ impl App {
             || self.push_tags_popup.any_work_pending()
             || self.pull_popup.any_work_pending()
             || self.revision_files_popup.any_work_pending()
+            || self.tags_popup.any_work_pending()
     }
 
     ///
