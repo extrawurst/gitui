@@ -694,7 +694,7 @@ impl App {
                 }
             }
             Action::ForcePush(branch, force) => {
-                self.queue.push(InternalEvent::Push(branch, force))
+                self.queue.push(InternalEvent::Push(branch, force));
             }
             Action::PullMerge { rebase, .. } => {
                 self.pull_popup.try_conflict_free_merge(rebase);

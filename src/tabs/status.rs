@@ -347,7 +347,7 @@ impl Status {
             AsyncGitNotification::Push
             | AsyncGitNotification::Fetch
             | AsyncGitNotification::CommitFiles => {
-                self.branch_compare()
+                self.branch_compare();
             }
             _ => (),
         }
