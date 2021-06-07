@@ -179,7 +179,7 @@ impl Component for TagListComponent {
                     return self.selected_tag().map_or(
                         Ok(EventState::NotConsumed),
                         |tag| {
-                            self.queue.borrow_mut().push_back(
+                            self.queue.push(
                                 InternalEvent::ConfirmAction(
                                     Action::DeleteTag(
                                         tag.name.clone(),
@@ -193,7 +193,7 @@ impl Component for TagListComponent {
                     return self.selected_tag().map_or(
                         Ok(EventState::NotConsumed),
                         |tag| {
-                            self.queue.borrow_mut().push_back(
+                            self.queue.push(
                                 InternalEvent::SelectCommitInRevlog(
                                     tag.commit_id,
                                 ),

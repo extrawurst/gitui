@@ -83,7 +83,7 @@ impl App {
         theme: Theme,
         key_config: KeyConfig,
     ) -> Self {
-        let queue = Queue::default();
+        let queue = Queue::new();
         let theme = Rc::new(theme);
         let key_config = Rc::new(key_config);
 
@@ -544,14 +544,14 @@ impl App {
         let mut flags = NeedsUpdate::empty();
 
         loop {
-            let front = self.queue.borrow_mut().pop_front();
+            let front = self.queue.pop();
             if let Some(e) = front {
                 flags.insert(self.process_internal_event(e)?);
             } else {
                 break;
             }
         }
-        self.queue.borrow_mut().clear();
+        self.queue.clear();
 
         Ok(flags)
     }
@@ -609,11 +609,9 @@ impl App {
             }
             InternalEvent::SelectCommitInRevlog(id) => {
                 if let Err(error) = self.revlog.select_commit(id) {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(
-                            error.to_string(),
-                        ),
-                    );
+                    self.queue.push(InternalEvent::ShowErrorMsg(
+                        error.to_string(),
+                    ));
                 } else {
                     self.tags_popup.hide();
                     flags.insert(NeedsUpdate::ALL);
@@ -677,9 +675,9 @@ impl App {
             Action::DeleteBranch(branch_ref) => {
                 if let Err(e) = sync::delete_branch(CWD, &branch_ref)
                 {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(e.to_string()),
-                    );
+                    self.queue.push(InternalEvent::ShowErrorMsg(
+                        e.to_string(),
+                    ));
                 } else {
                     flags.insert(NeedsUpdate::ALL);
                     self.select_branch_popup.update_branches()?;
@@ -687,20 +685,17 @@ impl App {
             }
             Action::DeleteTag(tag_name) => {
                 if let Err(error) = sync::delete_tag(CWD, &tag_name) {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(
-                            error.to_string(),
-                        ),
-                    );
+                    self.queue.push(InternalEvent::ShowErrorMsg(
+                        error.to_string(),
+                    ));
                 } else {
                     flags.insert(NeedsUpdate::ALL);
                     self.tags_popup.update_tags()?;
                 }
             }
-            Action::ForcePush(branch, force) => self
-                .queue
-                .borrow_mut()
-                .push_back(InternalEvent::Push(branch, force)),
+            Action::ForcePush(branch, force) => {
+                self.queue.push(InternalEvent::Push(branch, force))
+            }
             Action::PullMerge { rebase, .. } => {
                 self.pull_popup.try_conflict_free_merge(rebase);
                 flags.insert(NeedsUpdate::ALL);

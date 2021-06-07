@@ -138,9 +138,9 @@ impl Component for InspectCommitComponent {
                     self.diff.focus(false);
                 } else if e == self.key_config.open_file_tree {
                     if let Some(commit) = self.commit_id {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::OpenFileTree(commit),
-                        );
+                        self.queue.push(InternalEvent::OpenFileTree(
+                            commit,
+                        ));
                         self.hide();
                     }
                 } else if e == self.key_config.focus_left {

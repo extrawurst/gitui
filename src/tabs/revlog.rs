@@ -225,17 +225,14 @@ impl Component for Revlog {
                     self.copy_commit_hash()?;
                     return Ok(EventState::Consumed);
                 } else if k == self.key_config.push {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::PushTags);
+                    self.queue.push(InternalEvent::PushTags);
                     return Ok(EventState::Consumed);
                 } else if k == self.key_config.log_tag_commit {
                     return self.selected_commit().map_or(
                         Ok(EventState::NotConsumed),
                         |id| {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::TagCommit(id),
-                            );
+                            self.queue
+                                .push(InternalEvent::TagCommit(id));
                             Ok(EventState::Consumed)
                         },
                     );
@@ -245,7 +242,7 @@ impl Component for Revlog {
                     return self.selected_commit().map_or(
                         Ok(EventState::NotConsumed),
                         |id| {
-                            self.queue.borrow_mut().push_back(
+                            self.queue.push(
                                 InternalEvent::InspectCommit(
                                     id,
                                     self.selected_commit_tags(&Some(
@@ -257,24 +254,20 @@ impl Component for Revlog {
                         },
                     );
                 } else if k == self.key_config.select_branch {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::SelectBranch);
+                    self.queue.push(InternalEvent::SelectBranch);
                     return Ok(EventState::Consumed);
                 } else if k == self.key_config.open_file_tree {
                     return self.selected_commit().map_or(
                         Ok(EventState::NotConsumed),
                         |id| {
-                            self.queue.borrow_mut().push_back(
+                            self.queue.push(
                                 InternalEvent::OpenFileTree(id),
                             );
                             Ok(EventState::Consumed)
                         },
                     );
                 } else if k == self.key_config.tags {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::Tags);
+                    self.queue.push(InternalEvent::Tags);
                     return Ok(EventState::Consumed);
                 }
             }

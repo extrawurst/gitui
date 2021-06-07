@@ -199,36 +199,29 @@ impl Component for BranchListComponent {
                 } else if e == self.key_config.create_branch
                     && self.local
                 {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::CreateBranch);
+                    self.queue.push(InternalEvent::CreateBranch);
                 } else if e == self.key_config.rename_branch
                     && self.valid_selection()
                 {
                     let cur_branch =
                         &self.branches[self.selection as usize];
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::RenameBranch(
-                            cur_branch.reference.clone(),
-                            cur_branch.name.clone(),
-                        ),
-                    );
+                    self.queue.push(InternalEvent::RenameBranch(
+                        cur_branch.reference.clone(),
+                        cur_branch.name.clone(),
+                    ));
 
                     self.update_branches()?;
                 } else if e == self.key_config.delete_branch
                     && !self.selection_is_cur_branch()
                     && self.valid_selection()
                 {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ConfirmAction(
-                            Action::DeleteBranch(
-                                self.branches
-                                    [self.selection as usize]
-                                    .reference
-                                    .clone(),
-                            ),
+                    self.queue.push(InternalEvent::ConfirmAction(
+                        Action::DeleteBranch(
+                            self.branches[self.selection as usize]
+                                .reference
+                                .clone(),
                         ),
-                    );
+                    ));
                 } else if e == self.key_config.merge_branch
                     && !self.selection_is_cur_branch()
                     && self.valid_selection()
@@ -239,9 +232,9 @@ impl Component for BranchListComponent {
                         self.merge_branch()
                     );
                     self.hide();
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::Update(NeedsUpdate::ALL),
-                    );
+                    self.queue.push(InternalEvent::Update(
+                        NeedsUpdate::ALL,
+                    ));
                 } else if e == self.key_config.tab_toggle {
                     self.local = !self.local;
                     self.update_branches()?;
@@ -506,9 +499,7 @@ impl BranchListComponent {
             self.update_branches()?;
         }
 
-        self.queue
-            .borrow_mut()
-            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+        self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
         Ok(())
     }

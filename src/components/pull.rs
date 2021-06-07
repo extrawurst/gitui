@@ -136,12 +136,9 @@ impl PullComponent {
                 } else {
                     self.pending = false;
                     self.hide();
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "fetch failed:\n{}",
-                            err
-                        )),
-                    );
+                    self.queue.push(InternalEvent::ShowErrorMsg(
+                        format!("fetch failed:\n{}", err),
+                    ));
                 }
             }
         }
@@ -186,13 +183,13 @@ impl PullComponent {
     }
 
     fn confirm_merge(&mut self, incoming: usize) {
-        self.queue.borrow_mut().push_back(
-            InternalEvent::ConfirmAction(Action::PullMerge {
+        self.queue.push(InternalEvent::ConfirmAction(
+            Action::PullMerge {
                 incoming,
                 rebase: sync::config_is_pull_rebase(CWD)
                     .unwrap_or_default(),
-            }),
-        );
+            },
+        ));
         self.hide();
     }
 }

@@ -85,5 +85,28 @@ pub enum InternalEvent {
     OpenFileTree(CommitId),
 }
 
-///
-pub type Queue = Rc<RefCell<VecDeque<InternalEvent>>>;
+/// single threaded simple queue for components to communicate with each other
+#[derive(Clone)]
+pub struct Queue {
+    data: Rc<RefCell<VecDeque<InternalEvent>>>,
+}
+
+impl Queue {
+    pub fn new() -> Self {
+        Self {
+            data: Rc::new(RefCell::new(VecDeque::new())),
+        }
+    }
+
+    pub fn push(&self, ev: InternalEvent) {
+        self.data.borrow_mut().push_back(ev);
+    }
+
+    pub fn pop(&self) -> Option<InternalEvent> {
+        self.data.borrow_mut().pop_front()
+    }
+
+    pub fn clear(&self) {
+        self.data.borrow_mut().clear();
+    }
+}

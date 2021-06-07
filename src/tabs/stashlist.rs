@@ -59,17 +59,12 @@ impl StashList {
         if let Some(e) = self.list.selected_entry() {
             match sync::stash_apply(CWD, e.id, false) {
                 Ok(_) => {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::TabSwitch);
+                    self.queue.push(InternalEvent::TabSwitch);
                 }
                 Err(e) => {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "stash apply error:\n{}",
-                            e,
-                        )),
-                    );
+                    self.queue.push(InternalEvent::ShowErrorMsg(
+                        format!("stash apply error:\n{}", e,),
+                    ));
                 }
             }
         }
@@ -77,25 +72,23 @@ impl StashList {
 
     fn drop_stash(&mut self) {
         if let Some(e) = self.list.selected_entry() {
-            self.queue.borrow_mut().push_back(
-                InternalEvent::ConfirmAction(Action::StashDrop(e.id)),
-            );
+            self.queue.push(InternalEvent::ConfirmAction(
+                Action::StashDrop(e.id),
+            ));
         }
     }
 
     fn pop_stash(&mut self) {
         if let Some(e) = self.list.selected_entry() {
-            self.queue.borrow_mut().push_back(
-                InternalEvent::ConfirmAction(Action::StashPop(e.id)),
-            );
+            self.queue.push(InternalEvent::ConfirmAction(
+                Action::StashPop(e.id),
+            ));
         }
     }
 
     fn inspect(&mut self) {
         if let Some(e) = self.list.selected_entry() {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::InspectCommit(e.id, None));
+            self.queue.push(InternalEvent::InspectCommit(e.id, None));
         }
     }
 
@@ -115,18 +108,13 @@ impl StashList {
     fn pop(&self, id: CommitId) -> bool {
         match sync::stash_pop(CWD, id) {
             Ok(_) => {
-                self.queue
-                    .borrow_mut()
-                    .push_back(InternalEvent::TabSwitch);
+                self.queue.push(InternalEvent::TabSwitch);
                 true
             }
             Err(e) => {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ShowErrorMsg(format!(
-                        "stash pop error:\n{}",
-                        e,
-                    )),
-                );
+                self.queue.push(InternalEvent::ShowErrorMsg(
+                    format!("stash pop error:\n{}", e,),
+                ));
                 true
             }
         }

@@ -187,12 +187,10 @@ impl CommitComponent {
     fn commit_with_msg(&mut self, msg: String) -> Result<()> {
         if let HookResult::NotOk(e) = sync::hooks_pre_commit(CWD)? {
             log::error!("pre-commit hook error: {}", e);
-            self.queue.borrow_mut().push_back(
-                InternalEvent::ShowErrorMsg(format!(
-                    "pre-commit hook error:\n{}",
-                    e
-                )),
-            );
+            self.queue.push(InternalEvent::ShowErrorMsg(format!(
+                "pre-commit hook error:\n{}",
+                e
+            )));
             return Ok(());
         }
         let mut msg = msg;
@@ -200,12 +198,10 @@ impl CommitComponent {
             sync::hooks_commit_msg(CWD, &mut msg)?
         {
             log::error!("commit-msg hook error: {}", e);
-            self.queue.borrow_mut().push_back(
-                InternalEvent::ShowErrorMsg(format!(
-                    "commit-msg hook error:\n{}",
-                    e
-                )),
-            );
+            self.queue.push(InternalEvent::ShowErrorMsg(format!(
+                "commit-msg hook error:\n{}",
+                e
+            )));
             return Ok(());
         }
 
@@ -217,30 +213,24 @@ impl CommitComponent {
 
         if let Err(e) = res {
             log::error!("commit error: {}", &e);
-            self.queue.borrow_mut().push_back(
-                InternalEvent::ShowErrorMsg(format!(
-                    "commit failed:\n{}",
-                    &e
-                )),
-            );
+            self.queue.push(InternalEvent::ShowErrorMsg(format!(
+                "commit failed:\n{}",
+                &e
+            )));
             return Ok(());
         }
 
         if let HookResult::NotOk(e) = sync::hooks_post_commit(CWD)? {
             log::error!("post-commit hook error: {}", e);
-            self.queue.borrow_mut().push_back(
-                InternalEvent::ShowErrorMsg(format!(
-                    "post-commit hook error:\n{}",
-                    e
-                )),
-            );
+            self.queue.push(InternalEvent::ShowErrorMsg(format!(
+                "post-commit hook error:\n{}",
+                e
+            )));
         }
 
         self.hide();
 
-        self.queue
-            .borrow_mut()
-            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+        self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
         Ok(())
     }
@@ -349,7 +339,7 @@ impl Component for CommitComponent {
                 {
                     self.amend()?;
                 } else if e == self.key_config.open_commit_editor {
-                    self.queue.borrow_mut().push_back(
+                    self.queue.push(
                         InternalEvent::OpenExternalEditor(None),
                     );
                     self.hide();

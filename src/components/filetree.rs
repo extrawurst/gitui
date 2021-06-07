@@ -129,9 +129,7 @@ impl FileTreeComponent {
 
         if changed {
             if let Some(ref queue) = self.queue {
-                queue.borrow_mut().push_back(InternalEvent::Update(
-                    NeedsUpdate::DIFF,
-                ));
+                queue.push(InternalEvent::Update(NeedsUpdate::DIFF));
             }
         }
 
@@ -409,11 +407,9 @@ impl Component for FileTreeComponent {
                 return if e == self.key_config.blame {
                     match (&self.queue, self.selection_file()) {
                         (Some(queue), Some(status_item)) => {
-                            queue.borrow_mut().push_back(
-                                InternalEvent::BlameFile(
-                                    status_item.path,
-                                ),
-                            );
+                            queue.push(InternalEvent::BlameFile(
+                                status_item.path,
+                            ));
 
                             Ok(EventState::Consumed)
                         }

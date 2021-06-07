@@ -20,7 +20,6 @@ use crossbeam_channel::Sender;
 pub struct FilesTab {
     visible: bool,
     theme: SharedTheme,
-    queue: Queue,
     key_config: SharedKeyConfig,
     files: RevisionFilesComponent,
 }
@@ -35,7 +34,6 @@ impl FilesTab {
     ) -> Self {
         Self {
             visible: false,
-            queue: queue.clone(),
             files: RevisionFilesComponent::new(
                 queue,
                 sender,

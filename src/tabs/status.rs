@@ -422,12 +422,10 @@ impl Status {
     /// called after confirmation
     pub fn reset(&mut self, item: &ResetItem) -> bool {
         if let Err(e) = sync::reset_workdir(CWD, item.path.as_str()) {
-            self.queue.borrow_mut().push_back(
-                InternalEvent::ShowErrorMsg(format!(
-                    "reset failed:\n{}",
-                    e
-                )),
-            );
+            self.queue.push(InternalEvent::ShowErrorMsg(format!(
+                "reset failed:\n{}",
+                e
+            )));
 
             false
         } else {
@@ -446,15 +444,12 @@ impl Status {
         if self.can_push() {
             if let Some(branch) = self.git_branch_name.last() {
                 if force {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ConfirmAction(
-                            Action::ForcePush(branch, force),
-                        ),
-                    );
+                    self.queue.push(InternalEvent::ConfirmAction(
+                        Action::ForcePush(branch, force),
+                    ));
                 } else {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::Push(branch, force),
-                    );
+                    self.queue
+                        .push(InternalEvent::Push(branch, force));
                 }
             }
         }
@@ -462,9 +457,7 @@ impl Status {
 
     fn pull(&self) {
         if let Some(branch) = self.git_branch_name.last() {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::Pull(branch));
+            self.queue.push(InternalEvent::Pull(branch));
         }
     }
 
@@ -646,7 +639,7 @@ impl Component for Status {
                         || self.is_focus_on_diff())
                 {
                     if let Some((path, _)) = self.selected_path() {
-                        self.queue.borrow_mut().push_back(
+                        self.queue.push(
                             InternalEvent::OpenExternalEditor(Some(
                                 path,
                             )),
@@ -681,9 +674,7 @@ impl Component for Status {
                 } else if k == self.key_config.select_branch
                     && !self.is_focus_on_diff()
                 {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::SelectBranch);
+                    self.queue.push(InternalEvent::SelectBranch);
                     Ok(EventState::Consumed)
                 } else if k == self.key_config.force_push
                     && !self.is_focus_on_diff()
@@ -705,18 +696,16 @@ impl Component for Status {
                     && !self.is_focus_on_diff()
                 {
                     self.undo_last_commit();
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::Update(NeedsUpdate::ALL),
-                    );
+                    self.queue.push(InternalEvent::Update(
+                        NeedsUpdate::ALL,
+                    ));
                     Ok(EventState::Consumed)
                 } else if k == self.key_config.abort_merge
                     && Self::can_abort_merge()
                 {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ConfirmAction(
-                            Action::AbortMerge,
-                        ),
-                    );
+                    self.queue.push(InternalEvent::ConfirmAction(
+                        Action::AbortMerge,
+                    ));
 
                     Ok(EventState::Consumed)
                 } else {

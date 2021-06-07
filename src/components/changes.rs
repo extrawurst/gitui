@@ -88,9 +88,8 @@ impl ChangesComponent {
                     };
 
                     if self.is_empty() {
-                        self.queue.borrow_mut().push_back(
-                            InternalEvent::StatusLastFileMoved,
-                        );
+                        self.queue
+                            .push(InternalEvent::StatusLastFileMoved);
                     }
 
                     return Ok(true);
@@ -116,9 +115,7 @@ impl ChangesComponent {
     fn index_add_all(&mut self) -> Result<()> {
         sync::stage_add_all(CWD, "*")?;
 
-        self.queue
-            .borrow_mut()
-            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+        self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
         Ok(())
     }
@@ -126,9 +123,7 @@ impl ChangesComponent {
     fn stage_remove_all(&mut self) -> Result<()> {
         sync::reset_stage(CWD, "*")?;
 
-        self.queue
-            .borrow_mut()
-            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+        self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
         Ok(())
     }
@@ -137,14 +132,12 @@ impl ChangesComponent {
         if let Some(tree_item) = self.selection() {
             let is_folder =
                 matches!(tree_item.kind, FileTreeItemKind::Path(_));
-            self.queue.borrow_mut().push_back(
-                InternalEvent::ConfirmAction(Action::Reset(
-                    ResetItem {
-                        path: tree_item.info.full_path,
-                        is_folder,
-                    },
-                )),
-            );
+            self.queue.push(InternalEvent::ConfirmAction(
+                Action::Reset(ResetItem {
+                    path: tree_item.info.full_path,
+                    is_folder,
+                }),
+            ));
 
             return true;
         }
@@ -156,16 +149,15 @@ impl ChangesComponent {
             if let Err(e) =
                 sync::add_to_ignore(CWD, &tree_item.info.full_path)
             {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::ShowErrorMsg(format!(
+                self.queue.push(InternalEvent::ShowErrorMsg(
+                    format!(
                         "ignore error:\n{}\nfile:\n{:?}",
                         e, tree_item.info.full_path
-                    )),
-                );
+                    ),
+                ));
             } else {
-                self.queue.borrow_mut().push_back(
-                    InternalEvent::Update(NeedsUpdate::ALL),
-                );
+                self.queue
+                    .push(InternalEvent::Update(NeedsUpdate::ALL));
 
                 return true;
             }
@@ -253,9 +245,7 @@ impl Component for ChangesComponent {
                     && !self.is_working_dir
                     && !self.is_empty()
                 {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::OpenCommit);
+                    self.queue.push(InternalEvent::OpenCommit);
                     Ok(EventState::Consumed)
                 } else if e == self.key_config.enter {
                     try_or_popup!(
@@ -264,9 +254,9 @@ impl Component for ChangesComponent {
                         self.index_add_remove()
                     );
 
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::Update(NeedsUpdate::ALL),
-                    );
+                    self.queue.push(InternalEvent::Update(
+                        NeedsUpdate::ALL,
+                    ));
                     Ok(EventState::Consumed)
                 } else if e == self.key_config.status_stage_all
                     && !self.is_empty()
@@ -280,9 +270,8 @@ impl Component for ChangesComponent {
                     } else {
                         self.stage_remove_all()?;
                     }
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::StatusLastFileMoved,
-                    );
+                    self.queue
+                        .push(InternalEvent::StatusLastFileMoved);
                     Ok(EventState::Consumed)
                 } else if e == self.key_config.status_reset_item
                     && self.is_working_dir

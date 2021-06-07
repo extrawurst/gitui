@@ -126,9 +126,7 @@ impl ResetComponent {
     ///
     pub fn confirm(&mut self) {
         if let Some(a) = self.target.take() {
-            self.queue
-                .borrow_mut()
-                .push_back(InternalEvent::ConfirmedAction(a));
+            self.queue.push(InternalEvent::ConfirmedAction(a));
         }
 
         self.hide();

@@ -126,19 +126,16 @@ impl TagCommitComponent {
                     self.input.clear();
                     self.hide();
 
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::Update(NeedsUpdate::ALL),
-                    );
+                    self.queue.push(InternalEvent::Update(
+                        NeedsUpdate::ALL,
+                    ));
                 }
                 Err(e) => {
                     self.hide();
                     log::error!("e: {}", e,);
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::ShowErrorMsg(format!(
-                            "tag error:\n{}",
-                            e,
-                        )),
-                    );
+                    self.queue.push(InternalEvent::ShowErrorMsg(
+                        format!("tag error:\n{}", e,),
+                    ));
                 }
             }
         }

@@ -13,12 +13,10 @@ macro_rules! try_or_popup {
     ($self:ident, $msg:literal, $e:expr) => {
         if let Err(err) = $e {
             ::log::error!("{} {}", $msg, err);
-            $self.queue.borrow_mut().push_back(
-                InternalEvent::ShowErrorMsg(format!(
-                    "{}\n{}",
-                    $msg, err
-                )),
-            );
+            $self.queue.push(InternalEvent::ShowErrorMsg(format!(
+                "{}\n{}",
+                $msg, err
+            )));
         }
     };
 }

@@ -209,7 +209,7 @@ impl Component for BlameFileComponent {
                     return self.selected_commit().map_or(
                         Ok(EventState::NotConsumed),
                         |id| {
-                            self.queue.borrow_mut().push_back(
+                            self.queue.push(
                                 InternalEvent::InspectCommit(
                                     id, None,
                                 ),

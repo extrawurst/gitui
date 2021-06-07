@@ -491,10 +491,7 @@ impl DiffComponent {
     }
 
     fn queue_update(&self) {
-        self.queue
-            .as_ref()
-            .borrow_mut()
-            .push_back(InternalEvent::Update(NeedsUpdate::ALL));
+        self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
     }
 
     fn reset_hunk(&self) {
@@ -502,23 +499,23 @@ impl DiffComponent {
             if let Some(hunk) = self.selected_hunk {
                 let hash = diff.hunks[hunk].header_hash;
 
-                self.queue.as_ref().borrow_mut().push_back(
-                    InternalEvent::ConfirmAction(Action::ResetHunk(
+                self.queue.push(InternalEvent::ConfirmAction(
+                    Action::ResetHunk(
                         self.current.path.clone(),
                         hash,
-                    )),
-                );
+                    ),
+                ));
             }
         }
     }
 
     fn reset_lines(&self) {
-        self.queue.as_ref().borrow_mut().push_back(
-            InternalEvent::ConfirmAction(Action::ResetLines(
+        self.queue.push(InternalEvent::ConfirmAction(
+            Action::ResetLines(
                 self.current.path.clone(),
                 self.selected_lines(),
-            )),
-        );
+            ),
+        ));
     }
 
     fn stage_lines(&self) {
@@ -569,12 +566,12 @@ impl DiffComponent {
     }
 
     fn reset_untracked(&self) {
-        self.queue.as_ref().borrow_mut().push_back(
-            InternalEvent::ConfirmAction(Action::Reset(ResetItem {
+        self.queue.push(InternalEvent::ConfirmAction(Action::Reset(
+            ResetItem {
                 path: self.current.path.clone(),
                 is_folder: false,
-            })),
-        );
+            },
+        )));
     }
 
     fn stage_unstage_hunk(&mut self) -> Result<()> {

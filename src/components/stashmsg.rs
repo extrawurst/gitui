@@ -77,11 +77,9 @@ impl Component for StashMsgComponent {
                             self.input.clear();
                             self.hide();
 
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::Update(
-                                    NeedsUpdate::ALL,
-                                ),
-                            );
+                            self.queue.push(InternalEvent::Update(
+                                NeedsUpdate::ALL,
+                            ));
                         }
                         Err(e) => {
                             self.hide();
@@ -90,7 +88,7 @@ impl Component for StashMsgComponent {
                                 e,
                                 self.options
                             );
-                            self.queue.borrow_mut().push_back(
+                            self.queue.push(
                                 InternalEvent::ShowErrorMsg(format!(
                                     "stash error:\n{}\noptions:\n{:?}",
                                     e, self.options

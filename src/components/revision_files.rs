@@ -130,14 +130,12 @@ impl RevisionFilesComponent {
 
     fn blame(&self) -> bool {
         self.tree.selected_file().map_or(false, |file| {
-            self.queue.borrow_mut().push_back(
-                InternalEvent::BlameFile(
-                    file.full_path_str()
-                        .strip_prefix("./")
-                        .unwrap_or_default()
-                        .to_string(),
-                ),
-            );
+            self.queue.push(InternalEvent::BlameFile(
+                file.full_path_str()
+                    .strip_prefix("./")
+                    .unwrap_or_default()
+                    .to_string(),
+            ));
             true
         })
     }
