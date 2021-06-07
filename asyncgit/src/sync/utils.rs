@@ -149,6 +149,21 @@ pub fn stage_add_all(repo_path: &str, pattern: &str) -> Result<()> {
     Ok(())
 }
 
+/// Undo last commit in repo
+pub fn undo_last_commit(repo_path: &str) -> Result<()> {
+    let repo = repo(repo_path)?;
+    let previous_commit = repo.revparse_single("HEAD~")?;
+
+    Repository::reset(
+        &repo,
+        &previous_commit,
+        git2::ResetType::Soft,
+        None,
+    )?;
+
+    Ok(())
+}
+
 /// stage a removed file
 pub fn stage_addremoved(repo_path: &str, path: &Path) -> Result<()> {
     scope_time!("stage_addremoved");
@@ -206,9 +221,11 @@ mod tests {
     use super::*;
     use crate::sync::{
         commit,
+        diff::get_diff,
         status::{get_status, StatusType},
         tests::{
-            debug_cmd_print, get_statuses, repo_init, repo_init_empty,
+            debug_cmd_print, get_statuses, repo_init,
+            repo_init_empty, write_commit_file,
         },
     };
     use std::{
@@ -280,6 +297,43 @@ mod tests {
         assert_eq!(status_count(StatusType::Stage), 2);
 
         Ok(())
+    }
+
+    #[test]
+    fn test_undo_commit_empty_repo() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        // expect to fail
+        assert!(undo_last_commit(repo_path).is_err());
+    }
+
+    #[test]
+    fn test_undo_commit() {
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        // write commit file test.txt
+        let c1 =
+            write_commit_file(&repo, "test.txt", "content1", "c1");
+        let _c2 =
+            write_commit_file(&repo, "test.txt", "content2", "c2");
+        assert!(undo_last_commit(repo_path).is_ok());
+
+        // Make sure that HEAD points to c1
+        assert_eq!(c1, get_head_repo(&repo).unwrap());
+
+        // Make sure that now we have 1 file staged
+        assert_eq!(get_statuses(repo_path), (0, 1));
+
+        // And that file is test.txt
+        let diff = get_diff(repo_path, "test.txt", true).unwrap();
+        assert_eq!(
+            diff.hunks[0].lines[0].content,
+            String::from("@@ -1 +1 @@\n")
+        );
     }
 
     #[test]

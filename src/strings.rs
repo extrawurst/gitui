@@ -579,6 +579,16 @@ pub mod commands {
             CMD_GROUP_GENERAL,
         )
     }
+    pub fn undo_commit(key_config: &SharedKeyConfig) -> CommandText {
+        CommandText::new(
+            format!(
+                "Undo Commit [{}]",
+                key_config.get_hint(key_config.undo_commit),
+            ),
+            "undo last commit",
+            CMD_GROUP_GENERAL,
+        )
+    }
     pub fn commit_open(key_config: &SharedKeyConfig) -> CommandText {
         CommandText::new(
             format!(

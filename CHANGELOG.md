@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Added
+- undo-last-commit command under `[U]` key [[@remique](https://github.com/remique)] ([#758](https://github.com/extrawurst/gitui/issues/758))
+
 ## Fixed
 - openssl vendoring broken on macos ([#772](https://github.com/extrawurst/gitui/issues/772))
 
