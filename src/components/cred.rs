@@ -80,22 +80,24 @@ impl Component for CredComponent {
     fn commands(
         &self,
         out: &mut Vec<CommandInfo>,
-        _force_all: bool,
+        force_all: bool,
     ) -> CommandBlocking {
-        if self.is_visible() {
-            out.clear();
-        }
+        if self.is_visible() || force_all {
+            if !force_all {
+                out.clear();
+            }
 
-        out.push(CommandInfo::new(
-            strings::commands::validate_msg(&self.key_config),
-            true,
-            self.visible,
-        ));
-        out.push(CommandInfo::new(
-            strings::commands::close_popup(&self.key_config),
-            true,
-            self.visible,
-        ));
+            out.push(CommandInfo::new(
+                strings::commands::validate_msg(&self.key_config),
+                true,
+                true,
+            ));
+            out.push(CommandInfo::new(
+                strings::commands::close_popup(&self.key_config),
+                true,
+                true,
+            ));
+        }
 
         visibility_blocking(self)
     }

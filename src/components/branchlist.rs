@@ -102,7 +102,9 @@ impl Component for BranchListComponent {
         force_all: bool,
     ) -> CommandBlocking {
         if self.visible || force_all {
-            out.clear();
+            if !force_all {
+                out.clear();
+            }
 
             out.push(CommandInfo::new(
                 strings::commands::scroll(&self.key_config),

@@ -204,20 +204,22 @@ impl Component for PushTagsComponent {
         out: &mut Vec<CommandInfo>,
         force_all: bool,
     ) -> CommandBlocking {
-        if self.is_visible() {
-            out.clear();
-        }
+        if self.is_visible() || force_all {
+            if !force_all {
+                out.clear();
+            }
 
-        if self.input_cred.is_visible() {
-            self.input_cred.commands(out, force_all)
-        } else {
-            out.push(CommandInfo::new(
-                strings::commands::close_msg(&self.key_config),
-                !self.pending,
-                self.visible,
-            ));
-            visibility_blocking(self)
+            if self.input_cred.is_visible() {
+                return self.input_cred.commands(out, force_all);
+            } else {
+                out.push(CommandInfo::new(
+                    strings::commands::close_msg(&self.key_config),
+                    !self.pending,
+                    self.visible,
+                ));
+            }
         }
+        visibility_blocking(self)
     }
 
     fn event(&mut self, ev: Event) -> Result<EventState> {
