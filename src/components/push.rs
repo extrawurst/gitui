@@ -254,13 +254,12 @@ impl Component for PushComponent {
 
             if self.input_cred.is_visible() {
                 return self.input_cred.commands(out, force_all);
-            } else {
-                out.push(CommandInfo::new(
-                    strings::commands::close_msg(&self.key_config),
-                    !self.pending,
-                    self.visible,
-                ));
             }
+            out.push(CommandInfo::new(
+                strings::commands::close_msg(&self.key_config),
+                !self.pending,
+                self.visible,
+            ));
         }
 
         visibility_blocking(self)
