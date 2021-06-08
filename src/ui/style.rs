@@ -48,6 +48,8 @@ pub struct Theme {
     #[serde(with = "Color")]
     commit_author: Color,
     #[serde(with = "Color")]
+    commit_local_branch: Color,
+    #[serde(with = "Color")]
     danger_fg: Color,
     #[serde(with = "Color")]
     push_gauge_bg: Color,
@@ -88,6 +90,17 @@ impl Theme {
         } else {
             branch
         }
+    }
+
+    pub fn branch_in_log(&self, selected: bool) -> Style {
+        Style::default()
+            .fg(self.commit_local_branch)
+            .add_modifier(Modifier::BOLD)
+            .bg(if selected {
+                self.selection_bg
+            } else {
+                Color::Reset
+            })
     }
 
     pub fn tab(&self, selected: bool) -> Style {
@@ -320,6 +333,7 @@ impl Default for Theme {
             commit_hash: Color::Magenta,
             commit_time: Color::LightCyan,
             commit_author: Color::Green,
+            commit_local_branch: Color::LightGreen,
             danger_fg: Color::Red,
             push_gauge_bg: Color::Blue,
             push_gauge_fg: Color::Reset,
