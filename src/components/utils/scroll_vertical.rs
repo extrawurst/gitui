@@ -65,8 +65,12 @@ impl VerticalScroll {
         );
         self.top.set(new_top);
 
-        let new_max = selection_max.saturating_sub(visual_height);
-        self.max_top.set(new_max);
+        if visual_height == 0 {
+            self.max_top.set(0);
+        } else {
+            let new_max = selection_max.saturating_sub(visual_height);
+            self.max_top.set(new_max);
+        }
 
         new_top
     }
@@ -101,6 +105,9 @@ const fn calc_scroll_top(
     selection: usize,
     selection_max: usize,
 ) -> usize {
+    if height_in_lines == 0 {
+        return 0;
+    }
     if selection_max <= height_in_lines {
         return 0;
     }
@@ -122,5 +129,10 @@ mod tests {
     #[test]
     fn test_scroll_no_scroll_to_top() {
         assert_eq!(calc_scroll_top(1, 10, 4, 4), 0);
+    }
+
+    #[test]
+    fn test_scroll_zero_height() {
+        assert_eq!(calc_scroll_top(4, 0, 4, 3), 0);
     }
 }

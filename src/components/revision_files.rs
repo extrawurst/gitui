@@ -218,21 +218,22 @@ impl DrawableComponent for RevisionFilesComponent {
         f: &mut Frame<B>,
         area: Rect,
     ) -> Result<()> {
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Percentage(40),
-                    Constraint::Percentage(60),
-                ]
-                .as_ref(),
-            )
-            .split(area);
+        if self.is_visible() {
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints(
+                    [
+                        Constraint::Percentage(40),
+                        Constraint::Percentage(60),
+                    ]
+                    .as_ref(),
+                )
+                .split(area);
 
-        self.draw_tree(f, chunks[0]);
+            self.draw_tree(f, chunks[0]);
 
-        self.current_file.draw(f, chunks[1])?;
-
+            self.current_file.draw(f, chunks[1])?;
+        }
         Ok(())
     }
 }

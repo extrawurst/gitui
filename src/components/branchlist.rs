@@ -51,7 +51,7 @@ impl DrawableComponent for BranchListComponent {
         f: &mut Frame<B>,
         rect: Rect,
     ) -> Result<()> {
-        if self.visible {
+        if self.is_visible() {
             const PERCENT_SIZE: Size = Size::new(80, 50);
             const MIN_SIZE: Size = Size::new(60, 20);
 
