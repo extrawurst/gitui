@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
     asyncjob::AsyncSingleJob,
-    remotes::AsyncRemoteTagsJob,
+    remote_tags::AsyncRemoteTagsJob,
     sync::cred::{extract_username_password, need_username_password},
     sync::{get_tags_with_metadata, TagWithMetadata},
     AsyncGitNotification, CWD,

@@ -33,8 +33,7 @@ mod progress;
 mod push;
 mod push_tags;
 pub mod remote_progress;
-///
-pub mod remotes;
+pub mod remote_tags;
 mod revlog;
 mod status;
 pub mod sync;
