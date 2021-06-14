@@ -13,7 +13,10 @@ use anyhow::Result;
 use asyncgit::{
     asyncjob::AsyncSingleJob,
     remote_tags::AsyncRemoteTagsJob,
-    sync::cred::{extract_username_password, need_username_password},
+    sync::cred::{
+        extract_username_password, need_username_password,
+        BasicAuthCredential,
+    },
     sync::{get_tags_with_metadata, TagWithMetadata},
     AsyncGitNotification, CWD,
 };
@@ -41,6 +44,7 @@ pub struct TagListComponent {
     table_state: std::cell::Cell<TableState>,
     current_height: std::cell::Cell<usize>,
     missing_remote_tags: Option<Vec<String>>,
+    basic_credential: Option<BasicAuthCredential>,
     async_remote_tags:
         AsyncSingleJob<AsyncRemoteTagsJob, AsyncGitNotification>,
     key_config: SharedKeyConfig,
@@ -161,6 +165,11 @@ impl Component for TagListComponent {
                 self.valid_selection(),
                 true,
             ));
+            out.push(CommandInfo::new(
+                strings::commands::push_tags(&self.key_config),
+                true,
+                true,
+            ));
         }
         visibility_blocking(self)
     }
@@ -212,6 +221,8 @@ impl Component for TagListComponent {
                             Ok(EventState::Consumed)
                         },
                     );
+                } else if key == self.key_config.push {
+                    self.queue.push(InternalEvent::PushTags);
                 }
             }
 
@@ -250,6 +261,7 @@ impl TagListComponent {
             visible: false,
             table_state: std::cell::Cell::new(TableState::default()),
             current_height: std::cell::Cell::new(0),
+            basic_credential: None,
             missing_remote_tags: None,
             async_remote_tags: AsyncSingleJob::new(
                 sender.clone(),
@@ -264,8 +276,6 @@ impl TagListComponent {
         self.table_state.get_mut().select(Some(0));
         self.show()?;
 
-        self.update_tags()?;
-
         let basic_credential = if need_username_password()? {
             let credential = extract_username_password()?;
 
@@ -278,8 +288,10 @@ impl TagListComponent {
             None
         };
 
-        self.async_remote_tags
-            .spawn(AsyncRemoteTagsJob::new(basic_credential));
+        self.basic_credential = basic_credential;
+
+        self.update_tags()?;
+        self.update_missing_remote_tags();
 
         Ok(())
     }
@@ -293,6 +305,8 @@ impl TagListComponent {
                         Some(missing_remote_tags);
                 }
             }
+        } else if event == AsyncGitNotification::PushTags {
+            self.update_missing_remote_tags();
         }
     }
 
@@ -308,6 +322,12 @@ impl TagListComponent {
         self.tags = Some(tags);
 
         Ok(())
+    }
+
+    pub fn update_missing_remote_tags(&mut self) {
+        self.async_remote_tags.spawn(AsyncRemoteTagsJob::new(
+            self.basic_credential.clone(),
+        ));
     }
 
     ///
