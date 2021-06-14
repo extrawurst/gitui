@@ -325,9 +325,10 @@ pub mod commands {
     ) -> CommandText {
         CommandText::new(
             format!(
-                "Tab [{}{}{}{}]",
+                "Tab [{}{}{}{}{}]",
                 key_config.get_hint(key_config.tab_status),
                 key_config.get_hint(key_config.tab_log),
+                key_config.get_hint(key_config.tab_files),
                 key_config.get_hint(key_config.tab_stashing),
                 key_config.get_hint(key_config.tab_stashes),
             ),
