@@ -26,8 +26,8 @@
 
     open_help: ( code: F(1), modifiers: ( bits: 0,),),
 
-    exit: ( code: Char('Q'), modifiers: ( bits: 1,),),
-    exit_popup: ( code: Esc, modifiers: ( bits: 0,),),
+    exit: ( code: Char('q'), modifiers: ( bits: 0,),),
+    exit_popup: ( code: Char('q'), modifiers: ( bits: 0,),),
 
     open_commit: ( code: Char('c'), modifiers: ( bits: 0,),),
     // Note: the shift modifier does not work for open_commit_editor
