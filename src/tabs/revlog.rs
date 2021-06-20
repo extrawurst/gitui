@@ -60,7 +60,7 @@ impl Revlog {
                 theme,
                 key_config.clone(),
             ),
-            git_log: AsyncLog::new(sender),
+            git_log: AsyncLog::new(sender, None),
             git_tags: AsyncTags::new(sender),
             visible: false,
             branch_name: cached::BranchName::new(CWD),
