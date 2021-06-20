@@ -1,6 +1,6 @@
 use crate::{
     error::Result,
-    sync::{utils::repo, CommitId, LogWalker},
+    sync::{utils::repo, CommitId, LogWalker, LogWalkerFilter},
     AsyncGitNotification, CWD,
 };
 use crossbeam_channel::Sender;
@@ -32,6 +32,7 @@ pub struct AsyncLog {
     sender: Sender<AsyncGitNotification>,
     pending: Arc<AtomicBool>,
     background: Arc<AtomicBool>,
+    filter: Option<LogWalkerFilter>,
 }
 
 static LIMIT_COUNT: usize = 3000;
@@ -40,12 +41,16 @@ static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
 impl AsyncLog {
     ///
-    pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+    pub fn new(
+        sender: &Sender<AsyncGitNotification>,
+        filter: Option<LogWalkerFilter>,
+    ) -> Self {
         Self {
             current: Arc::new(Mutex::new(Vec::new())),
             sender: sender.clone(),
             pending: Arc::new(AtomicBool::new(false)),
             background: Arc::new(AtomicBool::new(false)),
+            filter,
         }
     }
 
@@ -126,6 +131,8 @@ impl AsyncLog {
 
         self.pending.store(true, Ordering::Relaxed);
 
+        let filter = self.filter.clone();
+
         rayon_core::spawn(move || {
             scope_time!("async::revlog");
 
@@ -133,6 +140,7 @@ impl AsyncLog {
                 &arc_current,
                 &arc_background,
                 &sender,
+                filter,
             )
             .expect("failed to fetch");
 
@@ -148,10 +156,12 @@ impl AsyncLog {
         arc_current: &Arc<Mutex<Vec<CommitId>>>,
         arc_background: &Arc<AtomicBool>,
         sender: &Sender<AsyncGitNotification>,
+        filter: Option<LogWalkerFilter>,
     ) -> Result<()> {
         let mut entries = Vec::with_capacity(LIMIT_COUNT);
         let r = repo(CWD)?;
-        let mut walker = LogWalker::new(&r, LIMIT_COUNT)?;
+        let mut walker =
+            LogWalker::new(&r, LIMIT_COUNT)?.filter(filter);
         loop {
             entries.clear();
             let res_is_err = walker.read(&mut entries).is_err();

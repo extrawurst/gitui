@@ -4,6 +4,7 @@ use git2::{Commit, Oid, Repository};
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashSet},
+    sync::Arc,
 };
 
 struct TimeOrderedCommit<'a>(Commit<'a>);
@@ -28,8 +29,10 @@ impl<'a> Ord for TimeOrderedCommit<'a> {
     }
 }
 
-type LogWalkerFilter =
-    Box<dyn Fn(&Repository, &CommitId) -> Result<bool>>;
+///
+pub type LogWalkerFilter = Arc<
+    Box<dyn Fn(&Repository, &CommitId) -> Result<bool> + Send + Sync>,
+>;
 
 ///
 pub struct LogWalker<'a> {
@@ -58,11 +61,8 @@ impl<'a> LogWalker<'a> {
     }
 
     ///
-    pub fn filter(self, filter: LogWalkerFilter) -> Self {
-        Self {
-            filter: Some(filter),
-            ..self
-        }
+    pub fn filter(self, filter: Option<LogWalkerFilter>) -> Self {
+        Self { filter, ..self }
     }
 
     ///
@@ -211,7 +211,7 @@ mod tests {
 
         let mut items = Vec::new();
         let mut walker = LogWalker::new(&repo, 100)?
-            .filter(Box::new(diff_contains_baz));
+            .filter(Some(Arc::new(Box::new(diff_contains_baz))));
         walker.read(&mut items).unwrap();
 
         assert_eq!(items.len(), 1);
@@ -238,7 +238,7 @@ mod tests {
 
         let mut items = Vec::new();
         let mut walker = LogWalker::new(&repo, 100)?
-            .filter(Box::new(diff_contains_bar));
+            .filter(Some(Arc::new(Box::new(diff_contains_bar))));
         walker.read(&mut items).unwrap();
 
         assert_eq!(items.len(), 0);

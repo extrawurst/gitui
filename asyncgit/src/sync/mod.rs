@@ -55,7 +55,7 @@ pub use hooks::{
 };
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
-pub use logwalker::LogWalker;
+pub use logwalker::{LogWalker, LogWalkerFilter};
 pub use merge::{
     abort_merge, merge_branch, merge_commit, merge_msg, mergehead_ids,
 };
