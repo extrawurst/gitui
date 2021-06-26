@@ -261,8 +261,7 @@ impl App {
         log::trace!("event: {:?}", ev);
 
         if let InputEvent::Input(ev) = ev {
-            if self.check_quit_key(ev) || self.check_weak_quit_key(ev)
-            {
+            if self.check_hard_exit(ev) || self.check_quit(ev) {
                 return Ok(());
             }
 
@@ -453,14 +452,12 @@ impl App {
         ]
     );
 
-    fn check_weak_quit_key(&mut self, ev: Event) -> bool {
+    fn check_quit(&mut self, ev: Event) -> bool {
         if self.any_popup_visible() {
             return false;
         }
         if let Event::Key(e) = ev {
-            if e == self.key_config.exit_if_no_popup
-                || e == self.key_config.exit_popup
-            {
+            if e == self.key_config.quit {
                 self.do_quit = true;
                 return true;
             }
@@ -468,7 +465,7 @@ impl App {
         false
     }
 
-    fn check_quit_key(&mut self, ev: Event) -> bool {
+    fn check_hard_exit(&mut self, ev: Event) -> bool {
         if let Event::Key(e) = ev {
             if e == self.key_config.exit {
                 self.do_quit = true;
