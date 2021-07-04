@@ -55,8 +55,10 @@ impl FileTree {
 
     ///
     pub fn collapse_but_root(&mut self) {
-        self.items.collapse(0, true);
-        self.items.expand(0, false);
+        if !self.is_empty() {
+            self.items.collapse(0, true);
+            self.items.expand(0, false);
+        }
     }
 
     /// iterates visible elements starting from `start_index_visual`

@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - openssl vendoring broken on macos ([#772](https://github.com/extrawurst/gitui/issues/772))
 - amend and other commands not shown in help ([#778](https://github.com/extrawurst/gitui/issues/778))
 - focus locked on commit msg details in narrow term sizes ([#780](https://github.com/extrawurst/gitui/issues/780))
+- non-utf8 file/path names broke filetree ([#802](https://github.com/extrawurst/gitui/issues/802))
 
 ## [0.16.1] - 2021-06-06
 

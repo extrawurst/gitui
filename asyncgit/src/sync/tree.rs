@@ -1,4 +1,4 @@
-use super::{utils::bytes2string, CommitId};
+use super::CommitId;
 use crate::{
     error::{Error, Result},
     sync::utils::repo,
@@ -101,7 +101,8 @@ fn tree_recurse(
     out.reserve(tree.len());
 
     for e in tree {
-        let path = path.join(bytes2string(e.name_bytes())?);
+        let p = String::from_utf8_lossy(e.name_bytes());
+        let path = path.join(p.to_string());
         match e.kind() {
             Some(git2::ObjectType::Blob) => {
                 let id = e.id();
