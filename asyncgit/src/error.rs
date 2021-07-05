@@ -1,3 +1,5 @@
+#![allow(renamed_and_removed_lints, clippy::unknown_clippy_lints)]
+
 use std::{num::TryFromIntError, string::FromUtf8Error};
 use thiserror::Error;
 
