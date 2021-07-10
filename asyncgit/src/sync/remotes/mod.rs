@@ -1,5 +1,6 @@
 //!
 
+mod callbacks;
 pub(crate) mod push;
 pub(crate) mod tags;
 
@@ -12,10 +13,10 @@ use crate::{
 };
 use crossbeam_channel::Sender;
 use git2::{BranchType, FetchOptions, Repository};
-use push::remote_callbacks;
 use scopetime::scope_time;
 use utils::bytes2string;
 
+pub use callbacks::Callbacks;
 pub use tags::tags_missing_remote;
 
 /// origin
@@ -93,10 +94,8 @@ pub(crate) fn fetch(
     let mut remote = repo.find_remote(&remote_name)?;
 
     let mut options = FetchOptions::new();
-    options.remote_callbacks(remote_callbacks(
-        progress_sender,
-        basic_credential,
-    ));
+    let callbacks = Callbacks::new(progress_sender, basic_credential);
+    options.remote_callbacks(callbacks.callbacks());
 
     remote.fetch(&[branch], Some(&mut options), None)?;
 
