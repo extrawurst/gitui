@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.16.1"
+version = "0.16.2"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
@@ -21,7 +21,7 @@ keywords = [
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
 asyncgit = { path = "./asyncgit", version = "0.16" }
-filetreelist = { path = "./filetreelist", version = "0.1" }
+filetreelist = { path = "./filetreelist", version = "0.2" }
 crossterm = { version = "0.19", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
 tui = { version = "0.15", default-features = false, features = ['crossterm', 'serde'] }
