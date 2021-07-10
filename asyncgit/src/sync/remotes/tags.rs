@@ -1,12 +1,10 @@
 //!
 
-use super::{
-    push::{remote_callbacks, AsyncProgress},
-    utils,
-};
+use super::{push::AsyncProgress, utils};
 use crate::{
-    error::Result, progress::ProgressPercent,
-    sync::cred::BasicAuthCredential,
+    error::Result,
+    progress::ProgressPercent,
+    sync::{cred::BasicAuthCredential, remotes::Callbacks},
 };
 use crossbeam_channel::Sender;
 use git2::{Direction, PushOptions};
@@ -54,9 +52,10 @@ fn remote_tag_refs(
 
     let repo = utils::repo(repo_path)?;
     let mut remote = repo.find_remote(remote)?;
+    let callbacks = Callbacks::new(None, basic_credential);
     let conn = remote.connect_auth(
         Direction::Fetch,
-        Some(remote_callbacks(None, basic_credential)),
+        Some(callbacks.callbacks()),
         None,
     )?;
 
@@ -127,10 +126,9 @@ pub fn push_tags(
 
     for (idx, tag) in tags_missing.into_iter().enumerate() {
         let mut options = PushOptions::new();
-        options.remote_callbacks(remote_callbacks(
-            None,
-            basic_credential.clone(),
-        ));
+        let callbacks =
+            Callbacks::new(None, basic_credential.clone());
+        options.remote_callbacks(callbacks.callbacks());
         options.packbuilder_parallelism(0);
         remote.push(&[tag.as_str()], Some(&mut options))?;
 
