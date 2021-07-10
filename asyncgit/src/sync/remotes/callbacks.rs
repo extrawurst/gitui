@@ -4,7 +4,10 @@ use super::push::ProgressNotification;
 use crate::{error::Result, sync::cred::BasicAuthCredential};
 use crossbeam_channel::Sender;
 use git2::{Cred, Error as GitError, RemoteCallbacks};
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
 
 ///
 #[derive(Default, Clone)]
@@ -18,6 +21,7 @@ pub struct Callbacks {
     sender: Option<Sender<ProgressNotification>>,
     basic_credential: Option<BasicAuthCredential>,
     stats: Arc<Mutex<CallbackStats>>,
+    first_call_to_credentials: Arc<AtomicBool>,
 }
 
 impl Callbacks {
@@ -32,6 +36,9 @@ impl Callbacks {
             sender,
             basic_credential,
             stats,
+            first_call_to_credentials: Arc::new(AtomicBool::new(
+                true,
+            )),
         }
     }
 
@@ -44,37 +51,17 @@ impl Callbacks {
     ///
     pub fn callbacks<'a>(&self) -> RemoteCallbacks<'a> {
         let mut callbacks = RemoteCallbacks::new();
-        let sender_clone = self.sender.clone();
+
+        let this = self.clone();
         callbacks.push_transfer_progress(
             move |current, total, bytes| {
-                log::debug!(
-                    "progress: {}/{} ({} B)",
-                    current,
-                    total,
-                    bytes,
-                );
-
-                sender_clone.clone().map(|sender| {
-                    sender.send(ProgressNotification::PushTransfer {
-                        current,
-                        total,
-                        bytes,
-                    })
-                });
+                this.push_transfer_progress(current, total, bytes);
             },
         );
 
-        let sender_clone = self.sender.clone();
+        let this = self.clone();
         callbacks.update_tips(move |name, a, b| {
-            log::debug!("update tips: '{}' [{}] [{}]", name, a, b);
-
-            sender_clone.clone().map(|sender| {
-                sender.send(ProgressNotification::UpdateTips {
-                    name: name.to_string(),
-                    a: a.into(),
-                    b: b.into(),
-                })
-            });
+            this.update_tips(name, a, b);
             true
         });
 
@@ -95,55 +82,14 @@ impl Callbacks {
             Ok(())
         });
 
-        let mut first_call_to_credentials = true;
-        let creds = self.basic_credential.clone();
-        // This boolean is used to avoid multiple calls to credentials callback.
-        // If credentials are bad, we don't ask the user to re-fill their creds. We push an error and they will be able to restart their action (for example a push) and retype their creds.
-        // This behavior is explained in a issue on git2-rs project : https://github.com/rust-lang/git2-rs/issues/347
-        // An implementation reference is done in cargo : https://github.com/rust-lang/cargo/blob/9fb208dddb12a3081230a5fd8f470e01df8faa25/src/cargo/sources/git/utils.rs#L588
-        // There is also a guide about libgit2 authentication : https://libgit2.org/docs/guides/authentication/
+        let this = self.clone();
         callbacks.credentials(
             move |url, username_from_url, allowed_types| {
-                log::debug!(
-                    "creds: '{}' {:?} ({:?})",
+                this.credentials(
                     url,
                     username_from_url,
-                    allowed_types
-                );
-                if first_call_to_credentials {
-                    first_call_to_credentials = false;
-                } else {
-                    return Err(GitError::from_str("Bad credentials."));
-                }
-
-                match &creds {
-                    _ if allowed_types.is_ssh_key() => {
-                        match username_from_url {
-                            Some(username) => {
-                                Cred::ssh_key_from_agent(username)
-                            }
-                            None => Err(GitError::from_str(
-                                " Couldn't extract username from url.",
-                            )),
-                        }
-                    }
-                    Some(BasicAuthCredential {
-                        username: Some(user),
-                        password: Some(pwd),
-                    }) if allowed_types.is_user_pass_plaintext() => {
-                        Cred::userpass_plaintext(user, pwd)
-                    }
-                    Some(BasicAuthCredential {
-                        username: Some(user),
-                        password: _,
-                    }) if allowed_types.is_username() => {
-                        Cred::username(user)
-                    }
-                    _ if allowed_types.is_default() => Cred::default(),
-                    _ => Err(GitError::from_str(
-                        "Couldn't find credentials",
-                    )),
-                }
+                    allowed_types,
+                )
             },
         );
 
@@ -195,5 +141,83 @@ impl Callbacks {
                 total_objects: p.total_objects(),
             })
         });
+    }
+
+    fn update_tips(&self, name: &str, a: git2::Oid, b: git2::Oid) {
+        log::debug!("update tips: '{}' [{}] [{}]", name, a, b);
+        self.sender.clone().map(|sender| {
+            sender.send(ProgressNotification::UpdateTips {
+                name: name.to_string(),
+                a: a.into(),
+                b: b.into(),
+            })
+        });
+    }
+
+    fn push_transfer_progress(
+        &self,
+        current: usize,
+        total: usize,
+        bytes: usize,
+    ) {
+        log::debug!("progress: {}/{} ({} B)", current, total, bytes,);
+        self.sender.clone().map(|sender| {
+            sender.send(ProgressNotification::PushTransfer {
+                current,
+                total,
+                bytes,
+            })
+        });
+    }
+
+    // If credentials are bad, we don't ask the user to re-fill their creds. We push an error and they will be able to restart their action (for example a push) and retype their creds.
+    // This behavior is explained in a issue on git2-rs project : https://github.com/rust-lang/git2-rs/issues/347
+    // An implementation reference is done in cargo : https://github.com/rust-lang/cargo/blob/9fb208dddb12a3081230a5fd8f470e01df8faa25/src/cargo/sources/git/utils.rs#L588
+    // There is also a guide about libgit2 authentication : https://libgit2.org/docs/guides/authentication/
+    fn credentials(
+        &self,
+        url: &str,
+        username_from_url: Option<&str>,
+        allowed_types: git2::CredentialType,
+    ) -> std::result::Result<Cred, GitError> {
+        log::debug!(
+            "creds: '{}' {:?} ({:?})",
+            url,
+            username_from_url,
+            allowed_types
+        );
+
+        // This boolean is used to avoid multiple calls to credentials callback.
+        if self.first_call_to_credentials.load(Ordering::Relaxed) {
+            self.first_call_to_credentials
+                .store(false, Ordering::Relaxed);
+        } else {
+            return Err(GitError::from_str("Bad credentials."));
+        }
+
+        match &self.basic_credential {
+            _ if allowed_types.is_ssh_key() => {
+                match username_from_url {
+                    Some(username) => {
+                        Cred::ssh_key_from_agent(username)
+                    }
+                    None => Err(GitError::from_str(
+                        " Couldn't extract username from url.",
+                    )),
+                }
+            }
+            Some(BasicAuthCredential {
+                username: Some(user),
+                password: Some(pwd),
+            }) if allowed_types.is_user_pass_plaintext() => {
+                Cred::userpass_plaintext(user, pwd)
+            }
+            Some(BasicAuthCredential {
+                username: Some(user),
+                password: _,
+            }) if allowed_types.is_username() => Cred::username(user),
+            _ if allowed_types.is_default() => Cred::default(),
+            _ => Err(GitError::from_str("Couldn't find credentials")),
+        }
     }
 }
