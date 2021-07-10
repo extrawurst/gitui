@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.16.2] - 2021-07-10
+
+![tag-remote-marker](assets/tag-remote-marker.gif)
+
 ## Added
-- new `undo-last-commit` command [[@remique](https://github.com/remique)] ([#758](https://github.com/extrawurst/gitui/issues/758))
 - taglist: show arrow-symbol on tags not present on origin [[@cruessler](https://github.com/cruessler)] ([#776](https://github.com/extrawurst/gitui/issues/776))
+- new `undo-last-commit` command [[@remique](https://github.com/remique)] ([#758](https://github.com/extrawurst/gitui/issues/758))
 - new quit key `[q]` ([#771](https://github.com/extrawurst/gitui/issues/771))
 - proper error message if remote rejects force push ([#801](https://github.com/extrawurst/gitui/issues/801))
 
