@@ -72,8 +72,7 @@ static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
 pub enum QueueEvent {
     Tick,
     SpinnerUpdate,
-    GitEvent(AsyncGitNotification),
-    AppEvent(AsyncAppNotification),
+    AsyncEvent(AsyncNotification),
     InputEvent(InputEvent),
 }
 
@@ -167,16 +166,16 @@ fn main() -> Result<()> {
                     app.event(ev)?;
                 }
                 QueueEvent::Tick => app.update()?,
-                QueueEvent::GitEvent(ev)
-                    if ev
-                        != AsyncGitNotification::FinishUnchanged =>
-                {
-                    app.update_async(AsyncNotification::Git(ev))?;
+                QueueEvent::AsyncEvent(ev) => {
+                    if !matches!(
+                        ev,
+                        AsyncNotification::Git(
+                            AsyncGitNotification::FinishUnchanged
+                        )
+                    ) {
+                        app.update_async(ev)?;
+                    }
                 }
-                QueueEvent::AppEvent(ev) => {
-                    app.update_async(AsyncNotification::App(ev))?;
-                }
-                QueueEvent::GitEvent(..) => (),
                 QueueEvent::SpinnerUpdate => unreachable!(),
             }
 
@@ -257,8 +256,12 @@ fn select_event(
 
     let ev = match index {
         0 => oper.recv(rx_input).map(QueueEvent::InputEvent),
-        1 => oper.recv(rx_git).map(QueueEvent::GitEvent),
-        2 => oper.recv(rx_app).map(QueueEvent::AppEvent),
+        1 => oper.recv(rx_git).map(|e| {
+            QueueEvent::AsyncEvent(AsyncNotification::Git(e))
+        }),
+        2 => oper.recv(rx_app).map(|e| {
+            QueueEvent::AsyncEvent(AsyncNotification::App(e))
+        }),
         3 => oper.recv(rx_ticker).map(|_| QueueEvent::Tick),
         4 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
         _ => bail!("unknown select source"),
