@@ -18,6 +18,7 @@ use crate::{
     strings::{self, order},
     tabs::{FilesTab, Revlog, StashList, Stashing, Status},
     ui::style::{SharedTheme, Theme},
+    AsyncAppNotification, AsyncNotification,
 };
 use anyhow::{bail, Result};
 use asyncgit::{sync, AsyncGitNotification, CWD};
@@ -79,6 +80,7 @@ impl App {
     #[allow(clippy::too_many_lines)]
     pub fn new(
         sender: &Sender<AsyncGitNotification>,
+        sender_app: &Sender<AsyncAppNotification>,
         input: Input,
         theme: Theme,
         key_config: KeyConfig,
@@ -108,7 +110,7 @@ impl App {
             ),
             revision_files_popup: RevisionFilesPopup::new(
                 &queue,
-                sender,
+                sender_app,
                 theme.clone(),
                 key_config.clone(),
             ),
@@ -167,7 +169,7 @@ impl App {
             ),
             tags_popup: TagListComponent::new(
                 &queue,
-                sender,
+                sender_app,
                 theme.clone(),
                 key_config.clone(),
             ),
@@ -206,7 +208,7 @@ impl App {
                 key_config.clone(),
             ),
             files_tab: FilesTab::new(
-                sender,
+                sender_app,
                 &queue,
                 theme.clone(),
                 key_config.clone(),
@@ -342,21 +344,24 @@ impl App {
     }
 
     ///
-    pub fn update_git(
+    pub fn update_async(
         &mut self,
-        ev: AsyncGitNotification,
+        ev: AsyncNotification,
     ) -> Result<()> {
-        log::trace!("update_git: {:?}", ev);
+        log::trace!("update_async: {:?}", ev);
 
-        self.status_tab.update_git(ev)?;
-        self.stashing_tab.update_git(ev)?;
-        self.files_tab.update_git(ev);
-        self.revlog.update_git(ev)?;
-        self.blame_file_popup.update_git(ev)?;
-        self.inspect_commit_popup.update_git(ev)?;
-        self.push_popup.update_git(ev)?;
-        self.push_tags_popup.update_git(ev)?;
-        self.pull_popup.update_git(ev)?;
+        if let AsyncNotification::Git(ev) = ev {
+            self.status_tab.update_git(ev)?;
+            self.stashing_tab.update_git(ev)?;
+            self.revlog.update_git(ev)?;
+            self.blame_file_popup.update_git(ev)?;
+            self.inspect_commit_popup.update_git(ev)?;
+            self.push_popup.update_git(ev)?;
+            self.push_tags_popup.update_git(ev)?;
+            self.pull_popup.update_git(ev)?;
+        }
+
+        self.files_tab.update_async(ev);
         self.revision_files_popup.update(ev);
         self.tags_popup.update(ev);
 

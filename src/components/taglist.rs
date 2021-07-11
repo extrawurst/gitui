@@ -8,6 +8,7 @@ use crate::{
     queue::{Action, InternalEvent, Queue},
     strings,
     ui::{self, Size},
+    AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -46,7 +47,7 @@ pub struct TagListComponent {
     missing_remote_tags: Option<Vec<String>>,
     basic_credential: Option<BasicAuthCredential>,
     async_remote_tags:
-        AsyncSingleJob<AsyncRemoteTagsJob, AsyncGitNotification>,
+        AsyncSingleJob<AsyncRemoteTagsJob, AsyncAppNotification>,
     key_config: SharedKeyConfig,
 }
 
@@ -250,7 +251,7 @@ impl Component for TagListComponent {
 impl TagListComponent {
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncGitNotification>,
+        sender: &Sender<AsyncAppNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -265,7 +266,7 @@ impl TagListComponent {
             missing_remote_tags: None,
             async_remote_tags: AsyncSingleJob::new(
                 sender.clone(),
-                AsyncGitNotification::RemoteTags,
+                AsyncAppNotification::RemoteTags,
             ),
             key_config,
         }
@@ -297,15 +298,21 @@ impl TagListComponent {
     }
 
     ///
-    pub fn update(&mut self, event: AsyncGitNotification) {
-        if event == AsyncGitNotification::RemoteTags {
+    pub fn update(&mut self, ev: AsyncNotification) {
+        if matches!(
+            ev,
+            AsyncNotification::App(AsyncAppNotification::RemoteTags)
+        ) {
             if let Some(job) = self.async_remote_tags.take_last() {
                 if let Some(Ok(missing_remote_tags)) = job.result() {
                     self.missing_remote_tags =
                         Some(missing_remote_tags);
                 }
             }
-        } else if event == AsyncGitNotification::PushTags {
+        } else if matches!(
+            ev,
+            AsyncNotification::Git(AsyncGitNotification::PushTags)
+        ) {
             self.update_missing_remote_tags();
         }
     }

@@ -83,12 +83,6 @@ pub enum AsyncGitNotification {
     Fetch,
     ///
     Blame,
-    ///
-    //TODO: this does not belong here
-    SyntaxHighlighting,
-    ///
-    //TODO: this does not belong here
-    RemoteTags,
 }
 
 /// current working directory `./`
