@@ -8,11 +8,12 @@ use crate::{
     queue::{InternalEvent, Queue},
     strings::{self, order},
     ui::{self, common_nav, style::SharedTheme},
+    AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
 use asyncgit::{
     sync::{self, CommitId, TreeFile},
-    AsyncGitNotification, CWD,
+    CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -52,7 +53,7 @@ impl RevisionFilesComponent {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncGitNotification>,
+        sender: &Sender<AsyncAppNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -90,7 +91,7 @@ impl RevisionFilesComponent {
     }
 
     ///
-    pub fn update(&mut self, ev: AsyncGitNotification) {
+    pub fn update(&mut self, ev: AsyncNotification) {
         self.current_file.update(ev);
     }
 

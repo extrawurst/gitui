@@ -73,7 +73,24 @@ pub enum QueueEvent {
     Tick,
     SpinnerUpdate,
     GitEvent(AsyncGitNotification),
+    AppEvent(AsyncAppNotification),
     InputEvent(InputEvent),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AsyncAppNotification {
+    ///
+    SyntaxHighlighting,
+    ///
+    RemoteTags,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AsyncNotification {
+    ///
+    App(AsyncAppNotification),
+    ///
+    Git(AsyncGitNotification),
 }
 
 fn main() -> Result<()> {
@@ -103,6 +120,7 @@ fn main() -> Result<()> {
     let mut terminal = start_terminal(io::stdout())?;
 
     let (tx_git, rx_git) = unbounded();
+    let (tx_app, rx_app) = unbounded();
 
     let input = Input::new();
 
@@ -110,7 +128,8 @@ fn main() -> Result<()> {
     let ticker = tick(TICK_INTERVAL);
     let spinner_ticker = tick(SPINNER_INTERVAL);
 
-    let mut app = App::new(&tx_git, input, theme, key_config);
+    let mut app =
+        App::new(&tx_git, &tx_app, input, theme, key_config);
 
     let mut spinner = Spinner::default();
     let mut first_update = true;
@@ -123,6 +142,7 @@ fn main() -> Result<()> {
             select_event(
                 &rx_input,
                 &rx_git,
+                &rx_app,
                 &ticker,
                 &spinner_ticker,
             )?
@@ -151,7 +171,10 @@ fn main() -> Result<()> {
                     if ev
                         != AsyncGitNotification::FinishUnchanged =>
                 {
-                    app.update_git(ev)?;
+                    app.update_async(AsyncNotification::Git(ev))?;
+                }
+                QueueEvent::AppEvent(ev) => {
+                    app.update_async(AsyncNotification::App(ev))?;
                 }
                 QueueEvent::GitEvent(..) => (),
                 QueueEvent::SpinnerUpdate => unreachable!(),
@@ -217,6 +240,7 @@ fn valid_path() -> Result<bool> {
 fn select_event(
     rx_input: &Receiver<InputEvent>,
     rx_git: &Receiver<AsyncGitNotification>,
+    rx_app: &Receiver<AsyncAppNotification>,
     rx_ticker: &Receiver<Instant>,
     rx_spinner: &Receiver<Instant>,
 ) -> Result<QueueEvent> {
@@ -224,6 +248,7 @@ fn select_event(
 
     sel.recv(rx_input);
     sel.recv(rx_git);
+    sel.recv(rx_app);
     sel.recv(rx_ticker);
     sel.recv(rx_spinner);
 
@@ -233,8 +258,9 @@ fn select_event(
     let ev = match index {
         0 => oper.recv(rx_input).map(QueueEvent::InputEvent),
         1 => oper.recv(rx_git).map(QueueEvent::GitEvent),
-        2 => oper.recv(rx_ticker).map(|_| QueueEvent::Tick),
-        3 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
+        2 => oper.recv(rx_app).map(QueueEvent::AppEvent),
+        3 => oper.recv(rx_ticker).map(|_| QueueEvent::Tick),
+        4 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
         _ => bail!("unknown select source"),
     }?;
 

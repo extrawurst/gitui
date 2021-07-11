@@ -8,9 +8,10 @@ use crate::{
     queue::Queue,
     strings::{self},
     ui::style::SharedTheme,
+    AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::{sync::CommitId, AsyncGitNotification};
+use asyncgit::sync::CommitId;
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, widgets::Clear, Frame};
@@ -25,7 +26,7 @@ impl RevisionFilesPopup {
     ///
     pub fn new(
         queue: &Queue,
-        sender: &Sender<AsyncGitNotification>,
+        sender: &Sender<AsyncAppNotification>,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
     ) -> Self {
@@ -50,7 +51,7 @@ impl RevisionFilesPopup {
     }
 
     ///
-    pub fn update(&mut self, ev: AsyncGitNotification) {
+    pub fn update(&mut self, ev: AsyncNotification) {
         self.files.update(ev);
     }
 
@@ -68,16 +69,6 @@ impl DrawableComponent for RevisionFilesPopup {
     ) -> Result<()> {
         if self.is_visible() {
             f.render_widget(Clear, area);
-            // f.render_widget(
-            //     Block::default()
-            //         .borders(Borders::TOP)
-            //         .title(Span::styled(
-            //             format!(" {}", self.title),
-            //             self.theme.title(true),
-            //         ))
-            //         .border_style(self.theme.block(true)),
-            //     area,
-            // );
 
             self.files.draw(f, area)?;
         }

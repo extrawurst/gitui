@@ -12,9 +12,10 @@ use crate::{
     keys::SharedKeyConfig,
     queue::Queue,
     ui::style::SharedTheme,
+    AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::{sync, AsyncGitNotification, CWD};
+use asyncgit::{sync, CWD};
 use crossbeam_channel::Sender;
 
 pub struct FilesTab {
@@ -27,7 +28,7 @@ pub struct FilesTab {
 impl FilesTab {
     ///
     pub fn new(
-        sender: &Sender<AsyncGitNotification>,
+        sender: &Sender<AsyncAppNotification>,
         queue: &Queue,
         theme: SharedTheme,
         key_config: SharedKeyConfig,
@@ -60,7 +61,7 @@ impl FilesTab {
     }
 
     ///
-    pub fn update_git(&mut self, ev: AsyncGitNotification) {
+    pub fn update_async(&mut self, ev: AsyncNotification) {
         if self.is_visible() {
             self.files.update(ev);
         }

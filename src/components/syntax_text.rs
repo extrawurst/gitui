@@ -9,12 +9,13 @@ use crate::{
         self, common_nav, style::SharedTheme, AsyncSyntaxJob,
         ParagraphState, ScrollPos, StatefulParagraph,
     },
+    AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
 use asyncgit::{
     asyncjob::AsyncSingleJob,
     sync::{self, TreeFile},
-    AsyncGitNotification, CWD,
+    CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -32,7 +33,7 @@ use tui::{
 pub struct SyntaxTextComponent {
     current_file: Option<(String, Either<ui::SyntaxText, String>)>,
     async_highlighting:
-        AsyncSingleJob<AsyncSyntaxJob, AsyncGitNotification>,
+        AsyncSingleJob<AsyncSyntaxJob, AsyncAppNotification>,
     key_config: SharedKeyConfig,
     paragraph_state: Cell<ParagraphState>,
     focused: bool,
@@ -42,14 +43,14 @@ pub struct SyntaxTextComponent {
 impl SyntaxTextComponent {
     ///
     pub fn new(
-        sender: &Sender<AsyncGitNotification>,
+        sender: &Sender<AsyncAppNotification>,
         key_config: SharedKeyConfig,
         theme: SharedTheme,
     ) -> Self {
         Self {
             async_highlighting: AsyncSingleJob::new(
                 sender.clone(),
-                AsyncGitNotification::SyntaxHighlighting,
+                AsyncAppNotification::SyntaxHighlighting,
             ),
             current_file: None,
             paragraph_state: Cell::new(ParagraphState::default()),
@@ -60,8 +61,13 @@ impl SyntaxTextComponent {
     }
 
     ///
-    pub fn update(&mut self, ev: AsyncGitNotification) {
-        if ev == AsyncGitNotification::SyntaxHighlighting {
+    pub fn update(&mut self, ev: AsyncNotification) {
+        if matches!(
+            ev,
+            AsyncNotification::App(
+                AsyncAppNotification::SyntaxHighlighting
+            )
+        ) {
             if let Some(job) = self.async_highlighting.take_last() {
                 if let Some((path, content)) =
                     self.current_file.as_mut()
