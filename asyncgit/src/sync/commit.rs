@@ -1,6 +1,12 @@
+use std::fs;
+
 use super::{utils::repo, CommitId};
 use crate::{error::Result, sync::utils::get_head_repo};
-use git2::{ErrorCode, ObjectType, Repository, Signature};
+use git2::{
+    Buf, ErrorClass, ErrorCode, ObjectType, Oid, Repository,
+    Signature,
+};
+use gpgme::{Context, Protocol};
 use scopetime::scope_time;
 
 ///
@@ -18,16 +24,43 @@ pub fn amend(
     let tree_id = index.write_tree()?;
     let tree = repo.find_tree(tree_id)?;
 
-    let new_id = commit.amend(
-        Some("HEAD"),
-        None,
-        None,
-        None,
-        Some(msg),
-        Some(&tree),
-    )?;
+    let parents = commit.parents().collect::<Vec<_>>();
+    let parents = parents.iter().collect::<Vec<_>>();
 
-    Ok(CommitId::new(new_id))
+    if let Some(parent) = parents.first() {
+        repo.set_head_detached(parent.id())?;
+    }
+
+    let commit_id = if sign_enabled(&repo)? {
+        let buffer = repo.commit_create_buffer(
+            &commit.author(),
+            &commit.committer(),
+            msg,
+            &tree,
+            &parents,
+        )?;
+
+        let signature = sign(&repo, &buffer)?;
+
+        repo.commit_signed(
+            &String::from_utf8(buffer.to_vec())?,
+            &signature,
+            None,
+        )?
+    } else {
+        repo.commit(
+            None,
+            &commit.author(),
+            &commit.committer(),
+            msg,
+            &tree,
+            &parents,
+        )?
+    };
+
+    update_head(&repo, commit_id, " (amend)")?;
+
+    Ok(commit_id.into())
 }
 
 /// Wrap `Repository::signature` to allow unknown user.name.
@@ -76,16 +109,35 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
 
     let parents = parents.iter().collect::<Vec<_>>();
 
-    Ok(repo
-        .commit(
-            Some("HEAD"),
+    let commit_id = if sign_enabled(&repo)? {
+        let buffer = repo.commit_create_buffer(
+            &signature,
+            &signature,
+            msg,
+            &tree,
+            parents.as_slice(),
+        )?;
+        let signature = sign(&repo, &buffer)?;
+
+        repo.commit_signed(
+            &String::from_utf8(buffer.to_vec())?,
+            &signature,
+            None,
+        )?
+    } else {
+        repo.commit(
+            None,
             &signature,
             &signature,
             msg,
             &tree,
             parents.as_slice(),
         )?
-        .into())
+    };
+
+    update_head(&repo, commit_id, "")?;
+
+    Ok(commit_id.into())
 }
 
 /// Tag a commit.
@@ -109,9 +161,90 @@ pub fn tag(
     Ok(repo.tag(tag, &target, &signature, "", false)?.into())
 }
 
+/// Sign a commit with [`gpgme`].
+fn sign(repo: &Repository, buffer: &Buf) -> Result<String> {
+    let mut context = Context::from_protocol(Protocol::OpenPgp)?;
+    context.set_armor(true);
+
+    if let Ok(signing_key) = repo
+        .config()
+        .and_then(|cfg| cfg.get_string("user.signingkey"))
+    {
+        let key = context.get_secret_key(signing_key)?;
+        context.add_signer(&key)?;
+    }
+
+    let mut signature = Vec::new();
+
+    context.sign_detached(buffer.as_ref(), &mut signature)?;
+
+    String::from_utf8(signature).map_err(Into::into)
+}
+
+/// Check whether commit signing is enabled in the Git config. This copes for the case where the
+/// config entry is missing, which is not considered an error but instead counts as signing being
+/// disabled.
+fn sign_enabled(repo: &Repository) -> Result<bool> {
+    match repo.config()?.get_bool("commit.gpgsign") {
+        Ok(value) => Ok(value),
+        Err(e)
+            if e.class() == ErrorClass::Config
+                && e.code() == ErrorCode::NotFound =>
+        {
+            Ok(false)
+        }
+        Err(e) => Err(e.into()),
+    }
+}
+
+/// Update the current HEAD, and the reference it's pointing to, to the give commit. Based on the
+/// state of the repository the current head is either:
+///
+/// - Available through and **resolvable** through means of git directly.
+/// - Extracted from the `.git/HEAD` file in case the current HEAD can't be resolved.
+///
+/// The HEAD can usually be resolved but in case the repository is fresh, meaning it doesn't have
+/// any commits so far, it can't because the reference HEAD is pointing to doesn't exist yet.
+///
+/// Unfortunately, the [`git2`] crate doesn't provide a way to retrieve the current HEAD without
+/// resolving it and the data must be extracted manually from the repo data.
+fn update_head(
+    repo: &Repository,
+    commit_id: Oid,
+    commit_type: &str,
+) -> Result<()> {
+    let head_name = match repo.head() {
+        Ok(r) => r.name().unwrap_or_default().to_owned(),
+        Err(e)
+            if e.class() == ErrorClass::Reference
+                && e.code() == ErrorCode::UnbornBranch =>
+        {
+            // TODO: Check for the possible formats that can be present in the HEAD file and
+            // make sure we really get the typical `refs/heads/main` reference that we expect or
+            // fail otherwise.
+            let head = fs::read_to_string(repo.path().join("HEAD"))?;
+            head.strip_prefix("ref:")
+                .unwrap_or(&head)
+                .trim()
+                .to_owned()
+        }
+        Err(e) => return Err(e.into()),
+    };
+    let reflog_msg = format!(
+        "commit{}: {}",
+        commit_type,
+        repo.find_commit(commit_id)?.summary().unwrap_or_default()
+    );
+
+    let new_head =
+        repo.reference(&head_name, commit_id, true, &reflog_msg)?;
+
+    repo.set_head(new_head.name().unwrap_or_default())
+        .map_err(Into::into)
+}
+
 #[cfg(test)]
 mod tests {
-
     use crate::error::Result;
     use crate::sync::{
         commit, get_commit_details, get_commit_files, stage_add_file,

@@ -4,28 +4,22 @@ version = "0.16.2"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
-exclude = [".github/*",".vscode/*","assets/*"]
+exclude = [".github/*", ".vscode/*", "assets/*"]
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
 license = "MIT"
 categories = ["command-line-utilities"]
-keywords = [
-    "git",
-    "gui",
-    "cli",
-    "terminal",
-    "ui",
-]
+keywords = ["git", "gui", "cli", "terminal", "ui"]
 
 [dependencies]
 scopetime = { path = "./scopetime", version = "0.1" }
 asyncgit = { path = "./asyncgit", version = "0.16" }
 filetreelist = { path = "./filetreelist", version = "0.2" }
-crossterm = { version = "0.19", features = [ "serde" ] }
+crossterm = { version = "0.19", features = ["serde"] }
 clap = { version = "2.33", default-features = false }
 tui = { version = "0.15", default-features = false, features = ['crossterm', 'serde'] }
-bytesize = { version = "1.0", default-features = false}
+bytesize = { version = "1.0", default-features = false }
 itertools = "0.10"
 rayon-core = "1.9"
 log = "0.4"
@@ -46,7 +40,8 @@ unicode-segmentation = "1.7"
 easy-cast = "0.4"
 bugreport = "0.4"
 lazy_static = "1.4"
-syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"]}
+syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"] }
+gpgme = "0.9.2"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.1"
@@ -62,23 +57,19 @@ pretty_assertions = "0.7"
 maintenance = { status = "actively-developed" }
 
 [features]
-default=[]
-timing=["scopetime/enabled"]
+default = []
+timing = ["scopetime/enabled"]
 
 [workspace]
-members=[
-    "asyncgit",
-    "scopetime",
-    "filetreelist",
-]
+members = ["asyncgit", "scopetime", "filetreelist"]
 
 [profile.release]
 lto = true
-opt-level = 'z'  # Optimize for size.
+opt-level = 'z'   # Optimize for size.
 codegen-units = 1
 
-# make debug build as fast as release 
-# usage of utf8 encoding inside tui 
+# make debug build as fast as release
+# usage of utf8 encoding inside tui
 # makes their debug profile slow
 [profile.dev.package."tui"]
 opt-level = 3

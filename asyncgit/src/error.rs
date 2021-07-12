@@ -35,6 +35,9 @@ pub enum Error {
     #[error("git error:{0}")]
     Git(#[from] git2::Error),
 
+    #[error("gpgme error:{0}")]
+    Gpgme(#[from] gpgme::Error),
+
     #[error("utf8 error:{0}")]
     Utf8Conversion(#[from] FromUtf8Error),
 
