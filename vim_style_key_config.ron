@@ -26,8 +26,8 @@
 
     open_help: ( code: F(1), modifiers: ( bits: 0,),),
 
-    exit: ( code: Char('Q'), modifiers: ( bits: 1,),),
-	quit: ( code: Char('q'), modifiers: ( bits: 0,),),
+    exit: ( code: Char('c'), modifiers: ( bits: 2,),),
+    quit: ( code: Char('q'), modifiers: ( bits: 0,),),
     exit_popup: ( code: Esc, modifiers: ( bits: 0,),),
 
     open_commit: ( code: Char('c'), modifiers: ( bits: 0,),),
