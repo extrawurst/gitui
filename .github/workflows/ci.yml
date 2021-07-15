@@ -2,11 +2,11 @@ name: CI
 
 on:
   schedule:
-    - cron: '0 2 * * *' # run at 2 AM UTC
+    - cron: "0 2 * * *" # run at 2 AM UTC
   push:
-    branches: [ '*' ]
+    branches: ["*"]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
@@ -17,151 +17,163 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [nightly, stable, '1.50']
+        rust: [nightly, stable, "1.50"]
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Restore cargo cache
-      uses: actions/cache@v2
-      env:
-        cache-name: ci
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          ~/.cargo/bin
-          target
-        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}-${{ hashFiles('Cargo.lock') }}
+      - name: Install gpgme (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get install -y --no-install-recommends libgpgme11-dev
 
-    - name: MacOS Workaround
-      if: matrix.os == 'macos-latest'
-      run: cargo clean -p serde_derive -p thiserror
+      - name: Install gpgme (MacOS)
+        if: startsWith(matrix.os, 'macos')
+        run: brew install gpgme
 
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        default: true
-        profile: minimal
-        components: clippy
+      - name: Install gpgme (Windows)
+        if: startsWith(matrix.os, 'windows')
+        run: choco install gpg4win
 
-    - name: New Resolver
-      if: matrix.rust != '1.50'
-      run: |
-        cargo install cargo-modify --force
-        cargo modify new-resolver
+      - name: Restore cargo cache
+        uses: actions/cache@v2
+        env:
+          cache-name: ci
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}-${{ hashFiles('Cargo.lock') }}
 
-    - name: Build Debug
-      run: |
-        cargo build
+      - name: MacOS Workaround
+        if: matrix.os == 'macos-latest'
+        run: cargo clean -p serde_derive -p thiserror
 
-    - name: Run tests
-      run: make test
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          default: true
+          profile: minimal
+          components: clippy
 
-    - name: Run clippy
-      run: |
-        make clippy
+      - name: New Resolver
+        if: matrix.rust != '1.50'
+        run: |
+          cargo install cargo-modify --force
+          cargo modify new-resolver
 
-    - name: Build Release
-      run: make build-release
+      - name: Build Debug
+        run: |
+          cargo build
 
-    - name: Binary Size (unix)
-      if: matrix.os != 'windows-latest'
-      run: |
-        ls -l ./target/release/gitui
-    
-    - name: Binary Size (win)
-      if: matrix.os == 'windows-latest'
-      run: |
-        ls -l ./target/release/gitui.exe
+      - name: Run tests
+        run: make test
 
-    - name: Binary dependencies (mac)
-      if: matrix.os == 'macos-latest'
-      run: |
-        otool -L ./target/release/gitui
+      - name: Run clippy
+        run: |
+          make clippy
 
-    - name: Build MSI (windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        cargo install cargo-wix
-        cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
-        ls -l ./target/wix/gitui.msi
+      - name: Build Release
+        run: make build-release
+
+      - name: Binary Size (unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          ls -l ./target/release/gitui
+
+      - name: Binary Size (win)
+        if: matrix.os == 'windows-latest'
+        run: |
+          ls -l ./target/release/gitui.exe
+
+      - name: Binary dependencies (mac)
+        if: matrix.os == 'macos-latest'
+        run: |
+          otool -L ./target/release/gitui
+
+      - name: Build MSI (windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cargo install cargo-wix
+          cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
+          ls -l ./target/wix/gitui.msi
 
   build-linux-musl:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        rust: [nightly, stable, '1.50']
+        rust: [nightly, stable, "1.50"]
     continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
-    - uses: actions/checkout@master
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        profile: minimal
-        default: true
-        target: x86_64-unknown-linux-musl
+      - uses: actions/checkout@master
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          default: true
+          target: x86_64-unknown-linux-musl
 
-    # TODO: remove once we depend on 1.51 as a msrv and resolver is supported by default
-    - name: New Resolver
-      if: matrix.rust != '1.50'
-      run: |
-        cargo install cargo-modify --force
-        cargo modify new-resolver
+      # TODO: remove once we depend on 1.51 as a msrv and resolver is supported by default
+      - name: New Resolver
+        if: matrix.rust != '1.50'
+        run: |
+          cargo install cargo-modify --force
+          cargo modify new-resolver
 
-    - name: Setup MUSL
-      run: |
-        sudo apt-get -qq install musl-tools
-    - name: Build Debug
-      run: |
-        make build-linux-musl-debug
-        ./target/x86_64-unknown-linux-musl/debug/gitui --version
-    - name: Build Release
-      run: |
-        make build-linux-musl-release
-        ./target/x86_64-unknown-linux-musl/release/gitui --version
-        ls -l ./target/x86_64-unknown-linux-musl/release/gitui
-    - name: Test
-      run: |
-        make test-linux-musl
+      - name: Setup MUSL
+        run: |
+          sudo apt-get -qq install musl-tools
+      - name: Build Debug
+        run: |
+          make build-linux-musl-debug
+          ./target/x86_64-unknown-linux-musl/debug/gitui --version
+      - name: Build Release
+        run: |
+          make build-linux-musl-release
+          ./target/x86_64-unknown-linux-musl/release/gitui --version
+          ls -l ./target/x86_64-unknown-linux-musl/release/gitui
+      - name: Test
+        run: |
+          make test-linux-musl
 
   rustfmt:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        components: rustfmt
-    - run: cargo fmt -- --check
+      - uses: actions/checkout@master
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+      - run: cargo fmt -- --check
 
   sec:
     name: Security audit
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/audit-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v2
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   log-test:
     name: Changelog Test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - name: Extract release notes
-      id: extract_release_notes
-      uses: ffurrer2/extract-release-notes@v1
-      with:
-        release_notes_file: ./release-notes.txt
-    - uses: actions/upload-artifact@v1
-      with:
-        name: release-notes.txt
-        path: ./release-notes.txt
+      - uses: actions/checkout@master
+      - name: Extract release notes
+        id: extract_release_notes
+        uses: ffurrer2/extract-release-notes@v1
+        with:
+          release_notes_file: ./release-notes.txt
+      - uses: actions/upload-artifact@v1
+        with:
+          name: release-notes.txt
+          path: ./release-notes.txt
