@@ -6,7 +6,7 @@ default on light terminal:
 to change the colors of the default theme you have to modify `theme.ron` file
 [Ron format](https://github.com/ron-rs/ron) located at config path. The path differs depending on the operating system:
 
-* `$HOME/Library/Application Support/gitui/theme.ron` (mac)
+* `$HOME/.config/gitui/theme.ron` (mac)
 * `$XDG_CONFIG_HOME/gitui/theme.ron` (linux using XDG)
 * `$HOME/.config/gitui/theme.ron` (linux)
 * `%APPDATA%/gitui/theme.ron` (Windows)
