@@ -166,7 +166,7 @@ Binaries available for:
 
 ### Cargo Install
 
-The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui`
+The simplest way to start playing around with `gitui` is to build it with `cargo build` and install it with `cargo install gitui`
 
 ## 8. <a name="diagnostics"></a> Diagnostics <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
