@@ -171,6 +171,8 @@ pub enum ScrollType {
     End,
     PageUp,
     PageDown,
+    ShiftUp,
+    ShiftDown,
 }
 
 #[derive(Copy, Clone)]
