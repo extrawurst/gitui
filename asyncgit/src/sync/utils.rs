@@ -188,7 +188,13 @@ pub(crate) fn repo_write_file(
     file: &str,
     content: &str,
 ) -> Result<()> {
-    let dir = work_dir(repo)?.join(file);
+    let dir = work_dir(repo)?;
+
+    //Note: only canonicalize on windows to support long paths
+    #[cfg(windows)]
+    let dir = dir.canonicalize()?;
+
+    let dir = dir.join(file);
     let file_path = dir.to_str().ok_or_else(|| {
         Error::Generic(String::from("invalid file path"))
     })?;
@@ -447,5 +453,106 @@ mod tests {
         assert_eq!(get_head(repo_path).is_ok(), true);
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test_long_paths {
+    use std::{fs::create_dir_all, path::Path};
+
+    use crate::sync::{
+        stage_add_file,
+        status::{get_status, StatusType},
+        tests::{get_statuses, repo_init},
+        utils::repo_write_file,
+    };
+
+    fn long_file_name_255() -> String {
+        format!(
+            "{}.txt",
+            std::iter::repeat("a").take(255 - 4).collect::<String>()
+        )
+    }
+
+    fn long_folder_name() -> String {
+        std::iter::repeat("f").take(255).collect::<String>()
+    }
+
+    #[test]
+    fn test_stage_long_filename() {
+        let (_td, repo) = repo_init().unwrap();
+        let repo_path = repo.workdir().unwrap().to_str().unwrap();
+
+        repo.config()
+            .unwrap()
+            .set_bool("core.longpaths", true)
+            .unwrap();
+
+        let folder_name =
+            String::from("some_not_so_long_folder_name");
+
+        let folder = repo.workdir().unwrap();
+        let folder = folder.join(folder_name.clone());
+        let folder = folder.to_str().unwrap();
+
+        create_dir_all(folder).unwrap();
+
+        let file_name =
+            Path::new(&folder_name).join(long_file_name_255());
+        let file_name = file_name.to_str().unwrap();
+
+        repo_write_file(&repo, &file_name, "").unwrap();
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        let files =
+            get_status(repo_path, StatusType::WorkingDir, true)
+                .unwrap();
+
+        stage_add_file(repo_path, Path::new(files[0].path.as_str()))
+            .unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 1));
+    }
+
+    #[test]
+    //TODO: right now this fails already because we cannot even create the path
+    #[cfg_attr(windows, should_panic)]
+    fn test_stage_long_folder() {
+        let (_td, repo) = repo_init().unwrap();
+        let repo_path = repo.workdir().unwrap().to_str().unwrap();
+
+        repo.config()
+            .unwrap()
+            .set_bool("core.longpaths", true)
+            .unwrap();
+
+        let folder_name = long_folder_name();
+
+        let folder = repo.workdir().unwrap();
+        let folder = folder.join(folder_name.clone());
+        let folder = folder.to_str().unwrap();
+
+        create_dir_all(folder).unwrap();
+
+        let file_name =
+            Path::new(&folder_name).join(long_file_name_255());
+        let file_name = file_name.to_str().unwrap();
+
+        repo_write_file(&repo, file_name, "").unwrap();
+
+        assert_eq!(get_statuses(repo_path), (1, 0));
+
+        let files =
+            get_status(repo_path, StatusType::WorkingDir, true)
+                .unwrap();
+
+        stage_add_file(
+            repo_path,
+            dbg!(Path::new(files[0].path.as_str())),
+        )
+        .unwrap();
+
+        assert_eq!(get_statuses(repo_path), (0, 1));
     }
 }
