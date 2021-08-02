@@ -25,7 +25,7 @@ filetreelist = { path = "./filetreelist", version = "0.2" }
 crossterm = { version = "0.19", features = [ "serde" ] }
 clap = { version = "2.33", default-features = false }
 tui = { version = "0.15", default-features = false, features = ['crossterm', 'serde'] }
-bytesize = { version = "1.0", default-features = false}
+bytesize = { version = "1.1", default-features = false}
 itertools = "0.10"
 rayon-core = "1.9"
 log = "0.4"
