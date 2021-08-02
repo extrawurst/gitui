@@ -49,7 +49,7 @@ lazy_static = "1.4"
 syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"]}
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
-which = "4.1"
+which = "4.2"
 
 # pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]
