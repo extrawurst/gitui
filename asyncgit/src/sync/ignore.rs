@@ -1,5 +1,5 @@
 use super::utils::{repo, work_dir};
-use crate::error::Result;
+use crate::error::{Error, Result};
 use scopetime::scope_time;
 use std::{
     fs::{File, OpenOptions},
@@ -17,6 +17,14 @@ pub fn add_to_ignore(
     scope_time!("add_to_ignore");
 
     let repo = repo(repo_path)?;
+
+    if Path::new(path_to_ignore).file_name()
+        == Path::new(GITIGNORE).file_name()
+    {
+        return Err(Error::Generic(String::from(
+            "cannot ignore gitignore",
+        )));
+    }
 
     let ignore_file = work_dir(&repo)?.join(GITIGNORE);
 
@@ -52,8 +60,9 @@ fn file_ends_with_newline(file: &Path) -> Result<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sync::tests::repo_init;
+    use crate::sync::{tests::repo_init, utils::repo_write_file};
     use io::BufRead;
+    use pretty_assertions::assert_eq;
     use std::{fs::File, io, path::Path};
 
     #[test]
@@ -123,5 +132,21 @@ mod tests {
         assert_eq!(&lines.nth(1).unwrap().unwrap(), "foo.txt");
 
         Ok(())
+    }
+
+    #[test]
+    fn test_ignore_ignore() {
+        let ignore_file_path = Path::new(".gitignore");
+        let (_td, repo) = repo_init().unwrap();
+        let root = repo.path().parent().unwrap();
+        let repo_path = root.as_os_str().to_str().unwrap();
+
+        repo_write_file(&repo, ".gitignore", "#foo").unwrap();
+
+        let res = add_to_ignore(repo_path, ".gitignore");
+        assert!(res.is_err());
+
+        let lines = read_lines(&root.join(ignore_file_path)).unwrap();
+        assert_eq!(lines.count(), 1);
     }
 }
