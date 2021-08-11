@@ -693,33 +693,32 @@ impl App {
                 sync::discard_lines(CWD, &path, &lines)?;
                 flags.insert(NeedsUpdate::ALL);
             }
-            Action::DeleteBranch(branch_ref, local) => {
-                if local {
-                    if let Err(e) =
-                        sync::delete_branch(CWD, &branch_ref)
+            Action::DeleteBranch(branch_ref, true) => {
+                if let Err(e) = sync::delete_branch(CWD, &branch_ref)
+                {
+                    self.queue.push(InternalEvent::ShowErrorMsg(
+                        e.to_string(),
+                    ));
+                }
+                flags.insert(NeedsUpdate::ALL);
+                self.select_branch_popup.update_branches()?;
+            }
+            Action::DeleteBranch(branch_ref, false) => {
+                self.queue.push(
+                    if let Some(name) = branch_ref.rsplit('/').next()
                     {
-                        self.queue.push(InternalEvent::ShowErrorMsg(
-                            e.to_string(),
-                        ));
-                    }
-                } else {
-                    self.queue.push(
-                        if let Some(name) =
-                            branch_ref.rsplit('/').next()
-                        {
-                            InternalEvent::Push(
-                                name.to_string(),
-                                false,
-                                true,
-                            )
-                        } else {
-                            InternalEvent::ShowErrorMsg(format!(
+                        InternalEvent::Push(
+                            name.to_string(),
+                            false,
+                            true,
+                        )
+                    } else {
+                        InternalEvent::ShowErrorMsg(format!(
                             "Failed to find the branch name in {}",
                             branch_ref
                         ))
-                        },
-                    );
-                }
+                    },
+                );
                 flags.insert(NeedsUpdate::ALL);
                 self.select_branch_popup.update_branches()?;
             }
