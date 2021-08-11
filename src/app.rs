@@ -701,20 +701,27 @@ impl App {
                         self.queue.push(InternalEvent::ShowErrorMsg(
                             e.to_string(),
                         ));
-                    } else {
-                        flags.insert(NeedsUpdate::ALL);
-                        self.select_branch_popup.update_branches()?;
                     }
                 } else {
-                    if let Some(name) = branch_ref.rsplit('/').next()
-                    {
-                        self.queue.push(InternalEvent::Push(
-                            name.to_string(),
-                            false,
-                            true,
-                        ));
-                    }
+                    self.queue.push(
+                        if let Some(name) =
+                            branch_ref.rsplit('/').next()
+                        {
+                            InternalEvent::Push(
+                                name.to_string(),
+                                false,
+                                true,
+                            )
+                        } else {
+                            InternalEvent::ShowErrorMsg(format!(
+                            "Failed to find the branch name in {}",
+                            branch_ref
+                        ))
+                        },
+                    );
                 }
+                flags.insert(NeedsUpdate::ALL);
+                self.select_branch_popup.update_branches()?;
             }
             Action::DeleteTag(tag_name) => {
                 if let Err(error) = sync::delete_tag(CWD, &tag_name) {
