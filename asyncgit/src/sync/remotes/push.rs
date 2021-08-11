@@ -381,4 +381,131 @@ mod tests {
                 .id();
         assert_eq!(new_upstream_parent, repo_2_parent,);
     }
+
+    #[test]
+    fn test_delete_remote_branch() {
+        // This test mimics the scenario of a user creating a branch, push it, and then remove it on the remote
+
+        let (tmp_repo_dir, repo) = repo_init().unwrap();
+        let (tmp_other_repo_dir, other_repo) = repo_init().unwrap();
+        let (tmp_upstream_dir, _) = repo_init_bare().unwrap();
+
+        repo.remote(
+            "origin",
+            tmp_upstream_dir.path().to_str().unwrap(),
+        )
+        .unwrap();
+
+        other_repo
+            .remote(
+                "origin",
+                tmp_upstream_dir.path().to_str().unwrap(),
+            )
+            .unwrap();
+
+        let tmp_repo_file_path =
+            tmp_repo_dir.path().join("temp_file.txt");
+        let mut tmp_repo_file =
+            File::create(tmp_repo_file_path).unwrap();
+        writeln!(tmp_repo_file, "TempSomething").unwrap();
+
+        sync::stage_add_file(
+            tmp_repo_dir.path().to_str().unwrap(),
+            Path::new("temp_file.txt"),
+        )
+        .unwrap();
+
+        // You need a commit before being able to branch !
+        let repo_1_commit = sync::commit(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "repo_1_commit",
+        )
+        .unwrap();
+
+        assert_eq!(
+            sync::get_commit_files(
+                tmp_repo_dir.path().to_str().unwrap(),
+                repo_1_commit
+            )
+            .unwrap()[0]
+                .path,
+            String::from("temp_file.txt")
+        );
+
+        let commits = get_commit_ids(&repo, 1);
+        assert!(commits.contains(&repo_1_commit));
+
+        push(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "origin",
+            "master",
+            false,
+            false,
+            None,
+            None,
+        )
+        .unwrap();
+
+        // Create the local branch
+        sync::create_branch(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "test_branch",
+        )
+        .unwrap();
+
+        // Push the local branch
+        push(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "origin",
+            "test_branch",
+            false,
+            false,
+            None,
+            None,
+        )
+        .unwrap();
+
+        // Test if the branch exits on the remote
+        assert_eq!(
+            Repository::init_bare(tmp_upstream_dir.path())
+                .unwrap()
+                .branches(None)
+                .unwrap()
+                .map(|i| i.unwrap())
+                .map(|(i, _)| i.name().unwrap().unwrap().to_string())
+                .filter(|i| i == "test_branch")
+                .next()
+                .is_some(),
+            true
+        );
+
+        // Delete the remote branch
+        assert_eq!(
+            push(
+                tmp_other_repo_dir.path().to_str().unwrap(),
+                "origin",
+                "test_branch",
+                false,
+                true,
+                None,
+                None,
+            )
+            .is_ok(),
+            true
+        );
+
+        // Test that the branch has be remove from the remote
+        assert_eq!(
+            Repository::init_bare(tmp_upstream_dir.path())
+                .unwrap()
+                .branches(None)
+                .unwrap()
+                .map(|i| i.unwrap())
+                .map(|(i, _)| i.name().unwrap().unwrap().to_string())
+                .filter(|i| i == "test_branch")
+                .next()
+                .is_some(),
+            false
+        )
+    }
 }
