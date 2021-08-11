@@ -49,7 +49,9 @@ pub(crate) fn get_commit_diff(
     let commit = repo.find_commit(id.into())?;
     let commit_tree = commit.tree()?;
     let parent = if commit.parent_count() > 0 {
-        Some(repo.find_commit(commit.parent_id(0)?)?.tree()?)
+        repo.find_commit(commit.parent_id(0)?)
+            .ok()
+            .and_then(|c| c.tree().ok())
     } else {
         None
     };
