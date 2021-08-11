@@ -644,8 +644,8 @@ impl App {
                 self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS);
             }
-            InternalEvent::Push(branch, force) => {
-                self.push_popup.push(branch, force)?;
+            InternalEvent::Push(branch, force, delete) => {
+                self.push_popup.push(branch, force, delete)?;
                 flags.insert(NeedsUpdate::ALL);
             }
             InternalEvent::Pull(branch) => {
@@ -693,15 +693,27 @@ impl App {
                 sync::discard_lines(CWD, &path, &lines)?;
                 flags.insert(NeedsUpdate::ALL);
             }
-            Action::DeleteBranch(branch_ref) => {
-                if let Err(e) = sync::delete_branch(CWD, &branch_ref)
-                {
-                    self.queue.push(InternalEvent::ShowErrorMsg(
-                        e.to_string(),
-                    ));
+            Action::DeleteBranch(branch_ref, local) => {
+                if local {
+                    if let Err(e) =
+                        sync::delete_branch(CWD, &branch_ref)
+                    {
+                        self.queue.push(InternalEvent::ShowErrorMsg(
+                            e.to_string(),
+                        ));
+                    } else {
+                        flags.insert(NeedsUpdate::ALL);
+                        self.select_branch_popup.update_branches()?;
+                    }
                 } else {
-                    flags.insert(NeedsUpdate::ALL);
-                    self.select_branch_popup.update_branches()?;
+                    if let Some(name) = branch_ref.rsplit('/').next()
+                    {
+                        self.queue.push(InternalEvent::Push(
+                            name.to_string(),
+                            false,
+                            true,
+                        ));
+                    }
                 }
             }
             Action::DeleteTag(tag_name) => {
@@ -715,7 +727,8 @@ impl App {
                 }
             }
             Action::ForcePush(branch, force) => {
-                self.queue.push(InternalEvent::Push(branch, force));
+                self.queue
+                    .push(InternalEvent::Push(branch, force, false));
             }
             Action::PullMerge { rebase, .. } => {
                 self.pull_popup.try_conflict_free_merge(rebase);

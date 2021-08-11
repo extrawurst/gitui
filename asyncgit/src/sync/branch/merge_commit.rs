@@ -134,6 +134,7 @@ mod test {
             "origin",
             "master",
             false,
+            false,
             None,
             None,
         )
@@ -151,7 +152,7 @@ mod test {
 
         //push should fail since origin diverged
         assert!(push(
-            clone2_dir, "origin", "master", false, None, None,
+            clone2_dir, "origin", "master", false, false, None, None,
         )
         .is_err());
 
@@ -221,6 +222,7 @@ mod test {
             clone1_dir.path().to_str().unwrap(),
             "origin",
             "master",
+            false,
             false,
             None,
             None,

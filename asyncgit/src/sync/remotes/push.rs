@@ -95,6 +95,7 @@ pub(crate) fn push(
     remote: &str,
     branch: &str,
     force: bool,
+    delete: bool,
     basic_credential: Option<BasicAuthCredential>,
     progress_sender: Option<Sender<ProgressNotification>>,
 ) -> Result<()> {
@@ -109,15 +110,15 @@ pub(crate) fn push(
     options.remote_callbacks(callbacks.callbacks());
     options.packbuilder_parallelism(0);
 
-    let branch_name = format!("refs/heads/{}", branch);
-    if force {
-        remote.push(
-            &[String::from("+") + &branch_name],
-            Some(&mut options),
-        )?;
-    } else {
-        remote.push(&[branch_name.as_str()], Some(&mut options))?;
-    }
+    let branch_modifier = match (force, delete) {
+        (true, true) => "+:",
+        (false, true) => ":",
+        (true, false) => "+",
+        (false, false) => "",
+    };
+    let branch_name =
+        format!("{}refs/heads/{}", branch_modifier, branch);
+    remote.push(&[branch_name.as_str()], Some(&mut options))?;
 
     if let Some((reference, msg)) =
         callbacks.get_stats()?.push_rejected_msg
@@ -128,7 +129,9 @@ pub(crate) fn push(
         )));
     }
 
-    branch_set_upstream(&repo, branch)?;
+    if !delete {
+        branch_set_upstream(&repo, branch)?;
+    }
 
     Ok(())
 }
@@ -183,6 +186,7 @@ mod tests {
             "origin",
             "master",
             false,
+            false,
             None,
             None,
         )
@@ -208,6 +212,7 @@ mod tests {
                 "origin",
                 "master",
                 false,
+                false,
                 None,
                 None,
             )
@@ -223,6 +228,7 @@ mod tests {
                 "origin",
                 "master",
                 true,
+                false,
                 None,
                 None,
             )
@@ -291,6 +297,7 @@ mod tests {
             "origin",
             "master",
             false,
+            false,
             None,
             None,
         )
@@ -333,6 +340,7 @@ mod tests {
                 "origin",
                 "master",
                 false,
+                false,
                 None,
                 None,
             )
@@ -353,6 +361,7 @@ mod tests {
             "origin",
             "master",
             true,
+            false,
             None,
             None,
         )

@@ -34,6 +34,7 @@ use tui::{
 pub struct PushComponent {
     visible: bool,
     force: bool,
+    delete: bool,
     git_push: AsyncPush,
     progress: Option<RemoteProgress>,
     pending: bool,
@@ -55,6 +56,7 @@ impl PushComponent {
         Self {
             queue: queue.clone(),
             force: false,
+            delete: false,
             pending: false,
             visible: false,
             branch: String::new(),
@@ -74,9 +76,11 @@ impl PushComponent {
         &mut self,
         branch: String,
         force: bool,
+        delete: bool,
     ) -> Result<()> {
         self.branch = branch;
         self.force = force;
+        self.delete = delete;
         self.show()?;
 
         if need_username_password()? {
@@ -122,6 +126,7 @@ impl PushComponent {
             remote,
             branch: self.branch.clone(),
             force,
+            delete: self.delete,
             basic_credential: cred,
         })?;
         Ok(())

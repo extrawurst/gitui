@@ -177,8 +177,10 @@ mod tests {
 
         sync::tag(clone1_dir, &commit1, "tag1").unwrap();
 
-        push(clone1_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone1_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
         push_tags(clone1_dir, "origin", None, None).unwrap();
 
         // clone2
@@ -221,8 +223,10 @@ mod tests {
 
         sync::tag(clone1_dir, &commit1, "tag1").unwrap();
 
-        push(clone1_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone1_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
         push_tags(clone1_dir, "origin", None, None).unwrap();
 
         // clone2
@@ -252,8 +256,10 @@ mod tests {
 
         sync::tag(clone1_dir, &commit1, "tag1").unwrap();
 
-        push(clone1_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone1_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
 
         let tags_missing =
             tags_missing_remote(clone1_dir, "origin", None).unwrap();

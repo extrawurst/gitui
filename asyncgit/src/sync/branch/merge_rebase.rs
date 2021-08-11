@@ -107,8 +107,10 @@ mod test {
 
         assert_eq!(clone1.head_detached().unwrap(), false);
 
-        push(clone1_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone1_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
 
         assert_eq!(clone1.head_detached().unwrap(), false);
 
@@ -129,8 +131,10 @@ mod test {
 
         assert_eq!(clone2.head_detached().unwrap(), false);
 
-        push(clone2_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone2_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
 
         assert_eq!(clone2.head_detached().unwrap(), false);
 
@@ -201,8 +205,10 @@ mod test {
             Time::new(0, 0),
         );
 
-        push(clone1_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone1_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
 
         // clone2
 
@@ -219,8 +225,10 @@ mod test {
             Time::new(1, 0),
         );
 
-        push(clone2_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone2_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
 
         // clone1
 
@@ -278,8 +286,10 @@ mod test {
         let _commit1 =
             write_commit_file(&clone1, "test.txt", "test", "commit1");
 
-        push(clone1_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone1_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
 
         // clone2
 
@@ -295,8 +305,10 @@ mod test {
             "commit2",
         );
 
-        push(clone2_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone2_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
 
         // clone1
 

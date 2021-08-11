@@ -157,7 +157,7 @@ impl ResetComponent {
                     strings::confirm_title_reset(),
                     strings::confirm_msg_reset_lines(lines.len()),
                 ),
-                Action::DeleteBranch(branch_ref) => (
+                Action::DeleteBranch(branch_ref, _) => (
                     strings::confirm_title_delete_branch(
                         &self.key_config,
                     ),

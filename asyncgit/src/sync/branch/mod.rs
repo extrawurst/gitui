@@ -471,7 +471,8 @@ mod tests_branches {
 
         write_commit_file(&repo, "f1.txt", "foo", "c1");
         rename_branch(dir, "refs/heads/master", branch_name).unwrap();
-        push(dir, "origin", branch_name, false, None, None).unwrap();
+        push(dir, "origin", branch_name, false, false, None, None)
+            .unwrap();
     }
 
     #[test]
@@ -680,14 +681,17 @@ mod test_remote_branches {
 
         write_commit_file(&clone1, "test.txt", "test", "commit1");
 
-        push(clone1_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone1_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
 
         create_branch(clone1_dir, "foo").unwrap();
 
         write_commit_file(&clone1, "test.txt", "test2", "commit2");
 
-        push(clone1_dir, "origin", "foo", false, None, None).unwrap();
+        push(clone1_dir, "origin", "foo", false, false, None, None)
+            .unwrap();
 
         // clone2
 
@@ -719,11 +723,14 @@ mod test_remote_branches {
         // clone1
 
         write_commit_file(&clone1, "test.txt", "test", "commit1");
-        push(clone1_dir, "origin", "master", false, None, None)
-            .unwrap();
+        push(
+            clone1_dir, "origin", "master", false, false, None, None,
+        )
+        .unwrap();
         create_branch(clone1_dir, "foo").unwrap();
         write_commit_file(&clone1, "test.txt", "test2", "commit2");
-        push(clone1_dir, "origin", "foo", false, None, None).unwrap();
+        push(clone1_dir, "origin", "foo", false, false, None, None)
+            .unwrap();
 
         // clone2
 

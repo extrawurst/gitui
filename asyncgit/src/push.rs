@@ -22,6 +22,8 @@ pub struct PushRequest {
     ///
     pub force: bool,
     ///
+    pub delete: bool,
+    ///
     pub basic_credential: Option<BasicAuthCredential>,
 }
 
@@ -98,6 +100,7 @@ impl AsyncPush {
                 params.remote.as_str(),
                 params.branch.as_str(),
                 params.force,
+                params.delete,
                 params.basic_credential.clone(),
                 Some(progress_sender.clone()),
             );

@@ -32,7 +32,7 @@ pub enum Action {
     ResetLines(String, Vec<DiffLinePosition>),
     StashDrop(CommitId),
     StashPop(CommitId),
-    DeleteBranch(String),
+    DeleteBranch(String, bool),
     DeleteTag(String),
     ForcePush(String, bool),
     PullMerge { incoming: usize, rebase: bool },
@@ -76,7 +76,7 @@ pub enum InternalEvent {
     ///
     OpenExternalEditor(Option<String>),
     ///
-    Push(String, bool),
+    Push(String, bool, bool),
     ///
     Pull(String),
     ///
