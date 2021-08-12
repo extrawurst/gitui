@@ -125,8 +125,8 @@ impl PushComponent {
         cred: Option<BasicAuthCredential>,
         force: bool,
     ) -> Result<()> {
-        let remote = if let Some(remote) =
-            get_branch_remote(CWD, &self.branch)?
+        let remote = if let Ok(Some(remote)) =
+            get_branch_remote(CWD, &self.branch)
         {
             log::info!("push: branch '{}' has upstream for remote '{}' - using that",self.branch,remote);
             remote
