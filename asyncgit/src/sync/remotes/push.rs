@@ -142,7 +142,7 @@ mod tests {
     use crate::sync::{
         self,
         tests::{
-            get_commit_ids, repo_init, repo_init_bare,
+            get_commit_ids, repo_clone, repo_init, repo_init_bare,
             write_commit_file,
         },
     };
@@ -154,7 +154,6 @@ mod tests {
         // This test mimics the scenario of 2 people having 2
         // local branches and both modifying the same file then
         // both pushing, sequentially
-
         let (tmp_repo_dir, repo) = repo_init().unwrap();
         let (tmp_other_repo_dir, other_repo) = repo_init().unwrap();
         let (tmp_upstream_dir, _) = repo_init_bare().unwrap();
@@ -389,22 +388,11 @@ mod tests {
     fn test_delete_remote_branch() {
         // This test mimics the scenario of a user creating a branch, push it, and then remove it on the remote
 
-        let (tmp_repo_dir, repo) = repo_init().unwrap();
-        let (tmp_other_repo_dir, other_repo) = repo_init().unwrap();
-        let (tmp_upstream_dir, _) = repo_init_bare().unwrap();
+        let (upstream_dir, upstream_repo) = repo_init_bare().unwrap();
 
-        repo.remote(
-            "origin",
-            tmp_upstream_dir.path().to_str().unwrap(),
-        )
-        .unwrap();
-
-        other_repo
-            .remote(
-                "origin",
-                tmp_upstream_dir.path().to_str().unwrap(),
-            )
-            .unwrap();
+        let (tmp_repo_dir, repo) =
+            repo_clone(upstream_dir.path().to_str().unwrap())
+                .unwrap();
 
         // You need a commit before being able to branch !
         let commit_1 = write_commit_file(
@@ -449,8 +437,7 @@ mod tests {
 
         // Test if the branch exits on the remote
         assert_eq!(
-            Repository::init_bare(tmp_upstream_dir.path())
-                .unwrap()
+            upstream_repo
                 .branches(None)
                 .unwrap()
                 .map(|i| i.unwrap())
@@ -464,7 +451,7 @@ mod tests {
         // Delete the remote branch
         assert_eq!(
             push(
-                tmp_other_repo_dir.path().to_str().unwrap(),
+                tmp_repo_dir.path().to_str().unwrap(),
                 "origin",
                 "test_branch",
                 false,
@@ -478,8 +465,7 @@ mod tests {
 
         // Test that the branch has be remove from the remote
         assert_eq!(
-            Repository::init_bare(tmp_upstream_dir.path())
-                .unwrap()
+            upstream_repo
                 .branches(None)
                 .unwrap()
                 .map(|i| i.unwrap())
@@ -488,6 +474,6 @@ mod tests {
                 .next()
                 .is_some(),
             false
-        )
+        );
     }
 }
