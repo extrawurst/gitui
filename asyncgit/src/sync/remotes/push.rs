@@ -141,7 +141,10 @@ mod tests {
     use super::*;
     use crate::sync::{
         self,
-        tests::{get_commit_ids, repo_init, repo_init_bare},
+        tests::{
+            get_commit_ids, repo_init, repo_init_bare,
+            write_commit_file,
+        },
     };
     use git2::Repository;
     use std::{fs::File, io::Write, path::Path};
@@ -403,37 +406,16 @@ mod tests {
             )
             .unwrap();
 
-        let tmp_repo_file_path =
-            tmp_repo_dir.path().join("temp_file.txt");
-        let mut tmp_repo_file =
-            File::create(tmp_repo_file_path).unwrap();
-        writeln!(tmp_repo_file, "TempSomething").unwrap();
-
-        sync::stage_add_file(
-            tmp_repo_dir.path().to_str().unwrap(),
-            Path::new("temp_file.txt"),
-        )
-        .unwrap();
-
         // You need a commit before being able to branch !
-        let repo_1_commit = sync::commit(
-            tmp_repo_dir.path().to_str().unwrap(),
-            "repo_1_commit",
-        )
-        .unwrap();
-
-        assert_eq!(
-            sync::get_commit_files(
-                tmp_repo_dir.path().to_str().unwrap(),
-                repo_1_commit
-            )
-            .unwrap()[0]
-                .path,
-            String::from("temp_file.txt")
+        let commit_1 = write_commit_file(
+            &repo,
+            "temp_file.txt",
+            "SomeContent",
+            "Initial commit",
         );
 
         let commits = get_commit_ids(&repo, 1);
-        assert!(commits.contains(&repo_1_commit));
+        assert!(commits.contains(&commit_1));
 
         push(
             tmp_repo_dir.path().to_str().unwrap(),
