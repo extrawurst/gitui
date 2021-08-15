@@ -15,7 +15,7 @@ impl ProgressPercent {
     pub fn new(current: usize, total: usize) -> Self {
         let total = f64::conv(cmp::max(current, total));
         let progress = f64::conv(current) / total * 100.0;
-        let progress = u8::conv_nearest(progress);
+        let progress = u8::try_conv_nearest(progress).unwrap_or(100);
         Self { progress }
     }
     ///
@@ -36,6 +36,12 @@ mod tests {
     fn test_progress_zero_total() {
         let prog = ProgressPercent::new(1, 0);
 
+        assert_eq!(prog.progress, 100);
+    }
+
+    #[test]
+    fn test_progress_zero_all() {
+        let prog = ProgressPercent::new(0, 0);
         assert_eq!(prog.progress, 100);
     }
 
