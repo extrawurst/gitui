@@ -398,6 +398,16 @@ impl Component for StatusTreeComponent {
 			)
 			.order(order::RARE_ACTION),
 		);
+		out.push(
+			CommandInfo::new(
+				strings::commands::open_file_history(
+					&self.key_config,
+				),
+				self.selection_file().is_some(),
+				self.focused || force_all,
+			)
+			.order(order::RARE_ACTION),
+		);
 
 		CommandBlocking::PassingOn
 	}
@@ -411,6 +421,19 @@ impl Component for StatusTreeComponent {
 							queue.push(InternalEvent::BlameFile(
 								status_item.path,
 							));
+
+							Ok(EventState::Consumed)
+						}
+						_ => Ok(EventState::NotConsumed),
+					}
+				} else if e == self.key_config.keys.file_history {
+					match (&self.queue, self.selection_file()) {
+						(Some(queue), Some(status_item)) => {
+							queue.push(
+								InternalEvent::OpenFileRevlog(
+									status_item.path,
+								),
+							);
 
 							Ok(EventState::Consumed)
 						}
