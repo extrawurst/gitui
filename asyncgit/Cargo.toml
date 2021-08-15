@@ -14,10 +14,10 @@ keywords = ["git"]
 [dependencies]
 scopetime = { path = "../scopetime", version = "0.1" }
 git2 = "0.13"
+# git2 = { path = "../../extern/git2-rs", features = ["vendored-openssl"]}
+# git2 = { git="https://github.com/extrawurst/git2-rs.git", rev="fc13dcc", features = ["vendored-openssl"]}
 # pinning to vendored openssl, using the git2 feature this gets lost with new resolver
 openssl-sys = { version = '0.9', features= ["vendored"] }
-# git2 = { path = "../../github/git2-rs", features = ["vendored-openssl"]}
-# git2 = { git="https://github.com/extrawurst/git2-rs.git", rev="513a8c9", features = ["vendored-openssl"]}
 rayon-core = "1.9"
 crossbeam-channel = "0.5"
 log = "0.4"

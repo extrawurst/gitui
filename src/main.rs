@@ -97,6 +97,8 @@ fn main() -> Result<()> {
 
     let _profiler = Profiler::new();
 
+    asyncgit::register_tracing_logging();
+
     if !valid_path()? {
         eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
         return Ok(());

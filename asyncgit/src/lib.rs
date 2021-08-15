@@ -94,3 +94,12 @@ pub fn hash<T: Hash + ?Sized>(v: &T) -> u64 {
     v.hash(&mut hasher);
     hasher.finish()
 }
+
+///
+pub fn register_tracing_logging() -> bool {
+    git2::trace_set(git2::TraceLevel::Trace, git_trace)
+}
+
+fn git_trace(level: git2::TraceLevel, msg: &str) {
+    log::info!("[{:?}]: {}", level, msg);
+}
