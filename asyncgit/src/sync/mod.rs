@@ -35,7 +35,7 @@ pub use branch::{
     get_branches_info, merge_commit::merge_upstream_commit,
     merge_ff::branch_merge_upstream_fastforward,
     merge_rebase::merge_upstream_rebase, rename::rename_branch,
-    BranchCompare, BranchInfo,
+    validate_branch_name, BranchCompare, BranchInfo,
 };
 pub use commit::{amend, commit, tag};
 pub use commit_details::{

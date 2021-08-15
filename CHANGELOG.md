@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Added
+- check branch name validity while typing ([#559](https://github.com/extrawurst/gitui/issues/559))
+
 ## Fixed
 - do not allow to ignore .gitignore files ([#825](https://github.com/extrawurst/gitui/issues/825))
 - crash in shallow repo ([#836](https://github.com/extrawurst/gitui/issues/836))

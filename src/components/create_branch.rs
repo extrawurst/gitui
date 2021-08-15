@@ -12,12 +12,16 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{sync, CWD};
 use crossterm::event::Event;
-use tui::{backend::Backend, layout::Rect, Frame};
+use easy_cast::Cast;
+use tui::{
+    backend::Backend, layout::Rect, widgets::Paragraph, Frame,
+};
 
 pub struct CreateBranchComponent {
     input: TextInputComponent,
     queue: Queue,
     key_config: SharedKeyConfig,
+    theme: SharedTheme,
 }
 
 impl DrawableComponent for CreateBranchComponent {
@@ -26,7 +30,10 @@ impl DrawableComponent for CreateBranchComponent {
         f: &mut Frame<B>,
         rect: Rect,
     ) -> Result<()> {
-        self.input.draw(f, rect)?;
+        if self.is_visible() {
+            self.input.draw(f, rect)?;
+            self.draw_warnings(f);
+        }
 
         Ok(())
     }
@@ -95,12 +102,13 @@ impl CreateBranchComponent {
         Self {
             queue,
             input: TextInputComponent::new(
-                theme,
+                theme.clone(),
                 key_config.clone(),
                 &strings::create_branch_popup_title(&key_config),
                 &strings::create_branch_popup_msg(&key_config),
                 true,
             ),
+            theme,
             key_config,
         }
     }
@@ -132,6 +140,34 @@ impl CreateBranchComponent {
                     format!("create branch error:\n{}", e,),
                 ));
             }
+        }
+    }
+
+    fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
+        let current_text = self.input.get_text();
+
+        let valid = sync::validate_branch_name(&current_text)
+            .unwrap_or_default();
+
+        if !valid {
+            let msg = strings::branch_name_invalid();
+            let msg_length: u16 = msg.len().cast();
+            let w =
+                Paragraph::new(msg).style(self.theme.text_danger());
+
+            let rect = {
+                let mut rect = self.input.get_area();
+                rect.y += rect.height.saturating_sub(1);
+                rect.height = 1;
+                let offset =
+                    rect.width.saturating_sub(msg_length + 1);
+                rect.width = rect.width.saturating_sub(offset + 1);
+                rect.x += offset;
+
+                rect
+            };
+
+            f.render_widget(w, rect);
         }
     }
 }

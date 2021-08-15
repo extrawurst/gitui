@@ -83,6 +83,9 @@ pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {
 pub fn commit_first_line_warning(count: usize) -> String {
     format!("[subject length: {}]", count)
 }
+pub fn branch_name_invalid() -> &'static str {
+    "[invalid name]"
+}
 pub fn commit_editor_msg(_key_config: &SharedKeyConfig) -> String {
     r##"
 # Edit your commit message

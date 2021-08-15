@@ -12,7 +12,7 @@ use crate::{
     error::{Error, Result},
     sync::{utils, CommitId},
 };
-use git2::{BranchType, Repository};
+use git2::{Branch, BranchType, Repository};
 use scopetime::scope_time;
 use utils::get_head_repo;
 
@@ -88,6 +88,15 @@ impl BranchInfo {
 
         None
     }
+}
+
+///
+pub fn validate_branch_name(name: &str) -> Result<bool> {
+    scope_time!("validate_branch_name");
+
+    let valid = Branch::name_is_valid(name)?;
+
+    Ok(valid)
 }
 
 /// returns a list of `BranchInfo` with a simple summary on each branch
