@@ -16,7 +16,7 @@ use asyncgit::{
         self, branch::checkout_remote_branch, checkout_branch,
         get_branches_info, BranchInfo,
     },
-    CWD,
+    AsyncGitNotification, CWD,
 };
 use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
@@ -286,23 +286,39 @@ impl BranchListComponent {
 
     ///
     pub fn open(&mut self) -> Result<()> {
-        self.update_branches()?;
         self.show()?;
+        self.update_branches()?;
 
         Ok(())
     }
 
     /// fetch list of branches
     pub fn update_branches(&mut self) -> Result<()> {
-        self.branches = get_branches_info(CWD, self.local)?;
-        //remove remote branch called `HEAD`
-        if !self.local {
-            self.branches
-                .iter()
-                .position(|b| b.name.ends_with("/HEAD"))
-                .map(|idx| self.branches.remove(idx));
+        if self.is_visible() {
+            self.branches = get_branches_info(CWD, self.local)?;
+            //remove remote branch called `HEAD`
+            if !self.local {
+                self.branches
+                    .iter()
+                    .position(|b| b.name.ends_with("/HEAD"))
+                    .map(|idx| self.branches.remove(idx));
+            }
+            self.set_selection(self.selection)?;
         }
-        self.set_selection(self.selection)?;
+        Ok(())
+    }
+
+    ///
+    pub fn update_git(
+        &mut self,
+        ev: AsyncGitNotification,
+    ) -> Result<()> {
+        if self.is_visible() {
+            if let AsyncGitNotification::Push = ev {
+                self.update_branches()?;
+            }
+        }
+
         Ok(())
     }
 
