@@ -644,8 +644,8 @@ impl App {
                 self.file_to_open = path;
                 flags.insert(NeedsUpdate::COMMANDS);
             }
-            InternalEvent::Push(branch, force) => {
-                self.push_popup.push(branch, force)?;
+            InternalEvent::Push(branch, force, delete) => {
+                self.push_popup.push(branch, force, delete)?;
                 flags.insert(NeedsUpdate::ALL);
             }
             InternalEvent::Pull(branch) => {
@@ -693,16 +693,34 @@ impl App {
                 sync::discard_lines(CWD, &path, &lines)?;
                 flags.insert(NeedsUpdate::ALL);
             }
-            Action::DeleteBranch(branch_ref) => {
+            Action::DeleteBranch(branch_ref, true) => {
                 if let Err(e) = sync::delete_branch(CWD, &branch_ref)
                 {
                     self.queue.push(InternalEvent::ShowErrorMsg(
                         e.to_string(),
                     ));
-                } else {
-                    flags.insert(NeedsUpdate::ALL);
-                    self.select_branch_popup.update_branches()?;
                 }
+                flags.insert(NeedsUpdate::ALL);
+                self.select_branch_popup.update_branches()?;
+            }
+            Action::DeleteBranch(branch_ref, false) => {
+                self.queue.push(
+                    if let Some(name) = branch_ref.rsplit('/').next()
+                    {
+                        InternalEvent::Push(
+                            name.to_string(),
+                            false,
+                            true,
+                        )
+                    } else {
+                        InternalEvent::ShowErrorMsg(format!(
+                            "Failed to find the branch name in {}",
+                            branch_ref
+                        ))
+                    },
+                );
+                flags.insert(NeedsUpdate::ALL);
+                self.select_branch_popup.update_branches()?;
             }
             Action::DeleteTag(tag_name) => {
                 if let Err(error) = sync::delete_tag(CWD, &tag_name) {
@@ -715,7 +733,8 @@ impl App {
                 }
             }
             Action::ForcePush(branch, force) => {
-                self.queue.push(InternalEvent::Push(branch, force));
+                self.queue
+                    .push(InternalEvent::Push(branch, force, false));
             }
             Action::PullMerge { rebase, .. } => {
                 self.pull_popup.try_conflict_free_merge(rebase);

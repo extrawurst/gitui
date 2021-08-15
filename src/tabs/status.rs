@@ -450,8 +450,9 @@ impl Status {
                         Action::ForcePush(branch, force),
                     ));
                 } else {
-                    self.queue
-                        .push(InternalEvent::Push(branch, force));
+                    self.queue.push(InternalEvent::Push(
+                        branch, force, false,
+                    ));
                 }
             }
         }

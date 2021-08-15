@@ -95,6 +95,7 @@ pub(crate) fn push(
     remote: &str,
     branch: &str,
     force: bool,
+    delete: bool,
     basic_credential: Option<BasicAuthCredential>,
     progress_sender: Option<Sender<ProgressNotification>>,
 ) -> Result<()> {
@@ -109,15 +110,15 @@ pub(crate) fn push(
     options.remote_callbacks(callbacks.callbacks());
     options.packbuilder_parallelism(0);
 
-    let branch_name = format!("refs/heads/{}", branch);
-    if force {
-        remote.push(
-            &[String::from("+") + &branch_name],
-            Some(&mut options),
-        )?;
-    } else {
-        remote.push(&[branch_name.as_str()], Some(&mut options))?;
-    }
+    let branch_modifier = match (force, delete) {
+        (true, true) => "+:",
+        (false, true) => ":",
+        (true, false) => "+",
+        (false, false) => "",
+    };
+    let branch_name =
+        format!("{}refs/heads/{}", branch_modifier, branch);
+    remote.push(&[branch_name.as_str()], Some(&mut options))?;
 
     if let Some((reference, msg)) =
         callbacks.get_stats()?.push_rejected_msg
@@ -128,7 +129,9 @@ pub(crate) fn push(
         )));
     }
 
-    branch_set_upstream(&repo, branch)?;
+    if !delete {
+        branch_set_upstream(&repo, branch)?;
+    }
 
     Ok(())
 }
@@ -138,7 +141,10 @@ mod tests {
     use super::*;
     use crate::sync::{
         self,
-        tests::{get_commit_ids, repo_init, repo_init_bare},
+        tests::{
+            get_commit_ids, repo_clone, repo_init, repo_init_bare,
+            write_commit_file,
+        },
     };
     use git2::Repository;
     use std::{fs::File, io::Write, path::Path};
@@ -148,7 +154,6 @@ mod tests {
         // This test mimics the scenario of 2 people having 2
         // local branches and both modifying the same file then
         // both pushing, sequentially
-
         let (tmp_repo_dir, repo) = repo_init().unwrap();
         let (tmp_other_repo_dir, other_repo) = repo_init().unwrap();
         let (tmp_upstream_dir, _) = repo_init_bare().unwrap();
@@ -183,6 +188,7 @@ mod tests {
             "origin",
             "master",
             false,
+            false,
             None,
             None,
         )
@@ -208,6 +214,7 @@ mod tests {
                 "origin",
                 "master",
                 false,
+                false,
                 None,
                 None,
             )
@@ -223,6 +230,7 @@ mod tests {
                 "origin",
                 "master",
                 true,
+                false,
                 None,
                 None,
             )
@@ -291,6 +299,7 @@ mod tests {
             "origin",
             "master",
             false,
+            false,
             None,
             None,
         )
@@ -333,6 +342,7 @@ mod tests {
                 "origin",
                 "master",
                 false,
+                false,
                 None,
                 None,
             )
@@ -353,6 +363,7 @@ mod tests {
             "origin",
             "master",
             true,
+            false,
             None,
             None,
         )
@@ -371,5 +382,98 @@ mod tests {
                 .unwrap()
                 .id();
         assert_eq!(new_upstream_parent, repo_2_parent,);
+    }
+
+    #[test]
+    fn test_delete_remote_branch() {
+        // This test mimics the scenario of a user creating a branch, push it, and then remove it on the remote
+
+        let (upstream_dir, upstream_repo) = repo_init_bare().unwrap();
+
+        let (tmp_repo_dir, repo) =
+            repo_clone(upstream_dir.path().to_str().unwrap())
+                .unwrap();
+
+        // You need a commit before being able to branch !
+        let commit_1 = write_commit_file(
+            &repo,
+            "temp_file.txt",
+            "SomeContent",
+            "Initial commit",
+        );
+
+        let commits = get_commit_ids(&repo, 1);
+        assert!(commits.contains(&commit_1));
+
+        push(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "origin",
+            "master",
+            false,
+            false,
+            None,
+            None,
+        )
+        .unwrap();
+
+        // Create the local branch
+        sync::create_branch(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "test_branch",
+        )
+        .unwrap();
+
+        // Push the local branch
+        push(
+            tmp_repo_dir.path().to_str().unwrap(),
+            "origin",
+            "test_branch",
+            false,
+            false,
+            None,
+            None,
+        )
+        .unwrap();
+
+        // Test if the branch exits on the remote
+        assert_eq!(
+            upstream_repo
+                .branches(None)
+                .unwrap()
+                .map(|i| i.unwrap())
+                .map(|(i, _)| i.name().unwrap().unwrap().to_string())
+                .filter(|i| i == "test_branch")
+                .next()
+                .is_some(),
+            true
+        );
+
+        // Delete the remote branch
+        assert_eq!(
+            push(
+                tmp_repo_dir.path().to_str().unwrap(),
+                "origin",
+                "test_branch",
+                false,
+                true,
+                None,
+                None,
+            )
+            .is_ok(),
+            true
+        );
+
+        // Test that the branch has be remove from the remote
+        assert_eq!(
+            upstream_repo
+                .branches(None)
+                .unwrap()
+                .map(|i| i.unwrap())
+                .map(|(i, _)| i.name().unwrap().unwrap().to_string())
+                .filter(|i| i == "test_branch")
+                .next()
+                .is_some(),
+            false
+        );
     }
 }

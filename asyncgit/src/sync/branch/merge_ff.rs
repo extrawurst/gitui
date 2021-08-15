@@ -80,6 +80,7 @@ pub mod test {
             "origin",
             "master",
             false,
+            false,
             None,
             None,
         )
@@ -102,6 +103,7 @@ pub mod test {
             clone2_dir.path().to_str().unwrap(),
             "origin",
             "master",
+            false,
             false,
             None,
             None,

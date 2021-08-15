@@ -149,7 +149,7 @@ impl Component for BranchListComponent {
                     &self.key_config,
                 ),
                 !self.selection_is_cur_branch(),
-                self.local,
+                true,
             ));
 
             out.push(CommandInfo::new(
@@ -222,6 +222,7 @@ impl Component for BranchListComponent {
                             self.branches[self.selection as usize]
                                 .reference
                                 .clone(),
+                            self.local,
                         ),
                     ));
                 } else if e == self.key_config.merge_branch

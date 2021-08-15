@@ -174,6 +174,17 @@ pub fn confirm_msg_delete_branch(
 ) -> String {
     format!("Confirm deleting branch: '{}' ?", branch_ref)
 }
+pub fn confirm_title_delete_remote_branch(
+    _key_config: &SharedKeyConfig,
+) -> String {
+    "Delete Remote Branch".to_string()
+}
+pub fn confirm_msg_delete_remote_branch(
+    _key_config: &SharedKeyConfig,
+    branch_ref: &str,
+) -> String {
+    format!("Confirm deleting remote branch: '{}' ?", branch_ref)
+}
 pub fn confirm_title_delete_tag(
     _key_config: &SharedKeyConfig,
 ) -> String {

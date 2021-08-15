@@ -31,9 +31,27 @@ use tui::{
 };
 
 ///
+#[derive(PartialEq, Eq)]
+enum PushComponentModifier {
+    None,
+    Force,
+    Delete,
+    ForceDelete,
+}
+
+impl PushComponentModifier {
+    pub(crate) fn force(&self) -> bool {
+        self == &Self::Force || self == &Self::ForceDelete
+    }
+    pub(crate) fn delete(&self) -> bool {
+        self == &Self::Delete || self == &Self::ForceDelete
+    }
+}
+
+///
 pub struct PushComponent {
+    modifier: PushComponentModifier,
     visible: bool,
-    force: bool,
     git_push: AsyncPush,
     progress: Option<RemoteProgress>,
     pending: bool,
@@ -54,7 +72,7 @@ impl PushComponent {
     ) -> Self {
         Self {
             queue: queue.clone(),
-            force: false,
+            modifier: PushComponentModifier::None,
             pending: false,
             visible: false,
             branch: String::new(),
@@ -74,9 +92,16 @@ impl PushComponent {
         &mut self,
         branch: String,
         force: bool,
+        delete: bool,
     ) -> Result<()> {
         self.branch = branch;
-        self.force = force;
+        self.modifier = match (force, delete) {
+            (true, true) => PushComponentModifier::ForceDelete,
+            (false, true) => PushComponentModifier::Delete,
+            (true, false) => PushComponentModifier::Force,
+            (false, false) => PushComponentModifier::None,
+        };
+
         self.show()?;
 
         if need_username_password()? {
@@ -100,8 +125,8 @@ impl PushComponent {
         cred: Option<BasicAuthCredential>,
         force: bool,
     ) -> Result<()> {
-        let remote = if let Some(remote) =
-            get_branch_remote(CWD, &self.branch)?
+        let remote = if let Ok(Some(remote)) =
+            get_branch_remote(CWD, &self.branch)
         {
             log::info!("push: branch '{}' has upstream for remote '{}' - using that",self.branch,remote);
             remote
@@ -122,6 +147,7 @@ impl PushComponent {
             remote,
             branch: self.branch.clone(),
             force,
+            delete: self.modifier.delete(),
             basic_credential: cred,
         })?;
         Ok(())
@@ -219,7 +245,7 @@ impl DrawableComponent for PushComponent {
                     .block(
                         Block::default()
                             .title(Span::styled(
-                                if self.force {
+                                if self.modifier.force() {
                                     strings::FORCE_PUSH_POPUP_MSG
                                 } else {
                                     strings::PUSH_POPUP_MSG
@@ -276,7 +302,7 @@ impl Component for PushComponent {
                     {
                         self.push_to_remote(
                             Some(self.input_cred.get_cred().clone()),
-                            self.force,
+                            self.modifier.force(),
                         )?;
                         self.input_cred.hide();
                     }
