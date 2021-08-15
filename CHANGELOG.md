@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+**branch name validation**
+
+![name-validation](assets/branch-validation.gif)
+
 ## Added
 - check branch name validity while typing ([#559](https://github.com/extrawurst/gitui/issues/559))
 
