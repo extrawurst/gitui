@@ -146,28 +146,31 @@ impl CreateBranchComponent {
     fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
         let current_text = self.input.get_text();
 
-        let valid = sync::validate_branch_name(&current_text)
-            .unwrap_or_default();
+        if !current_text.is_empty() {
+            let valid = sync::validate_branch_name(current_text)
+                .unwrap_or_default();
 
-        if !valid {
-            let msg = strings::branch_name_invalid();
-            let msg_length: u16 = msg.len().cast();
-            let w =
-                Paragraph::new(msg).style(self.theme.text_danger());
+            if !valid {
+                let msg = strings::branch_name_invalid();
+                let msg_length: u16 = msg.len().cast();
+                let w = Paragraph::new(msg)
+                    .style(self.theme.text_danger());
 
-            let rect = {
-                let mut rect = self.input.get_area();
-                rect.y += rect.height.saturating_sub(1);
-                rect.height = 1;
-                let offset =
-                    rect.width.saturating_sub(msg_length + 1);
-                rect.width = rect.width.saturating_sub(offset + 1);
-                rect.x += offset;
+                let rect = {
+                    let mut rect = self.input.get_area();
+                    rect.y += rect.height.saturating_sub(1);
+                    rect.height = 1;
+                    let offset =
+                        rect.width.saturating_sub(msg_length + 1);
+                    rect.width =
+                        rect.width.saturating_sub(offset + 1);
+                    rect.x += offset;
 
-                rect
-            };
+                    rect
+                };
 
-            f.render_widget(w, rect);
+                f.render_widget(w, rect);
+            }
         }
     }
 }
