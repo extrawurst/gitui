@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 - check branch name validity while typing ([#559](https://github.com/extrawurst/gitui/issues/559))
+- support deleting remote branch [[@zcorniere](https://github.com/zcorniere)] ([#622](https://github.com/extrawurst/gitui/issues/622))
 
 ## Fixed
 - do not allow to ignore .gitignore files ([#825](https://github.com/extrawurst/gitui/issues/825))
