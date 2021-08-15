@@ -85,7 +85,7 @@ impl DrawableComponent for BlameFileComponent {
                         .try_into()?,
                 ),
                 // the source code line
-                Constraint::Min(0),
+                Constraint::Percentage(100),
             ];
 
             let number_of_rows = rows.len();
