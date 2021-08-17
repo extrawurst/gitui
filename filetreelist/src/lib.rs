@@ -1,11 +1,11 @@
 // #![forbid(missing_docs)]
 #![forbid(unsafe_code)]
 #![deny(
-    unused_imports,
-    unused_must_use,
-    dead_code,
-    unstable_name_collisions,
-    unused_assignments
+	unused_imports,
+	unused_must_use,
+	dead_code,
+	unstable_name_collisions,
+	unused_assignments
 )]
 #![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
 #![deny(clippy::expect_used)]
@@ -27,7 +27,7 @@ mod tree_iter;
 mod treeitems_iter;
 
 pub use crate::{
-    filetree::FileTree,
-    filetree::MoveSelection,
-    item::{FileTreeItem, TreeItemInfo},
+	filetree::FileTree,
+	filetree::MoveSelection,
+	item::{FileTreeItem, TreeItemInfo},
 };

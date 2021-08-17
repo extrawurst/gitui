@@ -2,11 +2,11 @@
 
 #![forbid(missing_docs)]
 #![deny(
-    unused_imports,
-    unused_must_use,
-    dead_code,
-    unstable_name_collisions,
-    unused_assignments
+	unused_imports,
+	unused_must_use,
+	dead_code,
+	unstable_name_collisions,
+	unused_assignments
 )]
 #![deny(unstable_name_collisions)]
 #![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
@@ -40,49 +40,49 @@ pub mod sync;
 mod tags;
 
 pub use crate::{
-    blame::{AsyncBlame, BlameParams},
-    commit_files::AsyncCommitFiles,
-    diff::{AsyncDiff, DiffParams, DiffType},
-    fetch::{AsyncFetch, FetchRequest},
-    push::{AsyncPush, PushRequest},
-    push_tags::{AsyncPushTags, PushTagsRequest},
-    remote_progress::{RemoteProgress, RemoteProgressState},
-    revlog::{AsyncLog, FetchStatus},
-    status::{AsyncStatus, StatusParams},
-    sync::{
-        diff::{DiffLine, DiffLineType, FileDiff},
-        status::{StatusItem, StatusItemType},
-    },
-    tags::AsyncTags,
+	blame::{AsyncBlame, BlameParams},
+	commit_files::AsyncCommitFiles,
+	diff::{AsyncDiff, DiffParams, DiffType},
+	fetch::{AsyncFetch, FetchRequest},
+	push::{AsyncPush, PushRequest},
+	push_tags::{AsyncPushTags, PushTagsRequest},
+	remote_progress::{RemoteProgress, RemoteProgressState},
+	revlog::{AsyncLog, FetchStatus},
+	status::{AsyncStatus, StatusParams},
+	sync::{
+		diff::{DiffLine, DiffLineType, FileDiff},
+		status::{StatusItem, StatusItemType},
+	},
+	tags::AsyncTags,
 };
 use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
+	collections::hash_map::DefaultHasher,
+	hash::{Hash, Hasher},
 };
 
 /// this type is used to communicate events back through the channel
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum AsyncGitNotification {
-    /// this indicates that no new state was fetched but that a async process finished
-    FinishUnchanged,
-    ///
-    Status,
-    ///
-    Diff,
-    ///
-    Log,
-    ///
-    CommitFiles,
-    ///
-    Tags,
-    ///
-    Push,
-    ///
-    PushTags,
-    ///
-    Fetch,
-    ///
-    Blame,
+	/// this indicates that no new state was fetched but that a async process finished
+	FinishUnchanged,
+	///
+	Status,
+	///
+	Diff,
+	///
+	Log,
+	///
+	CommitFiles,
+	///
+	Tags,
+	///
+	Push,
+	///
+	PushTags,
+	///
+	Fetch,
+	///
+	Blame,
 }
 
 /// current working directory `./`
@@ -90,16 +90,16 @@ pub static CWD: &str = "./";
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait
 pub fn hash<T: Hash + ?Sized>(v: &T) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    v.hash(&mut hasher);
-    hasher.finish()
+	let mut hasher = DefaultHasher::new();
+	v.hash(&mut hasher);
+	hasher.finish()
 }
 
 ///
 pub fn register_tracing_logging() -> bool {
-    git2::trace_set(git2::TraceLevel::Trace, git_trace)
+	git2::trace_set(git2::TraceLevel::Trace, git_trace)
 }
 
 fn git_trace(level: git2::TraceLevel, msg: &str) {
-    log::info!("[{:?}]: {}", level, msg);
+	log::info!("[{:?}]: {}", level, msg);
 }

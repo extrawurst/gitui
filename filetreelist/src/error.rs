@@ -5,11 +5,11 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("InvalidPath: `{0}`")]
-    InvalidPath(PathBuf),
+	#[error("InvalidPath: `{0}`")]
+	InvalidPath(PathBuf),
 
-    #[error("TryFromInt error:{0}")]
-    IntConversion(#[from] TryFromIntError),
+	#[error("TryFromInt error:{0}")]
+	IntConversion(#[from] TryFromIntError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

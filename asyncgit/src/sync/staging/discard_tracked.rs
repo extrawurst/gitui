@@ -1,344 +1,344 @@
 use super::{apply_selection, load_file};
 use crate::error::Result;
 use crate::sync::{
-    diff::DiffLinePosition,
-    patches::get_file_diff_patch_and_hunklines,
-    utils::{repo, repo_write_file},
+	diff::DiffLinePosition,
+	patches::get_file_diff_patch_and_hunklines,
+	utils::{repo, repo_write_file},
 };
 use scopetime::scope_time;
 
 /// discards specific lines in an unstaged hunk of a diff
 pub fn discard_lines(
-    repo_path: &str,
-    file_path: &str,
-    lines: &[DiffLinePosition],
+	repo_path: &str,
+	file_path: &str,
+	lines: &[DiffLinePosition],
 ) -> Result<()> {
-    scope_time!("discard_lines");
+	scope_time!("discard_lines");
 
-    if lines.is_empty() {
-        return Ok(());
-    }
+	if lines.is_empty() {
+		return Ok(());
+	}
 
-    let repo = repo(repo_path)?;
-    repo.index()?.read(true)?;
+	let repo = repo(repo_path)?;
+	repo.index()?.read(true)?;
 
-    //TODO: check that file is not new (status modified)
+	//TODO: check that file is not new (status modified)
 
-    let new_content = {
-        let (_patch, hunks) = get_file_diff_patch_and_hunklines(
-            &repo, file_path, false, false,
-        )?;
+	let new_content = {
+		let (_patch, hunks) = get_file_diff_patch_and_hunklines(
+			&repo, file_path, false, false,
+		)?;
 
-        let working_content = load_file(&repo, file_path)?;
-        let old_lines = working_content.lines().collect::<Vec<_>>();
+		let working_content = load_file(&repo, file_path)?;
+		let old_lines = working_content.lines().collect::<Vec<_>>();
 
-        apply_selection(lines, &hunks, &old_lines, false, true)?
-    };
+		apply_selection(lines, &hunks, &old_lines, false, true)?
+	};
 
-    repo_write_file(&repo, file_path, new_content.as_str())?;
+	repo_write_file(&repo, file_path, new_content.as_str())?;
 
-    Ok(())
+	Ok(())
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::sync::tests::{repo_init, write_commit_file};
+	use super::*;
+	use crate::sync::tests::{repo_init, write_commit_file};
 
-    #[test]
-    fn test_discard() {
-        static FILE_1: &str = r"0
+	#[test]
+	fn test_discard() {
+		static FILE_1: &str = r"0
 1
 2
 3
 4
 ";
 
-        static FILE_2: &str = r"0
+		static FILE_2: &str = r"0
 
 
 3
 4
 ";
 
-        static FILE_3: &str = r"0
+		static FILE_3: &str = r"0
 2
 
 3
 4
 ";
 
-        let (path, repo) = repo_init().unwrap();
-        let path = path.path().to_str().unwrap();
+		let (path, repo) = repo_init().unwrap();
+		let path = path.path().to_str().unwrap();
 
-        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
+		repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
-        discard_lines(
-            path,
-            "test.txt",
-            &[
-                DiffLinePosition {
-                    old_lineno: Some(3),
-                    new_lineno: None,
-                },
-                DiffLinePosition {
-                    old_lineno: None,
-                    new_lineno: Some(2),
-                },
-            ],
-        )
-        .unwrap();
+		discard_lines(
+			path,
+			"test.txt",
+			&[
+				DiffLinePosition {
+					old_lineno: Some(3),
+					new_lineno: None,
+				},
+				DiffLinePosition {
+					old_lineno: None,
+					new_lineno: Some(2),
+				},
+			],
+		)
+		.unwrap();
 
-        let result_file = load_file(&repo, "test.txt").unwrap();
+		let result_file = load_file(&repo, "test.txt").unwrap();
 
-        assert_eq!(result_file.as_str(), FILE_3);
-    }
+		assert_eq!(result_file.as_str(), FILE_3);
+	}
 
-    #[test]
-    fn test_discard2() {
-        static FILE_1: &str = r"start
+	#[test]
+	fn test_discard2() {
+		static FILE_1: &str = r"start
 end
 ";
 
-        static FILE_2: &str = r"start
+		static FILE_2: &str = r"start
 1
 2
 end
 ";
 
-        static FILE_3: &str = r"start
+		static FILE_3: &str = r"start
 1
 end
 ";
 
-        let (path, repo) = repo_init().unwrap();
-        let path = path.path().to_str().unwrap();
+		let (path, repo) = repo_init().unwrap();
+		let path = path.path().to_str().unwrap();
 
-        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
+		repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
-        discard_lines(
-            path,
-            "test.txt",
-            &[DiffLinePosition {
-                old_lineno: None,
-                new_lineno: Some(3),
-            }],
-        )
-        .unwrap();
+		discard_lines(
+			path,
+			"test.txt",
+			&[DiffLinePosition {
+				old_lineno: None,
+				new_lineno: Some(3),
+			}],
+		)
+		.unwrap();
 
-        let result_file = load_file(&repo, "test.txt").unwrap();
+		let result_file = load_file(&repo, "test.txt").unwrap();
 
-        assert_eq!(result_file.as_str(), FILE_3);
-    }
+		assert_eq!(result_file.as_str(), FILE_3);
+	}
 
-    #[test]
-    fn test_discard3() {
-        static FILE_1: &str = r"start
+	#[test]
+	fn test_discard3() {
+		static FILE_1: &str = r"start
 1
 end
 ";
 
-        static FILE_2: &str = r"start
+		static FILE_2: &str = r"start
 2
 end
 ";
 
-        static FILE_3: &str = r"start
+		static FILE_3: &str = r"start
 1
 end
 ";
 
-        let (path, repo) = repo_init().unwrap();
-        let path = path.path().to_str().unwrap();
+		let (path, repo) = repo_init().unwrap();
+		let path = path.path().to_str().unwrap();
 
-        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
+		repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
-        discard_lines(
-            path,
-            "test.txt",
-            &[
-                DiffLinePosition {
-                    old_lineno: Some(2),
-                    new_lineno: None,
-                },
-                DiffLinePosition {
-                    old_lineno: None,
-                    new_lineno: Some(2),
-                },
-            ],
-        )
-        .unwrap();
+		discard_lines(
+			path,
+			"test.txt",
+			&[
+				DiffLinePosition {
+					old_lineno: Some(2),
+					new_lineno: None,
+				},
+				DiffLinePosition {
+					old_lineno: None,
+					new_lineno: Some(2),
+				},
+			],
+		)
+		.unwrap();
 
-        let result_file = load_file(&repo, "test.txt").unwrap();
+		let result_file = load_file(&repo, "test.txt").unwrap();
 
-        assert_eq!(result_file.as_str(), FILE_3);
-    }
+		assert_eq!(result_file.as_str(), FILE_3);
+	}
 
-    #[test]
-    fn test_discard4() {
-        static FILE_1: &str = r"start
+	#[test]
+	fn test_discard4() {
+		static FILE_1: &str = r"start
 mid
 end
 ";
 
-        static FILE_2: &str = r"start
+		static FILE_2: &str = r"start
 1
 mid
 2
 end
 ";
 
-        static FILE_3: &str = r"start
+		static FILE_3: &str = r"start
 mid
 end
 ";
 
-        let (path, repo) = repo_init().unwrap();
-        let path = path.path().to_str().unwrap();
+		let (path, repo) = repo_init().unwrap();
+		let path = path.path().to_str().unwrap();
 
-        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
+		repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
-        discard_lines(
-            path,
-            "test.txt",
-            &[
-                DiffLinePosition {
-                    old_lineno: None,
-                    new_lineno: Some(2),
-                },
-                DiffLinePosition {
-                    old_lineno: None,
-                    new_lineno: Some(4),
-                },
-            ],
-        )
-        .unwrap();
+		discard_lines(
+			path,
+			"test.txt",
+			&[
+				DiffLinePosition {
+					old_lineno: None,
+					new_lineno: Some(2),
+				},
+				DiffLinePosition {
+					old_lineno: None,
+					new_lineno: Some(4),
+				},
+			],
+		)
+		.unwrap();
 
-        let result_file = load_file(&repo, "test.txt").unwrap();
+		let result_file = load_file(&repo, "test.txt").unwrap();
 
-        assert_eq!(result_file.as_str(), FILE_3);
-    }
+		assert_eq!(result_file.as_str(), FILE_3);
+	}
 
-    #[test]
-    fn test_discard_if_first_selected_line_is_not_in_any_hunk() {
-        static FILE_1: &str = r"start
+	#[test]
+	fn test_discard_if_first_selected_line_is_not_in_any_hunk() {
+		static FILE_1: &str = r"start
 end
 ";
 
-        static FILE_2: &str = r"start
+		static FILE_2: &str = r"start
 1
 end
 ";
 
-        static FILE_3: &str = r"start
+		static FILE_3: &str = r"start
 end
 ";
 
-        let (path, repo) = repo_init().unwrap();
-        let path = path.path().to_str().unwrap();
+		let (path, repo) = repo_init().unwrap();
+		let path = path.path().to_str().unwrap();
 
-        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
+		repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
-        discard_lines(
-            path,
-            "test.txt",
-            &[
-                DiffLinePosition {
-                    old_lineno: None,
-                    new_lineno: Some(1),
-                },
-                DiffLinePosition {
-                    old_lineno: None,
-                    new_lineno: Some(2),
-                },
-            ],
-        )
-        .unwrap();
+		discard_lines(
+			path,
+			"test.txt",
+			&[
+				DiffLinePosition {
+					old_lineno: None,
+					new_lineno: Some(1),
+				},
+				DiffLinePosition {
+					old_lineno: None,
+					new_lineno: Some(2),
+				},
+			],
+		)
+		.unwrap();
 
-        let result_file = load_file(&repo, "test.txt").unwrap();
+		let result_file = load_file(&repo, "test.txt").unwrap();
 
-        assert_eq!(result_file.as_str(), FILE_3);
-    }
+		assert_eq!(result_file.as_str(), FILE_3);
+	}
 
-    //this test shows that we require at least a diff context around add/removes of 1
-    #[test]
-    fn test_discard_deletions_filestart_breaking_with_zero_context() {
-        static FILE_1: &str = r"start
+	//this test shows that we require at least a diff context around add/removes of 1
+	#[test]
+	fn test_discard_deletions_filestart_breaking_with_zero_context() {
+		static FILE_1: &str = r"start
 mid
 end
 ";
 
-        static FILE_2: &str = r"start
+		static FILE_2: &str = r"start
 end
 ";
 
-        static FILE_3: &str = r"start
+		static FILE_3: &str = r"start
 mid
 end
 ";
 
-        let (path, repo) = repo_init().unwrap();
-        let path = path.path().to_str().unwrap();
+		let (path, repo) = repo_init().unwrap();
+		let path = path.path().to_str().unwrap();
 
-        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
+		repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
-        discard_lines(
-            path,
-            "test.txt",
-            &[DiffLinePosition {
-                old_lineno: Some(2),
-                new_lineno: None,
-            }],
-        )
-        .unwrap();
+		discard_lines(
+			path,
+			"test.txt",
+			&[DiffLinePosition {
+				old_lineno: Some(2),
+				new_lineno: None,
+			}],
+		)
+		.unwrap();
 
-        let result_file = load_file(&repo, "test.txt").unwrap();
+		let result_file = load_file(&repo, "test.txt").unwrap();
 
-        assert_eq!(result_file.as_str(), FILE_3);
-    }
+		assert_eq!(result_file.as_str(), FILE_3);
+	}
 
-    #[test]
-    fn test_discard5() {
-        static FILE_1: &str = r"start
+	#[test]
+	fn test_discard5() {
+		static FILE_1: &str = r"start
 ";
 
-        static FILE_2: &str = r"start
+		static FILE_2: &str = r"start
 1";
 
-        static FILE_3: &str = r"start
+		static FILE_3: &str = r"start
 ";
 
-        let (path, repo) = repo_init().unwrap();
-        let path = path.path().to_str().unwrap();
+		let (path, repo) = repo_init().unwrap();
+		let path = path.path().to_str().unwrap();
 
-        write_commit_file(&repo, "test.txt", FILE_1, "c1");
+		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
-        repo_write_file(&repo, "test.txt", FILE_2).unwrap();
+		repo_write_file(&repo, "test.txt", FILE_2).unwrap();
 
-        discard_lines(
-            path,
-            "test.txt",
-            &[DiffLinePosition {
-                old_lineno: None,
-                new_lineno: Some(2),
-            }],
-        )
-        .unwrap();
+		discard_lines(
+			path,
+			"test.txt",
+			&[DiffLinePosition {
+				old_lineno: None,
+				new_lineno: Some(2),
+			}],
+		)
+		.unwrap();
 
-        let result_file = load_file(&repo, "test.txt").unwrap();
+		let result_file = load_file(&repo, "test.txt").unwrap();
 
-        assert_eq!(result_file.as_str(), FILE_3);
-    }
+		assert_eq!(result_file.as_str(), FILE_3);
+	}
 }

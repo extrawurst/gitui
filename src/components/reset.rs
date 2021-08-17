@@ -1,140 +1,140 @@
 use crate::{
-    components::{
-        popup_paragraph, visibility_blocking, CommandBlocking,
-        CommandInfo, Component, DrawableComponent, EventState,
-    },
-    keys::SharedKeyConfig,
-    queue::{Action, InternalEvent, Queue},
-    strings, ui,
+	components::{
+		popup_paragraph, visibility_blocking, CommandBlocking,
+		CommandInfo, Component, DrawableComponent, EventState,
+	},
+	keys::SharedKeyConfig,
+	queue::{Action, InternalEvent, Queue},
+	strings, ui,
 };
 use anyhow::Result;
 use crossterm::event::Event;
 use std::borrow::Cow;
 use tui::{
-    backend::Backend, layout::Rect, text::Text, widgets::Clear, Frame,
+	backend::Backend, layout::Rect, text::Text, widgets::Clear, Frame,
 };
 use ui::style::SharedTheme;
 
 ///
 pub struct ResetComponent {
-    target: Option<Action>,
-    visible: bool,
-    queue: Queue,
-    theme: SharedTheme,
-    key_config: SharedKeyConfig,
+	target: Option<Action>,
+	visible: bool,
+	queue: Queue,
+	theme: SharedTheme,
+	key_config: SharedKeyConfig,
 }
 
 impl DrawableComponent for ResetComponent {
-    fn draw<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        _rect: Rect,
-    ) -> Result<()> {
-        if self.visible {
-            let (title, msg) = self.get_text();
+	fn draw<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		_rect: Rect,
+	) -> Result<()> {
+		if self.visible {
+			let (title, msg) = self.get_text();
 
-            let txt = Text::styled(
-                Cow::from(msg),
-                self.theme.text_danger(),
-            );
+			let txt = Text::styled(
+				Cow::from(msg),
+				self.theme.text_danger(),
+			);
 
-            let area = ui::centered_rect(50, 20, f.size());
-            f.render_widget(Clear, area);
-            f.render_widget(
-                popup_paragraph(&title, txt, &self.theme, true),
-                area,
-            );
-        }
+			let area = ui::centered_rect(50, 20, f.size());
+			f.render_widget(Clear, area);
+			f.render_widget(
+				popup_paragraph(&title, txt, &self.theme, true),
+				area,
+			);
+		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 }
 
 impl Component for ResetComponent {
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        _force_all: bool,
-    ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            strings::commands::confirm_action(&self.key_config),
-            true,
-            self.visible,
-        ));
-        out.push(CommandInfo::new(
-            strings::commands::close_popup(&self.key_config),
-            true,
-            self.visible,
-        ));
+	fn commands(
+		&self,
+		out: &mut Vec<CommandInfo>,
+		_force_all: bool,
+	) -> CommandBlocking {
+		out.push(CommandInfo::new(
+			strings::commands::confirm_action(&self.key_config),
+			true,
+			self.visible,
+		));
+		out.push(CommandInfo::new(
+			strings::commands::close_popup(&self.key_config),
+			true,
+			self.visible,
+		));
 
-        visibility_blocking(self)
-    }
+		visibility_blocking(self)
+	}
 
-    fn event(&mut self, ev: Event) -> Result<EventState> {
-        if self.visible {
-            if let Event::Key(e) = ev {
-                if e == self.key_config.exit_popup {
-                    self.hide();
-                } else if e == self.key_config.enter {
-                    self.confirm();
-                }
+	fn event(&mut self, ev: Event) -> Result<EventState> {
+		if self.visible {
+			if let Event::Key(e) = ev {
+				if e == self.key_config.exit_popup {
+					self.hide();
+				} else if e == self.key_config.enter {
+					self.confirm();
+				}
 
-                return Ok(EventState::Consumed);
-            }
-        }
+				return Ok(EventState::Consumed);
+			}
+		}
 
-        Ok(EventState::NotConsumed)
-    }
+		Ok(EventState::NotConsumed)
+	}
 
-    fn is_visible(&self) -> bool {
-        self.visible
-    }
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
 
-    fn hide(&mut self) {
-        self.visible = false;
-    }
+	fn hide(&mut self) {
+		self.visible = false;
+	}
 
-    fn show(&mut self) -> Result<()> {
-        self.visible = true;
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
 
-        Ok(())
-    }
+		Ok(())
+	}
 }
 
 impl ResetComponent {
-    ///
-    pub fn new(
-        queue: Queue,
-        theme: SharedTheme,
-        key_config: SharedKeyConfig,
-    ) -> Self {
-        Self {
-            target: None,
-            visible: false,
-            queue,
-            theme,
-            key_config,
-        }
-    }
-    ///
-    pub fn open(&mut self, a: Action) -> Result<()> {
-        self.target = Some(a);
-        self.show()?;
+	///
+	pub fn new(
+		queue: Queue,
+		theme: SharedTheme,
+		key_config: SharedKeyConfig,
+	) -> Self {
+		Self {
+			target: None,
+			visible: false,
+			queue,
+			theme,
+			key_config,
+		}
+	}
+	///
+	pub fn open(&mut self, a: Action) -> Result<()> {
+		self.target = Some(a);
+		self.show()?;
 
-        Ok(())
-    }
-    ///
-    pub fn confirm(&mut self) {
-        if let Some(a) = self.target.take() {
-            self.queue.push(InternalEvent::ConfirmedAction(a));
-        }
+		Ok(())
+	}
+	///
+	pub fn confirm(&mut self) {
+		if let Some(a) = self.target.take() {
+			self.queue.push(InternalEvent::ConfirmedAction(a));
+		}
 
-        self.hide();
-    }
+		self.hide();
+	}
 
-    fn get_text(&self) -> (String, String) {
-        if let Some(ref a) = self.target {
-            return match a {
+	fn get_text(&self) -> (String, String) {
+		if let Some(ref a) = self.target {
+			return match a {
                 Action::Reset(_) => (
                     strings::confirm_title_reset(),
                     strings::confirm_msg_reset(),
@@ -202,8 +202,8 @@ impl ResetComponent {
                     strings::confirm_msg_abortmerge(),
                 ),
             };
-        }
+		}
 
-        (String::new(), String::new())
-    }
+		(String::new(), String::new())
+	}
 }

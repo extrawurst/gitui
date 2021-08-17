@@ -1,176 +1,176 @@
 use super::{
-    textinput::TextInputComponent, visibility_blocking,
-    CommandBlocking, CommandInfo, Component, DrawableComponent,
-    EventState,
+	textinput::TextInputComponent, visibility_blocking,
+	CommandBlocking, CommandInfo, Component, DrawableComponent,
+	EventState,
 };
 use crate::{
-    keys::SharedKeyConfig,
-    queue::{InternalEvent, NeedsUpdate, Queue},
-    strings,
-    ui::style::SharedTheme,
+	keys::SharedKeyConfig,
+	queue::{InternalEvent, NeedsUpdate, Queue},
+	strings,
+	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{sync, CWD};
 use crossterm::event::Event;
 use easy_cast::Cast;
 use tui::{
-    backend::Backend, layout::Rect, widgets::Paragraph, Frame,
+	backend::Backend, layout::Rect, widgets::Paragraph, Frame,
 };
 
 pub struct CreateBranchComponent {
-    input: TextInputComponent,
-    queue: Queue,
-    key_config: SharedKeyConfig,
-    theme: SharedTheme,
+	input: TextInputComponent,
+	queue: Queue,
+	key_config: SharedKeyConfig,
+	theme: SharedTheme,
 }
 
 impl DrawableComponent for CreateBranchComponent {
-    fn draw<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        rect: Rect,
-    ) -> Result<()> {
-        if self.is_visible() {
-            self.input.draw(f, rect)?;
-            self.draw_warnings(f);
-        }
+	fn draw<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		rect: Rect,
+	) -> Result<()> {
+		if self.is_visible() {
+			self.input.draw(f, rect)?;
+			self.draw_warnings(f);
+		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 }
 
 impl Component for CreateBranchComponent {
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
-    ) -> CommandBlocking {
-        if self.is_visible() || force_all {
-            self.input.commands(out, force_all);
+	fn commands(
+		&self,
+		out: &mut Vec<CommandInfo>,
+		force_all: bool,
+	) -> CommandBlocking {
+		if self.is_visible() || force_all {
+			self.input.commands(out, force_all);
 
-            out.push(CommandInfo::new(
-                strings::commands::create_branch_confirm_msg(
-                    &self.key_config,
-                ),
-                true,
-                true,
-            ));
-        }
+			out.push(CommandInfo::new(
+				strings::commands::create_branch_confirm_msg(
+					&self.key_config,
+				),
+				true,
+				true,
+			));
+		}
 
-        visibility_blocking(self)
-    }
+		visibility_blocking(self)
+	}
 
-    fn event(&mut self, ev: Event) -> Result<EventState> {
-        if self.is_visible() {
-            if self.input.event(ev)?.is_consumed() {
-                return Ok(EventState::Consumed);
-            }
+	fn event(&mut self, ev: Event) -> Result<EventState> {
+		if self.is_visible() {
+			if self.input.event(ev)?.is_consumed() {
+				return Ok(EventState::Consumed);
+			}
 
-            if let Event::Key(e) = ev {
-                if e == self.key_config.enter {
-                    self.create_branch();
-                }
+			if let Event::Key(e) = ev {
+				if e == self.key_config.enter {
+					self.create_branch();
+				}
 
-                return Ok(EventState::Consumed);
-            }
-        }
-        Ok(EventState::NotConsumed)
-    }
+				return Ok(EventState::Consumed);
+			}
+		}
+		Ok(EventState::NotConsumed)
+	}
 
-    fn is_visible(&self) -> bool {
-        self.input.is_visible()
-    }
+	fn is_visible(&self) -> bool {
+		self.input.is_visible()
+	}
 
-    fn hide(&mut self) {
-        self.input.hide();
-    }
+	fn hide(&mut self) {
+		self.input.hide();
+	}
 
-    fn show(&mut self) -> Result<()> {
-        self.input.show()?;
+	fn show(&mut self) -> Result<()> {
+		self.input.show()?;
 
-        Ok(())
-    }
+		Ok(())
+	}
 }
 
 impl CreateBranchComponent {
-    ///
-    pub fn new(
-        queue: Queue,
-        theme: SharedTheme,
-        key_config: SharedKeyConfig,
-    ) -> Self {
-        Self {
-            queue,
-            input: TextInputComponent::new(
-                theme.clone(),
-                key_config.clone(),
-                &strings::create_branch_popup_title(&key_config),
-                &strings::create_branch_popup_msg(&key_config),
-                true,
-            ),
-            theme,
-            key_config,
-        }
-    }
+	///
+	pub fn new(
+		queue: Queue,
+		theme: SharedTheme,
+		key_config: SharedKeyConfig,
+	) -> Self {
+		Self {
+			queue,
+			input: TextInputComponent::new(
+				theme.clone(),
+				key_config.clone(),
+				&strings::create_branch_popup_title(&key_config),
+				&strings::create_branch_popup_msg(&key_config),
+				true,
+			),
+			theme,
+			key_config,
+		}
+	}
 
-    ///
-    pub fn open(&mut self) -> Result<()> {
-        self.show()?;
+	///
+	pub fn open(&mut self) -> Result<()> {
+		self.show()?;
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    ///
-    pub fn create_branch(&mut self) {
-        let res =
-            sync::create_branch(CWD, self.input.get_text().as_str());
+	///
+	pub fn create_branch(&mut self) {
+		let res =
+			sync::create_branch(CWD, self.input.get_text().as_str());
 
-        self.input.clear();
-        self.hide();
+		self.input.clear();
+		self.hide();
 
-        match res {
-            Ok(_) => {
-                self.queue.push(InternalEvent::Update(
-                    NeedsUpdate::BRANCHES,
-                ));
-            }
-            Err(e) => {
-                log::error!("create branch: {}", e,);
-                self.queue.push(InternalEvent::ShowErrorMsg(
-                    format!("create branch error:\n{}", e,),
-                ));
-            }
-        }
-    }
+		match res {
+			Ok(_) => {
+				self.queue.push(InternalEvent::Update(
+					NeedsUpdate::BRANCHES,
+				));
+			}
+			Err(e) => {
+				log::error!("create branch: {}", e,);
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("create branch error:\n{}", e,),
+				));
+			}
+		}
+	}
 
-    fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
-        let current_text = self.input.get_text();
+	fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
+		let current_text = self.input.get_text();
 
-        if !current_text.is_empty() {
-            let valid = sync::validate_branch_name(current_text)
-                .unwrap_or_default();
+		if !current_text.is_empty() {
+			let valid = sync::validate_branch_name(current_text)
+				.unwrap_or_default();
 
-            if !valid {
-                let msg = strings::branch_name_invalid();
-                let msg_length: u16 = msg.len().cast();
-                let w = Paragraph::new(msg)
-                    .style(self.theme.text_danger());
+			if !valid {
+				let msg = strings::branch_name_invalid();
+				let msg_length: u16 = msg.len().cast();
+				let w = Paragraph::new(msg)
+					.style(self.theme.text_danger());
 
-                let rect = {
-                    let mut rect = self.input.get_area();
-                    rect.y += rect.height.saturating_sub(1);
-                    rect.height = 1;
-                    let offset =
-                        rect.width.saturating_sub(msg_length + 1);
-                    rect.width =
-                        rect.width.saturating_sub(offset + 1);
-                    rect.x += offset;
+				let rect = {
+					let mut rect = self.input.get_area();
+					rect.y += rect.height.saturating_sub(1);
+					rect.height = 1;
+					let offset =
+						rect.width.saturating_sub(msg_length + 1);
+					rect.width =
+						rect.width.saturating_sub(offset + 1);
+					rect.x += offset;
 
-                    rect
-                };
+					rect
+				};
 
-                f.render_widget(w, rect);
-            }
-        }
-    }
+				f.render_widget(w, rect);
+			}
+		}
+	}
 }

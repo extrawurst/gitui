@@ -6,164 +6,164 @@ use asyncgit::sync::cred::BasicAuthCredential;
 
 use crate::components::{EventState, InputType, TextInputComponent};
 use crate::{
-    components::{
-        visibility_blocking, CommandBlocking, CommandInfo, Component,
-        DrawableComponent,
-    },
-    keys::SharedKeyConfig,
-    strings,
-    ui::style::SharedTheme,
+	components::{
+		visibility_blocking, CommandBlocking, CommandInfo, Component,
+		DrawableComponent,
+	},
+	keys::SharedKeyConfig,
+	strings,
+	ui::style::SharedTheme,
 };
 
 ///
 pub struct CredComponent {
-    visible: bool,
-    key_config: SharedKeyConfig,
-    input_username: TextInputComponent,
-    input_password: TextInputComponent,
-    cred: BasicAuthCredential,
+	visible: bool,
+	key_config: SharedKeyConfig,
+	input_username: TextInputComponent,
+	input_password: TextInputComponent,
+	cred: BasicAuthCredential,
 }
 
 impl CredComponent {
-    ///
-    pub fn new(
-        theme: SharedTheme,
-        key_config: SharedKeyConfig,
-    ) -> Self {
-        Self {
-            visible: false,
-            input_username: TextInputComponent::new(
-                theme.clone(),
-                key_config.clone(),
-                &strings::username_popup_title(&key_config),
-                &strings::username_popup_msg(&key_config),
-                false,
-            )
-            .with_input_type(InputType::Singleline),
-            input_password: TextInputComponent::new(
-                theme,
-                key_config.clone(),
-                &strings::password_popup_title(&key_config),
-                &strings::password_popup_msg(&key_config),
-                false,
-            )
-            .with_input_type(InputType::Password),
-            key_config,
-            cred: BasicAuthCredential::new(None, None),
-        }
-    }
+	///
+	pub fn new(
+		theme: SharedTheme,
+		key_config: SharedKeyConfig,
+	) -> Self {
+		Self {
+			visible: false,
+			input_username: TextInputComponent::new(
+				theme.clone(),
+				key_config.clone(),
+				&strings::username_popup_title(&key_config),
+				&strings::username_popup_msg(&key_config),
+				false,
+			)
+			.with_input_type(InputType::Singleline),
+			input_password: TextInputComponent::new(
+				theme,
+				key_config.clone(),
+				&strings::password_popup_title(&key_config),
+				&strings::password_popup_msg(&key_config),
+				false,
+			)
+			.with_input_type(InputType::Password),
+			key_config,
+			cred: BasicAuthCredential::new(None, None),
+		}
+	}
 
-    pub fn set_cred(&mut self, cred: BasicAuthCredential) {
-        self.cred = cred;
-    }
+	pub fn set_cred(&mut self, cred: BasicAuthCredential) {
+		self.cred = cred;
+	}
 
-    pub const fn get_cred(&self) -> &BasicAuthCredential {
-        &self.cred
-    }
+	pub const fn get_cred(&self) -> &BasicAuthCredential {
+		&self.cred
+	}
 }
 
 impl DrawableComponent for CredComponent {
-    fn draw<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        rect: Rect,
-    ) -> Result<()> {
-        if self.visible {
-            self.input_username.draw(f, rect)?;
-            self.input_password.draw(f, rect)?;
-        }
-        Ok(())
-    }
+	fn draw<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		rect: Rect,
+	) -> Result<()> {
+		if self.visible {
+			self.input_username.draw(f, rect)?;
+			self.input_password.draw(f, rect)?;
+		}
+		Ok(())
+	}
 }
 
 impl Component for CredComponent {
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
-    ) -> CommandBlocking {
-        if self.is_visible() || force_all {
-            if !force_all {
-                out.clear();
-            }
+	fn commands(
+		&self,
+		out: &mut Vec<CommandInfo>,
+		force_all: bool,
+	) -> CommandBlocking {
+		if self.is_visible() || force_all {
+			if !force_all {
+				out.clear();
+			}
 
-            out.push(CommandInfo::new(
-                strings::commands::validate_msg(&self.key_config),
-                true,
-                true,
-            ));
-            out.push(CommandInfo::new(
-                strings::commands::close_popup(&self.key_config),
-                true,
-                true,
-            ));
-        }
+			out.push(CommandInfo::new(
+				strings::commands::validate_msg(&self.key_config),
+				true,
+				true,
+			));
+			out.push(CommandInfo::new(
+				strings::commands::close_popup(&self.key_config),
+				true,
+				true,
+			));
+		}
 
-        visibility_blocking(self)
-    }
+		visibility_blocking(self)
+	}
 
-    fn event(&mut self, ev: Event) -> Result<EventState> {
-        if self.visible {
-            if let Event::Key(e) = ev {
-                if e == self.key_config.exit_popup {
-                    self.hide();
-                    return Ok(EventState::Consumed);
-                }
-                if self.input_username.event(ev)?.is_consumed()
-                    || self.input_password.event(ev)?.is_consumed()
-                {
-                    return Ok(EventState::Consumed);
-                } else if e == self.key_config.enter {
-                    if self.input_username.is_visible() {
-                        self.cred = BasicAuthCredential::new(
-                            Some(
-                                self.input_username
-                                    .get_text()
-                                    .clone(),
-                            ),
-                            None,
-                        );
-                        self.input_username.hide();
-                        self.input_password.show()?;
-                    } else if self.input_password.is_visible() {
-                        self.cred = BasicAuthCredential::new(
-                            self.cred.username.clone(),
-                            Some(
-                                self.input_password
-                                    .get_text()
-                                    .clone(),
-                            ),
-                        );
-                        self.input_password.hide();
-                        self.input_password.clear();
-                        return Ok(EventState::NotConsumed);
-                    } else {
-                        self.hide();
-                    }
-                }
-            }
-            return Ok(EventState::Consumed);
-        }
-        Ok(EventState::NotConsumed)
-    }
+	fn event(&mut self, ev: Event) -> Result<EventState> {
+		if self.visible {
+			if let Event::Key(e) = ev {
+				if e == self.key_config.exit_popup {
+					self.hide();
+					return Ok(EventState::Consumed);
+				}
+				if self.input_username.event(ev)?.is_consumed()
+					|| self.input_password.event(ev)?.is_consumed()
+				{
+					return Ok(EventState::Consumed);
+				} else if e == self.key_config.enter {
+					if self.input_username.is_visible() {
+						self.cred = BasicAuthCredential::new(
+							Some(
+								self.input_username
+									.get_text()
+									.clone(),
+							),
+							None,
+						);
+						self.input_username.hide();
+						self.input_password.show()?;
+					} else if self.input_password.is_visible() {
+						self.cred = BasicAuthCredential::new(
+							self.cred.username.clone(),
+							Some(
+								self.input_password
+									.get_text()
+									.clone(),
+							),
+						);
+						self.input_password.hide();
+						self.input_password.clear();
+						return Ok(EventState::NotConsumed);
+					} else {
+						self.hide();
+					}
+				}
+			}
+			return Ok(EventState::Consumed);
+		}
+		Ok(EventState::NotConsumed)
+	}
 
-    fn is_visible(&self) -> bool {
-        self.visible
-    }
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
 
-    fn hide(&mut self) {
-        self.cred = BasicAuthCredential::new(None, None);
-        self.visible = false;
-    }
+	fn hide(&mut self) {
+		self.cred = BasicAuthCredential::new(None, None);
+		self.visible = false;
+	}
 
-    fn show(&mut self) -> Result<()> {
-        self.visible = true;
-        if self.cred.username.is_none() {
-            self.input_username.show()
-        } else if self.cred.password.is_none() {
-            self.input_password.show()
-        } else {
-            Ok(())
-        }
-    }
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+		if self.cred.username.is_none() {
+			self.input_username.show()
+		} else if self.cred.password.is_none() {
+			self.input_password.show()
+		} else {
+			Ok(())
+		}
+	}
 }

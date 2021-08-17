@@ -60,11 +60,11 @@ use anyhow::Result;
 use crossterm::event::Event;
 use std::convert::From;
 use tui::{
-    backend::Backend,
-    layout::{Alignment, Rect},
-    text::{Span, Text},
-    widgets::{Block, BorderType, Borders, Paragraph, Wrap},
-    Frame,
+	backend::Backend,
+	layout::{Alignment, Rect},
+	text::{Span, Text},
+	widgets::{Block, BorderType, Borders, Paragraph, Wrap},
+	Frame,
 };
 
 /// creates accessors for a list of components
@@ -134,175 +134,175 @@ macro_rules! setup_popups {
 
 /// returns `true` if event was consumed
 pub fn event_pump(
-    ev: Event,
-    components: &mut [&mut dyn Component],
+	ev: Event,
+	components: &mut [&mut dyn Component],
 ) -> Result<EventState> {
-    for c in components {
-        if c.event(ev)?.is_consumed() {
-            return Ok(EventState::Consumed);
-        }
-    }
+	for c in components {
+		if c.event(ev)?.is_consumed() {
+			return Ok(EventState::Consumed);
+		}
+	}
 
-    Ok(EventState::NotConsumed)
+	Ok(EventState::NotConsumed)
 }
 
 /// helper fn to simplify delegating command
 /// gathering down into child components
 /// see `event_pump`,`accessors`
 pub fn command_pump(
-    out: &mut Vec<CommandInfo>,
-    force_all: bool,
-    components: &[&dyn Component],
+	out: &mut Vec<CommandInfo>,
+	force_all: bool,
+	components: &[&dyn Component],
 ) {
-    for c in components {
-        if c.commands(out, force_all) != CommandBlocking::PassingOn
-            && !force_all
-        {
-            break;
-        }
-    }
+	for c in components {
+		if c.commands(out, force_all) != CommandBlocking::PassingOn
+			&& !force_all
+		{
+			break;
+		}
+	}
 }
 
 #[derive(Copy, Clone)]
 pub enum ScrollType {
-    Up,
-    Down,
-    Home,
-    End,
-    PageUp,
-    PageDown,
+	Up,
+	Down,
+	Home,
+	End,
+	PageUp,
+	PageDown,
 }
 
 #[derive(Copy, Clone)]
 pub enum Direction {
-    Up,
-    Down,
+	Up,
+	Down,
 }
 
 ///
 #[derive(PartialEq)]
 pub enum CommandBlocking {
-    Blocking,
-    PassingOn,
+	Blocking,
+	PassingOn,
 }
 
 ///
 pub fn visibility_blocking<T: Component>(
-    comp: &T,
+	comp: &T,
 ) -> CommandBlocking {
-    if comp.is_visible() {
-        CommandBlocking::Blocking
-    } else {
-        CommandBlocking::PassingOn
-    }
+	if comp.is_visible() {
+		CommandBlocking::Blocking
+	} else {
+		CommandBlocking::PassingOn
+	}
 }
 
 ///
 pub trait DrawableComponent {
-    ///
-    fn draw<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        rect: Rect,
-    ) -> Result<()>;
+	///
+	fn draw<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		rect: Rect,
+	) -> Result<()>;
 }
 
 ///
 #[derive(PartialEq)]
 pub enum EventState {
-    Consumed,
-    NotConsumed,
+	Consumed,
+	NotConsumed,
 }
 
 impl EventState {
-    pub fn is_consumed(&self) -> bool {
-        *self == Self::Consumed
-    }
+	pub fn is_consumed(&self) -> bool {
+		*self == Self::Consumed
+	}
 }
 
 impl From<bool> for EventState {
-    fn from(consumed: bool) -> Self {
-        if consumed {
-            Self::Consumed
-        } else {
-            Self::NotConsumed
-        }
-    }
+	fn from(consumed: bool) -> Self {
+		if consumed {
+			Self::Consumed
+		} else {
+			Self::NotConsumed
+		}
+	}
 }
 
 /// base component trait
 pub trait Component {
-    ///
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
-    ) -> CommandBlocking;
+	///
+	fn commands(
+		&self,
+		out: &mut Vec<CommandInfo>,
+		force_all: bool,
+	) -> CommandBlocking;
 
-    ///
-    fn event(&mut self, ev: Event) -> Result<EventState>;
+	///
+	fn event(&mut self, ev: Event) -> Result<EventState>;
 
-    ///
-    fn focused(&self) -> bool {
-        false
-    }
-    /// focus/unfocus this component depending on param
-    fn focus(&mut self, _focus: bool) {}
-    ///
-    fn is_visible(&self) -> bool {
-        true
-    }
-    ///
-    fn hide(&mut self) {}
-    ///
-    fn show(&mut self) -> Result<()> {
-        Ok(())
-    }
+	///
+	fn focused(&self) -> bool {
+		false
+	}
+	/// focus/unfocus this component depending on param
+	fn focus(&mut self, _focus: bool) {}
+	///
+	fn is_visible(&self) -> bool {
+		true
+	}
+	///
+	fn hide(&mut self) {}
+	///
+	fn show(&mut self) -> Result<()> {
+		Ok(())
+	}
 
-    ///
-    fn toggle_visible(&mut self) -> Result<()> {
-        if self.is_visible() {
-            self.hide();
-            Ok(())
-        } else {
-            self.show()
-        }
-    }
+	///
+	fn toggle_visible(&mut self) -> Result<()> {
+		if self.is_visible() {
+			self.hide();
+			Ok(())
+		} else {
+			self.show()
+		}
+	}
 }
 
 fn dialog_paragraph<'a>(
-    title: &'a str,
-    content: Text<'a>,
-    theme: &Theme,
-    focused: bool,
+	title: &'a str,
+	content: Text<'a>,
+	theme: &Theme,
+	focused: bool,
 ) -> Paragraph<'a> {
-    Paragraph::new(content)
-        .block(
-            Block::default()
-                .title(Span::styled(title, theme.title(focused)))
-                .borders(Borders::ALL)
-                .border_style(theme.block(focused)),
-        )
-        .alignment(Alignment::Left)
+	Paragraph::new(content)
+		.block(
+			Block::default()
+				.title(Span::styled(title, theme.title(focused)))
+				.borders(Borders::ALL)
+				.border_style(theme.block(focused)),
+		)
+		.alignment(Alignment::Left)
 }
 
 fn popup_paragraph<'a, T>(
-    title: &'a str,
-    content: T,
-    theme: &Theme,
-    focused: bool,
+	title: &'a str,
+	content: T,
+	theme: &Theme,
+	focused: bool,
 ) -> Paragraph<'a>
 where
-    T: Into<Text<'a>>,
+	T: Into<Text<'a>>,
 {
-    Paragraph::new(content.into())
-        .block(
-            Block::default()
-                .title(Span::styled(title, theme.title(focused)))
-                .borders(Borders::ALL)
-                .border_type(BorderType::Thick)
-                .border_style(theme.block(focused)),
-        )
-        .alignment(Alignment::Left)
-        .wrap(Wrap { trim: true })
+	Paragraph::new(content.into())
+		.block(
+			Block::default()
+				.title(Span::styled(title, theme.title(focused)))
+				.borders(Borders::ALL)
+				.border_type(BorderType::Thick)
+				.border_style(theme.block(focused)),
+		)
+		.alignment(Alignment::Left)
+		.wrap(Wrap { trim: true })
 }
