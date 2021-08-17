@@ -45,7 +45,7 @@ pub use pull::PullComponent;
 pub use push::PushComponent;
 pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
-pub use reset::ResetComponent;
+pub use reset::ConfirmComponent;
 pub use revision_files::RevisionFilesComponent;
 pub use revision_files_popup::RevisionFilesPopup;
 pub use stashmsg::StashMsgComponent;

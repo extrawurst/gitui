@@ -15,7 +15,7 @@ use std::{
 	rc::Rc,
 };
 
-use crate::args::get_app_config_path;
+use crate::{args::get_app_config_path, strings::symbol};
 
 pub type SharedKeyConfig = Rc<KeyConfig>;
 
@@ -248,6 +248,7 @@ impl KeyConfig {
 					self.get_key_symbol(ev.code)
 				)
 			}
+			KeyCode::Char(' ') => String::from(symbol::SPACE),
 			KeyCode::Char(c) => {
 				format!(
 					"{}{}",

@@ -4,12 +4,12 @@ use crate::{
 	components::{
 		event_pump, BlameFileComponent, BranchListComponent,
 		CommandBlocking, CommandInfo, CommitComponent, Component,
-		CreateBranchComponent, DrawableComponent,
+		ConfirmComponent, CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, HelpComponent,
 		InspectCommitComponent, MsgComponent, PullComponent,
 		PushComponent, PushTagsComponent, RenameBranchComponent,
-		ResetComponent, RevisionFilesPopup, StashMsgComponent,
-		TagCommitComponent, TagListComponent,
+		RevisionFilesPopup, StashMsgComponent, TagCommitComponent,
+		TagListComponent,
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{KeyConfig, SharedKeyConfig},
@@ -42,7 +42,7 @@ pub struct App {
 	do_quit: bool,
 	help: HelpComponent,
 	msg: MsgComponent,
-	reset: ResetComponent,
+	reset: ConfirmComponent,
 	commit: CommitComponent,
 	blame_file_popup: BlameFileComponent,
 	stashmsg_popup: StashMsgComponent,
@@ -91,7 +91,7 @@ impl App {
 
 		Self {
 			input,
-			reset: ResetComponent::new(
+			reset: ConfirmComponent::new(
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
@@ -682,9 +682,15 @@ impl App {
 				}
 			}
 			Action::StashDrop(_) | Action::StashPop(_) => {
-				if self.stashlist_tab.action_confirmed(&action) {
-					flags.insert(NeedsUpdate::ALL);
+				if let Err(e) =
+					self.stashlist_tab.action_confirmed(&action)
+				{
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						e.to_string(),
+					));
 				}
+
+				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetHunk(path, hash) => {
 				sync::reset_hunk(CWD, &path, hash)?;

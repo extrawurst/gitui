@@ -1,3 +1,4 @@
+use crate::strings::symbol;
 use crate::ui::Size;
 use crate::{
 	components::{
@@ -169,7 +170,7 @@ impl TextInputComponent {
 		let cursor_highlighting = {
 			let mut h = HashMap::with_capacity(2);
 			h.insert("\n", "\u{21b5}\n\r");
-			h.insert(" ", "\u{00B7}");
+			h.insert(" ", symbol::WHITESPACE);
 			h
 		};
 
@@ -470,7 +471,10 @@ mod tests {
 			get_style(&txt.lines[0].0[0]),
 			Some(&not_underlined)
 		);
-		assert_eq!(get_text(&txt.lines[0].0[1]), Some("\u{00B7}"));
+		assert_eq!(
+			get_text(&txt.lines[0].0[1]),
+			Some(symbol::WHITESPACE)
+		);
 		assert_eq!(
 			get_style(&txt.lines[0].0[1]),
 			Some(&underlined_whitespace)

@@ -5,7 +5,7 @@ use crate::{
 		Component, DrawableComponent, EventState, ScrollType,
 	},
 	keys::SharedKeyConfig,
-	strings,
+	strings::{self, symbol},
 	ui::calc_scroll_top,
 	ui::style::{SharedTheme, Theme},
 };
@@ -120,6 +120,23 @@ impl CommitList {
 		)
 	}
 
+	///
+	pub fn selected_entry_marked(&self) -> bool {
+		self.selected_entry()
+			.and_then(|e| self.is_marked(&e.id))
+			.unwrap_or_default()
+	}
+
+	///
+	pub fn marked_count(&self) -> usize {
+		self.marked.len()
+	}
+
+	///
+	pub fn marked(&self) -> &[CommitId] {
+		&self.marked
+	}
+
 	pub fn copy_entry_hash(&self) -> Result<()> {
 		if let Some(e) = self.items.iter().nth(
 			self.selection.saturating_sub(self.items.index_offset()),
@@ -223,14 +240,18 @@ impl CommitList {
 			ELEMENTS_PER_LINE + if marked.is_some() { 2 } else { 0 },
 		);
 
-		let splitter_txt = Cow::from(" ");
+		let splitter_txt = Cow::from(symbol::EMPTY_SPACE);
 		let splitter =
 			Span::styled(splitter_txt, theme.text(true, selected));
 
 		// marker
 		if let Some(marked) = marked {
 			txt.push(Span::styled(
-				Cow::from(if marked { "\u{2713}" } else { " " }),
+				Cow::from(if marked {
+					symbol::CHECKMARK
+				} else {
+					symbol::EMPTY_SPACE
+				}),
 				theme.log_marker(selected),
 			));
 			txt.push(splitter.clone());
@@ -431,6 +452,14 @@ impl Component for CommitList {
 		out.push(CommandInfo::new(
 			strings::commands::scroll(&self.key_config),
 			self.selected_entry().is_some(),
+			true,
+		));
+		out.push(CommandInfo::new(
+			strings::commands::commit_list_mark(
+				&self.key_config,
+				self.selected_entry_marked(),
+			),
+			true,
 			true,
 		));
 		CommandBlocking::PassingOn
