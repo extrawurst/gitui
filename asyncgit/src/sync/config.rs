@@ -16,9 +16,9 @@ pub enum ShowUntrackedFilesConfig {
 }
 
 impl Default for ShowUntrackedFilesConfig {
-    fn default() -> Self {
-        Self::No
-    }
+	fn default() -> Self {
+		Self::No
+	}
 }
 
 impl ShowUntrackedFilesConfig {

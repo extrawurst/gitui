@@ -81,239 +81,239 @@ pub use utils::{
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        commit, stage_add_file,
-        status::{get_status, StatusType},
-        utils::{get_head_repo, repo, repo_write_file},
-        CommitId, LogWalker,
-    };
-    use crate::error::Result;
-    use git2::Repository;
-    use std::{path::Path, process::Command};
-    use tempfile::TempDir;
+	use super::{
+		commit, stage_add_file,
+		status::{get_status, StatusType},
+		utils::{get_head_repo, repo, repo_write_file},
+		CommitId, LogWalker,
+	};
+	use crate::error::Result;
+	use git2::Repository;
+	use std::{path::Path, process::Command};
+	use tempfile::TempDir;
 
-    /// Calling `set_search_path` with an empty directory makes sure that there
-    /// is no git config interfering with our tests (for example user-local
-    /// `.gitconfig`).
-    #[allow(unsafe_code)]
-    fn sandbox_config_files() {
-        use git2::{opts::set_search_path, ConfigLevel};
-        use std::sync::Once;
+	/// Calling `set_search_path` with an empty directory makes sure that there
+	/// is no git config interfering with our tests (for example user-local
+	/// `.gitconfig`).
+	#[allow(unsafe_code)]
+	fn sandbox_config_files() {
+		use git2::{opts::set_search_path, ConfigLevel};
+		use std::sync::Once;
 
-        static INIT: Once = Once::new();
+		static INIT: Once = Once::new();
 
-        // Adapted from https://github.com/rust-lang/cargo/pull/9035
-        INIT.call_once(|| unsafe {
-            let temp_dir = TempDir::new().unwrap();
-            let path = temp_dir.path();
+		// Adapted from https://github.com/rust-lang/cargo/pull/9035
+		INIT.call_once(|| unsafe {
+			let temp_dir = TempDir::new().unwrap();
+			let path = temp_dir.path();
 
-            set_search_path(ConfigLevel::System, &path).unwrap();
-            set_search_path(ConfigLevel::Global, &path).unwrap();
-            set_search_path(ConfigLevel::XDG, &path).unwrap();
-            set_search_path(ConfigLevel::ProgramData, &path).unwrap();
-        });
-    }
+			set_search_path(ConfigLevel::System, &path).unwrap();
+			set_search_path(ConfigLevel::Global, &path).unwrap();
+			set_search_path(ConfigLevel::XDG, &path).unwrap();
+			set_search_path(ConfigLevel::ProgramData, &path).unwrap();
+		});
+	}
 
-    /// write, stage and commit a file
-    pub fn write_commit_file(
-        repo: &Repository,
-        file: &str,
-        content: &str,
-        commit_name: &str,
-    ) -> CommitId {
-        repo_write_file(repo, file, content).unwrap();
+	/// write, stage and commit a file
+	pub fn write_commit_file(
+		repo: &Repository,
+		file: &str,
+		content: &str,
+		commit_name: &str,
+	) -> CommitId {
+		repo_write_file(repo, file, content).unwrap();
 
-        stage_add_file(
-            repo.workdir().unwrap().to_str().unwrap(),
-            Path::new(file),
-        )
-        .unwrap();
+		stage_add_file(
+			repo.workdir().unwrap().to_str().unwrap(),
+			Path::new(file),
+		)
+		.unwrap();
 
-        commit(repo.workdir().unwrap().to_str().unwrap(), commit_name)
-            .unwrap()
-    }
+		commit(repo.workdir().unwrap().to_str().unwrap(), commit_name)
+			.unwrap()
+	}
 
-    /// write, stage and commit a file giving the commit a specific timestamp
-    pub fn write_commit_file_at(
-        repo: &Repository,
-        file: &str,
-        content: &str,
-        commit_name: &str,
-        time: git2::Time,
-    ) -> CommitId {
-        repo_write_file(repo, file, content).unwrap();
+	/// write, stage and commit a file giving the commit a specific timestamp
+	pub fn write_commit_file_at(
+		repo: &Repository,
+		file: &str,
+		content: &str,
+		commit_name: &str,
+		time: git2::Time,
+	) -> CommitId {
+		repo_write_file(repo, file, content).unwrap();
 
-        let path = repo.workdir().unwrap().to_str().unwrap();
+		let path = repo.workdir().unwrap().to_str().unwrap();
 
-        stage_add_file(path, Path::new(file)).unwrap();
+		stage_add_file(path, Path::new(file)).unwrap();
 
-        commit_at(path, commit_name, time)
-    }
+		commit_at(path, commit_name, time)
+	}
 
-    fn commit_at(
-        repo_path: &str,
-        msg: &str,
-        time: git2::Time,
-    ) -> CommitId {
-        let repo = repo(repo_path).unwrap();
+	fn commit_at(
+		repo_path: &str,
+		msg: &str,
+		time: git2::Time,
+	) -> CommitId {
+		let repo = repo(repo_path).unwrap();
 
-        let signature =
-            git2::Signature::new("name", "email", &time).unwrap();
-        let mut index = repo.index().unwrap();
-        let tree_id = index.write_tree().unwrap();
-        let tree = repo.find_tree(tree_id).unwrap();
+		let signature =
+			git2::Signature::new("name", "email", &time).unwrap();
+		let mut index = repo.index().unwrap();
+		let tree_id = index.write_tree().unwrap();
+		let tree = repo.find_tree(tree_id).unwrap();
 
-        let parents = if let Ok(id) = get_head_repo(&repo) {
-            vec![repo.find_commit(id.into()).unwrap()]
-        } else {
-            Vec::new()
-        };
+		let parents = if let Ok(id) = get_head_repo(&repo) {
+			vec![repo.find_commit(id.into()).unwrap()]
+		} else {
+			Vec::new()
+		};
 
-        let parents = parents.iter().collect::<Vec<_>>();
+		let parents = parents.iter().collect::<Vec<_>>();
 
-        let commit = repo
-            .commit(
-                Some("HEAD"),
-                &signature,
-                &signature,
-                msg,
-                &tree,
-                parents.as_slice(),
-            )
-            .unwrap()
-            .into();
+		let commit = repo
+			.commit(
+				Some("HEAD"),
+				&signature,
+				&signature,
+				msg,
+				&tree,
+				parents.as_slice(),
+			)
+			.unwrap()
+			.into();
 
-        commit
-    }
+		commit
+	}
 
-    ///
-    pub fn repo_init_empty() -> Result<(TempDir, Repository)> {
-        sandbox_config_files();
+	///
+	pub fn repo_init_empty() -> Result<(TempDir, Repository)> {
+		sandbox_config_files();
 
-        let td = TempDir::new()?;
-        let repo = Repository::init(td.path())?;
-        {
-            let mut config = repo.config()?;
-            config.set_str("user.name", "name")?;
-            config.set_str("user.email", "email")?;
-        }
-        Ok((td, repo))
-    }
+		let td = TempDir::new()?;
+		let repo = Repository::init(td.path())?;
+		{
+			let mut config = repo.config()?;
+			config.set_str("user.name", "name")?;
+			config.set_str("user.email", "email")?;
+		}
+		Ok((td, repo))
+	}
 
-    ///
-    pub fn repo_init() -> Result<(TempDir, Repository)> {
-        sandbox_config_files();
+	///
+	pub fn repo_init() -> Result<(TempDir, Repository)> {
+		sandbox_config_files();
 
-        let td = TempDir::new()?;
-        let repo = Repository::init(td.path())?;
-        {
-            let mut config = repo.config()?;
-            config.set_str("user.name", "name")?;
-            config.set_str("user.email", "email")?;
+		let td = TempDir::new()?;
+		let repo = Repository::init(td.path())?;
+		{
+			let mut config = repo.config()?;
+			config.set_str("user.name", "name")?;
+			config.set_str("user.email", "email")?;
 
-            let mut index = repo.index()?;
-            let id = index.write_tree()?;
+			let mut index = repo.index()?;
+			let id = index.write_tree()?;
 
-            let tree = repo.find_tree(id)?;
-            let sig = repo.signature()?;
-            repo.commit(
-                Some("HEAD"),
-                &sig,
-                &sig,
-                "initial",
-                &tree,
-                &[],
-            )?;
-        }
-        Ok((td, repo))
-    }
+			let tree = repo.find_tree(id)?;
+			let sig = repo.signature()?;
+			repo.commit(
+				Some("HEAD"),
+				&sig,
+				&sig,
+				"initial",
+				&tree,
+				&[],
+			)?;
+		}
+		Ok((td, repo))
+	}
 
-    ///
-    pub fn repo_clone(p: &str) -> Result<(TempDir, Repository)> {
-        sandbox_config_files();
+	///
+	pub fn repo_clone(p: &str) -> Result<(TempDir, Repository)> {
+		sandbox_config_files();
 
-        let td = TempDir::new()?;
+		let td = TempDir::new()?;
 
-        let td_path = td.path().as_os_str().to_str().unwrap();
+		let td_path = td.path().as_os_str().to_str().unwrap();
 
-        let repo = Repository::clone(p, td_path).unwrap();
+		let repo = Repository::clone(p, td_path).unwrap();
 
-        let mut config = repo.config()?;
-        config.set_str("user.name", "name")?;
-        config.set_str("user.email", "email")?;
+		let mut config = repo.config()?;
+		config.set_str("user.name", "name")?;
+		config.set_str("user.email", "email")?;
 
-        Ok((td, repo))
-    }
+		Ok((td, repo))
+	}
 
-    /// Same as repo_init, but the repo is a bare repo (--bare)
-    pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
-        let tmp_repo_dir = TempDir::new()?;
-        let bare_repo = Repository::init_bare(tmp_repo_dir.path())?;
-        Ok((tmp_repo_dir, bare_repo))
-    }
+	/// Same as repo_init, but the repo is a bare repo (--bare)
+	pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
+		let tmp_repo_dir = TempDir::new()?;
+		let bare_repo = Repository::init_bare(tmp_repo_dir.path())?;
+		Ok((tmp_repo_dir, bare_repo))
+	}
 
-    /// helper returning amount of files with changes in the (wd,stage)
-    pub fn get_statuses(repo_path: &str) -> (usize, usize) {
-        (
-            get_status(repo_path, StatusType::WorkingDir, None)
-                .unwrap()
-                .len(),
-            get_status(repo_path, StatusType::Stage, None)
-                .unwrap()
-                .len(),
-        )
-    }
+	/// helper returning amount of files with changes in the (wd,stage)
+	pub fn get_statuses(repo_path: &str) -> (usize, usize) {
+		(
+			get_status(repo_path, StatusType::WorkingDir, None)
+				.unwrap()
+				.len(),
+			get_status(repo_path, StatusType::Stage, None)
+				.unwrap()
+				.len(),
+		)
+	}
 
-    ///
-    pub fn debug_cmd_print(path: &str, cmd: &str) {
-        let cmd = debug_cmd(path, cmd);
-        eprintln!("\n----\n{}", cmd);
-    }
+	///
+	pub fn debug_cmd_print(path: &str, cmd: &str) {
+		let cmd = debug_cmd(path, cmd);
+		eprintln!("\n----\n{}", cmd);
+	}
 
-    /// helper to fetch commmit details using log walker
-    pub fn get_commit_ids(
-        r: &Repository,
-        max_count: usize,
-    ) -> Vec<CommitId> {
-        let mut commit_ids = Vec::<CommitId>::new();
-        LogWalker::new(r, max_count)
-            .unwrap()
-            .read(&mut commit_ids)
-            .unwrap();
+	/// helper to fetch commmit details using log walker
+	pub fn get_commit_ids(
+		r: &Repository,
+		max_count: usize,
+	) -> Vec<CommitId> {
+		let mut commit_ids = Vec::<CommitId>::new();
+		LogWalker::new(r, max_count)
+			.unwrap()
+			.read(&mut commit_ids)
+			.unwrap();
 
-        commit_ids
-    }
+		commit_ids
+	}
 
-    fn debug_cmd(path: &str, cmd: &str) -> String {
-        let output = if cfg!(target_os = "windows") {
-            Command::new("cmd")
-                .args(&["/C", cmd])
-                .current_dir(path)
-                .output()
-                .unwrap()
-        } else {
-            Command::new("sh")
-                .arg("-c")
-                .arg(cmd)
-                .current_dir(path)
-                .output()
-                .unwrap()
-        };
+	fn debug_cmd(path: &str, cmd: &str) -> String {
+		let output = if cfg!(target_os = "windows") {
+			Command::new("cmd")
+				.args(&["/C", cmd])
+				.current_dir(path)
+				.output()
+				.unwrap()
+		} else {
+			Command::new("sh")
+				.arg("-c")
+				.arg(cmd)
+				.current_dir(path)
+				.output()
+				.unwrap()
+		};
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        format!(
-            "{}{}",
-            if stdout.is_empty() {
-                String::new()
-            } else {
-                format!("out:\n{}", stdout)
-            },
-            if stderr.is_empty() {
-                String::new()
-            } else {
-                format!("err:\n{}", stderr)
-            }
-        )
-    }
+		let stdout = String::from_utf8_lossy(&output.stdout);
+		let stderr = String::from_utf8_lossy(&output.stderr);
+		format!(
+			"{}{}",
+			if stdout.is_empty() {
+				String::new()
+			} else {
+				format!("out:\n{}", stdout)
+			},
+			if stderr.is_empty() {
+				String::new()
+			} else {
+				format!("err:\n{}", stderr)
+			}
+		)
+	}
 }
