@@ -66,7 +66,13 @@ impl AsyncTags {
     ) -> Result<()> {
         log::trace!("request");
 
-        if !force && (self.is_pending() || !self.is_outdated(dur)?) {
+        if !force && self.is_pending() {
+            return Ok(());
+        }
+
+        let outdated = self.is_outdated(dur)?;
+
+        if !force && !outdated {
             return Ok(());
         }
 
@@ -77,8 +83,8 @@ impl AsyncTags {
         self.pending.fetch_add(1, Ordering::Relaxed);
 
         rayon_core::spawn(move || {
-            let notify =
-                Self::getter(&arc_last).expect("error getting tags");
+            let notify = Self::getter(&arc_last, outdated)
+                .expect("error getting tags");
 
             arc_pending.fetch_sub(1, Ordering::Relaxed);
 
@@ -96,14 +102,16 @@ impl AsyncTags {
 
     fn getter(
         arc_last: &Arc<Mutex<Option<(Instant, TagsResult)>>>,
+        outdated: bool,
     ) -> Result<bool> {
         let tags = sync::get_tags(CWD)?;
 
         let hash = hash(&tags);
 
-        if Self::last_hash(arc_last)
-            .map(|last| last == hash)
-            .unwrap_or_default()
+        if !outdated
+            && Self::last_hash(arc_last)
+                .map(|last| last == hash)
+                .unwrap_or_default()
         {
             return Ok(false);
         }
