@@ -10,7 +10,7 @@ use crate::{
     ui::style::{SharedTheme, Theme},
 };
 use anyhow::Result;
-use asyncgit::sync::Tags;
+use asyncgit::sync::{CommitId, Tags};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
 use std::{
@@ -33,6 +33,7 @@ pub struct CommitList {
     branch: Option<String>,
     count_total: usize,
     items: ItemBatch,
+    marked: Vec<CommitId>,
     scroll_state: (Instant, f32),
     tags: Option<Tags>,
     current_size: Cell<(u16, u16)>,
@@ -50,6 +51,7 @@ impl CommitList {
     ) -> Self {
         Self {
             items: ItemBatch::default(),
+            marked: Vec::with_capacity(2),
             selection: 0,
             branch: None,
             count_total: 0,
@@ -164,6 +166,17 @@ impl CommitList {
         Ok(needs_update)
     }
 
+    fn mark(&mut self) {
+        if let Some(e) = self.selected_entry() {
+            let id = e.id;
+            if self.is_marked(&id).unwrap_or_default() {
+                self.marked.retain(|marked| marked != &id);
+            } else {
+                self.marked.push(id);
+            }
+        }
+    }
+
     fn update_scroll_speed(&mut self) {
         const REPEATED_SCROLL_THRESHOLD_MILLIS: u128 = 300;
         const SCROLL_SPEED_START: f32 = 0.1_f32;
@@ -188,6 +201,15 @@ impl CommitList {
         self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
     }
 
+    fn is_marked(&self, id: &CommitId) -> Option<bool> {
+        if self.marked.is_empty() {
+            None
+        } else {
+            let found = self.marked.iter().any(|entry| entry == id);
+            Some(found)
+        }
+    }
+
     fn get_entry_to_add<'a>(
         e: &'a LogEntry,
         selected: bool,
@@ -195,13 +217,25 @@ impl CommitList {
         theme: &Theme,
         width: usize,
         now: DateTime<Local>,
+        marked: Option<bool>,
     ) -> Spans<'a> {
         let mut txt: Vec<Span> = Vec::new();
-        txt.reserve(ELEMENTS_PER_LINE);
+        txt.reserve(
+            ELEMENTS_PER_LINE + if marked.is_some() { 2 } else { 0 },
+        );
 
         let splitter_txt = Cow::from(" ");
         let splitter =
             Span::styled(splitter_txt, theme.text(true, selected));
+
+        // marked
+        if let Some(marked) = marked {
+            txt.push(Span::styled(
+                Cow::from(if marked { "X" } else { " " }),
+                theme.text(true, selected),
+            ));
+            txt.push(splitter.clone());
+        }
 
         // commit hash
         txt.push(Span::styled(
@@ -258,6 +292,8 @@ impl CommitList {
 
         let now = Local::now();
 
+        let any_marked = !self.marked.is_empty();
+
         for (idx, e) in self
             .items
             .iter()
@@ -270,6 +306,13 @@ impl CommitList {
                 .as_ref()
                 .and_then(|t| t.get(&e.id))
                 .map(|tags| tags.join(" "));
+
+            let marked = if any_marked {
+                self.is_marked(&e.id)
+            } else {
+                None
+            };
+
             txt.push(Self::get_entry_to_add(
                 e,
                 idx + self.scroll_top.get() == selection,
@@ -277,6 +320,7 @@ impl CommitList {
                 &self.theme,
                 width,
                 now,
+                marked,
             ));
         }
 
@@ -368,6 +412,9 @@ impl Component for CommitList {
                 self.move_selection(ScrollType::PageUp)?
             } else if k == self.key_config.page_down {
                 self.move_selection(ScrollType::PageDown)?
+            } else if k == self.key_config.log_mark_commit {
+                self.mark();
+                true
             } else {
                 false
             };

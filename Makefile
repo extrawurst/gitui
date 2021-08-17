@@ -7,6 +7,9 @@ ARGS=-l
 profile:
 	cargo run --features=timing,pprof -- ${ARGS}
 
+run-timing:
+	cargo run --features=timing --release -- ${ARGS}
+
 debug:
 	RUST_BACKTRACE=true cargo run --features=timing -- ${ARGS}
 
