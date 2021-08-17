@@ -6,9 +6,10 @@ use crate::{
 		CommandBlocking, CommandInfo, CommitComponent, Component,
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, HelpComponent,
-		InspectCommitComponent, MsgComponent, PullComponent,
-		PushComponent, PushTagsComponent, RenameBranchComponent,
-		RevisionFilesPopup, StashMsgComponent, TagCommitComponent,
+		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
+		PullComponent, PushComponent, PushTagsComponent,
+		RenameBranchComponent, ResetComponent, RevisionFilesPopup,
+		SharedOptions, StashMsgComponent, TagCommitComponent,
 		TagListComponent,
 	},
 	input::{Input, InputEvent, InputState},
@@ -56,6 +57,7 @@ pub struct App {
 	create_branch_popup: CreateBranchComponent,
 	rename_branch_popup: RenameBranchComponent,
 	select_branch_popup: BranchListComponent,
+	options_popup: OptionsPopupComponent,
 	tags_popup: TagListComponent,
 	cmdbar: RefCell<CommandBar>,
 	tab: usize,
@@ -88,6 +90,7 @@ impl App {
 		let queue = Queue::new();
 		let theme = Rc::new(theme);
 		let key_config = Rc::new(key_config);
+		let options = SharedOptions::default();
 
 		Self {
 			input,
@@ -173,6 +176,10 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
+			options_popup: OptionsPopupComponent::new(
+				key_config.clone(),
+				options.clone(),
+			),
 			do_quit: false,
 			cmdbar: RefCell::new(CommandBar::new(
 				theme.clone(),
@@ -195,6 +202,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options,
 			),
 			stashing_tab: Stashing::new(
 				sender,
@@ -426,6 +434,7 @@ impl App {
 			select_branch_popup,
 			revision_files_popup,
 			tags_popup,
+			options_popup,
 			help,
 			revlog,
 			status_tab,
@@ -453,6 +462,7 @@ impl App {
 			push_popup,
 			push_tags_popup,
 			pull_popup,
+			options_popup,
 			reset,
 			msg
 		]

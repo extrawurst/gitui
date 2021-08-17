@@ -4,7 +4,7 @@ use crate::{
 		command_pump, event_pump, visibility_blocking,
 		ChangesComponent, CommandBlocking, CommandInfo, Component,
 		DiffComponent, DrawableComponent, EventState,
-		FileTreeItemKind,
+		FileTreeItemKind, SharedOptions,
 	},
 	keys::SharedKeyConfig,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
@@ -14,8 +14,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	cached,
+	sync::BranchCompare,
 	sync::{self, status::StatusType, RepoState},
-	sync::{BranchCompare, ShowUntrackedFilesConfig},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
 	DiffType, StatusParams, CWD,
 };
@@ -56,10 +56,6 @@ enum DiffTarget {
 	WorkingDir,
 }
 
-pub struct Options {
-	pub show_untracked: Option<ShowUntrackedFilesConfig>,
-}
-
 pub struct Status {
 	visible: bool,
 	focus: Focus,
@@ -74,7 +70,7 @@ pub struct Status {
 	git_branch_name: cached::BranchName,
 	queue: Queue,
 	git_action_executed: bool,
-	options: Options,
+	options: SharedOptions,
 	key_config: SharedKeyConfig,
 }
 
@@ -139,6 +135,7 @@ impl Status {
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			queue: queue.clone(),
@@ -174,9 +171,7 @@ impl Status {
 			git_branch_state: None,
 			git_branch_name: cached::BranchName::new(CWD),
 			key_config,
-			options: Options {
-				show_untracked: None,
-			},
+			options,
 		}
 	}
 
@@ -325,14 +320,16 @@ impl Status {
 		self.git_branch_name.lookup().map(Some).unwrap_or(None);
 
 		if self.is_visible() {
+			let config = self.options.borrow().status_show_untracked;
+
 			self.git_diff.refresh()?;
 			self.git_status_workdir.fetch(&StatusParams::new(
 				StatusType::WorkingDir,
-				self.options.show_untracked,
+				config,
 			))?;
 			self.git_status_stage.fetch(&StatusParams::new(
 				StatusType::Stage,
-				self.options.show_untracked,
+				config,
 			))?;
 
 			self.branch_compare();
