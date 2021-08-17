@@ -230,7 +230,7 @@ impl CommitList {
 		// marker
 		if let Some(marked) = marked {
 			txt.push(Span::styled(
-				Cow::from(if marked { "X" } else { " " }),
+				Cow::from(if marked { "\u{2713}" } else { " " }),
 				theme.log_marker(selected),
 			));
 			txt.push(splitter.clone());

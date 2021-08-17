@@ -232,7 +232,9 @@ impl Theme {
 	}
 
 	pub fn log_marker(&self, selected: bool) -> Style {
-		let mut style = Style::default().add_modifier(Modifier::BOLD);
+		let mut style = Style::default()
+			.fg(self.commit_author)
+			.add_modifier(Modifier::BOLD);
 
 		style = self.apply_select(style, selected);
 
@@ -245,6 +247,7 @@ impl Theme {
 			selected,
 		)
 	}
+
 	pub fn commit_author(&self, selected: bool) -> Style {
 		self.apply_select(
 			Style::default().fg(self.commit_author),
