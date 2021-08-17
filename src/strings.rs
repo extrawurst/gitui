@@ -1,3 +1,5 @@
+use asyncgit::sync::CommitId;
+
 use crate::keys::SharedKeyConfig;
 
 pub mod order {
@@ -19,6 +21,13 @@ pub static PUSH_TAGS_POPUP_MSG: &str = "Push Tags";
 pub static PUSH_TAGS_STATES_FETCHING: &str = "fetching";
 pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
 pub static PUSH_TAGS_STATES_DONE: &str = "done";
+
+pub mod symbol {
+	pub const WHITESPACE: &str = "\u{00B7}"; //·
+	pub const CHECKMARK: &str = "\u{2713}"; //✓
+	pub const SPACE: &str = "\u{02FD}"; //˽
+	pub const EMPTY_SPACE: &str = " ";
+}
 
 pub fn title_branches() -> String {
 	"Branches".to_string()
@@ -103,8 +112,9 @@ pub fn confirm_title_reset() -> String {
 }
 pub fn confirm_title_stashdrop(
 	_key_config: &SharedKeyConfig,
+	multiple: bool,
 ) -> String {
-	"Drop".to_string()
+	format!("Drop Stash{}", if multiple { "es" } else { "" })
 }
 pub fn confirm_title_stashpop(
 	_key_config: &SharedKeyConfig,
@@ -151,8 +161,21 @@ pub fn confirm_msg_reset_lines(lines: usize) -> String {
 }
 pub fn confirm_msg_stashdrop(
 	_key_config: &SharedKeyConfig,
+	ids: &[CommitId],
 ) -> String {
-	"confirm stash drop?".to_string()
+	format!(
+		"Sure you want to drop following {}stash{}?\n\n{}",
+		if ids.len() > 1 {
+			format!("{} ", ids.len())
+		} else {
+			String::default()
+		},
+		if ids.len() > 1 { "es" } else { "" },
+		ids.iter()
+			.map(CommitId::get_short_string)
+			.collect::<Vec<_>>()
+			.join(", ")
+	)
 }
 pub fn confirm_msg_stashpop(_key_config: &SharedKeyConfig) -> String {
 	"The stash will be applied and removed from the stash list. Confirm stash pop?"
@@ -396,6 +419,20 @@ pub mod commands {
 				key_config.get_hint(key_config.focus_below)
 			),
 			"scroll up or down in focused view",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn commit_list_mark(
+		key_config: &SharedKeyConfig,
+		marked: bool,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"{} [{}]",
+				if marked { "Unmark" } else { "Mark" },
+				key_config.get_hint(key_config.log_mark_commit),
+			),
+			"mark multiple commits",
 			CMD_GROUP_GENERAL,
 		)
 	}
@@ -828,10 +865,16 @@ pub mod commands {
 	}
 	pub fn stashlist_drop(
 		key_config: &SharedKeyConfig,
+		marked: usize,
 	) -> CommandText {
 		CommandText::new(
 			format!(
-				"Drop [{}]",
+				"Drop{} [{}]",
+				if marked == 0 {
+					String::default()
+				} else {
+					format!(" {}", marked)
+				},
 				key_config.get_hint(key_config.stash_drop),
 			),
 			"drop selected stash",

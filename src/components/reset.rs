@@ -16,7 +16,7 @@ use tui::{
 use ui::style::SharedTheme;
 
 ///
-pub struct ResetComponent {
+pub struct ConfirmComponent {
 	target: Option<Action>,
 	visible: bool,
 	queue: Queue,
@@ -24,7 +24,7 @@ pub struct ResetComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for ResetComponent {
+impl DrawableComponent for ConfirmComponent {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -50,7 +50,7 @@ impl DrawableComponent for ResetComponent {
 	}
 }
 
-impl Component for ResetComponent {
+impl Component for ConfirmComponent {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -101,7 +101,7 @@ impl Component for ResetComponent {
 	}
 }
 
-impl ResetComponent {
+impl ConfirmComponent {
 	///
 	pub fn new(
 		queue: Queue,
@@ -139,11 +139,11 @@ impl ResetComponent {
                     strings::confirm_title_reset(),
                     strings::confirm_msg_reset(),
                 ),
-                Action::StashDrop(_) => (
+                Action::StashDrop(ids) => (
                     strings::confirm_title_stashdrop(
-                        &self.key_config,
+                        &self.key_config,ids.len()>1
                     ),
-                    strings::confirm_msg_stashdrop(&self.key_config),
+                    strings::confirm_msg_stashdrop(&self.key_config,ids),
                 ),
                 Action::StashPop(_) => (
                     strings::confirm_title_stashpop(&self.key_config),

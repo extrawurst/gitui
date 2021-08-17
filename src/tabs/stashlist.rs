@@ -71,9 +71,13 @@ impl StashList {
 	}
 
 	fn drop_stash(&mut self) {
-		if let Some(e) = self.list.selected_entry() {
+		if self.list.marked_count() > 0 {
 			self.queue.push(InternalEvent::ConfirmAction(
-				Action::StashDrop(e.id),
+				Action::StashDrop(self.list.marked().to_vec()),
+			));
+		} else if let Some(e) = self.list.selected_entry() {
+			self.queue.push(InternalEvent::ConfirmAction(
+				Action::StashDrop(vec![e.id]),
 			));
 		}
 	}
@@ -93,31 +97,27 @@ impl StashList {
 	}
 
 	/// Called when a pending stash action has been confirmed
-	pub fn action_confirmed(&self, action: &Action) -> bool {
-		match *action {
-			Action::StashDrop(id) => Self::drop(id),
-			Action::StashPop(id) => self.pop(id),
-			_ => false,
-		}
+	pub fn action_confirmed(action: &Action) -> Result<()> {
+		match action {
+			Action::StashDrop(ids) => Self::drop(ids)?,
+			Action::StashPop(id) => Self::pop(*id)?,
+			_ => (),
+		};
+
+		Ok(())
 	}
 
-	fn drop(id: CommitId) -> bool {
-		sync::stash_drop(CWD, id).is_ok()
+	fn drop(ids: &[CommitId]) -> Result<()> {
+		for id in ids {
+			sync::stash_drop(CWD, *id)?;
+		}
+
+		Ok(())
 	}
 
-	fn pop(&self, id: CommitId) -> bool {
-		match sync::stash_pop(CWD, id) {
-			Ok(_) => {
-				self.queue.push(InternalEvent::TabSwitch);
-				true
-			}
-			Err(e) => {
-				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("stash pop error:\n{}", e,),
-				));
-				true
-			}
-		}
+	fn pop(id: CommitId) -> Result<()> {
+		sync::stash_pop(CWD, id)?;
+		Ok(())
 	}
 }
 
@@ -155,7 +155,10 @@ impl Component for StashList {
 				true,
 			));
 			out.push(CommandInfo::new(
-				strings::commands::stashlist_drop(&self.key_config),
+				strings::commands::stashlist_drop(
+					&self.key_config,
+					self.list.marked_count(),
+				),
 				selection_valid,
 				true,
 			));
