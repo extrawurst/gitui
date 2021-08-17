@@ -5,6 +5,7 @@ use scopetime::scope_time;
 
 // see https://git-scm.com/docs/git-config#Documentation/git-config.txt-statusshowUntrackedFiles
 /// represents the `status.showUntrackedFiles` git config state
+#[derive(Hash, Copy, Clone, PartialEq)]
 pub enum ShowUntrackedFilesConfig {
 	///
 	No,
@@ -12,6 +13,12 @@ pub enum ShowUntrackedFilesConfig {
 	Normal,
 	///
 	All,
+}
+
+impl Default for ShowUntrackedFilesConfig {
+    fn default() -> Self {
+        Self::No
+    }
 }
 
 impl ShowUntrackedFilesConfig {
