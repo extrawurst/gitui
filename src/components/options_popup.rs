@@ -15,7 +15,7 @@ use asyncgit::sync::ShowUntrackedFilesConfig;
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, widgets::Clear, Frame};
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct Options {
 	pub status_show_untracked: Option<ShowUntrackedFilesConfig>,
 	pub diff_ignore_whitespaces: bool,
