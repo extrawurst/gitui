@@ -227,11 +227,11 @@ impl CommitList {
 		let splitter =
 			Span::styled(splitter_txt, theme.text(true, selected));
 
-		// marked
+		// marker
 		if let Some(marked) = marked {
 			txt.push(Span::styled(
 				Cow::from(if marked { "X" } else { " " }),
-				theme.text(true, selected),
+				theme.log_marker(selected),
 			));
 			txt.push(splitter.clone());
 		}

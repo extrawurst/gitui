@@ -230,6 +230,15 @@ impl Theme {
 			selected,
 		)
 	}
+
+	pub fn log_marker(&self, selected: bool) -> Style {
+		let mut style = Style::default().add_modifier(Modifier::BOLD);
+
+		style = self.apply_select(style, selected);
+
+		style
+	}
+
 	pub fn commit_time(&self, selected: bool) -> Style {
 		self.apply_select(
 			Style::default().fg(self.commit_time),
