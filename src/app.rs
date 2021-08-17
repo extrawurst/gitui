@@ -682,9 +682,7 @@ impl App {
 				}
 			}
 			Action::StashDrop(_) | Action::StashPop(_) => {
-				if let Err(e) =
-					self.stashlist_tab.action_confirmed(&action)
-				{
+				if let Err(e) = StashList::action_confirmed(&action) {
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						e.to_string(),
 					));

@@ -97,10 +97,10 @@ impl StashList {
 	}
 
 	/// Called when a pending stash action has been confirmed
-	pub fn action_confirmed(&self, action: &Action) -> Result<()> {
+	pub fn action_confirmed(action: &Action) -> Result<()> {
 		match action {
 			Action::StashDrop(ids) => Self::drop(ids)?,
-			Action::StashPop(id) => self.pop(*id)?,
+			Action::StashPop(id) => Self::pop(*id)?,
 			_ => (),
 		};
 
@@ -109,13 +109,13 @@ impl StashList {
 
 	fn drop(ids: &[CommitId]) -> Result<()> {
 		for id in ids {
-			sync::stash_drop(CWD, *id)?
+			sync::stash_drop(CWD, *id)?;
 		}
 
 		Ok(())
 	}
 
-	fn pop(&self, id: CommitId) -> Result<()> {
+	fn pop(id: CommitId) -> Result<()> {
 		sync::stash_pop(CWD, id)?;
 		Ok(())
 	}

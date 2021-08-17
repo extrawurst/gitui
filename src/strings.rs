@@ -164,7 +164,12 @@ pub fn confirm_msg_stashdrop(
 	ids: &[CommitId],
 ) -> String {
 	format!(
-		"Sure you want to drop following stash{}?\n\n{}",
+		"Sure you want to drop following {}stash{}?\n\n{}",
+		if ids.len() > 1 {
+			format!("{} ", ids.len())
+		} else {
+			String::default()
+		},
 		if ids.len() > 1 { "es" } else { "" },
 		ids.iter()
 			.map(CommitId::get_short_string)
