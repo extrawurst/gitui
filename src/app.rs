@@ -2,9 +2,10 @@ use crate::{
 	accessors,
 	cmdbar::CommandBar,
 	components::{
-		event_pump, BlameFileComponent, BranchListComponent,
-		CommandBlocking, CommandInfo, CommitComponent, Component,
-		ConfirmComponent, CreateBranchComponent, DrawableComponent,
+		event_pump, AppOption, BlameFileComponent,
+		BranchListComponent, CommandBlocking, CommandInfo,
+		CommitComponent, Component, ConfirmComponent,
+		CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, HelpComponent,
 		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
 		PullComponent, PushComponent, PushTagsComponent,
@@ -176,6 +177,8 @@ impl App {
 				key_config.clone(),
 			),
 			options_popup: OptionsPopupComponent::new(
+				&queue,
+				theme.clone(),
 				key_config.clone(),
 				options.clone(),
 			),
@@ -298,6 +301,9 @@ impl App {
 				} else if k == self.key_config.cmd_bar_toggle {
 					self.cmdbar.borrow_mut().toggle_more();
 					NeedsUpdate::empty()
+				} else if k == self.key_config.open_options {
+					self.options_popup.show()?;
+					NeedsUpdate::ALL
 				} else {
 					NeedsUpdate::empty()
 				};
@@ -674,6 +680,20 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
+			InternalEvent::OptionSwitched(o) => {
+				match o {
+					AppOption::StatusShowUntracked => {
+						self.status_tab.update()?
+					}
+					AppOption::DiffContextLines
+					| AppOption::DiffIgnoreWhitespaces
+					| AppOption::DiffInterhunkLines => {
+						self.status_tab.update_diff()?
+					}
+				}
+
+				flags.insert(NeedsUpdate::ALL);
+			}
 		};
 
 		Ok(flags)
@@ -788,6 +808,14 @@ impl App {
 				strings::commands::toggle_tabs_direct(
 					&self.key_config,
 				),
+				true,
+				!self.any_popup_visible(),
+			)
+			.order(order::NAV),
+		);
+		res.push(
+			CommandInfo::new(
+				strings::commands::options_popup(&self.key_config),
 				true,
 				!self.any_popup_visible(),
 			)

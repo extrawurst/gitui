@@ -173,6 +173,7 @@ mod tests {
 			sub_path.to_str().unwrap(),
 			file_path.to_str().unwrap(),
 			false,
+			None,
 		)?;
 
 		assert!(reset_hunk(

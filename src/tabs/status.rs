@@ -403,6 +403,7 @@ impl Status {
 			let diff_params = DiffParams {
 				path: path.clone(),
 				diff_type,
+				options: self.options.borrow().diff,
 			};
 
 			if self.diff.current() == (path.clone(), is_stage) {
@@ -410,24 +411,39 @@ impl Status {
 				// maybe the diff changed (outside file change)
 				if let Some((params, last)) = self.git_diff.last()? {
 					if params == diff_params {
+						// all params match, so we might need to update
 						self.diff.update(path, is_stage, last);
+					} else {
+						// params changed, we need to request the right diff
+						self.request_diff(
+							diff_params,
+							path,
+							is_stage,
+						)?;
 					}
 				}
 			} else {
 				// we dont show the right diff right now, so we need to request
-				if let Some(diff) =
-					self.git_diff.request(diff_params)?
-				{
-					self.diff.update(path, is_stage, diff);
-				} else {
-					self.diff.clear(true);
-				}
+				self.request_diff(diff_params, path, is_stage)?;
 			}
 		} else {
 			self.diff.clear(false);
 		}
 
 		Ok(())
+	}
+
+	fn request_diff(
+		&mut self,
+		diff_params: DiffParams,
+		path: String,
+		is_stage: bool,
+	) -> Result<(), anyhow::Error> {
+		Ok(if let Some(diff) = self.git_diff.request(diff_params)? {
+			self.diff.update(path, is_stage, diff);
+		} else {
+			self.diff.clear(true);
+		})
 	}
 
 	/// called after confirmation

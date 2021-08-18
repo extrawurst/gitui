@@ -8,8 +8,7 @@ use super::{
 use crate::{error::Error, error::Result, hash};
 use easy_cast::Conv;
 use git2::{
-	Delta, Diff, DiffDelta, DiffFormat, DiffHunk, DiffOptions, Patch,
-	Repository,
+	Delta, Diff, DiffDelta, DiffFormat, DiffHunk, Patch, Repository,
 };
 use scopetime::scope_time;
 use std::{cell::RefCell, fs, path::Path, rc::Rc};
@@ -125,18 +124,41 @@ pub struct FileDiff {
 	pub size_delta: i64,
 }
 
+/// see https://libgit2.org/libgit2/#HEAD/type/git_diff_options
+#[derive(Debug, Hash, Clone, Copy, PartialEq)]
+pub struct DiffOptions {
+	/// see https://libgit2.org/libgit2/#HEAD/type/git_diff_options
+	pub ignore_whitespace: bool,
+	/// see https://libgit2.org/libgit2/#HEAD/type/git_diff_options
+	pub context: u32,
+	/// see https://libgit2.org/libgit2/#HEAD/type/git_diff_options
+	pub interhunk_lines: u32,
+}
+
+impl Default for DiffOptions {
+	fn default() -> Self {
+		Self {
+			ignore_whitespace: false,
+			context: 3,
+			interhunk_lines: 0,
+		}
+	}
+}
+
 pub(crate) fn get_diff_raw<'a>(
 	repo: &'a Repository,
 	p: &str,
 	stage: bool,
 	reverse: bool,
-	context: Option<u32>,
+	options: Option<DiffOptions>,
 ) -> Result<Diff<'a>> {
 	// scope_time!("get_diff_raw");
 
-	let mut opt = DiffOptions::new();
-	if let Some(context) = context {
-		opt.context_lines(context);
+	let mut opt = git2::DiffOptions::new();
+	if let Some(options) = options {
+		opt.context_lines(options.context);
+		opt.ignore_whitespace(options.ignore_whitespace);
+		opt.interhunk_lines(options.interhunk_lines);
 	}
 	opt.pathspec(p);
 	opt.reverse(reverse);
@@ -173,12 +195,13 @@ pub fn get_diff(
 	repo_path: &str,
 	p: &str,
 	stage: bool,
+	options: Option<DiffOptions>,
 ) -> Result<FileDiff> {
 	scope_time!("get_diff");
 
 	let repo = utils::repo(repo_path)?;
 	let work_dir = work_dir(&repo)?;
-	let diff = get_diff_raw(&repo, p, stage, false, None)?;
+	let diff = get_diff_raw(&repo, p, stage, false, options)?;
 
 	raw_diff_to_file_diff(&diff, work_dir)
 }
@@ -386,7 +409,8 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (1, 0));
 
-		let diff = get_diff(repo_path, "foo/bar.txt", false).unwrap();
+		let diff =
+			get_diff(repo_path, "foo/bar.txt", false, None).unwrap();
 
 		assert_eq!(diff.hunks.len(), 1);
 		assert_eq!(diff.hunks[0].lines[1].content, "test\n");
@@ -412,9 +436,13 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 1));
 
-		let diff =
-			get_diff(repo_path, file_path.to_str().unwrap(), true)
-				.unwrap();
+		let diff = get_diff(
+			repo_path,
+			file_path.to_str().unwrap(),
+			true,
+			None,
+		)
+		.unwrap();
 
 		assert_eq!(diff.hunks.len(), 1);
 	}
@@ -480,7 +508,8 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (1, 1));
 
-		let res = get_diff(repo_path, "bar.txt", false).unwrap();
+		let res =
+			get_diff(repo_path, "bar.txt", false, None).unwrap();
 
 		assert_eq!(res.hunks.len(), 2)
 	}
@@ -503,6 +532,7 @@ mod tests {
 			sub_path.to_str().unwrap(),
 			file_path.to_str().unwrap(),
 			false,
+			None,
 		)
 		.unwrap();
 
@@ -525,9 +555,13 @@ mod tests {
 		File::create(&root.join(file_path))?
 			.write_all(b"\x00\x02")?;
 
-		let diff =
-			get_diff(repo_path, file_path.to_str().unwrap(), false)
-				.unwrap();
+		let diff = get_diff(
+			repo_path,
+			file_path.to_str().unwrap(),
+			false,
+			None,
+		)
+		.unwrap();
 
 		dbg!(&diff);
 		assert_eq!(diff.sizes, (1, 2));
@@ -546,9 +580,13 @@ mod tests {
 		File::create(&root.join(file_path))?
 			.write_all(b"\x00\xc7")?;
 
-		let diff =
-			get_diff(repo_path, file_path.to_str().unwrap(), false)
-				.unwrap();
+		let diff = get_diff(
+			repo_path,
+			file_path.to_str().unwrap(),
+			false,
+			None,
+		)
+		.unwrap();
 
 		dbg!(&diff);
 		assert_eq!(diff.sizes, (0, 2));

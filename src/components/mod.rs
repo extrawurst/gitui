@@ -42,7 +42,9 @@ pub use externaleditor::ExternalEditorComponent;
 pub use help::HelpComponent;
 pub use inspect_commit::InspectCommitComponent;
 pub use msg::MsgComponent;
-pub use options_popup::{OptionsPopupComponent, SharedOptions};
+pub use options_popup::{
+	AppOption, OptionsPopupComponent, SharedOptions,
+};
 pub use pull::PullComponent;
 pub use push::PushComponent;
 pub use push_tags::PushTagsComponent;

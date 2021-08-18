@@ -329,7 +329,8 @@ mod tests {
 		assert_eq!(get_statuses(repo_path), (0, 1));
 
 		// And that file is test.txt
-		let diff = get_diff(repo_path, "test.txt", true).unwrap();
+		let diff =
+			get_diff(repo_path, "test.txt", true, None).unwrap();
 		assert_eq!(
 			diff.hunks[0].lines[0].content,
 			String::from("@@ -1 +1 @@\n")

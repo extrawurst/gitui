@@ -12,7 +12,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{CommitId, CommitTags},
+	sync::{diff::DiffOptions, CommitId, CommitTags},
 	AsyncDiff, AsyncGitNotification, DiffParams, DiffType,
 };
 use crossbeam_channel::Sender;
@@ -245,6 +245,7 @@ impl InspectCommitComponent {
 					let diff_params = DiffParams {
 						path: f.path.clone(),
 						diff_type: DiffType::Commit(id),
+						options: DiffOptions::default(),
 					};
 
 					if let Some((params, last)) =

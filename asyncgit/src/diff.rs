@@ -1,7 +1,7 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self, CommitId},
+	sync::{self, diff::DiffOptions, CommitId},
 	AsyncGitNotification, FileDiff, CWD,
 };
 use crossbeam_channel::Sender;
@@ -14,7 +14,7 @@ use std::{
 };
 
 ///
-#[derive(Hash, Clone, PartialEq)]
+#[derive(Debug, Hash, Clone, PartialEq)]
 pub enum DiffType {
 	/// diff in a given commit
 	Commit(CommitId),
@@ -25,12 +25,14 @@ pub enum DiffType {
 }
 
 ///
-#[derive(Hash, Clone, PartialEq)]
+#[derive(Debug, Hash, Clone, PartialEq)]
 pub struct DiffParams {
 	/// path to the file to diff
 	pub path: String,
 	/// what kind of diff
 	pub diff_type: DiffType,
+	/// diff options
+	pub options: DiffOptions,
 }
 
 struct Request<R, A>(R, Option<A>);
@@ -87,7 +89,7 @@ impl AsyncDiff {
 		&mut self,
 		params: DiffParams,
 	) -> Result<Option<FileDiff>> {
-		log::trace!("request");
+		log::trace!("request {:?}", params);
 
 		let hash = hash(&params);
 
@@ -148,12 +150,18 @@ impl AsyncDiff {
 		hash: u64,
 	) -> Result<bool> {
 		let res = match params.diff_type {
-			DiffType::Stage => {
-				sync::diff::get_diff(CWD, &params.path, true)?
-			}
-			DiffType::WorkDir => {
-				sync::diff::get_diff(CWD, &params.path, false)?
-			}
+			DiffType::Stage => sync::diff::get_diff(
+				CWD,
+				&params.path,
+				true,
+				Some(params.options),
+			)?,
+			DiffType::WorkDir => sync::diff::get_diff(
+				CWD,
+				&params.path,
+				false,
+				Some(params.options),
+			)?,
 			DiffType::Commit(id) => sync::diff::get_diff_commit(
 				CWD,
 				id,
