@@ -23,17 +23,17 @@ impl Default for ShowUntrackedFilesConfig {
 
 impl ShowUntrackedFilesConfig {
 	///
-	pub const fn include_none(&self) -> bool {
+	pub const fn include_none(self) -> bool {
 		matches!(self, Self::No)
 	}
 
 	///
-	pub const fn include_untracked(&self) -> bool {
+	pub const fn include_untracked(self) -> bool {
 		matches!(self, Self::Normal | Self::All)
 	}
 
 	///
-	pub const fn recurse_untracked_dirs(&self) -> bool {
+	pub const fn recurse_untracked_dirs(self) -> bool {
 		matches!(self, Self::All)
 	}
 }
