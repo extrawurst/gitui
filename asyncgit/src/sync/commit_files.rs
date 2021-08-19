@@ -2,7 +2,7 @@ use super::{stash::is_stash_commit, utils::repo, CommitId};
 use crate::{
 	error::Error, error::Result, StatusItem, StatusItemType,
 };
-use git2::{Diff, DiffDelta, DiffOptions, Repository};
+use git2::{Diff, DiffDelta, DiffOptions, Oid, Repository};
 use scopetime::scope_time;
 
 /// get all files that are part of a commit
@@ -14,7 +14,7 @@ pub fn get_commit_files(
 
 	let repo = repo(repo_path)?;
 
-	let diff = get_commit_diff(&repo, id, None)?;
+	let diff = get_commit_diff(&repo, id, None, None)?;
 
 	let mut res = Vec::new();
 
@@ -42,19 +42,22 @@ pub fn get_commit_files(
 pub(crate) fn get_commit_diff(
 	repo: &Repository,
 	id: CommitId,
+	old: Option<CommitId>,
 	pathspec: Option<String>,
 ) -> Result<Diff<'_>> {
 	// scope_time!("get_commit_diff");
 
 	let commit = repo.find_commit(id.into())?;
 	let commit_tree = commit.tree()?;
-	let parent = if commit.parent_count() > 0 {
-		repo.find_commit(commit.parent_id(0)?)
-			.ok()
-			.and_then(|c| c.tree().ok())
-	} else {
-		None
-	};
+
+	let mut old: Option<Oid> = old.map(|old| old.into());
+	if old.is_none() && commit.parent_count() > 0 {
+		old = Some(commit.parent_id(0)?);
+	}
+
+	let parent = old.and_then(|old| {
+		repo.find_commit(old).ok().and_then(|c| c.tree().ok())
+	});
 
 	let mut opts = DiffOptions::new();
 	if let Some(p) = &pathspec {
@@ -79,6 +82,7 @@ pub(crate) fn get_commit_diff(
 			let untracked_diff = get_commit_diff(
 				repo,
 				CommitId::new(untracked_commit),
+				None,
 				pathspec,
 			)?;
 

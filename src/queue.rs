@@ -60,6 +60,8 @@ pub enum InternalEvent {
 	///
 	InspectCommit(CommitId, Option<CommitTags>),
 	///
+	CompareCommits(CommitId, Option<CommitId>),
+	///
 	SelectCommitInRevlog(CommitId),
 	///
 	TagCommit(CommitId),

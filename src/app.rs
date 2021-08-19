@@ -4,8 +4,8 @@ use crate::{
 	components::{
 		event_pump, AppOption, BlameFileComponent,
 		BranchListComponent, CommandBlocking, CommandInfo,
-		CommitComponent, Component, ConfirmComponent,
-		CreateBranchComponent, DrawableComponent,
+		CommitComponent, CompareCommitsComponent, Component,
+		ConfirmComponent, CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, HelpComponent,
 		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
 		PullComponent, PushComponent, PushTagsComponent,
@@ -48,6 +48,7 @@ pub struct App {
 	blame_file_popup: BlameFileComponent,
 	stashmsg_popup: StashMsgComponent,
 	inspect_commit_popup: InspectCommitComponent,
+	compare_commits_popup: CompareCommitsComponent,
 	external_editor_popup: ExternalEditorComponent,
 	revision_files_popup: RevisionFilesPopup,
 	push_popup: PushComponent,
@@ -123,6 +124,12 @@ impl App {
 				key_config.clone(),
 			),
 			inspect_commit_popup: InspectCommitComponent::new(
+				&queue,
+				sender,
+				theme.clone(),
+				key_config.clone(),
+			),
+			compare_commits_popup: CompareCommitsComponent::new(
 				&queue,
 				sender,
 				theme.clone(),
@@ -369,6 +376,7 @@ impl App {
 			self.revlog.update_git(ev)?;
 			self.blame_file_popup.update_git(ev)?;
 			self.inspect_commit_popup.update_git(ev)?;
+			self.compare_commits_popup.update_git(ev)?;
 			self.push_popup.update_git(ev)?;
 			self.push_tags_popup.update_git(ev)?;
 			self.pull_popup.update_git(ev)?;
@@ -399,6 +407,7 @@ impl App {
 			|| self.files_tab.anything_pending()
 			|| self.blame_file_popup.any_work_pending()
 			|| self.inspect_commit_popup.any_work_pending()
+			|| self.compare_commits_popup.any_work_pending()
 			|| self.input.is_state_changing()
 			|| self.push_popup.any_work_pending()
 			|| self.push_tags_popup.any_work_pending()
@@ -429,6 +438,7 @@ impl App {
 			blame_file_popup,
 			stashmsg_popup,
 			inspect_commit_popup,
+			compare_commits_popup,
 			external_editor_popup,
 			push_popup,
 			push_tags_popup,
@@ -456,6 +466,7 @@ impl App {
 			stashmsg_popup,
 			help,
 			inspect_commit_popup,
+			compare_commits_popup,
 			blame_file_popup,
 			external_editor_popup,
 			tag_commit_popup,
@@ -566,6 +577,7 @@ impl App {
 		if flags.contains(NeedsUpdate::DIFF) {
 			self.status_tab.update_diff()?;
 			self.inspect_commit_popup.update_diff()?;
+			self.compare_commits_popup.update_diff()?;
 		}
 		if flags.contains(NeedsUpdate::COMMANDS) {
 			self.update_commands();
@@ -593,6 +605,7 @@ impl App {
 		Ok(flags)
 	}
 
+	#[allow(clippy::too_many_lines)]
 	fn process_internal_event(
 		&mut self,
 		ev: InternalEvent,
@@ -693,6 +706,11 @@ impl App {
 				}
 
 				flags.insert(NeedsUpdate::ALL);
+			}
+			InternalEvent::CompareCommits(id, other) => {
+				self.compare_commits_popup.open(id, other)?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
 		};
 

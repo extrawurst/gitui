@@ -76,6 +76,7 @@ pub struct KeyConfig {
 	pub select_branch: KeyEvent,
 	pub delete_branch: KeyEvent,
 	pub merge_branch: KeyEvent,
+	pub compare_commits: KeyEvent,
 	pub tags: KeyEvent,
 	pub delete_tag: KeyEvent,
 	pub select_tag: KeyEvent,
@@ -89,16 +90,16 @@ pub struct KeyConfig {
 
 #[rustfmt::skip]
 impl Default for KeyConfig {
-    fn default() -> Self {
-        Self {
+	fn default() -> Self {
+		Self {
 			tab_status: KeyEvent { code: KeyCode::Char('1'), modifiers: KeyModifiers::empty()},
 			tab_log: KeyEvent { code: KeyCode::Char('2'), modifiers: KeyModifiers::empty()},
-            tab_files: KeyEvent { code: KeyCode::Char('3'), modifiers: KeyModifiers::empty()},
+			tab_files: KeyEvent { code: KeyCode::Char('3'), modifiers: KeyModifiers::empty()},
 			tab_stashing: KeyEvent { code: KeyCode::Char('4'), modifiers: KeyModifiers::empty()},
 			tab_stashes: KeyEvent { code: KeyCode::Char('5'), modifiers: KeyModifiers::empty()},
 			tab_toggle: KeyEvent { code: KeyCode::Tab, modifiers: KeyModifiers::empty()},
 			tab_toggle_reverse: KeyEvent { code: KeyCode::BackTab, modifiers: KeyModifiers::SHIFT},
-            toggle_workarea: KeyEvent { code: KeyCode::Char('w'), modifiers: KeyModifiers::empty()},
+			toggle_workarea: KeyEvent { code: KeyCode::Char('w'), modifiers: KeyModifiers::empty()},
 			focus_right: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::empty()},
 			focus_left: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::empty()},
 			focus_above: KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::empty()},
@@ -112,8 +113,8 @@ impl Default for KeyConfig {
 			open_options: KeyEvent { code: KeyCode::Char('o'), modifiers: KeyModifiers::empty()},
 			move_left: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::empty()},
 			move_right: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::empty()},
-            tree_collapse_recursive: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::SHIFT},
-            tree_expand_recursive: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::SHIFT},
+			tree_collapse_recursive: KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::SHIFT},
+			tree_expand_recursive: KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::SHIFT},
 			home: KeyEvent { code: KeyCode::Home, modifiers: KeyModifiers::empty()},
 			end: KeyEvent { code: KeyCode::End, modifiers: KeyModifiers::empty()},
 			move_up: KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::empty()},
@@ -127,9 +128,9 @@ impl Default for KeyConfig {
 			edit_file: KeyEvent { code: KeyCode::Char('e'), modifiers: KeyModifiers::empty()},
 			status_stage_all: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::empty()},
 			status_reset_item: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
-            diff_reset_lines: KeyEvent { code: KeyCode::Char('d'), modifiers: KeyModifiers::empty()},
+			diff_reset_lines: KeyEvent { code: KeyCode::Char('d'), modifiers: KeyModifiers::empty()},
 			status_ignore_file: KeyEvent { code: KeyCode::Char('i'), modifiers: KeyModifiers::empty()},
-            diff_stage_lines: KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
+			diff_stage_lines: KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
 			stashing_save: KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::empty()},
 			stashing_toggle_untracked: KeyEvent { code: KeyCode::Char('u'), modifiers: KeyModifiers::empty()},
 			stashing_toggle_index: KeyEvent { code: KeyCode::Char('i'), modifiers: KeyModifiers::empty()},
@@ -138,25 +139,26 @@ impl Default for KeyConfig {
 			stash_drop: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
 			cmd_bar_toggle: KeyEvent { code: KeyCode::Char('.'), modifiers: KeyModifiers::empty()},
 			log_tag_commit: KeyEvent { code: KeyCode::Char('t'), modifiers: KeyModifiers::empty()},
-            log_mark_commit: KeyEvent { code: KeyCode::Char(' '), modifiers: KeyModifiers::empty()},
+			log_mark_commit: KeyEvent { code: KeyCode::Char(' '), modifiers: KeyModifiers::empty()},
 			commit_amend: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
-            copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
-            create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::empty()},
-            rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::empty()},
-            select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
-            delete_branch: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
-            merge_branch: KeyEvent { code: KeyCode::Char('m'), modifiers: KeyModifiers::empty()},
-            tags: KeyEvent { code: KeyCode::Char('T'), modifiers: KeyModifiers::SHIFT},
-            delete_tag: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
-            select_tag: KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::empty()},
-            push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
-            force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
-            undo_commit: KeyEvent { code: KeyCode::Char('U'), modifiers: KeyModifiers::SHIFT},
-            pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
-            abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
-            open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
-        }
-    }
+			copy: KeyEvent { code: KeyCode::Char('y'), modifiers: KeyModifiers::empty()},
+			create_branch: KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::empty()},
+			rename_branch: KeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::empty()},
+			select_branch: KeyEvent { code: KeyCode::Char('b'), modifiers: KeyModifiers::empty()},
+			delete_branch: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
+			merge_branch: KeyEvent { code: KeyCode::Char('m'), modifiers: KeyModifiers::empty()},
+			compare_commits: KeyEvent { code: KeyCode::Char('C'), modifiers: KeyModifiers::SHIFT},
+			tags: KeyEvent { code: KeyCode::Char('T'), modifiers: KeyModifiers::SHIFT},
+			delete_tag: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
+			select_tag: KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::empty()},
+			push: KeyEvent { code: KeyCode::Char('p'), modifiers: KeyModifiers::empty()},
+			force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
+			undo_commit: KeyEvent { code: KeyCode::Char('U'), modifiers: KeyModifiers::SHIFT},
+			pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
+			abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
+			open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
+		}
+	}
 }
 
 impl KeyConfig {
@@ -194,7 +196,7 @@ impl KeyConfig {
 					Self::default().save(file)?;
 
 					Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
-                        e,config_path_old,config_path.to_string_lossy()))
+						e,config_path_old,config_path.to_string_lossy()))
 				}
 				Ok(res) => Ok(res),
 			}

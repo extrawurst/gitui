@@ -217,7 +217,23 @@ pub fn get_diff_commit(
 
 	let repo = utils::repo(repo_path)?;
 	let work_dir = work_dir(&repo)?;
-	let diff = get_commit_diff(&repo, id, Some(p))?;
+	let diff = get_commit_diff(&repo, id, None, Some(p))?;
+
+	raw_diff_to_file_diff(&diff, work_dir)
+}
+
+///
+pub fn get_diff_commits(
+	repo_path: &str,
+	ids: (CommitId, CommitId),
+	p: String,
+) -> Result<FileDiff> {
+	scope_time!("get_diff_commits");
+	log::info!("diffs: {:?}", ids);
+
+	let repo = utils::repo(repo_path)?;
+	let work_dir = work_dir(&repo)?;
+	let diff = get_commit_diff(&repo, ids.0, Some(ids.1), Some(p))?;
 
 	raw_diff_to_file_diff(&diff, work_dir)
 }

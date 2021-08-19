@@ -1051,6 +1051,19 @@ pub mod commands {
 			CMD_GROUP_BRANCHES,
 		)
 	}
+	pub fn compare_with_head(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Compare [{}]",
+				key_config.get_hint(key_config.compare_commits),
+			),
+			"compare with head",
+			CMD_GROUP_BRANCHES,
+		)
+	}
+
 	pub fn select_branch_popup(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

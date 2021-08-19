@@ -201,6 +201,7 @@ mod tests {
 			let diff = get_commit_diff(
 				&repo,
 				*commit_id,
+				None,
 				Some("baz".into()),
 			)?;
 
@@ -228,6 +229,7 @@ mod tests {
 			let diff = get_commit_diff(
 				&repo,
 				*commit_id,
+				None,
 				Some("bar".into()),
 			)?;
 
