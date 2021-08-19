@@ -14,7 +14,7 @@ use anyhow::Result;
 use asyncgit::{
 	sync::{
 		self, branch::checkout_remote_branch, checkout_branch,
-		get_branches_info, BranchInfo,
+		get_branches_info, BranchInfo, CommitId,
 	},
 	AsyncGitNotification, CWD,
 };
@@ -119,6 +119,14 @@ impl Component for BranchListComponent {
 			));
 
 			out.push(CommandInfo::new(
+				strings::commands::commit_details_open(
+					&self.key_config,
+				),
+				true,
+				true,
+			));
+
+			out.push(CommandInfo::new(
 				strings::commands::toggle_branch_popup(
 					&self.key_config,
 					self.local,
@@ -192,6 +200,9 @@ impl Component for BranchListComponent {
 					return self
 						.move_selection(ScrollType::PageUp)
 						.map(Into::into);
+				} else if e == self.key_config.tab_toggle {
+					self.local = !self.local;
+					self.update_branches()?;
 				} else if e == self.key_config.enter {
 					try_or_popup!(
 						self,
@@ -234,13 +245,18 @@ impl Component for BranchListComponent {
 						"merge branch error:",
 						self.merge_branch()
 					);
-					self.hide();
 					self.queue.push(InternalEvent::Update(
 						NeedsUpdate::ALL,
 					));
-				} else if e == self.key_config.tab_toggle {
-					self.local = !self.local;
-					self.update_branches()?;
+				} else if e == self.key_config.move_right
+					&& self.valid_selection()
+				{
+					self.hide();
+					if let Some(b) = self.get_selected() {
+						self.queue.push(
+							InternalEvent::InspectCommit(b, None),
+						);
+					}
 				}
 			}
 
@@ -349,6 +365,12 @@ impl BranchListComponent {
 					.unwrap_or_default()
 			})
 			.count() > 0
+	}
+
+	fn get_selected(&self) -> Option<CommitId> {
+		self.branches
+			.get(usize::from(self.selection))
+			.map(|b| b.top_commit)
 	}
 
 	///

@@ -166,7 +166,7 @@ impl Component for BlameFileComponent {
 			);
 			out.push(
 				CommandInfo::new(
-					strings::commands::log_details_open(
+					strings::commands::commit_details_open(
 						&self.key_config,
 					),
 					true,

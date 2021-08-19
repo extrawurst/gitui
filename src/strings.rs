@@ -929,7 +929,8 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
-	pub fn log_details_open(
+
+	pub fn commit_details_open(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
 		CommandText::new(
@@ -938,9 +939,10 @@ pub mod commands {
 				key_config.get_hint(key_config.focus_right),
 			),
 			"inspect selected commit in detail",
-			CMD_GROUP_LOG,
+			CMD_GROUP_GENERAL,
 		)
 	}
+
 	pub fn blame_file(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(

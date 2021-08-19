@@ -292,7 +292,7 @@ impl Component for Revlog {
 		));
 
 		out.push(CommandInfo::new(
-			strings::commands::log_details_open(&self.key_config),
+			strings::commands::commit_details_open(&self.key_config),
 			true,
 			(self.visible && self.commit_details.is_visible())
 				|| force_all,
