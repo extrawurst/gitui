@@ -278,7 +278,7 @@ mod tests {
 		let repo_path = root.as_os_str().to_str().unwrap();
 
 		let status_count = |s: StatusType| -> usize {
-			get_status(repo_path, s).unwrap().len()
+			get_status(repo_path, s, None).unwrap().len()
 		};
 
 		fs::create_dir_all(&root.join("a/d"))?;
@@ -329,7 +329,8 @@ mod tests {
 		assert_eq!(get_statuses(repo_path), (0, 1));
 
 		// And that file is test.txt
-		let diff = get_diff(repo_path, "test.txt", true).unwrap();
+		let diff =
+			get_diff(repo_path, "test.txt", true, None).unwrap();
 		assert_eq!(
 			diff.hunks[0].lines[0].content,
 			String::from("@@ -1 +1 @@\n")
@@ -371,7 +372,7 @@ mod tests {
 		let repo_path = root.as_os_str().to_str().unwrap();
 
 		let status_count = |s: StatusType| -> usize {
-			get_status(repo_path, s).unwrap().len()
+			get_status(repo_path, s, None).unwrap().len()
 		};
 
 		let full_path = &root.join(file_path);
@@ -405,7 +406,7 @@ mod tests {
 		let repo_path = root.as_os_str().to_str().unwrap();
 
 		let status_count = |s: StatusType| -> usize {
-			get_status(repo_path, s).unwrap().len()
+			get_status(repo_path, s, None).unwrap().len()
 		};
 
 		let sub = &root.join("sub");

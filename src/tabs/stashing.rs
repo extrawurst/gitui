@@ -74,7 +74,8 @@ impl Stashing {
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
 			self.git_status
-				.fetch(&StatusParams::new(StatusType::Both))?;
+				//TODO: support options
+				.fetch(&StatusParams::new(StatusType::Both, None))?;
 		}
 
 		Ok(())

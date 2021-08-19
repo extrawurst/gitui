@@ -4,7 +4,7 @@ use crate::{
 		command_pump, event_pump, visibility_blocking,
 		ChangesComponent, CommandBlocking, CommandInfo, Component,
 		DiffComponent, DrawableComponent, EventState,
-		FileTreeItemKind,
+		FileTreeItemKind, SharedOptions,
 	},
 	keys::SharedKeyConfig,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
@@ -70,6 +70,7 @@ pub struct Status {
 	git_branch_name: cached::BranchName,
 	queue: Queue,
 	git_action_executed: bool,
+	options: SharedOptions,
 	key_config: SharedKeyConfig,
 }
 
@@ -134,6 +135,7 @@ impl Status {
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			queue: queue.clone(),
@@ -169,6 +171,7 @@ impl Status {
 			git_branch_state: None,
 			git_branch_name: cached::BranchName::new(CWD),
 			key_config,
+			options,
 		}
 	}
 
@@ -317,11 +320,17 @@ impl Status {
 		self.git_branch_name.lookup().map(Some).unwrap_or(None);
 
 		if self.is_visible() {
+			let config = self.options.borrow().status_show_untracked;
+
 			self.git_diff.refresh()?;
-			self.git_status_workdir
-				.fetch(&StatusParams::new(StatusType::WorkingDir))?;
-			self.git_status_stage
-				.fetch(&StatusParams::new(StatusType::Stage))?;
+			self.git_status_workdir.fetch(&StatusParams::new(
+				StatusType::WorkingDir,
+				config,
+			))?;
+			self.git_status_stage.fetch(&StatusParams::new(
+				StatusType::Stage,
+				config,
+			))?;
 
 			self.branch_compare();
 		}
@@ -394,6 +403,7 @@ impl Status {
 			let diff_params = DiffParams {
 				path: path.clone(),
 				diff_type,
+				options: self.options.borrow().diff,
 			};
 
 			if self.diff.current() == (path.clone(), is_stage) {
@@ -401,21 +411,38 @@ impl Status {
 				// maybe the diff changed (outside file change)
 				if let Some((params, last)) = self.git_diff.last()? {
 					if params == diff_params {
+						// all params match, so we might need to update
 						self.diff.update(path, is_stage, last);
+					} else {
+						// params changed, we need to request the right diff
+						self.request_diff(
+							diff_params,
+							path,
+							is_stage,
+						)?;
 					}
 				}
 			} else {
 				// we dont show the right diff right now, so we need to request
-				if let Some(diff) =
-					self.git_diff.request(diff_params)?
-				{
-					self.diff.update(path, is_stage, diff);
-				} else {
-					self.diff.clear(true);
-				}
+				self.request_diff(diff_params, path, is_stage)?;
 			}
 		} else {
 			self.diff.clear(false);
+		}
+
+		Ok(())
+	}
+
+	fn request_diff(
+		&mut self,
+		diff_params: DiffParams,
+		path: String,
+		is_stage: bool,
+	) -> Result<(), anyhow::Error> {
+		if let Some(diff) = self.git_diff.request(diff_params)? {
+			self.diff.update(path, is_stage, diff);
+		} else {
+			self.diff.clear(true);
 		}
 
 		Ok(())

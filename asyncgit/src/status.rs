@@ -1,7 +1,7 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self, status::StatusType},
+	sync::{self, status::StatusType, ShowUntrackedFilesConfig},
 	AsyncGitNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
@@ -31,14 +31,19 @@ pub struct Status {
 pub struct StatusParams {
 	tick: u128,
 	status_type: StatusType,
+	config: Option<ShowUntrackedFilesConfig>,
 }
 
 impl StatusParams {
 	///
-	pub fn new(status_type: StatusType) -> Self {
+	pub fn new(
+		status_type: StatusType,
+		config: Option<ShowUntrackedFilesConfig>,
+	) -> Self {
 		Self {
 			tick: current_tick(),
 			status_type,
+			config,
 		}
 	}
 }
@@ -109,12 +114,14 @@ impl AsyncStatus {
 		let sender = self.sender.clone();
 		let arc_pending = Arc::clone(&self.pending);
 		let status_type = params.status_type;
+		let config = params.config;
 
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
 			let ok = Self::fetch_helper(
 				status_type,
+				config,
 				hash_request,
 				&arc_current,
 				&arc_last,
@@ -135,11 +142,12 @@ impl AsyncStatus {
 
 	fn fetch_helper(
 		status_type: StatusType,
+		config: Option<ShowUntrackedFilesConfig>,
 		hash_request: u64,
 		arc_current: &Arc<Mutex<Request<u64, Status>>>,
 		arc_last: &Arc<Mutex<Status>>,
 	) -> Result<()> {
-		let res = Self::get_status(status_type)?;
+		let res = Self::get_status(status_type, config)?;
 		log::trace!(
 			"status fetched: {} (type: {:?})",
 			hash_request,
@@ -161,9 +169,16 @@ impl AsyncStatus {
 		Ok(())
 	}
 
-	fn get_status(status_type: StatusType) -> Result<Status> {
+	fn get_status(
+		status_type: StatusType,
+		config: Option<ShowUntrackedFilesConfig>,
+	) -> Result<Status> {
 		Ok(Status {
-			items: sync::status::get_status(CWD, status_type)?,
+			items: sync::status::get_status(
+				CWD,
+				status_type,
+				config,
+			)?,
 		})
 	}
 }

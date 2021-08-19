@@ -373,6 +373,18 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+	pub fn options_popup(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Options [{}]",
+				key_config.get_hint(key_config.open_options),
+			),
+			"open options popup",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn help_open(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**options**
+
+![options](assets/options.gif)
+
 **drop multiple stashes**
 
 ![drop-multiple-stashes](assets/drop-multiple-stashes.gif)
@@ -16,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![name-validation](assets/branch-validation.gif)
 
 ## Added
+- new options popup (show untracked files, diff settings) ([#849](https://github.com/extrawurst/gitui/issues/849))
 - mark and drop multiple stashes ([#854](https://github.com/extrawurst/gitui/issues/854))
 - check branch name validity while typing ([#559](https://github.com/extrawurst/gitui/issues/559))
 - support deleting remote branch [[@zcorniere](https://github.com/zcorniere)] ([#622](https://github.com/extrawurst/gitui/issues/622))

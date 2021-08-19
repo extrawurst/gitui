@@ -9,6 +9,8 @@ use git2::{Delta, Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 use std::path::Path;
 
+use super::ShowUntrackedFilesConfig;
+
 ///
 #[derive(Copy, Clone, Hash, PartialEq, Debug)]
 pub enum StatusItemType {
@@ -96,12 +98,17 @@ impl From<StatusType> for StatusShow {
 pub fn get_status(
 	repo_path: &str,
 	status_type: StatusType,
+	show_untracked: Option<ShowUntrackedFilesConfig>,
 ) -> Result<Vec<StatusItem>> {
 	scope_time!("get_status");
 
 	let repo = utils::repo(repo_path)?;
 
-	let show_untracked = untracked_files_config_repo(&repo)?;
+	let show_untracked = if let Some(config) = show_untracked {
+		config
+	} else {
+		untracked_files_config_repo(&repo)?
+	};
 
 	let mut options = StatusOptions::default();
 	options

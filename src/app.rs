@@ -2,14 +2,15 @@ use crate::{
 	accessors,
 	cmdbar::CommandBar,
 	components::{
-		event_pump, BlameFileComponent, BranchListComponent,
-		CommandBlocking, CommandInfo, CommitComponent, Component,
-		ConfirmComponent, CreateBranchComponent, DrawableComponent,
+		event_pump, AppOption, BlameFileComponent,
+		BranchListComponent, CommandBlocking, CommandInfo,
+		CommitComponent, Component, ConfirmComponent,
+		CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, HelpComponent,
-		InspectCommitComponent, MsgComponent, PullComponent,
-		PushComponent, PushTagsComponent, RenameBranchComponent,
-		RevisionFilesPopup, StashMsgComponent, TagCommitComponent,
-		TagListComponent,
+		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
+		PullComponent, PushComponent, PushTagsComponent,
+		RenameBranchComponent, RevisionFilesPopup, SharedOptions,
+		StashMsgComponent, TagCommitComponent, TagListComponent,
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{KeyConfig, SharedKeyConfig},
@@ -56,6 +57,7 @@ pub struct App {
 	create_branch_popup: CreateBranchComponent,
 	rename_branch_popup: RenameBranchComponent,
 	select_branch_popup: BranchListComponent,
+	options_popup: OptionsPopupComponent,
 	tags_popup: TagListComponent,
 	cmdbar: RefCell<CommandBar>,
 	tab: usize,
@@ -88,6 +90,7 @@ impl App {
 		let queue = Queue::new();
 		let theme = Rc::new(theme);
 		let key_config = Rc::new(key_config);
+		let options = SharedOptions::default();
 
 		Self {
 			input,
@@ -173,6 +176,12 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
+			options_popup: OptionsPopupComponent::new(
+				&queue,
+				theme.clone(),
+				key_config.clone(),
+				options.clone(),
+			),
 			do_quit: false,
 			cmdbar: RefCell::new(CommandBar::new(
 				theme.clone(),
@@ -195,6 +204,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options,
 			),
 			stashing_tab: Stashing::new(
 				sender,
@@ -291,6 +301,9 @@ impl App {
 				} else if k == self.key_config.cmd_bar_toggle {
 					self.cmdbar.borrow_mut().toggle_more();
 					NeedsUpdate::empty()
+				} else if k == self.key_config.open_options {
+					self.options_popup.show()?;
+					NeedsUpdate::ALL
 				} else {
 					NeedsUpdate::empty()
 				};
@@ -426,6 +439,7 @@ impl App {
 			select_branch_popup,
 			revision_files_popup,
 			tags_popup,
+			options_popup,
 			help,
 			revlog,
 			status_tab,
@@ -453,6 +467,7 @@ impl App {
 			push_popup,
 			push_tags_popup,
 			pull_popup,
+			options_popup,
 			reset,
 			msg
 		]
@@ -665,6 +680,20 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
+			InternalEvent::OptionSwitched(o) => {
+				match o {
+					AppOption::StatusShowUntracked => {
+						self.status_tab.update()?;
+					}
+					AppOption::DiffContextLines
+					| AppOption::DiffIgnoreWhitespaces
+					| AppOption::DiffInterhunkLines => {
+						self.status_tab.update_diff()?;
+					}
+				}
+
+				flags.insert(NeedsUpdate::ALL);
+			}
 		};
 
 		Ok(flags)
@@ -779,6 +808,14 @@ impl App {
 				strings::commands::toggle_tabs_direct(
 					&self.key_config,
 				),
+				true,
+				!self.any_popup_visible(),
+			)
+			.order(order::NAV),
+		);
+		res.push(
+			CommandInfo::new(
+				strings::commands::options_popup(&self.key_config),
 				true,
 				!self.any_popup_visible(),
 			)

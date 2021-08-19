@@ -255,10 +255,12 @@ mod tests {
 	/// helper returning amount of files with changes in the (wd,stage)
 	pub fn get_statuses(repo_path: &str) -> (usize, usize) {
 		(
-			get_status(repo_path, StatusType::WorkingDir)
+			get_status(repo_path, StatusType::WorkingDir, None)
 				.unwrap()
 				.len(),
-			get_status(repo_path, StatusType::Stage).unwrap().len(),
+			get_status(repo_path, StatusType::Stage, None)
+				.unwrap()
+				.len(),
 		)
 	}
 

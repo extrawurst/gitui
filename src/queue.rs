@@ -1,4 +1,4 @@
-use crate::tabs::StashingOptions;
+use crate::{components::AppOption, tabs::StashingOptions};
 use asyncgit::sync::{diff::DiffLinePosition, CommitId, CommitTags};
 use bitflags::bitflags;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
@@ -83,6 +83,8 @@ pub enum InternalEvent {
 	PushTags,
 	///
 	OpenFileTree(CommitId),
+	///
+	OptionSwitched(AppOption),
 }
 
 /// single threaded simple queue for components to communicate with each other

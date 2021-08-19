@@ -1,4 +1,4 @@
-use super::diff::{get_diff_raw, HunkHeader};
+use super::diff::{get_diff_raw, DiffOptions, HunkHeader};
 use crate::error::{Error, Result};
 use git2::{Diff, DiffLine, Patch, Repository};
 
@@ -15,7 +15,16 @@ pub(crate) fn get_file_diff_patch_and_hunklines<'a>(
 	is_staged: bool,
 	reverse: bool,
 ) -> Result<(Patch<'a>, Vec<HunkLines<'a>>)> {
-	let diff = get_diff_raw(repo, file, is_staged, reverse, Some(1))?;
+	let diff = get_diff_raw(
+		repo,
+		file,
+		is_staged,
+		reverse,
+		Some(DiffOptions {
+			context: 1,
+			..DiffOptions::default()
+		}),
+	)?;
 	let patches = get_patches(&diff)?;
 	if patches.len() > 1 {
 		return Err(Error::Generic(String::from("patch error")));
