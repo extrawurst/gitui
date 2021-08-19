@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support deleting remote branch [[@zcorniere](https://github.com/zcorniere)] ([#622](https://github.com/extrawurst/gitui/issues/622))
 
 ## Fixed
+- error viewing filetree in empty repo ([#859](https://github.com/extrawurst/gitui/issues/859))
 - do not allow to ignore .gitignore files ([#825](https://github.com/extrawurst/gitui/issues/825))
 - crash in shallow repo ([#836](https://github.com/extrawurst/gitui/issues/836))
 - fixed performance regression in revlog ([#850](https://github.com/extrawurst/gitui/issues/850))
