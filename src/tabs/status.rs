@@ -439,11 +439,13 @@ impl Status {
 		path: String,
 		is_stage: bool,
 	) -> Result<(), anyhow::Error> {
-		Ok(if let Some(diff) = self.git_diff.request(diff_params)? {
+		if let Some(diff) = self.git_diff.request(diff_params)? {
 			self.diff.update(path, is_stage, diff);
 		} else {
 			self.diff.clear(true);
-		})
+		}
+
+		Ok(())
 	}
 
 	/// called after confirmation

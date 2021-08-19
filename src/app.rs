@@ -683,12 +683,12 @@ impl App {
 			InternalEvent::OptionSwitched(o) => {
 				match o {
 					AppOption::StatusShowUntracked => {
-						self.status_tab.update()?
+						self.status_tab.update()?;
 					}
 					AppOption::DiffContextLines
 					| AppOption::DiffIgnoreWhitespaces
 					| AppOption::DiffInterhunkLines => {
-						self.status_tab.update_diff()?
+						self.status_tab.update_diff()?;
 					}
 				}
 

@@ -124,14 +124,14 @@ pub struct FileDiff {
 	pub size_delta: i64,
 }
 
-/// see https://libgit2.org/libgit2/#HEAD/type/git_diff_options
+/// see <https://libgit2.org/libgit2/#HEAD/type/git_diff_options>
 #[derive(Debug, Hash, Clone, Copy, PartialEq)]
 pub struct DiffOptions {
-	/// see https://libgit2.org/libgit2/#HEAD/type/git_diff_options
+	/// see <https://libgit2.org/libgit2/#HEAD/type/git_diff_options>
 	pub ignore_whitespace: bool,
-	/// see https://libgit2.org/libgit2/#HEAD/type/git_diff_options
+	/// see <https://libgit2.org/libgit2/#HEAD/type/git_diff_options>
 	pub context: u32,
-	/// see https://libgit2.org/libgit2/#HEAD/type/git_diff_options
+	/// see <https://libgit2.org/libgit2/#HEAD/type/git_diff_options>
 	pub interhunk_lines: u32,
 }
 

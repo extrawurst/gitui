@@ -77,48 +77,42 @@ impl OptionsPopupComponent {
 	}
 
 	fn add_status(&self, txt: &mut Vec<Spans>, width: u16) {
-		self.add_header(txt, "Status");
+		Self::add_header(txt, "Status");
 
 		self.add_entry(
 			txt,
 			width,
 			"Show untracked",
 			match self.options.borrow().status_show_untracked {
-				None => String::from("Gitconfig"),
-				Some(ShowUntrackedFilesConfig::No) => {
-					String::from("No")
-				}
-				Some(ShowUntrackedFilesConfig::Normal) => {
-					String::from("Normal")
-				}
-				Some(ShowUntrackedFilesConfig::All) => {
-					String::from("All")
-				}
+				None => "Gitconfig",
+				Some(ShowUntrackedFilesConfig::No) => "No",
+				Some(ShowUntrackedFilesConfig::Normal) => "Normal",
+				Some(ShowUntrackedFilesConfig::All) => "All",
 			},
 			self.is_select(AppOption::StatusShowUntracked),
 		);
-		self.add_header(txt, "");
+		Self::add_header(txt, "");
 
-		self.add_header(txt, "Diff");
+		Self::add_header(txt, "Diff");
 		self.add_entry(
 			txt,
 			width,
 			"Ignore whitespaces",
-			self.options.borrow().diff.ignore_whitespace.to_string(),
+			&self.options.borrow().diff.ignore_whitespace.to_string(),
 			self.is_select(AppOption::DiffIgnoreWhitespaces),
 		);
 		self.add_entry(
 			txt,
 			width,
 			"Context lines",
-			self.options.borrow().diff.context.to_string(),
+			&self.options.borrow().diff.context.to_string(),
 			self.is_select(AppOption::DiffContextLines),
 		);
 		self.add_entry(
 			txt,
 			width,
 			"Inter hunk lines",
-			self.options.borrow().diff.interhunk_lines.to_string(),
+			&self.options.borrow().diff.interhunk_lines.to_string(),
 			self.is_select(AppOption::DiffInterhunkLines),
 		);
 	}
@@ -127,7 +121,7 @@ impl OptionsPopupComponent {
 		self.selection == kind
 	}
 
-	fn add_header(&self, txt: &mut Vec<Spans>, header: &'static str) {
+	fn add_header(txt: &mut Vec<Spans>, header: &'static str) {
 		txt.push(Spans::from(vec![Span::styled(
 			header,
 			//TODO:
@@ -140,7 +134,7 @@ impl OptionsPopupComponent {
 		txt: &mut Vec<Spans>,
 		width: u16,
 		entry: &'static str,
-		value: String,
+		value: &str,
 		selected: bool,
 	) {
 		let half = usize::from(width / 2);
@@ -355,13 +349,13 @@ impl Component for OptionsPopupComponent {
 				if *key == self.key_config.exit_popup {
 					self.hide();
 				} else if *key == self.key_config.move_up {
-					self.move_selection(true)
+					self.move_selection(true);
 				} else if *key == self.key_config.move_down {
-					self.move_selection(false)
+					self.move_selection(false);
 				} else if *key == self.key_config.move_right {
-					self.switch_option(true)
+					self.switch_option(true);
 				} else if *key == self.key_config.move_left {
-					self.switch_option(false)
+					self.switch_option(false);
 				}
 			}
 
