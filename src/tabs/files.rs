@@ -49,7 +49,9 @@ impl FilesTab {
 	///
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			self.files.set_commit(sync::get_head(CWD)?)?;
+			if let Ok(head) = sync::get_head(CWD) {
+				self.files.set_commit(head)?;
+			}
 		}
 
 		Ok(())
