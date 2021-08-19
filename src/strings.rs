@@ -597,19 +597,7 @@ pub mod commands {
 		)
 		.hide_help()
 	}
-	pub fn select_status(
-		key_config: &SharedKeyConfig,
-	) -> CommandText {
-		CommandText::new(
-			format!(
-				"To files [{},{}]",
-				key_config.get_hint(key_config.tab_status),
-				key_config.get_hint(key_config.tab_log),
-			),
-			"focus/select file tree of staged or unstaged files",
-			CMD_GROUP_GENERAL,
-		)
-	}
+
 	pub fn abort_merge(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(

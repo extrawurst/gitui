@@ -632,17 +632,6 @@ impl Component for Status {
 				self.visible || force_all,
 			));
 
-			out.push(
-				CommandInfo::new(
-					strings::commands::select_status(
-						&self.key_config,
-					),
-					true,
-					(self.visible && !focus_on_diff) || force_all,
-				)
-				.hidden(),
-			);
-
 			self.commands_nav(out, force_all);
 		}
 
