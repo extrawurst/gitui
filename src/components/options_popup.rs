@@ -280,12 +280,12 @@ impl DrawableComponent for OptionsPopupComponent {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
-		_area: Rect,
+		area: Rect,
 	) -> Result<()> {
 		if self.is_visible() {
 			const SIZE: (u16, u16) = (50, 10);
 			let area =
-				ui::centered_rect_absolute(SIZE.0, SIZE.1, f.size());
+				ui::centered_rect_absolute(SIZE.0, SIZE.1, area);
 
 			let width = area.width;
 
