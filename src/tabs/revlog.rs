@@ -13,7 +13,8 @@ use anyhow::Result;
 use asyncgit::{
 	cached,
 	sync::{self, CommitId},
-	AsyncGitNotification, AsyncLog, AsyncTags, FetchStatus, CWD,
+	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
+	FetchStatus, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -101,7 +102,10 @@ impl Revlog {
 				let commit = self.selected_commit();
 				let tags = self.selected_commit_tags(&commit);
 
-				self.commit_details.set_commit(commit, tags)?;
+				self.commit_details.set_commits(
+					commit.map(CommitFilesParams::from),
+					tags,
+				)?;
 			}
 		}
 

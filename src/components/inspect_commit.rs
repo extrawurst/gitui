@@ -13,7 +13,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	sync::{diff::DiffOptions, CommitId, CommitTags},
-	AsyncDiff, AsyncGitNotification, DiffParams, DiffType,
+	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
+	DiffType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -270,7 +271,10 @@ impl InspectCommitComponent {
 	}
 
 	fn update(&mut self) -> Result<()> {
-		self.details.set_commit(self.commit_id, self.tags.clone())?;
+		self.details.set_commits(
+			self.commit_id.map(CommitFilesParams::from),
+			self.tags.clone(),
+		)?;
 		self.update_diff()?;
 
 		Ok(())

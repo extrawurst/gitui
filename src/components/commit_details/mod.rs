@@ -10,8 +10,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{CommitId, CommitTags},
-	AsyncCommitFiles, AsyncGitNotification,
+	sync::CommitTags, AsyncCommitFiles, AsyncGitNotification,
+	CommitFilesParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -70,14 +70,15 @@ impl CommitDetailsComponent {
 	}
 
 	///
-	pub fn set_commit(
+	pub fn set_commits(
 		&mut self,
-		id: Option<CommitFilesParams>,
+		params: Option<CommitFilesParams>,
 		tags: Option<CommitTags>,
 	) -> Result<()> {
-		self.details.set_commit(id, tags);
+		self.details
+			.set_commit(params.map(|params| params.id), tags);
 
-		if let Some(id) = id {
+		if let Some(id) = params {
 			if let Some((fetched_id, res)) =
 				self.git_commit_files.current()?
 			{

@@ -10,7 +10,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	sync::{self, diff::DiffOptions, CommitId},
-	AsyncDiff, AsyncGitNotification, DiffParams, DiffType, CWD,
+	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
+	DiffType, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -255,8 +256,10 @@ impl CompareCommitsComponent {
 
 	fn update(&mut self) -> Result<()> {
 		//TODO:
-		self.details
-			.set_commit(self.commit_ids.map(|ids| ids.0), None)?;
+		self.details.set_commits(
+			self.commit_ids.map(CommitFilesParams::from),
+			None,
+		)?;
 		self.update_diff()?;
 
 		Ok(())

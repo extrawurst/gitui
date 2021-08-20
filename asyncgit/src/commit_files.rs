@@ -12,10 +12,28 @@ use std::sync::{
 type ResultType = Vec<StatusItem>;
 struct Request<R, A>(R, A);
 
+///
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct CommitFilesParams {
-	id: CommitId,
-	other: Option<CommitId>,
+	///
+	pub id: CommitId,
+	///
+	pub other: Option<CommitId>,
+}
+
+impl From<CommitId> for CommitFilesParams {
+	fn from(id: CommitId) -> Self {
+		Self { id, other: None }
+	}
+}
+
+impl From<(CommitId, CommitId)> for CommitFilesParams {
+	fn from((id, other): (CommitId, CommitId)) -> Self {
+		Self {
+			id,
+			other: Some(other),
+		}
+	}
 }
 
 ///
