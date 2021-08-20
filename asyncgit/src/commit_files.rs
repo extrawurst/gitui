@@ -12,9 +12,16 @@ use std::sync::{
 type ResultType = Vec<StatusItem>;
 struct Request<R, A>(R, A);
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct CommitFilesParams {
+	id: CommitId,
+	other: Option<CommitId>,
+}
+
 ///
 pub struct AsyncCommitFiles {
-	current: Arc<Mutex<Option<Request<CommitId, ResultType>>>>,
+	current:
+		Arc<Mutex<Option<Request<CommitFilesParams, ResultType>>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicUsize>,
 }
@@ -32,7 +39,7 @@ impl AsyncCommitFiles {
 	///
 	pub fn current(
 		&mut self,
-	) -> Result<Option<(CommitId, ResultType)>> {
+	) -> Result<Option<(CommitFilesParams, ResultType)>> {
 		let c = self.current.lock()?;
 
 		c.as_ref()
@@ -45,17 +52,17 @@ impl AsyncCommitFiles {
 	}
 
 	///
-	pub fn fetch(&mut self, id: CommitId) -> Result<()> {
+	pub fn fetch(&mut self, params: CommitFilesParams) -> Result<()> {
 		if self.is_pending() {
 			return Ok(());
 		}
 
-		log::trace!("request: {}", id.to_string());
+		log::trace!("request: {:?}", params);
 
 		{
 			let current = self.current.lock()?;
 			if let Some(c) = &*current {
-				if c.0 == id {
+				if c.0 == params {
 					return Ok(());
 				}
 			}
@@ -68,7 +75,7 @@ impl AsyncCommitFiles {
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
-			Self::fetch_helper(id, &arc_current)
+			Self::fetch_helper(params, &arc_current)
 				.expect("failed to fetch");
 
 			arc_pending.fetch_sub(1, Ordering::Relaxed);
@@ -82,22 +89,19 @@ impl AsyncCommitFiles {
 	}
 
 	fn fetch_helper(
-		id: CommitId,
+		params: CommitFilesParams,
 		arc_current: &Arc<
-			Mutex<Option<Request<CommitId, ResultType>>>,
+			Mutex<Option<Request<CommitFilesParams, ResultType>>>,
 		>,
 	) -> Result<()> {
-		let res = sync::get_commit_files(CWD, id)?;
+		let res =
+			sync::get_commit_files(CWD, params.id, params.other)?;
 
-		log::trace!(
-			"get_commit_files: {} ({})",
-			id.to_string(),
-			res.len()
-		);
+		log::trace!("get_commit_files: {:?} ({})", params, res.len());
 
 		{
 			let mut current = arc_current.lock()?;
-			*current = Some(Request(id, res));
+			*current = Some(Request(params, res));
 		}
 
 		Ok(())

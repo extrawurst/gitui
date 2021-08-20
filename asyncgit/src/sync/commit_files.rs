@@ -9,12 +9,13 @@ use scopetime::scope_time;
 pub fn get_commit_files(
 	repo_path: &str,
 	id: CommitId,
+	old: Option<CommitId>,
 ) -> Result<Vec<StatusItem>> {
 	scope_time!("get_commit_files");
 
 	let repo = repo(repo_path)?;
 
-	let diff = get_commit_diff(&repo, id, None, None)?;
+	let diff = get_commit_diff(&repo, id, old, None)?;
 
 	let mut res = Vec::new();
 
@@ -45,7 +46,7 @@ pub(crate) fn get_commit_diff(
 	old: Option<CommitId>,
 	pathspec: Option<String>,
 ) -> Result<Diff<'_>> {
-	// scope_time!("get_commit_diff");
+	scope_time!("get_commit_diff");
 
 	let commit = repo.find_commit(id.into())?;
 	let commit_tree = commit.tree()?;
@@ -120,7 +121,7 @@ mod tests {
 
 		let id = commit(repo_path, "commit msg")?;
 
-		let diff = get_commit_files(repo_path, id)?;
+		let diff = get_commit_files(repo_path, id, None)?;
 
 		assert_eq!(diff.len(), 1);
 		assert_eq!(diff[0].status, StatusItemType::New);
@@ -140,7 +141,7 @@ mod tests {
 
 		let id = stash_save(repo_path, None, true, false)?;
 
-		let diff = get_commit_files(repo_path, id)?;
+		let diff = get_commit_files(repo_path, id, None)?;
 
 		assert_eq!(diff.len(), 1);
 		assert_eq!(diff[0].status, StatusItemType::New);
@@ -168,7 +169,7 @@ mod tests {
 
 		let id = stash_save(repo_path, None, true, false)?;
 
-		let diff = get_commit_files(repo_path, id)?;
+		let diff = get_commit_files(repo_path, id, None)?;
 
 		assert_eq!(diff.len(), 2);
 		assert_eq!(diff[0].status, StatusItemType::Modified);

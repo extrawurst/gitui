@@ -222,6 +222,7 @@ impl CompareCommitsComponent {
 	pub fn update_diff(&mut self) -> Result<()> {
 		if self.is_visible() {
 			if let Some(ids) = self.commit_ids {
+				log::info!("compare: {:?}", ids);
 				if let Some(f) = self.details.files().selection_file()
 				{
 					let diff_params = DiffParams {
@@ -229,6 +230,7 @@ impl CompareCommitsComponent {
 						diff_type: DiffType::Commits(ids),
 						options: DiffOptions::default(),
 					};
+					log::info!("compare diff: {:?}", diff_params);
 
 					if let Some((params, last)) =
 						self.git_diff.last()?

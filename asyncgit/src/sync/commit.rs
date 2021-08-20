@@ -205,7 +205,7 @@ mod tests {
 		let details = get_commit_details(repo_path, new_id)?;
 		assert_eq!(details.message.unwrap().subject, "amended");
 
-		let files = get_commit_files(repo_path, new_id)?;
+		let files = get_commit_files(repo_path, new_id, None)?;
 
 		assert_eq!(files.len(), 2);
 
