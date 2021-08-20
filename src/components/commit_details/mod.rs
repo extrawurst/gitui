@@ -1,3 +1,4 @@
+mod compare_details;
 mod details;
 
 use super::{
@@ -13,6 +14,7 @@ use asyncgit::{
 	sync::CommitTags, AsyncCommitFiles, AsyncGitNotification,
 	CommitFilesParams,
 };
+use compare_details::CompareDetailsComponent;
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use details::DetailsComponent;
@@ -23,7 +25,9 @@ use tui::{
 };
 
 pub struct CommitDetailsComponent {
-	details: DetailsComponent,
+	commit: Option<CommitFilesParams>,
+	single_details: DetailsComponent,
+	compare_details: CompareDetailsComponent,
 	file_tree: FileTreeComponent,
 	git_commit_files: AsyncCommitFiles,
 	visible: bool,
@@ -31,7 +35,7 @@ pub struct CommitDetailsComponent {
 }
 
 impl CommitDetailsComponent {
-	accessors!(self, [details, file_tree]);
+	accessors!(self, [single_details, compare_details, file_tree]);
 
 	///
 	pub fn new(
@@ -41,7 +45,12 @@ impl CommitDetailsComponent {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
-			details: DetailsComponent::new(
+			single_details: DetailsComponent::new(
+				theme.clone(),
+				key_config.clone(),
+				false,
+			),
+			compare_details: CompareDetailsComponent::new(
 				theme.clone(),
 				key_config.clone(),
 				false,
@@ -55,6 +64,7 @@ impl CommitDetailsComponent {
 				key_config.clone(),
 			),
 			visible: false,
+			commit: None,
 			key_config,
 		}
 	}
@@ -75,10 +85,19 @@ impl CommitDetailsComponent {
 		params: Option<CommitFilesParams>,
 		tags: Option<CommitTags>,
 	) -> Result<()> {
-		self.details
-			.set_commit(params.map(|params| params.id), tags);
+		if params.is_none() {
+			self.single_details.set_commit(None, None);
+			self.compare_details.set_commits(None);
+		}
 
 		if let Some(id) = params {
+			if let Some(other) = id.other {
+				self.compare_details
+					.set_commits(Some((id.id, other)));
+			} else {
+				self.single_details.set_commit(Some(id.id), tags);
+			}
+
 			if let Some((fetched_id, res)) =
 				self.git_commit_files.current()?
 			{
@@ -108,6 +127,23 @@ impl CommitDetailsComponent {
 	pub const fn files(&self) -> &FileTreeComponent {
 		&self.file_tree
 	}
+
+	fn details_focused(&self) -> bool {
+		self.single_details.focused()
+			|| self.compare_details.focused()
+	}
+
+	fn set_details_focus(&mut self, focus: bool) {
+		if self.is_compare() {
+			self.compare_details.focus(focus);
+		} else {
+			self.single_details.focus(false);
+		}
+	}
+
+	fn is_compare(&self) -> bool {
+		self.commit.map(|p| p.other.is_some()).unwrap_or_default()
+	}
 }
 
 impl DrawableComponent for CommitDetailsComponent {
@@ -116,9 +152,10 @@ impl DrawableComponent for CommitDetailsComponent {
 		f: &mut Frame<B>,
 		rect: Rect,
 	) -> Result<()> {
+		let details_focused = self.details_focused();
 		let percentages = if self.file_tree.focused() {
 			(40, 60)
-		} else if self.details.focused() {
+		} else if details_focused {
 			(60, 40)
 		} else {
 			(40, 60)
@@ -135,7 +172,11 @@ impl DrawableComponent for CommitDetailsComponent {
 			)
 			.split(rect);
 
-		self.details.draw(f, chunks[0])?;
+		if self.is_compare() {
+			self.compare_details.draw(f, chunks[0])?;
+		} else {
+			self.single_details.draw(f, chunks[0])?;
+		}
 		self.file_tree.draw(f, chunks[1])?;
 
 		Ok(())
@@ -169,16 +210,16 @@ impl Component for CommitDetailsComponent {
 		if self.focused() {
 			if let Event::Key(e) = ev {
 				return if e == self.key_config.focus_below
-					&& self.details.focused()
+					&& self.details_focused()
 				{
-					self.details.focus(false);
+					self.set_details_focus(false);
 					self.file_tree.focus(true);
 					Ok(EventState::Consumed)
 				} else if e == self.key_config.focus_above
 					&& self.file_tree.focused()
 				{
 					self.file_tree.focus(false);
-					self.details.focus(true);
+					self.set_details_focus(true);
 					Ok(EventState::Consumed)
 				} else {
 					Ok(EventState::NotConsumed)
@@ -201,10 +242,12 @@ impl Component for CommitDetailsComponent {
 	}
 
 	fn focused(&self) -> bool {
-		self.details.focused() || self.file_tree.focused()
+		self.details_focused() || self.file_tree.focused()
 	}
+
 	fn focus(&mut self, focus: bool) {
-		self.details.focus(false);
+		self.single_details.focus(false);
+		self.compare_details.focus(false);
 		self.file_tree.focus(focus);
 		self.file_tree.show_selection(true);
 	}
