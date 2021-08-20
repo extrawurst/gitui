@@ -1,7 +1,7 @@
 //! sync git api for fetching a diff
 
 use super::{
-	commit_files::get_commit_diff,
+	commit_files::{get_commit_diff, get_compare_commits_diff},
 	utils::{self, get_head_repo, work_dir},
 	CommitId,
 };
@@ -217,7 +217,7 @@ pub fn get_diff_commit(
 
 	let repo = utils::repo(repo_path)?;
 	let work_dir = work_dir(&repo)?;
-	let diff = get_commit_diff(&repo, id, None, Some(p))?;
+	let diff = get_commit_diff(&repo, id, Some(p))?;
 
 	raw_diff_to_file_diff(&diff, work_dir)
 }
@@ -233,7 +233,8 @@ pub fn get_diff_commits(
 
 	let repo = utils::repo(repo_path)?;
 	let work_dir = work_dir(&repo)?;
-	let diff = get_commit_diff(&repo, ids.0, Some(ids.1), Some(p))?;
+	let diff =
+		get_compare_commits_diff(&repo, (ids.0, ids.1), Some(p))?;
 
 	raw_diff_to_file_diff(&diff, work_dir)
 }
