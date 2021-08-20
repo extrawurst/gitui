@@ -429,8 +429,8 @@ mod test {
 	#[test]
 	fn line_composer_max_line_width_of_1_double_width_characters() {
 		let width = 1;
-		let text = "コンピュータ上で文字を扱う場合、典型的には文字\naaaによる通信を行う場合にその\
-                    両端点では、";
+		let text = "\u{30b3}\u{30f3}\u{30d4}\u{30e5}\u{30fc}\u{30bf}\u{4e0a}\u{3067}\u{6587}\u{5b57}\u{3092}\u{6271}\u{3046}\u{5834}\u{5408}\u{3001}\u{5178}\u{578b}\u{7684}\u{306b}\u{306f}\u{6587}\u{5b57}\naaa\u{306b}\u{3088}\u{308b}\u{901a}\u{4fe1}\u{3092}\u{884c}\u{3046}\u{5834}\u{5408}\u{306b}\u{305d}\u{306e}\
+                    \u{4e21}\u{7aef}\u{70b9}\u{3067}\u{306f}\u{3001}";
 		let (word_wrapper, _) = run_composer(
 			Composer::WordWrapper { trim: true },
 			text,
@@ -467,22 +467,22 @@ mod test {
 	#[test]
 	fn line_composer_double_width_chars() {
 		let width = 20;
-		let text = "コンピュータ上で文字を扱う場合、典型的には文字による通信を行う場合にその両端点\
-                    では、";
+		let text = "\u{30b3}\u{30f3}\u{30d4}\u{30e5}\u{30fc}\u{30bf}\u{4e0a}\u{3067}\u{6587}\u{5b57}\u{3092}\u{6271}\u{3046}\u{5834}\u{5408}\u{3001}\u{5178}\u{578b}\u{7684}\u{306b}\u{306f}\u{6587}\u{5b57}\u{306b}\u{3088}\u{308b}\u{901a}\u{4fe1}\u{3092}\u{884c}\u{3046}\u{5834}\u{5408}\u{306b}\u{305d}\u{306e}\u{4e21}\u{7aef}\u{70b9}\
+                    \u{3067}\u{306f}\u{3001}";
 		let (word_wrapper, word_wrapper_width) = run_composer(
 			Composer::WordWrapper { trim: true },
-			&text,
+			text,
 			width,
 		);
 		let (line_truncator, _) =
-			run_composer(Composer::LineTruncator, &text, width);
-		assert_eq!(line_truncator, vec!["コンピュータ上で文字"]);
+			run_composer(Composer::LineTruncator, text, width);
+		assert_eq!(line_truncator, vec!["\u{30b3}\u{30f3}\u{30d4}\u{30e5}\u{30fc}\u{30bf}\u{4e0a}\u{3067}\u{6587}\u{5b57}"]);
 		let wrapped = vec![
-			"コンピュータ上で文字",
-			"を扱う場合、典型的に",
-			"は文字による通信を行",
-			"う場合にその両端点で",
-			"は、",
+			"\u{30b3}\u{30f3}\u{30d4}\u{30e5}\u{30fc}\u{30bf}\u{4e0a}\u{3067}\u{6587}\u{5b57}",
+			"\u{3092}\u{6271}\u{3046}\u{5834}\u{5408}\u{3001}\u{5178}\u{578b}\u{7684}\u{306b}",
+			"\u{306f}\u{6587}\u{5b57}\u{306b}\u{3088}\u{308b}\u{901a}\u{4fe1}\u{3092}\u{884c}",
+			"\u{3046}\u{5834}\u{5408}\u{306b}\u{305d}\u{306e}\u{4e21}\u{7aef}\u{70b9}\u{3067}",
+			"\u{306f}\u{3001}",
 		];
 		assert_eq!(word_wrapper, wrapped);
 		assert_eq!(
@@ -555,7 +555,7 @@ mod test {
 		// You are more than welcome to add word boundary detection based of alterations of
 		// hiragana and katakana...
 		// This happens to also be a test case for mixed width because regular spaces are single width.
-		let text = "コンピュ ータ上で文字を扱う場合、 典型的には文 字による 通信を行 う場合にその両端点では、";
+		let text = "\u{30b3}\u{30f3}\u{30d4}\u{30e5} \u{30fc}\u{30bf}\u{4e0a}\u{3067}\u{6587}\u{5b57}\u{3092}\u{6271}\u{3046}\u{5834}\u{5408}\u{3001} \u{5178}\u{578b}\u{7684}\u{306b}\u{306f}\u{6587} \u{5b57}\u{306b}\u{3088}\u{308b} \u{901a}\u{4fe1}\u{3092}\u{884c} \u{3046}\u{5834}\u{5408}\u{306b}\u{305d}\u{306e}\u{4e21}\u{7aef}\u{70b9}\u{3067}\u{306f}\u{3001}";
 		let (word_wrapper, word_wrapper_width) = run_composer(
 			Composer::WordWrapper { trim: true },
 			text,
@@ -564,12 +564,12 @@ mod test {
 		assert_eq!(
 			word_wrapper,
 			vec![
-				"コンピュ",
-				"ータ上で文字を扱う場",
-				"合、 典型的には文",
-				"字による 通信を行",
-				"う場合にその両端点で",
-				"は、",
+				"\u{30b3}\u{30f3}\u{30d4}\u{30e5}",
+				"\u{30fc}\u{30bf}\u{4e0a}\u{3067}\u{6587}\u{5b57}\u{3092}\u{6271}\u{3046}\u{5834}",
+				"\u{5408}\u{3001} \u{5178}\u{578b}\u{7684}\u{306b}\u{306f}\u{6587}",
+				"\u{5b57}\u{306b}\u{3088}\u{308b} \u{901a}\u{4fe1}\u{3092}\u{884c}",
+				"\u{3046}\u{5834}\u{5408}\u{306b}\u{305d}\u{306e}\u{4e21}\u{7aef}\u{70b9}\u{3067}",
+				"\u{306f}\u{3001}",
 			]
 		);
 		// Odd-sized lines have a space in them.

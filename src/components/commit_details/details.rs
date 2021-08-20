@@ -438,7 +438,7 @@ mod tests {
 		width: usize,
 	) -> Vec<Cow<'_, str>> {
 		let (wrapped_title, wrapped_message) =
-			DetailsComponent::wrap_commit_details(&message, width);
+			DetailsComponent::wrap_commit_details(message, width);
 
 		[&wrapped_title[..], &wrapped_message[..]].concat()
 	}

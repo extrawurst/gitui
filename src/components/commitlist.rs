@@ -481,14 +481,14 @@ mod tests {
 
 	#[test]
 	fn test_string_width_align_unicode() {
-		assert_eq!(string_width_align("äste", 3), "ä..");
+		assert_eq!(string_width_align("\u{e4}ste", 3), "\u{e4}..");
 		assert_eq!(
-			string_width_align("wüsten äste", 10),
-			"wüsten ä.."
+			string_width_align("w\u{fc}sten \u{e4}ste", 10),
+			"w\u{fc}sten \u{e4}.."
 		);
 		assert_eq!(
-			string_width_align("Jon Grythe Stødle", 19),
-			"Jon Grythe Stødle  "
+			string_width_align("Jon Grythe St\u{f8}dle", 19),
+			"Jon Grythe St\u{f8}dle  "
 		);
 	}
 }
