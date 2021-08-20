@@ -5,6 +5,8 @@ pub mod merge_ff;
 pub mod merge_rebase;
 pub mod rename;
 
+use std::collections::HashSet;
+
 use super::{
 	remotes::get_default_remote_in_repo, utils::bytes2string,
 };
@@ -57,11 +59,18 @@ pub struct LocalBranch {
 
 ///
 #[derive(Debug)]
+pub struct RemoteBranch {
+	///
+	pub has_tracking: bool,
+}
+
+///
+#[derive(Debug)]
 pub enum BranchDetails {
 	///
 	Local(LocalBranch),
 	///
-	Remote,
+	Remote(RemoteBranch),
 }
 
 ///
@@ -107,13 +116,26 @@ pub fn get_branches_info(
 ) -> Result<Vec<BranchInfo>> {
 	scope_time!("get_branches_info");
 
-	let filter = if local {
-		BranchType::Local
+	let repo = utils::repo(repo_path)?;
+
+	let (filter, remotes_with_tracking) = if local {
+		(BranchType::Local, HashSet::default())
 	} else {
-		BranchType::Remote
+		let remotes: HashSet<_> = repo
+			.branches(Some(BranchType::Local))?
+			.filter_map(|b| {
+				let branch = b.ok()?.0;
+				let upstream = branch.upstream();
+				upstream
+					.ok()?
+					.name_bytes()
+					.ok()
+					.map(ToOwned::to_owned)
+			})
+			.collect();
+		(BranchType::Remote, remotes)
 	};
 
-	let repo = utils::repo(repo_path)?;
 	let mut branches_for_display: Vec<BranchInfo> = repo
 		.branches(Some(filter))?
 		.map(|b| {
@@ -129,6 +151,8 @@ pub fn get_branches_info(
 				.and_then(git2::Buf::as_str)
 				.map(String::from);
 
+			let name_bytes = branch.name_bytes()?;
+
 			let details = if local {
 				BranchDetails::Local(LocalBranch {
 					is_head: branch.is_head(),
@@ -136,11 +160,14 @@ pub fn get_branches_info(
 					remote,
 				})
 			} else {
-				BranchDetails::Remote
+				BranchDetails::Remote(RemoteBranch {
+					has_tracking: remotes_with_tracking
+						.contains(name_bytes),
+				})
 			};
 
 			Ok(BranchInfo {
-				name: bytes2string(branch.name_bytes()?)?,
+				name: bytes2string(name_bytes)?,
 				reference,
 				top_commit_message: bytes2string(
 					top_commit.summary_bytes().unwrap_or_default(),
@@ -668,6 +695,17 @@ mod test_remote_branches {
 		repo_clone, repo_init_bare, write_commit_file,
 	};
 
+	impl BranchInfo {
+		/// returns details about remote branch or None
+		const fn remote_details(&self) -> Option<&RemoteBranch> {
+			if let BranchDetails::Remote(details) = &self.details {
+				Some(details)
+			} else {
+				None
+			}
+		}
+	}
+
 	#[test]
 	fn test_remote_branches() {
 		let (r1_dir, _repo) = repo_init_bare().unwrap();
@@ -755,5 +793,50 @@ mod test_remote_branches {
 		);
 
 		assert_eq!(&get_branch_name(clone2_dir).unwrap(), "foo");
+	}
+
+	#[test]
+	fn test_has_tracking() {
+		let (r1_dir, _repo) = repo_init_bare().unwrap();
+
+		let (clone1_dir, clone1) =
+			repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+		let clone1_dir = clone1_dir.path().to_str().unwrap();
+
+		// clone1
+
+		write_commit_file(&clone1, "test.txt", "test", "commit1");
+		push(
+			clone1_dir, "origin", "master", false, false, None, None,
+		)
+		.unwrap();
+		create_branch(clone1_dir, "foo").unwrap();
+		write_commit_file(&clone1, "test.txt", "test2", "commit2");
+		push(clone1_dir, "origin", "foo", false, false, None, None)
+			.unwrap();
+
+		let branches_1 =
+			get_branches_info(clone1_dir, false).unwrap();
+
+		assert!(branches_1[0].remote_details().unwrap().has_tracking);
+		assert!(branches_1[1].remote_details().unwrap().has_tracking);
+
+		// clone2
+
+		let (clone2_dir, _clone2) =
+			repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+		let clone2_dir = clone2_dir.path().to_str().unwrap();
+
+		let branches_2 =
+			get_branches_info(clone2_dir, false).unwrap();
+
+		assert!(
+			!branches_2[0].remote_details().unwrap().has_tracking
+		);
+		assert!(
+			!branches_2[1].remote_details().unwrap().has_tracking
+		);
+		assert!(branches_2[2].remote_details().unwrap().has_tracking);
 	}
 }
