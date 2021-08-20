@@ -9,13 +9,17 @@ use scopetime::scope_time;
 pub fn get_commit_files(
 	repo_path: &str,
 	id: CommitId,
-	old: Option<CommitId>,
+	other: Option<CommitId>,
 ) -> Result<Vec<StatusItem>> {
 	scope_time!("get_commit_files");
 
 	let repo = repo(repo_path)?;
 
-	let diff = get_commit_diff(&repo, id, old, None)?;
+	let diff = if let Some(other) = other {
+		get_compare_commits_diff(&repo, (id, other), None)?
+	} else {
+		get_commit_diff(&repo, id, None, None)?
+	};
 
 	let mut res = Vec::new();
 
@@ -37,6 +41,41 @@ pub fn get_commit_files(
 	)?;
 
 	Ok(res)
+}
+
+pub fn get_compare_commits_diff(
+	repo: &Repository,
+	ids: (CommitId, CommitId),
+	pathspec: Option<String>,
+) -> Result<Diff<'_>> {
+	scope_time!("get_compare_commits_diff");
+
+	let commits = (
+		repo.find_commit(ids.0.into())?,
+		repo.find_commit(ids.1.into())?,
+	);
+
+	let commits = if commits.0.time().cmp(&commits.1.time()).is_lt() {
+		(commits.1, commits.0)
+	} else {
+		commits
+	};
+
+	let trees = (commits.0.tree()?, commits.1.tree()?);
+
+	let mut opts = DiffOptions::new();
+	if let Some(p) = &pathspec {
+		opts.pathspec(p.clone());
+	}
+	opts.show_binary(true);
+
+	let diff = repo.diff_tree_to_tree(
+		Some(&trees.0),
+		Some(&trees.1),
+		Some(&mut opts),
+	)?;
+
+	Ok(diff)
 }
 
 #[allow(clippy::redundant_pub_crate)]
