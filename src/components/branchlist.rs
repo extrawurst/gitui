@@ -13,8 +13,12 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	sync::{
-		self, branch::checkout_remote_branch, checkout_branch,
-		get_branches_info, BranchInfo, CommitId,
+		self,
+		branch::{
+			checkout_remote_branch, BranchDetails, LocalBranch,
+			RemoteBranch,
+		},
+		checkout_branch, get_branches_info, BranchInfo, CommitId,
 	},
 	AsyncGitNotification, CWD,
 };
@@ -415,6 +419,7 @@ impl BranchListComponent {
 		height: usize,
 	) -> Text {
 		const UPSTREAM_SYMBOL: char = '\u{2191}';
+		const TRACKING_SYMBOL: char = '\u{2193}';
 		const HEAD_SYMBOL: char = '*';
 		const EMPTY_SYMBOL: char = ' ';
 		const THREE_DOTS: &str = "...";
@@ -473,18 +478,20 @@ impl BranchListComponent {
 				.unwrap_or_default();
 			let is_head_str =
 				if is_head { HEAD_SYMBOL } else { EMPTY_SYMBOL };
-			let has_upstream_str = if displaybranch
-				.local_details()
-				.map(|details| details.has_upstream)
-				.unwrap_or_default()
-			{
-				UPSTREAM_SYMBOL
-			} else {
-				EMPTY_SYMBOL
+			let upstream_tracking_str = match displaybranch.details {
+				BranchDetails::Local(LocalBranch {
+					has_upstream,
+					..
+				}) if has_upstream => UPSTREAM_SYMBOL,
+				BranchDetails::Remote(RemoteBranch {
+					has_tracking,
+					..
+				}) if has_tracking => TRACKING_SYMBOL,
+				_ => EMPTY_SYMBOL,
 			};
 
 			let span_prefix = Span::styled(
-				format!("{}{} ", is_head_str, has_upstream_str),
+				format!("{}{} ", is_head_str, upstream_tracking_str),
 				theme.commit_author(selected),
 			);
 			let span_hash = Span::styled(

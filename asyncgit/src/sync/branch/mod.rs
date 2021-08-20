@@ -5,6 +5,8 @@ pub mod merge_ff;
 pub mod merge_rebase;
 pub mod rename;
 
+use std::collections::HashSet;
+
 use super::{
 	remotes::get_default_remote_in_repo, utils::bytes2string,
 };
@@ -57,11 +59,18 @@ pub struct LocalBranch {
 
 ///
 #[derive(Debug)]
+pub struct RemoteBranch {
+	///
+	pub has_tracking: bool,
+}
+
+///
+#[derive(Debug)]
 pub enum BranchDetails {
 	///
 	Local(LocalBranch),
 	///
-	Remote,
+	Remote(RemoteBranch),
 }
 
 ///
@@ -107,13 +116,26 @@ pub fn get_branches_info(
 ) -> Result<Vec<BranchInfo>> {
 	scope_time!("get_branches_info");
 
-	let filter = if local {
-		BranchType::Local
+	let repo = utils::repo(repo_path)?;
+
+	let (filter, remotes_with_tracking) = if local {
+		(BranchType::Local, HashSet::default())
 	} else {
-		BranchType::Remote
+		let remotes: HashSet<_> = repo
+			.branches(Some(BranchType::Local))?
+			.filter_map(|b| {
+				let branch = b.ok()?.0;
+				let upstream = branch.upstream();
+				upstream
+					.ok()?
+					.name_bytes()
+					.ok()
+					.map(ToOwned::to_owned)
+			})
+			.collect();
+		(BranchType::Remote, remotes)
 	};
 
-	let repo = utils::repo(repo_path)?;
 	let mut branches_for_display: Vec<BranchInfo> = repo
 		.branches(Some(filter))?
 		.map(|b| {
@@ -129,6 +151,8 @@ pub fn get_branches_info(
 				.and_then(git2::Buf::as_str)
 				.map(String::from);
 
+			let name_bytes = branch.name_bytes()?;
+
 			let details = if local {
 				BranchDetails::Local(LocalBranch {
 					is_head: branch.is_head(),
@@ -136,11 +160,14 @@ pub fn get_branches_info(
 					remote,
 				})
 			} else {
-				BranchDetails::Remote
+				BranchDetails::Remote(RemoteBranch {
+					has_tracking: remotes_with_tracking
+						.contains(name_bytes),
+				})
 			};
 
 			Ok(BranchInfo {
-				name: bytes2string(branch.name_bytes()?)?,
+				name: bytes2string(name_bytes)?,
 				reference,
 				top_commit_message: bytes2string(
 					top_commit.summary_bytes().unwrap_or_default(),
