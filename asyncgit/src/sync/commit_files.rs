@@ -43,6 +43,7 @@ pub fn get_commit_files(
 	Ok(res)
 }
 
+#[allow(clippy::needless_pass_by_value)]
 pub fn get_compare_commits_diff(
 	repo: &Repository,
 	ids: (CommitId, CommitId),

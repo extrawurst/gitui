@@ -43,14 +43,12 @@ impl CompareDetailsComponent {
 	}
 
 	pub fn set_commits(&mut self, ids: Option<(CommitId, CommitId)>) {
-		self.data = if let Some(ids) = ids {
+		self.data = ids.and_then(|ids| {
 			let c1 = sync::get_commit_details(CWD, ids.0).ok();
 			let c2 = sync::get_commit_details(CWD, ids.1).ok();
 
-			c1.map(|c1| c2.map(|c2| (c1, c2))).flatten()
-		} else {
-			None
-		};
+			c1.and_then(|c1| c2.map(|c2| (c1, c2)))
+		});
 	}
 
 	// fn style_detail(&self, field: &Detail) -> Span {
