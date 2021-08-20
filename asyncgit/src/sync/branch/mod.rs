@@ -695,6 +695,17 @@ mod test_remote_branches {
 		repo_clone, repo_init_bare, write_commit_file,
 	};
 
+	impl BranchInfo {
+		/// returns details about remote branch or None
+		const fn remote_details(&self) -> Option<&RemoteBranch> {
+			if let BranchDetails::Remote(details) = &self.details {
+				Some(details)
+			} else {
+				None
+			}
+		}
+	}
+
 	#[test]
 	fn test_remote_branches() {
 		let (r1_dir, _repo) = repo_init_bare().unwrap();
@@ -782,5 +793,50 @@ mod test_remote_branches {
 		);
 
 		assert_eq!(&get_branch_name(clone2_dir).unwrap(), "foo");
+	}
+
+	#[test]
+	fn test_has_tracking() {
+		let (r1_dir, _repo) = repo_init_bare().unwrap();
+
+		let (clone1_dir, clone1) =
+			repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+		let clone1_dir = clone1_dir.path().to_str().unwrap();
+
+		// clone1
+
+		write_commit_file(&clone1, "test.txt", "test", "commit1");
+		push(
+			clone1_dir, "origin", "master", false, false, None, None,
+		)
+		.unwrap();
+		create_branch(clone1_dir, "foo").unwrap();
+		write_commit_file(&clone1, "test.txt", "test2", "commit2");
+		push(clone1_dir, "origin", "foo", false, false, None, None)
+			.unwrap();
+
+		let branches_1 =
+			get_branches_info(clone1_dir, false).unwrap();
+
+		assert!(branches_1[0].remote_details().unwrap().has_tracking);
+		assert!(branches_1[1].remote_details().unwrap().has_tracking);
+
+		// clone2
+
+		let (clone2_dir, _clone2) =
+			repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+
+		let clone2_dir = clone2_dir.path().to_str().unwrap();
+
+		let branches_2 =
+			get_branches_info(clone2_dir, false).unwrap();
+
+		assert!(
+			!branches_2[0].remote_details().unwrap().has_tracking
+		);
+		assert!(
+			!branches_2[1].remote_details().unwrap().has_tracking
+		);
+		assert!(branches_2[2].remote_details().unwrap().has_tracking);
 	}
 }
