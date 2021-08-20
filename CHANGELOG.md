@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - mark and drop multiple stashes ([#854](https://github.com/extrawurst/gitui/issues/854))
 - check branch name validity while typing ([#559](https://github.com/extrawurst/gitui/issues/559))
 - support deleting remote branch [[@zcorniere](https://github.com/zcorniere)] ([#622](https://github.com/extrawurst/gitui/issues/622))
+- mark remote branches that have local tracking branch [[@jedel1043](https://github.com/jedel1043)] ([#861](https://github.com/extrawurst/gitui/issues/861))
 
 ## Fixed
 - error viewing filetree in empty repo ([#859](https://github.com/extrawurst/gitui/issues/859))
