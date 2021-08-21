@@ -42,7 +42,7 @@ pub fn get_tags(repo_path: &str) -> Result<Tags> {
 	repo.tag_foreach(|id, name| {
 		if let Ok(name) =
 			// skip the `refs/tags/` part
-			String::from_utf8(name[10..name.len()].into())
+		 String::from_utf8(name[10..name.len()].into())
 		{
 			//NOTE: find_tag (git_tag_lookup) only works on annotated tags
 			// lightweight tags `id` already points to the target commit

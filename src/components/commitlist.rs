@@ -300,7 +300,7 @@ impl CommitList {
 		// commit msg
 		let r = gh_emoji::Replacer::new();
 		txt.push(Span::styled(
-			Cow::from(r.replace_all(e.msg.as_str())),
+			r.replace_all(e.msg.as_str()),
 			theme.text(true, selected),
 		));
 
