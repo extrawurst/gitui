@@ -1,7 +1,12 @@
+use std::borrow::Cow;
+
 use crate::{
 	components::{
-		dialog_paragraph, CommandBlocking, CommandInfo, Component,
-		DrawableComponent, EventState,
+		commit_details::style::{style_detail, Detail},
+		dialog_paragraph,
+		utils::time_to_string,
+		CommandBlocking, CommandInfo, Component, DrawableComponent,
+		EventState,
 	},
 	keys::SharedKeyConfig,
 	strings::{self},
@@ -16,7 +21,7 @@ use crossterm::event::Event;
 use tui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
-	text::Text,
+	text::{Span, Spans, Text},
 	Frame,
 };
 
@@ -51,126 +56,87 @@ impl CompareDetailsComponent {
 		});
 	}
 
-	// fn style_detail(&self, field: &Detail) -> Span {
-	// 	match field {
-	// 		Detail::Author => Span::styled(
-	// 			Cow::from(strings::commit::details_author(
-	// 				&self.key_config,
-	// 			)),
-	// 			self.theme.text(false, false),
-	// 		),
-	// 		Detail::Date => Span::styled(
-	// 			Cow::from(strings::commit::details_date(
-	// 				&self.key_config,
-	// 			)),
-	// 			self.theme.text(false, false),
-	// 		),
-	// 		Detail::Commiter => Span::styled(
-	// 			Cow::from(strings::commit::details_committer(
-	// 				&self.key_config,
-	// 			)),
-	// 			self.theme.text(false, false),
-	// 		),
-	// 		Detail::Sha => Span::styled(
-	// 			Cow::from(strings::commit::details_tags(
-	// 				&self.key_config,
-	// 			)),
-	// 			self.theme.text(false, false),
-	// 		),
-	// 	}
-	// }
+	#[allow(unstable_name_collisions)]
+	fn get_commit_text(&self, data: &CommitDetails) -> Vec<Spans> {
+		let mut res = vec![
+			Spans::from(vec![
+				style_detail(
+					self.theme.clone(),
+					self.key_config.clone(),
+					&Detail::Author,
+				),
+				Span::styled(
+					Cow::from(format!(
+						"{} <{}>",
+						data.author.name, data.author.email
+					)),
+					self.theme.text(true, false),
+				),
+			]),
+			Spans::from(vec![
+				style_detail(
+					self.theme.clone(),
+					self.key_config.clone(),
+					&Detail::Date,
+				),
+				Span::styled(
+					Cow::from(time_to_string(
+						data.author.time,
+						false,
+					)),
+					self.theme.text(true, false),
+				),
+			]),
+		];
 
-	// #[allow(unstable_name_collisions)]
-	// fn get_text_info(&self) -> Vec<Spans> {
-	// 	if let Some(ref data) = self.data {
-	// 		let mut res = vec![
-	// 			Spans::from(vec![
-	// 				self.style_detail(&Detail::Author),
-	// 				Span::styled(
-	// 					Cow::from(format!(
-	// 						"{} <{}>",
-	// 						data.author.name, data.author.email
-	// 					)),
-	// 					self.theme.text(true, false),
-	// 				),
-	// 			]),
-	// 			Spans::from(vec![
-	// 				self.style_detail(&Detail::Date),
-	// 				Span::styled(
-	// 					Cow::from(time_to_string(
-	// 						data.author.time,
-	// 						false,
-	// 					)),
-	// 					self.theme.text(true, false),
-	// 				),
-	// 			]),
-	// 		];
+		if let Some(ref committer) = data.committer {
+			res.extend(vec![
+				Spans::from(vec![
+					style_detail(
+						self.theme.clone(),
+						self.key_config.clone(),
+						&Detail::Commiter,
+					),
+					Span::styled(
+						Cow::from(format!(
+							"{} <{}>",
+							committer.name, committer.email
+						)),
+						self.theme.text(true, false),
+					),
+				]),
+				Spans::from(vec![
+					style_detail(
+						self.theme.clone(),
+						self.key_config.clone(),
+						&Detail::Date,
+					),
+					Span::styled(
+						Cow::from(time_to_string(
+							committer.time,
+							false,
+						)),
+						self.theme.text(true, false),
+					),
+				]),
+			]);
+		}
 
-	// 		if let Some(ref committer) = data.committer {
-	// 			res.extend(vec![
-	// 				Spans::from(vec![
-	// 					self.style_detail(&Detail::Commiter),
-	// 					Span::styled(
-	// 						Cow::from(format!(
-	// 							"{} <{}>",
-	// 							committer.name, committer.email
-	// 						)),
-	// 						self.theme.text(true, false),
-	// 					),
-	// 				]),
-	// 				Spans::from(vec![
-	// 					self.style_detail(&Detail::Date),
-	// 					Span::styled(
-	// 						Cow::from(time_to_string(
-	// 							committer.time,
-	// 							false,
-	// 						)),
-	// 						self.theme.text(true, false),
-	// 					),
-	// 				]),
-	// 			]);
-	// 		}
+		res.push(Spans::from(vec![
+			Span::styled(
+				Cow::from(strings::commit::details_sha(
+					&self.key_config,
+				)),
+				self.theme.text(false, false),
+			),
+			Span::styled(
+				Cow::from(data.hash.clone()),
+				self.theme.text(true, false),
+			),
+		]));
 
-	// 		res.push(Spans::from(vec![
-	// 			Span::styled(
-	// 				Cow::from(strings::commit::details_sha(
-	// 					&self.key_config,
-	// 				)),
-	// 				self.theme.text(false, false),
-	// 			),
-	// 			Span::styled(
-	// 				Cow::from(data.hash.clone()),
-	// 				self.theme.text(true, false),
-	// 			),
-	// 		]));
-
-	// 		if !self.tags.is_empty() {
-	// 			res.push(Spans::from(
-	// 				self.style_detail(&Detail::Sha),
-	// 			));
-
-	// 			res.push(Spans::from(
-	// 				self.tags
-	// 					.iter()
-	// 					.map(|tag| {
-	// 						Span::styled(
-	// 							Cow::from(tag),
-	// 							self.theme.text(true, false),
-	// 						)
-	// 					})
-	// 					.intersperse(Span::styled(
-	// 						Cow::from(","),
-	// 						self.theme.text(true, false),
-	// 					))
-	// 					.collect::<Vec<Span>>(),
-	// 			));
-	// 		}
-
-	// 		res
-	// 	} else {
-	// 		vec![]
-	// 	}
-	// }
+		res
+	}
 }
 
 impl DrawableComponent for CompareDetailsComponent {
@@ -182,45 +148,36 @@ impl DrawableComponent for CompareDetailsComponent {
 		let chunks = Layout::default()
 			.direction(Direction::Vertical)
 			.constraints(
-				[Constraint::Length(4), Constraint::Length(4)]
+				[Constraint::Length(5), Constraint::Length(5)]
 					.as_ref(),
 			)
 			.split(rect);
 
-		f.render_widget(
-			dialog_paragraph(
-				&strings::commit::details_info_title(
-					&self.key_config,
+		if let Some(data) = &self.data {
+			f.render_widget(
+				dialog_paragraph(
+					&strings::commit::compare_details_info_title(
+						true,
+					),
+					Text::from(self.get_commit_text(&data.0)),
+					&self.theme,
+					false,
 				),
-				Text::from(""),
-				&self.theme,
-				false,
-			),
-			chunks[0],
-		);
+				chunks[0],
+			);
 
-		// f.render_widget(
-		// 	dialog_paragraph(
-		// 		&format!(
-		// 			"{} {}",
-		// 			strings::commit::details_message_title(
-		// 				&self.key_config,
-		// 			),
-		// 			if !self.focused && can_scroll {
-		// 				CANSCROLL_STRING
-		// 			} else {
-		// 				EMPTY_STRING
-		// 			}
-		// 		),
-		// 		Text::from(self.get_wrapped_text_message(
-		// 			width as usize,
-		// 			height as usize,
-		// 		)),
-		// 		&self.theme,
-		// 		self.focused,
-		// 	),
-		// 	chunks[1],
-		// );
+			f.render_widget(
+				dialog_paragraph(
+					&strings::commit::compare_details_info_title(
+						false,
+					),
+					Text::from(self.get_commit_text(&data.1)),
+					&self.theme,
+					false,
+				),
+				chunks[1],
+			);
+		}
 
 		Ok(())
 	}

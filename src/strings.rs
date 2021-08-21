@@ -322,6 +322,13 @@ pub mod commit {
 	) -> String {
 		"Info".to_string()
 	}
+	pub fn compare_details_info_title(old: bool) -> String {
+		if old {
+			"Old".to_string()
+		} else {
+			"New".to_string()
+		}
+	}
 	pub fn details_message_title(
 		_key_config: &SharedKeyConfig,
 	) -> String {

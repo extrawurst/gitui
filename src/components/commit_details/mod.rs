@@ -1,5 +1,6 @@
 mod compare_details;
 mod details;
+mod style;
 
 use super::{
 	command_pump, event_pump, CommandBlocking, CommandInfo,
@@ -155,7 +156,7 @@ impl DrawableComponent for CommitDetailsComponent {
 		rect: Rect,
 	) -> Result<()> {
 		let constraints = if self.is_compare() {
-			[Constraint::Length(8), Constraint::Min(0)]
+			[Constraint::Length(10), Constraint::Min(0)]
 		} else {
 			let details_focused = self.details_focused();
 			let percentages = if self.file_tree.focused() {
