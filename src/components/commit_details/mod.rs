@@ -90,6 +90,8 @@ impl CommitDetailsComponent {
 			self.compare_details.set_commits(None);
 		}
 
+		self.commit = params;
+
 		if let Some(id) = params {
 			if let Some(other) = id.other {
 				self.compare_details
@@ -217,6 +219,7 @@ impl Component for CommitDetailsComponent {
 					Ok(EventState::Consumed)
 				} else if e == self.key_config.focus_above
 					&& self.file_tree.focused()
+					&& !self.is_compare()
 				{
 					self.file_tree.focus(false);
 					self.set_details_focus(true);

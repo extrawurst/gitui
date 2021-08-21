@@ -182,7 +182,8 @@ impl DrawableComponent for CompareDetailsComponent {
 		let chunks = Layout::default()
 			.direction(Direction::Vertical)
 			.constraints(
-				[Constraint::Length(8), Constraint::Min(10)].as_ref(),
+				[Constraint::Length(4), Constraint::Length(4)]
+					.as_ref(),
 			)
 			.split(rect);
 
