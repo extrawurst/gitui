@@ -52,7 +52,15 @@ impl CompareDetailsComponent {
 			let c1 = sync::get_commit_details(CWD, ids.0).ok();
 			let c2 = sync::get_commit_details(CWD, ids.1).ok();
 
-			c1.and_then(|c1| c2.map(|c2| (c1, c2)))
+			c1.and_then(|c1| {
+				c2.map(|c2| {
+					if c1.author.time < c2.author.time {
+						(c1, c2)
+					} else {
+						(c2, c1)
+					}
+				})
+			})
 		});
 	}
 
