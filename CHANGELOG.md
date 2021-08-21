@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**emojified commit message**
+
+![emojified-commit-message](assets/emojified-commit-message.png)
+
 **options**
 
 ![options](assets/options.gif)
@@ -20,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![name-validation](assets/branch-validation.gif)
 
 ## Added
+- added support for markdown emoji's in commits [[@andrewpollack](https://github.com/andrewpollack)] ([#768](https://github.com/extrawurst/gitui/issues/768))
 - allow opening top commit of a branch
 - new options popup (show untracked files, diff settings) ([#849](https://github.com/extrawurst/gitui/issues/849))
 - mark and drop multiple stashes ([#854](https://github.com/extrawurst/gitui/issues/854))

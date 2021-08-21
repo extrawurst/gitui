@@ -53,6 +53,14 @@ pub fn string_width_align(s: &str, width: usize) -> String {
 	}
 }
 
+// Replace markdown emojis with Unicode equivalent
+// :hammer: --> 🔨
+#[inline]
+pub fn emojifi_string(s: &str) -> String {
+	let r = gh_emoji::Replacer::new();
+	r.replace_all(&*s).to_string()
+}
+
 #[inline]
 fn find_truncate_point(s: &str, chars: usize) -> usize {
 	s.chars().take(chars).map(char::len_utf8).sum()

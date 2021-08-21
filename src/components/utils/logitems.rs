@@ -2,6 +2,8 @@ use asyncgit::sync::{CommitId, CommitInfo};
 use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
 use std::slice::Iter;
 
+use crate::components::utils::emojifi_string;
+
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 
 pub struct LogEntry {
@@ -19,9 +21,13 @@ impl From<CommitInfo> for LogEntry {
 				NaiveDateTime::from_timestamp(c.time, 0),
 				Utc,
 			));
+
+		// Replace markdown emojis with Unicode equivalent
+		let emojified_message = emojifi_string(&*c.message);
+
 		Self {
 			author: c.author,
-			msg: c.message,
+			msg: emojified_message,
 			time,
 			hash_short: c.id.get_short_string(),
 			id: c.id,
@@ -96,5 +102,37 @@ impl ItemBatch {
 		let needs_data_top = want_min < self.index_offset;
 		let needs_data_bottom = want_max >= self.last_idx();
 		needs_data_bottom || needs_data_top
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_emojifi_string_conversion_cases() {
+		assert_eq!(
+			emojifi_string("It's :hammer: time!"),
+			"It's 🔨 time!"
+		);
+		assert_eq!(
+			emojifi_string(":red_circle::orange_circle::yellow_circle::green_circle::large_blue_circle::purple_circle:"),
+			"🔴🟠🟡🟢🔵🟣"
+		);
+		assert_eq!(
+			emojifi_string("It's raining :cat:s and :dog:s"),
+			"It's raining 🐱s and 🐶s"
+		);
+		assert_eq!(emojifi_string(":crab: rules!"), "🦀 rules!");
+	}
+
+	#[test]
+	fn test_emojifi_string_no_conversion_cases() {
+		assert_eq!(emojifi_string("123"), "123");
+		assert_eq!(
+			emojifi_string("This :should_not_convert:"),
+			"This :should_not_convert:"
+		);
+		assert_eq!(emojifi_string(":gopher:"), ":gopher:");
 	}
 }
