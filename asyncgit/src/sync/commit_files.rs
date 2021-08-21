@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use super::{stash::is_stash_commit, utils::repo, CommitId};
 use crate::{
 	error::Error, error::Result, StatusItem, StatusItemType,
@@ -56,7 +58,9 @@ pub fn get_compare_commits_diff(
 		repo.find_commit(ids.1.into())?,
 	);
 
-	let commits = if commits.0.time().cmp(&commits.1.time()).is_gt() {
+	let commits = if commits.0.time().cmp(&commits.1.time())
+		== Ordering::Greater
+	{
 		(commits.1, commits.0)
 	} else {
 		commits
