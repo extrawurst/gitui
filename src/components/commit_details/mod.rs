@@ -139,7 +139,7 @@ impl CommitDetailsComponent {
 		if self.is_compare() {
 			self.compare_details.focus(focus);
 		} else {
-			self.single_details.focus(false);
+			self.single_details.focus(focus);
 		}
 	}
 
