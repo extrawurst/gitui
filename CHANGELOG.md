@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**compare commits**
+
+![compare](assets/compare.gif)
+
 **options**
 
 ![options](assets/options.gif)
@@ -20,7 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![name-validation](assets/branch-validation.gif)
 
 ## Added
-- allow opening top commit of a branch
+- allow inspecting top commit of a branch from list
+- compare commits in revlog and head against branch ([#852](https://github.com/extrawurst/gitui/issues/852))
 - new options popup (show untracked files, diff settings) ([#849](https://github.com/extrawurst/gitui/issues/849))
 - mark and drop multiple stashes ([#854](https://github.com/extrawurst/gitui/issues/854))
 - check branch name validity while typing ([#559](https://github.com/extrawurst/gitui/issues/559))
