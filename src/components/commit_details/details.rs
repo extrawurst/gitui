@@ -1,5 +1,6 @@
 use crate::{
 	components::{
+		commit_details::style::style_detail,
 		dialog_paragraph,
 		utils::{scroll_vertical::VerticalScroll, time_to_string},
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
@@ -26,12 +27,8 @@ use tui::{
 	text::{Span, Spans, Text},
 	Frame,
 };
-enum Detail {
-	Author,
-	Date,
-	Commiter,
-	Sha,
-}
+
+use super::style::Detail;
 
 pub struct DetailsComponent {
 	data: Option<CommitDetails>,
@@ -153,41 +150,12 @@ impl DetailsComponent {
 			.collect()
 	}
 
-	fn style_detail(&self, field: &Detail) -> Span {
-		match field {
-			Detail::Author => Span::styled(
-				Cow::from(strings::commit::details_author(
-					&self.key_config,
-				)),
-				self.theme.text(false, false),
-			),
-			Detail::Date => Span::styled(
-				Cow::from(strings::commit::details_date(
-					&self.key_config,
-				)),
-				self.theme.text(false, false),
-			),
-			Detail::Commiter => Span::styled(
-				Cow::from(strings::commit::details_committer(
-					&self.key_config,
-				)),
-				self.theme.text(false, false),
-			),
-			Detail::Sha => Span::styled(
-				Cow::from(strings::commit::details_tags(
-					&self.key_config,
-				)),
-				self.theme.text(false, false),
-			),
-		}
-	}
-
-	#[allow(unstable_name_collisions)]
+	#[allow(unstable_name_collisions, clippy::too_many_lines)]
 	fn get_text_info(&self) -> Vec<Spans> {
 		if let Some(ref data) = self.data {
 			let mut res = vec![
 				Spans::from(vec![
-					self.style_detail(&Detail::Author),
+					style_detail(&self.theme, &Detail::Author),
 					Span::styled(
 						Cow::from(format!(
 							"{} <{}>",
@@ -197,7 +165,7 @@ impl DetailsComponent {
 					),
 				]),
 				Spans::from(vec![
-					self.style_detail(&Detail::Date),
+					style_detail(&self.theme, &Detail::Date),
 					Span::styled(
 						Cow::from(time_to_string(
 							data.author.time,
@@ -211,7 +179,7 @@ impl DetailsComponent {
 			if let Some(ref committer) = data.committer {
 				res.extend(vec![
 					Spans::from(vec![
-						self.style_detail(&Detail::Commiter),
+						style_detail(&self.theme, &Detail::Commiter),
 						Span::styled(
 							Cow::from(format!(
 								"{} <{}>",
@@ -221,7 +189,7 @@ impl DetailsComponent {
 						),
 					]),
 					Spans::from(vec![
-						self.style_detail(&Detail::Date),
+						style_detail(&self.theme, &Detail::Date),
 						Span::styled(
 							Cow::from(time_to_string(
 								committer.time,
@@ -235,9 +203,7 @@ impl DetailsComponent {
 
 			res.push(Spans::from(vec![
 				Span::styled(
-					Cow::from(strings::commit::details_sha(
-						&self.key_config,
-					)),
+					Cow::from(strings::commit::details_sha()),
 					self.theme.text(false, false),
 				),
 				Span::styled(
@@ -247,9 +213,10 @@ impl DetailsComponent {
 			]));
 
 			if !self.tags.is_empty() {
-				res.push(Spans::from(
-					self.style_detail(&Detail::Sha),
-				));
+				res.push(Spans::from(style_detail(
+					&self.theme,
+					&Detail::Sha,
+				)));
 
 				res.push(Spans::from(
 					self.tags

@@ -16,6 +16,8 @@ use std::{
 ///
 #[derive(Debug, Hash, Clone, PartialEq)]
 pub enum DiffType {
+	/// diff two commits
+	Commits((CommitId, CommitId)),
 	/// diff in a given commit
 	Commit(CommitId),
 	/// diff against staged file
@@ -165,6 +167,11 @@ impl AsyncDiff {
 			DiffType::Commit(id) => sync::diff::get_diff_commit(
 				CWD,
 				id,
+				params.path.clone(),
+			)?,
+			DiffType::Commits(ids) => sync::diff::get_diff_commits(
+				CWD,
+				ids,
 				params.path.clone(),
 			)?,
 		};

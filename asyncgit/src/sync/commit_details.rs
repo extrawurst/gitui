@@ -80,6 +80,13 @@ pub struct CommitDetails {
 	pub hash: String,
 }
 
+impl CommitDetails {
+	///
+	pub fn short_hash(&self) -> &str {
+		&self.hash[0..7]
+	}
+}
+
 ///
 pub fn get_commit_details(
 	repo_path: &str,

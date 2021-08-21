@@ -86,6 +86,8 @@
     merge_branch: ( code: Char('m'), modifiers: ( bits: 0,),),
     abort_merge: ( code: Char('M'), modifiers: ( bits: 1,),),
 
+    compare_commits: ( code: Char('C'), modifiers: ( bits: 1,),),
+
     tags: ( code: Char('T'), modifiers: ( bits: 1,),),
     delete_tag: ( code: Char('D'), modifiers: ( bits: 1,),),
     select_tag: ( code: Enter, modifiers: ( bits: 0,),),

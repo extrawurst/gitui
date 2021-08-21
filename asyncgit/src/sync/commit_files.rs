@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use super::{stash::is_stash_commit, utils::repo, CommitId};
 use crate::{
 	error::Error, error::Result, StatusItem, StatusItemType,
@@ -9,12 +11,17 @@ use scopetime::scope_time;
 pub fn get_commit_files(
 	repo_path: &str,
 	id: CommitId,
+	other: Option<CommitId>,
 ) -> Result<Vec<StatusItem>> {
 	scope_time!("get_commit_files");
 
 	let repo = repo(repo_path)?;
 
-	let diff = get_commit_diff(&repo, id, None)?;
+	let diff = if let Some(other) = other {
+		get_compare_commits_diff(&repo, (id, other), None)?
+	} else {
+		get_commit_diff(&repo, id, None)?
+	};
 
 	let mut res = Vec::new();
 
@@ -38,6 +45,44 @@ pub fn get_commit_files(
 	Ok(res)
 }
 
+#[allow(clippy::needless_pass_by_value)]
+pub fn get_compare_commits_diff(
+	repo: &Repository,
+	ids: (CommitId, CommitId),
+	pathspec: Option<String>,
+) -> Result<Diff<'_>> {
+	// scope_time!("get_compare_commits_diff");
+
+	let commits = (
+		repo.find_commit(ids.0.into())?,
+		repo.find_commit(ids.1.into())?,
+	);
+
+	let commits = if commits.0.time().cmp(&commits.1.time())
+		== Ordering::Greater
+	{
+		(commits.1, commits.0)
+	} else {
+		commits
+	};
+
+	let trees = (commits.0.tree()?, commits.1.tree()?);
+
+	let mut opts = DiffOptions::new();
+	if let Some(p) = &pathspec {
+		opts.pathspec(p.clone());
+	}
+	opts.show_binary(true);
+
+	let diff = repo.diff_tree_to_tree(
+		Some(&trees.0),
+		Some(&trees.1),
+		Some(&mut opts),
+	)?;
+
+	Ok(diff)
+}
+
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) fn get_commit_diff(
 	repo: &Repository,
@@ -48,6 +93,7 @@ pub(crate) fn get_commit_diff(
 
 	let commit = repo.find_commit(id.into())?;
 	let commit_tree = commit.tree()?;
+
 	let parent = if commit.parent_count() > 0 {
 		repo.find_commit(commit.parent_id(0)?)
 			.ok()
@@ -116,7 +162,7 @@ mod tests {
 
 		let id = commit(repo_path, "commit msg")?;
 
-		let diff = get_commit_files(repo_path, id)?;
+		let diff = get_commit_files(repo_path, id, None)?;
 
 		assert_eq!(diff.len(), 1);
 		assert_eq!(diff[0].status, StatusItemType::New);
@@ -136,7 +182,7 @@ mod tests {
 
 		let id = stash_save(repo_path, None, true, false)?;
 
-		let diff = get_commit_files(repo_path, id)?;
+		let diff = get_commit_files(repo_path, id, None)?;
 
 		assert_eq!(diff.len(), 1);
 		assert_eq!(diff[0].status, StatusItemType::New);
@@ -164,7 +210,7 @@ mod tests {
 
 		let id = stash_save(repo_path, None, true, false)?;
 
-		let diff = get_commit_files(repo_path, id)?;
+		let diff = get_commit_files(repo_path, id, None)?;
 
 		assert_eq!(diff.len(), 2);
 		assert_eq!(diff[0].status, StatusItemType::Modified);

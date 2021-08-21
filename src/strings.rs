@@ -300,27 +300,34 @@ pub fn rename_branch_popup_msg(
 
 pub mod commit {
 	use crate::keys::SharedKeyConfig;
-	pub fn details_author(_key_config: &SharedKeyConfig) -> String {
+	pub fn details_author() -> String {
 		"Author: ".to_string()
 	}
-	pub fn details_committer(
-		_key_config: &SharedKeyConfig,
-	) -> String {
+	pub fn details_committer() -> String {
 		"Committer: ".to_string()
 	}
-	pub fn details_sha(_key_config: &SharedKeyConfig) -> String {
+	pub fn details_sha() -> String {
 		"Sha: ".to_string()
 	}
-	pub fn details_date(_key_config: &SharedKeyConfig) -> String {
+	pub fn details_date() -> String {
 		"Date: ".to_string()
 	}
-	pub fn details_tags(_key_config: &SharedKeyConfig) -> String {
+	pub fn details_tags() -> String {
 		"Tags: ".to_string()
+	}
+	pub fn details_message() -> String {
+		"Subject: ".to_string()
 	}
 	pub fn details_info_title(
 		_key_config: &SharedKeyConfig,
 	) -> String {
 		"Info".to_string()
+	}
+	pub fn compare_details_info_title(
+		old: bool,
+		hash: &str,
+	) -> String {
+		format!("{}: {}", if old { "Old" } else { "New" }, hash)
 	}
 	pub fn details_message_title(
 		_key_config: &SharedKeyConfig,
@@ -1051,6 +1058,33 @@ pub mod commands {
 			CMD_GROUP_BRANCHES,
 		)
 	}
+
+	pub fn compare_with_head(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Compare [{}]",
+				key_config.get_hint(key_config.compare_commits),
+			),
+			"compare with head",
+			CMD_GROUP_BRANCHES,
+		)
+	}
+
+	pub fn compare_commits(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Compare Commits [{}]",
+				key_config.get_hint(key_config.compare_commits),
+			),
+			"compare two marked commits",
+			CMD_GROUP_LOG,
+		)
+	}
+
 	pub fn select_branch_popup(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

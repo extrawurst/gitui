@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![emojified-commit-message](assets/emojified-commit-message.png)
 
+## Added
+- added support for markdown emoji's in commits [[@andrewpollack](https://github.com/andrewpollack)] ([#768](https://github.com/extrawurst/gitui/issues/768))
+
+## [0.17.0] - 2021-08-21
+
+**compare commits**
+
+![compare](assets/compare.gif)
+
 **options**
 
 ![options](assets/options.gif)
@@ -24,8 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![name-validation](assets/branch-validation.gif)
 
 ## Added
-- added support for markdown emoji's in commits [[@andrewpollack](https://github.com/andrewpollack)] ([#768](https://github.com/extrawurst/gitui/issues/768))
-- allow opening top commit of a branch
+- allow inspecting top commit of a branch from list
+- compare commits in revlog and head against branch ([#852](https://github.com/extrawurst/gitui/issues/852))
 - new options popup (show untracked files, diff settings) ([#849](https://github.com/extrawurst/gitui/issues/849))
 - mark and drop multiple stashes ([#854](https://github.com/extrawurst/gitui/issues/854))
 - check branch name validity while typing ([#559](https://github.com/extrawurst/gitui/issues/559))

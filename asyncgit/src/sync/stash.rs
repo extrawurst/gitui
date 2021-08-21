@@ -231,7 +231,7 @@ mod tests {
 
 		let stash = get_stashes(repo_path)?[0];
 
-		let diff = get_commit_files(repo_path, stash)?;
+		let diff = get_commit_files(repo_path, stash, None)?;
 
 		assert_eq!(diff.len(), 1);
 

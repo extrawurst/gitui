@@ -4,17 +4,14 @@ use super::{
 	DrawableComponent, EventState,
 };
 use crate::{
-	accessors,
-	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
-	strings,
+	accessors, keys::SharedKeyConfig, queue::Queue, strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{diff::DiffOptions, CommitId, CommitTags},
+	sync::{self, diff::DiffOptions, CommitId},
 	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
-	DiffType,
+	DiffType, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -25,10 +22,8 @@ use tui::{
 	Frame,
 };
 
-pub struct InspectCommitComponent {
-	queue: Queue,
-	commit_id: Option<CommitId>,
-	tags: Option<CommitTags>,
+pub struct CompareCommitsComponent {
+	commit_ids: Option<(CommitId, CommitId)>,
 	diff: DiffComponent,
 	details: CommitDetailsComponent,
 	git_diff: AsyncDiff,
@@ -36,7 +31,7 @@ pub struct InspectCommitComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for InspectCommitComponent {
+impl DrawableComponent for CompareCommitsComponent {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -70,7 +65,7 @@ impl DrawableComponent for InspectCommitComponent {
 	}
 }
 
-impl Component for InspectCommitComponent {
+impl Component for CompareCommitsComponent {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -103,14 +98,6 @@ impl Component for InspectCommitComponent {
 				true,
 				self.diff.focused() || force_all,
 			));
-
-			out.push(CommandInfo::new(
-				strings::commands::inspect_file_tree(
-					&self.key_config,
-				),
-				true,
-				true,
-			));
 		}
 
 		visibility_blocking(self)
@@ -137,13 +124,6 @@ impl Component for InspectCommitComponent {
 				{
 					self.details.focus(true);
 					self.diff.focus(false);
-				} else if e == self.key_config.open_file_tree {
-					if let Some(commit) = self.commit_id {
-						self.queue.push(InternalEvent::OpenFileTree(
-							commit,
-						));
-						self.hide();
-					}
 				} else if e == self.key_config.focus_left {
 					self.hide();
 				}
@@ -171,7 +151,7 @@ impl Component for InspectCommitComponent {
 	}
 }
 
-impl InspectCommitComponent {
+impl CompareCommitsComponent {
 	accessors!(self, [diff, details]);
 
 	///
@@ -182,7 +162,6 @@ impl InspectCommitComponent {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
-			queue: queue.clone(),
 			details: CommitDetailsComponent::new(
 				queue,
 				sender,
@@ -195,8 +174,7 @@ impl InspectCommitComponent {
 				key_config.clone(),
 				true,
 			),
-			commit_id: None,
-			tags: None,
+			commit_ids: None,
 			git_diff: AsyncDiff::new(sender),
 			visible: false,
 			key_config,
@@ -207,10 +185,14 @@ impl InspectCommitComponent {
 	pub fn open(
 		&mut self,
 		id: CommitId,
-		tags: Option<CommitTags>,
+		other: Option<CommitId>,
 	) -> Result<()> {
-		self.commit_id = Some(id);
-		self.tags = tags;
+		let other = if let Some(other) = other {
+			other
+		} else {
+			sync::get_head_tuple(CWD)?.id
+		};
+		self.commit_ids = Some((id, other));
 		self.show()?;
 
 		Ok(())
@@ -240,12 +222,12 @@ impl InspectCommitComponent {
 	/// called when any tree component changed selection
 	pub fn update_diff(&mut self) -> Result<()> {
 		if self.is_visible() {
-			if let Some(id) = self.commit_id {
+			if let Some(ids) = self.commit_ids {
 				if let Some(f) = self.details.files().selection_file()
 				{
 					let diff_params = DiffParams {
 						path: f.path.clone(),
-						diff_type: DiffType::Commit(id),
+						diff_type: DiffType::Commits(ids),
 						options: DiffOptions::default(),
 					};
 
@@ -272,8 +254,8 @@ impl InspectCommitComponent {
 
 	fn update(&mut self) -> Result<()> {
 		self.details.set_commits(
-			self.commit_id.map(CommitFilesParams::from),
-			self.tags.clone(),
+			self.commit_ids.map(CommitFilesParams::from),
+			None,
 		)?;
 		self.update_diff()?;
 

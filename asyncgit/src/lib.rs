@@ -41,7 +41,7 @@ mod tags;
 
 pub use crate::{
 	blame::{AsyncBlame, BlameParams},
-	commit_files::AsyncCommitFiles,
+	commit_files::{AsyncCommitFiles, CommitFilesParams},
 	diff::{AsyncDiff, DiffParams, DiffType},
 	fetch::{AsyncFetch, FetchRequest},
 	push::{AsyncPush, PushRequest},
