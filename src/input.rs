@@ -3,7 +3,6 @@ use anyhow::Result;
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use crossterm::event::{self, Event};
 use std::{
-	process,
 	sync::{
 		atomic::{AtomicBool, Ordering},
 		Arc,
@@ -33,6 +32,7 @@ pub struct Input {
 	desired_state: Arc<NotifyableMutex<bool>>,
 	current_state: Arc<AtomicBool>,
 	receiver: Receiver<InputEvent>,
+	aborted: Arc<AtomicBool>,
 }
 
 impl Input {
@@ -42,16 +42,18 @@ impl Input {
 
 		let desired_state = Arc::new(NotifyableMutex::new(true));
 		let current_state = Arc::new(AtomicBool::new(true));
+		let aborted = Arc::new(AtomicBool::new(false));
 
 		let arc_desired = Arc::clone(&desired_state);
 		let arc_current = Arc::clone(&current_state);
+		let arc_aborted = Arc::clone(&aborted);
 
 		thread::spawn(move || {
 			if let Err(e) =
 				Self::input_loop(&arc_desired, &arc_current, &tx)
 			{
 				log::error!("input thread error: {}", e);
-				process::abort();
+				arc_aborted.store(true, Ordering::SeqCst);
 			}
 		});
 
@@ -59,6 +61,7 @@ impl Input {
 			receiver: rx,
 			desired_state,
 			current_state,
+			aborted,
 		}
 	}
 
@@ -80,6 +83,10 @@ impl Input {
 	pub fn is_state_changing(&self) -> bool {
 		self.shall_poll()
 			!= self.current_state.load(Ordering::Relaxed)
+	}
+
+	pub fn is_aborted(&self) -> bool {
+		self.aborted.load(Ordering::SeqCst)
 	}
 
 	fn poll(dur: Duration) -> anyhow::Result<Option<Event>> {

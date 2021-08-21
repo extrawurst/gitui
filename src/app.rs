@@ -395,8 +395,8 @@ impl App {
 	}
 
 	///
-	pub const fn is_quit(&self) -> bool {
-		self.do_quit
+	pub fn is_quit(&self) -> bool {
+		self.do_quit || self.input.is_aborted()
 	}
 
 	///
