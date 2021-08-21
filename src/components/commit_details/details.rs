@@ -150,14 +150,14 @@ impl DetailsComponent {
 			.collect()
 	}
 
-	#[allow(unstable_name_collisions)]
+	#[allow(unstable_name_collisions, clippy::too_many_lines)]
 	fn get_text_info(&self) -> Vec<Spans> {
 		if let Some(ref data) = self.data {
 			let mut res = vec![
 				Spans::from(vec![
 					style_detail(
-						self.theme.clone(),
-						self.key_config.clone(),
+						&self.theme,
+						&self.key_config,
 						&Detail::Author,
 					),
 					Span::styled(
@@ -170,8 +170,8 @@ impl DetailsComponent {
 				]),
 				Spans::from(vec![
 					style_detail(
-						self.theme.clone(),
-						self.key_config.clone(),
+						&self.theme,
+						&self.key_config,
 						&Detail::Date,
 					),
 					Span::styled(
@@ -188,8 +188,8 @@ impl DetailsComponent {
 				res.extend(vec![
 					Spans::from(vec![
 						style_detail(
-							self.theme.clone(),
-							self.key_config.clone(),
+							&self.theme,
+							&self.key_config,
 							&Detail::Commiter,
 						),
 						Span::styled(
@@ -202,8 +202,8 @@ impl DetailsComponent {
 					]),
 					Spans::from(vec![
 						style_detail(
-							self.theme.clone(),
-							self.key_config.clone(),
+							&self.theme,
+							&self.key_config,
 							&Detail::Date,
 						),
 						Span::styled(
@@ -232,8 +232,8 @@ impl DetailsComponent {
 
 			if !self.tags.is_empty() {
 				res.push(Spans::from(style_detail(
-					self.theme.clone(),
-					self.key_config.clone(),
+					&self.theme,
+					&self.key_config,
 					&Detail::Sha,
 				)));
 

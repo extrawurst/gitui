@@ -61,8 +61,8 @@ impl CompareDetailsComponent {
 		let mut res = vec![
 			Spans::from(vec![
 				style_detail(
-					self.theme.clone(),
-					self.key_config.clone(),
+					&self.theme,
+					&self.key_config,
 					&Detail::Author,
 				),
 				Span::styled(
@@ -75,8 +75,8 @@ impl CompareDetailsComponent {
 			]),
 			Spans::from(vec![
 				style_detail(
-					self.theme.clone(),
-					self.key_config.clone(),
+					&self.theme,
+					&self.key_config,
 					&Detail::Date,
 				),
 				Span::styled(
@@ -93,8 +93,8 @@ impl CompareDetailsComponent {
 			res.extend(vec![
 				Spans::from(vec![
 					style_detail(
-						self.theme.clone(),
-						self.key_config.clone(),
+						&self.theme,
+						&self.key_config,
 						&Detail::Commiter,
 					),
 					Span::styled(
@@ -107,8 +107,8 @@ impl CompareDetailsComponent {
 				]),
 				Spans::from(vec![
 					style_detail(
-						self.theme.clone(),
-						self.key_config.clone(),
+						&self.theme,
+						&self.key_config,
 						&Detail::Date,
 					),
 					Span::styled(
