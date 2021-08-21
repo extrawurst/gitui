@@ -8,7 +8,6 @@ use crate::{
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
 		EventState,
 	},
-	keys::SharedKeyConfig,
 	strings::{self},
 	ui::style::SharedTheme,
 };
@@ -29,21 +28,15 @@ pub struct CompareDetailsComponent {
 	data: Option<(CommitDetails, CommitDetails)>,
 	theme: SharedTheme,
 	focused: bool,
-	key_config: SharedKeyConfig,
 }
 
 impl CompareDetailsComponent {
 	///
-	pub const fn new(
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-		focused: bool,
-	) -> Self {
+	pub const fn new(theme: SharedTheme, focused: bool) -> Self {
 		Self {
 			data: None,
 			theme,
 			focused,
-			key_config,
 		}
 	}
 
@@ -68,11 +61,7 @@ impl CompareDetailsComponent {
 	fn get_commit_text(&self, data: &CommitDetails) -> Vec<Spans> {
 		let mut res = vec![
 			Spans::from(vec![
-				style_detail(
-					&self.theme,
-					&self.key_config,
-					&Detail::Author,
-				),
+				style_detail(&self.theme, &Detail::Author),
 				Span::styled(
 					Cow::from(format!(
 						"{} <{}>",
@@ -82,11 +71,7 @@ impl CompareDetailsComponent {
 				),
 			]),
 			Spans::from(vec![
-				style_detail(
-					&self.theme,
-					&self.key_config,
-					&Detail::Date,
-				),
+				style_detail(&self.theme, &Detail::Date),
 				Span::styled(
 					Cow::from(time_to_string(
 						data.author.time,
@@ -97,48 +82,15 @@ impl CompareDetailsComponent {
 			]),
 		];
 
-		if let Some(ref committer) = data.committer {
-			res.extend(vec![
-				Spans::from(vec![
-					style_detail(
-						&self.theme,
-						&self.key_config,
-						&Detail::Commiter,
-					),
-					Span::styled(
-						Cow::from(format!(
-							"{} <{}>",
-							committer.name, committer.email
-						)),
-						self.theme.text(true, false),
-					),
-				]),
-				Spans::from(vec![
-					style_detail(
-						&self.theme,
-						&self.key_config,
-						&Detail::Date,
-					),
-					Span::styled(
-						Cow::from(time_to_string(
-							committer.time,
-							false,
-						)),
-						self.theme.text(true, false),
-					),
-				]),
-			]);
-		}
-
 		res.push(Spans::from(vec![
+			style_detail(&self.theme, &Detail::Message),
 			Span::styled(
-				Cow::from(strings::commit::details_sha(
-					&self.key_config,
-				)),
-				self.theme.text(false, false),
-			),
-			Span::styled(
-				Cow::from(data.hash.clone()),
+				Cow::from(
+					data.message
+						.as_ref()
+						.map(|msg| msg.subject.clone())
+						.unwrap_or_default(),
+				),
 				self.theme.text(true, false),
 			),
 		]));
@@ -166,6 +118,7 @@ impl DrawableComponent for CompareDetailsComponent {
 				dialog_paragraph(
 					&strings::commit::compare_details_info_title(
 						true,
+						data.0.short_hash(),
 					),
 					Text::from(self.get_commit_text(&data.0)),
 					&self.theme,
@@ -178,6 +131,7 @@ impl DrawableComponent for CompareDetailsComponent {
 				dialog_paragraph(
 					&strings::commit::compare_details_info_title(
 						false,
+						data.1.short_hash(),
 					),
 					Text::from(self.get_commit_text(&data.1)),
 					&self.theme,

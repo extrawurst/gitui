@@ -300,34 +300,34 @@ pub fn rename_branch_popup_msg(
 
 pub mod commit {
 	use crate::keys::SharedKeyConfig;
-	pub fn details_author(_key_config: &SharedKeyConfig) -> String {
+	pub fn details_author() -> String {
 		"Author: ".to_string()
 	}
-	pub fn details_committer(
-		_key_config: &SharedKeyConfig,
-	) -> String {
+	pub fn details_committer() -> String {
 		"Committer: ".to_string()
 	}
-	pub fn details_sha(_key_config: &SharedKeyConfig) -> String {
+	pub fn details_sha() -> String {
 		"Sha: ".to_string()
 	}
-	pub fn details_date(_key_config: &SharedKeyConfig) -> String {
+	pub fn details_date() -> String {
 		"Date: ".to_string()
 	}
-	pub fn details_tags(_key_config: &SharedKeyConfig) -> String {
+	pub fn details_tags() -> String {
 		"Tags: ".to_string()
+	}
+	pub fn details_message() -> String {
+		"Subject: ".to_string()
 	}
 	pub fn details_info_title(
 		_key_config: &SharedKeyConfig,
 	) -> String {
 		"Info".to_string()
 	}
-	pub fn compare_details_info_title(old: bool) -> String {
-		if old {
-			"Old".to_string()
-		} else {
-			"New".to_string()
-		}
+	pub fn compare_details_info_title(
+		old: bool,
+		hash: &str,
+	) -> String {
+		format!("{}: {}", if old { "Old" } else { "New" }, hash)
 	}
 	pub fn details_message_title(
 		_key_config: &SharedKeyConfig,

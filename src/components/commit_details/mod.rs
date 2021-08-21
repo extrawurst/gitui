@@ -53,7 +53,6 @@ impl CommitDetailsComponent {
 			),
 			compare_details: CompareDetailsComponent::new(
 				theme.clone(),
-				key_config.clone(),
 				false,
 			),
 			git_commit_files: AsyncCommitFiles::new(sender),

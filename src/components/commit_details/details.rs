@@ -155,11 +155,7 @@ impl DetailsComponent {
 		if let Some(ref data) = self.data {
 			let mut res = vec![
 				Spans::from(vec![
-					style_detail(
-						&self.theme,
-						&self.key_config,
-						&Detail::Author,
-					),
+					style_detail(&self.theme, &Detail::Author),
 					Span::styled(
 						Cow::from(format!(
 							"{} <{}>",
@@ -169,11 +165,7 @@ impl DetailsComponent {
 					),
 				]),
 				Spans::from(vec![
-					style_detail(
-						&self.theme,
-						&self.key_config,
-						&Detail::Date,
-					),
+					style_detail(&self.theme, &Detail::Date),
 					Span::styled(
 						Cow::from(time_to_string(
 							data.author.time,
@@ -187,11 +179,7 @@ impl DetailsComponent {
 			if let Some(ref committer) = data.committer {
 				res.extend(vec![
 					Spans::from(vec![
-						style_detail(
-							&self.theme,
-							&self.key_config,
-							&Detail::Commiter,
-						),
+						style_detail(&self.theme, &Detail::Commiter),
 						Span::styled(
 							Cow::from(format!(
 								"{} <{}>",
@@ -201,11 +189,7 @@ impl DetailsComponent {
 						),
 					]),
 					Spans::from(vec![
-						style_detail(
-							&self.theme,
-							&self.key_config,
-							&Detail::Date,
-						),
+						style_detail(&self.theme, &Detail::Date),
 						Span::styled(
 							Cow::from(time_to_string(
 								committer.time,
@@ -219,9 +203,7 @@ impl DetailsComponent {
 
 			res.push(Spans::from(vec![
 				Span::styled(
-					Cow::from(strings::commit::details_sha(
-						&self.key_config,
-					)),
+					Cow::from(strings::commit::details_sha()),
 					self.theme.text(false, false),
 				),
 				Span::styled(
@@ -233,7 +215,6 @@ impl DetailsComponent {
 			if !self.tags.is_empty() {
 				res.push(Spans::from(style_detail(
 					&self.theme,
-					&self.key_config,
 					&Detail::Sha,
 				)));
 
