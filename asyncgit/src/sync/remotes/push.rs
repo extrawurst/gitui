@@ -284,7 +284,8 @@ mod tests {
 		assert_eq!(
 			sync::get_commit_files(
 				tmp_repo_dir.path().to_str().unwrap(),
-				repo_1_commit
+				repo_1_commit,
+				None
 			)
 			.unwrap()[0]
 				.path,

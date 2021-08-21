@@ -131,6 +131,14 @@ impl Component for BranchListComponent {
 			));
 
 			out.push(CommandInfo::new(
+				strings::commands::compare_with_head(
+					&self.key_config,
+				),
+				!self.selection_is_cur_branch(),
+				true,
+			));
+
+			out.push(CommandInfo::new(
 				strings::commands::toggle_branch_popup(
 					&self.key_config,
 					self.local,
@@ -259,6 +267,15 @@ impl Component for BranchListComponent {
 					if let Some(b) = self.get_selected() {
 						self.queue.push(
 							InternalEvent::InspectCommit(b, None),
+						);
+					}
+				} else if e == self.key_config.compare_commits
+					&& self.valid_selection()
+				{
+					self.hide();
+					if let Some(b) = self.get_selected() {
+						self.queue.push(
+							InternalEvent::CompareCommits(b, None),
 						);
 					}
 				}
