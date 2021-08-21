@@ -1058,6 +1058,7 @@ pub mod commands {
 			CMD_GROUP_BRANCHES,
 		)
 	}
+
 	pub fn compare_with_head(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -1068,6 +1069,19 @@ pub mod commands {
 			),
 			"compare with head",
 			CMD_GROUP_BRANCHES,
+		)
+	}
+
+	pub fn compare_commits(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Compare Commits [{}]",
+				key_config.get_hint(key_config.compare_commits),
+			),
+			"compare two marked commits",
+			CMD_GROUP_LOG,
 		)
 	}
 

@@ -273,6 +273,29 @@ impl Component for Revlog {
 				} else if k == self.key_config.tags {
 					self.queue.push(InternalEvent::Tags);
 					return Ok(EventState::Consumed);
+				} else if k == self.key_config.compare_commits
+					&& self.list.marked_count() > 0
+				{
+					if self.list.marked_count() == 1 {
+						// compare against head
+						self.queue.push(
+							InternalEvent::CompareCommits(
+								self.list.marked()[0],
+								None,
+							),
+						);
+						return Ok(EventState::Consumed);
+					} else if self.list.marked_count() == 2 {
+						//compare two marked commits
+						let marked = self.list.marked();
+						self.queue.push(
+							InternalEvent::CompareCommits(
+								marked[0],
+								Some(marked[1]),
+							),
+						);
+						return Ok(EventState::Consumed);
+					}
 				}
 			}
 		}
@@ -303,12 +326,6 @@ impl Component for Revlog {
 		));
 
 		out.push(CommandInfo::new(
-			strings::commands::log_tag_commit(&self.key_config),
-			self.selected_commit().is_some(),
-			self.visible || force_all,
-		));
-
-		out.push(CommandInfo::new(
 			strings::commands::open_branch_select_popup(
 				&self.key_config,
 			),
@@ -317,14 +334,34 @@ impl Component for Revlog {
 		));
 
 		out.push(CommandInfo::new(
-			strings::commands::open_tags_popup(&self.key_config),
+			strings::commands::compare_with_head(&self.key_config),
+			self.list.marked_count() == 1,
+			(self.visible && self.list.marked_count() <= 1)
+				|| force_all,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::compare_commits(&self.key_config),
 			true,
-			self.visible || force_all,
+			(self.visible && self.list.marked_count() == 2)
+				|| force_all,
 		));
 
 		out.push(CommandInfo::new(
 			strings::commands::copy_hash(&self.key_config),
 			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::log_tag_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::open_tags_popup(&self.key_config),
+			true,
 			self.visible || force_all,
 		));
 
