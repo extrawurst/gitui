@@ -298,10 +298,12 @@ impl CommitList {
 		txt.push(splitter);
 
 		// commit msg
+		let r = gh_emoji::Replacer::new();
 		txt.push(Span::styled(
-			Cow::from(e.msg.as_str()),
+			Cow::from(r.replace_all(e.msg.as_str())),
 			theme.text(true, selected),
 		));
+
 		Spans::from(txt)
 	}
 
