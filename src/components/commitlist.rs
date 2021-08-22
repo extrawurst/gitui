@@ -24,7 +24,7 @@ use tui::{
 	Frame,
 };
 
-const ELEMENTS_PER_LINE: usize = 10;
+const ELEMENTS_PER_LINE: usize = 9;
 
 ///
 pub struct CommitList {
@@ -235,8 +235,7 @@ impl CommitList {
 		now: DateTime<Local>,
 		marked: Option<bool>,
 	) -> Spans<'a> {
-		let mut txt: Vec<Span> = Vec::new();
-		txt.reserve(
+		let mut txt: Vec<Span> = Vec::with_capacity(
 			ELEMENTS_PER_LINE + if marked.is_some() { 2 } else { 0 },
 		);
 
