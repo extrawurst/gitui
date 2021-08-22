@@ -86,7 +86,7 @@ impl DrawableComponent for TagListComponent {
 				// author width
 				Constraint::Length(19),
 				// commit id
-				Constraint::Min(0),
+				Constraint::Percentage(100),
 			];
 
 			let rows = self.get_rows();
