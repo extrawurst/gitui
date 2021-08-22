@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - do not allow to ignore .gitignore files ([#825](https://github.com/extrawurst/gitui/issues/825))
 - crash in shallow repo ([#836](https://github.com/extrawurst/gitui/issues/836))
 - fixed performance regression in revlog ([#850](https://github.com/extrawurst/gitui/issues/850))
+- fixed performance degradation when quitting on Windows ([#823](https://github.com/extrawurst/gitui/issues/823))
 
 ## [0.16.2] - 2021-07-10
 
