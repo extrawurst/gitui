@@ -1,4 +1,6 @@
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use lazy_static::lazy_static;
+use std::borrow::Cow;
 use unicode_width::UnicodeWidthStr;
 
 pub mod filetree;
@@ -53,12 +55,20 @@ pub fn string_width_align(s: &str, width: usize) -> String {
 	}
 }
 
+lazy_static! {
+	static ref EMOJI_REPLACER: gh_emoji::Replacer =
+		gh_emoji::Replacer::new();
+}
+
 // Replace markdown emojis with Unicode equivalent
 // :hammer: --> 🔨
 #[inline]
-pub fn emojifi_string(s: &str) -> String {
-	let r = gh_emoji::Replacer::new();
-	r.replace_all(&*s).to_string()
+pub fn emojifi_string(s: &mut String) -> String {
+	let resulting_cow = EMOJI_REPLACER.replace_all(s);
+	match resulting_cow {
+		Cow::Borrowed(_) => s.to_string(),
+		Cow::Owned(_) => resulting_cow.to_string(),
+	}
 }
 
 #[inline]

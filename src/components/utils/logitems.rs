@@ -15,7 +15,7 @@ pub struct LogEntry {
 }
 
 impl From<CommitInfo> for LogEntry {
-	fn from(c: CommitInfo) -> Self {
+	fn from(mut c: CommitInfo) -> Self {
 		let time =
 			DateTime::<Local>::from(DateTime::<Utc>::from_utc(
 				NaiveDateTime::from_timestamp(c.time, 0),
@@ -23,7 +23,7 @@ impl From<CommitInfo> for LogEntry {
 			));
 
 		// Replace markdown emojis with Unicode equivalent
-		let emojified_message = emojifi_string(&*c.message);
+		let emojified_message = emojifi_string(&mut c.message);
 
 		Self {
 			author: c.author,
