@@ -15,7 +15,7 @@ pub struct LogEntry {
 }
 
 impl From<CommitInfo> for LogEntry {
-	fn from(mut c: CommitInfo) -> Self {
+	fn from(c: CommitInfo) -> Self {
 		let time =
 			DateTime::<Local>::from(DateTime::<Utc>::from_utc(
 				NaiveDateTime::from_timestamp(c.time, 0),
@@ -23,11 +23,13 @@ impl From<CommitInfo> for LogEntry {
 			));
 
 		// Replace markdown emojis with Unicode equivalent
-		let emojified_message = emojifi_string(&mut c.message);
+		let author = c.author;
+		let mut msg = c.message;
+		emojifi_string(&mut msg);
 
 		Self {
-			author: c.author,
-			msg: emojified_message,
+			author,
+			msg,
 			time,
 			hash_short: c.id.get_short_string(),
 			id: c.id,
@@ -109,30 +111,36 @@ impl ItemBatch {
 mod tests {
 	use super::*;
 
+	fn test_conversion(s: &str) -> String {
+		let mut s = s.to_string();
+		emojifi_string(&mut s);
+		s
+	}
+
 	#[test]
 	fn test_emojifi_string_conversion_cases() {
 		assert_eq!(
-			emojifi_string("It's :hammer: time!"),
+			&test_conversion("It's :hammer: time!"),
 			"It's 🔨 time!"
 		);
 		assert_eq!(
-			emojifi_string(":red_circle::orange_circle::yellow_circle::green_circle::large_blue_circle::purple_circle:"),
+			&test_conversion(":red_circle::orange_circle::yellow_circle::green_circle::large_blue_circle::purple_circle:"),
 			"🔴🟠🟡🟢🔵🟣"
 		);
 		assert_eq!(
-			emojifi_string("It's raining :cat:s and :dog:s"),
+			&test_conversion("It's raining :cat:s and :dog:s"),
 			"It's raining 🐱s and 🐶s"
 		);
-		assert_eq!(emojifi_string(":crab: rules!"), "🦀 rules!");
+		assert_eq!(&test_conversion(":crab: rules!"), "🦀 rules!");
 	}
 
 	#[test]
 	fn test_emojifi_string_no_conversion_cases() {
-		assert_eq!(emojifi_string("123"), "123");
+		assert_eq!(&test_conversion("123"), "123");
 		assert_eq!(
-			emojifi_string("This :should_not_convert:"),
+			&test_conversion("This :should_not_convert:"),
 			"This :should_not_convert:"
 		);
-		assert_eq!(emojifi_string(":gopher:"), ":gopher:");
+		assert_eq!(&test_conversion(":gopher:"), ":gopher:");
 	}
 }

@@ -63,11 +63,10 @@ lazy_static! {
 // Replace markdown emojis with Unicode equivalent
 // :hammer: --> 🔨
 #[inline]
-pub fn emojifi_string(s: &mut String) -> String {
+pub fn emojifi_string(s: &mut String) {
 	let resulting_cow = EMOJI_REPLACER.replace_all(s);
-	match resulting_cow {
-		Cow::Borrowed(_) => s.to_string(),
-		Cow::Owned(_) => resulting_cow.to_string(),
+	if let Cow::Owned(altered_s) = resulting_cow {
+		*s = altered_s;
 	}
 }
 
