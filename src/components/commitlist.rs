@@ -301,6 +301,7 @@ impl CommitList {
 			Cow::from(e.msg.as_str()),
 			theme.text(true, selected),
 		));
+
 		Spans::from(txt)
 	}
 

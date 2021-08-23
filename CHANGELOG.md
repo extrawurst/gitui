@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**emojified commit message**
+
+![emojified-commit-message](assets/emojified-commit-message.png)
+
+## Added
+- added support for markdown emoji's in commits [[@andrewpollack](https://github.com/andrewpollack)] ([#768](https://github.com/extrawurst/gitui/issues/768))
+
 ## Fixed
 - fix commit msg being broken inside tag list ([#871](https://github.com/extrawurst/gitui/issues/871))
 
