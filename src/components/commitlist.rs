@@ -6,8 +6,8 @@ use crate::{
 	},
 	keys::SharedKeyConfig,
 	strings::{self, symbol},
-	ui::calc_scroll_top,
 	ui::style::{SharedTheme, Theme},
+	ui::{calc_scroll_top, draw_scrollbar},
 };
 use anyhow::Result;
 use asyncgit::sync::{CommitId, Tags};
@@ -407,6 +407,14 @@ impl DrawableComponent for CommitList {
 			)
 			.alignment(Alignment::Left),
 			area,
+		);
+
+		draw_scrollbar(
+			f,
+			area,
+			&self.theme,
+			self.count_total,
+			self.selection,
 		);
 
 		Ok(())
