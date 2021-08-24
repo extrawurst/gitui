@@ -3,7 +3,9 @@ use super::{
 	Direction, DrawableComponent, ScrollType,
 };
 use crate::{
-	components::{CommandInfo, Component, EventState},
+	components::{
+		tabs_to_spaces, CommandInfo, Component, EventState,
+	},
 	keys::SharedKeyConfig,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
@@ -425,13 +427,11 @@ impl DiffComponent {
 			// weird eof missing eol line
 			format!("{}\n", trimmed)
 		};
-		//TODO: allow customize tabsize
-		let content = Cow::from(filled.replace("\t", "  "));
 
 		Spans::from(vec![
 			left_side_of_line,
 			Span::styled(
-				content,
+				Cow::from(tabs_to_spaces(filled)),
 				theme.diff_line(line.line_type, selected),
 			),
 		])

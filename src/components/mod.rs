@@ -312,3 +312,12 @@ where
 		.alignment(Alignment::Left)
 		.wrap(Wrap { trim: true })
 }
+
+//TODO: allow customize tabsize
+pub fn tabs_to_spaces(input: String) -> String {
+	if input.contains('\t') {
+		input.replace("\t", "  ")
+	} else {
+		input
+	}
+}

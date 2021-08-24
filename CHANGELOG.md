@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Fixed
 - fix commit msg being broken inside tag list ([#871](https://github.com/extrawurst/gitui/issues/871))
+- fix filetree file content not showing tabs correctly ([#874](https://github.com/extrawurst/gitui/issues/874))
 
 ## [0.17.0] - 2021-08-21
 

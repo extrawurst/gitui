@@ -1,6 +1,6 @@
 use super::{
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+	tabs_to_spaces, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState,
 };
 use crate::{
 	keys::SharedKeyConfig,
@@ -104,6 +104,7 @@ impl SyntaxTextComponent {
 			//TODO: fetch file content async aswell
 			match sync::tree_file_content(CWD, item) {
 				Ok(content) => {
+					let content = tabs_to_spaces(content);
 					self.async_highlighting.spawn(
 						AsyncSyntaxJob::new(
 							content.clone(),
