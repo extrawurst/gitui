@@ -84,6 +84,7 @@
     select_branch: ( code: Char('b'), modifiers: ( bits: 0,),),
     delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
     merge_branch: ( code: Char('m'), modifiers: ( bits: 0,),),
+    rebase_branch: ( code: Char('R'), modifiers: ( bits: 1,),),
     abort_merge: ( code: Char('M'), modifiers: ( bits: 1,),),
 
     compare_commits: ( code: Char('C'), modifiers: ( bits: 1,),),

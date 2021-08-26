@@ -11,6 +11,9 @@ pub enum Error {
 	#[error("git: no head found")]
 	NoHead,
 
+	#[error("git: conflict during rebase")]
+	RebaseConflict,
+
 	#[error("git: remote url not found")]
 	UnknownRemote,
 

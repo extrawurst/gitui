@@ -181,6 +181,14 @@ impl Component for BranchListComponent {
 			));
 
 			out.push(CommandInfo::new(
+				strings::commands::branch_popup_rebase(
+					&self.key_config,
+				),
+				!self.selection_is_cur_branch(),
+				self.local,
+			));
+
+			out.push(CommandInfo::new(
 				strings::commands::rename_branch_popup(
 					&self.key_config,
 				),
@@ -191,100 +199,91 @@ impl Component for BranchListComponent {
 		visibility_blocking(self)
 	}
 
+	//TODO: cleanup
+	#[allow(clippy::cognitive_complexity)]
 	fn event(&mut self, ev: Event) -> Result<EventState> {
-		if self.visible {
-			if let Event::Key(e) = ev {
-				if e == self.key_config.exit_popup {
-					self.hide();
-				} else if e == self.key_config.move_down {
-					return self
-						.move_selection(ScrollType::Up)
-						.map(Into::into);
-				} else if e == self.key_config.move_up {
-					return self
-						.move_selection(ScrollType::Down)
-						.map(Into::into);
-				} else if e == self.key_config.page_down {
-					return self
-						.move_selection(ScrollType::PageDown)
-						.map(Into::into);
-				} else if e == self.key_config.page_up {
-					return self
-						.move_selection(ScrollType::PageUp)
-						.map(Into::into);
-				} else if e == self.key_config.tab_toggle {
-					self.local = !self.local;
-					self.update_branches()?;
-				} else if e == self.key_config.enter {
-					try_or_popup!(
-						self,
-						"switch branch error:",
-						self.switch_to_selected_branch()
-					);
-				} else if e == self.key_config.create_branch
-					&& self.local
-				{
-					self.queue.push(InternalEvent::CreateBranch);
-				} else if e == self.key_config.rename_branch
-					&& self.valid_selection()
-				{
-					let cur_branch =
-						&self.branches[self.selection as usize];
-					self.queue.push(InternalEvent::RenameBranch(
-						cur_branch.reference.clone(),
-						cur_branch.name.clone(),
-					));
+		if !self.visible {
+			return Ok(EventState::NotConsumed);
+		}
 
-					self.update_branches()?;
-				} else if e == self.key_config.delete_branch
-					&& !self.selection_is_cur_branch()
-					&& self.valid_selection()
-				{
-					self.queue.push(InternalEvent::ConfirmAction(
-						Action::DeleteBranch(
-							self.branches[self.selection as usize]
-								.reference
-								.clone(),
-							self.local,
-						),
-					));
-				} else if e == self.key_config.merge_branch
-					&& !self.selection_is_cur_branch()
-					&& self.valid_selection()
-				{
-					try_or_popup!(
-						self,
-						"merge branch error:",
-						self.merge_branch()
-					);
-					self.queue.push(InternalEvent::Update(
-						NeedsUpdate::ALL,
-					));
-				} else if e == self.key_config.move_right
-					&& self.valid_selection()
-				{
-					self.hide();
-					if let Some(b) = self.get_selected() {
-						self.queue.push(
-							InternalEvent::InspectCommit(b, None),
-						);
-					}
-				} else if e == self.key_config.compare_commits
-					&& self.valid_selection()
-				{
-					self.hide();
-					if let Some(b) = self.get_selected() {
-						self.queue.push(
-							InternalEvent::CompareCommits(b, None),
-						);
-					}
+		if let Event::Key(e) = ev {
+			if e == self.key_config.exit_popup {
+				self.hide();
+			} else if e == self.key_config.move_down {
+				return self
+					.move_selection(ScrollType::Up)
+					.map(Into::into);
+			} else if e == self.key_config.move_up {
+				return self
+					.move_selection(ScrollType::Down)
+					.map(Into::into);
+			} else if e == self.key_config.page_down {
+				return self
+					.move_selection(ScrollType::PageDown)
+					.map(Into::into);
+			} else if e == self.key_config.page_up {
+				return self
+					.move_selection(ScrollType::PageUp)
+					.map(Into::into);
+			} else if e == self.key_config.tab_toggle {
+				self.local = !self.local;
+				self.update_branches()?;
+			} else if e == self.key_config.enter {
+				try_or_popup!(
+					self,
+					"switch branch error:",
+					self.switch_to_selected_branch()
+				);
+			} else if e == self.key_config.create_branch && self.local
+			{
+				self.queue.push(InternalEvent::CreateBranch);
+			} else if e == self.key_config.rename_branch
+				&& self.valid_selection()
+			{
+				self.rename_branch();
+			} else if e == self.key_config.delete_branch
+				&& !self.selection_is_cur_branch()
+				&& self.valid_selection()
+			{
+				self.delete_branch();
+			} else if e == self.key_config.merge_branch
+				&& !self.selection_is_cur_branch()
+				&& self.valid_selection()
+			{
+				try_or_popup!(
+					self,
+					"merge branch error:",
+					self.merge_branch()
+				);
+			} else if e == self.key_config.rebase_branch
+				&& !self.selection_is_cur_branch()
+				&& self.valid_selection()
+			{
+				try_or_popup!(
+					self,
+					"rebase error:",
+					self.rebase_branch()
+				);
+			} else if e == self.key_config.move_right
+				&& self.valid_selection()
+			{
+				self.hide();
+				if let Some(b) = self.get_selected() {
+					self.queue
+						.push(InternalEvent::InspectCommit(b, None));
+				}
+			} else if e == self.key_config.compare_commits
+				&& self.valid_selection()
+			{
+				self.hide();
+				if let Some(b) = self.get_selected() {
+					self.queue
+						.push(InternalEvent::CompareCommits(b, None));
 				}
 			}
-
-			Ok(EventState::Consumed)
-		} else {
-			Ok(EventState::NotConsumed)
 		}
+
+		Ok(EventState::Consumed)
 	}
 
 	fn is_visible(&self) -> bool {
@@ -368,6 +367,20 @@ impl BranchListComponent {
 			self.branches.get(usize::from(self.selection))
 		{
 			sync::merge_branch(CWD, &branch.name)?;
+
+			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+		}
+
+		Ok(())
+	}
+
+	fn rebase_branch(&self) -> Result<()> {
+		if let Some(branch) =
+			self.branches.get(usize::from(self.selection))
+		{
+			sync::rebase_branch(CWD, &branch.name)?;
+
+			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 		}
 
 		Ok(())
@@ -622,5 +635,24 @@ impl BranchListComponent {
 		self.scroll.draw(f, r, &self.theme);
 
 		Ok(())
+	}
+
+	fn rename_branch(&mut self) {
+		let cur_branch = &self.branches[self.selection as usize];
+		self.queue.push(InternalEvent::RenameBranch(
+			cur_branch.reference.clone(),
+			cur_branch.name.clone(),
+		));
+	}
+
+	fn delete_branch(&mut self) {
+		self.queue.push(InternalEvent::ConfirmAction(
+			Action::DeleteBranch(
+				self.branches[self.selection as usize]
+					.reference
+					.clone(),
+				self.local,
+			),
+		));
 	}
 }

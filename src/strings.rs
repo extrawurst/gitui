@@ -1059,6 +1059,19 @@ pub mod commands {
 		)
 	}
 
+	pub fn branch_popup_rebase(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Rebase [{}]",
+				key_config.get_hint(key_config.rebase_branch),
+			),
+			"rebase a branch",
+			CMD_GROUP_BRANCHES,
+		)
+	}
+
 	pub fn compare_with_head(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

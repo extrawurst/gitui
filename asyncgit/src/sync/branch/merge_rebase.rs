@@ -2,7 +2,7 @@
 
 use crate::{
 	error::{Error, Result},
-	sync::utils,
+	sync::{rebase::conflict_free_rebase, utils},
 };
 use git2::BranchType;
 use scopetime::scope_time;
@@ -27,34 +27,7 @@ pub fn merge_upstream_rebase(
 	let annotated_upstream =
 		repo.find_annotated_commit(upstream_commit.id())?;
 
-	let mut rebase =
-		repo.rebase(None, Some(&annotated_upstream), None, None)?;
-
-	let signature =
-		crate::sync::commit::signature_allow_undefined_name(&repo)?;
-
-	while let Some(op) = rebase.next() {
-		let _op = op?;
-		// dbg!(op.id());
-
-		if repo.index()?.has_conflicts() {
-			rebase.abort()?;
-			return Err(Error::Generic(String::from(
-				"conflicts while merging",
-			)));
-		}
-
-		rebase.commit(None, &signature, None)?;
-	}
-
-	if repo.index()?.has_conflicts() {
-		rebase.abort()?;
-		return Err(Error::Generic(String::from(
-			"conflicts while merging",
-		)));
-	}
-
-	rebase.finish(Some(&signature))?;
+	conflict_free_rebase(&repo, &annotated_upstream)?;
 
 	Ok(())
 }
