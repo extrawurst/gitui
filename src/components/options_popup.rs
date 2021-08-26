@@ -124,7 +124,7 @@ impl OptionsPopupComponent {
 	fn add_header(txt: &mut Vec<Spans>, header: &'static str) {
 		txt.push(Spans::from(vec![Span::styled(
 			header,
-			//TODO:
+			//TODO: use style
 			Style::default().add_modifier(Modifier::UNDERLINED),
 		)]));
 	}
