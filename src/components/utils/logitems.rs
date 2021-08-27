@@ -6,11 +6,16 @@ use crate::components::utils::emojifi_string;
 
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 
+type BoxStr = Box<str>;
+
 pub struct LogEntry {
+	//TODO: cache string representation
 	pub time: DateTime<Local>,
-	pub author: String,
-	pub msg: String,
-	pub hash_short: String,
+	//TODO: use tinyvec here
+	pub author: BoxStr,
+	pub msg: BoxStr,
+	//TODO: use tinyvec here
+	pub hash_short: BoxStr,
 	pub id: CommitId,
 }
 
@@ -28,10 +33,10 @@ impl From<CommitInfo> for LogEntry {
 		emojifi_string(&mut msg);
 
 		Self {
-			author,
-			msg,
+			author: author.into(),
+			msg: msg.into(),
 			time,
-			hash_short: c.id.get_short_string(),
+			hash_short: c.id.get_short_string().into(),
 			id: c.id,
 		}
 	}

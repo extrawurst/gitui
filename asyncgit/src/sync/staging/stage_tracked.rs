@@ -100,10 +100,7 @@ mod test {
 		let diff = get_diff(path, "test.txt", true, None).unwrap();
 
 		assert_eq!(diff.lines, 3);
-		assert_eq!(
-			diff.hunks[0].lines[0].content,
-			String::from("@@ -1 +1,2 @@\n")
-		);
+		assert_eq!(&*diff.hunks[0].lines[0].content, "@@ -1 +1,2 @@");
 	}
 
 	#[test]
@@ -142,10 +139,7 @@ c = 4";
 		let diff = get_diff(path, "test.txt", true, None).unwrap();
 
 		assert_eq!(diff.lines, 5);
-		assert_eq!(
-			diff.hunks[0].lines[0].content,
-			String::from("@@ -1,2 +1 @@\n")
-		);
+		assert_eq!(&*diff.hunks[0].lines[0].content, "@@ -1,2 +1 @@");
 	}
 
 	#[test]

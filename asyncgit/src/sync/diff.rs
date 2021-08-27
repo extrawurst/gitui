@@ -435,7 +435,7 @@ mod tests {
 			get_diff(repo_path, "foo/bar.txt", false, None).unwrap();
 
 		assert_eq!(diff.hunks.len(), 1);
-		assert_eq!(&*diff.hunks[0].lines[1].content, "test\n");
+		assert_eq!(&*diff.hunks[0].lines[1].content, "test");
 	}
 
 	#[test]

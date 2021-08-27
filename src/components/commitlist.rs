@@ -28,7 +28,7 @@ const ELEMENTS_PER_LINE: usize = 9;
 
 ///
 pub struct CommitList {
-	title: String,
+	title: Box<str>,
 	selection: usize,
 	branch: Option<String>,
 	count_total: usize,
@@ -61,7 +61,7 @@ impl CommitList {
 			scroll_top: Cell::new(0),
 			theme,
 			key_config,
-			title: String::from(title),
+			title: title.into(),
 		}
 	}
 
@@ -258,7 +258,7 @@ impl CommitList {
 
 		// commit hash
 		txt.push(Span::styled(
-			Cow::from(e.hash_short.as_str()),
+			Cow::from(&*e.hash_short),
 			theme.commit_hash(selected),
 		));
 
@@ -298,7 +298,7 @@ impl CommitList {
 
 		// commit msg
 		txt.push(Span::styled(
-			Cow::from(e.msg.as_str()),
+			Cow::from(&*e.msg),
 			theme.text(true, selected),
 		));
 
