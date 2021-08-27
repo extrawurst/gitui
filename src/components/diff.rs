@@ -417,15 +417,12 @@ impl DiffComponent {
 			}
 		};
 
-		let trimmed =
-			line.content.trim_matches(|c| c == '\n' || c == '\r');
-
 		let filled = if selected {
 			// selected line
-			format!("{:w$}\n", trimmed, w = width as usize)
+			format!("{:w$}\n", line.content, w = width as usize)
 		} else {
 			// weird eof missing eol line
-			format!("{}\n", trimmed)
+			format!("{}\n", line.content)
 		};
 
 		Spans::from(vec![

@@ -49,7 +49,7 @@ impl Default for DiffLineType {
 #[derive(Default, Clone, Hash, Debug)]
 pub struct DiffLine {
 	///
-	pub content: String,
+	pub content: Box<str>,
 	///
 	pub line_type: DiffLineType,
 	///
@@ -292,7 +292,9 @@ fn raw_diff_to_file_diff<'a>(
 				let diff_line = DiffLine {
 					position: DiffLinePosition::from(&line),
 					content: String::from_utf8_lossy(line.content())
-						.to_string(),
+						//Note: trim await trailing newline characters
+						.trim_matches(is_newline)
+						.into(),
 					line_type: line.origin_value().into(),
 				};
 
@@ -376,6 +378,10 @@ fn raw_diff_to_file_diff<'a>(
 	Ok(res.into_inner())
 }
 
+const fn is_newline(c: char) -> bool {
+	c == '\n' || c == '\r'
+}
+
 fn new_file_content(path: &Path) -> Option<Vec<u8>> {
 	if let Ok(meta) = fs::symlink_metadata(path) {
 		if meta.file_type().is_symlink() {
@@ -429,7 +435,7 @@ mod tests {
 			get_diff(repo_path, "foo/bar.txt", false, None).unwrap();
 
 		assert_eq!(diff.hunks.len(), 1);
-		assert_eq!(diff.hunks[0].lines[1].content, "test\n");
+		assert_eq!(&*diff.hunks[0].lines[1].content, "test\n");
 	}
 
 	#[test]
@@ -552,7 +558,7 @@ mod tests {
 		)
 		.unwrap();
 
-		assert_eq!(diff.hunks[0].lines[1].content, "test");
+		assert_eq!(&*diff.hunks[0].lines[1].content, "test");
 	}
 
 	#[test]

@@ -332,7 +332,7 @@ mod tests {
 		let diff =
 			get_diff(repo_path, "test.txt", true, None).unwrap();
 		assert_eq!(
-			diff.hunks[0].lines[0].content,
+			&*diff.hunks[0].lines[0].content,
 			String::from("@@ -1 +1 @@\n")
 		);
 	}
