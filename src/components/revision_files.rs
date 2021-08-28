@@ -132,13 +132,17 @@ impl RevisionFilesComponent {
 	}
 
 	fn blame(&self) -> bool {
-		self.tree.selected_file().map_or(false, |file| {
-			self.queue.push(InternalEvent::BlameFile(
-				file.full_path_str()
-					.strip_prefix("./")
-					.unwrap_or_default()
-					.to_string(),
-			));
+		self.selected_file_path().map_or(false, |path| {
+			self.queue.push(InternalEvent::BlameFile(path));
+
+			true
+		})
+	}
+
+	fn file_history(&self) -> bool {
+		self.selected_file_path().map_or(false, |path| {
+			self.queue.push(InternalEvent::OpenFileRevlog(path));
+
 			true
 		})
 	}
@@ -157,15 +161,18 @@ impl RevisionFilesComponent {
 		}
 	}
 
-	fn selected_file(&self) -> Option<String> {
-		self.tree
-			.selected_file()
-			.map(|file| file.full_path_str().to_string())
+	fn selected_file_path(&self) -> Option<String> {
+		self.tree.selected_file().map(|file| {
+			file.full_path_str()
+				.strip_prefix("./")
+				.unwrap_or_default()
+				.to_string()
+		})
 	}
 
 	fn selection_changed(&mut self) {
 		//TODO: retrieve TreeFile from tree datastructure
-		if let Some(file) = self.selected_file() {
+		if let Some(file) = self.selected_file_path() {
 			log::info!("selected: {:?}", file);
 			let path = Path::new(&file);
 			if let Some(item) =
@@ -280,6 +287,16 @@ impl Component for RevisionFilesComponent {
 				self.tree.selected_file().is_some(),
 				true,
 			));
+			out.push(
+				CommandInfo::new(
+					strings::commands::open_file_history(
+						&self.key_config,
+					),
+					self.tree.selected_file().is_some(),
+					true,
+				)
+				.order(order::RARE_ACTION),
+			);
 			tree_nav_cmds(&self.tree, &self.key_config, out);
 		} else {
 			self.current_file.commands(out, force_all);
@@ -304,6 +321,11 @@ impl Component for RevisionFilesComponent {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
+			} else if key == self.key_config.keys.file_history {
+				if self.file_history() {
+					self.hide();
+					return Ok(EventState::Consumed);
+				}
 			} else if key == self.key_config.keys.move_right {
 				if is_tree_focused {
 					self.focus = Focus::File;
@@ -324,7 +346,7 @@ impl Component for RevisionFilesComponent {
 					return Ok(EventState::Consumed);
 				}
 			} else if key == self.key_config.keys.edit_file {
-				if let Some(file) = self.selected_file() {
+				if let Some(file) = self.selected_file_path() {
 					//Note: switch to status tab so its clear we are
 					// not altering a file inside a revision here
 					self.queue.push(InternalEvent::TabSwitchStatus);
