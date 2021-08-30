@@ -362,12 +362,13 @@ impl BranchListComponent {
 		!self.branches.is_empty()
 	}
 
-	fn merge_branch(&self) -> Result<()> {
+	fn merge_branch(&mut self) -> Result<()> {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
 			sync::merge_branch(CWD, &branch.name)?;
 
+			self.hide();
 			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 		}
 
