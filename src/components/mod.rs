@@ -129,7 +129,7 @@ macro_rules! draw_popups {
 }
 
 /// simply calls
-/// any_popup_visible!() and draw_popups!() macros
+/// `any_popup_visible`!() and `draw_popups`!() macros
 #[macro_export]
 macro_rules! setup_popups {
     ($self:ident, [$($element:ident),+]) => {
