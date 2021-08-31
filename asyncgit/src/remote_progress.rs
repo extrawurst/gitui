@@ -11,7 +11,6 @@ use git2::PackBuilderStage;
 use std::{
 	sync::{Arc, Mutex},
 	thread::{self, JoinHandle},
-	time::Duration,
 };
 
 /// used for push/pull
@@ -89,8 +88,7 @@ impl RemoteProgress {
 						.send(notification_type)
 						.expect("Notification error");
 
-					//NOTE: for better debugging
-					thread::sleep(Duration::from_millis(1));
+					thread::yield_now();
 
 					if update.is_done() {
 						break;
