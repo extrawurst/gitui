@@ -84,17 +84,22 @@ impl AsyncFetch {
 
 		thread::spawn(move || {
 			let res = Self::threaded_fetch(
-				sender,
-				arc_progress,
 				params,
-				arc_res,
-				arc_state,
+				&sender,
+				arc_progress,
+				&arc_res,
+				&arc_state,
 			);
 
 			if let Err(e) = res {
 				log::error!("async fetch: {}", e);
-				panic!("{}", e);
+				Self::clear_request(&arc_state)
+					.expect("clear request error");
 			}
+
+			sender
+				.send(AsyncGitNotification::Fetch)
+				.expect("notification error");
 		});
 
 		Ok(())
@@ -142,11 +147,11 @@ impl AsyncFetch {
 	}
 
 	fn threaded_fetch(
-		sender: Sender<AsyncGitNotification>,
-		arc_progress: Arc<Mutex<Option<ProgressNotification>>>,
 		params: FetchRequest,
-		arc_res: Arc<Mutex<Option<(usize, String)>>>,
-		arc_state: Arc<Mutex<Option<FetchState>>>,
+		sender: &Sender<AsyncGitNotification>,
+		arc_progress: Arc<Mutex<Option<ProgressNotification>>>,
+		arc_res: &Arc<Mutex<Option<(usize, String)>>>,
+		arc_state: &Arc<Mutex<Option<FetchState>>>,
 	) -> Result<()> {
 		let (progress_sender, receiver) = unbounded();
 
@@ -168,10 +173,8 @@ impl AsyncFetch {
 
 		handle.join()?;
 
-		Self::set_result(&arc_res, res)?;
-		Self::clear_request(&arc_state)?;
-
-		sender.send(AsyncGitNotification::Fetch)?;
+		Self::set_result(arc_res, res)?;
+		Self::clear_request(arc_state)?;
 
 		Ok(())
 	}
