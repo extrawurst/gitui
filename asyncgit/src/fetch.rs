@@ -67,9 +67,10 @@ impl AsyncFetch {
 
 	///
 	pub fn request(&mut self, params: FetchRequest) -> Result<()> {
-		log::trace!("request");
+		log::trace!("request: {}/{}", params.remote, params.branch);
 
 		if self.is_pending()? {
+			log::trace!("request ignored, still pending");
 			return Ok(());
 		}
 
@@ -82,35 +83,18 @@ impl AsyncFetch {
 		let sender = self.sender.clone();
 
 		thread::spawn(move || {
-			let (progress_sender, receiver) = unbounded();
-
-			let handle = RemoteProgress::spawn_receiver_thread(
-				AsyncGitNotification::Fetch,
-				sender.clone(),
-				receiver,
+			let res = Self::threaded_fetch(
+				sender,
 				arc_progress,
+				params,
+				arc_res,
+				arc_state,
 			);
 
-			let res = fetch(
-				CWD,
-				&params.branch,
-				params.basic_credential,
-				Some(progress_sender.clone()),
-			);
-
-			progress_sender
-				.send(ProgressNotification::Done)
-				.expect("closing send failed");
-
-			handle.join().expect("joining thread failed");
-
-			Self::set_result(&arc_res, res).expect("result error");
-
-			Self::clear_request(&arc_state).expect("clear error");
-
-			sender
-				.send(AsyncGitNotification::Fetch)
-				.expect("AsyncNotification error");
+			if let Err(e) = res {
+				log::error!("async fetch: {}", e);
+				panic!("{}", e);
+			}
 		});
 
 		Ok(())
@@ -153,6 +137,41 @@ impl AsyncFetch {
 				Some((0, e.to_string()))
 			}
 		};
+
+		Ok(())
+	}
+
+	fn threaded_fetch(
+		sender: Sender<AsyncGitNotification>,
+		arc_progress: Arc<Mutex<Option<ProgressNotification>>>,
+		params: FetchRequest,
+		arc_res: Arc<Mutex<Option<(usize, String)>>>,
+		arc_state: Arc<Mutex<Option<FetchState>>>,
+	) -> Result<()> {
+		let (progress_sender, receiver) = unbounded();
+
+		let handle = RemoteProgress::spawn_receiver_thread(
+			AsyncGitNotification::Fetch,
+			sender.clone(),
+			receiver,
+			arc_progress,
+		);
+
+		let res = fetch(
+			CWD,
+			&params.branch,
+			params.basic_credential,
+			Some(progress_sender.clone()),
+		);
+
+		progress_sender.send(ProgressNotification::Done)?;
+
+		handle.join()?;
+
+		Self::set_result(&arc_res, res)?;
+		Self::clear_request(&arc_state)?;
+
+		sender.send(AsyncGitNotification::Fetch)?;
 
 		Ok(())
 	}
