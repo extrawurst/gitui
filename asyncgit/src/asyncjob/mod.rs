@@ -4,18 +4,54 @@
 
 use crate::error::Result;
 use crossbeam_channel::Sender;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
+
+/// Passed to `AsyncJob::run` allowing sending intermediate progress notifications
+pub struct RunParams<T: Copy + Send, P: Clone + Send + Sync> {
+	sender: Sender<T>,
+	progress: Arc<RwLock<P>>,
+}
+
+impl<T: Copy + Send, P: Clone + Send + Sync> RunParams<T, P> {
+	/// send an intermediate update notification.
+	/// do not confuse this with the return value of `run`.
+	/// `send` should only be used about progress notifications
+	/// and not for the final notifcation indicating the end of the async job.
+	/// see `run` for more info
+	pub fn send(&self, notification: T) -> Result<()> {
+		self.sender.send(notification)?;
+		Ok(())
+	}
+
+	/// set the current progress
+	pub fn set_progress(&self, p: P) -> Result<()> {
+		*(self.progress.write()?) = p;
+		Ok(())
+	}
+}
 
 /// trait that defines an async task we can run on a threadpool
 pub trait AsyncJob: Send + Sync + Clone {
-	/// defines what notification to send after finish running job
-	type Notification: Copy + Send + 'static;
+	/// defines what notification type is used to communicate outside
+	type Notification: Copy + Send;
+	/// type of progress
+	type Progress: Clone + Default + Send + Sync;
 
-	/// can run a synchronous time intensive task
+	/// can run a synchronous time intensive task.
+	/// the returned notification is used to tell interested parties
+	/// that the job finished and the job can be access via `take_last`.
+	/// prior to this final notification it is not safe to assume `take_last`
+	/// will already return the correct job
 	fn run(
 		&mut self,
-		sender: Sender<Self::Notification>,
+		params: RunParams<Self::Notification, Self::Progress>,
 	) -> Result<Self::Notification>;
+
+	/// allows observers to get intermediate progress status if the job customizes it
+	/// by default this will be returning ()::Default
+	fn get_progress(&self) -> Self::Progress {
+		Self::Progress::default()
+	}
 }
 
 /// Abstraction for a FIFO task queue that will only queue up **one** `next` job.
@@ -24,6 +60,7 @@ pub trait AsyncJob: Send + Sync + Clone {
 pub struct AsyncSingleJob<J: AsyncJob> {
 	next: Arc<Mutex<Option<J>>>,
 	last: Arc<Mutex<Option<J>>>,
+	progress: Arc<RwLock<J::Progress>>,
 	sender: Sender<J::Notification>,
 	pending: Arc<Mutex<()>>,
 }
@@ -35,6 +72,7 @@ impl<J: 'static + AsyncJob> AsyncSingleJob<J> {
 			next: Arc::new(Mutex::new(None)),
 			last: Arc::new(Mutex::new(None)),
 			pending: Arc::new(Mutex::new(())),
+			progress: Arc::new(RwLock::new(J::Progress::default())),
 			sender,
 		}
 	}
@@ -73,16 +111,20 @@ impl<J: 'static + AsyncJob> AsyncSingleJob<J> {
 		self.check_for_job()
 	}
 
+	///
+	pub fn progress(&self) -> Option<J::Progress> {
+		self.progress.read().ok().map(|d| (*d).clone())
+	}
+
 	fn check_for_job(&self) -> bool {
 		if self.is_pending() {
 			return false;
 		}
 
 		if let Some(task) = self.take_next() {
-			let self_arc = self.clone();
-
+			let self_clone = (*self).clone();
 			rayon_core::spawn(move || {
-				if let Err(e) = self_arc.run_job(task) {
+				if let Err(e) = self_clone.run_job(task) {
 					log::error!("async job error: {}", e);
 				}
 			});
@@ -98,7 +140,10 @@ impl<J: 'static + AsyncJob> AsyncSingleJob<J> {
 		{
 			let _pending = self.pending.lock()?;
 
-			let notification = task.run(self.sender.clone())?;
+			let notification = task.run(RunParams {
+				progress: self.progress.clone(),
+				sender: self.sender.clone(),
+			})?;
 
 			if let Ok(mut last) = self.last.lock() {
 				*last = Some(task);
@@ -149,10 +194,11 @@ mod test {
 
 	impl AsyncJob for TestJob {
 		type Notification = TestNotificaton;
+		type Progress = ();
 
 		fn run(
 			&mut self,
-			_sender: Sender<Self::Notification>,
+			_params: RunParams<Self::Notification, Self::Progress>,
 		) -> Result<Self::Notification> {
 			println!("[job] wait");
 

@@ -1,5 +1,7 @@
-use asyncgit::{asyncjob::AsyncJob, ProgressPercent};
-use crossbeam_channel::Sender;
+use asyncgit::{
+	asyncjob::{AsyncJob, RunParams},
+	ProgressPercent,
+};
 use lazy_static::lazy_static;
 use scopetime::scope_time;
 use std::{
@@ -70,7 +72,7 @@ impl SyntaxText {
 	pub fn new(
 		text: String,
 		file_path: &Path,
-		sender: &Sender<AsyncAppNotification>,
+		params: &RunParams<AsyncAppNotification, ProgressPercent>,
 	) -> asyncgit::Result<Self> {
 		scope_time!("syntax_highlighting");
 		log::debug!("syntax: {:?}", file_path);
@@ -110,10 +112,9 @@ impl SyntaxText {
 				total_count,
 				Duration::from_millis(200),
 			);
-			sender.send(AsyncAppNotification::SyntaxHighlighting(
-				SyntaxHighlightProgress::Progress(
-					buffer.send_progress(),
-				),
+			params.set_progress(buffer.send_progress())?;
+			params.send(AsyncAppNotification::SyntaxHighlighting(
+				SyntaxHighlightProgress::Progress,
 			))?;
 
 			for (number, line) in text.lines().enumerate() {
@@ -134,11 +135,10 @@ impl SyntaxText {
 				});
 
 				if buffer.update(number) {
-					sender.send(
+					params.set_progress(buffer.send_progress())?;
+					params.send(
 						AsyncAppNotification::SyntaxHighlighting(
-							SyntaxHighlightProgress::Progress(
-								buffer.send_progress(),
-							),
+							SyntaxHighlightProgress::Progress,
 						),
 					)?;
 				}
@@ -241,10 +241,11 @@ impl AsyncSyntaxJob {
 
 impl AsyncJob for AsyncSyntaxJob {
 	type Notification = AsyncAppNotification;
+	type Progress = ProgressPercent;
 
 	fn run(
 		&mut self,
-		sender: Sender<Self::Notification>,
+		params: RunParams<Self::Notification, Self::Progress>,
 	) -> asyncgit::Result<Self::Notification> {
 		let mut state_mutex = self.state.lock()?;
 
@@ -254,7 +255,7 @@ impl AsyncJob for AsyncSyntaxJob {
 					let syntax = SyntaxText::new(
 						content,
 						Path::new(&path),
-						&sender,
+						&params,
 					)?;
 					JobState::Response(syntax)
 				}

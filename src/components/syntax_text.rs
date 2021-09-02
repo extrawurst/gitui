@@ -65,8 +65,9 @@ impl SyntaxTextComponent {
 		) = ev
 		{
 			match progress {
-				SyntaxHighlightProgress::Progress(progress) => {
-					self.syntax_progress = Some(progress);
+				SyntaxHighlightProgress::Progress => {
+					self.syntax_progress =
+						self.async_highlighting.progress();
 				}
 				SyntaxHighlightProgress::Done => {
 					self.syntax_progress = None;

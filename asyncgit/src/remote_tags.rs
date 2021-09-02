@@ -1,9 +1,7 @@
 //!
 
-use crossbeam_channel::Sender;
-
 use crate::{
-	asyncjob::AsyncJob,
+	asyncjob::{AsyncJob, RunParams},
 	error::Result,
 	sync::cred::BasicAuthCredential,
 	sync::remotes::{get_default_remote, tags_missing_remote},
@@ -53,10 +51,11 @@ impl AsyncRemoteTagsJob {
 
 impl AsyncJob for AsyncRemoteTagsJob {
 	type Notification = AsyncGitNotification;
+	type Progress = ();
 
 	fn run(
 		&mut self,
-		_sender: Sender<Self::Notification>,
+		_params: RunParams<Self::Notification, Self::Progress>,
 	) -> Result<Self::Notification> {
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {

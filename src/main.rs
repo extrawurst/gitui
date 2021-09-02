@@ -78,7 +78,7 @@ pub enum QueueEvent {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SyntaxHighlightProgress {
-	Progress(asyncgit::ProgressPercent),
+	Progress,
 	Done,
 }
 
