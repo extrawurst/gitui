@@ -145,11 +145,9 @@ mod test {
 
 	impl AsyncJob for TestJob {
 		fn run(&mut self) {
-			self.finish.store(false, Ordering::Relaxed);
-
 			println!("[job] wait");
 
-			while self.finish.load(Ordering::Relaxed) {
+			while !self.finish.load(Ordering::SeqCst) {
 				std::thread::yield_now();
 			}
 
@@ -159,7 +157,10 @@ mod test {
 
 			println!("[job] done sleeping");
 
-			self.v.fetch_add(self.value_to_add, Ordering::Relaxed);
+			let res =
+				self.v.fetch_add(self.value_to_add, Ordering::SeqCst);
+
+			println!("[job] value: {}", res);
 		}
 	}
 
@@ -179,6 +180,7 @@ mod test {
 		};
 
 		assert!(job.spawn(task.clone()));
+		task.finish.store(true, Ordering::SeqCst);
 		thread::sleep(Duration::from_millis(10));
 
 		for _ in 0..5 {
@@ -186,14 +188,13 @@ mod test {
 			assert!(!job.spawn(task.clone()));
 		}
 
-		task.finish.store(true, Ordering::Relaxed);
-
+		println!("recv");
 		let _foo = receiver.recv().unwrap();
 		let _foo = receiver.recv().unwrap();
 		assert!(receiver.is_empty());
 
 		assert_eq!(
-			task.v.load(std::sync::atomic::Ordering::Relaxed),
+			task.v.load(std::sync::atomic::Ordering::SeqCst),
 			3
 		);
 	}
@@ -218,7 +219,7 @@ mod test {
 		};
 
 		assert!(job.spawn(task.clone()));
-		task.finish.store(true, Ordering::Relaxed);
+		task.finish.store(true, Ordering::SeqCst);
 		thread::sleep(Duration::from_millis(10));
 
 		for _ in 0..5 {
@@ -229,14 +230,16 @@ mod test {
 		println!("cancel");
 		assert!(job.cancel());
 
-		task.finish.store(true, Ordering::Relaxed);
+		task.finish.store(true, Ordering::SeqCst);
 
 		wait_for_job(&job);
 
+		println!("recv");
 		let _foo = receiver.recv().unwrap();
+		println!("received");
 
 		assert_eq!(
-			task.v.load(std::sync::atomic::Ordering::Relaxed),
+			task.v.load(std::sync::atomic::Ordering::SeqCst),
 			2
 		);
 	}
