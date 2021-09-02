@@ -68,7 +68,7 @@ impl Component for StashMsgComponent {
 						if self.input.get_text().is_empty() {
 							None
 						} else {
-							Some(self.input.get_text().as_str())
+							Some(self.input.get_text())
 						},
 						self.options.stash_untracked,
 						self.options.keep_index,

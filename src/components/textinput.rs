@@ -81,8 +81,8 @@ impl TextInputComponent {
 	}
 
 	/// Get the `msg`.
-	pub const fn get_text(&self) -> &String {
-		&self.msg
+	pub fn get_text(&self) -> &str {
+		self.msg.as_str()
 	}
 
 	/// screen area (last time we got drawn)

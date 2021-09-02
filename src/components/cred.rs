@@ -119,7 +119,7 @@ impl Component for CredComponent {
 							Some(
 								self.input_username
 									.get_text()
-									.clone(),
+									.to_string(),
 							),
 							None,
 						);
@@ -131,7 +131,7 @@ impl Component for CredComponent {
 							Some(
 								self.input_password
 									.get_text()
-									.clone(),
+									.to_string(),
 							),
 						);
 						self.input_password.hide();
