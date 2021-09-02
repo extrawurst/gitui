@@ -1,4 +1,5 @@
-use asyncgit::asyncjob::AsyncJob;
+use asyncgit::{asyncjob::AsyncJob, ProgressPercent};
+use crossbeam_channel::Sender;
 use lazy_static::lazy_static;
 use scopetime::scope_time;
 use std::{
@@ -6,6 +7,7 @@ use std::{
 	ops::Range,
 	path::{Path, PathBuf},
 	sync::{Arc, Mutex},
+	time::{Duration, Instant},
 };
 use syntect::{
 	highlighting::{
@@ -16,7 +18,7 @@ use syntect::{
 };
 use tui::text::{Span, Spans};
 
-use crate::AsyncAppNotification;
+use crate::{AsyncAppNotification, SyntaxHighlightProgress};
 
 struct SyntaxLine {
 	items: Vec<(Style, usize, Range<usize>)>,
@@ -34,12 +36,47 @@ lazy_static! {
 	static ref THEME_SET: ThemeSet = ThemeSet::load_defaults();
 }
 
+pub struct AsyncProgressBuffer {
+	current: usize,
+	total: usize,
+	last_send: Option<Instant>,
+	min_interval: Duration,
+}
+
+impl AsyncProgressBuffer {
+	pub const fn new(total: usize, min_interval: Duration) -> Self {
+		Self {
+			current: 0,
+			total,
+			last_send: None,
+			min_interval,
+		}
+	}
+
+	pub fn send_progress(&mut self) -> ProgressPercent {
+		self.last_send = Some(Instant::now());
+		ProgressPercent::new(self.current, self.total)
+	}
+
+	pub fn update(&mut self, current: usize) -> bool {
+		self.current = current;
+		self.last_send.map_or(true, |last_send| {
+			last_send.elapsed() > self.min_interval
+		})
+	}
+}
+
 impl SyntaxText {
-	pub fn new(text: String, file_path: &Path) -> Self {
+	pub fn new(
+		text: String,
+		file_path: &Path,
+		sender: &Sender<AsyncAppNotification>,
+	) -> asyncgit::Result<Self> {
 		scope_time!("syntax_highlighting");
 		log::debug!("syntax: {:?}", file_path);
 
 		let mut state = {
+			scope_time!("syntax_highlighting.0");
 			let syntax = file_path
 				.extension()
 				.and_then(OsStr::to_str)
@@ -66,27 +103,53 @@ impl SyntaxText {
 		let mut highlight_state =
 			HighlightState::new(&highlighter, ScopeStack::new());
 
-		for (number, line) in text.lines().enumerate() {
-			let ops = state.parse_line(line, &SYNTAX_SET);
-			let iter = RangedHighlightIterator::new(
-				&mut highlight_state,
-				&ops[..],
-				line,
-				&highlighter,
-			);
+		{
+			let total_count = text.lines().count();
 
-			syntax_lines.push(SyntaxLine {
-				items: iter
-					.map(|(style, _, range)| (style, number, range))
-					.collect(),
-			});
+			let mut buffer = AsyncProgressBuffer::new(
+				total_count,
+				Duration::from_millis(200),
+			);
+			sender.send(AsyncAppNotification::SyntaxHighlighting(
+				SyntaxHighlightProgress::Progress(
+					buffer.send_progress(),
+				),
+			))?;
+
+			for (number, line) in text.lines().enumerate() {
+				let ops = state.parse_line(line, &SYNTAX_SET);
+				let iter = RangedHighlightIterator::new(
+					&mut highlight_state,
+					&ops[..],
+					line,
+					&highlighter,
+				);
+
+				syntax_lines.push(SyntaxLine {
+					items: iter
+						.map(|(style, _, range)| {
+							(style, number, range)
+						})
+						.collect(),
+				});
+
+				if buffer.update(number) {
+					sender.send(
+						AsyncAppNotification::SyntaxHighlighting(
+							SyntaxHighlightProgress::Progress(
+								buffer.send_progress(),
+							),
+						),
+					)?;
+				}
+			}
 		}
 
-		Self {
+		Ok(Self {
 			text,
 			lines: syntax_lines,
 			path: file_path.into(),
-		}
+		})
 	}
 
 	///
@@ -179,18 +242,28 @@ impl AsyncSyntaxJob {
 impl AsyncJob for AsyncSyntaxJob {
 	type Notification = AsyncAppNotification;
 
-	fn run(&mut self) -> Self::Notification {
-		if let Ok(mut state) = self.state.lock() {
-			*state = state.take().map(|state| match state {
+	fn run(
+		&mut self,
+		sender: Sender<Self::Notification>,
+	) -> asyncgit::Result<Self::Notification> {
+		let mut state_mutex = self.state.lock()?;
+
+		if let Some(state) = state_mutex.take() {
+			*state_mutex = Some(match state {
 				JobState::Request((content, path)) => {
-					let syntax =
-						SyntaxText::new(content, Path::new(&path));
+					let syntax = SyntaxText::new(
+						content,
+						Path::new(&path),
+						&sender,
+					)?;
 					JobState::Response(syntax)
 				}
 				JobState::Response(res) => JobState::Response(res),
 			});
 		}
 
-		AsyncAppNotification::SyntaxHighlighting
+		Ok(AsyncAppNotification::SyntaxHighlighting(
+			SyntaxHighlightProgress::Done,
+		))
 	}
 }

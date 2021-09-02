@@ -12,7 +12,10 @@ pub trait AsyncJob: Send + Sync + Clone {
 	type Notification: Copy + Send + 'static;
 
 	/// can run a synchronous time intensive task
-	fn run(&mut self) -> Self::Notification;
+	fn run(
+		&mut self,
+		sender: Sender<Self::Notification>,
+	) -> Result<Self::Notification>;
 }
 
 /// Abstraction for a FIFO task queue that will only queue up **one** `next` job.
@@ -95,7 +98,7 @@ impl<J: 'static + AsyncJob> AsyncSingleJob<J> {
 		{
 			let _pending = self.pending.lock()?;
 
-			let notification = task.run();
+			let notification = task.run(self.sender.clone())?;
 
 			if let Ok(mut last) = self.last.lock() {
 				*last = Some(task);
@@ -147,7 +150,10 @@ mod test {
 	impl AsyncJob for TestJob {
 		type Notification = TestNotificaton;
 
-		fn run(&mut self) -> Self::Notification {
+		fn run(
+			&mut self,
+			_sender: Sender<Self::Notification>,
+		) -> Result<Self::Notification> {
 			println!("[job] wait");
 
 			while !self.finish.load(Ordering::SeqCst) {
@@ -165,7 +171,7 @@ mod test {
 
 			println!("[job] value: {}", res);
 
-			()
+			Ok(())
 		}
 	}
 

@@ -1,5 +1,7 @@
 //!
 
+use crossbeam_channel::Sender;
+
 use crate::{
 	asyncjob::AsyncJob,
 	error::Result,
@@ -52,7 +54,10 @@ impl AsyncRemoteTagsJob {
 impl AsyncJob for AsyncRemoteTagsJob {
 	type Notification = AsyncGitNotification;
 
-	fn run(&mut self) -> Self::Notification {
+	fn run(
+		&mut self,
+		_sender: Sender<Self::Notification>,
+	) -> Result<Self::Notification> {
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
 				JobState::Request(basic_credential) => {
@@ -73,6 +78,6 @@ impl AsyncJob for AsyncRemoteTagsJob {
 			});
 		}
 
-		AsyncGitNotification::RemoteTags
+		Ok(AsyncGitNotification::RemoteTags)
 	}
 }

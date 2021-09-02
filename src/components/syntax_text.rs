@@ -9,13 +9,13 @@ use crate::{
 		self, common_nav, style::SharedTheme, AsyncSyntaxJob,
 		ParagraphState, ScrollPos, StatefulParagraph,
 	},
-	AsyncAppNotification, AsyncNotification,
+	AsyncAppNotification, AsyncNotification, SyntaxHighlightProgress,
 };
 use anyhow::Result;
 use asyncgit::{
 	asyncjob::AsyncSingleJob,
 	sync::{self, TreeFile},
-	CWD,
+	ProgressPercent, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -33,6 +33,7 @@ use tui::{
 pub struct SyntaxTextComponent {
 	current_file: Option<(String, Either<ui::SyntaxText, String>)>,
 	async_highlighting: AsyncSingleJob<AsyncSyntaxJob>,
+	syntax_progress: Option<ProgressPercent>,
 	key_config: SharedKeyConfig,
 	paragraph_state: Cell<ParagraphState>,
 	focused: bool,
@@ -48,6 +49,7 @@ impl SyntaxTextComponent {
 	) -> Self {
 		Self {
 			async_highlighting: AsyncSingleJob::new(sender.clone()),
+			syntax_progress: None,
 			current_file: None,
 			paragraph_state: Cell::new(ParagraphState::default()),
 			focused: false,
@@ -58,19 +60,27 @@ impl SyntaxTextComponent {
 
 	///
 	pub fn update(&mut self, ev: AsyncNotification) {
-		if matches!(
-			ev,
-			AsyncNotification::App(
-				AsyncAppNotification::SyntaxHighlighting
-			)
-		) {
-			if let Some(job) = self.async_highlighting.take_last() {
-				if let Some((path, content)) =
-					self.current_file.as_mut()
-				{
-					if let Some(syntax) = job.result() {
-						if syntax.path() == Path::new(path) {
-							*content = Either::Left(syntax);
+		if let AsyncNotification::App(
+			AsyncAppNotification::SyntaxHighlighting(progress),
+		) = ev
+		{
+			match progress {
+				SyntaxHighlightProgress::Progress(progress) => {
+					self.syntax_progress = Some(progress);
+				}
+				SyntaxHighlightProgress::Done => {
+					self.syntax_progress = None;
+					if let Some(job) =
+						self.async_highlighting.take_last()
+					{
+						if let Some((path, content)) =
+							self.current_file.as_mut()
+						{
+							if let Some(syntax) = job.result() {
+								if syntax.path() == Path::new(path) {
+									*content = Either::Left(syntax);
+								}
+							}
 						}
 					}
 				}
@@ -101,6 +111,8 @@ impl SyntaxTextComponent {
 			match sync::tree_file_content(CWD, item) {
 				Ok(content) => {
 					let content = tabs_to_spaces(content);
+					self.syntax_progress =
+						Some(ProgressPercent::empty());
 					self.async_highlighting.spawn(
 						AsyncSyntaxJob::new(
 							content.clone(),
@@ -185,16 +197,22 @@ impl DrawableComponent for SyntaxTextComponent {
 			},
 		);
 
+		let title = format!(
+			"{}{}",
+			self.current_file
+				.as_ref()
+				.map(|(name, _)| name.clone())
+				.unwrap_or_default(),
+			self.syntax_progress
+				.map(|p| format!(" ({}%)", p.progress))
+				.unwrap_or_default()
+		);
+
 		let content = StatefulParagraph::new(text)
 			.wrap(Wrap { trim: false })
 			.block(
 				Block::default()
-					.title(
-						self.current_file
-							.as_ref()
-							.map(|(name, _)| name.clone())
-							.unwrap_or_default(),
-					)
+					.title(title)
 					.borders(Borders::ALL)
 					.border_style(self.theme.title(self.focused())),
 			);
