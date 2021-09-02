@@ -16,6 +16,8 @@ use syntect::{
 };
 use tui::text::{Span, Spans};
 
+use crate::AsyncAppNotification;
+
 struct SyntaxLine {
 	items: Vec<(Style, usize, Range<usize>)>,
 }
@@ -175,7 +177,9 @@ impl AsyncSyntaxJob {
 }
 
 impl AsyncJob for AsyncSyntaxJob {
-	fn run(&mut self) {
+	type Notification = AsyncAppNotification;
+
+	fn run(&mut self) -> Self::Notification {
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
 				JobState::Request((content, path)) => {
@@ -186,5 +190,7 @@ impl AsyncJob for AsyncSyntaxJob {
 				JobState::Response(res) => JobState::Response(res),
 			});
 		}
+
+		AsyncAppNotification::SyntaxHighlighting
 	}
 }

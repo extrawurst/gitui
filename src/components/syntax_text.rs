@@ -32,8 +32,7 @@ use tui::{
 
 pub struct SyntaxTextComponent {
 	current_file: Option<(String, Either<ui::SyntaxText, String>)>,
-	async_highlighting:
-		AsyncSingleJob<AsyncSyntaxJob, AsyncAppNotification>,
+	async_highlighting: AsyncSingleJob<AsyncSyntaxJob>,
 	key_config: SharedKeyConfig,
 	paragraph_state: Cell<ParagraphState>,
 	focused: bool,
@@ -48,10 +47,7 @@ impl SyntaxTextComponent {
 		theme: SharedTheme,
 	) -> Self {
 		Self {
-			async_highlighting: AsyncSingleJob::new(
-				sender.clone(),
-				AsyncAppNotification::SyntaxHighlighting,
-			),
+			async_highlighting: AsyncSingleJob::new(sender.clone()),
 			current_file: None,
 			paragraph_state: Cell::new(ParagraphState::default()),
 			focused: false,

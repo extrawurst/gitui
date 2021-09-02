@@ -8,31 +8,30 @@ use std::sync::{Arc, Mutex};
 
 /// trait that defines an async task we can run on a threadpool
 pub trait AsyncJob: Send + Sync + Clone {
+	/// defines what notification to send after finish running job
+	type Notification: Copy + Send + 'static;
+
 	/// can run a synchronous time intensive task
-	fn run(&mut self);
+	fn run(&mut self) -> Self::Notification;
 }
 
 /// Abstraction for a FIFO task queue that will only queue up **one** `next` job.
 /// It keeps overwriting the next job until it is actually taken to be processed
 #[derive(Debug, Clone)]
-pub struct AsyncSingleJob<J: AsyncJob, T: Copy + Send + 'static> {
+pub struct AsyncSingleJob<J: AsyncJob> {
 	next: Arc<Mutex<Option<J>>>,
 	last: Arc<Mutex<Option<J>>>,
-	sender: Sender<T>,
+	sender: Sender<J::Notification>,
 	pending: Arc<Mutex<()>>,
-	notification: T,
 }
 
-impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
-	AsyncSingleJob<J, T>
-{
+impl<J: 'static + AsyncJob> AsyncSingleJob<J> {
 	///
-	pub fn new(sender: Sender<T>, value: T) -> Self {
+	pub fn new(sender: Sender<J::Notification>) -> Self {
 		Self {
 			next: Arc::new(Mutex::new(None)),
 			last: Arc::new(Mutex::new(None)),
 			pending: Arc::new(Mutex::new(())),
-			notification: value,
 			sender,
 		}
 	}
@@ -96,13 +95,13 @@ impl<J: 'static + AsyncJob, T: Copy + Send + 'static>
 		{
 			let _pending = self.pending.lock()?;
 
-			task.run();
+			let notification = task.run();
 
 			if let Ok(mut last) = self.last.lock() {
 				*last = Some(task);
 			}
 
-			self.sender.send(self.notification)?;
+			self.sender.send(notification)?;
 		}
 
 		self.check_for_job();
@@ -143,8 +142,12 @@ mod test {
 		value_to_add: u32,
 	}
 
+	type TestNotificaton = ();
+
 	impl AsyncJob for TestJob {
-		fn run(&mut self) {
+		type Notification = TestNotificaton;
+
+		fn run(&mut self) -> Self::Notification {
 			println!("[job] wait");
 
 			while !self.finish.load(Ordering::SeqCst) {
@@ -161,17 +164,17 @@ mod test {
 				self.v.fetch_add(self.value_to_add, Ordering::SeqCst);
 
 			println!("[job] value: {}", res);
+
+			()
 		}
 	}
-
-	type Notificaton = ();
 
 	#[test]
 	fn test_overwrite() {
 		let (sender, receiver) = unbounded();
 
-		let mut job: AsyncSingleJob<TestJob, Notificaton> =
-			AsyncSingleJob::new(sender, ());
+		let mut job: AsyncSingleJob<TestJob> =
+			AsyncSingleJob::new(sender);
 
 		let task = TestJob {
 			v: Arc::new(AtomicU32::new(1)),
@@ -199,7 +202,7 @@ mod test {
 		);
 	}
 
-	fn wait_for_job(job: &AsyncSingleJob<TestJob, Notificaton>) {
+	fn wait_for_job(job: &AsyncSingleJob<TestJob>) {
 		while job.is_pending() {
 			thread::sleep(Duration::from_millis(10));
 		}
@@ -209,8 +212,8 @@ mod test {
 	fn test_cancel() {
 		let (sender, receiver) = unbounded();
 
-		let mut job: AsyncSingleJob<TestJob, Notificaton> =
-			AsyncSingleJob::new(sender, ());
+		let mut job: AsyncSingleJob<TestJob> =
+			AsyncSingleJob::new(sender);
 
 		let task = TestJob {
 			v: Arc::new(AtomicU32::new(1)),

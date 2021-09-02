@@ -80,8 +80,6 @@ pub enum QueueEvent {
 pub enum AsyncAppNotification {
 	///
 	SyntaxHighlighting,
-	///
-	RemoteTags,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

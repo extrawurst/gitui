@@ -5,7 +5,7 @@ use crate::{
 	error::Result,
 	sync::cred::BasicAuthCredential,
 	sync::remotes::{get_default_remote, tags_missing_remote},
-	CWD,
+	AsyncGitNotification, CWD,
 };
 
 use std::sync::{Arc, Mutex};
@@ -50,7 +50,9 @@ impl AsyncRemoteTagsJob {
 }
 
 impl AsyncJob for AsyncRemoteTagsJob {
-	fn run(&mut self) {
+	type Notification = AsyncGitNotification;
+
+	fn run(&mut self) -> Self::Notification {
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
 				JobState::Request(basic_credential) => {
@@ -70,5 +72,7 @@ impl AsyncJob for AsyncRemoteTagsJob {
 				}
 			});
 		}
+
+		AsyncGitNotification::RemoteTags
 	}
 }

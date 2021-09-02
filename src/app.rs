@@ -179,7 +179,7 @@ impl App {
 			),
 			tags_popup: TagListComponent::new(
 				&queue,
-				sender_app,
+				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
