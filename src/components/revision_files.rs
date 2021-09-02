@@ -6,7 +6,7 @@ use super::{
 use crate::{
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
-	strings::{self, order},
+	strings::{self, order, symbol},
 	ui::{self, common_nav, style::SharedTheme},
 	AsyncAppNotification, AsyncNotification,
 };
@@ -26,10 +26,6 @@ use tui::{
 	widgets::{Block, Borders},
 	Frame,
 };
-
-const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
-const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
-const EMPTY_STR: &str = "";
 
 enum Focus {
 	Tree,
@@ -117,12 +113,12 @@ impl RevisionFilesComponent {
 		let is_path = item.kind().is_path();
 		let path_arrow = if is_path {
 			if item.kind().is_path_collapsed() {
-				FOLDER_ICON_COLLAPSED
+				symbol::FOLDER_ICON_COLLAPSED
 			} else {
-				FOLDER_ICON_EXPANDED
+				symbol::FOLDER_ICON_EXPANDED
 			}
 		} else {
-			EMPTY_STR
+			symbol::EMPTY_STR
 		};
 
 		let path = format!("{}{}{}", indent_str, path_arrow, path);
