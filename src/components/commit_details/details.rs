@@ -16,7 +16,6 @@ use asyncgit::{
 	CWD,
 };
 use crossterm::event::Event;
-use itertools::Itertools;
 use std::clone::Clone;
 use std::{borrow::Cow, cell::Cell};
 use sync::CommitTags;
@@ -219,19 +218,19 @@ impl DetailsComponent {
 				)));
 
 				res.push(Spans::from(
-					self.tags
-						.iter()
-						.map(|tag| {
+					itertools::Itertools::intersperse(
+						self.tags.iter().map(|tag| {
 							Span::styled(
 								Cow::from(tag),
 								self.theme.text(true, false),
 							)
-						})
-						.intersperse(Span::styled(
+						}),
+						Span::styled(
 							Cow::from(","),
 							self.theme.text(true, false),
-						))
-						.collect::<Vec<Span>>(),
+						),
+					)
+					.collect::<Vec<Span>>(),
 				));
 			}
 
