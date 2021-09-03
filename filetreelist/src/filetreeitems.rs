@@ -200,7 +200,7 @@ impl FileTreeItems {
 	fn show_element_upward(&mut self, index: usize) -> Option<usize> {
 		let mut shown = 0_usize;
 
-		let item = self.tree_items.iter().nth(index)?;
+		let item = self.tree_items.get(index)?;
 		let mut current_folder: (PathBuf, u8) = (
 			item.info().full_path().parent()?.to_path_buf(),
 			item.info().indent(),
@@ -216,28 +216,23 @@ impl FileTreeItems {
 			if item.info().indent() == current_folder.1 {
 				item.show();
 				shown += 1;
-			} else {
-				if item.info().indent() == current_folder.1 - 1 {
-					// this must be our parent
+			} else if item.info().indent() == current_folder.1 - 1 {
+				// this must be our parent
 
-					item.expand_path();
+				item.expand_path();
 
-					if item.info().is_visible() {
-						// early out if parent already visible
-						break;
-					}
-
-					item.show();
-					shown += 1;
-
-					current_folder = (
-						item.info()
-							.full_path()
-							.parent()?
-							.to_path_buf(),
-						item.info().indent(),
-					);
+				if item.info().is_visible() {
+					// early out if parent already visible
+					break;
 				}
+
+				item.show();
+				shown += 1;
+
+				current_folder = (
+					item.info().full_path().parent()?.to_path_buf(),
+					item.info().indent(),
+				);
 			}
 		}
 
@@ -250,7 +245,7 @@ impl FileTreeItems {
 	) -> Option<usize> {
 		let mut shown = 0_usize;
 
-		let item = self.tree_items.iter().nth(index)?;
+		let item = self.tree_items.get(index)?;
 		let mut current_folder: (PathBuf, u8) = (
 			item.info().full_path().parent()?.to_path_buf(),
 			item.info().indent(),
@@ -260,21 +255,17 @@ impl FileTreeItems {
 			if item.info().indent() == current_folder.1 {
 				item.show();
 				shown += 1;
-			} else {
-				if item.info().indent() == current_folder.1 - 1 {
-					// this must be our parent
+			}
+			if item.info().indent() == current_folder.1 - 1 {
+				// this must be our parent
 
-					item.show();
-					shown += 1;
+				item.show();
+				shown += 1;
 
-					current_folder = (
-						item.info()
-							.full_path()
-							.parent()?
-							.to_path_buf(),
-						item.info().indent(),
-					);
-				}
+				current_folder = (
+					item.info().full_path().parent()?.to_path_buf(),
+					item.info().indent(),
+				);
 			}
 		}
 
