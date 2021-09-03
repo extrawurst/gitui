@@ -1,18 +1,18 @@
-use std::borrow::Cow;
-
 use super::{
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, TextInputComponent,
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, TextInputComponent,
 };
 use crate::{
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
+	strings,
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::sync::TreeFile;
 use crossterm::event::Event;
 use fuzzy_matcher::FuzzyMatcher;
+use std::borrow::Cow;
 use tui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Margin, Rect},
@@ -217,14 +217,21 @@ impl DrawableComponent for FileFindComponent {
 impl Component for FileFindComponent {
 	fn commands(
 		&self,
-		_out: &mut Vec<CommandInfo>,
-		_force_all: bool,
+		out: &mut Vec<CommandInfo>,
+		force_all: bool,
 	) -> CommandBlocking {
-		if self.is_visible() {
-			return CommandBlocking::Blocking;
+		if self.is_visible() || force_all {
+			out.push(
+				CommandInfo::new(
+					strings::commands::close_popup(&self.key_config),
+					true,
+					true,
+				)
+				.order(1),
+			);
 		}
 
-		CommandBlocking::PassingOn
+		visibility_blocking(self)
 	}
 
 	fn event(
