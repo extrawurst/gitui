@@ -41,8 +41,8 @@ impl FileFindComponent {
 		let mut find_text = TextInputComponent::new(
 			theme.clone(),
 			key_config.clone(),
-			"find",
-			"",
+			"fuzzy find",
+			"start typing..",
 			false,
 		);
 		find_text.embed();
@@ -75,6 +75,7 @@ impl FileFindComponent {
 		self.find_text.show()?;
 		if self.files != *files {
 			self.files = files.to_owned();
+			self.update_query();
 		}
 
 		Ok(())
