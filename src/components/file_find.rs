@@ -6,6 +6,7 @@ use super::{
 };
 use crate::{
 	keys::SharedKeyConfig,
+	queue::{InternalEvent, Queue},
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
@@ -21,11 +22,13 @@ use tui::{
 };
 
 pub struct FileFindComponent {
+	queue: Queue,
 	visible: bool,
 	find_text: TextInputComponent,
 	query: Option<String>,
 	theme: SharedTheme,
 	files: Vec<TreeFile>,
+	selection: Option<usize>,
 	files_filtered: Vec<usize>,
 	key_config: SharedKeyConfig,
 }
@@ -33,6 +36,7 @@ pub struct FileFindComponent {
 impl FileFindComponent {
 	///
 	pub fn new(
+		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
@@ -46,6 +50,7 @@ impl FileFindComponent {
 		find_text.embed();
 
 		Self {
+			queue: queue.clone(),
 			visible: false,
 			query: None,
 			find_text,
@@ -53,6 +58,7 @@ impl FileFindComponent {
 			files: Vec::new(),
 			files_filtered: Vec::new(),
 			key_config,
+			selection: None,
 		}
 	}
 
@@ -64,25 +70,17 @@ impl FileFindComponent {
 		self.visible = false;
 	}
 
-	pub fn clear(&mut self) {
-		self.files.clear();
-	}
-
 	pub fn open(&mut self, files: &[TreeFile]) -> Result<()> {
 		self.visible = true;
 		self.find_text.show()?;
+		self.find_text.set_text(String::new());
+		self.query = None;
 		if self.files != *files {
 			self.files = files.to_owned();
-			self.update_query();
 		}
+		self.update_query();
 
 		Ok(())
-	}
-
-	pub fn get_selection(&self) -> Option<&TreeFile> {
-		self.files_filtered
-			.first()
-			.and_then(|idx| self.files.get(*idx))
 	}
 
 	fn update_query(&mut self) {
@@ -116,9 +114,26 @@ impl FileFindComponent {
 					})
 				}),
 			);
+
+			self.refresh_selection();
 		} else {
 			self.files_filtered
 				.extend(self.files.iter().enumerate().map(|a| a.0));
+		}
+	}
+
+	fn refresh_selection(&mut self) {
+		let selection = self.files_filtered.first().copied();
+
+		if self.selection != selection {
+			self.selection = selection;
+
+			let file = self
+				.selection
+				.and_then(|index| self.files.get(index))
+				.map(|f| f.path.clone());
+
+			self.queue.push(InternalEvent::FileFinderChanged(file))
 		}
 	}
 }
@@ -202,6 +217,10 @@ impl Component for FileFindComponent {
 		_out: &mut Vec<CommandInfo>,
 		_force_all: bool,
 	) -> CommandBlocking {
+		if self.is_visible() {
+			return CommandBlocking::Blocking;
+		}
+
 		CommandBlocking::PassingOn
 	}
 
@@ -211,16 +230,18 @@ impl Component for FileFindComponent {
 	) -> Result<EventState> {
 		if self.is_visible() {
 			if let Event::Key(key) = &event {
-				if *key == self.key_config.exit_popup {
+				if *key == self.key_config.exit_popup
+					|| *key == self.key_config.enter
+				{
 					self.hide();
-					return Ok(EventState::Consumed);
 				}
 			}
 
 			if self.find_text.event(event)?.is_consumed() {
 				self.update_query();
-				return Ok(EventState::Consumed);
 			}
+
+			return Ok(EventState::Consumed);
 		}
 
 		Ok(EventState::NotConsumed)

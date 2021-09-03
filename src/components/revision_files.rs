@@ -1,5 +1,4 @@
 use super::{
-	file_find::FileFindComponent,
 	utils::scroll_vertical::VerticalScroll, CommandBlocking,
 	CommandInfo, Component, DrawableComponent, EventState,
 	SyntaxTextComponent,
@@ -19,7 +18,11 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
-use std::{collections::BTreeSet, convert::From, path::Path};
+use std::{
+	collections::BTreeSet,
+	convert::From,
+	path::{Path, PathBuf},
+};
 use tui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
@@ -42,7 +45,6 @@ pub struct RevisionFilesComponent {
 	tree: FileTree,
 	scroll: VerticalScroll,
 	revision: Option<CommitId>,
-	find: FileFindComponent,
 	focus: Focus,
 	key_config: SharedKeyConfig,
 }
@@ -64,10 +66,6 @@ impl RevisionFilesComponent {
 				key_config.clone(),
 				theme.clone(),
 			),
-			find: FileFindComponent::new(
-				theme.clone(),
-				key_config.clone(),
-			),
 			theme,
 			files: Vec::new(),
 			revision: None,
@@ -82,7 +80,6 @@ impl RevisionFilesComponent {
 			self.revision.map(|c| c == commit).unwrap_or_default();
 		if !same_id {
 			self.files = sync::tree_files(CWD, commit)?;
-			self.find.clear();
 			let filenames: Vec<&Path> =
 				self.files.iter().map(|f| f.path.as_path()).collect();
 			self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
@@ -144,15 +141,18 @@ impl RevisionFilesComponent {
 		})
 	}
 
-	fn find_file(&mut self) {
-		if let Some(file) = self.find.get_selection() {
+	fn open_finder(&self) {
+		self.queue
+			.push(InternalEvent::OpenFileFinder(self.files.clone()));
+	}
+
+	pub fn find_file(&mut self, file: Option<PathBuf>) {
+		if let Some(file) = file {
 			self.tree.collapse_but_root();
-			if self.tree.select_file(file.path.as_path()) {
+			if self.tree.select_file(&file) {
 				self.selection_changed();
 			}
 		}
-
-		self.find.hide();
 	}
 
 	fn selection_changed(&mut self) {
@@ -249,10 +249,6 @@ impl DrawableComponent for RevisionFilesComponent {
 			self.draw_tree(f, chunks[0]);
 
 			self.current_file.draw(f, chunks[1])?;
-
-			if self.find.is_visible() {
-				self.find.draw(f, area)?;
-			}
 		}
 		Ok(())
 	}
@@ -264,8 +260,7 @@ impl Component for RevisionFilesComponent {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
-		let is_tree_focused = matches!(self.focus, Focus::Tree)
-			&& !self.find.is_visible();
+		let is_tree_focused = matches!(self.focus, Focus::Tree);
 
 		if is_tree_focused || force_all {
 			out.push(
@@ -289,16 +284,7 @@ impl Component for RevisionFilesComponent {
 		event: crossterm::event::Event,
 	) -> Result<EventState> {
 		if let Event::Key(key) = event {
-			if self.find.is_visible() {
-				if key == self.key_config.enter {
-					self.find_file();
-					return Ok(EventState::Consumed);
-				}
-				return self.find.event(event);
-			}
-
-			let is_tree_focused = matches!(self.focus, Focus::Tree)
-				&& !self.find.is_visible();
+			let is_tree_focused = matches!(self.focus, Focus::Tree);
 			if is_tree_focused
 				&& tree_nav(&mut self.tree, &self.key_config, key)
 			{
@@ -325,7 +311,7 @@ impl Component for RevisionFilesComponent {
 				}
 			} else if key == self.key_config.file_find {
 				if is_tree_focused {
-					self.find.open(&self.files)?;
+					self.open_finder();
 					return Ok(EventState::Consumed);
 				}
 			} else if !is_tree_focused {

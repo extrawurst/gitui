@@ -4,6 +4,8 @@
 	clippy::unused_self
 )]
 
+use std::path::PathBuf;
+
 use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -67,6 +69,10 @@ impl FilesTab {
 		if self.is_visible() {
 			self.files.update(ev);
 		}
+	}
+
+	pub fn file_finder_update(&mut self, file: Option<PathBuf>) {
+		self.files.find_file(file);
 	}
 }
 
