@@ -1,5 +1,5 @@
 use super::{
-	revision_files_find::FileFindComponent,
+	file_find::FileFindComponent,
 	utils::scroll_vertical::VerticalScroll, CommandBlocking,
 	CommandInfo, Component, DrawableComponent, EventState,
 	SyntaxTextComponent,
