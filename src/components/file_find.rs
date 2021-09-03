@@ -152,9 +152,8 @@ impl DrawableComponent for FileFindComponent {
 
 			let items = self
 				.files_filtered
-				//TODO: scroll
-				// .iterate(self.scroll.get_top(), tree_height)
 				.iter()
+				.take(usize::from(chunks[1].height))
 				.map(|idx| {
 					Span::raw(Cow::from(
 						self.files[*idx]

@@ -148,7 +148,7 @@ impl FileTreeItems {
 				if item_path.starts_with(&path) {
 					item.hide();
 				} else {
-					return;
+					break;
 				}
 			}
 		}
@@ -186,6 +186,99 @@ impl FileTreeItems {
 				false,
 			);
 		}
+	}
+
+	/// makes sure `index` is visible.
+	/// this expands all parents and shows all siblings
+	pub fn show_element(&mut self, index: usize) -> Option<usize> {
+		Some(
+			self.show_element_upward(index)?
+				+ self.show_element_downward(index)?,
+		)
+	}
+
+	fn show_element_upward(&mut self, index: usize) -> Option<usize> {
+		let mut shown = 0_usize;
+
+		let item = self.tree_items.iter().nth(index)?;
+		let mut current_folder: (PathBuf, u8) = (
+			item.info().full_path().parent()?.to_path_buf(),
+			item.info().indent(),
+		);
+
+		let item_count = self.tree_items.len();
+		for item in self
+			.tree_items
+			.iter_mut()
+			.rev()
+			.skip(item_count - index - 1)
+		{
+			if item.info().indent() == current_folder.1 {
+				item.show();
+				shown += 1;
+			} else {
+				if item.info().indent() == current_folder.1 - 1 {
+					// this must be our parent
+
+					item.expand_path();
+
+					if item.info().is_visible() {
+						// early out if parent already visible
+						break;
+					}
+
+					item.show();
+					shown += 1;
+
+					current_folder = (
+						item.info()
+							.full_path()
+							.parent()?
+							.to_path_buf(),
+						item.info().indent(),
+					);
+				}
+			}
+		}
+
+		Some(shown)
+	}
+
+	fn show_element_downward(
+		&mut self,
+		index: usize,
+	) -> Option<usize> {
+		let mut shown = 0_usize;
+
+		let item = self.tree_items.iter().nth(index)?;
+		let mut current_folder: (PathBuf, u8) = (
+			item.info().full_path().parent()?.to_path_buf(),
+			item.info().indent(),
+		);
+
+		for item in self.tree_items.iter_mut().skip(index + 1) {
+			if item.info().indent() == current_folder.1 {
+				item.show();
+				shown += 1;
+			} else {
+				if item.info().indent() == current_folder.1 - 1 {
+					// this must be our parent
+
+					item.show();
+					shown += 1;
+
+					current_folder = (
+						item.info()
+							.full_path()
+							.parent()?
+							.to_path_buf(),
+						item.info().indent(),
+					);
+				}
+			}
+		}
+
+		Some(shown)
 	}
 
 	fn update_visibility(
@@ -684,6 +777,152 @@ mod tests {
 				true,  //
 				false, //
 				true,
+			]
+		);
+	}
+
+	#[test]
+	fn test_show_element() {
+		let items = vec![
+			Path::new("a/b/c"),  //
+			Path::new("a/b2/d"), //
+			Path::new("a/b2/e"), //
+		];
+
+		//0 a/
+		//1   b/
+		//2     c
+		//3   b2/
+		//4   	d
+		//5     e
+
+		let mut tree =
+			FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
+
+		tree.collapse(0, true);
+
+		let res = tree.show_element(5).unwrap();
+		assert_eq!(res, 4);
+		assert!(tree.tree_items[3].kind().is_path());
+		assert!(!tree.tree_items[3].kind().is_path_collapsed());
+
+		assert_eq!(
+			get_visibles(&tree),
+			vec![
+				true,  //
+				true,  //
+				false, //
+				true,  //
+				true,  //
+				true,
+			]
+		);
+	}
+
+	#[test]
+	fn test_show_element_later_elements() {
+		let items = vec![
+			Path::new("a/b"), //
+			Path::new("a/c"), //
+		];
+
+		//0 a/
+		//1   b
+		//2   c
+
+		let mut tree =
+			FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
+
+		tree.collapse(0, true);
+
+		assert_eq!(
+			get_visibles(&tree),
+			vec![
+				true,  //
+				false, //
+				false, //
+			]
+		);
+
+		let res = tree.show_element(1).unwrap();
+		assert_eq!(res, 2);
+
+		assert_eq!(
+			get_visibles(&tree),
+			vec![
+				true, //
+				true, //
+				true, //
+			]
+		);
+	}
+
+	#[test]
+	fn test_show_element_downward_parent() {
+		let items = vec![
+			Path::new("a/b/c"), //
+			Path::new("a/d"),   //
+			Path::new("a/e"),   //
+		];
+
+		//0 a/
+		//1   b/
+		//2     c
+		//3   d
+		//4   e
+
+		let mut tree =
+			FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
+
+		tree.collapse(0, true);
+
+		let res = tree.show_element(2).unwrap();
+		assert_eq!(res, 4);
+
+		assert_eq!(
+			get_visibles(&tree),
+			vec![
+				true, //
+				true, //
+				true, //
+				true, //
+				true, //
+			]
+		);
+	}
+
+	#[test]
+	fn test_show_element_expand_visible_parent() {
+		let items = vec![
+			Path::new("a/b"), //
+		];
+
+		//0 a/
+		//1   b
+
+		let mut tree =
+			FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
+
+		tree.collapse(0, true);
+
+		assert_eq!(
+			get_visibles(&tree),
+			vec![
+				true,  //
+				false, //
+			]
+		);
+
+		let res = tree.show_element(1).unwrap();
+		assert_eq!(res, 1);
+		assert!(tree.tree_items[0].kind().is_path());
+		assert!(!tree.tree_items[0].kind().is_path_collapsed());
+
+		assert_eq!(
+			get_visibles(&tree),
+			vec![
+				true, //
+				true, //
 			]
 		);
 	}

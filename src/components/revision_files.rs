@@ -146,9 +146,9 @@ impl RevisionFilesComponent {
 
 	fn find_file(&mut self) {
 		if let Some(file) = self.find.get_selection() {
-			log::info!("selected: {:?}", file);
-			self.tree.select_file(file.path.as_path());
-			self.selection_changed();
+			if self.tree.select_file(file.path.as_path()) {
+				self.selection_changed();
+			}
 		}
 
 		self.find.hide();
