@@ -21,6 +21,7 @@ mod push_tags;
 mod rename_branch;
 mod reset;
 mod revision_files;
+mod revision_files_find;
 mod revision_files_popup;
 mod stashmsg;
 mod syntax_text;

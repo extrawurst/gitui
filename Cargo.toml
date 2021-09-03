@@ -48,6 +48,7 @@ bugreport = "0.4"
 lazy_static = "1.4"
 syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"]}
 gh-emoji = "1.0.6"
+fuzzy-matcher = "0.3"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.1"

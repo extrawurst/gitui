@@ -41,6 +41,7 @@ pub struct TextInputComponent {
 	cursor_position: usize,
 	input_type: InputType,
 	current_area: Cell<Rect>,
+	embed: bool,
 }
 
 impl TextInputComponent {
@@ -63,6 +64,7 @@ impl TextInputComponent {
 			cursor_position: 0,
 			input_type: InputType::Multiline,
 			current_area: Cell::new(Rect::default()),
+			embed: false,
 		}
 	}
 
@@ -88,6 +90,11 @@ impl TextInputComponent {
 	/// screen area (last time we got drawn)
 	pub fn get_area(&self) -> Rect {
 		self.current_area.get()
+	}
+
+	/// embed into parent draw area
+	pub fn embed(&mut self) {
+		self.embed = true;
 	}
 
 	/// Move the cursor right one char.
@@ -267,7 +274,7 @@ impl DrawableComponent for TextInputComponent {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
-		_rect: Rect,
+		rect: Rect,
 	) -> Result<()> {
 		if self.visible {
 			let txt = if self.msg.is_empty() {
@@ -279,16 +286,21 @@ impl DrawableComponent for TextInputComponent {
 				self.get_draw_text()
 			};
 
-			let area = match self.input_type {
-				InputType::Multiline => {
-					let area = ui::centered_rect(60, 20, f.size());
-					ui::rect_inside(
-						Size::new(10, 3),
-						f.size().into(),
-						area,
-					)
+			let area = if self.embed {
+				rect
+			} else {
+				match self.input_type {
+					InputType::Multiline => {
+						let area =
+							ui::centered_rect(60, 20, f.size());
+						ui::rect_inside(
+							Size::new(10, 3),
+							f.size().into(),
+							area,
+						)
+					}
+					_ => ui::centered_rect_absolute(32, 3, f.size()),
 				}
-				_ => ui::centered_rect_absolute(32, 3, f.size()),
 			};
 
 			f.render_widget(Clear, area);

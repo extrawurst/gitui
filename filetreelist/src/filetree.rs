@@ -142,6 +142,15 @@ impl FileTree {
 		})
 	}
 
+	pub fn select_file(&mut self, path: &Path) {
+		self.selection = self
+			.items
+			.tree_items
+			.iter()
+			.position(|item| item.info().full_path() == path);
+		self.visual_selection = self.calc_visual_selection();
+	}
+
 	fn visual_index_to_absolute(
 		&self,
 		visual_index: usize,
