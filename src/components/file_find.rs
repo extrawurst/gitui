@@ -133,7 +133,7 @@ impl FileFindComponent {
 				.and_then(|index| self.files.get(index))
 				.map(|f| f.path.clone());
 
-			self.queue.push(InternalEvent::FileFinderChanged(file))
+			self.queue.push(InternalEvent::FileFinderChanged(file));
 		}
 	}
 }
@@ -177,6 +177,9 @@ impl DrawableComponent for FileFindComponent {
 			let height = usize::from(area[1].height);
 			let items =
 				self.files_filtered.iter().take(height).map(|idx| {
+					let selected = self
+						.selection
+						.map_or(false, |selection| selection == *idx);
 					Span::styled(
 						Cow::from(
 							self.files[*idx]
@@ -184,7 +187,7 @@ impl DrawableComponent for FileFindComponent {
 								.to_str()
 								.unwrap_or_default(),
 						),
-						self.theme.text(false, false),
+						self.theme.text(selected, false),
 					)
 				});
 
