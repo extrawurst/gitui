@@ -298,20 +298,26 @@ fn popup_paragraph<'a, T>(
 	content: T,
 	theme: &Theme,
 	focused: bool,
+	block: bool,
 ) -> Paragraph<'a>
 where
 	T: Into<Text<'a>>,
 {
-	Paragraph::new(content.into())
-		.block(
+	let paragraph = Paragraph::new(content.into())
+		.alignment(Alignment::Left)
+		.wrap(Wrap { trim: true });
+
+	if block {
+		paragraph.block(
 			Block::default()
 				.title(Span::styled(title, theme.title(focused)))
 				.borders(Borders::ALL)
 				.border_type(BorderType::Thick)
 				.border_style(theme.block(focused)),
 		)
-		.alignment(Alignment::Left)
-		.wrap(Wrap { trim: true })
+	} else {
+		paragraph
+	}
 }
 
 //TODO: allow customize tabsize

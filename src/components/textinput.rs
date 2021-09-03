@@ -310,6 +310,7 @@ impl DrawableComponent for TextInputComponent {
 					txt,
 					&self.theme,
 					true,
+					!self.embed,
 				),
 				area,
 			);

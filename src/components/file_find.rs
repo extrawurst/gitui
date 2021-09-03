@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::borrow::Cow;
 
 use super::{
@@ -16,7 +14,7 @@ use crossterm::event::Event;
 use fuzzy_matcher::FuzzyMatcher;
 use tui::{
 	backend::Backend,
-	layout::{Constraint, Direction, Layout, Rect},
+	layout::{Constraint, Direction, Layout, Margin, Rect},
 	text::Span,
 	widgets::{Block, Borders, Clear},
 	Frame,
@@ -41,7 +39,7 @@ impl FileFindComponent {
 		let mut find_text = TextInputComponent::new(
 			theme.clone(),
 			key_config.clone(),
-			"fuzzy find",
+			"",
 			"start typing..",
 			false,
 		);
@@ -113,6 +111,7 @@ impl FileFindComponent {
 			self.files_filtered.extend(
 				self.files.iter().enumerate().filter_map(|a| {
 					a.1.path.to_str().and_then(|path| {
+						//TODO: use fuzzy_indices and highlight hits
 						matcher.fuzzy_match(path, q).map(|_| a.0)
 					})
 				}),
@@ -131,50 +130,64 @@ impl DrawableComponent for FileFindComponent {
 		area: Rect,
 	) -> Result<()> {
 		if self.is_visible() {
-			const SIZE: (u16, u16) = (50, 20);
+			const SIZE: (u16, u16) = (45, 25);
 			let area =
 				ui::centered_rect_absolute(SIZE.0, SIZE.1, area);
 
-			let chunks = Layout::default()
+			f.render_widget(Clear, area);
+			f.render_widget(
+				Block::default()
+					.borders(Borders::all())
+					//TODO: strings
+					.title("Fuzzy find"),
+				area,
+			);
+
+			let area = Layout::default()
 				.direction(Direction::Vertical)
 				.constraints(
 					[
-						Constraint::Length(3),
+						Constraint::Length(1),
 						Constraint::Percentage(100),
 					]
 					.as_ref(),
 				)
-				.split(area);
+				.split(area.inner(&Margin {
+					horizontal: 1,
+					vertical: 1,
+				}));
 
-			f.render_widget(Clear, area);
+			self.find_text.draw(f, area[0])?;
 
-			self.find_text.draw(f, chunks[0])?;
-
-			let items = self
-				.files_filtered
-				.iter()
-				.take(usize::from(chunks[1].height))
-				.map(|idx| {
-					Span::raw(Cow::from(
-						self.files[*idx]
-							.path
-							.to_str()
-							.unwrap_or_default(),
-					))
+			let height = usize::from(area[1].height);
+			let items =
+				self.files_filtered.iter().take(height).map(|idx| {
+					Span::styled(
+						Cow::from(
+							self.files[*idx]
+								.path
+								.to_str()
+								.unwrap_or_default(),
+						),
+						self.theme.text(false, false),
+					)
 				});
 
-			let title =
-				format!("Hits: {}", self.files_filtered.len());
+			let title = format!(
+				"Hits: {}/{}",
+				height.min(self.files_filtered.len()),
+				self.files_filtered.len()
+			);
 
 			ui::draw_list_block(
 				f,
-				chunks[1],
+				area[1],
 				Block::default()
 					.title(Span::styled(
 						title,
 						self.theme.title(true),
 					))
-					.borders(Borders::ALL)
+					.borders(Borders::TOP)
 					.border_style(self.theme.block(true)),
 				items,
 			);
