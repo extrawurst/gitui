@@ -62,27 +62,6 @@ impl FileFindComponent {
 		}
 	}
 
-	pub const fn is_visible(&self) -> bool {
-		self.visible
-	}
-
-	pub fn hide(&mut self) {
-		self.visible = false;
-	}
-
-	pub fn open(&mut self, files: &[TreeFile]) -> Result<()> {
-		self.visible = true;
-		self.find_text.show()?;
-		self.find_text.set_text(String::new());
-		self.query = None;
-		if self.files != *files {
-			self.files = files.to_owned();
-		}
-		self.update_query();
-
-		Ok(())
-	}
-
 	fn update_query(&mut self) {
 		if self.find_text.get_text().is_empty() {
 			self.set_query(None);
@@ -135,6 +114,19 @@ impl FileFindComponent {
 
 			self.queue.push(InternalEvent::FileFinderChanged(file));
 		}
+	}
+
+	pub fn open(&mut self, files: &[TreeFile]) -> Result<()> {
+		self.show()?;
+		self.find_text.show()?;
+		self.find_text.set_text(String::new());
+		self.query = None;
+		if self.files != *files {
+			self.files = files.to_owned();
+		}
+		self.update_query();
+
+		Ok(())
 	}
 }
 
@@ -255,5 +247,18 @@ impl Component for FileFindComponent {
 		}
 
 		Ok(EventState::NotConsumed)
+	}
+
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
+
+	fn hide(&mut self) {
+		self.visible = false;
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+		Ok(())
 	}
 }
