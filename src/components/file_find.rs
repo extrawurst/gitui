@@ -137,7 +137,7 @@ impl DrawableComponent for FileFindComponent {
 		area: Rect,
 	) -> Result<()> {
 		if self.is_visible() {
-			const SIZE: (u16, u16) = (45, 25);
+			const SIZE: (u16, u16) = (50, 25);
 			let area =
 				ui::centered_rect_absolute(SIZE.0, SIZE.1, area);
 
@@ -145,8 +145,12 @@ impl DrawableComponent for FileFindComponent {
 			f.render_widget(
 				Block::default()
 					.borders(Borders::all())
-					//TODO: strings
-					.title("Fuzzy find"),
+					.style(self.theme.title(true))
+					.title(Span::styled(
+						//TODO: strings
+						"Fuzzy find",
+						self.theme.title(true),
+					)),
 				area,
 			);
 
@@ -197,8 +201,7 @@ impl DrawableComponent for FileFindComponent {
 						title,
 						self.theme.title(true),
 					))
-					.borders(Borders::TOP)
-					.border_style(self.theme.block(true)),
+					.borders(Borders::TOP),
 				items,
 			);
 		}
