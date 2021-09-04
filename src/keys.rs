@@ -83,6 +83,7 @@ pub struct KeyConfig {
 	pub select_tag: KeyEvent,
 	pub push: KeyEvent,
 	pub open_file_tree: KeyEvent,
+	pub file_find: KeyEvent,
 	pub force_push: KeyEvent,
 	pub pull: KeyEvent,
 	pub abort_merge: KeyEvent,
@@ -159,6 +160,7 @@ impl Default for KeyConfig {
 			pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
 			abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
 			open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
+			file_find: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
 		}
 	}
 }

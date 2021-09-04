@@ -6,7 +6,7 @@ use crate::{
 		BranchListComponent, CommandBlocking, CommandInfo,
 		CommitComponent, CompareCommitsComponent, Component,
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
-		ExternalEditorComponent, HelpComponent,
+		ExternalEditorComponent, FileFindComponent, HelpComponent,
 		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
 		PullComponent, PushComponent, PushTagsComponent,
 		RenameBranchComponent, RevisionFilesPopup, SharedOptions,
@@ -51,6 +51,7 @@ pub struct App {
 	compare_commits_popup: CompareCommitsComponent,
 	external_editor_popup: ExternalEditorComponent,
 	revision_files_popup: RevisionFilesPopup,
+	find_file_popup: FileFindComponent,
 	push_popup: PushComponent,
 	push_tags_popup: PushTagsComponent,
 	pull_popup: PullComponent,
@@ -188,6 +189,11 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 				options.clone(),
+			),
+			find_file_popup: FileFindComponent::new(
+				&queue,
+				theme.clone(),
+				key_config.clone(),
 			),
 			do_quit: false,
 			cmdbar: RefCell::new(CommandBar::new(
@@ -448,6 +454,7 @@ impl App {
 			rename_branch_popup,
 			select_branch_popup,
 			revision_files_popup,
+			find_file_popup,
 			tags_popup,
 			options_popup,
 			help,
@@ -475,6 +482,7 @@ impl App {
 			create_branch_popup,
 			rename_branch_popup,
 			revision_files_popup,
+			find_file_popup,
 			push_popup,
 			push_tags_popup,
 			pull_popup,
@@ -693,6 +701,11 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
+			InternalEvent::OpenFileFinder(files) => {
+				self.find_file_popup.open(&files)?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
 			InternalEvent::OptionSwitched(o) => {
 				match o {
 					AppOption::StatusShowUntracked => {
@@ -709,6 +722,11 @@ impl App {
 			}
 			InternalEvent::CompareCommits(id, other) => {
 				self.compare_commits_popup.open(id, other)?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::FileFinderChanged(file) => {
+				self.files_tab.file_finder_update(file);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}

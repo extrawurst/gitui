@@ -18,7 +18,11 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
-use std::{collections::BTreeSet, convert::From, path::Path};
+use std::{
+	collections::BTreeSet,
+	convert::From,
+	path::{Path, PathBuf},
+};
 use tui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
@@ -137,6 +141,20 @@ impl RevisionFilesComponent {
 		})
 	}
 
+	fn open_finder(&self) {
+		self.queue
+			.push(InternalEvent::OpenFileFinder(self.files.clone()));
+	}
+
+	pub fn find_file(&mut self, file: Option<PathBuf>) {
+		if let Some(file) = file {
+			self.tree.collapse_but_root();
+			if self.tree.select_file(&file) {
+				self.selection_changed();
+			}
+		}
+	}
+
 	fn selection_changed(&mut self) {
 		//TODO: retrieve TreeFile from tree datastructure
 		if let Some(file) = self
@@ -144,6 +162,7 @@ impl RevisionFilesComponent {
 			.selected_file()
 			.map(|file| file.full_path_str().to_string())
 		{
+			log::info!("selected: {:?}", file);
 			let path = Path::new(&file);
 			if let Some(item) =
 				self.files.iter().find(|f| f.path == path)
@@ -188,7 +207,7 @@ impl RevisionFilesComponent {
 			"Files at [{}]",
 			self.revision
 				.map(|c| c.get_short_string())
-				.unwrap_or_default()
+				.unwrap_or_default(),
 		);
 		ui::draw_list_block(
 			f,
@@ -241,7 +260,9 @@ impl Component for RevisionFilesComponent {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
-		if matches!(self.focus, Focus::Tree) || force_all {
+		let is_tree_focused = matches!(self.focus, Focus::Tree);
+
+		if is_tree_focused || force_all {
 			out.push(
 				CommandInfo::new(
 					strings::commands::blame_file(&self.key_config),
@@ -286,6 +307,11 @@ impl Component for RevisionFilesComponent {
 					self.focus = Focus::Tree;
 					self.current_file.focus(false);
 					self.focus(false);
+					return Ok(EventState::Consumed);
+				}
+			} else if key == self.key_config.file_find {
+				if is_tree_focused {
+					self.open_finder();
 					return Ok(EventState::Consumed);
 				}
 			} else if !is_tree_focused {

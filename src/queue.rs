@@ -1,7 +1,11 @@
 use crate::{components::AppOption, tabs::StashingOptions};
-use asyncgit::sync::{diff::DiffLinePosition, CommitId, CommitTags};
+use asyncgit::sync::{
+	diff::DiffLinePosition, CommitId, CommitTags, TreeFile,
+};
 use bitflags::bitflags;
-use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use std::{
+	cell::RefCell, collections::VecDeque, path::PathBuf, rc::Rc,
+};
 
 bitflags! {
 	/// flags defining what part of the app need to update
@@ -87,6 +91,10 @@ pub enum InternalEvent {
 	OpenFileTree(CommitId),
 	///
 	OptionSwitched(AppOption),
+	///
+	OpenFileFinder(Vec<TreeFile>),
+	///
+	FileFinderChanged(Option<PathBuf>),
 }
 
 /// single threaded simple queue for components to communicate with each other

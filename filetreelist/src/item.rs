@@ -164,19 +164,28 @@ impl FileTreeItem {
 		&self.kind
 	}
 
-	///
+	/// # Panics
+	/// panics if self is not a path
 	pub fn collapse_path(&mut self) {
+		assert!(self.kind.is_path());
 		self.kind = FileTreeItemKind::Path(PathCollapsed(true));
 	}
 
-	///
+	/// # Panics
+	/// panics if self is not a path
 	pub fn expand_path(&mut self) {
+		assert!(self.kind.is_path());
 		self.kind = FileTreeItemKind::Path(PathCollapsed(false));
 	}
 
 	///
 	pub fn hide(&mut self) {
 		self.info.visible = false;
+	}
+
+	///
+	pub fn show(&mut self) {
+		self.info.visible = true;
 	}
 }
 

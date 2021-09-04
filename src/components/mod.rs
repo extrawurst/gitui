@@ -10,6 +10,7 @@ mod create_branch;
 mod cred;
 mod diff;
 mod externaleditor;
+mod file_find;
 mod filetree;
 mod help;
 mod inspect_commit;
@@ -41,6 +42,7 @@ pub use compare_commits::CompareCommitsComponent;
 pub use create_branch::CreateBranchComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
+pub use file_find::FileFindComponent;
 pub use help::HelpComponent;
 pub use inspect_commit::InspectCommitComponent;
 pub use msg::MsgComponent;
@@ -297,27 +299,24 @@ fn popup_paragraph<'a, T>(
 	content: T,
 	theme: &Theme,
 	focused: bool,
+	block: bool,
 ) -> Paragraph<'a>
 where
 	T: Into<Text<'a>>,
 {
-	Paragraph::new(content.into())
-		.block(
+	let paragraph = Paragraph::new(content.into())
+		.alignment(Alignment::Left)
+		.wrap(Wrap { trim: true });
+
+	if block {
+		paragraph.block(
 			Block::default()
 				.title(Span::styled(title, theme.title(focused)))
 				.borders(Borders::ALL)
 				.border_type(BorderType::Thick)
 				.border_style(theme.block(focused)),
 		)
-		.alignment(Alignment::Left)
-		.wrap(Wrap { trim: true })
-}
-
-//TODO: allow customize tabsize
-pub fn tabs_to_spaces(input: String) -> String {
-	if input.contains('\t') {
-		input.replace("\t", "  ")
 	} else {
-		input
+		paragraph
 	}
 }

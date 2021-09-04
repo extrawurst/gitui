@@ -142,6 +142,25 @@ impl FileTree {
 		})
 	}
 
+	pub fn select_file(&mut self, path: &Path) -> bool {
+		let new_selection = self
+			.items
+			.tree_items
+			.iter()
+			.position(|item| item.info().full_path() == path);
+
+		if new_selection == self.selection {
+			return false;
+		}
+
+		self.selection = new_selection;
+		if let Some(selection) = self.selection {
+			self.items.show_element(selection);
+		}
+		self.visual_selection = self.calc_visual_selection();
+		true
+	}
+
 	fn visual_index_to_absolute(
 		&self,
 		visual_index: usize,

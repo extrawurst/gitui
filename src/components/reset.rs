@@ -41,7 +41,7 @@ impl DrawableComponent for ConfirmComponent {
 			let area = ui::centered_rect(50, 20, f.size());
 			f.render_widget(Clear, area);
 			f.render_widget(
-				popup_paragraph(&title, txt, &self.theme, true),
+				popup_paragraph(&title, txt, &self.theme, true, true),
 				area,
 			);
 		}
