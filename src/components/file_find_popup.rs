@@ -1,6 +1,6 @@
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, TextInputComponent,
+	DrawableComponent, EventState, ScrollType, TextInputComponent,
 };
 use crate::{
 	keys::SharedKeyConfig,
@@ -29,7 +29,8 @@ pub struct FileFindPopup {
 	query: Option<String>,
 	theme: SharedTheme,
 	files: Vec<TreeFile>,
-	selection: Option<usize>,
+	selection: usize,
+	selected_index: Option<usize>,
 	files_filtered: Vec<usize>,
 	key_config: SharedKeyConfig,
 }
@@ -58,8 +59,9 @@ impl FileFindPopup {
 			theme,
 			files: Vec::new(),
 			files_filtered: Vec::new(),
+			selected_index: None,
 			key_config,
-			selection: None,
+			selection: 0,
 		}
 	}
 
@@ -94,22 +96,21 @@ impl FileFindPopup {
 					})
 				}),
 			);
-
-			self.refresh_selection();
-		} else {
-			self.files_filtered
-				.extend(self.files.iter().enumerate().map(|a| a.0));
 		}
+
+		self.selection = 0;
+		self.refresh_selection();
 	}
 
 	fn refresh_selection(&mut self) {
-		let selection = self.files_filtered.first().copied();
+		let selection =
+			self.files_filtered.get(self.selection).copied();
 
-		if self.selection != selection {
-			self.selection = selection;
+		if self.selected_index != selection {
+			self.selected_index = selection;
 
 			let file = self
-				.selection
+				.selected_index
 				.and_then(|index| self.files.get(index))
 				.map(|f| f.path.clone());
 
@@ -129,6 +130,25 @@ impl FileFindPopup {
 
 		Ok(())
 	}
+
+	fn move_selection(&mut self, move_type: ScrollType) -> bool {
+		let new_selection = match move_type {
+			ScrollType::Up => self.selection.saturating_sub(1),
+			ScrollType::Down => self.selection.saturating_add(1),
+			_ => self.selection,
+		};
+
+		let new_selection = new_selection
+			.clamp(0, self.files_filtered.len().saturating_sub(1));
+
+		if new_selection != self.selection {
+			self.selection = new_selection;
+			self.refresh_selection();
+			return true;
+		}
+
+		false
+	}
 }
 
 impl DrawableComponent for FileFindPopup {
@@ -138,9 +158,28 @@ impl DrawableComponent for FileFindPopup {
 		area: Rect,
 	) -> Result<()> {
 		if self.is_visible() {
-			const SIZE: (u16, u16) = (50, 25);
-			let area =
-				ui::centered_rect_absolute(SIZE.0, SIZE.1, area);
+			const MAX_SIZE: (u16, u16) = (50, 20);
+
+			let any_hits = !self.files_filtered.is_empty();
+
+			let area = ui::centered_rect_absolute(
+				MAX_SIZE.0, MAX_SIZE.1, area,
+			);
+
+			let area = if any_hits {
+				area
+			} else {
+				Layout::default()
+					.direction(Direction::Vertical)
+					.constraints(
+						[
+							Constraint::Length(3),
+							Constraint::Percentage(100),
+						]
+						.as_ref(),
+					)
+					.split(area)[0]
+			};
 
 			f.render_widget(Clear, area);
 			f.render_widget(
@@ -155,7 +194,7 @@ impl DrawableComponent for FileFindPopup {
 				area,
 			);
 
-			let area = Layout::default()
+			let chunks = Layout::default()
 				.direction(Direction::Vertical)
 				.constraints(
 					[
@@ -169,45 +208,46 @@ impl DrawableComponent for FileFindPopup {
 					vertical: 1,
 				}));
 
-			self.find_text.draw(f, area[0])?;
+			self.find_text.draw(f, chunks[0])?;
 
-			let height = usize::from(area[1].height);
-			let width = usize::from(area[1].width);
+			if any_hits {
+				let title =
+					format!("Hits: {}", self.files_filtered.len());
 
-			let items =
-				self.files_filtered.iter().take(height).map(|idx| {
-					let selected = self
-						.selection
-						.map_or(false, |selection| selection == *idx);
-					Span::styled(
-						Cow::from(trim_length_left(
-							self.files[*idx]
-								.path
-								.to_str()
-								.unwrap_or_default(),
-							width,
-						)),
-						self.theme.text(selected, false),
-					)
-				});
+				let height = usize::from(chunks[1].height);
+				let width = usize::from(chunks[1].width);
 
-			let title = format!(
-				"Hits: {}/{}",
-				height.min(self.files_filtered.len()),
-				self.files_filtered.len()
-			);
+				let items =
+					self.files_filtered.iter().take(height).map(
+						|idx| {
+							let selected = self
+								.selected_index
+								.map_or(false, |index| index == *idx);
+							Span::styled(
+								Cow::from(trim_length_left(
+									self.files[*idx]
+										.path
+										.to_str()
+										.unwrap_or_default(),
+									width,
+								)),
+								self.theme.text(selected, false),
+							)
+						},
+					);
 
-			ui::draw_list_block(
-				f,
-				area[1],
-				Block::default()
-					.title(Span::styled(
-						title,
-						self.theme.title(true),
-					))
-					.borders(Borders::TOP),
-				items,
-			);
+				ui::draw_list_block(
+					f,
+					chunks[1],
+					Block::default()
+						.title(Span::styled(
+							title,
+							self.theme.title(true),
+						))
+						.borders(Borders::TOP),
+					items,
+				);
+			}
 		}
 		Ok(())
 	}
@@ -228,6 +268,12 @@ impl Component for FileFindPopup {
 				)
 				.order(1),
 			);
+
+			out.push(CommandInfo::new(
+				strings::commands::scroll(&self.key_config),
+				true,
+				true,
+			));
 		}
 
 		visibility_blocking(self)
@@ -243,6 +289,10 @@ impl Component for FileFindPopup {
 					|| *key == self.key_config.enter
 				{
 					self.hide();
+				} else if *key == self.key_config.move_down {
+					self.move_selection(ScrollType::Down);
+				} else if *key == self.key_config.move_up {
+					self.move_selection(ScrollType::Up);
 				}
 			}
 

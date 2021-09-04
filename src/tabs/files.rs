@@ -71,7 +71,7 @@ impl FilesTab {
 		}
 	}
 
-	pub fn file_finder_update(&mut self, file: Option<PathBuf>) {
+	pub fn file_finder_update(&mut self, file: &Option<PathBuf>) {
 		self.files.find_file(file);
 	}
 }
