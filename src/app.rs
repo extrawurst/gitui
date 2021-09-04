@@ -6,7 +6,7 @@ use crate::{
 		BranchListComponent, CommandBlocking, CommandInfo,
 		CommitComponent, CompareCommitsComponent, Component,
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
-		ExternalEditorComponent, FileFindComponent, HelpComponent,
+		ExternalEditorComponent, FileFindPopup, HelpComponent,
 		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
 		PullComponent, PushComponent, PushTagsComponent,
 		RenameBranchComponent, RevisionFilesPopup, SharedOptions,
@@ -51,7 +51,7 @@ pub struct App {
 	compare_commits_popup: CompareCommitsComponent,
 	external_editor_popup: ExternalEditorComponent,
 	revision_files_popup: RevisionFilesPopup,
-	find_file_popup: FileFindComponent,
+	find_file_popup: FileFindPopup,
 	push_popup: PushComponent,
 	push_tags_popup: PushTagsComponent,
 	pull_popup: PullComponent,
@@ -190,7 +190,7 @@ impl App {
 				key_config.clone(),
 				options.clone(),
 			),
-			find_file_popup: FileFindComponent::new(
+			find_file_popup: FileFindPopup::new(
 				&queue,
 				theme.clone(),
 				key_config.clone(),

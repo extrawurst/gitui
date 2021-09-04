@@ -22,7 +22,7 @@ use tui::{
 	Frame,
 };
 
-pub struct FileFindComponent {
+pub struct FileFindPopup {
 	queue: Queue,
 	visible: bool,
 	find_text: TextInputComponent,
@@ -34,7 +34,7 @@ pub struct FileFindComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl FileFindComponent {
+impl FileFindPopup {
 	///
 	pub fn new(
 		queue: &Queue,
@@ -131,7 +131,7 @@ impl FileFindComponent {
 	}
 }
 
-impl DrawableComponent for FileFindComponent {
+impl DrawableComponent for FileFindPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -213,7 +213,7 @@ impl DrawableComponent for FileFindComponent {
 	}
 }
 
-impl Component for FileFindComponent {
+impl Component for FileFindPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
