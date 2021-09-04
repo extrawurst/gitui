@@ -5,6 +5,7 @@ use super::{
 use crate::{
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
+	string_utils::trim_length_left,
 	strings,
 	ui::{self, style::SharedTheme},
 };
@@ -171,18 +172,21 @@ impl DrawableComponent for FileFindComponent {
 			self.find_text.draw(f, area[0])?;
 
 			let height = usize::from(area[1].height);
+			let width = usize::from(area[1].width);
+
 			let items =
 				self.files_filtered.iter().take(height).map(|idx| {
 					let selected = self
 						.selection
 						.map_or(false, |selection| selection == *idx);
 					Span::styled(
-						Cow::from(
+						Cow::from(trim_length_left(
 							self.files[*idx]
 								.path
 								.to_str()
 								.unwrap_or_default(),
-						),
+							width,
+						)),
 						self.theme.text(selected, false),
 					)
 				});

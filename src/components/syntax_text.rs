@@ -1,16 +1,11 @@
 use super::{
-	tabs_to_spaces, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState,
+	CommandBlocking, CommandInfo, Component, DrawableComponent,
+	EventState,
 };
-use crate::{
-	keys::SharedKeyConfig,
-	strings,
-	ui::{
+use crate::{AsyncAppNotification, AsyncNotification, SyntaxHighlightProgress, keys::SharedKeyConfig, string_utils::tabs_to_spaces, strings, ui::{
 		self, common_nav, style::SharedTheme, AsyncSyntaxJob,
 		ParagraphState, ScrollPos, StatefulParagraph,
-	},
-	AsyncAppNotification, AsyncNotification, SyntaxHighlightProgress,
-};
+	}};
 use anyhow::Result;
 use asyncgit::{
 	asyncjob::AsyncSingleJob,

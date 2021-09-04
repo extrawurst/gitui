@@ -320,12 +320,3 @@ where
 		paragraph
 	}
 }
-
-//TODO: allow customize tabsize
-pub fn tabs_to_spaces(input: String) -> String {
-	if input.contains('\t') {
-		input.replace("\t", "  ")
-	} else {
-		input
-	}
-}

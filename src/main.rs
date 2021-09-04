@@ -30,6 +30,7 @@ mod notify_mutex;
 mod profiler;
 mod queue;
 mod spinner;
+mod string_utils;
 mod strings;
 mod tabs;
 mod ui;

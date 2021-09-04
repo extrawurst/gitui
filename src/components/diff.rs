@@ -3,11 +3,10 @@ use super::{
 	Direction, DrawableComponent, ScrollType,
 };
 use crate::{
-	components::{
-		tabs_to_spaces, CommandInfo, Component, EventState,
-	},
+	components::{CommandInfo, Component, EventState},
 	keys::SharedKeyConfig,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
+	string_utils::tabs_to_spaces,
 	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
