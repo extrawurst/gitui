@@ -134,7 +134,7 @@ impl FileFindPopup {
 		Ok(())
 	}
 
-	fn move_selection(&mut self, move_type: ScrollType) {
+	fn move_selection(&mut self, move_type: ScrollType) -> bool {
 		let new_selection = match move_type {
 			ScrollType::Up => self.selection.saturating_sub(1),
 			ScrollType::Down => self.selection.saturating_add(1),
@@ -147,7 +147,10 @@ impl FileFindPopup {
 		if new_selection != self.selection {
 			self.selection = new_selection;
 			self.refresh_selection();
+			return true;
 		}
+
+		false
 	}
 }
 
@@ -211,11 +214,8 @@ impl DrawableComponent for FileFindPopup {
 					)
 				});
 
-			let title = format!(
-				"Hits: {}/{}",
-				height.min(self.files_filtered.len()),
-				self.files_filtered.len()
-			);
+			let title =
+				format!("Hits: {}", self.files_filtered.len());
 
 			ui::draw_list_block(
 				f,

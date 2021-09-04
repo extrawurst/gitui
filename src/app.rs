@@ -438,6 +438,7 @@ impl App {
 	accessors!(
 		self,
 		[
+			find_file_popup,
 			msg,
 			reset,
 			commit,
@@ -454,7 +455,6 @@ impl App {
 			rename_branch_popup,
 			select_branch_popup,
 			revision_files_popup,
-			find_file_popup,
 			tags_popup,
 			options_popup,
 			help,
@@ -726,7 +726,8 @@ impl App {
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
 			InternalEvent::FileFinderChanged(file) => {
-				self.files_tab.file_finder_update(file);
+				self.files_tab.file_finder_update(&file);
+				self.revision_files_popup.file_finder_update(&file);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}

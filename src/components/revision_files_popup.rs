@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use super::{
 	revision_files::RevisionFilesComponent, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
@@ -58,6 +60,10 @@ impl RevisionFilesPopup {
 	///
 	pub fn any_work_pending(&self) -> bool {
 		self.files.any_work_pending()
+	}
+
+	pub fn file_finder_update(&mut self, file: &Option<PathBuf>) {
+		self.files.find_file(file);
 	}
 }
 

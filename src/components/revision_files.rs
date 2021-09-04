@@ -146,10 +146,10 @@ impl RevisionFilesComponent {
 			.push(InternalEvent::OpenFileFinder(self.files.clone()));
 	}
 
-	pub fn find_file(&mut self, file: Option<PathBuf>) {
+	pub fn find_file(&mut self, file: &Option<PathBuf>) {
 		if let Some(file) = file {
 			self.tree.collapse_but_root();
-			if self.tree.select_file(&file) {
+			if self.tree.select_file(file) {
 				self.selection_changed();
 			}
 		}
