@@ -96,13 +96,10 @@ impl FileFindPopup {
 					})
 				}),
 			);
-
-			self.selection = 0;
-			self.refresh_selection();
-		} else {
-			self.files_filtered
-				.extend(self.files.iter().enumerate().map(|a| a.0));
 		}
+
+		self.selection = 0;
+		self.refresh_selection();
 	}
 
 	fn refresh_selection(&mut self) {
@@ -161,9 +158,42 @@ impl DrawableComponent for FileFindPopup {
 		area: Rect,
 	) -> Result<()> {
 		if self.is_visible() {
-			const SIZE: (u16, u16) = (50, 25);
-			let area =
-				ui::centered_rect_absolute(SIZE.0, SIZE.1, area);
+			const MAX_SIZE: (u16, u16) = (50, 20);
+
+			let any_hits = !self.files_filtered.is_empty();
+
+			let area = ui::centered_rect_absolute(
+				MAX_SIZE.0, MAX_SIZE.1, area,
+			);
+
+			let chunks = Layout::default()
+				.direction(Direction::Vertical)
+				.constraints(
+					[
+						Constraint::Length(1),
+						Constraint::Percentage(100),
+					]
+					.as_ref(),
+				)
+				.split(area.inner(&Margin {
+					horizontal: 1,
+					vertical: 1,
+				}));
+
+			let area = if any_hits {
+				area
+			} else {
+				Layout::default()
+					.direction(Direction::Vertical)
+					.constraints(
+						[
+							Constraint::Length(3),
+							Constraint::Percentage(100),
+						]
+						.as_ref(),
+					)
+					.split(area)[0]
+			};
 
 			f.render_widget(Clear, area);
 			f.render_widget(
@@ -178,56 +208,46 @@ impl DrawableComponent for FileFindPopup {
 				area,
 			);
 
-			let area = Layout::default()
-				.direction(Direction::Vertical)
-				.constraints(
-					[
-						Constraint::Length(1),
-						Constraint::Percentage(100),
-					]
-					.as_ref(),
-				)
-				.split(area.inner(&Margin {
-					horizontal: 1,
-					vertical: 1,
-				}));
+			self.find_text.draw(f, chunks[0])?;
 
-			self.find_text.draw(f, area[0])?;
+			if any_hits {
+				let title =
+					format!("Hits: {}", self.files_filtered.len());
 
-			let height = usize::from(area[1].height);
-			let width = usize::from(area[1].width);
+				let height = usize::from(chunks[1].height);
+				let width = usize::from(chunks[1].width);
 
-			let items =
-				self.files_filtered.iter().take(height).map(|idx| {
-					let selected = self
-						.selected_index
-						.map_or(false, |index| index == *idx);
-					Span::styled(
-						Cow::from(trim_length_left(
-							self.files[*idx]
-								.path
-								.to_str()
-								.unwrap_or_default(),
-							width,
-						)),
-						self.theme.text(selected, false),
-					)
-				});
+				let items =
+					self.files_filtered.iter().take(height).map(
+						|idx| {
+							let selected = self
+								.selected_index
+								.map_or(false, |index| index == *idx);
+							Span::styled(
+								Cow::from(trim_length_left(
+									self.files[*idx]
+										.path
+										.to_str()
+										.unwrap_or_default(),
+									width,
+								)),
+								self.theme.text(selected, false),
+							)
+						},
+					);
 
-			let title =
-				format!("Hits: {}", self.files_filtered.len());
-
-			ui::draw_list_block(
-				f,
-				area[1],
-				Block::default()
-					.title(Span::styled(
-						title,
-						self.theme.title(true),
-					))
-					.borders(Borders::TOP),
-				items,
-			);
+				ui::draw_list_block(
+					f,
+					chunks[1],
+					Block::default()
+						.title(Span::styled(
+							title,
+							self.theme.title(true),
+						))
+						.borders(Borders::TOP),
+					items,
+				);
+			}
 		}
 		Ok(())
 	}
