@@ -166,20 +166,6 @@ impl DrawableComponent for FileFindPopup {
 				MAX_SIZE.0, MAX_SIZE.1, area,
 			);
 
-			let chunks = Layout::default()
-				.direction(Direction::Vertical)
-				.constraints(
-					[
-						Constraint::Length(1),
-						Constraint::Percentage(100),
-					]
-					.as_ref(),
-				)
-				.split(area.inner(&Margin {
-					horizontal: 1,
-					vertical: 1,
-				}));
-
 			let area = if any_hits {
 				area
 			} else {
@@ -207,6 +193,20 @@ impl DrawableComponent for FileFindPopup {
 					)),
 				area,
 			);
+
+			let chunks = Layout::default()
+				.direction(Direction::Vertical)
+				.constraints(
+					[
+						Constraint::Length(1),
+						Constraint::Percentage(100),
+					]
+					.as_ref(),
+				)
+				.split(area.inner(&Margin {
+					horizontal: 1,
+					vertical: 1,
+				}));
 
 			self.find_text.draw(f, chunks[0])?;
 
