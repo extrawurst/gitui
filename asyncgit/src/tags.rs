@@ -117,7 +117,7 @@ impl AsyncJob for AsyncTagsJob {
 		&mut self,
 		_params: RunParams<Self::Notification, Self::Progress>,
 	) -> Result<Self::Notification> {
-		let mut notification = AsyncGitNotification::Tags;
+		let mut notification = AsyncGitNotification::FinishUnchanged;
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
 				JobState::Request(last_hash) => {
@@ -125,9 +125,8 @@ impl AsyncJob for AsyncTagsJob {
 
 					JobState::Response(tags.map(|tags| {
 						let hash = hash(&tags);
-						if last_hash == hash {
-							notification =
-								AsyncGitNotification::FinishUnchanged;
+						if last_hash != hash {
+							notification = AsyncGitNotification::Tags;
 						}
 
 						(Instant::now(), TagsResult { hash, tags })
