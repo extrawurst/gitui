@@ -1,6 +1,7 @@
 use crate::{
 	asyncjob::{AsyncJob, AsyncSingleJob, RunParams},
 	error::Result,
+	hash,
 	sync::{self},
 	AsyncGitNotification, CWD,
 };
@@ -71,7 +72,11 @@ impl AsyncTags {
 		}
 
 		if outdated {
-			self.job.spawn(AsyncTagsJob::new());
+			self.job.spawn(AsyncTagsJob::new(
+				self.last
+					.as_ref()
+					.map_or(0, |(_, result)| result.hash),
+			));
 		} else {
 			self.sender
 				.send(AsyncGitNotification::FinishUnchanged)?;
@@ -82,7 +87,7 @@ impl AsyncTags {
 }
 
 enum JobState {
-	Request(),
+	Request(u64),
 	Response(Result<(Instant, TagsResult)>),
 }
 
@@ -95,9 +100,11 @@ pub struct AsyncTagsJob {
 ///
 impl AsyncTagsJob {
 	///
-	pub fn new() -> Self {
+	pub fn new(last_hash: u64) -> Self {
 		Self {
-			state: Arc::new(Mutex::new(Some(JobState::Request()))),
+			state: Arc::new(Mutex::new(Some(JobState::Request(
+				last_hash,
+			)))),
 		}
 	}
 }
@@ -110,20 +117,20 @@ impl AsyncJob for AsyncTagsJob {
 		&mut self,
 		_params: RunParams<Self::Notification, Self::Progress>,
 	) -> Result<Self::Notification> {
+		let mut notification = AsyncGitNotification::Tags;
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
-				JobState::Request() => {
+				JobState::Request(last_hash) => {
 					let tags = sync::get_tags(CWD);
-					// let hash = tags.hash();
-					let hash = Ok(0);
 
-					JobState::Response(tags.and_then(|tags| {
-						hash.map(|hash| {
-							(
-								Instant::now(),
-								TagsResult { hash, tags },
-							)
-						})
+					JobState::Response(tags.map(|tags| {
+						let hash = hash(&tags);
+						if last_hash == hash {
+							notification =
+								AsyncGitNotification::FinishUnchanged;
+						}
+
+						(Instant::now(), TagsResult { hash, tags })
 					}))
 				}
 				JobState::Response(result) => {
@@ -132,6 +139,6 @@ impl AsyncJob for AsyncTagsJob {
 			});
 		}
 
-		Ok(AsyncGitNotification::Tags)
+		Ok(notification)
 	}
 }
