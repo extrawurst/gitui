@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![emojified-commit-message](assets/emojified-commit-message.png)
 
 ## Added
-- add supporting rebasing on branch ([#816](https://github.com/extrawurst/gitui/issues/816))
+- add supporting rebasing on branch (if conflict-free) ([#816](https://github.com/extrawurst/gitui/issues/816))
 - fuzzy find files ([#891](https://github.com/extrawurst/gitui/issues/891))
 - visualize progress during async syntax highlighting ([#889](https://github.com/extrawurst/gitui/issues/889))
 - added support for markdown emoji's in commits [[@andrewpollack](https://github.com/andrewpollack)] ([#768](https://github.com/extrawurst/gitui/issues/768))

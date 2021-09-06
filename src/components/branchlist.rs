@@ -375,11 +375,13 @@ impl BranchListComponent {
 		Ok(())
 	}
 
-	fn rebase_branch(&self) -> Result<()> {
+	fn rebase_branch(&mut self) -> Result<()> {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
 			sync::rebase_branch(CWD, &branch.name)?;
+
+			self.hide();
 
 			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 		}

@@ -2,7 +2,7 @@
 
 use crate::{
 	error::{Error, Result},
-	sync::{rebase::conflict_free_rebase, utils},
+	sync::{rebase::conflict_free_rebase, utils, CommitId},
 };
 use git2::BranchType;
 use scopetime::scope_time;
@@ -11,7 +11,7 @@ use scopetime::scope_time;
 pub fn merge_upstream_rebase(
 	repo_path: &str,
 	branch_name: &str,
-) -> Result<()> {
+) -> Result<CommitId> {
 	scope_time!("merge_upstream_rebase");
 
 	let repo = utils::repo(repo_path)?;
@@ -27,9 +27,7 @@ pub fn merge_upstream_rebase(
 	let annotated_upstream =
 		repo.find_annotated_commit(upstream_commit.id())?;
 
-	conflict_free_rebase(&repo, &annotated_upstream)?;
-
-	Ok(())
+	conflict_free_rebase(&repo, &annotated_upstream)
 }
 
 #[cfg(test)]
