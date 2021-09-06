@@ -375,7 +375,7 @@ impl BranchListComponent {
 		Ok(())
 	}
 
-	fn rebase_branch(&self) -> Result<()> {
+	fn rebase_branch(&mut self) -> Result<()> {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
