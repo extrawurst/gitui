@@ -381,6 +381,8 @@ impl BranchListComponent {
 		{
 			sync::rebase_branch(CWD, &branch.name)?;
 
+			self.hide();
+
 			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 		}
 
