@@ -832,6 +832,15 @@ impl App {
 			}
 		}
 
+		res.push(CommandInfo::new(
+			strings::commands::find_file(&self.key_config),
+			!self.find_file_popup.is_visible(),
+			(!self.any_popup_visible()
+				&& self.files_tab.is_visible())
+				|| self.revision_files_popup.is_visible()
+				|| force_all,
+		));
+
 		res.push(
 			CommandInfo::new(
 				strings::commands::toggle_tabs(&self.key_config),

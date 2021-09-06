@@ -367,6 +367,16 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+	pub fn find_file(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Find [{}]",
+				key_config.get_hint(key_config.file_find)
+			),
+			"find file in tree",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn toggle_tabs_direct(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
