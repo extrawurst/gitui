@@ -54,14 +54,15 @@ pub fn merge_branch(repo_path: &str, branch: &str) -> Result<()> {
 }
 
 ///
-pub fn rebase_branch(repo_path: &str, branch: &str) -> Result<()> {
+pub fn rebase_branch(
+	repo_path: &str,
+	branch: &str,
+) -> Result<CommitId> {
 	scope_time!("rebase_branch");
 
 	let repo = utils::repo(repo_path)?;
 
-	rebase_branch_repo(&repo, branch)?;
-
-	Ok(())
+	rebase_branch_repo(&repo, branch)
 }
 
 ///
@@ -92,15 +93,13 @@ pub fn merge_branch_repo(
 pub fn rebase_branch_repo(
 	repo: &Repository,
 	branch_name: &str,
-) -> Result<()> {
+) -> Result<CommitId> {
 	let branch = repo.find_branch(branch_name, BranchType::Local)?;
 
 	let annotated =
 		repo.reference_to_annotated_commit(&branch.into_reference())?;
 
-	conflict_free_rebase(repo, &annotated)?;
-
-	Ok(())
+	conflict_free_rebase(repo, &annotated)
 }
 
 ///

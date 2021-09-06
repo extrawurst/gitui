@@ -1,13 +1,16 @@
 use crate::error::{Error, Result};
 
+use super::CommitId;
+
 /// rebase attempt which aborts and undo's rebase if any conflict appears
 pub fn conflict_free_rebase(
 	repo: &git2::Repository,
 	commit: &git2::AnnotatedCommit,
-) -> Result<()> {
+) -> Result<CommitId> {
 	let mut rebase = repo.rebase(None, Some(commit), None, None)?;
 	let signature =
 		crate::sync::commit::signature_allow_undefined_name(repo)?;
+	let mut last_commit = None;
 	while let Some(op) = rebase.next() {
 		let _op = op?;
 		// dbg!(op.id());
@@ -17,12 +20,68 @@ pub fn conflict_free_rebase(
 			return Err(Error::RebaseConflict);
 		}
 
-		rebase.commit(None, &signature, None)?;
+		let c = rebase.commit(None, &signature, None)?;
+
+		last_commit = Some(CommitId::from(c));
 	}
+
 	if repo.index()?.has_conflicts() {
 		rebase.abort()?;
 		return Err(Error::RebaseConflict);
 	}
+
 	rebase.finish(Some(&signature))?;
-	Ok(())
+
+	last_commit.ok_or_else(|| {
+		Error::Generic(String::from("no commit rebased"))
+	})
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::sync::{
+		checkout_branch, create_branch, rebase_branch,
+		tests::{repo_init, write_commit_file},
+		CommitId,
+	};
+	use git2::Repository;
+
+	fn parent_ids(repo: &Repository, c: CommitId) -> Vec<CommitId> {
+		let foo = repo
+			.find_commit(c.into())
+			.unwrap()
+			.parent_ids()
+			.map(|id| CommitId::from(id))
+			.collect();
+
+		foo
+	}
+
+	#[test]
+	fn test_smoke() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path = root.as_os_str().to_str().unwrap();
+
+		let c1 =
+			write_commit_file(&repo, "test1.txt", "test", "commit1");
+
+		create_branch(repo_path, "foo").unwrap();
+
+		let c2 =
+			write_commit_file(&repo, "test2.txt", "test", "commit2");
+
+		assert_eq!(parent_ids(&repo, c2), vec![c1]);
+
+		checkout_branch(repo_path, "refs/heads/master").unwrap();
+
+		let c3 =
+			write_commit_file(&repo, "test3.txt", "test", "commit3");
+
+		checkout_branch(repo_path, "refs/heads/foo").unwrap();
+
+		let r = rebase_branch(repo_path, "master").unwrap();
+
+		assert_eq!(parent_ids(&repo, r), vec![c3]);
+	}
 }
