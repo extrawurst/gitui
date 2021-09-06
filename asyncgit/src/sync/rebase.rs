@@ -40,9 +40,9 @@ pub fn conflict_free_rebase(
 #[cfg(test)]
 mod tests {
 	use crate::sync::{
-		checkout_branch, create_branch, rebase_branch,
+		checkout_branch, create_branch, rebase_branch, repo_state,
 		tests::{repo_init, write_commit_file},
-		CommitId,
+		CommitId, RepoState,
 	};
 	use git2::Repository;
 
@@ -83,5 +83,30 @@ mod tests {
 		let r = rebase_branch(repo_path, "master").unwrap();
 
 		assert_eq!(parent_ids(&repo, r), vec![c3]);
+	}
+
+	#[test]
+	fn test_conflict() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path = root.as_os_str().to_str().unwrap();
+
+		write_commit_file(&repo, "test.txt", "test1", "commit1");
+
+		create_branch(repo_path, "foo").unwrap();
+
+		write_commit_file(&repo, "test.txt", "test2", "commit2");
+
+		checkout_branch(repo_path, "refs/heads/master").unwrap();
+
+		write_commit_file(&repo, "test.txt", "test3", "commit3");
+
+		checkout_branch(repo_path, "refs/heads/foo").unwrap();
+
+		let res = rebase_branch(repo_path, "master");
+
+		assert!(res.is_err());
+
+		assert_eq!(repo_state(repo_path).unwrap(), RepoState::Clean);
 	}
 }
