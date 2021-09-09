@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.17.1] - 2021-09-09
+
 **fuzzy find files**
 
 ![fuzzy-find](assets/fuzzy-find.gif)
