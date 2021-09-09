@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - added scrollbar to revlog [[@ashvin021](https://github.com/ashvin021)] ([#868](https://github.com/extrawurst/gitui/issues/868))
 
 ## Fixed
+- fix build when system level libgit2 version was used ([#883](https://github.com/extrawurst/gitui/issues/883))
 - fix merging branch not closing branch window [[@andrewpollack](https://github.com/andrewpollack)] ([#876](https://github.com/extrawurst/gitui/issues/876))
 - fix commit msg being broken inside tag list ([#871](https://github.com/extrawurst/gitui/issues/871))
 - fix filetree file content not showing tabs correctly ([#874](https://github.com/extrawurst/gitui/issues/874))
