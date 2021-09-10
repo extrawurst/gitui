@@ -368,11 +368,9 @@ impl TagListComponent {
 
 	///
 	fn get_rows(&self) -> Vec<Row> {
-		if let Some(ref tags) = self.tags {
+		self.tags.as_ref().map_or_else(Vec::new, |tags| {
 			tags.iter().map(|tag| self.get_row(tag)).collect()
-		} else {
-			vec![]
-		}
+		})
 	}
 
 	///

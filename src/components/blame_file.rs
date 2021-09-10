@@ -354,23 +354,23 @@ impl BlameFileComponent {
 
 	///
 	fn get_rows(&self, width: usize) -> Vec<Row> {
-		if let Some(ref file_blame) = self.file_blame {
-			file_blame
-				.lines
-				.iter()
-				.enumerate()
-				.map(|(i, (blame_hunk, line))| {
-					self.get_line_blame(
-						width,
-						i,
-						(blame_hunk.as_ref(), line.as_ref()),
-						file_blame,
-					)
-				})
-				.collect()
-		} else {
-			vec![]
-		}
+		self.file_blame
+			.as_ref()
+			.map_or_else(Vec::new, |file_blame| {
+				file_blame
+					.lines
+					.iter()
+					.enumerate()
+					.map(|(i, (blame_hunk, line))| {
+						self.get_line_blame(
+							width,
+							i,
+							(blame_hunk.as_ref(), line.as_ref()),
+							file_blame,
+						)
+					})
+					.collect()
+			})
 	}
 
 	fn get_line_blame(

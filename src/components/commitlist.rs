@@ -286,11 +286,10 @@ impl CommitList {
 
 		// commit tags
 		txt.push(Span::styled(
-			Cow::from(if let Some(tags) = tags {
-				format!(" {}", tags)
-			} else {
-				String::from("")
-			}),
+			Cow::from(tags.map_or_else(
+				|| String::from(""),
+				|tags| format!(" {}", tags),
+			)),
 			theme.tags(selected),
 		));
 

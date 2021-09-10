@@ -181,15 +181,16 @@ impl Status {
 		chunks: &[tui::layout::Rect],
 	) {
 		if let Some(branch_name) = self.git_branch_name.last() {
-			let ahead_behind =
-				if let Some(state) = &self.git_branch_state {
+			let ahead_behind = self
+				.git_branch_state
+				.as_ref()
+				.map_or_else(String::new, |state| {
 					format!(
 						"\u{2191}{} \u{2193}{} ",
 						state.ahead, state.behind,
 					)
-				} else {
-					String::new()
-				};
+				});
+
 			let w = Paragraph::new(format!(
 				"{}{{{}}}",
 				ahead_behind, branch_name

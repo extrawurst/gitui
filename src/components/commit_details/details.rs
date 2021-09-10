@@ -151,7 +151,7 @@ impl DetailsComponent {
 
 	#[allow(unstable_name_collisions, clippy::too_many_lines)]
 	fn get_text_info(&self) -> Vec<Spans> {
-		if let Some(ref data) = self.data {
+		self.data.as_ref().map_or_else(Vec::new, |data| {
 			let mut res = vec![
 				Spans::from(vec![
 					style_detail(&self.theme, &Detail::Author),
@@ -235,9 +235,7 @@ impl DetailsComponent {
 			}
 
 			res
-		} else {
-			vec![]
-		}
+		})
 	}
 
 	fn move_scroll_top(&mut self, move_type: ScrollType) -> bool {

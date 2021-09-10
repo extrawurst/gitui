@@ -776,19 +776,21 @@ impl App {
 			}
 			Action::DeleteBranch(branch_ref, false) => {
 				self.queue.push(
-					if let Some(name) = branch_ref.rsplit('/').next()
-					{
-						InternalEvent::Push(
-							name.to_string(),
-							false,
-							true,
-						)
-					} else {
-						InternalEvent::ShowErrorMsg(format!(
-							"Failed to find the branch name in {}",
-							branch_ref
-						))
-					},
+					branch_ref.rsplit('/').next().map_or_else(
+						|| {
+							InternalEvent::ShowErrorMsg(format!(
+						"Failed to find the branch name in {}",
+						branch_ref
+					))
+						},
+						|name| {
+							InternalEvent::Push(
+								name.to_string(),
+								false,
+								true,
+							)
+						},
+					),
 				);
 				flags.insert(NeedsUpdate::ALL);
 				self.select_branch_popup.update_branches()?;
