@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix commit msg being broken inside tag list ([#871](https://github.com/extrawurst/gitui/issues/871))
 - fix filetree file content not showing tabs correctly ([#874](https://github.com/extrawurst/gitui/issues/874))
 
+## Key binding notes
+- new keys: `rebase_branch` [`R`], `file_find` [`f`]
+
+see `vim_style_key_config.ron` for their default vim binding
+
 ## [0.17.0] - 2021-08-21
 
 **compare commits**
