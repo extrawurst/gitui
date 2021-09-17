@@ -25,7 +25,6 @@ struct Request<R, A>(R, Option<A>);
 #[derive(Default, Clone)]
 struct LastResult<P, R> {
 	params: P,
-	hash: u64,
 	result: R,
 }
 
@@ -154,7 +153,6 @@ impl AsyncBlame {
 			let mut last = arc_last.lock()?;
 			*last = Some(LastResult {
 				result: file_blame,
-				hash,
 				params,
 			});
 		}

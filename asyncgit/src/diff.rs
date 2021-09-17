@@ -42,7 +42,6 @@ struct Request<R, A>(R, Option<A>);
 #[derive(Default, Clone)]
 struct LastResult<P, R> {
 	params: P,
-	hash: u64,
 	result: R,
 }
 
@@ -189,7 +188,6 @@ impl AsyncDiff {
 			let mut last = arc_last.lock()?;
 			*last = Some(LastResult {
 				result: res,
-				hash,
 				params,
 			});
 		}
