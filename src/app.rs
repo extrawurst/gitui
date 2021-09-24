@@ -385,7 +385,7 @@ impl App {
 			self.compare_commits_popup.update_git(ev)?;
 			self.push_popup.update_git(ev)?;
 			self.push_tags_popup.update_git(ev)?;
-			self.pull_popup.update_git(ev)?;
+			self.pull_popup.update_git(ev);
 			self.select_branch_popup.update_git(ev)?;
 		}
 
@@ -686,7 +686,11 @@ impl App {
 				flags.insert(NeedsUpdate::ALL);
 			}
 			InternalEvent::Pull(branch) => {
-				self.pull_popup.fetch(branch)?;
+				if let Err(error) = self.pull_popup.fetch(branch) {
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						error.to_string(),
+					));
+				}
 				flags.insert(NeedsUpdate::ALL);
 			}
 			InternalEvent::PushTags => {
