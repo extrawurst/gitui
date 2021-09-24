@@ -23,10 +23,9 @@ pub struct FetchRequest {
 	pub basic_credential: Option<BasicAuthCredential>,
 }
 
+//TODO: since this is empty we can go with a simple AtomicBool to mark that we are fetching or not
 #[derive(Default, Clone, Debug)]
-struct FetchState {
-	request: FetchRequest,
-}
+struct FetchState {}
 
 ///
 pub struct AsyncFetch {
@@ -116,16 +115,14 @@ impl AsyncFetch {
 		Ok(())
 	}
 
-	fn set_request(&self, params: &FetchRequest) -> Result<()> {
+	fn set_request(&self, _params: &FetchRequest) -> Result<()> {
 		let mut state = self.state.lock()?;
 
 		if state.is_some() {
 			return Err(Error::Generic("pending request".into()));
 		}
 
-		*state = Some(FetchState {
-			request: params.clone(),
-		});
+		*state = Some(FetchState {});
 
 		Ok(())
 	}

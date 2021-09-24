@@ -110,17 +110,18 @@ impl PullComponent {
 	}
 
 	///
-	pub fn update_git(
-		&mut self,
-		ev: AsyncGitNotification,
-	) -> Result<()> {
+	pub fn update_git(&mut self, ev: AsyncGitNotification) {
 		if self.is_visible() {
 			if let AsyncGitNotification::Fetch = ev {
-				self.update()?;
+				if let Err(error) = self.update() {
+					self.pending = false;
+					self.hide();
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						format!("fetch failed:\n{}", error),
+					));
+				}
 			}
 		}
-
-		Ok(())
 	}
 
 	///
@@ -135,11 +136,7 @@ impl PullComponent {
 				if err.is_empty() {
 					self.try_ff_merge()?;
 				} else {
-					self.pending = false;
-					self.hide();
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						format!("fetch failed:\n{}", err),
-					));
+					anyhow::bail!(err);
 				}
 			}
 		}
