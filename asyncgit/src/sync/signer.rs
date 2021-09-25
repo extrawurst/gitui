@@ -1,5 +1,5 @@
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::Path;
 
 use anyhow::Context;
 use openpgp::armor;
@@ -38,7 +38,8 @@ pub fn get_signing_keys(
 			};
 
 			final_keys.push(
-				KeyPair::new(key.clone(), unencrypted).unwrap(),
+				KeyPair::new(key.clone(), unencrypted)
+					.expect("Failed to create keypair"),
 			);
 
 			break 'cert;
@@ -56,9 +57,9 @@ pub fn get_signing_keys(
 pub fn create_signature(
 	commit: &str,
 	signature: &mut (dyn Write + Send + Sync),
-	cert: &PathBuf,
+	cert: &Path,
 ) -> openpgp::Result<()> {
-	let cert = Cert::from_file(cert.as_path())
+	let cert = Cert::from_file(cert)
 		.context("Failed to read signing key")?;
 
 	let mut keypairs =
