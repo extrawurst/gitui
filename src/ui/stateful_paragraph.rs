@@ -1,4 +1,3 @@
-
 use easy_cast::Cast;
 use std::iter;
 use tui::{
