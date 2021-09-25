@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 
 use easy_cast::Cast;
 use std::iter;
@@ -49,12 +48,6 @@ pub struct ScrollPos {
 	pub y: u16,
 }
 
-impl ScrollPos {
-	pub const fn new(x: u16, y: u16) -> Self {
-		Self { x, y }
-	}
-}
-
 #[derive(Debug, Copy, Clone, Default)]
 pub struct ParagraphState {
 	/// Scroll
@@ -103,20 +96,20 @@ impl<'a> StatefulParagraph<'a> {
 		self
 	}
 
-	pub const fn style(mut self, style: Style) -> Self {
-		self.style = style;
-		self
-	}
-
 	pub const fn wrap(mut self, wrap: Wrap) -> Self {
 		self.wrap = Some(wrap);
 		self
 	}
 
-	pub const fn alignment(mut self, alignment: Alignment) -> Self {
-		self.alignment = alignment;
-		self
-	}
+	// pub const fn style(mut self, style: Style) -> Self {
+	// 	self.style = style;
+	// 	self
+	// }
+
+	// pub const fn alignment(mut self, alignment: Alignment) -> Self {
+	// 	self.alignment = alignment;
+	// 	self
+	// }
 }
 
 impl<'a> StatefulWidget for StatefulParagraph<'a> {
