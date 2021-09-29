@@ -221,14 +221,6 @@ impl Component for ChangesComponent {
 				true,
 				some_selection && self.focused(),
 			));
-			out.push(
-				CommandInfo::new(
-					strings::commands::commit_open(&self.key_config),
-					true,
-					(!self.is_empty() && self.focused()) || force_all,
-				)
-				.order(-1),
-			);
 		}
 
 		CommandBlocking::PassingOn
@@ -241,13 +233,7 @@ impl Component for ChangesComponent {
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.open_commit
-					&& !self.is_working_dir
-					&& !self.is_empty()
-				{
-					self.queue.push(InternalEvent::OpenCommit);
-					Ok(EventState::Consumed)
-				} else if e == self.key_config.enter {
+				return if e == self.key_config.enter {
 					try_or_popup!(
 						self,
 						"staging error:",

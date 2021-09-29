@@ -617,6 +617,12 @@ impl Status {
 			.order(strings::order::NAV),
 		);
 	}
+
+	fn can_commit(&self) -> bool {
+		self.index.focused()
+			&& !self.index.is_empty()
+			&& !Self::pending_rebase()
+	}
 }
 
 impl Component for Status {
@@ -632,6 +638,17 @@ impl Component for Status {
 				out,
 				force_all,
 				self.components().as_slice(),
+			);
+
+			let can_commit =
+				self.index.focused() && !self.index.is_empty();
+			out.push(
+				CommandInfo::new(
+					strings::commands::commit_open(&self.key_config),
+					true,
+					can_commit || force_all,
+				)
+				.order(-1),
 			);
 
 			out.push(CommandInfo::new(
@@ -663,7 +680,8 @@ impl Component for Status {
 			out.push(CommandInfo::new(
 				strings::commands::undo_commit(&self.key_config),
 				true,
-				!focus_on_diff,
+				(!Self::pending_rebase() && !focus_on_diff)
+					|| force_all,
 			));
 
 			out.push(CommandInfo::new(
@@ -701,7 +719,7 @@ impl Component for Status {
 		visibility_blocking(self)
 	}
 
-	#[allow(clippy::too_many_lines)]
+	#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 	fn event(
 		&mut self,
 		ev: crossterm::event::Event,
@@ -726,6 +744,11 @@ impl Component for Status {
 							)),
 						);
 					}
+					Ok(EventState::Consumed)
+				} else if k == self.key_config.open_commit
+					&& self.can_commit()
+				{
+					self.queue.push(InternalEvent::OpenCommit);
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.toggle_workarea
 					&& !self.is_focus_on_diff()
