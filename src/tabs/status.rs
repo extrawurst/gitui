@@ -693,6 +693,7 @@ impl Component for Status {
 		visibility_blocking(self)
 	}
 
+	#[allow(clippy::too_many_lines)]
 	fn event(
 		&mut self,
 		ev: crossterm::event::Event,
