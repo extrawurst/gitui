@@ -149,7 +149,7 @@ impl CommitComponent {
 		drop(file);
 		std::fs::remove_file(&file_path)?;
 
-		message = self.prettify_message(message);
+		message = message_prettify(message, Some(b'#'))?;
 		self.input.set_text(message);
 		self.input.show()?;
 
@@ -181,7 +181,7 @@ impl CommitComponent {
 			)));
 			return Ok(());
 		}
-		let mut msg = self.prettify_message(msg);
+		let mut msg = message_prettify(msg, Some(b'#'))?;
 		if let HookResult::NotOk(e) =
 			sync::hooks_commit_msg(CWD, &mut msg)?
 		{
@@ -221,19 +221,6 @@ impl CommitComponent {
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
 		Ok(())
-	}
-
-	fn prettify_message(&mut self, msg: String) -> String {
-		return match message_prettify(&msg, Some(b'#')) {
-			Ok(new_value) => new_value,
-			Err(e) => {
-				log::error!("post-commit hook error: {}", e);
-				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("post-commit hook error:\n{}", e),
-				));
-				return msg;
-			}
-		};
 	}
 
 	fn can_commit(&self) -> bool {
