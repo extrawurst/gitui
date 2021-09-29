@@ -1,6 +1,36 @@
-use crate::error::{Error, Result};
+use git2::{BranchType, Repository};
+use scopetime::scope_time;
+
+use crate::{
+	error::{Error, Result},
+	sync::utils,
+};
 
 use super::CommitId;
+
+fn rebase_branch_repo(
+	repo: &Repository,
+	branch_name: &str,
+) -> Result<CommitId> {
+	let branch = repo.find_branch(branch_name, BranchType::Local)?;
+
+	let annotated =
+		repo.reference_to_annotated_commit(&branch.into_reference())?;
+
+	conflict_free_rebase(repo, &annotated)
+}
+
+///
+pub fn rebase_branch(
+	repo_path: &str,
+	branch: &str,
+) -> Result<CommitId> {
+	scope_time!("rebase_branch");
+
+	let repo = utils::repo(repo_path)?;
+
+	rebase_branch_repo(&repo, branch)
+}
 
 /// rebase attempt which aborts and undo's rebase if any conflict appears
 pub fn conflict_free_rebase(
@@ -40,7 +70,9 @@ pub fn conflict_free_rebase(
 #[cfg(test)]
 mod tests {
 	use crate::sync::{
-		checkout_branch, create_branch, rebase_branch, repo_state,
+		checkout_branch, create_branch,
+		rebase::rebase_branch,
+		repo_state,
 		tests::{repo_init, write_commit_file},
 		CommitId, RepoState,
 	};
