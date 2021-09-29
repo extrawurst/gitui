@@ -215,14 +215,12 @@ impl Status {
 		}
 	}
 
-	fn draw_repo_state<B: tui::backend::Backend>(
-		f: &mut tui::Frame<B>,
-		r: tui::layout::Rect,
-	) -> Result<()> {
-		if let Ok(state) = sync::repo_state(CWD) {
-			if state != RepoState::Clean {
+	fn repo_state_text(state: RepoState) -> String {
+		match state {
+			RepoState::Merge => {
 				let ids =
 					sync::mergehead_ids(CWD).unwrap_or_default();
+
 				let ids = format!(
 					"({})",
 					ids.iter()
@@ -231,7 +229,31 @@ impl Status {
 						))
 						.join(",")
 				);
-				let txt = format!("{:?} {}", state, ids);
+
+				format!("{:?} {}", state, ids)
+			}
+			RepoState::Rebase => {
+				let progress =
+					if let Ok(p) = sync::rebase_progress(CWD) {
+						format!("{}/{}", p.current + 1, p.steps)
+					} else {
+						String::new()
+					};
+
+				format!("{:?} ({})", state, progress)
+			}
+			_ => format!("{:?}", state),
+		}
+	}
+
+	fn draw_repo_state<B: tui::backend::Backend>(
+		f: &mut tui::Frame<B>,
+		r: tui::layout::Rect,
+	) -> Result<()> {
+		if let Ok(state) = sync::repo_state(CWD) {
+			if state != RepoState::Clean {
+				let txt = Self::repo_state_text(state);
+
 				let txt_len = u16::try_from(txt.len())?;
 				let w = Paragraph::new(txt)
 					.style(Style::default().fg(Color::Red))
