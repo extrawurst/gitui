@@ -192,40 +192,40 @@ impl Component for ChangesComponent {
 		if self.is_working_dir {
 			out.push(CommandInfo::new(
 				strings::commands::stage_all(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::stage_item(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::reset_item(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::ignore_item(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 		} else {
 			out.push(CommandInfo::new(
 				strings::commands::unstage_item(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::unstage_all(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 			out.push(
 				CommandInfo::new(
 					strings::commands::commit_open(&self.key_config),
-					!self.is_empty(),
-					self.focused() || force_all,
+					true,
+					(!self.is_empty() && self.focused()) || force_all,
 				)
 				.order(-1),
 			);
