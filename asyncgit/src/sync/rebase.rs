@@ -108,13 +108,18 @@ pub fn rebase(
 pub fn continue_rebase(
 	repo: &git2::Repository,
 ) -> Result<RebaseState> {
+	let mut rebase = repo.open_rebase(None)?;
+	let signature =
+		crate::sync::commit::signature_allow_undefined_name(repo)?;
+
 	if repo.index()?.has_conflicts() {
 		return Ok(RebaseState::Conflicted);
 	}
 
-	let mut rebase = repo.open_rebase(None)?;
-	let signature =
-		crate::sync::commit::signature_allow_undefined_name(repo)?;
+	// try commit current rebase step
+	if !repo.index()?.is_empty() {
+		rebase.commit(None, &signature, None)?;
+	}
 
 	while let Some(op) = rebase.next() {
 		let _op = op?;
