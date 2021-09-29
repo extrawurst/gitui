@@ -84,7 +84,11 @@ impl Theme {
 		};
 
 		if selected {
-			branch.patch(Style::default().bg(self.selection_bg))
+			branch.patch(
+				Style::default()
+					.fg(self.command_fg)
+					.bg(self.selection_bg),
+			)
 		} else {
 			branch
 		}
