@@ -58,7 +58,7 @@ which = "4.1"
 pprof = { version = "0.5", features = ["flamegraph"], optional = true }
 
 [dev-dependencies]
-pretty_assertions = "0.7"
+pretty_assertions = "1.0"
 
 [badges]
 maintenance = { status = "actively-developed" }
