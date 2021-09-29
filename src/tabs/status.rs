@@ -215,7 +215,7 @@ impl Status {
 		}
 	}
 
-	fn repo_state_text(state: RepoState) -> String {
+	fn repo_state_text(state: &RepoState) -> String {
 		match state {
 			RepoState::Merge => {
 				let ids =
@@ -252,7 +252,7 @@ impl Status {
 	) -> Result<()> {
 		if let Ok(state) = sync::repo_state(CWD) {
 			if state != RepoState::Clean {
-				let txt = Self::repo_state_text(state);
+				let txt = Self::repo_state_text(&state);
 
 				let txt_len = u16::try_from(txt.len())?;
 				let w = Paragraph::new(txt)
