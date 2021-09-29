@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Fixed
 - appropriate error message when pulling deleted remote branch ([#911](https://github.com/extrawurst/gitui/issues/991))
 - improved color contrast in branches popup for light themes  [[@Cottser](https://github.com/Cottser)] ([#922](https://github.com/extrawurst/gitui/issues/922))
+- use git_message_prettify for commit messages ([#917](https://github.com/extrawurst/gitui/issues/917))
 
 ## [0.17.1] - 2021-09-10
 
