@@ -541,8 +541,21 @@ impl Status {
 			== RepoState::Merge
 	}
 
+	fn pending_rebase() -> bool {
+		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+			== RepoState::Rebase
+	}
+
 	pub fn abort_merge(&self) {
 		try_or_popup!(self, "abort merge", sync::abort_merge(CWD));
+	}
+
+	fn continue_rebase(&self) {
+		try_or_popup!(
+			self,
+			"continue rebase",
+			sync::continue_pending_rebase(CWD)
+		);
 	}
 
 	fn commands_nav(
@@ -641,6 +654,11 @@ impl Component for Status {
 				strings::commands::abort_merge(&self.key_config),
 				true,
 				Self::can_abort_merge() || force_all,
+			));
+			out.push(CommandInfo::new(
+				strings::commands::continue_rebase(&self.key_config),
+				true,
+				Self::pending_rebase() || force_all,
 			));
 		}
 
@@ -747,6 +765,14 @@ impl Component for Status {
 						Action::AbortMerge,
 					));
 
+					Ok(EventState::Consumed)
+				} else if k == self.key_config.rebase_branch
+					&& Self::pending_rebase()
+				{
+					self.continue_rebase();
+					self.queue.push(InternalEvent::Update(
+						NeedsUpdate::ALL,
+					));
 					Ok(EventState::Consumed)
 				} else {
 					Ok(EventState::NotConsumed)

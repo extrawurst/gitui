@@ -628,6 +628,19 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+
+	pub fn continue_rebase(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Continue rebase [{}]",
+				key_config.get_hint(key_config.rebase_branch),
+			),
+			"continue ongoing rebase",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn select_staging(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

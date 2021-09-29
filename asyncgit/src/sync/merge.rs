@@ -2,14 +2,14 @@ use crate::{
 	error::{Error, Result},
 	sync::{
 		branch::merge_commit::commit_merge_with_head,
-		rebase::get_rebase_progress, reset_stage, reset_workdir,
-		utils, CommitId,
+		rebase::{continue_rebase, get_rebase_progress},
+		reset_stage, reset_workdir, utils, CommitId,
 	},
 };
 use git2::{BranchType, Commit, MergeOptions, Repository};
 use scopetime::scope_time;
 
-use super::rebase::RebaseProgress;
+use super::rebase::{RebaseProgress, RebaseState};
 
 ///
 pub fn mergehead_ids(repo_path: &str) -> Result<Vec<CommitId>> {
@@ -61,6 +61,17 @@ pub fn rebase_progress(repo_path: &str) -> Result<RebaseProgress> {
 	let repo = utils::repo(repo_path)?;
 
 	get_rebase_progress(&repo)
+}
+
+///
+pub fn continue_pending_rebase(
+	repo_path: &str,
+) -> Result<RebaseState> {
+	scope_time!("continue_pending_rebase");
+
+	let repo = utils::repo(repo_path)?;
+
+	continue_rebase(&repo)
 }
 
 ///

@@ -76,12 +76,43 @@ pub enum RebaseState {
 }
 
 /// rebase
-#[allow(dead_code)]
-fn rebase(
+pub fn rebase(
 	repo: &git2::Repository,
 	commit: &git2::AnnotatedCommit,
 ) -> Result<RebaseState> {
 	let mut rebase = repo.rebase(None, Some(commit), None, None)?;
+	let signature =
+		crate::sync::commit::signature_allow_undefined_name(repo)?;
+
+	while let Some(op) = rebase.next() {
+		let _op = op?;
+		// dbg!(op.id());
+
+		if repo.index()?.has_conflicts() {
+			return Ok(RebaseState::Conflicted);
+		}
+
+		rebase.commit(None, &signature, None)?;
+	}
+
+	if repo.index()?.has_conflicts() {
+		return Ok(RebaseState::Conflicted);
+	}
+
+	rebase.finish(Some(&signature))?;
+
+	Ok(RebaseState::Finished)
+}
+
+/// continue pending rebase
+pub fn continue_rebase(
+	repo: &git2::Repository,
+) -> Result<RebaseState> {
+	if repo.index()?.has_conflicts() {
+		return Ok(RebaseState::Conflicted);
+	}
+
+	let mut rebase = repo.open_rebase(None)?;
 	let signature =
 		crate::sync::commit::signature_allow_undefined_name(repo)?;
 
@@ -115,7 +146,6 @@ pub struct RebaseProgress {
 }
 
 ///
-#[allow(dead_code)]
 pub fn get_rebase_progress(
 	repo: &git2::Repository,
 ) -> Result<RebaseProgress> {
