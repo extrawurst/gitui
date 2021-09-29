@@ -143,6 +143,8 @@ pub struct RebaseProgress {
 	pub steps: usize,
 	///
 	pub current: usize,
+	///
+	pub current_commit: Option<CommitId>,
 }
 
 ///
@@ -151,9 +153,15 @@ pub fn get_rebase_progress(
 ) -> Result<RebaseProgress> {
 	let mut rebase = repo.open_rebase(None)?;
 
+	let current_commit: Option<CommitId> = rebase
+		.operation_current()
+		.and_then(|idx| rebase.nth(idx))
+		.map(|op| op.id().into());
+
 	let progress = RebaseProgress {
 		steps: rebase.len(),
 		current: rebase.operation_current().unwrap_or_default(),
+		current_commit,
 	};
 
 	Ok(progress)
@@ -286,7 +294,8 @@ mod test_rebase {
 
 		create_branch(repo_path, "foo").unwrap();
 
-		write_commit_file(&repo, "test.txt", "test2", "commit2");
+		let c =
+			write_commit_file(&repo, "test.txt", "test2", "commit2");
 
 		checkout_branch(repo_path, "refs/heads/master").unwrap();
 
@@ -306,7 +315,8 @@ mod test_rebase {
 			get_rebase_progress(&repo).unwrap(),
 			RebaseProgress {
 				current: 0,
-				steps: 1
+				steps: 1,
+				current_commit: Some(c)
 			}
 		);
 

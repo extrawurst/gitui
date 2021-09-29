@@ -13,7 +13,8 @@ use anyhow::Result;
 use asyncgit::{
 	cached,
 	sync::{
-		self, get_config_string, CommitId, HookResult, RepoState,
+		self, get_commit_info, get_config_string, CommitId,
+		HookResult, RepoState,
 	},
 	CWD,
 };
@@ -254,6 +255,19 @@ impl CommitComponent {
 			!= self.commit_template.as_ref().map(|s| s.trim())
 	}
 
+	fn rebase_commit_msg() -> Result<String> {
+		let progress = sync::rebase_progress(CWD)?;
+
+		let id = if let Some(id) = progress.current_commit {
+			id
+		} else {
+			anyhow::bail!("no commit id")
+		};
+
+		let info = get_commit_info(CWD, &id)?;
+		Ok(info.message)
+	}
+
 	fn amend(&mut self) -> Result<()> {
 		if self.can_amend() {
 			let id = sync::get_head(CWD)?;
@@ -369,26 +383,36 @@ impl Component for CommitComponent {
 
 		self.mode = Mode::Normal;
 
-		self.mode = if sync::repo_state(CWD)? == RepoState::Merge {
-			let ids = sync::mergehead_ids(CWD)?;
-			self.input.set_title(strings::commit_title_merge());
-			self.input.set_text(sync::merge_msg(CWD)?);
-			Mode::Merge(ids)
-		} else {
-			self.commit_template =
-				get_config_string(CWD, "commit.template")
-					.ok()
-					.flatten()
-					.and_then(|path| read_to_string(path).ok());
-
-			if self.is_empty() {
-				if let Some(s) = &self.commit_template {
-					self.input.set_text(s.clone());
-				}
+		self.mode = match sync::repo_state(CWD)? {
+			RepoState::Merge => {
+				let ids = sync::mergehead_ids(CWD)?;
+				self.input.set_title(strings::commit_title_merge());
+				self.input.set_text(sync::merge_msg(CWD)?);
+				Mode::Merge(ids)
 			}
+			RepoState::Rebase => {
+				self.input.set_title(strings::commit_title_rebase());
+				self.input.set_text(
+					Self::rebase_commit_msg().unwrap_or_default(),
+				);
+				Mode::Normal
+			}
+			_ => {
+				self.commit_template =
+					get_config_string(CWD, "commit.template")
+						.ok()
+						.flatten()
+						.and_then(|path| read_to_string(path).ok());
 
-			self.input.set_title(strings::commit_title());
-			Mode::Normal
+				if self.is_empty() {
+					if let Some(s) = &self.commit_template {
+						self.input.set_text(s.clone());
+					}
+				}
+
+				self.input.set_title(strings::commit_title());
+				Mode::Normal
+			}
 		};
 
 		self.input.show()?;

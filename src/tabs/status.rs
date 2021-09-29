@@ -14,8 +14,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	cached,
-	sync::BranchCompare,
 	sync::{self, status::StatusType, RepoState},
+	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
 	DiffType, StatusParams, CWD,
 };
@@ -235,7 +235,15 @@ impl Status {
 			RepoState::Rebase => {
 				let progress =
 					if let Ok(p) = sync::rebase_progress(CWD) {
-						format!("{}/{}", p.current + 1, p.steps)
+						format!(
+							"[{}] {}/{}",
+							p.current_commit
+								.as_ref()
+								.map(CommitId::get_short_string)
+								.unwrap_or_default(),
+							p.current + 1,
+							p.steps
+						)
 					} else {
 						String::new()
 					};

@@ -86,6 +86,9 @@ pub fn commit_title() -> String {
 pub fn commit_title_merge() -> String {
 	"Commit (Merge)".to_string()
 }
+pub fn commit_title_rebase() -> String {
+	"Commit (Rebase)".to_string()
+}
 pub fn commit_title_amend() -> String {
 	"Commit (Amend)".to_string()
 }
