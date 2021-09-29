@@ -57,6 +57,7 @@ pub use crate::{
 	},
 	tags::AsyncTags,
 };
+pub use git2::message_prettify;
 use std::{
 	collections::hash_map::DefaultHasher,
 	hash::{Hash, Hasher},

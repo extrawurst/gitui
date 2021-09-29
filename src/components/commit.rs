@@ -11,7 +11,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	cached,
+	cached, message_prettify,
 	sync::{
 		self, get_config_string, CommitId, HookResult, RepoState,
 	},
@@ -149,19 +149,7 @@ impl CommitComponent {
 		drop(file);
 		std::fs::remove_file(&file_path)?;
 
-		let message: String = message
-			.lines()
-			.flat_map(|l| {
-				if l.starts_with('#') {
-					vec![]
-				} else {
-					vec![l, "\n"]
-				}
-			})
-			.collect();
-
-		let message = message.trim().to_string();
-
+		message = self.prettify_message(message);
 		self.input.set_text(message);
 		self.input.show()?;
 
@@ -193,7 +181,7 @@ impl CommitComponent {
 			)));
 			return Ok(());
 		}
-		let mut msg = msg;
+		let mut msg = self.prettify_message(msg);
 		if let HookResult::NotOk(e) =
 			sync::hooks_commit_msg(CWD, &mut msg)?
 		{
@@ -233,6 +221,19 @@ impl CommitComponent {
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
 		Ok(())
+	}
+
+	fn prettify_message(&mut self, msg: String) -> String {
+		return match message_prettify(&msg, Some(b'#')) {
+			Ok(new_value) => new_value,
+			Err(e) => {
+				log::error!("post-commit hook error: {}", e);
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("post-commit hook error:\n{}", e),
+				));
+				return msg;
+			}
+		};
 	}
 
 	fn can_commit(&self) -> bool {
