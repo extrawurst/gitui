@@ -158,7 +158,7 @@ impl Default for KeyConfig {
 			force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
 			undo_commit: KeyEvent { code: KeyCode::Char('U'), modifiers: KeyModifiers::SHIFT},
 			pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
-			abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
+			abort_merge: KeyEvent { code: KeyCode::Char('A'), modifiers: KeyModifiers::SHIFT},
 			open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
 			file_find: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
 		}

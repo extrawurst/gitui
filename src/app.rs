@@ -821,6 +821,10 @@ impl App {
 				self.status_tab.abort_merge();
 				flags.insert(NeedsUpdate::ALL);
 			}
+			Action::AbortRebase => {
+				self.status_tab.abort_rebase();
+				flags.insert(NeedsUpdate::ALL);
+			}
 		};
 
 		Ok(())

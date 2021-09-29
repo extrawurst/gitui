@@ -153,6 +153,13 @@ pub fn confirm_msg_abortmerge() -> String {
 	"This will revert all uncommitted changes. Are you sure?"
 		.to_string()
 }
+pub fn confirm_title_abortrebase() -> String {
+	"Abort rebase?".to_string()
+}
+pub fn confirm_msg_abortrebase() -> String {
+	"This will revert all uncommitted changes. Are you sure?"
+		.to_string()
+}
 pub fn confirm_msg_reset() -> String {
 	"confirm file reset?".to_string()
 }
@@ -641,6 +648,18 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+
+	pub fn abort_rebase(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Abort rebase [{}]",
+				key_config.get_hint(key_config.abort_merge),
+			),
+			"abort ongoing rebase",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
 	pub fn select_staging(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

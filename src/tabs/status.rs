@@ -550,6 +550,14 @@ impl Status {
 		try_or_popup!(self, "abort merge", sync::abort_merge(CWD));
 	}
 
+	pub fn abort_rebase(&self) {
+		try_or_popup!(
+			self,
+			"abort rebase",
+			sync::abort_pending_rebase(CWD)
+		);
+	}
+
 	fn continue_rebase(&self) {
 		try_or_popup!(
 			self,
@@ -655,8 +663,14 @@ impl Component for Status {
 				true,
 				Self::can_abort_merge() || force_all,
 			));
+
 			out.push(CommandInfo::new(
 				strings::commands::continue_rebase(&self.key_config),
+				true,
+				Self::pending_rebase() || force_all,
+			));
+			out.push(CommandInfo::new(
+				strings::commands::abort_rebase(&self.key_config),
 				true,
 				Self::pending_rebase() || force_all,
 			));
@@ -763,6 +777,14 @@ impl Component for Status {
 				{
 					self.queue.push(InternalEvent::ConfirmAction(
 						Action::AbortMerge,
+					));
+
+					Ok(EventState::Consumed)
+				} else if k == self.key_config.abort_merge
+					&& Self::pending_rebase()
+				{
+					self.queue.push(InternalEvent::ConfirmAction(
+						Action::AbortRebase,
 					));
 
 					Ok(EventState::Consumed)

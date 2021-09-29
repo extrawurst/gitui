@@ -2,7 +2,9 @@ use crate::{
 	error::{Error, Result},
 	sync::{
 		branch::merge_commit::commit_merge_with_head,
-		rebase::{continue_rebase, get_rebase_progress},
+		rebase::{
+			abort_rebase, continue_rebase, get_rebase_progress,
+		},
 		reset_stage, reset_workdir, utils, CommitId,
 	},
 };
@@ -72,6 +74,15 @@ pub fn continue_pending_rebase(
 	let repo = utils::repo(repo_path)?;
 
 	continue_rebase(&repo)
+}
+
+///
+pub fn abort_pending_rebase(repo_path: &str) -> Result<()> {
+	scope_time!("abort_pending_rebase");
+
+	let repo = utils::repo(repo_path)?;
+
+	abort_rebase(&repo)
 }
 
 ///

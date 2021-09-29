@@ -160,7 +160,6 @@ pub fn get_rebase_progress(
 }
 
 ///
-#[allow(dead_code)]
 pub fn abort_rebase(repo: &git2::Repository) -> Result<()> {
 	let mut rebase = repo.open_rebase(None)?;
 

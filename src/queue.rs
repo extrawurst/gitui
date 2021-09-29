@@ -41,6 +41,7 @@ pub enum Action {
 	ForcePush(String, bool),
 	PullMerge { incoming: usize, rebase: bool },
 	AbortMerge,
+	AbortRebase,
 }
 
 ///
