@@ -14,8 +14,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	cached,
-	sync::BranchCompare,
 	sync::{self, status::StatusType, RepoState},
+	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
 	DiffType, StatusParams, CWD,
 };
@@ -215,14 +215,12 @@ impl Status {
 		}
 	}
 
-	fn draw_repo_state<B: tui::backend::Backend>(
-		f: &mut tui::Frame<B>,
-		r: tui::layout::Rect,
-	) -> Result<()> {
-		if let Ok(state) = sync::repo_state(CWD) {
-			if state != RepoState::Clean {
+	fn repo_state_text(state: &RepoState) -> String {
+		match state {
+			RepoState::Merge => {
 				let ids =
 					sync::mergehead_ids(CWD).unwrap_or_default();
+
 				let ids = format!(
 					"({})",
 					ids.iter()
@@ -231,7 +229,39 @@ impl Status {
 						))
 						.join(",")
 				);
-				let txt = format!("{:?} {}", state, ids);
+
+				format!("{:?} {}", state, ids)
+			}
+			RepoState::Rebase => {
+				let progress =
+					if let Ok(p) = sync::rebase_progress(CWD) {
+						format!(
+							"[{}] {}/{}",
+							p.current_commit
+								.as_ref()
+								.map(CommitId::get_short_string)
+								.unwrap_or_default(),
+							p.current + 1,
+							p.steps
+						)
+					} else {
+						String::new()
+					};
+
+				format!("{:?} ({})", state, progress)
+			}
+			_ => format!("{:?}", state),
+		}
+	}
+
+	fn draw_repo_state<B: tui::backend::Backend>(
+		f: &mut tui::Frame<B>,
+		r: tui::layout::Rect,
+	) -> Result<()> {
+		if let Ok(state) = sync::repo_state(CWD) {
+			if state != RepoState::Clean {
+				let txt = Self::repo_state_text(&state);
+
 				let txt_len = u16::try_from(txt.len())?;
 				let w = Paragraph::new(txt)
 					.style(Style::default().fg(Color::Red))
@@ -519,8 +549,29 @@ impl Status {
 			== RepoState::Merge
 	}
 
+	fn pending_rebase() -> bool {
+		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+			== RepoState::Rebase
+	}
+
 	pub fn abort_merge(&self) {
 		try_or_popup!(self, "abort merge", sync::abort_merge(CWD));
+	}
+
+	pub fn abort_rebase(&self) {
+		try_or_popup!(
+			self,
+			"abort rebase",
+			sync::abort_pending_rebase(CWD)
+		);
+	}
+
+	fn continue_rebase(&self) {
+		try_or_popup!(
+			self,
+			"continue rebase",
+			sync::continue_pending_rebase(CWD)
+		);
 	}
 
 	fn commands_nav(
@@ -566,6 +617,12 @@ impl Status {
 			.order(strings::order::NAV),
 		);
 	}
+
+	fn can_commit(&self) -> bool {
+		self.index.focused()
+			&& !self.index.is_empty()
+			&& !Self::pending_rebase()
+	}
 }
 
 impl Component for Status {
@@ -581,6 +638,15 @@ impl Component for Status {
 				out,
 				force_all,
 				self.components().as_slice(),
+			);
+
+			out.push(
+				CommandInfo::new(
+					strings::commands::commit_open(&self.key_config),
+					true,
+					self.can_commit() || force_all,
+				)
+				.order(-1),
 			);
 
 			out.push(CommandInfo::new(
@@ -612,13 +678,25 @@ impl Component for Status {
 			out.push(CommandInfo::new(
 				strings::commands::undo_commit(&self.key_config),
 				true,
-				!focus_on_diff,
+				(!Self::pending_rebase() && !focus_on_diff)
+					|| force_all,
 			));
 
 			out.push(CommandInfo::new(
 				strings::commands::abort_merge(&self.key_config),
 				true,
 				Self::can_abort_merge() || force_all,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::continue_rebase(&self.key_config),
+				true,
+				Self::pending_rebase() || force_all,
+			));
+			out.push(CommandInfo::new(
+				strings::commands::abort_rebase(&self.key_config),
+				true,
+				Self::pending_rebase() || force_all,
 			));
 		}
 
@@ -639,6 +717,7 @@ impl Component for Status {
 		visibility_blocking(self)
 	}
 
+	#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 	fn event(
 		&mut self,
 		ev: crossterm::event::Event,
@@ -663,6 +742,11 @@ impl Component for Status {
 							)),
 						);
 					}
+					Ok(EventState::Consumed)
+				} else if k == self.key_config.open_commit
+					&& self.can_commit()
+				{
+					self.queue.push(InternalEvent::OpenCommit);
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.toggle_workarea
 					&& !self.is_focus_on_diff()
@@ -725,6 +809,22 @@ impl Component for Status {
 						Action::AbortMerge,
 					));
 
+					Ok(EventState::Consumed)
+				} else if k == self.key_config.abort_merge
+					&& Self::pending_rebase()
+				{
+					self.queue.push(InternalEvent::ConfirmAction(
+						Action::AbortRebase,
+					));
+
+					Ok(EventState::Consumed)
+				} else if k == self.key_config.rebase_branch
+					&& Self::pending_rebase()
+				{
+					self.continue_rebase();
+					self.queue.push(InternalEvent::Update(
+						NeedsUpdate::ALL,
+					));
 					Ok(EventState::Consumed)
 				} else {
 					Ok(EventState::NotConsumed)

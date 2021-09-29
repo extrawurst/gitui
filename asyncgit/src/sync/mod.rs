@@ -58,7 +58,9 @@ pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::{LogWalker, LogWalkerFilter};
 pub use merge::{
-	abort_merge, merge_branch, merge_commit, merge_msg, mergehead_ids,
+	abort_merge, abort_pending_rebase, continue_pending_rebase,
+	merge_branch, merge_commit, merge_msg, mergehead_ids,
+	rebase_progress,
 };
 pub use rebase::rebase_branch;
 pub use remotes::{

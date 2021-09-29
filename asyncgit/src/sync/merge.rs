@@ -1,12 +1,17 @@
 use crate::{
 	error::{Error, Result},
 	sync::{
-		branch::merge_commit::commit_merge_with_head, reset_stage,
-		reset_workdir, utils, CommitId,
+		branch::merge_commit::commit_merge_with_head,
+		rebase::{
+			abort_rebase, continue_rebase, get_rebase_progress,
+		},
+		reset_stage, reset_workdir, utils, CommitId,
 	},
 };
 use git2::{BranchType, Commit, MergeOptions, Repository};
 use scopetime::scope_time;
+
+use super::rebase::{RebaseProgress, RebaseState};
 
 ///
 pub fn mergehead_ids(repo_path: &str) -> Result<Vec<CommitId>> {
@@ -49,6 +54,35 @@ pub fn merge_branch(repo_path: &str, branch: &str) -> Result<()> {
 	merge_branch_repo(&repo, branch)?;
 
 	Ok(())
+}
+
+///
+pub fn rebase_progress(repo_path: &str) -> Result<RebaseProgress> {
+	scope_time!("rebase_progress");
+
+	let repo = utils::repo(repo_path)?;
+
+	get_rebase_progress(&repo)
+}
+
+///
+pub fn continue_pending_rebase(
+	repo_path: &str,
+) -> Result<RebaseState> {
+	scope_time!("continue_pending_rebase");
+
+	let repo = utils::repo(repo_path)?;
+
+	continue_rebase(&repo)
+}
+
+///
+pub fn abort_pending_rebase(repo_path: &str) -> Result<()> {
+	scope_time!("abort_pending_rebase");
+
+	let repo = utils::repo(repo_path)?;
+
+	abort_rebase(&repo)
 }
 
 ///

@@ -201,6 +201,10 @@ impl ConfirmComponent {
                     strings::confirm_title_abortmerge(),
                     strings::confirm_msg_abortmerge(),
                 ),
+				Action::AbortRebase => (
+                    strings::confirm_title_abortrebase(),
+                    strings::confirm_msg_abortrebase(),
+                ),
             };
 		}
 
