@@ -640,13 +640,11 @@ impl Component for Status {
 				self.components().as_slice(),
 			);
 
-			let can_commit =
-				self.index.focused() && !self.index.is_empty();
 			out.push(
 				CommandInfo::new(
 					strings::commands::commit_open(&self.key_config),
 					true,
-					can_commit || force_all,
+					self.can_commit() || force_all,
 				)
 				.order(-1),
 			);
