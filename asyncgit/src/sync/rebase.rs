@@ -20,7 +20,7 @@ fn rebase_branch_repo(
 	conflict_free_rebase(repo, &annotated)
 }
 
-///
+/// rebase current HEAD on `branch`
 pub fn rebase_branch(
 	repo_path: &str,
 	branch: &str,
