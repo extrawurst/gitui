@@ -229,8 +229,8 @@ fn draw<B: Backend>(
 		terminal.resize(terminal.size()?)?;
 	}
 
-	terminal.draw(|mut f| {
-		if let Err(e) = app.draw(&mut f) {
+	terminal.draw(|f| {
+		if let Err(e) = app.draw(f) {
 			log::error!("failed to draw: {:?}", e);
 		}
 	})?;

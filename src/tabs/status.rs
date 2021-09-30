@@ -224,9 +224,7 @@ impl Status {
 				let ids = format!(
 					"({})",
 					ids.iter()
-						.map(|id| sync::CommitId::get_short_string(
-							id
-						))
+						.map(sync::CommitId::get_short_string)
 						.join(",")
 				);
 
