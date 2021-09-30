@@ -11,7 +11,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	cached,
+	cached, message_prettify,
 	sync::{
 		self, get_config_string, CommitId, HookResult, RepoState,
 	},
@@ -149,19 +149,7 @@ impl CommitComponent {
 		drop(file);
 		std::fs::remove_file(&file_path)?;
 
-		let message: String = message
-			.lines()
-			.flat_map(|l| {
-				if l.starts_with('#') {
-					vec![]
-				} else {
-					vec![l, "\n"]
-				}
-			})
-			.collect();
-
-		let message = message.trim().to_string();
-
+		message = message_prettify(message, Some(b'#'))?;
 		self.input.set_text(message);
 		self.input.show()?;
 
@@ -193,7 +181,7 @@ impl CommitComponent {
 			)));
 			return Ok(());
 		}
-		let mut msg = msg;
+		let mut msg = message_prettify(msg, Some(b'#'))?;
 		if let HookResult::NotOk(e) =
 			sync::hooks_commit_msg(CWD, &mut msg)?
 		{
