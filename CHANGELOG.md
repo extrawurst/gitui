@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 - support rebasing branches with conflicts ([#895](https://github.com/extrawurst/gitui/issues/895))
+- specific key bindings to stage / unstage items [[@alessandroasm](https://github.com/alessandroasm)] ([#909](https://github.com/extrawurst/gitui/issues/909))
 
 ## Fixed
 - appropriate error message when pulling deleted remote branch ([#911](https://github.com/extrawurst/gitui/issues/991))
