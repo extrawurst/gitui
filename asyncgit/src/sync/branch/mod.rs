@@ -319,7 +319,7 @@ pub fn checkout_remote_branch(
 		return Err(Error::UncommittedChanges);
 	}
 
-	let name = branch.name.rfind('/').map_or_else(
+	let name = branch.name.find('/').map_or_else(
 		|| branch.name.clone(),
 		|pos| branch.name[pos..].to_string(),
 	);
@@ -793,6 +793,52 @@ mod test_remote_branches {
 		);
 
 		assert_eq!(&get_branch_name(clone2_dir).unwrap(), "foo");
+	}
+
+	#[test]
+	fn test_checkout_remote_branch_hirachical() {
+		let (r1_dir, _repo) = repo_init_bare().unwrap();
+
+		let (clone1_dir, clone1) =
+			repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+		let clone1_dir = clone1_dir.path().to_str().unwrap();
+
+		// clone1
+
+		let branch_name = "bar/foo";
+
+		write_commit_file(&clone1, "test.txt", "test", "commit1");
+		push(
+			clone1_dir, "origin", "master", false, false, None, None,
+		)
+		.unwrap();
+		create_branch(clone1_dir, branch_name).unwrap();
+		write_commit_file(&clone1, "test.txt", "test2", "commit2");
+		push(
+			clone1_dir,
+			"origin",
+			branch_name,
+			false,
+			false,
+			None,
+			None,
+		)
+		.unwrap();
+
+		// clone2
+
+		let (clone2_dir, _clone2) =
+			repo_clone(r1_dir.path().to_str().unwrap()).unwrap();
+		let clone2_dir = clone2_dir.path().to_str().unwrap();
+
+		let branches = get_branches_info(clone2_dir, false).unwrap();
+
+		checkout_remote_branch(clone2_dir, &branches[1]).unwrap();
+
+		assert_eq!(
+			&get_branch_name(clone2_dir).unwrap(),
+			branch_name
+		);
 	}
 
 	#[test]
