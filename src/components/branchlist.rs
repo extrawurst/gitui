@@ -19,6 +19,7 @@ use asyncgit::{
 			RemoteBranch,
 		},
 		checkout_branch, get_branches_info, BranchInfo, CommitId,
+		RepoState,
 	},
 	AsyncGitNotification, CWD,
 };
@@ -368,7 +369,7 @@ impl BranchListComponent {
 		{
 			sync::merge_branch(CWD, &branch.name)?;
 
-			self.hide_and_check_for_conflicts()?;
+			self.hide_and_switch_tab()?;
 		}
 
 		Ok(())
@@ -380,17 +381,17 @@ impl BranchListComponent {
 		{
 			sync::rebase_branch(CWD, &branch.name)?;
 
-			self.hide_and_check_for_conflicts()?;
+			self.hide_and_switch_tab()?;
 		}
 
 		Ok(())
 	}
 
-	fn hide_and_check_for_conflicts(&mut self) -> Result<()> {
+	fn hide_and_switch_tab(&mut self) -> Result<()> {
 		self.hide();
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
-		if sync::has_conflicts(CWD)? {
+		if sync::repo_state(CWD)? != RepoState::Clean {
 			self.queue.push(InternalEvent::TabSwitch);
 		}
 
