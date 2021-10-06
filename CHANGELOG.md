@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support rebasing branches with conflicts ([#895](https://github.com/extrawurst/gitui/issues/895))
 
 ## Fixed
-- appropriate error message when pulling deleted remote branch ([#911](https://github.com/extrawurst/gitui/issues/991))
+- fix supported checkout of hierarchical branchnames ([#921](https://github.com/extrawurst/gitui/issues/921))
+- appropriate error message when pulling deleted remote branch ([#911](https://github.com/extrawurst/gitui/issues/911))
 - improved color contrast in branches popup for light themes  [[@Cottser](https://github.com/Cottser)] ([#922](https://github.com/extrawurst/gitui/issues/922))
 - use git_message_prettify for commit messages ([#917](https://github.com/extrawurst/gitui/issues/917))
 
