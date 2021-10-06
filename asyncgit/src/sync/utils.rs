@@ -197,6 +197,14 @@ pub(crate) fn repo_write_file(
 	Ok(())
 }
 
+/// checks if repository has conflicts
+pub fn has_conflicts(repo_path: &str) -> Result<bool> {
+	let repo = repo(repo_path)?;
+	let index = repo.index()?;
+
+	Ok(index.has_conflicts())
+}
+
 #[cfg(test)]
 pub(crate) fn repo_read_file(
 	repo: &Repository,

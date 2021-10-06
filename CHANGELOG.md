@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 - support rebasing branches with conflicts ([#895](https://github.com/extrawurst/gitui/issues/895))
+- switch to status tab after merging or rebasing with conflicts ([#926](https://github.com/extrawurst/gitui/issues/926))
 
 ## Fixed
 - fix supported checkout of hierarchical branchnames ([#921](https://github.com/extrawurst/gitui/issues/921))

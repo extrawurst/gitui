@@ -368,8 +368,7 @@ impl BranchListComponent {
 		{
 			sync::merge_branch(CWD, &branch.name)?;
 
-			self.hide();
-			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+			self.hide_and_check_for_conflicts()?;
 		}
 
 		Ok(())
@@ -381,9 +380,18 @@ impl BranchListComponent {
 		{
 			sync::rebase_branch(CWD, &branch.name)?;
 
-			self.hide();
+			self.hide_and_check_for_conflicts()?;
+		}
 
-			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+		Ok(())
+	}
+
+	fn hide_and_check_for_conflicts(&mut self) -> Result<()> {
+		self.hide();
+		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+
+		if sync::has_conflicts(CWD)? {
+			self.queue.push(InternalEvent::TabSwitch);
 		}
 
 		Ok(())
