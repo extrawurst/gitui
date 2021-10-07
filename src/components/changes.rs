@@ -233,12 +233,7 @@ impl Component for ChangesComponent {
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				let stage_or_reset_key = if self.is_working_dir {
-					self.key_config.stage_item
-				} else {
-					self.key_config.unstage_item
-				};
-				return if e == stage_or_reset_key {
+				return if e == self.key_config.stage_unstage_item {
 					try_or_popup!(
 						self,
 						"staging error:",

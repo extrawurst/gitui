@@ -751,7 +751,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Stage [{}]",
-				key_config.get_hint(key_config.stage_item),
+				key_config.get_hint(key_config.stage_unstage_item),
 			),
 			"stage currently selected file or entire path",
 			CMD_GROUP_CHANGES,
@@ -771,7 +771,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Unstage [{}]",
-				key_config.get_hint(key_config.unstage_item),
+				key_config.get_hint(key_config.stage_unstage_item),
 			),
 			"unstage currently selected file or entire path",
 			CMD_GROUP_CHANGES,
