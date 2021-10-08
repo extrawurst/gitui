@@ -526,7 +526,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Add hunk [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.stage_unstage_item),
 			),
 			"adds selected hunk to stage",
 			CMD_GROUP_DIFF,
@@ -586,7 +586,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Remove hunk [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.stage_unstage_item),
 			),
 			"removes selected hunk from stage",
 			CMD_GROUP_DIFF,

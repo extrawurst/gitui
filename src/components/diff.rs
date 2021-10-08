@@ -738,7 +738,7 @@ impl Component for DiffComponent {
 				} else if e == self.key_config.page_down {
 					self.move_selection(ScrollType::PageDown);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.enter
+				} else if e == self.key_config.stage_unstage_item
 					&& !self.is_immutable
 				{
 					try_or_popup!(
