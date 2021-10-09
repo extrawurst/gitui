@@ -209,9 +209,9 @@ impl CompareCommitsComponent {
 		ev: AsyncGitNotification,
 	) -> Result<()> {
 		if self.is_visible() {
-			if let AsyncGitNotification::CommitFiles = ev {
+			if ev == AsyncGitNotification::CommitFiles {
 				self.update()?;
-			} else if let AsyncGitNotification::Diff = ev {
+			} else if ev == AsyncGitNotification::Diff {
 				self.update_diff()?;
 			}
 		}

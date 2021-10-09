@@ -286,10 +286,8 @@ impl BlameFileComponent {
 		&mut self,
 		event: AsyncGitNotification,
 	) -> Result<()> {
-		if self.is_visible() {
-			if let AsyncGitNotification::Blame = event {
-				self.update()?;
-			}
+		if self.is_visible() && event == AsyncGitNotification::Blame {
+			self.update()?;
 		}
 
 		Ok(())
