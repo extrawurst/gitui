@@ -160,7 +160,7 @@ impl<'a> StatefulWidget for StatefulParagraph<'a> {
 					&mut styled,
 					text_area.width,
 				));
-				if let Alignment::Left = self.alignment {
+				if self.alignment == Alignment::Left {
 					line_composer
 						.set_horizontal_offset(state.scroll.x);
 				}

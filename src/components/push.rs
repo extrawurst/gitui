@@ -158,10 +158,8 @@ impl PushComponent {
 		&mut self,
 		ev: AsyncGitNotification,
 	) -> Result<()> {
-		if self.is_visible() {
-			if let AsyncGitNotification::Push = ev {
-				self.update()?;
-			}
+		if self.is_visible() && ev == AsyncGitNotification::Push {
+			self.update()?;
 		}
 
 		Ok(())

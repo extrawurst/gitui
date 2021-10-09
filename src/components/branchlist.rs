@@ -350,10 +350,8 @@ impl BranchListComponent {
 		&mut self,
 		ev: AsyncGitNotification,
 	) -> Result<()> {
-		if self.is_visible() {
-			if let AsyncGitNotification::Push = ev {
-				self.update_branches()?;
-			}
+		if self.is_visible() && ev == AsyncGitNotification::Push {
+			self.update_branches()?;
 		}
 
 		Ok(())
