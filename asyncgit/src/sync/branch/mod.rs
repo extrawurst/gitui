@@ -184,6 +184,41 @@ pub fn get_branches_info(
 	Ok(branches_for_display)
 }
 
+/// returns the local branches that track the provided remote branch
+pub fn get_branch_trackers(
+	repo_path: &str,
+	branch_name: &str,
+) -> Result<HashSet<String>> {
+	let repo = utils::repo(repo_path)?;
+
+	let local_branches: HashSet<_> = repo
+		.branches(Some(BranchType::Local))?
+		.filter_map(|b| {
+			let branch = b.ok()?.0;
+
+			branch
+				.upstream()
+				.ok()
+				.filter(|upstream| {
+					let upstream_name =
+						bytes2string(upstream.get().name_bytes())
+							.ok();
+					upstream_name.map_or(false, |upstream_name| {
+						branch_name == upstream_name
+					})
+				})
+				.and_then(|_| {
+					branch
+						.name_bytes()
+						.ok()
+						.and_then(|bn| bytes2string(bn).ok())
+				})
+		})
+		.collect();
+
+	Ok(local_branches)
+}
+
 ///
 #[derive(Debug, Default)]
 pub struct BranchCompare {

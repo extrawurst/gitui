@@ -37,6 +37,8 @@ pub enum Action {
 	StashDrop(Vec<CommitId>),
 	StashPop(CommitId),
 	DeleteBranch(String, bool),
+	DeleteUpstreamBranch(String),
+	DeleteTrackingBranches(Vec<String>),
 	DeleteTag(String),
 	ForcePush(String, bool),
 	PullMerge { incoming: usize, rebase: bool },

@@ -768,37 +768,6 @@ impl App {
 				sync::discard_lines(CWD, &path, &lines)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
-			Action::DeleteBranch(branch_ref, true) => {
-				if let Err(e) = sync::delete_branch(CWD, &branch_ref)
-				{
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						e.to_string(),
-					));
-				}
-				flags.insert(NeedsUpdate::ALL);
-				self.select_branch_popup.update_branches()?;
-			}
-			Action::DeleteBranch(branch_ref, false) => {
-				self.queue.push(
-					branch_ref.rsplit('/').next().map_or_else(
-						|| {
-							InternalEvent::ShowErrorMsg(format!(
-						"Failed to find the branch name in {}",
-						branch_ref
-					))
-						},
-						|name| {
-							InternalEvent::Push(
-								name.to_string(),
-								false,
-								true,
-							)
-						},
-					),
-				);
-				flags.insert(NeedsUpdate::ALL);
-				self.select_branch_popup.update_branches()?;
-			}
 			Action::DeleteTag(tag_name) => {
 				if let Err(error) = sync::delete_tag(CWD, &tag_name) {
 					self.queue.push(InternalEvent::ShowErrorMsg(
@@ -825,7 +794,88 @@ impl App {
 				self.status_tab.abort_rebase();
 				flags.insert(NeedsUpdate::ALL);
 			}
+			Action::DeleteBranch(_, _)
+			| Action::DeleteUpstreamBranch(_)
+			| Action::DeleteTrackingBranches(_) => {
+				return self.process_branch_delete_confirmed_action(
+					action, flags,
+				);
+			}
 		};
+
+		Ok(())
+	}
+
+	fn process_branch_delete_confirmed_action(
+		&mut self,
+		action: Action,
+		flags: &mut NeedsUpdate,
+	) -> Result<()> {
+		match action {
+			Action::DeleteBranch(branch_ref, true) => {
+				let upstream =
+					sync::get_branch_remote(CWD, &branch_ref)
+						.ok()
+						.flatten();
+
+				if let Err(e) = sync::delete_branch(CWD, &branch_ref)
+				{
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						e.to_string(),
+					));
+				}
+				flags.insert(NeedsUpdate::ALL);
+				self.select_branch_popup.update_branches()?;
+
+				// If we have a remote, we must ask if user wants to delete it
+				if let Some(upstream) = upstream {
+					self.queue.push(InternalEvent::ConfirmAction(
+						Action::DeleteUpstreamBranch(upstream),
+					));
+				}
+			}
+			Action::DeleteBranch(branch_ref, false) => {
+				self.queue.push(
+					branch_ref.rsplit('/').next().map_or_else(
+						|| {
+							InternalEvent::ShowErrorMsg(format!(
+						"Failed to find the branch name in {}",
+						branch_ref
+					))
+						},
+						|name| {
+							InternalEvent::Push(
+								name.to_string(),
+								false,
+								true,
+							)
+						},
+					),
+				);
+				flags.insert(NeedsUpdate::ALL);
+				self.select_branch_popup.update_branches()?;
+			}
+			Action::DeleteUpstreamBranch(upstream) => {
+				self.queue.push(InternalEvent::ConfirmedAction(
+					Action::DeleteBranch(upstream, false),
+				));
+			}
+			Action::DeleteTrackingBranches(branch_refs) => {
+				for branch_ref in &branch_refs {
+					if let Err(e) =
+						sync::delete_branch(CWD, branch_ref)
+					{
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							e.to_string(),
+						));
+					}
+				}
+
+				flags.insert(NeedsUpdate::ALL);
+				self.select_branch_popup.update_branches()?;
+			}
+			_ => {}
+		}
 
 		Ok(())
 	}
