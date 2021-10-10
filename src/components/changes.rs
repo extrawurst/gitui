@@ -233,7 +233,7 @@ impl Component for ChangesComponent {
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.enter {
+				return if e == self.key_config.stage_unstage_item {
 					try_or_popup!(
 						self,
 						"staging error:",
