@@ -80,6 +80,18 @@ impl DrawableComponent for Status {
 		f: &mut tui::Frame<B>,
 		rect: tui::layout::Rect,
 	) -> Result<()> {
+		let rects = if Self::repo_state_unclean() {
+			Layout::default()
+				.direction(Direction::Vertical)
+				.constraints(
+					[Constraint::Min(1), Constraint::Length(3)]
+						.as_ref(),
+				)
+				.split(rect)
+		} else {
+			vec![rect]
+		};
+
 		let chunks = Layout::default()
 			.direction(Direction::Horizontal)
 			.constraints(
@@ -96,7 +108,7 @@ impl DrawableComponent for Status {
 				}
 				.as_ref(),
 			)
-			.split(rect);
+			.split(rects[0]);
 
 		let left_chunks = Layout::default()
 			.direction(Direction::Vertical)
@@ -279,6 +291,15 @@ impl Status {
 		}
 
 		Ok(())
+	}
+
+	fn repo_state_unclean() -> bool {
+		if let Ok(state) = sync::repo_state(CWD) {
+			if state != RepoState::Clean {
+				return true;
+			}
+		}
+		false
 	}
 
 	fn can_focus_diff(&self) -> bool {
