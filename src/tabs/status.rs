@@ -26,7 +26,7 @@ use std::convert::Into;
 use tui::{
 	layout::{Alignment, Constraint, Direction, Layout},
 	style::{Color, Style},
-	widgets::{Block, Paragraph},
+	widgets::{Block, BorderType, Paragraph},
 };
 
 /// what part of the screen is focused
@@ -276,7 +276,14 @@ impl Status {
 				let txt = Self::repo_state_text(&state);
 
 				let w = Paragraph::new(txt)
-					.block(Block::default().title("Foo"))
+					.block(
+						Block::default()
+							.border_type(BorderType::Plain)
+							.border_style(
+								Style::default().fg(Color::Yellow),
+							)
+							.title(format!("{:?}", state)),
+					)
 					.style(Style::default().fg(Color::Red))
 					.alignment(Alignment::Left);
 
