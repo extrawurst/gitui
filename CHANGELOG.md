@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**rebase merge with conflicts**
+
+![rebase-merge](assets/rebase.png)
+
 ## Added
 - support rebasing branches with conflicts ([#895](https://github.com/extrawurst/gitui/issues/895))
 - add a key binding to stage / unstage items [[@alessandroasm](https://github.com/alessandroasm)] ([#909](https://github.com/extrawurst/gitui/issues/909))
