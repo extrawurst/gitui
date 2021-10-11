@@ -281,6 +281,9 @@ impl Component for BranchListComponent {
 					self.queue
 						.push(InternalEvent::CompareCommits(b, None));
 				}
+			} else if e == self.key_config.cmd_bar_toggle {
+				//do not consume if its the more key
+				return Ok(EventState::NotConsumed);
 			}
 		}
 
