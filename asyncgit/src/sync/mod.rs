@@ -51,6 +51,7 @@ pub use config::{
 	ShowUntrackedFilesConfig,
 };
 pub use diff::get_diff_commit;
+pub use git2::BranchType;
 pub use hooks::{
 	hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,
 };

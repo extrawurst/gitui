@@ -12,19 +12,21 @@ use super::CommitId;
 pub fn rebase_branch(
 	repo_path: &str,
 	branch: &str,
+	branch_type: BranchType,
 ) -> Result<RebaseState> {
 	scope_time!("rebase_branch");
 
 	let repo = utils::repo(repo_path)?;
 
-	rebase_branch_repo(&repo, branch)
+	rebase_branch_repo(&repo, branch, branch_type)
 }
 
 fn rebase_branch_repo(
 	repo: &Repository,
 	branch_name: &str,
+	branch_type: BranchType,
 ) -> Result<RebaseState> {
-	let branch = repo.find_branch(branch_name, BranchType::Local)?;
+	let branch = repo.find_branch(branch_name, branch_type)?;
 
 	let annotated =
 		repo.reference_to_annotated_commit(&branch.into_reference())?;

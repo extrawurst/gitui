@@ -46,12 +46,16 @@ pub fn abort_merge(repo_path: &str) -> Result<()> {
 }
 
 ///
-pub fn merge_branch(repo_path: &str, branch: &str) -> Result<()> {
+pub fn merge_branch(
+	repo_path: &str,
+	branch: &str,
+	branch_type: BranchType,
+) -> Result<()> {
 	scope_time!("merge_branch");
 
 	let repo = utils::repo(repo_path)?;
 
-	merge_branch_repo(&repo, branch)?;
+	merge_branch_repo(&repo, branch, branch_type)?;
 
 	Ok(())
 }
@@ -89,8 +93,9 @@ pub fn abort_pending_rebase(repo_path: &str) -> Result<()> {
 pub fn merge_branch_repo(
 	repo: &Repository,
 	branch: &str,
+	branch_type: BranchType,
 ) -> Result<()> {
-	let branch = repo.find_branch(branch, BranchType::Local)?;
+	let branch = repo.find_branch(branch, branch_type)?;
 
 	let annotated =
 		repo.reference_to_annotated_commit(&branch.into_reference())?;

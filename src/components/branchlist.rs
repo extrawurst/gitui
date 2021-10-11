@@ -18,8 +18,8 @@ use asyncgit::{
 			checkout_remote_branch, BranchDetails, LocalBranch,
 			RemoteBranch,
 		},
-		checkout_branch, get_branches_info, BranchInfo, CommitId,
-		RepoState,
+		checkout_branch, get_branches_info, BranchInfo, BranchType,
+		CommitId, RepoState,
 	},
 	AsyncGitNotification, CWD,
 };
@@ -368,7 +368,13 @@ impl BranchListComponent {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
-			sync::merge_branch(CWD, &branch.name)?;
+			let branch_type = if self.local {
+				BranchType::Local
+			} else {
+				BranchType::Remote
+			};
+
+			sync::merge_branch(CWD, &branch.name, branch_type)?;
 
 			self.hide_and_switch_tab()?;
 		}
@@ -380,7 +386,13 @@ impl BranchListComponent {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
-			sync::rebase_branch(CWD, &branch.name)?;
+			let branch_type = if self.local {
+				BranchType::Local
+			} else {
+				BranchType::Remote
+			};
+
+			sync::rebase_branch(CWD, &branch.name, branch_type)?;
 
 			self.hide_and_switch_tab()?;
 		}
