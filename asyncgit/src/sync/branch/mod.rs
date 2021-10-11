@@ -617,6 +617,28 @@ mod tests_branches {
 				.unwrap(),
 			String::from("r2")
 		);
+
+		assert_eq!(
+			get_branch_trackers(
+				repo_path,
+				"refs/remotes/r1/r1branch"
+			)
+			.unwrap()
+			.into_iter()
+			.collect::<Vec<String>>(),
+			vec![String::from("r1branch")]
+		);
+
+		assert_eq!(
+			get_branch_trackers(
+				repo_path,
+				"refs/remotes/r2/r2branch"
+			)
+			.unwrap()
+			.into_iter()
+			.collect::<Vec<String>>(),
+			vec![String::from("r2branch")]
+		);
 	}
 
 	#[test]
@@ -638,6 +660,17 @@ mod tests_branches {
 		let repo_path = root.as_os_str().to_str().unwrap();
 
 		assert!(get_branch_remote(repo_path, "foo").is_err());
+
+		assert_eq!(
+			get_branch_trackers(
+				repo_path,
+				"refs/remotes/foo/foobranch"
+			)
+			.unwrap()
+			.into_iter()
+			.collect::<Vec<String>>(),
+			Vec::<String>::new()
+		);
 	}
 }
 

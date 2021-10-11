@@ -740,6 +740,7 @@ impl App {
 		Ok(flags)
 	}
 
+	#[allow(clippy::too_many_lines)]
 	fn process_confirmed_action(
 		&mut self,
 		action: Action,
@@ -768,55 +769,21 @@ impl App {
 				sync::discard_lines(CWD, &path, &lines)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
-			Action::DeleteTag(tag_name) => {
-				if let Err(error) = sync::delete_tag(CWD, &tag_name) {
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						error.to_string(),
-					));
-				} else {
-					flags.insert(NeedsUpdate::ALL);
-					self.tags_popup.update_tags()?;
-				}
-			}
-			Action::ForcePush(branch, force) => {
-				self.queue
-					.push(InternalEvent::Push(branch, force, false));
-			}
-			Action::PullMerge { rebase, .. } => {
-				self.pull_popup.try_conflict_free_merge(rebase);
-				flags.insert(NeedsUpdate::ALL);
-			}
-			Action::AbortMerge => {
-				self.status_tab.abort_merge();
-				flags.insert(NeedsUpdate::ALL);
-			}
-			Action::AbortRebase => {
-				self.status_tab.abort_rebase();
-				flags.insert(NeedsUpdate::ALL);
-			}
-			Action::DeleteBranch(_, _)
-			| Action::DeleteUpstreamBranch(_)
-			| Action::DeleteTrackingBranches(_) => {
-				return self.process_branch_delete_confirmed_action(
-					action, flags,
-				);
-			}
-		};
-
-		Ok(())
-	}
-
-	fn process_branch_delete_confirmed_action(
-		&mut self,
-		action: Action,
-		flags: &mut NeedsUpdate,
-	) -> Result<()> {
-		match action {
 			Action::DeleteBranch(branch_ref, true) => {
-				let upstream =
-					sync::get_branch_remote(CWD, &branch_ref)
-						.ok()
-						.flatten();
+				let upstream = branch_ref
+					.rsplit('/')
+					.next()
+					.and_then(|branch_name| {
+						sync::get_branch_remote(CWD, branch_name)
+							.ok()
+							.flatten()
+							.map(|remote| {
+								format!(
+									"refs/remotes/{}/{}",
+									remote, branch_name
+								)
+							})
+					});
 
 				if let Err(e) = sync::delete_branch(CWD, &branch_ref)
 				{
@@ -860,10 +827,11 @@ impl App {
 					Action::DeleteBranch(upstream, false),
 				));
 			}
-			Action::DeleteTrackingBranches(branch_refs) => {
-				for branch_ref in &branch_refs {
+			Action::DeleteTrackingBranches(branches) => {
+				for branch in &branches {
+					let branch_ref = format!("refs/heads/{}", branch);
 					if let Err(e) =
-						sync::delete_branch(CWD, branch_ref)
+						sync::delete_branch(CWD, &branch_ref)
 					{
 						self.queue.push(InternalEvent::ShowErrorMsg(
 							e.to_string(),
@@ -874,8 +842,33 @@ impl App {
 				flags.insert(NeedsUpdate::ALL);
 				self.select_branch_popup.update_branches()?;
 			}
-			_ => {}
-		}
+			Action::DeleteTag(tag_name) => {
+				if let Err(error) = sync::delete_tag(CWD, &tag_name) {
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						error.to_string(),
+					));
+				} else {
+					flags.insert(NeedsUpdate::ALL);
+					self.tags_popup.update_tags()?;
+				}
+			}
+			Action::ForcePush(branch, force) => {
+				self.queue
+					.push(InternalEvent::Push(branch, force, false));
+			}
+			Action::PullMerge { rebase, .. } => {
+				self.pull_popup.try_conflict_free_merge(rebase);
+				flags.insert(NeedsUpdate::ALL);
+			}
+			Action::AbortMerge => {
+				self.status_tab.abort_merge();
+				flags.insert(NeedsUpdate::ALL);
+			}
+			Action::AbortRebase => {
+				self.status_tab.abort_rebase();
+				flags.insert(NeedsUpdate::ALL);
+			}
+		};
 
 		Ok(())
 	}
