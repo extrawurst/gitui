@@ -26,7 +26,7 @@ use std::convert::Into;
 use tui::{
 	layout::{Alignment, Constraint, Direction, Layout},
 	style::{Color, Style},
-	widgets::{Block, BorderType, Paragraph},
+	widgets::{Block, BorderType, Borders, Paragraph},
 };
 
 /// what part of the screen is focused
@@ -237,31 +237,28 @@ impl Status {
 					sync::mergehead_ids(CWD).unwrap_or_default();
 
 				let ids = format!(
-					"({})",
+					"{}",
 					ids.iter()
 						.map(sync::CommitId::get_short_string)
 						.join(",")
 				);
 
-				format!("{:?} {}", state, ids)
+				format!("Commits: {}", ids)
 			}
 			RepoState::Rebase => {
-				let progress =
-					if let Ok(p) = sync::rebase_progress(CWD) {
-						format!(
-							"[{}] {}/{}",
-							p.current_commit
-								.as_ref()
-								.map(CommitId::get_short_string)
-								.unwrap_or_default(),
-							p.current + 1,
-							p.steps
-						)
-					} else {
-						String::new()
-					};
-
-				format!("{:?} ({})", state, progress)
+				if let Ok(p) = sync::rebase_progress(CWD) {
+					format!(
+						"Step: {}/{} Current Commit: {}",
+						p.current + 1,
+						p.steps,
+						p.current_commit
+							.as_ref()
+							.map(CommitId::get_short_string)
+							.unwrap_or_default(),
+					)
+				} else {
+					String::new()
+				}
 			}
 			_ => format!("{:?}", state),
 		}
@@ -279,10 +276,11 @@ impl Status {
 					.block(
 						Block::default()
 							.border_type(BorderType::Plain)
+							.borders(Borders::all())
 							.border_style(
 								Style::default().fg(Color::Yellow),
 							)
-							.title(format!("{:?}", state)),
+							.title(format!("Pending {:?}", state)),
 					)
 					.style(Style::default().fg(Color::Red))
 					.alignment(Alignment::Left);
