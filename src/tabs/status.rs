@@ -134,7 +134,7 @@ impl DrawableComponent for Status {
 		self.draw_branch_state(f, &left_chunks);
 
 		if repo_unclean {
-			Self::draw_repo_state(f, rects[1])?;
+			Self::draw_repo_state(f, rects[1]);
 		}
 
 		Ok(())
@@ -236,14 +236,12 @@ impl Status {
 				let ids =
 					sync::mergehead_ids(CWD).unwrap_or_default();
 
-				let ids = format!(
-					"{}",
+				format!(
+					"Commits: {}",
 					ids.iter()
 						.map(sync::CommitId::get_short_string)
 						.join(",")
-				);
-
-				format!("Commits: {}", ids)
+				)
 			}
 			RepoState::Rebase => {
 				if let Ok(p) = sync::rebase_progress(CWD) {
@@ -267,7 +265,7 @@ impl Status {
 	fn draw_repo_state<B: tui::backend::Backend>(
 		f: &mut tui::Frame<B>,
 		r: tui::layout::Rect,
-	) -> Result<()> {
+	) {
 		if let Ok(state) = sync::repo_state(CWD) {
 			if state != RepoState::Clean {
 				let txt = Self::repo_state_text(&state);
@@ -288,8 +286,6 @@ impl Status {
 				f.render_widget(w, r);
 			}
 		}
-
-		Ok(())
 	}
 
 	fn repo_state_unclean() -> bool {
