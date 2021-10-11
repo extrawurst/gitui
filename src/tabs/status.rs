@@ -23,11 +23,10 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
 use std::convert::Into;
-use std::convert::TryFrom;
 use tui::{
 	layout::{Alignment, Constraint, Direction, Layout},
 	style::{Color, Style},
-	widgets::Paragraph,
+	widgets::{Block, Paragraph},
 };
 
 /// what part of the screen is focused
@@ -80,7 +79,8 @@ impl DrawableComponent for Status {
 		f: &mut tui::Frame<B>,
 		rect: tui::layout::Rect,
 	) -> Result<()> {
-		let rects = if Self::repo_state_unclean() {
+		let repo_unclean = Self::repo_state_unclean();
+		let rects = if repo_unclean {
 			Layout::default()
 				.direction(Direction::Vertical)
 				.constraints(
@@ -132,7 +132,10 @@ impl DrawableComponent for Status {
 		self.index.draw(f, left_chunks[1])?;
 		self.diff.draw(f, chunks[1])?;
 		self.draw_branch_state(f, &left_chunks);
-		Self::draw_repo_state(f, left_chunks[0])?;
+
+		if repo_unclean {
+			Self::draw_repo_state(f, rects[1])?;
+		}
 
 		Ok(())
 	}
@@ -272,21 +275,12 @@ impl Status {
 			if state != RepoState::Clean {
 				let txt = Self::repo_state_text(&state);
 
-				let txt_len = u16::try_from(txt.len())?;
 				let w = Paragraph::new(txt)
+					.block(Block::default().title("Foo"))
 					.style(Style::default().fg(Color::Red))
 					.alignment(Alignment::Left);
 
-				let mut rect = r;
-				rect.x += 1;
-				rect.width =
-					rect.width.saturating_sub(2).min(txt_len);
-				rect.y += rect.height.saturating_sub(1);
-				rect.height = rect
-					.height
-					.saturating_sub(rect.height.saturating_sub(1));
-
-				f.render_widget(w, rect);
+				f.render_widget(w, r);
 			}
 		}
 
