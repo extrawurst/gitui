@@ -270,7 +270,8 @@ mod test_conflict_free_rebase {
 
 		checkout_branch(repo_path, "refs/heads/foo").unwrap();
 
-		let res = rebase_branch(repo_path, "master");
+		let res =
+			rebase_branch(repo_path, "master", BranchType::Local);
 
 		assert!(matches!(res.unwrap(), RebaseState::Conflicted));
 
@@ -290,6 +291,7 @@ mod test_rebase {
 		tests::{repo_init, write_commit_file},
 		RepoState,
 	};
+	use git2::BranchType;
 
 	#[test]
 	fn test_conflicted_abort() {
@@ -314,7 +316,8 @@ mod test_rebase {
 
 		// rebase
 
-		let r = rebase_branch(repo_path, "master").unwrap();
+		let r = rebase_branch(repo_path, "master", BranchType::Local)
+			.unwrap();
 
 		assert_eq!(r, RebaseState::Conflicted);
 		assert_eq!(repo_state(repo_path).unwrap(), RepoState::Rebase);

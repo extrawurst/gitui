@@ -167,7 +167,7 @@ mod tests {
 
 		write_commit_file(&repo, "test.txt", "test2", "commit2");
 
-		merge_branch(repo_path, "master").unwrap();
+		merge_branch(repo_path, "master", BranchType::Local).unwrap();
 
 		let msg = merge_msg(repo_path).unwrap();
 
