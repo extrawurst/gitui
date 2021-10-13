@@ -769,7 +769,7 @@ impl App {
 				sync::discard_lines(CWD, &path, &lines)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
-			Action::DeleteBranch(branch_ref, true) => {
+			Action::DeleteLocalBranch(branch_ref) => {
 				let upstream = branch_ref
 					.rsplit('/')
 					.next()
@@ -801,8 +801,9 @@ impl App {
 					));
 				}
 			}
-			Action::DeleteBranch(branch_ref, false) => {
+			Action::DeleteRemoteBranch(branch_ref) => {
 				self.queue.push(
+					//TODO: check if this is correct based on the fix in `c6abbaf`
 					branch_ref.rsplit('/').next().map_or_else(
 						|| {
 							InternalEvent::ShowErrorMsg(format!(
@@ -824,7 +825,7 @@ impl App {
 			}
 			Action::DeleteUpstreamBranch(upstream) => {
 				self.queue.push(InternalEvent::ConfirmedAction(
-					Action::DeleteBranch(upstream, false),
+					Action::DeleteRemoteBranch(upstream),
 				));
 			}
 			Action::DeleteTrackingBranches(branches) => {

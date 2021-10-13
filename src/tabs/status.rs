@@ -23,11 +23,10 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
 use std::convert::Into;
-use std::convert::TryFrom;
 use tui::{
 	layout::{Alignment, Constraint, Direction, Layout},
 	style::{Color, Style},
-	widgets::Paragraph,
+	widgets::{Block, BorderType, Borders, Paragraph},
 };
 
 /// what part of the screen is focused
@@ -80,6 +79,19 @@ impl DrawableComponent for Status {
 		f: &mut tui::Frame<B>,
 		rect: tui::layout::Rect,
 	) -> Result<()> {
+		let repo_unclean = Self::repo_state_unclean();
+		let rects = if repo_unclean {
+			Layout::default()
+				.direction(Direction::Vertical)
+				.constraints(
+					[Constraint::Min(1), Constraint::Length(3)]
+						.as_ref(),
+				)
+				.split(rect)
+		} else {
+			vec![rect]
+		};
+
 		let chunks = Layout::default()
 			.direction(Direction::Horizontal)
 			.constraints(
@@ -96,7 +108,7 @@ impl DrawableComponent for Status {
 				}
 				.as_ref(),
 			)
-			.split(rect);
+			.split(rects[0]);
 
 		let left_chunks = Layout::default()
 			.direction(Direction::Vertical)
@@ -120,7 +132,10 @@ impl DrawableComponent for Status {
 		self.index.draw(f, left_chunks[1])?;
 		self.diff.draw(f, chunks[1])?;
 		self.draw_branch_state(f, &left_chunks);
-		Self::draw_repo_state(f, left_chunks[0])?;
+
+		if repo_unclean {
+			Self::draw_repo_state(f, rects[1]);
+		}
 
 		Ok(())
 	}
@@ -221,32 +236,27 @@ impl Status {
 				let ids =
 					sync::mergehead_ids(CWD).unwrap_or_default();
 
-				let ids = format!(
-					"({})",
+				format!(
+					"Commits: {}",
 					ids.iter()
 						.map(sync::CommitId::get_short_string)
 						.join(",")
-				);
-
-				format!("{:?} {}", state, ids)
+				)
 			}
 			RepoState::Rebase => {
-				let progress =
-					if let Ok(p) = sync::rebase_progress(CWD) {
-						format!(
-							"[{}] {}/{}",
-							p.current_commit
-								.as_ref()
-								.map(CommitId::get_short_string)
-								.unwrap_or_default(),
-							p.current + 1,
-							p.steps
-						)
-					} else {
-						String::new()
-					};
-
-				format!("{:?} ({})", state, progress)
+				if let Ok(p) = sync::rebase_progress(CWD) {
+					format!(
+						"Step: {}/{} Current Commit: {}",
+						p.current + 1,
+						p.steps,
+						p.current_commit
+							.as_ref()
+							.map(CommitId::get_short_string)
+							.unwrap_or_default(),
+					)
+				} else {
+					String::new()
+				}
 			}
 			_ => format!("{:?}", state),
 		}
@@ -255,30 +265,36 @@ impl Status {
 	fn draw_repo_state<B: tui::backend::Backend>(
 		f: &mut tui::Frame<B>,
 		r: tui::layout::Rect,
-	) -> Result<()> {
+	) {
 		if let Ok(state) = sync::repo_state(CWD) {
 			if state != RepoState::Clean {
 				let txt = Self::repo_state_text(&state);
 
-				let txt_len = u16::try_from(txt.len())?;
 				let w = Paragraph::new(txt)
+					.block(
+						Block::default()
+							.border_type(BorderType::Plain)
+							.borders(Borders::all())
+							.border_style(
+								Style::default().fg(Color::Yellow),
+							)
+							.title(format!("Pending {:?}", state)),
+					)
 					.style(Style::default().fg(Color::Red))
 					.alignment(Alignment::Left);
 
-				let mut rect = r;
-				rect.x += 1;
-				rect.width =
-					rect.width.saturating_sub(2).min(txt_len);
-				rect.y += rect.height.saturating_sub(1);
-				rect.height = rect
-					.height
-					.saturating_sub(rect.height.saturating_sub(1));
-
-				f.render_widget(w, rect);
+				f.render_widget(w, r);
 			}
 		}
+	}
 
-		Ok(())
+	fn repo_state_unclean() -> bool {
+		if let Ok(state) = sync::repo_state(CWD) {
+			if state != RepoState::Clean {
+				return true;
+			}
+		}
+		false
 	}
 
 	fn can_focus_diff(&self) -> bool {
