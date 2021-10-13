@@ -396,7 +396,7 @@ impl BranchListComponent {
 		Ok(())
 	}
 
-	fn get_branch_type(&self) -> BranchType {
+	const fn get_branch_type(&self) -> BranchType {
 		if self.local {
 			BranchType::Local
 		} else {
