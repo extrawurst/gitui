@@ -157,7 +157,7 @@ impl ConfirmComponent {
                     strings::confirm_title_reset(),
                     strings::confirm_msg_reset_lines(lines.len()),
                 ),
-                Action::DeleteBranch(branch_ref, true) => (
+                Action::DeleteLocalBranch(branch_ref) => (
                     strings::confirm_title_delete_branch(
                         &self.key_config,
                     ),
@@ -166,7 +166,7 @@ impl ConfirmComponent {
                         branch_ref,
                     ),
                 ),
-                Action::DeleteBranch(branch_ref, false) => (
+                Action::DeleteRemoteBranch(branch_ref) => (
                     strings::confirm_title_delete_remote_branch(
                         &self.key_config,
                     ),
