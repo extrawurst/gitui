@@ -368,13 +368,11 @@ impl BranchListComponent {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
-			let branch_type = if self.local {
-				BranchType::Local
-			} else {
-				BranchType::Remote
-			};
-
-			sync::merge_branch(CWD, &branch.name, branch_type)?;
+			sync::merge_branch(
+				CWD,
+				&branch.name,
+				self.get_branch_type(),
+			)?;
 
 			self.hide_and_switch_tab()?;
 		}
@@ -386,18 +384,24 @@ impl BranchListComponent {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
-			let branch_type = if self.local {
-				BranchType::Local
-			} else {
-				BranchType::Remote
-			};
-
-			sync::rebase_branch(CWD, &branch.name, branch_type)?;
+			sync::rebase_branch(
+				CWD,
+				&branch.name,
+				self.get_branch_type(),
+			)?;
 
 			self.hide_and_switch_tab()?;
 		}
 
 		Ok(())
+	}
+
+	fn get_branch_type(&self) -> BranchType {
+		if self.local {
+			BranchType::Local
+		} else {
+			BranchType::Remote
+		}
 	}
 
 	fn hide_and_switch_tab(&mut self) -> Result<()> {
