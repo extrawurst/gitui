@@ -768,7 +768,7 @@ impl App {
 				sync::discard_lines(CWD, &path, &lines)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
-			Action::DeleteBranch(branch_ref, true) => {
+			Action::DeleteLocalBranch(branch_ref) => {
 				if let Err(e) = sync::delete_branch(CWD, &branch_ref)
 				{
 					self.queue.push(InternalEvent::ShowErrorMsg(
@@ -778,8 +778,9 @@ impl App {
 				flags.insert(NeedsUpdate::ALL);
 				self.select_branch_popup.update_branches()?;
 			}
-			Action::DeleteBranch(branch_ref, false) => {
+			Action::DeleteRemoteBranch(branch_ref) => {
 				self.queue.push(
+					//TODO: check if this is correct based on the fix in `c6abbaf`
 					branch_ref.rsplit('/').next().map_or_else(
 						|| {
 							InternalEvent::ShowErrorMsg(format!(

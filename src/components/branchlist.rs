@@ -675,13 +675,15 @@ impl BranchListComponent {
 	}
 
 	fn delete_branch(&mut self) {
+		let reference =
+			self.branches[self.selection as usize].reference.clone();
+
 		self.queue.push(InternalEvent::ConfirmAction(
-			Action::DeleteBranch(
-				self.branches[self.selection as usize]
-					.reference
-					.clone(),
-				self.local,
-			),
+			if self.local {
+				Action::DeleteLocalBranch(reference)
+			} else {
+				Action::DeleteRemoteBranch(reference)
+			},
 		));
 	}
 }
