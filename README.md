@@ -167,6 +167,13 @@ Binaries available for:
 ### Cargo Install
 
 The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui`. If you are not familiar with rust and cargo: [Getting Started with Rust](https://doc.rust-lang.org/book/ch01-00-getting-started.html)
+### Cargo Features
+#### trace-libgit
+enable `libgit2` tracing
+
+works if `libgit2` builded with `-DENABLE_TRACE=ON`
+
+this feature enabled by default, to disable: `cargo install --no-default-features`
 
 ## 8. <a name="diagnostics"></a> Diagnostics <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
