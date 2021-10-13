@@ -12,19 +12,21 @@ use super::CommitId;
 pub fn rebase_branch(
 	repo_path: &str,
 	branch: &str,
+	branch_type: BranchType,
 ) -> Result<RebaseState> {
 	scope_time!("rebase_branch");
 
 	let repo = utils::repo(repo_path)?;
 
-	rebase_branch_repo(&repo, branch)
+	rebase_branch_repo(&repo, branch, branch_type)
 }
 
 fn rebase_branch_repo(
 	repo: &Repository,
 	branch_name: &str,
+	branch_type: BranchType,
 ) -> Result<RebaseState> {
-	let branch = repo.find_branch(branch_name, BranchType::Local)?;
+	let branch = repo.find_branch(branch_name, branch_type)?;
 
 	let annotated =
 		repo.reference_to_annotated_commit(&branch.into_reference())?;
@@ -268,7 +270,8 @@ mod test_conflict_free_rebase {
 
 		checkout_branch(repo_path, "refs/heads/foo").unwrap();
 
-		let res = rebase_branch(repo_path, "master");
+		let res =
+			rebase_branch(repo_path, "master", BranchType::Local);
 
 		assert!(matches!(res.unwrap(), RebaseState::Conflicted));
 
@@ -288,6 +291,7 @@ mod test_rebase {
 		tests::{repo_init, write_commit_file},
 		RepoState,
 	};
+	use git2::BranchType;
 
 	#[test]
 	fn test_conflicted_abort() {
@@ -312,7 +316,8 @@ mod test_rebase {
 
 		// rebase
 
-		let r = rebase_branch(repo_path, "master").unwrap();
+		let r = rebase_branch(repo_path, "master", BranchType::Local)
+			.unwrap();
 
 		assert_eq!(r, RebaseState::Conflicted);
 		assert_eq!(repo_state(repo_path).unwrap(), RepoState::Rebase);

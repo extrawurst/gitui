@@ -18,8 +18,8 @@ use asyncgit::{
 			checkout_remote_branch, BranchDetails, LocalBranch,
 			RemoteBranch,
 		},
-		checkout_branch, get_branches_info, BranchInfo, CommitId,
-		RepoState,
+		checkout_branch, get_branches_info, BranchInfo, BranchType,
+		CommitId, RepoState,
 	},
 	AsyncGitNotification, CWD,
 };
@@ -178,7 +178,7 @@ impl Component for BranchListComponent {
 					&self.key_config,
 				),
 				!self.selection_is_cur_branch(),
-				self.local,
+				true,
 			));
 
 			out.push(CommandInfo::new(
@@ -186,7 +186,7 @@ impl Component for BranchListComponent {
 					&self.key_config,
 				),
 				!self.selection_is_cur_branch(),
-				self.local,
+				true,
 			));
 
 			out.push(CommandInfo::new(
@@ -368,7 +368,11 @@ impl BranchListComponent {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
-			sync::merge_branch(CWD, &branch.name)?;
+			sync::merge_branch(
+				CWD,
+				&branch.name,
+				self.get_branch_type(),
+			)?;
 
 			self.hide_and_switch_tab()?;
 		}
@@ -380,12 +384,24 @@ impl BranchListComponent {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
-			sync::rebase_branch(CWD, &branch.name)?;
+			sync::rebase_branch(
+				CWD,
+				&branch.name,
+				self.get_branch_type(),
+			)?;
 
 			self.hide_and_switch_tab()?;
 		}
 
 		Ok(())
+	}
+
+	const fn get_branch_type(&self) -> BranchType {
+		if self.local {
+			BranchType::Local
+		} else {
+			BranchType::Remote
+		}
 	}
 
 	fn hide_and_switch_tab(&mut self) -> Result<()> {
