@@ -19,6 +19,7 @@ use asyncgit::{
 			RemoteBranch,
 		},
 		checkout_branch, get_branches_info, BranchInfo, CommitId,
+		RepoState,
 	},
 	AsyncGitNotification, CWD,
 };
@@ -280,6 +281,9 @@ impl Component for BranchListComponent {
 					self.queue
 						.push(InternalEvent::CompareCommits(b, None));
 				}
+			} else if e == self.key_config.cmd_bar_toggle {
+				//do not consume if its the more key
+				return Ok(EventState::NotConsumed);
 			}
 		}
 
@@ -349,10 +353,8 @@ impl BranchListComponent {
 		&mut self,
 		ev: AsyncGitNotification,
 	) -> Result<()> {
-		if self.is_visible() {
-			if let AsyncGitNotification::Push = ev {
-				self.update_branches()?;
-			}
+		if self.is_visible() && ev == AsyncGitNotification::Push {
+			self.update_branches()?;
 		}
 
 		Ok(())
@@ -368,8 +370,7 @@ impl BranchListComponent {
 		{
 			sync::merge_branch(CWD, &branch.name)?;
 
-			self.hide();
-			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+			self.hide_and_switch_tab()?;
 		}
 
 		Ok(())
@@ -381,9 +382,18 @@ impl BranchListComponent {
 		{
 			sync::rebase_branch(CWD, &branch.name)?;
 
-			self.hide();
+			self.hide_and_switch_tab()?;
+		}
 
-			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+		Ok(())
+	}
+
+	fn hide_and_switch_tab(&mut self) -> Result<()> {
+		self.hide();
+		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+
+		if sync::repo_state(CWD)? != RepoState::Clean {
+			self.queue.push(InternalEvent::TabSwitch);
 		}
 
 		Ok(())
@@ -649,13 +659,15 @@ impl BranchListComponent {
 	}
 
 	fn delete_branch(&mut self) {
+		let reference =
+			self.branches[self.selection as usize].reference.clone();
+
 		self.queue.push(InternalEvent::ConfirmAction(
-			Action::DeleteBranch(
-				self.branches[self.selection as usize]
-					.reference
-					.clone(),
-				self.local,
-			),
+			if self.local {
+				Action::DeleteLocalBranch(reference)
+			} else {
+				Action::DeleteRemoteBranch(reference)
+			},
 		));
 	}
 }

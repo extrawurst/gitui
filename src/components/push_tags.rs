@@ -101,10 +101,8 @@ impl PushTagsComponent {
 		&mut self,
 		ev: AsyncGitNotification,
 	) -> Result<()> {
-		if self.is_visible() {
-			if let AsyncGitNotification::PushTags = ev {
-				self.update()?;
-			}
+		if self.is_visible() && ev == AsyncGitNotification::PushTags {
+			self.update()?;
 		}
 
 		Ok(())

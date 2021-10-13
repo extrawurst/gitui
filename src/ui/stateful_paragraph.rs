@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use easy_cast::Cast;
 use std::iter;
 use tui::{
@@ -47,12 +45,6 @@ pub struct StatefulParagraph<'a> {
 pub struct ScrollPos {
 	pub x: u16,
 	pub y: u16,
-}
-
-impl ScrollPos {
-	pub const fn new(x: u16, y: u16) -> Self {
-		Self { x, y }
-	}
 }
 
 #[derive(Debug, Copy, Clone, Default)]
@@ -103,20 +95,20 @@ impl<'a> StatefulParagraph<'a> {
 		self
 	}
 
-	pub const fn style(mut self, style: Style) -> Self {
-		self.style = style;
-		self
-	}
-
 	pub const fn wrap(mut self, wrap: Wrap) -> Self {
 		self.wrap = Some(wrap);
 		self
 	}
 
-	pub const fn alignment(mut self, alignment: Alignment) -> Self {
-		self.alignment = alignment;
-		self
-	}
+	// pub const fn style(mut self, style: Style) -> Self {
+	// 	self.style = style;
+	// 	self
+	// }
+
+	// pub const fn alignment(mut self, alignment: Alignment) -> Self {
+	// 	self.alignment = alignment;
+	// 	self
+	// }
 }
 
 impl<'a> StatefulWidget for StatefulParagraph<'a> {
@@ -168,7 +160,7 @@ impl<'a> StatefulWidget for StatefulParagraph<'a> {
 					&mut styled,
 					text_area.width,
 				));
-				if let Alignment::Left = self.alignment {
+				if self.alignment == Alignment::Left {
 					line_composer
 						.set_horizontal_offset(state.scroll.x);
 				}

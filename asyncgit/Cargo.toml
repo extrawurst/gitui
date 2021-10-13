@@ -1,6 +1,6 @@
 [package]
 name = "asyncgit"
-version = "0.17.1"
+version = "0.18.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 edition = "2018"
 description = "allow using git2 in a asynchronous context"
@@ -30,7 +30,7 @@ easy-cast = "0.4"
 tempfile = "3.2"
 invalidstring = { path = "../invalidstring", version = "0.1" }
 serial_test = "0.5.1"
-pretty_assertions = "0.7"
+pretty_assertions = "1.0"
 
 [features]
 default = ["trace-libgit"]

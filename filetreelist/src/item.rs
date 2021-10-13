@@ -63,7 +63,7 @@ impl TreeItemInfo {
 						.unwrap_or_default(),
 				)
 			},
-			|folding| folding.as_path(),
+			PathBuf::as_path,
 		)
 	}
 

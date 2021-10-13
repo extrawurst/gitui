@@ -14,8 +14,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	cached,
-	sync::BranchCompare,
 	sync::{self, status::StatusType, RepoState},
+	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
 	DiffType, StatusParams, CWD,
 };
@@ -23,11 +23,10 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
 use std::convert::Into;
-use std::convert::TryFrom;
 use tui::{
 	layout::{Alignment, Constraint, Direction, Layout},
 	style::{Color, Style},
-	widgets::Paragraph,
+	widgets::{Block, BorderType, Borders, Paragraph},
 };
 
 /// what part of the screen is focused
@@ -80,6 +79,19 @@ impl DrawableComponent for Status {
 		f: &mut tui::Frame<B>,
 		rect: tui::layout::Rect,
 	) -> Result<()> {
+		let repo_unclean = Self::repo_state_unclean();
+		let rects = if repo_unclean {
+			Layout::default()
+				.direction(Direction::Vertical)
+				.constraints(
+					[Constraint::Min(1), Constraint::Length(3)]
+						.as_ref(),
+				)
+				.split(rect)
+		} else {
+			vec![rect]
+		};
+
 		let chunks = Layout::default()
 			.direction(Direction::Horizontal)
 			.constraints(
@@ -96,7 +108,7 @@ impl DrawableComponent for Status {
 				}
 				.as_ref(),
 			)
-			.split(rect);
+			.split(rects[0]);
 
 		let left_chunks = Layout::default()
 			.direction(Direction::Vertical)
@@ -120,7 +132,10 @@ impl DrawableComponent for Status {
 		self.index.draw(f, left_chunks[1])?;
 		self.diff.draw(f, chunks[1])?;
 		self.draw_branch_state(f, &left_chunks);
-		Self::draw_repo_state(f, left_chunks[0])?;
+
+		if repo_unclean {
+			Self::draw_repo_state(f, rects[1]);
+		}
 
 		Ok(())
 	}
@@ -215,42 +230,71 @@ impl Status {
 		}
 	}
 
+	fn repo_state_text(state: &RepoState) -> String {
+		match state {
+			RepoState::Merge => {
+				let ids =
+					sync::mergehead_ids(CWD).unwrap_or_default();
+
+				format!(
+					"Commits: {}",
+					ids.iter()
+						.map(sync::CommitId::get_short_string)
+						.join(",")
+				)
+			}
+			RepoState::Rebase => {
+				if let Ok(p) = sync::rebase_progress(CWD) {
+					format!(
+						"Step: {}/{} Current Commit: {}",
+						p.current + 1,
+						p.steps,
+						p.current_commit
+							.as_ref()
+							.map(CommitId::get_short_string)
+							.unwrap_or_default(),
+					)
+				} else {
+					String::new()
+				}
+			}
+			_ => format!("{:?}", state),
+		}
+	}
+
 	fn draw_repo_state<B: tui::backend::Backend>(
 		f: &mut tui::Frame<B>,
 		r: tui::layout::Rect,
-	) -> Result<()> {
+	) {
 		if let Ok(state) = sync::repo_state(CWD) {
 			if state != RepoState::Clean {
-				let ids =
-					sync::mergehead_ids(CWD).unwrap_or_default();
-				let ids = format!(
-					"({})",
-					ids.iter()
-						.map(|id| sync::CommitId::get_short_string(
-							id
-						))
-						.join(",")
-				);
-				let txt = format!("{:?} {}", state, ids);
-				let txt_len = u16::try_from(txt.len())?;
+				let txt = Self::repo_state_text(&state);
+
 				let w = Paragraph::new(txt)
+					.block(
+						Block::default()
+							.border_type(BorderType::Plain)
+							.borders(Borders::all())
+							.border_style(
+								Style::default().fg(Color::Yellow),
+							)
+							.title(format!("Pending {:?}", state)),
+					)
 					.style(Style::default().fg(Color::Red))
 					.alignment(Alignment::Left);
 
-				let mut rect = r;
-				rect.x += 1;
-				rect.width =
-					rect.width.saturating_sub(2).min(txt_len);
-				rect.y += rect.height.saturating_sub(1);
-				rect.height = rect
-					.height
-					.saturating_sub(rect.height.saturating_sub(1));
-
-				f.render_widget(w, rect);
+				f.render_widget(w, r);
 			}
 		}
+	}
 
-		Ok(())
+	fn repo_state_unclean() -> bool {
+		if let Ok(state) = sync::repo_state(CWD) {
+			if state != RepoState::Clean {
+				return true;
+			}
+		}
+		false
 	}
 
 	fn can_focus_diff(&self) -> bool {
@@ -519,8 +563,29 @@ impl Status {
 			== RepoState::Merge
 	}
 
+	fn pending_rebase() -> bool {
+		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+			== RepoState::Rebase
+	}
+
 	pub fn abort_merge(&self) {
 		try_or_popup!(self, "abort merge", sync::abort_merge(CWD));
+	}
+
+	pub fn abort_rebase(&self) {
+		try_or_popup!(
+			self,
+			"abort rebase",
+			sync::abort_pending_rebase(CWD)
+		);
+	}
+
+	fn continue_rebase(&self) {
+		try_or_popup!(
+			self,
+			"continue rebase",
+			sync::continue_pending_rebase(CWD)
+		);
 	}
 
 	fn commands_nav(
@@ -566,6 +631,12 @@ impl Status {
 			.order(strings::order::NAV),
 		);
 	}
+
+	fn can_commit(&self) -> bool {
+		self.index.focused()
+			&& !self.index.is_empty()
+			&& !Self::pending_rebase()
+	}
 }
 
 impl Component for Status {
@@ -581,6 +652,15 @@ impl Component for Status {
 				out,
 				force_all,
 				self.components().as_slice(),
+			);
+
+			out.push(
+				CommandInfo::new(
+					strings::commands::commit_open(&self.key_config),
+					true,
+					self.can_commit() || force_all,
+				)
+				.order(-1),
 			);
 
 			out.push(CommandInfo::new(
@@ -612,13 +692,25 @@ impl Component for Status {
 			out.push(CommandInfo::new(
 				strings::commands::undo_commit(&self.key_config),
 				true,
-				!focus_on_diff,
+				(!Self::pending_rebase() && !focus_on_diff)
+					|| force_all,
 			));
 
 			out.push(CommandInfo::new(
 				strings::commands::abort_merge(&self.key_config),
 				true,
 				Self::can_abort_merge() || force_all,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::continue_rebase(&self.key_config),
+				true,
+				Self::pending_rebase() || force_all,
+			));
+			out.push(CommandInfo::new(
+				strings::commands::abort_rebase(&self.key_config),
+				true,
+				Self::pending_rebase() || force_all,
 			));
 		}
 
@@ -639,6 +731,7 @@ impl Component for Status {
 		visibility_blocking(self)
 	}
 
+	#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 	fn event(
 		&mut self,
 		ev: crossterm::event::Event,
@@ -663,6 +756,11 @@ impl Component for Status {
 							)),
 						);
 					}
+					Ok(EventState::Consumed)
+				} else if k == self.key_config.open_commit
+					&& self.can_commit()
+				{
+					self.queue.push(InternalEvent::OpenCommit);
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.toggle_workarea
 					&& !self.is_focus_on_diff()
@@ -725,6 +823,22 @@ impl Component for Status {
 						Action::AbortMerge,
 					));
 
+					Ok(EventState::Consumed)
+				} else if k == self.key_config.abort_merge
+					&& Self::pending_rebase()
+				{
+					self.queue.push(InternalEvent::ConfirmAction(
+						Action::AbortRebase,
+					));
+
+					Ok(EventState::Consumed)
+				} else if k == self.key_config.rebase_branch
+					&& Self::pending_rebase()
+				{
+					self.continue_rebase();
+					self.queue.push(InternalEvent::Update(
+						NeedsUpdate::ALL,
+					));
 					Ok(EventState::Consumed)
 				} else {
 					Ok(EventState::NotConsumed)

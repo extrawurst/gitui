@@ -111,15 +111,13 @@ impl PullComponent {
 
 	///
 	pub fn update_git(&mut self, ev: AsyncGitNotification) {
-		if self.is_visible() {
-			if let AsyncGitNotification::Fetch = ev {
-				if let Err(error) = self.update() {
-					self.pending = false;
-					self.hide();
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						format!("fetch failed:\n{}", error),
-					));
-				}
+		if self.is_visible() && ev == AsyncGitNotification::Fetch {
+			if let Err(error) = self.update() {
+				self.pending = false;
+				self.hide();
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("fetch failed:\n{}", error),
+				));
 			}
 		}
 	}

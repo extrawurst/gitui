@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use super::push::ProgressNotification;
 use crate::{error::Result, sync::cred::BasicAuthCredential};
 use crossbeam_channel::Sender;

@@ -153,6 +153,13 @@ pub fn confirm_msg_abortmerge() -> String {
 	"This will revert all uncommitted changes. Are you sure?"
 		.to_string()
 }
+pub fn confirm_title_abortrebase() -> String {
+	"Abort rebase?".to_string()
+}
+pub fn confirm_msg_abortrebase() -> String {
+	"This will revert all uncommitted changes. Are you sure?"
+		.to_string()
+}
 pub fn confirm_msg_reset() -> String {
 	"confirm file reset?".to_string()
 }
@@ -519,7 +526,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Add hunk [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.stage_unstage_item),
 			),
 			"adds selected hunk to stage",
 			CMD_GROUP_DIFF,
@@ -579,7 +586,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Remove hunk [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.stage_unstage_item),
 			),
 			"removes selected hunk from stage",
 			CMD_GROUP_DIFF,
@@ -628,6 +635,31 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+
+	pub fn continue_rebase(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Continue rebase [{}]",
+				key_config.get_hint(key_config.rebase_branch),
+			),
+			"continue ongoing rebase",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn abort_rebase(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Abort rebase [{}]",
+				key_config.get_hint(key_config.abort_merge),
+			),
+			"abort ongoing rebase",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
 	pub fn select_staging(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -719,7 +751,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Stage [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.stage_unstage_item),
 			),
 			"stage currently selected file or entire path",
 			CMD_GROUP_CHANGES,
@@ -739,7 +771,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Unstage [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.stage_unstage_item),
 			),
 			"unstage currently selected file or entire path",
 			CMD_GROUP_CHANGES,

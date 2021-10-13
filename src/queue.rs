@@ -36,11 +36,13 @@ pub enum Action {
 	ResetLines(String, Vec<DiffLinePosition>),
 	StashDrop(Vec<CommitId>),
 	StashPop(CommitId),
-	DeleteBranch(String, bool),
+	DeleteLocalBranch(String),
+	DeleteRemoteBranch(String),
 	DeleteTag(String),
 	ForcePush(String, bool),
 	PullMerge { incoming: usize, rebase: bool },
 	AbortMerge,
+	AbortRebase,
 }
 
 ///

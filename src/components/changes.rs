@@ -192,43 +192,35 @@ impl Component for ChangesComponent {
 		if self.is_working_dir {
 			out.push(CommandInfo::new(
 				strings::commands::stage_all(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::stage_item(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::reset_item(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::ignore_item(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 		} else {
 			out.push(CommandInfo::new(
 				strings::commands::unstage_item(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::unstage_all(&self.key_config),
-				some_selection,
-				self.focused(),
+				true,
+				some_selection && self.focused(),
 			));
-			out.push(
-				CommandInfo::new(
-					strings::commands::commit_open(&self.key_config),
-					!self.is_empty(),
-					self.focused() || force_all,
-				)
-				.order(-1),
-			);
 		}
 
 		CommandBlocking::PassingOn
@@ -241,13 +233,7 @@ impl Component for ChangesComponent {
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.open_commit
-					&& !self.is_working_dir
-					&& !self.is_empty()
-				{
-					self.queue.push(InternalEvent::OpenCommit);
-					Ok(EventState::Consumed)
-				} else if e == self.key_config.enter {
+				return if e == self.key_config.stage_unstage_item {
 					try_or_popup!(
 						self,
 						"staging error:",

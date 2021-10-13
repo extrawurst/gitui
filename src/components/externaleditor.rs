@@ -104,7 +104,7 @@ impl ExternalEditorComponent {
 		let remainder = remainder_str.split_whitespace();
 
 		let mut args: Vec<&OsStr> =
-			remainder.map(|s| OsStr::new(s)).collect();
+			remainder.map(OsStr::new).collect();
 
 		args.push(path.as_os_str());
 
