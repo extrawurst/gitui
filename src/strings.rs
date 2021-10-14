@@ -212,7 +212,7 @@ pub fn confirm_msg_delete_tracking_branches(
 	branches_ref: &[String],
 ) -> String {
 	format!(
-		"Do you want to delete the referring tracking branches: {} ?",
+		"Do you want to delete the referring tracking branches?\n{}",
 		branches_ref.join(", ")
 	)
 }

@@ -770,20 +770,10 @@ impl App {
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::DeleteLocalBranch(branch_ref) => {
-				let upstream = branch_ref
-					.rsplit('/')
-					.next()
-					.and_then(|branch_name| {
-						sync::get_branch_remote(CWD, branch_name)
-							.ok()
-							.flatten()
-							.map(|remote| {
-								format!(
-									"refs/remotes/{}/{}",
-									remote, branch_name
-								)
-							})
-					});
+				let upstream =
+					sync::get_branch_remote_by_ref(CWD, &branch_ref)
+						.ok()
+						.flatten();
 
 				if let Err(e) = sync::delete_branch(CWD, &branch_ref)
 				{

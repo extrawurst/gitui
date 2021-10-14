@@ -263,6 +263,28 @@ pub fn get_branch_remote(
 	}
 }
 
+/// returns remote of the upstream tracking branch for `branch` (using branch ref)
+pub fn get_branch_remote_by_ref(
+	repo_path: &str,
+	branch_ref: &str,
+) -> Result<Option<String>> {
+	let repo = utils::repo(repo_path)?;
+	let remote_name = repo.branch_upstream_remote(branch_ref).ok();
+	if let Some(remote_name) = remote_name {
+		let remote_name_str = bytes2string(remote_name.as_ref())?;
+		let remote_branch_name =
+			branch_ref.rsplit('/').next().map(|branch_name| {
+				format!(
+					"refs/remotes/{}/{}",
+					remote_name_str, branch_name
+				)
+			});
+		Ok(remote_branch_name)
+	} else {
+		Ok(None)
+	}
+}
+
 /// returns whether the pull merge strategy is set to rebase
 pub fn config_is_pull_rebase(repo_path: &str) -> Result<bool> {
 	let repo = utils::repo(repo_path)?;
@@ -617,6 +639,41 @@ mod tests_branches {
 				.unwrap(),
 			String::from("r2")
 		);
+	}
+
+	#[test]
+	fn test_branch_remote_trackers() {
+		let (r1_path, _remote1) = repo_init_bare().unwrap();
+		let (r2_path, _remote2) = repo_init_bare().unwrap();
+		let (_r, repo) = repo_init().unwrap();
+
+		let r1_path = r1_path.path().to_str().unwrap();
+		let r2_path = r2_path.path().to_str().unwrap();
+
+		//Note: create those test branches in our remotes
+		clone_branch_commit_push(r1_path, "r1branch");
+		clone_branch_commit_push(r2_path, "r2branch");
+
+		let root = repo.path().parent().unwrap();
+		let repo_path = root.as_os_str().to_str().unwrap();
+
+		//add the remotes
+		repo.remote("r1", r1_path).unwrap();
+		repo.remote("r2", r2_path).unwrap();
+
+		//pull stuff from the two remotes
+		debug_cmd_print(repo_path, "git pull r1");
+		debug_cmd_print(repo_path, "git pull r2");
+
+		//create local tracking branches
+		debug_cmd_print(
+			repo_path,
+			"git checkout --track r1/r1branch",
+		);
+		debug_cmd_print(
+			repo_path,
+			"git checkout --track r2/r2branch",
+		);
 
 		assert_eq!(
 			get_branch_trackers(
@@ -638,6 +695,41 @@ mod tests_branches {
 			.into_iter()
 			.collect::<Vec<String>>(),
 			vec![String::from("r2branch")]
+		);
+	}
+
+	#[test]
+	fn test_get_remote_by_ref() {
+		let (r_path, _remote) = repo_init_bare().unwrap();
+		let (_r, repo) = repo_init().unwrap();
+
+		let r_path = r_path.path().to_str().unwrap();
+
+		//Note: create the test branches in our remote
+		clone_branch_commit_push(r_path, "remotebranch");
+
+		let root = repo.path().parent().unwrap();
+		let repo_path = root.as_os_str().to_str().unwrap();
+
+		//add the remote
+		repo.remote("origin", r_path).unwrap();
+
+		//pull stuff from the remotes
+		debug_cmd_print(repo_path, "git pull origin");
+
+		//create local tracking branches
+		debug_cmd_print(
+			repo_path,
+			"git checkout --track origin/remotebranch",
+		);
+
+		assert_eq!(
+			get_branch_remote_by_ref(
+				repo_path,
+				"refs/heads/remotebranch"
+			)
+			.unwrap(),
+			Some(String::from("refs/remotes/origin/remotebranch"))
 		);
 	}
 
