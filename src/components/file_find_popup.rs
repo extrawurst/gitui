@@ -17,7 +17,7 @@ use std::borrow::Cow;
 use tui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Margin, Rect},
-	text::Span,
+	text::{Span, Spans},
 	widgets::{Block, Borders, Clear},
 	Frame,
 };
@@ -31,7 +31,7 @@ pub struct FileFindPopup {
 	files: Vec<TreeFile>,
 	selection: usize,
 	selected_index: Option<usize>,
-	files_filtered: Vec<usize>,
+	files_filtered: Vec<(usize, Vec<usize>)>,
 	key_config: SharedKeyConfig,
 }
 
@@ -91,8 +91,9 @@ impl FileFindPopup {
 			self.files_filtered.extend(
 				self.files.iter().enumerate().filter_map(|a| {
 					a.1.path.to_str().and_then(|path| {
-						//TODO: use fuzzy_indices and highlight hits
-						matcher.fuzzy_match(path, q).map(|_| a.0)
+						matcher
+							.fuzzy_indices(path, q)
+							.map(|(_, indicies)| (a.0, indicies))
 					})
 				}),
 			);
@@ -104,7 +105,7 @@ impl FileFindPopup {
 
 	fn refresh_selection(&mut self) {
 		let selection =
-			self.files_filtered.get(self.selection).copied();
+			self.files_filtered.get(self.selection).map(|a| a.0);
 
 		if self.selected_index != selection {
 			self.selected_index = selection;
@@ -217,24 +218,36 @@ impl DrawableComponent for FileFindPopup {
 				let height = usize::from(chunks[1].height);
 				let width = usize::from(chunks[1].width);
 
-				let items =
-					self.files_filtered.iter().take(height).map(
-						|idx| {
-							let selected = self
-								.selected_index
-								.map_or(false, |index| index == *idx);
-							Span::styled(
-								Cow::from(trim_length_left(
-									self.files[*idx]
-										.path
-										.to_str()
-										.unwrap_or_default(),
-									width,
-								)),
-								self.theme.text(selected, false),
-							)
-						},
-					);
+				let items = self
+					.files_filtered
+					.iter()
+					.take(height)
+					.map(|(idx, indicies)| {
+						let selected = self
+							.selected_index
+							.map_or(false, |index| index == *idx);
+						let full_text = trim_length_left(
+							self.files[*idx]
+								.path
+								.to_str()
+								.unwrap_or_default(),
+							width,
+						);
+						Spans::from(
+							full_text
+								.char_indices()
+								.map(|(c_idx, c)| {
+									Span::styled(
+										Cow::from(c.to_string()),
+										self.theme.text(
+											selected,
+											indicies.contains(&c_idx),
+										),
+									)
+								})
+								.collect::<Vec<_>>(),
+						)
+					});
 
 				ui::draw_list_block(
 					f,
