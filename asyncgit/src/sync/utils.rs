@@ -149,6 +149,40 @@ pub fn stage_add_all(repo_path: &str, pattern: &str) -> Result<()> {
 	Ok(())
 }
 
+/// add all changed files that are currently tracked
+pub fn stage_add_updated(
+	repo_path: &str,
+	pattern: &str,
+) -> Result<()> {
+	scope_time!("stage_add_updated");
+
+	let repo = repo(repo_path)?;
+
+	let mut index = repo.index()?;
+
+	// Gets the status of a file in the index.
+	// If it's in the working tree update it.
+	// If for whatever reason we can't get the status of a file,
+	// treat it as an empty status.
+	let cb = &mut |path: &Path, _matched_spec: &[u8]| -> i32 {
+		let status = repo
+			.status_file(path)
+			.unwrap_or_else(|_| git2::Status::empty());
+
+		if status.contains(git2::Status::WT_MODIFIED) {
+			0
+		} else {
+			1
+		}
+	};
+	let cb = Some(cb as &mut git2::IndexMatchedPath);
+
+	index.update_all(vec![pattern], cb)?;
+	index.write()?;
+
+	Ok(())
+}
+
 /// Undo last commit in repo
 pub fn undo_last_commit(repo_path: &str) -> Result<()> {
 	let repo = repo(repo_path)?;
@@ -229,7 +263,7 @@ mod tests {
 		},
 	};
 	use std::{
-		fs::{self, remove_file, File},
+		fs::{self, remove_file, File, OpenOptions},
 		io::Write,
 		path::Path,
 	};
@@ -269,6 +303,53 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 
 		assert_eq!(get_statuses(repo_path), (1, 1));
+	}
+
+	#[test]
+	fn test_updated_only_tracked() -> Result<()> {
+		let tracked_file = "file1.txt";
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path = root.as_os_str().to_str().unwrap();
+
+		// Create and commit file 1
+		write_commit_file(
+			&repo,
+			tracked_file,
+			"test file1 content",
+			"c1",
+		);
+
+		// No changes in (wd, stage)
+		assert_eq!(get_statuses(repo_path), (0, 0));
+
+		// Create new untracked file 2
+		File::create(&root.join(Path::new("file2.txt")))
+			.unwrap()
+			.write_all(b"test file2 content")
+			.unwrap();
+
+		// Single change in wd
+		assert_eq!(get_statuses(repo_path), (1, 0));
+
+		// Add new content to file 1
+		OpenOptions::new()
+			.write(true)
+			.append(true)
+			.open(&root.join(Path::new(tracked_file)))
+			.unwrap()
+			.write_all(b"add new content")?;
+
+		// Two changes in wd, nothing staged
+		assert_eq!(get_statuses(repo_path), (2, 0));
+
+		// Only add file 1 to the stage as file 2 is untracked
+		stage_add_updated(repo_path, "*").unwrap();
+
+		// Single change in wd and stage
+		assert_eq!(get_statuses(repo_path), (1, 1));
+
+		Ok(())
 	}
 
 	#[test]

@@ -1,5 +1,5 @@
 // bit for modifiers
-// bits: 0  None 
+// bits: 0  None
 // bits: 1  SHIFT
 // bits: 2  CONTROL
 //
@@ -33,7 +33,7 @@
 
     open_commit: ( code: Char('c'), modifiers: ( bits: 0,),),
     // Note: the shift modifier does not work for open_commit_editor
-    // Also just plain text characters will not work because the commit 
+    // Also just plain text characters will not work because the commit
     // msg editor will interpret them as text input
     open_commit_editor: ( code: Char('e'), modifiers: ( bits: 2,),),
     undo_commit: ( code: Char('U'), modifiers: ( bits: 1,),),
@@ -58,6 +58,7 @@
     edit_file: ( code: Char('I'), modifiers: ( bits: 1,),),
 
     status_stage_all: ( code: Char('a'), modifiers: ( bits: 0,),),
+    status_stage_update: ( code: Char('u'), modifiers: ( bits: 0,),),
     status_reset_item: ( code: Char('U'), modifiers: ( bits: 1,),),
     status_ignore_file: ( code: Char('i'), modifiers: ( bits: 0,),),
 

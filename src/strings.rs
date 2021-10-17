@@ -767,6 +767,16 @@ pub mod commands {
 			CMD_GROUP_CHANGES,
 		)
 	}
+	pub fn stage_update(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Stage Only Tracked Files [{}]",
+				key_config.get_hint(key_config.status_stage_update),
+			),
+			"stage all changes (in already tracked, unstaged files)",
+			CMD_GROUP_CHANGES,
+		)
+	}
 	pub fn unstage_item(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
