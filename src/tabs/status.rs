@@ -71,8 +71,7 @@ pub struct Status {
 	git_action_executed: bool,
 	options: SharedOptions,
 	key_config: SharedKeyConfig,
-	pending_rebase: bool,
-	can_abort_merge: bool,
+	repo_state: RepoState,
 }
 
 impl DrawableComponent for Status {
@@ -189,8 +188,7 @@ impl Status {
 			git_branch_name: cached::BranchName::new(CWD),
 			key_config,
 			options,
-			pending_rebase: Self::get_pending_rebase(),
-			can_abort_merge: Self::get_can_abort_merge(),
+			repo_state: Self::get_repo_state(),
 		}
 	}
 
@@ -422,8 +420,7 @@ impl Status {
 
 		self.update_diff()?;
 
-		self.can_abort_merge = Self::get_can_abort_merge();
-		self.pending_rebase = Self::get_pending_rebase();
+		self.repo_state = Self::get_repo_state();
 
 		if self.git_action_executed {
 			self.git_action_executed = false;
@@ -565,14 +562,16 @@ impl Status {
 			.map_or(true, |state| state.ahead > 0)
 	}
 
-	fn get_can_abort_merge() -> bool {
+	fn get_repo_state() -> RepoState {
 		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
-			== RepoState::Merge
 	}
 
-	fn get_pending_rebase() -> bool {
-		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
-			== RepoState::Rebase
+	fn can_abort_merge(&self) -> bool {
+		self.repo_state == RepoState::Merge
+	}
+
+	fn pending_rebase(&self) -> bool {
+		self.repo_state == RepoState::Rebase
 	}
 
 	pub fn abort_merge(&self) {
@@ -642,7 +641,7 @@ impl Status {
 	fn can_commit(&self) -> bool {
 		self.index.focused()
 			&& !self.index.is_empty()
-			&& !self.pending_rebase
+			&& !self.pending_rebase()
 	}
 }
 
@@ -699,24 +698,25 @@ impl Component for Status {
 			out.push(CommandInfo::new(
 				strings::commands::undo_commit(&self.key_config),
 				true,
-				(self.pending_rebase && !focus_on_diff) || force_all,
+				(self.pending_rebase() && !focus_on_diff)
+					|| force_all,
 			));
 
 			out.push(CommandInfo::new(
 				strings::commands::abort_merge(&self.key_config),
 				true,
-				self.can_abort_merge || force_all,
+				self.can_abort_merge() || force_all,
 			));
 
 			out.push(CommandInfo::new(
 				strings::commands::continue_rebase(&self.key_config),
 				true,
-				self.pending_rebase || force_all,
+				self.pending_rebase() || force_all,
 			));
 			out.push(CommandInfo::new(
 				strings::commands::abort_rebase(&self.key_config),
 				true,
-				self.pending_rebase || force_all,
+				self.pending_rebase() || force_all,
 			));
 		}
 
@@ -823,7 +823,7 @@ impl Component for Status {
 					));
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.abort_merge
-					&& self.can_abort_merge
+					&& self.can_abort_merge()
 				{
 					self.queue.push(InternalEvent::ConfirmAction(
 						Action::AbortMerge,
@@ -831,7 +831,7 @@ impl Component for Status {
 
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.abort_merge
-					&& self.pending_rebase
+					&& self.pending_rebase()
 				{
 					self.queue.push(InternalEvent::ConfirmAction(
 						Action::AbortRebase,
@@ -839,7 +839,7 @@ impl Component for Status {
 
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.rebase_branch
-					&& self.pending_rebase
+					&& self.pending_rebase()
 				{
 					self.continue_rebase();
 					self.queue.push(InternalEvent::Update(

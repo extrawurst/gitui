@@ -81,22 +81,14 @@ impl CommitComponent {
 	}
 
 	///
-	pub fn update_git(
-		&mut self,
-		ev: AsyncGitNotification,
-	) -> Result<()> {
-		match ev {
-			AsyncGitNotification::Status => self.update_status()?,
-			_ => (),
+	pub fn update_git(&mut self, ev: AsyncGitNotification) {
+		if ev == AsyncGitNotification::Status {
+			self.update_status();
 		}
-
-		Ok(())
 	}
 
-	fn update_status(&mut self) -> Result<()> {
+	fn update_status(&mut self) {
 		self.can_amend = self.get_can_amend();
-
-		Ok(())
 	}
 
 	fn draw_branch_name<B: Backend>(&self, f: &mut Frame<B>) {
