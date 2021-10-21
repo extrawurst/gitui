@@ -47,7 +47,7 @@ easy-cast = "0.4"
 bugreport = "0.4"
 lazy_static = "1.4"
 syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"]}
-gh-emoji = "1.0.6"
+gh-emoji = { version = "1.0.6", optional = true }
 fuzzy-matcher = "0.3"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
@@ -64,7 +64,8 @@ pretty_assertions = "1.0"
 maintenance = { status = "actively-developed" }
 
 [features]
-default=["trace-libgit"]
+default=["ghemoji", "trace-libgit"]
+ghemoji=["gh-emoji"]
 timing=["scopetime/enabled"]
 trace-libgit=["asyncgit/trace-libgit"]
 

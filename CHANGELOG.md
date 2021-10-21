@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support merging and rebasing remote branches ([#920](https://github.com/extrawurst/gitui/issues/920))
 - add highlighting matches in fuzzy finder ([#893](https://github.com/extrawurst/gitui/issues/893))
 - support `home` and `end` keys in branchlist ([#957](https://github.com/extrawurst/gitui/issues/957))
+- add `ghemoji` feature to make gh-emoji (GitHub emoji) optional ([#954](https://github.com/extrawurst/gitui/pull/954))
 
 ### Fixed
 - honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))
