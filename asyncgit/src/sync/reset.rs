@@ -167,7 +167,7 @@ mod tests {
 				.write_all(b"file3")?;
 		}
 
-		stage_add_all(repo_path, "*").unwrap();
+		stage_add_all(repo_path, "*", None).unwrap();
 		commit(repo_path, "msg").unwrap();
 
 		{

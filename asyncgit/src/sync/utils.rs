@@ -1,6 +1,6 @@
 //! sync git api (various methods)
 
-use super::CommitId;
+use super::{CommitId, ShowUntrackedFilesConfig};
 use crate::{
 	error::{Error, Result},
 	sync::config::untracked_files_config_repo,
@@ -125,23 +125,31 @@ pub fn stage_add_file(repo_path: &str, path: &Path) -> Result<()> {
 }
 
 /// like `stage_add_file` but uses a pattern to match/glob multiple files/folders
-pub fn stage_add_all(repo_path: &str, pattern: &str) -> Result<()> {
+pub fn stage_add_all(
+	repo_path: &str,
+	pattern: &str,
+	stage_untracked: Option<ShowUntrackedFilesConfig>,
+) -> Result<()> {
 	scope_time!("stage_add_all");
 
 	let repo = repo(repo_path)?;
 
 	let mut index = repo.index()?;
 
-	let config = untracked_files_config_repo(&repo)?;
-
-	if config.include_none() {
-		index.update_all(vec![pattern], None)?;
+	let stage_untracked = if let Some(config) = stage_untracked {
+		config
 	} else {
+		untracked_files_config_repo(&repo)?
+	};
+
+	if stage_untracked.include_untracked() {
 		index.add_all(
 			vec![pattern],
 			IndexAddOption::DEFAULT,
 			None,
 		)?;
+	} else {
+		index.update_all(vec![pattern], None)?;
 	}
 
 	index.write()?;
@@ -291,7 +299,7 @@ mod tests {
 
 		assert_eq!(status_count(StatusType::WorkingDir), 3);
 
-		stage_add_all(repo_path, "a/d").unwrap();
+		stage_add_all(repo_path, "a/d", None).unwrap();
 
 		assert_eq!(status_count(StatusType::WorkingDir), 1);
 		assert_eq!(status_count(StatusType::Stage), 2);
@@ -354,7 +362,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 
-		stage_add_all(repo_path, "*").unwrap();
+		stage_add_all(repo_path, "*", None).unwrap();
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 
@@ -420,7 +428,7 @@ mod tests {
 		assert_eq!(status_count(StatusType::WorkingDir), 1);
 
 		//expect to fail
-		assert!(stage_add_all(repo_path, "sub").is_err());
+		assert!(stage_add_all(repo_path, "sub", None).is_err());
 
 		Ok(())
 	}

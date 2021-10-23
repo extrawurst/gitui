@@ -1,7 +1,7 @@
 use super::{
 	filetree::FileTreeComponent,
 	utils::filetree::{FileTreeItem, FileTreeItemKind},
-	CommandBlocking, DrawableComponent,
+	CommandBlocking, DrawableComponent, SharedOptions,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
@@ -22,6 +22,7 @@ pub struct ChangesComponent {
 	is_working_dir: bool,
 	queue: Queue,
 	key_config: SharedKeyConfig,
+	options: SharedOptions,
 }
 
 impl ChangesComponent {
@@ -33,6 +34,7 @@ impl ChangesComponent {
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			files: FileTreeComponent::new(
@@ -45,6 +47,7 @@ impl ChangesComponent {
 			is_working_dir,
 			queue,
 			key_config,
+			options,
 		}
 	}
 
@@ -95,10 +98,14 @@ impl ChangesComponent {
 					return Ok(true);
 				}
 
+				let config =
+					self.options.borrow().status_show_untracked;
+
 				//TODO: check if we can handle the one file case with it aswell
 				sync::stage_add_all(
 					CWD,
 					tree_item.info.full_path.as_str(),
+					config,
 				)?;
 
 				return Ok(true);
@@ -113,7 +120,9 @@ impl ChangesComponent {
 	}
 
 	fn index_add_all(&mut self) -> Result<()> {
-		sync::stage_add_all(CWD, "*")?;
+		let config = self.options.borrow().status_show_untracked;
+
+		sync::stage_add_all(CWD, "*", config)?;
 
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 

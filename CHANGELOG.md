@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add highlighting matches in fuzzy finder ([#893](https://github.com/extrawurst/gitui/issues/893))
 - support `home` and `end` keys in branchlist ([#957](https://github.com/extrawurst/gitui/issues/957))
 
+## Fixed
+- honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))
+
 ## [0.18] - 2021-10-11
 
 **rebase merge with conflicts**
