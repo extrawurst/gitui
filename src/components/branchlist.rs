@@ -226,6 +226,14 @@ impl Component for BranchListComponent {
 				return self
 					.move_selection(ScrollType::PageUp)
 					.map(Into::into);
+			} else if e == self.key_config.home {
+				return self
+					.move_selection(ScrollType::Home)
+					.map(Into::into);
+			} else if e == self.key_config.end {
+				return self
+					.move_selection(ScrollType::End)
+					.map(Into::into);
 			} else if e == self.key_config.tab_toggle {
 				self.local = !self.local;
 				self.update_branches()?;
@@ -447,7 +455,12 @@ impl BranchListComponent {
 			ScrollType::PageUp => self
 				.selection
 				.saturating_sub(self.current_height.get()),
-			_ => self.selection,
+			ScrollType::Home => 0,
+			ScrollType::End => {
+				let num_branches: u16 =
+					self.branches.len().try_into()?;
+				num_branches.saturating_sub(1)
+			}
 		};
 
 		self.set_selection(new_selection)?;
