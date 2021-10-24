@@ -7,13 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
  
-## Added
+### Added
 - add `trace-libgit` feature to make git tracing optional [[@dm9pZCAq](https://github.com/dm9pZCAq)] ([#902](https://github.com/extrawurst/gitui/issues/902))
 - support merging and rebasing remote branches ([#920](https://github.com/extrawurst/gitui/issues/920))
 - add highlighting matches in fuzzy finder ([#893](https://github.com/extrawurst/gitui/issues/893))
 - support `home` and `end` keys in branchlist ([#957](https://github.com/extrawurst/gitui/issues/957))
 
-## Fixed
+### Fixed
 - honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))
 
 ## [0.18] - 2021-10-11
@@ -22,12 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![rebase-merge](assets/rebase.png)
 
-## Added
+### Added
 - support rebasing branches with conflicts ([#895](https://github.com/extrawurst/gitui/issues/895))
 - add a key binding to stage / unstage items [[@alessandroasm](https://github.com/alessandroasm)] ([#909](https://github.com/extrawurst/gitui/issues/909))
 - switch to status tab after merging or rebasing with conflicts ([#926](https://github.com/extrawurst/gitui/issues/926))
 
-## Fixed
+### Fixed
 - fix supported checkout of hierarchical branchnames ([#921](https://github.com/extrawurst/gitui/issues/921))
 - appropriate error message when pulling deleted remote branch ([#911](https://github.com/extrawurst/gitui/issues/911))
 - improved color contrast in branches popup for light themes  [[@Cottser](https://github.com/Cottser)] ([#922](https://github.com/extrawurst/gitui/issues/922))
@@ -43,20 +43,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![emojified-commit-message](assets/emojified-commit-message.png)
 
-## Added
+### Added
 - add supporting rebasing on branch (if conflict-free) ([#816](https://github.com/extrawurst/gitui/issues/816))
 - fuzzy find files ([#891](https://github.com/extrawurst/gitui/issues/891))
 - visualize progress during async syntax highlighting ([#889](https://github.com/extrawurst/gitui/issues/889))
 - added support for markdown emoji's in commits [[@andrewpollack](https://github.com/andrewpollack)] ([#768](https://github.com/extrawurst/gitui/issues/768))
 - added scrollbar to revlog [[@ashvin021](https://github.com/ashvin021)] ([#868](https://github.com/extrawurst/gitui/issues/868))
 
-## Fixed
+### Fixed
 - fix build when system level libgit2 version was used ([#883](https://github.com/extrawurst/gitui/issues/883))
 - fix merging branch not closing branch window [[@andrewpollack](https://github.com/andrewpollack)] ([#876](https://github.com/extrawurst/gitui/issues/876))
 - fix commit msg being broken inside tag list ([#871](https://github.com/extrawurst/gitui/issues/871))
 - fix filetree file content not showing tabs correctly ([#874](https://github.com/extrawurst/gitui/issues/874))
 
-## Key binding notes
+### Key binding notes
 - new keys: `rebase_branch` [`R`], `file_find` [`f`]
 
 see `vim_style_key_config.ron` for their default vim binding
@@ -79,7 +79,7 @@ see `vim_style_key_config.ron` for their default vim binding
 
 ![name-validation](assets/branch-validation.gif)
 
-## Added
+### Added
 - allow inspecting top commit of a branch from list
 - compare commits in revlog and head against branch ([#852](https://github.com/extrawurst/gitui/issues/852))
 - new options popup (show untracked files, diff settings) ([#849](https://github.com/extrawurst/gitui/issues/849))
@@ -88,7 +88,7 @@ see `vim_style_key_config.ron` for their default vim binding
 - support deleting remote branch [[@zcorniere](https://github.com/zcorniere)] ([#622](https://github.com/extrawurst/gitui/issues/622))
 - mark remote branches that have local tracking branch [[@jedel1043](https://github.com/jedel1043)] ([#861](https://github.com/extrawurst/gitui/issues/861))
 
-## Fixed
+### Fixed
 - error viewing filetree in empty repo ([#859](https://github.com/extrawurst/gitui/issues/859))
 - do not allow to ignore .gitignore files ([#825](https://github.com/extrawurst/gitui/issues/825))
 - crash in shallow repo ([#836](https://github.com/extrawurst/gitui/issues/836))
@@ -105,13 +105,13 @@ see `vim_style_key_config.ron` for their default vim binding
 
 ![tag-remote-marker](assets/tag-remote-marker.gif)
 
-## Added
+### Added
 - taglist: show arrow-symbol on tags not present on origin [[@cruessler](https://github.com/cruessler)] ([#776](https://github.com/extrawurst/gitui/issues/776))
 - new `undo-last-commit` command [[@remique](https://github.com/remique)] ([#758](https://github.com/extrawurst/gitui/issues/758))
 - new quit key `[q]` ([#771](https://github.com/extrawurst/gitui/issues/771))
 - proper error message if remote rejects force push ([#801](https://github.com/extrawurst/gitui/issues/801))
 
-## Fixed
+### Fixed
 - openssl vendoring broken on macos ([#772](https://github.com/extrawurst/gitui/issues/772))
 - amend and other commands not shown in help ([#778](https://github.com/extrawurst/gitui/issues/778))
 - focus locked on commit msg details in narrow term sizes ([#780](https://github.com/extrawurst/gitui/issues/780))
@@ -119,14 +119,14 @@ see `vim_style_key_config.ron` for their default vim binding
 
 ## [0.16.1] - 2021-06-06
 
-## Added
+### Added
 - honor `config.showUntrackedFiles` improving speed with a lot of untracked items ([#752](https://github.com/extrawurst/gitui/issues/752))
 - improve performance when opening filetree-tab ([#756](https://github.com/extrawurst/gitui/issues/756))
 - indicator for longer commit message than displayed ([#773](https://github.com/extrawurst/gitui/issues/773))
 
 ![msg-len](assets/long-msg-indicator.gif)
   
-## Fixed
+### Fixed
 - wrong file with same name shown in file tree ([#748](https://github.com/extrawurst/gitui/issues/748))
 - filetree collapsing broken on windows ([#761](https://github.com/extrawurst/gitui/issues/761))
 - unnecessary overdraw of the spinner on each redraw ([#764](https://github.com/extrawurst/gitui/issues/764))
@@ -152,7 +152,7 @@ see `vim_style_key_config.ron` for their default vim binding
 
 ![warning](assets/commit-msg-length-limit.gif)
 
-## Added
+### Added
 - merging branches, pull-merge with conflicts, commit merges ([#485](https://github.com/extrawurst/gitui/issues/485))
 - tags-list-popup (delete-tag, go to tagged commit) [[@cruessler](https://github.com/cruessler)] ([#483](https://github.com/extrawurst/gitui/issues/483))
 - inspect file tree tab ([#743](https://github.com/extrawurst/gitui/issues/743))
@@ -160,13 +160,13 @@ see `vim_style_key_config.ron` for their default vim binding
 - warning if commit subject line gets too long ([#478](https://github.com/extrawurst/gitui/issues/478))
 - `--bugreport` cmd line arg to help diagnostics [[@zcorniere](https://github.com/zcorniere)] ([#695](https://github.com/extrawurst/gitui/issues/695))
 
-## Changed
+### Changed
 - smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
 - create-branch popup aligned with rename-branch [[@bruceCoelho](https://github.com/bruceCoelho)] ([#679](https://github.com/extrawurst/gitui/issues/679))
 - smart focus change after staging all files ([#706](https://github.com/extrawurst/gitui/issues/706))
 - do not allow to commit when `gpgsign` enabled ([#740](https://github.com/extrawurst/gitui/issues/740))
 
-## Fixed
+### Fixed
 - selected-tab color broken in light theme [[@Cottser](https://github.com/Cottser)] ([#719](https://github.com/extrawurst/gitui/issues/719))
 - proper tmp file location to externally edit commit msg ([#518](https://github.com/extrawurst/gitui/issues/518))
 
