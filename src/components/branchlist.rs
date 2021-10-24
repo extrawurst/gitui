@@ -6,7 +6,9 @@ use super::{
 use crate::{
 	components::ScrollType,
 	keys::SharedKeyConfig,
-	queue::{Action, InternalEvent, NeedsUpdate, Queue},
+	queue::{
+		Action, HistoryEvent, InternalEvent, NeedsUpdate, Queue,
+	},
 	strings, try_or_popup,
 	ui::{self, Size},
 };
@@ -23,6 +25,7 @@ use asyncgit::{
 	},
 	AsyncGitNotification, CWD,
 };
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
 use tui::{
@@ -48,6 +51,8 @@ pub struct BranchListComponent {
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
+	visibility_tx: Sender<bool>,
+	visibility_rx: Receiver<bool>,
 }
 
 impl DrawableComponent for BranchListComponent {
@@ -268,7 +273,6 @@ impl Component for BranchListComponent {
 			} else if e == self.key_config.move_right
 				&& self.valid_selection()
 			{
-				self.hide();
 				if let Some(b) = self.get_selected() {
 					self.queue
 						.push(InternalEvent::InspectCommit(b, None));
@@ -276,7 +280,6 @@ impl Component for BranchListComponent {
 			} else if e == self.key_config.compare_commits
 				&& self.valid_selection()
 			{
-				self.hide();
 				if let Some(b) = self.get_selected() {
 					self.queue
 						.push(InternalEvent::CompareCommits(b, None));
@@ -295,11 +298,14 @@ impl Component for BranchListComponent {
 	}
 
 	fn hide(&mut self) {
-		self.visible = false;
+		self.queue
+			.push(InternalEvent::History(HistoryEvent::PopHistory));
 	}
 
 	fn show(&mut self) -> Result<()> {
-		self.visible = true;
+		self.queue.push(InternalEvent::History(
+			HistoryEvent::PushHistory(self.visibility_tx.clone()),
+		));
 
 		Ok(())
 	}
@@ -311,6 +317,7 @@ impl BranchListComponent {
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
+		let (visibility_tx, visibility_rx) = unbounded();
 		Self {
 			branches: Vec::new(),
 			local: true,
@@ -321,13 +328,14 @@ impl BranchListComponent {
 			theme,
 			key_config,
 			current_height: Cell::new(0),
+			visibility_tx,
+			visibility_rx,
 		}
 	}
 
 	///
 	pub fn open(&mut self) -> Result<()> {
 		self.show()?;
-		self.update_branches()?;
 
 		Ok(())
 	}
@@ -357,6 +365,15 @@ impl BranchListComponent {
 			self.update_branches()?;
 		}
 
+		Ok(())
+	}
+
+	pub fn update(&mut self) -> Result<()> {
+		while let Ok(visible) = self.visibility_rx.try_recv() {
+			self.visible = visible;
+		}
+
+		self.update_branches()?;
 		Ok(())
 	}
 

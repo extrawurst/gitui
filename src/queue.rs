@@ -3,6 +3,7 @@ use asyncgit::sync::{
 	diff::DiffLinePosition, CommitId, CommitTags, TreeFile,
 };
 use bitflags::bitflags;
+use crossbeam_channel::Sender;
 use std::{
 	cell::RefCell, collections::VecDeque, path::PathBuf, rc::Rc,
 };
@@ -97,6 +98,15 @@ pub enum InternalEvent {
 	OpenFileFinder(Vec<TreeFile>),
 	///
 	FileFinderChanged(Option<PathBuf>),
+	///
+	History(HistoryEvent),
+}
+
+pub enum HistoryEvent {
+	///
+	PopHistory,
+	///
+	PushHistory(Sender<bool>),
 }
 
 /// single threaded simple queue for components to communicate with each other

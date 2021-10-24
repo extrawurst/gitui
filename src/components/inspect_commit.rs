@@ -6,7 +6,7 @@ use super::{
 use crate::{
 	accessors,
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{HistoryEvent, InternalEvent, Queue},
 	strings,
 	ui::style::SharedTheme,
 };
@@ -16,7 +16,7 @@ use asyncgit::{
 	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
 	DiffType,
 };
-use crossbeam_channel::Sender;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use crossterm::event::Event;
 use tui::{
 	backend::Backend,
@@ -34,6 +34,8 @@ pub struct InspectCommitComponent {
 	git_diff: AsyncDiff,
 	visible: bool,
 	key_config: SharedKeyConfig,
+	visibility_tx: Sender<bool>,
+	visibility_rx: Receiver<bool>,
 }
 
 impl DrawableComponent for InspectCommitComponent {
@@ -126,7 +128,9 @@ impl Component for InspectCommitComponent {
 
 			if let Event::Key(e) = ev {
 				if e == self.key_config.exit_popup {
-					self.hide();
+					self.queue.push(InternalEvent::History(
+						HistoryEvent::PopHistory,
+					));
 				} else if e == self.key_config.focus_right
 					&& self.can_focus_diff()
 				{
@@ -142,10 +146,11 @@ impl Component for InspectCommitComponent {
 						self.queue.push(InternalEvent::OpenFileTree(
 							commit,
 						));
-						self.hide();
 					}
 				} else if e == self.key_config.focus_left {
-					self.hide();
+					self.queue.push(InternalEvent::History(
+						HistoryEvent::PopHistory,
+					));
 				}
 
 				return Ok(EventState::Consumed);
@@ -181,6 +186,7 @@ impl InspectCommitComponent {
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
+		let (visibility_tx, visibility_rx) = unbounded();
 		Self {
 			queue: queue.clone(),
 			details: CommitDetailsComponent::new(
@@ -200,6 +206,8 @@ impl InspectCommitComponent {
 			git_diff: AsyncDiff::new(sender),
 			visible: false,
 			key_config,
+			visibility_tx,
+			visibility_rx,
 		}
 	}
 
@@ -211,7 +219,10 @@ impl InspectCommitComponent {
 	) -> Result<()> {
 		self.commit_id = Some(id);
 		self.tags = tags;
-		self.show()?;
+		self.queue.push(InternalEvent::History(
+			HistoryEvent::PushHistory(self.visibility_tx.clone()),
+		));
+		self.update()?;
 
 		Ok(())
 	}
@@ -270,7 +281,10 @@ impl InspectCommitComponent {
 		Ok(())
 	}
 
-	fn update(&mut self) -> Result<()> {
+	pub fn update(&mut self) -> Result<()> {
+		while let Ok(visibility) = self.visibility_rx.try_recv() {
+			self.visible = visibility;
+		}
 		self.details.set_commits(
 			self.commit_id.map(CommitFilesParams::from),
 			self.tags.clone(),

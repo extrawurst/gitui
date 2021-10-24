@@ -12,9 +12,12 @@ use crate::{
 		RenameBranchComponent, RevisionFilesPopup, SharedOptions,
 		StashMsgComponent, TagCommitComponent, TagListComponent,
 	},
+	history::History,
 	input::{Input, InputEvent, InputState},
 	keys::{KeyConfig, SharedKeyConfig},
-	queue::{Action, InternalEvent, NeedsUpdate, Queue},
+	queue::{
+		Action, HistoryEvent, InternalEvent, NeedsUpdate, Queue,
+	},
 	setup_popups,
 	strings::{self, order},
 	tabs::{FilesTab, Revlog, StashList, Stashing, Status},
@@ -72,6 +75,7 @@ pub struct App {
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	input: Input,
+	history: History,
 
 	// "Flags"
 	requires_redraw: Cell<bool>,
@@ -239,6 +243,7 @@ impl App {
 			queue,
 			theme,
 			key_config,
+			history: History::new(),
 			requires_redraw: Cell::new(false),
 			file_to_open: None,
 		}
@@ -365,6 +370,15 @@ impl App {
 		self.stashlist_tab.update()?;
 
 		self.update_commands();
+
+		Ok(())
+	}
+
+	fn update_popups(&mut self) -> Result<()> {
+		self.blame_file_popup.update()?;
+		self.inspect_commit_popup.update()?;
+		self.select_branch_popup.update()?;
+		self.compare_commits_popup.update()?;
 
 		Ok(())
 	}
@@ -642,7 +656,7 @@ impl App {
 				self.tag_commit_popup.open(id)?;
 			}
 			InternalEvent::BlameFile(path) => {
-				self.blame_file_popup.open(&path)?;
+				self.blame_file_popup.open(&path);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
@@ -734,6 +748,17 @@ impl App {
 				self.revision_files_popup.file_finder_update(&file);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::History(history_event) => {
+				match history_event {
+					HistoryEvent::PopHistory => {
+						self.history.pop();
+					}
+					HistoryEvent::PushHistory(tx) => {
+						self.history.push(tx);
+					}
+				}
+				self.update_popups()?;
 			}
 		};
 

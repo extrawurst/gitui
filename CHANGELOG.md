@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
- 
+- track opened popups history, allowing to go back ([#846](https://github.com/extrawurst/gitui/issues/846))
+
 ## Added
 - add `trace-libgit` feature to make git tracing optional [[@dm9pZCAq](https://github.com/dm9pZCAq)] ([#902](https://github.com/extrawurst/gitui/issues/902))
 - support merging and rebasing remote branches ([#920](https://github.com/extrawurst/gitui/issues/920))

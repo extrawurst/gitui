@@ -4,7 +4,10 @@ use super::{
 	DrawableComponent, EventState,
 };
 use crate::{
-	accessors, keys::SharedKeyConfig, queue::Queue, strings,
+	accessors,
+	keys::SharedKeyConfig,
+	queue::{HistoryEvent, InternalEvent, Queue},
+	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -13,7 +16,7 @@ use asyncgit::{
 	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
 	DiffType, CWD,
 };
-use crossbeam_channel::Sender;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use crossterm::event::Event;
 use tui::{
 	backend::Backend,
@@ -29,6 +32,9 @@ pub struct CompareCommitsComponent {
 	git_diff: AsyncDiff,
 	visible: bool,
 	key_config: SharedKeyConfig,
+	queue: Queue,
+	visibility_tx: Sender<bool>,
+	visibility_rx: Receiver<bool>,
 }
 
 impl DrawableComponent for CompareCommitsComponent {
@@ -139,14 +145,16 @@ impl Component for CompareCommitsComponent {
 		self.visible
 	}
 	fn hide(&mut self) {
-		self.visible = false;
+		self.queue
+			.push(InternalEvent::History(HistoryEvent::PopHistory));
 	}
 	fn show(&mut self) -> Result<()> {
-		self.visible = true;
+		self.queue.push(InternalEvent::History(
+			HistoryEvent::PushHistory(self.visibility_tx.clone()),
+		));
 		self.details.show()?;
 		self.details.focus(true);
 		self.diff.focus(false);
-		self.update()?;
 		Ok(())
 	}
 }
@@ -161,6 +169,7 @@ impl CompareCommitsComponent {
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
+		let (visibility_tx, visibility_rx) = unbounded();
 		Self {
 			details: CommitDetailsComponent::new(
 				queue,
@@ -178,6 +187,9 @@ impl CompareCommitsComponent {
 			git_diff: AsyncDiff::new(sender),
 			visible: false,
 			key_config,
+			queue: queue.clone(),
+			visibility_tx,
+			visibility_rx,
 		}
 	}
 
@@ -252,7 +264,10 @@ impl CompareCommitsComponent {
 		Ok(())
 	}
 
-	fn update(&mut self) -> Result<()> {
+	pub fn update(&mut self) -> Result<()> {
+		while let Ok(visible) = self.visibility_rx.try_recv() {
+			self.visible = visible;
+		}
 		self.details.set_commits(
 			self.commit_ids.map(CommitFilesParams::from),
 			None,

@@ -5,7 +5,7 @@ use super::{
 use crate::{
 	components::{utils::string_width_align, ScrollType},
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{HistoryEvent, InternalEvent, Queue},
 	strings,
 	ui::{self, style::SharedTheme},
 };
@@ -14,7 +14,7 @@ use asyncgit::{
 	sync::{BlameHunk, CommitId, FileBlame},
 	AsyncBlame, AsyncGitNotification, BlameParams,
 };
-use crossbeam_channel::Sender;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use crossterm::event::Event;
 use std::convert::TryInto;
 use tui::{
@@ -37,6 +37,8 @@ pub struct BlameFileComponent {
 	table_state: std::cell::Cell<TableState>,
 	key_config: SharedKeyConfig,
 	current_height: std::cell::Cell<usize>,
+	visibility_tx: Sender<bool>,
+	visibility_rx: Receiver<bool>,
 }
 
 static NO_COMMIT_ID: &str = "0000000";
@@ -204,8 +206,6 @@ impl Component for BlameFileComponent {
 				} else if key == self.key_config.page_up {
 					self.move_selection(ScrollType::PageUp);
 				} else if key == self.key_config.focus_right {
-					self.hide();
-
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -231,11 +231,14 @@ impl Component for BlameFileComponent {
 	}
 
 	fn hide(&mut self) {
-		self.visible = false;
+		self.queue
+			.push(InternalEvent::History(HistoryEvent::PopHistory));
 	}
 
 	fn show(&mut self) -> Result<()> {
-		self.visible = true;
+		self.queue.push(InternalEvent::History(
+			HistoryEvent::PushHistory(self.visibility_tx.clone()),
+		));
 
 		Ok(())
 	}
@@ -250,6 +253,7 @@ impl BlameFileComponent {
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
+		let (visibility_tx, visibility_rx) = unbounded();
 		Self {
 			title: String::from(title),
 			theme,
@@ -261,19 +265,19 @@ impl BlameFileComponent {
 			table_state: std::cell::Cell::new(TableState::default()),
 			key_config,
 			current_height: std::cell::Cell::new(0),
+			visibility_tx,
+			visibility_rx,
 		}
 	}
 
 	///
-	pub fn open(&mut self, file_path: &str) -> Result<()> {
+	pub fn open(&mut self, file_path: &str) {
 		self.file_path = Some(file_path.into());
 		self.file_blame = None;
 		self.table_state.get_mut().select(Some(0));
-		self.show()?;
-
-		self.update()?;
-
-		Ok(())
+		self.queue.push(InternalEvent::History(
+			HistoryEvent::PushHistory(self.visibility_tx.clone()),
+		));
 	}
 
 	///
@@ -293,7 +297,10 @@ impl BlameFileComponent {
 		Ok(())
 	}
 
-	fn update(&mut self) -> Result<()> {
+	pub fn update(&mut self) -> Result<()> {
+		while let Ok(visible) = self.visibility_rx.try_recv() {
+			self.visible = visible;
+		}
 		if self.is_visible() {
 			if let Some(file_path) = &self.file_path {
 				let blame_params = BlameParams {
