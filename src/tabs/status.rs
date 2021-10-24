@@ -164,6 +164,7 @@ impl Status {
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			index: ChangesComponent::new(
 				&strings::title_index(&key_config),
@@ -172,6 +173,7 @@ impl Status {
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			diff: DiffComponent::new(
 				queue.clone(),
