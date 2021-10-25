@@ -72,11 +72,6 @@ impl CommitList {
 	}
 
 	///
-	pub fn set_title(&mut self, title: &str) {
-		self.title = title.into();
-	}
-
-	///
 	pub fn set_branch(&mut self, name: Option<String>) {
 		self.branch = name;
 	}
