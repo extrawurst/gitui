@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))
+- honor `pushurl` when checking whether we need username and password for pushing ([#953](https://github.com/extrawurst/gitui/issues/953))
+
 
 ## [0.18] - 2021-10-11
 
