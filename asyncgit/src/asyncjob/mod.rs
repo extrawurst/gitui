@@ -48,7 +48,7 @@ pub trait AsyncJob: Send + Sync + Clone {
 	) -> Result<Self::Notification>;
 
 	/// allows observers to get intermediate progress status if the job customizes it
-	/// by default this will be returning ()::Default
+	/// by default this will be returning `Self::Progress::default()`
 	fn get_progress(&self) -> Self::Progress {
 		Self::Progress::default()
 	}
