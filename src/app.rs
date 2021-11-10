@@ -642,7 +642,7 @@ impl App {
 				self.tag_commit_popup.open(id)?;
 			}
 			InternalEvent::BlameFile(path) => {
-				self.blame_file_popup.open(&path)?;
+				self.blame_file_popup.open(path)?;
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}

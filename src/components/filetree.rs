@@ -410,7 +410,7 @@ impl Component for FileTreeComponent {
 					match (&self.queue, self.selection_file()) {
 						(Some(queue), Some(status_item)) => {
 							queue.push(InternalEvent::BlameFile(
-								status_item.path,
+								status_item.path.into(),
 							));
 
 							Ok(EventState::Consumed)

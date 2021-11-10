@@ -16,7 +16,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::convert::TryInto;
+use std::{convert::TryInto, path::PathBuf};
 use tui::{
 	backend::Backend,
 	layout::{Constraint, Rect},
@@ -32,7 +32,7 @@ pub struct BlameFileComponent {
 	queue: Queue,
 	async_blame: AsyncBlame,
 	visible: bool,
-	file_path: Option<String>,
+	file_path: Option<PathBuf>,
 	file_blame: Option<FileBlame>,
 	table_state: std::cell::Cell<TableState>,
 	key_config: SharedKeyConfig,
@@ -265,8 +265,8 @@ impl BlameFileComponent {
 	}
 
 	///
-	pub fn open(&mut self, file_path: &str) -> Result<()> {
-		self.file_path = Some(file_path.into());
+	pub fn open(&mut self, file_path: PathBuf) -> Result<()> {
+		self.file_path = Some(file_path);
 		self.file_blame = None;
 		self.table_state.get_mut().select(Some(0));
 		self.show()?;
@@ -297,7 +297,10 @@ impl BlameFileComponent {
 		if self.is_visible() {
 			if let Some(file_path) = &self.file_path {
 				let blame_params = BlameParams {
-					file_path: file_path.into(),
+					file_path: file_path
+						.to_str()
+						.unwrap_or_default()
+						.to_owned(),
 				};
 
 				if let Some((
@@ -329,21 +332,23 @@ impl BlameFileComponent {
 			(true, Some(file_path), _) => {
 				format!(
 					"{} -- {} -- <calculating.. (who is to blame?)>",
-					self.title, file_path
+					self.title,
+					file_path.to_str().unwrap_or_default()
 				)
 			}
 			(false, Some(file_path), Some(file_blame)) => {
 				format!(
 					"{} -- {} -- {}",
 					self.title,
-					file_path,
+					file_path.to_str().unwrap_or_default(),
 					file_blame.commit_id.get_short_string()
 				)
 			}
 			(false, Some(file_path), None) => {
 				format!(
 					"{} -- {} -- <no blame available>",
-					self.title, file_path
+					self.title,
+					file_path.to_str().unwrap_or_default()
 				)
 			}
 			_ => format!("{} -- <no blame available>", self.title),

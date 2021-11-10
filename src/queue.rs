@@ -74,7 +74,7 @@ pub enum InternalEvent {
 	///
 	Tags,
 	///
-	BlameFile(String),
+	BlameFile(PathBuf),
 	///
 	CreateBranch,
 	///
