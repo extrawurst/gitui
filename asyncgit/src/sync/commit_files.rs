@@ -4,7 +4,7 @@ use super::{stash::is_stash_commit, utils::repo, CommitId};
 use crate::{
 	error::Error, error::Result, StatusItem, StatusItemType,
 };
-use git2::{Diff, DiffDelta, DiffOptions, Repository};
+use git2::{Diff, DiffOptions, Repository};
 use scopetime::scope_time;
 
 /// get all files that are part of a commit
@@ -23,24 +23,21 @@ pub fn get_commit_files(
 		get_commit_diff(&repo, id, None)?
 	};
 
-	let mut res = Vec::new();
+	let res = diff
+		.deltas()
+		.map(|delta| {
+			let status = StatusItemType::from(delta.status());
 
-	diff.foreach(
-		&mut |delta: DiffDelta<'_>, _progress| {
-			res.push(StatusItem {
+			StatusItem {
 				path: delta
 					.new_file()
 					.path()
 					.map(|p| p.to_str().unwrap_or("").to_string())
 					.unwrap_or_default(),
-				status: StatusItemType::from(delta.status()),
-			});
-			true
-		},
-		None,
-		None,
-		None,
-	)?;
+				status,
+			}
+		})
+		.collect::<Vec<_>>();
 
 	Ok(res)
 }
