@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))
+- improved file diff speed dramatically ([#976](https://github.com/extrawurst/gitui/issues/976))
 
 ## [0.18] - 2021-10-11
 
