@@ -23,29 +23,19 @@ pub fn get_commit_files(
 		get_commit_diff(&repo, id, None)?
 	};
 
-	let deltas = {
-		scope_time!("get_commit_files.delta-count");
-		diff.deltas().count()
-	};
+	let mut res = Vec::with_capacity(diff.deltas().count());
 
-	log::debug!("deltas in diff: {}", deltas);
+	for delta in diff.deltas() {
+		let status = StatusItemType::from(delta.status());
 
-	let mut res = Vec::with_capacity(deltas);
-
-	{
-		scope_time!("get_commit_files.diff-foreach");
-		for delta in diff.deltas() {
-			let status = StatusItemType::from(delta.status());
-
-			res.push(StatusItem {
-				path: delta
-					.new_file()
-					.path()
-					.map(|p| p.to_str().unwrap_or("").to_string())
-					.unwrap_or_default(),
-				status,
-			});
-		}
+		res.push(StatusItem {
+			path: delta
+				.new_file()
+				.path()
+				.map(|p| p.to_str().unwrap_or("").to_string())
+				.unwrap_or_default(),
+			status,
+		});
 	}
 
 	Ok(res)
@@ -57,7 +47,7 @@ pub fn get_compare_commits_diff(
 	ids: (CommitId, CommitId),
 	pathspec: Option<String>,
 ) -> Result<Diff<'_>> {
-	scope_time!("get_compare_commits_diff");
+	// scope_time!("get_compare_commits_diff");
 
 	let commits = (
 		repo.find_commit(ids.0.into())?,
@@ -95,7 +85,7 @@ pub(crate) fn get_commit_diff(
 	id: CommitId,
 	pathspec: Option<String>,
 ) -> Result<Diff<'_>> {
-	scope_time!("get_commit_diff");
+	// scope_time!("get_commit_diff");
 
 	let commit = repo.find_commit(id.into())?;
 	let commit_tree = commit.tree()?;
