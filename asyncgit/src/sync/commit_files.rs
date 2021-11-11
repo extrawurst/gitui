@@ -23,20 +23,21 @@ pub fn get_commit_files(
 		get_commit_diff(&repo, id, None)?
 	};
 
-	let mut res = Vec::with_capacity(diff.deltas().count());
+	let res = diff
+		.deltas()
+		.map(|delta| {
+			let status = StatusItemType::from(delta.status());
 
-	for delta in diff.deltas() {
-		let status = StatusItemType::from(delta.status());
-
-		res.push(StatusItem {
-			path: delta
-				.new_file()
-				.path()
-				.map(|p| p.to_str().unwrap_or("").to_string())
-				.unwrap_or_default(),
-			status,
-		});
-	}
+			StatusItem {
+				path: delta
+					.new_file()
+					.path()
+					.map(|p| p.to_str().unwrap_or("").to_string())
+					.unwrap_or_default(),
+				status,
+			}
+		})
+		.collect::<Vec<_>>();
 
 	Ok(res)
 }
