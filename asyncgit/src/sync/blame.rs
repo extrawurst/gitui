@@ -39,6 +39,15 @@ pub struct FileBlame {
 	pub lines: Vec<(Option<BlameHunk>, String)>,
 }
 
+#[cfg(windows)]
+fn fixup_windows_path(path: String) -> String {
+	path.replace("\\", "/")
+}
+#[cfg(not(windows))]
+const fn fixup_windows_path(path: &str) -> &str {
+	path
+}
+
 ///
 pub fn blame_file(
 	repo_path: &str,
@@ -50,7 +59,11 @@ pub fn blame_file(
 
 	let commit_id = utils::get_head_repo(&repo)?;
 
-	let spec = format!("{}:{}", commit_id.to_string(), file_path);
+	let spec = format!(
+		"{}:{}",
+		commit_id.to_string(),
+		fixup_windows_path(file_path)
+	);
 
 	let object = repo.revparse_single(&spec)?;
 	let blob = repo.find_blob(object.id())?;
@@ -213,5 +226,25 @@ mod tests {
 		assert_eq!(blame.lines.len(), 3);
 
 		Ok(())
+	}
+
+	#[test]
+	fn test_blame_windows_path_dividers() {
+		let file_path = Path::new("bar\\foo");
+		let (_td, repo) = repo_init_empty().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path = root.as_os_str().to_str().unwrap();
+
+		std::fs::create_dir(&root.join("bar")).unwrap();
+
+		File::create(&root.join(file_path))
+			.unwrap()
+			.write_all(b"line 1\n")
+			.unwrap();
+
+		stage_add_file(repo_path, file_path).unwrap();
+		commit(repo_path, "first commit").unwrap();
+
+		assert!(blame_file(&repo_path, "bar\\foo").is_ok());
 	}
 }
