@@ -40,7 +40,7 @@ pub struct FileBlame {
 }
 
 #[cfg(windows)]
-fn fixup_windows_path(path: String) -> String {
+fn fixup_windows_path(path: &str) -> String {
 	path.replace("\\", "/")
 }
 #[cfg(not(windows))]
