@@ -39,13 +39,17 @@ pub struct FileBlame {
 	pub lines: Vec<(Option<BlameHunk>, String)>,
 }
 
-#[cfg(windows)]
+/// fixup `\` windows path seperators to git compatible `/`
 fn fixup_windows_path(path: &str) -> String {
-	path.replace("\\", "/")
-}
-#[cfg(not(windows))]
-const fn fixup_windows_path(path: &str) -> &str {
-	path
+	#[cfg(windows)]
+	{
+		path.replace("\\", "/")
+	}
+
+	#[cfg(not(windows))]
+	{
+		path.to_string()
+	}
 }
 
 ///
