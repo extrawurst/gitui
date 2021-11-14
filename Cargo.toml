@@ -4,6 +4,7 @@ version = "0.18.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
+rust-version = "1.50"
 exclude = [".github/*",".vscode/*","assets/*"]
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
