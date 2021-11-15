@@ -30,7 +30,7 @@ bytesize = { version = "1.0", default-features = false}
 itertools = "0.10"
 rayon-core = "1.9"
 log = "0.4"
-simplelog = { version = "0.10", default-features = false }
+simplelog = { version = "0.11", default-features = false }
 dirs-next = "2.0"
 crossbeam-channel = "0.5"
 scopeguard = "1.1"
