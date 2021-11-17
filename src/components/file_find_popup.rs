@@ -302,9 +302,9 @@ impl Component for FileFindPopup {
 					|| *key == self.key_config.keys.enter
 				{
 					self.hide();
-				} else if *key == self.key_config.keys.move_down {
+				} else if *key == self.key_config.keys.popup_down {
 					self.move_selection(ScrollType::Down);
-				} else if *key == self.key_config.keys.move_up {
+				} else if *key == self.key_config.keys.popup_up {
 					self.move_selection(ScrollType::Up);
 				}
 			}
