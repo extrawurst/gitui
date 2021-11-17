@@ -387,6 +387,7 @@ impl App {
 			self.push_tags_popup.update_git(ev)?;
 			self.pull_popup.update_git(ev);
 			self.select_branch_popup.update_git(ev)?;
+			self.commit.update_git(ev);
 		}
 
 		self.files_tab.update_async(ev);

@@ -71,6 +71,7 @@ pub struct Status {
 	git_action_executed: bool,
 	options: SharedOptions,
 	key_config: SharedKeyConfig,
+	repo_state: RepoState,
 }
 
 impl DrawableComponent for Status {
@@ -189,6 +190,7 @@ impl Status {
 			git_branch_name: cached::BranchName::new(CWD),
 			key_config,
 			options,
+			repo_state: Self::get_repo_state(),
 		}
 	}
 
@@ -420,6 +422,8 @@ impl Status {
 
 		self.update_diff()?;
 
+		self.repo_state = Self::get_repo_state();
+
 		if self.git_action_executed {
 			self.git_action_executed = false;
 
@@ -560,14 +564,16 @@ impl Status {
 			.map_or(true, |state| state.ahead > 0)
 	}
 
-	fn can_abort_merge() -> bool {
+	fn get_repo_state() -> RepoState {
 		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
-			== RepoState::Merge
 	}
 
-	fn pending_rebase() -> bool {
-		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
-			== RepoState::Rebase
+	fn can_abort_merge(&self) -> bool {
+		self.repo_state == RepoState::Merge
+	}
+
+	fn pending_rebase(&self) -> bool {
+		self.repo_state == RepoState::Rebase
 	}
 
 	pub fn abort_merge(&self) {
@@ -637,7 +643,7 @@ impl Status {
 	fn can_commit(&self) -> bool {
 		self.index.focused()
 			&& !self.index.is_empty()
-			&& !Self::pending_rebase()
+			&& !self.pending_rebase()
 	}
 }
 
@@ -694,25 +700,25 @@ impl Component for Status {
 			out.push(CommandInfo::new(
 				strings::commands::undo_commit(&self.key_config),
 				true,
-				(!Self::pending_rebase() && !focus_on_diff)
+				(self.pending_rebase() && !focus_on_diff)
 					|| force_all,
 			));
 
 			out.push(CommandInfo::new(
 				strings::commands::abort_merge(&self.key_config),
 				true,
-				Self::can_abort_merge() || force_all,
+				self.can_abort_merge() || force_all,
 			));
 
 			out.push(CommandInfo::new(
 				strings::commands::continue_rebase(&self.key_config),
 				true,
-				Self::pending_rebase() || force_all,
+				self.pending_rebase() || force_all,
 			));
 			out.push(CommandInfo::new(
 				strings::commands::abort_rebase(&self.key_config),
 				true,
-				Self::pending_rebase() || force_all,
+				self.pending_rebase() || force_all,
 			));
 		}
 
@@ -819,7 +825,7 @@ impl Component for Status {
 					));
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.abort_merge
-					&& Self::can_abort_merge()
+					&& self.can_abort_merge()
 				{
 					self.queue.push(InternalEvent::ConfirmAction(
 						Action::AbortMerge,
@@ -827,7 +833,7 @@ impl Component for Status {
 
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.abort_merge
-					&& Self::pending_rebase()
+					&& self.pending_rebase()
 				{
 					self.queue.push(InternalEvent::ConfirmAction(
 						Action::AbortRebase,
@@ -835,7 +841,7 @@ impl Component for Status {
 
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.rebase_branch
-					&& Self::pending_rebase()
+					&& self.pending_rebase()
 				{
 					self.continue_rebase();
 					self.queue.push(InternalEvent::Update(

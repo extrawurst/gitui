@@ -15,7 +15,7 @@ use asyncgit::{
 	sync::{
 		self, get_config_string, CommitId, HookResult, RepoState,
 	},
-	CWD,
+	AsyncGitNotification, CWD,
 };
 use crossterm::event::Event;
 use easy_cast::Cast;
@@ -44,6 +44,7 @@ pub struct CommitComponent {
 	git_branch_name: cached::BranchName,
 	commit_template: Option<String>,
 	theme: SharedTheme,
+	can_amend: bool,
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
@@ -70,12 +71,24 @@ impl CommitComponent {
 			git_branch_name: cached::BranchName::new(CWD),
 			commit_template: None,
 			theme,
+			can_amend: false,
 		}
 	}
 
 	///
 	pub fn update(&mut self) {
 		self.git_branch_name.lookup().ok();
+	}
+
+	///
+	pub fn update_git(&mut self, ev: AsyncGitNotification) {
+		if ev == AsyncGitNotification::Status {
+			self.update_status();
+		}
+	}
+
+	fn update_status(&mut self) {
+		self.can_amend = self.get_can_amend();
 	}
 
 	fn draw_branch_name<B: Backend>(&self, f: &mut Frame<B>) {
@@ -227,7 +240,7 @@ impl CommitComponent {
 		!self.is_empty() && self.is_changed()
 	}
 
-	fn can_amend(&self) -> bool {
+	fn get_can_amend(&self) -> bool {
 		matches!(self.mode, Mode::Normal)
 			&& sync::get_head(CWD).is_ok()
 			&& (self.is_empty() || !self.is_changed())
@@ -243,7 +256,7 @@ impl CommitComponent {
 	}
 
 	fn amend(&mut self) -> Result<()> {
-		if self.can_amend() {
+		if self.can_amend {
 			let id = sync::get_head(CWD)?;
 			self.mode = Mode::Amend(id);
 
@@ -293,7 +306,7 @@ impl Component for CommitComponent {
 
 			out.push(CommandInfo::new(
 				strings::commands::commit_amend(&self.key_config),
-				self.can_amend(),
+				self.can_amend,
 				true,
 			));
 
@@ -323,7 +336,7 @@ impl Component for CommitComponent {
 						self.commit()
 					);
 				} else if e == self.key_config.commit_amend
-					&& self.can_amend()
+					&& self.can_amend
 				{
 					self.amend()?;
 				} else if e == self.key_config.open_commit_editor {
