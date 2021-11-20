@@ -109,7 +109,7 @@ fn main() -> Result<()> {
 		return Ok(());
 	}
 
-	let key_config = KeyConfig::init(KeyConfig::get_config_file()?)
+	let key_config = KeyConfig::init()
 		.map_err(|e| eprintln!("KeyConfig loading error: {}", e))
 		.unwrap_or_default();
 	let theme = Theme::init(cliargs.theme)

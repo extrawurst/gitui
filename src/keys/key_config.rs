@@ -5,24 +5,33 @@ use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::{fs, path::PathBuf, rc::Rc};
 
-use crate::{args::get_app_config_path, keys::Keys, strings::symbol};
+use crate::{args::get_app_config_path, strings::symbol};
+
+use super::{key_list::KeysList, symbols::KeySymbols};
 
 pub type SharedKeyConfig = Rc<KeyConfig>;
 
 #[derive(Default)]
 pub struct KeyConfig {
-	pub keys: Keys,
+	pub keys: KeysList,
+	symbols: KeySymbols,
 }
 
 impl KeyConfig {
-	pub fn get_config_file() -> Result<PathBuf> {
+	fn get_config_file() -> Result<PathBuf> {
 		let app_home = get_app_config_path()?;
 		Ok(app_home.join("key_config.ron"))
 	}
 
-	pub fn init(file: PathBuf) -> Result<Self> {
+	fn get_symbols_file() -> Result<PathBuf> {
+		let app_home = get_app_config_path()?;
+		Ok(app_home.join("key_symbols.ron"))
+	}
+
+	fn init_keys() -> Result<KeysList> {
+		let file = Self::get_config_file()?;
 		if file.exists() {
-			match Keys::read_file(file.clone()) {
+			match KeysList::read_file(file.clone()) {
 				Err(e) => {
 					let config_path = file.clone();
 					let config_path_old =
@@ -32,38 +41,42 @@ impl KeyConfig {
 						config_path_old.clone(),
 					)?;
 
-					Keys::default().save(file)?;
+					KeysList::default().save(file)?;
 
 					Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
 						e,config_path_old,config_path.to_string_lossy()))
 				}
-				Ok(keys) => Ok(Self { keys }),
+				Ok(keys) => Ok(keys),
 			}
 		} else {
-			Keys::default().save(file)?;
-			Ok(Self::default())
+			KeysList::default().save(file)?;
+			Ok(KeysList::default())
 		}
 	}
 
-	//TODO: make this configurable (https://github.com/extrawurst/gitui/issues/465)
-	#[allow(clippy::unused_self)]
-	const fn get_key_symbol(&self, k: KeyCode) -> &str {
+	pub fn init() -> Result<Self> {
+		let keys = Self::init_keys()?;
+		let symbols = KeySymbols::init(Self::get_symbols_file()?);
+		Ok(Self { keys, symbols })
+	}
+
+	fn get_key_symbol(&self, k: KeyCode) -> &str {
 		match k {
-			KeyCode::Enter => "\u{23ce}",     //⏎
-			KeyCode::Left => "\u{2190}",      //←
-			KeyCode::Right => "\u{2192}",     //→
-			KeyCode::Up => "\u{2191}",        //↑
-			KeyCode::Down => "\u{2193}",      //↓
-			KeyCode::Backspace => "\u{232b}", //⌫
-			KeyCode::Home => "\u{2912}",      //⤒
-			KeyCode::End => "\u{2913}",       //⤓
-			KeyCode::PageUp => "\u{21de}",    //⇞
-			KeyCode::PageDown => "\u{21df}",  //⇟
-			KeyCode::Tab => "\u{21e5}",       //⇥
-			KeyCode::BackTab => "\u{21e4}",   //⇤
-			KeyCode::Delete => "\u{2326}",    //⌦
-			KeyCode::Insert => "\u{2380}",    //⎀
-			KeyCode::Esc => "\u{238b}",       //⎋
+			KeyCode::Enter => &self.symbols.enter,
+			KeyCode::Left => &self.symbols.left,
+			KeyCode::Right => &self.symbols.right,
+			KeyCode::Up => &self.symbols.up,
+			KeyCode::Down => &self.symbols.down,
+			KeyCode::Backspace => &self.symbols.backspace,
+			KeyCode::Home => &self.symbols.home,
+			KeyCode::End => &self.symbols.end,
+			KeyCode::PageUp => &self.symbols.page_up,
+			KeyCode::PageDown => &self.symbols.page_down,
+			KeyCode::Tab => &self.symbols.tab,
+			KeyCode::BackTab => &self.symbols.back_tab,
+			KeyCode::Delete => &self.symbols.delete,
+			KeyCode::Insert => &self.symbols.insert,
+			KeyCode::Esc => &self.symbols.esc,
 			_ => "?",
 		}
 	}
@@ -87,7 +100,7 @@ impl KeyConfig {
 			| KeyCode::Esc => {
 				format!(
 					"{}{}",
-					Self::get_modifier_hint(ev.modifiers),
+					self.get_modifier_hint(ev.modifiers),
 					self.get_key_symbol(ev.code)
 				)
 			}
@@ -95,32 +108,29 @@ impl KeyConfig {
 			KeyCode::Char(c) => {
 				format!(
 					"{}{}",
-					Self::get_modifier_hint(ev.modifiers),
+					self.get_modifier_hint(ev.modifiers),
 					c
 				)
 			}
 			KeyCode::F(u) => {
 				format!(
 					"{}F{}",
-					Self::get_modifier_hint(ev.modifiers),
+					self.get_modifier_hint(ev.modifiers),
 					u
 				)
 			}
-			KeyCode::Null => Self::get_modifier_hint(ev.modifiers),
+			KeyCode::Null => {
+				self.get_modifier_hint(ev.modifiers).into()
+			}
 		}
 	}
 
-	//TODO: make customizable (see https://github.com/extrawurst/gitui/issues/465)
-	fn get_modifier_hint(modifier: KeyModifiers) -> String {
+	fn get_modifier_hint(&self, modifier: KeyModifiers) -> &str {
 		match modifier {
-			KeyModifiers::CONTROL => "^".to_string(),
-			KeyModifiers::SHIFT => {
-				"\u{21e7}".to_string() //⇧
-			}
-			KeyModifiers::ALT => {
-				"\u{2325}".to_string() //⌥
-			}
-			_ => String::new(),
+			KeyModifiers::CONTROL => &self.symbols.control,
+			KeyModifiers::SHIFT => &self.symbols.shift,
+			KeyModifiers::ALT => &self.symbols.alt,
+			_ => "",
 		}
 	}
 }
