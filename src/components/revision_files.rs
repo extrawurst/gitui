@@ -290,26 +290,26 @@ impl Component for RevisionFilesComponent {
 			{
 				self.selection_changed();
 				return Ok(EventState::Consumed);
-			} else if key == self.key_config.blame {
+			} else if key == self.key_config.keys.blame {
 				if self.blame() {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.move_right {
+			} else if key == self.key_config.keys.move_right {
 				if is_tree_focused {
 					self.focus = Focus::File;
 					self.current_file.focus(true);
 					self.focus(true);
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.move_left {
+			} else if key == self.key_config.keys.move_left {
 				if !is_tree_focused {
 					self.focus = Focus::Tree;
 					self.current_file.focus(false);
 					self.focus(false);
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.file_find {
+			} else if key == self.key_config.keys.file_find {
 				if is_tree_focused {
 					self.open_finder();
 					return Ok(EventState::Consumed);
@@ -347,10 +347,10 @@ fn tree_nav(
 ) -> bool {
 	if let Some(common_nav) = common_nav(key, key_config) {
 		tree.move_selection(common_nav)
-	} else if key == key_config.tree_collapse_recursive {
+	} else if key == key_config.keys.tree_collapse_recursive {
 		tree.collapse_recursive();
 		true
-	} else if key == key_config.tree_expand_recursive {
+	} else if key == key_config.keys.tree_expand_recursive {
 		tree.expand_recursive();
 		true
 	} else {

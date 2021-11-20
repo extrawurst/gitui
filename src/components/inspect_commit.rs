@@ -125,26 +125,26 @@ impl Component for InspectCommitComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.exit_popup {
+				if e == self.key_config.keys.exit_popup {
 					self.hide();
-				} else if e == self.key_config.focus_right
+				} else if e == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if e == self.key_config.focus_left
+				} else if e == self.key_config.keys.focus_left
 					&& self.diff.focused()
 				{
 					self.details.focus(true);
 					self.diff.focus(false);
-				} else if e == self.key_config.open_file_tree {
+				} else if e == self.key_config.keys.open_file_tree {
 					if let Some(commit) = self.commit_id {
 						self.queue.push(InternalEvent::OpenFileTree(
 							commit,
 						));
 						self.hide();
 					}
-				} else if e == self.key_config.focus_left {
+				} else if e == self.key_config.keys.focus_left {
 					self.hide();
 				}
 

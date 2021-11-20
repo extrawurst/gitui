@@ -64,7 +64,7 @@ impl Component for RenameBranchComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.enter {
+				if e == self.key_config.keys.enter {
 					self.rename_branch();
 				}
 

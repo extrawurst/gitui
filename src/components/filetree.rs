@@ -406,7 +406,7 @@ impl Component for FileTreeComponent {
 	fn event(&mut self, ev: Event) -> Result<EventState> {
 		if self.focused {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.blame {
+				return if e == self.key_config.keys.blame {
 					match (&self.queue, self.selection_file()) {
 						(Some(queue), Some(status_item)) => {
 							queue.push(InternalEvent::BlameFile(
@@ -417,27 +417,27 @@ impl Component for FileTreeComponent {
 						}
 						_ => Ok(EventState::NotConsumed),
 					}
-				} else if e == self.key_config.move_down {
+				} else if e == self.key_config.keys.move_down {
 					Ok(self
 						.move_selection(MoveSelection::Down)
 						.into())
-				} else if e == self.key_config.move_up {
+				} else if e == self.key_config.keys.move_up {
 					Ok(self.move_selection(MoveSelection::Up).into())
-				} else if e == self.key_config.home
-					|| e == self.key_config.shift_up
+				} else if e == self.key_config.keys.home
+					|| e == self.key_config.keys.shift_up
 				{
 					Ok(self
 						.move_selection(MoveSelection::Home)
 						.into())
-				} else if e == self.key_config.end
-					|| e == self.key_config.shift_down
+				} else if e == self.key_config.keys.end
+					|| e == self.key_config.keys.shift_down
 				{
 					Ok(self.move_selection(MoveSelection::End).into())
-				} else if e == self.key_config.move_left {
+				} else if e == self.key_config.keys.move_left {
 					Ok(self
 						.move_selection(MoveSelection::Left)
 						.into())
-				} else if e == self.key_config.move_right {
+				} else if e == self.key_config.keys.move_right {
 					Ok(self
 						.move_selection(MoveSelection::Right)
 						.into())

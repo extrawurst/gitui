@@ -297,24 +297,27 @@ impl App {
 			{
 				flags.insert(NeedsUpdate::COMMANDS);
 			} else if let Event::Key(k) = ev {
-				let new_flags = if k == self.key_config.tab_toggle {
+				let new_flags = if k
+					== self.key_config.keys.tab_toggle
+				{
 					self.toggle_tabs(false)?;
 					NeedsUpdate::COMMANDS
-				} else if k == self.key_config.tab_toggle_reverse {
+				} else if k == self.key_config.keys.tab_toggle_reverse
+				{
 					self.toggle_tabs(true)?;
 					NeedsUpdate::COMMANDS
-				} else if k == self.key_config.tab_status
-					|| k == self.key_config.tab_log
-					|| k == self.key_config.tab_files
-					|| k == self.key_config.tab_stashing
-					|| k == self.key_config.tab_stashes
+				} else if k == self.key_config.keys.tab_status
+					|| k == self.key_config.keys.tab_log
+					|| k == self.key_config.keys.tab_files
+					|| k == self.key_config.keys.tab_stashing
+					|| k == self.key_config.keys.tab_stashes
 				{
 					self.switch_tab(k)?;
 					NeedsUpdate::COMMANDS
-				} else if k == self.key_config.cmd_bar_toggle {
+				} else if k == self.key_config.keys.cmd_bar_toggle {
 					self.cmdbar.borrow_mut().toggle_more();
 					NeedsUpdate::empty()
-				} else if k == self.key_config.open_options {
+				} else if k == self.key_config.keys.open_options {
 					self.options_popup.show()?;
 					NeedsUpdate::ALL
 				} else {
@@ -497,7 +500,7 @@ impl App {
 			return false;
 		}
 		if let Event::Key(e) = ev {
-			if e == self.key_config.quit {
+			if e == self.key_config.keys.quit {
 				self.do_quit = true;
 				return true;
 			}
@@ -507,7 +510,7 @@ impl App {
 
 	fn check_hard_exit(&mut self, ev: Event) -> bool {
 		if let Event::Key(e) = ev {
-			if e == self.key_config.exit {
+			if e == self.key_config.keys.exit {
 				self.do_quit = true;
 				return true;
 			}
@@ -537,15 +540,15 @@ impl App {
 	}
 
 	fn switch_tab(&mut self, k: KeyEvent) -> Result<()> {
-		if k == self.key_config.tab_status {
+		if k == self.key_config.keys.tab_status {
 			self.set_tab(0)?;
-		} else if k == self.key_config.tab_log {
+		} else if k == self.key_config.keys.tab_log {
 			self.set_tab(1)?;
-		} else if k == self.key_config.tab_files {
+		} else if k == self.key_config.keys.tab_files {
 			self.set_tab(2)?;
-		} else if k == self.key_config.tab_stashing {
+		} else if k == self.key_config.keys.tab_stashing {
 			self.set_tab(3)?;
-		} else if k == self.key_config.tab_stashes {
+		} else if k == self.key_config.keys.tab_stashes {
 			self.set_tab(4)?;
 		}
 

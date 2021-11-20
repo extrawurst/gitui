@@ -304,7 +304,7 @@ impl Component for PushComponent {
 						)?;
 						self.input_cred.hide();
 					}
-				} else if e == self.key_config.exit_popup
+				} else if e == self.key_config.keys.exit_popup
 					&& !self.pending
 				{
 					self.hide();

@@ -105,7 +105,7 @@ impl Component for CredComponent {
 	fn event(&mut self, ev: Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
-				if e == self.key_config.exit_popup {
+				if e == self.key_config.keys.exit_popup {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
@@ -113,7 +113,7 @@ impl Component for CredComponent {
 					|| self.input_password.event(ev)?.is_consumed()
 				{
 					return Ok(EventState::Consumed);
-				} else if e == self.key_config.enter {
+				} else if e == self.key_config.keys.enter {
 					if self.input_username.is_visible() {
 						self.cred = BasicAuthCredential::new(
 							Some(

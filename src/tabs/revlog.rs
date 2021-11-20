@@ -221,17 +221,17 @@ impl Component for Revlog {
 				self.update()?;
 				return Ok(EventState::Consumed);
 			} else if let Event::Key(k) = ev {
-				if k == self.key_config.enter {
+				if k == self.key_config.keys.enter {
 					self.commit_details.toggle_visible()?;
 					self.update()?;
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.copy {
+				} else if k == self.key_config.keys.copy {
 					self.copy_commit_hash()?;
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.push {
+				} else if k == self.key_config.keys.push {
 					self.queue.push(InternalEvent::PushTags);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.log_tag_commit {
+				} else if k == self.key_config.keys.log_tag_commit {
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -240,7 +240,7 @@ impl Component for Revlog {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.focus_right
+				} else if k == self.key_config.keys.focus_right
 					&& self.commit_details.is_visible()
 				{
 					return self.selected_commit().map_or(
@@ -257,10 +257,10 @@ impl Component for Revlog {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.select_branch {
+				} else if k == self.key_config.keys.select_branch {
 					self.queue.push(InternalEvent::SelectBranch);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.open_file_tree {
+				} else if k == self.key_config.keys.open_file_tree {
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -270,10 +270,10 @@ impl Component for Revlog {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.tags {
+				} else if k == self.key_config.keys.tags {
 					self.queue.push(InternalEvent::Tags);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.compare_commits
+				} else if k == self.key_config.keys.compare_commits
 					&& self.list.marked_count() > 0
 				{
 					if self.list.marked_count() == 1 {

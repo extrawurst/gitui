@@ -217,7 +217,7 @@ impl Component for Stashing {
 			}
 
 			if let Event::Key(k) = ev {
-				return if k == self.key_config.stashing_save
+				return if k == self.key_config.keys.stashing_save
 					&& !self.index.is_empty()
 				{
 					self.queue.push(InternalEvent::PopupStashing(
@@ -225,13 +225,15 @@ impl Component for Stashing {
 					));
 
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.stashing_toggle_index {
+				} else if k
+					== self.key_config.keys.stashing_toggle_index
+				{
 					self.options.keep_index =
 						!self.options.keep_index;
 					self.update()?;
 					Ok(EventState::Consumed)
 				} else if k
-					== self.key_config.stashing_toggle_untracked
+					== self.key_config.keys.stashing_toggle_untracked
 				{
 					self.options.stash_untracked =
 						!self.options.stash_untracked;

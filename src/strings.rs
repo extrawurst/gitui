@@ -48,24 +48,30 @@ pub fn title_index(_key_config: &SharedKeyConfig) -> String {
 	"Staged Changes".to_string()
 }
 pub fn tab_status(key_config: &SharedKeyConfig) -> String {
-	format!("Status [{}]", key_config.get_hint(key_config.tab_status))
+	format!(
+		"Status [{}]",
+		key_config.get_hint(key_config.keys.tab_status)
+	)
 }
 pub fn tab_log(key_config: &SharedKeyConfig) -> String {
-	format!("Log [{}]", key_config.get_hint(key_config.tab_log))
+	format!("Log [{}]", key_config.get_hint(key_config.keys.tab_log))
 }
 pub fn tab_files(key_config: &SharedKeyConfig) -> String {
-	format!("Files [{}]", key_config.get_hint(key_config.tab_files))
+	format!(
+		"Files [{}]",
+		key_config.get_hint(key_config.keys.tab_files)
+	)
 }
 pub fn tab_stashing(key_config: &SharedKeyConfig) -> String {
 	format!(
 		"Stashing [{}]",
-		key_config.get_hint(key_config.tab_stashing)
+		key_config.get_hint(key_config.keys.tab_stashing)
 	)
 }
 pub fn tab_stashes(key_config: &SharedKeyConfig) -> String {
 	format!(
 		"Stashes [{}]",
-		key_config.get_hint(key_config.tab_stashes)
+		key_config.get_hint(key_config.keys.tab_stashes)
 	)
 }
 pub fn tab_divider(_key_config: &SharedKeyConfig) -> String {
@@ -310,6 +316,7 @@ pub fn rename_branch_popup_msg(
 
 pub mod commit {
 	use crate::keys::SharedKeyConfig;
+
 	pub fn details_author() -> String {
 		"Author: ".to_string()
 	}
@@ -368,7 +375,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Next [{}]",
-				key_config.get_hint(key_config.tab_toggle)
+				key_config.get_hint(key_config.keys.tab_toggle)
 			),
 			"switch to next tab",
 			CMD_GROUP_GENERAL,
@@ -378,7 +385,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Find [{}]",
-				key_config.get_hint(key_config.file_find)
+				key_config.get_hint(key_config.keys.file_find)
 			),
 			"find file in tree",
 			CMD_GROUP_GENERAL,
@@ -390,11 +397,11 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Tab [{}{}{}{}{}]",
-				key_config.get_hint(key_config.tab_status),
-				key_config.get_hint(key_config.tab_log),
-				key_config.get_hint(key_config.tab_files),
-				key_config.get_hint(key_config.tab_stashing),
-				key_config.get_hint(key_config.tab_stashes),
+				key_config.get_hint(key_config.keys.tab_status),
+				key_config.get_hint(key_config.keys.tab_log),
+				key_config.get_hint(key_config.keys.tab_files),
+				key_config.get_hint(key_config.keys.tab_stashing),
+				key_config.get_hint(key_config.keys.tab_stashes),
 			),
 			"switch top level tabs directly",
 			CMD_GROUP_GENERAL,
@@ -406,7 +413,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Options [{}]",
-				key_config.get_hint(key_config.open_options),
+				key_config.get_hint(key_config.keys.open_options),
 			),
 			"open options popup",
 			CMD_GROUP_GENERAL,
@@ -416,7 +423,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Help [{}]",
-				key_config.get_hint(key_config.open_help)
+				key_config.get_hint(key_config.keys.open_help)
 			),
 			"open this help screen",
 			CMD_GROUP_GENERAL,
@@ -428,8 +435,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Nav [{}{}]",
-				key_config.get_hint(key_config.move_up),
-				key_config.get_hint(key_config.move_down)
+				key_config.get_hint(key_config.keys.move_up),
+				key_config.get_hint(key_config.keys.move_down)
 			),
 			"navigate commit message",
 			CMD_GROUP_GENERAL,
@@ -441,10 +448,10 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Nav [{}{}{}{}]",
-				key_config.get_hint(key_config.move_up),
-				key_config.get_hint(key_config.move_down),
-				key_config.get_hint(key_config.move_right),
-				key_config.get_hint(key_config.move_left)
+				key_config.get_hint(key_config.keys.move_up),
+				key_config.get_hint(key_config.keys.move_down),
+				key_config.get_hint(key_config.keys.move_right),
+				key_config.get_hint(key_config.keys.move_left)
 			),
 			"navigate tree view, collapse, expand",
 			CMD_GROUP_GENERAL,
@@ -454,8 +461,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Scroll [{}{}]",
-				key_config.get_hint(key_config.focus_above),
-				key_config.get_hint(key_config.focus_below)
+				key_config.get_hint(key_config.keys.focus_above),
+				key_config.get_hint(key_config.keys.focus_below)
 			),
 			"scroll up or down in focused view",
 			CMD_GROUP_GENERAL,
@@ -469,7 +476,7 @@ pub mod commands {
 			format!(
 				"{} [{}]",
 				if marked { "Unmark" } else { "Mark" },
-				key_config.get_hint(key_config.log_mark_commit),
+				key_config.get_hint(key_config.keys.log_mark_commit),
 			),
 			"mark multiple commits",
 			CMD_GROUP_GENERAL,
@@ -479,7 +486,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Copy [{}]",
-				key_config.get_hint(key_config.copy),
+				key_config.get_hint(key_config.keys.copy),
 			),
 			"copy selected lines to clipboard",
 			CMD_GROUP_DIFF,
@@ -489,7 +496,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Copy Hash [{}]",
-				key_config.get_hint(key_config.copy),
+				key_config.get_hint(key_config.keys.copy),
 			),
 			"copy selected commit hash to clipboard",
 			CMD_GROUP_LOG,
@@ -499,7 +506,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Push Tags [{}]",
-				key_config.get_hint(key_config.push),
+				key_config.get_hint(key_config.keys.push),
 			),
 			"push tags to remote",
 			CMD_GROUP_LOG,
@@ -511,10 +518,10 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Jump up/down [{},{},{},{}]",
-				key_config.get_hint(key_config.home),
-				key_config.get_hint(key_config.end),
-				key_config.get_hint(key_config.move_up),
-				key_config.get_hint(key_config.move_down)
+				key_config.get_hint(key_config.keys.home),
+				key_config.get_hint(key_config.keys.end),
+				key_config.get_hint(key_config.keys.move_up),
+				key_config.get_hint(key_config.keys.move_down)
 			),
 			"scroll to top or bottom of diff",
 			CMD_GROUP_DIFF,
@@ -526,7 +533,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Add hunk [{}]",
-				key_config.get_hint(key_config.stage_unstage_item),
+				key_config
+					.get_hint(key_config.keys.stage_unstage_item),
 			),
 			"adds selected hunk to stage",
 			CMD_GROUP_DIFF,
@@ -538,7 +546,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Reset hunk [{}]",
-				key_config.get_hint(key_config.status_reset_item),
+				key_config
+					.get_hint(key_config.keys.status_reset_item),
 			),
 			"reverts selected hunk",
 			CMD_GROUP_DIFF,
@@ -550,7 +559,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Reset lines [{}]",
-				key_config.get_hint(key_config.diff_reset_lines),
+				key_config.get_hint(key_config.keys.diff_reset_lines),
 			),
 			"resets selected lines",
 			CMD_GROUP_DIFF,
@@ -562,7 +571,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Stage lines [{}]",
-				key_config.get_hint(key_config.diff_stage_lines),
+				key_config.get_hint(key_config.keys.diff_stage_lines),
 			),
 			"stage selected lines",
 			CMD_GROUP_DIFF,
@@ -574,7 +583,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Unstage lines [{}]",
-				key_config.get_hint(key_config.diff_stage_lines),
+				key_config.get_hint(key_config.keys.diff_stage_lines),
 			),
 			"unstage selected lines",
 			CMD_GROUP_DIFF,
@@ -586,7 +595,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Remove hunk [{}]",
-				key_config.get_hint(key_config.stage_unstage_item),
+				key_config
+					.get_hint(key_config.keys.stage_unstage_item),
 			),
 			"removes selected hunk from stage",
 			CMD_GROUP_DIFF,
@@ -596,7 +606,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Close [{}]",
-				key_config.get_hint(key_config.exit_popup),
+				key_config.get_hint(key_config.keys.exit_popup),
 			),
 			"close overlay (e.g commit, help)",
 			CMD_GROUP_GENERAL,
@@ -606,7 +616,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Close [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"close msg popup (e.g msg)",
 			CMD_GROUP_GENERAL,
@@ -617,7 +627,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Validate [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"validate msg",
 			CMD_GROUP_GENERAL,
@@ -629,7 +639,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Abort merge [{}]",
-				key_config.get_hint(key_config.abort_merge),
+				key_config.get_hint(key_config.keys.abort_merge),
 			),
 			"abort ongoing merge",
 			CMD_GROUP_GENERAL,
@@ -642,7 +652,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Continue rebase [{}]",
-				key_config.get_hint(key_config.rebase_branch),
+				key_config.get_hint(key_config.keys.rebase_branch),
 			),
 			"continue ongoing rebase",
 			CMD_GROUP_GENERAL,
@@ -653,7 +663,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Abort rebase [{}]",
-				key_config.get_hint(key_config.abort_merge),
+				key_config.get_hint(key_config.keys.abort_merge),
 			),
 			"abort ongoing rebase",
 			CMD_GROUP_GENERAL,
@@ -666,7 +676,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"To stage [{}]",
-				key_config.get_hint(key_config.toggle_workarea),
+				key_config.get_hint(key_config.keys.toggle_workarea),
 			),
 			"focus/select staging area",
 			CMD_GROUP_GENERAL,
@@ -678,7 +688,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"To unstaged [{}]",
-				key_config.get_hint(key_config.toggle_workarea),
+				key_config.get_hint(key_config.keys.toggle_workarea),
 			),
 			"focus/select unstaged area",
 			CMD_GROUP_GENERAL,
@@ -688,7 +698,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Undo Commit [{}]",
-				key_config.get_hint(key_config.undo_commit),
+				key_config.get_hint(key_config.keys.undo_commit),
 			),
 			"undo last commit",
 			CMD_GROUP_GENERAL,
@@ -698,7 +708,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Commit [{}]",
-				key_config.get_hint(key_config.open_commit),
+				key_config.get_hint(key_config.keys.open_commit),
 			),
 			"open commit popup (available in non-empty stage)",
 			CMD_GROUP_COMMIT,
@@ -710,7 +720,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Open editor [{}]",
-				key_config.get_hint(key_config.open_commit_editor),
+				key_config
+					.get_hint(key_config.keys.open_commit_editor),
 			),
 			"open commit editor (available in commit popup)",
 			CMD_GROUP_COMMIT,
@@ -720,7 +731,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Commit [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"commit (available when commit message is non-empty)",
 			CMD_GROUP_COMMIT,
@@ -731,7 +742,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Amend [{}]",
-				key_config.get_hint(key_config.commit_amend),
+				key_config.get_hint(key_config.keys.commit_amend),
 			),
 			"amend last commit (available in commit popup)",
 			CMD_GROUP_COMMIT,
@@ -741,7 +752,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Edit [{}]",
-				key_config.get_hint(key_config.edit_file),
+				key_config.get_hint(key_config.keys.edit_file),
 			),
 			"edit the currently selected file in an external editor",
 			CMD_GROUP_CHANGES,
@@ -751,7 +762,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Stage [{}]",
-				key_config.get_hint(key_config.stage_unstage_item),
+				key_config
+					.get_hint(key_config.keys.stage_unstage_item),
 			),
 			"stage currently selected file or entire path",
 			CMD_GROUP_CHANGES,
@@ -761,7 +773,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Stage All [{}]",
-				key_config.get_hint(key_config.status_stage_all),
+				key_config.get_hint(key_config.keys.status_stage_all),
 			),
 			"stage all changes (in unstaged files)",
 			CMD_GROUP_CHANGES,
@@ -771,7 +783,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Unstage [{}]",
-				key_config.get_hint(key_config.stage_unstage_item),
+				key_config
+					.get_hint(key_config.keys.stage_unstage_item),
 			),
 			"unstage currently selected file or entire path",
 			CMD_GROUP_CHANGES,
@@ -781,7 +794,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Unstage all [{}]",
-				key_config.get_hint(key_config.status_stage_all),
+				key_config.get_hint(key_config.keys.status_stage_all),
 			),
 			"unstage all files (in staged files)",
 			CMD_GROUP_CHANGES,
@@ -791,7 +804,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Reset [{}]",
-				key_config.get_hint(key_config.status_reset_item),
+				key_config
+					.get_hint(key_config.keys.status_reset_item),
 			),
 			"revert changes in selected file or entire path",
 			CMD_GROUP_CHANGES,
@@ -801,7 +815,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Ignore [{}]",
-				key_config.get_hint(key_config.status_ignore_file),
+				key_config
+					.get_hint(key_config.keys.status_ignore_file),
 			),
 			"Add file or path to .gitignore",
 			CMD_GROUP_CHANGES,
@@ -814,7 +829,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Back [{}]",
-				key_config.get_hint(key_config.focus_left),
+				key_config.get_hint(key_config.keys.focus_left),
 			),
 			"view and select changed files",
 			CMD_GROUP_GENERAL,
@@ -826,7 +841,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Diff [{}]",
-				key_config.get_hint(key_config.focus_right),
+				key_config.get_hint(key_config.keys.focus_right),
 			),
 			"inspect file diff",
 			CMD_GROUP_GENERAL,
@@ -836,7 +851,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Quit [{}]",
-				key_config.get_hint(key_config.exit),
+				key_config.get_hint(key_config.keys.exit),
 			),
 			"quit gitui application",
 			CMD_GROUP_GENERAL,
@@ -848,7 +863,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Confirm [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"confirm action",
 			CMD_GROUP_GENERAL,
@@ -860,7 +875,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Save [{}]",
-				key_config.get_hint(key_config.stashing_save),
+				key_config.get_hint(key_config.keys.stashing_save),
 			),
 			"opens stash name input popup",
 			CMD_GROUP_STASHING,
@@ -872,7 +887,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Toggle Staged [{}]",
-				key_config.get_hint(key_config.stashing_toggle_index),
+				key_config
+					.get_hint(key_config.keys.stashing_toggle_index),
 			),
 			"toggle including staged files into stash",
 			CMD_GROUP_STASHING,
@@ -884,8 +900,9 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Toggle Untracked [{}]",
-				key_config
-					.get_hint(key_config.stashing_toggle_untracked),
+				key_config.get_hint(
+					key_config.keys.stashing_toggle_untracked
+				),
 			),
 			"toggle including untracked files into stash",
 			CMD_GROUP_STASHING,
@@ -897,7 +914,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Stash [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"save files to stash",
 			CMD_GROUP_STASHING,
@@ -909,7 +926,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Apply [{}]",
-				key_config.get_hint(key_config.stash_apply),
+				key_config.get_hint(key_config.keys.stash_apply),
 			),
 			"apply selected stash",
 			CMD_GROUP_STASHES,
@@ -927,7 +944,7 @@ pub mod commands {
 				} else {
 					format!(" {}", marked)
 				},
-				key_config.get_hint(key_config.stash_drop),
+				key_config.get_hint(key_config.keys.stash_drop),
 			),
 			"drop selected stash",
 			CMD_GROUP_STASHES,
@@ -939,7 +956,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Pop [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"pop selected stash",
 			CMD_GROUP_STASHES,
@@ -951,7 +968,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Inspect [{}]",
-				key_config.get_hint(key_config.focus_right),
+				key_config.get_hint(key_config.keys.focus_right),
 			),
 			"open stash commit details (allows to diff files)",
 			CMD_GROUP_STASHES,
@@ -963,7 +980,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Details [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"open details of selected commit",
 			CMD_GROUP_LOG,
@@ -976,7 +993,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Inspect [{}]",
-				key_config.get_hint(key_config.focus_right),
+				key_config.get_hint(key_config.keys.focus_right),
 			),
 			"inspect selected commit in detail",
 			CMD_GROUP_GENERAL,
@@ -987,7 +1004,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Blame [{}]",
-				key_config.get_hint(key_config.blame),
+				key_config.get_hint(key_config.keys.blame),
 			),
 			"open blame view of selected file",
 			CMD_GROUP_LOG,
@@ -999,7 +1016,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Tag [{}]",
-				key_config.get_hint(key_config.log_tag_commit),
+				key_config.get_hint(key_config.keys.log_tag_commit),
 			),
 			"tag commit",
 			CMD_GROUP_LOG,
@@ -1011,7 +1028,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Files [{}]",
-				key_config.get_hint(key_config.open_file_tree),
+				key_config.get_hint(key_config.keys.open_file_tree),
 			),
 			"inspect file tree at specific revision",
 			CMD_GROUP_LOG,
@@ -1023,7 +1040,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Tag [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"tag commit",
 			CMD_GROUP_LOG,
@@ -1035,7 +1052,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Create Branch [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"create branch",
 			CMD_GROUP_BRANCHES,
@@ -1048,7 +1065,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Create [{}]",
-				key_config.get_hint(key_config.create_branch),
+				key_config.get_hint(key_config.keys.create_branch),
 			),
 			"open create branch popup",
 			CMD_GROUP_BRANCHES,
@@ -1060,7 +1077,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Rename Branch [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"rename branch",
 			CMD_GROUP_BRANCHES,
@@ -1073,7 +1090,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Rename Branch [{}]",
-				key_config.get_hint(key_config.rename_branch),
+				key_config.get_hint(key_config.keys.rename_branch),
 			),
 			"rename branch",
 			CMD_GROUP_BRANCHES,
@@ -1085,7 +1102,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Delete [{}]",
-				key_config.get_hint(key_config.delete_branch),
+				key_config.get_hint(key_config.keys.delete_branch),
 			),
 			"delete a branch",
 			CMD_GROUP_BRANCHES,
@@ -1097,7 +1114,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Merge [{}]",
-				key_config.get_hint(key_config.merge_branch),
+				key_config.get_hint(key_config.keys.merge_branch),
 			),
 			"merge a branch",
 			CMD_GROUP_BRANCHES,
@@ -1110,7 +1127,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Rebase [{}]",
-				key_config.get_hint(key_config.rebase_branch),
+				key_config.get_hint(key_config.keys.rebase_branch),
 			),
 			"rebase a branch",
 			CMD_GROUP_BRANCHES,
@@ -1123,7 +1140,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Compare [{}]",
-				key_config.get_hint(key_config.compare_commits),
+				key_config.get_hint(key_config.keys.compare_commits),
 			),
 			"compare with head",
 			CMD_GROUP_BRANCHES,
@@ -1136,7 +1153,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Compare Commits [{}]",
-				key_config.get_hint(key_config.compare_commits),
+				key_config.get_hint(key_config.keys.compare_commits),
 			),
 			"compare two marked commits",
 			CMD_GROUP_LOG,
@@ -1149,7 +1166,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Checkout [{}]",
-				key_config.get_hint(key_config.enter),
+				key_config.get_hint(key_config.keys.enter),
 			),
 			"checkout branch",
 			CMD_GROUP_BRANCHES,
@@ -1163,7 +1180,7 @@ pub mod commands {
 			format!(
 				"{} [{}]",
 				if local { "Remote" } else { "Local" },
-				key_config.get_hint(key_config.tab_toggle),
+				key_config.get_hint(key_config.keys.tab_toggle),
 			),
 			"toggle branch type (remote/local)",
 			CMD_GROUP_BRANCHES,
@@ -1175,7 +1192,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Branches [{}]",
-				key_config.get_hint(key_config.select_branch),
+				key_config.get_hint(key_config.keys.select_branch),
 			),
 			"open branch popup",
 			CMD_GROUP_BRANCHES,
@@ -1188,7 +1205,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Tags [{}]",
-				key_config.get_hint(key_config.tags),
+				key_config.get_hint(key_config.keys.tags),
 			),
 			"open tags popup",
 			CMD_GROUP_GENERAL,
@@ -1200,7 +1217,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Delete [{}]",
-				key_config.get_hint(key_config.delete_tag),
+				key_config.get_hint(key_config.keys.delete_tag),
 			),
 			"delete a tag",
 			CMD_GROUP_GENERAL,
@@ -1210,7 +1227,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Select commit [{}]",
-				key_config.get_hint(key_config.select_tag),
+				key_config.get_hint(key_config.keys.select_tag),
 			),
 			"Select commit in revlog",
 			CMD_GROUP_LOG,
@@ -1221,7 +1238,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Push [{}]",
-				key_config.get_hint(key_config.push),
+				key_config.get_hint(key_config.keys.push),
 			),
 			"push to origin",
 			CMD_GROUP_GENERAL,
@@ -1233,7 +1250,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Force Push [{}]",
-				key_config.get_hint(key_config.force_push),
+				key_config.get_hint(key_config.keys.force_push),
 			),
 			"force push to origin",
 			CMD_GROUP_GENERAL,
@@ -1243,7 +1260,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Pull [{}]",
-				key_config.get_hint(key_config.pull),
+				key_config.get_hint(key_config.keys.pull),
 			),
 			"fetch/merge",
 			CMD_GROUP_GENERAL,
