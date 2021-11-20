@@ -75,6 +75,31 @@ pub(crate) fn get_default_remote_in_repo(
 	Err(Error::NoDefaultRemoteFound)
 }
 
+///
+pub fn fetch_all(
+	repo_path: &str,
+	remote: &str,
+	basic_credential: Option<BasicAuthCredential>,
+	progress_sender: Option<Sender<ProgressNotification>>,
+) -> Result<()> {
+	scope_time!("fetch_all");
+
+	let repo = utils::repo(repo_path)?;
+
+	let mut remote = repo.find_remote(remote)?;
+
+	let mut options = FetchOptions::new();
+	let callbacks = Callbacks::new(
+		progress_sender.clone(),
+		basic_credential.clone(),
+	);
+	options.prune(git2::FetchPrune::On);
+	options.remote_callbacks(callbacks.callbacks());
+	remote.fetch_all(Some(&mut options), None)?;
+
+	Ok(())
+}
+
 /// fetches from upstream/remote for `branch`
 pub(crate) fn fetch(
 	repo_path: &str,
@@ -82,7 +107,7 @@ pub(crate) fn fetch(
 	basic_credential: Option<BasicAuthCredential>,
 	progress_sender: Option<Sender<ProgressNotification>>,
 ) -> Result<usize> {
-	scope_time!("fetch_origin");
+	scope_time!("fetch");
 
 	let repo = utils::repo(repo_path)?;
 	let branch_ref = repo
@@ -96,6 +121,8 @@ pub(crate) fn fetch(
 	let mut options = FetchOptions::new();
 	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.remote_callbacks(callbacks.callbacks());
+
+	log::debug!("fetch: {}", branch);
 
 	remote.fetch(&[branch], Some(&mut options), None)?;
 

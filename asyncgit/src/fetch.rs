@@ -2,7 +2,7 @@ use crate::{
 	error::{Error, Result},
 	sync::{
 		cred::BasicAuthCredential,
-		remotes::{fetch, push::ProgressNotification},
+		remotes::{fetch, fetch_all, push::ProgressNotification},
 	},
 	AsyncGitNotification, RemoteProgress, CWD,
 };
@@ -89,6 +89,14 @@ impl AsyncFetch {
 				receiver,
 				arc_progress,
 			);
+
+			fetch_all(
+				CWD,
+				"origin",
+				params.basic_credential.clone(),
+				Some(progress_sender.clone()),
+			)
+			.expect("");
 
 			let res = fetch(
 				CWD,
