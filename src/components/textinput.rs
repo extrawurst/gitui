@@ -5,7 +5,7 @@ use crate::{
 		popup_paragraph, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	strings,
 	ui::{self, style::SharedTheme},
 };
@@ -346,7 +346,7 @@ impl Component for TextInputComponent {
 	fn event(&mut self, ev: Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
-				if e == self.key_config.exit_popup {
+				if e == self.key_config.keys.exit_popup {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}

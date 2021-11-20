@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	components::ScrollType,
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
 	ui::{self, Size},
@@ -208,54 +208,55 @@ impl Component for BranchListComponent {
 		}
 
 		if let Event::Key(e) = ev {
-			if e == self.key_config.exit_popup {
+			if e == self.key_config.keys.exit_popup {
 				self.hide();
-			} else if e == self.key_config.move_down {
+			} else if e == self.key_config.keys.move_down {
 				return self
 					.move_selection(ScrollType::Up)
 					.map(Into::into);
-			} else if e == self.key_config.move_up {
+			} else if e == self.key_config.keys.move_up {
 				return self
 					.move_selection(ScrollType::Down)
 					.map(Into::into);
-			} else if e == self.key_config.page_down {
+			} else if e == self.key_config.keys.page_down {
 				return self
 					.move_selection(ScrollType::PageDown)
 					.map(Into::into);
-			} else if e == self.key_config.page_up {
+			} else if e == self.key_config.keys.page_up {
 				return self
 					.move_selection(ScrollType::PageUp)
 					.map(Into::into);
-			} else if e == self.key_config.home {
+			} else if e == self.key_config.keys.home {
 				return self
 					.move_selection(ScrollType::Home)
 					.map(Into::into);
-			} else if e == self.key_config.end {
+			} else if e == self.key_config.keys.end {
 				return self
 					.move_selection(ScrollType::End)
 					.map(Into::into);
-			} else if e == self.key_config.tab_toggle {
+			} else if e == self.key_config.keys.tab_toggle {
 				self.local = !self.local;
 				self.update_branches()?;
-			} else if e == self.key_config.enter {
+			} else if e == self.key_config.keys.enter {
 				try_or_popup!(
 					self,
 					"switch branch error:",
 					self.switch_to_selected_branch()
 				);
-			} else if e == self.key_config.create_branch && self.local
+			} else if e == self.key_config.keys.create_branch
+				&& self.local
 			{
 				self.queue.push(InternalEvent::CreateBranch);
-			} else if e == self.key_config.rename_branch
+			} else if e == self.key_config.keys.rename_branch
 				&& self.valid_selection()
 			{
 				self.rename_branch();
-			} else if e == self.key_config.delete_branch
+			} else if e == self.key_config.keys.delete_branch
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
 				self.delete_branch();
-			} else if e == self.key_config.merge_branch
+			} else if e == self.key_config.keys.merge_branch
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
@@ -264,7 +265,7 @@ impl Component for BranchListComponent {
 					"merge branch error:",
 					self.merge_branch()
 				);
-			} else if e == self.key_config.rebase_branch
+			} else if e == self.key_config.keys.rebase_branch
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
@@ -273,7 +274,7 @@ impl Component for BranchListComponent {
 					"rebase error:",
 					self.rebase_branch()
 				);
-			} else if e == self.key_config.move_right
+			} else if e == self.key_config.keys.move_right
 				&& self.valid_selection()
 			{
 				self.hide();
@@ -281,7 +282,7 @@ impl Component for BranchListComponent {
 					self.queue
 						.push(InternalEvent::InspectCommit(b, None));
 				}
-			} else if e == self.key_config.compare_commits
+			} else if e == self.key_config.keys.compare_commits
 				&& self.valid_selection()
 			{
 				self.hide();
@@ -289,7 +290,7 @@ impl Component for BranchListComponent {
 					self.queue
 						.push(InternalEvent::CompareCommits(b, None));
 				}
-			} else if e == self.key_config.cmd_bar_toggle {
+			} else if e == self.key_config.keys.cmd_bar_toggle {
 				//do not consume if its the more key
 				return Ok(EventState::NotConsumed);
 			}

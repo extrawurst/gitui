@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
 	components::utils::string_width_align,
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
 	strings::{self},
 	ui::{self, style::SharedTheme},
@@ -344,15 +344,15 @@ impl Component for OptionsPopupComponent {
 	) -> Result<EventState> {
 		if self.is_visible() {
 			if let Event::Key(key) = &event {
-				if *key == self.key_config.exit_popup {
+				if *key == self.key_config.keys.exit_popup {
 					self.hide();
-				} else if *key == self.key_config.move_up {
+				} else if *key == self.key_config.keys.move_up {
 					self.move_selection(true);
-				} else if *key == self.key_config.move_down {
+				} else if *key == self.key_config.keys.move_down {
 					self.move_selection(false);
-				} else if *key == self.key_config.move_right {
+				} else if *key == self.key_config.keys.move_right {
 					self.switch_option(true);
-				} else if *key == self.key_config.move_left {
+				} else if *key == self.key_config.keys.move_left {
 					self.switch_option(false);
 				}
 			}

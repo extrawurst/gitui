@@ -3,7 +3,7 @@ use super::{
 	DrawableComponent, EventState, ScrollType, TextInputComponent,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
 	string_utils::trim_length_left,
 	strings,
@@ -298,13 +298,13 @@ impl Component for FileFindPopup {
 	) -> Result<EventState> {
 		if self.is_visible() {
 			if let Event::Key(key) = &event {
-				if *key == self.key_config.exit_popup
-					|| *key == self.key_config.enter
+				if *key == self.key_config.keys.exit_popup
+					|| *key == self.key_config.keys.enter
 				{
 					self.hide();
-				} else if *key == self.key_config.move_down {
+				} else if *key == self.key_config.keys.move_down {
 					self.move_selection(ScrollType::Down);
-				} else if *key == self.key_config.move_up {
+				} else if *key == self.key_config.keys.move_up {
 					self.move_selection(ScrollType::Up);
 				}
 			}

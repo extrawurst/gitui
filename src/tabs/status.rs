@@ -6,7 +6,7 @@ use crate::{
 		DiffComponent, DrawableComponent, EventState,
 		FileTreeItemKind, SharedOptions,
 	},
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -747,7 +747,7 @@ impl Component for Status {
 			}
 
 			if let Event::Key(k) = ev {
-				return if k == self.key_config.edit_file
+				return if k == self.key_config.keys.edit_file
 					&& (self.can_focus_diff()
 						|| self.is_focus_on_diff())
 				{
@@ -759,58 +759,58 @@ impl Component for Status {
 						);
 					}
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.open_commit
+				} else if k == self.key_config.keys.open_commit
 					&& self.can_commit()
 				{
 					self.queue.push(InternalEvent::OpenCommit);
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.toggle_workarea
+				} else if k == self.key_config.keys.toggle_workarea
 					&& !self.is_focus_on_diff()
 				{
 					self.switch_focus(self.focus.toggled_focus())
 						.map(Into::into)
-				} else if k == self.key_config.focus_right
+				} else if k == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
 					self.switch_focus(Focus::Diff).map(Into::into)
-				} else if k == self.key_config.focus_left {
+				} else if k == self.key_config.keys.focus_left {
 					self.switch_focus(match self.diff_target {
 						DiffTarget::Stage => Focus::Stage,
 						DiffTarget::WorkingDir => Focus::WorkDir,
 					})
 					.map(Into::into)
-				} else if k == self.key_config.move_down
+				} else if k == self.key_config.keys.move_down
 					&& self.focus == Focus::WorkDir
 					&& !self.index.is_empty()
 				{
 					self.switch_focus(Focus::Stage).map(Into::into)
-				} else if k == self.key_config.move_up
+				} else if k == self.key_config.keys.move_up
 					&& self.focus == Focus::Stage
 					&& !self.index_wd.is_empty()
 				{
 					self.switch_focus(Focus::WorkDir).map(Into::into)
-				} else if k == self.key_config.select_branch
+				} else if k == self.key_config.keys.select_branch
 					&& !self.is_focus_on_diff()
 				{
 					self.queue.push(InternalEvent::SelectBranch);
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.force_push
+				} else if k == self.key_config.keys.force_push
 					&& !self.is_focus_on_diff()
 					&& self.can_push()
 				{
 					self.push(true);
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.push
+				} else if k == self.key_config.keys.push
 					&& !self.is_focus_on_diff()
 				{
 					self.push(false);
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.pull
+				} else if k == self.key_config.keys.pull
 					&& !self.is_focus_on_diff()
 				{
 					self.pull();
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.undo_commit
+				} else if k == self.key_config.keys.undo_commit
 					&& !self.is_focus_on_diff()
 				{
 					self.undo_last_commit();
@@ -818,7 +818,7 @@ impl Component for Status {
 						NeedsUpdate::ALL,
 					));
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.abort_merge
+				} else if k == self.key_config.keys.abort_merge
 					&& Self::can_abort_merge()
 				{
 					self.queue.push(InternalEvent::ConfirmAction(
@@ -826,7 +826,7 @@ impl Component for Status {
 					));
 
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.abort_merge
+				} else if k == self.key_config.keys.abort_merge
 					&& Self::pending_rebase()
 				{
 					self.queue.push(InternalEvent::ConfirmAction(
@@ -834,7 +834,7 @@ impl Component for Status {
 					));
 
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.rebase_branch
+				} else if k == self.key_config.keys.rebase_branch
 					&& Self::pending_rebase()
 				{
 					self.continue_rebase();

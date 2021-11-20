@@ -14,7 +14,7 @@ pub use stateful_paragraph::{
 pub use syntax_text::{AsyncSyntaxJob, SyntaxText};
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
-use crate::keys::SharedKeyConfig;
+use crate::key_config::SharedKeyConfig;
 
 /// return the scroll position (line) necessary to have the `selection` in view if it is not already
 pub const fn calc_scroll_top(
@@ -118,21 +118,25 @@ pub fn common_nav(
 	key: crossterm::event::KeyEvent,
 	key_config: &SharedKeyConfig,
 ) -> Option<MoveSelection> {
-	if key == key_config.move_down {
+	if key == key_config.keys.move_down {
 		Some(MoveSelection::Down)
-	} else if key == key_config.move_up {
+	} else if key == key_config.keys.move_up {
 		Some(MoveSelection::Up)
-	} else if key == key_config.page_up {
+	} else if key == key_config.keys.page_up {
 		Some(MoveSelection::PageUp)
-	} else if key == key_config.page_down {
+	} else if key == key_config.keys.page_down {
 		Some(MoveSelection::PageDown)
-	} else if key == key_config.move_right {
+	} else if key == key_config.keys.move_right {
 		Some(MoveSelection::Right)
-	} else if key == key_config.move_left {
+	} else if key == key_config.keys.move_left {
 		Some(MoveSelection::Left)
-	} else if key == key_config.home || key == key_config.shift_up {
+	} else if key == key_config.keys.home
+		|| key == key_config.keys.shift_up
+	{
 		Some(MoveSelection::Top)
-	} else if key == key_config.end || key == key_config.shift_down {
+	} else if key == key_config.keys.end
+		|| key == key_config.keys.shift_down
+	{
 		Some(MoveSelection::End)
 	} else {
 		None

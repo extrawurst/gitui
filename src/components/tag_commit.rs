@@ -4,7 +4,7 @@ use super::{
 	EventState,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
 	ui::style::SharedTheme,
@@ -64,7 +64,7 @@ impl Component for TagCommitComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.enter {
+				if e == self.key_config.keys.enter {
 					self.tag();
 				}
 

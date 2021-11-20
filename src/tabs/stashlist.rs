@@ -3,7 +3,7 @@ use crate::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitList, Component, DrawableComponent, EventState,
 	},
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	queue::{Action, InternalEvent, Queue},
 	strings,
 	ui::style::SharedTheme,
@@ -184,13 +184,13 @@ impl Component for StashList {
 			}
 
 			if let Event::Key(k) = ev {
-				if k == self.key_config.enter {
+				if k == self.key_config.keys.enter {
 					self.pop_stash();
-				} else if k == self.key_config.stash_apply {
+				} else if k == self.key_config.keys.stash_apply {
 					self.apply_stash();
-				} else if k == self.key_config.stash_drop {
+				} else if k == self.key_config.keys.stash_drop {
 					self.drop_stash();
-				} else if k == self.key_config.stash_open {
+				} else if k == self.key_config.keys.stash_open {
 					self.inspect();
 				}
 			}

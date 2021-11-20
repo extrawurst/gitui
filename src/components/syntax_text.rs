@@ -3,7 +3,7 @@ use super::{
 	EventState,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	string_utils::tabs_to_spaces,
 	strings,
 	ui::{

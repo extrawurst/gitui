@@ -6,7 +6,7 @@ use super::{
 	EventState,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	queue::Queue,
 	strings::{self},
 	ui::style::SharedTheme,
@@ -111,7 +111,7 @@ impl Component for RevisionFilesPopup {
 	) -> Result<EventState> {
 		if self.is_visible() {
 			if let Event::Key(key) = &event {
-				if *key == self.key_config.exit_popup {
+				if *key == self.key_config.keys.exit_popup {
 					self.hide();
 				}
 			}

@@ -25,6 +25,7 @@ mod clipboard;
 mod cmdbar;
 mod components;
 mod input;
+mod key_config;
 mod keys;
 mod notify_mutex;
 mod profiler;
@@ -49,7 +50,7 @@ use crossterm::{
 	ExecutableCommand,
 };
 use input::{Input, InputEvent, InputState};
-use keys::KeyConfig;
+use key_config::KeyConfig;
 use profiler::Profiler;
 use scopeguard::defer;
 use scopetime::scope_time;

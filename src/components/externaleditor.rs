@@ -3,7 +3,7 @@ use crate::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
 		DrawableComponent, EventState,
 	},
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	strings,
 	ui::{self, style::SharedTheme},
 };

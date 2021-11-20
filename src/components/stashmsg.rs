@@ -4,7 +4,7 @@ use super::{
 	EventState,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
 	tabs::StashingOptions,
@@ -62,7 +62,7 @@ impl Component for StashMsgComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.enter {
+				if e == self.key_config.keys.enter {
 					match sync::stash_save(
 						CWD,
 						if self.input.get_text().is_empty() {

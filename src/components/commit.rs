@@ -4,7 +4,7 @@ use super::{
 	EventState, ExternalEditorComponent,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -316,17 +316,20 @@ impl Component for CommitComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.enter && self.can_commit() {
+				if e == self.key_config.keys.enter
+					&& self.can_commit()
+				{
 					try_or_popup!(
 						self,
 						"commit error:",
 						self.commit()
 					);
-				} else if e == self.key_config.commit_amend
+				} else if e == self.key_config.keys.commit_amend
 					&& self.can_amend()
 				{
 					self.amend()?;
-				} else if e == self.key_config.open_commit_editor {
+				} else if e == self.key_config.keys.open_commit_editor
+				{
 					self.queue.push(
 						InternalEvent::OpenExternalEditor(None),
 					);

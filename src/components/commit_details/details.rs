@@ -6,7 +6,7 @@ use crate::{
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
 		EventState, ScrollType,
 	},
-	keys::SharedKeyConfig,
+	key_config::SharedKeyConfig,
 	strings::{self, order},
 	ui::style::SharedTheme,
 };
@@ -357,16 +357,16 @@ impl Component for DetailsComponent {
 	fn event(&mut self, event: Event) -> Result<EventState> {
 		if self.focused {
 			if let Event::Key(e) = event {
-				return Ok(if e == self.key_config.move_up {
+				return Ok(if e == self.key_config.keys.move_up {
 					self.move_scroll_top(ScrollType::Up).into()
-				} else if e == self.key_config.move_down {
+				} else if e == self.key_config.keys.move_down {
 					self.move_scroll_top(ScrollType::Down).into()
-				} else if e == self.key_config.home
-					|| e == self.key_config.shift_up
+				} else if e == self.key_config.keys.home
+					|| e == self.key_config.keys.shift_up
 				{
 					self.move_scroll_top(ScrollType::Home).into()
-				} else if e == self.key_config.end
-					|| e == self.key_config.shift_down
+				} else if e == self.key_config.keys.end
+					|| e == self.key_config.keys.shift_down
 				{
 					self.move_scroll_top(ScrollType::End).into()
 				} else {
