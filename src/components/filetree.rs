@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings::{self, order},
 	ui,

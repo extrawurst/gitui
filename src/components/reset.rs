@@ -3,7 +3,7 @@ use crate::{
 		popup_paragraph, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{Action, InternalEvent, Queue},
 	strings, ui,
 };

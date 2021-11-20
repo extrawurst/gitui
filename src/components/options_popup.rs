@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
 	components::utils::string_width_align,
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
 	strings::{self},
 	ui::{self, style::SharedTheme},

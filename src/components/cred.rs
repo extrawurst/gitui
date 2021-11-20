@@ -10,7 +10,7 @@ use crate::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
 		DrawableComponent,
 	},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	strings,
 	ui::style::SharedTheme,
 };

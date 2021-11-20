@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	components::ScrollType,
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
 	ui::{self, Size},

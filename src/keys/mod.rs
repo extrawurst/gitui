@@ -1,8 +1,4 @@
-use std::{
-	fs::File,
-	io::{Read, Write},
-	path::PathBuf,
-};
+mod key_config;
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -11,6 +7,13 @@ use ron::{
 	ser::{to_string_pretty, PrettyConfig},
 };
 use serde::{Deserialize, Serialize};
+use std::{
+	fs::File,
+	io::{Read, Write},
+	path::PathBuf,
+};
+
+pub use key_config::{KeyConfig, SharedKeyConfig};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Keys {

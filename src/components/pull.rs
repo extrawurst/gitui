@@ -4,7 +4,7 @@ use crate::{
 		cred::CredComponent, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{Action, InternalEvent, Queue},
 	strings, try_or_popup,
 	ui::{self, style::SharedTheme},

@@ -4,7 +4,7 @@ use crate::{
 		CommitDetailsComponent, CommitList, Component,
 		DrawableComponent, EventState,
 	},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
 	strings,
 	ui::style::SharedTheme,

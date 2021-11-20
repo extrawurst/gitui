@@ -5,7 +5,7 @@ use crate::{
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
 		EventState, FileTreeComponent,
 	},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
 	strings,
 	ui::style::SharedTheme,

@@ -1,5 +1,5 @@
 use crate::{
-	components::CommandInfo, key_config::SharedKeyConfig, strings,
+	components::CommandInfo, keys::SharedKeyConfig, strings,
 	ui::style::SharedTheme,
 };
 use std::borrow::Cow;

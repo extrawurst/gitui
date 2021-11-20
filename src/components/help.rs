@@ -2,9 +2,7 @@ use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState,
 };
-use crate::{
-	key_config::SharedKeyConfig, strings, ui, version::Version,
-};
+use crate::{keys::SharedKeyConfig, strings, ui, version::Version};
 use anyhow::Result;
 use asyncgit::hash;
 use crossterm::event::Event;

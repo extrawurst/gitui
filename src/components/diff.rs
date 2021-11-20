@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	string_utils::tabs_to_spaces,
 	strings, try_or_popup,

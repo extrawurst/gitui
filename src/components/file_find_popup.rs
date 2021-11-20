@@ -3,7 +3,7 @@ use super::{
 	DrawableComponent, EventState, ScrollType, TextInputComponent,
 };
 use crate::{
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
 	string_utils::trim_length_left,
 	strings,

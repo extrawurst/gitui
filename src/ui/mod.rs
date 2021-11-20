@@ -14,7 +14,7 @@ pub use stateful_paragraph::{
 pub use syntax_text::{AsyncSyntaxJob, SyntaxText};
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
-use crate::key_config::SharedKeyConfig;
+use crate::keys::SharedKeyConfig;
 
 /// return the scroll position (line) necessary to have the `selection` in view if it is not already
 pub const fn calc_scroll_top(

@@ -4,7 +4,7 @@ use crate::{
 		utils::string_width_align, CommandBlocking, CommandInfo,
 		Component, DrawableComponent, EventState, ScrollType,
 	},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	strings::{self, symbol},
 	ui::style::{SharedTheme, Theme},
 	ui::{calc_scroll_top, draw_scrollbar},

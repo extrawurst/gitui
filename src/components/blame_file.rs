@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
 	components::{utils::string_width_align, ScrollType},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
 	strings,
 	ui::{self, style::SharedTheme},

@@ -6,7 +6,7 @@ use crate::{
 		DiffComponent, DrawableComponent, EventState,
 		FileTreeItemKind, SharedOptions,
 	},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
 	ui::style::SharedTheme,

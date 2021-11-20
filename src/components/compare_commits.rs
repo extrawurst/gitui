@@ -4,7 +4,7 @@ use super::{
 	DrawableComponent, EventState,
 };
 use crate::{
-	accessors, key_config::SharedKeyConfig, queue::Queue, strings,
+	accessors, keys::SharedKeyConfig, queue::Queue, strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;

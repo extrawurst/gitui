@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	accessors,
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
 	strings,
 	ui::style::SharedTheme,

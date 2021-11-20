@@ -2,7 +2,7 @@ use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState,
 };
-use crate::{key_config::SharedKeyConfig, strings, ui};
+use crate::{keys::SharedKeyConfig, strings, ui};
 use crossterm::event::Event;
 use std::convert::TryFrom;
 use tui::{

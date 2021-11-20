@@ -6,7 +6,7 @@ use crate::{
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
 		EventState, ScrollType,
 	},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	strings::{self, order},
 	ui::style::SharedTheme,
 };

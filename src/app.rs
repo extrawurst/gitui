@@ -13,7 +13,7 @@ use crate::{
 		StashMsgComponent, TagCommitComponent, TagListComponent,
 	},
 	input::{Input, InputEvent, InputState},
-	key_config::{KeyConfig, SharedKeyConfig},
+	keys::{KeyConfig, SharedKeyConfig},
 	queue::{Action, InternalEvent, NeedsUpdate, Queue},
 	setup_popups,
 	strings::{self, order},

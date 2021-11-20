@@ -4,7 +4,7 @@ use super::{
 	EventState, ExternalEditorComponent,
 };
 use crate::{
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
 	ui::style::SharedTheme,

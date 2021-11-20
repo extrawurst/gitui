@@ -11,7 +11,7 @@ use crate::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
 		DrawableComponent, EventState, RevisionFilesComponent,
 	},
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::Queue,
 	ui::style::SharedTheme,
 	AsyncAppNotification, AsyncNotification,

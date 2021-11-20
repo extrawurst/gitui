@@ -4,7 +4,7 @@ use super::{
 	SyntaxTextComponent,
 };
 use crate::{
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
 	strings::{self, order, symbol},
 	ui::{self, common_nav, style::SharedTheme},

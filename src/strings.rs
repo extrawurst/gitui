@@ -1,6 +1,6 @@
 use asyncgit::sync::CommitId;
 
-use crate::key_config::SharedKeyConfig;
+use crate::keys::SharedKeyConfig;
 
 pub mod order {
 	pub static NAV: i8 = 2;
@@ -315,7 +315,7 @@ pub fn rename_branch_popup_msg(
 }
 
 pub mod commit {
-	use crate::key_config::SharedKeyConfig;
+	use crate::keys::SharedKeyConfig;
 
 	pub fn details_author() -> String {
 		"Author: ".to_string()
@@ -360,7 +360,7 @@ pub mod commit {
 
 pub mod commands {
 	use crate::components::CommandText;
-	use crate::key_config::SharedKeyConfig;
+	use crate::keys::SharedKeyConfig;
 
 	static CMD_GROUP_GENERAL: &str = "-- General --";
 	static CMD_GROUP_DIFF: &str = "-- Diff --";

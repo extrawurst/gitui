@@ -6,7 +6,7 @@ use super::{
 	EventState,
 };
 use crate::{
-	key_config::SharedKeyConfig,
+	keys::SharedKeyConfig,
 	queue::Queue,
 	strings::{self},
 	ui::style::SharedTheme,
