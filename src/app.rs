@@ -743,6 +743,7 @@ impl App {
 		Ok(flags)
 	}
 
+	#[allow(clippy::too_many_lines)]
 	fn process_confirmed_action(
 		&mut self,
 		action: Action,
@@ -772,6 +773,11 @@ impl App {
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::DeleteLocalBranch(branch_ref) => {
+				let upstream =
+					sync::get_branch_remote_by_ref(CWD, &branch_ref)
+						.ok()
+						.flatten();
+
 				if let Err(e) = sync::delete_branch(CWD, &branch_ref)
 				{
 					self.queue.push(InternalEvent::ShowErrorMsg(
@@ -780,6 +786,13 @@ impl App {
 				}
 				flags.insert(NeedsUpdate::ALL);
 				self.select_branch_popup.update_branches()?;
+
+				// If we have a remote, we must ask if user wants to delete it
+				if let Some(upstream) = upstream {
+					self.queue.push(InternalEvent::ConfirmAction(
+						Action::DeleteUpstreamBranch(upstream),
+					));
+				}
 			}
 			Action::DeleteRemoteBranch(branch_ref) => {
 				self.queue.push(
@@ -800,6 +813,26 @@ impl App {
 						},
 					),
 				);
+				flags.insert(NeedsUpdate::ALL);
+				self.select_branch_popup.update_branches()?;
+			}
+			Action::DeleteUpstreamBranch(upstream) => {
+				self.queue.push(InternalEvent::ConfirmedAction(
+					Action::DeleteRemoteBranch(upstream),
+				));
+			}
+			Action::DeleteTrackingBranches(branches) => {
+				for branch in &branches {
+					let branch_ref = format!("refs/heads/{}", branch);
+					if let Err(e) =
+						sync::delete_branch(CWD, &branch_ref)
+					{
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							e.to_string(),
+						));
+					}
+				}
+
 				flags.insert(NeedsUpdate::ALL);
 				self.select_branch_popup.update_branches()?;
 			}

@@ -4,7 +4,7 @@ use crate::{
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{Action, InternalEvent, Queue},
 	strings,
 	ui::{self, style::SharedTheme},
 };
@@ -15,13 +15,14 @@ use asyncgit::{
 			extract_username_password, need_username_password,
 			BasicAuthCredential,
 		},
-		get_branch_remote, get_default_remote,
+		get_branch_remote, get_branch_trackers, get_default_remote,
 	},
 	AsyncGitNotification, AsyncPush, PushRequest, RemoteProgress,
 	RemoteProgressState, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use std::collections::HashSet;
 use tui::{
 	backend::Backend,
 	layout::Rect,
@@ -60,6 +61,7 @@ pub struct PushComponent {
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	input_cred: CredComponent,
+	tracking_branches: Option<Vec<String>>,
 }
 
 impl PushComponent {
@@ -84,6 +86,7 @@ impl PushComponent {
 			),
 			theme,
 			key_config,
+			tracking_branches: None,
 		}
 	}
 
@@ -141,6 +144,19 @@ impl PushComponent {
 			remote
 		};
 
+		self.tracking_branches = if self.modifier.delete() {
+			let remote_ref =
+				format!("refs/remotes/{}/{}", remote, self.branch);
+			Some(
+				get_branch_trackers(CWD, &remote_ref)
+					.unwrap_or_else(|_| HashSet::new())
+					.into_iter()
+					.collect(),
+			)
+		} else {
+			None
+		};
+
 		self.pending = true;
 		self.progress = None;
 		self.git_push.request(PushRequest {
@@ -175,6 +191,20 @@ impl PushComponent {
 				self.queue.push(InternalEvent::ShowErrorMsg(
 					format!("push failed:\n{}", err),
 				));
+			} else if self.modifier.delete() {
+				// Check if we need to delete the tracking branches
+				let tracking_branches = self
+					.tracking_branches
+					.take()
+					.unwrap_or_else(Vec::new);
+
+				if !tracking_branches.is_empty() {
+					self.queue.push(InternalEvent::ConfirmAction(
+						Action::DeleteTrackingBranches(
+							tracking_branches.into_iter().collect(),
+						),
+					));
+				}
 			}
 			self.hide();
 		}

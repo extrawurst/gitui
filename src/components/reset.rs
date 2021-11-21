@@ -175,6 +175,24 @@ impl ConfirmComponent {
                         branch_ref,
                     ),
                 ),
+                Action::DeleteUpstreamBranch(upstream) => (
+                    strings::confirm_title_delete_remote_branch(
+                        &self.key_config,
+                    ),
+                    strings::confirm_msg_delete_referring_remote_branch(
+                        &self.key_config,
+                        upstream,
+                    ),
+                ),
+                Action::DeleteTrackingBranches(local_branches) => (
+                    strings::confirm_title_delete_branch(
+                        &self.key_config,
+                    ),
+                    strings::confirm_msg_delete_tracking_branches(
+                        &self.key_config,
+                        local_branches,
+                    ),
+                ),
                 Action::DeleteTag(tag_name) => (
                     strings::confirm_title_delete_tag(
                         &self.key_config,

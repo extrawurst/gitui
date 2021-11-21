@@ -213,6 +213,15 @@ pub fn confirm_msg_delete_branch(
 ) -> String {
 	format!("Confirm deleting branch: '{}' ?", branch_ref)
 }
+pub fn confirm_msg_delete_tracking_branches(
+	_key_config: &SharedKeyConfig,
+	branches_ref: &[String],
+) -> String {
+	format!(
+		"Do you want to delete the referring tracking branches?\n{}",
+		branches_ref.join(", ")
+	)
+}
 pub fn confirm_title_delete_remote_branch(
 	_key_config: &SharedKeyConfig,
 ) -> String {
@@ -223,6 +232,15 @@ pub fn confirm_msg_delete_remote_branch(
 	branch_ref: &str,
 ) -> String {
 	format!("Confirm deleting remote branch: '{}' ?", branch_ref)
+}
+pub fn confirm_msg_delete_referring_remote_branch(
+	_key_config: &SharedKeyConfig,
+	branch_ref: &str,
+) -> String {
+	format!(
+		"Do you want to delete the referring remote branch: '{}' ?",
+		branch_ref
+	)
 }
 pub fn confirm_title_delete_tag(
 	_key_config: &SharedKeyConfig,

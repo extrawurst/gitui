@@ -37,6 +37,7 @@ The way this works got changed and simplified ([See docs](https://github.com/ext
 
 ### Added
 - support rebasing branches with conflicts ([#895](https://github.com/extrawurst/gitui/issues/895))
+- add supporting deletion of referring branches [[@alessandroasm](https://github.com/alessandroasm)] ([#875](https://github.com/extrawurst/gitui/issues/875))
 - add a key binding to stage / unstage items [[@alessandroasm](https://github.com/alessandroasm)] ([#909](https://github.com/extrawurst/gitui/issues/909))
 - switch to status tab after merging or rebasing with conflicts ([#926](https://github.com/extrawurst/gitui/issues/926))
 
