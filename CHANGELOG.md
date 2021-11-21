@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**finder highlighting matches**
+
+![fuzzy-find](assets/fuzzy-find-matches.gif)
+
 ### Breaking Change
 Have you used `key_config.ron` for custom key bindings before?
 The way this works got changed and simplified ([See docs](https://github.com/extrawurst/gitui/blob/master/KEY_CONFIG.md) for more info): 
