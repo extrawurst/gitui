@@ -6,104 +6,42 @@
 // Note:
 // If the default key layout is lower case,
 // and you want to use `Shift + q` to trigger the exit event,
-// the setting should like this `exit: ( code: Char('Q'), modifiers: ( bits: 1,),),`
+// the setting should like this `exit: Some(( code: Char('Q'), modifiers: ( bits: 1,),)),`
 // The Char should be upper case, and the shift modified bit should be set to 1.
+//
+// Note:
+// find `KeysList` type in src/keys/key_list.rs for all possible keys.
+// every key not overwritten via the config file will use the default specified there
 (
-    tab_status: ( code: Char('1'), modifiers: ( bits: 0,),),
-    tab_log: ( code: Char('2'), modifiers: ( bits: 0,),),
-    tab_files: ( code: Char('3'), modifiers: ( bits: 0,),),
-    tab_stashing: ( code: Char('4'), modifiers: ( bits: 0,),),
-    tab_stashes: ( code: Char('5'), modifiers: ( bits: 0,),),
+    focus_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
+    focus_left: Some(( code: Char('h'), modifiers: ( bits: 0,),)),
+    focus_above: Some(( code: Char('k'), modifiers: ( bits: 0,),)),
+    focus_below: Some(( code: Char('j'), modifiers: ( bits: 0,),)),
 
-    tab_toggle: ( code: Tab, modifiers: ( bits: 0,),),
-    tab_toggle_reverse: ( code: BackTab, modifiers: ( bits: 1,),),
-    toggle_workarea: ( code: Char('w'), modifiers: (bits: 0,),),
+    open_help: Some(( code: F(1), modifiers: ( bits: 0,),)),
 
-    focus_right: ( code: Char('l'), modifiers: ( bits: 0,),),
-    focus_left: ( code: Char('h'), modifiers: ( bits: 0,),),
-    focus_above: ( code: Char('k'), modifiers: ( bits: 0,),),
-    focus_below: ( code: Char('j'), modifiers: ( bits: 0,),),
+    move_left: Some(( code: Char('h'), modifiers: ( bits: 0,),)),
+    move_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
+    move_up: Some(( code: Char('k'), modifiers: ( bits: 0,),)),
+    move_down: Some(( code: Char('j'), modifiers: ( bits: 0,),)),
+    popup_up: Some(( code: Char('p'), modifiers: ( bits: 2,),)),
+    popup_down: Some(( code: Char('n'), modifiers: ( bits: 2,),)),
+    page_up: Some(( code: Char('b'), modifiers: ( bits: 2,),)),
+    page_down: Some(( code: Char('f'), modifiers: ( bits: 2,),)),
+    shift_up: Some(( code: Char('K'), modifiers: ( bits: 1,),)),
+    shift_down: Some(( code: Char('J'), modifiers: ( bits: 1,),)),
 
-    open_help: ( code: F(1), modifiers: ( bits: 0,),),
-    open_options: ( code: Char('o'), modifiers: ( bits: 0,),),
+    edit_file: Some(( code: Char('I'), modifiers: ( bits: 1,),)),
 
-    exit: ( code: Char('c'), modifiers: ( bits: 2,),),
-    quit: ( code: Char('q'), modifiers: ( bits: 0,),),
-    exit_popup: ( code: Esc, modifiers: ( bits: 0,),),
+    status_reset_item: Some(( code: Char('U'), modifiers: ( bits: 1,),)),
 
-    open_commit: ( code: Char('c'), modifiers: ( bits: 0,),),
-    // Note: the shift modifier does not work for open_commit_editor
-    // Also just plain text characters will not work because the commit 
-    // msg editor will interpret them as text input
-    open_commit_editor: ( code: Char('e'), modifiers: ( bits: 2,),),
-    undo_commit: ( code: Char('U'), modifiers: ( bits: 1,),),
+    diff_reset_lines: Some(( code: Char('u'), modifiers: ( bits: 0,),)),
+    diff_stage_lines: Some(( code: Char('s'), modifiers: ( bits: 0,),)),
 
-    move_left: ( code: Char('h'), modifiers: ( bits: 0,),),
-    move_right: ( code: Char('l'), modifiers: ( bits: 0,),),
-    home: ( code: Home, modifiers: ( bits: 0,),),
-    end: ( code: End, modifiers: ( bits: 0,),),
-    move_up: ( code: Char('k'), modifiers: ( bits: 0,),),
-    move_down: ( code: Char('j'), modifiers: ( bits: 0,),),
-    popup_up: ( code: Char('p'), modifiers: ( bits: 2,),),
-    popup_down: ( code: Char('n'), modifiers: ( bits: 2,),),
-    page_up: ( code: Char('b'), modifiers: ( bits: 2,),),
-    page_down: ( code: Char('f'), modifiers: ( bits: 2,),),
-    tree_collapse_recursive: ( code: Left, modifiers: ( bits: 1,),),
-    tree_expand_recursive: ( code: Right, modifiers: ( bits: 1,),),
+    stashing_save: Some(( code: Char('w'), modifiers: ( bits: 0,),)),
+    stashing_toggle_index: Some(( code: Char('m'), modifiers: ( bits: 0,),)),
 
-    shift_up: ( code: Char('K'), modifiers: ( bits: 1,),),
-    shift_down: ( code: Char('J'), modifiers: ( bits: 1,),),
+    stash_open: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
 
-    enter: ( code: Enter, modifiers: ( bits: 0,),),
-    blame: ( code: Char('B'), modifiers: ( bits: 1,),),
-
-    edit_file: ( code: Char('I'), modifiers: ( bits: 1,),),
-
-    status_stage_all: ( code: Char('a'), modifiers: ( bits: 0,),),
-    status_reset_item: ( code: Char('U'), modifiers: ( bits: 1,),),
-    status_ignore_file: ( code: Char('i'), modifiers: ( bits: 0,),),
-
-    diff_reset_lines: ( code: Char('u'), modifiers: ( bits: 0,),),
-    diff_stage_lines: ( code: Char('s'), modifiers: ( bits: 0,),),
-
-    stashing_save: ( code: Char('w'), modifiers: ( bits: 0,),),
-    stashing_toggle_untracked: ( code: Char('u'), modifiers: ( bits: 0,),),
-    stashing_toggle_index: ( code: Char('m'), modifiers: ( bits: 0,),),
-
-    stash_apply: ( code: Char('a'), modifiers: ( bits: 0,),),
-    stash_open: ( code: Char('l'), modifiers: ( bits: 0,),),
-    stash_drop: ( code: Char('D'), modifiers: ( bits: 1,),),
-
-    cmd_bar_toggle: ( code: Char('.'), modifiers: ( bits: 0,),),
-
-    log_tag_commit: ( code: Char('t'), modifiers: ( bits: 0,),),
-    log_mark_commit: ( code: Char(' '), modifiers: ( bits: 0,),),
-
-    commit_amend: ( code: Char('a'), modifiers: ( bits: 2,),),
-    copy: ( code: Char('y'), modifiers: ( bits: 0,),),
-    create_branch: ( code: Char('c'), modifiers: ( bits: 0,),),
-    rename_branch: ( code: Char('r'), modifiers: ( bits: 0,),),
-    select_branch: ( code: Char('b'), modifiers: ( bits: 0,),),
-    delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
-    merge_branch: ( code: Char('m'), modifiers: ( bits: 0,),),
-    rebase_branch: ( code: Char('R'), modifiers: ( bits: 1,),),
-    abort_merge: ( code: Char('M'), modifiers: ( bits: 1,),),
-
-    compare_commits: ( code: Char('C'), modifiers: ( bits: 1,),),
-
-    tags: ( code: Char('T'), modifiers: ( bits: 1,),),
-    delete_tag: ( code: Char('D'), modifiers: ( bits: 1,),),
-    select_tag: ( code: Enter, modifiers: ( bits: 0,),),
-
-    push: ( code: Char('p'), modifiers: ( bits: 0,),),
-    force_push: ( code: Char('P'), modifiers: ( bits: 1,),),
-    pull: ( code: Char('f'), modifiers: ( bits: 0,),),
-
-    open_file_tree: ( code: Char('F'), modifiers: ( bits: 1,),),
-    file_find: ( code: Char('f'), modifiers: ( bits: 0,),),
-
-    stage_unstage_item: ( code: Enter, modifiers: ( bits: 0,),),
-
-    //removed in 0.11
-    //tab_toggle_reverse_windows: ( code: BackTab, modifiers: ( bits: 1,),),
+    abort_merge: Some(( code: Char('M'), modifiers: ( bits: 1,),)),
 )

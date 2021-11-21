@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use std::{fs, path::PathBuf, rc::Rc};
+use std::{path::PathBuf, rc::Rc};
 
 use crate::{args::get_app_config_path, strings::symbol};
 
@@ -17,7 +17,7 @@ pub struct KeyConfig {
 impl KeyConfig {
 	fn get_config_file() -> Result<PathBuf> {
 		let app_home = get_app_config_path()?;
-		Ok(app_home.join("key_config.ron"))
+		Ok(app_home.join("key_bindings.ron"))
 	}
 
 	fn get_symbols_file() -> Result<PathBuf> {
@@ -25,34 +25,8 @@ impl KeyConfig {
 		Ok(app_home.join("key_symbols.ron"))
 	}
 
-	fn init_keys() -> Result<KeysList> {
-		let file = Self::get_config_file()?;
-		if file.exists() {
-			match KeysList::read_file(file.clone()) {
-				Err(e) => {
-					let config_path = file.clone();
-					let config_path_old =
-						format!("{}.old", file.to_string_lossy());
-					fs::rename(
-						config_path.clone(),
-						config_path_old.clone(),
-					)?;
-
-					KeysList::default().save(file)?;
-
-					Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
-						e,config_path_old,config_path.to_string_lossy()))
-				}
-				Ok(keys) => Ok(keys),
-			}
-		} else {
-			KeysList::default().save(file)?;
-			Ok(KeysList::default())
-		}
-	}
-
 	pub fn init() -> Result<Self> {
-		let keys = Self::init_keys()?;
+		let keys = KeysList::init(Self::get_config_file()?);
 		let symbols = KeySymbols::init(Self::get_symbols_file()?);
 		Ok(Self { keys, symbols })
 	}
