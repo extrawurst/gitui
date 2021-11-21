@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support `home` and `end` keys in branchlist ([#957](https://github.com/extrawurst/gitui/issues/957))
 - add `ghemoji` feature to make gh-emoji (GitHub emoji) optional ([#954](https://github.com/extrawurst/gitui/pull/954))
 - allow customizing key symbols like `⏎` & `⇧` ([see docs](https://github.com/extrawurst/gitui/blob/master/KEY_CONFIG.md#key-symbols)) ([#465](https://github.com/extrawurst/gitui/issues/465))
+- fuzzy finder up/down keys compatible with typing search patterns ([#993](https://github.com/extrawurst/gitui/pull/993))
 
 ### Fixed
 - honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))

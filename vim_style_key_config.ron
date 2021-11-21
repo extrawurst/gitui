@@ -44,6 +44,8 @@
     end: ( code: End, modifiers: ( bits: 0,),),
     move_up: ( code: Char('k'), modifiers: ( bits: 0,),),
     move_down: ( code: Char('j'), modifiers: ( bits: 0,),),
+    popup_up: ( code: Char('p'), modifiers: ( bits: 2,),),
+    popup_down: ( code: Char('n'), modifiers: ( bits: 2,),),
     page_up: ( code: Char('b'), modifiers: ( bits: 2,),),
     page_down: ( code: Char('f'), modifiers: ( bits: 2,),),
     tree_collapse_recursive: ( code: Left, modifiers: ( bits: 1,),),
