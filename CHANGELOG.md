@@ -16,10 +16,10 @@ The way this works got changed and simplified ([See docs](https://github.com/ext
 
 ### Added
 - add `trace-libgit` feature to make git tracing optional [[@dm9pZCAq](https://github.com/dm9pZCAq)] ([#902](https://github.com/extrawurst/gitui/issues/902))
-- support merging and rebasing remote branches ([#920](https://github.com/extrawurst/gitui/issues/920))
-- add highlighting matches in fuzzy finder ([#893](https://github.com/extrawurst/gitui/issues/893))
+- support merging and rebasing remote branches [[@R0nd](https://github.com/R0nd)] ([#920](https://github.com/extrawurst/gitui/issues/920))
+- add highlighting matches in fuzzy finder [[@Mifom](https://github.com/Mifom)] ([#893](https://github.com/extrawurst/gitui/issues/893))
 - support `home` and `end` keys in branchlist ([#957](https://github.com/extrawurst/gitui/issues/957))
-- add `ghemoji` feature to make gh-emoji (GitHub emoji) optional ([#954](https://github.com/extrawurst/gitui/pull/954))
+- add `ghemoji` feature to make gh-emoji (GitHub emoji) optional [[@jirutka](https://github.com/jirutka)] ([#954](https://github.com/extrawurst/gitui/pull/954))
 - allow customizing key symbols like `⏎` & `⇧` ([see docs](https://github.com/extrawurst/gitui/blob/master/KEY_CONFIG.md#key-symbols)) ([#465](https://github.com/extrawurst/gitui/issues/465))
 - simplify key overrides ([see docs](https://github.com/extrawurst/gitui/blob/master/KEY_CONFIG.md)) ([#946](https://github.com/extrawurst/gitui/issues/946))
 - dedicated fuzzy finder up/down keys to allow vim overrides ([#993](https://github.com/extrawurst/gitui/pull/993))
