@@ -1,17 +1,8 @@
-use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ron::{
-	self,
-	ser::{to_string_pretty, PrettyConfig},
-};
-use serde::{Deserialize, Serialize};
-use std::{
-	fs::File,
-	io::{Read, Write},
-	path::PathBuf,
-};
+use std::path::PathBuf;
 
-#[derive(Serialize, Deserialize, Debug)]
+use super::key_list_file::KeysListFile;
+
 pub struct KeysList {
 	pub tab_status: KeyEvent,
 	pub tab_log: KeyEvent,
@@ -164,31 +155,13 @@ impl Default for KeysList {
 }
 
 impl KeysList {
-	pub fn save(&self, file: PathBuf) -> Result<()> {
-		let mut file = File::create(file)?;
-		let data = to_string_pretty(self, PrettyConfig::default())?;
-		file.write_all(data.as_bytes())?;
-		Ok(())
-	}
-
-	pub fn read_file(config_file: PathBuf) -> Result<Self> {
-		let mut f = File::open(config_file)?;
-		let mut buffer = Vec::new();
-		f.read_to_end(&mut buffer)?;
-		Ok(ron::de::from_bytes(&buffer)?)
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	fn test_load_vim_style_example() {
-		assert_eq!(
-			KeysList::read_file("vim_style_key_config.ron".into())
-				.is_ok(),
-			true
-		);
+	pub fn init(file: PathBuf) -> Self {
+		if file.exists() {
+			let file =
+				KeysListFile::read_file(file).unwrap_or_default();
+			file.get_list()
+		} else {
+			Self::default()
+		}
 	}
 }
