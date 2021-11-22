@@ -89,13 +89,10 @@ pub fn fetch_all(
 	let mut remote = repo.find_remote(remote)?;
 
 	let mut options = FetchOptions::new();
-	let callbacks = Callbacks::new(
-		progress_sender.clone(),
-		basic_credential.clone(),
-	);
+	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.prune(git2::FetchPrune::On);
 	options.remote_callbacks(callbacks.callbacks());
-	remote.fetch_all(Some(&mut options), None)?;
+	remote.fetch(&[] as &[&str], Some(&mut options), None)?;
 
 	Ok(())
 }
