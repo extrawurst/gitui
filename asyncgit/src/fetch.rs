@@ -90,13 +90,8 @@ impl AsyncFetch {
 				arc_progress,
 			);
 
-			fetch_all(
-				CWD,
-				"origin",
-				params.basic_credential.clone(),
-				Some(progress_sender.clone()),
-			)
-			.expect("");
+			fetch_all(CWD, params.basic_credential.clone())
+				.expect("");
 
 			let res = fetch(
 				CWD,

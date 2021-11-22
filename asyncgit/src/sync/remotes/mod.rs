@@ -76,14 +76,12 @@ pub(crate) fn get_default_remote_in_repo(
 }
 
 ///
-pub fn fetch_all(
+fn fetch_from_remote(
 	repo_path: &str,
 	remote: &str,
 	basic_credential: Option<BasicAuthCredential>,
 	progress_sender: Option<Sender<ProgressNotification>>,
 ) -> Result<()> {
-	scope_time!("fetch_all");
-
 	let repo = utils::repo(repo_path)?;
 
 	let mut remote = repo.find_remote(remote)?;
@@ -97,7 +95,34 @@ pub fn fetch_all(
 	Ok(())
 }
 
-/// fetches from upstream/remote for `branch`
+/// updates/prunes all branches from all remotes
+pub fn fetch_all(
+	repo_path: &str,
+	basic_credential: Option<BasicAuthCredential>,
+) -> Result<()> {
+	scope_time!("fetch_all");
+
+	let repo = utils::repo(repo_path)?;
+	let remotes = repo
+		.remotes()?
+		.iter()
+		.filter_map(|r| r)
+		.map(String::from)
+		.collect::<Vec<_>>();
+
+	for remote in remotes {
+		fetch_from_remote(
+			repo_path,
+			&remote,
+			basic_credential.clone(),
+			None,
+		)?;
+	}
+
+	Ok(())
+}
+
+/// fetches from upstream/remote for local `branch`
 pub(crate) fn fetch(
 	repo_path: &str,
 	branch: &str,
