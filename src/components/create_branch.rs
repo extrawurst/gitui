@@ -130,7 +130,7 @@ impl CreateBranchComponent {
 		match res {
 			Ok(_) => {
 				self.queue.push(InternalEvent::Update(
-					NeedsUpdate::BRANCHES,
+					NeedsUpdate::ALL | NeedsUpdate::BRANCHES,
 				));
 			}
 			Err(e) => {
