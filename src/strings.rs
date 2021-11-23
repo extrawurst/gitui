@@ -10,6 +10,7 @@ pub mod order {
 pub static PUSH_POPUP_MSG: &str = "Push";
 pub static FORCE_PUSH_POPUP_MSG: &str = "Force Push";
 pub static PULL_POPUP_MSG: &str = "Pull";
+pub static FETCH_POPUP_MSG: &str = "Fetch";
 pub static PUSH_POPUP_PROGRESS_NONE: &str = "preparing...";
 pub static PUSH_POPUP_STATES_ADDING: &str = "adding objects (1/3)";
 pub static PUSH_POPUP_STATES_DELTAS: &str = "deltas (2/3)";
@@ -1264,6 +1265,19 @@ pub mod commands {
 			),
 			"fetch/merge",
 			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn fetch_remotes(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Fetch [{}]",
+				key_config.get_hint(key_config.keys.pull),
+			),
+			"fetch/prune",
+			CMD_GROUP_BRANCHES,
 		)
 	}
 }

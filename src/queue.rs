@@ -97,6 +97,8 @@ pub enum InternalEvent {
 	OpenFileFinder(Vec<TreeFile>),
 	///
 	FileFinderChanged(Option<PathBuf>),
+	///
+	FetchRemotes,
 }
 
 /// single threaded simple queue for components to communicate with each other

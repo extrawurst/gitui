@@ -10,6 +10,7 @@ use crate::{
 		cred::BasicAuthCredential,
 		remotes::push::ProgressNotification, utils,
 	},
+	ProgressPercent,
 };
 use crossbeam_channel::Sender;
 use git2::{BranchType, FetchOptions, Repository};
@@ -75,14 +76,68 @@ pub(crate) fn get_default_remote_in_repo(
 	Err(Error::NoDefaultRemoteFound)
 }
 
-/// fetches from upstream/remote for `branch`
+///
+fn fetch_from_remote(
+	repo_path: &str,
+	remote: &str,
+	basic_credential: Option<BasicAuthCredential>,
+	progress_sender: Option<Sender<ProgressNotification>>,
+) -> Result<()> {
+	let repo = utils::repo(repo_path)?;
+
+	let mut remote = repo.find_remote(remote)?;
+
+	let mut options = FetchOptions::new();
+	let callbacks = Callbacks::new(progress_sender, basic_credential);
+	options.prune(git2::FetchPrune::On);
+	options.remote_callbacks(callbacks.callbacks());
+	remote.fetch(&[] as &[&str], Some(&mut options), None)?;
+
+	Ok(())
+}
+
+/// updates/prunes all branches from all remotes
+pub fn fetch_all(
+	repo_path: &str,
+	basic_credential: &Option<BasicAuthCredential>,
+	progress_sender: &Option<Sender<ProgressPercent>>,
+) -> Result<()> {
+	scope_time!("fetch_all");
+
+	let repo = utils::repo(repo_path)?;
+	let remotes = repo
+		.remotes()?
+		.iter()
+		.flatten()
+		.map(String::from)
+		.collect::<Vec<_>>();
+	let remotes_count = remotes.len();
+
+	for (idx, remote) in remotes.into_iter().enumerate() {
+		fetch_from_remote(
+			repo_path,
+			&remote,
+			basic_credential.clone(),
+			None,
+		)?;
+
+		if let Some(sender) = progress_sender {
+			let progress = ProgressPercent::new(idx, remotes_count);
+			sender.send(progress)?;
+		}
+	}
+
+	Ok(())
+}
+
+/// fetches from upstream/remote for local `branch`
 pub(crate) fn fetch(
 	repo_path: &str,
 	branch: &str,
 	basic_credential: Option<BasicAuthCredential>,
 	progress_sender: Option<Sender<ProgressNotification>>,
 ) -> Result<usize> {
-	scope_time!("fetch_origin");
+	scope_time!("fetch");
 
 	let repo = utils::repo(repo_path)?;
 	let branch_ref = repo

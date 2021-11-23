@@ -6,11 +6,12 @@ use crate::{
 		BranchListComponent, CommandBlocking, CommandInfo,
 		CommitComponent, CompareCommitsComponent, Component,
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
-		ExternalEditorComponent, FileFindPopup, HelpComponent,
-		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
-		PullComponent, PushComponent, PushTagsComponent,
-		RenameBranchComponent, RevisionFilesPopup, SharedOptions,
-		StashMsgComponent, TagCommitComponent, TagListComponent,
+		ExternalEditorComponent, FetchComponent, FileFindPopup,
+		HelpComponent, InspectCommitComponent, MsgComponent,
+		OptionsPopupComponent, PullComponent, PushComponent,
+		PushTagsComponent, RenameBranchComponent, RevisionFilesPopup,
+		SharedOptions, StashMsgComponent, TagCommitComponent,
+		TagListComponent,
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{KeyConfig, SharedKeyConfig},
@@ -55,6 +56,7 @@ pub struct App {
 	push_popup: PushComponent,
 	push_tags_popup: PushTagsComponent,
 	pull_popup: PullComponent,
+	fetch_popup: FetchComponent,
 	tag_commit_popup: TagCommitComponent,
 	create_branch_popup: CreateBranchComponent,
 	rename_branch_popup: RenameBranchComponent,
@@ -153,6 +155,12 @@ impl App {
 				key_config.clone(),
 			),
 			pull_popup: PullComponent::new(
+				&queue,
+				sender,
+				theme.clone(),
+				key_config.clone(),
+			),
+			fetch_popup: FetchComponent::new(
 				&queue,
 				sender,
 				theme.clone(),
@@ -389,6 +397,7 @@ impl App {
 			self.push_popup.update_git(ev)?;
 			self.push_tags_popup.update_git(ev)?;
 			self.pull_popup.update_git(ev);
+			self.fetch_popup.update_git(ev);
 			self.select_branch_popup.update_git(ev)?;
 		}
 
@@ -421,6 +430,7 @@ impl App {
 			|| self.push_popup.any_work_pending()
 			|| self.push_tags_popup.any_work_pending()
 			|| self.pull_popup.any_work_pending()
+			|| self.fetch_popup.any_work_pending()
 			|| self.revision_files_popup.any_work_pending()
 			|| self.tags_popup.any_work_pending()
 	}
@@ -453,6 +463,7 @@ impl App {
 			push_popup,
 			push_tags_popup,
 			pull_popup,
+			fetch_popup,
 			tag_commit_popup,
 			create_branch_popup,
 			rename_branch_popup,
@@ -489,6 +500,7 @@ impl App {
 			push_popup,
 			push_tags_popup,
 			pull_popup,
+			fetch_popup,
 			options_popup,
 			reset,
 			msg
@@ -690,6 +702,14 @@ impl App {
 			}
 			InternalEvent::Pull(branch) => {
 				if let Err(error) = self.pull_popup.fetch(branch) {
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						error.to_string(),
+					));
+				}
+				flags.insert(NeedsUpdate::ALL);
+			}
+			InternalEvent::FetchRemotes => {
+				if let Err(error) = self.fetch_popup.fetch() {
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						error.to_string(),
 					));

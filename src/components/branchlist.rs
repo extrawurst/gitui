@@ -196,6 +196,12 @@ impl Component for BranchListComponent {
 				true,
 				self.local,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::fetch_remotes(&self.key_config),
+				true,
+				!self.local,
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -290,6 +296,8 @@ impl Component for BranchListComponent {
 					self.queue
 						.push(InternalEvent::CompareCommits(b, None));
 				}
+			} else if e == self.key_config.keys.pull && !self.local {
+				self.queue.push(InternalEvent::FetchRemotes);
 			} else if e == self.key_config.keys.cmd_bar_toggle {
 				//do not consume if its the more key
 				return Ok(EventState::NotConsumed);

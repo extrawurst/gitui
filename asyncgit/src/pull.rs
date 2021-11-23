@@ -28,14 +28,14 @@ pub struct FetchRequest {
 struct FetchState {}
 
 ///
-pub struct AsyncFetch {
+pub struct AsyncPull {
 	state: Arc<Mutex<Option<FetchState>>>,
 	last_result: Arc<Mutex<Option<(usize, String)>>>,
 	progress: Arc<Mutex<Option<ProgressNotification>>>,
 	sender: Sender<AsyncGitNotification>,
 }
 
-impl AsyncFetch {
+impl AsyncPull {
 	///
 	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
 		Self {
@@ -84,7 +84,7 @@ impl AsyncFetch {
 			let (progress_sender, receiver) = unbounded();
 
 			let handle = RemoteProgress::spawn_receiver_thread(
-				AsyncGitNotification::Fetch,
+				AsyncGitNotification::Pull,
 				sender.clone(),
 				receiver,
 				arc_progress,
@@ -108,7 +108,7 @@ impl AsyncFetch {
 			Self::clear_request(&arc_state).expect("clear error");
 
 			sender
-				.send(AsyncGitNotification::Fetch)
+				.send(AsyncGitNotification::Pull)
 				.expect("AsyncNotification error");
 		});
 
