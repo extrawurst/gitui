@@ -19,6 +19,7 @@ The way this works got changed and simplified ([See docs](https://github.com/ext
 * Future addition of new keys will not break anymore
 
 ### Added
+- add fetch/update command all remote branches ([#998](https://github.com/extrawurst/gitui/issues/998))
 - add `trace-libgit` feature to make git tracing optional [[@dm9pZCAq](https://github.com/dm9pZCAq)] ([#902](https://github.com/extrawurst/gitui/issues/902))
 - support merging and rebasing remote branches [[@R0nd](https://github.com/R0nd)] ([#920](https://github.com/extrawurst/gitui/issues/920))
 - add highlighting matches in fuzzy finder [[@Mifom](https://github.com/Mifom)] ([#893](https://github.com/extrawurst/gitui/issues/893))
