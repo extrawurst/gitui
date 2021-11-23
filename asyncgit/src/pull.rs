@@ -1,5 +1,3 @@
-//TODO: rename mod to pull
-
 use crate::{
 	error::{Error, Result},
 	sync::{
