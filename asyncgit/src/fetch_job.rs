@@ -60,6 +60,7 @@ impl AsyncJob for AsyncFetchJob {
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
 				JobState::Request(basic_credentials) => {
+					//TODO: support progress
 					let result =
 						fetch_all(CWD, &basic_credentials, &None);
 
