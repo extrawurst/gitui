@@ -1,8 +1,5 @@
 //!
 
-//TODO:
-#![allow(dead_code)]
-
 use crate::{
 	asyncjob::{AsyncJob, RunParams},
 	error::Result,
