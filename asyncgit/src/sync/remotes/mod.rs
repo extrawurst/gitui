@@ -152,8 +152,6 @@ pub(crate) fn fetch(
 	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.remote_callbacks(callbacks.callbacks());
 
-	log::debug!("fetch: {}", branch);
-
 	remote.fetch(&[branch], Some(&mut options), None)?;
 
 	Ok(remote.stats().received_bytes())

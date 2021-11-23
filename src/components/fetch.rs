@@ -98,19 +98,12 @@ impl FetchComponent {
 	///
 	pub fn update_git(&mut self, ev: AsyncGitNotification) {
 		if self.is_visible() && ev == AsyncGitNotification::Fetch {
-			if let Err(error) = self.update() {
-				self.pending = false;
-				self.hide();
-				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("fetch failed:\n{}", error),
-				));
-			}
+			self.update();
 		}
 	}
 
 	///
-	#[allow(clippy::unnecessary_wraps)]
-	fn update(&mut self) -> Result<()> {
+	fn update(&mut self) {
 		self.pending = self.async_fetch.is_pending();
 		self.progress = self.async_fetch.progress();
 
@@ -119,8 +112,6 @@ impl FetchComponent {
 			self.queue
 				.push(InternalEvent::Update(NeedsUpdate::BRANCHES));
 		}
-
-		Ok(())
 	}
 }
 
@@ -138,7 +129,6 @@ impl DrawableComponent for FetchComponent {
 			f.render_widget(Clear, area);
 			f.render_widget(
 				Gauge::default()
-					// .label(state.as_str())
 					.block(
 						Block::default()
 							.title(Span::styled(
