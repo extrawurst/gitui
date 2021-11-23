@@ -1,26 +1,21 @@
-use super::PushComponent;
 use crate::{
 	components::{
 		cred::CredComponent, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
 	keys::SharedKeyConfig,
-	queue::{Action, InternalEvent, Queue},
-	strings, try_or_popup,
+	queue::{InternalEvent, NeedsUpdate, Queue},
+	strings,
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{
-		self,
-		cred::{
-			extract_username_password, need_username_password,
-			BasicAuthCredential,
-		},
-		get_default_remote,
+	asyncjob::AsyncSingleJob,
+	sync::cred::{
+		extract_username_password, need_username_password,
+		BasicAuthCredential,
 	},
-	AsyncGitNotification, AsyncPull, FetchRequest, RemoteProgress,
-	CWD,
+	AsyncFetchJob, AsyncGitNotification, ProgressPercent,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -33,19 +28,18 @@ use tui::{
 };
 
 ///
-pub struct PullComponent {
+pub struct FetchComponent {
 	visible: bool,
-	git_fetch: AsyncPull,
-	progress: Option<RemoteProgress>,
+	async_fetch: AsyncSingleJob<AsyncFetchJob>,
+	progress: Option<ProgressPercent>,
 	pending: bool,
-	branch: String,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	input_cred: CredComponent,
 }
 
-impl PullComponent {
+impl FetchComponent {
 	///
 	pub fn new(
 		queue: &Queue,
@@ -57,8 +51,7 @@ impl PullComponent {
 			queue: queue.clone(),
 			pending: false,
 			visible: false,
-			branch: String::new(),
-			git_fetch: AsyncPull::new(sender),
+			async_fetch: AsyncSingleJob::new(sender.clone()),
 			progress: None,
 			input_cred: CredComponent::new(
 				theme.clone(),
@@ -70,8 +63,7 @@ impl PullComponent {
 	}
 
 	///
-	pub fn fetch(&mut self, branch: String) -> Result<()> {
-		self.branch = branch;
+	pub fn fetch(&mut self) -> Result<()> {
 		self.show()?;
 		if need_username_password()? {
 			let cred =
@@ -79,29 +71,23 @@ impl PullComponent {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
-				self.fetch_from_remote(Some(cred))
+				self.fetch_all(Some(cred));
 			} else {
 				self.input_cred.set_cred(cred);
-				self.input_cred.show()
+				self.input_cred.show()?;
 			}
 		} else {
-			self.fetch_from_remote(None)
+			self.fetch_all(None);
 		}
-	}
-
-	fn fetch_from_remote(
-		&mut self,
-		cred: Option<BasicAuthCredential>,
-	) -> Result<()> {
-		self.pending = true;
-		self.progress = None;
-		self.git_fetch.request(FetchRequest {
-			remote: get_default_remote(CWD)?,
-			branch: self.branch.clone(),
-			basic_credential: cred,
-		})?;
 
 		Ok(())
+	}
+
+	fn fetch_all(&mut self, cred: Option<BasicAuthCredential>) {
+		self.pending = true;
+		self.progress = None;
+		self.progress = Some(ProgressPercent::empty());
+		self.async_fetch.spawn(AsyncFetchJob::new(cred));
 	}
 
 	///
@@ -111,7 +97,7 @@ impl PullComponent {
 
 	///
 	pub fn update_git(&mut self, ev: AsyncGitNotification) {
-		if self.is_visible() && ev == AsyncGitNotification::Pull {
+		if self.is_visible() && ev == AsyncGitNotification::Fetch {
 			if let Err(error) = self.update() {
 				self.pending = false;
 				self.hide();
@@ -123,93 +109,40 @@ impl PullComponent {
 	}
 
 	///
+	#[allow(clippy::unnecessary_wraps)]
 	fn update(&mut self) -> Result<()> {
-		self.pending = self.git_fetch.is_pending()?;
-		self.progress = self.git_fetch.progress()?;
+		self.pending = self.async_fetch.is_pending();
+		self.progress = self.async_fetch.progress();
 
 		if !self.pending {
-			if let Some((_bytes, err)) =
-				self.git_fetch.last_result()?
-			{
-				if err.is_empty() {
-					self.try_ff_merge()?;
-				} else {
-					anyhow::bail!(err);
-				}
-			}
+			self.hide();
+			self.queue
+				.push(InternalEvent::Update(NeedsUpdate::BRANCHES));
 		}
 
 		Ok(())
-	}
-
-	// check if something is incoming and try a ff merge then
-	fn try_ff_merge(&mut self) -> Result<()> {
-		let branch_compare =
-			sync::branch_compare_upstream(CWD, &self.branch)?;
-		if branch_compare.behind > 0 {
-			let ff_res = sync::branch_merge_upstream_fastforward(
-				CWD,
-				&self.branch,
-			);
-			if let Err(err) = ff_res {
-				log::trace!("ff failed: {}", err);
-				self.confirm_merge(branch_compare.behind);
-			}
-		}
-
-		self.hide();
-
-		Ok(())
-	}
-
-	pub fn try_conflict_free_merge(&self, rebase: bool) {
-		if rebase {
-			try_or_popup!(
-				self,
-				"rebase failed:",
-				sync::merge_upstream_rebase(CWD, &self.branch)
-			);
-		} else {
-			try_or_popup!(
-				self,
-				"merge failed:",
-				sync::merge_upstream_commit(CWD, &self.branch)
-			);
-		}
-	}
-
-	fn confirm_merge(&mut self, incoming: usize) {
-		self.queue.push(InternalEvent::ConfirmAction(
-			Action::PullMerge {
-				incoming,
-				rebase: sync::config_is_pull_rebase(CWD)
-					.unwrap_or_default(),
-			},
-		));
-		self.hide();
 	}
 }
 
-impl DrawableComponent for PullComponent {
+impl DrawableComponent for FetchComponent {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
 		rect: Rect,
 	) -> Result<()> {
 		if self.visible {
-			let (state, progress) =
-				PushComponent::get_progress(&self.progress);
+			let progress = self.progress.unwrap_or_default().progress;
 
 			let area = ui::centered_rect_absolute(30, 3, f.size());
 
 			f.render_widget(Clear, area);
 			f.render_widget(
 				Gauge::default()
-					.label(state.as_str())
+					// .label(state.as_str())
 					.block(
 						Block::default()
 							.title(Span::styled(
-								strings::PULL_POPUP_MSG,
+								strings::FETCH_POPUP_MSG,
 								self.theme.title(true),
 							))
 							.borders(Borders::ALL)
@@ -227,7 +160,7 @@ impl DrawableComponent for PullComponent {
 	}
 }
 
-impl Component for PullComponent {
+impl Component for FetchComponent {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -260,9 +193,9 @@ impl Component for PullComponent {
 					if self.input_cred.get_cred().is_complete()
 						|| !self.input_cred.is_visible()
 					{
-						self.fetch_from_remote(Some(
+						self.fetch_all(Some(
 							self.input_cred.get_cred().clone(),
-						))?;
+						));
 						self.input_cred.hide();
 					}
 				}

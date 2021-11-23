@@ -81,7 +81,6 @@ pub struct KeysListFile {
 }
 
 impl KeysListFile {
-	#[allow(dead_code)]
 	pub fn read_file(config_file: PathBuf) -> Result<Self> {
 		let mut f = File::open(config_file)?;
 		let mut buffer = Vec::new();

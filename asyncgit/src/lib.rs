@@ -29,6 +29,7 @@ mod commit_files;
 mod diff;
 mod error;
 mod fetch;
+mod fetch_job;
 mod progress;
 mod push;
 mod push_tags;
@@ -44,7 +45,8 @@ pub use crate::{
 	commit_files::{AsyncCommitFiles, CommitFilesParams},
 	diff::{AsyncDiff, DiffParams, DiffType},
 	error::{Error, Result},
-	fetch::{AsyncFetch, FetchRequest},
+	fetch::{AsyncPull, FetchRequest},
+	fetch_job::AsyncFetchJob,
 	progress::ProgressPercent,
 	push::{AsyncPush, PushRequest},
 	push_tags::{AsyncPushTags, PushTagsRequest},
@@ -83,11 +85,13 @@ pub enum AsyncGitNotification {
 	///
 	PushTags,
 	///
-	Fetch,
+	Pull,
 	///
 	Blame,
 	///
 	RemoteTags,
+	///
+	Fetch,
 }
 
 /// current working directory `./`

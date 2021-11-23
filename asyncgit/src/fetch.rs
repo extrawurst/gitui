@@ -1,8 +1,10 @@
+//TODO: rename mod to pull
+
 use crate::{
 	error::{Error, Result},
 	sync::{
 		cred::BasicAuthCredential,
-		remotes::{fetch, fetch_all, push::ProgressNotification},
+		remotes::{fetch, push::ProgressNotification},
 	},
 	AsyncGitNotification, RemoteProgress, CWD,
 };
@@ -28,14 +30,14 @@ pub struct FetchRequest {
 struct FetchState {}
 
 ///
-pub struct AsyncFetch {
+pub struct AsyncPull {
 	state: Arc<Mutex<Option<FetchState>>>,
 	last_result: Arc<Mutex<Option<(usize, String)>>>,
 	progress: Arc<Mutex<Option<ProgressNotification>>>,
 	sender: Sender<AsyncGitNotification>,
 }
 
-impl AsyncFetch {
+impl AsyncPull {
 	///
 	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
 		Self {
@@ -84,14 +86,11 @@ impl AsyncFetch {
 			let (progress_sender, receiver) = unbounded();
 
 			let handle = RemoteProgress::spawn_receiver_thread(
-				AsyncGitNotification::Fetch,
+				AsyncGitNotification::Pull,
 				sender.clone(),
 				receiver,
 				arc_progress,
 			);
-
-			fetch_all(CWD, params.basic_credential.clone())
-				.expect("");
 
 			let res = fetch(
 				CWD,
@@ -111,7 +110,7 @@ impl AsyncFetch {
 			Self::clear_request(&arc_state).expect("clear error");
 
 			sender
-				.send(AsyncGitNotification::Fetch)
+				.send(AsyncGitNotification::Pull)
 				.expect("AsyncNotification error");
 		});
 

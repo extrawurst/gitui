@@ -401,7 +401,7 @@ impl Status {
 			AsyncGitNotification::Diff => self.update_diff()?,
 			AsyncGitNotification::Status => self.update_status()?,
 			AsyncGitNotification::Push
-			| AsyncGitNotification::Fetch
+			| AsyncGitNotification::Pull
 			| AsyncGitNotification::CommitFiles => {
 				self.branch_compare();
 			}
