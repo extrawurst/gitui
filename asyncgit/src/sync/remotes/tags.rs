@@ -155,6 +155,7 @@ mod tests {
 		remotes::{fetch, push::push},
 		tests::{repo_clone, repo_init_bare},
 	};
+	use pretty_assertions::assert_eq;
 	use sync::tests::write_commit_file;
 
 	#[test]
@@ -272,5 +273,43 @@ mod tests {
 		let tags_missing =
 			tags_missing_remote(clone1_dir, "origin", None).unwrap();
 		assert!(tags_missing.is_empty());
+	}
+
+	#[test]
+	fn test_tags_fetch_same_branch() {
+		let (r1_dir, _repo) = repo_init_bare().unwrap();
+		let r1_dir = r1_dir.path().to_str().unwrap();
+
+		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
+		let clone1_dir = clone1_dir.path().to_str().unwrap();
+
+		let commit1 =
+			write_commit_file(&clone1, "test.txt", "test", "commit1");
+		push(
+			clone1_dir, "origin", "master", false, false, None, None,
+		)
+		.unwrap();
+
+		let (clone2_dir, _clone2) = repo_clone(r1_dir).unwrap();
+		let clone2_dir = clone2_dir.path().to_str().unwrap();
+
+		// clone1 - creates tag
+
+		sync::tag(clone1_dir, &commit1, "tag1").unwrap();
+
+		let tags1 = sync::get_tags(clone1_dir).unwrap();
+
+		push_tags(clone1_dir, "origin", None, None).unwrap();
+		let tags_missing =
+			tags_missing_remote(clone1_dir, "origin", None).unwrap();
+		assert!(tags_missing.is_empty());
+
+		// clone 2 - pull
+
+		fetch(clone2_dir, "master", None, None).unwrap();
+
+		let tags2 = sync::get_tags(clone2_dir).unwrap();
+
+		assert_eq!(tags1, tags2);
 	}
 }

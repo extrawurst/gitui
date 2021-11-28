@@ -149,6 +149,7 @@ pub(crate) fn fetch(
 	let mut remote = repo.find_remote(&remote_name)?;
 
 	let mut options = FetchOptions::new();
+	options.download_tags(git2::AutotagOption::All);
 	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.remote_callbacks(callbacks.callbacks());
 
