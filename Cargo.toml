@@ -5,7 +5,7 @@ authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
 rust-version = "1.50"
-exclude = [".github/*",".vscode/*","assets/*"]
+exclude = [".github/*", ".vscode/*", "assets/*"]
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
@@ -20,36 +20,36 @@ keywords = [
 ]
 
 [dependencies]
-scopetime = { path = "./scopetime", version = "0.1" }
-asyncgit = { path = "./asyncgit", version = "0.18", default-features = false }
-filetreelist = { path = "./filetreelist", version = "0.4" }
-crossterm = { version = "0.20", features = [ "serde" ] }
-clap = { version = "2.33", default-features = false }
-tui = { version = "0.16", default-features = false, features = ['crossterm', 'serde'] }
-bytesize = { version = "1.0", default-features = false}
-itertools = "0.10"
-rayon-core = "1.9"
-log = "0.4"
-simplelog = { version = "0.11", default-features = false }
-dirs-next = "2.0"
-crossbeam-channel = "0.5"
-scopeguard = "1.1"
-bitflags = "1.2"
-chrono = "0.4"
-backtrace = "0.3"
-ron = "0.7"
-serde = "1.0"
 anyhow = "1.0"
-unicode-width = "0.1"
-textwrap = "0.14"
-unicode-truncate = "0.2"
-unicode-segmentation = "1.7"
-easy-cast = "0.4"
+asyncgit = { path = "./asyncgit", version = "0.18", default-features = false }
+backtrace = "0.3"
+bitflags = "1.2"
 bugreport = "0.4"
-lazy_static = "1.4"
-syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"]}
-gh-emoji = { version = "1.0.6", optional = true }
+bytesize = { version = "1.0", default-features = false }
+chrono = "0.4"
+clap = { version = "2.33", default-features = false }
+crossbeam-channel = "0.5"
+crossterm = { version = "0.20", features = [ "serde" ] }
+dirs-next = "2.0"
+easy-cast = "0.4"
+filetreelist = { path = "./filetreelist", version = "0.4" }
 fuzzy-matcher = "0.3"
+gh-emoji = { version = "1.0.6", optional = true }
+itertools = "0.10"
+lazy_static = "1.4"
+log = "0.4"
+rayon-core = "1.9"
+ron = "0.7"
+scopeguard = "1.1"
+scopetime = { path = "./scopetime", version = "0.1" }
+serde = "1.0"
+simplelog = { version = "0.11", default-features = false }
+syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"] }
+textwrap = "0.14"
+tui = { version = "0.16", default-features = false, features = ['crossterm', 'serde'] }
+unicode-segmentation = "1.7"
+unicode-truncate = "0.2"
+unicode-width = "0.1"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.1"
@@ -65,16 +65,16 @@ pretty_assertions = "1.0"
 maintenance = { status = "actively-developed" }
 
 [features]
-default=["ghemoji", "trace-libgit"]
-ghemoji=["gh-emoji"]
-timing=["scopetime/enabled"]
-trace-libgit=["asyncgit/trace-libgit"]
+default =["ghemoji", "trace-libgit"]
+ghemoji =["gh-emoji"]
+timing =["scopetime/enabled"]
+trace-libgit =["asyncgit/trace-libgit"]
 
 [workspace]
-members=[
+members =[
     "asyncgit",
-    "scopetime",
     "filetreelist",
+    "scopetime",
 ]
 
 [profile.release]

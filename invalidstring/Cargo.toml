@@ -8,7 +8,7 @@ homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
 license = "MIT"
-categories = ["development-tools","development-tools::testing","encoding"]
+categories = ["development-tools", "development-tools::testing", "encoding"]
 keywords = ["string"]
 
 [dependencies]
