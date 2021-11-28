@@ -90,6 +90,7 @@ fn fetch_from_remote(
 	let mut options = FetchOptions::new();
 	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.prune(git2::FetchPrune::On);
+	options.download_tags(git2::AutotagOption::All);
 	options.remote_callbacks(callbacks.callbacks());
 	remote.fetch(&[] as &[&str], Some(&mut options), None)?;
 
