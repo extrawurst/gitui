@@ -21,7 +21,10 @@ impl From<RepositoryState> for RepoState {
 			RepositoryState::Clean => Self::Clean,
 			RepositoryState::Merge => Self::Merge,
 			RepositoryState::RebaseMerge => Self::Rebase,
-			_ => Self::Other,
+			_ => {
+				log::debug!("state not supported yet: {:?}", state);
+				Self::Other
+			}
 		}
 	}
 }
