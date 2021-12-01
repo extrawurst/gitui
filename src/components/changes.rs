@@ -1,5 +1,5 @@
 use super::{
-	filetree::StatusTreeComponent,
+	status_tree::StatusTreeComponent,
 	utils::filetree::{FileTreeItem, FileTreeItemKind},
 	CommandBlocking, DrawableComponent, SharedOptions,
 };
