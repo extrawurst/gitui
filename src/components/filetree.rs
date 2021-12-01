@@ -19,11 +19,10 @@ use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
 use tui::{backend::Backend, layout::Rect, text::Span, Frame};
 
-//TODO: rename so that its clear this only works for Statuses
 //TODO: use new `filetreelist` crate
 
 ///
-pub struct FileTreeComponent {
+pub struct StatusTreeComponent {
 	title: String,
 	tree: StatusTree,
 	pending: bool,
@@ -36,7 +35,7 @@ pub struct FileTreeComponent {
 	scroll_top: Cell<usize>,
 }
 
-impl FileTreeComponent {
+impl StatusTreeComponent {
 	///
 	pub fn new(
 		title: &str,
@@ -308,7 +307,7 @@ struct TextDrawInfo<'a> {
 	item_kind: &'a FileTreeItemKind,
 }
 
-impl DrawableComponent for FileTreeComponent {
+impl DrawableComponent for StatusTreeComponent {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -377,7 +376,7 @@ impl DrawableComponent for FileTreeComponent {
 	}
 }
 
-impl Component for FileTreeComponent {
+impl Component for StatusTreeComponent {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -496,7 +495,7 @@ mod tests {
 		let mut frame = terminal.get_frame();
 
 		// set up file tree
-		let mut ftc = FileTreeComponent::new(
+		let mut ftc = StatusTreeComponent::new(
 			"title",
 			true,
 			None,
@@ -537,7 +536,7 @@ mod tests {
 		let mut frame = terminal.get_frame();
 
 		// set up file tree
-		let mut ftc = FileTreeComponent::new(
+		let mut ftc = StatusTreeComponent::new(
 			"title",
 			true,
 			None,

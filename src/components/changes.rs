@@ -1,5 +1,5 @@
 use super::{
-	filetree::FileTreeComponent,
+	filetree::StatusTreeComponent,
 	utils::filetree::{FileTreeItem, FileTreeItemKind},
 	CommandBlocking, DrawableComponent, SharedOptions,
 };
@@ -18,7 +18,7 @@ use tui::{backend::Backend, layout::Rect, Frame};
 
 ///
 pub struct ChangesComponent {
-	files: FileTreeComponent,
+	files: StatusTreeComponent,
 	is_working_dir: bool,
 	queue: Queue,
 	key_config: SharedKeyConfig,
@@ -37,7 +37,7 @@ impl ChangesComponent {
 		options: SharedOptions,
 	) -> Self {
 		Self {
-			files: FileTreeComponent::new(
+			files: StatusTreeComponent::new(
 				title,
 				focus,
 				Some(queue.clone()),

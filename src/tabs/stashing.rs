@@ -3,7 +3,7 @@ use crate::{
 	components::{
 		command_pump, event_pump, visibility_blocking,
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
-		EventState, FileTreeComponent,
+		EventState, StatusTreeComponent,
 	},
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
@@ -31,7 +31,7 @@ pub struct StashingOptions {
 }
 
 pub struct Stashing {
-	index: FileTreeComponent,
+	index: StatusTreeComponent,
 	visible: bool,
 	options: StashingOptions,
 	theme: SharedTheme,
@@ -51,7 +51,7 @@ impl Stashing {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
-			index: FileTreeComponent::new(
+			index: StatusTreeComponent::new(
 				&strings::stashing_files_title(&key_config),
 				true,
 				Some(queue.clone()),

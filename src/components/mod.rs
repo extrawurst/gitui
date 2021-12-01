@@ -31,7 +31,7 @@ mod taglist;
 mod textinput;
 mod utils;
 
-pub use self::filetree::FileTreeComponent;
+pub use self::filetree::StatusTreeComponent;
 pub use blame_file::BlameFileComponent;
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;

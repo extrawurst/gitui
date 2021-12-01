@@ -4,7 +4,7 @@ mod style;
 
 use super::{
 	command_pump, event_pump, CommandBlocking, CommandInfo,
-	Component, DrawableComponent, EventState, FileTreeComponent,
+	Component, DrawableComponent, EventState, StatusTreeComponent,
 };
 use crate::{
 	accessors, keys::SharedKeyConfig, queue::Queue, strings,
@@ -29,7 +29,7 @@ pub struct CommitDetailsComponent {
 	commit: Option<CommitFilesParams>,
 	single_details: DetailsComponent,
 	compare_details: CompareDetailsComponent,
-	file_tree: FileTreeComponent,
+	file_tree: StatusTreeComponent,
 	git_commit_files: AsyncCommitFiles,
 	visible: bool,
 	key_config: SharedKeyConfig,
@@ -56,7 +56,7 @@ impl CommitDetailsComponent {
 				false,
 			),
 			git_commit_files: AsyncCommitFiles::new(sender),
-			file_tree: FileTreeComponent::new(
+			file_tree: StatusTreeComponent::new(
 				"",
 				false,
 				Some(queue.clone()),
@@ -126,7 +126,7 @@ impl CommitDetailsComponent {
 	}
 
 	///
-	pub const fn files(&self) -> &FileTreeComponent {
+	pub const fn files(&self) -> &StatusTreeComponent {
 		&self.file_tree
 	}
 
