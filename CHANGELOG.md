@@ -34,6 +34,7 @@ The way this works got changed and simplified ([See docs](https://github.com/ext
 - honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))
 - improved file diff speed dramatically ([#976](https://github.com/extrawurst/gitui/issues/976))
 - blaming files in sub-folders on windows ([#981](https://github.com/extrawurst/gitui/issues/981))
+- push failing due to tracing error in upstream ([#881](https://github.com/extrawurst/gitui/issues/881))
 
 ## [0.18] - 2021-10-11
 
