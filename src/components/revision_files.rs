@@ -155,13 +155,15 @@ impl RevisionFilesComponent {
 		}
 	}
 
-	fn selection_changed(&mut self) {
-		//TODO: retrieve TreeFile from tree datastructure
-		if let Some(file) = self
-			.tree
+	fn selected_file(&self) -> Option<String> {
+		self.tree
 			.selected_file()
 			.map(|file| file.full_path_str().to_string())
-		{
+	}
+
+	fn selection_changed(&mut self) {
+		//TODO: retrieve TreeFile from tree datastructure
+		if let Some(file) = self.selected_file() {
 			log::info!("selected: {:?}", file);
 			let path = Path::new(&file);
 			if let Some(item) =
@@ -271,6 +273,11 @@ impl Component for RevisionFilesComponent {
 				)
 				.order(order::NAV),
 			);
+			out.push(CommandInfo::new(
+				strings::commands::edit_item(&self.key_config),
+				self.tree.selected_file().is_some(),
+				true,
+			));
 			tree_nav_cmds(&self.tree, &self.key_config, out);
 		} else {
 			self.current_file.commands(out, force_all);
@@ -312,6 +319,16 @@ impl Component for RevisionFilesComponent {
 			} else if key == self.key_config.keys.file_find {
 				if is_tree_focused {
 					self.open_finder();
+					return Ok(EventState::Consumed);
+				}
+			} else if key == self.key_config.keys.edit_file {
+				if let Some(file) = self.selected_file() {
+					//Note: switch to status tab so its clear we are
+					// not altering a file inside a revision here
+					self.queue.push(InternalEvent::TabSwitch);
+					self.queue.push(
+						InternalEvent::OpenExternalEditor(Some(file)),
+					);
 					return Ok(EventState::Consumed);
 				}
 			} else if !is_tree_focused {
