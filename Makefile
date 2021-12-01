@@ -35,6 +35,10 @@ release-linux-musl: build-linux-musl-release
 	mkdir -p release
 	tar -C ./target/x86_64-unknown-linux-musl/release/ -czvf ./release/gitui-linux-musl.tar.gz ./gitui
 
+release-linux-musl-deb: build-linux-musl-release
+	cargo deb --no-build --target x86_64-unknown-linux-musl
+	cp ./target/x86_64-unknown-linux-musl/debian/*.deb ./release/
+
 build-linux-musl-debug:
 	cargo build --target=x86_64-unknown-linux-musl
 

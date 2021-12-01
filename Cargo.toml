@@ -90,3 +90,6 @@ opt-level = 3
 
 [profile.dev]
 split-debuginfo = "unpacked"
+
+[package.metadata.deb]
+depends = ""

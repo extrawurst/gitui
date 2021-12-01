@@ -47,12 +47,19 @@ jobs:
         rustup target add x86_64-unknown-linux-musl
         sudo apt-get -qq install musl-tools
 
+    - name: Add cargo deb
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo install cargo-deb
+
     - name: Build Release Mac
       if: matrix.os == 'macos-latest'
       run: make release-mac
-    - name: Build Release Linux
+    - name: Build Release Linux + Debian package
       if: matrix.os == 'ubuntu-latest'
-      run: make release-linux-musl
+      run: |
+        make release-linux-musl
+        make release-linux-musl-deb
     - name: Build Release Win
       if: matrix.os == 'windows-latest'
       run: make release-win
@@ -76,6 +83,7 @@ jobs:
           ./release/*.tar.gz
           ./release/*.zip
           ./release/*.msi
+          ./release/*.deb
           
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
