@@ -12,8 +12,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::CommitTags, AsyncCommitFiles, AsyncGitNotification,
-	CommitFilesParams,
+	sync::{CommitTags, RepoPathRef},
+	AsyncCommitFiles, AsyncGitNotification, CommitFilesParams,
 };
 use compare_details::CompareDetailsComponent;
 use crossbeam_channel::Sender;
@@ -40,6 +40,7 @@ impl CommitDetailsComponent {
 
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -47,15 +48,20 @@ impl CommitDetailsComponent {
 	) -> Self {
 		Self {
 			single_details: DetailsComponent::new(
+				repo.clone(),
 				theme.clone(),
 				key_config.clone(),
 				false,
 			),
 			compare_details: CompareDetailsComponent::new(
+				repo.clone(),
 				theme.clone(),
 				false,
 			),
-			git_commit_files: AsyncCommitFiles::new(sender),
+			git_commit_files: AsyncCommitFiles::new(
+				repo.borrow().clone(),
+				sender,
+			),
 			file_tree: StatusTreeComponent::new(
 				"",
 				false,

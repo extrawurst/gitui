@@ -12,8 +12,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{self, status::StatusType},
-	AsyncGitNotification, AsyncStatus, StatusParams, CWD,
+	sync::{self, status::StatusType, RepoPathRef},
+	AsyncGitNotification, AsyncStatus, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -31,6 +31,7 @@ pub struct StashingOptions {
 }
 
 pub struct Stashing {
+	repo: RepoPathRef,
 	index: StatusTreeComponent,
 	visible: bool,
 	options: StashingOptions,
@@ -45,12 +46,14 @@ impl Stashing {
 
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		sender: &Sender<AsyncGitNotification>,
 		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			index: StatusTreeComponent::new(
 				&strings::stashing_files_title(&key_config),
 				true,
@@ -64,7 +67,10 @@ impl Stashing {
 				stash_untracked: true,
 			},
 			theme,
-			git_status: AsyncStatus::new(sender.clone()),
+			git_status: AsyncStatus::new(
+				repo.borrow().clone(),
+				sender.clone(),
+			),
 			queue: queue.clone(),
 			key_config,
 		}
@@ -258,7 +264,7 @@ impl Component for Stashing {
 
 	fn show(&mut self) -> Result<()> {
 		let config_untracked_files =
-			sync::untracked_files_config(CWD)?;
+			sync::untracked_files_config(&self.repo.borrow())?;
 
 		self.options.stash_untracked =
 			!config_untracked_files.include_none();

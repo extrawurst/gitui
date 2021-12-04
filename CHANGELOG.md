@@ -30,6 +30,7 @@ The way this works got changed and simplified ([See docs](https://github.com/ext
 - dedicated fuzzy finder up/down keys to allow vim overrides ([#993](https://github.com/extrawurst/gitui/pull/993))
 - pull will also download tags ([#1013](https://github.com/extrawurst/gitui/pull/1013))
 - allow editing file from filetree ([#989](https://github.com/extrawurst/gitui/pull/989))
+- support bare repos (new `workdir` argument) ([#1026](https://github.com/extrawurst/gitui/pull/1026))
 
 ### Fixed
 - honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))

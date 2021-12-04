@@ -23,7 +23,10 @@ use crate::{
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::{bail, Result};
-use asyncgit::{sync, AsyncGitNotification, CWD};
+use asyncgit::{
+	sync::{self, RepoPathRef},
+	AsyncGitNotification,
+};
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
 use std::{
@@ -41,6 +44,7 @@ use tui::{
 
 /// the main app type
 pub struct App {
+	repo: RepoPathRef,
 	do_quit: bool,
 	help: HelpComponent,
 	msg: MsgComponent,
@@ -85,6 +89,7 @@ impl App {
 	///
 	#[allow(clippy::too_many_lines)]
 	pub fn new(
+		repo: RepoPathRef,
 		sender: &Sender<AsyncGitNotification>,
 		sender_app: &Sender<AsyncAppNotification>,
 		input: Input,
@@ -104,11 +109,13 @@ impl App {
 				key_config.clone(),
 			),
 			commit: CommitComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			blame_file_popup: BlameFileComponent::new(
+				&repo,
 				&queue,
 				sender,
 				&strings::blame_title(&key_config),
@@ -116,23 +123,27 @@ impl App {
 				key_config.clone(),
 			),
 			revision_files_popup: RevisionFilesPopup::new(
+				repo.clone(),
 				&queue,
 				sender_app,
 				theme.clone(),
 				key_config.clone(),
 			),
 			stashmsg_popup: StashMsgComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			inspect_commit_popup: InspectCommitComponent::new(
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			compare_commits_popup: CompareCommitsComponent::new(
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
@@ -143,50 +154,59 @@ impl App {
 				key_config.clone(),
 			),
 			push_popup: PushComponent::new(
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			push_tags_popup: PushTagsComponent::new(
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			pull_popup: PullComponent::new(
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			fetch_popup: FetchComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			tag_commit_popup: TagCommitComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			create_branch_popup: CreateBranchComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			rename_branch_popup: RenameBranchComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			select_branch_popup: BranchListComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			tags_popup: TagListComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
@@ -215,12 +235,14 @@ impl App {
 			msg: MsgComponent::new(theme.clone(), key_config.clone()),
 			tab: 0,
 			revlog: Revlog::new(
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			status_tab: Status::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
@@ -228,17 +250,20 @@ impl App {
 				options,
 			),
 			stashing_tab: Stashing::new(
+				&repo,
 				sender,
 				&queue,
 				theme.clone(),
 				key_config.clone(),
 			),
 			stashlist_tab: StashList::new(
+				repo.clone(),
 				&queue,
 				theme.clone(),
 				key_config.clone(),
 			),
 			files_tab: FilesTab::new(
+				repo.clone(),
 				sender_app,
 				&queue,
 				theme.clone(),
@@ -249,6 +274,7 @@ impl App {
 			key_config,
 			requires_redraw: Cell::new(false),
 			file_to_open: None,
+			repo,
 		}
 	}
 
@@ -342,6 +368,7 @@ impl App {
 				let result = match self.file_to_open.take() {
 					Some(path) => {
 						ExternalEditorComponent::open_file_in_editor(
+							&self.repo.borrow(),
 							Path::new(&path),
 						)
 					}
@@ -775,7 +802,10 @@ impl App {
 				}
 			}
 			Action::StashDrop(_) | Action::StashPop(_) => {
-				if let Err(e) = StashList::action_confirmed(&action) {
+				if let Err(e) = StashList::action_confirmed(
+					&self.repo.borrow(),
+					&action,
+				) {
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						e.to_string(),
 					));
@@ -784,16 +814,22 @@ impl App {
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetHunk(path, hash) => {
-				sync::reset_hunk(CWD, &path, hash)?;
+				sync::reset_hunk(&self.repo.borrow(), &path, hash)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetLines(path, lines) => {
-				sync::discard_lines(CWD, &path, &lines)?;
+				sync::discard_lines(
+					&self.repo.borrow(),
+					&path,
+					&lines,
+				)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::DeleteLocalBranch(branch_ref) => {
-				if let Err(e) = sync::delete_branch(CWD, &branch_ref)
-				{
+				if let Err(e) = sync::delete_branch(
+					&self.repo.borrow(),
+					&branch_ref,
+				) {
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						e.to_string(),
 					));
@@ -824,7 +860,9 @@ impl App {
 				self.select_branch_popup.update_branches()?;
 			}
 			Action::DeleteTag(tag_name) => {
-				if let Err(error) = sync::delete_tag(CWD, &tag_name) {
+				if let Err(error) =
+					sync::delete_tag(&self.repo.borrow(), &tag_name)
+				{
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						error.to_string(),
 					));

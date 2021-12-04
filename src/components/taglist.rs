@@ -18,8 +18,8 @@ use asyncgit::{
 		extract_username_password, need_username_password,
 		BasicAuthCredential,
 	},
-	sync::{get_tags_with_metadata, TagWithMetadata},
-	AsyncGitNotification, CWD,
+	sync::{get_tags_with_metadata, RepoPathRef, TagWithMetadata},
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -38,6 +38,7 @@ use ui::style::SharedTheme;
 
 ///
 pub struct TagListComponent {
+	repo: RepoPathRef,
 	theme: SharedTheme,
 	queue: Queue,
 	tags: Option<Vec<TagWithMetadata>>,
@@ -249,6 +250,7 @@ impl Component for TagListComponent {
 
 impl TagListComponent {
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -265,6 +267,7 @@ impl TagListComponent {
 			missing_remote_tags: None,
 			async_remote_tags: AsyncSingleJob::new(sender.clone()),
 			key_config,
+			repo,
 		}
 	}
 
@@ -273,17 +276,19 @@ impl TagListComponent {
 		self.table_state.get_mut().select(Some(0));
 		self.show()?;
 
-		let basic_credential = if need_username_password()? {
-			let credential = extract_username_password()?;
+		let basic_credential =
+			if need_username_password(&self.repo.borrow())? {
+				let credential =
+					extract_username_password(&self.repo.borrow())?;
 
-			if credential.is_complete() {
-				Some(credential)
+				if credential.is_complete() {
+					Some(credential)
+				} else {
+					None
+				}
 			} else {
 				None
-			}
-		} else {
-			None
-		};
+			};
 
 		self.basic_credential = basic_credential;
 
@@ -320,7 +325,7 @@ impl TagListComponent {
 
 	/// fetch list of tags
 	pub fn update_tags(&mut self) -> Result<()> {
-		let tags = get_tags_with_metadata(CWD)?;
+		let tags = get_tags_with_metadata(&self.repo.borrow())?;
 
 		self.tags = Some(tags);
 
@@ -329,6 +334,7 @@ impl TagListComponent {
 
 	pub fn update_missing_remote_tags(&mut self) {
 		self.async_remote_tags.spawn(AsyncRemoteTagsJob::new(
+			self.repo.borrow().clone(),
 			self.basic_credential.clone(),
 		));
 	}

@@ -13,9 +13,9 @@ use anyhow::Result;
 use asyncgit::{
 	cached, message_prettify,
 	sync::{
-		self, get_config_string, CommitId, HookResult, RepoState,
+		self, get_config_string, CommitId, HookResult, RepoPathRef,
+		RepoState,
 	},
-	CWD,
 };
 use crossterm::event::Event;
 use easy_cast::Cast;
@@ -37,6 +37,7 @@ enum Mode {
 }
 
 pub struct CommitComponent {
+	repo: RepoPathRef,
 	input: TextInputComponent,
 	mode: Mode,
 	queue: Queue,
@@ -51,6 +52,7 @@ const FIRST_LINE_LIMIT: usize = 50;
 impl CommitComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -58,7 +60,6 @@ impl CommitComponent {
 		Self {
 			queue,
 			mode: Mode::Normal,
-
 			input: TextInputComponent::new(
 				theme.clone(),
 				key_config.clone(),
@@ -67,9 +68,10 @@ impl CommitComponent {
 				true,
 			),
 			key_config,
-			git_branch_name: cached::BranchName::new(CWD),
+			git_branch_name: cached::BranchName::new(repo.clone()),
 			commit_template: None,
 			theme,
+			repo,
 		}
 	}
 
@@ -126,7 +128,8 @@ impl CommitComponent {
 	}
 
 	pub fn show_editor(&mut self) -> Result<()> {
-		let file_path = sync::repo_dir(CWD)?.join("COMMIT_EDITMSG");
+		let file_path = sync::repo_dir(&self.repo.borrow())?
+			.join("COMMIT_EDITMSG");
 
 		{
 			let mut file = File::create(&file_path)?;
@@ -140,7 +143,10 @@ impl CommitComponent {
 			)?;
 		}
 
-		ExternalEditorComponent::open_file_in_editor(&file_path)?;
+		ExternalEditorComponent::open_file_in_editor(
+			&self.repo.borrow(),
+			&file_path,
+		)?;
 
 		let mut message = String::new();
 
@@ -157,11 +163,12 @@ impl CommitComponent {
 	}
 
 	fn commit(&mut self) -> Result<()> {
-		let gpgsign = get_config_string(CWD, "commit.gpgsign")
-			.ok()
-			.flatten()
-			.and_then(|path| path.parse::<bool>().ok())
-			.unwrap_or_default();
+		let gpgsign =
+			get_config_string(&self.repo.borrow(), "commit.gpgsign")
+				.ok()
+				.flatten()
+				.and_then(|path| path.parse::<bool>().ok())
+				.unwrap_or_default();
 
 		if gpgsign {
 			anyhow::bail!("config commit.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
@@ -173,7 +180,9 @@ impl CommitComponent {
 	}
 
 	fn commit_with_msg(&mut self, msg: String) -> Result<()> {
-		if let HookResult::NotOk(e) = sync::hooks_pre_commit(CWD)? {
+		if let HookResult::NotOk(e) =
+			sync::hooks_pre_commit(&self.repo.borrow())?
+		{
 			log::error!("pre-commit hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
 				"pre-commit hook error:\n{}",
@@ -183,7 +192,7 @@ impl CommitComponent {
 		}
 		let mut msg = message_prettify(msg, Some(b'#'))?;
 		if let HookResult::NotOk(e) =
-			sync::hooks_commit_msg(CWD, &mut msg)?
+			sync::hooks_commit_msg(&self.repo.borrow(), &mut msg)?
 		{
 			log::error!("commit-msg hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
@@ -194,9 +203,13 @@ impl CommitComponent {
 		}
 
 		let res = match &self.mode {
-			Mode::Normal => sync::commit(CWD, &msg),
-			Mode::Amend(amend) => sync::amend(CWD, *amend, &msg),
-			Mode::Merge(ids) => sync::merge_commit(CWD, &msg, ids),
+			Mode::Normal => sync::commit(&self.repo.borrow(), &msg),
+			Mode::Amend(amend) => {
+				sync::amend(&self.repo.borrow(), *amend, &msg)
+			}
+			Mode::Merge(ids) => {
+				sync::merge_commit(&self.repo.borrow(), &msg, ids)
+			}
 		};
 
 		if let Err(e) = res {
@@ -208,7 +221,9 @@ impl CommitComponent {
 			return Ok(());
 		}
 
-		if let HookResult::NotOk(e) = sync::hooks_post_commit(CWD)? {
+		if let HookResult::NotOk(e) =
+			sync::hooks_post_commit(&self.repo.borrow())?
+		{
 			log::error!("post-commit hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
 				"post-commit hook error:\n{}",
@@ -229,7 +244,7 @@ impl CommitComponent {
 
 	fn can_amend(&self) -> bool {
 		matches!(self.mode, Mode::Normal)
-			&& sync::get_head(CWD).is_ok()
+			&& sync::get_head(&self.repo.borrow()).is_ok()
 			&& (self.is_empty() || !self.is_changed())
 	}
 
@@ -244,10 +259,11 @@ impl CommitComponent {
 
 	fn amend(&mut self) -> Result<()> {
 		if self.can_amend() {
-			let id = sync::get_head(CWD)?;
+			let id = sync::get_head(&self.repo.borrow())?;
 			self.mode = Mode::Amend(id);
 
-			let details = sync::get_commit_details(CWD, id)?;
+			let details =
+				sync::get_commit_details(&self.repo.borrow(), id)?;
 
 			self.input.set_title(strings::commit_title_amend());
 
@@ -360,17 +376,22 @@ impl Component for CommitComponent {
 
 		self.mode = Mode::Normal;
 
-		self.mode = if sync::repo_state(CWD)? == RepoState::Merge {
-			let ids = sync::mergehead_ids(CWD)?;
+		self.mode = if sync::repo_state(&self.repo.borrow())?
+			== RepoState::Merge
+		{
+			let ids = sync::mergehead_ids(&self.repo.borrow())?;
 			self.input.set_title(strings::commit_title_merge());
-			self.input.set_text(sync::merge_msg(CWD)?);
+			self.input
+				.set_text(sync::merge_msg(&self.repo.borrow())?);
 			Mode::Merge(ids)
 		} else {
-			self.commit_template =
-				get_config_string(CWD, "commit.template")
-					.ok()
-					.flatten()
-					.and_then(|path| read_to_string(path).ok());
+			self.commit_template = get_config_string(
+				&self.repo.borrow(),
+				"commit.template",
+			)
+			.ok()
+			.flatten()
+			.and_then(|path| read_to_string(path).ok());
 
 			if self.is_empty() {
 				if let Some(s) = &self.commit_template {

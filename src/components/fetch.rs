@@ -11,9 +11,12 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	asyncjob::AsyncSingleJob,
-	sync::cred::{
-		extract_username_password, need_username_password,
-		BasicAuthCredential,
+	sync::{
+		cred::{
+			extract_username_password, need_username_password,
+			BasicAuthCredential,
+		},
+		RepoPathRef,
 	},
 	AsyncFetchJob, AsyncGitNotification, ProgressPercent,
 };
@@ -29,6 +32,7 @@ use tui::{
 
 ///
 pub struct FetchComponent {
+	repo: RepoPathRef,
 	visible: bool,
 	async_fetch: AsyncSingleJob<AsyncFetchJob>,
 	progress: Option<ProgressPercent>,
@@ -42,6 +46,7 @@ pub struct FetchComponent {
 impl FetchComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -59,15 +64,16 @@ impl FetchComponent {
 			),
 			theme,
 			key_config,
+			repo,
 		}
 	}
 
 	///
 	pub fn fetch(&mut self) -> Result<()> {
 		self.show()?;
-		if need_username_password()? {
-			let cred =
-				extract_username_password().unwrap_or_else(|_| {
+		if need_username_password(&self.repo.borrow())? {
+			let cred = extract_username_password(&self.repo.borrow())
+				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
@@ -87,7 +93,10 @@ impl FetchComponent {
 		self.pending = true;
 		self.progress = None;
 		self.progress = Some(ProgressPercent::empty());
-		self.async_fetch.spawn(AsyncFetchJob::new(cred));
+		self.async_fetch.spawn(AsyncFetchJob::new(
+			self.repo.borrow().clone(),
+			cred,
+		));
 	}
 
 	///

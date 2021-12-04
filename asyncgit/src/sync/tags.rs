@@ -1,5 +1,5 @@
-use super::{get_commits_info, utils::repo, CommitId};
-use crate::error::Result;
+use super::{get_commits_info, CommitId, RepoPath};
+use crate::{error::Result, sync::repository::repo};
 use scopetime::scope_time;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -25,7 +25,7 @@ pub struct TagWithMetadata {
 static MAX_MESSAGE_WIDTH: usize = 100;
 
 /// returns `Tags` type filled with all tags found in repo
-pub fn get_tags(repo_path: &str) -> Result<Tags> {
+pub fn get_tags(repo_path: &RepoPath) -> Result<Tags> {
 	scope_time!("get_tags");
 
 	let mut res = Tags::new();
@@ -67,7 +67,7 @@ pub fn get_tags(repo_path: &str) -> Result<Tags> {
 
 ///
 pub fn get_tags_with_metadata(
-	repo_path: &str,
+	repo_path: &RepoPath,
 ) -> Result<Vec<TagWithMetadata>> {
 	scope_time!("get_tags_with_metadata");
 
@@ -119,7 +119,10 @@ pub fn get_tags_with_metadata(
 }
 
 ///
-pub fn delete_tag(repo_path: &str, tag_name: &str) -> Result<()> {
+pub fn delete_tag(
+	repo_path: &RepoPath,
+	tag_name: &str,
+) -> Result<()> {
 	scope_time!("delete_tag");
 
 	let repo = repo(repo_path)?;
@@ -138,7 +141,8 @@ mod tests {
 	fn test_smoke() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		assert_eq!(get_tags(repo_path).unwrap().is_empty(), true);
 	}
@@ -147,7 +151,8 @@ mod tests {
 	fn test_multitags() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let sig = repo.signature().unwrap();
 		let head_id = repo.head().unwrap().target().unwrap();

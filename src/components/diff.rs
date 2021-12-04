@@ -13,8 +13,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	hash,
-	sync::{self, diff::DiffLinePosition},
-	DiffLine, DiffLineType, FileDiff, CWD,
+	sync::{self, diff::DiffLinePosition, RepoPathRef},
+	DiffLine, DiffLineType, FileDiff,
 };
 use bytesize::ByteSize;
 use crossterm::event::Event;
@@ -100,6 +100,7 @@ impl Selection {
 
 ///
 pub struct DiffComponent {
+	repo: RepoPathRef,
 	diff: Option<FileDiff>,
 	pending: bool,
 	selection: Selection,
@@ -117,6 +118,7 @@ pub struct DiffComponent {
 impl DiffComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -135,6 +137,7 @@ impl DiffComponent {
 			theme,
 			key_config,
 			is_immutable,
+			repo,
 		}
 	}
 	///
@@ -458,7 +461,11 @@ impl DiffComponent {
 		if let Some(diff) = &self.diff {
 			if let Some(hunk) = self.selected_hunk {
 				let hash = diff.hunks[hunk].header_hash;
-				sync::unstage_hunk(CWD, &self.current.path, hash)?;
+				sync::unstage_hunk(
+					&self.repo.borrow(),
+					&self.current.path,
+					hash,
+				)?;
 				self.queue_update();
 			}
 		}
@@ -471,12 +478,16 @@ impl DiffComponent {
 			if let Some(hunk) = self.selected_hunk {
 				if diff.untracked {
 					sync::stage_add_file(
-						CWD,
+						&self.repo.borrow(),
 						Path::new(&self.current.path),
 					)?;
 				} else {
 					let hash = diff.hunks[hunk].header_hash;
-					sync::stage_hunk(CWD, &self.current.path, hash)?;
+					sync::stage_hunk(
+						&self.repo.borrow(),
+						&self.current.path,
+						hash,
+					)?;
 				}
 
 				self.queue_update();
@@ -524,7 +535,7 @@ impl DiffComponent {
 					self,
 					"(un)stage lines:",
 					sync::stage_lines(
-						CWD,
+						&self.repo.borrow(),
 						&self.current.path,
 						self.is_stage(),
 						&selected_lines,

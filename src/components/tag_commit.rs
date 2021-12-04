@@ -10,14 +10,12 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self, CommitId},
-	CWD,
-};
+use asyncgit::sync::{self, CommitId, RepoPathRef};
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct TagCommitComponent {
+	repo: RepoPathRef,
 	input: TextInputComponent,
 	commit_id: Option<CommitId>,
 	queue: Queue,
@@ -92,6 +90,7 @@ impl Component for TagCommitComponent {
 impl TagCommitComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -107,6 +106,7 @@ impl TagCommitComponent {
 			),
 			commit_id: None,
 			key_config,
+			repo,
 		}
 	}
 
@@ -121,7 +121,12 @@ impl TagCommitComponent {
 	///
 	pub fn tag(&mut self) {
 		if let Some(commit_id) = self.commit_id {
-			match sync::tag(CWD, &commit_id, self.input.get_text()) {
+			let result = sync::tag(
+				&self.repo.borrow(),
+				&commit_id,
+				self.input.get_text(),
+			);
+			match result {
 				Ok(_) => {
 					self.input.clear();
 					self.hide();

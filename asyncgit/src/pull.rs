@@ -3,8 +3,9 @@ use crate::{
 	sync::{
 		cred::BasicAuthCredential,
 		remotes::{fetch, push::ProgressNotification},
+		RepoPath,
 	},
-	AsyncGitNotification, RemoteProgress, CWD,
+	AsyncGitNotification, RemoteProgress,
 };
 use crossbeam_channel::{unbounded, Sender};
 use std::{
@@ -33,12 +34,17 @@ pub struct AsyncPull {
 	last_result: Arc<Mutex<Option<(usize, String)>>>,
 	progress: Arc<Mutex<Option<ProgressNotification>>>,
 	sender: Sender<AsyncGitNotification>,
+	repo: RepoPath,
 }
 
 impl AsyncPull {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			state: Arc::new(Mutex::new(None)),
 			last_result: Arc::new(Mutex::new(None)),
 			progress: Arc::new(Mutex::new(None)),
@@ -79,6 +85,7 @@ impl AsyncPull {
 		let arc_res = Arc::clone(&self.last_result);
 		let arc_progress = Arc::clone(&self.progress);
 		let sender = self.sender.clone();
+		let repo = self.repo.clone();
 
 		thread::spawn(move || {
 			let (progress_sender, receiver) = unbounded();
@@ -91,7 +98,7 @@ impl AsyncPull {
 			);
 
 			let res = fetch(
-				CWD,
+				&repo,
 				&params.branch,
 				params.basic_credential,
 				Some(progress_sender.clone()),

@@ -9,13 +9,11 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self, CommitId},
-	CWD,
-};
+use asyncgit::sync::{self, CommitId, RepoPath, RepoPathRef};
 use crossterm::event::Event;
 
 pub struct StashList {
+	repo: RepoPathRef,
 	list: CommitList,
 	visible: bool,
 	queue: Queue,
@@ -25,6 +23,7 @@ pub struct StashList {
 impl StashList {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -38,15 +37,19 @@ impl StashList {
 			),
 			queue: queue.clone(),
 			key_config,
+			repo,
 		}
 	}
 
 	///
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			let stashes = sync::get_stashes(CWD)?;
-			let commits =
-				sync::get_commits_info(CWD, stashes.as_slice(), 100)?;
+			let stashes = sync::get_stashes(&self.repo.borrow())?;
+			let commits = sync::get_commits_info(
+				&self.repo.borrow(),
+				stashes.as_slice(),
+				100,
+			)?;
 
 			self.list.set_count_total(commits.len());
 			self.list.items().set_items(0, commits);
@@ -57,7 +60,8 @@ impl StashList {
 
 	fn apply_stash(&mut self) {
 		if let Some(e) = self.list.selected_entry() {
-			match sync::stash_apply(CWD, e.id, false) {
+			match sync::stash_apply(&self.repo.borrow(), e.id, false)
+			{
 				Ok(_) => {
 					self.queue.push(InternalEvent::TabSwitch);
 				}
@@ -97,26 +101,29 @@ impl StashList {
 	}
 
 	/// Called when a pending stash action has been confirmed
-	pub fn action_confirmed(action: &Action) -> Result<()> {
+	pub fn action_confirmed(
+		repo: &RepoPath,
+		action: &Action,
+	) -> Result<()> {
 		match action {
-			Action::StashDrop(ids) => Self::drop(ids)?,
-			Action::StashPop(id) => Self::pop(*id)?,
+			Action::StashDrop(ids) => Self::drop(repo, ids)?,
+			Action::StashPop(id) => Self::pop(repo, *id)?,
 			_ => (),
 		};
 
 		Ok(())
 	}
 
-	fn drop(ids: &[CommitId]) -> Result<()> {
+	fn drop(repo: &RepoPath, ids: &[CommitId]) -> Result<()> {
 		for id in ids {
-			sync::stash_drop(CWD, *id)?;
+			sync::stash_drop(repo, *id)?;
 		}
 
 		Ok(())
 	}
 
-	fn pop(id: CommitId) -> Result<()> {
-		sync::stash_pop(CWD, id)?;
+	fn pop(repo: &RepoPath, id: CommitId) -> Result<()> {
+		sync::stash_pop(repo, id)?;
 		Ok(())
 	}
 }

@@ -13,7 +13,7 @@ use crate::{
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::sync::CommitId;
+use asyncgit::sync::{CommitId, RepoPathRef};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, widgets::Clear, Frame};
@@ -27,6 +27,7 @@ pub struct RevisionFilesPopup {
 impl RevisionFilesPopup {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncAppNotification>,
 		theme: SharedTheme,
@@ -34,6 +35,7 @@ impl RevisionFilesPopup {
 	) -> Self {
 		Self {
 			files: RevisionFilesComponent::new(
+				repo,
 				queue,
 				sender,
 				theme,

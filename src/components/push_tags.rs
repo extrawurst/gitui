@@ -16,8 +16,9 @@ use asyncgit::{
 			BasicAuthCredential,
 		},
 		get_default_remote, AsyncProgress, PushTagsProgress,
+		RepoPathRef,
 	},
-	AsyncGitNotification, AsyncPushTags, PushTagsRequest, CWD,
+	AsyncGitNotification, AsyncPushTags, PushTagsRequest,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -31,6 +32,7 @@ use tui::{
 
 ///
 pub struct PushTagsComponent {
+	repo: RepoPathRef,
 	visible: bool,
 	git_push: AsyncPushTags,
 	progress: Option<PushTagsProgress>,
@@ -44,16 +46,21 @@ pub struct PushTagsComponent {
 impl PushTagsComponent {
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			queue: queue.clone(),
 			pending: false,
 			visible: false,
-			git_push: AsyncPushTags::new(sender),
+			git_push: AsyncPushTags::new(
+				repo.borrow().clone(),
+				sender,
+			),
 			progress: None,
 			input_cred: CredComponent::new(
 				theme.clone(),
@@ -67,9 +74,9 @@ impl PushTagsComponent {
 	///
 	pub fn push_tags(&mut self) -> Result<()> {
 		self.show()?;
-		if need_username_password()? {
-			let cred =
-				extract_username_password().unwrap_or_else(|_| {
+		if need_username_password(&self.repo.borrow())? {
+			let cred = extract_username_password(&self.repo.borrow())
+				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
@@ -90,7 +97,7 @@ impl PushTagsComponent {
 		self.pending = true;
 		self.progress = None;
 		self.git_push.request(PushTagsRequest {
-			remote: get_default_remote(CWD)?,
+			remote: get_default_remote(&self.repo.borrow())?,
 			basic_credential: cred,
 		})?;
 		Ok(())

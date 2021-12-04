@@ -1,4 +1,4 @@
-use super::utils::{repo, work_dir};
+use super::{repository::repo, utils::work_dir, RepoPath};
 use crate::error::{Error, Result};
 use scopetime::scope_time;
 use std::{
@@ -18,7 +18,7 @@ const HOOK_COMMIT_MSG_TEMP_FILE: &str = ".git/COMMIT_EDITMSG";
 /// the commit message at `.git/COMMIT_EDITMSG` and pass it's relative path as the only
 /// parameter to the hook script.
 pub fn hooks_commit_msg(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	msg: &mut String,
 ) -> Result<HookResult> {
 	scope_time!("hooks_commit_msg");
@@ -48,7 +48,7 @@ pub fn hooks_commit_msg(
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_pre_commit>
 ///
-pub fn hooks_pre_commit(repo_path: &str) -> Result<HookResult> {
+pub fn hooks_pre_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	scope_time!("hooks_pre_commit");
 
 	let work_dir = work_dir_as_string(repo_path)?;
@@ -60,7 +60,7 @@ pub fn hooks_pre_commit(repo_path: &str) -> Result<HookResult> {
 	}
 }
 ///
-pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
+pub fn hooks_post_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	scope_time!("hooks_post_commit");
 
 	let work_dir = work_dir_as_string(repo_path)?;
@@ -73,7 +73,7 @@ pub fn hooks_post_commit(repo_path: &str) -> Result<HookResult> {
 	}
 }
 
-fn work_dir_as_string(repo_path: &str) -> Result<String> {
+fn work_dir_as_string(repo_path: &RepoPath) -> Result<String> {
 	let repo = repo(repo_path)?;
 	work_dir(&repo)?
 		.to_str()
@@ -163,7 +163,8 @@ mod tests {
 	fn test_smoke() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let mut msg = String::from("test");
 		let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
@@ -195,7 +196,8 @@ mod tests {
 	fn test_hooks_commit_msg_ok() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let hook = b"#!/bin/sh
 exit 0
@@ -215,7 +217,8 @@ exit 0
 	fn test_pre_commit_sh() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let hook = b"#!/bin/sh
 exit 0
@@ -230,7 +233,8 @@ exit 0
 	fn test_pre_commit_fail_sh() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let hook = b"#!/bin/sh
 echo 'rejected'        
@@ -246,7 +250,8 @@ exit 1
 	fn test_pre_commit_py() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		// mirror how python pre-commmit sets itself up
 		#[cfg(not(windows))]
@@ -269,7 +274,8 @@ sys.exit(0)
 	fn test_pre_commit_fail_py() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		// mirror how python pre-commmit sets itself up
 		#[cfg(not(windows))]
@@ -292,7 +298,8 @@ sys.exit(1)
 	fn test_hooks_commit_msg_reject() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let hook = b"#!/bin/sh
 echo 'msg' > $1
@@ -331,9 +338,11 @@ exit 1
 		fs::create_dir_all(&subfolder).unwrap();
 
 		let mut msg = String::from("test");
-		let res =
-			hooks_commit_msg(subfolder.to_str().unwrap(), &mut msg)
-				.unwrap();
+		let res = hooks_commit_msg(
+			&subfolder.to_str().unwrap().into(),
+			&mut msg,
+		)
+		.unwrap();
 
 		assert_eq!(
 			res,
@@ -347,7 +356,8 @@ exit 1
 	fn test_commit_msg_no_block_but_alter() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let hook = b"#!/bin/sh
 echo 'msg' > $1
@@ -379,7 +389,8 @@ exit 1
 		fs::create_dir_all(&subfolder).unwrap();
 
 		let res =
-			hooks_post_commit(subfolder.to_str().unwrap()).unwrap();
+			hooks_post_commit(&subfolder.to_str().unwrap().into())
+				.unwrap();
 
 		assert_eq!(
 			res,

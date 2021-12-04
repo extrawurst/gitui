@@ -1,8 +1,10 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self, status::StatusType, ShowUntrackedFilesConfig},
-	AsyncGitNotification, StatusItem, CWD,
+	sync::{
+		self, status::StatusType, RepoPath, ShowUntrackedFilesConfig,
+	},
+	AsyncGitNotification, StatusItem,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -56,12 +58,17 @@ pub struct AsyncStatus {
 	last: Arc<Mutex<Status>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicUsize>,
+	repo: RepoPath,
 }
 
 impl AsyncStatus {
 	///
-	pub fn new(sender: Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			current: Arc::new(Mutex::new(Request(0, None))),
 			last: Arc::new(Mutex::new(Status::default())),
 			sender,
@@ -115,11 +122,13 @@ impl AsyncStatus {
 		let arc_pending = Arc::clone(&self.pending);
 		let status_type = params.status_type;
 		let config = params.config;
+		let repo = self.repo.clone();
 
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
 			let ok = Self::fetch_helper(
+				&repo,
 				status_type,
 				config,
 				hash_request,
@@ -141,13 +150,14 @@ impl AsyncStatus {
 	}
 
 	fn fetch_helper(
+		repo: &RepoPath,
 		status_type: StatusType,
 		config: Option<ShowUntrackedFilesConfig>,
 		hash_request: u64,
 		arc_current: &Arc<Mutex<Request<u64, Status>>>,
 		arc_last: &Arc<Mutex<Status>>,
 	) -> Result<()> {
-		let res = Self::get_status(status_type, config)?;
+		let res = Self::get_status(repo, status_type, config)?;
 		log::trace!(
 			"status fetched: {} (type: {:?})",
 			hash_request,
@@ -170,12 +180,13 @@ impl AsyncStatus {
 	}
 
 	fn get_status(
+		repo: &RepoPath,
 		status_type: StatusType,
 		config: Option<ShowUntrackedFilesConfig>,
 	) -> Result<Status> {
 		Ok(Status {
 			items: sync::status::get_status(
-				CWD,
+				repo,
 				status_type,
 				config,
 			)?,

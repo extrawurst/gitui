@@ -14,10 +14,12 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	cached,
-	sync::{self, status::StatusType, RepoState},
+	sync::{
+		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
+	},
 	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
-	DiffType, StatusParams, CWD,
+	DiffType, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -56,6 +58,7 @@ enum DiffTarget {
 }
 
 pub struct Status {
+	repo: RepoPathRef,
 	visible: bool,
 	focus: Focus,
 	diff_target: DiffTarget,
@@ -79,7 +82,7 @@ impl DrawableComponent for Status {
 		f: &mut tui::Frame<B>,
 		rect: tui::layout::Rect,
 	) -> Result<()> {
-		let repo_unclean = Self::repo_state_unclean();
+		let repo_unclean = self.repo_state_unclean();
 		let rects = if repo_unclean {
 			Layout::default()
 				.direction(Direction::Vertical)
@@ -134,7 +137,7 @@ impl DrawableComponent for Status {
 		self.draw_branch_state(f, &left_chunks);
 
 		if repo_unclean {
-			Self::draw_repo_state(f, rects[1]);
+			self.draw_repo_state(f, rects[1]);
 		}
 
 		Ok(())
@@ -146,18 +149,21 @@ impl Status {
 
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 		options: SharedOptions,
 	) -> Self {
+		let repo_clone = repo.borrow().clone();
 		Self {
 			queue: queue.clone(),
 			visible: true,
 			focus: Focus::WorkDir,
 			diff_target: DiffTarget::WorkingDir,
 			index_wd: ChangesComponent::new(
+				repo.clone(),
 				&strings::title_status(&key_config),
 				true,
 				true,
@@ -167,6 +173,7 @@ impl Status {
 				options.clone(),
 			),
 			index: ChangesComponent::new(
+				repo.clone(),
 				&strings::title_index(&key_config),
 				false,
 				false,
@@ -176,19 +183,27 @@ impl Status {
 				options.clone(),
 			),
 			diff: DiffComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme,
 				key_config.clone(),
 				false,
 			),
-			git_diff: AsyncDiff::new(sender),
-			git_status_workdir: AsyncStatus::new(sender.clone()),
-			git_status_stage: AsyncStatus::new(sender.clone()),
+			git_diff: AsyncDiff::new(repo_clone.clone(), sender),
+			git_status_workdir: AsyncStatus::new(
+				repo_clone.clone(),
+				sender.clone(),
+			),
+			git_status_stage: AsyncStatus::new(
+				repo_clone,
+				sender.clone(),
+			),
 			git_action_executed: false,
 			git_branch_state: None,
-			git_branch_name: cached::BranchName::new(CWD),
+			git_branch_name: cached::BranchName::new(repo.clone()),
 			key_config,
 			options,
+			repo,
 		}
 	}
 
@@ -232,11 +247,11 @@ impl Status {
 		}
 	}
 
-	fn repo_state_text(state: &RepoState) -> String {
+	fn repo_state_text(repo: &RepoPath, state: &RepoState) -> String {
 		match state {
 			RepoState::Merge => {
 				let ids =
-					sync::mergehead_ids(CWD).unwrap_or_default();
+					sync::mergehead_ids(repo).unwrap_or_default();
 
 				format!(
 					"Commits: {}",
@@ -246,7 +261,7 @@ impl Status {
 				)
 			}
 			RepoState::Rebase => {
-				if let Ok(p) = sync::rebase_progress(CWD) {
+				if let Ok(p) = sync::rebase_progress(repo) {
 					format!(
 						"Step: {}/{} Current Commit: {}",
 						p.current + 1,
@@ -265,12 +280,16 @@ impl Status {
 	}
 
 	fn draw_repo_state<B: tui::backend::Backend>(
+		&self,
 		f: &mut tui::Frame<B>,
 		r: tui::layout::Rect,
 	) {
-		if let Ok(state) = sync::repo_state(CWD) {
+		if let Ok(state) = sync::repo_state(&self.repo.borrow()) {
 			if state != RepoState::Clean {
-				let txt = Self::repo_state_text(&state);
+				let txt = Self::repo_state_text(
+					&self.repo.borrow(),
+					&state,
+				);
 
 				let w = Paragraph::new(txt)
 					.block(
@@ -290,8 +309,8 @@ impl Status {
 		}
 	}
 
-	fn repo_state_unclean() -> bool {
-		if let Ok(state) = sync::repo_state(CWD) {
+	fn repo_state_unclean(&self) -> bool {
+		if let Ok(state) = sync::repo_state(&self.repo.borrow()) {
 			if state != RepoState::Clean {
 				return true;
 			}
@@ -497,7 +516,10 @@ impl Status {
 
 	/// called after confirmation
 	pub fn reset(&mut self, item: &ResetItem) -> bool {
-		if let Err(e) = sync::reset_workdir(CWD, item.path.as_str()) {
+		if let Err(e) = sync::reset_workdir(
+			&self.repo.borrow(),
+			item.path.as_str(),
+		) {
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
 				"reset failed:\n{}",
 				e
@@ -542,15 +564,18 @@ impl Status {
 		try_or_popup!(
 			self,
 			"undo commit failed:",
-			sync::utils::undo_last_commit(CWD)
+			sync::utils::undo_last_commit(&self.repo.borrow())
 		);
 	}
 
 	fn branch_compare(&mut self) {
 		self.git_branch_state =
 			self.git_branch_name.last().and_then(|branch| {
-				sync::branch_compare_upstream(CWD, branch.as_str())
-					.ok()
+				sync::branch_compare_upstream(
+					&self.repo.borrow(),
+					branch.as_str(),
+				)
+				.ok()
 			});
 	}
 
@@ -560,25 +585,31 @@ impl Status {
 			.map_or(true, |state| state.ahead > 0)
 	}
 
-	fn can_abort_merge() -> bool {
-		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+	fn can_abort_merge(&self) -> bool {
+		sync::repo_state(&self.repo.borrow())
+			.unwrap_or(RepoState::Clean)
 			== RepoState::Merge
 	}
 
-	fn pending_rebase() -> bool {
-		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+	fn pending_rebase(&self) -> bool {
+		sync::repo_state(&self.repo.borrow())
+			.unwrap_or(RepoState::Clean)
 			== RepoState::Rebase
 	}
 
 	pub fn abort_merge(&self) {
-		try_or_popup!(self, "abort merge", sync::abort_merge(CWD));
+		try_or_popup!(
+			self,
+			"abort merge",
+			sync::abort_merge(&self.repo.borrow())
+		);
 	}
 
 	pub fn abort_rebase(&self) {
 		try_or_popup!(
 			self,
 			"abort rebase",
-			sync::abort_pending_rebase(CWD)
+			sync::abort_pending_rebase(&self.repo.borrow())
 		);
 	}
 
@@ -586,7 +617,7 @@ impl Status {
 		try_or_popup!(
 			self,
 			"continue rebase",
-			sync::continue_pending_rebase(CWD)
+			sync::continue_pending_rebase(&self.repo.borrow())
 		);
 	}
 
@@ -637,7 +668,7 @@ impl Status {
 	fn can_commit(&self) -> bool {
 		self.index.focused()
 			&& !self.index.is_empty()
-			&& !Self::pending_rebase()
+			&& !self.pending_rebase()
 	}
 }
 
@@ -694,25 +725,25 @@ impl Component for Status {
 			out.push(CommandInfo::new(
 				strings::commands::undo_commit(&self.key_config),
 				true,
-				(!Self::pending_rebase() && !focus_on_diff)
+				(!self.pending_rebase() && !focus_on_diff)
 					|| force_all,
 			));
 
 			out.push(CommandInfo::new(
 				strings::commands::abort_merge(&self.key_config),
 				true,
-				Self::can_abort_merge() || force_all,
+				self.can_abort_merge() || force_all,
 			));
 
 			out.push(CommandInfo::new(
 				strings::commands::continue_rebase(&self.key_config),
 				true,
-				Self::pending_rebase() || force_all,
+				self.pending_rebase() || force_all,
 			));
 			out.push(CommandInfo::new(
 				strings::commands::abort_rebase(&self.key_config),
 				true,
-				Self::pending_rebase() || force_all,
+				self.pending_rebase() || force_all,
 			));
 		}
 
@@ -819,7 +850,7 @@ impl Component for Status {
 					));
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.keys.abort_merge
-					&& Self::can_abort_merge()
+					&& self.can_abort_merge()
 				{
 					self.queue.push(InternalEvent::ConfirmAction(
 						Action::AbortMerge,
@@ -827,7 +858,7 @@ impl Component for Status {
 
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.keys.abort_merge
-					&& Self::pending_rebase()
+					&& self.pending_rebase()
 				{
 					self.queue.push(InternalEvent::ConfirmAction(
 						Action::AbortRebase,
@@ -835,7 +866,7 @@ impl Component for Status {
 
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.keys.rebase_branch
-					&& Self::pending_rebase()
+					&& self.pending_rebase()
 				{
 					self.continue_rebase();
 					self.queue.push(InternalEvent::Update(

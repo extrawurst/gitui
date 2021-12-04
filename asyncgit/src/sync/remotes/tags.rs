@@ -1,10 +1,13 @@
 //!
 
-use super::{push::AsyncProgress, utils};
+use super::push::AsyncProgress;
 use crate::{
 	error::Result,
 	progress::ProgressPercent,
-	sync::{cred::BasicAuthCredential, remotes::Callbacks},
+	sync::{
+		cred::BasicAuthCredential, remotes::Callbacks,
+		repository::repo, RepoPath,
+	},
 };
 use crossbeam_channel::Sender;
 use git2::{Direction, PushOptions};
@@ -44,13 +47,13 @@ impl AsyncProgress for PushTagsProgress {
 
 /// lists the remotes tags
 fn remote_tag_refs(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	remote: &str,
 	basic_credential: Option<BasicAuthCredential>,
 ) -> Result<Vec<String>> {
 	scope_time!("remote_tags");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let mut remote = repo.find_remote(remote)?;
 	let callbacks = Callbacks::new(None, basic_credential);
 	let conn = remote.connect_auth(
@@ -73,13 +76,13 @@ fn remote_tag_refs(
 
 /// lists the remotes tags missing
 pub fn tags_missing_remote(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	remote: &str,
 	basic_credential: Option<BasicAuthCredential>,
 ) -> Result<Vec<String>> {
 	scope_time!("tags_missing_remote");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let tags = repo.tag_names(None)?;
 
 	let mut local_tags = tags
@@ -98,7 +101,7 @@ pub fn tags_missing_remote(
 
 ///
 pub fn push_tags(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	remote: &str,
 	basic_credential: Option<BasicAuthCredential>,
 	progress_sender: Option<Sender<PushTagsProgress>>,
@@ -115,7 +118,7 @@ pub fn push_tags(
 		basic_credential.clone(),
 	)?;
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let mut remote = repo.find_remote(remote)?;
 
 	let total = tags_missing.len();
@@ -165,11 +168,13 @@ mod tests {
 
 		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
 
-		let clone1_dir = clone1_dir.path().to_str().unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
 
 		let (clone2_dir, clone2) = repo_clone(r1_dir).unwrap();
 
-		let clone2_dir = clone2_dir.path().to_str().unwrap();
+		let clone2_dir: &RepoPath =
+			&clone2_dir.path().to_str().unwrap().into();
 
 		// clone1
 
@@ -211,11 +216,13 @@ mod tests {
 
 		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
 
-		let clone1_dir = clone1_dir.path().to_str().unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
 
 		let (clone2_dir, _clone2) = repo_clone(r1_dir).unwrap();
 
-		let clone2_dir = clone2_dir.path().to_str().unwrap();
+		let clone2_dir: &RepoPath =
+			&clone2_dir.path().to_str().unwrap().into();
 
 		// clone1
 
@@ -248,7 +255,8 @@ mod tests {
 
 		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
 
-		let clone1_dir = clone1_dir.path().to_str().unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
 
 		// clone1
 
@@ -281,7 +289,8 @@ mod tests {
 		let r1_dir = r1_dir.path().to_str().unwrap();
 
 		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
-		let clone1_dir = clone1_dir.path().to_str().unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
 
 		let commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
@@ -291,7 +300,8 @@ mod tests {
 		.unwrap();
 
 		let (clone2_dir, _clone2) = repo_clone(r1_dir).unwrap();
-		let clone2_dir = clone2_dir.path().to_str().unwrap();
+		let clone2_dir: &RepoPath =
+			&clone2_dir.path().to_str().unwrap().into();
 
 		// clone1 - creates tag
 
@@ -319,7 +329,8 @@ mod tests {
 		let r1_dir = r1_dir.path().to_str().unwrap();
 
 		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
-		let clone1_dir = clone1_dir.path().to_str().unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
 
 		let commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
@@ -329,7 +340,8 @@ mod tests {
 		.unwrap();
 
 		let (clone2_dir, _clone2) = repo_clone(r1_dir).unwrap();
-		let clone2_dir = clone2_dir.path().to_str().unwrap();
+		let clone2_dir: &RepoPath =
+			&clone2_dir.path().to_str().unwrap().into();
 
 		// clone1 - creates tag
 
