@@ -51,7 +51,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		.arg(
 			Arg::with_name("workdir")
 				.help("Set the working directory")
-				.short("wd")
+				.short("w")
 				.long("workdir")
 				.takes_value(true),
 		);
@@ -65,12 +65,17 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		setup_logging()?;
 	}
 
-	let _workdir = arg_matches.value_of("workdir").map(PathBuf::from);
+	let workdir = arg_matches.value_of("workdir").map(PathBuf::from);
 	let gitdir = arg_matches
 		.value_of("directory")
 		.map_or_else(|| PathBuf::from("."), PathBuf::from);
 
-	let repo_path = RepoPath::Path(gitdir);
+	#[allow(clippy::option_if_let_else)]
+	let repo_path = if let Some(w) = workdir {
+		RepoPath::Workdir { gitdir, workdir: w }
+	} else {
+		RepoPath::Path(gitdir)
+	};
 
 	let arg_theme =
 		arg_matches.value_of("theme").unwrap_or("theme.ron");

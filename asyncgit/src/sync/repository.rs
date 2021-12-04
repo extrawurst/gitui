@@ -15,7 +15,13 @@ pub type RepoPathRef = RefCell<RepoPath>;
 pub enum RepoPath {
 	///
 	Path(PathBuf),
-	// Workdir { gitdir: PathBuf, workdir:PathBuf },
+	///
+	Workdir {
+		///
+		gitdir: PathBuf,
+		///
+		workdir: PathBuf,
+	},
 }
 
 impl RepoPath {
@@ -23,6 +29,15 @@ impl RepoPath {
 	pub fn gitpath(&self) -> &Path {
 		match self {
 			Self::Path(p) => p.as_path(),
+			Self::Workdir { gitdir, .. } => gitdir.as_path(),
+		}
+	}
+
+	///
+	pub fn workdir(&self) -> Option<&Path> {
+		match self {
+			Self::Path(_) => None,
+			Self::Workdir { workdir, .. } => Some(workdir.as_path()),
 		}
 	}
 }
@@ -40,8 +55,8 @@ pub fn repo(repo_path: &RepoPath) -> Result<Repository> {
 		Vec::<&Path>::new(),
 	)?;
 
-	if repo.is_bare() {
-		// repo.set_workdir(&Path::new("/Users/stephan/code/"), false)?;
+	if let Some(workdir) = repo_path.workdir() {
+		repo.set_workdir(workdir, false)?;
 	}
 
 	Ok(repo)
