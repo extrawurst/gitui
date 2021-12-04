@@ -139,7 +139,7 @@ impl Revlog {
 			self.list.selection().saturating_sub(SLICE_SIZE / 2);
 
 		let commits = sync::get_commits_info(
-			CWD,
+			&CWD.into(),
 			&self.git_log.get_slice(want_min, SLICE_SIZE)?,
 			self.list.current_size().0.into(),
 		);

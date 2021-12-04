@@ -4,7 +4,10 @@ use crate::{
 	asyncjob::{AsyncJob, RunParams},
 	error::Result,
 	sync::cred::BasicAuthCredential,
-	sync::remotes::{get_default_remote, tags_missing_remote},
+	sync::{
+		remotes::{get_default_remote, tags_missing_remote},
+		RepoPath,
+	},
 	AsyncGitNotification, CWD,
 };
 
@@ -60,10 +63,11 @@ impl AsyncJob for AsyncRemoteTagsJob {
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
 				JobState::Request(basic_credential) => {
-					let result =
-						get_default_remote(CWD).and_then(|remote| {
+					let repo_path: &RepoPath = &CWD.into();
+					let result = get_default_remote(repo_path)
+						.and_then(|remote| {
 							tags_missing_remote(
-								CWD,
+								repo_path,
 								&remote,
 								basic_credential,
 							)

@@ -1,5 +1,5 @@
-use super::utils::repo;
-use crate::error::Result;
+use super::RepoPath;
+use crate::{error::Result, sync::repository::repo};
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
 use unicode_truncate::UnicodeTruncateStr;
@@ -62,7 +62,7 @@ pub struct CommitInfo {
 
 ///
 pub fn get_commits_info(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	ids: &[CommitId],
 	message_length_limit: usize,
 ) -> Result<Vec<CommitInfo>> {
@@ -97,7 +97,7 @@ pub fn get_commits_info(
 
 ///
 pub fn get_commit_info(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	commit_id: &CommitId,
 ) -> Result<CommitInfo> {
 	scope_time!("get_commit_info");
@@ -136,10 +136,12 @@ pub fn get_message(
 #[cfg(test)]
 mod tests {
 	use super::get_commits_info;
-	use crate::error::Result;
-	use crate::sync::{
-		commit, stage_add_file, tests::repo_init_empty,
-		utils::get_head_repo,
+	use crate::{
+		error::Result,
+		sync::{
+			commit, stage_add_file, tests::repo_init_empty,
+			utils::get_head_repo, RepoPath,
+		},
 	};
 	use std::{fs::File, io::Write, path::Path};
 
@@ -148,7 +150,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
@@ -173,7 +176,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
@@ -192,7 +196,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();

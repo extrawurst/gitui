@@ -122,7 +122,8 @@ impl CreateBranchComponent {
 
 	///
 	pub fn create_branch(&mut self) {
-		let res = sync::create_branch(CWD, self.input.get_text());
+		let res =
+			sync::create_branch(&CWD.into(), self.input.get_text());
 
 		self.input.clear();
 		self.hide();

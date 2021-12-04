@@ -15,7 +15,7 @@ use asyncgit::{
 		extract_username_password, need_username_password,
 		BasicAuthCredential,
 	},
-	AsyncFetchJob, AsyncGitNotification, ProgressPercent,
+	AsyncFetchJob, AsyncGitNotification, ProgressPercent, CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -65,9 +65,9 @@ impl FetchComponent {
 	///
 	pub fn fetch(&mut self) -> Result<()> {
 		self.show()?;
-		if need_username_password()? {
-			let cred =
-				extract_username_password().unwrap_or_else(|_| {
+		if need_username_password(&CWD.into())? {
+			let cred = extract_username_password(&CWD.into())
+				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {

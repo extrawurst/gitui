@@ -175,7 +175,7 @@ impl AsyncStatus {
 	) -> Result<Status> {
 		Ok(Status {
 			items: sync::status::get_status(
-				CWD,
+				&CWD.into(),
 				status_type,
 				config,
 			)?,

@@ -67,9 +67,9 @@ impl PushTagsComponent {
 	///
 	pub fn push_tags(&mut self) -> Result<()> {
 		self.show()?;
-		if need_username_password()? {
-			let cred =
-				extract_username_password().unwrap_or_else(|_| {
+		if need_username_password(&CWD.into())? {
+			let cred = extract_username_password(&CWD.into())
+				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
@@ -90,7 +90,7 @@ impl PushTagsComponent {
 		self.pending = true;
 		self.progress = None;
 		self.git_push.request(PushTagsRequest {
-			remote: get_default_remote(CWD)?,
+			remote: get_default_remote(&CWD.into())?,
 			basic_credential: cred,
 		})?;
 		Ok(())

@@ -1,6 +1,8 @@
 //! sync git api (various methods)
 
-use super::{CommitId, ShowUntrackedFilesConfig};
+use super::{
+	repository::repo, CommitId, RepoPath, ShowUntrackedFilesConfig,
+};
 use crate::{
 	error::{Error, Result},
 	sync::config::untracked_files_config_repo,
@@ -32,45 +34,19 @@ pub fn is_repo(repo_path: &str) -> bool {
 	.is_ok()
 }
 
-/// checks if the git repo at path `repo_path` is a bare repo
-pub fn is_bare_repo(repo_path: &str) -> Result<bool> {
-	let repo = Repository::open_ext(
-		repo_path,
-		RepositoryOpenFlags::empty(),
-		Vec::<&Path>::new(),
-	)?;
-
-	Ok(repo.is_bare())
-}
-
-///
-pub(crate) fn repo(repo_path: &str) -> Result<Repository> {
-	let repo = Repository::open_ext(
-		repo_path,
-		RepositoryOpenFlags::empty(),
-		Vec::<&Path>::new(),
-	)?;
-
-	if repo.is_bare() {
-		return Err(Error::Generic("bare repo".to_string()));
-	}
-
-	Ok(repo)
-}
-
 ///
 pub(crate) fn work_dir(repo: &Repository) -> Result<&Path> {
 	repo.workdir().ok_or(Error::NoWorkDir)
 }
 
 /// path to .git folder
-pub fn repo_dir(repo_path: &str) -> Result<PathBuf> {
+pub fn repo_dir(repo_path: &RepoPath) -> Result<PathBuf> {
 	let repo = repo(repo_path)?;
 	Ok(repo.path().to_owned())
 }
 
 ///
-pub fn repo_work_dir(repo_path: &str) -> Result<String> {
+pub fn repo_work_dir(repo_path: &RepoPath) -> Result<String> {
 	let repo = repo(repo_path)?;
 	work_dir(&repo)?.to_str().map_or_else(
 		|| Err(Error::Generic("invalid workdir".to_string())),
@@ -79,13 +55,13 @@ pub fn repo_work_dir(repo_path: &str) -> Result<String> {
 }
 
 ///
-pub fn get_head(repo_path: &str) -> Result<CommitId> {
+pub fn get_head(repo_path: &RepoPath) -> Result<CommitId> {
 	let repo = repo(repo_path)?;
 	get_head_repo(&repo)
 }
 
 ///
-pub fn get_head_tuple(repo_path: &str) -> Result<Head> {
+pub fn get_head_tuple(repo_path: &RepoPath) -> Result<Head> {
 	let repo = repo(repo_path)?;
 	let id = get_head_repo(&repo)?;
 	let name = get_head_refname(&repo)?;
@@ -111,7 +87,10 @@ pub fn get_head_repo(repo: &Repository) -> Result<CommitId> {
 }
 
 /// add a file diff from workingdir to stage (will not add removed files see `stage_addremoved`)
-pub fn stage_add_file(repo_path: &str, path: &Path) -> Result<()> {
+pub fn stage_add_file(
+	repo_path: &RepoPath,
+	path: &Path,
+) -> Result<()> {
 	scope_time!("stage_add_file");
 
 	let repo = repo(repo_path)?;
@@ -126,7 +105,7 @@ pub fn stage_add_file(repo_path: &str, path: &Path) -> Result<()> {
 
 /// like `stage_add_file` but uses a pattern to match/glob multiple files/folders
 pub fn stage_add_all(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	pattern: &str,
 	stage_untracked: Option<ShowUntrackedFilesConfig>,
 ) -> Result<()> {
@@ -158,7 +137,7 @@ pub fn stage_add_all(
 }
 
 /// Undo last commit in repo
-pub fn undo_last_commit(repo_path: &str) -> Result<()> {
+pub fn undo_last_commit(repo_path: &RepoPath) -> Result<()> {
 	let repo = repo(repo_path)?;
 	let previous_commit = repo.revparse_single("HEAD~")?;
 
@@ -173,7 +152,10 @@ pub fn undo_last_commit(repo_path: &str) -> Result<()> {
 }
 
 /// stage a removed file
-pub fn stage_addremoved(repo_path: &str, path: &Path) -> Result<()> {
+pub fn stage_addremoved(
+	repo_path: &RepoPath,
+	path: &Path,
+) -> Result<()> {
 	scope_time!("stage_addremoved");
 
 	let repo = repo(repo_path)?;
@@ -250,7 +232,7 @@ mod tests {
 		let repo_path = root.as_os_str().to_str().unwrap();
 
 		assert_eq!(
-			stage_add_file(repo_path, file_path).is_ok(),
+			stage_add_file(&repo_path.into(), file_path).is_ok(),
 			false
 		);
 	}
@@ -260,7 +242,8 @@ mod tests {
 		let file_path = Path::new("file1.txt");
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))
 			.unwrap()
@@ -283,7 +266,8 @@ mod tests {
 	fn test_staging_folder() -> Result<()> {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let status_count = |s: StatusType| -> usize {
 			get_status(repo_path, s, None).unwrap().len()
@@ -311,7 +295,8 @@ mod tests {
 	fn test_undo_commit_empty_repo() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		// expect to fail
 		assert!(undo_last_commit(repo_path).is_err());
@@ -321,7 +306,8 @@ mod tests {
 	fn test_undo_commit() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		// write commit file test.txt
 		let c1 =
@@ -346,7 +332,8 @@ mod tests {
 	fn test_not_staging_untracked_folder() -> Result<()> {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		fs::create_dir_all(&root.join("a/d"))?;
 		File::create(&root.join(Path::new("a/d/f1.txt")))?
@@ -374,7 +361,8 @@ mod tests {
 		let file_path = Path::new("file1.txt");
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let status_count = |s: StatusType| -> usize {
 			get_status(repo_path, s, None).unwrap().len()
@@ -408,7 +396,8 @@ mod tests {
 	fn test_staging_sub_git_folder() -> Result<()> {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let status_count = |s: StatusType| -> usize {
 			get_status(repo_path, s, None).unwrap().len()
@@ -418,7 +407,10 @@ mod tests {
 
 		fs::create_dir_all(sub)?;
 
-		debug_cmd_print(sub.to_str().unwrap(), "git init subgit");
+		debug_cmd_print(
+			&sub.to_str().unwrap().into(),
+			"git init subgit",
+		);
 
 		File::create(sub.join("subgit/foo.txt"))
 			.unwrap()
@@ -437,7 +429,8 @@ mod tests {
 	fn test_head_empty() -> Result<()> {
 		let (_td, repo) = repo_init_empty()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		assert_eq!(get_head(repo_path).is_ok(), false);
 
@@ -448,7 +441,8 @@ mod tests {
 	fn test_head() -> Result<()> {
 		let (_td, repo) = repo_init()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		assert_eq!(get_head(repo_path).is_ok(), true);
 

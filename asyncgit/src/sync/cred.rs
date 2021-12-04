@@ -1,10 +1,9 @@
 //! credentials git helper
 
-use super::remotes::get_default_remote_in_repo;
-use crate::{
-	error::{Error, Result},
-	CWD,
+use super::{
+	remotes::get_default_remote_in_repo, repository::repo, RepoPath,
 };
+use crate::error::{Error, Result};
 use git2::{Config, CredentialHelper};
 
 /// basic Authentication Credentials
@@ -31,8 +30,8 @@ impl BasicAuthCredential {
 }
 
 /// know if username and password are needed for this url
-pub fn need_username_password() -> Result<bool> {
-	let repo = crate::sync::utils::repo(CWD)?;
+pub fn need_username_password(repo_path: &RepoPath) -> Result<bool> {
+	let repo = repo(repo_path)?;
 	let url = repo
 		.find_remote(&get_default_remote_in_repo(&repo)?)?
 		.url()
@@ -43,8 +42,10 @@ pub fn need_username_password() -> Result<bool> {
 }
 
 /// extract username and password
-pub fn extract_username_password() -> Result<BasicAuthCredential> {
-	let repo = crate::sync::utils::repo(CWD)?;
+pub fn extract_username_password(
+	repo_path: &RepoPath,
+) -> Result<BasicAuthCredential> {
+	let repo = repo(repo_path)?;
 	let url = repo
 		.find_remote(&get_default_remote_in_repo(&repo)?)?
 		.url()
@@ -88,9 +89,9 @@ mod tests {
 		},
 		remotes::DEFAULT_REMOTE_NAME,
 		tests::repo_init,
+		RepoPath,
 	};
 	use serial_test::serial;
-	use std::env;
 
 	#[test]
 	fn test_credential_complete() {
@@ -160,13 +161,15 @@ mod tests {
 	fn test_need_username_password_if_https() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
-		env::set_current_dir(repo_path).unwrap();
+		//TODO:
+		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
 			.unwrap();
 
-		assert_eq!(need_username_password().unwrap(), true);
+		assert_eq!(need_username_password(repo_path).unwrap(), true);
 	}
 
 	#[test]
@@ -174,13 +177,15 @@ mod tests {
 	fn test_dont_need_username_password_if_ssh() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
-		env::set_current_dir(repo_path).unwrap();
+		//TODO:
+		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "git@github.com:user/repo")
 			.unwrap();
 
-		assert_eq!(need_username_password().unwrap(), false);
+		assert_eq!(need_username_password(repo_path).unwrap(), false);
 	}
 
 	#[test]
@@ -190,11 +195,13 @@ mod tests {
 	) {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
-		env::set_current_dir(repo_path).unwrap();
+		//TODO:
+		// env::set_current_dir(repo_path).unwrap();
 
-		need_username_password().unwrap();
+		need_username_password(repo_path).unwrap();
 	}
 
 	#[test]
@@ -202,9 +209,11 @@ mod tests {
 	fn test_extract_username_password_from_repo() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
-		env::set_current_dir(repo_path).unwrap();
+		//TODO:
+		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(
 			DEFAULT_REMOTE_NAME,
 			"http://user:pass@github.com",
@@ -212,7 +221,7 @@ mod tests {
 		.unwrap();
 
 		assert_eq!(
-			extract_username_password().unwrap(),
+			extract_username_password(repo_path).unwrap(),
 			BasicAuthCredential::new(
 				Some("user".to_owned()),
 				Some("pass".to_owned())
@@ -225,14 +234,16 @@ mod tests {
 	fn test_extract_username_from_repo() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
-		env::set_current_dir(repo_path).unwrap();
+		//TODO:
+		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
 			.unwrap();
 
 		assert_eq!(
-			extract_username_password().unwrap(),
+			extract_username_password(repo_path).unwrap(),
 			BasicAuthCredential::new(Some("user".to_owned()), None)
 		);
 	}
@@ -244,10 +255,12 @@ mod tests {
 	) {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
-		env::set_current_dir(repo_path).unwrap();
+		//TODO: not needed anymore?
+		// env::set_current_dir(repo_path).unwrap();
 
-		extract_username_password().unwrap();
+		extract_username_password(repo_path).unwrap();
 	}
 }

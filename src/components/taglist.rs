@@ -273,8 +273,9 @@ impl TagListComponent {
 		self.table_state.get_mut().select(Some(0));
 		self.show()?;
 
-		let basic_credential = if need_username_password()? {
-			let credential = extract_username_password()?;
+		let basic_credential = if need_username_password(&CWD.into())?
+		{
+			let credential = extract_username_password(&CWD.into())?;
 
 			if credential.is_complete() {
 				Some(credential)
@@ -320,7 +321,7 @@ impl TagListComponent {
 
 	/// fetch list of tags
 	pub fn update_tags(&mut self) -> Result<()> {
-		let tags = get_tags_with_metadata(CWD)?;
+		let tags = get_tags_with_metadata(&CWD.into())?;
 
 		self.tags = Some(tags);
 

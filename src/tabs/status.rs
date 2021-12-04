@@ -235,8 +235,8 @@ impl Status {
 	fn repo_state_text(state: &RepoState) -> String {
 		match state {
 			RepoState::Merge => {
-				let ids =
-					sync::mergehead_ids(CWD).unwrap_or_default();
+				let ids = sync::mergehead_ids(&CWD.into())
+					.unwrap_or_default();
 
 				format!(
 					"Commits: {}",
@@ -246,7 +246,7 @@ impl Status {
 				)
 			}
 			RepoState::Rebase => {
-				if let Ok(p) = sync::rebase_progress(CWD) {
+				if let Ok(p) = sync::rebase_progress(&CWD.into()) {
 					format!(
 						"Step: {}/{} Current Commit: {}",
 						p.current + 1,
@@ -268,7 +268,7 @@ impl Status {
 		f: &mut tui::Frame<B>,
 		r: tui::layout::Rect,
 	) {
-		if let Ok(state) = sync::repo_state(CWD) {
+		if let Ok(state) = sync::repo_state(&CWD.into()) {
 			if state != RepoState::Clean {
 				let txt = Self::repo_state_text(&state);
 
@@ -291,7 +291,7 @@ impl Status {
 	}
 
 	fn repo_state_unclean() -> bool {
-		if let Ok(state) = sync::repo_state(CWD) {
+		if let Ok(state) = sync::repo_state(&CWD.into()) {
 			if state != RepoState::Clean {
 				return true;
 			}
@@ -497,7 +497,9 @@ impl Status {
 
 	/// called after confirmation
 	pub fn reset(&mut self, item: &ResetItem) -> bool {
-		if let Err(e) = sync::reset_workdir(CWD, item.path.as_str()) {
+		if let Err(e) =
+			sync::reset_workdir(&CWD.into(), item.path.as_str())
+		{
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
 				"reset failed:\n{}",
 				e
@@ -542,15 +544,18 @@ impl Status {
 		try_or_popup!(
 			self,
 			"undo commit failed:",
-			sync::utils::undo_last_commit(CWD)
+			sync::utils::undo_last_commit(&CWD.into())
 		);
 	}
 
 	fn branch_compare(&mut self) {
 		self.git_branch_state =
 			self.git_branch_name.last().and_then(|branch| {
-				sync::branch_compare_upstream(CWD, branch.as_str())
-					.ok()
+				sync::branch_compare_upstream(
+					&CWD.into(),
+					branch.as_str(),
+				)
+				.ok()
 			});
 	}
 
@@ -561,24 +566,28 @@ impl Status {
 	}
 
 	fn can_abort_merge() -> bool {
-		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+		sync::repo_state(&CWD.into()).unwrap_or(RepoState::Clean)
 			== RepoState::Merge
 	}
 
 	fn pending_rebase() -> bool {
-		sync::repo_state(CWD).unwrap_or(RepoState::Clean)
+		sync::repo_state(&CWD.into()).unwrap_or(RepoState::Clean)
 			== RepoState::Rebase
 	}
 
 	pub fn abort_merge(&self) {
-		try_or_popup!(self, "abort merge", sync::abort_merge(CWD));
+		try_or_popup!(
+			self,
+			"abort merge",
+			sync::abort_merge(&CWD.into())
+		);
 	}
 
 	pub fn abort_rebase(&self) {
 		try_or_popup!(
 			self,
 			"abort rebase",
-			sync::abort_pending_rebase(CWD)
+			sync::abort_pending_rebase(&CWD.into())
 		);
 	}
 
@@ -586,7 +595,7 @@ impl Status {
 		try_or_popup!(
 			self,
 			"continue rebase",
-			sync::continue_pending_rebase(CWD)
+			sync::continue_pending_rebase(&CWD.into())
 		);
 	}
 

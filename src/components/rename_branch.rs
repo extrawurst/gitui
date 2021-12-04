@@ -127,8 +127,11 @@ impl RenameBranchComponent {
 	///
 	pub fn rename_branch(&mut self) {
 		if let Some(br) = &self.branch_ref {
-			let res =
-				sync::rename_branch(CWD, br, self.input.get_text());
+			let res = sync::rename_branch(
+				&CWD.into(),
+				br,
+				self.input.get_text(),
+			);
 
 			match res {
 				Ok(_) => {

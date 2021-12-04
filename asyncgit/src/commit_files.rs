@@ -1,6 +1,6 @@
 use crate::{
 	error::Result,
-	sync::{self, CommitId},
+	sync::{self, CommitId, RepoPath},
 	AsyncGitNotification, StatusItem, CWD,
 };
 use crossbeam_channel::Sender;
@@ -93,7 +93,8 @@ impl AsyncCommitFiles {
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
-			Self::fetch_helper(params, &arc_current)
+			//TODO:
+			Self::fetch_helper(&CWD.into(), params, &arc_current)
 				.expect("failed to fetch");
 
 			arc_pending.fetch_sub(1, Ordering::Relaxed);
@@ -107,13 +108,17 @@ impl AsyncCommitFiles {
 	}
 
 	fn fetch_helper(
+		repo_path: &RepoPath,
 		params: CommitFilesParams,
 		arc_current: &Arc<
 			Mutex<Option<Request<CommitFilesParams, ResultType>>>,
 		>,
 	) -> Result<()> {
-		let res =
-			sync::get_commit_files(CWD, params.id, params.other)?;
+		let res = sync::get_commit_files(
+			repo_path,
+			params.id,
+			params.other,
+		)?;
 
 		log::trace!("get_commit_files: {:?} ({})", params, res.len());
 

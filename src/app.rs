@@ -784,15 +784,16 @@ impl App {
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetHunk(path, hash) => {
-				sync::reset_hunk(CWD, &path, hash)?;
+				sync::reset_hunk(&CWD.into(), &path, hash)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetLines(path, lines) => {
-				sync::discard_lines(CWD, &path, &lines)?;
+				sync::discard_lines(&CWD.into(), &path, &lines)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::DeleteLocalBranch(branch_ref) => {
-				if let Err(e) = sync::delete_branch(CWD, &branch_ref)
+				if let Err(e) =
+					sync::delete_branch(&CWD.into(), &branch_ref)
 				{
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						e.to_string(),
@@ -824,7 +825,9 @@ impl App {
 				self.select_branch_popup.update_branches()?;
 			}
 			Action::DeleteTag(tag_name) => {
-				if let Err(error) = sync::delete_tag(CWD, &tag_name) {
+				if let Err(error) =
+					sync::delete_tag(&CWD.into(), &tag_name)
+				{
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						error.to_string(),
 					));

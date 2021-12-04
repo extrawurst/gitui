@@ -95,7 +95,7 @@ impl AsyncPush {
 			);
 
 			let res = push(
-				CWD,
+				&CWD.into(),
 				params.remote.as_str(),
 				params.branch.as_str(),
 				params.force,

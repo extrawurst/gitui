@@ -110,7 +110,7 @@ impl SyntaxTextComponent {
 
 		if !already_loaded {
 			//TODO: fetch file content async aswell
-			match sync::tree_file_content(CWD, item) {
+			match sync::tree_file_content(&CWD.into(), item) {
 				Ok(content) => {
 					let content = tabs_to_spaces(content);
 					self.syntax_progress =

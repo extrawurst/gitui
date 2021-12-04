@@ -50,7 +50,7 @@ impl ExternalEditorComponent {
 
 	/// opens file at given `path` in an available editor
 	pub fn open_file_in_editor(path: &Path) -> Result<()> {
-		let work_dir = repo_work_dir(CWD)?;
+		let work_dir = repo_work_dir(&CWD.into())?;
 
 		let path = if path.is_relative() {
 			Path::new(&work_dir).join(path)
@@ -71,7 +71,9 @@ impl ExternalEditorComponent {
 
 		let editor = env::var(environment_options[0])
 			.ok()
-			.or_else(|| get_config_string(CWD, "core.editor").ok()?)
+			.or_else(|| {
+				get_config_string(&CWD.into(), "core.editor").ok()?
+			})
 			.or_else(|| env::var(environment_options[1]).ok())
 			.or_else(|| env::var(environment_options[2]).ok())
 			.unwrap_or_else(|| String::from("vi"));

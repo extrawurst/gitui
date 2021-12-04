@@ -44,9 +44,12 @@ impl StashList {
 	///
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			let stashes = sync::get_stashes(CWD)?;
-			let commits =
-				sync::get_commits_info(CWD, stashes.as_slice(), 100)?;
+			let stashes = sync::get_stashes(&CWD.into())?;
+			let commits = sync::get_commits_info(
+				&CWD.into(),
+				stashes.as_slice(),
+				100,
+			)?;
 
 			self.list.set_count_total(commits.len());
 			self.list.items().set_items(0, commits);
@@ -57,7 +60,7 @@ impl StashList {
 
 	fn apply_stash(&mut self) {
 		if let Some(e) = self.list.selected_entry() {
-			match sync::stash_apply(CWD, e.id, false) {
+			match sync::stash_apply(&CWD.into(), e.id, false) {
 				Ok(_) => {
 					self.queue.push(InternalEvent::TabSwitch);
 				}
@@ -109,14 +112,14 @@ impl StashList {
 
 	fn drop(ids: &[CommitId]) -> Result<()> {
 		for id in ids {
-			sync::stash_drop(CWD, *id)?;
+			sync::stash_drop(&CWD.into(), *id)?;
 		}
 
 		Ok(())
 	}
 
 	fn pop(id: CommitId) -> Result<()> {
-		sync::stash_pop(CWD, id)?;
+		sync::stash_pop(&CWD.into(), id)?;
 		Ok(())
 	}
 }

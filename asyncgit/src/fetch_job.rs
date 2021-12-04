@@ -61,8 +61,11 @@ impl AsyncJob for AsyncFetchJob {
 			*state = state.take().map(|state| match state {
 				JobState::Request(basic_credentials) => {
 					//TODO: support progress
-					let result =
-						fetch_all(CWD, &basic_credentials, &None);
+					let result = fetch_all(
+						&CWD.into(),
+						&basic_credentials,
+						&None,
+					);
 
 					JobState::Response(result)
 				}

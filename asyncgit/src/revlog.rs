@@ -1,6 +1,6 @@
 use crate::{
 	error::Result,
-	sync::{utils::repo, CommitId, LogWalker, LogWalkerFilter},
+	sync::{repo, CommitId, LogWalker, LogWalkerFilter, RepoPath},
 	AsyncGitNotification, CWD,
 };
 use crossbeam_channel::Sender;
@@ -102,7 +102,7 @@ impl AsyncLog {
 
 	///
 	fn head_changed(&self) -> Result<bool> {
-		if let Ok(head) = repo(CWD)?.head() {
+		if let Ok(head) = repo(&CWD.into())?.head() {
 			if let Some(head) = head.target() {
 				return Ok(head != self.current_head()?.into());
 			}
@@ -137,6 +137,7 @@ impl AsyncLog {
 			scope_time!("async::revlog");
 
 			Self::fetch_helper(
+				&CWD.into(),
 				&arc_current,
 				&arc_background,
 				&sender,
@@ -153,13 +154,14 @@ impl AsyncLog {
 	}
 
 	fn fetch_helper(
+		repo_path: &RepoPath,
 		arc_current: &Arc<Mutex<Vec<CommitId>>>,
 		arc_background: &Arc<AtomicBool>,
 		sender: &Sender<AsyncGitNotification>,
 		filter: Option<LogWalkerFilter>,
 	) -> Result<()> {
 		let mut entries = Vec::with_capacity(LIMIT_COUNT);
-		let r = repo(CWD)?;
+		let r = repo(repo_path)?;
 		let mut walker =
 			LogWalker::new(&r, LIMIT_COUNT)?.filter(filter);
 		loop {

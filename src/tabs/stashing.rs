@@ -258,7 +258,7 @@ impl Component for Stashing {
 
 	fn show(&mut self) -> Result<()> {
 		let config_untracked_files =
-			sync::untracked_files_config(CWD)?;
+			sync::untracked_files_config(&CWD.into())?;
 
 		self.options.stash_untracked =
 			!config_untracked_files.include_none();

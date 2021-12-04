@@ -1,7 +1,7 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self, FileBlame},
+	sync::{self, FileBlame, RepoPath},
 	AsyncGitNotification, CWD,
 };
 use crossbeam_channel::Sender;
@@ -101,6 +101,8 @@ impl AsyncBlame {
 
 		rayon_core::spawn(move || {
 			let notify = Self::get_blame_helper(
+				//TODO:
+				&CWD.into(),
 				params,
 				&arc_last,
 				&arc_current,
@@ -130,6 +132,7 @@ impl AsyncBlame {
 	}
 
 	fn get_blame_helper(
+		repo_path: &RepoPath,
 		params: BlameParams,
 		arc_last: &Arc<
 			Mutex<Option<LastResult<BlameParams, FileBlame>>>,
@@ -138,7 +141,7 @@ impl AsyncBlame {
 		hash: u64,
 	) -> Result<bool> {
 		let file_blame =
-			sync::blame::blame_file(CWD, &params.file_path)?;
+			sync::blame::blame_file(repo_path, &params.file_path)?;
 
 		let mut notify = false;
 		{

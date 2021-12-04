@@ -121,7 +121,11 @@ impl TagCommitComponent {
 	///
 	pub fn tag(&mut self) {
 		if let Some(commit_id) = self.commit_id {
-			match sync::tag(CWD, &commit_id, self.input.get_text()) {
+			match sync::tag(
+				&CWD.into(),
+				&commit_id,
+				self.input.get_text(),
+			) {
 				Ok(_) => {
 					self.input.clear();
 					self.hide();

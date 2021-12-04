@@ -1,7 +1,7 @@
-use super::CommitId;
+use super::{CommitId, RepoPath};
 use crate::{
 	error::{Error, Result},
-	sync::utils::repo,
+	sync::repository::repo,
 };
 use git2::{Oid, Repository, Tree};
 use scopetime::scope_time;
@@ -23,7 +23,7 @@ pub struct TreeFile {
 
 /// guarantees sorting the result
 pub fn tree_files(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	commit: CommitId,
 ) -> Result<Vec<TreeFile>> {
 	scope_time!("tree_files");
@@ -73,7 +73,7 @@ fn path_cmp(a: &Path, b: &Path) -> Ordering {
 
 /// will only work on utf8 content
 pub fn tree_file_content(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	file: &TreeFile,
 ) -> Result<String> {
 	scope_time!("tree_file_content");
@@ -130,7 +130,8 @@ mod tests {
 	fn test_smoke() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let c1 =
 			write_commit_file(&repo, "test.txt", "content", "c1");

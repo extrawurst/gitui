@@ -104,9 +104,9 @@ impl PushComponent {
 
 		self.show()?;
 
-		if need_username_password()? {
-			let cred =
-				extract_username_password().unwrap_or_else(|_| {
+		if need_username_password(&CWD.into())? {
+			let cred = extract_username_password(&CWD.into())
+				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
@@ -126,13 +126,13 @@ impl PushComponent {
 		force: bool,
 	) -> Result<()> {
 		let remote = if let Ok(Some(remote)) =
-			get_branch_remote(CWD, &self.branch)
+			get_branch_remote(&CWD.into(), &self.branch)
 		{
 			log::info!("push: branch '{}' has upstream for remote '{}' - using that",self.branch,remote);
 			remote
 		} else {
 			log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
-			let remote = get_default_remote(CWD)?;
+			let remote = get_default_remote(&CWD.into())?;
 			log::info!(
 				"push: branch '{}' to remote '{}'",
 				self.branch,

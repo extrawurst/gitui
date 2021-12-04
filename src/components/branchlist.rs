@@ -352,7 +352,8 @@ impl BranchListComponent {
 	/// fetch list of branches
 	pub fn update_branches(&mut self) -> Result<()> {
 		if self.is_visible() {
-			self.branches = get_branches_info(CWD, self.local)?;
+			self.branches =
+				get_branches_info(&CWD.into(), self.local)?;
 			//remove remote branch called `HEAD`
 			if !self.local {
 				self.branches
@@ -386,7 +387,7 @@ impl BranchListComponent {
 			self.branches.get(usize::from(self.selection))
 		{
 			sync::merge_branch(
-				CWD,
+				&CWD.into(),
 				&branch.name,
 				self.get_branch_type(),
 			)?;
@@ -402,7 +403,7 @@ impl BranchListComponent {
 			self.branches.get(usize::from(self.selection))
 		{
 			sync::rebase_branch(
-				CWD,
+				&CWD.into(),
 				&branch.name,
 				self.get_branch_type(),
 			)?;
@@ -425,7 +426,7 @@ impl BranchListComponent {
 		self.hide();
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
-		if sync::repo_state(CWD)? != RepoState::Clean {
+		if sync::repo_state(&CWD.into())? != RepoState::Clean {
 			self.queue.push(InternalEvent::TabSwitch);
 		}
 
@@ -614,13 +615,13 @@ impl BranchListComponent {
 
 		if self.local {
 			checkout_branch(
-				asyncgit::CWD,
+				&CWD.into(),
 				&self.branches[self.selection as usize].reference,
 			)?;
 			self.hide();
 		} else {
 			checkout_remote_branch(
-				CWD,
+				&CWD.into(),
 				&self.branches[self.selection as usize],
 			)?;
 			self.local = true;

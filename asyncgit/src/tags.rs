@@ -104,7 +104,7 @@ impl AsyncTags {
 		arc_last: &Arc<Mutex<Option<(Instant, TagsResult)>>>,
 		outdated: bool,
 	) -> Result<bool> {
-		let tags = sync::get_tags(CWD)?;
+		let tags = sync::get_tags(&CWD.into())?;
 
 		let hash = hash(&tags);
 

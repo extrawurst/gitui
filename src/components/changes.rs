@@ -85,9 +85,12 @@ impl ChangesComponent {
 					let path = Path::new(i.path.as_str());
 					match i.status {
 						StatusItemType::Deleted => {
-							sync::stage_addremoved(CWD, path)?;
+							sync::stage_addremoved(
+								&CWD.into(),
+								path,
+							)?;
 						}
-						_ => sync::stage_add_file(CWD, path)?,
+						_ => sync::stage_add_file(&CWD.into(), path)?,
 					};
 
 					if self.is_empty() {
@@ -103,7 +106,7 @@ impl ChangesComponent {
 
 				//TODO: check if we can handle the one file case with it aswell
 				sync::stage_add_all(
-					CWD,
+					&CWD.into(),
 					tree_item.info.full_path.as_str(),
 					config,
 				)?;
@@ -112,7 +115,7 @@ impl ChangesComponent {
 			}
 
 			let path = tree_item.info.full_path.as_str();
-			sync::reset_stage(CWD, path)?;
+			sync::reset_stage(&CWD.into(), path)?;
 			return Ok(true);
 		}
 
@@ -122,7 +125,7 @@ impl ChangesComponent {
 	fn index_add_all(&mut self) -> Result<()> {
 		let config = self.options.borrow().status_show_untracked;
 
-		sync::stage_add_all(CWD, "*", config)?;
+		sync::stage_add_all(&CWD.into(), "*", config)?;
 
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
@@ -130,7 +133,7 @@ impl ChangesComponent {
 	}
 
 	fn stage_remove_all(&mut self) -> Result<()> {
-		sync::reset_stage(CWD, "*")?;
+		sync::reset_stage(&CWD.into(), "*")?;
 
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
@@ -155,9 +158,10 @@ impl ChangesComponent {
 
 	fn add_to_ignore(&mut self) -> bool {
 		if let Some(tree_item) = self.selection() {
-			if let Err(e) =
-				sync::add_to_ignore(CWD, &tree_item.info.full_path)
-			{
+			if let Err(e) = sync::add_to_ignore(
+				&CWD.into(),
+				&tree_item.info.full_path,
+			) {
 				self.queue.push(InternalEvent::ShowErrorMsg(
 					format!(
 						"ignore error:\n{}\nfile:\n{:?}",

@@ -2,19 +2,22 @@
 
 use crate::{
 	error::{Error, Result},
-	sync::{rebase::conflict_free_rebase, utils, CommitId},
+	sync::{
+		rebase::conflict_free_rebase, repository::repo, CommitId,
+		RepoPath,
+	},
 };
 use git2::BranchType;
 use scopetime::scope_time;
 
 /// trys merging current branch with its upstrema using rebase
 pub fn merge_upstream_rebase(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	branch_name: &str,
 ) -> Result<CommitId> {
 	scope_time!("merge_upstream_rebase");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	if super::get_branch_name_repo(&repo)? != branch_name {
 		return Err(Error::Generic(String::from(
 			"can only rebase in head branch",
@@ -47,7 +50,7 @@ mod test {
 	fn get_commit_msgs(r: &Repository) -> Vec<String> {
 		let commits = get_commit_ids(r, 10);
 		get_commits_info(
-			r.workdir().unwrap().to_str().unwrap(),
+			&r.workdir().unwrap().to_str().unwrap().into(),
 			&commits,
 			10,
 		)
@@ -79,7 +82,13 @@ mod test {
 		assert_eq!(clone1.head_detached().unwrap(), false);
 
 		push(
-			clone1_dir, "origin", "master", false, false, None, None,
+			&clone1_dir.into(),
+			"origin",
+			"master",
+			false,
+			false,
+			None,
+			None,
 		)
 		.unwrap();
 
@@ -103,7 +112,13 @@ mod test {
 		assert_eq!(clone2.head_detached().unwrap(), false);
 
 		push(
-			clone2_dir, "origin", "master", false, false, None, None,
+			&clone2_dir.into(),
+			"origin",
+			"master",
+			false,
+			false,
+			None,
+			None,
 		)
 		.unwrap();
 
@@ -122,12 +137,13 @@ mod test {
 		assert_eq!(clone1.head_detached().unwrap(), false);
 
 		//lets fetch from origin
-		let bytes = fetch(clone1_dir, "master", None, None).unwrap();
+		let bytes =
+			fetch(&clone1_dir.into(), "master", None, None).unwrap();
 		assert!(bytes > 0);
 
 		//we should be one commit behind
 		assert_eq!(
-			branch_compare_upstream(clone1_dir, "master")
+			branch_compare_upstream(&clone1_dir.into(), "master")
 				.unwrap()
 				.behind,
 			1
@@ -137,11 +153,12 @@ mod test {
 
 		assert_eq!(clone1.head_detached().unwrap(), false);
 
-		merge_upstream_rebase(clone1_dir, "master").unwrap();
+		merge_upstream_rebase(&clone1_dir.into(), "master").unwrap();
 
-		debug_cmd_print(clone1_dir, "git log");
+		debug_cmd_print(&clone1_dir.into(), "git log");
 
-		let state = crate::sync::repo_state(clone1_dir).unwrap();
+		let state =
+			crate::sync::repo_state(&clone1_dir.into()).unwrap();
 		assert_eq!(state, RepoState::Clean);
 
 		let commits = get_commit_msgs(&clone1);
@@ -177,7 +194,13 @@ mod test {
 		);
 
 		push(
-			clone1_dir, "origin", "master", false, false, None, None,
+			&clone1_dir.into(),
+			"origin",
+			"master",
+			false,
+			false,
+			None,
+			None,
 		)
 		.unwrap();
 
@@ -197,7 +220,13 @@ mod test {
 		);
 
 		push(
-			clone2_dir, "origin", "master", false, false, None, None,
+			&clone2_dir.into(),
+			"origin",
+			"master",
+			false,
+			false,
+			None,
+			None,
 		)
 		.unwrap();
 
@@ -220,13 +249,14 @@ mod test {
 
 		//lets fetch from origin
 
-		fetch(clone1_dir, "master", None, None).unwrap();
+		fetch(&clone1_dir.into(), "master", None, None).unwrap();
 
-		merge_upstream_rebase(clone1_dir, "master").unwrap();
+		merge_upstream_rebase(&clone1_dir.into(), "master").unwrap();
 
-		debug_cmd_print(clone1_dir, "git log");
+		debug_cmd_print(&clone1_dir.into(), "git log");
 
-		let state = crate::sync::repo_state(clone1_dir).unwrap();
+		let state =
+			crate::sync::repo_state(&clone1_dir.into()).unwrap();
 		assert_eq!(state, RepoState::Clean);
 
 		let commits = get_commit_msgs(&clone1);
@@ -258,7 +288,13 @@ mod test {
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
 
 		push(
-			clone1_dir, "origin", "master", false, false, None, None,
+			&clone1_dir.into(),
+			"origin",
+			"master",
+			false,
+			false,
+			None,
+			None,
 		)
 		.unwrap();
 
@@ -277,7 +313,13 @@ mod test {
 		);
 
 		push(
-			clone2_dir, "origin", "master", false, false, None, None,
+			&clone2_dir.into(),
+			"origin",
+			"master",
+			false,
+			false,
+			None,
+			None,
 		)
 		.unwrap();
 
@@ -286,20 +328,22 @@ mod test {
 		let _commit3 =
 			write_commit_file(&clone1, "test2.txt", "foo", "commit3");
 
-		let bytes = fetch(clone1_dir, "master", None, None).unwrap();
+		let bytes =
+			fetch(&clone1_dir.into(), "master", None, None).unwrap();
 		assert!(bytes > 0);
 
 		assert_eq!(
-			branch_compare_upstream(clone1_dir, "master")
+			branch_compare_upstream(&clone1_dir.into(), "master")
 				.unwrap()
 				.behind,
 			1
 		);
 
-		let res = merge_upstream_rebase(clone1_dir, "master");
+		let res = merge_upstream_rebase(&clone1_dir.into(), "master");
 		assert!(res.is_err());
 
-		let state = crate::sync::repo_state(clone1_dir).unwrap();
+		let state =
+			crate::sync::repo_state(&clone1_dir.into()).unwrap();
 
 		assert_eq!(state, RepoState::Clean);
 

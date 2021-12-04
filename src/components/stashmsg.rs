@@ -64,7 +64,7 @@ impl Component for StashMsgComponent {
 			if let Event::Key(e) = ev {
 				if e == self.key_config.keys.enter {
 					match sync::stash_save(
-						CWD,
+						&CWD.into(),
 						if self.input.get_text().is_empty() {
 							None
 						} else {

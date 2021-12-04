@@ -190,7 +190,7 @@ impl CompareCommitsComponent {
 		let other = if let Some(other) = other {
 			other
 		} else {
-			sync::get_head_tuple(CWD)?.id
+			sync::get_head_tuple(&CWD.into())?.id
 		};
 		self.commit_ids = Some((id, other));
 		self.show()?;

@@ -239,8 +239,7 @@ fn draw<B: Backend>(
 }
 
 fn valid_path() -> Result<bool> {
-	Ok(asyncgit::sync::is_repo(asyncgit::CWD)
-		&& !asyncgit::sync::is_bare_repo(asyncgit::CWD)?)
+	Ok(asyncgit::sync::is_repo(asyncgit::CWD))
 }
 
 fn select_event(

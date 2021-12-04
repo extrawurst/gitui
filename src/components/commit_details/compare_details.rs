@@ -42,8 +42,10 @@ impl CompareDetailsComponent {
 
 	pub fn set_commits(&mut self, ids: Option<(CommitId, CommitId)>) {
 		self.data = ids.and_then(|ids| {
-			let c1 = sync::get_commit_details(CWD, ids.0).ok();
-			let c2 = sync::get_commit_details(CWD, ids.1).ok();
+			let c1 =
+				sync::get_commit_details(&CWD.into(), ids.0).ok();
+			let c2 =
+				sync::get_commit_details(&CWD.into(), ids.1).ok();
 
 			c1.and_then(|c1| {
 				c2.map(|c2| {

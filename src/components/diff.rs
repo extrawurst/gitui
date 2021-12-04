@@ -458,7 +458,11 @@ impl DiffComponent {
 		if let Some(diff) = &self.diff {
 			if let Some(hunk) = self.selected_hunk {
 				let hash = diff.hunks[hunk].header_hash;
-				sync::unstage_hunk(CWD, &self.current.path, hash)?;
+				sync::unstage_hunk(
+					&CWD.into(),
+					&self.current.path,
+					hash,
+				)?;
 				self.queue_update();
 			}
 		}
@@ -471,12 +475,16 @@ impl DiffComponent {
 			if let Some(hunk) = self.selected_hunk {
 				if diff.untracked {
 					sync::stage_add_file(
-						CWD,
+						&CWD.into(),
 						Path::new(&self.current.path),
 					)?;
 				} else {
 					let hash = diff.hunks[hunk].header_hash;
-					sync::stage_hunk(CWD, &self.current.path, hash)?;
+					sync::stage_hunk(
+						&CWD.into(),
+						&self.current.path,
+						hash,
+					)?;
 				}
 
 				self.queue_update();
@@ -524,7 +532,7 @@ impl DiffComponent {
 					self,
 					"(un)stage lines:",
 					sync::stage_lines(
-						CWD,
+						&CWD.into(),
 						&self.current.path,
 						self.is_stage(),
 						&selected_lines,

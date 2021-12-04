@@ -91,7 +91,7 @@ impl AsyncPull {
 			);
 
 			let res = fetch(
-				CWD,
+				&CWD.into(),
 				&params.branch,
 				params.basic_credential,
 				Some(progress_sender.clone()),

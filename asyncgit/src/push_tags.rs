@@ -89,7 +89,7 @@ impl AsyncPushTags {
 			);
 
 			let res = push_tags(
-				CWD,
+				&CWD.into(),
 				params.remote.as_str(),
 				params.basic_credential.clone(),
 				Some(progress_sender),

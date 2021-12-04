@@ -1,10 +1,10 @@
-use super::utils::{get_head_repo, repo};
-use crate::error::Result;
+use super::{utils::get_head_repo, RepoPath};
+use crate::{error::Result, sync::repository::repo};
 use git2::{build::CheckoutBuilder, ObjectType};
 use scopetime::scope_time;
 
 ///
-pub fn reset_stage(repo_path: &str, path: &str) -> Result<()> {
+pub fn reset_stage(repo_path: &RepoPath, path: &str) -> Result<()> {
 	scope_time!("reset_stage");
 
 	let repo = repo(repo_path)?;
@@ -22,7 +22,7 @@ pub fn reset_stage(repo_path: &str, path: &str) -> Result<()> {
 }
 
 ///
-pub fn reset_workdir(repo_path: &str, path: &str) -> Result<()> {
+pub fn reset_workdir(repo_path: &RepoPath, path: &str) -> Result<()> {
 	scope_time!("reset_workdir");
 
 	let repo = repo(repo_path)?;
@@ -49,6 +49,7 @@ mod tests {
 			debug_cmd_print, get_statuses, repo_init, repo_init_empty,
 		},
 		utils::{stage_add_all, stage_add_file},
+		RepoPath,
 	};
 	use std::{
 		fs::{self, File},
@@ -86,7 +87,8 @@ mod tests {
 	fn test_reset_only_unstaged() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let res = get_status(repo_path, StatusType::WorkingDir, None)
 			.unwrap();
@@ -130,7 +132,8 @@ mod tests {
 	fn test_reset_untracked_in_subdir() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		{
 			fs::create_dir(&root.join("foo")).unwrap();
@@ -155,7 +158,8 @@ mod tests {
 	fn test_reset_folder() -> Result<()> {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		{
 			fs::create_dir(&root.join("foo"))?;
@@ -200,7 +204,8 @@ mod tests {
 	fn test_reset_untracked_in_subdir_and_index() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 		let file = "foo/bar.txt";
 
 		{
@@ -240,7 +245,8 @@ mod tests {
 		let file_path = Path::new("foo.txt");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))
 			.unwrap()
@@ -262,7 +268,8 @@ mod tests {
 	fn test_reset_untracked_in_subdir_with_cwd_in_subdir() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		{
 			fs::create_dir(&root.join("foo")).unwrap();
@@ -277,7 +284,7 @@ mod tests {
 		assert_eq!(get_statuses(repo_path), (1, 0));
 
 		reset_workdir(
-			&root.join("foo").as_os_str().to_str().unwrap(),
+			&root.join("foo").as_os_str().to_str().unwrap().into(),
 			"foo/bar.txt",
 		)
 		.unwrap();
@@ -291,7 +298,8 @@ mod tests {
 	fn test_reset_untracked_subdir() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		{
 			fs::create_dir_all(&root.join("foo/bar")).unwrap();

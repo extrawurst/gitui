@@ -79,7 +79,7 @@ impl RevisionFilesComponent {
 		let same_id =
 			self.revision.map(|c| c == commit).unwrap_or_default();
 		if !same_id {
-			self.files = sync::tree_files(CWD, commit)?;
+			self.files = sync::tree_files(&CWD.into(), commit)?;
 			let filenames: Vec<&Path> =
 				self.files.iter().map(|f| f.path.as_path()).collect();
 			self.tree = FileTree::new(&filenames, &BTreeSet::new())?;

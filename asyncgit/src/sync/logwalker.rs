@@ -108,6 +108,7 @@ impl<'a> LogWalker<'a> {
 mod tests {
 	use super::*;
 	use crate::error::Result;
+	use crate::sync::RepoPath;
 	use crate::sync::{
 		commit, commit_files::get_commit_diff, get_commits_info,
 		stage_add_file, tests::repo_init_empty,
@@ -120,7 +121,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
@@ -144,7 +146,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
@@ -177,28 +180,31 @@ mod tests {
 		let second_file_path = Path::new("baz");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: RepoPath =
+			root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?.write_all(b"a")?;
-		stage_add_file(repo_path, file_path).unwrap();
+		stage_add_file(&repo_path, file_path).unwrap();
 
-		let _first_commit_id = commit(repo_path, "commit1").unwrap();
+		let _first_commit_id = commit(&repo_path, "commit1").unwrap();
 
 		File::create(&root.join(second_file_path))?
 			.write_all(b"a")?;
-		stage_add_file(repo_path, second_file_path).unwrap();
+		stage_add_file(&repo_path, second_file_path).unwrap();
 
-		let second_commit_id = commit(repo_path, "commit2").unwrap();
+		let second_commit_id = commit(&repo_path, "commit2").unwrap();
 
 		File::create(&root.join(file_path))?.write_all(b"b")?;
-		stage_add_file(repo_path, file_path).unwrap();
+		stage_add_file(&repo_path, file_path).unwrap();
 
-		let _third_commit_id = commit(repo_path, "commit3").unwrap();
+		let _third_commit_id = commit(&repo_path, "commit3").unwrap();
 
-		let diff_contains_baz = |repo: &Repository,
-		                         commit_id: &CommitId|
-		 -> Result<bool> {
+		let repo_path_clone = repo_path.clone();
+		let diff_contains_baz = move |repo: &Repository,
+		                              commit_id: &CommitId|
+		      -> Result<bool> {
 			let diff = get_commit_diff(
+				&repo_path_clone,
 				&repo,
 				*commit_id,
 				Some("baz".into()),
@@ -222,10 +228,12 @@ mod tests {
 
 		assert_eq!(items.len(), 0);
 
-		let diff_contains_bar = |repo: &Repository,
-		                         commit_id: &CommitId|
-		 -> Result<bool> {
+		let repo_path_clone = repo_path.clone();
+		let diff_contains_bar = move |repo: &Repository,
+		                              commit_id: &CommitId|
+		      -> Result<bool> {
 			let diff = get_commit_diff(
+				&repo_path_clone,
 				&repo,
 				*commit_id,
 				Some("bar".into()),

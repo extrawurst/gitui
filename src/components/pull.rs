@@ -73,9 +73,9 @@ impl PullComponent {
 	pub fn fetch(&mut self, branch: String) -> Result<()> {
 		self.branch = branch;
 		self.show()?;
-		if need_username_password()? {
-			let cred =
-				extract_username_password().unwrap_or_else(|_| {
+		if need_username_password(&CWD.into())? {
+			let cred = extract_username_password(&CWD.into())
+				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
@@ -96,7 +96,7 @@ impl PullComponent {
 		self.pending = true;
 		self.progress = None;
 		self.git_fetch.request(FetchRequest {
-			remote: get_default_remote(CWD)?,
+			remote: get_default_remote(&CWD.into())?,
 			branch: self.branch.clone(),
 			basic_credential: cred,
 		})?;
@@ -145,10 +145,10 @@ impl PullComponent {
 	// check if something is incoming and try a ff merge then
 	fn try_ff_merge(&mut self) -> Result<()> {
 		let branch_compare =
-			sync::branch_compare_upstream(CWD, &self.branch)?;
+			sync::branch_compare_upstream(&CWD.into(), &self.branch)?;
 		if branch_compare.behind > 0 {
 			let ff_res = sync::branch_merge_upstream_fastforward(
-				CWD,
+				&CWD.into(),
 				&self.branch,
 			);
 			if let Err(err) = ff_res {
@@ -167,13 +167,19 @@ impl PullComponent {
 			try_or_popup!(
 				self,
 				"rebase failed:",
-				sync::merge_upstream_rebase(CWD, &self.branch)
+				sync::merge_upstream_rebase(
+					&CWD.into(),
+					&self.branch
+				)
 			);
 		} else {
 			try_or_popup!(
 				self,
 				"merge failed:",
-				sync::merge_upstream_commit(CWD, &self.branch)
+				sync::merge_upstream_commit(
+					&CWD.into(),
+					&self.branch
+				)
 			);
 		}
 	}
@@ -182,7 +188,7 @@ impl PullComponent {
 		self.queue.push(InternalEvent::ConfirmAction(
 			Action::PullMerge {
 				incoming,
-				rebase: sync::config_is_pull_rebase(CWD)
+				rebase: sync::config_is_pull_rebase(&CWD.into())
 					.unwrap_or_default(),
 			},
 		));

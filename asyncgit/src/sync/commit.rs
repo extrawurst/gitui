@@ -1,11 +1,14 @@
-use super::{utils::repo, CommitId};
-use crate::{error::Result, sync::utils::get_head_repo};
+use super::{CommitId, RepoPath};
+use crate::{
+	error::Result,
+	sync::{repository::repo, utils::get_head_repo},
+};
 use git2::{ErrorCode, ObjectType, Repository, Signature};
 use scopetime::scope_time;
 
 ///
 pub fn amend(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	id: CommitId,
 	msg: &str,
 ) -> Result<CommitId> {
@@ -58,7 +61,7 @@ pub(crate) fn signature_allow_undefined_name(
 }
 
 /// this does not run any git hooks
-pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
+pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 	scope_time!("commit");
 
 	let repo = repo(repo_path)?;
@@ -93,7 +96,7 @@ pub fn commit(repo_path: &str, msg: &str) -> Result<CommitId> {
 /// This function will return an `Err(…)` variant if the tag’s name is refused
 /// by git or if the tag already exists.
 pub fn tag(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	commit_id: &CommitId,
 	tag: &str,
 ) -> Result<CommitId> {
@@ -113,7 +116,8 @@ pub fn tag(
 mod tests {
 
 	use crate::error::Result;
-	use crate::sync::{
+	use crate::sync::RepoPath;
+use crate::sync::{
 		commit, get_commit_details, get_commit_files, stage_add_file,
 		tags::get_tags,
 		tests::{get_statuses, repo_init, repo_init_empty},
@@ -136,7 +140,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))
 			.unwrap()
@@ -159,7 +164,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 
@@ -185,7 +191,8 @@ mod tests {
 		let file_path2 = Path::new("foo2");
 		let (_td, repo) = repo_init_empty()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path1))?.write_all(b"test1")?;
 
@@ -221,7 +228,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?
 			.write_all(b"test\nfoo")?;
@@ -265,7 +273,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?
 			.write_all(b"test\nfoo")?;
@@ -300,7 +309,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?
 			.write_all(b"test\nfoo")?;

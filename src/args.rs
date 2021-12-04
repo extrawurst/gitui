@@ -13,6 +13,8 @@ use std::{
 
 pub struct CliArgs {
 	pub theme: PathBuf,
+	pub workdir: Option<PathBuf>,
+	pub gitdir: PathBuf,
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
@@ -41,9 +43,16 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		)
 		.arg(
 			Arg::with_name("directory")
-				.help("Set the working directory")
+				.help("Set the git directory")
 				.short("d")
 				.long("directory")
+				.takes_value(true),
+		)
+		.arg(
+			Arg::with_name("workdir")
+				.help("Set the working directory")
+				.short("wd")
+				.long("workdir")
 				.takes_value(true),
 		);
 
@@ -55,20 +64,27 @@ pub fn process_cmdline() -> Result<CliArgs> {
 	if arg_matches.is_present("logging") {
 		setup_logging()?;
 	}
-	if arg_matches.is_present("directory") {
-		let directory =
-			arg_matches.value_of("directory").unwrap_or(".");
-		env::set_current_dir(directory)?;
-	}
+
+	let workdir = arg_matches.value_of("workdir").map(PathBuf::from);
+	let gitdir = arg_matches
+		.value_of("directory")
+		.map(PathBuf::from)
+		.unwrap_or(PathBuf::from("."));
+
 	let arg_theme =
 		arg_matches.value_of("theme").unwrap_or("theme.ron");
+
 	if get_app_config_path()?.join(arg_theme).is_file() {
 		Ok(CliArgs {
 			theme: get_app_config_path()?.join(arg_theme),
+			workdir,
+			gitdir,
 		})
 	} else {
 		Ok(CliArgs {
 			theme: get_app_config_path()?.join("theme.ron"),
+			workdir,
+			gitdir,
 		})
 	}
 }

@@ -69,8 +69,9 @@ impl DetailsComponent {
 	) {
 		self.tags.clear();
 
-		self.data =
-			id.and_then(|id| sync::get_commit_details(CWD, id).ok());
+		self.data = id.and_then(|id| {
+			sync::get_commit_details(&CWD.into(), id).ok()
+		});
 
 		self.scroll.reset();
 

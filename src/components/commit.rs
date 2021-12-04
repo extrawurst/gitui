@@ -126,7 +126,8 @@ impl CommitComponent {
 	}
 
 	pub fn show_editor(&mut self) -> Result<()> {
-		let file_path = sync::repo_dir(CWD)?.join("COMMIT_EDITMSG");
+		let file_path =
+			sync::repo_dir(&CWD.into())?.join("COMMIT_EDITMSG");
 
 		{
 			let mut file = File::create(&file_path)?;
@@ -157,11 +158,12 @@ impl CommitComponent {
 	}
 
 	fn commit(&mut self) -> Result<()> {
-		let gpgsign = get_config_string(CWD, "commit.gpgsign")
-			.ok()
-			.flatten()
-			.and_then(|path| path.parse::<bool>().ok())
-			.unwrap_or_default();
+		let gpgsign =
+			get_config_string(&CWD.into(), "commit.gpgsign")
+				.ok()
+				.flatten()
+				.and_then(|path| path.parse::<bool>().ok())
+				.unwrap_or_default();
 
 		if gpgsign {
 			anyhow::bail!("config commit.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
@@ -173,7 +175,9 @@ impl CommitComponent {
 	}
 
 	fn commit_with_msg(&mut self, msg: String) -> Result<()> {
-		if let HookResult::NotOk(e) = sync::hooks_pre_commit(CWD)? {
+		if let HookResult::NotOk(e) =
+			sync::hooks_pre_commit(&CWD.into())?
+		{
 			log::error!("pre-commit hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
 				"pre-commit hook error:\n{}",
@@ -183,7 +187,7 @@ impl CommitComponent {
 		}
 		let mut msg = message_prettify(msg, Some(b'#'))?;
 		if let HookResult::NotOk(e) =
-			sync::hooks_commit_msg(CWD, &mut msg)?
+			sync::hooks_commit_msg(&CWD.into(), &mut msg)?
 		{
 			log::error!("commit-msg hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
@@ -194,9 +198,13 @@ impl CommitComponent {
 		}
 
 		let res = match &self.mode {
-			Mode::Normal => sync::commit(CWD, &msg),
-			Mode::Amend(amend) => sync::amend(CWD, *amend, &msg),
-			Mode::Merge(ids) => sync::merge_commit(CWD, &msg, ids),
+			Mode::Normal => sync::commit(&CWD.into(), &msg),
+			Mode::Amend(amend) => {
+				sync::amend(&CWD.into(), *amend, &msg)
+			}
+			Mode::Merge(ids) => {
+				sync::merge_commit(&CWD.into(), &msg, ids)
+			}
 		};
 
 		if let Err(e) = res {
@@ -208,7 +216,9 @@ impl CommitComponent {
 			return Ok(());
 		}
 
-		if let HookResult::NotOk(e) = sync::hooks_post_commit(CWD)? {
+		if let HookResult::NotOk(e) =
+			sync::hooks_post_commit(&CWD.into())?
+		{
 			log::error!("post-commit hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
 				"post-commit hook error:\n{}",
@@ -229,7 +239,7 @@ impl CommitComponent {
 
 	fn can_amend(&self) -> bool {
 		matches!(self.mode, Mode::Normal)
-			&& sync::get_head(CWD).is_ok()
+			&& sync::get_head(&CWD.into()).is_ok()
 			&& (self.is_empty() || !self.is_changed())
 	}
 
@@ -244,10 +254,10 @@ impl CommitComponent {
 
 	fn amend(&mut self) -> Result<()> {
 		if self.can_amend() {
-			let id = sync::get_head(CWD)?;
+			let id = sync::get_head(&CWD.into())?;
 			self.mode = Mode::Amend(id);
 
-			let details = sync::get_commit_details(CWD, id)?;
+			let details = sync::get_commit_details(&CWD.into(), id)?;
 
 			self.input.set_title(strings::commit_title_amend());
 
@@ -360,27 +370,28 @@ impl Component for CommitComponent {
 
 		self.mode = Mode::Normal;
 
-		self.mode = if sync::repo_state(CWD)? == RepoState::Merge {
-			let ids = sync::mergehead_ids(CWD)?;
-			self.input.set_title(strings::commit_title_merge());
-			self.input.set_text(sync::merge_msg(CWD)?);
-			Mode::Merge(ids)
-		} else {
-			self.commit_template =
-				get_config_string(CWD, "commit.template")
-					.ok()
-					.flatten()
-					.and_then(|path| read_to_string(path).ok());
+		self.mode =
+			if sync::repo_state(&CWD.into())? == RepoState::Merge {
+				let ids = sync::mergehead_ids(&CWD.into())?;
+				self.input.set_title(strings::commit_title_merge());
+				self.input.set_text(sync::merge_msg(&CWD.into())?);
+				Mode::Merge(ids)
+			} else {
+				self.commit_template =
+					get_config_string(&CWD.into(), "commit.template")
+						.ok()
+						.flatten()
+						.and_then(|path| read_to_string(path).ok());
 
-			if self.is_empty() {
-				if let Some(s) = &self.commit_template {
-					self.input.set_text(s.clone());
+				if self.is_empty() {
+					if let Some(s) = &self.commit_template {
+						self.input.set_text(s.clone());
+					}
 				}
-			}
 
-			self.input.set_title(strings::commit_title());
-			Mode::Normal
-		};
+				self.input.set_title(strings::commit_title());
+				Mode::Normal
+			};
 
 		self.input.show()?;
 

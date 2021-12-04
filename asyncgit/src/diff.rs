@@ -1,7 +1,7 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self, diff::DiffOptions, CommitId},
+	sync::{self, diff::DiffOptions, CommitId, RepoPath},
 	AsyncGitNotification, FileDiff, CWD,
 };
 use crossbeam_channel::Sender;
@@ -114,6 +114,8 @@ impl AsyncDiff {
 
 		rayon_core::spawn(move || {
 			let notify = Self::get_diff_helper(
+				//TODO:
+				&CWD.into(),
 				params,
 				&arc_last,
 				&arc_current,
@@ -143,6 +145,7 @@ impl AsyncDiff {
 	}
 
 	fn get_diff_helper(
+		repo_path: &RepoPath,
 		params: DiffParams,
 		arc_last: &Arc<
 			Mutex<Option<LastResult<DiffParams, FileDiff>>>,
@@ -152,24 +155,24 @@ impl AsyncDiff {
 	) -> Result<bool> {
 		let res = match params.diff_type {
 			DiffType::Stage => sync::diff::get_diff(
-				CWD,
+				repo_path,
 				&params.path,
 				true,
 				Some(params.options),
 			)?,
 			DiffType::WorkDir => sync::diff::get_diff(
-				CWD,
+				repo_path,
 				&params.path,
 				false,
 				Some(params.options),
 			)?,
 			DiffType::Commit(id) => sync::diff::get_diff_commit(
-				CWD,
+				repo_path,
 				id,
 				params.path.clone(),
 			)?,
 			DiffType::Commits(ids) => sync::diff::get_diff_commits(
-				CWD,
+				repo_path,
 				ids,
 				params.path.clone(),
 			)?,
