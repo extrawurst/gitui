@@ -82,7 +82,6 @@ These are the high level goals before calling out `1.0`:
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
-- no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
 - no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
 - no support for GPG signing (see [#97](https://github.com/extrawurst/gitui/issues/97))
 
