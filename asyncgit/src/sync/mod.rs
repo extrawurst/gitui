@@ -70,7 +70,7 @@ pub use remotes::{
 	tags::PushTagsProgress,
 };
 pub(crate) use repository::repo;
-pub use repository::RepoPath;
+pub use repository::{RepoPath, RepoPathRef};
 pub use reset::{reset_stage, reset_workdir};
 pub use staging::{discard_lines, stage_lines};
 pub use stash::{

@@ -55,6 +55,7 @@ use scopeguard::defer;
 use scopetime::scope_time;
 use spinner::Spinner;
 use std::{
+	cell::RefCell,
 	io::{self, Write},
 	panic, process,
 	time::{Duration, Instant},
@@ -134,8 +135,14 @@ fn main() -> Result<()> {
 	let ticker = tick(TICK_INTERVAL);
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
-	let mut app =
-		App::new(&tx_git, &tx_app, input, theme, key_config);
+	let mut app = App::new(
+		RefCell::new(asyncgit::CWD.into()),
+		&tx_git,
+		&tx_app,
+		input,
+		theme,
+		key_config,
+	);
 
 	let mut spinner = Spinner::default();
 	let mut first_update = true;

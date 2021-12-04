@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	cached,
-	sync::{self, CommitId},
+	sync::{self, CommitId, RepoPathRef},
 	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
 	FetchStatus, CWD,
 };
@@ -43,6 +43,7 @@ pub struct Revlog {
 impl Revlog {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -64,7 +65,7 @@ impl Revlog {
 			git_log: AsyncLog::new(sender, None),
 			git_tags: AsyncTags::new(sender),
 			visible: false,
-			branch_name: cached::BranchName::new(CWD),
+			branch_name: cached::BranchName::new(repo),
 			key_config,
 		}
 	}

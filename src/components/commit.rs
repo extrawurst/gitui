@@ -13,7 +13,8 @@ use anyhow::Result;
 use asyncgit::{
 	cached, message_prettify,
 	sync::{
-		self, get_config_string, CommitId, HookResult, RepoState,
+		self, get_config_string, CommitId, HookResult, RepoPathRef,
+		RepoState,
 	},
 	CWD,
 };
@@ -51,6 +52,7 @@ const FIRST_LINE_LIMIT: usize = 50;
 impl CommitComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -67,7 +69,7 @@ impl CommitComponent {
 				true,
 			),
 			key_config,
-			git_branch_name: cached::BranchName::new(CWD),
+			git_branch_name: cached::BranchName::new(repo),
 			commit_template: None,
 			theme,
 		}

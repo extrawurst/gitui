@@ -1,8 +1,14 @@
-use std::path::{Path, PathBuf};
+use std::{
+	cell::RefCell,
+	path::{Path, PathBuf},
+};
 
 use git2::{Repository, RepositoryOpenFlags};
 
 use crate::error::Result;
+
+///
+pub type RepoPathRef = RefCell<RepoPath>;
 
 ///
 #[derive(Clone)]
@@ -16,7 +22,7 @@ impl RepoPath {
 	///
 	pub fn gitpath(&self) -> &Path {
 		match self {
-			RepoPath::Path(p) => p.as_path(),
+			Self::Path(p) => p.as_path(),
 		}
 	}
 }
