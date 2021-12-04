@@ -68,8 +68,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 	let workdir = arg_matches.value_of("workdir").map(PathBuf::from);
 	let gitdir = arg_matches
 		.value_of("directory")
-		.map(PathBuf::from)
-		.unwrap_or(PathBuf::from("."));
+		.map_or_else(|| PathBuf::from("."), PathBuf::from);
 
 	let arg_theme =
 		arg_matches.value_of("theme").unwrap_or("theme.ron");

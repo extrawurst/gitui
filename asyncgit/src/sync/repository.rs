@@ -27,7 +27,7 @@ impl From<&str> for RepoPath {
 	}
 }
 
-pub(crate) fn repo(repo_path: &RepoPath) -> Result<Repository> {
+pub fn repo(repo_path: &RepoPath) -> Result<Repository> {
 	let repo = Repository::open_ext(
 		repo_path.gitpath(),
 		RepositoryOpenFlags::empty(),

@@ -292,7 +292,7 @@ mod test_rebase {
 		},
 		rebase_branch, repo_state,
 		tests::{repo_init, write_commit_file},
-		RepoState, RepoPath,
+		RepoPath, RepoState,
 	};
 	use git2::BranchType;
 

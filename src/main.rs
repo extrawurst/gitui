@@ -104,7 +104,7 @@ fn main() -> Result<()> {
 
 	asyncgit::register_tracing_logging();
 
-	if !valid_path()? {
+	if !valid_path() {
 		eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
 		return Ok(());
 	}
@@ -238,8 +238,8 @@ fn draw<B: Backend>(
 	Ok(())
 }
 
-fn valid_path() -> Result<bool> {
-	Ok(asyncgit::sync::is_repo(asyncgit::CWD))
+fn valid_path() -> bool {
+	asyncgit::sync::is_repo(asyncgit::CWD)
 }
 
 fn select_event(

@@ -117,7 +117,7 @@ mod tests {
 
 	use crate::error::Result;
 	use crate::sync::RepoPath;
-use crate::sync::{
+	use crate::sync::{
 		commit, get_commit_details, get_commit_files, stage_add_file,
 		tags::get_tags,
 		tests::{get_statuses, repo_init, repo_init_empty},
