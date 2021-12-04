@@ -1,8 +1,8 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self},
-	AsyncGitNotification, CWD,
+	sync::{self, RepoPath},
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -26,12 +26,17 @@ pub struct AsyncTags {
 	last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicUsize>,
+	repo: RepoPath,
 }
 
 impl AsyncTags {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			last: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
 			pending: Arc::new(AtomicUsize::new(0)),
@@ -81,9 +86,10 @@ impl AsyncTags {
 		let arc_pending = Arc::clone(&self.pending);
 
 		self.pending.fetch_add(1, Ordering::Relaxed);
+		let repo = self.repo.clone();
 
 		rayon_core::spawn(move || {
-			let notify = Self::getter(&arc_last, outdated)
+			let notify = Self::getter(&repo, &arc_last, outdated)
 				.expect("error getting tags");
 
 			arc_pending.fetch_sub(1, Ordering::Relaxed);
@@ -101,10 +107,11 @@ impl AsyncTags {
 	}
 
 	fn getter(
+		repo: &RepoPath,
 		arc_last: &Arc<Mutex<Option<(Instant, TagsResult)>>>,
 		outdated: bool,
 	) -> Result<bool> {
-		let tags = sync::get_tags(&CWD.into())?;
+		let tags = sync::get_tags(repo)?;
 
 		let hash = hash(&tags);
 

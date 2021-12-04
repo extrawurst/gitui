@@ -2,7 +2,7 @@ use crate::{
 	error::Result,
 	hash,
 	sync::{self, diff::DiffOptions, CommitId, RepoPath},
-	AsyncGitNotification, FileDiff, CWD,
+	AsyncGitNotification, FileDiff,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -51,12 +51,17 @@ pub struct AsyncDiff {
 	last: Arc<Mutex<Option<LastResult<DiffParams, FileDiff>>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicUsize>,
+	repo: RepoPath,
 }
 
 impl AsyncDiff {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			current: Arc::new(Mutex::new(Request(0, None))),
 			last: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
@@ -109,13 +114,13 @@ impl AsyncDiff {
 		let arc_last = Arc::clone(&self.last);
 		let sender = self.sender.clone();
 		let arc_pending = Arc::clone(&self.pending);
+		let repo = self.repo.clone();
 
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
 			let notify = Self::get_diff_helper(
-				//TODO:
-				&CWD.into(),
+				&repo,
 				params,
 				&arc_last,
 				&arc_current,

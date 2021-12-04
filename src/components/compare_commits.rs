@@ -164,6 +164,7 @@ impl CompareCommitsComponent {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			details: CommitDetailsComponent::new(
 				repo.clone(),
 				queue,
@@ -179,10 +180,9 @@ impl CompareCommitsComponent {
 				true,
 			),
 			commit_ids: None,
-			git_diff: AsyncDiff::new(sender),
+			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),
 			visible: false,
 			key_config,
-			repo,
 		}
 	}
 

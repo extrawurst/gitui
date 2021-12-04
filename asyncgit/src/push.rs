@@ -2,9 +2,9 @@ use crate::{
 	error::{Error, Result},
 	sync::{
 		cred::BasicAuthCredential, remotes::push::push,
-		remotes::push::ProgressNotification,
+		remotes::push::ProgressNotification, RepoPath,
 	},
-	AsyncGitNotification, RemoteProgress, CWD,
+	AsyncGitNotification, RemoteProgress,
 };
 use crossbeam_channel::{unbounded, Sender};
 use std::{
@@ -37,12 +37,17 @@ pub struct AsyncPush {
 	last_result: Arc<Mutex<Option<String>>>,
 	progress: Arc<Mutex<Option<ProgressNotification>>>,
 	sender: Sender<AsyncGitNotification>,
+	repo: RepoPath,
 }
 
 impl AsyncPush {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			state: Arc::new(Mutex::new(None)),
 			last_result: Arc::new(Mutex::new(None)),
 			progress: Arc::new(Mutex::new(None)),
@@ -83,6 +88,7 @@ impl AsyncPush {
 		let arc_res = Arc::clone(&self.last_result);
 		let arc_progress = Arc::clone(&self.progress);
 		let sender = self.sender.clone();
+		let repo = self.repo.clone();
 
 		thread::spawn(move || {
 			let (progress_sender, receiver) = unbounded();
@@ -95,7 +101,7 @@ impl AsyncPush {
 			);
 
 			let res = push(
-				&CWD.into(),
+				&repo,
 				params.remote.as_str(),
 				params.branch.as_str(),
 				params.force,

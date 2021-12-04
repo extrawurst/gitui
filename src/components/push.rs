@@ -73,12 +73,13 @@ impl PushComponent {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			queue: queue.clone(),
 			modifier: PushComponentModifier::None,
 			pending: false,
 			visible: false,
 			branch: String::new(),
-			git_push: AsyncPush::new(sender),
+			git_push: AsyncPush::new(repo.borrow().clone(), sender),
 			progress: None,
 			input_cred: CredComponent::new(
 				theme.clone(),
@@ -86,7 +87,6 @@ impl PushComponent {
 			),
 			theme,
 			key_config,
-			repo,
 		}
 	}
 

@@ -156,6 +156,7 @@ impl Status {
 		key_config: SharedKeyConfig,
 		options: SharedOptions,
 	) -> Self {
+		let repo_clone = repo.borrow().clone();
 		Self {
 			queue: queue.clone(),
 			visible: true,
@@ -188,9 +189,15 @@ impl Status {
 				key_config.clone(),
 				false,
 			),
-			git_diff: AsyncDiff::new(sender),
-			git_status_workdir: AsyncStatus::new(sender.clone()),
-			git_status_stage: AsyncStatus::new(sender.clone()),
+			git_diff: AsyncDiff::new(repo_clone.clone(), sender),
+			git_status_workdir: AsyncStatus::new(
+				repo_clone.clone(),
+				sender.clone(),
+			),
+			git_status_stage: AsyncStatus::new(
+				repo_clone.clone(),
+				sender.clone(),
+			),
 			git_action_executed: false,
 			git_branch_state: None,
 			git_branch_name: cached::BranchName::new(repo.clone()),

@@ -115,6 +115,7 @@ impl App {
 				key_config.clone(),
 			),
 			blame_file_popup: BlameFileComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				&strings::blame_title(&key_config),

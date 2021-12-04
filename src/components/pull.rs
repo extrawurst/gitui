@@ -55,11 +55,12 @@ impl PullComponent {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			queue: queue.clone(),
 			pending: false,
 			visible: false,
 			branch: String::new(),
-			git_fetch: AsyncPull::new(sender),
+			git_fetch: AsyncPull::new(repo.borrow().clone(), sender),
 			progress: None,
 			input_cred: CredComponent::new(
 				theme.clone(),
@@ -67,7 +68,6 @@ impl PullComponent {
 			),
 			theme,
 			key_config,
-			repo,
 		}
 	}
 

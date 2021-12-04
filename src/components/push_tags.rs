@@ -53,11 +53,14 @@ impl PushTagsComponent {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
-			repo,
+			repo: repo.clone(),
 			queue: queue.clone(),
 			pending: false,
 			visible: false,
-			git_push: AsyncPushTags::new(sender),
+			git_push: AsyncPushTags::new(
+				repo.borrow().clone(),
+				sender,
+			),
 			progress: None,
 			input_cred: CredComponent::new(
 				theme.clone(),

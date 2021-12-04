@@ -1,7 +1,7 @@
 use crate::{
 	error::Result,
 	sync::{repo, CommitId, LogWalker, LogWalkerFilter, RepoPath},
-	AsyncGitNotification, CWD,
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
 use git2::Oid;
@@ -33,6 +33,7 @@ pub struct AsyncLog {
 	pending: Arc<AtomicBool>,
 	background: Arc<AtomicBool>,
 	filter: Option<LogWalkerFilter>,
+	repo: RepoPath,
 }
 
 static LIMIT_COUNT: usize = 3000;
@@ -42,10 +43,12 @@ static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 impl AsyncLog {
 	///
 	pub fn new(
+		repo: RepoPath,
 		sender: &Sender<AsyncGitNotification>,
 		filter: Option<LogWalkerFilter>,
 	) -> Self {
 		Self {
+			repo,
 			current: Arc::new(Mutex::new(Vec::new())),
 			sender: sender.clone(),
 			pending: Arc::new(AtomicBool::new(false)),
@@ -102,7 +105,7 @@ impl AsyncLog {
 
 	///
 	fn head_changed(&self) -> Result<bool> {
-		if let Ok(head) = repo(&CWD.into())?.head() {
+		if let Ok(head) = repo(&self.repo)?.head() {
 			if let Some(head) = head.target() {
 				return Ok(head != self.current_head()?.into());
 			}
@@ -128,16 +131,16 @@ impl AsyncLog {
 		let sender = self.sender.clone();
 		let arc_pending = Arc::clone(&self.pending);
 		let arc_background = Arc::clone(&self.background);
+		let filter = self.filter.clone();
+		let repo = self.repo.clone();
 
 		self.pending.store(true, Ordering::Relaxed);
-
-		let filter = self.filter.clone();
 
 		rayon_core::spawn(move || {
 			scope_time!("async::revlog");
 
 			Self::fetch_helper(
-				&CWD.into(),
+				&repo,
 				&arc_current,
 				&arc_background,
 				&sender,

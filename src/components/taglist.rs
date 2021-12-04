@@ -334,6 +334,7 @@ impl TagListComponent {
 
 	pub fn update_missing_remote_tags(&mut self) {
 		self.async_remote_tags.spawn(AsyncRemoteTagsJob::new(
+			self.repo.borrow().clone(),
 			self.basic_credential.clone(),
 		));
 	}

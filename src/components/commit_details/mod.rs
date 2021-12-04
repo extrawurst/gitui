@@ -54,11 +54,14 @@ impl CommitDetailsComponent {
 				false,
 			),
 			compare_details: CompareDetailsComponent::new(
-				repo,
+				repo.clone(),
 				theme.clone(),
 				false,
 			),
-			git_commit_files: AsyncCommitFiles::new(sender),
+			git_commit_files: AsyncCommitFiles::new(
+				repo.borrow().clone(),
+				sender,
+			),
 			file_tree: StatusTreeComponent::new(
 				"",
 				false,

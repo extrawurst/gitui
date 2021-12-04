@@ -2,7 +2,7 @@ use crate::{
 	error::Result,
 	hash,
 	sync::{self, FileBlame, RepoPath},
-	AsyncGitNotification, CWD,
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -34,12 +34,17 @@ pub struct AsyncBlame {
 	last: Arc<Mutex<Option<LastResult<BlameParams, FileBlame>>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicUsize>,
+	repo: RepoPath,
 }
 
 impl AsyncBlame {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			current: Arc::new(Mutex::new(Request(0, None))),
 			last: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
@@ -96,13 +101,13 @@ impl AsyncBlame {
 		let arc_last = Arc::clone(&self.last);
 		let sender = self.sender.clone();
 		let arc_pending = Arc::clone(&self.pending);
+		let repo = self.repo.clone();
 
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
 			let notify = Self::get_blame_helper(
-				//TODO:
-				&CWD.into(),
+				&repo,
 				params,
 				&arc_last,
 				&arc_current,

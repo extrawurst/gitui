@@ -53,6 +53,7 @@ impl Stashing {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			index: StatusTreeComponent::new(
 				&strings::stashing_files_title(&key_config),
 				true,
@@ -66,10 +67,12 @@ impl Stashing {
 				stash_untracked: true,
 			},
 			theme,
-			git_status: AsyncStatus::new(sender.clone()),
+			git_status: AsyncStatus::new(
+				repo.borrow().clone(),
+				sender.clone(),
+			),
 			queue: queue.clone(),
 			key_config,
-			repo,
 		}
 	}
 

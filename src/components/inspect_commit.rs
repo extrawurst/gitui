@@ -192,7 +192,7 @@ impl InspectCommitComponent {
 				key_config.clone(),
 			),
 			diff: DiffComponent::new(
-				repo,
+				repo.clone(),
 				queue.clone(),
 				theme,
 				key_config.clone(),
@@ -200,7 +200,7 @@ impl InspectCommitComponent {
 			),
 			commit_id: None,
 			tags: None,
-			git_diff: AsyncDiff::new(sender),
+			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),
 			visible: false,
 			key_config,
 		}

@@ -51,6 +51,7 @@ impl Revlog {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			queue: queue.clone(),
 			commit_details: CommitDetailsComponent::new(
 				repo.clone(),
@@ -64,12 +65,15 @@ impl Revlog {
 				theme,
 				key_config.clone(),
 			),
-			git_log: AsyncLog::new(sender, None),
-			git_tags: AsyncTags::new(sender),
+			git_log: AsyncLog::new(
+				repo.borrow().clone(),
+				sender,
+				None,
+			),
+			git_tags: AsyncTags::new(repo.borrow().clone(), sender),
 			visible: false,
 			branch_name: cached::BranchName::new(repo.clone()),
 			key_config,
-			repo,
 		}
 	}
 

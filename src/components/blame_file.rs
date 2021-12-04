@@ -11,7 +11,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{BlameHunk, CommitId, FileBlame},
+	sync::{BlameHunk, CommitId, FileBlame, RepoPathRef},
 	AsyncBlame, AsyncGitNotification, BlameParams,
 };
 use crossbeam_channel::Sender;
@@ -244,6 +244,7 @@ impl Component for BlameFileComponent {
 impl BlameFileComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		title: &str,
@@ -253,7 +254,10 @@ impl BlameFileComponent {
 		Self {
 			title: String::from(title),
 			theme,
-			async_blame: AsyncBlame::new(sender),
+			async_blame: AsyncBlame::new(
+				repo.borrow().clone(),
+				sender,
+			),
 			queue: queue.clone(),
 			visible: false,
 			file_path: None,

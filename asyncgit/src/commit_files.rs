@@ -1,7 +1,7 @@
 use crate::{
 	error::Result,
 	sync::{self, CommitId, RepoPath},
-	AsyncGitNotification, StatusItem, CWD,
+	AsyncGitNotification, StatusItem,
 };
 use crossbeam_channel::Sender;
 use std::sync::{
@@ -42,12 +42,17 @@ pub struct AsyncCommitFiles {
 		Arc<Mutex<Option<Request<CommitFilesParams, ResultType>>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicUsize>,
+	repo: RepoPath,
 }
 
 impl AsyncCommitFiles {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			current: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
 			pending: Arc::new(AtomicUsize::new(0)),
@@ -89,12 +94,12 @@ impl AsyncCommitFiles {
 		let arc_current = Arc::clone(&self.current);
 		let sender = self.sender.clone();
 		let arc_pending = Arc::clone(&self.pending);
+		let repo = self.repo.clone();
 
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
-			//TODO:
-			Self::fetch_helper(&CWD.into(), params, &arc_current)
+			Self::fetch_helper(&repo, params, &arc_current)
 				.expect("failed to fetch");
 
 			arc_pending.fetch_sub(1, Ordering::Relaxed);

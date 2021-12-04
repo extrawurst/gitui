@@ -93,7 +93,10 @@ impl FetchComponent {
 		self.pending = true;
 		self.progress = None;
 		self.progress = Some(ProgressPercent::empty());
-		self.async_fetch.spawn(AsyncFetchJob::new(cred));
+		self.async_fetch.spawn(AsyncFetchJob::new(
+			self.repo.borrow().clone(),
+			cred,
+		));
 	}
 
 	///
