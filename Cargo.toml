@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.18.0"
+version = "0.19.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
@@ -21,7 +21,7 @@ keywords = [
 
 [dependencies]
 anyhow = "1.0"
-asyncgit = { path = "./asyncgit", version = "0.18", default-features = false }
+asyncgit = { path = "./asyncgit", version = "0.19", default-features = false }
 backtrace = "0.3"
 bitflags = "1.3"
 bugreport = "0.4"
