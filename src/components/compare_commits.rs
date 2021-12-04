@@ -157,7 +157,7 @@ impl CompareCommitsComponent {
 
 	///
 	pub fn new(
-		repo: RepoPathRef,
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -166,7 +166,7 @@ impl CompareCommitsComponent {
 		Self {
 			repo: repo.clone(),
 			details: CommitDetailsComponent::new(
-				repo.clone(),
+				repo,
 				queue,
 				sender,
 				theme.clone(),

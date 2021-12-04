@@ -46,7 +46,7 @@ impl Stashing {
 
 	///
 	pub fn new(
-		repo: RepoPathRef,
+		repo: &RepoPathRef,
 		sender: &Sender<AsyncGitNotification>,
 		queue: &Queue,
 		theme: SharedTheme,

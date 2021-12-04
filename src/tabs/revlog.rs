@@ -44,7 +44,7 @@ pub struct Revlog {
 impl Revlog {
 	///
 	pub fn new(
-		repo: RepoPathRef,
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -54,7 +54,7 @@ impl Revlog {
 			repo: repo.clone(),
 			queue: queue.clone(),
 			commit_details: CommitDetailsComponent::new(
-				repo.clone(),
+				repo,
 				queue,
 				sender,
 				theme.clone(),

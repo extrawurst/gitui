@@ -176,7 +176,7 @@ impl InspectCommitComponent {
 
 	///
 	pub fn new(
-		repo: RepoPathRef,
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -185,7 +185,7 @@ impl InspectCommitComponent {
 		Self {
 			queue: queue.clone(),
 			details: CommitDetailsComponent::new(
-				repo.clone(),
+				repo,
 				queue,
 				sender,
 				theme.clone(),

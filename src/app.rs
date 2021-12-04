@@ -115,7 +115,7 @@ impl App {
 				key_config.clone(),
 			),
 			blame_file_popup: BlameFileComponent::new(
-				repo.clone(),
+				&repo,
 				&queue,
 				sender,
 				&strings::blame_title(&key_config),
@@ -136,14 +136,14 @@ impl App {
 				key_config.clone(),
 			),
 			inspect_commit_popup: InspectCommitComponent::new(
-				repo.clone(),
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			compare_commits_popup: CompareCommitsComponent::new(
-				repo.clone(),
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
@@ -154,21 +154,21 @@ impl App {
 				key_config.clone(),
 			),
 			push_popup: PushComponent::new(
-				repo.clone(),
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			push_tags_popup: PushTagsComponent::new(
-				repo.clone(),
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			pull_popup: PullComponent::new(
-				repo.clone(),
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
@@ -235,7 +235,7 @@ impl App {
 			msg: MsgComponent::new(theme.clone(), key_config.clone()),
 			tab: 0,
 			revlog: Revlog::new(
-				repo.clone(),
+				&repo,
 				&queue,
 				sender,
 				theme.clone(),
@@ -250,7 +250,7 @@ impl App {
 				options,
 			),
 			stashing_tab: Stashing::new(
-				repo.clone(),
+				&repo,
 				sender,
 				&queue,
 				theme.clone(),

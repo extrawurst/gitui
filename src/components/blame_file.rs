@@ -244,7 +244,7 @@ impl Component for BlameFileComponent {
 impl BlameFileComponent {
 	///
 	pub fn new(
-		repo: RepoPathRef,
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		title: &str,

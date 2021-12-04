@@ -46,7 +46,7 @@ pub struct PushTagsComponent {
 impl PushTagsComponent {
 	///
 	pub fn new(
-		repo: RepoPathRef,
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,

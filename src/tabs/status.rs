@@ -195,7 +195,7 @@ impl Status {
 				sender.clone(),
 			),
 			git_status_stage: AsyncStatus::new(
-				repo_clone.clone(),
+				repo_clone,
 				sender.clone(),
 			),
 			git_action_executed: false,
