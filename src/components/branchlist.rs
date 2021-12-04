@@ -19,9 +19,9 @@ use asyncgit::{
 			RemoteBranch,
 		},
 		checkout_branch, get_branches_info, BranchInfo, BranchType,
-		CommitId, RepoState,
+		CommitId, RepoPathRef, RepoState,
 	},
-	AsyncGitNotification, CWD,
+	AsyncGitNotification,
 };
 use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
@@ -39,6 +39,7 @@ use unicode_truncate::UnicodeTruncateStr;
 
 ///
 pub struct BranchListComponent {
+	repo: RepoPathRef,
 	branches: Vec<BranchInfo>,
 	local: bool,
 	visible: bool,
@@ -324,6 +325,7 @@ impl Component for BranchListComponent {
 
 impl BranchListComponent {
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -338,6 +340,7 @@ impl BranchListComponent {
 			theme,
 			key_config,
 			current_height: Cell::new(0),
+			repo,
 		}
 	}
 
@@ -353,7 +356,7 @@ impl BranchListComponent {
 	pub fn update_branches(&mut self) -> Result<()> {
 		if self.is_visible() {
 			self.branches =
-				get_branches_info(&CWD.into(), self.local)?;
+				get_branches_info(&self.repo.borrow(), self.local)?;
 			//remove remote branch called `HEAD`
 			if !self.local {
 				self.branches
@@ -387,7 +390,7 @@ impl BranchListComponent {
 			self.branches.get(usize::from(self.selection))
 		{
 			sync::merge_branch(
-				&CWD.into(),
+				&self.repo.borrow(),
 				&branch.name,
 				self.get_branch_type(),
 			)?;
@@ -403,7 +406,7 @@ impl BranchListComponent {
 			self.branches.get(usize::from(self.selection))
 		{
 			sync::rebase_branch(
-				&CWD.into(),
+				&self.repo.borrow(),
 				&branch.name,
 				self.get_branch_type(),
 			)?;
@@ -426,7 +429,8 @@ impl BranchListComponent {
 		self.hide();
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
-		if sync::repo_state(&CWD.into())? != RepoState::Clean {
+		if sync::repo_state(&self.repo.borrow())? != RepoState::Clean
+		{
 			self.queue.push(InternalEvent::TabSwitch);
 		}
 
@@ -615,13 +619,13 @@ impl BranchListComponent {
 
 		if self.local {
 			checkout_branch(
-				&CWD.into(),
+				&self.repo.borrow(),
 				&self.branches[self.selection as usize].reference,
 			)?;
 			self.hide();
 		} else {
 			checkout_remote_branch(
-				&CWD.into(),
+				&self.repo.borrow(),
 				&self.branches[self.selection as usize],
 			)?;
 			self.local = true;

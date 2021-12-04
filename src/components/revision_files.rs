@@ -11,10 +11,7 @@ use crate::{
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self, CommitId, TreeFile},
-	CWD,
-};
+use asyncgit::sync::{self, CommitId, RepoPathRef, TreeFile};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
@@ -37,6 +34,7 @@ enum Focus {
 }
 
 pub struct RevisionFilesComponent {
+	repo: RepoPathRef,
 	queue: Queue,
 	theme: SharedTheme,
 	//TODO: store TreeFiles in `tree`
@@ -52,6 +50,7 @@ pub struct RevisionFilesComponent {
 impl RevisionFilesComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncAppNotification>,
 		theme: SharedTheme,
@@ -62,6 +61,7 @@ impl RevisionFilesComponent {
 			tree: FileTree::default(),
 			scroll: VerticalScroll::new(),
 			current_file: SyntaxTextComponent::new(
+				repo.clone(),
 				sender,
 				key_config.clone(),
 				theme.clone(),
@@ -71,6 +71,7 @@ impl RevisionFilesComponent {
 			revision: None,
 			focus: Focus::Tree,
 			key_config,
+			repo,
 		}
 	}
 
@@ -79,7 +80,8 @@ impl RevisionFilesComponent {
 		let same_id =
 			self.revision.map(|c| c == commit).unwrap_or_default();
 		if !same_id {
-			self.files = sync::tree_files(&CWD.into(), commit)?;
+			self.files =
+				sync::tree_files(&self.repo.borrow(), commit)?;
 			let filenames: Vec<&Path> =
 				self.files.iter().map(|f| f.path.as_path()).collect();
 			self.tree = FileTree::new(&filenames, &BTreeSet::new())?;

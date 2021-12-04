@@ -11,13 +11,17 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{sync, StatusItem, StatusItemType, CWD};
+use asyncgit::{
+	sync::{self, RepoPathRef},
+	StatusItem, StatusItemType,
+};
 use crossterm::event::Event;
 use std::path::Path;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 ///
 pub struct ChangesComponent {
+	repo: RepoPathRef,
 	files: StatusTreeComponent,
 	is_working_dir: bool,
 	queue: Queue,
@@ -27,7 +31,10 @@ pub struct ChangesComponent {
 
 impl ChangesComponent {
 	///
+	//TODO: fix
+	#[allow(clippy::too_many_arguments)]
 	pub fn new(
+		repo: RepoPathRef,
 		title: &str,
 		focus: bool,
 		is_working_dir: bool,
@@ -48,6 +55,7 @@ impl ChangesComponent {
 			queue,
 			key_config,
 			options,
+			repo,
 		}
 	}
 
@@ -86,11 +94,14 @@ impl ChangesComponent {
 					match i.status {
 						StatusItemType::Deleted => {
 							sync::stage_addremoved(
-								&CWD.into(),
+								&self.repo.borrow(),
 								path,
 							)?;
 						}
-						_ => sync::stage_add_file(&CWD.into(), path)?,
+						_ => sync::stage_add_file(
+							&self.repo.borrow(),
+							path,
+						)?,
 					};
 
 					if self.is_empty() {
@@ -106,7 +117,7 @@ impl ChangesComponent {
 
 				//TODO: check if we can handle the one file case with it aswell
 				sync::stage_add_all(
-					&CWD.into(),
+					&self.repo.borrow(),
 					tree_item.info.full_path.as_str(),
 					config,
 				)?;
@@ -115,7 +126,7 @@ impl ChangesComponent {
 			}
 
 			let path = tree_item.info.full_path.as_str();
-			sync::reset_stage(&CWD.into(), path)?;
+			sync::reset_stage(&self.repo.borrow(), path)?;
 			return Ok(true);
 		}
 
@@ -125,7 +136,7 @@ impl ChangesComponent {
 	fn index_add_all(&mut self) -> Result<()> {
 		let config = self.options.borrow().status_show_untracked;
 
-		sync::stage_add_all(&CWD.into(), "*", config)?;
+		sync::stage_add_all(&self.repo.borrow(), "*", config)?;
 
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
@@ -133,7 +144,7 @@ impl ChangesComponent {
 	}
 
 	fn stage_remove_all(&mut self) -> Result<()> {
-		sync::reset_stage(&CWD.into(), "*")?;
+		sync::reset_stage(&self.repo.borrow(), "*")?;
 
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
@@ -159,7 +170,7 @@ impl ChangesComponent {
 	fn add_to_ignore(&mut self) -> bool {
 		if let Some(tree_item) = self.selection() {
 			if let Err(e) = sync::add_to_ignore(
-				&CWD.into(),
+				&self.repo.borrow(),
 				&tree_item.info.full_path,
 			) {
 				self.queue.push(InternalEvent::ShowErrorMsg(

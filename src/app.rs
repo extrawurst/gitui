@@ -122,23 +122,27 @@ impl App {
 				key_config.clone(),
 			),
 			revision_files_popup: RevisionFilesPopup::new(
+				repo.clone(),
 				&queue,
 				sender_app,
 				theme.clone(),
 				key_config.clone(),
 			),
 			stashmsg_popup: StashMsgComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			inspect_commit_popup: InspectCommitComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			compare_commits_popup: CompareCommitsComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
@@ -149,50 +153,59 @@ impl App {
 				key_config.clone(),
 			),
 			push_popup: PushComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			push_tags_popup: PushTagsComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			pull_popup: PullComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			fetch_popup: FetchComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			tag_commit_popup: TagCommitComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			create_branch_popup: CreateBranchComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			rename_branch_popup: RenameBranchComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			select_branch_popup: BranchListComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
 			tags_popup: TagListComponent::new(
+				repo.clone(),
 				&queue,
 				sender,
 				theme.clone(),
@@ -236,17 +249,20 @@ impl App {
 				options,
 			),
 			stashing_tab: Stashing::new(
+				repo.clone(),
 				sender,
 				&queue,
 				theme.clone(),
 				key_config.clone(),
 			),
 			stashlist_tab: StashList::new(
+				repo.clone(),
 				&queue,
 				theme.clone(),
 				key_config.clone(),
 			),
 			files_tab: FilesTab::new(
+				repo.clone(),
 				sender_app,
 				&queue,
 				theme.clone(),
@@ -351,6 +367,7 @@ impl App {
 				let result = match self.file_to_open.take() {
 					Some(path) => {
 						ExternalEditorComponent::open_file_in_editor(
+							&self.repo.borrow(),
 							Path::new(&path),
 						)
 					}
@@ -784,7 +801,10 @@ impl App {
 				}
 			}
 			Action::StashDrop(_) | Action::StashPop(_) => {
-				if let Err(e) = StashList::action_confirmed(&action) {
+				if let Err(e) = StashList::action_confirmed(
+					&self.repo.borrow(),
+					&action,
+				) {
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						e.to_string(),
 					));

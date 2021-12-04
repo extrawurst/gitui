@@ -15,10 +15,10 @@ use asyncgit::{
 			extract_username_password, need_username_password,
 			BasicAuthCredential,
 		},
-		get_branch_remote, get_default_remote,
+		get_branch_remote, get_default_remote, RepoPathRef,
 	},
 	AsyncGitNotification, AsyncPush, PushRequest, RemoteProgress,
-	RemoteProgressState, CWD,
+	RemoteProgressState,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -50,6 +50,7 @@ impl PushComponentModifier {
 
 ///
 pub struct PushComponent {
+	repo: RepoPathRef,
 	modifier: PushComponentModifier,
 	visible: bool,
 	git_push: AsyncPush,
@@ -65,6 +66,7 @@ pub struct PushComponent {
 impl PushComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -84,6 +86,7 @@ impl PushComponent {
 			),
 			theme,
 			key_config,
+			repo,
 		}
 	}
 
@@ -104,8 +107,8 @@ impl PushComponent {
 
 		self.show()?;
 
-		if need_username_password(&CWD.into())? {
-			let cred = extract_username_password(&CWD.into())
+		if need_username_password(&self.repo.borrow())? {
+			let cred = extract_username_password(&self.repo.borrow())
 				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
@@ -126,13 +129,13 @@ impl PushComponent {
 		force: bool,
 	) -> Result<()> {
 		let remote = if let Ok(Some(remote)) =
-			get_branch_remote(&CWD.into(), &self.branch)
+			get_branch_remote(&self.repo.borrow(), &self.branch)
 		{
 			log::info!("push: branch '{}' has upstream for remote '{}' - using that",self.branch,remote);
 			remote
 		} else {
 			log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
-			let remote = get_default_remote(&CWD.into())?;
+			let remote = get_default_remote(&self.repo.borrow())?;
 			log::info!(
 				"push: branch '{}' to remote '{}'",
 				self.branch,

@@ -11,11 +11,12 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{sync, CWD};
+use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct StashMsgComponent {
+	repo: RepoPathRef,
 	options: StashingOptions,
 	input: TextInputComponent,
 	queue: Queue,
@@ -63,8 +64,8 @@ impl Component for StashMsgComponent {
 
 			if let Event::Key(e) = ev {
 				if e == self.key_config.keys.enter {
-					match sync::stash_save(
-						&CWD.into(),
+					let result = sync::stash_save(
+						&self.repo.borrow(),
 						if self.input.get_text().is_empty() {
 							None
 						} else {
@@ -72,7 +73,8 @@ impl Component for StashMsgComponent {
 						},
 						self.options.stash_untracked,
 						self.options.keep_index,
-					) {
+					);
+					match result {
 						Ok(_) => {
 							self.input.clear();
 							self.hide();
@@ -123,6 +125,7 @@ impl Component for StashMsgComponent {
 impl StashMsgComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -138,6 +141,7 @@ impl StashMsgComponent {
 				true,
 			),
 			key_config,
+			repo,
 		}
 	}
 

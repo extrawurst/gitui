@@ -1,5 +1,6 @@
 use crate::bug_report;
 use anyhow::{anyhow, Result};
+use asyncgit::sync::RepoPath;
 use clap::{
 	crate_authors, crate_description, crate_name, crate_version,
 	App as ClapApp, Arg,
@@ -13,8 +14,7 @@ use std::{
 
 pub struct CliArgs {
 	pub theme: PathBuf,
-	pub workdir: Option<PathBuf>,
-	pub gitdir: PathBuf,
+	pub repo_path: RepoPath,
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
@@ -65,10 +65,12 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		setup_logging()?;
 	}
 
-	let workdir = arg_matches.value_of("workdir").map(PathBuf::from);
+	let _workdir = arg_matches.value_of("workdir").map(PathBuf::from);
 	let gitdir = arg_matches
 		.value_of("directory")
 		.map_or_else(|| PathBuf::from("."), PathBuf::from);
+
+	let repo_path = RepoPath::Path(gitdir);
 
 	let arg_theme =
 		arg_matches.value_of("theme").unwrap_or("theme.ron");
@@ -76,14 +78,12 @@ pub fn process_cmdline() -> Result<CliArgs> {
 	if get_app_config_path()?.join(arg_theme).is_file() {
 		Ok(CliArgs {
 			theme: get_app_config_path()?.join(arg_theme),
-			workdir,
-			gitdir,
+			repo_path,
 		})
 	} else {
 		Ok(CliArgs {
 			theme: get_app_config_path()?.join("theme.ron"),
-			workdir,
-			gitdir,
+			repo_path,
 		})
 	}
 }

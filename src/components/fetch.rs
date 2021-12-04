@@ -11,11 +11,14 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	asyncjob::AsyncSingleJob,
-	sync::cred::{
-		extract_username_password, need_username_password,
-		BasicAuthCredential,
+	sync::{
+		cred::{
+			extract_username_password, need_username_password,
+			BasicAuthCredential,
+		},
+		RepoPathRef,
 	},
-	AsyncFetchJob, AsyncGitNotification, ProgressPercent, CWD,
+	AsyncFetchJob, AsyncGitNotification, ProgressPercent,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -29,6 +32,7 @@ use tui::{
 
 ///
 pub struct FetchComponent {
+	repo: RepoPathRef,
 	visible: bool,
 	async_fetch: AsyncSingleJob<AsyncFetchJob>,
 	progress: Option<ProgressPercent>,
@@ -42,6 +46,7 @@ pub struct FetchComponent {
 impl FetchComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -59,14 +64,15 @@ impl FetchComponent {
 			),
 			theme,
 			key_config,
+			repo,
 		}
 	}
 
 	///
 	pub fn fetch(&mut self) -> Result<()> {
 		self.show()?;
-		if need_username_password(&CWD.into())? {
-			let cred = extract_username_password(&CWD.into())
+		if need_username_password(&self.repo.borrow())? {
+			let cred = extract_username_password(&self.repo.borrow())
 				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});

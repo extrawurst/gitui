@@ -11,9 +11,8 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self, CommitDetails, CommitId, CommitMessage},
-	CWD,
+use asyncgit::sync::{
+	self, CommitDetails, CommitId, CommitMessage, RepoPathRef,
 };
 use crossterm::event::Event;
 use std::clone::Clone;
@@ -30,6 +29,7 @@ use tui::{
 use super::style::Detail;
 
 pub struct DetailsComponent {
+	repo: RepoPathRef,
 	data: Option<CommitDetails>,
 	tags: Vec<String>,
 	theme: SharedTheme,
@@ -46,11 +46,13 @@ type WrappedCommitMessage<'a> =
 impl DetailsComponent {
 	///
 	pub const fn new(
+		repo: RepoPathRef,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 		focused: bool,
 	) -> Self {
 		Self {
+			repo,
 			data: None,
 			tags: Vec::new(),
 			theme,
@@ -70,7 +72,7 @@ impl DetailsComponent {
 		self.tags.clear();
 
 		self.data = id.and_then(|id| {
-			sync::get_commit_details(&CWD.into(), id).ok()
+			sync::get_commit_details(&self.repo.borrow(), id).ok()
 		});
 
 		self.scroll.reset();

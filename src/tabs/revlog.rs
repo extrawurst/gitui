@@ -14,7 +14,7 @@ use asyncgit::{
 	cached,
 	sync::{self, CommitId, RepoPathRef},
 	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
-	FetchStatus, CWD,
+	FetchStatus,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -30,6 +30,7 @@ const SLICE_SIZE: usize = 1200;
 
 ///
 pub struct Revlog {
+	repo: RepoPathRef,
 	commit_details: CommitDetailsComponent,
 	list: CommitList,
 	git_log: AsyncLog,
@@ -52,6 +53,7 @@ impl Revlog {
 		Self {
 			queue: queue.clone(),
 			commit_details: CommitDetailsComponent::new(
+				repo.clone(),
 				queue,
 				sender,
 				theme.clone(),
@@ -65,8 +67,9 @@ impl Revlog {
 			git_log: AsyncLog::new(sender, None),
 			git_tags: AsyncTags::new(sender),
 			visible: false,
-			branch_name: cached::BranchName::new(repo),
+			branch_name: cached::BranchName::new(repo.clone()),
 			key_config,
+			repo,
 		}
 	}
 
@@ -140,7 +143,7 @@ impl Revlog {
 			self.list.selection().saturating_sub(SLICE_SIZE / 2);
 
 		let commits = sync::get_commits_info(
-			&CWD.into(),
+			&self.repo.borrow(),
 			&self.git_log.get_slice(want_min, SLICE_SIZE)?,
 			self.list.current_size().0.into(),
 		);

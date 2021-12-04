@@ -10,14 +10,12 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self},
-	CWD,
-};
+use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct RenameBranchComponent {
+	repo: RepoPathRef,
 	input: TextInputComponent,
 	branch_ref: Option<String>,
 	queue: Queue,
@@ -92,11 +90,13 @@ impl Component for RenameBranchComponent {
 impl RenameBranchComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo,
 			queue,
 			input: TextInputComponent::new(
 				theme,
@@ -128,7 +128,7 @@ impl RenameBranchComponent {
 	pub fn rename_branch(&mut self) {
 		if let Some(br) = &self.branch_ref {
 			let res = sync::rename_branch(
-				&CWD.into(),
+				&self.repo.borrow(),
 				br,
 				self.input.get_text(),
 			);

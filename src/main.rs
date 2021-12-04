@@ -38,7 +38,7 @@ mod version;
 
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
-use asyncgit::AsyncGitNotification;
+use asyncgit::{sync::RepoPath, AsyncGitNotification};
 use backtrace::Backtrace;
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
@@ -105,7 +105,7 @@ fn main() -> Result<()> {
 
 	asyncgit::register_tracing_logging();
 
-	if !valid_path() {
+	if !valid_path(&cliargs.repo_path) {
 		eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
 		return Ok(());
 	}
@@ -136,7 +136,7 @@ fn main() -> Result<()> {
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
 	let mut app = App::new(
-		RefCell::new(asyncgit::CWD.into()),
+		RefCell::new(cliargs.repo_path),
 		&tx_git,
 		&tx_app,
 		input,
@@ -245,8 +245,8 @@ fn draw<B: Backend>(
 	Ok(())
 }
 
-fn valid_path() -> bool {
-	asyncgit::sync::is_repo(asyncgit::CWD)
+fn valid_path(repo_path: &RepoPath) -> bool {
+	asyncgit::sync::is_repo(repo_path)
 }
 
 fn select_event(

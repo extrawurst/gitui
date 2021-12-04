@@ -25,9 +25,9 @@ pub struct Head {
 }
 
 ///
-pub fn is_repo(repo_path: &str) -> bool {
+pub fn is_repo(repo_path: &RepoPath) -> bool {
 	Repository::open_ext(
-		repo_path,
+		repo_path.gitpath(),
 		RepositoryOpenFlags::empty(),
 		Vec::<&Path>::new(),
 	)

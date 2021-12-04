@@ -17,10 +17,9 @@ use asyncgit::{
 			extract_username_password, need_username_password,
 			BasicAuthCredential,
 		},
-		get_default_remote,
+		get_default_remote, RepoPathRef,
 	},
 	AsyncGitNotification, AsyncPull, FetchRequest, RemoteProgress,
-	CWD,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -34,6 +33,7 @@ use tui::{
 
 ///
 pub struct PullComponent {
+	repo: RepoPathRef,
 	visible: bool,
 	git_fetch: AsyncPull,
 	progress: Option<RemoteProgress>,
@@ -48,6 +48,7 @@ pub struct PullComponent {
 impl PullComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -66,6 +67,7 @@ impl PullComponent {
 			),
 			theme,
 			key_config,
+			repo,
 		}
 	}
 
@@ -73,8 +75,8 @@ impl PullComponent {
 	pub fn fetch(&mut self, branch: String) -> Result<()> {
 		self.branch = branch;
 		self.show()?;
-		if need_username_password(&CWD.into())? {
-			let cred = extract_username_password(&CWD.into())
+		if need_username_password(&self.repo.borrow())? {
+			let cred = extract_username_password(&self.repo.borrow())
 				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
@@ -96,7 +98,7 @@ impl PullComponent {
 		self.pending = true;
 		self.progress = None;
 		self.git_fetch.request(FetchRequest {
-			remote: get_default_remote(&CWD.into())?,
+			remote: get_default_remote(&self.repo.borrow())?,
 			branch: self.branch.clone(),
 			basic_credential: cred,
 		})?;
@@ -144,11 +146,13 @@ impl PullComponent {
 
 	// check if something is incoming and try a ff merge then
 	fn try_ff_merge(&mut self) -> Result<()> {
-		let branch_compare =
-			sync::branch_compare_upstream(&CWD.into(), &self.branch)?;
+		let branch_compare = sync::branch_compare_upstream(
+			&self.repo.borrow(),
+			&self.branch,
+		)?;
 		if branch_compare.behind > 0 {
 			let ff_res = sync::branch_merge_upstream_fastforward(
-				&CWD.into(),
+				&self.repo.borrow(),
 				&self.branch,
 			);
 			if let Err(err) = ff_res {
@@ -168,7 +172,7 @@ impl PullComponent {
 				self,
 				"rebase failed:",
 				sync::merge_upstream_rebase(
-					&CWD.into(),
+					&self.repo.borrow(),
 					&self.branch
 				)
 			);
@@ -177,7 +181,7 @@ impl PullComponent {
 				self,
 				"merge failed:",
 				sync::merge_upstream_commit(
-					&CWD.into(),
+					&self.repo.borrow(),
 					&self.branch
 				)
 			);
@@ -188,8 +192,10 @@ impl PullComponent {
 		self.queue.push(InternalEvent::ConfirmAction(
 			Action::PullMerge {
 				incoming,
-				rebase: sync::config_is_pull_rebase(&CWD.into())
-					.unwrap_or_default(),
+				rebase: sync::config_is_pull_rebase(
+					&self.repo.borrow(),
+				)
+				.unwrap_or_default(),
 			},
 		));
 		self.hide();

@@ -162,6 +162,7 @@ impl Status {
 			focus: Focus::WorkDir,
 			diff_target: DiffTarget::WorkingDir,
 			index_wd: ChangesComponent::new(
+				repo.clone(),
 				&strings::title_status(&key_config),
 				true,
 				true,
@@ -171,6 +172,7 @@ impl Status {
 				options.clone(),
 			),
 			index: ChangesComponent::new(
+				repo.clone(),
 				&strings::title_index(&key_config),
 				false,
 				false,
@@ -180,6 +182,7 @@ impl Status {
 				options.clone(),
 			),
 			diff: DiffComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme,
 				key_config.clone(),

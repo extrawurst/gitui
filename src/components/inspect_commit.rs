@@ -12,7 +12,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{diff::DiffOptions, CommitId, CommitTags},
+	sync::{diff::DiffOptions, CommitId, CommitTags, RepoPathRef},
 	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
 	DiffType,
 };
@@ -176,6 +176,7 @@ impl InspectCommitComponent {
 
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -184,12 +185,14 @@ impl InspectCommitComponent {
 		Self {
 			queue: queue.clone(),
 			details: CommitDetailsComponent::new(
+				repo.clone(),
 				queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			diff: DiffComponent::new(
+				repo,
 				queue.clone(),
 				theme,
 				key_config.clone(),

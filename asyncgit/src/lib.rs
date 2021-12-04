@@ -95,7 +95,7 @@ pub enum AsyncGitNotification {
 }
 
 /// current working directory `./`
-pub static CWD: &str = "./";
+static CWD: &str = "./";
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait
 pub fn hash<T: Hash + ?Sized>(v: &T) -> u64 {
