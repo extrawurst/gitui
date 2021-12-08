@@ -15,7 +15,7 @@ pub fn trim_length_left(s: &str, width: usize) -> &str {
 //TODO: allow customize tabsize
 pub fn tabs_to_spaces(input: String) -> String {
 	if input.contains('\t') {
-		input.replace("\t", "  ")
+		input.replace('\t', "  ")
 	} else {
 		input
 	}
