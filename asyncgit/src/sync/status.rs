@@ -104,6 +104,10 @@ pub fn get_status(
 
 	let repo = repo(repo_path)?;
 
+	if repo.is_bare() && !repo.is_worktree() {
+		return Ok(Vec::new());
+	}
+
 	let show_untracked = if let Some(config) = show_untracked {
 		config
 	} else {

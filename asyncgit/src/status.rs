@@ -127,23 +127,22 @@ impl AsyncStatus {
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
-			let ok = Self::fetch_helper(
+			if let Err(e) = Self::fetch_helper(
 				&repo,
 				status_type,
 				config,
 				hash_request,
 				&arc_current,
 				&arc_last,
-			)
-			.is_ok();
+			) {
+				log::error!("fetch_helper: {}", e);
+			}
 
 			arc_pending.fetch_sub(1, Ordering::Relaxed);
 
-			if ok {
-				sender
-					.send(AsyncGitNotification::Status)
-					.expect("error sending status");
-			}
+			sender
+				.send(AsyncGitNotification::Status)
+				.expect("error sending status");
 		});
 
 		Ok(None)
