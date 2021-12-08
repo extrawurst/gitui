@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "asyncgit"
-version = "0.18.0"
+version = "0.19.0"
 dependencies = [
  "crossbeam-channel",
  "easy-cast",
@@ -497,7 +497,7 @@ dependencies = [
 
 [[package]]
 name = "gitui"
-version = "0.18.0"
+version = "0.19.0"
 dependencies = [
  "anyhow",
  "asyncgit",
