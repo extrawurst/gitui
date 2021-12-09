@@ -195,9 +195,9 @@ mod tests {
 	fn test_dont_need_username_password_if_pushurl_ssh() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
-		env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
 			.unwrap();
 		repo.remote_set_pushurl(
@@ -206,7 +206,7 @@ mod tests {
 		)
 		.unwrap();
 
-		assert_eq!(need_username_password().unwrap(), false);
+		assert_eq!(need_username_password(repo_path).unwrap(), false);
 	}
 
 	#[test]
