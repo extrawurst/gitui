@@ -12,9 +12,9 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	cached,
-	sync::{self, CommitId},
+	sync::{self, CommitId, RepoPathRef},
 	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
-	FetchStatus, CWD,
+	FetchStatus,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -30,6 +30,7 @@ const SLICE_SIZE: usize = 1200;
 
 ///
 pub struct Revlog {
+	repo: RepoPathRef,
 	commit_details: CommitDetailsComponent,
 	list: CommitList,
 	git_log: AsyncLog,
@@ -43,14 +44,17 @@ pub struct Revlog {
 impl Revlog {
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			queue: queue.clone(),
 			commit_details: CommitDetailsComponent::new(
+				repo,
 				queue,
 				sender,
 				theme.clone(),
@@ -61,10 +65,14 @@ impl Revlog {
 				theme,
 				key_config.clone(),
 			),
-			git_log: AsyncLog::new(sender, None),
-			git_tags: AsyncTags::new(sender),
+			git_log: AsyncLog::new(
+				repo.borrow().clone(),
+				sender,
+				None,
+			),
+			git_tags: AsyncTags::new(repo.borrow().clone(), sender),
 			visible: false,
-			branch_name: cached::BranchName::new(CWD),
+			branch_name: cached::BranchName::new(repo.clone()),
 			key_config,
 		}
 	}
@@ -139,7 +147,7 @@ impl Revlog {
 			self.list.selection().saturating_sub(SLICE_SIZE / 2);
 
 		let commits = sync::get_commits_info(
-			CWD,
+			&self.repo.borrow(),
 			&self.git_log.get_slice(want_min, SLICE_SIZE)?,
 			self.list.current_size().0.into(),
 		);
@@ -221,17 +229,17 @@ impl Component for Revlog {
 				self.update()?;
 				return Ok(EventState::Consumed);
 			} else if let Event::Key(k) = ev {
-				if k == self.key_config.enter {
+				if k == self.key_config.keys.enter {
 					self.commit_details.toggle_visible()?;
 					self.update()?;
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.copy {
+				} else if k == self.key_config.keys.copy {
 					self.copy_commit_hash()?;
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.push {
+				} else if k == self.key_config.keys.push {
 					self.queue.push(InternalEvent::PushTags);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.log_tag_commit {
+				} else if k == self.key_config.keys.log_tag_commit {
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -240,7 +248,7 @@ impl Component for Revlog {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.focus_right
+				} else if k == self.key_config.keys.focus_right
 					&& self.commit_details.is_visible()
 				{
 					return self.selected_commit().map_or(
@@ -257,10 +265,10 @@ impl Component for Revlog {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.select_branch {
+				} else if k == self.key_config.keys.select_branch {
 					self.queue.push(InternalEvent::SelectBranch);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.open_file_tree {
+				} else if k == self.key_config.keys.open_file_tree {
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -270,10 +278,10 @@ impl Component for Revlog {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.tags {
+				} else if k == self.key_config.keys.tags {
 					self.queue.push(InternalEvent::Tags);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.compare_commits
+				} else if k == self.key_config.keys.compare_commits
 					&& self.list.marked_count() > 0
 				{
 					if self.list.marked_count() == 1 {

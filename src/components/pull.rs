@@ -17,10 +17,9 @@ use asyncgit::{
 			extract_username_password, need_username_password,
 			BasicAuthCredential,
 		},
-		get_default_remote,
+		get_default_remote, RepoPathRef,
 	},
-	AsyncFetch, AsyncGitNotification, FetchRequest, RemoteProgress,
-	CWD,
+	AsyncGitNotification, AsyncPull, FetchRequest, RemoteProgress,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -34,8 +33,9 @@ use tui::{
 
 ///
 pub struct PullComponent {
+	repo: RepoPathRef,
 	visible: bool,
-	git_fetch: AsyncFetch,
+	git_fetch: AsyncPull,
 	progress: Option<RemoteProgress>,
 	pending: bool,
 	branch: String,
@@ -48,17 +48,19 @@ pub struct PullComponent {
 impl PullComponent {
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			queue: queue.clone(),
 			pending: false,
 			visible: false,
 			branch: String::new(),
-			git_fetch: AsyncFetch::new(sender),
+			git_fetch: AsyncPull::new(repo.borrow().clone(), sender),
 			progress: None,
 			input_cred: CredComponent::new(
 				theme.clone(),
@@ -73,9 +75,9 @@ impl PullComponent {
 	pub fn fetch(&mut self, branch: String) -> Result<()> {
 		self.branch = branch;
 		self.show()?;
-		if need_username_password()? {
-			let cred =
-				extract_username_password().unwrap_or_else(|_| {
+		if need_username_password(&self.repo.borrow())? {
+			let cred = extract_username_password(&self.repo.borrow())
+				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
@@ -96,7 +98,7 @@ impl PullComponent {
 		self.pending = true;
 		self.progress = None;
 		self.git_fetch.request(FetchRequest {
-			remote: get_default_remote(CWD)?,
+			remote: get_default_remote(&self.repo.borrow())?,
 			branch: self.branch.clone(),
 			basic_credential: cred,
 		})?;
@@ -111,7 +113,7 @@ impl PullComponent {
 
 	///
 	pub fn update_git(&mut self, ev: AsyncGitNotification) {
-		if self.is_visible() && ev == AsyncGitNotification::Fetch {
+		if self.is_visible() && ev == AsyncGitNotification::Pull {
 			if let Err(error) = self.update() {
 				self.pending = false;
 				self.hide();
@@ -144,11 +146,13 @@ impl PullComponent {
 
 	// check if something is incoming and try a ff merge then
 	fn try_ff_merge(&mut self) -> Result<()> {
-		let branch_compare =
-			sync::branch_compare_upstream(CWD, &self.branch)?;
+		let branch_compare = sync::branch_compare_upstream(
+			&self.repo.borrow(),
+			&self.branch,
+		)?;
 		if branch_compare.behind > 0 {
 			let ff_res = sync::branch_merge_upstream_fastforward(
-				CWD,
+				&self.repo.borrow(),
 				&self.branch,
 			);
 			if let Err(err) = ff_res {
@@ -167,13 +171,19 @@ impl PullComponent {
 			try_or_popup!(
 				self,
 				"rebase failed:",
-				sync::merge_upstream_rebase(CWD, &self.branch)
+				sync::merge_upstream_rebase(
+					&self.repo.borrow(),
+					&self.branch
+				)
 			);
 		} else {
 			try_or_popup!(
 				self,
 				"merge failed:",
-				sync::merge_upstream_commit(CWD, &self.branch)
+				sync::merge_upstream_commit(
+					&self.repo.borrow(),
+					&self.branch
+				)
 			);
 		}
 	}
@@ -182,8 +192,10 @@ impl PullComponent {
 		self.queue.push(InternalEvent::ConfirmAction(
 			Action::PullMerge {
 				incoming,
-				rebase: sync::config_is_pull_rebase(CWD)
-					.unwrap_or_default(),
+				rebase: sync::config_is_pull_rebase(
+					&self.repo.borrow(),
+				)
+				.unwrap_or_default(),
 			},
 		));
 		self.hide();

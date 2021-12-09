@@ -17,10 +17,11 @@ use crate::{
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::{sync, CWD};
+use asyncgit::sync::{self, RepoPathRef};
 use crossbeam_channel::Sender;
 
 pub struct FilesTab {
+	repo: RepoPathRef,
 	visible: bool,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -30,6 +31,7 @@ pub struct FilesTab {
 impl FilesTab {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		sender: &Sender<AsyncAppNotification>,
 		queue: &Queue,
 		theme: SharedTheme,
@@ -38,6 +40,7 @@ impl FilesTab {
 		Self {
 			visible: false,
 			files: RevisionFilesComponent::new(
+				repo.clone(),
 				queue,
 				sender,
 				theme.clone(),
@@ -45,13 +48,14 @@ impl FilesTab {
 			),
 			theme,
 			key_config,
+			repo,
 		}
 	}
 
 	///
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			if let Ok(head) = sync::get_head(CWD) {
+			if let Ok(head) = sync::get_head(&self.repo.borrow()) {
 				self.files.set_commit(head)?;
 			}
 		}

@@ -15,10 +15,10 @@ use asyncgit::{
 			extract_username_password, need_username_password,
 			BasicAuthCredential,
 		},
-		get_branch_remote, get_default_remote,
+		get_branch_remote, get_default_remote, RepoPathRef,
 	},
 	AsyncGitNotification, AsyncPush, PushRequest, RemoteProgress,
-	RemoteProgressState, CWD,
+	RemoteProgressState,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -50,6 +50,7 @@ impl PushComponentModifier {
 
 ///
 pub struct PushComponent {
+	repo: RepoPathRef,
 	modifier: PushComponentModifier,
 	visible: bool,
 	git_push: AsyncPush,
@@ -65,18 +66,20 @@ pub struct PushComponent {
 impl PushComponent {
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			queue: queue.clone(),
 			modifier: PushComponentModifier::None,
 			pending: false,
 			visible: false,
 			branch: String::new(),
-			git_push: AsyncPush::new(sender),
+			git_push: AsyncPush::new(repo.borrow().clone(), sender),
 			progress: None,
 			input_cred: CredComponent::new(
 				theme.clone(),
@@ -104,9 +107,9 @@ impl PushComponent {
 
 		self.show()?;
 
-		if need_username_password()? {
-			let cred =
-				extract_username_password().unwrap_or_else(|_| {
+		if need_username_password(&self.repo.borrow())? {
+			let cred = extract_username_password(&self.repo.borrow())
+				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
@@ -126,13 +129,13 @@ impl PushComponent {
 		force: bool,
 	) -> Result<()> {
 		let remote = if let Ok(Some(remote)) =
-			get_branch_remote(CWD, &self.branch)
+			get_branch_remote(&self.repo.borrow(), &self.branch)
 		{
 			log::info!("push: branch '{}' has upstream for remote '{}' - using that",self.branch,remote);
 			remote
 		} else {
 			log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
-			let remote = get_default_remote(CWD)?;
+			let remote = get_default_remote(&self.repo.borrow())?;
 			log::info!(
 				"push: branch '{}' to remote '{}'",
 				self.branch,
@@ -304,7 +307,7 @@ impl Component for PushComponent {
 						)?;
 						self.input_cred.hide();
 					}
-				} else if e == self.key_config.exit_popup
+				} else if e == self.key_config.keys.exit_popup
 					&& !self.pending
 				{
 					self.hide();

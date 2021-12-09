@@ -8,8 +8,9 @@ use crate::{
 	error::{Error, Result},
 	sync::{
 		cred::BasicAuthCredential,
-		remotes::push::ProgressNotification, utils,
+		remotes::push::ProgressNotification, repository::repo, utils,
 	},
+	ProgressPercent,
 };
 use crossbeam_channel::Sender;
 use git2::{BranchType, FetchOptions, Repository};
@@ -19,14 +20,16 @@ use utils::bytes2string;
 pub use callbacks::Callbacks;
 pub use tags::tags_missing_remote;
 
+use super::RepoPath;
+
 /// origin
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
 
 ///
-pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
+pub fn get_remotes(repo_path: &RepoPath) -> Result<Vec<String>> {
 	scope_time!("get_remotes");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let remotes = repo.remotes()?;
 	let remotes: Vec<String> =
 		remotes.iter().flatten().map(String::from).collect();
@@ -36,8 +39,8 @@ pub fn get_remotes(repo_path: &str) -> Result<Vec<String>> {
 
 /// tries to find origin or the only remote that is defined if any
 /// in case of multiple remotes and none named *origin* we fail
-pub fn get_default_remote(repo_path: &str) -> Result<String> {
-	let repo = utils::repo(repo_path)?;
+pub fn get_default_remote(repo_path: &RepoPath) -> Result<String> {
+	let repo = repo(repo_path)?;
 	get_default_remote_in_repo(&repo)
 }
 
@@ -75,16 +78,71 @@ pub(crate) fn get_default_remote_in_repo(
 	Err(Error::NoDefaultRemoteFound)
 }
 
-/// fetches from upstream/remote for `branch`
+///
+fn fetch_from_remote(
+	repo_path: &RepoPath,
+	remote: &str,
+	basic_credential: Option<BasicAuthCredential>,
+	progress_sender: Option<Sender<ProgressNotification>>,
+) -> Result<()> {
+	let repo = repo(repo_path)?;
+
+	let mut remote = repo.find_remote(remote)?;
+
+	let mut options = FetchOptions::new();
+	let callbacks = Callbacks::new(progress_sender, basic_credential);
+	options.prune(git2::FetchPrune::On);
+	options.download_tags(git2::AutotagOption::All);
+	options.remote_callbacks(callbacks.callbacks());
+	remote.fetch(&[] as &[&str], Some(&mut options), None)?;
+
+	Ok(())
+}
+
+/// updates/prunes all branches from all remotes
+pub fn fetch_all(
+	repo_path: &RepoPath,
+	basic_credential: &Option<BasicAuthCredential>,
+	progress_sender: &Option<Sender<ProgressPercent>>,
+) -> Result<()> {
+	scope_time!("fetch_all");
+
+	let repo = repo(repo_path)?;
+	let remotes = repo
+		.remotes()?
+		.iter()
+		.flatten()
+		.map(String::from)
+		.collect::<Vec<_>>();
+	let remotes_count = remotes.len();
+
+	for (idx, remote) in remotes.into_iter().enumerate() {
+		fetch_from_remote(
+			repo_path,
+			&remote,
+			basic_credential.clone(),
+			None,
+		)?;
+
+		if let Some(sender) = progress_sender {
+			let progress = ProgressPercent::new(idx, remotes_count);
+			sender.send(progress)?;
+		}
+	}
+
+	Ok(())
+}
+
+/// fetches from upstream/remote for local `branch`
 pub(crate) fn fetch(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	branch: &str,
 	basic_credential: Option<BasicAuthCredential>,
 	progress_sender: Option<Sender<ProgressNotification>>,
 ) -> Result<usize> {
-	scope_time!("fetch_origin");
+	scope_time!("fetch");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let branch_ref = repo
 		.find_branch(branch, BranchType::Local)?
 		.into_reference();
@@ -94,6 +152,7 @@ pub(crate) fn fetch(
 	let mut remote = repo.find_remote(&remote_name)?;
 
 	let mut options = FetchOptions::new();
+	options.download_tags(git2::AutotagOption::All);
 	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.remote_callbacks(callbacks.callbacks());
 
@@ -114,7 +173,12 @@ mod tests {
 		let (remote_dir, _remote) = repo_init().unwrap();
 		let remote_path = remote_dir.path().to_str().unwrap();
 		let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
-		let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath = &repo_dir
+			.into_path()
+			.as_os_str()
+			.to_str()
+			.unwrap()
+			.into();
 
 		let remotes = get_remotes(repo_path).unwrap();
 
@@ -128,7 +192,12 @@ mod tests {
 		let (remote_dir, _remote) = repo_init().unwrap();
 		let remote_path = remote_dir.path().to_str().unwrap();
 		let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
-		let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath = &repo_dir
+			.into_path()
+			.as_os_str()
+			.to_str()
+			.unwrap()
+			.into();
 
 		debug_cmd_print(
 			repo_path,
@@ -142,10 +211,9 @@ mod tests {
 			vec![String::from("origin"), String::from("second")]
 		);
 
-		let first = get_default_remote_in_repo(
-			&utils::repo(repo_path).unwrap(),
-		)
-		.unwrap();
+		let first =
+			get_default_remote_in_repo(&repo(repo_path).unwrap())
+				.unwrap();
 		assert_eq!(first, String::from("origin"));
 	}
 
@@ -154,7 +222,12 @@ mod tests {
 		let (remote_dir, _remote) = repo_init().unwrap();
 		let remote_path = remote_dir.path().to_str().unwrap();
 		let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
-		let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath = &repo_dir
+			.into_path()
+			.as_os_str()
+			.to_str()
+			.unwrap()
+			.into();
 
 		debug_cmd_print(
 			repo_path,
@@ -174,10 +247,9 @@ mod tests {
 			vec![String::from("alternate"), String::from("origin")]
 		);
 
-		let first = get_default_remote_in_repo(
-			&utils::repo(repo_path).unwrap(),
-		)
-		.unwrap();
+		let first =
+			get_default_remote_in_repo(&repo(repo_path).unwrap())
+				.unwrap();
 		assert_eq!(first, String::from("origin"));
 	}
 
@@ -186,7 +258,12 @@ mod tests {
 		let (remote_dir, _remote) = repo_init().unwrap();
 		let remote_path = remote_dir.path().to_str().unwrap();
 		let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
-		let repo_path = repo_dir.path().as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath = &repo_dir
+			.into_path()
+			.as_os_str()
+			.to_str()
+			.unwrap()
+			.into();
 
 		debug_cmd_print(
 			repo_path,
@@ -207,9 +284,8 @@ mod tests {
 			]
 		);
 
-		let res = get_default_remote_in_repo(
-			&utils::repo(repo_path).unwrap(),
-		);
+		let res =
+			get_default_remote_in_repo(&repo(repo_path).unwrap());
 		assert_eq!(res.is_err(), true);
 		assert!(matches!(res, Err(Error::NoDefaultRemoteFound)));
 	}

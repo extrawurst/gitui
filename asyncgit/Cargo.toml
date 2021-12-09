@@ -1,6 +1,6 @@
 [package]
 name = "asyncgit"
-version = "0.18.0"
+version = "0.19.0"
 authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
 edition = "2018"
 description = "allow using git2 in a asynchronous context"
@@ -8,29 +8,29 @@ homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
 license = "MIT"
-categories = ["concurrency","asynchronous"]
+categories = ["concurrency", "asynchronous"]
 keywords = ["git"]
 
 [dependencies]
-scopetime = { path = "../scopetime", version = "0.1" }
+crossbeam-channel = "0.5"
+easy-cast = "0.4"
 git2 = "0.13"
+log = "0.4"
 # git2 = { path = "../../extern/git2-rs", features = ["vendored-openssl"]}
 # git2 = { git="https://github.com/extrawurst/git2-rs.git", rev="fc13dcc", features = ["vendored-openssl"]}
 # pinning to vendored openssl, using the git2 feature this gets lost with new resolver
-openssl-sys = { version = '0.9', features= ["vendored"] }
+openssl-sys = { version = '0.9', features = ["vendored"] }
 rayon-core = "1.9"
-crossbeam-channel = "0.5"
-log = "0.4"
+scopetime = { path = "../scopetime", version = "0.1" }
 thiserror = "1.0"
-url = "2.2"
 unicode-truncate = "0.2.0"
-easy-cast = "0.4"
+url = "2.2"
 
 [dev-dependencies]
-tempfile = "3.2"
 invalidstring = { path = "../invalidstring", version = "0.1" }
-serial_test = "0.5.1"
 pretty_assertions = "1.0"
+serial_test = "0.5"
+tempfile = "3.2"
 
 [features]
 default = ["trace-libgit"]

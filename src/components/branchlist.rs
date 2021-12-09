@@ -19,9 +19,9 @@ use asyncgit::{
 			RemoteBranch,
 		},
 		checkout_branch, get_branches_info, BranchInfo, BranchType,
-		CommitId, RepoState,
+		CommitId, RepoPathRef, RepoState,
 	},
-	AsyncGitNotification, CWD,
+	AsyncGitNotification,
 };
 use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
@@ -39,6 +39,7 @@ use unicode_truncate::UnicodeTruncateStr;
 
 ///
 pub struct BranchListComponent {
+	repo: RepoPathRef,
 	branches: Vec<BranchInfo>,
 	local: bool,
 	visible: bool,
@@ -196,6 +197,12 @@ impl Component for BranchListComponent {
 				true,
 				self.local,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::fetch_remotes(&self.key_config),
+				true,
+				!self.local,
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -208,54 +215,55 @@ impl Component for BranchListComponent {
 		}
 
 		if let Event::Key(e) = ev {
-			if e == self.key_config.exit_popup {
+			if e == self.key_config.keys.exit_popup {
 				self.hide();
-			} else if e == self.key_config.move_down {
+			} else if e == self.key_config.keys.move_down {
 				return self
 					.move_selection(ScrollType::Up)
 					.map(Into::into);
-			} else if e == self.key_config.move_up {
+			} else if e == self.key_config.keys.move_up {
 				return self
 					.move_selection(ScrollType::Down)
 					.map(Into::into);
-			} else if e == self.key_config.page_down {
+			} else if e == self.key_config.keys.page_down {
 				return self
 					.move_selection(ScrollType::PageDown)
 					.map(Into::into);
-			} else if e == self.key_config.page_up {
+			} else if e == self.key_config.keys.page_up {
 				return self
 					.move_selection(ScrollType::PageUp)
 					.map(Into::into);
-			} else if e == self.key_config.home {
+			} else if e == self.key_config.keys.home {
 				return self
 					.move_selection(ScrollType::Home)
 					.map(Into::into);
-			} else if e == self.key_config.end {
+			} else if e == self.key_config.keys.end {
 				return self
 					.move_selection(ScrollType::End)
 					.map(Into::into);
-			} else if e == self.key_config.tab_toggle {
+			} else if e == self.key_config.keys.tab_toggle {
 				self.local = !self.local;
 				self.update_branches()?;
-			} else if e == self.key_config.enter {
+			} else if e == self.key_config.keys.enter {
 				try_or_popup!(
 					self,
 					"switch branch error:",
 					self.switch_to_selected_branch()
 				);
-			} else if e == self.key_config.create_branch && self.local
+			} else if e == self.key_config.keys.create_branch
+				&& self.local
 			{
 				self.queue.push(InternalEvent::CreateBranch);
-			} else if e == self.key_config.rename_branch
+			} else if e == self.key_config.keys.rename_branch
 				&& self.valid_selection()
 			{
 				self.rename_branch();
-			} else if e == self.key_config.delete_branch
+			} else if e == self.key_config.keys.delete_branch
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
 				self.delete_branch();
-			} else if e == self.key_config.merge_branch
+			} else if e == self.key_config.keys.merge_branch
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
@@ -264,7 +272,7 @@ impl Component for BranchListComponent {
 					"merge branch error:",
 					self.merge_branch()
 				);
-			} else if e == self.key_config.rebase_branch
+			} else if e == self.key_config.keys.rebase_branch
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
@@ -273,7 +281,7 @@ impl Component for BranchListComponent {
 					"rebase error:",
 					self.rebase_branch()
 				);
-			} else if e == self.key_config.move_right
+			} else if e == self.key_config.keys.move_right
 				&& self.valid_selection()
 			{
 				self.hide();
@@ -281,7 +289,7 @@ impl Component for BranchListComponent {
 					self.queue
 						.push(InternalEvent::InspectCommit(b, None));
 				}
-			} else if e == self.key_config.compare_commits
+			} else if e == self.key_config.keys.compare_commits
 				&& self.valid_selection()
 			{
 				self.hide();
@@ -289,7 +297,9 @@ impl Component for BranchListComponent {
 					self.queue
 						.push(InternalEvent::CompareCommits(b, None));
 				}
-			} else if e == self.key_config.cmd_bar_toggle {
+			} else if e == self.key_config.keys.pull && !self.local {
+				self.queue.push(InternalEvent::FetchRemotes);
+			} else if e == self.key_config.keys.cmd_bar_toggle {
 				//do not consume if its the more key
 				return Ok(EventState::NotConsumed);
 			}
@@ -315,6 +325,7 @@ impl Component for BranchListComponent {
 
 impl BranchListComponent {
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -329,6 +340,7 @@ impl BranchListComponent {
 			theme,
 			key_config,
 			current_height: Cell::new(0),
+			repo,
 		}
 	}
 
@@ -343,7 +355,8 @@ impl BranchListComponent {
 	/// fetch list of branches
 	pub fn update_branches(&mut self) -> Result<()> {
 		if self.is_visible() {
-			self.branches = get_branches_info(CWD, self.local)?;
+			self.branches =
+				get_branches_info(&self.repo.borrow(), self.local)?;
 			//remove remote branch called `HEAD`
 			if !self.local {
 				self.branches
@@ -377,7 +390,7 @@ impl BranchListComponent {
 			self.branches.get(usize::from(self.selection))
 		{
 			sync::merge_branch(
-				CWD,
+				&self.repo.borrow(),
 				&branch.name,
 				self.get_branch_type(),
 			)?;
@@ -393,7 +406,7 @@ impl BranchListComponent {
 			self.branches.get(usize::from(self.selection))
 		{
 			sync::rebase_branch(
-				CWD,
+				&self.repo.borrow(),
 				&branch.name,
 				self.get_branch_type(),
 			)?;
@@ -416,7 +429,8 @@ impl BranchListComponent {
 		self.hide();
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
-		if sync::repo_state(CWD)? != RepoState::Clean {
+		if sync::repo_state(&self.repo.borrow())? != RepoState::Clean
+		{
 			self.queue.push(InternalEvent::TabSwitch);
 		}
 
@@ -605,13 +619,13 @@ impl BranchListComponent {
 
 		if self.local {
 			checkout_branch(
-				asyncgit::CWD,
+				&self.repo.borrow(),
 				&self.branches[self.selection as usize].reference,
 			)?;
 			self.hide();
 		} else {
 			checkout_remote_branch(
-				CWD,
+				&self.repo.borrow(),
 				&self.branches[self.selection as usize],
 			)?;
 			self.local = true;

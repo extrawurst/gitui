@@ -131,7 +131,7 @@ jobs:
         make test-linux-musl
 
   rustfmt:
-    name: Rustfmt
+    name: Formatting
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
@@ -141,6 +141,11 @@ jobs:
         toolchain: stable
         components: rustfmt
     - run: cargo fmt -- --check
+
+    - name: cargo-sort
+      run: |
+        cargo install cargo-sort --force
+        cargo sort -c -w
 
   sec:
     name: Security audit

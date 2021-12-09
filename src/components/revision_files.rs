@@ -11,10 +11,7 @@ use crate::{
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self, CommitId, TreeFile},
-	CWD,
-};
+use asyncgit::sync::{self, CommitId, RepoPathRef, TreeFile};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
@@ -37,6 +34,7 @@ enum Focus {
 }
 
 pub struct RevisionFilesComponent {
+	repo: RepoPathRef,
 	queue: Queue,
 	theme: SharedTheme,
 	//TODO: store TreeFiles in `tree`
@@ -52,6 +50,7 @@ pub struct RevisionFilesComponent {
 impl RevisionFilesComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncAppNotification>,
 		theme: SharedTheme,
@@ -62,6 +61,7 @@ impl RevisionFilesComponent {
 			tree: FileTree::default(),
 			scroll: VerticalScroll::new(),
 			current_file: SyntaxTextComponent::new(
+				repo.clone(),
 				sender,
 				key_config.clone(),
 				theme.clone(),
@@ -71,6 +71,7 @@ impl RevisionFilesComponent {
 			revision: None,
 			focus: Focus::Tree,
 			key_config,
+			repo,
 		}
 	}
 
@@ -79,7 +80,8 @@ impl RevisionFilesComponent {
 		let same_id =
 			self.revision.map(|c| c == commit).unwrap_or_default();
 		if !same_id {
-			self.files = sync::tree_files(CWD, commit)?;
+			self.files =
+				sync::tree_files(&self.repo.borrow(), commit)?;
 			let filenames: Vec<&Path> =
 				self.files.iter().map(|f| f.path.as_path()).collect();
 			self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
@@ -155,13 +157,15 @@ impl RevisionFilesComponent {
 		}
 	}
 
-	fn selection_changed(&mut self) {
-		//TODO: retrieve TreeFile from tree datastructure
-		if let Some(file) = self
-			.tree
+	fn selected_file(&self) -> Option<String> {
+		self.tree
 			.selected_file()
 			.map(|file| file.full_path_str().to_string())
-		{
+	}
+
+	fn selection_changed(&mut self) {
+		//TODO: retrieve TreeFile from tree datastructure
+		if let Some(file) = self.selected_file() {
 			log::info!("selected: {:?}", file);
 			let path = Path::new(&file);
 			if let Some(item) =
@@ -271,6 +275,11 @@ impl Component for RevisionFilesComponent {
 				)
 				.order(order::NAV),
 			);
+			out.push(CommandInfo::new(
+				strings::commands::edit_item(&self.key_config),
+				self.tree.selected_file().is_some(),
+				true,
+			));
 			tree_nav_cmds(&self.tree, &self.key_config, out);
 		} else {
 			self.current_file.commands(out, force_all);
@@ -290,28 +299,38 @@ impl Component for RevisionFilesComponent {
 			{
 				self.selection_changed();
 				return Ok(EventState::Consumed);
-			} else if key == self.key_config.blame {
+			} else if key == self.key_config.keys.blame {
 				if self.blame() {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.move_right {
+			} else if key == self.key_config.keys.move_right {
 				if is_tree_focused {
 					self.focus = Focus::File;
 					self.current_file.focus(true);
 					self.focus(true);
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.move_left {
+			} else if key == self.key_config.keys.move_left {
 				if !is_tree_focused {
 					self.focus = Focus::Tree;
 					self.current_file.focus(false);
 					self.focus(false);
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.file_find {
+			} else if key == self.key_config.keys.file_find {
 				if is_tree_focused {
 					self.open_finder();
+					return Ok(EventState::Consumed);
+				}
+			} else if key == self.key_config.keys.edit_file {
+				if let Some(file) = self.selected_file() {
+					//Note: switch to status tab so its clear we are
+					// not altering a file inside a revision here
+					self.queue.push(InternalEvent::TabSwitch);
+					self.queue.push(
+						InternalEvent::OpenExternalEditor(Some(file)),
+					);
 					return Ok(EventState::Consumed);
 				}
 			} else if !is_tree_focused {
@@ -347,10 +366,10 @@ fn tree_nav(
 ) -> bool {
 	if let Some(common_nav) = common_nav(key, key_config) {
 		tree.move_selection(common_nav)
-	} else if key == key_config.tree_collapse_recursive {
+	} else if key == key_config.keys.tree_collapse_recursive {
 		tree.collapse_recursive();
 		true
-	} else if key == key_config.tree_expand_recursive {
+	} else if key == key_config.keys.tree_expand_recursive {
 		tree.expand_recursive();
 		true
 	} else {

@@ -3,8 +3,9 @@ use crate::{
 	sync::{
 		cred::BasicAuthCredential,
 		remotes::{fetch, push::ProgressNotification},
+		RepoPath,
 	},
-	AsyncGitNotification, RemoteProgress, CWD,
+	AsyncGitNotification, RemoteProgress,
 };
 use crossbeam_channel::{unbounded, Sender};
 use std::{
@@ -28,17 +29,22 @@ pub struct FetchRequest {
 struct FetchState {}
 
 ///
-pub struct AsyncFetch {
+pub struct AsyncPull {
 	state: Arc<Mutex<Option<FetchState>>>,
 	last_result: Arc<Mutex<Option<(usize, String)>>>,
 	progress: Arc<Mutex<Option<ProgressNotification>>>,
 	sender: Sender<AsyncGitNotification>,
+	repo: RepoPath,
 }
 
-impl AsyncFetch {
+impl AsyncPull {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			state: Arc::new(Mutex::new(None)),
 			last_result: Arc::new(Mutex::new(None)),
 			progress: Arc::new(Mutex::new(None)),
@@ -79,19 +85,20 @@ impl AsyncFetch {
 		let arc_res = Arc::clone(&self.last_result);
 		let arc_progress = Arc::clone(&self.progress);
 		let sender = self.sender.clone();
+		let repo = self.repo.clone();
 
 		thread::spawn(move || {
 			let (progress_sender, receiver) = unbounded();
 
 			let handle = RemoteProgress::spawn_receiver_thread(
-				AsyncGitNotification::Fetch,
+				AsyncGitNotification::Pull,
 				sender.clone(),
 				receiver,
 				arc_progress,
 			);
 
 			let res = fetch(
-				CWD,
+				&repo,
 				&params.branch,
 				params.basic_credential,
 				Some(progress_sender.clone()),
@@ -108,7 +115,7 @@ impl AsyncFetch {
 			Self::clear_request(&arc_state).expect("clear error");
 
 			sender
-				.send(AsyncGitNotification::Fetch)
+				.send(AsyncGitNotification::Pull)
 				.expect("AsyncNotification error");
 		});
 

@@ -1,5 +1,5 @@
 use super::{
-	filetree::FileTreeComponent,
+	status_tree::StatusTreeComponent,
 	utils::filetree::{FileTreeItem, FileTreeItemKind},
 	CommandBlocking, DrawableComponent, SharedOptions,
 };
@@ -11,14 +11,18 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{sync, StatusItem, StatusItemType, CWD};
+use asyncgit::{
+	sync::{self, RepoPathRef},
+	StatusItem, StatusItemType,
+};
 use crossterm::event::Event;
 use std::path::Path;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 ///
 pub struct ChangesComponent {
-	files: FileTreeComponent,
+	repo: RepoPathRef,
+	files: StatusTreeComponent,
 	is_working_dir: bool,
 	queue: Queue,
 	key_config: SharedKeyConfig,
@@ -27,7 +31,10 @@ pub struct ChangesComponent {
 
 impl ChangesComponent {
 	///
+	//TODO: fix
+	#[allow(clippy::too_many_arguments)]
 	pub fn new(
+		repo: RepoPathRef,
 		title: &str,
 		focus: bool,
 		is_working_dir: bool,
@@ -37,7 +44,7 @@ impl ChangesComponent {
 		options: SharedOptions,
 	) -> Self {
 		Self {
-			files: FileTreeComponent::new(
+			files: StatusTreeComponent::new(
 				title,
 				focus,
 				Some(queue.clone()),
@@ -48,6 +55,7 @@ impl ChangesComponent {
 			queue,
 			key_config,
 			options,
+			repo,
 		}
 	}
 
@@ -85,9 +93,15 @@ impl ChangesComponent {
 					let path = Path::new(i.path.as_str());
 					match i.status {
 						StatusItemType::Deleted => {
-							sync::stage_addremoved(CWD, path)?;
+							sync::stage_addremoved(
+								&self.repo.borrow(),
+								path,
+							)?;
 						}
-						_ => sync::stage_add_file(CWD, path)?,
+						_ => sync::stage_add_file(
+							&self.repo.borrow(),
+							path,
+						)?,
 					};
 
 					if self.is_empty() {
@@ -103,7 +117,7 @@ impl ChangesComponent {
 
 				//TODO: check if we can handle the one file case with it aswell
 				sync::stage_add_all(
-					CWD,
+					&self.repo.borrow(),
 					tree_item.info.full_path.as_str(),
 					config,
 				)?;
@@ -112,7 +126,7 @@ impl ChangesComponent {
 			}
 
 			let path = tree_item.info.full_path.as_str();
-			sync::reset_stage(CWD, path)?;
+			sync::reset_stage(&self.repo.borrow(), path)?;
 			return Ok(true);
 		}
 
@@ -122,7 +136,7 @@ impl ChangesComponent {
 	fn index_add_all(&mut self) -> Result<()> {
 		let config = self.options.borrow().status_show_untracked;
 
-		sync::stage_add_all(CWD, "*", config)?;
+		sync::stage_add_all(&self.repo.borrow(), "*", config)?;
 
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
@@ -130,7 +144,7 @@ impl ChangesComponent {
 	}
 
 	fn stage_remove_all(&mut self) -> Result<()> {
-		sync::reset_stage(CWD, "*")?;
+		sync::reset_stage(&self.repo.borrow(), "*")?;
 
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 
@@ -155,9 +169,10 @@ impl ChangesComponent {
 
 	fn add_to_ignore(&mut self) -> bool {
 		if let Some(tree_item) = self.selection() {
-			if let Err(e) =
-				sync::add_to_ignore(CWD, &tree_item.info.full_path)
-			{
+			if let Err(e) = sync::add_to_ignore(
+				&self.repo.borrow(),
+				&tree_item.info.full_path,
+			) {
 				self.queue.push(InternalEvent::ShowErrorMsg(
 					format!(
 						"ignore error:\n{}\nfile:\n{:?}",
@@ -242,7 +257,8 @@ impl Component for ChangesComponent {
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.stage_unstage_item {
+				return if e == self.key_config.keys.stage_unstage_item
+				{
 					try_or_popup!(
 						self,
 						"staging error:",
@@ -253,7 +269,7 @@ impl Component for ChangesComponent {
 						NeedsUpdate::ALL,
 					));
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.status_stage_all
+				} else if e == self.key_config.keys.status_stage_all
 					&& !self.is_empty()
 				{
 					if self.is_working_dir {
@@ -268,11 +284,11 @@ impl Component for ChangesComponent {
 					self.queue
 						.push(InternalEvent::StatusLastFileMoved);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.status_reset_item
+				} else if e == self.key_config.keys.status_reset_item
 					&& self.is_working_dir
 				{
 					Ok(self.dispatch_reset_workdir().into())
-				} else if e == self.key_config.status_ignore_file
+				} else if e == self.key_config.keys.status_ignore_file
 					&& self.is_working_dir
 					&& !self.is_empty()
 				{

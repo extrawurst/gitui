@@ -1,9 +1,9 @@
 //! Sync git API for fetching a file blame
 
-use super::{utils, CommitId};
+use super::{utils, CommitId, RepoPath};
 use crate::{
 	error::{Error, Result},
-	sync::get_commits_info,
+	sync::{get_commits_info, repository::repo},
 };
 use scopetime::scope_time;
 use std::collections::{HashMap, HashSet};
@@ -39,18 +39,35 @@ pub struct FileBlame {
 	pub lines: Vec<(Option<BlameHunk>, String)>,
 }
 
+/// fixup `\` windows path seperators to git compatible `/`
+fn fixup_windows_path(path: &str) -> String {
+	#[cfg(windows)]
+	{
+		path.replace('\\', "/")
+	}
+
+	#[cfg(not(windows))]
+	{
+		path.to_string()
+	}
+}
+
 ///
 pub fn blame_file(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	file_path: &str,
 ) -> Result<FileBlame> {
 	scope_time!("blame_file");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 
 	let commit_id = utils::get_head_repo(&repo)?;
 
-	let spec = format!("{}:{}", commit_id.to_string(), file_path);
+	let spec = format!(
+		"{}:{}",
+		commit_id.to_string(),
+		fixup_windows_path(file_path)
+	);
 
 	let object = repo.revparse_single(&spec)?;
 	let blob = repo.find_blob(object.id())?;
@@ -125,9 +142,9 @@ pub fn blame_file(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::error::Result;
-	use crate::sync::{
-		commit, stage_add_file, tests::repo_init_empty,
+	use crate::{
+		error::Result,
+		sync::{commit, stage_add_file, tests::repo_init_empty},
 	};
 	use std::{
 		fs::{File, OpenOptions},
@@ -140,7 +157,8 @@ mod tests {
 		let file_path = Path::new("foo");
 		let (_td, repo) = repo_init_empty()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		assert!(matches!(blame_file(&repo_path, "foo"), Err(_)));
 
@@ -213,5 +231,26 @@ mod tests {
 		assert_eq!(blame.lines.len(), 3);
 
 		Ok(())
+	}
+
+	#[test]
+	fn test_blame_windows_path_dividers() {
+		let file_path = Path::new("bar\\foo");
+		let (_td, repo) = repo_init_empty().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		std::fs::create_dir(&root.join("bar")).unwrap();
+
+		File::create(&root.join(file_path))
+			.unwrap()
+			.write_all(b"line 1\n")
+			.unwrap();
+
+		stage_add_file(repo_path, file_path).unwrap();
+		commit(repo_path, "first commit").unwrap();
+
+		assert!(blame_file(&repo_path, "bar\\foo").is_ok());
 	}
 }

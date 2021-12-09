@@ -19,11 +19,10 @@ use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
 use tui::{backend::Backend, layout::Rect, text::Span, Frame};
 
-//TODO: rename so that its clear this only works for Statuses
 //TODO: use new `filetreelist` crate
 
 ///
-pub struct FileTreeComponent {
+pub struct StatusTreeComponent {
 	title: String,
 	tree: StatusTree,
 	pending: bool,
@@ -36,7 +35,7 @@ pub struct FileTreeComponent {
 	scroll_top: Cell<usize>,
 }
 
-impl FileTreeComponent {
+impl StatusTreeComponent {
 	///
 	pub fn new(
 		title: &str,
@@ -308,7 +307,7 @@ struct TextDrawInfo<'a> {
 	item_kind: &'a FileTreeItemKind,
 }
 
-impl DrawableComponent for FileTreeComponent {
+impl DrawableComponent for StatusTreeComponent {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -377,7 +376,7 @@ impl DrawableComponent for FileTreeComponent {
 	}
 }
 
-impl Component for FileTreeComponent {
+impl Component for StatusTreeComponent {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -406,7 +405,7 @@ impl Component for FileTreeComponent {
 	fn event(&mut self, ev: Event) -> Result<EventState> {
 		if self.focused {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.blame {
+				return if e == self.key_config.keys.blame {
 					match (&self.queue, self.selection_file()) {
 						(Some(queue), Some(status_item)) => {
 							queue.push(InternalEvent::BlameFile(
@@ -417,27 +416,27 @@ impl Component for FileTreeComponent {
 						}
 						_ => Ok(EventState::NotConsumed),
 					}
-				} else if e == self.key_config.move_down {
+				} else if e == self.key_config.keys.move_down {
 					Ok(self
 						.move_selection(MoveSelection::Down)
 						.into())
-				} else if e == self.key_config.move_up {
+				} else if e == self.key_config.keys.move_up {
 					Ok(self.move_selection(MoveSelection::Up).into())
-				} else if e == self.key_config.home
-					|| e == self.key_config.shift_up
+				} else if e == self.key_config.keys.home
+					|| e == self.key_config.keys.shift_up
 				{
 					Ok(self
 						.move_selection(MoveSelection::Home)
 						.into())
-				} else if e == self.key_config.end
-					|| e == self.key_config.shift_down
+				} else if e == self.key_config.keys.end
+					|| e == self.key_config.keys.shift_down
 				{
 					Ok(self.move_selection(MoveSelection::End).into())
-				} else if e == self.key_config.move_left {
+				} else if e == self.key_config.keys.move_left {
 					Ok(self
 						.move_selection(MoveSelection::Left)
 						.into())
-				} else if e == self.key_config.move_right {
+				} else if e == self.key_config.keys.move_right {
 					Ok(self
 						.move_selection(MoveSelection::Right)
 						.into())
@@ -496,7 +495,7 @@ mod tests {
 		let mut frame = terminal.get_frame();
 
 		// set up file tree
-		let mut ftc = FileTreeComponent::new(
+		let mut ftc = StatusTreeComponent::new(
 			"title",
 			true,
 			None,
@@ -537,7 +536,7 @@ mod tests {
 		let mut frame = terminal.get_frame();
 
 		// set up file tree
-		let mut ftc = FileTreeComponent::new(
+		let mut ftc = StatusTreeComponent::new(
 			"title",
 			true,
 			None,

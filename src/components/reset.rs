@@ -73,9 +73,9 @@ impl Component for ConfirmComponent {
 	fn event(&mut self, ev: Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
-				if e == self.key_config.exit_popup {
+				if e == self.key_config.keys.exit_popup {
 					self.hide();
-				} else if e == self.key_config.enter {
+				} else if e == self.key_config.keys.enter {
 					self.confirm();
 				}
 

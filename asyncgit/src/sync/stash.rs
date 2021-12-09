@@ -1,5 +1,8 @@
-use super::{utils::repo, CommitId};
-use crate::error::{Error, Result};
+use super::{CommitId, RepoPath};
+use crate::{
+	error::{Error, Result},
+	sync::repository::repo,
+};
 use git2::{
 	build::CheckoutBuilder, Oid, Repository, StashApplyOptions,
 	StashFlags,
@@ -7,7 +10,7 @@ use git2::{
 use scopetime::scope_time;
 
 ///
-pub fn get_stashes(repo_path: &str) -> Result<Vec<CommitId>> {
+pub fn get_stashes(repo_path: &RepoPath) -> Result<Vec<CommitId>> {
 	scope_time!("get_stashes");
 
 	let mut repo = repo(repo_path)?;
@@ -24,7 +27,7 @@ pub fn get_stashes(repo_path: &str) -> Result<Vec<CommitId>> {
 
 /// checks whether a given commit is a stash commit.
 pub fn is_stash_commit(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	id: &CommitId,
 ) -> Result<bool> {
 	let stashes = get_stashes(repo_path)?;
@@ -32,7 +35,10 @@ pub fn is_stash_commit(
 }
 
 ///
-pub fn stash_drop(repo_path: &str, stash_id: CommitId) -> Result<()> {
+pub fn stash_drop(
+	repo_path: &RepoPath,
+	stash_id: CommitId,
+) -> Result<()> {
 	scope_time!("stash_drop");
 
 	let mut repo = repo(repo_path)?;
@@ -45,7 +51,10 @@ pub fn stash_drop(repo_path: &str, stash_id: CommitId) -> Result<()> {
 }
 
 ///
-pub fn stash_pop(repo_path: &str, stash_id: CommitId) -> Result<()> {
+pub fn stash_pop(
+	repo_path: &RepoPath,
+	stash_id: CommitId,
+) -> Result<()> {
 	scope_time!("stash_pop");
 
 	let mut repo = repo(repo_path)?;
@@ -59,7 +68,7 @@ pub fn stash_pop(repo_path: &str, stash_id: CommitId) -> Result<()> {
 
 ///
 pub fn stash_apply(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	stash_id: CommitId,
 	allow_conflicts: bool,
 ) -> Result<()> {
@@ -101,7 +110,7 @@ fn get_stash_index(
 
 ///
 pub fn stash_save(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	message: Option<&str>,
 	include_untracked: bool,
 	keep_index: bool,
@@ -143,7 +152,8 @@ mod tests {
 	fn test_smoke() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		assert_eq!(
 			stash_save(repo_path, None, true, false).is_ok(),
@@ -157,7 +167,8 @@ mod tests {
 	fn test_stashing() -> Result<()> {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join("foo.txt"))?
 			.write_all(b"test\nfoo")?;
@@ -175,7 +186,8 @@ mod tests {
 	fn test_stashes() -> Result<()> {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join("foo.txt"))?
 			.write_all(b"test\nfoo")?;
@@ -198,7 +210,8 @@ mod tests {
 	fn test_stash_nothing_untracked() -> Result<()> {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join("foo.txt"))?
 			.write_all(b"test\nfoo")?;
@@ -215,7 +228,8 @@ mod tests {
 		let file_path1 = Path::new("file1.txt");
 		let (_td, repo) = repo_init()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path1))?.write_all(b"test")?;
 		stage_add_file(repo_path, file_path1)?;
@@ -242,7 +256,8 @@ mod tests {
 	fn test_stash_apply_conflict() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		repo_write_file(&repo, "test.txt", "test").unwrap();
 
@@ -260,7 +275,8 @@ mod tests {
 	fn test_stash_apply_conflict2() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", "test", "c1");
 
@@ -280,7 +296,8 @@ mod tests {
 	fn test_stash_apply_creating_conflict() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", "test", "c1");
 
@@ -304,7 +321,8 @@ mod tests {
 	fn test_stash_pop_no_conflict() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", "test", "c1");
 
@@ -326,7 +344,8 @@ mod tests {
 	fn test_stash_pop_conflict() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		repo_write_file(&repo, "test.txt", "test").unwrap();
 
@@ -348,7 +367,8 @@ mod tests {
 	fn test_stash_pop_conflict_after_commit() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", "test", "c1");
 

@@ -9,7 +9,7 @@ repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
 license-file = "LICENSE.md"
 categories = ["command-line-utilities"]
-keywords = ["gui","cli","terminal","ui","tui"]
+keywords = ["gui", "cli", "terminal", "ui", "tui"]
 
 [dependencies]
 scopetime = { path = "../scopetime", version = "0.1" }

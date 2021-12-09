@@ -3,18 +3,18 @@
 use super::BranchType;
 use crate::{
 	error::{Error, Result},
-	sync::utils,
+	sync::{repository::repo, RepoPath},
 };
 use scopetime::scope_time;
 
 ///
 pub fn branch_merge_upstream_fastforward(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	branch: &str,
 ) -> Result<()> {
 	scope_time!("branch_merge_upstream");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 
 	let branch = repo.find_branch(branch, BranchType::Local)?;
 	let upstream = branch.upstream()?;
@@ -76,7 +76,7 @@ pub mod test {
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
 
 		push(
-			clone1_dir.path().to_str().unwrap(),
+			&clone1_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
 			false,
@@ -88,7 +88,7 @@ pub mod test {
 
 		// clone2
 		debug_cmd_print(
-			clone2_dir.path().to_str().unwrap(),
+			&clone2_dir.path().to_str().unwrap().into(),
 			"git pull --ff",
 		);
 
@@ -100,7 +100,7 @@ pub mod test {
 		);
 
 		push(
-			clone2_dir.path().to_str().unwrap(),
+			&clone2_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
 			false,
@@ -113,7 +113,7 @@ pub mod test {
 		// clone1 again
 
 		let bytes = fetch(
-			clone1_dir.path().to_str().unwrap(),
+			&clone1_dir.path().to_str().unwrap().into(),
 			"master",
 			None,
 			None,
@@ -122,7 +122,7 @@ pub mod test {
 		assert!(bytes > 0);
 
 		let bytes = fetch(
-			clone1_dir.path().to_str().unwrap(),
+			&clone1_dir.path().to_str().unwrap().into(),
 			"master",
 			None,
 			None,
@@ -131,7 +131,7 @@ pub mod test {
 		assert_eq!(bytes, 0);
 
 		branch_merge_upstream_fastforward(
-			clone1_dir.path().to_str().unwrap(),
+			&clone1_dir.path().to_str().unwrap().into(),
 			"master",
 		)
 		.unwrap();

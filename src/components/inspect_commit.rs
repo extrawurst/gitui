@@ -12,7 +12,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{diff::DiffOptions, CommitId, CommitTags},
+	sync::{diff::DiffOptions, CommitId, CommitTags, RepoPathRef},
 	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
 	DiffType,
 };
@@ -125,26 +125,26 @@ impl Component for InspectCommitComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.exit_popup {
+				if e == self.key_config.keys.exit_popup {
 					self.hide();
-				} else if e == self.key_config.focus_right
+				} else if e == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if e == self.key_config.focus_left
+				} else if e == self.key_config.keys.focus_left
 					&& self.diff.focused()
 				{
 					self.details.focus(true);
 					self.diff.focus(false);
-				} else if e == self.key_config.open_file_tree {
+				} else if e == self.key_config.keys.open_file_tree {
 					if let Some(commit) = self.commit_id {
 						self.queue.push(InternalEvent::OpenFileTree(
 							commit,
 						));
 						self.hide();
 					}
-				} else if e == self.key_config.focus_left {
+				} else if e == self.key_config.keys.focus_left {
 					self.hide();
 				}
 
@@ -176,6 +176,7 @@ impl InspectCommitComponent {
 
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -184,12 +185,14 @@ impl InspectCommitComponent {
 		Self {
 			queue: queue.clone(),
 			details: CommitDetailsComponent::new(
+				repo,
 				queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			diff: DiffComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme,
 				key_config.clone(),
@@ -197,7 +200,7 @@ impl InspectCommitComponent {
 			),
 			commit_id: None,
 			tags: None,
-			git_diff: AsyncDiff::new(sender),
+			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),
 			visible: false,
 			key_config,
 		}

@@ -1,10 +1,13 @@
 //!
 
-use super::{push::AsyncProgress, utils};
+use super::push::AsyncProgress;
 use crate::{
 	error::Result,
 	progress::ProgressPercent,
-	sync::{cred::BasicAuthCredential, remotes::Callbacks},
+	sync::{
+		cred::BasicAuthCredential, remotes::Callbacks,
+		repository::repo, RepoPath,
+	},
 };
 use crossbeam_channel::Sender;
 use git2::{Direction, PushOptions};
@@ -44,13 +47,13 @@ impl AsyncProgress for PushTagsProgress {
 
 /// lists the remotes tags
 fn remote_tag_refs(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	remote: &str,
 	basic_credential: Option<BasicAuthCredential>,
 ) -> Result<Vec<String>> {
 	scope_time!("remote_tags");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let mut remote = repo.find_remote(remote)?;
 	let callbacks = Callbacks::new(None, basic_credential);
 	let conn = remote.connect_auth(
@@ -73,13 +76,13 @@ fn remote_tag_refs(
 
 /// lists the remotes tags missing
 pub fn tags_missing_remote(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	remote: &str,
 	basic_credential: Option<BasicAuthCredential>,
 ) -> Result<Vec<String>> {
 	scope_time!("tags_missing_remote");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let tags = repo.tag_names(None)?;
 
 	let mut local_tags = tags
@@ -98,7 +101,7 @@ pub fn tags_missing_remote(
 
 ///
 pub fn push_tags(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	remote: &str,
 	basic_credential: Option<BasicAuthCredential>,
 	progress_sender: Option<Sender<PushTagsProgress>>,
@@ -115,7 +118,7 @@ pub fn push_tags(
 		basic_credential.clone(),
 	)?;
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let mut remote = repo.find_remote(remote)?;
 
 	let total = tags_missing.len();
@@ -152,9 +155,10 @@ mod tests {
 	use super::*;
 	use crate::sync::{
 		self,
-		remotes::{fetch, push::push},
+		remotes::{fetch, fetch_all, push::push},
 		tests::{repo_clone, repo_init_bare},
 	};
+	use pretty_assertions::assert_eq;
 	use sync::tests::write_commit_file;
 
 	#[test]
@@ -164,11 +168,13 @@ mod tests {
 
 		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
 
-		let clone1_dir = clone1_dir.path().to_str().unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
 
 		let (clone2_dir, clone2) = repo_clone(r1_dir).unwrap();
 
-		let clone2_dir = clone2_dir.path().to_str().unwrap();
+		let clone2_dir: &RepoPath =
+			&clone2_dir.path().to_str().unwrap().into();
 
 		// clone1
 
@@ -210,11 +216,13 @@ mod tests {
 
 		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
 
-		let clone1_dir = clone1_dir.path().to_str().unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
 
 		let (clone2_dir, _clone2) = repo_clone(r1_dir).unwrap();
 
-		let clone2_dir = clone2_dir.path().to_str().unwrap();
+		let clone2_dir: &RepoPath =
+			&clone2_dir.path().to_str().unwrap().into();
 
 		// clone1
 
@@ -247,7 +255,8 @@ mod tests {
 
 		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
 
-		let clone1_dir = clone1_dir.path().to_str().unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
 
 		// clone1
 
@@ -272,5 +281,85 @@ mod tests {
 		let tags_missing =
 			tags_missing_remote(clone1_dir, "origin", None).unwrap();
 		assert!(tags_missing.is_empty());
+	}
+
+	#[test]
+	fn test_tags_fetch() {
+		let (r1_dir, _repo) = repo_init_bare().unwrap();
+		let r1_dir = r1_dir.path().to_str().unwrap();
+
+		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
+
+		let commit1 =
+			write_commit_file(&clone1, "test.txt", "test", "commit1");
+		push(
+			clone1_dir, "origin", "master", false, false, None, None,
+		)
+		.unwrap();
+
+		let (clone2_dir, _clone2) = repo_clone(r1_dir).unwrap();
+		let clone2_dir: &RepoPath =
+			&clone2_dir.path().to_str().unwrap().into();
+
+		// clone1 - creates tag
+
+		sync::tag(clone1_dir, &commit1, "tag1").unwrap();
+
+		let tags1 = sync::get_tags(clone1_dir).unwrap();
+
+		push_tags(clone1_dir, "origin", None, None).unwrap();
+		let tags_missing =
+			tags_missing_remote(clone1_dir, "origin", None).unwrap();
+		assert!(tags_missing.is_empty());
+
+		// clone 2 - pull
+
+		fetch(clone2_dir, "master", None, None).unwrap();
+
+		let tags2 = sync::get_tags(clone2_dir).unwrap();
+
+		assert_eq!(tags1, tags2);
+	}
+
+	#[test]
+	fn test_tags_fetch_all() {
+		let (r1_dir, _repo) = repo_init_bare().unwrap();
+		let r1_dir = r1_dir.path().to_str().unwrap();
+
+		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
+
+		let commit1 =
+			write_commit_file(&clone1, "test.txt", "test", "commit1");
+		push(
+			clone1_dir, "origin", "master", false, false, None, None,
+		)
+		.unwrap();
+
+		let (clone2_dir, _clone2) = repo_clone(r1_dir).unwrap();
+		let clone2_dir: &RepoPath =
+			&clone2_dir.path().to_str().unwrap().into();
+
+		// clone1 - creates tag
+
+		sync::tag(clone1_dir, &commit1, "tag1").unwrap();
+
+		let tags1 = sync::get_tags(clone1_dir).unwrap();
+
+		push_tags(clone1_dir, "origin", None, None).unwrap();
+		let tags_missing =
+			tags_missing_remote(clone1_dir, "origin", None).unwrap();
+		assert!(tags_missing.is_empty());
+
+		// clone 2 - pull
+
+		fetch_all(clone2_dir, &None, &None).unwrap();
+
+		let tags2 = sync::get_tags(clone2_dir).unwrap();
+
+		assert_eq!(tags1, tags2);
 	}
 }

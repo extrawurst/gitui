@@ -2,7 +2,8 @@ use asyncgit::sync::{CommitId, CommitInfo};
 use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
 use std::slice::Iter;
 
-use crate::components::utils::emojifi_string;
+#[cfg(feature = "ghemoji")]
+use super::emoji::emojifi_string;
 
 static SLICE_OFFSET_RELOAD_THRESHOLD: usize = 100;
 
@@ -27,9 +28,12 @@ impl From<CommitInfo> for LogEntry {
 				Utc,
 			));
 
-		// Replace markdown emojis with Unicode equivalent
 		let author = c.author;
+		#[allow(unused_mut)]
 		let mut msg = c.message;
+
+		// Replace markdown emojis with Unicode equivalent
+		#[cfg(feature = "ghemoji")]
 		emojifi_string(&mut msg);
 
 		Self {
@@ -113,6 +117,7 @@ impl ItemBatch {
 }
 
 #[cfg(test)]
+#[cfg(feature = "ghemoji")]
 mod tests {
 	use super::*;
 

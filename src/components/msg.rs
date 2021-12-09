@@ -92,7 +92,7 @@ impl Component for MsgComponent {
 	fn event(&mut self, ev: Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
-				if e == self.key_config.enter {
+				if e == self.key_config.keys.enter {
 					self.hide();
 				}
 			}

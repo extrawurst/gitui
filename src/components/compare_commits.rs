@@ -9,9 +9,9 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{self, diff::DiffOptions, CommitId},
+	sync::{self, diff::DiffOptions, CommitId, RepoPathRef},
 	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
-	DiffType, CWD,
+	DiffType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -23,6 +23,7 @@ use tui::{
 };
 
 pub struct CompareCommitsComponent {
+	repo: RepoPathRef,
 	commit_ids: Option<(CommitId, CommitId)>,
 	diff: DiffComponent,
 	details: CommitDetailsComponent,
@@ -112,19 +113,19 @@ impl Component for CompareCommitsComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.exit_popup {
+				if e == self.key_config.keys.exit_popup {
 					self.hide();
-				} else if e == self.key_config.focus_right
+				} else if e == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if e == self.key_config.focus_left
+				} else if e == self.key_config.keys.focus_left
 					&& self.diff.focused()
 				{
 					self.details.focus(true);
 					self.diff.focus(false);
-				} else if e == self.key_config.focus_left {
+				} else if e == self.key_config.keys.focus_left {
 					self.hide();
 				}
 
@@ -156,26 +157,30 @@ impl CompareCommitsComponent {
 
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			details: CommitDetailsComponent::new(
+				repo,
 				queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			diff: DiffComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme,
 				key_config.clone(),
 				true,
 			),
 			commit_ids: None,
-			git_diff: AsyncDiff::new(sender),
+			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),
 			visible: false,
 			key_config,
 		}
@@ -190,7 +195,7 @@ impl CompareCommitsComponent {
 		let other = if let Some(other) = other {
 			other
 		} else {
-			sync::get_head_tuple(CWD)?.id
+			sync::get_head_tuple(&self.repo.borrow())?.id
 		};
 		self.commit_ids = Some((id, other));
 		self.show()?;

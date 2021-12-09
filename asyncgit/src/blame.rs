@@ -1,8 +1,8 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self, FileBlame},
-	AsyncGitNotification, CWD,
+	sync::{self, FileBlame, RepoPath},
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -34,12 +34,17 @@ pub struct AsyncBlame {
 	last: Arc<Mutex<Option<LastResult<BlameParams, FileBlame>>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicUsize>,
+	repo: RepoPath,
 }
 
 impl AsyncBlame {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			current: Arc::new(Mutex::new(Request(0, None))),
 			last: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
@@ -96,11 +101,13 @@ impl AsyncBlame {
 		let arc_last = Arc::clone(&self.last);
 		let sender = self.sender.clone();
 		let arc_pending = Arc::clone(&self.pending);
+		let repo = self.repo.clone();
 
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
 			let notify = Self::get_blame_helper(
+				&repo,
 				params,
 				&arc_last,
 				&arc_current,
@@ -130,6 +137,7 @@ impl AsyncBlame {
 	}
 
 	fn get_blame_helper(
+		repo_path: &RepoPath,
 		params: BlameParams,
 		arc_last: &Arc<
 			Mutex<Option<LastResult<BlameParams, FileBlame>>>,
@@ -138,7 +146,7 @@ impl AsyncBlame {
 		hash: u64,
 	) -> Result<bool> {
 		let file_blame =
-			sync::blame::blame_file(CWD, &params.file_path)?;
+			sync::blame::blame_file(repo_path, &params.file_path)?;
 
 		let mut notify = false;
 		{

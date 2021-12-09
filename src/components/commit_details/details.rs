@@ -11,9 +11,8 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self, CommitDetails, CommitId, CommitMessage},
-	CWD,
+use asyncgit::sync::{
+	self, CommitDetails, CommitId, CommitMessage, RepoPathRef,
 };
 use crossterm::event::Event;
 use std::clone::Clone;
@@ -30,6 +29,7 @@ use tui::{
 use super::style::Detail;
 
 pub struct DetailsComponent {
+	repo: RepoPathRef,
 	data: Option<CommitDetails>,
 	tags: Vec<String>,
 	theme: SharedTheme,
@@ -46,11 +46,13 @@ type WrappedCommitMessage<'a> =
 impl DetailsComponent {
 	///
 	pub const fn new(
+		repo: RepoPathRef,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 		focused: bool,
 	) -> Self {
 		Self {
+			repo,
 			data: None,
 			tags: Vec::new(),
 			theme,
@@ -69,8 +71,9 @@ impl DetailsComponent {
 	) {
 		self.tags.clear();
 
-		self.data =
-			id.and_then(|id| sync::get_commit_details(CWD, id).ok());
+		self.data = id.and_then(|id| {
+			sync::get_commit_details(&self.repo.borrow(), id).ok()
+		});
 
 		self.scroll.reset();
 
@@ -357,16 +360,16 @@ impl Component for DetailsComponent {
 	fn event(&mut self, event: Event) -> Result<EventState> {
 		if self.focused {
 			if let Event::Key(e) = event {
-				return Ok(if e == self.key_config.move_up {
+				return Ok(if e == self.key_config.keys.move_up {
 					self.move_scroll_top(ScrollType::Up).into()
-				} else if e == self.key_config.move_down {
+				} else if e == self.key_config.keys.move_down {
 					self.move_scroll_top(ScrollType::Down).into()
-				} else if e == self.key_config.home
-					|| e == self.key_config.shift_up
+				} else if e == self.key_config.keys.home
+					|| e == self.key_config.keys.shift_up
 				{
 					self.move_scroll_top(ScrollType::Home).into()
-				} else if e == self.key_config.end
-					|| e == self.key_config.shift_down
+				} else if e == self.key_config.keys.end
+					|| e == self.key_config.keys.shift_down
 				{
 					self.move_scroll_top(ScrollType::End).into()
 				} else {

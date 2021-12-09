@@ -6,17 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
- 
+
+### Fixed
+- Keep commit message when pre-commit hook fails ([#1035](https://github.com/extrawurst/gitui/issues/1035))
+- honor `pushurl` when checking whether we need username and password for pushing ([#953](https://github.com/extrawurst/gitui/issues/953))
+
+## [0.19] - 2021-12-08 - Bare Repo Support
+
+**finder highlighting matches**
+
+![fuzzy-find](assets/fuzzy-find-matches.gif)
+
+### Breaking Change
+Have you used `key_config.ron` for custom key bindings before?
+The way this works got changed and simplified ([See docs](https://github.com/extrawurst/gitui/blob/master/KEY_CONFIG.md) for more info): 
+* You only define the keys that should differ from the default.
+* The file is renamed to `key_bindings.ron`
+* Future addition of new keys will not break anymore
+
 ### Added
+- add fetch/update command all remote branches ([#998](https://github.com/extrawurst/gitui/issues/998))
 - add `trace-libgit` feature to make git tracing optional [[@dm9pZCAq](https://github.com/dm9pZCAq)] ([#902](https://github.com/extrawurst/gitui/issues/902))
-- support merging and rebasing remote branches ([#920](https://github.com/extrawurst/gitui/issues/920))
-- add highlighting matches in fuzzy finder ([#893](https://github.com/extrawurst/gitui/issues/893))
+- support merging and rebasing remote branches [[@R0nd](https://github.com/R0nd)] ([#920](https://github.com/extrawurst/gitui/issues/920))
+- add highlighting matches in fuzzy finder [[@Mifom](https://github.com/Mifom)] ([#893](https://github.com/extrawurst/gitui/issues/893))
 - support `home` and `end` keys in branchlist ([#957](https://github.com/extrawurst/gitui/issues/957))
+- add `ghemoji` feature to make gh-emoji (GitHub emoji) optional [[@jirutka](https://github.com/jirutka)] ([#954](https://github.com/extrawurst/gitui/pull/954))
+- allow customizing key symbols like `⏎` & `⇧` ([see docs](https://github.com/extrawurst/gitui/blob/master/KEY_CONFIG.md#key-symbols)) ([#465](https://github.com/extrawurst/gitui/issues/465))
+- simplify key overrides ([see docs](https://github.com/extrawurst/gitui/blob/master/KEY_CONFIG.md)) ([#946](https://github.com/extrawurst/gitui/issues/946))
+- dedicated fuzzy finder up/down keys to allow vim overrides ([#993](https://github.com/extrawurst/gitui/pull/993))
+- pull will also download tags ([#1013](https://github.com/extrawurst/gitui/pull/1013))
+- allow editing file from filetree ([#989](https://github.com/extrawurst/gitui/pull/989))
+- support bare repos (new `workdir` argument) ([#1026](https://github.com/extrawurst/gitui/pull/1026))
 
 ### Fixed
 - honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))
-- honor `pushurl` when checking whether we need username and password for pushing ([#953](https://github.com/extrawurst/gitui/issues/953))
-
+- improved file diff speed dramatically ([#976](https://github.com/extrawurst/gitui/issues/976))
+- blaming files in sub-folders on windows ([#981](https://github.com/extrawurst/gitui/issues/981))
+- push failing due to tracing error in upstream ([#881](https://github.com/extrawurst/gitui/issues/881))
 
 ## [0.18] - 2021-10-11
 

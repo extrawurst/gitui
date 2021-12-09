@@ -9,11 +9,11 @@ repository = "https://github.com/extrawurst/gitui"
 license = "MIT"
 readme = "README.md"
 categories = ["development-tools::profiling"]
-keywords = ["profiling","logging"]
+keywords = ["profiling", "logging"]
 
 [dependencies]
 log = "0.4"
 
 [features]
-default=[]
-enabled=[]
+default =[]
+enabled =[]

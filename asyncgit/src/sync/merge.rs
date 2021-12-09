@@ -5,19 +5,23 @@ use crate::{
 		rebase::{
 			abort_rebase, continue_rebase, get_rebase_progress,
 		},
-		reset_stage, reset_workdir, utils, CommitId,
+		repository::repo,
+		reset_stage, reset_workdir, CommitId,
 	},
 };
 use git2::{BranchType, Commit, MergeOptions, Repository};
 use scopetime::scope_time;
 
-use super::rebase::{RebaseProgress, RebaseState};
+use super::{
+	rebase::{RebaseProgress, RebaseState},
+	RepoPath,
+};
 
 ///
-pub fn mergehead_ids(repo_path: &str) -> Result<Vec<CommitId>> {
+pub fn mergehead_ids(repo_path: &RepoPath) -> Result<Vec<CommitId>> {
 	scope_time!("mergehead_ids");
 
-	let mut repo = utils::repo(repo_path)?;
+	let mut repo = repo(repo_path)?;
 
 	let mut ids: Vec<CommitId> = Vec::new();
 	repo.mergehead_foreach(|id| {
@@ -32,10 +36,10 @@ pub fn mergehead_ids(repo_path: &str) -> Result<Vec<CommitId>> {
 /// * reset all staged changes,
 /// * revert all changes in workdir
 /// * cleanup repo merge state
-pub fn abort_merge(repo_path: &str) -> Result<()> {
+pub fn abort_merge(repo_path: &RepoPath) -> Result<()> {
 	scope_time!("cleanup_state");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 
 	reset_stage(repo_path, "*")?;
 	reset_workdir(repo_path, "*")?;
@@ -47,13 +51,13 @@ pub fn abort_merge(repo_path: &str) -> Result<()> {
 
 ///
 pub fn merge_branch(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	branch: &str,
 	branch_type: BranchType,
 ) -> Result<()> {
 	scope_time!("merge_branch");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 
 	merge_branch_repo(&repo, branch, branch_type)?;
 
@@ -61,30 +65,32 @@ pub fn merge_branch(
 }
 
 ///
-pub fn rebase_progress(repo_path: &str) -> Result<RebaseProgress> {
+pub fn rebase_progress(
+	repo_path: &RepoPath,
+) -> Result<RebaseProgress> {
 	scope_time!("rebase_progress");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 
 	get_rebase_progress(&repo)
 }
 
 ///
 pub fn continue_pending_rebase(
-	repo_path: &str,
+	repo_path: &RepoPath,
 ) -> Result<RebaseState> {
 	scope_time!("continue_pending_rebase");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 
 	continue_rebase(&repo)
 }
 
 ///
-pub fn abort_pending_rebase(repo_path: &str) -> Result<()> {
+pub fn abort_pending_rebase(repo_path: &RepoPath) -> Result<()> {
 	scope_time!("abort_pending_rebase");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 
 	abort_rebase(&repo)
 }
@@ -115,10 +121,10 @@ pub fn merge_branch_repo(
 }
 
 ///
-pub fn merge_msg(repo_path: &str) -> Result<String> {
+pub fn merge_msg(repo_path: &RepoPath) -> Result<String> {
 	scope_time!("merge_msg");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let content = repo.message()?;
 
 	Ok(content)
@@ -126,13 +132,13 @@ pub fn merge_msg(repo_path: &str) -> Result<String> {
 
 ///
 pub fn merge_commit(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	msg: &str,
 	ids: &[CommitId],
 ) -> Result<CommitId> {
 	scope_time!("merge_commit");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 
 	let mut commits: Vec<Commit> = Vec::new();
 
@@ -151,6 +157,7 @@ mod tests {
 	use crate::sync::{
 		create_branch,
 		tests::{repo_init, write_commit_file},
+		RepoPath,
 	};
 	use pretty_assertions::assert_eq;
 
@@ -158,7 +165,8 @@ mod tests {
 	fn test_smoke() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		let c1 =
 			write_commit_file(&repo, "test.txt", "test", "commit1");

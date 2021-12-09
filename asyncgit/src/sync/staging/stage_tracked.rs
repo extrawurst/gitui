@@ -3,7 +3,8 @@ use crate::{
 	error::{Error, Result},
 	sync::{
 		diff::DiffLinePosition,
-		patches::get_file_diff_patch_and_hunklines, utils::repo,
+		patches::get_file_diff_patch_and_hunklines, repository::repo,
+		RepoPath,
 	},
 };
 use easy_cast::Conv;
@@ -12,7 +13,7 @@ use std::path::Path;
 
 ///
 pub fn stage_lines(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	file_path: &str,
 	is_stage: bool,
 	lines: &[DiffLinePosition],
@@ -80,7 +81,7 @@ mod test {
 ";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
@@ -113,7 +114,7 @@ b = 3
 c = 4";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
@@ -154,7 +155,7 @@ c = 4";
 ";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 

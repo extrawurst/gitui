@@ -10,7 +10,7 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{sync, CWD};
+use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use easy_cast::Cast;
 use tui::{
@@ -18,6 +18,7 @@ use tui::{
 };
 
 pub struct CreateBranchComponent {
+	repo: RepoPathRef,
 	input: TextInputComponent,
 	queue: Queue,
 	key_config: SharedKeyConfig,
@@ -67,7 +68,7 @@ impl Component for CreateBranchComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.enter {
+				if e == self.key_config.keys.enter {
 					self.create_branch();
 				}
 
@@ -95,6 +96,7 @@ impl Component for CreateBranchComponent {
 impl CreateBranchComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -110,6 +112,7 @@ impl CreateBranchComponent {
 			),
 			theme,
 			key_config,
+			repo,
 		}
 	}
 
@@ -122,7 +125,10 @@ impl CreateBranchComponent {
 
 	///
 	pub fn create_branch(&mut self) {
-		let res = sync::create_branch(CWD, self.input.get_text());
+		let res = sync::create_branch(
+			&self.repo.borrow(),
+			self.input.get_text(),
+		);
 
 		self.input.clear();
 		self.hide();
@@ -130,7 +136,7 @@ impl CreateBranchComponent {
 		match res {
 			Ok(_) => {
 				self.queue.push(InternalEvent::Update(
-					NeedsUpdate::BRANCHES,
+					NeedsUpdate::ALL | NeedsUpdate::BRANCHES,
 				));
 			}
 			Err(e) => {

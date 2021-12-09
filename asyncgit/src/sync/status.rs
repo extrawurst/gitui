@@ -3,13 +3,13 @@
 use crate::{
 	error::Error,
 	error::Result,
-	sync::{config::untracked_files_config_repo, utils},
+	sync::{config::untracked_files_config_repo, repository::repo},
 };
 use git2::{Delta, Status, StatusOptions, StatusShow};
 use scopetime::scope_time;
 use std::path::Path;
 
-use super::ShowUntrackedFilesConfig;
+use super::{RepoPath, ShowUntrackedFilesConfig};
 
 ///
 #[derive(Copy, Clone, Hash, PartialEq, Debug)]
@@ -96,13 +96,17 @@ impl From<StatusType> for StatusShow {
 
 /// gurantees sorting
 pub fn get_status(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	status_type: StatusType,
 	show_untracked: Option<ShowUntrackedFilesConfig>,
 ) -> Result<Vec<StatusItem>> {
 	scope_time!("get_status");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
+
+	if repo.is_bare() && !repo.is_worktree() {
+		return Ok(Vec::new());
+	}
 
 	let show_untracked = if let Some(config) = show_untracked {
 		config

@@ -4,8 +4,11 @@ use crate::{
 	asyncjob::{AsyncJob, RunParams},
 	error::Result,
 	sync::cred::BasicAuthCredential,
-	sync::remotes::{get_default_remote, tags_missing_remote},
-	AsyncGitNotification, CWD,
+	sync::{
+		remotes::{get_default_remote, tags_missing_remote},
+		RepoPath,
+	},
+	AsyncGitNotification,
 };
 
 use std::sync::{Arc, Mutex};
@@ -16,18 +19,21 @@ enum JobState {
 }
 
 ///
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct AsyncRemoteTagsJob {
 	state: Arc<Mutex<Option<JobState>>>,
+	repo: RepoPath,
 }
 
 ///
 impl AsyncRemoteTagsJob {
 	///
 	pub fn new(
+		repo: RepoPath,
 		basic_credential: Option<BasicAuthCredential>,
 	) -> Self {
 		Self {
+			repo,
 			state: Arc::new(Mutex::new(Some(JobState::Request(
 				basic_credential,
 			)))),
@@ -60,10 +66,10 @@ impl AsyncJob for AsyncRemoteTagsJob {
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
 				JobState::Request(basic_credential) => {
-					let result =
-						get_default_remote(CWD).and_then(|remote| {
+					let result = get_default_remote(&self.repo)
+						.and_then(|remote| {
 							tags_missing_remote(
-								CWD,
+								&self.repo,
 								&remote,
 								basic_credential,
 							)

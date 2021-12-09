@@ -1,10 +1,9 @@
-use super::utils;
 use crate::{
 	error::{Error, Result},
 	progress::ProgressPercent,
 	sync::{
 		branch::branch_set_upstream, cred::BasicAuthCredential,
-		remotes::Callbacks, CommitId,
+		remotes::Callbacks, repository::repo, CommitId, RepoPath,
 	},
 };
 use crossbeam_channel::Sender;
@@ -91,7 +90,7 @@ impl AsyncProgress for ProgressNotification {
 
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) fn push(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	remote: &str,
 	branch: &str,
 	force: bool,
@@ -101,7 +100,7 @@ pub(crate) fn push(
 ) -> Result<()> {
 	scope_time!("push");
 
-	let repo = utils::repo(repo_path)?;
+	let repo = repo(repo_path)?;
 	let mut remote = repo.find_remote(remote)?;
 
 	let mut options = PushOptions::new();
@@ -178,13 +177,13 @@ mod tests {
 		writeln!(tmp_repo_file, "TempSomething").unwrap();
 
 		sync::commit(
-			tmp_repo_dir.path().to_str().unwrap(),
+			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"repo_1_commit",
 		)
 		.unwrap();
 
 		push(
-			tmp_repo_dir.path().to_str().unwrap(),
+			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
 			false,
@@ -201,7 +200,7 @@ mod tests {
 		writeln!(tmp_other_repo_file, "TempElse").unwrap();
 
 		sync::commit(
-			tmp_other_repo_dir.path().to_str().unwrap(),
+			&tmp_other_repo_dir.path().to_str().unwrap().into(),
 			"repo_2_commit",
 		)
 		.unwrap();
@@ -210,7 +209,7 @@ mod tests {
 		// should fail as branches diverged
 		assert_eq!(
 			push(
-				tmp_other_repo_dir.path().to_str().unwrap(),
+				&tmp_other_repo_dir.path().to_str().unwrap().into(),
 				"origin",
 				"master",
 				false,
@@ -226,7 +225,7 @@ mod tests {
 		// should work as it forces the push through
 		assert_eq!(
 			push(
-				tmp_other_repo_dir.path().to_str().unwrap(),
+				&tmp_other_repo_dir.path().to_str().unwrap().into(),
 				"origin",
 				"master",
 				true,
@@ -269,13 +268,13 @@ mod tests {
 		writeln!(tmp_repo_file, "TempSomething").unwrap();
 
 		sync::stage_add_file(
-			tmp_repo_dir.path().to_str().unwrap(),
+			&tmp_repo_dir.path().to_str().unwrap().into(),
 			Path::new("temp_file.txt"),
 		)
 		.unwrap();
 
 		let repo_1_commit = sync::commit(
-			tmp_repo_dir.path().to_str().unwrap(),
+			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"repo_1_commit",
 		)
 		.unwrap();
@@ -283,7 +282,7 @@ mod tests {
 		//NOTE: make sure the commit actually contains that file
 		assert_eq!(
 			sync::get_commit_files(
-				tmp_repo_dir.path().to_str().unwrap(),
+				&tmp_repo_dir.path().to_str().unwrap().into(),
 				repo_1_commit,
 				None
 			)
@@ -296,7 +295,7 @@ mod tests {
 		assert!(commits.contains(&repo_1_commit));
 
 		push(
-			tmp_repo_dir.path().to_str().unwrap(),
+			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
 			false,
@@ -313,13 +312,13 @@ mod tests {
 		writeln!(tmp_other_repo_file, "TempElse").unwrap();
 
 		sync::stage_add_file(
-			tmp_other_repo_dir.path().to_str().unwrap(),
+			&tmp_other_repo_dir.path().to_str().unwrap().into(),
 			Path::new("temp_file.txt"),
 		)
 		.unwrap();
 
 		let repo_2_commit = sync::commit(
-			tmp_other_repo_dir.path().to_str().unwrap(),
+			&tmp_other_repo_dir.path().to_str().unwrap().into(),
 			"repo_2_commit",
 		)
 		.unwrap();
@@ -339,7 +338,7 @@ mod tests {
 		// should fail as branches diverged
 		assert_eq!(
 			push(
-				tmp_other_repo_dir.path().to_str().unwrap(),
+				&tmp_other_repo_dir.path().to_str().unwrap().into(),
 				"origin",
 				"master",
 				false,
@@ -360,7 +359,7 @@ mod tests {
 		// should work as it forces the push through
 
 		push(
-			tmp_other_repo_dir.path().to_str().unwrap(),
+			&tmp_other_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
 			true,
@@ -407,7 +406,7 @@ mod tests {
 		assert!(commits.contains(&commit_1));
 
 		push(
-			tmp_repo_dir.path().to_str().unwrap(),
+			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
 			false,
@@ -419,14 +418,14 @@ mod tests {
 
 		// Create the local branch
 		sync::create_branch(
-			tmp_repo_dir.path().to_str().unwrap(),
+			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"test_branch",
 		)
 		.unwrap();
 
 		// Push the local branch
 		push(
-			tmp_repo_dir.path().to_str().unwrap(),
+			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"test_branch",
 			false,
@@ -452,7 +451,7 @@ mod tests {
 		// Delete the remote branch
 		assert_eq!(
 			push(
-				tmp_repo_dir.path().to_str().unwrap(),
+				&tmp_repo_dir.path().to_str().unwrap().into(),
 				"origin",
 				"test_branch",
 				false,
