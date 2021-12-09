@@ -32,9 +32,11 @@ impl BasicAuthCredential {
 /// know if username and password are needed for this url
 pub fn need_username_password(repo_path: &RepoPath) -> Result<bool> {
 	let repo = repo(repo_path)?;
-	let url = repo
-		.find_remote(&get_default_remote_in_repo(&repo)?)?
-		.url()
+	let remote =
+		repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
+	let url = remote
+		.pushurl()
+		.or_else(|| remote.url())
 		.ok_or(Error::UnknownRemote)?
 		.to_owned();
 	let is_http = url.starts_with("http");
@@ -184,6 +186,25 @@ mod tests {
 		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "git@github.com:user/repo")
 			.unwrap();
+
+		assert_eq!(need_username_password(repo_path).unwrap(), false);
+	}
+
+	#[test]
+	#[serial]
+	fn test_dont_need_username_password_if_pushurl_ssh() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
+			.unwrap();
+		repo.remote_set_pushurl(
+			DEFAULT_REMOTE_NAME,
+			Some("git@github.com:user/repo"),
+		)
+		.unwrap();
 
 		assert_eq!(need_username_password(repo_path).unwrap(), false);
 	}
