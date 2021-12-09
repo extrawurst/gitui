@@ -30,6 +30,11 @@ use tui::{
 	Frame,
 };
 
+enum CommitResult {
+	ComitDone,
+	Aborted,
+}
+
 enum Mode {
 	Normal,
 	Amend(CommitId),
@@ -175,11 +180,23 @@ impl CommitComponent {
 		}
 
 		let msg = self.input.get_text().to_string();
-		self.input.clear();
-		self.commit_with_msg(msg)
+
+		if matches!(
+			self.commit_with_msg(msg)?,
+			CommitResult::ComitDone
+		) {
+			self.hide();
+			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+			self.input.clear();
+		}
+
+		Ok(())
 	}
 
-	fn commit_with_msg(&mut self, msg: String) -> Result<()> {
+	fn commit_with_msg(
+		&mut self,
+		msg: String,
+	) -> Result<CommitResult> {
 		if let HookResult::NotOk(e) =
 			sync::hooks_pre_commit(&self.repo.borrow())?
 		{
@@ -188,7 +205,7 @@ impl CommitComponent {
 				"pre-commit hook error:\n{}",
 				e
 			)));
-			return Ok(());
+			return Ok(CommitResult::Aborted);
 		}
 		let mut msg = message_prettify(msg, Some(b'#'))?;
 		if let HookResult::NotOk(e) =
@@ -199,27 +216,18 @@ impl CommitComponent {
 				"commit-msg hook error:\n{}",
 				e
 			)));
-			return Ok(());
+			return Ok(CommitResult::Aborted);
 		}
 
-		let res = match &self.mode {
-			Mode::Normal => sync::commit(&self.repo.borrow(), &msg),
+		match &self.mode {
+			Mode::Normal => sync::commit(&self.repo.borrow(), &msg)?,
 			Mode::Amend(amend) => {
-				sync::amend(&self.repo.borrow(), *amend, &msg)
+				sync::amend(&self.repo.borrow(), *amend, &msg)?
 			}
 			Mode::Merge(ids) => {
-				sync::merge_commit(&self.repo.borrow(), &msg, ids)
+				sync::merge_commit(&self.repo.borrow(), &msg, ids)?
 			}
 		};
-
-		if let Err(e) = res {
-			log::error!("commit error: {}", &e);
-			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"commit failed:\n{}",
-				&e
-			)));
-			return Ok(());
-		}
 
 		if let HookResult::NotOk(e) =
 			sync::hooks_post_commit(&self.repo.borrow())?
@@ -231,11 +239,7 @@ impl CommitComponent {
 			)));
 		}
 
-		self.hide();
-
-		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
-
-		Ok(())
+		Ok(CommitResult::ComitDone)
 	}
 
 	fn can_commit(&self) -> bool {
