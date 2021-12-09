@@ -30,7 +30,7 @@ impl BasicAuthCredential {
 }
 
 /// know if username and password are needed for this url
-pub fn need_username_password() -> Result<bool> {
+pub fn need_username_password(repo_path: &RepoPath) -> Result<bool> {
 	let repo = repo(repo_path)?;
 	let remote =
 		repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
