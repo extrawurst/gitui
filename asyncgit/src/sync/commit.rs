@@ -60,7 +60,7 @@ pub(crate) fn signature_allow_undefined_name(
 	signature
 }
 
-/// this does not run any git hooks
+/// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
 pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 	scope_time!("commit");
 
