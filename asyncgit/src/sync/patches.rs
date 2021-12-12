@@ -18,6 +18,7 @@ pub(crate) fn get_file_diff_patch_and_hunklines<'a>(
 	let diff = get_diff_raw(
 		repo,
 		file,
+		file,
 		is_staged,
 		reverse,
 		Some(DiffOptions {

@@ -495,7 +495,10 @@ impl Status {
 			};
 
 			let diff_params = DiffParams {
-				path: new_path.clone(),
+				src_path: old_path
+					.clone()
+					.unwrap_or_else(|| new_path.clone()),
+				dst_path: new_path.clone(),
 				diff_type,
 				options: self.options.borrow().diff,
 			};

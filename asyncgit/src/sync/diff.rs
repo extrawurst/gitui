@@ -10,7 +10,8 @@ use crate::{
 };
 use easy_cast::Conv;
 use git2::{
-	Delta, Diff, DiffDelta, DiffFormat, DiffHunk, Patch, Repository,
+	Delta, Diff, DiffDelta, DiffFindOptions, DiffFormat, DiffHunk,
+	Patch, Repository,
 };
 use scopetime::scope_time;
 use std::{cell::RefCell, fs, path::Path, rc::Rc};
@@ -149,7 +150,8 @@ impl Default for DiffOptions {
 
 pub(crate) fn get_diff_raw<'a>(
 	repo: &'a Repository,
-	p: &str,
+	src: &str,
+	dst: &str,
 	stage: bool,
 	reverse: bool,
 	options: Option<DiffOptions>,
@@ -162,7 +164,8 @@ pub(crate) fn get_diff_raw<'a>(
 		opt.ignore_whitespace(options.ignore_whitespace);
 		opt.interhunk_lines(options.interhunk_lines);
 	}
-	opt.pathspec(p);
+	opt.pathspec(src);
+	opt.pathspec(dst);
 	opt.reverse(reverse);
 
 	let diff = if stage {
@@ -195,7 +198,8 @@ pub(crate) fn get_diff_raw<'a>(
 /// returns diff of a specific file either in `stage` or workdir
 pub fn get_diff(
 	repo_path: &RepoPath,
-	p: &str,
+	src: &str,
+	dst: &str,
 	stage: bool,
 	options: Option<DiffOptions>,
 ) -> Result<FileDiff> {
@@ -203,9 +207,9 @@ pub fn get_diff(
 
 	let repo = repo(repo_path)?;
 	let work_dir = work_dir(&repo)?;
-	let diff = get_diff_raw(&repo, p, stage, false, options)?;
+	let diff = get_diff_raw(&repo, src, dst, stage, false, options)?;
 
-	raw_diff_to_file_diff(&diff, work_dir)
+	raw_diff_to_file_diff(diff, work_dir)
 }
 
 /// returns diff of a specific file inside a commit
@@ -223,7 +227,7 @@ pub fn get_diff_commit(
 	let diff =
 		get_commit_diff(repo_path, &repo, id, Some(p), options)?;
 
-	raw_diff_to_file_diff(&diff, work_dir)
+	raw_diff_to_file_diff(diff, work_dir)
 }
 
 /// get file changes of a diff between two commits
@@ -244,16 +248,17 @@ pub fn get_diff_commits(
 		options,
 	)?;
 
-	raw_diff_to_file_diff(&diff, work_dir)
+	raw_diff_to_file_diff(diff, work_dir)
 }
 
 ///
 //TODO: refactor into helper type with the inline closures as dedicated functions
 #[allow(clippy::too_many_lines)]
-fn raw_diff_to_file_diff<'a>(
-	diff: &'a Diff,
+fn raw_diff_to_file_diff(
+	mut diff: Diff,
 	work_dir: &Path,
 ) -> Result<FileDiff> {
+	diff.find_similar(Some(DiffFindOptions::new().renames(true)))?;
 	let res = Rc::new(RefCell::new(FileDiff::default()));
 	{
 		let mut current_lines = Vec::new();
@@ -444,8 +449,14 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (1, 0));
 
-		let diff =
-			get_diff(repo_path, "foo/bar.txt", false, None).unwrap();
+		let diff = get_diff(
+			repo_path,
+			"foo/bar.txt",
+			"foo/bar.txt",
+			false,
+			None,
+		)
+		.unwrap();
 
 		assert_eq!(diff.hunks.len(), 1);
 		assert_eq!(&*diff.hunks[0].lines[1].content, "test");
@@ -474,6 +485,7 @@ mod tests {
 
 		let diff = get_diff(
 			repo_path,
+			file_path.to_str().unwrap(),
 			file_path.to_str().unwrap(),
 			true,
 			None,
@@ -547,7 +559,8 @@ mod tests {
 		assert_eq!(get_statuses(repo_path), (1, 1));
 
 		let res =
-			get_diff(repo_path, "bar.txt", false, None).unwrap();
+			get_diff(repo_path, "bar.txt", "bar.txt", false, None)
+				.unwrap();
 
 		assert_eq!(res.hunks.len(), 2)
 	}
@@ -568,6 +581,7 @@ mod tests {
 
 		let diff = get_diff(
 			&sub_path.to_str().unwrap().into(),
+			file_path.to_str().unwrap(),
 			file_path.to_str().unwrap(),
 			false,
 			None,
@@ -597,6 +611,7 @@ mod tests {
 		let diff = get_diff(
 			repo_path,
 			file_path.to_str().unwrap(),
+			file_path.to_str().unwrap(),
 			false,
 			None,
 		)
@@ -622,6 +637,7 @@ mod tests {
 
 		let diff = get_diff(
 			repo_path,
+			file_path.to_str().unwrap(),
 			file_path.to_str().unwrap(),
 			false,
 			None,
