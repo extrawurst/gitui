@@ -385,7 +385,7 @@ impl Status {
 
 		if let Some(item) = idx.selection() {
 			if let FileTreeItemKind::File(i) = item.kind {
-				return Some((i.path, is_stage));
+				return Some((i.new_path, is_stage));
 			}
 		}
 		None

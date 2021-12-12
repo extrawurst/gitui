@@ -530,7 +530,8 @@ mod tests {
 		let res = get_status(repo_path, StatusType::WorkingDir, None)
 			.unwrap();
 		assert_eq!(res.len(), 1);
-		assert_eq!(res[0].path, "bar.txt");
+		assert_eq!(res[0].new_path, "bar.txt");
+		assert_eq!(res[0].old_path, None);
 
 		stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
 		assert_eq!(get_statuses(repo_path), (0, 1));

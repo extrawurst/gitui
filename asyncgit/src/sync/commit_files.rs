@@ -26,21 +26,24 @@ pub fn get_commit_files(
 		get_commit_diff(repo_path, &repo, id, None, None)?
 	};
 
-	let res = diff
-		.deltas()
-		.map(|delta| {
-			let status = StatusItemType::from(delta.status());
+	let res =
+		diff.deltas()
+			.map(|delta| {
+				let status = StatusItemType::from(delta.status());
 
-			StatusItem {
-				path: delta
-					.new_file()
-					.path()
-					.map(|p| p.to_str().unwrap_or("").to_string())
-					.unwrap_or_default(),
-				status,
-			}
-		})
-		.collect::<Vec<_>>();
+				StatusItem {
+					old_path: delta.old_file().path().map(|p| {
+						p.to_str().unwrap_or("").to_string()
+					}),
+					new_path: delta
+						.new_file()
+						.path()
+						.map(|p| p.to_str().unwrap_or("").to_string())
+						.unwrap_or_default(),
+					status,
+				}
+			})
+			.collect::<Vec<_>>();
 
 	Ok(res)
 }

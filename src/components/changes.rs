@@ -91,7 +91,7 @@ impl ChangesComponent {
 		if let Some(tree_item) = self.selection() {
 			if self.is_working_dir {
 				if let FileTreeItemKind::File(i) = tree_item.kind {
-					let path = Path::new(i.path.as_str());
+					let path = Path::new(i.new_path.as_str());
 					match i.status {
 						StatusItemType::Deleted => {
 							sync::stage_addremoved(

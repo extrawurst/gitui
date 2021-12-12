@@ -251,7 +251,7 @@ impl CompareCommitsComponent {
 				if let Some(f) = self.details.files().selection_file()
 				{
 					let diff_params = DiffParams {
-						path: f.path.clone(),
+						path: f.new_path.clone(),
 						diff_type: DiffType::Commits(ids),
 						options: DiffOptions::default(),
 					};
@@ -260,7 +260,7 @@ impl CompareCommitsComponent {
 						self.git_diff.last()?
 					{
 						if params == diff_params {
-							self.diff.update(f.path, false, last);
+							self.diff.update(f.new_path, false, last);
 							return Ok(());
 						}
 					}

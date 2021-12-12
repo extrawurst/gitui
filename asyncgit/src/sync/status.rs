@@ -62,7 +62,9 @@ impl From<Delta> for StatusItemType {
 #[derive(Clone, Hash, PartialEq, Debug)]
 pub struct StatusItem {
 	///
-	pub path: String,
+	pub old_path: Option<String>,
+	///
+	pub new_path: String,
 	///
 	pub status: StatusItemType,
 }
@@ -131,7 +133,7 @@ pub fn get_status(
 	for e in statuses.iter() {
 		let status: Status = e.status();
 
-		let path = match e.head_to_index() {
+		let new_path = match e.head_to_index() {
 			Some(diff) => diff
 				.new_file()
 				.path()
@@ -150,15 +152,29 @@ pub fn get_status(
 				)
 			})?,
 		};
+		let old_path = e
+			.head_to_index()
+			.and_then(|diff| diff.old_file().path())
+			.map(|path| {
+				path.to_str().map(String::from).ok_or_else(|| {
+					Error::Generic(
+						"failed to get path to diff's new file."
+							.to_string(),
+					)
+				})
+			})
+			.transpose()?;
 
 		res.push(StatusItem {
-			path,
+			old_path,
+			new_path,
 			status: StatusItemType::from(status),
 		});
 	}
 
 	res.sort_by(|a, b| {
-		Path::new(a.path.as_str()).cmp(Path::new(b.path.as_str()))
+		Path::new(a.new_path.as_str())
+			.cmp(Path::new(b.new_path.as_str()))
 	});
 
 	Ok(res)
