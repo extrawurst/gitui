@@ -289,7 +289,10 @@ impl InspectCommitComponent {
 						self.git_diff.last()?
 					{
 						if params == diff_params {
-							self.diff.update(f.new_path, false, last);
+							self.diff.update(
+								f.old_path, f.new_path, f.status,
+								false, last,
+							);
 							return Ok(());
 						}
 					}

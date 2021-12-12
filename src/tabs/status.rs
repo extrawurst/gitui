@@ -19,7 +19,7 @@ use asyncgit::{
 	},
 	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
-	DiffType, PushType, StatusParams,
+	DiffType, PushType, StatusItemType, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -377,7 +377,10 @@ impl Status {
 		self.index.focus_select(is_stage);
 	}
 
-	pub fn selected_path(&self) -> Option<(String, bool)> {
+	pub fn selected_path(
+		&self,
+	) -> Option<(Option<String>, String, StatusItemType, bool)> {
+		// FIXME: replace with type
 		let (idx, is_stage) = match self.diff_target {
 			DiffTarget::Stage => (&self.index, true),
 			DiffTarget::WorkingDir => (&self.index_wd, false),
@@ -385,7 +388,9 @@ impl Status {
 
 		if let Some(item) = idx.selection() {
 			if let FileTreeItemKind::File(i) = item.kind {
-				return Some((i.new_path, is_stage));
+				return Some((
+					i.old_path, i.new_path, i.status, is_stage,
+				));
 			}
 		}
 		None
@@ -480,7 +485,9 @@ impl Status {
 
 	///
 	pub fn update_diff(&mut self) -> Result<()> {
-		if let Some((path, is_stage)) = self.selected_path() {
+		if let Some((old_path, new_path, status, is_stage)) =
+			self.selected_path()
+		{
 			let diff_type = if is_stage {
 				DiffType::Stage
 			} else {
@@ -488,30 +495,41 @@ impl Status {
 			};
 
 			let diff_params = DiffParams {
-				path: path.clone(),
+				path: new_path.clone(),
 				diff_type,
 				options: self.options.borrow().diff,
 			};
 
-			if self.diff.current() == (path.clone(), is_stage) {
+			if self.diff.current() == (new_path.clone(), is_stage) {
 				// we are already showing a diff of the right file
 				// maybe the diff changed (outside file change)
 				if let Some((params, last)) = self.git_diff.last()? {
 					if params == diff_params {
 						// all params match, so we might need to update
-						self.diff.update(path, is_stage, last);
+						self.diff.update(
+							old_path, new_path, status, is_stage,
+							last,
+						);
 					} else {
 						// params changed, we need to request the right diff
 						self.request_diff(
 							diff_params,
-							path,
+							old_path,
+							new_path,
+							status,
 							is_stage,
 						)?;
 					}
 				}
 			} else {
 				// we dont show the right diff right now, so we need to request
-				self.request_diff(diff_params, path, is_stage)?;
+				self.request_diff(
+					diff_params,
+					old_path,
+					new_path,
+					status,
+					is_stage,
+				)?;
 			}
 		} else {
 			self.diff.clear(false);
@@ -523,11 +541,14 @@ impl Status {
 	fn request_diff(
 		&mut self,
 		diff_params: DiffParams,
-		path: String,
+		old_path: Option<String>,
+		new_path: String,
+		status: StatusItemType,
 		is_stage: bool,
 	) -> Result<(), anyhow::Error> {
 		if let Some(diff) = self.git_diff.request(diff_params)? {
-			self.diff.update(path, is_stage, diff);
+			self.diff
+				.update(old_path, new_path, status, is_stage, diff);
 		} else {
 			self.diff.clear(true);
 		}
@@ -818,7 +839,9 @@ impl Component for Status {
 					&& (self.can_focus_diff()
 						|| self.is_focus_on_diff())
 				{
-					if let Some((path, _)) = self.selected_path() {
+					if let Some((_, path, _, _)) =
+						self.selected_path()
+					{
 						self.queue.push(
 							InternalEvent::OpenExternalEditor(Some(
 								path,
