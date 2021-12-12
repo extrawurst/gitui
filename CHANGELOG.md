@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep commit message when pre-commit hook fails ([#1035](https://github.com/extrawurst/gitui/issues/1035))
 - honor `pushurl` when checking whether we need username and password for pushing ([#953](https://github.com/extrawurst/gitui/issues/953))
 
+### Key binding notes
+- added `gg`/`G` vim bindings to `vim_style_key_config.ron` ([#1039](https://github.com/extrawurst/gitui/issues/1039))
+
 ## [0.19] - 2021-12-08 - Bare Repo Support
 
 **finder highlighting matches**
@@ -19,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Change
 Have you used `key_config.ron` for custom key bindings before?
-The way this works got changed and simplified ([See docs](https://github.com/extrawurst/gitui/blob/master/KEY_CONFIG.md) for more info): 
+The way this works got changed and simplified ([See docs](https://github.com/extrawurst/gitui/blob/master/KEY_CONFIG.md) for more info):
 * You only define the keys that should differ from the default.
 * The file is renamed to `key_bindings.ron`
 * Future addition of new keys will not break anymore
@@ -153,7 +156,7 @@ see `vim_style_key_config.ron` for their default vim binding
 - indicator for longer commit message than displayed ([#773](https://github.com/extrawurst/gitui/issues/773))
 
 ![msg-len](assets/long-msg-indicator.gif)
-  
+
 ### Fixed
 - wrong file with same name shown in file tree ([#748](https://github.com/extrawurst/gitui/issues/748))
 - filetree collapsing broken on windows ([#761](https://github.com/extrawurst/gitui/issues/761))
@@ -189,7 +192,7 @@ see `vim_style_key_config.ron` for their default vim binding
 - `--bugreport` cmd line arg to help diagnostics [[@zcorniere](https://github.com/zcorniere)] ([#695](https://github.com/extrawurst/gitui/issues/695))
 
 ### Changed
-- smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682)) 
+- smarter log timestamps ([#682](https://github.com/extrawurst/gitui/issues/682))
 - create-branch popup aligned with rename-branch [[@bruceCoelho](https://github.com/bruceCoelho)] ([#679](https://github.com/extrawurst/gitui/issues/679))
 - smart focus change after staging all files ([#706](https://github.com/extrawurst/gitui/issues/706))
 - do not allow to commit when `gpgsign` enabled ([#740](https://github.com/extrawurst/gitui/issues/740))
@@ -276,13 +279,13 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 ![chars-branch-name](assets/chars_and_branchname.gif)
 
 ### Breaking Change
-- MacOS config directory now uses `~/.config/gitui` [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317)) 
+- MacOS config directory now uses `~/.config/gitui` [[@remique](https://github.com/remique)] ([#317](https://github.com/extrawurst/gitui/issues/317))
 
 ### Added
 - support for pull (fetch + simple merging) ([#319](https://github.com/extrawurst/gitui/issues/319))
 - show used char count in input texts ([#466](https://github.com/extrawurst/gitui/issues/466))
 - support smoother left/right toggle/keys for commit details ([#418](https://github.com/extrawurst/gitui/issues/418))
-- support *force push* command [[@WizardOhio24](https://github.com/WizardOhio24)] ([#274](https://github.com/extrawurst/gitui/issues/274)) 
+- support *force push* command [[@WizardOhio24](https://github.com/WizardOhio24)] ([#274](https://github.com/extrawurst/gitui/issues/274))
 
 ### Fixed
 - don't close branchlist every time ([#550](https://github.com/extrawurst/gitui/issues/550))
