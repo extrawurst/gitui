@@ -5,7 +5,9 @@ use crate::{
 	error::Result,
 	sync::{config::untracked_files_config_repo, repository::repo},
 };
-use git2::{Delta, Status, StatusOptions, StatusShow};
+use git2::{
+	Delta, DiffDelta, Status, StatusEntry, StatusOptions, StatusShow,
+};
 use scopetime::scope_time;
 use std::path::Path;
 
@@ -96,6 +98,21 @@ impl From<StatusType> for StatusShow {
 	}
 }
 
+fn get_diff<'a>(
+	status_type: StatusType,
+	status_entry: &'a StatusEntry,
+) -> Option<DiffDelta<'a>> {
+	match status_type {
+		StatusType::WorkingDir => status_entry.index_to_workdir(),
+		StatusType::Stage => status_entry.head_to_index(),
+		StatusType::Both => {
+			status_entry // TODO: chain both Some(...) values
+				.head_to_index()
+				.or_else(|| status_entry.index_to_workdir())
+		}
+	}
+}
+
 /// gurantees sorting
 pub fn get_status(
 	repo_path: &RepoPath,
@@ -121,7 +138,8 @@ pub fn get_status(
 		.show(status_type.into())
 		.update_index(true)
 		.include_untracked(show_untracked.include_untracked())
-		.renames_head_to_index(true)
+		.renames_head_to_index(status_type != StatusType::WorkingDir)
+		.renames_index_to_workdir(status_type != StatusType::Stage)
 		.recurse_untracked_dirs(
 			show_untracked.recurse_untracked_dirs(),
 		);
@@ -133,7 +151,7 @@ pub fn get_status(
 	for e in statuses.iter() {
 		let status: Status = e.status();
 
-		let new_path = match e.head_to_index() {
+		let new_path = match get_diff(status_type, &e) {
 			Some(diff) => diff
 				.new_file()
 				.path()
@@ -152,8 +170,7 @@ pub fn get_status(
 				)
 			})?,
 		};
-		let old_path = e
-			.head_to_index()
+		let old_path = get_diff(status_type, &e)
 			.and_then(|diff| diff.old_file().path())
 			.map(|path| {
 				path.to_str().map(String::from).ok_or_else(|| {
