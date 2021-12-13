@@ -196,3 +196,72 @@ pub fn get_status(
 
 	Ok(res)
 }
+
+#[cfg(test)]
+mod tests {
+	use git2::{Delta, StatusOptions};
+
+	use crate::{
+		error::Result,
+		sync::{
+			commit, stage_add_file, stage_addremoved,
+			tests::repo_init_empty, RepoPath,
+		},
+	};
+	use std::{
+		fs::{self, File},
+		io::Write,
+		path::Path,
+	};
+
+	#[test]
+	fn test_rename_file() -> Result<()> {
+		let bar = Path::new("bar");
+		let baz = Path::new("baz");
+		let (_td, repo) = repo_init_empty()?;
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		let mut file = File::create(&root.join(bar))?;
+		file.write_all(b"\x00")?;
+
+		let mut opts = StatusOptions::new();
+		opts.show(git2::StatusShow::Index)
+			.renames_index_to_workdir(true)
+			.renames_head_to_index(true);
+
+		let statuses = repo.statuses(Some(&mut opts))?;
+		for status in statuses.iter() {
+			let diff = status.index_to_workdir().unwrap();
+			assert_eq!(diff.status(), Delta::Added);
+			assert_eq!(diff.old_file().path(), None);
+			assert_eq!(diff.new_file().path(), Some(bar));
+		}
+
+		stage_add_file(repo_path, bar)?;
+		let _id = commit(repo_path, "")?;
+
+		fs::rename(&root.join(bar), &root.join(baz))?;
+		stage_add_file(repo_path, baz)?;
+		stage_addremoved(repo_path, bar)?;
+		let statuses = repo.statuses(Some(&mut opts))?;
+		for status in statuses.iter() {
+			let diff = status.head_to_index().unwrap();
+			assert_eq!(diff.status(), Delta::Renamed);
+			assert_eq!(diff.old_file().path(), Some(bar));
+			assert_eq!(diff.new_file().path(), Some(baz));
+		}
+
+		fs::remove_file(&root.join(baz))?;
+		stage_addremoved(repo_path, baz)?;
+		let statuses = repo.statuses(Some(&mut opts))?;
+		for status in statuses.iter() {
+			let diff = status.head_to_index().unwrap();
+			assert_eq!(diff.status(), Delta::Deleted);
+			assert_eq!(diff.old_file().path(), Some(bar));
+			assert_eq!(diff.new_file().path(), Some(bar));
+		}
+		Ok(())
+	}
+}
