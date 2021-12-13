@@ -380,7 +380,7 @@ impl Status {
 	pub fn selected_path(
 		&self,
 	) -> Option<(Option<String>, String, StatusItemType, bool)> {
-		// FIXME: replace with type
+		// TODO: replace with type
 		let (idx, is_stage) = match self.diff_target {
 			DiffTarget::Stage => (&self.index, true),
 			DiffTarget::WorkingDir => (&self.index_wd, false),
