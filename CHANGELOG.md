@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Keep commit message when pre-commit hook fails ([#1035](https://github.com/extrawurst/gitui/issues/1035))
-- honor `pushurl` when checking whether we need username and password for pushing ([#953](https://github.com/extrawurst/gitui/issues/953))
+- honor `pushurl` when checking credentials for pushing ([#953](https://github.com/extrawurst/gitui/issues/953))
+- use git-path instead of workdir finding hooks ([#1046](https://github.com/extrawurst/gitui/issues/1046))
 
 ### Key binding notes
 - added `gg`/`G` vim bindings to `vim_style_key_config.ron` ([#1039](https://github.com/extrawurst/gitui/issues/1039))
