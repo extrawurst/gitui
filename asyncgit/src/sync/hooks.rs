@@ -1,21 +1,21 @@
-use super::{repository::repo, utils::work_dir, RepoPath};
-use crate::error::{Error, Result};
+use super::{repository::repo, RepoPath};
+use crate::error::Result;
 use scopetime::scope_time;
 use std::{
 	fs::File,
 	io::{Read, Write},
-	path::Path,
+	path::{Path, PathBuf},
 	process::Command,
 };
 
-const HOOK_POST_COMMIT: &str = ".git/hooks/post-commit";
-const HOOK_PRE_COMMIT: &str = ".git/hooks/pre-commit";
-const HOOK_COMMIT_MSG: &str = ".git/hooks/commit-msg";
-const HOOK_COMMIT_MSG_TEMP_FILE: &str = ".git/COMMIT_EDITMSG";
+const HOOK_POST_COMMIT: &str = "hooks/post-commit";
+const HOOK_PRE_COMMIT: &str = "hooks/pre-commit";
+const HOOK_COMMIT_MSG: &str = "hooks/commit-msg";
+const HOOK_COMMIT_MSG_TEMP_FILE: &str = "COMMIT_EDITMSG";
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_commit_msg>
 /// we use the same convention as other git clients to create a temp file containing
-/// the commit message at `.git/COMMIT_EDITMSG` and pass it's relative path as the only
+/// the commit message at `<.git|hooksPath>/COMMIT_EDITMSG` and pass it's relative path as the only
 /// parameter to the hook script.
 pub fn hooks_commit_msg(
 	repo_path: &RepoPath,
@@ -23,15 +23,15 @@ pub fn hooks_commit_msg(
 ) -> Result<HookResult> {
 	scope_time!("hooks_commit_msg");
 
-	let work_dir = work_dir_as_string(repo_path)?;
+	let git_dir = git_dir_as_string(repo_path)?;
+	let git_dir = git_dir.as_path();
 
-	if hook_runable(work_dir.as_str(), HOOK_COMMIT_MSG) {
-		let temp_file = Path::new(work_dir.as_str())
-			.join(HOOK_COMMIT_MSG_TEMP_FILE);
+	if hook_runable(git_dir, HOOK_COMMIT_MSG) {
+		let temp_file = git_dir.join(HOOK_COMMIT_MSG_TEMP_FILE);
 		File::create(&temp_file)?.write_all(msg.as_bytes())?;
 
 		let res = run_hook(
-			work_dir.as_str(),
+			git_dir,
 			HOOK_COMMIT_MSG,
 			&[HOOK_COMMIT_MSG_TEMP_FILE],
 		)?;
@@ -51,10 +51,11 @@ pub fn hooks_commit_msg(
 pub fn hooks_pre_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	scope_time!("hooks_pre_commit");
 
-	let work_dir = work_dir_as_string(repo_path)?;
+	let git_dir = git_dir_as_string(repo_path)?;
+	let git_dir = git_dir.as_path();
 
-	if hook_runable(work_dir.as_str(), HOOK_PRE_COMMIT) {
-		Ok(run_hook(work_dir.as_str(), HOOK_PRE_COMMIT, &[])?)
+	if hook_runable(git_dir, HOOK_PRE_COMMIT) {
+		Ok(run_hook(git_dir, HOOK_PRE_COMMIT, &[])?)
 	} else {
 		Ok(HookResult::Ok)
 	}
@@ -63,32 +64,23 @@ pub fn hooks_pre_commit(repo_path: &RepoPath) -> Result<HookResult> {
 pub fn hooks_post_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	scope_time!("hooks_post_commit");
 
-	let work_dir = work_dir_as_string(repo_path)?;
-	let work_dir_str = work_dir.as_str();
+	let git_dir = git_dir_as_string(repo_path)?;
+	let git_dir = git_dir.as_path();
 
-	if hook_runable(work_dir_str, HOOK_POST_COMMIT) {
-		Ok(run_hook(work_dir_str, HOOK_POST_COMMIT, &[])?)
+	if hook_runable(git_dir, HOOK_POST_COMMIT) {
+		Ok(run_hook(git_dir, HOOK_POST_COMMIT, &[])?)
 	} else {
 		Ok(HookResult::Ok)
 	}
 }
 
-fn work_dir_as_string(repo_path: &RepoPath) -> Result<String> {
+fn git_dir_as_string(repo_path: &RepoPath) -> Result<PathBuf> {
 	let repo = repo(repo_path)?;
-	work_dir(&repo)?
-		.to_str()
-		.map(std::string::ToString::to_string)
-		.ok_or_else(|| {
-			Error::Generic(
-				"workdir contains invalid utf8".to_string(),
-			)
-		})
+	Ok(repo.path().to_path_buf())
 }
 
-fn hook_runable(path: &str, hook: &str) -> bool {
-	let path = Path::new(path);
+fn hook_runable(path: &Path, hook: &str) -> bool {
 	let path = path.join(hook);
-
 	path.exists() && is_executable(&path)
 }
 
@@ -104,7 +96,7 @@ pub enum HookResult {
 /// this function calls hook scripts based on conventions documented here
 /// see <https://git-scm.com/docs/githooks>
 fn run_hook(
-	path: &str,
+	path: &Path,
 	hook_script: &str,
 	args: &[&str],
 ) -> Result<HookResult> {
@@ -155,8 +147,10 @@ const fn is_executable(_: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
+	use tempfile::TempDir;
+
 	use super::*;
-	use crate::sync::tests::repo_init;
+	use crate::sync::tests::{repo_init, repo_init_bare};
 	use std::fs::{self, File};
 
 	#[test]
@@ -177,6 +171,13 @@ mod tests {
 	}
 
 	fn create_hook(path: &Path, hook_path: &str, hook_script: &[u8]) {
+		let path = git_dir_as_string(
+			&path.as_os_str().to_str().unwrap().into(),
+		)
+		.unwrap();
+		let path = path.as_path();
+		dbg!(&path);
+
 		File::create(&path.join(hook_path))
 			.unwrap()
 			.write_all(hook_script)
@@ -242,6 +243,26 @@ exit 1
         ";
 
 		create_hook(root, HOOK_PRE_COMMIT, hook);
+		let res = hooks_pre_commit(repo_path).unwrap();
+		assert!(res != HookResult::Ok);
+	}
+
+	#[test]
+	fn test_pre_commit_fail_bare() {
+		let (git_root, _repo) = repo_init_bare().unwrap();
+		let workdir = TempDir::new().unwrap();
+		let git_root = git_root.into_path();
+		let repo_path = &RepoPath::Workdir {
+			gitdir: git_root.to_path_buf(),
+			workdir: workdir.into_path(),
+		};
+
+		let hook = b"#!/bin/sh
+echo 'rejected'        
+exit 1
+        ";
+
+		create_hook(git_root.as_path(), "hooks/pre-commit", hook);
 		let res = hooks_pre_commit(repo_path).unwrap();
 		assert!(res != HookResult::Ok);
 	}
