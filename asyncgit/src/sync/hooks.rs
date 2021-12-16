@@ -298,8 +298,8 @@ exit 1
 		let res = hooks_pre_commit(repo_path).unwrap();
 		if let HookResult::NotOk(res) = res {
 			assert_eq!(
-				Path::new(res.trim_end()),
-				Path::new(&workdir)
+				Path::new(res.trim_end()).canonicalize().unwrap(),
+				Path::new(&workdir).canonicalize().unwrap()
 			);
 		} else {
 			assert!(false);
