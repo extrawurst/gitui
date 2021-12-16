@@ -160,7 +160,10 @@ const fn is_executable(_: &Path) -> bool {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::sync::tests::{repo_init, repo_init_bare};
+	use crate::sync::{
+		tests::{repo_init, repo_init_bare},
+		utils::repo_work_dir,
+	};
 	use std::fs::{self, File};
 	use tempfile::TempDir;
 
@@ -428,6 +431,35 @@ exit 1
 			res,
 			HookResult::NotOk(String::from("rejected\n"))
 		);
+	}
+
+	// make sure we run the hooks with the correct pwd.
+	// for non-bare repos this is the dir of the worktree
+	// unfortunately does not work on windows
+	#[test]
+	#[cfg(unix)]
+	fn test_pre_commit_workdir() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+		let workdir = repo_work_dir(repo_path).unwrap();
+
+		let hook = b"#!/bin/sh
+echo $(pwd)
+exit 1
+        ";
+
+		create_hook(repo_path, HOOK_PRE_COMMIT, hook);
+		let res = hooks_pre_commit(repo_path).unwrap();
+		if let HookResult::NotOk(res) = res {
+			assert_eq!(
+				Path::new(res.trim_end()),
+				Path::new(&workdir)
+			);
+		} else {
+			assert!(false);
+		}
 	}
 
 	#[test]
