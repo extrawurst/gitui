@@ -159,14 +159,10 @@ const fn is_executable(_: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-	use tempfile::TempDir;
-
 	use super::*;
-	use crate::sync::{
-		tests::{repo_init, repo_init_bare},
-		utils::repo_work_dir,
-	};
+	use crate::sync::tests::{repo_init, repo_init_bare};
 	use std::fs::{self, File};
+	use tempfile::TempDir;
 
 	#[test]
 	fn test_smoke() {
@@ -277,34 +273,6 @@ exit 1
 		create_hook(repo_path, HOOK_PRE_COMMIT, hook);
 		let res = hooks_pre_commit(repo_path).unwrap();
 		assert!(res != HookResult::Ok);
-	}
-
-	// make sure we run the hooks with the correct pwd.
-	// for non-bare repos this is the dir of the worktree
-	#[test]
-	fn test_pre_commit_workdir() {
-		let (_td, repo) = repo_init().unwrap();
-		let root = repo.path().parent().unwrap();
-		let repo_path: &RepoPath =
-			&root.as_os_str().to_str().unwrap().into();
-		let workdir = repo_work_dir(repo_path).unwrap();
-		dbg!(&workdir);
-
-		let hook = b"#!/bin/sh
-echo $(pwd)
-exit 1
-        ";
-
-		create_hook(repo_path, HOOK_PRE_COMMIT, hook);
-		let res = hooks_pre_commit(repo_path).unwrap();
-		if let HookResult::NotOk(res) = dbg!(res) {
-			assert_eq!(
-				Path::new(res.trim_end()),
-				Path::new(&workdir)
-			);
-		} else {
-			assert!(false);
-		}
 	}
 
 	#[test]
@@ -471,6 +439,37 @@ exit 1
 		let hook =
 			HookPaths::new(repo_path, HOOK_POST_COMMIT).unwrap();
 
-		assert_eq!(hook.pwd, git_root);
+		assert_eq!(hook.pwd, dbg!(git_root));
+	}
+
+	#[test]
+	fn test_hook_pwd_in_bare_with_workdir() {
+		let (git_root, _repo) = repo_init_bare().unwrap();
+		let workdir = TempDir::new().unwrap();
+		let git_root = git_root.into_path();
+		let repo_path = &RepoPath::Workdir {
+			gitdir: dbg!(git_root.to_path_buf()),
+			workdir: dbg!(workdir.path().to_path_buf()),
+		};
+
+		let hook =
+			HookPaths::new(repo_path, HOOK_POST_COMMIT).unwrap();
+
+		assert_eq!(
+			hook.pwd,
+			dbg!(workdir.path().canonicalize().unwrap())
+		);
+	}
+
+	#[test]
+	fn test_hook_pwd() {
+		let (_td, _repo) = repo_init().unwrap();
+		let git_root = _repo.path().to_path_buf();
+		let repo_path = &RepoPath::Path(git_root.clone());
+
+		let hook =
+			HookPaths::new(repo_path, HOOK_POST_COMMIT).unwrap();
+
+		assert_eq!(hook.pwd, git_root.parent().unwrap());
 	}
 }

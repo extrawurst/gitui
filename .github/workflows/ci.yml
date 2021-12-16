@@ -59,7 +59,7 @@ jobs:
     #     cargo build
 
     - name: Run tests
-      run: cargo test --package asyncgit --lib -- sync::hooks::tests::test_pre_commit_workdir --exact --nocapture
+      run: make test
 
     - name: Run clippy
       run: |
