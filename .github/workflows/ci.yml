@@ -54,12 +54,12 @@ jobs:
         cargo install cargo-modify --force
         cargo modify new-resolver
 
-    - name: Build Debug
-      run: |
-        cargo build
+    # - name: Build Debug
+    #   run: |
+    #     cargo build
 
     - name: Run tests
-      run: make test
+      run: cargo test --package asyncgit --lib -- sync::hooks::tests::test_pre_commit_workdir --exact --nocapture
 
     - name: Run clippy
       run: |

@@ -288,6 +288,7 @@ exit 1
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 		let workdir = repo_work_dir(repo_path).unwrap();
+		dbg!(&workdir);
 
 		let hook = b"#!/bin/sh
 echo $(pwd)
@@ -298,8 +299,8 @@ exit 1
 		let res = hooks_pre_commit(repo_path).unwrap();
 		if let HookResult::NotOk(res) = dbg!(res) {
 			assert_eq!(
-				Path::new(res.trim_end()).canonicalize().unwrap(),
-				Path::new(&workdir).canonicalize().unwrap()
+				Path::new(res.trim_end()),
+				Path::new(&workdir)
 			);
 		} else {
 			assert!(false);
