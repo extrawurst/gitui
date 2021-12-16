@@ -456,7 +456,7 @@ exit 1
 			HookPaths::new(repo_path, HOOK_POST_COMMIT).unwrap();
 
 		assert_eq!(
-			hook.pwd,
+			hook.pwd.canonicalize().unwrap(),
 			dbg!(workdir.path().canonicalize().unwrap())
 		);
 	}
