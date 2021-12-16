@@ -296,7 +296,7 @@ exit 1
 
 		create_hook(repo_path, HOOK_PRE_COMMIT, hook);
 		let res = hooks_pre_commit(repo_path).unwrap();
-		if let HookResult::NotOk(res) = res {
+		if let HookResult::NotOk(res) = dbg!(res) {
 			assert_eq!(
 				Path::new(res.trim_end()).canonicalize().unwrap(),
 				Path::new(&workdir).canonicalize().unwrap()
