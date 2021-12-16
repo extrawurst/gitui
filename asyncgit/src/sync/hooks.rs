@@ -160,10 +160,7 @@ const fn is_executable(_: &Path) -> bool {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::sync::{
-		tests::{repo_init, repo_init_bare},
-		utils::repo_work_dir,
-	};
+	use crate::sync::tests::{repo_init, repo_init_bare};
 	use std::fs::{self, File};
 	use tempfile::TempDir;
 
@@ -443,7 +440,8 @@ exit 1
 		let root = repo.path().parent().unwrap();
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
-		let workdir = repo_work_dir(repo_path).unwrap();
+		let workdir =
+			crate::sync::utils::repo_work_dir(repo_path).unwrap();
 
 		let hook = b"#!/bin/sh
 echo $(pwd)
