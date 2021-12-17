@@ -210,7 +210,7 @@ pub fn get_diff(
 	let work_dir = work_dir(&repo)?;
 	let diff = get_diff_raw(&repo, src, dst, stage, false, options)?;
 
-	raw_diff_to_file_diff(diff, work_dir)
+	raw_diff_to_file_diff(&diff, work_dir)
 }
 
 /// returns diff of a specific file inside a commit
@@ -228,7 +228,7 @@ pub fn get_diff_commit(
 	let diff =
 		get_commit_diff(repo_path, &repo, id, Some(p), options)?;
 
-	raw_diff_to_file_diff(diff, work_dir)
+	raw_diff_to_file_diff(&diff, work_dir)
 }
 
 /// get file changes of a diff between two commits
@@ -249,14 +249,14 @@ pub fn get_diff_commits(
 		options,
 	)?;
 
-	raw_diff_to_file_diff(diff, work_dir)
+	raw_diff_to_file_diff(&diff, work_dir)
 }
 
 ///
 //TODO: refactor into helper type with the inline closures as dedicated functions
 #[allow(clippy::too_many_lines)]
 fn raw_diff_to_file_diff(
-	diff: Diff,
+	diff: &Diff,
 	work_dir: &Path,
 ) -> Result<FileDiff> {
 	let res = Rc::new(RefCell::new(FileDiff::default()));

@@ -478,7 +478,7 @@ impl DiffComponent {
 					self.current
 						.old_path
 						.as_ref()
-						.unwrap_or_else(|| &self.current.new_path),
+						.unwrap_or(&self.current.new_path),
 					&self.current.new_path,
 					hash,
 				)?;
@@ -501,13 +501,10 @@ impl DiffComponent {
 					let hash = diff.hunks[hunk].header_hash;
 					sync::stage_hunk(
 						&self.repo.borrow(),
-						&self
-							.current
+						self.current
 							.old_path
 							.as_ref()
-							.unwrap_or_else(|| {
-								&self.current.new_path
-							}),
+							.unwrap_or(&self.current.new_path),
 						hash,
 					)?;
 				}
