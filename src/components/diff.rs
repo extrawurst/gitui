@@ -149,8 +149,12 @@ impl DiffComponent {
 			.unwrap_or_default()
 	}
 	///
-	pub fn current(&self) -> (String, bool) {
-		(self.current.new_path.clone(), self.current.is_stage)
+	pub fn current(&self) -> (Option<String>, String, bool) {
+		(
+			self.current.old_path.clone(),
+			self.current.new_path.clone(),
+			self.current.is_stage,
+		)
 	}
 	///
 	pub fn clear(&mut self, pending: bool) {
@@ -493,7 +497,13 @@ impl DiffComponent {
 					let hash = diff.hunks[hunk].header_hash;
 					sync::stage_hunk(
 						&self.repo.borrow(),
-						&self.current.new_path,
+						&self
+							.current
+							.old_path
+							.as_ref()
+							.unwrap_or_else(|| {
+								&self.current.new_path
+							}),
 						hash,
 					)?;
 				}

@@ -503,7 +503,9 @@ impl Status {
 				options: self.options.borrow().diff,
 			};
 
-			if self.diff.current() == (new_path.clone(), is_stage) {
+			if self.diff.current()
+				== (old_path.clone(), new_path.clone(), is_stage)
+			{
 				// we are already showing a diff of the right file
 				// maybe the diff changed (outside file change)
 				if let Some((params, last)) = self.git_diff.last()? {
