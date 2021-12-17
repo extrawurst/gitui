@@ -102,15 +102,22 @@ fn find_hunk_index(diff: &Diff, hunk_hash: u64) -> Option<usize> {
 ///
 pub fn unstage_hunk(
 	repo_path: &RepoPath,
-	file_path: &str,
+	src_file_path: &str,
+	dst_file_path: &str,
 	hunk_hash: u64,
 ) -> Result<bool> {
 	scope_time!("revert_hunk");
 
 	let repo = repo(repo_path)?;
 
-	let diff =
-		get_diff_raw(&repo, file_path, file_path, true, false, None)?;
+	let diff = get_diff_raw(
+		&repo,
+		src_file_path,
+		dst_file_path,
+		true,
+		false,
+		None,
+	)?;
 	let diff_count_positive = diff.deltas().len();
 
 	let hunk_index = find_hunk_index(&diff, hunk_hash);
@@ -119,8 +126,14 @@ pub fn unstage_hunk(
 		Ok,
 	)?;
 
-	let diff =
-		get_diff_raw(&repo, file_path, file_path, true, true, None)?;
+	let diff = get_diff_raw(
+		&repo,
+		src_file_path,
+		dst_file_path,
+		true,
+		true,
+		None,
+	)?;
 
 	if diff.deltas().len() != diff_count_positive {
 		return Err(Error::Generic(format!(

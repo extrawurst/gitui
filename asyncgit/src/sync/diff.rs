@@ -168,7 +168,7 @@ pub(crate) fn get_diff_raw<'a>(
 	opt.pathspec(dst);
 	opt.reverse(reverse);
 
-	let diff = if stage {
+	let mut diff = if stage {
 		// diff against head
 		if let Ok(id) = get_head_repo(repo) {
 			let parent = repo.find_commit(id.into())?;
@@ -192,6 +192,7 @@ pub(crate) fn get_diff_raw<'a>(
 		repo.diff_index_to_workdir(None, Some(&mut opt))?
 	};
 
+	diff.find_similar(Some(DiffFindOptions::new().renames(true)))?;
 	Ok(diff)
 }
 
@@ -255,10 +256,9 @@ pub fn get_diff_commits(
 //TODO: refactor into helper type with the inline closures as dedicated functions
 #[allow(clippy::too_many_lines)]
 fn raw_diff_to_file_diff(
-	mut diff: Diff,
+	diff: Diff,
 	work_dir: &Path,
 ) -> Result<FileDiff> {
-	diff.find_similar(Some(DiffFindOptions::new().renames(true)))?;
 	let res = Rc::new(RefCell::new(FileDiff::default()));
 	{
 		let mut current_lines = Vec::new();

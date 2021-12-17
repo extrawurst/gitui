@@ -475,6 +475,10 @@ impl DiffComponent {
 				let hash = diff.hunks[hunk].header_hash;
 				sync::unstage_hunk(
 					&self.repo.borrow(),
+					self.current
+						.old_path
+						.as_ref()
+						.unwrap_or_else(|| &self.current.new_path),
 					&self.current.new_path,
 					hash,
 				)?;
