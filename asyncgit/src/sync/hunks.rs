@@ -13,7 +13,8 @@ use scopetime::scope_time;
 ///
 pub fn stage_hunk(
 	repo_path: &RepoPath,
-	file_path: &str,
+	src_file_path: &str,
+	dst_file_path: &str,
 	hunk_hash: u64,
 ) -> Result<()> {
 	scope_time!("stage_hunk");
@@ -21,7 +22,12 @@ pub fn stage_hunk(
 	let repo = repo(repo_path)?;
 
 	let diff = get_diff_raw(
-		&repo, file_path, file_path, false, false, None,
+		&repo,
+		src_file_path,
+		dst_file_path,
+		false,
+		false,
+		None,
 	)?;
 
 	let mut opt = ApplyOptions::new();

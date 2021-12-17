@@ -505,6 +505,7 @@ impl DiffComponent {
 							.old_path
 							.as_ref()
 							.unwrap_or(&self.current.new_path),
+						&self.current.new_path,
 						hash,
 					)?;
 				}
