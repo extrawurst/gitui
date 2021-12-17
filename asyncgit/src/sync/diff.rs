@@ -543,7 +543,7 @@ mod tests {
 			.unwrap();
 		assert_eq!(res.len(), 1);
 		assert_eq!(res[0].new_path, "bar.txt");
-		assert_eq!(res[0].old_path, None);
+		assert_eq!(res[0].old_path, Some("bar.txt".to_string()));
 
 		stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
 		assert_eq!(get_statuses(repo_path), (0, 1));
