@@ -192,7 +192,9 @@ pub(crate) fn get_diff_raw<'a>(
 		repo.diff_index_to_workdir(None, Some(&mut opt))?
 	};
 
-	diff.find_similar(Some(DiffFindOptions::new().renames(true)))?;
+	diff.find_similar(Some(
+		DiffFindOptions::new().renames(true).for_untracked(true),
+	))?;
 	Ok(diff)
 }
 
