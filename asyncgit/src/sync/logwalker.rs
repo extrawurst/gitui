@@ -61,6 +61,7 @@ impl<'a> LogWalker<'a> {
 	}
 
 	///
+	#[must_use]
 	pub fn filter(self, filter: Option<LogWalkerFilter>) -> Self {
 		Self { filter, ..self }
 	}
