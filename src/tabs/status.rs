@@ -165,7 +165,7 @@ impl Status {
 			focus: Focus::WorkDir,
 			diff_target: DiffTarget::WorkingDir,
 			local_only: get_branches_info(&repo_clone, false)
-				.map(|l| l.len() == 0)
+				.map(|l| l.is_empty())
 				.unwrap_or(true),
 			index_wd: ChangesComponent::new(
 				repo.clone(),
@@ -593,7 +593,7 @@ impl Status {
 			&& !self.local_only
 	}
 
-	fn can_pull(&self) -> bool {
+	const fn can_pull(&self) -> bool {
 		!self.local_only
 	}
 

@@ -247,7 +247,7 @@ impl Component for BranchListComponent {
 				if !self.local {
 					self.has_remotes =
 						get_branches_info(&self.repo.borrow(), false)
-							.map(|branches| branches.len() > 0)
+							.map(|branches| !branches.is_empty())
 							.unwrap_or(false);
 				}
 				self.update_branches()?;
