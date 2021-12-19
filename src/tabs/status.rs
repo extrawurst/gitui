@@ -15,7 +15,8 @@ use anyhow::Result;
 use asyncgit::{
 	cached,
 	sync::{
-		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
+		self, get_branches_info, status::StatusType, RepoPath,
+		RepoPathRef, RepoState,
 	},
 	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
@@ -66,6 +67,7 @@ pub struct Status {
 	index_wd: ChangesComponent,
 	diff: DiffComponent,
 	git_diff: AsyncDiff,
+	local_only: bool,
 	git_status_workdir: AsyncStatus,
 	git_status_stage: AsyncStatus,
 	git_branch_state: Option<BranchCompare>,
@@ -162,6 +164,9 @@ impl Status {
 			visible: true,
 			focus: Focus::WorkDir,
 			diff_target: DiffTarget::WorkingDir,
+			local_only: get_branches_info(&repo_clone, false)
+				.map(|l| l.len() == 0)
+				.unwrap_or(true),
 			index_wd: ChangesComponent::new(
 				repo.clone(),
 				&strings::title_status(&key_config),
@@ -555,8 +560,10 @@ impl Status {
 	}
 
 	fn pull(&self) {
-		if let Some(branch) = self.git_branch_name.last() {
-			self.queue.push(InternalEvent::Pull(branch));
+		if !self.local_only {
+			if let Some(branch) = self.git_branch_name.last() {
+				self.queue.push(InternalEvent::Pull(branch));
+			}
 		}
 	}
 
@@ -583,6 +590,11 @@ impl Status {
 		self.git_branch_state
 			.as_ref()
 			.map_or(true, |state| state.ahead > 0)
+			&& !self.local_only
+	}
+
+	fn can_pull(&self) -> bool {
+		!self.local_only
 	}
 
 	fn can_abort_merge(&self) -> bool {
@@ -718,7 +730,7 @@ impl Component for Status {
 			));
 			out.push(CommandInfo::new(
 				strings::commands::status_pull(&self.key_config),
-				true,
+				self.can_pull(),
 				!focus_on_diff,
 			));
 

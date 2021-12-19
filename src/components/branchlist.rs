@@ -42,6 +42,7 @@ pub struct BranchListComponent {
 	repo: RepoPathRef,
 	branches: Vec<BranchInfo>,
 	local: bool,
+	has_remotes: bool,
 	visible: bool,
 	selection: u16,
 	scroll: VerticalScroll,
@@ -200,7 +201,7 @@ impl Component for BranchListComponent {
 
 			out.push(CommandInfo::new(
 				strings::commands::fetch_remotes(&self.key_config),
-				true,
+				self.has_remotes,
 				!self.local,
 			));
 		}
@@ -243,6 +244,12 @@ impl Component for BranchListComponent {
 					.map(Into::into);
 			} else if e == self.key_config.keys.tab_toggle {
 				self.local = !self.local;
+				if !self.local {
+					self.has_remotes =
+						get_branches_info(&self.repo.borrow(), false)
+							.map(|branches| branches.len() > 0)
+							.unwrap_or(false);
+				}
 				self.update_branches()?;
 			} else if e == self.key_config.keys.enter {
 				try_or_popup!(
@@ -297,7 +304,9 @@ impl Component for BranchListComponent {
 					self.queue
 						.push(InternalEvent::CompareCommits(b, None));
 				}
-			} else if e == self.key_config.keys.pull && !self.local {
+			} else if e == self.key_config.keys.pull
+				&& !self.local && self.has_remotes
+			{
 				self.queue.push(InternalEvent::FetchRemotes);
 			} else if e == self.key_config.keys.cmd_bar_toggle {
 				//do not consume if its the more key
@@ -333,6 +342,7 @@ impl BranchListComponent {
 		Self {
 			branches: Vec::new(),
 			local: true,
+			has_remotes: false,
 			visible: false,
 			selection: 0,
 			scroll: VerticalScroll::new(),
