@@ -377,10 +377,7 @@ impl Status {
 		self.index.focus_select(is_stage);
 	}
 
-	pub fn selected_path(
-		&self,
-	) -> Option<(Option<String>, String, StatusItemType, bool)> {
-		// TODO: replace with type
+	pub fn selected_data(&self) -> Option<DiffData> {
 		let (idx, is_stage) = match self.diff_target {
 			DiffTarget::Stage => (&self.index, true),
 			DiffTarget::WorkingDir => (&self.index_wd, false),
@@ -388,9 +385,12 @@ impl Status {
 
 		if let Some(item) = idx.selection() {
 			if let FileTreeItemKind::File(i) = item.kind {
-				return Some((
-					i.old_path, i.new_path, i.status, is_stage,
-				));
+				return Some(DiffData {
+					old_path: i.old_path,
+					new_path: i.new_path,
+					status: i.status,
+					is_stage,
+				});
 			}
 		}
 		None
@@ -485,8 +485,12 @@ impl Status {
 
 	///
 	pub fn update_diff(&mut self) -> Result<()> {
-		if let Some((old_path, new_path, status, is_stage)) =
-			self.selected_path()
+		if let Some(DiffData {
+			old_path,
+			new_path,
+			status,
+			is_stage,
+		}) = self.selected_data()
 		{
 			let diff_type = if is_stage {
 				DiffType::Stage
@@ -727,6 +731,13 @@ impl Status {
 	}
 }
 
+pub struct DiffData {
+	old_path: Option<String>,
+	new_path: String,
+	status: StatusItemType,
+	is_stage: bool,
+}
+
 impl Component for Status {
 	fn commands(
 		&self,
@@ -844,12 +855,10 @@ impl Component for Status {
 					&& (self.can_focus_diff()
 						|| self.is_focus_on_diff())
 				{
-					if let Some((_, path, _, _)) =
-						self.selected_path()
-					{
+					if let Some(diff_data) = self.selected_data() {
 						self.queue.push(
 							InternalEvent::OpenExternalEditor(Some(
-								path,
+								diff_data.new_path,
 							)),
 						);
 					}
