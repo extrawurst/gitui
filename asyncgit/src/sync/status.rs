@@ -102,15 +102,13 @@ fn get_diff<'a>(
 	status_type: StatusType,
 	status_entry: &'a StatusEntry,
 ) -> Option<DiffDelta<'a>> {
-	match status_type {
-		StatusType::WorkingDir => status_entry.index_to_workdir(),
-		StatusType::Stage => status_entry.head_to_index(),
-		StatusType::Both => {
-			status_entry // TODO: chain both Some(...) values
-				.head_to_index()
-				.or_else(|| status_entry.index_to_workdir())
-		}
-	}
+	(status_type != StatusType::WorkingDir)
+		.then(|| status_entry.head_to_index())
+		.or_else(|| {
+			(status_type != StatusType::Stage)
+				.then(|| status_entry.index_to_workdir())
+		})
+		.flatten()
 }
 
 /// gurantees sorting
