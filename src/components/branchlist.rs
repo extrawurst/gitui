@@ -244,12 +244,7 @@ impl Component for BranchListComponent {
 					.map(Into::into);
 			} else if e == self.key_config.keys.tab_toggle {
 				self.local = !self.local;
-				if !self.local {
-					self.has_remotes =
-						get_branches_info(&self.repo.borrow(), false)
-							.map(|branches| !branches.is_empty())
-							.unwrap_or(false);
-				}
+				self.check_remotes();
 				self.update_branches()?;
 			} else if e == self.key_config.keys.enter {
 				try_or_popup!(
@@ -362,9 +357,19 @@ impl BranchListComponent {
 		Ok(())
 	}
 
+	fn check_remotes(&mut self) {
+		if !self.local {
+			self.has_remotes =
+				get_branches_info(&self.repo.borrow(), false)
+					.map(|branches| !branches.is_empty())
+					.unwrap_or(false);
+		}
+	}
+
 	/// fetch list of branches
 	pub fn update_branches(&mut self) -> Result<()> {
 		if self.is_visible() {
+			self.check_remotes();
 			self.branches =
 				get_branches_info(&self.repo.borrow(), self.local)?;
 			//remove remote branch called `HEAD`

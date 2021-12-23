@@ -67,7 +67,6 @@ pub struct Status {
 	index_wd: ChangesComponent,
 	diff: DiffComponent,
 	git_diff: AsyncDiff,
-	local_only: bool,
 	git_status_workdir: AsyncStatus,
 	git_status_stage: AsyncStatus,
 	git_branch_state: Option<BranchCompare>,
@@ -164,9 +163,6 @@ impl Status {
 			visible: true,
 			focus: Focus::WorkDir,
 			diff_target: DiffTarget::WorkingDir,
-			local_only: get_branches_info(&repo_clone, false)
-				.map(|l| l.is_empty())
-				.unwrap_or(true),
 			index_wd: ChangesComponent::new(
 				repo.clone(),
 				&strings::title_status(&key_config),
@@ -559,8 +555,14 @@ impl Status {
 		}
 	}
 
+	fn has_remotes(&self) -> bool {
+		get_branches_info(&self.repo.borrow(), false)
+			.map(|l| !l.is_empty())
+			.unwrap_or(false)
+	}
+
 	fn pull(&self) {
-		if !self.local_only {
+		if self.has_remotes() {
 			if let Some(branch) = self.git_branch_name.last() {
 				self.queue.push(InternalEvent::Pull(branch));
 			}
@@ -590,11 +592,11 @@ impl Status {
 		self.git_branch_state
 			.as_ref()
 			.map_or(true, |state| state.ahead > 0)
-			&& !self.local_only
+			&& self.has_remotes()
 	}
 
-	const fn can_pull(&self) -> bool {
-		!self.local_only
+	fn can_pull(&self) -> bool {
+		self.has_remotes()
 	}
 
 	fn can_abort_merge(&self) -> bool {
