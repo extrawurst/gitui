@@ -15,7 +15,8 @@ use anyhow::Result;
 use asyncgit::{
 	cached,
 	sync::{
-		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
+		self, get_branches_info, status::StatusType, RepoPath,
+		RepoPathRef, RepoState,
 	},
 	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
@@ -554,9 +555,17 @@ impl Status {
 		}
 	}
 
+	fn has_remotes(&self) -> bool {
+		get_branches_info(&self.repo.borrow(), false)
+			.map(|l| !l.is_empty())
+			.unwrap_or(false)
+	}
+
 	fn pull(&self) {
-		if let Some(branch) = self.git_branch_name.last() {
-			self.queue.push(InternalEvent::Pull(branch));
+		if self.has_remotes() {
+			if let Some(branch) = self.git_branch_name.last() {
+				self.queue.push(InternalEvent::Pull(branch));
+			}
 		}
 	}
 
@@ -583,6 +592,11 @@ impl Status {
 		self.git_branch_state
 			.as_ref()
 			.map_or(true, |state| state.ahead > 0)
+			&& self.has_remotes()
+	}
+
+	fn can_pull(&self) -> bool {
+		self.has_remotes()
 	}
 
 	fn can_abort_merge(&self) -> bool {
@@ -718,7 +732,7 @@ impl Component for Status {
 			));
 			out.push(CommandInfo::new(
 				strings::commands::status_pull(&self.key_config),
-				true,
+				self.can_pull(),
 				!focus_on_diff,
 			));
 
