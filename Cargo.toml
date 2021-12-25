@@ -52,7 +52,7 @@ unicode-truncate = "0.2"
 unicode-width = "0.1"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
-which = "4.1"
+which = "4.2"
 
 # pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]
