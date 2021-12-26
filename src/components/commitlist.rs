@@ -10,7 +10,7 @@ use crate::{
 	ui::{calc_scroll_top, draw_scrollbar},
 };
 use anyhow::Result;
-use asyncgit::sync::{CommitId, Tags};
+use asyncgit::sync::{checkout_commit, CommitId, RepoPathRef, Tags};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
 use std::{
@@ -28,6 +28,7 @@ const ELEMENTS_PER_LINE: usize = 9;
 
 ///
 pub struct CommitList {
+	repo: RepoPathRef,
 	title: Box<str>,
 	selection: usize,
 	branch: Option<String>,
@@ -45,11 +46,13 @@ pub struct CommitList {
 impl CommitList {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		title: &str,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo,
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
 			selection: 0,
@@ -423,29 +426,40 @@ impl DrawableComponent for CommitList {
 impl Component for CommitList {
 	fn event(&mut self, ev: Event) -> Result<EventState> {
 		if let Event::Key(k) = ev {
-			let selection_changed =
-				if k == self.key_config.keys.move_up {
-					self.move_selection(ScrollType::Up)?
-				} else if k == self.key_config.keys.move_down {
-					self.move_selection(ScrollType::Down)?
-				} else if k == self.key_config.keys.shift_up
-					|| k == self.key_config.keys.home
+			let selection_changed = if k
+				== self.key_config.keys.move_up
+			{
+				self.move_selection(ScrollType::Up)?
+			} else if k == self.key_config.keys.move_down {
+				self.move_selection(ScrollType::Down)?
+			} else if k == self.key_config.keys.shift_up
+				|| k == self.key_config.keys.home
+			{
+				self.move_selection(ScrollType::Home)?
+			} else if k == self.key_config.keys.shift_down
+				|| k == self.key_config.keys.end
+			{
+				self.move_selection(ScrollType::End)?
+			} else if k == self.key_config.keys.page_up {
+				self.move_selection(ScrollType::PageUp)?
+			} else if k == self.key_config.keys.page_down {
+				self.move_selection(ScrollType::PageDown)?
+			} else if k == self.key_config.keys.log_mark_commit {
+				self.mark();
+				true
+			} else if k == self.key_config.keys.log_checkout_commit {
+				if let Some(commit_hash) =
+					self.selected_entry().map(|entry| entry.id)
 				{
-					self.move_selection(ScrollType::Home)?
-				} else if k == self.key_config.keys.shift_down
-					|| k == self.key_config.keys.end
-				{
-					self.move_selection(ScrollType::End)?
-				} else if k == self.key_config.keys.page_up {
-					self.move_selection(ScrollType::PageUp)?
-				} else if k == self.key_config.keys.page_down {
-					self.move_selection(ScrollType::PageDown)?
-				} else if k == self.key_config.keys.log_mark_commit {
-					self.mark();
-					true
-				} else {
-					false
-				};
+					checkout_commit(
+						&self.repo.borrow(),
+						commit_hash,
+					)?;
+				}
+				true
+			} else {
+				false
+			};
 			return Ok(selection_changed.into());
 		}
 

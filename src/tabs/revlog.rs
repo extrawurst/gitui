@@ -61,6 +61,7 @@ impl Revlog {
 				key_config.clone(),
 			),
 			list: CommitList::new(
+				repo.clone(),
 				&strings::log_title(&key_config),
 				theme,
 				key_config.clone(),

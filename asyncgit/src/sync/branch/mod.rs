@@ -301,6 +301,36 @@ pub fn checkout_branch(
 	}
 }
 
+/// Detach HEAD to point to a commit then checkout HEAD, does not work if there are uncommitted changes
+pub fn checkout_commit(
+	repo_path: &RepoPath,
+	commit_hash: CommitId,
+) -> Result<()> {
+	scope_time!("checkout_commit");
+
+	let repo = repo(repo_path)?;
+	let cur_ref = repo.head()?;
+	let statuses = repo.statuses(Some(
+		git2::StatusOptions::new().include_ignored(false),
+	))?;
+
+	if statuses.is_empty() {
+		repo.set_head_detached(commit_hash.into())?;
+
+		if let Err(e) = repo.checkout_head(Some(
+			git2::build::CheckoutBuilder::new().force(),
+		)) {
+			repo.set_head(
+				bytes2string(cur_ref.name_bytes())?.as_str(),
+			)?;
+			return Err(Error::Git(e));
+		}
+		Ok(())
+	} else {
+		Err(Error::UncommittedChanges)
+	}
+}
+
 ///
 pub fn checkout_remote_branch(
 	repo_path: &RepoPath,
