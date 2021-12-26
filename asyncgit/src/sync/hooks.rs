@@ -8,9 +8,9 @@ use std::{
 	process::Command,
 };
 
-const HOOK_POST_COMMIT: &str = "hooks/post-commit";
-const HOOK_PRE_COMMIT: &str = "hooks/pre-commit";
-const HOOK_COMMIT_MSG: &str = "hooks/commit-msg";
+const HOOK_POST_COMMIT: &str = "post-commit";
+const HOOK_PRE_COMMIT: &str = "pre-commit";
+const HOOK_COMMIT_MSG: &str = "commit-msg";
 const HOOK_COMMIT_MSG_TEMP_FILE: &str = "COMMIT_EDITMSG";
 
 struct HookPaths {
@@ -26,8 +26,21 @@ impl HookPaths {
 			.workdir()
 			.unwrap_or_else(|| repo.path())
 			.to_path_buf();
+
 		let git_dir = repo.path().to_path_buf();
-		let hook = git_dir.join(hook);
+		let hooks_path = repo
+			.config()
+			.and_then(|config| config.get_string("core.hooksPath"))
+			.map_or_else(
+				|e| {
+					log::error!("hookspath error: {}", e);
+					repo.path().to_path_buf().join("hooks/")
+				},
+				PathBuf::from,
+			);
+
+		let hook = hooks_path.join(hook);
+
 		Ok(Self {
 			git: git_dir,
 			hook,
@@ -181,20 +194,28 @@ mod tests {
 		assert_eq!(res, HookResult::Ok);
 	}
 
-	fn create_hook(path: &RepoPath, hook: &str, hook_script: &[u8]) {
+	fn create_hook(
+		path: &RepoPath,
+		hook: &str,
+		hook_script: &[u8],
+	) -> PathBuf {
 		let hook = HookPaths::new(path, hook).unwrap();
 
-		File::create(&hook.hook)
-			.unwrap()
-			.write_all(hook_script)
-			.unwrap();
+		let path = hook.hook.clone();
+
+		create_hook_in_path(&hook.hook, hook_script);
+
+		path
+	}
+
+	fn create_hook_in_path(path: &Path, hook_script: &[u8]) {
+		File::create(path).unwrap().write_all(hook_script).unwrap();
 
 		#[cfg(not(windows))]
 		{
-			let hook = hook.hook.as_os_str();
 			Command::new("chmod")
 				.arg("+x")
-				.arg(hook)
+				.arg(path)
 				// .current_dir(path)
 				.output()
 				.unwrap();
@@ -251,6 +272,31 @@ exit 1
         ";
 
 		create_hook(repo_path, HOOK_PRE_COMMIT, hook);
+		let res = hooks_pre_commit(repo_path).unwrap();
+		assert!(res != HookResult::Ok);
+	}
+
+	#[test]
+	fn test_pre_commit_fail_hookspath() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let hooks = TempDir::new().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		let hook = b"#!/bin/sh
+echo 'rejected'        
+exit 1
+        ";
+
+		create_hook_in_path(&hooks.path().join("pre-commit"), hook);
+		repo.config()
+			.unwrap()
+			.set_str(
+				"core.hooksPath",
+				hooks.path().as_os_str().to_str().unwrap(),
+			)
+			.unwrap();
 		let res = hooks_pre_commit(repo_path).unwrap();
 		assert!(res != HookResult::Ok);
 	}
