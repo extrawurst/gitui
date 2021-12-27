@@ -1,11 +1,12 @@
 use super::{repository::repo, RepoPath};
-use crate::error::Result;
+use crate::error::{self, Result};
 use scopetime::scope_time;
 use std::{
 	fs::File,
 	io::{Read, Write},
 	path::{Path, PathBuf},
 	process::Command,
+	str::FromStr,
 };
 
 const HOOK_POST_COMMIT: &str = "post-commit";
@@ -40,6 +41,15 @@ impl HookPaths {
 			);
 
 		let hook = hooks_path.join(hook);
+
+		let hook = shellexpand::full(
+			hook.as_os_str()
+				.to_str()
+				.ok_or(error::Error::PathString)?,
+		)?;
+
+		let hook = PathBuf::from_str(hook.as_ref())
+			.map_err(|_| error::Error::PathString)?;
 
 		Ok(Self {
 			git: git_dir,
@@ -156,10 +166,14 @@ fn is_executable(path: &Path) -> bool {
 	use std::os::unix::fs::PermissionsExt;
 	let metadata = match path.metadata() {
 		Ok(metadata) => metadata,
-		Err(_) => return false,
+		Err(e) => {
+			log::error!("metadata error: {}", e);
+			return false;
+		}
 	};
 
 	let permissions = metadata.permissions();
+
 	permissions.mode() & 0o111 != 0
 }
 

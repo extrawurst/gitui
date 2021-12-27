@@ -25,6 +25,7 @@ scopetime = { path = "../scopetime", version = "0.1" }
 thiserror = "1.0"
 unicode-truncate = "0.2.0"
 url = "2.2"
+shellexpand = "2.1"
 
 [dev-dependencies]
 invalidstring = { path = "../invalidstring", version = "0.1" }

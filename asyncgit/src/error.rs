@@ -61,6 +61,14 @@ pub enum Error {
 	///
 	#[error("EasyCast error:{0}")]
 	EasyCast(#[from] easy_cast::Error),
+
+	///
+	#[error("shellexpand error:{0}")]
+	Shell(#[from] shellexpand::LookupError<std::env::VarError>),
+
+	///
+	#[error("path string error")]
+	PathString,
 }
 
 ///
