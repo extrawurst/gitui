@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- support `core.hooksPath` asd ([#1044](https://github.com/extrawurst/gitui/issues/1044))
+
 ### Fixed
 - Keep commit message when pre-commit hook fails ([#1035](https://github.com/extrawurst/gitui/issues/1035))
 - honor `pushurl` when checking credentials for pushing ([#953](https://github.com/extrawurst/gitui/issues/953))
