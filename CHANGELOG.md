@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- support `core.hooksPath` ads ([#1044](https://github.com/extrawurst/gitui/issues/1044))
+- support `core.hooksPath` ([#1044](https://github.com/extrawurst/gitui/issues/1044))
 
 ### Fixed
 - Keep commit message when pre-commit hook fails ([#1035](https://github.com/extrawurst/gitui/issues/1035))
