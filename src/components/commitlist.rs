@@ -357,6 +357,15 @@ impl CommitList {
 	pub fn select_entry(&mut self, position: usize) {
 		self.selection = position;
 	}
+
+	pub fn checkout(&mut self) -> Result<()> {
+		if let Some(commit_hash) =
+			self.selected_entry().map(|entry| entry.id)
+		{
+			checkout_commit(&self.repo.borrow(), commit_hash)?;
+		}
+		Ok(())
+	}
 }
 
 impl DrawableComponent for CommitList {
@@ -448,14 +457,7 @@ impl Component for CommitList {
 				self.mark();
 				true
 			} else if k == self.key_config.keys.log_checkout_commit {
-				if let Some(commit_hash) =
-					self.selected_entry().map(|entry| entry.id)
-				{
-					checkout_commit(
-						&self.repo.borrow(),
-						commit_hash,
-					)?;
-				}
+				self.checkout()?;
 				true
 			} else {
 				false
