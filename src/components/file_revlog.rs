@@ -12,6 +12,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
+	asyncjob::AsyncSingleJob,
+	file_log::AsyncFileLogJob,
 	sync::{
 		diff_contains_file, get_commits_info, CommitId, RepoPathRef,
 	},
@@ -39,6 +41,7 @@ static DETAILS_WIDTH: u16 =
 ///
 pub struct FileRevlogComponent {
 	git_log: Option<AsyncLog>,
+	async_file_log: AsyncSingleJob<AsyncFileLogJob>,
 	theme: SharedTheme,
 	queue: Queue,
 	sender: Sender<AsyncGitNotification>,
@@ -65,6 +68,7 @@ impl FileRevlogComponent {
 			queue: queue.clone(),
 			sender: sender.clone(),
 			git_log: None,
+			async_file_log: AsyncSingleJob::new(sender.clone()),
 			visible: false,
 			repo_path: repo_path.clone(),
 			file_path: None,
@@ -98,7 +102,7 @@ impl FileRevlogComponent {
 
 	///
 	pub fn any_work_pending(&self) -> bool {
-		self.git_log.as_ref().map_or(false, AsyncLog::is_pending)
+		self.async_file_log.is_pending()
 	}
 
 	///
@@ -188,6 +192,8 @@ impl FileRevlogComponent {
 		self.items
 			.iter()
 			.map(|entry| {
+				// let status = self.get_file_status(entry.id);
+
 				let spans = Spans::from(vec![
 					Span::styled(
 						entry.hash_short.to_string(),
@@ -209,6 +215,11 @@ impl FileRevlogComponent {
 				text.extend(Text::raw(entry.msg.to_string()));
 
 				let cells = vec![Cell::from(""), Cell::from(text)];
+
+				// let cells = vec![
+				// 	Cell::from(status.to_string()),
+				// 	Cell::from(text),
+				// ];
 
 				Row::new(cells).height(2)
 			})
