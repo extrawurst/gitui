@@ -6,7 +6,7 @@ use crate::{
 	},
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
-	strings,
+	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -278,7 +278,12 @@ impl Component for Revlog {
 					return Ok(EventState::Consumed);
 				} else if k == self.key_config.keys.status_reset_item
 				{
-					self.revert_commit()?;
+					try_or_popup!(
+						self,
+						"revert error:",
+						self.revert_commit()
+					);
+
 					return Ok(EventState::Consumed);
 				} else if k == self.key_config.keys.open_file_tree {
 					return self.selected_commit().map_or(
