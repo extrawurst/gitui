@@ -90,8 +90,12 @@ pub fn msg_title_error(_key_config: &SharedKeyConfig) -> String {
 pub fn commit_title() -> String {
 	"Commit".to_string()
 }
+
 pub fn commit_title_merge() -> String {
 	"Commit (Merge)".to_string()
+}
+pub fn commit_title_revert() -> String {
+	"Commit (Revert)".to_string()
 }
 pub fn commit_title_amend() -> String {
 	"Commit (Amend)".to_string()

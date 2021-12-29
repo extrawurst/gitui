@@ -31,7 +31,7 @@ pub fn revert_head(repo_path: &RepoPath) -> Result<CommitId> {
 
 	let file_content = read_file(&path)?;
 
-	let id = git2::Oid::from_str(&file_content)?;
+	let id = git2::Oid::from_str(file_content.trim())?;
 
 	Ok(id.into())
 }
