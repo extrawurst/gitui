@@ -37,14 +37,15 @@ pub fn revert_head(repo_path: &RepoPath) -> Result<CommitId> {
 }
 
 ///
-pub fn abort_revert(repo_path: &RepoPath) -> Result<()> {
-	scope_time!("abort_revert");
+pub fn commit_revert(
+	repo_path: &RepoPath,
+	msg: &str,
+) -> Result<CommitId> {
+	scope_time!("commit_revert");
 
-	//TODO: revert all changes in index and workdir
+	let id = crate::sync::commit(repo_path, msg)?;
 
-	std::fs::remove_file(
-		repo(repo_path)?.path().join(GIT_REVERT_HEAD_FILE),
-	)?;
+	repo(repo_path)?.cleanup_state()?;
 
-	Ok(())
+	Ok(id)
 }

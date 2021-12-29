@@ -45,7 +45,7 @@ pub use commit_details::{
 	get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };
 pub use commit_files::get_commit_files;
-pub use commit_revert::{abort_revert, revert_commit, revert_head};
+pub use commit_revert::{commit_revert, revert_commit, revert_head};
 pub use commits_info::{
 	get_commit_info, get_commits_info, CommitId, CommitInfo,
 };
@@ -62,9 +62,9 @@ pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
 pub use logwalker::{LogWalker, LogWalkerFilter};
 pub use merge::{
-	abort_merge, abort_pending_rebase, continue_pending_rebase,
-	merge_branch, merge_commit, merge_msg, mergehead_ids,
-	rebase_progress,
+	abort_pending_rebase, abort_pending_state,
+	continue_pending_rebase, merge_branch, merge_commit, merge_msg,
+	mergehead_ids, rebase_progress,
 };
 pub use rebase::rebase_branch;
 pub use remotes::{

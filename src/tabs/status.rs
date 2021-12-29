@@ -627,19 +627,11 @@ impl Status {
 			== RepoState::Revert
 	}
 
-	pub fn abort_merge(&self) {
+	pub fn revert_pending_state(&self) {
 		try_or_popup!(
 			self,
-			"abort merge",
-			sync::abort_merge(&self.repo.borrow())
-		);
-	}
-
-	pub fn abort_revert(&self) {
-		try_or_popup!(
-			self,
-			"abort revert",
-			sync::abort_revert(&self.repo.borrow())
+			"revert pending state",
+			sync::abort_pending_state(&self.repo.borrow())
 		);
 	}
 

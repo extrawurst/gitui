@@ -879,12 +879,8 @@ impl App {
 				self.pull_popup.try_conflict_free_merge(rebase);
 				flags.insert(NeedsUpdate::ALL);
 			}
-			Action::AbortMerge => {
-				self.status_tab.abort_merge();
-				flags.insert(NeedsUpdate::ALL);
-			}
-			Action::AbortRevert => {
-				self.status_tab.abort_revert();
+			Action::AbortRevert | Action::AbortMerge => {
+				self.status_tab.revert_pending_state();
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::AbortRebase => {

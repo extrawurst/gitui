@@ -41,7 +41,5 @@ pub fn repo_state(repo_path: &RepoPath) -> Result<RepoState> {
 
 	let state = repo.state();
 
-	// dbg!(&state);
-
 	Ok(state.into())
 }

@@ -229,10 +229,7 @@ impl CommitComponent {
 				sync::merge_commit(&self.repo.borrow(), &msg, ids)?
 			}
 			Mode::Revert => {
-				//TODO: make this a utility fn so we do not explicitly casll abort_revert which feels weird
-				let id = sync::commit(&self.repo.borrow(), &msg)?;
-				sync::abort_revert(&self.repo.borrow())?;
-				id
+				sync::commit_revert(&self.repo.borrow(), &msg)?
 			}
 		};
 
