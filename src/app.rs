@@ -701,7 +701,7 @@ impl App {
 			InternalEvent::Tags => {
 				self.tags_popup.open()?;
 			}
-			InternalEvent::TabSwitch => self.set_tab(0)?,
+			InternalEvent::TabSwitchStatus => self.set_tab(0)?,
 			InternalEvent::InspectCommit(id, tags) => {
 				self.inspect_commit_popup.open(id, tags)?;
 				flags

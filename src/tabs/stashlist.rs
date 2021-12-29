@@ -63,7 +63,7 @@ impl StashList {
 			match sync::stash_apply(&self.repo.borrow(), e.id, false)
 			{
 				Ok(_) => {
-					self.queue.push(InternalEvent::TabSwitch);
+					self.queue.push(InternalEvent::TabSwitchStatus);
 				}
 				Err(e) => {
 					self.queue.push(InternalEvent::ShowErrorMsg(

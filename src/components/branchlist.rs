@@ -446,7 +446,7 @@ impl BranchListComponent {
 
 		if sync::repo_state(&self.repo.borrow())? != RepoState::Clean
 		{
-			self.queue.push(InternalEvent::TabSwitch);
+			self.queue.push(InternalEvent::TabSwitchStatus);
 		}
 
 		Ok(())

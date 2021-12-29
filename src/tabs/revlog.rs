@@ -194,6 +194,7 @@ impl Revlog {
 	fn revert_commit(&self) -> Result<()> {
 		if let Some(c) = self.selected_commit() {
 			sync::revert_commit(&self.repo.borrow(), c)?;
+			self.queue.push(InternalEvent::TabSwitchStatus);
 		}
 
 		Ok(())

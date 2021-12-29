@@ -62,7 +62,7 @@ pub enum InternalEvent {
 	///
 	PopupStashing(StashingOptions),
 	///
-	TabSwitch,
+	TabSwitchStatus,
 	///
 	InspectCommit(CommitId, Option<CommitTags>),
 	///
