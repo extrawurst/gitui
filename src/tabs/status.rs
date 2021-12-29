@@ -894,9 +894,7 @@ impl Component for Status {
 						NeedsUpdate::ALL,
 					));
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.keys.abort_merge
-					&& self.can_abort_merge()
-				{
+				} else if k == self.key_config.keys.abort_merge {
 					if self.can_abort_merge() {
 						self.queue.push(
 							InternalEvent::ConfirmAction(
