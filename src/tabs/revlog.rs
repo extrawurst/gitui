@@ -190,6 +190,14 @@ impl Revlog {
 			anyhow::bail!("Could not select commit in revlog. It might not be loaded yet or it might be on a different branch.");
 		}
 	}
+
+	fn revert_commit(&self) -> Result<()> {
+		if let Some(c) = self.selected_commit() {
+			sync::revert_commit(&self.repo.borrow(), c)?;
+		}
+
+		Ok(())
+	}
 }
 
 impl DrawableComponent for Revlog {
@@ -267,6 +275,10 @@ impl Component for Revlog {
 					);
 				} else if k == self.key_config.keys.select_branch {
 					self.queue.push(InternalEvent::SelectBranch);
+					return Ok(EventState::Consumed);
+				} else if k == self.key_config.keys.status_reset_item
+				{
+					self.revert_commit()?;
 					return Ok(EventState::Consumed);
 				} else if k == self.key_config.keys.open_file_tree {
 					return self.selected_commit().map_or(
@@ -381,6 +393,12 @@ impl Component for Revlog {
 
 		out.push(CommandInfo::new(
 			strings::commands::inspect_file_tree(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::revert_commit(&self.key_config),
 			self.selected_commit().is_some(),
 			self.visible || force_all,
 		));

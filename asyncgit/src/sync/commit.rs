@@ -60,6 +60,22 @@ pub(crate) fn signature_allow_undefined_name(
 	signature
 }
 
+///
+pub fn revert_commit(
+	repo_path: &RepoPath,
+	commit: CommitId,
+) -> Result<()> {
+	scope_time!("revert");
+
+	let repo = repo(repo_path)?;
+
+	let commit = repo.find_commit(commit.into())?;
+
+	repo.revert(&commit, None)?;
+
+	Ok(())
+}
+
 /// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
 pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 	scope_time!("commit");

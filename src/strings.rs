@@ -1035,6 +1035,19 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn revert_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Revert [{}]",
+				key_config
+					.get_hint(key_config.keys.status_reset_item),
+			),
+			"revert commit",
+			CMD_GROUP_LOG,
+		)
+	}
 	pub fn tag_commit_confirm_msg(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
