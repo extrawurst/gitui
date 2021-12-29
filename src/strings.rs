@@ -90,8 +90,12 @@ pub fn msg_title_error(_key_config: &SharedKeyConfig) -> String {
 pub fn commit_title() -> String {
 	"Commit".to_string()
 }
+
 pub fn commit_title_merge() -> String {
 	"Commit (Merge)".to_string()
+}
+pub fn commit_title_revert() -> String {
+	"Commit (Revert)".to_string()
 }
 pub fn commit_title_amend() -> String {
 	"Commit (Amend)".to_string()
@@ -156,7 +160,10 @@ pub fn confirm_msg_merge(
 pub fn confirm_title_abortmerge() -> String {
 	"Abort merge?".to_string()
 }
-pub fn confirm_msg_abortmerge() -> String {
+pub fn confirm_title_abortrevert() -> String {
+	"Abort revert?".to_string()
+}
+pub fn confirm_msg_revertchanges() -> String {
 	"This will revert all uncommitted changes. Are you sure?"
 		.to_string()
 }
@@ -647,6 +654,17 @@ pub mod commands {
 		)
 	}
 
+	pub fn abort_revert(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Abort revert [{}]",
+				key_config.get_hint(key_config.keys.abort_merge),
+			),
+			"abort ongoing revert",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
 	pub fn continue_rebase(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -1032,6 +1050,19 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.open_file_tree),
 			),
 			"inspect file tree at specific revision",
+			CMD_GROUP_LOG,
+		)
+	}
+	pub fn revert_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Revert [{}]",
+				key_config
+					.get_hint(key_config.keys.status_reset_item),
+			),
+			"revert commit",
 			CMD_GROUP_LOG,
 		)
 	}

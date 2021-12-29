@@ -327,7 +327,7 @@ impl Component for RevisionFilesComponent {
 				if let Some(file) = self.selected_file() {
 					//Note: switch to status tab so its clear we are
 					// not altering a file inside a revision here
-					self.queue.push(InternalEvent::TabSwitch);
+					self.queue.push(InternalEvent::TabSwitchStatus);
 					self.queue.push(
 						InternalEvent::OpenExternalEditor(Some(file)),
 					);

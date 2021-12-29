@@ -276,6 +276,16 @@ impl Status {
 					String::new()
 				}
 			}
+			RepoState::Revert => {
+				format!(
+					"Revert {}",
+					sync::revert_head(repo)
+						.ok()
+						.as_ref()
+						.map(CommitId::get_short_string)
+						.unwrap_or_default(),
+				)
+			}
 			_ => format!("{:?}", state),
 		}
 	}
@@ -611,11 +621,17 @@ impl Status {
 			== RepoState::Rebase
 	}
 
-	pub fn abort_merge(&self) {
+	fn pending_revert(&self) -> bool {
+		sync::repo_state(&self.repo.borrow())
+			.unwrap_or(RepoState::Clean)
+			== RepoState::Revert
+	}
+
+	pub fn revert_pending_state(&self) {
 		try_or_popup!(
 			self,
-			"abort merge",
-			sync::abort_merge(&self.repo.borrow())
+			"revert pending state",
+			sync::abort_pending_state(&self.repo.borrow())
 		);
 	}
 
@@ -754,10 +770,17 @@ impl Component for Status {
 				true,
 				self.pending_rebase() || force_all,
 			));
+
 			out.push(CommandInfo::new(
 				strings::commands::abort_rebase(&self.key_config),
 				true,
 				self.pending_rebase() || force_all,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::abort_revert(&self.key_config),
+				true,
+				self.pending_revert() || force_all,
 			));
 		}
 
@@ -863,20 +886,26 @@ impl Component for Status {
 						NeedsUpdate::ALL,
 					));
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.keys.abort_merge
-					&& self.can_abort_merge()
-				{
-					self.queue.push(InternalEvent::ConfirmAction(
-						Action::AbortMerge,
-					));
-
-					Ok(EventState::Consumed)
-				} else if k == self.key_config.keys.abort_merge
-					&& self.pending_rebase()
-				{
-					self.queue.push(InternalEvent::ConfirmAction(
-						Action::AbortRebase,
-					));
+				} else if k == self.key_config.keys.abort_merge {
+					if self.can_abort_merge() {
+						self.queue.push(
+							InternalEvent::ConfirmAction(
+								Action::AbortMerge,
+							),
+						);
+					} else if self.pending_rebase() {
+						self.queue.push(
+							InternalEvent::ConfirmAction(
+								Action::AbortRebase,
+							),
+						);
+					} else if self.pending_revert() {
+						self.queue.push(
+							InternalEvent::ConfirmAction(
+								Action::AbortRevert,
+							),
+						);
+					}
 
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.keys.rebase_branch
