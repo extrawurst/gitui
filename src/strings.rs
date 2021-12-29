@@ -160,7 +160,10 @@ pub fn confirm_msg_merge(
 pub fn confirm_title_abortmerge() -> String {
 	"Abort merge?".to_string()
 }
-pub fn confirm_msg_abortmerge() -> String {
+pub fn confirm_title_abortrevert() -> String {
+	"Abort revert?".to_string()
+}
+pub fn confirm_msg_revertchanges() -> String {
 	"This will revert all uncommitted changes. Are you sure?"
 		.to_string()
 }
@@ -647,6 +650,17 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.abort_merge),
 			),
 			"abort ongoing merge",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn abort_revert(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Abort revert [{}]",
+				key_config.get_hint(key_config.keys.abort_merge),
+			),
+			"abort ongoing revert",
 			CMD_GROUP_GENERAL,
 		)
 	}
