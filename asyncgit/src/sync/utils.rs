@@ -187,6 +187,17 @@ pub(crate) fn repo_write_file(
 	Ok(())
 }
 
+///
+pub fn read_file(path: &Path) -> Result<String> {
+	use std::io::Read;
+
+	let mut file = File::open(path)?;
+	let mut buffer = Vec::new();
+	file.read_to_end(&mut buffer)?;
+
+	Ok(String::from_utf8(buffer)?)
+}
+
 #[cfg(test)]
 pub(crate) fn repo_read_file(
 	repo: &Repository,

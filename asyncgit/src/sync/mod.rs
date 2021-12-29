@@ -8,6 +8,7 @@ pub mod branch;
 mod commit;
 mod commit_details;
 mod commit_files;
+mod commit_revert;
 mod commits_info;
 mod config;
 pub mod cred;
@@ -39,11 +40,14 @@ pub use branch::{
 	merge_rebase::merge_upstream_rebase, rename::rename_branch,
 	validate_branch_name, BranchCompare, BranchInfo,
 };
-pub use commit::{amend, commit, revert_commit, tag};
+pub use commit::{amend, commit, tag};
 pub use commit_details::{
 	get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };
 pub use commit_files::get_commit_files;
+pub use commit_revert::{
+	clear_revert_head, revert_commit, revert_head,
+};
 pub use commits_info::{
 	get_commit_info, get_commits_info, CommitId, CommitInfo,
 };

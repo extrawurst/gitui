@@ -13,6 +13,8 @@ pub enum RepoState {
 	///
 	Rebase,
 	///
+	Revert,
+	///
 	Other,
 }
 
@@ -21,6 +23,7 @@ impl From<RepositoryState> for RepoState {
 		match state {
 			RepositoryState::Clean => Self::Clean,
 			RepositoryState::Merge => Self::Merge,
+			RepositoryState::Revert => Self::Revert,
 			RepositoryState::RebaseMerge => Self::Rebase,
 			_ => {
 				log::warn!("state not supported yet: {:?}", state);
