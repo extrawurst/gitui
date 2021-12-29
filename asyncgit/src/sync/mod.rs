@@ -45,9 +45,7 @@ pub use commit_details::{
 	get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };
 pub use commit_files::get_commit_files;
-pub use commit_revert::{
-	clear_revert_head, revert_commit, revert_head,
-};
+pub use commit_revert::{abort_revert, revert_commit, revert_head};
 pub use commits_info::{
 	get_commit_info, get_commits_info, CommitId, CommitInfo,
 };

@@ -276,6 +276,16 @@ impl Status {
 					String::new()
 				}
 			}
+			RepoState::Revert => {
+				format!(
+					"Revert {}",
+					sync::revert_head(repo)
+						.ok()
+						.as_ref()
+						.map(CommitId::get_short_string)
+						.unwrap_or_default(),
+				)
+			}
 			_ => format!("{:?}", state),
 		}
 	}

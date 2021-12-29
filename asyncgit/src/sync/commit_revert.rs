@@ -37,12 +37,14 @@ pub fn revert_head(repo_path: &RepoPath) -> Result<CommitId> {
 }
 
 ///
-pub fn clear_revert_head(repo_path: &RepoPath) -> Result<()> {
-	scope_time!("revert_head_clear");
+pub fn abort_revert(repo_path: &RepoPath) -> Result<()> {
+	scope_time!("abort_revert");
 
-	let path = repo(repo_path)?.path().join(GIT_REVERT_HEAD_FILE);
+	//TODO: revert all changes in index and workdir
 
-	std::fs::remove_file(path)?;
+	std::fs::remove_file(
+		repo(repo_path)?.path().join(GIT_REVERT_HEAD_FILE),
+	)?;
 
 	Ok(())
 }
