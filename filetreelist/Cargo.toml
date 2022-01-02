@@ -7,7 +7,7 @@ description = "filetree abstraction based on a sorted path list, supports key ba
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
-license-file = "LICENSE.md"
+license = "MIT"
 categories = ["command-line-utilities"]
 keywords = ["gui", "cli", "terminal", "ui", "tui"]
 
