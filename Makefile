@@ -68,3 +68,6 @@ install:
 
 install-timing:
 	cargo install --features=timing --path "." --offline
+
+licenses:
+	cargo bundle-licenses --format toml --output THIRDPARTY.toml

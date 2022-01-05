@@ -39,6 +39,7 @@ enum Mode {
 	Normal,
 	Amend(CommitId),
 	Merge(Vec<CommitId>),
+	Revert,
 }
 
 pub struct CommitComponent {
@@ -227,6 +228,9 @@ impl CommitComponent {
 			Mode::Merge(ids) => {
 				sync::merge_commit(&self.repo.borrow(), &msg, ids)?
 			}
+			Mode::Revert => {
+				sync::commit_revert(&self.repo.borrow(), &msg)?
+			}
 		};
 
 		if let HookResult::NotOk(e) =
@@ -380,31 +384,40 @@ impl Component for CommitComponent {
 
 		self.mode = Mode::Normal;
 
-		self.mode = if sync::repo_state(&self.repo.borrow())?
-			== RepoState::Merge
-		{
-			let ids = sync::mergehead_ids(&self.repo.borrow())?;
-			self.input.set_title(strings::commit_title_merge());
-			self.input
-				.set_text(sync::merge_msg(&self.repo.borrow())?);
-			Mode::Merge(ids)
-		} else {
-			self.commit_template = get_config_string(
-				&self.repo.borrow(),
-				"commit.template",
-			)
-			.ok()
-			.flatten()
-			.and_then(|path| read_to_string(path).ok());
+		let repo_state = sync::repo_state(&self.repo.borrow())?;
 
-			if self.is_empty() {
-				if let Some(s) = &self.commit_template {
-					self.input.set_text(s.clone());
-				}
+		self.mode = match repo_state {
+			RepoState::Merge => {
+				let ids = sync::mergehead_ids(&self.repo.borrow())?;
+				self.input.set_title(strings::commit_title_merge());
+				self.input
+					.set_text(sync::merge_msg(&self.repo.borrow())?);
+				Mode::Merge(ids)
 			}
+			RepoState::Revert => {
+				self.input.set_title(strings::commit_title_revert());
+				self.input
+					.set_text(sync::merge_msg(&self.repo.borrow())?);
+				Mode::Revert
+			}
+			_ => {
+				self.commit_template = get_config_string(
+					&self.repo.borrow(),
+					"commit.template",
+				)
+				.ok()
+				.flatten()
+				.and_then(|path| read_to_string(path).ok());
 
-			self.input.set_title(strings::commit_title());
-			Mode::Normal
+				if self.is_empty() {
+					if let Some(s) = &self.commit_template {
+						self.input.set_text(s.clone());
+					}
+				}
+
+				self.input.set_title(strings::commit_title());
+				Mode::Normal
+			}
 		};
 
 		self.input.show()?;

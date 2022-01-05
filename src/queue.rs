@@ -43,6 +43,7 @@ pub enum Action {
 	PullMerge { incoming: usize, rebase: bool },
 	AbortMerge,
 	AbortRebase,
+	AbortRevert,
 }
 
 ///
@@ -62,7 +63,7 @@ pub enum InternalEvent {
 	///
 	PopupStashing(StashingOptions),
 	///
-	TabSwitch,
+	TabSwitchStatus,
 	///
 	InspectCommit(CommitId, Option<CommitTags>),
 	///

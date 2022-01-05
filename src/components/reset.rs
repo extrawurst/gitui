@@ -199,11 +199,15 @@ impl ConfirmComponent {
                 ),
                 Action::AbortMerge => (
                     strings::confirm_title_abortmerge(),
-                    strings::confirm_msg_abortmerge(),
+                    strings::confirm_msg_revertchanges(),
                 ),
 				Action::AbortRebase => (
                     strings::confirm_title_abortrebase(),
                     strings::confirm_msg_abortrebase(),
+                ),
+				Action::AbortRevert => (
+                    strings::confirm_title_abortrevert(),
+                    strings::confirm_msg_revertchanges(),
                 ),
             };
 		}

@@ -701,7 +701,7 @@ impl App {
 			InternalEvent::Tags => {
 				self.tags_popup.open()?;
 			}
-			InternalEvent::TabSwitch => self.set_tab(0)?,
+			InternalEvent::TabSwitchStatus => self.set_tab(0)?,
 			InternalEvent::InspectCommit(id, tags) => {
 				self.inspect_commit_popup.open(id, tags)?;
 				flags
@@ -879,8 +879,8 @@ impl App {
 				self.pull_popup.try_conflict_free_merge(rebase);
 				flags.insert(NeedsUpdate::ALL);
 			}
-			Action::AbortMerge => {
-				self.status_tab.abort_merge();
+			Action::AbortRevert | Action::AbortMerge => {
+				self.status_tab.revert_pending_state();
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::AbortRebase => {

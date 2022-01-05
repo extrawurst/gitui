@@ -36,8 +36,8 @@ pub fn mergehead_ids(repo_path: &RepoPath) -> Result<Vec<CommitId>> {
 /// * reset all staged changes,
 /// * revert all changes in workdir
 /// * cleanup repo merge state
-pub fn abort_merge(repo_path: &RepoPath) -> Result<()> {
-	scope_time!("cleanup_state");
+pub fn abort_pending_state(repo_path: &RepoPath) -> Result<()> {
+	scope_time!("abort_pending_state");
 
 	let repo = repo(repo_path)?;
 

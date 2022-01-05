@@ -13,6 +13,8 @@ pub enum RepoState {
 	///
 	Rebase,
 	///
+	Revert,
+	///
 	Other,
 }
 
@@ -21,6 +23,7 @@ impl From<RepositoryState> for RepoState {
 		match state {
 			RepositoryState::Clean => Self::Clean,
 			RepositoryState::Merge => Self::Merge,
+			RepositoryState::Revert => Self::Revert,
 			RepositoryState::RebaseMerge => Self::Rebase,
 			_ => {
 				log::warn!("state not supported yet: {:?}", state);
@@ -37,8 +40,6 @@ pub fn repo_state(repo_path: &RepoPath) -> Result<RepoState> {
 	let repo = repo(repo_path)?;
 
 	let state = repo.state();
-
-	// dbg!(&state);
 
 	Ok(state.into())
 }

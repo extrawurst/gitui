@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - support `core.hooksPath` ([#1044](https://github.com/extrawurst/gitui/issues/1044))
+- allow reverting a commit from the commit log ([#927](https://github.com/extrawurst/gitui/issues/927))
 
 ### Fixed
 - Keep commit message when pre-commit hook fails ([#1035](https://github.com/extrawurst/gitui/issues/1035))
