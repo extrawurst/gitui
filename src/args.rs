@@ -8,6 +8,7 @@ use clap::{
 use simplelog::{Config, LevelFilter, WriteLogger};
 use std::{
 	env,
+	ffi::OsStr,
 	fs::{self, File},
 	path::PathBuf,
 };
@@ -23,36 +24,39 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		.version(crate_version!())
 		.about(crate_description!())
 		.arg(
-			Arg::with_name("theme")
+			Arg::new("theme")
 				.help("Set the color theme (defaults to theme.ron)")
-				.short("t")
+				.short('t')
 				.long("theme")
 				.value_name("THEME")
+				.allow_invalid_utf8(true)
 				.takes_value(true),
 		)
 		.arg(
-			Arg::with_name("logging")
+			Arg::new("logging")
 				.help("Stores logging output into a cache directory")
-				.short("l")
+				.short('l')
 				.long("logging"),
 		)
 		.arg(
-			Arg::with_name("bugreport")
+			Arg::new("bugreport")
 				.help("Generate a bug report")
 				.long("bugreport"),
 		)
 		.arg(
-			Arg::with_name("directory")
+			Arg::new("directory")
 				.help("Set the git directory")
-				.short("d")
+				.short('d')
 				.long("directory")
+				.allow_invalid_utf8(true)
 				.takes_value(true),
 		)
 		.arg(
-			Arg::with_name("workdir")
+			Arg::new("workdir")
 				.help("Set the working directory")
-				.short("w")
+				.short('w')
 				.long("workdir")
+				.allow_invalid_utf8(true)
 				.takes_value(true),
 		);
 
@@ -65,9 +69,10 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		setup_logging()?;
 	}
 
-	let workdir = arg_matches.value_of("workdir").map(PathBuf::from);
+	let workdir =
+		arg_matches.value_of_os("workdir").map(PathBuf::from);
 	let gitdir = arg_matches
-		.value_of("directory")
+		.value_of_os("directory")
 		.map_or_else(|| PathBuf::from("."), PathBuf::from);
 
 	#[allow(clippy::option_if_let_else)]
@@ -77,8 +82,9 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		RepoPath::Path(gitdir)
 	};
 
-	let arg_theme =
-		arg_matches.value_of("theme").unwrap_or("theme.ron");
+	let arg_theme = arg_matches
+		.value_of_os("theme")
+		.unwrap_or_else(|| OsStr::new("theme.ron"));
 
 	if get_app_config_path()?.join(arg_theme).is_file() {
 		Ok(CliArgs {
