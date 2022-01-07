@@ -19,48 +19,7 @@ pub struct CliArgs {
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
-	let app = ClapApp::new(crate_name!())
-		.author(crate_authors!())
-		.version(crate_version!())
-		.about(crate_description!())
-		.arg(
-			Arg::new("theme")
-				.help("Set the color theme (defaults to theme.ron)")
-				.short('t')
-				.long("theme")
-				.value_name("THEME")
-				.allow_invalid_utf8(true)
-				.takes_value(true),
-		)
-		.arg(
-			Arg::new("logging")
-				.help("Stores logging output into a cache directory")
-				.short('l')
-				.long("logging"),
-		)
-		.arg(
-			Arg::new("bugreport")
-				.help("Generate a bug report")
-				.long("bugreport"),
-		)
-		.arg(
-			Arg::new("directory")
-				.help("Set the git directory")
-				.short('d')
-				.long("directory")
-				.allow_invalid_utf8(true)
-				.takes_value(true),
-		)
-		.arg(
-			Arg::new("workdir")
-				.help("Set the working directory")
-				.short('w')
-				.long("workdir")
-				.allow_invalid_utf8(true)
-				.takes_value(true),
-		);
-
-	let arg_matches = app.get_matches();
+	let arg_matches = app().get_matches();
 	if arg_matches.is_present("bugreport") {
 		bug_report::generate_bugreport();
 		std::process::exit(0);
@@ -99,6 +58,49 @@ pub fn process_cmdline() -> Result<CliArgs> {
 	}
 }
 
+fn app() -> ClapApp<'static> {
+	ClapApp::new(crate_name!())
+		.author(crate_authors!())
+		.version(crate_version!())
+		.about(crate_description!())
+		.arg(
+			Arg::new("theme")
+				.help("Set the color theme (defaults to theme.ron)")
+				.short('t')
+				.long("theme")
+				.value_name("THEME")
+				.allow_invalid_utf8(true)
+				.takes_value(true),
+		)
+		.arg(
+			Arg::new("logging")
+				.help("Stores logging output into a cache directory")
+				.short('l')
+				.long("logging"),
+		)
+		.arg(
+			Arg::new("bugreport")
+				.help("Generate a bug report")
+				.long("bugreport"),
+		)
+		.arg(
+			Arg::new("directory")
+				.help("Set the git directory")
+				.short('d')
+				.long("directory")
+				.allow_invalid_utf8(true)
+				.takes_value(true),
+		)
+		.arg(
+			Arg::new("workdir")
+				.help("Set the working directory")
+				.short('w')
+				.long("workdir")
+				.allow_invalid_utf8(true)
+				.takes_value(true),
+		)
+}
+
 fn setup_logging() -> Result<()> {
 	let mut path = get_app_cache_path()?;
 	path.push("gitui.log");
@@ -132,4 +134,9 @@ pub fn get_app_config_path() -> Result<PathBuf> {
 	path.push("gitui");
 	fs::create_dir_all(&path)?;
 	Ok(path)
+}
+
+#[test]
+fn verify_app() {
+	app().debug_assert();
 }
