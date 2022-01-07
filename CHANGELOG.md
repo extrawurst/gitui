@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**revert commit from rev log**
+
+![revert-commit](assets/revert-commit.gif)
+
 ### Added
 - allow reverting a commit from the commit log ([#927](https://github.com/extrawurst/gitui/issues/927))
 
