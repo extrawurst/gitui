@@ -22,7 +22,11 @@ pub fn reset_stage(repo_path: &RepoPath, path: &str) -> Result<()> {
 }
 
 ///
-pub fn reset_workdir(repo_path: &RepoPath, path: &str) -> Result<()> {
+pub fn reset_workdir(
+	repo_path: &RepoPath,
+	old_path: Option<&str>,
+	new_path: &str,
+) -> Result<()> {
 	scope_time!("reset_workdir");
 
 	let repo = repo(repo_path)?;
@@ -32,7 +36,11 @@ pub fn reset_workdir(repo_path: &RepoPath, path: &str) -> Result<()> {
 		.update_index(true) // windows: needs this to be true WTF?!
 		.remove_untracked(true)
 		.force()
-		.path(path);
+		.path(new_path);
+
+	if let Some(path) = old_path {
+		checkout_opts.path(path);
+	}
 
 	repo.checkout_index(None, Some(&mut checkout_opts))?;
 	Ok(())
@@ -121,7 +129,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (1, 1));
 
-		reset_workdir(repo_path, "bar.txt").unwrap();
+		reset_workdir(repo_path, None, "bar.txt").unwrap();
 
 		debug_cmd_print(repo_path, "git status");
 
@@ -147,7 +155,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (1, 0));
 
-		reset_workdir(repo_path, "foo/bar.txt").unwrap();
+		reset_workdir(repo_path, None, "foo/bar.txt").unwrap();
 
 		debug_cmd_print(repo_path, "git status");
 
@@ -193,7 +201,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (4, 1));
 
-		reset_workdir(repo_path, "foo").unwrap();
+		reset_workdir(repo_path, None, "foo").unwrap();
 
 		assert_eq!(get_statuses(repo_path), (1, 1));
 
@@ -233,7 +241,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (1, 1));
 
-		reset_workdir(repo_path, file).unwrap();
+		reset_workdir(repo_path, None, file).unwrap();
 
 		debug_cmd_print(repo_path, "git status");
 
@@ -285,6 +293,7 @@ mod tests {
 
 		reset_workdir(
 			&root.join("foo").as_os_str().to_str().unwrap().into(),
+			None,
 			"foo/bar.txt",
 		)
 		.unwrap();
@@ -313,7 +322,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (1, 0));
 
-		reset_workdir(repo_path, "foo/bar").unwrap();
+		reset_workdir(repo_path, None, "foo/bar").unwrap();
 
 		debug_cmd_print(repo_path, "git status");
 

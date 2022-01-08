@@ -569,7 +569,8 @@ impl Status {
 	pub fn reset(&mut self, item: &ResetItem) -> bool {
 		if let Err(e) = sync::reset_workdir(
 			&self.repo.borrow(),
-			item.path.as_str(),
+			item.old_path.as_deref(),
+			item.new_path.as_str(),
 		) {
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
 				"reset failed:\n{}",

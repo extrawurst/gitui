@@ -189,9 +189,14 @@ impl ChangesComponent {
 		if let Some(tree_item) = self.selection() {
 			let is_folder =
 				matches!(tree_item.kind, FileTreeItemKind::Path(_));
+			let old_path = match tree_item.kind {
+				FileTreeItemKind::Path(_) => None,
+				FileTreeItemKind::File(status) => status.old_path,
+			};
 			self.queue.push(InternalEvent::ConfirmAction(
 				Action::Reset(ResetItem {
-					path: tree_item.info.full_path,
+					old_path,
+					new_path: tree_item.info.full_path,
 					is_folder,
 				}),
 			));

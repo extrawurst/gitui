@@ -595,7 +595,8 @@ impl DiffComponent {
 	fn reset_untracked(&self) {
 		self.queue.push(InternalEvent::ConfirmAction(Action::Reset(
 			ResetItem {
-				path: self.current.new_path.clone(),
+				old_path: self.current.old_path.clone(),
+				new_path: self.current.new_path.clone(),
 				is_folder: false,
 			},
 		)));
