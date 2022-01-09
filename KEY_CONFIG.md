@@ -16,6 +16,8 @@ Create a `key_bindings.ron` file like this:
     move_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
     move_up: Some(( code: Char('k'), modifiers: ( bits: 0,),)),
     move_down: Some(( code: Char('j'), modifiers: ( bits: 0,),)),
+
+    open_help: Some(( code: F(1), modifiers: ( bits: 0,),)),
 )
 ```
 
