@@ -30,7 +30,7 @@ url = "2.2"
 invalidstring = { path = "../invalidstring", version = "0.1" }
 pretty_assertions = "1.0"
 serial_test = "0.5"
-tempfile = "3.2"
+tempfile = "3.3"
 
 [features]
 default = ["trace-libgit"]
