@@ -40,7 +40,7 @@ pub use branch::{
 	merge_rebase::merge_upstream_rebase, rename::rename_branch,
 	validate_branch_name, BranchCompare, BranchInfo,
 };
-pub use commit::{amend, commit, tag};
+pub use commit::{amend, commit, tag_commit};
 pub use commit_details::{
 	get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };
@@ -80,7 +80,7 @@ pub use stash::{
 };
 pub use state::{repo_state, RepoState};
 pub use tags::{
-	delete_tag, get_tags, get_tags_with_metadata, CommitTags,
+	delete_tag, get_tags, get_tags_with_metadata, CommitTags, Tag,
 	TagWithMetadata, Tags,
 };
 pub use tree::{tree_file_content, tree_files, TreeFile};

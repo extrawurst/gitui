@@ -181,7 +181,7 @@ mod tests {
 		let commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
 
-		sync::tag(clone1_dir, &commit1, "tag1").unwrap();
+		sync::tag_commit(clone1_dir, &commit1, "tag1", None).unwrap();
 
 		push(
 			clone1_dir, "origin", "master", false, false, None, None,
@@ -229,7 +229,7 @@ mod tests {
 		let commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
 
-		sync::tag(clone1_dir, &commit1, "tag1").unwrap();
+		sync::tag_commit(clone1_dir, &commit1, "tag1", None).unwrap();
 
 		push(
 			clone1_dir, "origin", "master", false, false, None, None,
@@ -263,7 +263,7 @@ mod tests {
 		let commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
 
-		sync::tag(clone1_dir, &commit1, "tag1").unwrap();
+		sync::tag_commit(clone1_dir, &commit1, "tag1", None).unwrap();
 
 		push(
 			clone1_dir, "origin", "master", false, false, None, None,
@@ -305,7 +305,7 @@ mod tests {
 
 		// clone1 - creates tag
 
-		sync::tag(clone1_dir, &commit1, "tag1").unwrap();
+		sync::tag_commit(clone1_dir, &commit1, "tag1", None).unwrap();
 
 		let tags1 = sync::get_tags(clone1_dir).unwrap();
 
@@ -345,7 +345,7 @@ mod tests {
 
 		// clone1 - creates tag
 
-		sync::tag(clone1_dir, &commit1, "tag1").unwrap();
+		sync::tag_commit(clone1_dir, &commit1, "tag1", None).unwrap();
 
 		let tags1 = sync::get_tags(clone1_dir).unwrap();
 

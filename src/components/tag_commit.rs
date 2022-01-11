@@ -121,10 +121,11 @@ impl TagCommitComponent {
 	///
 	pub fn tag(&mut self) {
 		if let Some(commit_id) = self.commit_id {
-			let result = sync::tag(
+			let result = sync::tag_commit(
 				&self.repo.borrow(),
 				&commit_id,
 				self.input.get_text(),
+				None,
 			);
 			match result {
 				Ok(_) => {

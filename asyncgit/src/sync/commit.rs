@@ -95,27 +95,35 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 ///
 /// This function will return an `Err(…)` variant if the tag’s name is refused
 /// by git or if the tag already exists.
-pub fn tag(
+pub fn tag_commit(
 	repo_path: &RepoPath,
 	commit_id: &CommitId,
 	tag: &str,
+	message: Option<&str>,
 ) -> Result<CommitId> {
-	scope_time!("tag");
+	scope_time!("tag_commit");
 
 	let repo = repo(repo_path)?;
 
-	let signature = signature_allow_undefined_name(&repo)?;
 	let object_id = commit_id.get_oid();
 	let target =
 		repo.find_object(object_id, Some(ObjectType::Commit))?;
 
-	Ok(repo.tag(tag, &target, &signature, "", false)?.into())
+	let c = if let Some(message) = message {
+		let signature = signature_allow_undefined_name(&repo)?;
+		repo.tag(tag, &target, &signature, message, false)?.into()
+	} else {
+		repo.tag_lightweight(tag, &target, false)?.into()
+	};
+
+	Ok(c)
 }
 
 #[cfg(test)]
 mod tests {
 
 	use crate::error::Result;
+	use crate::sync::tags::Tag;
 	use crate::sync::RepoPath;
 	use crate::sync::{
 		commit, get_commit_details, get_commit_files, stage_add_file,
@@ -124,7 +132,7 @@ mod tests {
 		utils::get_head,
 		LogWalker,
 	};
-	use commit::{amend, tag};
+	use commit::{amend, tag_commit};
 	use git2::Repository;
 	use std::{fs::File, io::Write, path::Path};
 
@@ -238,25 +246,56 @@ mod tests {
 
 		let new_id = commit(repo_path, "commit msg")?;
 
-		tag(repo_path, &new_id, "tag")?;
+		tag_commit(repo_path, &new_id, "tag", None)?;
 
 		assert_eq!(
 			get_tags(repo_path).unwrap()[&new_id],
-			vec!["tag"]
+			vec![Tag::new("tag")]
 		);
 
-		assert!(matches!(tag(repo_path, &new_id, "tag"), Err(_)));
+		assert!(matches!(
+			tag_commit(repo_path, &new_id, "tag", None),
+			Err(_)
+		));
 
 		assert_eq!(
 			get_tags(repo_path).unwrap()[&new_id],
-			vec!["tag"]
+			vec![Tag::new("tag")]
 		);
 
-		tag(repo_path, &new_id, "second-tag")?;
+		tag_commit(repo_path, &new_id, "second-tag", None)?;
 
 		assert_eq!(
 			get_tags(repo_path).unwrap()[&new_id],
-			vec!["second-tag", "tag"]
+			vec![Tag::new("second-tag"), Tag::new("tag")]
+		);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_tag_with_message() -> Result<()> {
+		let file_path = Path::new("foo");
+		let (_td, repo) = repo_init_empty().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		File::create(&root.join(file_path))?
+			.write_all(b"test\nfoo")?;
+
+		stage_add_file(repo_path, file_path)?;
+
+		let new_id = commit(repo_path, "commit msg")?;
+
+		tag_commit(repo_path, &new_id, "tag", Some("tag-message"))?;
+
+		assert_eq!(
+			get_tags(repo_path).unwrap()[&new_id][0]
+				.annotation
+				.as_ref()
+				.unwrap(),
+			"tag-message"
 		);
 
 		Ok(())
