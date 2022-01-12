@@ -147,6 +147,11 @@ impl TextInputComponent {
 		self.title = t;
 	}
 
+	///
+	pub fn set_default_msg(&mut self, v: String) {
+		self.default_msg = v;
+	}
+
 	fn get_draw_text(&self) -> Text {
 		let style = self.theme.text(true, false);
 

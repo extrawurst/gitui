@@ -1,10 +1,32 @@
 use super::{get_commits_info, CommitId, RepoPath};
-use crate::{error::Result, sync::repository::repo};
+use crate::{
+	error::Result,
+	sync::{repository::repo, utils::bytes2string},
+};
 use scopetime::scope_time;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+///
+#[derive(Clone, Hash, PartialEq, Debug)]
+pub struct Tag {
+	/// tag name
+	pub name: String,
+	/// tag annotation
+	pub annotation: Option<String>,
+}
+
+impl Tag {
+	///
+	pub fn new(name: &str) -> Self {
+		Self {
+			name: name.into(),
+			annotation: None,
+		}
+	}
+}
+
 /// all tags pointing to a single commit
-pub type CommitTags = Vec<String>;
+pub type CommitTags = Vec<Tag>;
 /// hashmap of tag target commit hash to tag names
 pub type Tags = BTreeMap<CommitId, CommitTags>;
 
@@ -29,7 +51,7 @@ pub fn get_tags(repo_path: &RepoPath) -> Result<Tags> {
 	scope_time!("get_tags");
 
 	let mut res = Tags::new();
-	let mut adder = |key, value: String| {
+	let mut adder = |key, value: Tag| {
 		if let Some(key) = res.get_mut(&key) {
 			key.push(value);
 		} else {
@@ -44,17 +66,31 @@ pub fn get_tags(repo_path: &RepoPath) -> Result<Tags> {
 			// skip the `refs/tags/` part
 			String::from_utf8(name[10..name.len()].into())
 		{
-			//NOTE: find_tag (git_tag_lookup) only works on annotated tags
-			// lightweight tags `id` already points to the target commit
+			//NOTE: find_tag (using underlying git_tag_lookup) only
+			// works on annotated tags lightweight tags `id` already
+			// points to the target commit
 			// see https://github.com/libgit2/libgit2/issues/5586
-			if let Ok(commit) = repo
+			let commit = if let Ok(commit) = repo
 				.find_tag(id)
 				.and_then(|tag| tag.target())
 				.and_then(|target| target.peel_to_commit())
 			{
-				adder(CommitId::new(commit.id()), name);
+				Some(CommitId::new(commit.id()))
 			} else if repo.find_commit(id).is_ok() {
-				adder(CommitId::new(id), name);
+				Some(CommitId::new(id))
+			} else {
+				None
+			};
+
+			let annotation = repo
+				.find_tag(id)
+				.ok()
+				.as_ref()
+				.and_then(git2::Tag::message_bytes)
+				.and_then(|msg| bytes2string(msg).ok());
+
+			if let Some(commit) = commit {
+				adder(commit, Tag { name, annotation });
 			}
 
 			return true;
@@ -78,7 +114,7 @@ pub fn get_tags_with_metadata(
 			.iter()
 			.flat_map(|(commit_id, tags)| {
 				tags.iter()
-					.map(|tag| (tag.as_ref(), commit_id))
+					.map(|tag| (tag.name.as_ref(), commit_id))
 					.collect::<Vec<(&str, &CommitId)>>()
 			})
 			.collect();
@@ -167,7 +203,10 @@ mod tests {
 		repo.tag("b", &target, &sig, "", false).unwrap();
 
 		assert_eq!(
-			get_tags(repo_path).unwrap()[&CommitId::new(head_id)],
+			get_tags(repo_path).unwrap()[&CommitId::new(head_id)]
+				.iter()
+				.map(|t| &t.name)
+				.collect::<Vec<_>>(),
 			vec!["a", "b"]
 		);
 

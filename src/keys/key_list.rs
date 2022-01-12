@@ -74,6 +74,7 @@ pub struct KeysList {
 	pub abort_merge: KeyEvent,
 	pub undo_commit: KeyEvent,
 	pub stage_unstage_item: KeyEvent,
+	pub tag_annotate: KeyEvent,
 }
 
 #[rustfmt::skip]
@@ -150,6 +151,7 @@ impl Default for KeysList {
 			open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
 			file_find: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
 			stage_unstage_item: KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::empty()},
+			tag_annotate: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
 		}
 	}
 }

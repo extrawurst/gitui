@@ -13,6 +13,7 @@ use anyhow::Result;
 use asyncgit::sync::{CommitId, Tags};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
+use itertools::Itertools;
 use std::{
 	borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
 };
@@ -320,11 +321,10 @@ impl CommitList {
 			.take(height)
 			.enumerate()
 		{
-			let tags = self
-				.tags
-				.as_ref()
-				.and_then(|t| t.get(&e.id))
-				.map(|tags| tags.join(" "));
+			let tags =
+				self.tags.as_ref().and_then(|t| t.get(&e.id)).map(
+					|tags| tags.iter().map(|t| &t.name).join(" "),
+				);
 
 			let marked = if any_marked {
 				self.is_marked(&e.id)

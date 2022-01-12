@@ -78,6 +78,7 @@ pub struct KeysListFile {
 	pub abort_merge: Option<KeyEvent>,
 	pub undo_commit: Option<KeyEvent>,
 	pub stage_unstage_item: Option<KeyEvent>,
+	pub tag_annotate: Option<KeyEvent>,
 }
 
 impl KeysListFile {
@@ -163,6 +164,7 @@ impl KeysListFile {
 			abort_merge: self.abort_merge.unwrap_or(default.abort_merge),
 			undo_commit: self.undo_commit.unwrap_or(default.undo_commit),
 			stage_unstage_item: self.stage_unstage_item.unwrap_or(default.stage_unstage_item),
+			tag_annotate: self.tag_annotate.unwrap_or(default.tag_annotate),
 		}
 	}
 }

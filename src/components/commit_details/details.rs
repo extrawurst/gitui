@@ -12,7 +12,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::sync::{
-	self, CommitDetails, CommitId, CommitMessage, RepoPathRef,
+	self, CommitDetails, CommitId, CommitMessage, RepoPathRef, Tag,
 };
 use crossterm::event::Event;
 use std::clone::Clone;
@@ -31,7 +31,7 @@ use super::style::Detail;
 pub struct DetailsComponent {
 	repo: RepoPathRef,
 	data: Option<CommitDetails>,
-	tags: Vec<String>,
+	tags: Vec<Tag>,
 	theme: SharedTheme,
 	focused: bool,
 	current_width: Cell<u16>,
@@ -224,7 +224,7 @@ impl DetailsComponent {
 					itertools::Itertools::intersperse(
 						self.tags.iter().map(|tag| {
 							Span::styled(
-								Cow::from(tag),
+								Cow::from(&tag.name),
 								self.theme.text(true, false),
 							)
 						}),
