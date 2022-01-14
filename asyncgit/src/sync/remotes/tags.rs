@@ -100,6 +100,25 @@ pub fn tags_missing_remote(
 }
 
 ///
+#[allow(dead_code)]
+pub fn delete_tag_remote(
+	repo_path: &RepoPath,
+	remote: &str,
+	tag: &str,
+) -> Result<()> {
+	scope_time!("delete_tag_remote");
+
+	let repo = repo(repo_path)?;
+	let mut remote = repo.find_remote(remote)?;
+
+	let ref_name = format!(":refs/tags/{}", tag);
+
+	remote.push(&[ref_name.as_str()], None)?;
+
+	Ok(())
+}
+
+///
 pub fn push_tags(
 	repo_path: &RepoPath,
 	remote: &str,
@@ -154,7 +173,7 @@ pub fn push_tags(
 mod tests {
 	use super::*;
 	use crate::sync::{
-		self,
+		self, delete_tag,
 		remotes::{fetch, fetch_all, push::push},
 		tests::{repo_clone, repo_init_bare},
 	};
@@ -361,5 +380,47 @@ mod tests {
 		let tags2 = sync::get_tags(clone2_dir).unwrap();
 
 		assert_eq!(tags1, tags2);
+	}
+
+	#[test]
+	fn test_tags_delete_remote() {
+		let (r1_dir, _repo) = repo_init_bare().unwrap();
+		let r1_dir = r1_dir.path().to_str().unwrap();
+
+		let (clone1_dir, clone1) = repo_clone(r1_dir).unwrap();
+		let clone1_dir: &RepoPath =
+			&clone1_dir.path().to_str().unwrap().into();
+
+		let commit1 =
+			write_commit_file(&clone1, "test.txt", "test", "commit1");
+		push(
+			clone1_dir, "origin", "master", false, false, None, None,
+		)
+		.unwrap();
+
+		let (clone2_dir, _clone2) = repo_clone(r1_dir).unwrap();
+		let clone2_dir: &RepoPath =
+			&clone2_dir.path().to_str().unwrap().into();
+
+		// clone1 - creates tag
+
+		sync::tag_commit(clone1_dir, &commit1, "tag1", None).unwrap();
+		push_tags(clone1_dir, "origin", None, None).unwrap();
+
+		// clone 2 - pull
+
+		fetch_all(clone2_dir, &None, &None).unwrap();
+		assert_eq!(sync::get_tags(clone2_dir).unwrap().len(), 1);
+
+		// delete on clone 1
+
+		delete_tag(clone1_dir, "tag1").unwrap();
+		delete_tag_remote(clone1_dir, "origin", "tag1").unwrap();
+		push_tags(clone1_dir, "origin", None, None).unwrap();
+
+		// clone 2
+
+		fetch_all(clone2_dir, &None, &None).unwrap();
+		assert_eq!(sync::get_tags(clone2_dir).unwrap().len(), 0);
 	}
 }

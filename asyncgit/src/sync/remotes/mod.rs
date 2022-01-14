@@ -95,6 +95,12 @@ fn fetch_from_remote(
 	options.download_tags(git2::AutotagOption::All);
 	options.remote_callbacks(callbacks.callbacks());
 	remote.fetch(&[] as &[&str], Some(&mut options), None)?;
+	// fetch tags (also removing remotely deleted ones)
+	remote.fetch(
+		&["refs/tags/*:refs/tags/*"],
+		Some(&mut options),
+		None,
+	)?;
 
 	Ok(())
 }
