@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - allow reverting a commit from the commit log ([#927](https://github.com/extrawurst/gitui/issues/927))
 - disable pull cmd on local-only branches ([#1047](https://github.com/extrawurst/gitui/issues/1047))
 - support adding annotations to tags ([#747](https://github.com/extrawurst/gitui/issues/747))
+- support deleting tag on remote ([#1074](https://github.com/extrawurst/gitui/issues/1074))
 
 ### Fixed
 - Keep commit message when pre-commit hook fails ([#1035](https://github.com/extrawurst/gitui/issues/1035))
