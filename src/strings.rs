@@ -243,6 +243,12 @@ pub fn confirm_msg_delete_tag(
 ) -> String {
 	format!("Confirm deleting Tag: '{}' ?", tag_name)
 }
+pub fn confirm_title_delete_tag_remote() -> String {
+	"Delete Tag (remote)".to_string()
+}
+pub fn confirm_msg_delete_tag_remote(remote_name: &str) -> String {
+	format!("Confirm deleting tag on remote '{}'?", remote_name)
+}
 pub fn confirm_title_force_push(
 	_key_config: &SharedKeyConfig,
 ) -> String {

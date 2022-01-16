@@ -105,6 +105,7 @@ pub fn delete_tag_remote(
 	repo_path: &RepoPath,
 	remote: &str,
 	tag: &str,
+	basic_credential: Option<BasicAuthCredential>,
 ) -> Result<()> {
 	scope_time!("delete_tag_remote");
 
@@ -113,7 +114,11 @@ pub fn delete_tag_remote(
 
 	let ref_name = format!(":refs/tags/{}", tag);
 
-	remote.push(&[ref_name.as_str()], None)?;
+	let mut options = PushOptions::new();
+	let callbacks = Callbacks::new(None, basic_credential);
+	options.remote_callbacks(callbacks.callbacks());
+
+	remote.push(&[ref_name.as_str()], Some(&mut options))?;
 
 	Ok(())
 }
@@ -415,7 +420,8 @@ mod tests {
 		// delete on clone 1
 
 		delete_tag(clone1_dir, "tag1").unwrap();
-		delete_tag_remote(clone1_dir, "origin", "tag1").unwrap();
+		delete_tag_remote(clone1_dir, "origin", "tag1", None)
+			.unwrap();
 		push_tags(clone1_dir, "origin", None, None).unwrap();
 
 		// clone 2

@@ -18,7 +18,7 @@ use scopetime::scope_time;
 use utils::bytes2string;
 
 pub use callbacks::Callbacks;
-pub use tags::tags_missing_remote;
+pub use tags::{delete_tag_remote, tags_missing_remote};
 
 use super::RepoPath;
 

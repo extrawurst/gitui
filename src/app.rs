@@ -790,6 +790,7 @@ impl App {
 		Ok(flags)
 	}
 
+	#[allow(clippy::too_many_lines)]
 	fn process_confirmed_action(
 		&mut self,
 		action: Action,
@@ -867,8 +868,30 @@ impl App {
 						error.to_string(),
 					));
 				} else {
+					let remote = sync::get_default_remote(
+						&self.repo.borrow(),
+					)?;
+
+					self.queue.push(InternalEvent::ConfirmAction(
+						Action::DeleteRemoteTag(tag_name, remote),
+					));
+
 					flags.insert(NeedsUpdate::ALL);
 					self.tags_popup.update_tags()?;
+				}
+			}
+			Action::DeleteRemoteTag(tag_name, remote) => {
+				if let Err(error) = sync::delete_tag_remote(
+					&self.repo.borrow(),
+					&remote,
+					&tag_name,
+					None,
+				) {
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						error.to_string(),
+					));
+				} else {
+					flags.insert(NeedsUpdate::ALL);
 				}
 			}
 			Action::ForcePush(branch, force) => {
