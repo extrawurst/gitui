@@ -458,7 +458,7 @@ mod tests_branch_compare {
 mod tests_branches {
 	use super::*;
 	use crate::sync::{
-		remotes::{get_remotes, push::push},
+		remotes::{get_remotes, push::push_branch},
 		rename_branch,
 		tests::{
 			debug_cmd_print, repo_clone, repo_init, repo_init_bare,
@@ -509,7 +509,7 @@ mod tests_branches {
 		write_commit_file(&repo, "f1.txt", "foo", "c1");
 		rename_branch(&dir.into(), "refs/heads/master", branch_name)
 			.unwrap();
-		push(
+		push_branch(
 			&dir.into(),
 			"origin",
 			branch_name,
@@ -715,7 +715,7 @@ mod test_delete_branch {
 #[cfg(test)]
 mod test_remote_branches {
 	use super::*;
-	use crate::sync::remotes::push::push;
+	use crate::sync::remotes::push::push_branch;
 	use crate::sync::tests::{
 		repo_clone, repo_init_bare, write_commit_file,
 	};
@@ -744,7 +744,7 @@ mod test_remote_branches {
 
 		write_commit_file(&clone1, "test.txt", "test", "commit1");
 
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"master",
@@ -759,7 +759,7 @@ mod test_remote_branches {
 
 		write_commit_file(&clone1, "test.txt", "test2", "commit2");
 
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"foo",
@@ -801,7 +801,7 @@ mod test_remote_branches {
 		// clone1
 
 		write_commit_file(&clone1, "test.txt", "test", "commit1");
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"master",
@@ -813,7 +813,7 @@ mod test_remote_branches {
 		.unwrap();
 		create_branch(&clone1_dir.into(), "foo").unwrap();
 		write_commit_file(&clone1, "test.txt", "test2", "commit2");
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"foo",
@@ -869,7 +869,7 @@ mod test_remote_branches {
 		let branch_name = "bar/foo";
 
 		write_commit_file(&clone1, "test.txt", "test", "commit1");
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"master",
@@ -881,7 +881,7 @@ mod test_remote_branches {
 		.unwrap();
 		create_branch(&clone1_dir.into(), branch_name).unwrap();
 		write_commit_file(&clone1, "test.txt", "test2", "commit2");
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			branch_name,
@@ -921,7 +921,7 @@ mod test_remote_branches {
 		// clone1
 
 		write_commit_file(&clone1, "test.txt", "test", "commit1");
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"master",
@@ -933,7 +933,7 @@ mod test_remote_branches {
 		.unwrap();
 		create_branch(&clone1_dir.into(), "foo").unwrap();
 		write_commit_file(&clone1, "test.txt", "test2", "commit2");
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"foo",

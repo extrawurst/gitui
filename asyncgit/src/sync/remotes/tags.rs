@@ -100,30 +100,6 @@ pub fn tags_missing_remote(
 }
 
 ///
-#[allow(dead_code)]
-pub fn delete_tag_remote(
-	repo_path: &RepoPath,
-	remote: &str,
-	tag: &str,
-	basic_credential: Option<BasicAuthCredential>,
-) -> Result<()> {
-	scope_time!("delete_tag_remote");
-
-	let repo = repo(repo_path)?;
-	let mut remote = repo.find_remote(remote)?;
-
-	let ref_name = format!(":refs/tags/{}", tag);
-
-	let mut options = PushOptions::new();
-	let callbacks = Callbacks::new(None, basic_credential);
-	options.remote_callbacks(callbacks.callbacks());
-
-	remote.push(&[ref_name.as_str()], Some(&mut options))?;
-
-	Ok(())
-}
-
-///
 pub fn push_tags(
 	repo_path: &RepoPath,
 	remote: &str,
@@ -177,10 +153,16 @@ pub fn push_tags(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::sync::{
-		self, delete_tag,
-		remotes::{fetch, fetch_all, push::push},
-		tests::{repo_clone, repo_init_bare},
+	use crate::{
+		sync::{
+			self, delete_tag,
+			remotes::{
+				fetch, fetch_all,
+				push::{push_branch, push_raw},
+			},
+			tests::{repo_clone, repo_init_bare},
+		},
+		PushType,
 	};
 	use pretty_assertions::assert_eq;
 	use sync::tests::write_commit_file;
@@ -207,7 +189,7 @@ mod tests {
 
 		sync::tag_commit(clone1_dir, &commit1, "tag1", None).unwrap();
 
-		push(
+		push_branch(
 			clone1_dir, "origin", "master", false, false, None, None,
 		)
 		.unwrap();
@@ -255,7 +237,7 @@ mod tests {
 
 		sync::tag_commit(clone1_dir, &commit1, "tag1", None).unwrap();
 
-		push(
+		push_branch(
 			clone1_dir, "origin", "master", false, false, None, None,
 		)
 		.unwrap();
@@ -289,7 +271,7 @@ mod tests {
 
 		sync::tag_commit(clone1_dir, &commit1, "tag1", None).unwrap();
 
-		push(
+		push_branch(
 			clone1_dir, "origin", "master", false, false, None, None,
 		)
 		.unwrap();
@@ -318,7 +300,7 @@ mod tests {
 
 		let commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
-		push(
+		push_branch(
 			clone1_dir, "origin", "master", false, false, None, None,
 		)
 		.unwrap();
@@ -358,7 +340,7 @@ mod tests {
 
 		let commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
-		push(
+		push_branch(
 			clone1_dir, "origin", "master", false, false, None, None,
 		)
 		.unwrap();
@@ -398,7 +380,7 @@ mod tests {
 
 		let commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
-		push(
+		push_branch(
 			clone1_dir, "origin", "master", false, false, None, None,
 		)
 		.unwrap();
@@ -420,8 +402,19 @@ mod tests {
 		// delete on clone 1
 
 		delete_tag(clone1_dir, "tag1").unwrap();
-		delete_tag_remote(clone1_dir, "origin", "tag1", None)
-			.unwrap();
+
+		push_raw(
+			clone1_dir,
+			"origin",
+			"tag1",
+			PushType::Tag,
+			false,
+			true,
+			None,
+			None,
+		)
+		.unwrap();
+
 		push_tags(clone1_dir, "origin", None, None).unwrap();
 
 		// clone 2

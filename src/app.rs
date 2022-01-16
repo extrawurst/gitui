@@ -25,7 +25,7 @@ use crate::{
 use anyhow::{bail, Result};
 use asyncgit::{
 	sync::{self, RepoPathRef},
-	AsyncGitNotification,
+	AsyncGitNotification, PushType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
@@ -723,8 +723,9 @@ impl App {
 				self.file_to_open = path;
 				flags.insert(NeedsUpdate::COMMANDS);
 			}
-			InternalEvent::Push(branch, force, delete) => {
-				self.push_popup.push(branch, force, delete)?;
+			InternalEvent::Push(branch, push_type, force, delete) => {
+				self.push_popup
+					.push(branch, push_type, force, delete)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
 			InternalEvent::Pull(branch) => {
@@ -851,6 +852,7 @@ impl App {
 						|name| {
 							InternalEvent::Push(
 								name.to_string(),
+								PushType::Branch,
 								false,
 								true,
 							)
@@ -880,23 +882,21 @@ impl App {
 					self.tags_popup.update_tags()?;
 				}
 			}
-			Action::DeleteRemoteTag(tag_name, remote) => {
-				if let Err(error) = sync::delete_tag_remote(
-					&self.repo.borrow(),
-					&remote,
-					&tag_name,
-					None,
-				) {
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						error.to_string(),
-					));
-				} else {
-					flags.insert(NeedsUpdate::ALL);
-				}
+			Action::DeleteRemoteTag(tag_name, _remote) => {
+				self.queue.push(InternalEvent::Push(
+					tag_name,
+					PushType::Tag,
+					false,
+					true,
+				));
 			}
 			Action::ForcePush(branch, force) => {
-				self.queue
-					.push(InternalEvent::Push(branch, force, false));
+				self.queue.push(InternalEvent::Push(
+					branch,
+					PushType::Branch,
+					force,
+					false,
+				));
 			}
 			Action::PullMerge { rebase, .. } => {
 				self.pull_popup.try_conflict_free_merge(rebase);

@@ -99,7 +99,7 @@ mod test {
 	use super::*;
 	use crate::sync::{
 		branch_compare_upstream,
-		remotes::{fetch, push::push},
+		remotes::{fetch, push::push_branch},
 		tests::{
 			debug_cmd_print, get_commit_ids, repo_clone,
 			repo_init_bare, write_commit_file, write_commit_file_at,
@@ -129,7 +129,7 @@ mod test {
 			Time::new(1, 0),
 		);
 
-		push(
+		push_branch(
 			&clone1_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
@@ -151,7 +151,7 @@ mod test {
 		);
 
 		//push should fail since origin diverged
-		assert!(push(
+		assert!(push_branch(
 			&clone2_dir.into(),
 			"origin",
 			"master",
@@ -228,7 +228,7 @@ mod test {
 			"git status",
 		);
 
-		push(
+		push_branch(
 			&clone1_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
