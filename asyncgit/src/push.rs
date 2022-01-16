@@ -1,8 +1,10 @@
 use crate::{
 	error::{Error, Result},
 	sync::{
-		cred::BasicAuthCredential, remotes::push::push,
-		remotes::push::ProgressNotification, RepoPath,
+		cred::BasicAuthCredential,
+		remotes::push::push_raw,
+		remotes::push::{ProgressNotification, PushType},
+		RepoPath,
 	},
 	AsyncGitNotification, RemoteProgress,
 };
@@ -19,6 +21,8 @@ pub struct PushRequest {
 	pub remote: String,
 	///
 	pub branch: String,
+	///
+	pub push_type: PushType,
 	///
 	pub force: bool,
 	///
@@ -100,10 +104,11 @@ impl AsyncPush {
 				arc_progress,
 			);
 
-			let res = push(
+			let res = push_raw(
 				&repo,
 				params.remote.as_str(),
 				params.branch.as_str(),
+				params.push_type,
 				params.force,
 				params.delete,
 				params.basic_credential.clone(),

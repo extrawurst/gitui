@@ -184,6 +184,10 @@ impl ConfirmComponent {
                         tag_name,
                     ),
                 ),
+				Action::DeleteRemoteTag(_tag_name,remote) => (
+                    strings::confirm_title_delete_tag_remote(),
+                    strings::confirm_msg_delete_tag_remote(remote),
+                ),
                 Action::ForcePush(branch, _force) => (
                     strings::confirm_title_force_push(
                         &self.key_config,

@@ -17,8 +17,8 @@ use asyncgit::{
 		},
 		get_branch_remote, get_default_remote, RepoPathRef,
 	},
-	AsyncGitNotification, AsyncPush, PushRequest, RemoteProgress,
-	RemoteProgressState,
+	AsyncGitNotification, AsyncPush, PushRequest, PushType,
+	RemoteProgress, RemoteProgressState,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -57,6 +57,7 @@ pub struct PushComponent {
 	progress: Option<RemoteProgress>,
 	pending: bool,
 	branch: String,
+	push_type: PushType,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -79,6 +80,7 @@ impl PushComponent {
 			pending: false,
 			visible: false,
 			branch: String::new(),
+			push_type: PushType::Branch,
 			git_push: AsyncPush::new(repo.borrow().clone(), sender),
 			progress: None,
 			input_cred: CredComponent::new(
@@ -94,10 +96,12 @@ impl PushComponent {
 	pub fn push(
 		&mut self,
 		branch: String,
+		push_type: PushType,
 		force: bool,
 		delete: bool,
 	) -> Result<()> {
 		self.branch = branch;
+		self.push_type = push_type;
 		self.modifier = match (force, delete) {
 			(true, true) => PushComponentModifier::ForceDelete,
 			(false, true) => PushComponentModifier::Delete,
@@ -149,6 +153,7 @@ impl PushComponent {
 		self.git_push.request(PushRequest {
 			remote,
 			branch: self.branch.clone(),
+			push_type: self.push_type,
 			force,
 			delete: self.modifier.delete(),
 			basic_credential: cred,

@@ -55,6 +55,7 @@ pub use crate::{
 	status::{AsyncStatus, StatusParams},
 	sync::{
 		diff::{DiffLine, DiffLineType, FileDiff},
+		remotes::push::PushType,
 		status::{StatusItem, StatusItemType},
 	},
 	tags::AsyncTags,

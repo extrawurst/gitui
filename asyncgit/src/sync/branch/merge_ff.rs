@@ -53,7 +53,7 @@ pub fn branch_merge_upstream_fastforward(
 pub mod test {
 	use super::*;
 	use crate::sync::{
-		remotes::{fetch, push::push},
+		remotes::{fetch, push::push_branch},
 		tests::{
 			debug_cmd_print, get_commit_ids, repo_clone,
 			repo_init_bare, write_commit_file,
@@ -75,7 +75,7 @@ pub mod test {
 		let commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
 
-		push(
+		push_branch(
 			&clone1_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
@@ -99,7 +99,7 @@ pub mod test {
 			"commit2",
 		);
 
-		push(
+		push_branch(
 			&clone2_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",

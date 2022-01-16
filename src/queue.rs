@@ -1,6 +1,7 @@
 use crate::{components::AppOption, tabs::StashingOptions};
-use asyncgit::sync::{
-	diff::DiffLinePosition, CommitId, CommitTags, TreeFile,
+use asyncgit::{
+	sync::{diff::DiffLinePosition, CommitId, CommitTags, TreeFile},
+	PushType,
 };
 use bitflags::bitflags;
 use std::{
@@ -39,6 +40,7 @@ pub enum Action {
 	DeleteLocalBranch(String),
 	DeleteRemoteBranch(String),
 	DeleteTag(String),
+	DeleteRemoteTag(String, String),
 	ForcePush(String, bool),
 	PullMerge { incoming: usize, rebase: bool },
 	AbortMerge,
@@ -85,7 +87,7 @@ pub enum InternalEvent {
 	///
 	OpenExternalEditor(Option<String>),
 	///
-	Push(String, bool, bool),
+	Push(String, PushType, bool, bool),
 	///
 	Pull(String),
 	///

@@ -20,7 +20,7 @@ use asyncgit::{
 	},
 	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
-	DiffType, StatusParams,
+	DiffType, PushType, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -558,7 +558,10 @@ impl Status {
 					));
 				} else {
 					self.queue.push(InternalEvent::Push(
-						branch, force, false,
+						branch,
+						PushType::Branch,
+						force,
+						false,
 					));
 				}
 			}
