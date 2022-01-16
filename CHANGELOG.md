@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![revert-commit](assets/revert-commit.gif)
 
+**delete tag on remote**
+
+![delete-tag-remote](assets/delete-tag-remote.gif)
+
 ### Added
 - allow reverting a commit from the commit log ([#927](https://github.com/extrawurst/gitui/issues/927))
 - disable pull cmd on local-only branches ([#1047](https://github.com/extrawurst/gitui/issues/1047))
