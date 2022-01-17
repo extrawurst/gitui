@@ -312,7 +312,10 @@ exit 1
 			)
 			.unwrap();
 		let res = hooks_pre_commit(repo_path).unwrap();
-		assert!(res != HookResult::Ok);
+		assert_eq!(
+			res,
+			HookResult::NotOk(String::from("rejected\n"))
+		);
 	}
 
 	#[test]
