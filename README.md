@@ -82,7 +82,6 @@ These are the high level goals before calling out `1.0`:
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
-- no support for [core.hooksPath](https://git-scm.com/docs/githooks) config (see [#1044](https://github.com/extrawurst/gitui/issues/1044))
 - no support for GPG signing (see [#97](https://github.com/extrawurst/gitui/issues/97))
 
 Currently, this tool does not fully substitute the _git shell_, however both tools work well in tandem.
