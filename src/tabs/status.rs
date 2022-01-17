@@ -20,7 +20,7 @@ use asyncgit::{
 	},
 	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
-	DiffType, StatusParams,
+	DiffType, PushType, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -558,7 +558,10 @@ impl Status {
 					));
 				} else {
 					self.queue.push(InternalEvent::Push(
-						branch, force, false,
+						branch,
+						PushType::Branch,
+						force,
+						false,
 					));
 				}
 			}
@@ -572,10 +575,8 @@ impl Status {
 	}
 
 	fn pull(&self) {
-		if self.has_remotes() {
-			if let Some(branch) = self.git_branch_name.last() {
-				self.queue.push(InternalEvent::Pull(branch));
-			}
+		if let Some(branch) = self.git_branch_name.last() {
+			self.queue.push(InternalEvent::Pull(branch));
 		}
 	}
 
@@ -606,7 +607,7 @@ impl Status {
 	}
 
 	fn can_pull(&self) -> bool {
-		self.has_remotes()
+		self.has_remotes() && self.git_branch_state.is_some()
 	}
 
 	fn can_abort_merge(&self) -> bool {
@@ -875,6 +876,7 @@ impl Component for Status {
 					Ok(EventState::Consumed)
 				} else if k == self.key_config.keys.pull
 					&& !self.is_focus_on_diff()
+					&& self.can_pull()
 				{
 					self.pull();
 					Ok(EventState::Consumed)

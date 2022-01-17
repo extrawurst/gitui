@@ -243,6 +243,12 @@ pub fn confirm_msg_delete_tag(
 ) -> String {
 	format!("Confirm deleting Tag: '{}' ?", tag_name)
 }
+pub fn confirm_title_delete_tag_remote() -> String {
+	"Delete Tag (remote)".to_string()
+}
+pub fn confirm_msg_delete_tag_remote(remote_name: &str) -> String {
+	format!("Confirm deleting tag on remote '{}'?", remote_name)
+}
 pub fn confirm_title_force_push(
 	_key_config: &SharedKeyConfig,
 ) -> String {
@@ -263,13 +269,17 @@ pub fn log_title(_key_config: &SharedKeyConfig) -> String {
 pub fn blame_title(_key_config: &SharedKeyConfig) -> String {
 	"Blame".to_string()
 }
-pub fn tag_commit_popup_title(
-	_key_config: &SharedKeyConfig,
-) -> String {
+pub fn tag_popup_name_title() -> String {
 	"Tag".to_string()
 }
-pub fn tag_commit_popup_msg(_key_config: &SharedKeyConfig) -> String {
-	"type tag".to_string()
+pub fn tag_popup_name_msg() -> String {
+	"type tag name".to_string()
+}
+pub fn tag_popup_annotation_title(name: &str) -> String {
+	format!("Tag Annotation ({})", name)
+}
+pub fn tag_popup_annotation_msg() -> String {
+	"type tag annotation".to_string()
 }
 pub fn stashlist_title(_key_config: &SharedKeyConfig) -> String {
 	"Stashes".to_string()
@@ -1078,6 +1088,20 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+
+	pub fn tag_annotate_msg(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Annotate [{}]",
+				key_config.get_hint(key_config.keys.tag_annotate),
+			),
+			"annotate tag",
+			CMD_GROUP_LOG,
+		)
+	}
+
 	pub fn create_branch_confirm_msg(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
