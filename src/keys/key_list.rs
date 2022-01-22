@@ -107,6 +107,7 @@ pub struct KeysList {
 	pub undo_commit: GituiKeyEvent,
 	pub stage_unstage_item: GituiKeyEvent,
 	pub tag_annotate: GituiKeyEvent,
+	pub view_submodules: GituiKeyEvent,
 }
 
 #[rustfmt::skip]
@@ -185,6 +186,8 @@ impl Default for KeysList {
 			file_find: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::empty()),
 			stage_unstage_item: GituiKeyEvent::new(KeyCode::Enter,  KeyModifiers::empty()),
 			tag_annotate: GituiKeyEvent::new(KeyCode::Char('a'),  KeyModifiers::CONTROL),
+			view_submodules: GituiKeyEvent::new(KeyCode::Char('S'),  KeyModifiers::SHIFT),
+
 		}
 	}
 }

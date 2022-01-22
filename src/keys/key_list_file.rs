@@ -79,6 +79,7 @@ pub struct KeysListFile {
 	pub undo_commit: Option<GituiKeyEvent>,
 	pub stage_unstage_item: Option<GituiKeyEvent>,
 	pub tag_annotate: Option<GituiKeyEvent>,
+	pub view_submodules: Option<GituiKeyEvent>,
 }
 
 impl KeysListFile {
@@ -166,6 +167,7 @@ impl KeysListFile {
 			undo_commit: self.undo_commit.unwrap_or(default.undo_commit),
 			stage_unstage_item: self.stage_unstage_item.unwrap_or(default.stage_unstage_item),
 			tag_annotate: self.tag_annotate.unwrap_or(default.tag_annotate),
+			view_submodules: self.view_submodules.unwrap_or(default.view_submodules),
 		}
 	}
 }
