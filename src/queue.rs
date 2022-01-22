@@ -57,6 +57,8 @@ pub enum InternalEvent {
 	///
 	ShowErrorMsg(String),
 	///
+	ShowInfoMsg(String),
+	///
 	Update(NeedsUpdate),
 	///
 	StatusLastFileMoved,

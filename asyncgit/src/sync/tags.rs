@@ -4,7 +4,10 @@ use crate::{
 	sync::{repository::repo, utils::bytes2string},
 };
 use scopetime::scope_time;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::{
+	collections::{BTreeMap, HashMap, HashSet},
+	ops::Not,
+};
 
 ///
 #[derive(Clone, Hash, PartialEq, Debug)]
@@ -42,6 +45,8 @@ pub struct TagWithMetadata {
 	pub message: String,
 	///
 	pub commit_id: CommitId,
+	///
+	pub annotation: Option<String>,
 }
 
 static MAX_MESSAGE_WIDTH: usize = 100;
@@ -87,7 +92,12 @@ pub fn get_tags(repo_path: &RepoPath) -> Result<Tags> {
 				.ok()
 				.as_ref()
 				.and_then(git2::Tag::message_bytes)
-				.and_then(|msg| bytes2string(msg).ok());
+				.and_then(|msg| {
+					msg.is_empty()
+						.not()
+						.then(|| bytes2string(msg).ok())
+						.flatten()
+				});
 
 			if let Some(commit) = commit {
 				adder(commit, Tag { name, annotation });
@@ -109,20 +119,26 @@ pub fn get_tags_with_metadata(
 
 	let tags_grouped_by_commit_id = get_tags(repo_path)?;
 
-	let tags_with_commit_id: Vec<(&str, &CommitId)> =
+	let tags_with_commit_id: Vec<(&str, Option<&str>, &CommitId)> =
 		tags_grouped_by_commit_id
 			.iter()
 			.flat_map(|(commit_id, tags)| {
 				tags.iter()
-					.map(|tag| (tag.name.as_ref(), commit_id))
-					.collect::<Vec<(&str, &CommitId)>>()
+					.map(|tag| {
+						(
+							tag.name.as_ref(),
+							tag.annotation.as_deref(),
+							commit_id,
+						)
+					})
+					.collect::<Vec<_>>()
 			})
 			.collect();
 
 	let unique_commit_ids: HashSet<_> = tags_with_commit_id
 		.iter()
 		.copied()
-		.map(|(_, &commit_id)| commit_id)
+		.map(|(_, _, &commit_id)| commit_id)
 		.collect();
 	let mut commit_ids = Vec::with_capacity(unique_commit_ids.len());
 	commit_ids.extend(unique_commit_ids);
@@ -136,7 +152,7 @@ pub fn get_tags_with_metadata(
 
 	let mut tags: Vec<TagWithMetadata> = tags_with_commit_id
 		.into_iter()
-		.filter_map(|(tag, commit_id)| {
+		.filter_map(|(tag, annotation, commit_id)| {
 			unique_commit_infos.get(commit_id).map(|commit_info| {
 				TagWithMetadata {
 					name: String::from(tag),
@@ -144,6 +160,7 @@ pub fn get_tags_with_metadata(
 					time: commit_info.time,
 					message: commit_info.message.clone(),
 					commit_id: *commit_id,
+					annotation: annotation.map(String::from),
 				}
 			})
 		})

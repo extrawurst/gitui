@@ -85,6 +85,8 @@ impl DrawableComponent for TagListComponent {
 				Constraint::Length(10),
 				// author width
 				Constraint::Length(19),
+				// attachement
+				Constraint::Length(1),
 				// commit id
 				Constraint::Percentage(100),
 			];
@@ -171,6 +173,13 @@ impl Component for TagListComponent {
 				true,
 				true,
 			));
+			out.push(CommandInfo::new(
+				strings::commands::show_tag_annotation(
+					&self.key_config,
+				),
+				self.can_show_annotation(),
+				true,
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -196,6 +205,10 @@ impl Component for TagListComponent {
 					self.move_selection(ScrollType::PageDown);
 				} else if key == self.key_config.keys.page_up {
 					self.move_selection(ScrollType::PageUp);
+				} else if key == self.key_config.keys.move_right
+					&& self.can_show_annotation()
+				{
+					self.show_annotation();
 				} else if key == self.key_config.keys.delete_tag {
 					return self.selected_tag().map_or(
 						Ok(EventState::NotConsumed),
@@ -372,6 +385,22 @@ impl TagListComponent {
 		needs_update
 	}
 
+	fn show_annotation(&self) {
+		if let Some(tag) = self.selected_tag() {
+			if let Some(annotation) = &tag.annotation {
+				self.queue.push(InternalEvent::ShowInfoMsg(
+					annotation.clone(),
+				));
+			}
+		}
+	}
+
+	fn can_show_annotation(&self) -> bool {
+		self.selected_tag()
+			.and_then(|t| t.annotation.as_ref())
+			.is_some()
+	}
+
 	///
 	fn get_rows(&self) -> Vec<Row> {
 		self.tags.as_ref().map_or_else(Vec::new, |tags| {
@@ -382,6 +411,7 @@ impl TagListComponent {
 	///
 	fn get_row(&self, tag: &TagWithMetadata) -> Row {
 		const UPSTREAM_SYMBOL: &str = "\u{2191}";
+		const ATTACHEMENT_SYMBOL: &str = "!";
 		const EMPTY_SYMBOL: &str = " ";
 
 		let is_tag_missing_on_remote = self
@@ -399,6 +429,12 @@ impl TagListComponent {
 			EMPTY_SYMBOL
 		};
 
+		let has_attachement_str = if tag.annotation.is_some() {
+			ATTACHEMENT_SYMBOL
+		} else {
+			EMPTY_SYMBOL
+		};
+
 		let cells: Vec<Cell> = vec![
 			Cell::from(has_remote_str)
 				.style(self.theme.commit_author(false)),
@@ -408,6 +444,8 @@ impl TagListComponent {
 				.style(self.theme.commit_time(false)),
 			Cell::from(tag.author.clone())
 				.style(self.theme.commit_author(false)),
+			Cell::from(has_attachement_str)
+				.style(self.theme.commit_time(false)),
 			Cell::from(tag.message.clone())
 				.style(self.theme.text(true, false)),
 		];
