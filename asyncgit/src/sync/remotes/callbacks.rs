@@ -91,6 +91,14 @@ impl Callbacks {
 			},
 		);
 
+		callbacks.sideband_progress(move |data| {
+			log::debug!(
+				"sideband transfer: '{}'",
+				String::from_utf8_lossy(data).trim()
+			);
+			true
+		});
+
 		callbacks
 	}
 
