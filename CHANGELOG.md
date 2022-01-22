@@ -7,17 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-**tag annotation support**
+## [0.20] - 2021-01-22 - Tag Annotations
+
+**support tag annotations**
 
 ![tag-annotation](assets/tag-annotation.gif)
-
-**revert commit from rev log**
-
-![revert-commit](assets/revert-commit.gif)
 
 **delete tag on remote**
 
 ![delete-tag-remote](assets/delete-tag-remote.gif)
+
+**revert commit from rev log**
+
+![revert-commit](assets/revert-commit.gif)
 
 ### Added
 - support `core.hooksPath` ([#1044](https://github.com/extrawurst/gitui/issues/1044))
