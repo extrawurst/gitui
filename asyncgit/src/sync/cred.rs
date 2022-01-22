@@ -112,7 +112,7 @@ fn git_credential_fill(url: &str) -> Option<BasicAuthCredential> {
 
 	let mut res = BasicAuthCredential::default();
 	for line in output.lines() {
-		if let Some(tuple) = line.split_once("=") {
+		if let Some(tuple) = split_once(line, "=") {
 			if tuple.0 == "username" {
 				res.username = Some(tuple.1.to_string());
 			} else if tuple.0 == "password" {
@@ -126,6 +126,18 @@ fn git_credential_fill(url: &str) -> Option<BasicAuthCredential> {
 	}
 
 	None
+}
+
+fn split_once<'a>(
+	v: &'a str,
+	splitter: &str,
+) -> Option<(&'a str, &'a str)> {
+	let mut split = v.split(splitter);
+
+	let key = split.next();
+	let val = split.next();
+
+	key.zip(val)
 }
 
 /// extract credentials from url
