@@ -1,10 +1,13 @@
 //! credentials git helper
 
+use std::process::Command;
+
 use super::{
 	remotes::get_default_remote_in_repo, repository::repo, RepoPath,
 };
 use crate::error::{Error, Result};
 use git2::{Config, CredentialHelper};
+use scopetime::scope_time;
 
 /// basic Authentication Credentials
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -55,6 +58,12 @@ pub fn extract_username_password(
 		.to_owned();
 	let mut helper = CredentialHelper::new(&url);
 
+	if use_credential_store(&repo.config()?) {
+		if let Some(cred) = git_credential_fill(&url) {
+			return Ok(cred);
+		}
+	}
+
 	//TODO: look at Cred::credential_helper,
 	//if the username is in the url we need to set it here,
 	//I dont think `config` will pick it up
@@ -62,12 +71,61 @@ pub fn extract_username_password(
 	if let Ok(config) = Config::open_default() {
 		helper.config(&config);
 	}
+
 	Ok(match helper.execute() {
 		Some((username, password)) => {
 			BasicAuthCredential::new(Some(username), Some(password))
 		}
 		None => extract_cred_from_url(&url),
 	})
+}
+
+fn use_credential_store(config: &Config) -> bool {
+	config
+		.get_entry("credential.helper")
+		.ok()
+		.as_ref()
+		.and_then(git2::ConfigEntry::value)
+		.map(|val| val == "store")
+		.unwrap_or_default()
+}
+
+// tries calling:
+// printf "protocol=https\nhost=github.com\n" | git credential fill
+// see https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage
+// TODO: use input stream
+fn git_credential_fill(url: &str) -> Option<BasicAuthCredential> {
+	scope_time!("git_credential_fill");
+
+	let url = url::Url::parse(url).ok()?;
+
+	let host = url.domain()?;
+	let protocol = url.scheme();
+
+	let cmd = format!("protocol={}\nhost={}\n", protocol, host);
+	let cmd = format!("printf \"{}\" | git credential fill", cmd);
+
+	let bash_args = vec!["-c".to_string(), cmd];
+
+	let res = Command::new("bash").args(bash_args).output().ok()?;
+	let output = String::from_utf8_lossy(res.stdout.as_slice());
+
+	let mut res = BasicAuthCredential::default();
+	for line in output.lines() {
+		if let Some(tuple) = line.split_once("=") {
+			if tuple.0 == "username" {
+				res.username = Some(tuple.1.to_string());
+			} else if tuple.0 == "password" {
+				res.password = Some(tuple.1.to_string());
+			}
+		}
+	}
+
+	if res.username.is_some() && res.password.is_some() {
+		return Some(res);
+	}
+
+	None
 }
 
 /// extract credentials from url
