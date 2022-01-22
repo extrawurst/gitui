@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support adding annotations to tags ([#747](https://github.com/extrawurst/gitui/issues/747))
 - support inspecting annotation of tag ([#1076](https://github.com/extrawurst/gitui/issues/1076))
 - support deleting tag on remote ([#1074](https://github.com/extrawurst/gitui/issues/1074))
+- support git credentials helper ([#800](https://github.com/extrawurst/gitui/issues/800))
 
 ### Fixed
 - Keep commit message when pre-commit hook fails ([#1035](https://github.com/extrawurst/gitui/issues/1035))
