@@ -55,6 +55,10 @@ pub fn extract_username_password(
 		.to_owned();
 	let mut helper = CredentialHelper::new(&url);
 
+	//TODO: look at Cred::credential_helper,
+	//if the username is in the url we need to set it here,
+	//I dont think `config` will pick it up
+
 	if let Ok(config) = Config::open_default() {
 		helper.config(&config);
 	}
