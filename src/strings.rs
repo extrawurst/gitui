@@ -87,6 +87,9 @@ pub fn msg_opening_editor(_key_config: &SharedKeyConfig) -> String {
 pub fn msg_title_error(_key_config: &SharedKeyConfig) -> String {
 	"Error".to_string()
 }
+pub fn msg_title_info(_key_config: &SharedKeyConfig) -> String {
+	"Info".to_string()
+}
 pub fn commit_title() -> String {
 	"Commit".to_string()
 }
@@ -527,6 +530,18 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.push),
 			),
 			"push tags to remote",
+			CMD_GROUP_LOG,
+		)
+	}
+	pub fn show_tag_annotation(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Annotation [{}]",
+				key_config.get_hint(key_config.keys.move_right),
+			),
+			"show tag annotation",
 			CMD_GROUP_LOG,
 		)
 	}

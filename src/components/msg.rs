@@ -139,4 +139,13 @@ impl MsgComponent {
 
 		Ok(())
 	}
+
+	///
+	pub fn show_info(&mut self, msg: &str) -> Result<()> {
+		self.title = strings::msg_title_info(&self.key_config);
+		self.msg = msg.to_string();
+		self.show()?;
+
+		Ok(())
+	}
 }
