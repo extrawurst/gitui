@@ -84,6 +84,7 @@ These are the high level goals before calling out `1.0`:
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - no support for GPG signing (see [#97](https://github.com/extrawurst/gitui/issues/97))
+- no git-lfs support (see [#1089](https://github.com/extrawurst/gitui/discussions/1089))
 
 Currently, this tool does not fully substitute the _git shell_, however both tools work well in tandem.
 
