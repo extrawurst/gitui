@@ -411,7 +411,7 @@ impl TagListComponent {
 	///
 	fn get_row(&self, tag: &TagWithMetadata) -> Row {
 		const UPSTREAM_SYMBOL: &str = "\u{2191}";
-		const ATTACHEMENT_SYMBOL: &str = "!";
+		const ATTACHEMENT_SYMBOL: &str = "@";
 		const EMPTY_SYMBOL: &str = " ";
 
 		let is_tag_missing_on_remote = self
@@ -445,7 +445,7 @@ impl TagListComponent {
 			Cell::from(tag.author.clone())
 				.style(self.theme.commit_author(false)),
 			Cell::from(has_attachement_str)
-				.style(self.theme.commit_time(false)),
+				.style(self.theme.text_danger()),
 			Cell::from(tag.message.clone())
 				.style(self.theme.text(true, false)),
 		];
