@@ -4,7 +4,7 @@ use super::{
 	remotes::get_default_remote_in_repo, repository::repo, RepoPath,
 };
 use crate::error::{Error, Result};
-use git2::{Config, CredentialHelper};
+use git2::CredentialHelper;
 
 /// basic Authentication Credentials
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -59,9 +59,10 @@ pub fn extract_username_password(
 	//if the username is in the url we need to set it here,
 	//I dont think `config` will pick it up
 
-	if let Ok(config) = Config::open_default() {
+	if let Ok(config) = repo.config() {
 		helper.config(&config);
 	}
+
 	Ok(match helper.execute() {
 		Some((username, password)) => {
 			BasicAuthCredential::new(Some(username), Some(password))
