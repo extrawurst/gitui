@@ -103,11 +103,14 @@ fn git_credential_fill(url: &str) -> Option<BasicAuthCredential> {
 	let protocol = url.scheme();
 
 	let cmd = format!("protocol={}\nhost={}\n", protocol, host);
-	let cmd = format!("printf \"{}\" | git credential fill", cmd);
+	let cmd =
+		format!("printf \"{}\" | git credential-store get", cmd);
 
 	let bash_args = vec!["-c".to_string(), cmd];
 
-	let res = Command::new("bash").args(bash_args).output().ok()?;
+	let res = Command::new("bash").args(bash_args).output();
+	log::debug!("out: {:?}", res);
+	let res = res.ok()?;
 	let output = String::from_utf8_lossy(res.stdout.as_slice());
 
 	let mut res = BasicAuthCredential::default();
