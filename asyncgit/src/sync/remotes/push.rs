@@ -2,8 +2,11 @@ use crate::{
 	error::{Error, Result},
 	progress::ProgressPercent,
 	sync::{
-		branch::branch_set_upstream, cred::BasicAuthCredential,
-		remotes::Callbacks, repository::repo, CommitId, RepoPath,
+		branch::branch_set_upstream,
+		cred::BasicAuthCredential,
+		remotes::{proxy_auto, Callbacks},
+		repository::repo,
+		CommitId, RepoPath,
 	},
 };
 use crossbeam_channel::Sender;
@@ -143,6 +146,7 @@ pub fn push_raw(
 	let mut remote = repo.find_remote(remote)?;
 
 	let mut options = PushOptions::new();
+	options.proxy_options(proxy_auto());
 
 	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.remote_callbacks(callbacks.callbacks());
