@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+* severe performance regression ([#1102](https://github.com/extrawurst/gitui/1102))
+* windows release deployment via CD broken
+
 ## [0.20] - 2021-01-25 - Tag Annotations
 
 **support tag annotations**
