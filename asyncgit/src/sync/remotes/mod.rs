@@ -13,7 +13,7 @@ use crate::{
 	ProgressPercent,
 };
 use crossbeam_channel::Sender;
-use git2::{BranchType, FetchOptions, Repository};
+use git2::{BranchType, FetchOptions, ProxyOptions, Repository};
 use scopetime::scope_time;
 use utils::bytes2string;
 
@@ -24,6 +24,13 @@ use super::RepoPath;
 
 /// origin
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
+
+///
+pub fn proxy_auto<'a>() -> ProxyOptions<'a> {
+	let mut proxy = ProxyOptions::new();
+	proxy.auto();
+	proxy
+}
 
 ///
 pub fn get_remotes(repo_path: &RepoPath) -> Result<Vec<String>> {
@@ -92,6 +99,7 @@ fn fetch_from_remote(
 	let mut options = FetchOptions::new();
 	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.prune(git2::FetchPrune::On);
+	options.proxy_options(proxy_auto());
 	options.download_tags(git2::AutotagOption::All);
 	options.remote_callbacks(callbacks.callbacks());
 	remote.fetch(&[] as &[&str], Some(&mut options), None)?;
@@ -161,6 +169,7 @@ pub(crate) fn fetch(
 	options.download_tags(git2::AutotagOption::All);
 	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.remote_callbacks(callbacks.callbacks());
+	options.proxy_options(proxy_auto());
 
 	remote.fetch(&[branch], Some(&mut options), None)?;
 

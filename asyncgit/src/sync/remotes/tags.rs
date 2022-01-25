@@ -5,8 +5,10 @@ use crate::{
 	error::Result,
 	progress::ProgressPercent,
 	sync::{
-		cred::BasicAuthCredential, remotes::Callbacks,
-		repository::repo, RepoPath,
+		cred::BasicAuthCredential,
+		remotes::{proxy_auto, Callbacks},
+		repository::repo,
+		RepoPath,
 	},
 };
 use crossbeam_channel::Sender;
@@ -59,7 +61,7 @@ fn remote_tag_refs(
 	let conn = remote.connect_auth(
 		Direction::Fetch,
 		Some(callbacks.callbacks()),
-		None,
+		Some(proxy_auto()),
 	)?;
 
 	let remote_heads = conn.list()?;
@@ -133,6 +135,7 @@ pub fn push_tags(
 			Callbacks::new(None, basic_credential.clone());
 		options.remote_callbacks(callbacks.callbacks());
 		options.packbuilder_parallelism(0);
+		options.proxy_options(proxy_auto());
 		remote.push(&[tag.as_str()], Some(&mut options))?;
 
 		progress_sender.as_ref().map(|sender| {
