@@ -15,8 +15,7 @@ use anyhow::Result;
 use asyncgit::{
 	cached,
 	sync::{
-		self, get_branches_info, status::StatusType, RepoPath,
-		RepoPathRef, RepoState,
+		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
 	},
 	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
@@ -67,6 +66,7 @@ pub struct Status {
 	index_wd: ChangesComponent,
 	diff: DiffComponent,
 	git_diff: AsyncDiff,
+	has_remotes: bool,
 	git_status_workdir: AsyncStatus,
 	git_status_stage: AsyncStatus,
 	git_branch_state: Option<BranchCompare>,
@@ -161,6 +161,7 @@ impl Status {
 		Self {
 			queue: queue.clone(),
 			visible: true,
+			has_remotes: false,
 			focus: Focus::WorkDir,
 			diff_target: DiffTarget::WorkingDir,
 			index_wd: ChangesComponent::new(
@@ -422,6 +423,13 @@ impl Status {
 			|| self.git_status_workdir.is_pending()
 	}
 
+	fn check_remotes(&mut self) {
+		self.has_remotes =
+			sync::get_branches_info(&self.repo.borrow(), false)
+				.map(|branches| !branches.is_empty())
+				.unwrap_or(false);
+	}
+
 	///
 	pub fn update_git(
 		&mut self,
@@ -568,12 +576,6 @@ impl Status {
 		}
 	}
 
-	fn has_remotes(&self) -> bool {
-		get_branches_info(&self.repo.borrow(), false)
-			.map(|l| !l.is_empty())
-			.unwrap_or(false)
-	}
-
 	fn pull(&self) {
 		if let Some(branch) = self.git_branch_name.last() {
 			self.queue.push(InternalEvent::Pull(branch));
@@ -603,11 +605,11 @@ impl Status {
 		self.git_branch_state
 			.as_ref()
 			.map_or(true, |state| state.ahead > 0)
-			&& self.has_remotes()
+			&& self.has_remotes
 	}
 
-	fn can_pull(&self) -> bool {
-		self.has_remotes() && self.git_branch_state.is_some()
+	const fn can_pull(&self) -> bool {
+		self.has_remotes && self.git_branch_state.is_some()
 	}
 
 	fn can_abort_merge(&self) -> bool {
@@ -937,6 +939,7 @@ impl Component for Status {
 
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
+		self.check_remotes();
 		self.update()?;
 
 		Ok(())
