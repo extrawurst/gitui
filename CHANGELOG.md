@@ -7,8 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.20.1] - 2021-01-26
+
+This is was a immediate followup patch release to `0.20` see [release notes](https://github.com/extrawurst/gitui/releases/tag/v0.20.0) for the whole list of goodies in `0.20`.
+
+### Added
+* support proxy auto detection via env's like `HTTP_PROXY` ([#994](https://github.com/extrawurst/gitui/994))
+
 ### Fixed
-* severe performance regression ([#1102](https://github.com/extrawurst/gitui/1102))
+* severe performance regression in `0.20` ([#1102](https://github.com/extrawurst/gitui/1102))
+* several smaller performance improvements via caching ([#1104](https://github.com/extrawurst/gitui/1104))
 * windows release deployment via CD broken
 
 ## [0.20] - 2021-01-25 - Tag Annotations
