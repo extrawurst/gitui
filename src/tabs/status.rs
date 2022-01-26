@@ -458,6 +458,7 @@ impl Status {
 		self.index_wd.set_items(&workdir_status.items)?;
 
 		self.update_diff()?;
+		self.check_remotes();
 
 		if self.git_action_executed {
 			self.git_action_executed = false;
