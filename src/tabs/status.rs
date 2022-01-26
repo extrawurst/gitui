@@ -67,6 +67,7 @@ pub struct Status {
 	diff: DiffComponent,
 	git_diff: AsyncDiff,
 	has_remotes: bool,
+	git_state: RepoState,
 	git_status_workdir: AsyncStatus,
 	git_status_stage: AsyncStatus,
 	git_branch_state: Option<BranchCompare>,
@@ -162,6 +163,7 @@ impl Status {
 			queue: queue.clone(),
 			visible: true,
 			has_remotes: false,
+			git_state: RepoState::Clean,
 			focus: Focus::WorkDir,
 			diff_target: DiffTarget::WorkingDir,
 			index_wd: ChangesComponent::new(
@@ -296,38 +298,34 @@ impl Status {
 		f: &mut tui::Frame<B>,
 		r: tui::layout::Rect,
 	) {
-		if let Ok(state) = sync::repo_state(&self.repo.borrow()) {
-			if state != RepoState::Clean {
-				let txt = Self::repo_state_text(
-					&self.repo.borrow(),
-					&state,
-				);
+		if self.git_state != RepoState::Clean {
+			let txt = Self::repo_state_text(
+				&self.repo.borrow(),
+				&self.git_state,
+			);
 
-				let w = Paragraph::new(txt)
-					.block(
-						Block::default()
-							.border_type(BorderType::Plain)
-							.borders(Borders::all())
-							.border_style(
-								Style::default().fg(Color::Yellow),
-							)
-							.title(format!("Pending {:?}", state)),
-					)
-					.style(Style::default().fg(Color::Red))
-					.alignment(Alignment::Left);
+			let w = Paragraph::new(txt)
+				.block(
+					Block::default()
+						.border_type(BorderType::Plain)
+						.borders(Borders::all())
+						.border_style(
+							Style::default().fg(Color::Yellow),
+						)
+						.title(format!(
+							"Pending {:?}",
+							self.git_state
+						)),
+				)
+				.style(Style::default().fg(Color::Red))
+				.alignment(Alignment::Left);
 
-				f.render_widget(w, r);
-			}
+			f.render_widget(w, r);
 		}
 	}
 
 	fn repo_state_unclean(&self) -> bool {
-		if let Ok(state) = sync::repo_state(&self.repo.borrow()) {
-			if state != RepoState::Clean {
-				return true;
-			}
-		}
-		false
+		self.git_state != RepoState::Clean
 	}
 
 	fn can_focus_diff(&self) -> bool {
@@ -409,6 +407,9 @@ impl Status {
 				StatusType::Stage,
 				config,
 			))?;
+
+			self.git_state = sync::repo_state(&self.repo.borrow())
+				.unwrap_or(RepoState::Clean);
 
 			self.branch_compare();
 		}
@@ -613,21 +614,15 @@ impl Status {
 	}
 
 	fn can_abort_merge(&self) -> bool {
-		sync::repo_state(&self.repo.borrow())
-			.unwrap_or(RepoState::Clean)
-			== RepoState::Merge
+		self.git_state == RepoState::Merge
 	}
 
 	fn pending_rebase(&self) -> bool {
-		sync::repo_state(&self.repo.borrow())
-			.unwrap_or(RepoState::Clean)
-			== RepoState::Rebase
+		self.git_state == RepoState::Rebase
 	}
 
 	fn pending_revert(&self) -> bool {
-		sync::repo_state(&self.repo.borrow())
-			.unwrap_or(RepoState::Clean)
-			== RepoState::Revert
+		self.git_state == RepoState::Revert
 	}
 
 	pub fn revert_pending_state(&self) {
