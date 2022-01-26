@@ -610,7 +610,9 @@ impl App {
 	}
 
 	fn update_commands(&mut self) {
-		self.help.set_cmds(self.commands(true));
+		if self.help.is_visible() {
+			self.help.set_cmds(self.commands(true));
+		}
 		self.cmdbar.borrow_mut().set_cmds(self.commands(false));
 	}
 
