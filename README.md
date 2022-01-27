@@ -85,7 +85,7 @@ These are the high level goals before calling out `1.0`:
 
 - no support for GPG signing (see [#97](https://github.com/extrawurst/gitui/issues/97))
 - no git-lfs support (see [#1089](https://github.com/extrawurst/gitui/discussions/1089))
-- *credential.helper* for https needs to be **explicitly** configured (see [#800](https://github.com/extrawurst/gitui/issues/800)
+- *credential.helper* for https needs to be **explicitly** configured (see [#800](https://github.com/extrawurst/gitui/issues/800))
 
 Currently, this tool does not fully substitute the _git shell_, however both tools work well in tandem.
 
