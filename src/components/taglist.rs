@@ -18,7 +18,9 @@ use asyncgit::{
 		extract_username_password, need_username_password,
 		BasicAuthCredential,
 	},
-	sync::{get_tags_with_metadata, RepoPathRef, TagWithMetadata},
+	sync::{
+		self, get_tags_with_metadata, RepoPathRef, TagWithMetadata,
+	},
 	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
@@ -46,6 +48,7 @@ pub struct TagListComponent {
 	table_state: std::cell::Cell<TableState>,
 	current_height: std::cell::Cell<usize>,
 	missing_remote_tags: Option<Vec<String>>,
+	has_remotes: bool,
 	basic_credential: Option<BasicAuthCredential>,
 	async_remote_tags: AsyncSingleJob<AsyncRemoteTagsJob>,
 	key_config: SharedKeyConfig,
@@ -170,7 +173,7 @@ impl Component for TagListComponent {
 			));
 			out.push(CommandInfo::new(
 				strings::commands::push_tags(&self.key_config),
-				true,
+				self.has_remotes,
 				true,
 			));
 			out.push(CommandInfo::new(
@@ -235,7 +238,9 @@ impl Component for TagListComponent {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if key == self.key_config.keys.push {
+				} else if key == self.key_config.keys.push
+					&& self.has_remotes
+				{
 					self.queue.push(InternalEvent::PushTags);
 				}
 			}
@@ -274,6 +279,7 @@ impl TagListComponent {
 			queue: queue.clone(),
 			tags: None,
 			visible: false,
+			has_remotes: false,
 			table_state: std::cell::Cell::new(TableState::default()),
 			current_height: std::cell::Cell::new(0),
 			basic_credential: None,
@@ -289,7 +295,12 @@ impl TagListComponent {
 		self.table_state.get_mut().select(Some(0));
 		self.show()?;
 
-		let basic_credential =
+		self.has_remotes =
+			sync::get_branches_info(&self.repo.borrow(), false)
+				.map(|branches| !branches.is_empty())
+				.unwrap_or(false);
+
+		let basic_credential = if self.has_remotes {
 			if need_username_password(&self.repo.borrow())? {
 				let credential =
 					extract_username_password(&self.repo.borrow())?;
@@ -301,7 +312,10 @@ impl TagListComponent {
 				}
 			} else {
 				None
-			};
+			}
+		} else {
+			None
+		};
 
 		self.basic_credential = basic_credential;
 
@@ -346,10 +360,12 @@ impl TagListComponent {
 	}
 
 	pub fn update_missing_remote_tags(&mut self) {
-		self.async_remote_tags.spawn(AsyncRemoteTagsJob::new(
-			self.repo.borrow().clone(),
-			self.basic_credential.clone(),
-		));
+		if self.has_remotes {
+			self.async_remote_tags.spawn(AsyncRemoteTagsJob::new(
+				self.repo.borrow().clone(),
+				self.basic_credential.clone(),
+			));
+		}
 	}
 
 	///
