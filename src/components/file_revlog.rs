@@ -32,12 +32,6 @@ use tui::{
 
 const SLICE_SIZE: usize = 1200;
 
-static HASH_WIDTH: u16 = 7;
-static DATE_WIDTH: u16 = 10;
-static AUTHOR_WIDTH: u16 = 20;
-static DETAILS_WIDTH: u16 =
-	HASH_WIDTH + 1 + DATE_WIDTH + 1 + AUTHOR_WIDTH;
-
 ///
 pub struct FileRevlogComponent {
 	git_log: Option<AsyncLog>,
@@ -51,6 +45,7 @@ pub struct FileRevlogComponent {
 	table_state: std::cell::Cell<TableState>,
 	items: ItemBatch,
 	key_config: SharedKeyConfig,
+	current_width: std::cell::Cell<usize>,
 	current_height: std::cell::Cell<usize>,
 }
 
@@ -75,6 +70,7 @@ impl FileRevlogComponent {
 			table_state: std::cell::Cell::new(TableState::default()),
 			items: ItemBatch::default(),
 			key_config,
+			current_width: std::cell::Cell::new(0),
 			current_height: std::cell::Cell::new(0),
 		}
 	}
@@ -150,7 +146,7 @@ impl FileRevlogComponent {
 			let commits = get_commits_info(
 				&self.repo_path.borrow(),
 				&git_log.get_slice(start, SLICE_SIZE)?,
-				DETAILS_WIDTH as usize,
+				self.current_width.get() as usize,
 			);
 
 			if let Ok(commits) = commits {
@@ -275,7 +271,7 @@ impl DrawableComponent for FileRevlogComponent {
 				// type of change: (A)dded, (M)odified, (D)eleted
 				Constraint::Length(1),
 				// commit details
-				Constraint::Length(DETAILS_WIDTH),
+				Constraint::Percentage(100),
 			];
 
 			let now = Local::now();
@@ -303,6 +299,7 @@ impl DrawableComponent for FileRevlogComponent {
 			f.render_stateful_widget(table, area, &mut table_state);
 
 			self.table_state.set(table_state);
+			self.current_width.set(area.width.into());
 			self.current_height.set(area.height.into());
 		}
 
