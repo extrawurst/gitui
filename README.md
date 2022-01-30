@@ -74,7 +74,6 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 These are the high level goals before calling out `1.0`:
 
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
-* file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
 * notify-based change detection ([#1](https://github.com/extrawurst/gitui/issues/1))
 * interactive rebase ([#32](https://github.com/extrawurst/gitui/issues/32))
