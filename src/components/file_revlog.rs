@@ -443,30 +443,25 @@ impl Component for FileRevlogComponent {
 							Ok(EventState::Consumed)
 						},
 					);
-				}
-
-				let selection_changed =
-					if key == self.key_config.keys.move_up {
-						self.move_selection(ScrollType::Up)
-					} else if key == self.key_config.keys.move_down {
-						self.move_selection(ScrollType::Down)
-					} else if key == self.key_config.keys.shift_up
-						|| key == self.key_config.keys.home
-					{
-						self.move_selection(ScrollType::Home)
-					} else if key == self.key_config.keys.shift_down
-						|| key == self.key_config.keys.end
-					{
-						self.move_selection(ScrollType::End)
-					} else if key == self.key_config.keys.page_up {
-						self.move_selection(ScrollType::PageUp)
-					} else if key == self.key_config.keys.page_down {
-						self.move_selection(ScrollType::PageDown)
-					} else {
-						false
-					};
-
-				return Ok(selection_changed.into());
+				} else if key == self.key_config.keys.move_up {
+					self.move_selection(ScrollType::Up)
+				} else if key == self.key_config.keys.move_down {
+					self.move_selection(ScrollType::Down)
+				} else if key == self.key_config.keys.shift_up
+					|| key == self.key_config.keys.home
+				{
+					self.move_selection(ScrollType::Home)
+				} else if key == self.key_config.keys.shift_down
+					|| key == self.key_config.keys.end
+				{
+					self.move_selection(ScrollType::End)
+				} else if key == self.key_config.keys.page_up {
+					self.move_selection(ScrollType::PageUp)
+				} else if key == self.key_config.keys.page_down {
+					self.move_selection(ScrollType::PageDown)
+				} else {
+					false
+				};
 			}
 
 			return Ok(EventState::Consumed);
