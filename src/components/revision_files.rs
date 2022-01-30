@@ -161,6 +161,12 @@ impl RevisionFilesComponent {
 		}
 	}
 
+	fn selected_file_path_with_prefix(&self) -> Option<String> {
+		self.tree
+			.selected_file()
+			.map(|file| file.full_path_str().to_string())
+	}
+
 	fn selected_file_path(&self) -> Option<String> {
 		self.tree.selected_file().map(|file| {
 			file.full_path_str()
@@ -172,7 +178,7 @@ impl RevisionFilesComponent {
 
 	fn selection_changed(&mut self) {
 		//TODO: retrieve TreeFile from tree datastructure
-		if let Some(file) = self.selected_file_path() {
+		if let Some(file) = self.selected_file_path_with_prefix() {
 			log::info!("selected: {:?}", file);
 			let path = Path::new(&file);
 			if let Some(item) =
@@ -346,7 +352,9 @@ impl Component for RevisionFilesComponent {
 					return Ok(EventState::Consumed);
 				}
 			} else if key == self.key_config.keys.edit_file {
-				if let Some(file) = self.selected_file_path() {
+				if let Some(file) =
+					self.selected_file_path_with_prefix()
+				{
 					//Note: switch to status tab so its clear we are
 					// not altering a file inside a revision here
 					self.queue.push(InternalEvent::TabSwitchStatus);
