@@ -15,8 +15,7 @@ use anyhow::Result;
 use asyncgit::{
 	cached,
 	sync::{
-		self, get_submodules, status::StatusType, RepoPath,
-		RepoPathRef, RepoState,
+		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
 	},
 	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
@@ -660,8 +659,14 @@ impl Status {
 	}
 
 	fn submodules(repo: &RepoPath, q: &Queue) -> Result<()> {
-		let s = get_submodules(repo)?;
-		q.push(InternalEvent::ShowInfoMsg(s.join(",")));
+		let s = sync::get_submodules(repo)?;
+
+		q.push(InternalEvent::ShowInfoMsg(
+			s.iter()
+				.map(|s| s.path.as_os_str().to_string_lossy())
+				.join(","),
+		));
+
 		Ok(())
 	}
 
