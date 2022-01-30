@@ -472,6 +472,8 @@ impl Component for FileRevlogComponent {
 
 				return Ok(selection_changed.into());
 			}
+
+			return Ok(EventState::Consumed);
 		}
 
 		Ok(EventState::NotConsumed)
