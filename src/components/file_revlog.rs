@@ -319,11 +319,7 @@ impl FileRevlogComponent {
 		needs_update
 	}
 
-	fn draw_revlog<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw_revlog<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
 		let constraints = [
 			// type of change: (A)dded, (M)odified, (D)eleted
 			Constraint::Length(1),
@@ -366,8 +362,6 @@ impl FileRevlogComponent {
 		self.table_state.set(table_state);
 		self.current_width.set(area.width.into());
 		self.current_height.set(area.height.into());
-
-		Ok(())
 	}
 }
 
@@ -392,10 +386,10 @@ impl DrawableComponent for FileRevlogComponent {
 			f.render_widget(Clear, area);
 
 			if self.diff.is_visible() {
-				self.draw_revlog(f, chunks[0])?;
+				self.draw_revlog(f, chunks[0]);
 				self.diff.draw(f, chunks[1])?;
 			} else {
-				self.draw_revlog(f, area)?;
+				self.draw_revlog(f, area);
 			}
 		}
 

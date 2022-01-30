@@ -98,6 +98,23 @@ impl Selection {
 	}
 }
 
+#[derive(PartialEq)]
+enum Visibility {
+	Hidden,
+	Visible,
+	Focused,
+}
+
+impl Visibility {
+	fn is_visible(&self) -> bool {
+		*self != Self::Hidden
+	}
+
+	fn is_focused(&self) -> bool {
+		*self != Self::Focused
+	}
+}
+
 ///
 pub struct DiffComponent {
 	repo: RepoPathRef,
@@ -106,8 +123,7 @@ pub struct DiffComponent {
 	selection: Selection,
 	selected_hunk: Option<usize>,
 	current_size: Cell<(u16, u16)>,
-	focused: bool,
-	visible: bool,
+	visibility: Visibility,
 	current: Current,
 	scroll: VerticalScroll,
 	queue: Queue,
@@ -126,8 +142,7 @@ impl DiffComponent {
 		is_immutable: bool,
 	) -> Self {
 		Self {
-			focused: false,
-			visible: false,
+			visibility: Visibility::Hidden,
 			queue,
 			current: Current::default(),
 			pending: false,
@@ -637,15 +652,15 @@ impl DrawableComponent for DiffComponent {
 				Block::default()
 					.title(Span::styled(
 						title.as_str(),
-						self.theme.title(self.focused),
+						self.theme.title(self.focused()),
 					))
 					.borders(Borders::ALL)
-					.border_style(self.theme.block(self.focused)),
+					.border_style(self.theme.block(self.focused())),
 			),
 			r,
 		);
 
-		if self.focused {
+		if self.focused() {
 			self.scroll.draw(f, r, &self.theme);
 		}
 
@@ -662,14 +677,14 @@ impl Component for DiffComponent {
 		out.push(CommandInfo::new(
 			strings::commands::scroll(&self.key_config),
 			self.can_scroll(),
-			self.focused,
+			self.focused(),
 		));
 
 		out.push(
 			CommandInfo::new(
 				strings::commands::diff_home_end(&self.key_config),
 				self.can_scroll(),
-				self.focused,
+				self.focused(),
 			)
 			.hidden(),
 		);
@@ -678,17 +693,17 @@ impl Component for DiffComponent {
 			out.push(CommandInfo::new(
 				strings::commands::diff_hunk_remove(&self.key_config),
 				self.selected_hunk.is_some(),
-				self.focused && self.is_stage(),
+				self.focused() && self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_hunk_add(&self.key_config),
 				self.selected_hunk.is_some(),
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_hunk_revert(&self.key_config),
 				self.selected_hunk.is_some(),
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_lines_revert(
@@ -696,13 +711,13 @@ impl Component for DiffComponent {
 				),
 				//TODO: only if any modifications are selected
 				true,
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_lines_stage(&self.key_config),
 				//TODO: only if any modifications are selected
 				true,
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_lines_unstage(
@@ -710,14 +725,14 @@ impl Component for DiffComponent {
 				),
 				//TODO: only if any modifications are selected
 				true,
-				self.focused && self.is_stage(),
+				self.focused() && self.is_stage(),
 			));
 		}
 
 		out.push(CommandInfo::new(
 			strings::commands::copy(&self.key_config),
 			true,
-			self.focused,
+			self.focused(),
 		));
 
 		CommandBlocking::PassingOn
@@ -725,7 +740,7 @@ impl Component for DiffComponent {
 
 	#[allow(clippy::cognitive_complexity)]
 	fn event(&mut self, ev: Event) -> Result<EventState> {
-		if self.focused {
+		if self.visibility.is_focused() {
 			if let Event::Key(e) = ev {
 				return if e == self.key_config.keys.move_down {
 					self.move_selection(ScrollType::Down);
@@ -802,19 +817,23 @@ impl Component for DiffComponent {
 	}
 
 	fn focused(&self) -> bool {
-		self.focused
+		self.visibility.is_focused()
 	}
 	fn focus(&mut self, focus: bool) {
-		self.focused = focus;
+		if focus {
+			self.visibility = Visibility::Focused;
+		} else {
+			self.visibility = Visibility::Visible;
+		}
 	}
 	fn is_visible(&self) -> bool {
-		self.visible
+		self.visibility.is_visible()
 	}
 	fn hide(&mut self) {
-		self.visible = false;
+		self.visibility = Visibility::Hidden;
 	}
 	fn show(&mut self) -> Result<()> {
-		self.visible = true;
+		self.visibility = Visibility::Visible;
 		Ok(())
 	}
 }
