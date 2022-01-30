@@ -2,11 +2,11 @@ use super::utils::logitems::ItemBatch;
 use super::visibility_blocking;
 use crate::{
 	components::{
-		CommandBlocking, CommandInfo, Component, DrawableComponent,
-		EventState, ScrollType,
+		CommandBlocking, CommandInfo, Component, DiffComponent,
+		DrawableComponent, EventState, ScrollType,
 	},
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
 	ui::style::SharedTheme,
 };
@@ -15,16 +15,18 @@ use asyncgit::{
 	asyncjob::AsyncSingleJob,
 	file_log::AsyncFileLogJob,
 	sync::{
-		diff_contains_file, get_commits_info, CommitId, RepoPathRef,
+		diff::DiffOptions, diff_contains_file, get_commits_info,
+		CommitId, RepoPathRef,
 	},
-	AsyncGitNotification, AsyncLog, FetchStatus,
+	AsyncDiff, AsyncGitNotification, AsyncLog, DiffParams, DiffType,
+	FetchStatus,
 };
 use chrono::{DateTime, Local};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{
 	backend::Backend,
-	layout::{Constraint, Rect},
+	layout::{Constraint, Direction, Layout, Rect},
 	text::{Span, Spans, Text},
 	widgets::{Block, Borders, Cell, Clear, Row, Table, TableState},
 	Frame,
@@ -36,9 +38,11 @@ const SLICE_SIZE: usize = 1200;
 pub struct FileRevlogComponent {
 	git_log: Option<AsyncLog>,
 	async_file_log: AsyncSingleJob<AsyncFileLogJob>,
+	git_diff: AsyncDiff,
 	theme: SharedTheme,
 	queue: Queue,
 	sender: Sender<AsyncGitNotification>,
+	diff: DiffComponent,
 	visible: bool,
 	repo_path: RepoPathRef,
 	file_path: Option<String>,
@@ -59,11 +63,22 @@ impl FileRevlogComponent {
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
-			theme,
+			theme: theme.clone(),
 			queue: queue.clone(),
 			sender: sender.clone(),
+			diff: DiffComponent::new(
+				repo_path.clone(),
+				queue.clone(),
+				theme,
+				key_config.clone(),
+				true,
+			),
 			git_log: None,
 			async_file_log: AsyncSingleJob::new(sender.clone()),
+			git_diff: AsyncDiff::new(
+				repo_path.borrow().clone(),
+				sender,
+			),
 			visible: false,
 			repo_path: repo_path.clone(),
 			file_path: None,
@@ -98,7 +113,7 @@ impl FileRevlogComponent {
 
 	///
 	pub fn any_work_pending(&self) -> bool {
-		self.async_file_log.is_pending()
+		self.async_file_log.is_pending() || self.git_diff.is_pending()
 	}
 
 	///
@@ -130,8 +145,46 @@ impl FileRevlogComponent {
 			match event {
 				AsyncGitNotification::CommitFiles
 				| AsyncGitNotification::Log => self.update()?,
+				AsyncGitNotification::Diff => self.update_diff()?,
 				_ => (),
 			}
+		}
+
+		Ok(())
+	}
+
+	pub fn update_diff(&mut self) -> Result<()> {
+		if self.is_visible() {
+			if let Some(commit_id) = self.selected_commit() {
+				if let Some(file_path) = &self.file_path {
+					let diff_params = DiffParams {
+						path: file_path.clone(),
+						diff_type: DiffType::Commit(commit_id),
+						options: DiffOptions::default(),
+					};
+
+					if let Some((params, last)) =
+						self.git_diff.last()?
+					{
+						if params == diff_params {
+							self.diff.update(
+								file_path.to_string(),
+								false,
+								last,
+							);
+
+							return Ok(());
+						}
+					}
+
+					self.git_diff.request(diff_params)?;
+					self.diff.clear(true);
+
+					return Ok(());
+				}
+			}
+
+			self.diff.clear(false);
 		}
 
 		Ok(())
@@ -253,10 +306,57 @@ impl FileRevlogComponent {
 
 		let needs_update = new_selection != old_selection;
 
+		if needs_update {
+			self.queue.push(InternalEvent::Update(NeedsUpdate::DIFF));
+		}
+
 		table_state.select(Some(new_selection));
 		self.table_state.set(table_state);
 
 		needs_update
+	}
+
+	fn draw_revlog<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		area: Rect,
+	) -> Result<()> {
+		let constraints = [
+			// type of change: (A)dded, (M)odified, (D)eleted
+			Constraint::Length(1),
+			// commit details
+			Constraint::Percentage(100),
+		];
+
+		let now = Local::now();
+
+		let title = self.get_title();
+		let rows = self.get_rows(now);
+
+		let table = Table::new(rows)
+			.widths(&constraints)
+			.column_spacing(1)
+			.highlight_style(self.theme.text(true, true))
+			.block(
+				Block::default()
+					.borders(Borders::ALL)
+					.title(Span::styled(
+						title,
+						self.theme.title(true),
+					))
+					.border_style(self.theme.block(true)),
+			);
+
+		let mut table_state = self.table_state.take();
+
+		f.render_widget(Clear, area);
+		f.render_stateful_widget(table, area, &mut table_state);
+
+		self.table_state.set(table_state);
+		self.current_width.set(area.width.into());
+		self.current_height.set(area.height.into());
+
+		Ok(())
 	}
 }
 
@@ -267,40 +367,25 @@ impl DrawableComponent for FileRevlogComponent {
 		area: Rect,
 	) -> Result<()> {
 		if self.visible {
-			let constraints = [
-				// type of change: (A)dded, (M)odified, (D)eleted
-				Constraint::Length(1),
-				// commit details
-				Constraint::Percentage(100),
-			];
-
-			let now = Local::now();
-
-			let title = self.get_title();
-			let rows = self.get_rows(now);
-
-			let table = Table::new(rows)
-				.widths(&constraints)
-				.column_spacing(1)
-				.highlight_style(self.theme.text(true, true))
-				.block(
-					Block::default()
-						.borders(Borders::ALL)
-						.title(Span::styled(
-							title,
-							self.theme.title(true),
-						))
-						.border_style(self.theme.block(true)),
-				);
-
-			let mut table_state = self.table_state.take();
+			let chunks = Layout::default()
+				.direction(Direction::Horizontal)
+				.constraints(
+					[
+						Constraint::Percentage(60),
+						Constraint::Percentage(40),
+					]
+					.as_ref(),
+				)
+				.split(area);
 
 			f.render_widget(Clear, area);
-			f.render_stateful_widget(table, area, &mut table_state);
 
-			self.table_state.set(table_state);
-			self.current_width.set(area.width.into());
-			self.current_height.set(area.height.into());
+			if self.diff.is_visible() {
+				self.draw_revlog(f, chunks[0])?;
+				self.diff.draw(f, chunks[1])?;
+			} else {
+				self.draw_revlog(f, area)?;
+			}
 		}
 
 		Ok(())
@@ -316,6 +401,10 @@ impl Component for FileRevlogComponent {
 
 					return Ok(EventState::Consumed);
 				} else if key == self.key_config.keys.enter {
+					self.diff.toggle_visible()?;
+					self.update_diff()?;
+					return Ok(EventState::Consumed);
+				} else if key == self.key_config.keys.inspect_commit {
 					self.hide();
 
 					return self.selected_commit().map_or(
@@ -376,6 +465,16 @@ impl Component for FileRevlogComponent {
 			out.push(
 				CommandInfo::new(
 					strings::commands::log_details_toggle(
+						&self.key_config,
+					),
+					true,
+					self.selected_commit().is_some(),
+				)
+				.order(1),
+			);
+			out.push(
+				CommandInfo::new(
+					strings::commands::inspect_commit(
 						&self.key_config,
 					),
 					true,

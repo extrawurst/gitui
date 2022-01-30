@@ -107,6 +107,7 @@ pub struct DiffComponent {
 	selected_hunk: Option<usize>,
 	current_size: Cell<(u16, u16)>,
 	focused: bool,
+	visible: bool,
 	current: Current,
 	scroll: VerticalScroll,
 	queue: Queue,
@@ -126,6 +127,7 @@ impl DiffComponent {
 	) -> Self {
 		Self {
 			focused: false,
+			visible: false,
 			queue,
 			current: Current::default(),
 			pending: false,
@@ -804,5 +806,15 @@ impl Component for DiffComponent {
 	}
 	fn focus(&mut self, focus: bool) {
 		self.focused = focus;
+	}
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
+	fn hide(&mut self) {
+		self.visible = false;
+	}
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+		Ok(())
 	}
 }

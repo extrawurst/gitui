@@ -165,6 +165,7 @@ impl Component for InspectCommitComponent {
 		self.visible = true;
 		self.details.show()?;
 		self.details.focus(true);
+		self.diff.show()?;
 		self.diff.focus(false);
 		self.update()?;
 		Ok(())
