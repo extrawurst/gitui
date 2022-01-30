@@ -103,10 +103,9 @@ impl AsyncLog {
 	///
 	fn head_changed(&self) -> Result<bool> {
 		if let Ok(head) = repo(&self.repo)?.head() {
-			return Ok(head.target()
-				!= self
-					.current_head()?
-					.map(|commit_id| commit_id.into()));
+			return Ok(
+				head.target() != self.current_head()?.map(Into::into)
+			);
 		}
 		Ok(false)
 	}
