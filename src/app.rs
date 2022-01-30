@@ -642,6 +642,7 @@ impl App {
 			self.status_tab.update_diff()?;
 			self.inspect_commit_popup.update_diff()?;
 			self.compare_commits_popup.update_diff()?;
+			self.file_revlog_popup.update_diff()?;
 		}
 		if flags.contains(NeedsUpdate::COMMANDS) {
 			self.update_commands();
