@@ -458,7 +458,7 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 
 ![](assets/binary_diff.png)
 
-- external editor support for commit messages [[@jonstodle](https://github.com/jonstodle)](<[#46](https://github.com/extrawurst/gitui/issues/46)>)
+- external editor support for commit messages [[@jonstodle](https://github.com/jonstodle)]([#46](https://github.com/extrawurst/gitui/issues/46))
 
 ![](assets/vi_support.gif)
 
