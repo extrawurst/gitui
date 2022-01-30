@@ -98,23 +98,6 @@ impl Selection {
 	}
 }
 
-#[derive(PartialEq)]
-enum Visibility {
-	Hidden,
-	Visible,
-	Focused,
-}
-
-impl Visibility {
-	fn is_visible(&self) -> bool {
-		*self != Self::Hidden
-	}
-
-	fn is_focused(&self) -> bool {
-		*self == Self::Focused
-	}
-}
-
 ///
 pub struct DiffComponent {
 	repo: RepoPathRef,
@@ -123,7 +106,7 @@ pub struct DiffComponent {
 	selection: Selection,
 	selected_hunk: Option<usize>,
 	current_size: Cell<(u16, u16)>,
-	visibility: Visibility,
+	focused: bool,
 	current: Current,
 	scroll: VerticalScroll,
 	queue: Queue,
@@ -142,7 +125,7 @@ impl DiffComponent {
 		is_immutable: bool,
 	) -> Self {
 		Self {
-			visibility: Visibility::Hidden,
+			focused: false,
 			queue,
 			current: Current::default(),
 			pending: false,
@@ -740,7 +723,7 @@ impl Component for DiffComponent {
 
 	#[allow(clippy::cognitive_complexity)]
 	fn event(&mut self, ev: Event) -> Result<EventState> {
-		if self.visibility.is_focused() {
+		if self.focused() {
 			if let Event::Key(e) = ev {
 				return if e == self.key_config.keys.move_down {
 					self.move_selection(ScrollType::Down);
@@ -817,23 +800,9 @@ impl Component for DiffComponent {
 	}
 
 	fn focused(&self) -> bool {
-		self.visibility.is_focused()
+		self.focused
 	}
 	fn focus(&mut self, focus: bool) {
-		if focus {
-			self.visibility = Visibility::Focused;
-		} else {
-			self.visibility = Visibility::Visible;
-		}
-	}
-	fn is_visible(&self) -> bool {
-		self.visibility.is_visible()
-	}
-	fn hide(&mut self) {
-		self.visibility = Visibility::Hidden;
-	}
-	fn show(&mut self) -> Result<()> {
-		self.visibility = Visibility::Visible;
-		Ok(())
+		self.focused = focus;
 	}
 }

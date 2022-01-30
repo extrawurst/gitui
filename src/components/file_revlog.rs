@@ -116,6 +116,11 @@ impl FileRevlogComponent {
 	///
 	pub fn any_work_pending(&self) -> bool {
 		self.git_diff.is_pending()
+			|| self
+				.git_log
+				.as_ref()
+				.map(|git_log| git_log.is_pending())
+				.unwrap_or(false)
 	}
 
 	///
@@ -388,12 +393,8 @@ impl DrawableComponent for FileRevlogComponent {
 
 			f.render_widget(Clear, area);
 
-			if self.diff.is_visible() {
-				self.draw_revlog(f, chunks[0]);
-				self.diff.draw(f, chunks[1])?;
-			} else {
-				self.draw_revlog(f, area);
-			}
+			self.draw_revlog(f, chunks[0]);
+			self.diff.draw(f, chunks[1])?;
 		}
 
 		Ok(())
