@@ -111,7 +111,7 @@ impl Visibility {
 	}
 
 	fn is_focused(&self) -> bool {
-		*self != Self::Focused
+		*self == Self::Focused
 	}
 }
 
