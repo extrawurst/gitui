@@ -29,7 +29,6 @@ mod commit_files;
 mod diff;
 mod error;
 mod fetch_job;
-pub mod file_log;
 mod progress;
 mod pull;
 mod push;

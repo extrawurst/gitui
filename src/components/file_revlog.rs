@@ -12,8 +12,6 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	asyncjob::AsyncSingleJob,
-	file_log::AsyncFileLogJob,
 	sync::{
 		diff::DiffOptions, diff_contains_file, get_commits_info,
 		CommitId, RepoPathRef,
@@ -37,7 +35,6 @@ const SLICE_SIZE: usize = 1200;
 ///
 pub struct FileRevlogComponent {
 	git_log: Option<AsyncLog>,
-	async_file_log: AsyncSingleJob<AsyncFileLogJob>,
 	git_diff: AsyncDiff,
 	theme: SharedTheme,
 	queue: Queue,
@@ -75,7 +72,6 @@ impl FileRevlogComponent {
 				true,
 			),
 			git_log: None,
-			async_file_log: AsyncSingleJob::new(sender.clone()),
 			git_diff: AsyncDiff::new(
 				repo_path.borrow().clone(),
 				sender,
@@ -119,7 +115,7 @@ impl FileRevlogComponent {
 
 	///
 	pub fn any_work_pending(&self) -> bool {
-		self.async_file_log.is_pending() || self.git_diff.is_pending()
+		self.git_diff.is_pending()
 	}
 
 	///
