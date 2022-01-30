@@ -368,7 +368,7 @@ impl FileTreeItems {
 	}
 
 	fn unindent(
-		items: &mut Vec<FileTreeItem>,
+		items: &mut [FileTreeItem],
 		prefix: &str,
 		start: usize,
 	) {

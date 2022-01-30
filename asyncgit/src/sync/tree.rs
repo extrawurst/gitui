@@ -42,7 +42,7 @@ pub fn tree_files(
 	Ok(files)
 }
 
-fn sort_file_list(files: &mut Vec<TreeFile>) {
+fn sort_file_list(files: &mut [TreeFile]) {
 	files.sort_by(|a, b| path_cmp(&a.path, &b.path));
 }
 
@@ -163,7 +163,7 @@ mod tests {
 				filemode: 0,
 				id: Oid::zero(),
 			})
-			.collect();
+			.collect::<Vec<_>>();
 
 		sort_file_list(&mut list);
 
@@ -188,7 +188,7 @@ mod tests {
 				filemode: 0,
 				id: Oid::zero(),
 			})
-			.collect();
+			.collect::<Vec<_>>();
 
 		sort_file_list(&mut list);
 
@@ -212,7 +212,7 @@ mod tests {
 				filemode: 0,
 				id: Oid::zero(),
 			})
-			.collect();
+			.collect::<Vec<_>>();
 
 		sort_file_list(&mut list);
 

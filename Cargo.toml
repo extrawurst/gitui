@@ -21,7 +21,7 @@ keywords = [
 
 [dependencies]
 anyhow = "1.0"
-asyncgit = { path = "./asyncgit", version = "0.20", default-features = false }
+asyncgit = { path = "./asyncgit", version = "0.21", default-features = false }
 backtrace = "0.3"
 bitflags = "1.3"
 bugreport = "0.4"
@@ -32,7 +32,7 @@ crossbeam-channel = "0.5"
 crossterm = { version = "0.20", features = [ "serde" ] }
 dirs-next = "2.0"
 easy-cast = "0.4"
-filetreelist = { path = "./filetreelist", version = "0.4" }
+filetreelist = { path = "./filetreelist", version = "0.5" }
 fuzzy-matcher = "0.3"
 gh-emoji = { version = "1.0", optional = true }
 itertools = "0.10"
