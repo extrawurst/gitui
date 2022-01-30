@@ -78,6 +78,8 @@ pub enum AsyncGitNotification {
 	///
 	Log,
 	///
+	FileLog,
+	///
 	CommitFiles,
 	///
 	Tags,

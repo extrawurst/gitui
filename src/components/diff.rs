@@ -635,15 +635,15 @@ impl DrawableComponent for DiffComponent {
 				Block::default()
 					.title(Span::styled(
 						title.as_str(),
-						self.theme.title(self.focused),
+						self.theme.title(self.focused()),
 					))
 					.borders(Borders::ALL)
-					.border_style(self.theme.block(self.focused)),
+					.border_style(self.theme.block(self.focused())),
 			),
 			r,
 		);
 
-		if self.focused {
+		if self.focused() {
 			self.scroll.draw(f, r, &self.theme);
 		}
 
@@ -660,14 +660,14 @@ impl Component for DiffComponent {
 		out.push(CommandInfo::new(
 			strings::commands::scroll(&self.key_config),
 			self.can_scroll(),
-			self.focused,
+			self.focused(),
 		));
 
 		out.push(
 			CommandInfo::new(
 				strings::commands::diff_home_end(&self.key_config),
 				self.can_scroll(),
-				self.focused,
+				self.focused(),
 			)
 			.hidden(),
 		);
@@ -676,17 +676,17 @@ impl Component for DiffComponent {
 			out.push(CommandInfo::new(
 				strings::commands::diff_hunk_remove(&self.key_config),
 				self.selected_hunk.is_some(),
-				self.focused && self.is_stage(),
+				self.focused() && self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_hunk_add(&self.key_config),
 				self.selected_hunk.is_some(),
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_hunk_revert(&self.key_config),
 				self.selected_hunk.is_some(),
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_lines_revert(
@@ -694,13 +694,13 @@ impl Component for DiffComponent {
 				),
 				//TODO: only if any modifications are selected
 				true,
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_lines_stage(&self.key_config),
 				//TODO: only if any modifications are selected
 				true,
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_lines_unstage(
@@ -708,14 +708,14 @@ impl Component for DiffComponent {
 				),
 				//TODO: only if any modifications are selected
 				true,
-				self.focused && self.is_stage(),
+				self.focused() && self.is_stage(),
 			));
 		}
 
 		out.push(CommandInfo::new(
 			strings::commands::copy(&self.key_config),
 			true,
-			self.focused,
+			self.focused(),
 		));
 
 		CommandBlocking::PassingOn
@@ -723,7 +723,7 @@ impl Component for DiffComponent {
 
 	#[allow(clippy::cognitive_complexity)]
 	fn event(&mut self, ev: Event) -> Result<EventState> {
-		if self.focused {
+		if self.focused() {
 			if let Event::Key(e) = ev {
 				return if e == self.key_config.keys.move_down {
 					self.move_selection(ScrollType::Down);
