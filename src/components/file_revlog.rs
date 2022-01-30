@@ -119,8 +119,7 @@ impl FileRevlogComponent {
 			|| self
 				.git_log
 				.as_ref()
-				.map(|git_log| git_log.is_pending())
-				.unwrap_or(false)
+				.map_or(false, AsyncLog::is_pending)
 	}
 
 	///
