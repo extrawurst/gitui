@@ -8,7 +8,7 @@ use crate::{
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
-	ui::style::SharedTheme,
+	ui::{draw_scrollbar, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -48,6 +48,7 @@ pub struct FileRevlogComponent {
 	file_path: Option<String>,
 	table_state: std::cell::Cell<TableState>,
 	items: ItemBatch,
+	count_total: usize,
 	key_config: SharedKeyConfig,
 	current_width: std::cell::Cell<usize>,
 	current_height: std::cell::Cell<usize>,
@@ -84,6 +85,7 @@ impl FileRevlogComponent {
 			file_path: None,
 			table_state: std::cell::Cell::new(TableState::default()),
 			items: ItemBatch::default(),
+			count_total: 0,
 			key_config,
 			current_width: std::cell::Cell::new(0),
 			current_height: std::cell::Cell::new(0),
@@ -191,7 +193,7 @@ impl FileRevlogComponent {
 	}
 
 	fn fetch_commits(&mut self) -> Result<()> {
-		if let Some(git_log) = &self.git_log {
+		if let Some(git_log) = &mut self.git_log {
 			let table_state = self.table_state.take();
 
 			let start = table_state.selected().unwrap_or(0);
@@ -207,6 +209,7 @@ impl FileRevlogComponent {
 			}
 
 			self.table_state.set(table_state);
+			self.count_total = git_log.count()?;
 		}
 
 		Ok(())
@@ -351,6 +354,14 @@ impl FileRevlogComponent {
 
 		f.render_widget(Clear, area);
 		f.render_stateful_widget(table, area, &mut table_state);
+
+		draw_scrollbar(
+			f,
+			area,
+			&self.theme,
+			self.count_total,
+			table_state.selected().unwrap_or(0),
+		);
 
 		self.table_state.set(table_state);
 		self.current_width.set(area.width.into());
