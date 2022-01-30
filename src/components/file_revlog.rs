@@ -2,8 +2,8 @@ use super::utils::logitems::ItemBatch;
 use super::visibility_blocking;
 use crate::{
 	components::{
-		CommandBlocking, CommandInfo, Component, DiffComponent,
-		DrawableComponent, EventState, ScrollType,
+		event_pump, CommandBlocking, CommandInfo, Component,
+		DiffComponent, DrawableComponent, EventState, ScrollType,
 	},
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
@@ -90,6 +90,10 @@ impl FileRevlogComponent {
 			current_width: std::cell::Cell::new(0),
 			current_height: std::cell::Cell::new(0),
 		}
+	}
+
+	fn components_mut(&mut self) -> Vec<&mut dyn Component> {
+		vec![&mut self.diff]
 	}
 
 	///
@@ -229,6 +233,10 @@ impl FileRevlogComponent {
 		self.table_state.set(table_state);
 
 		commit_id
+	}
+
+	fn can_focus_diff(&self) -> bool {
+		self.selected_commit().is_some()
 	}
 
 	fn get_title(&self) -> String {
@@ -372,12 +380,18 @@ impl DrawableComponent for FileRevlogComponent {
 		area: Rect,
 	) -> Result<()> {
 		if self.visible {
+			let percentages = if self.diff.focused() {
+				(30, 70)
+			} else {
+				(50, 50)
+			};
+
 			let chunks = Layout::default()
 				.direction(Direction::Horizontal)
 				.constraints(
 					[
-						Constraint::Percentage(60),
-						Constraint::Percentage(40),
+						Constraint::Percentage(percentages.0),
+						Constraint::Percentage(percentages.1),
 					]
 					.as_ref(),
 				)
@@ -400,10 +414,31 @@ impl DrawableComponent for FileRevlogComponent {
 impl Component for FileRevlogComponent {
 	fn event(&mut self, event: Event) -> Result<EventState> {
 		if self.is_visible() {
+			if event_pump(
+				event,
+				self.components_mut().as_mut_slice(),
+			)?
+			.is_consumed()
+			{
+				return Ok(EventState::Consumed);
+			}
+
 			if let Event::Key(key) = event {
 				if key == self.key_config.keys.exit_popup {
 					self.hide();
 
+					return Ok(EventState::Consumed);
+				} else if key == self.key_config.keys.focus_right
+					&& self.can_focus_diff()
+				{
+					self.diff.focus(true);
+					return Ok(EventState::Consumed);
+				} else if key == self.key_config.keys.focus_left {
+					if self.diff.focused() {
+						self.diff.focus(false);
+					} else {
+						self.hide();
+					}
 					return Ok(EventState::Consumed);
 				} else if key == self.key_config.keys.enter {
 					self.diff.toggle_visible()?;
@@ -477,6 +512,18 @@ impl Component for FileRevlogComponent {
 				)
 				.order(1),
 			);
+
+			out.push(CommandInfo::new(
+				strings::commands::diff_focus_right(&self.key_config),
+				self.can_focus_diff(),
+				!self.diff.focused(),
+			));
+			out.push(CommandInfo::new(
+				strings::commands::diff_focus_left(&self.key_config),
+				true,
+				self.diff.focused(),
+			));
+
 			out.push(
 				CommandInfo::new(
 					strings::commands::inspect_commit(
