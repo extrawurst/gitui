@@ -248,8 +248,6 @@ impl FileRevlogComponent {
 		self.items
 			.iter()
 			.map(|entry| {
-				// let status = self.get_file_status(entry.id);
-
 				let spans = Spans::from(vec![
 					Span::styled(
 						entry.hash_short.to_string(),
@@ -271,11 +269,6 @@ impl FileRevlogComponent {
 				text.extend(Text::raw(entry.msg.to_string()));
 
 				let cells = vec![Cell::from(""), Cell::from(text)];
-
-				// let cells = vec![
-				// 	Cell::from(status.to_string()),
-				// 	Cell::from(text),
-				// ];
 
 				Row::new(cells).height(2)
 			})
