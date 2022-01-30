@@ -430,10 +430,6 @@ impl Component for FileRevlogComponent {
 					}
 					return Ok(EventState::Consumed);
 				} else if key == self.key_config.keys.enter {
-					self.diff.toggle_visible()?;
-					self.update_diff()?;
-					return Ok(EventState::Consumed);
-				} else if key == self.key_config.keys.inspect_commit {
 					self.hide();
 
 					return self.selected_commit().map_or(
@@ -514,17 +510,6 @@ impl Component for FileRevlogComponent {
 				true,
 				self.diff.focused(),
 			));
-
-			out.push(
-				CommandInfo::new(
-					strings::commands::inspect_commit(
-						&self.key_config,
-					),
-					true,
-					self.selected_commit().is_some(),
-				)
-				.order(1),
-			);
 		}
 
 		visibility_blocking(self)

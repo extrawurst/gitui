@@ -1072,18 +1072,6 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
-	pub fn inspect_commit(
-		key_config: &SharedKeyConfig,
-	) -> CommandText {
-		CommandText::new(
-			format!(
-				"Inspect commit [{}]",
-				key_config.get_hint(key_config.keys.inspect_commit),
-			),
-			"inspect selected commit",
-			CMD_GROUP_LOG,
-		)
-	}
 	pub fn log_tag_commit(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
