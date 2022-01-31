@@ -293,6 +293,8 @@ impl FileRevlogComponent {
 
 		let old_selection = table_state.selected().unwrap_or(0);
 		let max_selection = self.get_max_selection();
+		let height_in_items =
+			self.current_height.get().saturating_div(2);
 
 		let new_selection = match scroll_type {
 			ScrollType::Up => old_selection.saturating_sub(1),
@@ -301,13 +303,10 @@ impl FileRevlogComponent {
 			}
 			ScrollType::Home => 0,
 			ScrollType::End => max_selection,
-			ScrollType::PageUp => old_selection.saturating_sub(
-				self.current_height.get().saturating_sub(2),
-			),
+			ScrollType::PageUp => old_selection
+				.saturating_sub(height_in_items.saturating_sub(2)),
 			ScrollType::PageDown => old_selection
-				.saturating_add(
-					self.current_height.get().saturating_sub(2),
-				)
+				.saturating_add(height_in_items.saturating_sub(2))
 				.min(max_selection),
 		};
 
