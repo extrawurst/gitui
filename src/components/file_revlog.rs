@@ -245,10 +245,20 @@ impl FileRevlogComponent {
 	}
 
 	fn get_title(&self) -> String {
+		let selected = {
+			let table = self.table_state.take();
+			let res = table.selected().unwrap_or_default();
+			self.table_state.set(table);
+			res
+		};
+		let revisions = self.get_max_selection();
+
 		self.file_path.as_ref().map_or(
 			"<no history available>".into(),
 			|file_path| {
-				strings::file_log_title(&self.key_config, file_path)
+				strings::file_log_title(
+					file_path, selected, revisions,
+				)
 			},
 		)
 	}
@@ -284,8 +294,8 @@ impl FileRevlogComponent {
 			.collect()
 	}
 
-	fn get_max_selection(&mut self) -> usize {
-		self.git_log.as_mut().map_or(0, |log| {
+	fn get_max_selection(&self) -> usize {
+		self.git_log.as_ref().map_or(0, |log| {
 			log.count().unwrap_or(0).saturating_sub(1)
 		})
 	}
