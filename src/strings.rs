@@ -270,10 +270,14 @@ pub fn log_title(_key_config: &SharedKeyConfig) -> String {
 	"Commit".to_string()
 }
 pub fn file_log_title(
-	_key_config: &SharedKeyConfig,
 	file_path: &str,
+	selected: usize,
+	revisions: usize,
 ) -> String {
-	format!("Commits for file {}", file_path)
+	format!(
+		"Revisions of '{}' ({}/{})",
+		file_path, selected, revisions
+	)
 }
 pub fn blame_title(_key_config: &SharedKeyConfig) -> String {
 	"Blame".to_string()
@@ -1057,7 +1061,7 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.blame),
 			),
 			"open blame view of selected file",
-			CMD_GROUP_LOG,
+			CMD_GROUP_GENERAL,
 		)
 	}
 	pub fn open_file_history(

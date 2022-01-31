@@ -1,5 +1,5 @@
-use super::utils::logitems::ItemBatch;
 use super::visibility_blocking;
+use super::{utils::logitems::ItemBatch, SharedOptions};
 use crate::{
 	components::{
 		event_pump, CommandBlocking, CommandInfo, Component,
@@ -13,8 +13,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	sync::{
-		diff::DiffOptions, diff_contains_file, get_commits_info,
-		CommitId, RepoPathRef,
+		diff_contains_file, get_commits_info, CommitId, RepoPathRef,
 	},
 	AsyncDiff, AsyncGitNotification, AsyncLog, DiffParams, DiffType,
 	FetchStatus,
@@ -47,6 +46,7 @@ pub struct FileRevlogComponent {
 	items: ItemBatch,
 	count_total: usize,
 	key_config: SharedKeyConfig,
+	options: SharedOptions,
 	current_width: std::cell::Cell<usize>,
 	current_height: std::cell::Cell<usize>,
 }
@@ -59,6 +59,7 @@ impl FileRevlogComponent {
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			theme: theme.clone(),
@@ -85,6 +86,7 @@ impl FileRevlogComponent {
 			key_config,
 			current_width: std::cell::Cell::new(0),
 			current_height: std::cell::Cell::new(0),
+			options,
 		}
 	}
 
@@ -169,7 +171,7 @@ impl FileRevlogComponent {
 					let diff_params = DiffParams {
 						path: file_path.clone(),
 						diff_type: DiffType::Commit(commit_id),
-						options: DiffOptions::default(),
+						options: self.options.borrow().diff,
 					};
 
 					if let Some((params, last)) =
@@ -243,10 +245,20 @@ impl FileRevlogComponent {
 	}
 
 	fn get_title(&self) -> String {
+		let selected = {
+			let table = self.table_state.take();
+			let res = table.selected().unwrap_or_default();
+			self.table_state.set(table);
+			res
+		};
+		let revisions = self.get_max_selection();
+
 		self.file_path.as_ref().map_or(
 			"<no history available>".into(),
 			|file_path| {
-				strings::file_log_title(&self.key_config, file_path)
+				strings::file_log_title(
+					file_path, selected, revisions,
+				)
 			},
 		)
 	}
@@ -282,8 +294,8 @@ impl FileRevlogComponent {
 			.collect()
 	}
 
-	fn get_max_selection(&mut self) -> usize {
-		self.git_log.as_mut().map_or(0, |log| {
+	fn get_max_selection(&self) -> usize {
+		self.git_log.as_ref().map_or(0, |log| {
 			log.count().unwrap_or(0).saturating_sub(1)
 		})
 	}
@@ -293,6 +305,7 @@ impl FileRevlogComponent {
 
 		let old_selection = table_state.selected().unwrap_or(0);
 		let max_selection = self.get_max_selection();
+		let height_in_items = self.current_height.get() / 2;
 
 		let new_selection = match scroll_type {
 			ScrollType::Up => old_selection.saturating_sub(1),
@@ -301,13 +314,10 @@ impl FileRevlogComponent {
 			}
 			ScrollType::Home => 0,
 			ScrollType::End => max_selection,
-			ScrollType::PageUp => old_selection.saturating_sub(
-				self.current_height.get().saturating_sub(2),
-			),
+			ScrollType::PageUp => old_selection
+				.saturating_sub(height_in_items.saturating_sub(2)),
 			ScrollType::PageDown => old_selection
-				.saturating_add(
-					self.current_height.get().saturating_sub(2),
-				)
+				.saturating_add(height_in_items.saturating_sub(2))
 				.min(max_selection),
 		};
 
@@ -418,53 +428,46 @@ impl Component for FileRevlogComponent {
 			if let Event::Key(key) = event {
 				if key == self.key_config.keys.exit_popup {
 					self.hide();
-
-					return Ok(EventState::Consumed);
 				} else if key == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
 					self.diff.focus(true);
-					return Ok(EventState::Consumed);
 				} else if key == self.key_config.keys.focus_left {
 					if self.diff.focused() {
 						self.diff.focus(false);
-					} else {
-						self.hide();
 					}
-					return Ok(EventState::Consumed);
 				} else if key == self.key_config.keys.enter {
-					self.hide();
-
-					return self.selected_commit().map_or(
-						Ok(EventState::NotConsumed),
-						|id| {
-							self.queue.push(
-								InternalEvent::InspectCommit(
-									id, None,
-								),
-							);
-							Ok(EventState::Consumed)
-						},
-					);
+					if let Some(id) = self.selected_commit() {
+						self.hide();
+						self.queue.push(
+							InternalEvent::InspectCommit(id, None),
+						);
+					};
+				} else if key == self.key_config.keys.blame {
+					if let Some(file) = self.file_path.clone() {
+						self.hide();
+						self.queue.push(InternalEvent::BlameFile(
+							file,
+							self.selected_commit(),
+						));
+					}
 				} else if key == self.key_config.keys.move_up {
-					self.move_selection(ScrollType::Up)
+					self.move_selection(ScrollType::Up);
 				} else if key == self.key_config.keys.move_down {
-					self.move_selection(ScrollType::Down)
+					self.move_selection(ScrollType::Down);
 				} else if key == self.key_config.keys.shift_up
 					|| key == self.key_config.keys.home
 				{
-					self.move_selection(ScrollType::Home)
+					self.move_selection(ScrollType::Home);
 				} else if key == self.key_config.keys.shift_down
 					|| key == self.key_config.keys.end
 				{
-					self.move_selection(ScrollType::End)
+					self.move_selection(ScrollType::End);
 				} else if key == self.key_config.keys.page_up {
-					self.move_selection(ScrollType::PageUp)
+					self.move_selection(ScrollType::PageUp);
 				} else if key == self.key_config.keys.page_down {
-					self.move_selection(ScrollType::PageDown)
-				} else {
-					false
-				};
+					self.move_selection(ScrollType::PageDown);
+				}
 			}
 
 			return Ok(EventState::Consumed);
@@ -492,6 +495,14 @@ impl Component for FileRevlogComponent {
 					strings::commands::log_details_toggle(
 						&self.key_config,
 					),
+					true,
+					self.selected_commit().is_some(),
+				)
+				.order(1),
+			);
+			out.push(
+				CommandInfo::new(
+					strings::commands::blame_file(&self.key_config),
 					true,
 					self.selected_commit().is_some(),
 				)

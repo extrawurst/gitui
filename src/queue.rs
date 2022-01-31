@@ -79,7 +79,7 @@ pub enum InternalEvent {
 	///
 	Tags,
 	///
-	BlameFile(String),
+	BlameFile(String, Option<CommitId>),
 	///
 	OpenFileRevlog(String),
 	///

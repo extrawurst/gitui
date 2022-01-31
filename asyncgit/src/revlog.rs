@@ -59,7 +59,7 @@ impl AsyncLog {
 	}
 
 	///
-	pub fn count(&mut self) -> Result<usize> {
+	pub fn count(&self) -> Result<usize> {
 		Ok(self.current.lock()?.len())
 	}
 

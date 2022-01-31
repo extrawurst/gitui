@@ -418,8 +418,10 @@ impl Component for StatusTreeComponent {
 				return if e == self.key_config.keys.blame {
 					match (&self.queue, self.selection_file()) {
 						(Some(queue), Some(status_item)) => {
+							//TODO: use correct revision here
 							queue.push(InternalEvent::BlameFile(
 								status_item.path,
+								None,
 							));
 
 							Ok(EventState::Consumed)

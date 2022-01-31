@@ -133,7 +133,8 @@ impl RevisionFilesComponent {
 
 	fn blame(&self) -> bool {
 		self.selected_file_path().map_or(false, |path| {
-			self.queue.push(InternalEvent::BlameFile(path));
+			self.queue
+				.push(InternalEvent::BlameFile(path, self.revision));
 
 			true
 		})

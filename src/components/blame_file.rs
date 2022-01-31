@@ -33,7 +33,7 @@ pub struct BlameFileComponent {
 	queue: Queue,
 	async_blame: AsyncBlame,
 	visible: bool,
-	file_path: Option<String>,
+	params: Option<BlameParams>,
 	file_blame: Option<FileBlame>,
 	table_state: std::cell::Cell<TableState>,
 	key_config: SharedKeyConfig,
@@ -175,6 +175,16 @@ impl Component for BlameFileComponent {
 				)
 				.order(1),
 			);
+			out.push(
+				CommandInfo::new(
+					strings::commands::open_file_history(
+						&self.key_config,
+					),
+					true,
+					self.file_blame.is_some(),
+				)
+				.order(1),
+			);
 		}
 
 		visibility_blocking(self)
@@ -205,19 +215,23 @@ impl Component for BlameFileComponent {
 				} else if key == self.key_config.keys.page_up {
 					self.move_selection(ScrollType::PageUp);
 				} else if key == self.key_config.keys.focus_right {
-					self.hide();
-
-					return self.selected_commit().map_or(
-						Ok(EventState::NotConsumed),
-						|id| {
-							self.queue.push(
-								InternalEvent::InspectCommit(
-									id, None,
-								),
-							);
-							Ok(EventState::Consumed)
-						},
-					);
+					if let Some(id) = self.selected_commit() {
+						self.hide();
+						self.queue.push(
+							InternalEvent::InspectCommit(id, None),
+						);
+					}
+				} else if key == self.key_config.keys.file_history {
+					if let Some(filepath) = self
+						.params
+						.as_ref()
+						.map(|p| p.file_path.clone())
+					{
+						self.hide();
+						self.queue.push(
+							InternalEvent::OpenFileRevlog(filepath),
+						);
+					}
 				}
 
 				return Ok(EventState::Consumed);
@@ -261,7 +275,7 @@ impl BlameFileComponent {
 			),
 			queue: queue.clone(),
 			visible: false,
-			file_path: None,
+			params: None,
 			file_blame: None,
 			table_state: std::cell::Cell::new(TableState::default()),
 			key_config,
@@ -270,8 +284,15 @@ impl BlameFileComponent {
 	}
 
 	///
-	pub fn open(&mut self, file_path: &str) -> Result<()> {
-		self.file_path = Some(file_path.into());
+	pub fn open(
+		&mut self,
+		file_path: &str,
+		commit_id: Option<CommitId>,
+	) -> Result<()> {
+		self.params = Some(BlameParams {
+			file_path: file_path.into(),
+			commit_id,
+		});
 		self.file_blame = None;
 		self.table_state.get_mut().select(Some(0));
 		self.show()?;
@@ -300,24 +321,20 @@ impl BlameFileComponent {
 
 	fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			if let Some(file_path) = &self.file_path {
-				let blame_params = BlameParams {
-					file_path: file_path.into(),
-				};
-
+			if let Some(params) = &self.params {
 				if let Some((
 					previous_blame_params,
 					last_file_blame,
 				)) = self.async_blame.last()?
 				{
-					if previous_blame_params == blame_params {
+					if previous_blame_params == *params {
 						self.file_blame = Some(last_file_blame);
 
 						return Ok(());
 					}
 				}
 
-				self.async_blame.request(blame_params)?;
+				self.async_blame.request(params.clone())?;
 			}
 		}
 
@@ -328,27 +345,27 @@ impl BlameFileComponent {
 	fn get_title(&self) -> String {
 		match (
 			self.any_work_pending(),
-			self.file_path.as_ref(),
+			self.params.as_ref(),
 			self.file_blame.as_ref(),
 		) {
-			(true, Some(file_path), _) => {
+			(true, Some(params), _) => {
 				format!(
 					"{} -- {} -- <calculating.. (who is to blame?)>",
-					self.title, file_path
+					self.title, params.file_path
 				)
 			}
-			(false, Some(file_path), Some(file_blame)) => {
+			(false, Some(params), Some(file_blame)) => {
 				format!(
 					"{} -- {} -- {}",
 					self.title,
-					file_path,
+					params.file_path,
 					file_blame.commit_id.get_short_string()
 				)
 			}
-			(false, Some(file_path), None) => {
+			(false, Some(params), None) => {
 				format!(
 					"{} -- {} -- <no blame available>",
-					self.title, file_path
+					self.title, params.file_path
 				)
 			}
 			_ => format!("{} -- <no blame available>", self.title),

@@ -175,11 +175,13 @@ impl AsyncDiff {
 				repo_path,
 				id,
 				params.path.clone(),
+				Some(params.options),
 			)?,
 			DiffType::Commits(ids) => sync::diff::get_diff_commits(
 				repo_path,
 				ids,
 				params.path.clone(),
+				Some(params.options),
 			)?,
 		};
 

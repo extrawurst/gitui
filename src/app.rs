@@ -129,6 +129,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			revision_files_popup: RevisionFilesPopup::new(
 				repo.clone(),
@@ -714,8 +715,8 @@ impl App {
 			InternalEvent::TagCommit(id) => {
 				self.tag_commit_popup.open(id)?;
 			}
-			InternalEvent::BlameFile(path) => {
-				self.blame_file_popup.open(&path)?;
+			InternalEvent::BlameFile(path, commit_id) => {
+				self.blame_file_popup.open(&path, commit_id)?;
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
