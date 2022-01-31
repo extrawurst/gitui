@@ -49,6 +49,7 @@ pub fn diff_contains_file(
 				repo,
 				*commit_id,
 				Some(file_path.clone()),
+				None,
 			)?;
 
 			let contains_file = diff.deltas().len() > 0;

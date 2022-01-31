@@ -1,5 +1,5 @@
-use super::utils::logitems::ItemBatch;
 use super::visibility_blocking;
+use super::{utils::logitems::ItemBatch, SharedOptions};
 use crate::{
 	components::{
 		event_pump, CommandBlocking, CommandInfo, Component,
@@ -13,8 +13,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	sync::{
-		diff::DiffOptions, diff_contains_file, get_commits_info,
-		CommitId, RepoPathRef,
+		diff_contains_file, get_commits_info, CommitId, RepoPathRef,
 	},
 	AsyncDiff, AsyncGitNotification, AsyncLog, DiffParams, DiffType,
 	FetchStatus,
@@ -47,6 +46,7 @@ pub struct FileRevlogComponent {
 	items: ItemBatch,
 	count_total: usize,
 	key_config: SharedKeyConfig,
+	options: SharedOptions,
 	current_width: std::cell::Cell<usize>,
 	current_height: std::cell::Cell<usize>,
 }
@@ -59,6 +59,7 @@ impl FileRevlogComponent {
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			theme: theme.clone(),
@@ -85,6 +86,7 @@ impl FileRevlogComponent {
 			key_config,
 			current_width: std::cell::Cell::new(0),
 			current_height: std::cell::Cell::new(0),
+			options,
 		}
 	}
 
@@ -169,7 +171,7 @@ impl FileRevlogComponent {
 					let diff_params = DiffParams {
 						path: file_path.clone(),
 						diff_type: DiffType::Commit(commit_id),
-						options: DiffOptions::default(),
+						options: self.options.borrow().diff,
 					};
 
 					if let Some((params, last)) =

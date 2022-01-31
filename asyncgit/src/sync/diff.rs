@@ -214,12 +214,14 @@ pub fn get_diff_commit(
 	repo_path: &RepoPath,
 	id: CommitId,
 	p: String,
+	options: Option<DiffOptions>,
 ) -> Result<FileDiff> {
 	scope_time!("get_diff_commit");
 
 	let repo = repo(repo_path)?;
 	let work_dir = work_dir(&repo)?;
-	let diff = get_commit_diff(repo_path, &repo, id, Some(p))?;
+	let diff =
+		get_commit_diff(repo_path, &repo, id, Some(p), options)?;
 
 	raw_diff_to_file_diff(&diff, work_dir)
 }
@@ -229,13 +231,18 @@ pub fn get_diff_commits(
 	repo_path: &RepoPath,
 	ids: (CommitId, CommitId),
 	p: String,
+	options: Option<DiffOptions>,
 ) -> Result<FileDiff> {
 	scope_time!("get_diff_commits");
 
 	let repo = repo(repo_path)?;
 	let work_dir = work_dir(&repo)?;
-	let diff =
-		get_compare_commits_diff(&repo, (ids.0, ids.1), Some(p))?;
+	let diff = get_compare_commits_diff(
+		&repo,
+		(ids.0, ids.1),
+		Some(p),
+		options,
+	)?;
 
 	raw_diff_to_file_diff(&diff, work_dir)
 }
@@ -649,7 +656,8 @@ mod tests {
 		let id = commit(repo_path, "").unwrap();
 
 		let diff =
-			get_diff_commit(repo_path, id, String::new()).unwrap();
+			get_diff_commit(repo_path, id, String::new(), None)
+				.unwrap();
 
 		dbg!(&diff);
 		assert_eq!(diff.sizes, (1, 2));

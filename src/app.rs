@@ -129,6 +129,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			revision_files_popup: RevisionFilesPopup::new(
 				repo.clone(),
