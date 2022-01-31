@@ -295,8 +295,7 @@ impl FileRevlogComponent {
 
 		let old_selection = table_state.selected().unwrap_or(0);
 		let max_selection = self.get_max_selection();
-		let height_in_items =
-			self.current_height.get().saturating_div(2);
+		let height_in_items = self.current_height.get() / 2;
 
 		let new_selection = match scroll_type {
 			ScrollType::Up => old_selection.saturating_sub(1),
