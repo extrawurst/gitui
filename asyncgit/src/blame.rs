@@ -1,7 +1,7 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self, FileBlame, RepoPath},
+	sync::{self, CommitId, FileBlame, RepoPath},
 	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
@@ -18,6 +18,8 @@ use std::{
 pub struct BlameParams {
 	/// path to the file to blame
 	pub file_path: String,
+	/// blame at a specific revision
+	pub commit_id: Option<CommitId>,
 }
 
 struct Request<R, A>(R, Option<A>);
@@ -145,8 +147,11 @@ impl AsyncBlame {
 		arc_current: &Arc<Mutex<Request<u64, FileBlame>>>,
 		hash: u64,
 	) -> Result<bool> {
-		let file_blame =
-			sync::blame::blame_file(repo_path, &params.file_path)?;
+		let file_blame = sync::blame::blame_file(
+			repo_path,
+			&params.file_path,
+			params.commit_id,
+		)?;
 
 		let mut notify = false;
 		{

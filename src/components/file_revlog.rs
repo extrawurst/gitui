@@ -437,13 +437,20 @@ impl Component for FileRevlogComponent {
 						self.diff.focus(false);
 					}
 				} else if key == self.key_config.keys.enter {
-					self.hide();
-
 					if let Some(id) = self.selected_commit() {
+						self.hide();
 						self.queue.push(
 							InternalEvent::InspectCommit(id, None),
 						);
 					};
+				} else if key == self.key_config.keys.blame {
+					if let Some(file) = self.file_path.clone() {
+						self.hide();
+						self.queue.push(InternalEvent::BlameFile(
+							file,
+							self.selected_commit(),
+						));
+					}
 				} else if key == self.key_config.keys.move_up {
 					self.move_selection(ScrollType::Up);
 				} else if key == self.key_config.keys.move_down {
