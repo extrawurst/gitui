@@ -418,53 +418,39 @@ impl Component for FileRevlogComponent {
 			if let Event::Key(key) = event {
 				if key == self.key_config.keys.exit_popup {
 					self.hide();
-
-					return Ok(EventState::Consumed);
 				} else if key == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
 					self.diff.focus(true);
-					return Ok(EventState::Consumed);
 				} else if key == self.key_config.keys.focus_left {
 					if self.diff.focused() {
 						self.diff.focus(false);
-					} else {
-						self.hide();
 					}
-					return Ok(EventState::Consumed);
 				} else if key == self.key_config.keys.enter {
 					self.hide();
 
-					return self.selected_commit().map_or(
-						Ok(EventState::NotConsumed),
-						|id| {
-							self.queue.push(
-								InternalEvent::InspectCommit(
-									id, None,
-								),
-							);
-							Ok(EventState::Consumed)
-						},
-					);
+					if let Some(id) = self.selected_commit() {
+						self.queue.push(
+							InternalEvent::InspectCommit(id, None),
+						);
+					};
 				} else if key == self.key_config.keys.move_up {
-					self.move_selection(ScrollType::Up)
+					self.move_selection(ScrollType::Up);
 				} else if key == self.key_config.keys.move_down {
-					self.move_selection(ScrollType::Down)
+					self.move_selection(ScrollType::Down);
 				} else if key == self.key_config.keys.shift_up
 					|| key == self.key_config.keys.home
 				{
-					self.move_selection(ScrollType::Home)
+					self.move_selection(ScrollType::Home);
 				} else if key == self.key_config.keys.shift_down
 					|| key == self.key_config.keys.end
 				{
-					self.move_selection(ScrollType::End)
+					self.move_selection(ScrollType::End);
 				} else if key == self.key_config.keys.page_up {
-					self.move_selection(ScrollType::PageUp)
+					self.move_selection(ScrollType::PageUp);
 				} else if key == self.key_config.keys.page_down {
-					self.move_selection(ScrollType::PageDown)
-				} else {
-					false
-				};
+					self.move_selection(ScrollType::PageDown);
+				}
 			}
 
 			return Ok(EventState::Consumed);
