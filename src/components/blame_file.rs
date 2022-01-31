@@ -6,6 +6,7 @@ use crate::{
 	components::{utils::string_width_align, ScrollType},
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
+	string_utils::tabs_to_spaces,
 	strings,
 	ui::{self, style::SharedTheme},
 };
@@ -415,7 +416,7 @@ impl BlameFileComponent {
 			.style(self.theme.text(true, false)),
 		);
 		cells.push(
-			Cell::from(String::from(line))
+			Cell::from(tabs_to_spaces(String::from(line)))
 				.style(self.theme.text(true, false)),
 		);
 
