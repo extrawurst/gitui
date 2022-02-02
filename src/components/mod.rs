@@ -33,7 +33,7 @@ mod textinput;
 mod utils;
 
 pub use self::status_tree::StatusTreeComponent;
-pub use blame_file::BlameFileComponent;
+pub use blame_file::{BlameFileComponent, BlameFileOpen};
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};

@@ -1,4 +1,7 @@
-use crate::{components::AppOption, tabs::StashingOptions};
+use crate::{
+	components::{AppOption, BlameFileOpen},
+	tabs::StashingOptions,
+};
 use asyncgit::{
 	sync::{diff::DiffLinePosition, CommitId, CommitTags, TreeFile},
 	PushType,
@@ -48,6 +51,14 @@ pub enum Action {
 	AbortRevert,
 }
 
+#[derive(Debug)]
+pub enum StackablePopupOpen {
+	///
+	BlameFile(BlameFileOpen),
+	///
+	FileRevlog(String),
+}
+
 ///
 pub enum InternalEvent {
 	///
@@ -79,10 +90,6 @@ pub enum InternalEvent {
 	///
 	Tags,
 	///
-	BlameFile(String, Option<CommitId>),
-	///
-	OpenFileRevlog(String),
-	///
 	CreateBranch,
 	///
 	RenameBranch(String, String),
@@ -106,6 +113,12 @@ pub enum InternalEvent {
 	FileFinderChanged(Option<PathBuf>),
 	///
 	FetchRemotes,
+	///
+	OpenPopup(StackablePopupOpen),
+	///
+	PopupStackPop,
+	///
+	PopupStackPush(StackablePopupOpen),
 }
 
 /// single threaded simple queue for components to communicate with each other

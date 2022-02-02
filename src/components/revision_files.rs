@@ -1,11 +1,11 @@
 use super::{
-	utils::scroll_vertical::VerticalScroll, CommandBlocking,
-	CommandInfo, Component, DrawableComponent, EventState,
-	SyntaxTextComponent,
+	utils::scroll_vertical::VerticalScroll, BlameFileOpen,
+	CommandBlocking, CommandInfo, Component, DrawableComponent,
+	EventState, SyntaxTextComponent,
 };
 use crate::{
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order, symbol},
 	ui::{self, common_nav, style::SharedTheme},
 	AsyncAppNotification, AsyncNotification,
@@ -133,8 +133,13 @@ impl RevisionFilesComponent {
 
 	fn blame(&self) -> bool {
 		self.selected_file_path().map_or(false, |path| {
-			self.queue
-				.push(InternalEvent::BlameFile(path, self.revision));
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::BlameFile(BlameFileOpen {
+					file_path: path,
+					commit_id: self.revision,
+					selection: None,
+				}),
+			));
 
 			true
 		})
@@ -142,7 +147,9 @@ impl RevisionFilesComponent {
 
 	fn file_history(&self) -> bool {
 		self.selected_file_path().map_or(false, |path| {
-			self.queue.push(InternalEvent::OpenFileRevlog(path));
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::FileRevlog(path),
+			));
 
 			true
 		})

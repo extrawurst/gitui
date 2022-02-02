@@ -160,6 +160,7 @@ impl Component for InspectCommitComponent {
 	}
 	fn hide(&mut self) {
 		self.visible = false;
+		self.queue.push(InternalEvent::PopupStackPop);
 	}
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;

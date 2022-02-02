@@ -5,7 +5,7 @@ use super::{
 use crate::{
 	components::{utils::string_width_align, ScrollType},
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	string_utils::tabs_to_spaces,
 	strings,
 	ui::{self, style::SharedTheme},
@@ -27,41 +27,31 @@ use tui::{
 	Frame,
 };
 
+static NO_COMMIT_ID: &str = "0000000";
+static NO_AUTHOR: &str = "<no author>";
+static MIN_AUTHOR_WIDTH: usize = 3;
+static MAX_AUTHOR_WIDTH: usize = 20;
+
+#[derive(Clone, Debug)]
+pub struct BlameFileOpen {
+	pub file_path: String,
+	pub commit_id: Option<CommitId>,
+	pub selection: Option<usize>,
+}
+
 pub struct BlameFileComponent {
 	title: String,
 	theme: SharedTheme,
 	queue: Queue,
 	async_blame: AsyncBlame,
 	visible: bool,
+	open_request: Option<BlameFileOpen>,
 	params: Option<BlameParams>,
 	file_blame: Option<FileBlame>,
 	table_state: std::cell::Cell<TableState>,
 	key_config: SharedKeyConfig,
 	current_height: std::cell::Cell<usize>,
 }
-
-static NO_COMMIT_ID: &str = "0000000";
-static NO_AUTHOR: &str = "<no author>";
-static MIN_AUTHOR_WIDTH: usize = 3;
-static MAX_AUTHOR_WIDTH: usize = 20;
-
-fn get_author_width(width: usize) -> usize {
-	(width.saturating_sub(19) / 3)
-		.clamp(MIN_AUTHOR_WIDTH, MAX_AUTHOR_WIDTH)
-}
-
-const fn number_of_digits(number: usize) -> usize {
-	let mut rest = number;
-	let mut result = 0;
-
-	while rest > 0 {
-		rest /= 10;
-		result += 1;
-	}
-
-	result
-}
-
 impl DrawableComponent for BlameFileComponent {
 	fn draw<B: Backend>(
 		&self,
@@ -197,7 +187,7 @@ impl Component for BlameFileComponent {
 		if self.is_visible() {
 			if let Event::Key(key) = event {
 				if key == self.key_config.keys.exit_popup {
-					self.hide();
+					self.hide_stacked(false);
 				} else if key == self.key_config.keys.move_up {
 					self.move_selection(ScrollType::Up);
 				} else if key == self.key_config.keys.move_down {
@@ -216,7 +206,7 @@ impl Component for BlameFileComponent {
 					self.move_selection(ScrollType::PageUp);
 				} else if key == self.key_config.keys.focus_right {
 					if let Some(id) = self.selected_commit() {
-						self.hide();
+						self.hide_stacked(true);
 						self.queue.push(
 							InternalEvent::InspectCommit(id, None),
 						);
@@ -227,10 +217,10 @@ impl Component for BlameFileComponent {
 						.as_ref()
 						.map(|p| p.file_path.clone())
 					{
-						self.hide();
-						self.queue.push(
-							InternalEvent::OpenFileRevlog(filepath),
-						);
+						self.hide_stacked(true);
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::FileRevlog(filepath),
+						));
 					}
 				}
 
@@ -243,10 +233,6 @@ impl Component for BlameFileComponent {
 
 	fn is_visible(&self) -> bool {
 		self.visible
-	}
-
-	fn hide(&mut self) {
-		self.visible = false;
 	}
 
 	fn show(&mut self) -> Result<()> {
@@ -277,21 +263,36 @@ impl BlameFileComponent {
 			visible: false,
 			params: None,
 			file_blame: None,
+			open_request: None,
 			table_state: std::cell::Cell::new(TableState::default()),
 			key_config,
 			current_height: std::cell::Cell::new(0),
 		}
 	}
 
+	fn hide_stacked(&mut self, stack: bool) {
+		self.visible = false;
+		if stack {
+			if let Some(request) = self.open_request.clone() {
+				self.queue.push(InternalEvent::PopupStackPush(
+					StackablePopupOpen::BlameFile(BlameFileOpen {
+						file_path: request.file_path,
+						commit_id: request.commit_id,
+						selection: self.get_selection(),
+					}),
+				));
+			}
+		} else {
+			self.queue.push(InternalEvent::PopupStackPop);
+		}
+	}
+
 	///
-	pub fn open(
-		&mut self,
-		file_path: &str,
-		commit_id: Option<CommitId>,
-	) -> Result<()> {
+	pub fn open(&mut self, open: BlameFileOpen) -> Result<()> {
+		self.open_request = Some(open.clone());
 		self.params = Some(BlameParams {
-			file_path: file_path.into(),
-			commit_id,
+			file_path: open.file_path,
+			commit_id: open.commit_id,
 		});
 		self.file_blame = None;
 		self.table_state.get_mut().select(Some(0));
@@ -329,6 +330,7 @@ impl BlameFileComponent {
 				{
 					if previous_blame_params == *params {
 						self.file_blame = Some(last_file_blame);
+						self.set_selection();
 
 						return Ok(());
 					}
@@ -526,6 +528,28 @@ impl BlameFileComponent {
 		needs_update
 	}
 
+	fn set_selection(&mut self) {
+		if let Some(selection) =
+			self.open_request.as_ref().and_then(|req| req.selection)
+		{
+			let mut table_state = self.table_state.take();
+			table_state.select(Some(selection));
+			self.table_state.set(table_state);
+		}
+	}
+
+	fn get_selection(&self) -> Option<usize> {
+		self.file_blame.as_ref().and_then(|_| {
+			let table_state = self.table_state.take();
+
+			let selection = table_state.selected();
+
+			self.table_state.set(table_state);
+
+			selection
+		})
+	}
+
 	fn selected_commit(&self) -> Option<CommitId> {
 		self.file_blame.as_ref().and_then(|file_blame| {
 			let table_state = self.table_state.take();
@@ -543,4 +567,21 @@ impl BlameFileComponent {
 			commit_id
 		})
 	}
+}
+
+fn get_author_width(width: usize) -> usize {
+	(width.saturating_sub(19) / 3)
+		.clamp(MIN_AUTHOR_WIDTH, MAX_AUTHOR_WIDTH)
+}
+
+const fn number_of_digits(number: usize) -> usize {
+	let mut rest = number;
+	let mut result = 0;
+
+	while rest > 0 {
+		rest /= 10;
+		result += 1;
+	}
+
+	result
 }

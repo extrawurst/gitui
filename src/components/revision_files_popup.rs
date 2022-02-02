@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{
 	keys::SharedKeyConfig,
-	queue::Queue,
+	queue::{InternalEvent, Queue},
 	strings::{self},
 	ui::style::SharedTheme,
 	AsyncAppNotification, AsyncNotification,
@@ -22,6 +22,7 @@ pub struct RevisionFilesPopup {
 	visible: bool,
 	key_config: SharedKeyConfig,
 	files: RevisionFilesComponent,
+	queue: Queue,
 }
 
 impl RevisionFilesPopup {
@@ -43,6 +44,7 @@ impl RevisionFilesPopup {
 			),
 			visible: false,
 			key_config,
+			queue: queue.clone(),
 		}
 	}
 
@@ -130,6 +132,7 @@ impl Component for RevisionFilesPopup {
 
 	fn hide(&mut self) {
 		self.visible = false;
+		self.queue.push(InternalEvent::PopupStackPop);
 	}
 
 	fn show(&mut self) -> Result<()> {

@@ -3,12 +3,12 @@ use super::{
 		filetree::{FileTreeItem, FileTreeItemKind},
 		statustree::{MoveSelection, StatusTree},
 	},
-	CommandBlocking, DrawableComponent,
+	BlameFileOpen, CommandBlocking, DrawableComponent,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, NeedsUpdate, Queue},
+	queue::{InternalEvent, NeedsUpdate, Queue, StackablePopupOpen},
 	strings::{self, order},
 	ui,
 	ui::style::SharedTheme,
@@ -419,9 +419,14 @@ impl Component for StatusTreeComponent {
 					match (&self.queue, self.selection_file()) {
 						(Some(queue), Some(status_item)) => {
 							//TODO: use correct revision here
-							queue.push(InternalEvent::BlameFile(
-								status_item.path,
-								None,
+							queue.push(InternalEvent::OpenPopup(
+								StackablePopupOpen::BlameFile(
+									BlameFileOpen {
+										file_path: status_item.path,
+										commit_id: None,
+										selection: None,
+									},
+								),
 							));
 
 							Ok(EventState::Consumed)
@@ -431,11 +436,11 @@ impl Component for StatusTreeComponent {
 				} else if e == self.key_config.keys.file_history {
 					match (&self.queue, self.selection_file()) {
 						(Some(queue), Some(status_item)) => {
-							queue.push(
-								InternalEvent::OpenFileRevlog(
+							queue.push(InternalEvent::OpenPopup(
+								StackablePopupOpen::FileRevlog(
 									status_item.path,
 								),
-							);
+							));
 
 							Ok(EventState::Consumed)
 						}

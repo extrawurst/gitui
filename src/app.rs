@@ -15,7 +15,10 @@ use crate::{
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{KeyConfig, SharedKeyConfig},
-	queue::{Action, InternalEvent, NeedsUpdate, Queue},
+	popup_stack::PopupStack,
+	queue::{
+		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
+	},
 	setup_popups,
 	strings::{self, order},
 	tabs::{FilesTab, Revlog, StashList, Stashing, Status},
@@ -79,6 +82,7 @@ pub struct App {
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	input: Input,
+	popup_stack: PopupStack,
 
 	// "Flags"
 	requires_redraw: Cell<bool>,
@@ -284,6 +288,7 @@ impl App {
 			requires_redraw: Cell::new(false),
 			file_to_open: None,
 			repo,
+			popup_stack: PopupStack::default(),
 		}
 	}
 
@@ -666,6 +671,24 @@ impl App {
 		Ok(())
 	}
 
+	fn open_popup(
+		&mut self,
+		popup: StackablePopupOpen,
+	) -> Result<()> {
+		log::debug!("open_popup: {:?}", popup);
+
+		match popup {
+			StackablePopupOpen::BlameFile(params) => {
+				self.blame_file_popup.open(params)?;
+			}
+			StackablePopupOpen::FileRevlog(param) => {
+				self.file_revlog_popup.open(&param)?;
+			}
+		}
+
+		Ok(())
+	}
+
 	fn process_internal_events(&mut self) -> Result<NeedsUpdate> {
 		let mut flags = NeedsUpdate::empty();
 
@@ -715,16 +738,7 @@ impl App {
 			InternalEvent::TagCommit(id) => {
 				self.tag_commit_popup.open(id)?;
 			}
-			InternalEvent::BlameFile(path, commit_id) => {
-				self.blame_file_popup.open(&path, commit_id)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-			}
-			InternalEvent::OpenFileRevlog(path) => {
-				self.file_revlog_popup.open(&path)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-			}
+
 			InternalEvent::CreateBranch => {
 				self.create_branch_popup.open()?;
 			}
@@ -820,6 +834,26 @@ impl App {
 			InternalEvent::FileFinderChanged(file) => {
 				self.files_tab.file_finder_update(&file);
 				self.revision_files_popup.file_finder_update(&file);
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::OpenPopup(popup) => {
+				self.open_popup(popup)?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::PopupStackPop => {
+				if let Some(popup) = self.popup_stack.pop() {
+					log::debug!("pop popup: {:?}", popup);
+					self.open_popup(popup)?;
+					flags.insert(
+						NeedsUpdate::ALL | NeedsUpdate::COMMANDS,
+					);
+				}
+			}
+			InternalEvent::PopupStackPush(popup) => {
+				log::debug!("push popup: {:?}", popup);
+				self.popup_stack.push(popup);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}

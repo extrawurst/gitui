@@ -1,5 +1,6 @@
-use super::visibility_blocking;
 use super::{utils::logitems::ItemBatch, SharedOptions};
+use super::{visibility_blocking, BlameFileOpen};
+use crate::queue::StackablePopupOpen;
 use crate::{
 	components::{
 		event_pump, CommandBlocking, CommandInfo, Component,
@@ -446,9 +447,14 @@ impl Component for FileRevlogComponent {
 				} else if key == self.key_config.keys.blame {
 					if let Some(file) = self.file_path.clone() {
 						self.hide();
-						self.queue.push(InternalEvent::BlameFile(
-							file,
-							self.selected_commit(),
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::BlameFile(
+								BlameFileOpen {
+									file_path: file,
+									commit_id: self.selected_commit(),
+									selection: None,
+								},
+							),
 						));
 					}
 				} else if key == self.key_config.keys.move_up {
@@ -530,6 +536,7 @@ impl Component for FileRevlogComponent {
 
 	fn hide(&mut self) {
 		self.visible = false;
+		self.queue.push(InternalEvent::PopupStackPop);
 	}
 
 	fn show(&mut self) -> Result<()> {
