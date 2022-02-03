@@ -125,6 +125,8 @@ impl FileRevlogComponent {
 		));
 		self.table_state.get_mut().select(Some(0));
 		self.show()?;
+
+		self.diff.focus(false);
 		self.diff.clear(false);
 
 		self.update()?;
