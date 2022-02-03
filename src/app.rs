@@ -675,8 +675,6 @@ impl App {
 		&mut self,
 		popup: StackablePopupOpen,
 	) -> Result<()> {
-		log::debug!("open_popup: {:?}", popup);
-
 		match popup {
 			StackablePopupOpen::BlameFile(params) => {
 				self.blame_file_popup.open(params)?;
@@ -844,7 +842,6 @@ impl App {
 			}
 			InternalEvent::PopupStackPop => {
 				if let Some(popup) = self.popup_stack.pop() {
-					log::debug!("pop popup: {:?}", popup);
 					self.open_popup(popup)?;
 					flags.insert(
 						NeedsUpdate::ALL | NeedsUpdate::COMMANDS,
@@ -852,7 +849,6 @@ impl App {
 				}
 			}
 			InternalEvent::PopupStackPush(popup) => {
-				log::debug!("push popup: {:?}", popup);
 				self.popup_stack.push(popup);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
