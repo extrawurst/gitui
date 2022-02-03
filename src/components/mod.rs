@@ -46,7 +46,7 @@ pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
 pub use fetch::FetchComponent;
 pub use file_find_popup::FileFindPopup;
-pub use file_revlog::FileRevlogComponent;
+pub use file_revlog::{FileRevOpen, FileRevlogComponent};
 pub use help::HelpComponent;
 pub use inspect_commit::InspectCommitComponent;
 pub use msg::MsgComponent;

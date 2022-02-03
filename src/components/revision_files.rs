@@ -1,7 +1,7 @@
 use super::{
 	utils::scroll_vertical::VerticalScroll, BlameFileOpen,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, SyntaxTextComponent,
+	EventState, FileRevOpen, SyntaxTextComponent,
 };
 use crate::{
 	keys::SharedKeyConfig,
@@ -148,7 +148,9 @@ impl RevisionFilesComponent {
 	fn file_history(&self) -> bool {
 		self.selected_file_path().map_or(false, |path| {
 			self.queue.push(InternalEvent::OpenPopup(
-				StackablePopupOpen::FileRevlog(path),
+				StackablePopupOpen::FileRevlog(FileRevOpen::new(
+					path,
+				)),
 			));
 
 			true

@@ -3,7 +3,7 @@ use super::{
 		filetree::{FileTreeItem, FileTreeItemKind},
 		statustree::{MoveSelection, StatusTree},
 	},
-	BlameFileOpen, CommandBlocking, DrawableComponent,
+	BlameFileOpen, CommandBlocking, DrawableComponent, FileRevOpen,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
@@ -438,7 +438,9 @@ impl Component for StatusTreeComponent {
 						(Some(queue), Some(status_item)) => {
 							queue.push(InternalEvent::OpenPopup(
 								StackablePopupOpen::FileRevlog(
-									status_item.path,
+									FileRevOpen::new(
+										status_item.path,
+									),
 								),
 							));
 

@@ -1,6 +1,6 @@
 use super::{
 	utils, visibility_blocking, CommandBlocking, CommandInfo,
-	Component, DrawableComponent, EventState,
+	Component, DrawableComponent, EventState, FileRevOpen,
 };
 use crate::{
 	components::{utils::string_width_align, ScrollType},
@@ -219,7 +219,9 @@ impl Component for BlameFileComponent {
 					{
 						self.hide_stacked(true);
 						self.queue.push(InternalEvent::OpenPopup(
-							StackablePopupOpen::FileRevlog(filepath),
+							StackablePopupOpen::FileRevlog(
+								FileRevOpen::new(filepath),
+							),
 						));
 					}
 				}
@@ -330,7 +332,7 @@ impl BlameFileComponent {
 				{
 					if previous_blame_params == *params {
 						self.file_blame = Some(last_file_blame);
-						self.set_selection();
+						self.set_open_selection();
 
 						return Ok(());
 					}
@@ -528,7 +530,7 @@ impl BlameFileComponent {
 		needs_update
 	}
 
-	fn set_selection(&mut self) {
+	fn set_open_selection(&mut self) {
 		if let Some(selection) =
 			self.open_request.as_ref().and_then(|req| req.selection)
 		{

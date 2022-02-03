@@ -1,5 +1,5 @@
 use crate::{
-	components::{AppOption, BlameFileOpen},
+	components::{AppOption, BlameFileOpen, FileRevOpen},
 	tabs::StashingOptions,
 };
 use asyncgit::{
@@ -56,7 +56,7 @@ pub enum StackablePopupOpen {
 	///
 	BlameFile(BlameFileOpen),
 	///
-	FileRevlog(String),
+	FileRevlog(FileRevOpen),
 }
 
 ///

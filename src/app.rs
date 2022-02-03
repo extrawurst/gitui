@@ -680,7 +680,7 @@ impl App {
 				self.blame_file_popup.open(params)?;
 			}
 			StackablePopupOpen::FileRevlog(param) => {
-				self.file_revlog_popup.open(&param)?;
+				self.file_revlog_popup.open(param)?;
 			}
 		}
 
