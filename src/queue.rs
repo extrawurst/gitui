@@ -1,5 +1,7 @@
 use crate::{
-	components::{AppOption, BlameFileOpen, FileRevOpen},
+	components::{
+		AppOption, BlameFileOpen, FileRevOpen, FileTreeOpen,
+	},
 	tabs::StashingOptions,
 };
 use asyncgit::{
@@ -57,6 +59,8 @@ pub enum StackablePopupOpen {
 	BlameFile(BlameFileOpen),
 	///
 	FileRevlog(FileRevOpen),
+	///
+	FileTree(FileTreeOpen),
 }
 
 ///
@@ -103,8 +107,6 @@ pub enum InternalEvent {
 	Pull(String),
 	///
 	PushTags,
-	///
-	OpenFileTree(CommitId),
 	///
 	OptionSwitched(AppOption),
 	///

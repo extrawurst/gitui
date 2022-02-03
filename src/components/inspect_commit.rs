@@ -1,12 +1,12 @@
 use super::{
 	command_pump, event_pump, visibility_blocking, CommandBlocking,
 	CommandInfo, CommitDetailsComponent, Component, DiffComponent,
-	DrawableComponent, EventState,
+	DrawableComponent, EventState, FileTreeOpen,
 };
 use crate::{
 	accessors,
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings,
 	ui::style::SharedTheme,
 };
@@ -139,8 +139,10 @@ impl Component for InspectCommitComponent {
 					self.diff.focus(false);
 				} else if e == self.key_config.keys.open_file_tree {
 					if let Some(commit) = self.commit_id {
-						self.queue.push(InternalEvent::OpenFileTree(
-							commit,
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::FileTree(
+								FileTreeOpen::new(commit),
+							),
 						));
 						self.hide();
 					}

@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self},
 	ui::style::SharedTheme,
 	AsyncAppNotification, AsyncNotification,
@@ -18,7 +18,23 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, widgets::Clear, Frame};
 
+#[derive(Clone, Debug)]
+pub struct FileTreeOpen {
+	pub commit_id: CommitId,
+	pub selection: Option<usize>,
+}
+
+impl FileTreeOpen {
+	pub const fn new(commit_id: CommitId) -> Self {
+		Self {
+			commit_id,
+			selection: None,
+		}
+	}
+}
+
 pub struct RevisionFilesPopup {
+	open_request: Option<FileTreeOpen>,
 	visible: bool,
 	key_config: SharedKeyConfig,
 	files: RevisionFilesComponent,
@@ -44,13 +60,15 @@ impl RevisionFilesPopup {
 			),
 			visible: false,
 			key_config,
+			open_request: None,
 			queue: queue.clone(),
 		}
 	}
 
 	///
-	pub fn open(&mut self, commit: CommitId) -> Result<()> {
-		self.files.set_commit(commit)?;
+	pub fn open(&mut self, request: FileTreeOpen) -> Result<()> {
+		self.files.set_commit(request.commit_id)?;
+		self.open_request = Some(request);
 		self.show()?;
 
 		Ok(())
@@ -68,6 +86,23 @@ impl RevisionFilesPopup {
 
 	pub fn file_finder_update(&mut self, file: &Option<PathBuf>) {
 		self.files.find_file(file);
+	}
+
+	fn hide_stacked(&mut self, stack: bool) {
+		self.hide();
+
+		if stack {
+			if let Some(revision) = self.files.revision() {
+				self.queue.push(InternalEvent::PopupStackPush(
+					StackablePopupOpen::FileTree(FileTreeOpen {
+						commit_id: revision,
+						selection: self.files.selection(),
+					}),
+				));
+			}
+		} else {
+			self.queue.push(InternalEvent::PopupStackPop);
+		}
 	}
 }
 
@@ -116,11 +151,18 @@ impl Component for RevisionFilesPopup {
 		if self.is_visible() {
 			if let Event::Key(key) = &event {
 				if *key == self.key_config.keys.exit_popup {
-					self.hide();
+					self.hide_stacked(false);
 				}
 			}
 
-			return self.files.event(event);
+			let res = self.files.event(event)?;
+			//Note: if this made the files hide we need to stack the popup
+			if res == EventState::Consumed && !self.files.is_visible()
+			{
+				self.hide_stacked(true);
+			}
+
+			return Ok(res);
 		}
 
 		Ok(EventState::NotConsumed)
@@ -132,7 +174,6 @@ impl Component for RevisionFilesPopup {
 
 	fn hide(&mut self) {
 		self.visible = false;
-		self.queue.push(InternalEvent::PopupStackPop);
 	}
 
 	fn show(&mut self) -> Result<()> {

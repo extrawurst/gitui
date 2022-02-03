@@ -682,6 +682,9 @@ impl App {
 			StackablePopupOpen::FileRevlog(param) => {
 				self.file_revlog_popup.open(param)?;
 			}
+			StackablePopupOpen::FileTree(param) => {
+				self.revision_files_popup.open(param)?;
+			}
 		}
 
 		Ok(())
@@ -799,11 +802,6 @@ impl App {
 			}
 			InternalEvent::StatusLastFileMoved => {
 				self.status_tab.last_file_moved()?;
-			}
-			InternalEvent::OpenFileTree(c) => {
-				self.revision_files_popup.open(c)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
 			InternalEvent::OpenFileFinder(files) => {
 				self.find_file_popup.open(&files)?;

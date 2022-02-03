@@ -59,7 +59,7 @@ pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ConfirmComponent;
 pub use revision_files::RevisionFilesComponent;
-pub use revision_files_popup::RevisionFilesPopup;
+pub use revision_files_popup::{FileTreeOpen, RevisionFilesPopup};
 pub use stashmsg::StashMsgComponent;
 pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;

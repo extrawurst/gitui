@@ -2,10 +2,10 @@ use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitDetailsComponent, CommitList, Component,
-		DrawableComponent, EventState,
+		DrawableComponent, EventState, FileTreeOpen,
 	},
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
@@ -291,7 +291,11 @@ impl Component for Revlog {
 						Ok(EventState::NotConsumed),
 						|id| {
 							self.queue.push(
-								InternalEvent::OpenFileTree(id),
+								InternalEvent::OpenPopup(
+									StackablePopupOpen::FileTree(
+										FileTreeOpen::new(id),
+									),
+								),
 							);
 							Ok(EventState::Consumed)
 						},

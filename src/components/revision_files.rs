@@ -42,6 +42,7 @@ pub struct RevisionFilesComponent {
 	current_file: SyntaxTextComponent,
 	tree: FileTree,
 	scroll: VerticalScroll,
+	visible: bool,
 	revision: Option<CommitId>,
 	focus: Focus,
 	key_config: SharedKeyConfig,
@@ -72,11 +73,14 @@ impl RevisionFilesComponent {
 			focus: Focus::Tree,
 			key_config,
 			repo,
+			visible: false,
 		}
 	}
 
 	///
 	pub fn set_commit(&mut self, commit: CommitId) -> Result<()> {
+		self.show()?;
+
 		let same_id =
 			self.revision.map(|c| c == commit).unwrap_or_default();
 		if !same_id {
@@ -90,6 +94,16 @@ impl RevisionFilesComponent {
 		}
 
 		Ok(())
+	}
+
+	///
+	pub const fn revision(&self) -> Option<CommitId> {
+		self.revision
+	}
+
+	///
+	pub const fn selection(&self) -> Option<usize> {
+		self.tree.selection()
 	}
 
 	///
@@ -287,6 +301,10 @@ impl Component for RevisionFilesComponent {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
+		if !self.is_visible() && !force_all {
+			return CommandBlocking::PassingOn;
+		}
+
 		let is_tree_focused = matches!(self.focus, Focus::Tree);
 
 		if is_tree_focused || force_all {
@@ -325,6 +343,10 @@ impl Component for RevisionFilesComponent {
 		&mut self,
 		event: crossterm::event::Event,
 	) -> Result<EventState> {
+		if !self.is_visible() {
+			return Ok(EventState::NotConsumed);
+		}
+
 		if let Event::Key(key) = event {
 			let is_tree_focused = matches!(self.focus, Focus::Tree);
 			if is_tree_focused
@@ -379,6 +401,19 @@ impl Component for RevisionFilesComponent {
 		}
 
 		Ok(EventState::NotConsumed)
+	}
+
+	fn hide(&mut self) {
+		self.visible = false;
+	}
+
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+		Ok(())
 	}
 }
 
