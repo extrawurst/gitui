@@ -2,10 +2,11 @@ use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitDetailsComponent, CommitList, Component,
-		DrawableComponent, EventState,
+		DrawableComponent, EventState, FileTreeOpen,
+		InspectCommitOpen,
 	},
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
@@ -199,6 +200,17 @@ impl Revlog {
 
 		Ok(())
 	}
+
+	fn inspect_commit(&self) {
+		if let Some(commit_id) = self.selected_commit() {
+			let tags = self.selected_commit_tags(&Some(commit_id));
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::InspectCommit(
+					InspectCommitOpen::new_with_tags(commit_id, tags),
+				),
+			));
+		}
+	}
 }
 
 impl DrawableComponent for Revlog {
@@ -260,20 +272,8 @@ impl Component for Revlog {
 				} else if k == self.key_config.keys.focus_right
 					&& self.commit_details.is_visible()
 				{
-					return self.selected_commit().map_or(
-						Ok(EventState::NotConsumed),
-						|id| {
-							self.queue.push(
-								InternalEvent::InspectCommit(
-									id,
-									self.selected_commit_tags(&Some(
-										id,
-									)),
-								),
-							);
-							Ok(EventState::Consumed)
-						},
-					);
+					self.inspect_commit();
+					return Ok(EventState::Consumed);
 				} else if k == self.key_config.keys.select_branch {
 					self.queue.push(InternalEvent::SelectBranch);
 					return Ok(EventState::Consumed);
@@ -291,7 +291,11 @@ impl Component for Revlog {
 						Ok(EventState::NotConsumed),
 						|id| {
 							self.queue.push(
-								InternalEvent::OpenFileTree(id),
+								InternalEvent::OpenPopup(
+									StackablePopupOpen::FileTree(
+										FileTreeOpen::new(id),
+									),
+								),
 							);
 							Ok(EventState::Consumed)
 						},
@@ -304,22 +308,26 @@ impl Component for Revlog {
 				{
 					if self.list.marked_count() == 1 {
 						// compare against head
-						self.queue.push(
-							InternalEvent::CompareCommits(
-								self.list.marked()[0],
-								None,
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::CompareCommits(
+								InspectCommitOpen::new(
+									self.list.marked()[0],
+								),
 							),
-						);
+						));
 						return Ok(EventState::Consumed);
 					} else if self.list.marked_count() == 2 {
 						//compare two marked commits
 						let marked = self.list.marked();
-						self.queue.push(
-							InternalEvent::CompareCommits(
-								marked[0],
-								Some(marked[1]),
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::CompareCommits(
+								InspectCommitOpen {
+									commit_id: marked[0],
+									compare_id: Some(marked[1]),
+									tags: None,
+								},
 							),
-						);
+						));
 						return Ok(EventState::Consumed);
 					}
 				}

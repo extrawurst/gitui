@@ -1,5 +1,6 @@
-use super::visibility_blocking;
 use super::{utils::logitems::ItemBatch, SharedOptions};
+use super::{visibility_blocking, BlameFileOpen, InspectCommitOpen};
+use crate::queue::StackablePopupOpen;
 use crate::{
 	components::{
 		event_pump, CommandBlocking, CommandInfo, Component,
@@ -31,6 +32,21 @@ use tui::{
 
 const SLICE_SIZE: usize = 1200;
 
+#[derive(Clone, Debug)]
+pub struct FileRevOpen {
+	pub file_path: String,
+	pub selection: Option<usize>,
+}
+
+impl FileRevOpen {
+	pub const fn new(file_path: String) -> Self {
+		Self {
+			file_path,
+			selection: None,
+		}
+	}
+}
+
 ///
 pub struct FileRevlogComponent {
 	git_log: Option<AsyncLog>,
@@ -41,7 +57,7 @@ pub struct FileRevlogComponent {
 	diff: DiffComponent,
 	visible: bool,
 	repo_path: RepoPathRef,
-	file_path: Option<String>,
+	open_request: Option<FileRevOpen>,
 	table_state: std::cell::Cell<TableState>,
 	items: ItemBatch,
 	count_total: usize,
@@ -79,7 +95,7 @@ impl FileRevlogComponent {
 			),
 			visible: false,
 			repo_path: repo_path.clone(),
-			file_path: None,
+			open_request: None,
 			table_state: std::cell::Cell::new(TableState::default()),
 			items: ItemBatch::default(),
 			count_total: 0,
@@ -95,12 +111,12 @@ impl FileRevlogComponent {
 	}
 
 	///
-	pub fn open(&mut self, file_path: &str) -> Result<()> {
-		self.file_path = Some(file_path.into());
+	pub fn open(&mut self, open_request: FileRevOpen) -> Result<()> {
+		self.open_request = Some(open_request.clone());
 
 		let filter = diff_contains_file(
 			self.repo_path.borrow().clone(),
-			file_path.into(),
+			open_request.file_path,
 		);
 		self.git_log = Some(AsyncLog::new(
 			self.repo_path.borrow().clone(),
@@ -109,6 +125,8 @@ impl FileRevlogComponent {
 		));
 		self.table_state.get_mut().select(Some(0));
 		self.show()?;
+
+		self.diff.focus(false);
 		self.diff.clear(false);
 
 		self.update()?;
@@ -139,6 +157,7 @@ impl FileRevlogComponent {
 				|| log_changed
 			{
 				self.fetch_commits()?;
+				self.set_open_selection();
 			}
 
 			self.update_diff()?;
@@ -167,9 +186,9 @@ impl FileRevlogComponent {
 	pub fn update_diff(&mut self) -> Result<()> {
 		if self.is_visible() {
 			if let Some(commit_id) = self.selected_commit() {
-				if let Some(file_path) = &self.file_path {
+				if let Some(open_request) = &self.open_request {
 					let diff_params = DiffParams {
-						path: file_path.clone(),
+						path: open_request.file_path.clone(),
 						diff_type: DiffType::Commit(commit_id),
 						options: self.options.borrow().diff,
 					};
@@ -179,7 +198,7 @@ impl FileRevlogComponent {
 					{
 						if params == diff_params {
 							self.diff.update(
-								file_path.to_string(),
+								open_request.file_path.to_string(),
 								false,
 								last,
 							);
@@ -253,11 +272,13 @@ impl FileRevlogComponent {
 		};
 		let revisions = self.get_max_selection();
 
-		self.file_path.as_ref().map_or(
+		self.open_request.as_ref().map_or(
 			"<no history available>".into(),
-			|file_path| {
+			|open_request| {
 				strings::file_log_title(
-					file_path, selected, revisions,
+					&open_request.file_path,
+					selected,
+					revisions,
 				)
 			},
 		)
@@ -333,6 +354,24 @@ impl FileRevlogComponent {
 		needs_update
 	}
 
+	fn set_open_selection(&mut self) {
+		if let Some(selection) =
+			self.open_request.as_ref().and_then(|req| req.selection)
+		{
+			let mut table_state = self.table_state.take();
+			table_state.select(Some(selection));
+			self.table_state.set(table_state);
+		}
+	}
+
+	fn get_selection(&self) -> Option<usize> {
+		let table_state = self.table_state.take();
+		let selection = table_state.selected();
+		self.table_state.set(table_state);
+
+		selection
+	}
+
 	fn draw_revlog<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
 		let constraints = [
 			// type of change: (A)dded, (M)odified, (D)eleted
@@ -376,6 +415,23 @@ impl FileRevlogComponent {
 		self.table_state.set(table_state);
 		self.current_width.set(area.width.into());
 		self.current_height.set(area.height.into());
+	}
+
+	fn hide_stacked(&mut self, stack: bool) {
+		self.hide();
+
+		if stack {
+			if let Some(open_request) = self.open_request.clone() {
+				self.queue.push(InternalEvent::PopupStackPush(
+					StackablePopupOpen::FileRevlog(FileRevOpen {
+						file_path: open_request.file_path,
+						selection: self.get_selection(),
+					}),
+				));
+			}
+		} else {
+			self.queue.push(InternalEvent::PopupStackPop);
+		}
 	}
 }
 
@@ -427,7 +483,7 @@ impl Component for FileRevlogComponent {
 
 			if let Event::Key(key) = event {
 				if key == self.key_config.keys.exit_popup {
-					self.hide();
+					self.hide_stacked(false);
 				} else if key == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
@@ -437,18 +493,27 @@ impl Component for FileRevlogComponent {
 						self.diff.focus(false);
 					}
 				} else if key == self.key_config.keys.enter {
-					if let Some(id) = self.selected_commit() {
-						self.hide();
-						self.queue.push(
-							InternalEvent::InspectCommit(id, None),
-						);
+					if let Some(commit_id) = self.selected_commit() {
+						self.hide_stacked(true);
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::InspectCommit(
+								InspectCommitOpen::new(commit_id),
+							),
+						));
 					};
 				} else if key == self.key_config.keys.blame {
-					if let Some(file) = self.file_path.clone() {
-						self.hide();
-						self.queue.push(InternalEvent::BlameFile(
-							file,
-							self.selected_commit(),
+					if let Some(open_request) =
+						self.open_request.clone()
+					{
+						self.hide_stacked(true);
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::BlameFile(
+								BlameFileOpen {
+									file_path: open_request.file_path,
+									commit_id: self.selected_commit(),
+									selection: None,
+								},
+							),
 						));
 					}
 				} else if key == self.key_config.keys.move_up {

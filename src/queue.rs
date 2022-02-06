@@ -1,6 +1,12 @@
-use crate::{components::AppOption, tabs::StashingOptions};
+use crate::{
+	components::{
+		AppOption, BlameFileOpen, FileRevOpen, FileTreeOpen,
+		InspectCommitOpen,
+	},
+	tabs::StashingOptions,
+};
 use asyncgit::{
-	sync::{diff::DiffLinePosition, CommitId, CommitTags, TreeFile},
+	sync::{diff::DiffLinePosition, CommitId, TreeFile},
 	PushType,
 };
 use bitflags::bitflags;
@@ -48,6 +54,20 @@ pub enum Action {
 	AbortRevert,
 }
 
+#[derive(Debug)]
+pub enum StackablePopupOpen {
+	///
+	BlameFile(BlameFileOpen),
+	///
+	FileRevlog(FileRevOpen),
+	///
+	FileTree(FileTreeOpen),
+	///
+	InspectCommit(InspectCommitOpen),
+	///
+	CompareCommits(InspectCommitOpen),
+}
+
 ///
 pub enum InternalEvent {
 	///
@@ -69,19 +89,11 @@ pub enum InternalEvent {
 	///
 	TabSwitchStatus,
 	///
-	InspectCommit(CommitId, Option<CommitTags>),
-	///
-	CompareCommits(CommitId, Option<CommitId>),
-	///
 	SelectCommitInRevlog(CommitId),
 	///
 	TagCommit(CommitId),
 	///
 	Tags,
-	///
-	BlameFile(String, Option<CommitId>),
-	///
-	OpenFileRevlog(String),
 	///
 	CreateBranch,
 	///
@@ -97,8 +109,6 @@ pub enum InternalEvent {
 	///
 	PushTags,
 	///
-	OpenFileTree(CommitId),
-	///
 	OptionSwitched(AppOption),
 	///
 	OpenFileFinder(Vec<TreeFile>),
@@ -106,6 +116,12 @@ pub enum InternalEvent {
 	FileFinderChanged(Option<PathBuf>),
 	///
 	FetchRemotes,
+	///
+	OpenPopup(StackablePopupOpen),
+	///
+	PopupStackPop,
+	///
+	PopupStackPush(StackablePopupOpen),
 }
 
 /// single threaded simple queue for components to communicate with each other

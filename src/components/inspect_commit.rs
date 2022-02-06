@@ -1,20 +1,19 @@
 use super::{
 	command_pump, event_pump, visibility_blocking, CommandBlocking,
 	CommandInfo, CommitDetailsComponent, Component, DiffComponent,
-	DrawableComponent, EventState,
+	DrawableComponent, EventState, FileTreeOpen,
 };
 use crate::{
 	accessors,
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
 	sync::{diff::DiffOptions, CommitId, CommitTags, RepoPathRef},
-	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
-	DiffType,
+	AsyncDiff, AsyncGitNotification, DiffParams, DiffType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -25,10 +24,38 @@ use tui::{
 	Frame,
 };
 
+#[derive(Clone, Debug)]
+pub struct InspectCommitOpen {
+	pub commit_id: CommitId,
+	/// in case we wanna compare
+	pub compare_id: Option<CommitId>,
+	pub tags: Option<CommitTags>,
+}
+
+impl InspectCommitOpen {
+	pub const fn new(commit_id: CommitId) -> Self {
+		Self {
+			commit_id,
+			compare_id: None,
+			tags: None,
+		}
+	}
+
+	pub const fn new_with_tags(
+		commit_id: CommitId,
+		tags: Option<CommitTags>,
+	) -> Self {
+		Self {
+			commit_id,
+			compare_id: None,
+			tags,
+		}
+	}
+}
+
 pub struct InspectCommitComponent {
 	queue: Queue,
-	commit_id: Option<CommitId>,
-	tags: Option<CommitTags>,
+	open_request: Option<InspectCommitOpen>,
 	diff: DiffComponent,
 	details: CommitDetailsComponent,
 	git_diff: AsyncDiff,
@@ -121,12 +148,16 @@ impl Component for InspectCommitComponent {
 			if event_pump(ev, self.components_mut().as_mut_slice())?
 				.is_consumed()
 			{
+				if !self.details.is_visible() {
+					self.hide_stacked(true);
+				}
+
 				return Ok(EventState::Consumed);
 			}
 
 			if let Event::Key(e) = ev {
 				if e == self.key_config.keys.exit_popup {
-					self.hide();
+					self.hide_stacked(false);
 				} else if e == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
@@ -138,14 +169,20 @@ impl Component for InspectCommitComponent {
 					self.details.focus(true);
 					self.diff.focus(false);
 				} else if e == self.key_config.keys.open_file_tree {
-					if let Some(commit) = self.commit_id {
-						self.queue.push(InternalEvent::OpenFileTree(
-							commit,
+					if let Some(commit) = self
+						.open_request
+						.as_ref()
+						.map(|open| open.commit_id)
+					{
+						self.hide_stacked(true);
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::FileTree(
+								FileTreeOpen::new(commit),
+							),
 						));
-						self.hide();
 					}
 				} else if e == self.key_config.keys.focus_left {
-					self.hide();
+					self.hide_stacked(false);
 				}
 
 				return Ok(EventState::Consumed);
@@ -198,8 +235,7 @@ impl InspectCommitComponent {
 				key_config.clone(),
 				true,
 			),
-			commit_id: None,
-			tags: None,
+			open_request: None,
 			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),
 			visible: false,
 			key_config,
@@ -207,13 +243,8 @@ impl InspectCommitComponent {
 	}
 
 	///
-	pub fn open(
-		&mut self,
-		id: CommitId,
-		tags: Option<CommitTags>,
-	) -> Result<()> {
-		self.commit_id = Some(id);
-		self.tags = tags;
+	pub fn open(&mut self, open: InspectCommitOpen) -> Result<()> {
+		self.open_request = Some(open);
 		self.show()?;
 
 		Ok(())
@@ -243,12 +274,14 @@ impl InspectCommitComponent {
 	/// called when any tree component changed selection
 	pub fn update_diff(&mut self) -> Result<()> {
 		if self.is_visible() {
-			if let Some(id) = self.commit_id {
+			if let Some(request) = &self.open_request {
 				if let Some(f) = self.details.files().selection_file()
 				{
 					let diff_params = DiffParams {
 						path: f.path.clone(),
-						diff_type: DiffType::Commit(id),
+						diff_type: DiffType::Commit(
+							request.commit_id,
+						),
 						options: DiffOptions::default(),
 					};
 
@@ -274,16 +307,33 @@ impl InspectCommitComponent {
 	}
 
 	fn update(&mut self) -> Result<()> {
-		self.details.set_commits(
-			self.commit_id.map(CommitFilesParams::from),
-			self.tags.clone(),
-		)?;
-		self.update_diff()?;
+		if let Some(request) = &self.open_request {
+			//TODO: pass as reference and only clone if details changed
+			self.details.set_commits(
+				Some(request.commit_id.into()),
+				request.tags.clone(),
+			)?;
+			self.update_diff()?;
+		}
 
 		Ok(())
 	}
 
 	fn can_focus_diff(&self) -> bool {
 		self.details.files().selection_file().is_some()
+	}
+
+	fn hide_stacked(&mut self, stack: bool) {
+		self.hide();
+
+		if stack {
+			if let Some(open_request) = self.open_request.take() {
+				self.queue.push(InternalEvent::PopupStackPush(
+					StackablePopupOpen::InspectCommit(open_request),
+				));
+			}
+		} else {
+			self.queue.push(InternalEvent::PopupStackPop);
+		}
 	}
 }

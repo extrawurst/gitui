@@ -1,12 +1,14 @@
 use super::{
 	utils::scroll_vertical::VerticalScroll, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+	EventState, InspectCommitOpen,
 };
 use crate::{
 	components::ScrollType,
 	keys::SharedKeyConfig,
-	queue::{Action, InternalEvent, NeedsUpdate, Queue},
+	queue::{
+		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
+	},
 	strings, try_or_popup,
 	ui::{self, Size},
 };
@@ -286,18 +288,17 @@ impl Component for BranchListComponent {
 			} else if e == self.key_config.keys.move_right
 				&& self.valid_selection()
 			{
-				self.hide();
-				if let Some(b) = self.get_selected() {
-					self.queue
-						.push(InternalEvent::InspectCommit(b, None));
-				}
+				self.inspect_head_of_branch();
 			} else if e == self.key_config.keys.compare_commits
 				&& self.valid_selection()
 			{
 				self.hide();
-				if let Some(b) = self.get_selected() {
-					self.queue
-						.push(InternalEvent::CompareCommits(b, None));
+				if let Some(commit_id) = self.get_selected() {
+					self.queue.push(InternalEvent::OpenPopup(
+						StackablePopupOpen::CompareCommits(
+							InspectCommitOpen::new(commit_id),
+						),
+					));
 				}
 			} else if e == self.key_config.keys.pull
 				&& !self.local && self.has_remotes
@@ -430,6 +431,17 @@ impl BranchListComponent {
 		}
 
 		Ok(())
+	}
+
+	fn inspect_head_of_branch(&mut self) {
+		if let Some(commit_id) = self.get_selected() {
+			self.hide();
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::InspectCommit(
+					InspectCommitOpen::new(commit_id),
+				),
+			));
+		}
 	}
 
 	const fn get_branch_type(&self) -> BranchType {

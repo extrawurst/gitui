@@ -1,11 +1,11 @@
 use super::{
-	utils::scroll_vertical::VerticalScroll, CommandBlocking,
-	CommandInfo, Component, DrawableComponent, EventState,
-	SyntaxTextComponent,
+	utils::scroll_vertical::VerticalScroll, BlameFileOpen,
+	CommandBlocking, CommandInfo, Component, DrawableComponent,
+	EventState, FileRevOpen, SyntaxTextComponent,
 };
 use crate::{
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order, symbol},
 	ui::{self, common_nav, style::SharedTheme},
 	AsyncAppNotification, AsyncNotification,
@@ -42,6 +42,7 @@ pub struct RevisionFilesComponent {
 	current_file: SyntaxTextComponent,
 	tree: FileTree,
 	scroll: VerticalScroll,
+	visible: bool,
 	revision: Option<CommitId>,
 	focus: Focus,
 	key_config: SharedKeyConfig,
@@ -72,11 +73,14 @@ impl RevisionFilesComponent {
 			focus: Focus::Tree,
 			key_config,
 			repo,
+			visible: false,
 		}
 	}
 
 	///
 	pub fn set_commit(&mut self, commit: CommitId) -> Result<()> {
+		self.show()?;
+
 		let same_id =
 			self.revision.map(|c| c == commit).unwrap_or_default();
 		if !same_id {
@@ -90,6 +94,16 @@ impl RevisionFilesComponent {
 		}
 
 		Ok(())
+	}
+
+	///
+	pub const fn revision(&self) -> Option<CommitId> {
+		self.revision
+	}
+
+	///
+	pub const fn selection(&self) -> Option<usize> {
+		self.tree.selection()
 	}
 
 	///
@@ -133,8 +147,13 @@ impl RevisionFilesComponent {
 
 	fn blame(&self) -> bool {
 		self.selected_file_path().map_or(false, |path| {
-			self.queue
-				.push(InternalEvent::BlameFile(path, self.revision));
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::BlameFile(BlameFileOpen {
+					file_path: path,
+					commit_id: self.revision,
+					selection: None,
+				}),
+			));
 
 			true
 		})
@@ -142,7 +161,11 @@ impl RevisionFilesComponent {
 
 	fn file_history(&self) -> bool {
 		self.selected_file_path().map_or(false, |path| {
-			self.queue.push(InternalEvent::OpenFileRevlog(path));
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::FileRevlog(FileRevOpen::new(
+					path,
+				)),
+			));
 
 			true
 		})
@@ -278,6 +301,10 @@ impl Component for RevisionFilesComponent {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
+		if !self.is_visible() && !force_all {
+			return CommandBlocking::PassingOn;
+		}
+
 		let is_tree_focused = matches!(self.focus, Focus::Tree);
 
 		if is_tree_focused || force_all {
@@ -316,6 +343,10 @@ impl Component for RevisionFilesComponent {
 		&mut self,
 		event: crossterm::event::Event,
 	) -> Result<EventState> {
+		if !self.is_visible() {
+			return Ok(EventState::NotConsumed);
+		}
+
 		if let Event::Key(key) = event {
 			let is_tree_focused = matches!(self.focus, Focus::Tree);
 			if is_tree_focused
@@ -370,6 +401,19 @@ impl Component for RevisionFilesComponent {
 		}
 
 		Ok(EventState::NotConsumed)
+	}
+
+	fn hide(&mut self) {
+		self.visible = false;
+	}
+
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+		Ok(())
 	}
 }
 

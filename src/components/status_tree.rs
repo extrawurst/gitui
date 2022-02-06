@@ -3,12 +3,12 @@ use super::{
 		filetree::{FileTreeItem, FileTreeItemKind},
 		statustree::{MoveSelection, StatusTree},
 	},
-	CommandBlocking, DrawableComponent,
+	BlameFileOpen, CommandBlocking, DrawableComponent, FileRevOpen,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, NeedsUpdate, Queue},
+	queue::{InternalEvent, NeedsUpdate, Queue, StackablePopupOpen},
 	strings::{self, order},
 	ui,
 	ui::style::SharedTheme,
@@ -22,6 +22,7 @@ use tui::{backend::Backend, layout::Rect, text::Span, Frame};
 //TODO: use new `filetreelist` crate
 
 ///
+#[allow(clippy::struct_excessive_bools)]
 pub struct StatusTreeComponent {
 	title: String,
 	tree: StatusTree,
@@ -33,6 +34,7 @@ pub struct StatusTreeComponent {
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	scroll_top: Cell<usize>,
+	visible: bool,
 }
 
 impl StatusTreeComponent {
@@ -55,6 +57,7 @@ impl StatusTreeComponent {
 			key_config,
 			scroll_top: Cell::new(0),
 			pending: true,
+			visible: false,
 		}
 	}
 
@@ -313,6 +316,10 @@ impl DrawableComponent for StatusTreeComponent {
 		f: &mut Frame<B>,
 		r: Rect,
 	) -> Result<()> {
+		if !self.is_visible() {
+			return Ok(());
+		}
+
 		if self.pending {
 			let items = vec![Span::styled(
 				Cow::from(strings::loading_text(&self.key_config)),
@@ -416,31 +423,35 @@ impl Component for StatusTreeComponent {
 		if self.focused {
 			if let Event::Key(e) = ev {
 				return if e == self.key_config.keys.blame {
-					match (&self.queue, self.selection_file()) {
-						(Some(queue), Some(status_item)) => {
-							//TODO: use correct revision here
-							queue.push(InternalEvent::BlameFile(
-								status_item.path,
-								None,
-							));
-
-							Ok(EventState::Consumed)
-						}
-						_ => Ok(EventState::NotConsumed),
-					}
-				} else if e == self.key_config.keys.file_history {
-					match (&self.queue, self.selection_file()) {
-						(Some(queue), Some(status_item)) => {
-							queue.push(
-								InternalEvent::OpenFileRevlog(
-									status_item.path,
+					if let Some(status_item) = self.selection_file() {
+						self.hide();
+						if let Some(queue) = &self.queue {
+							queue.push(InternalEvent::OpenPopup(
+								StackablePopupOpen::BlameFile(
+									BlameFileOpen {
+										file_path: status_item.path,
+										commit_id: None,
+										selection: None,
+									},
 								),
-							);
-
-							Ok(EventState::Consumed)
+							));
 						}
-						_ => Ok(EventState::NotConsumed),
 					}
+					Ok(EventState::Consumed)
+				} else if e == self.key_config.keys.file_history {
+					if let Some(status_item) = self.selection_file() {
+						self.hide();
+						if let Some(queue) = &self.queue {
+							queue.push(InternalEvent::OpenPopup(
+								StackablePopupOpen::FileRevlog(
+									FileRevOpen::new(
+										status_item.path,
+									),
+								),
+							));
+						}
+					}
+					Ok(EventState::Consumed)
 				} else if e == self.key_config.keys.move_down {
 					Ok(self
 						.move_selection(MoveSelection::Down)
@@ -480,6 +491,19 @@ impl Component for StatusTreeComponent {
 	fn focus(&mut self, focus: bool) {
 		self.focused = focus;
 		self.show_selection(focus);
+	}
+
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
+
+	fn hide(&mut self) {
+		self.visible = false;
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+		Ok(())
 	}
 }
 

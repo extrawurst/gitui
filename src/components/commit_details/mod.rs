@@ -160,6 +160,10 @@ impl DrawableComponent for CommitDetailsComponent {
 		f: &mut Frame<B>,
 		rect: Rect,
 	) -> Result<()> {
+		if !self.visible {
+			return Ok(());
+		}
+
 		let constraints = if self.is_compare() {
 			[Constraint::Length(10), Constraint::Min(0)]
 		} else {
@@ -215,6 +219,10 @@ impl Component for CommitDetailsComponent {
 		if event_pump(ev, self.components_mut().as_mut_slice())?
 			.is_consumed()
 		{
+			if !self.file_tree.is_visible() {
+				self.hide();
+			}
+
 			return Ok(EventState::Consumed);
 		}
 
@@ -250,6 +258,7 @@ impl Component for CommitDetailsComponent {
 	}
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
+		self.file_tree.show()?;
 		Ok(())
 	}
 

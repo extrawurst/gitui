@@ -33,7 +33,7 @@ mod textinput;
 mod utils;
 
 pub use self::status_tree::StatusTreeComponent;
-pub use blame_file::BlameFileComponent;
+pub use blame_file::{BlameFileComponent, BlameFileOpen};
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
@@ -46,9 +46,9 @@ pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
 pub use fetch::FetchComponent;
 pub use file_find_popup::FileFindPopup;
-pub use file_revlog::FileRevlogComponent;
+pub use file_revlog::{FileRevOpen, FileRevlogComponent};
 pub use help::HelpComponent;
-pub use inspect_commit::InspectCommitComponent;
+pub use inspect_commit::{InspectCommitComponent, InspectCommitOpen};
 pub use msg::MsgComponent;
 pub use options_popup::{
 	AppOption, OptionsPopupComponent, SharedOptions,
@@ -59,7 +59,7 @@ pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ConfirmComponent;
 pub use revision_files::RevisionFilesComponent;
-pub use revision_files_popup::RevisionFilesPopup;
+pub use revision_files_popup::{FileTreeOpen, RevisionFilesPopup};
 pub use stashmsg::StashMsgComponent;
 pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;

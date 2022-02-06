@@ -15,7 +15,10 @@ use crate::{
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{KeyConfig, SharedKeyConfig},
-	queue::{Action, InternalEvent, NeedsUpdate, Queue},
+	popup_stack::PopupStack,
+	queue::{
+		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
+	},
 	setup_popups,
 	strings::{self, order},
 	tabs::{FilesTab, Revlog, StashList, Stashing, Status},
@@ -79,6 +82,7 @@ pub struct App {
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	input: Input,
+	popup_stack: PopupStack,
 
 	// "Flags"
 	requires_redraw: Cell<bool>,
@@ -284,6 +288,7 @@ impl App {
 			requires_redraw: Cell::new(false),
 			file_to_open: None,
 			repo,
+			popup_stack: PopupStack::default(),
 		}
 	}
 
@@ -666,6 +671,31 @@ impl App {
 		Ok(())
 	}
 
+	fn open_popup(
+		&mut self,
+		popup: StackablePopupOpen,
+	) -> Result<()> {
+		match popup {
+			StackablePopupOpen::BlameFile(params) => {
+				self.blame_file_popup.open(params)?;
+			}
+			StackablePopupOpen::FileRevlog(param) => {
+				self.file_revlog_popup.open(param)?;
+			}
+			StackablePopupOpen::FileTree(param) => {
+				self.revision_files_popup.open(param)?;
+			}
+			StackablePopupOpen::InspectCommit(param) => {
+				self.inspect_commit_popup.open(param)?;
+			}
+			StackablePopupOpen::CompareCommits(param) => {
+				self.compare_commits_popup.open(param)?;
+			}
+		}
+
+		Ok(())
+	}
+
 	fn process_internal_events(&mut self) -> Result<NeedsUpdate> {
 		let mut flags = NeedsUpdate::empty();
 
@@ -715,16 +745,7 @@ impl App {
 			InternalEvent::TagCommit(id) => {
 				self.tag_commit_popup.open(id)?;
 			}
-			InternalEvent::BlameFile(path, commit_id) => {
-				self.blame_file_popup.open(&path, commit_id)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-			}
-			InternalEvent::OpenFileRevlog(path) => {
-				self.file_revlog_popup.open(&path)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-			}
+
 			InternalEvent::CreateBranch => {
 				self.create_branch_popup.open()?;
 			}
@@ -739,11 +760,6 @@ impl App {
 				self.tags_popup.open()?;
 			}
 			InternalEvent::TabSwitchStatus => self.set_tab(0)?,
-			InternalEvent::InspectCommit(id, tags) => {
-				self.inspect_commit_popup.open(id, tags)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-			}
 			InternalEvent::SelectCommitInRevlog(id) => {
 				if let Err(error) = self.revlog.select_commit(id) {
 					self.queue.push(InternalEvent::ShowErrorMsg(
@@ -788,11 +804,6 @@ impl App {
 			InternalEvent::StatusLastFileMoved => {
 				self.status_tab.last_file_moved()?;
 			}
-			InternalEvent::OpenFileTree(c) => {
-				self.revision_files_popup.open(c)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-			}
 			InternalEvent::OpenFileFinder(files) => {
 				self.find_file_popup.open(&files)?;
 				flags
@@ -812,14 +823,27 @@ impl App {
 
 				flags.insert(NeedsUpdate::ALL);
 			}
-			InternalEvent::CompareCommits(id, other) => {
-				self.compare_commits_popup.open(id, other)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-			}
 			InternalEvent::FileFinderChanged(file) => {
 				self.files_tab.file_finder_update(&file);
 				self.revision_files_popup.file_finder_update(&file);
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::OpenPopup(popup) => {
+				self.open_popup(popup)?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::PopupStackPop => {
+				if let Some(popup) = self.popup_stack.pop() {
+					self.open_popup(popup)?;
+					flags.insert(
+						NeedsUpdate::ALL | NeedsUpdate::COMMANDS,
+					);
+				}
+			}
+			InternalEvent::PopupStackPush(popup) => {
+				self.popup_stack.push(popup);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
