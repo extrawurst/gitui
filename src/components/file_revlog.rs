@@ -1,5 +1,5 @@
 use super::{utils::logitems::ItemBatch, SharedOptions};
-use super::{visibility_blocking, BlameFileOpen};
+use super::{visibility_blocking, BlameFileOpen, InspectCommitOpen};
 use crate::queue::StackablePopupOpen;
 use crate::{
 	components::{
@@ -493,11 +493,16 @@ impl Component for FileRevlogComponent {
 						self.diff.focus(false);
 					}
 				} else if key == self.key_config.keys.enter {
-					if let Some(id) = self.selected_commit() {
+					if let Some(commit_id) = self.selected_commit() {
 						self.hide_stacked(true);
-						self.queue.push(
-							InternalEvent::InspectCommit(id, None),
-						);
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::InspectCommit(
+								InspectCommitOpen {
+									commit_id,
+									tags: None,
+								},
+							),
+						));
 					};
 				} else if key == self.key_config.keys.blame {
 					if let Some(open_request) =

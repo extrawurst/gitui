@@ -1,11 +1,12 @@
 use crate::{
 	components::{
 		AppOption, BlameFileOpen, FileRevOpen, FileTreeOpen,
+		InspectCommitOpen,
 	},
 	tabs::StashingOptions,
 };
 use asyncgit::{
-	sync::{diff::DiffLinePosition, CommitId, CommitTags, TreeFile},
+	sync::{diff::DiffLinePosition, CommitId, TreeFile},
 	PushType,
 };
 use bitflags::bitflags;
@@ -61,6 +62,8 @@ pub enum StackablePopupOpen {
 	FileRevlog(FileRevOpen),
 	///
 	FileTree(FileTreeOpen),
+	///
+	InspectCommit(InspectCommitOpen),
 }
 
 ///
@@ -83,8 +86,6 @@ pub enum InternalEvent {
 	PopupStashing(StashingOptions),
 	///
 	TabSwitchStatus,
-	///
-	InspectCommit(CommitId, Option<CommitTags>),
 	///
 	CompareCommits(CommitId, Option<CommitId>),
 	///

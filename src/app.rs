@@ -685,6 +685,9 @@ impl App {
 			StackablePopupOpen::FileTree(param) => {
 				self.revision_files_popup.open(param)?;
 			}
+			StackablePopupOpen::InspectCommit(param) => {
+				self.inspect_commit_popup.open(param)?;
+			}
 		}
 
 		Ok(())
@@ -754,11 +757,6 @@ impl App {
 				self.tags_popup.open()?;
 			}
 			InternalEvent::TabSwitchStatus => self.set_tab(0)?,
-			InternalEvent::InspectCommit(id, tags) => {
-				self.inspect_commit_popup.open(id, tags)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-			}
 			InternalEvent::SelectCommitInRevlog(id) => {
 				if let Err(error) = self.revlog.select_commit(id) {
 					self.queue.push(InternalEvent::ShowErrorMsg(

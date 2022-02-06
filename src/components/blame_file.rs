@@ -1,6 +1,7 @@
 use super::{
 	utils, visibility_blocking, CommandBlocking, CommandInfo,
 	Component, DrawableComponent, EventState, FileRevOpen,
+	InspectCommitOpen,
 };
 use crate::{
 	components::{utils::string_width_align, ScrollType},
@@ -205,11 +206,16 @@ impl Component for BlameFileComponent {
 				} else if key == self.key_config.keys.page_up {
 					self.move_selection(ScrollType::PageUp);
 				} else if key == self.key_config.keys.focus_right {
-					if let Some(id) = self.selected_commit() {
+					if let Some(commit_id) = self.selected_commit() {
 						self.hide_stacked(true);
-						self.queue.push(
-							InternalEvent::InspectCommit(id, None),
-						);
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::InspectCommit(
+								InspectCommitOpen {
+									commit_id,
+									tags: None,
+								},
+							),
+						));
 					}
 				} else if key == self.key_config.keys.file_history {
 					if let Some(filepath) = self

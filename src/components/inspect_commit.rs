@@ -13,8 +13,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	sync::{diff::DiffOptions, CommitId, CommitTags, RepoPathRef},
-	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
-	DiffType,
+	AsyncDiff, AsyncGitNotification, DiffParams, DiffType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -25,10 +24,15 @@ use tui::{
 	Frame,
 };
 
+#[derive(Clone, Debug)]
+pub struct InspectCommitOpen {
+	pub commit_id: CommitId,
+	pub tags: Option<CommitTags>,
+}
+
 pub struct InspectCommitComponent {
 	queue: Queue,
-	commit_id: Option<CommitId>,
-	tags: Option<CommitTags>,
+	open_request: Option<InspectCommitOpen>,
 	diff: DiffComponent,
 	details: CommitDetailsComponent,
 	git_diff: AsyncDiff,
@@ -126,7 +130,7 @@ impl Component for InspectCommitComponent {
 
 			if let Event::Key(e) = ev {
 				if e == self.key_config.keys.exit_popup {
-					self.hide();
+					self.hide_stacked(false);
 				} else if e == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
@@ -138,16 +142,20 @@ impl Component for InspectCommitComponent {
 					self.details.focus(true);
 					self.diff.focus(false);
 				} else if e == self.key_config.keys.open_file_tree {
-					if let Some(commit) = self.commit_id {
+					if let Some(commit) = self
+						.open_request
+						.as_ref()
+						.map(|open| open.commit_id)
+					{
+						self.hide_stacked(true);
 						self.queue.push(InternalEvent::OpenPopup(
 							StackablePopupOpen::FileTree(
 								FileTreeOpen::new(commit),
 							),
 						));
-						self.hide();
 					}
 				} else if e == self.key_config.keys.focus_left {
-					self.hide();
+					self.hide_stacked(false);
 				}
 
 				return Ok(EventState::Consumed);
@@ -162,7 +170,6 @@ impl Component for InspectCommitComponent {
 	}
 	fn hide(&mut self) {
 		self.visible = false;
-		self.queue.push(InternalEvent::PopupStackPop);
 	}
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
@@ -201,8 +208,7 @@ impl InspectCommitComponent {
 				key_config.clone(),
 				true,
 			),
-			commit_id: None,
-			tags: None,
+			open_request: None,
 			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),
 			visible: false,
 			key_config,
@@ -210,13 +216,9 @@ impl InspectCommitComponent {
 	}
 
 	///
-	pub fn open(
-		&mut self,
-		id: CommitId,
-		tags: Option<CommitTags>,
-	) -> Result<()> {
-		self.commit_id = Some(id);
-		self.tags = tags;
+	pub fn open(&mut self, open: InspectCommitOpen) -> Result<()> {
+		self.open_request = Some(open);
+
 		self.show()?;
 
 		Ok(())
@@ -246,12 +248,14 @@ impl InspectCommitComponent {
 	/// called when any tree component changed selection
 	pub fn update_diff(&mut self) -> Result<()> {
 		if self.is_visible() {
-			if let Some(id) = self.commit_id {
+			if let Some(request) = &self.open_request {
 				if let Some(f) = self.details.files().selection_file()
 				{
 					let diff_params = DiffParams {
 						path: f.path.clone(),
-						diff_type: DiffType::Commit(id),
+						diff_type: DiffType::Commit(
+							request.commit_id,
+						),
 						options: DiffOptions::default(),
 					};
 
@@ -277,16 +281,36 @@ impl InspectCommitComponent {
 	}
 
 	fn update(&mut self) -> Result<()> {
-		self.details.set_commits(
-			self.commit_id.map(CommitFilesParams::from),
-			self.tags.clone(),
-		)?;
-		self.update_diff()?;
+		if let Some(request) = &self.open_request {
+			//TODO: pass as reference and only clone if details changed
+			self.details.set_commits(
+				Some(request.commit_id.into()),
+				request.tags.clone(),
+			)?;
+			self.update_diff()?;
+		}
 
 		Ok(())
 	}
 
 	fn can_focus_diff(&self) -> bool {
 		self.details.files().selection_file().is_some()
+	}
+
+	fn hide_stacked(&mut self, stack: bool) {
+		self.hide();
+
+		if stack {
+			// if let Some(revision) = self.files.revision() {
+			// 	self.queue.push(InternalEvent::PopupStackPush(
+			// 		StackablePopupOpen::FileTree(FileTreeOpen {
+			// 			commit_id: revision,
+			// 			selection: self.files.selection(),
+			// 		}),
+			// 	));
+			// }
+		} else {
+			self.queue.push(InternalEvent::PopupStackPop);
+		}
 	}
 }

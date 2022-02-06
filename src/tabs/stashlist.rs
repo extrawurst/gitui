@@ -2,9 +2,10 @@ use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitList, Component, DrawableComponent, EventState,
+		InspectCommitOpen,
 	},
 	keys::SharedKeyConfig,
-	queue::{Action, InternalEvent, Queue},
+	queue::{Action, InternalEvent, Queue, StackablePopupOpen},
 	strings,
 	ui::style::SharedTheme,
 };
@@ -96,7 +97,14 @@ impl StashList {
 
 	fn inspect(&mut self) {
 		if let Some(e) = self.list.selected_entry() {
-			self.queue.push(InternalEvent::InspectCommit(e.id, None));
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::InspectCommit(
+					InspectCommitOpen {
+						commit_id: e.id,
+						tags: None,
+					},
+				),
+			));
 		}
 	}
 

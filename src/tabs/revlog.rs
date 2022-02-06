@@ -3,6 +3,7 @@ use crate::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitDetailsComponent, CommitList, Component,
 		DrawableComponent, EventState, FileTreeOpen,
+		InspectCommitOpen,
 	},
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue, StackablePopupOpen},
@@ -262,15 +263,21 @@ impl Component for Revlog {
 				{
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
-						|id| {
+						|commit_id| {
+							let tags = self.selected_commit_tags(
+								&Some(commit_id),
+							);
 							self.queue.push(
-								InternalEvent::InspectCommit(
-									id,
-									self.selected_commit_tags(&Some(
-										id,
-									)),
+								InternalEvent::OpenPopup(
+									StackablePopupOpen::InspectCommit(
+										InspectCommitOpen {
+											commit_id,
+											tags,
+										},
+									),
 								),
 							);
+
 							Ok(EventState::Consumed)
 						},
 					);
