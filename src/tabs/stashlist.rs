@@ -99,10 +99,7 @@ impl StashList {
 		if let Some(e) = self.list.selected_entry() {
 			self.queue.push(InternalEvent::OpenPopup(
 				StackablePopupOpen::InspectCommit(
-					InspectCommitOpen {
-						commit_id: e.id,
-						tags: None,
-					},
+					InspectCommitOpen::new(e.id),
 				),
 			));
 		}

@@ -64,6 +64,8 @@ pub enum StackablePopupOpen {
 	FileTree(FileTreeOpen),
 	///
 	InspectCommit(InspectCommitOpen),
+	///
+	CompareCommits(InspectCommitOpen),
 }
 
 ///
@@ -86,8 +88,6 @@ pub enum InternalEvent {
 	PopupStashing(StashingOptions),
 	///
 	TabSwitchStatus,
-	///
-	CompareCommits(CommitId, Option<CommitId>),
 	///
 	SelectCommitInRevlog(CommitId),
 	///

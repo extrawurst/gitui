@@ -293,9 +293,12 @@ impl Component for BranchListComponent {
 				&& self.valid_selection()
 			{
 				self.hide();
-				if let Some(b) = self.get_selected() {
-					self.queue
-						.push(InternalEvent::CompareCommits(b, None));
+				if let Some(commit_id) = self.get_selected() {
+					self.queue.push(InternalEvent::OpenPopup(
+						StackablePopupOpen::CompareCommits(
+							InspectCommitOpen::new(commit_id),
+						),
+					));
 				}
 			} else if e == self.key_config.keys.pull
 				&& !self.local && self.has_remotes
@@ -435,10 +438,7 @@ impl BranchListComponent {
 			self.hide();
 			self.queue.push(InternalEvent::OpenPopup(
 				StackablePopupOpen::InspectCommit(
-					InspectCommitOpen {
-						commit_id,
-						tags: None,
-					},
+					InspectCommitOpen::new(commit_id),
 				),
 			));
 		}

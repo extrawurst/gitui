@@ -61,6 +61,7 @@ impl ChangesComponent {
 
 	///
 	pub fn set_items(&mut self, list: &[StatusItem]) -> Result<()> {
+		self.files.show()?;
 		self.files.update(list)?;
 		Ok(())
 	}

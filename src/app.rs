@@ -688,6 +688,9 @@ impl App {
 			StackablePopupOpen::InspectCommit(param) => {
 				self.inspect_commit_popup.open(param)?;
 			}
+			StackablePopupOpen::CompareCommits(param) => {
+				self.compare_commits_popup.open(param)?;
+			}
 		}
 
 		Ok(())
@@ -819,11 +822,6 @@ impl App {
 				}
 
 				flags.insert(NeedsUpdate::ALL);
-			}
-			InternalEvent::CompareCommits(id, other) => {
-				self.compare_commits_popup.open(id, other)?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
 			InternalEvent::FileFinderChanged(file) => {
 				self.files_tab.file_finder_update(&file);

@@ -210,10 +210,7 @@ impl Component for BlameFileComponent {
 						self.hide_stacked(true);
 						self.queue.push(InternalEvent::OpenPopup(
 							StackablePopupOpen::InspectCommit(
-								InspectCommitOpen {
-									commit_id,
-									tags: None,
-								},
+								InspectCommitOpen::new(commit_id),
 							),
 						));
 					}
@@ -304,7 +301,7 @@ impl BlameFileComponent {
 		});
 		self.file_blame = None;
 		self.table_state.get_mut().select(Some(0));
-		self.show()?;
+		self.visible = true;
 
 		self.update()?;
 

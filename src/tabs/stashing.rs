@@ -269,6 +269,7 @@ impl Component for Stashing {
 		self.options.stash_untracked =
 			!config_untracked_files.include_none();
 
+		self.index.show()?;
 		self.visible = true;
 		self.update()?;
 		Ok(())

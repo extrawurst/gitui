@@ -497,10 +497,7 @@ impl Component for FileRevlogComponent {
 						self.hide_stacked(true);
 						self.queue.push(InternalEvent::OpenPopup(
 							StackablePopupOpen::InspectCommit(
-								InspectCommitOpen {
-									commit_id,
-									tags: None,
-								},
+								InspectCommitOpen::new(commit_id),
 							),
 						));
 					};

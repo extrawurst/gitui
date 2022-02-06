@@ -27,7 +27,30 @@ use tui::{
 #[derive(Clone, Debug)]
 pub struct InspectCommitOpen {
 	pub commit_id: CommitId,
+	/// in case we wanna compare
+	pub compare_id: Option<CommitId>,
 	pub tags: Option<CommitTags>,
+}
+
+impl InspectCommitOpen {
+	pub const fn new(commit_id: CommitId) -> Self {
+		Self {
+			commit_id,
+			compare_id: None,
+			tags: None,
+		}
+	}
+
+	pub const fn new_with_tags(
+		commit_id: CommitId,
+		tags: Option<CommitTags>,
+	) -> Self {
+		Self {
+			commit_id,
+			compare_id: None,
+			tags,
+		}
+	}
 }
 
 pub struct InspectCommitComponent {
@@ -125,6 +148,10 @@ impl Component for InspectCommitComponent {
 			if event_pump(ev, self.components_mut().as_mut_slice())?
 				.is_consumed()
 			{
+				if !self.details.is_visible() {
+					self.hide_stacked(true);
+				}
+
 				return Ok(EventState::Consumed);
 			}
 
@@ -218,7 +245,6 @@ impl InspectCommitComponent {
 	///
 	pub fn open(&mut self, open: InspectCommitOpen) -> Result<()> {
 		self.open_request = Some(open);
-
 		self.show()?;
 
 		Ok(())
@@ -301,14 +327,11 @@ impl InspectCommitComponent {
 		self.hide();
 
 		if stack {
-			// if let Some(revision) = self.files.revision() {
-			// 	self.queue.push(InternalEvent::PopupStackPush(
-			// 		StackablePopupOpen::FileTree(FileTreeOpen {
-			// 			commit_id: revision,
-			// 			selection: self.files.selection(),
-			// 		}),
-			// 	));
-			// }
+			if let Some(open_request) = self.open_request.take() {
+				self.queue.push(InternalEvent::PopupStackPush(
+					StackablePopupOpen::InspectCommit(open_request),
+				));
+			}
 		} else {
 			self.queue.push(InternalEvent::PopupStackPop);
 		}
