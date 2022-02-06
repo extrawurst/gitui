@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Fixed
+**popup stacking**
+
+![popup-stacking](assets/popup-stacking.gif)
 
 ### Added
+* stack popups ([#846](https://github.com/extrawurst/gitui/846))
 * file history log [[@cruessler](https://github.com/cruessler)] ([#381](https://github.com/extrawurst/gitui/issues/381))
 
 ### Fixed
