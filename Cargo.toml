@@ -47,7 +47,7 @@ simplelog = { version = "0.11", default-features = false }
 syntect = { version = "4.6", default-features = false, features = ["metadata", "default-fancy"] }
 textwrap = "0.14"
 tui = { version = "0.16", default-features = false, features = ['crossterm', 'serde'] }
-unicode-segmentation = "1.8"
+unicode-segmentation = "1.9"
 unicode-truncate = "0.2"
 unicode-width = "0.1"
 
