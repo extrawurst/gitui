@@ -147,6 +147,12 @@ NixOS
 nix-env -iA nixos.gitui
 ```
 
+### [Termux](https://github.com/termux/termux-packages/tree/master/packages/gitui) (Android)
+
+```
+pkg install gitui
+```
+
 ## Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
