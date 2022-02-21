@@ -1,7 +1,7 @@
 [package]
 name = "invalidstring"
 version = "0.1.2"
-authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
+authors = ["extrawurst <mail@rusticorn.com>"]
 edition = "2018"
 description = "just for testing invalid string data"
 homepage = "https://github.com/extrawurst/gitui"

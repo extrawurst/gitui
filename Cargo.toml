@@ -1,7 +1,7 @@
 [package]
 name = "gitui"
 version = "0.20.1"
-authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
+authors = ["extrawurst <mail@rusticorn.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2018"
 rust-version = "1.50"
