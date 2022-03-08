@@ -412,6 +412,7 @@ impl Status {
 				.unwrap_or(RepoState::Clean);
 
 			self.branch_compare();
+			self.update_status()?;
 		}
 
 		Ok(())
@@ -462,17 +463,17 @@ impl Status {
 
 		if self.git_action_executed {
 			self.git_action_executed = false;
+		}
 
-			if self.focus == Focus::WorkDir
-				&& workdir_status.items.is_empty()
-				&& !stage_status.items.is_empty()
-			{
-				self.switch_focus(Focus::Stage)?;
-			} else if self.focus == Focus::Stage
-				&& stage_status.items.is_empty()
-			{
-				self.switch_focus(Focus::WorkDir)?;
-			}
+		if self.focus == Focus::WorkDir
+			&& workdir_status.items.is_empty()
+			&& !stage_status.items.is_empty()
+		{
+			self.switch_focus(Focus::Stage)?;
+		} else if self.focus == Focus::Stage
+			&& stage_status.items.is_empty()
+		{
+			self.switch_focus(Focus::WorkDir)?;
 		}
 
 		Ok(())
