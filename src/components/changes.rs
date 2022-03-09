@@ -104,30 +104,30 @@ impl ChangesComponent {
 							path,
 						)?,
 					};
+				} else {
+					let config =
+						self.options.borrow().status_show_untracked;
 
-					if self.is_empty() {
-						self.queue
-							.push(InternalEvent::StatusLastFileMoved);
-					}
-
-					return Ok(true);
+					//TODO: check if we can handle the one file case with it aswell
+					sync::stage_add_all(
+						&self.repo.borrow(),
+						tree_item.info.full_path.as_str(),
+						config,
+					)?;
 				}
 
-				let config =
-					self.options.borrow().status_show_untracked;
-
-				//TODO: check if we can handle the one file case with it aswell
-				sync::stage_add_all(
+				if sync::is_workdir_clean(
 					&self.repo.borrow(),
-					tree_item.info.full_path.as_str(),
-					config,
-				)?;
-
-				return Ok(true);
+					self.options.borrow().status_show_untracked,
+				)? {
+					self.queue
+						.push(InternalEvent::StatusLastFileMoved);
+				}
+			} else {
+				let path = tree_item.info.full_path.as_str();
+				sync::reset_stage(&self.repo.borrow(), path)?;
 			}
 
-			let path = tree_item.info.full_path.as_str();
-			sync::reset_stage(&self.repo.borrow(), path)?;
 			return Ok(true);
 		}
 
