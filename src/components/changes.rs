@@ -116,9 +116,9 @@ impl ChangesComponent {
 					)?;
 				}
 
-				//TODO: this might be slow in big repos, 
-				// in theory we should be able to ask the tree structure 
-				// if we are currently on a leaf or a lonely branch that 
+				//TODO: this might be slow in big repos,
+				// in theory we should be able to ask the tree structure
+				// if we are currently on a leaf or a lonely branch that
 				// would mean that after staging the workdir becomes empty
 				if sync::is_workdir_clean(
 					&self.repo.borrow(),
