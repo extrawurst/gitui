@@ -88,15 +88,18 @@ impl FileFindPopup {
 			let matcher =
 				fuzzy_matcher::skim::SkimMatcherV2::default();
 
-			self.files_filtered.extend(
+			let mut files =
 				self.files.iter().enumerate().filter_map(|a| {
 					a.1.path.to_str().and_then(|path| {
 						matcher
 							.fuzzy_indices(path, q)
-							.map(|(_, indicies)| (a.0, indicies))
+							.map(|(score, indices)| (score, a.0, indices))
 					})
-				}),
-			);
+			}).collect::<Vec<(_, _, _)>>();
+
+			files.sort_by(|(score1, _, _), (score2, _, _)| score2.cmp(score1));
+
+			self.files_filtered.extend(files.into_iter().map(|entry| (entry.1, entry.2)));
 		}
 
 		self.selection = 0;
