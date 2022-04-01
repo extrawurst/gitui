@@ -429,7 +429,7 @@ mod tests {
 		},
 	};
 	use std::{
-		fs::{self, File},
+		fs::{self, remove_file, File},
 		io::Write,
 		path::Path,
 	};
@@ -683,5 +683,51 @@ mod tests {
 		assert_eq!(diff.size_delta, 1);
 
 		Ok(())
+	}
+
+	#[test]
+	fn test_rename() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		assert_eq!(get_statuses(repo_path), (0, 0));
+
+		let file_path = root.join("bar.txt");
+
+		{
+			File::create(&file_path)
+				.unwrap()
+				.write_all(HUNK_A.as_bytes())
+				.unwrap();
+		}
+
+		let res = get_status(repo_path, StatusType::WorkingDir, None)
+			.unwrap();
+		assert_eq!(res.len(), 1);
+		assert_eq!(res[0].new_path, "bar.txt");
+		assert_eq!(res[0].old_path, Some("bar.txt".to_string()));
+
+		stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
+		assert_eq!(get_statuses(repo_path), (0, 1));
+
+		// Move file
+		let other_file_path = root.join("baz.txt");
+		{
+			File::create(&other_file_path)
+				.unwrap()
+				.write_all(HUNK_A.as_bytes())
+				.unwrap();
+			remove_file(&file_path).unwrap();
+		}
+
+		assert_eq!(get_statuses(repo_path), (1, 1));
+
+		let res =
+			get_diff(repo_path, "bar.txt", "baz.txt", false, None)
+				.unwrap();
+
+		assert_eq!(res.hunks.len(), 0)
 	}
 }
