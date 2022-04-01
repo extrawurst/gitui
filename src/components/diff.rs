@@ -14,7 +14,7 @@ use anyhow::Result;
 use asyncgit::{
 	hash,
 	sync::{self, diff::DiffLinePosition, RepoPathRef},
-	DiffLine, DiffLineType, FileDiff, StatusItemType,
+	DiffLine, DiffLineType, Error, FileDiff, StatusItemType,
 };
 use bytesize::ByteSize;
 use crossterm::event::Event;
@@ -521,7 +521,13 @@ impl DiffComponent {
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 	}
 
-	fn reset_hunk(&self) {
+	fn reset_hunk(&self) -> Result<()> {
+		if self.current.old_path.is_some() {
+			return Err(Error::Generic(
+				"Cannot reset in renamed files".to_string(),
+			)
+			.into());
+		}
 		if let Some(diff) = &self.diff {
 			if let Some(hunk) = self.selected_hunk {
 				let hash = diff.hunks[hunk].header_hash;
@@ -534,6 +540,7 @@ impl DiffComponent {
 				));
 			}
 		}
+		Ok(())
 	}
 
 	fn reset_lines(&self) {
@@ -793,7 +800,11 @@ impl Component for DiffComponent {
 						if diff.untracked {
 							self.reset_untracked();
 						} else {
-							self.reset_hunk();
+							try_or_popup!(
+								self,
+								"hunk error: ",
+								self.reset_hunk()
+							);
 						}
 					}
 					Ok(EventState::Consumed)
