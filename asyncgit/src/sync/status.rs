@@ -110,6 +110,37 @@ fn get_diff<'a>(
 		})
 		.flatten()
 }
+///
+pub fn is_workdir_clean(
+	repo_path: &RepoPath,
+	show_untracked: Option<ShowUntrackedFilesConfig>,
+) -> Result<bool> {
+	let repo = repo(repo_path)?;
+
+	if repo.is_bare() && !repo.is_worktree() {
+		return Ok(true);
+	}
+
+	let show_untracked = if let Some(config) = show_untracked {
+		config
+	} else {
+		untracked_files_config_repo(&repo)?
+	};
+
+	let mut options = StatusOptions::default();
+	options
+		.show(StatusShow::Workdir)
+		.update_index(true)
+		.include_untracked(show_untracked.include_untracked())
+		.renames_head_to_index(true)
+		.recurse_untracked_dirs(
+			show_untracked.recurse_untracked_dirs(),
+		);
+
+	let statuses = repo.statuses(Some(&mut options))?;
+
+	Ok(statuses.is_empty())
+}
 
 /// gurantees sorting
 pub fn get_status(

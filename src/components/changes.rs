@@ -120,26 +120,32 @@ impl ChangesComponent {
 							new_path,
 						)?,
 					};
+				} else {
+					let config =
+						self.options.borrow().status_show_untracked;
 
-					if self.is_empty() {
-						self.queue
-							.push(InternalEvent::StatusLastFileMoved);
-					}
-
-					return Ok(true);
+					//TODO: check if we can handle the one file case with it aswell
+					sync::stage_add_all(
+						&self.repo.borrow(),
+						tree_item.info.full_path.as_str(),
+						config,
+					)?;
 				}
 
-				let config =
-					self.options.borrow().status_show_untracked;
-
-				//TODO: check if we can handle the one file case with it aswell
-				sync::stage_add_all(
+				//TODO: this might be slow in big repos,
+				// in theory we should be able to ask the tree structure
+				// if we are currently on a leaf or a lonely branch that
+				// would mean that after staging the workdir becomes empty
+				if sync::is_workdir_clean(
 					&self.repo.borrow(),
-					tree_item.info.full_path.as_str(),
-					config,
-				)?;
-
-				return Ok(true);
+					self.options.borrow().status_show_untracked,
+				)? {
+					self.queue
+						.push(InternalEvent::StatusLastFileMoved);
+				}
+			} else {
+				let path = tree_item.info.full_path.as_str();
+				sync::reset_stage(&self.repo.borrow(), path)?;
 			}
 
 			if let FileTreeItemKind::File(i) = tree_item.kind {
