@@ -46,7 +46,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 				.help("Set the git directory")
 				.short("d")
 				.long("directory")
-                .env("GIT_DIR")
+				.env("GIT_DIR")
 				.takes_value(true),
 		)
 		.arg(
@@ -54,7 +54,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 				.help("Set the working directory")
 				.short("w")
 				.long("workdir")
-                .env("GIT_WORK_TREE")
+				.env("GIT_WORK_TREE")
 				.takes_value(true),
 		);
 
