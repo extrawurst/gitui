@@ -90,7 +90,8 @@ impl ChangesComponent {
 	fn index_add_remove(&mut self) -> Result<bool> {
 		if let Some(tree_item) = self.selection() {
 			if self.is_working_dir {
-				if let FileTreeItemKind::File(i) = tree_item.kind {
+				if let FileTreeItemKind::File(ref i) = tree_item.kind
+				{
 					let new_path = Path::new(i.new_path.as_str());
 					let old_path = i
 						.old_path
