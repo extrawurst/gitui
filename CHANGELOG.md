@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * stack popups ([#846](https://github.com/extrawurst/gitui/846))
 * file history log [[@cruessler](https://github.com/cruessler)] ([#381](https://github.com/extrawurst/gitui/issues/381))
 * termux support on andriod [[@PeroSar](https://github.com/PeroSar)] ([#1139](https://github.com/extrawurst/gitui/issues/1139))
-* use `GIT_DIR` and `GIT_WORK_DIR` from environment if set
+* use `GIT_DIR` and `GIT_WORK_DIR` from environment if set ([#1191](https://github.com/extrawurst/gitui/pull/1191))
 
 ### Fixed
 * opening tags list without remotes ([#1111](https://github.com/extrawurst/gitui/1111))
