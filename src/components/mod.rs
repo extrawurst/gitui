@@ -139,8 +139,8 @@ macro_rules! draw_popups {
 #[macro_export]
 macro_rules! setup_popups {
     ($self:ident, [$($element:ident),+]) => {
-        crate::any_popup_visible!($self, [$($element),+]);
-        crate::draw_popups!($self, [ $($element),+ ]);
+        $crate::any_popup_visible!($self, [$($element),+]);
+        $crate::draw_popups!($self, [ $($element),+ ]);
     };
 }
 
