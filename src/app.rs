@@ -864,7 +864,7 @@ impl App {
 					flags.insert(NeedsUpdate::ALL);
 				}
 			}
-			Action::StashDrop(_) | Action::StashPop(_) => {
+			Action::StashDrop(ref ids) => {
 				if let Err(e) = StashList::action_confirmed(
 					&self.repo.borrow(),
 					&action,
@@ -874,6 +874,29 @@ impl App {
 					));
 				}
 
+				ids.replace(vec![]);
+				flags.insert(NeedsUpdate::ALL);
+			}
+			Action::StashPop {
+				ref marked_commit_ids,
+				commit_id,
+			} => {
+				if let Err(e) = StashList::action_confirmed(
+					&self.repo.borrow(),
+					&action,
+				) {
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						e.to_string(),
+					));
+				}
+
+				let mut marked_commit_ids_without_poped =
+					marked_commit_ids.take();
+				marked_commit_ids_without_poped
+					.retain(|&marked| marked != commit_id);
+
+				marked_commit_ids
+					.replace(marked_commit_ids_without_poped);
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetHunk(path, hash) => {

@@ -78,11 +78,13 @@ impl StashList {
 	fn drop_stash(&mut self) {
 		if self.list.marked_count() > 0 {
 			self.queue.push(InternalEvent::ConfirmAction(
-				Action::StashDrop(self.list.marked().to_vec()),
+				Action::StashDrop(self.list.marked()),
 			));
 		} else if let Some(e) = self.list.selected_entry() {
 			self.queue.push(InternalEvent::ConfirmAction(
-				Action::StashDrop(vec![e.id]),
+				Action::StashDrop(std::rc::Rc::new(
+					std::cell::RefCell::new(vec![e.id]),
+				)),
 			));
 		}
 	}
@@ -90,7 +92,10 @@ impl StashList {
 	fn pop_stash(&mut self) {
 		if let Some(e) = self.list.selected_entry() {
 			self.queue.push(InternalEvent::ConfirmAction(
-				Action::StashPop(e.id),
+				Action::StashPop {
+					marked_commit_ids: self.list.marked(),
+					commit_id: e.id,
+				},
 			));
 		}
 	}
@@ -111,15 +116,22 @@ impl StashList {
 		action: &Action,
 	) -> Result<()> {
 		match action {
-			Action::StashDrop(ids) => Self::drop(repo, ids)?,
-			Action::StashPop(id) => Self::pop(repo, *id)?,
+			Action::StashDrop(ids) => {
+				Self::drop(repo, ids.borrow().iter())?;
+			}
+			Action::StashPop { commit_id, .. } => {
+				Self::pop(repo, *commit_id)?;
+			}
 			_ => (),
 		};
 
 		Ok(())
 	}
 
-	fn drop(repo: &RepoPath, ids: &[CommitId]) -> Result<()> {
+	fn drop<'a>(
+		repo: &RepoPath,
+		ids: impl Iterator<Item = &'a CommitId>,
+	) -> Result<()> {
 		for id in ids {
 			sync::stash_drop(repo, *id)?;
 		}

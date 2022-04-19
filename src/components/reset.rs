@@ -141,11 +141,11 @@ impl ConfirmComponent {
                 ),
                 Action::StashDrop(ids) => (
                     strings::confirm_title_stashdrop(
-                        &self.key_config,ids.len()>1
+                        &self.key_config,ids.borrow().len()>1
                     ),
-                    strings::confirm_msg_stashdrop(&self.key_config,ids),
+                    strings::confirm_msg_stashdrop(&self.key_config, &ids.borrow().clone()),
                 ),
-                Action::StashPop(_) => (
+                Action::StashPop{ .. } => (
                     strings::confirm_title_stashpop(&self.key_config),
                     strings::confirm_msg_stashpop(&self.key_config),
                 ),
