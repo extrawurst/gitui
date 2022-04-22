@@ -35,11 +35,11 @@ pub fn get_submodules(
 ///
 pub fn update_submodule(
 	repo_path: &RepoPath,
-	path: String,
+	path: &str,
 ) -> Result<()> {
 	let repo = repo(repo_path)?;
 
-	let mut submodule = repo.find_submodule(&path)?;
+	let mut submodule = repo.find_submodule(path)?;
 
 	let mut options = SubmoduleUpdateOptions::new();
 
