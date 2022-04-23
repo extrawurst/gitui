@@ -113,7 +113,7 @@ impl StashList {
 	) -> Result<()> {
 		match action {
 			Action::StashDrop(ids) => self.drop(repo, ids)?,
-			Action::StashPop(id) => Self::pop(repo, *id)?,
+			Action::StashPop(id) => self.pop(repo, *id)?,
 			_ => (),
 		};
 
@@ -135,8 +135,12 @@ impl StashList {
 		Ok(())
 	}
 
-	fn pop(repo: &RepoPath, id: CommitId) -> Result<()> {
+	fn pop(&mut self, repo: &RepoPath, id: CommitId) -> Result<()> {
 		sync::stash_pop(repo, id)?;
+
+		self.list.clear_marked();
+		self.update()?;
+
 		Ok(())
 	}
 }
