@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * opening tags list without remotes ([#1111](https://github.com/extrawurst/gitui/issues/1111))
 * tabs indentation in blame [[@fersilva16](https://github.com/fersilva16)] ([#1111](https://github.com/extrawurst/gitui/issues/1117))
 * switch focus to index after staging last file ([#1169](https://github.com/extrawurst/gitui/pull/1169))
+* fix stashlist multi marking not updated after dropping ([#1207](https://github.com/extrawurst/gitui/pull/1207))
 
 ## [0.20.1] - 2021-01-26
 
