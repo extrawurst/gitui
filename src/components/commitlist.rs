@@ -138,6 +138,11 @@ impl CommitList {
 		&self.marked
 	}
 
+	///
+	pub fn clear_marked(&mut self) {
+		self.marked.clear();
+	}
+
 	pub fn copy_entry_hash(&self) -> Result<()> {
 		if let Some(e) = self.items.iter().nth(
 			self.selection.saturating_sub(self.items.index_offset()),
