@@ -21,20 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * termux support on andriod [[@PeroSar](https://github.com/PeroSar)] ([#1139](https://github.com/extrawurst/gitui/issues/1139))
 
 ### Fixed
-* opening tags list without remotes ([#1111](https://github.com/extrawurst/gitui/1111))
+* opening tags list without remotes ([#1111](https://github.com/extrawurst/gitui/issues/1111))
 * tabs indentation in blame [[@fersilva16](https://github.com/fersilva16)] ([#1111](https://github.com/extrawurst/gitui/issues/1117))
-* switch focus to index after staging last file ([#1169](https://github.com/extrawurst/gitui/1169))
+* switch focus to index after staging last file ([#1169](https://github.com/extrawurst/gitui/pull/1169))
 
 ## [0.20.1] - 2021-01-26
 
 This is was a immediate followup patch release to `0.20` see [release notes](https://github.com/extrawurst/gitui/releases/tag/v0.20.0) for the whole list of goodies in `0.20`.
 
 ### Added
-* support proxy auto detection via env's like `HTTP_PROXY` ([#994](https://github.com/extrawurst/gitui/994))
+* support proxy auto detection via env's like `HTTP_PROXY` ([#994](https://github.com/extrawurst/gitui/issues/994))
 
 ### Fixed
-* severe performance regression in `0.20` ([#1102](https://github.com/extrawurst/gitui/1102))
-* several smaller performance improvements via caching ([#1104](https://github.com/extrawurst/gitui/1104))
+* severe performance regression in `0.20` ([#1102](https://github.com/extrawurst/gitui/issues/1102))
+* several smaller performance improvements via caching ([#1104](https://github.com/extrawurst/gitui/issues/1104))
 * windows release deployment via CD broken
 
 ## [0.20] - 2021-01-25 - Tag Annotations
