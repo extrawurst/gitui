@@ -81,7 +81,9 @@ pub use stash::{
 };
 pub use state::{repo_state, RepoState};
 pub use status::is_workdir_clean;
-pub use submodules::{get_submodules, update_submodule};
+pub use submodules::{
+	get_submodules, update_submodule, SubmoduleInfo,
+};
 pub use tags::{
 	delete_tag, get_tags, get_tags_with_metadata, CommitTags, Tag,
 	TagWithMetadata, Tags,

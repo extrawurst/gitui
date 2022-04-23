@@ -5,10 +5,15 @@ use git2::SubmoduleUpdateOptions;
 use super::{repo, CommitId, RepoPath};
 use crate::error::Result;
 
+///
 pub struct SubmoduleInfo {
+	///
 	pub path: PathBuf,
+	///
 	pub url: Option<String>,
+	///
 	pub id: Option<CommitId>,
+	///
 	pub head_id: Option<CommitId>,
 }
 
