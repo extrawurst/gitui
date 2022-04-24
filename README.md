@@ -32,11 +32,12 @@
 5. [Limitations](#limitations)
 6. [Installation](#installation)
 7. [Build](#build)
-8. [Diagnostics](#diagnostics)
-9. [Color Theme](#theme)
-10. [Key Bindings](#bindings)
-11. [Sponsoring](#sponsoring)
-12. [Inspiration](#inspiration)
+8. [FAQs](#faqs)
+9. [Diagnostics](#diagnostics)
+10. [Color Theme](#theme)
+11. [Key Bindings](#bindings)
+12. [Sponsoring](#sponsoring)
+13. [Inspiration](#inspiration)
 
 ## 1. <a name="features"></a> Features <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -181,7 +182,11 @@ works if `libgit2` builded with `-DENABLE_TRACE=ON`
 
 this feature enabled by default, to disable: `cargo install --no-default-features`
 
-## 8. <a name="diagnostics"></a> Diagnostics <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 8. <a name="faqs"></a> FAQs <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+see [FAQs page](./FAQ.md)
+
+## 9. <a name="diagnostics"></a> Diagnostics <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 To run with logging enabled run `gitui -l`.
 
@@ -192,7 +197,7 @@ This will log to:
 - Linux: `$HOME/.cache/gitui/gitui.log`
 - Windows: `%LOCALAPPDATA%/gitui/gitui.log`
 
-## 9. <a name="theme"></a> Color Theme <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 10. <a name="theme"></a> Color Theme <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 ![](assets/light-theme.png)
 
@@ -200,15 +205,15 @@ This will log to:
 
 However, you can customize everything to your liking: See [Themes](THEMES.md).
 
-## 10. <a name="bindings"></a> Key Bindings <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 11. <a name="bindings"></a> Key Bindings <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to set them to `vim`-like bindings.
 
-## 11. <a name="sponsoring"></a> Sponsoring <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 12. <a name="sponsoring"></a> Sponsoring <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 [![github](https://img.shields.io/badge/-GitHub%20Sponsors-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/extrawurst)
 
-## 12. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 13. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - [lazygit](https://github.com/jesseduffield/lazygit)
 - [tig](https://github.com/jonas/tig)
