@@ -128,6 +128,7 @@ impl ChangesComponent {
 						.push(InternalEvent::StatusLastFileMoved);
 				}
 			} else {
+				// this is a staged entry, so lets unstage it
 				let path = tree_item.info.full_path.as_str();
 				sync::reset_stage(&self.repo.borrow(), path)?;
 			}
