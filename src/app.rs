@@ -865,10 +865,10 @@ impl App {
 				}
 			}
 			Action::StashDrop(_) | Action::StashPop(_) => {
-				if let Err(e) = StashList::action_confirmed(
-					&self.repo.borrow(),
-					&action,
-				) {
+				if let Err(e) = self
+					.stashlist_tab
+					.action_confirmed(&self.repo.borrow(), &action)
+				{
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						e.to_string(),
 					));
