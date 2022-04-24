@@ -30,8 +30,10 @@ bitflags! {
 
 /// data of item that is supposed to be reset
 pub struct ResetItem {
-	/// path to the item (folder/file)
-	pub path: String,
+	/// old path to the item (folder/file)
+	pub old_path: Option<String>,
+	/// new path to the item (folder/file)
+	pub new_path: String,
 	/// are talking about a folder here? otherwise it's a single file
 	pub is_folder: bool,
 }

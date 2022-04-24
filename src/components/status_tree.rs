@@ -172,21 +172,47 @@ impl StatusTreeComponent {
 			FileTreeItemKind::File(status_item) => {
 				let status_char =
 					Self::item_status_char(status_item.status);
-				let file = Path::new(&status_item.path)
+				let file = Path::new(&status_item.new_path)
 					.file_name()
 					.and_then(std::ffi::OsStr::to_str)
 					.expect("invalid path.");
+				let old_file_prefix = if status_item.status
+					== StatusItemType::Renamed
+				{
+					status_item
+						.old_path
+						.as_ref()
+						.map(|path| {
+							Path::new(path)
+								.file_name()
+								.and_then(std::ffi::OsStr::to_str)
+								.map(|old_file| {
+									format!("{} -> ", old_file)
+								})
+								.expect("invalid path.")
+						})
+						.unwrap_or_default()
+				} else {
+					String::from("")
+				};
 
 				let txt = if selected {
 					format!(
-						"{} {}{:w$}",
+						"{} {}{}{:w$}",
 						status_char,
 						indent_str,
+						old_file_prefix,
 						file,
 						w = width as usize
 					)
 				} else {
-					format!("{} {}{}", status_char, indent_str, file)
+					format!(
+						"{} {}{}{}",
+						status_char,
+						indent_str,
+						old_file_prefix,
+						file
+					)
 				};
 
 				Some(Span::styled(
@@ -429,7 +455,8 @@ impl Component for StatusTreeComponent {
 							queue.push(InternalEvent::OpenPopup(
 								StackablePopupOpen::BlameFile(
 									BlameFileOpen {
-										file_path: status_item.path,
+										file_path: status_item
+											.new_path,
 										commit_id: None,
 										selection: None,
 									},
@@ -445,7 +472,7 @@ impl Component for StatusTreeComponent {
 							queue.push(InternalEvent::OpenPopup(
 								StackablePopupOpen::FileRevlog(
 									FileRevOpen::new(
-										status_item.path,
+										status_item.new_path,
 									),
 								),
 							));
@@ -516,7 +543,8 @@ mod tests {
 		items
 			.iter()
 			.map(|a| StatusItem {
-				path: String::from(*a),
+				old_path: None,
+				new_path: String::from(*a),
 				status: StatusItemType::Modified,
 			})
 			.collect::<Vec<_>>()

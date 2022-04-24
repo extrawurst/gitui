@@ -10,7 +10,8 @@ use crate::{
 };
 use easy_cast::Conv;
 use git2::{
-	Delta, Diff, DiffDelta, DiffFormat, DiffHunk, Patch, Repository,
+	Delta, Diff, DiffDelta, DiffFindOptions, DiffFormat, DiffHunk,
+	Patch, Repository,
 };
 use scopetime::scope_time;
 use std::{cell::RefCell, fs, path::Path, rc::Rc};
@@ -149,7 +150,8 @@ impl Default for DiffOptions {
 
 pub(crate) fn get_diff_raw<'a>(
 	repo: &'a Repository,
-	p: &str,
+	src: &str,
+	dst: &str,
 	stage: bool,
 	reverse: bool,
 	options: Option<DiffOptions>,
@@ -162,10 +164,11 @@ pub(crate) fn get_diff_raw<'a>(
 		opt.ignore_whitespace(options.ignore_whitespace);
 		opt.interhunk_lines(options.interhunk_lines);
 	}
-	opt.pathspec(p);
+	opt.pathspec(src);
+	opt.pathspec(dst);
 	opt.reverse(reverse);
 
-	let diff = if stage {
+	let mut diff = if stage {
 		// diff against head
 		if let Ok(id) = get_head_repo(repo) {
 			let parent = repo.find_commit(id.into())?;
@@ -189,13 +192,17 @@ pub(crate) fn get_diff_raw<'a>(
 		repo.diff_index_to_workdir(None, Some(&mut opt))?
 	};
 
+	diff.find_similar(Some(
+		DiffFindOptions::new().renames(true).for_untracked(true),
+	))?;
 	Ok(diff)
 }
 
 /// returns diff of a specific file either in `stage` or workdir
 pub fn get_diff(
 	repo_path: &RepoPath,
-	p: &str,
+	src: &str,
+	dst: &str,
 	stage: bool,
 	options: Option<DiffOptions>,
 ) -> Result<FileDiff> {
@@ -203,7 +210,7 @@ pub fn get_diff(
 
 	let repo = repo(repo_path)?;
 	let work_dir = work_dir(&repo)?;
-	let diff = get_diff_raw(&repo, p, stage, false, options)?;
+	let diff = get_diff_raw(&repo, src, dst, stage, false, options)?;
 
 	raw_diff_to_file_diff(&diff, work_dir)
 }
@@ -250,8 +257,8 @@ pub fn get_diff_commits(
 ///
 //TODO: refactor into helper type with the inline closures as dedicated functions
 #[allow(clippy::too_many_lines)]
-fn raw_diff_to_file_diff<'a>(
-	diff: &'a Diff,
+fn raw_diff_to_file_diff(
+	diff: &Diff,
 	work_dir: &Path,
 ) -> Result<FileDiff> {
 	let res = Rc::new(RefCell::new(FileDiff::default()));
@@ -422,7 +429,7 @@ mod tests {
 		},
 	};
 	use std::{
-		fs::{self, File},
+		fs::{self, remove_file, File},
 		io::Write,
 		path::Path,
 	};
@@ -444,8 +451,14 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (1, 0));
 
-		let diff =
-			get_diff(repo_path, "foo/bar.txt", false, None).unwrap();
+		let diff = get_diff(
+			repo_path,
+			"foo/bar.txt",
+			"foo/bar.txt",
+			false,
+			None,
+		)
+		.unwrap();
 
 		assert_eq!(diff.hunks.len(), 1);
 		assert_eq!(&*diff.hunks[0].lines[1].content, "test");
@@ -474,6 +487,7 @@ mod tests {
 
 		let diff = get_diff(
 			repo_path,
+			file_path.to_str().unwrap(),
 			file_path.to_str().unwrap(),
 			true,
 			None,
@@ -530,7 +544,8 @@ mod tests {
 		let res = get_status(repo_path, StatusType::WorkingDir, None)
 			.unwrap();
 		assert_eq!(res.len(), 1);
-		assert_eq!(res[0].path, "bar.txt");
+		assert_eq!(res[0].new_path, "bar.txt");
+		assert_eq!(res[0].old_path, Some("bar.txt".to_string()));
 
 		stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
 		assert_eq!(get_statuses(repo_path), (0, 1));
@@ -546,7 +561,8 @@ mod tests {
 		assert_eq!(get_statuses(repo_path), (1, 1));
 
 		let res =
-			get_diff(repo_path, "bar.txt", false, None).unwrap();
+			get_diff(repo_path, "bar.txt", "bar.txt", false, None)
+				.unwrap();
 
 		assert_eq!(res.hunks.len(), 2)
 	}
@@ -567,6 +583,7 @@ mod tests {
 
 		let diff = get_diff(
 			&sub_path.to_str().unwrap().into(),
+			file_path.to_str().unwrap(),
 			file_path.to_str().unwrap(),
 			false,
 			None,
@@ -596,6 +613,7 @@ mod tests {
 		let diff = get_diff(
 			repo_path,
 			file_path.to_str().unwrap(),
+			file_path.to_str().unwrap(),
 			false,
 			None,
 		)
@@ -621,6 +639,7 @@ mod tests {
 
 		let diff = get_diff(
 			repo_path,
+			file_path.to_str().unwrap(),
 			file_path.to_str().unwrap(),
 			false,
 			None,
@@ -664,5 +683,51 @@ mod tests {
 		assert_eq!(diff.size_delta, 1);
 
 		Ok(())
+	}
+
+	#[test]
+	fn test_rename() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		assert_eq!(get_statuses(repo_path), (0, 0));
+
+		let file_path = root.join("bar.txt");
+
+		{
+			File::create(&file_path)
+				.unwrap()
+				.write_all(HUNK_A.as_bytes())
+				.unwrap();
+		}
+
+		let res = get_status(repo_path, StatusType::WorkingDir, None)
+			.unwrap();
+		assert_eq!(res.len(), 1);
+		assert_eq!(res[0].new_path, "bar.txt");
+		assert_eq!(res[0].old_path, Some("bar.txt".to_string()));
+
+		stage_add_file(repo_path, Path::new("bar.txt")).unwrap();
+		assert_eq!(get_statuses(repo_path), (0, 1));
+
+		// Move file
+		let other_file_path = root.join("baz.txt");
+		{
+			File::create(&other_file_path)
+				.unwrap()
+				.write_all(HUNK_A.as_bytes())
+				.unwrap();
+			remove_file(&file_path).unwrap();
+		}
+
+		assert_eq!(get_statuses(repo_path), (1, 1));
+
+		let res =
+			get_diff(repo_path, "bar.txt", "baz.txt", false, None)
+				.unwrap();
+
+		assert_eq!(res.hunks.len(), 0)
 	}
 }

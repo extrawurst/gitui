@@ -98,7 +98,8 @@ mod test {
 		)
 		.unwrap();
 
-		let diff = get_diff(path, "test.txt", true, None).unwrap();
+		let diff = get_diff(path, "test.txt", "test.txt", true, None)
+			.unwrap();
 
 		assert_eq!(diff.lines, 3);
 		assert_eq!(&*diff.hunks[0].lines[0].content, "@@ -1 +1,2 @@");
@@ -137,7 +138,8 @@ c = 4";
 		)
 		.unwrap();
 
-		let diff = get_diff(path, "test.txt", true, None).unwrap();
+		let diff = get_diff(path, "test.txt", "test.txt", true, None)
+			.unwrap();
 
 		assert_eq!(diff.lines, 5);
 		assert_eq!(&*diff.hunks[0].lines[0].content, "@@ -1,2 +1 @@");
@@ -168,7 +170,8 @@ c = 4";
 		assert_eq!(get_statuses(path), (0, 1));
 
 		let diff_before =
-			get_diff(path, "test.txt", true, None).unwrap();
+			get_diff(path, "test.txt", "test.txt", true, None)
+				.unwrap();
 
 		assert_eq!(diff_before.lines, 5);
 
@@ -185,7 +188,8 @@ c = 4";
 
 		assert_eq!(get_statuses(path), (1, 1));
 
-		let diff = get_diff(path, "test.txt", true, None).unwrap();
+		let diff = get_diff(path, "test.txt", "test.txt", true, None)
+			.unwrap();
 
 		assert_eq!(diff.lines, 4);
 	}

@@ -29,8 +29,10 @@ pub enum DiffType {
 ///
 #[derive(Debug, Hash, Clone, PartialEq)]
 pub struct DiffParams {
+	///
+	pub src_path: String,
 	/// path to the file to diff
-	pub path: String,
+	pub dst_path: String,
 	/// what kind of diff
 	pub diff_type: DiffType,
 	/// diff options
@@ -161,26 +163,28 @@ impl AsyncDiff {
 		let res = match params.diff_type {
 			DiffType::Stage => sync::diff::get_diff(
 				repo_path,
-				&params.path,
+				&params.src_path,
+				&params.dst_path,
 				true,
 				Some(params.options),
 			)?,
 			DiffType::WorkDir => sync::diff::get_diff(
 				repo_path,
-				&params.path,
+				&params.src_path,
+				&params.dst_path,
 				false,
 				Some(params.options),
 			)?,
 			DiffType::Commit(id) => sync::diff::get_diff_commit(
 				repo_path,
 				id,
-				params.path.clone(),
+				params.dst_path.clone(),
 				Some(params.options),
 			)?,
 			DiffType::Commits(ids) => sync::diff::get_diff_commits(
 				repo_path,
 				ids,
-				params.path.clone(),
+				params.dst_path.clone(),
 				Some(params.options),
 			)?,
 		};

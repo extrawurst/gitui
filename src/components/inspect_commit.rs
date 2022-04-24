@@ -278,7 +278,11 @@ impl InspectCommitComponent {
 				if let Some(f) = self.details.files().selection_file()
 				{
 					let diff_params = DiffParams {
-						path: f.path.clone(),
+						src_path: f
+							.old_path
+							.clone()
+							.unwrap_or_else(|| f.new_path.clone()),
+						dst_path: f.new_path.clone(),
 						diff_type: DiffType::Commit(
 							request.commit_id,
 						),
@@ -289,7 +293,10 @@ impl InspectCommitComponent {
 						self.git_diff.last()?
 					{
 						if params == diff_params {
-							self.diff.update(f.path, false, last);
+							self.diff.update(
+								f.old_path, f.new_path, f.status,
+								false, last,
+							);
 							return Ok(());
 						}
 					}

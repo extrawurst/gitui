@@ -90,18 +90,35 @@ impl ChangesComponent {
 	fn index_add_remove(&mut self) -> Result<bool> {
 		if let Some(tree_item) = self.selection() {
 			if self.is_working_dir {
-				if let FileTreeItemKind::File(i) = tree_item.kind {
-					let path = Path::new(i.path.as_str());
+				if let FileTreeItemKind::File(ref i) = tree_item.kind
+				{
+					let new_path = Path::new(i.new_path.as_str());
+					let old_path = i
+						.old_path
+						.as_ref()
+						.map(|path| Path::new(path.as_str()));
 					match i.status {
 						StatusItemType::Deleted => {
 							sync::stage_addremoved(
 								&self.repo.borrow(),
-								path,
+								new_path,
+							)?;
+						}
+						StatusItemType::Renamed => {
+							if let Some(old_path) = old_path {
+								sync::stage_addremoved(
+									&self.repo.borrow(),
+									old_path,
+								)?;
+							}
+							sync::stage_add_file(
+								&self.repo.borrow(),
+								new_path,
 							)?;
 						}
 						_ => sync::stage_add_file(
 							&self.repo.borrow(),
-							path,
+							new_path,
 						)?,
 					};
 				} else {
@@ -132,6 +149,25 @@ impl ChangesComponent {
 				sync::reset_stage(&self.repo.borrow(), path)?;
 			}
 
+			if let FileTreeItemKind::File(i) = tree_item.kind {
+				if i.status == StatusItemType::Renamed {
+					i.old_path
+						.map(|path| {
+							sync::reset_stage(
+								&self.repo.borrow(),
+								path.as_str(),
+							)
+						})
+						.transpose()?;
+				}
+				sync::reset_stage(
+					&self.repo.borrow(),
+					i.new_path.as_str(),
+				)?;
+			}
+
+			let path = tree_item.info.full_path.as_str();
+			sync::reset_stage(&self.repo.borrow(), path)?;
 			return Ok(true);
 		}
 
@@ -160,9 +196,14 @@ impl ChangesComponent {
 		if let Some(tree_item) = self.selection() {
 			let is_folder =
 				matches!(tree_item.kind, FileTreeItemKind::Path(_));
+			let old_path = match tree_item.kind {
+				FileTreeItemKind::Path(_) => None,
+				FileTreeItemKind::File(status) => status.old_path,
+			};
 			self.queue.push(InternalEvent::ConfirmAction(
 				Action::Reset(ResetItem {
-					path: tree_item.info.full_path,
+					old_path,
+					new_path: tree_item.info.full_path,
 					is_folder,
 				}),
 			));
