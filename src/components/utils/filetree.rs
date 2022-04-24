@@ -58,7 +58,7 @@ pub struct FileTreeItem {
 
 impl FileTreeItem {
 	fn new_file(item: &StatusItem) -> Result<Self> {
-		let item_path = Path::new(&item.new_path);
+		let item_path = Path::new(&item.path);
 		let indent = u8::try_from(
 			item_path.ancestors().count().saturating_sub(2),
 		)?;
@@ -73,7 +73,7 @@ impl FileTreeItem {
 				info: TreeItemInfo::new(
 					indent,
 					path,
-					item.new_path.clone(),
+					item.path.clone(),
 				),
 				kind: FileTreeItemKind::File(item.clone()),
 			}),
@@ -148,7 +148,7 @@ impl FileTreeItems {
 
 		for e in list {
 			{
-				let item_path = Path::new(&e.new_path);
+				let item_path = Path::new(&e.path);
 
 				Self::push_dirs(
 					item_path,
@@ -267,8 +267,7 @@ mod tests {
 		items
 			.iter()
 			.map(|a| StatusItem {
-				old_path: None,
-				new_path: String::from(*a),
+				path: String::from(*a),
 				status: StatusItemType::Modified,
 			})
 			.collect::<Vec<_>>()
@@ -287,8 +286,8 @@ mod tests {
 			res.items,
 			vec![FileTreeItem {
 				info: TreeItemInfo {
-					path: items[0].new_path.clone(),
-					full_path: items[0].new_path.clone(),
+					path: items[0].path.clone(),
+					full_path: items[0].path.clone(),
 					indent: 0,
 					visible: true,
 				},
@@ -305,7 +304,7 @@ mod tests {
 			FileTreeItems::new(&items, &BTreeSet::new()).unwrap();
 
 		assert_eq!(res.items.len(), 2);
-		assert_eq!(res.items[1].info.path, items[1].new_path);
+		assert_eq!(res.items[1].info.path, items[1].path);
 	}
 
 	#[test]
@@ -323,7 +322,7 @@ mod tests {
 
 		assert_eq!(
 			res,
-			vec![String::from("a"), items[0].new_path.clone(),]
+			vec![String::from("a"), items[0].path.clone(),]
 		);
 	}
 
@@ -382,8 +381,8 @@ mod tests {
 			res,
 			vec![
 				String::from("a"),
-				items[0].new_path.clone(),
-				items[1].new_path.clone()
+				items[0].path.clone(),
+				items[1].path.clone()
 			]
 		);
 	}

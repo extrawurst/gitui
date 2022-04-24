@@ -438,8 +438,7 @@ mod tests {
 		items
 			.iter()
 			.map(|a| StatusItem {
-				old_path: None,
-				new_path: String::from(*a),
+				path: String::from(*a),
 				status: StatusItemType::Modified,
 			})
 			.collect::<Vec<_>>()

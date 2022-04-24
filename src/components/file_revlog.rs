@@ -188,8 +188,7 @@ impl FileRevlogComponent {
 			if let Some(commit_id) = self.selected_commit() {
 				if let Some(open_request) = &self.open_request {
 					let diff_params = DiffParams {
-						src_path: open_request.file_path.clone(),
-						dst_path: open_request.file_path.clone(),
+						path: open_request.file_path.clone(),
 						diff_type: DiffType::Commit(commit_id),
 						options: self.options.borrow().diff,
 					};
@@ -199,9 +198,7 @@ impl FileRevlogComponent {
 					{
 						if params == diff_params {
 							self.diff.update(
-								Some(params.src_path),
-								params.dst_path,
-								asyncgit::StatusItemType::Modified,
+								open_request.file_path.to_string(),
 								false,
 								last,
 							);

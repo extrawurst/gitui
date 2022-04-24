@@ -335,7 +335,7 @@ mod tests {
 				None
 			)
 			.unwrap()[0]
-				.new_path,
+				.path,
 			String::from("temp_file.txt")
 		);
 

@@ -19,7 +19,7 @@ use asyncgit::{
 	},
 	sync::{BranchCompare, CommitId},
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
-	DiffType, PushType, StatusItemType, StatusParams,
+	DiffType, PushType, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -377,7 +377,7 @@ impl Status {
 		self.index.focus_select(is_stage);
 	}
 
-	pub fn selected_data(&self) -> Option<DiffData> {
+	pub fn selected_path(&self) -> Option<(String, bool)> {
 		let (idx, is_stage) = match self.diff_target {
 			DiffTarget::Stage => (&self.index, true),
 			DiffTarget::WorkingDir => (&self.index_wd, false),
@@ -385,12 +385,7 @@ impl Status {
 
 		if let Some(item) = idx.selection() {
 			if let FileTreeItemKind::File(i) = item.kind {
-				return Some(DiffData {
-					old_path: i.old_path,
-					new_path: i.new_path,
-					status: i.status,
-					is_stage,
-				});
+				return Some((i.path, is_stage));
 			}
 		}
 		None
@@ -485,13 +480,7 @@ impl Status {
 
 	///
 	pub fn update_diff(&mut self) -> Result<()> {
-		if let Some(DiffData {
-			old_path,
-			new_path,
-			status,
-			is_stage,
-		}) = self.selected_data()
-		{
+		if let Some((path, is_stage)) = self.selected_path() {
 			let diff_type = if is_stage {
 				DiffType::Stage
 			} else {
@@ -499,46 +488,30 @@ impl Status {
 			};
 
 			let diff_params = DiffParams {
-				src_path: old_path
-					.clone()
-					.unwrap_or_else(|| new_path.clone()),
-				dst_path: new_path.clone(),
+				path: path.clone(),
 				diff_type,
 				options: self.options.borrow().diff,
 			};
 
-			if self.diff.current()
-				== (old_path.clone(), new_path.clone(), is_stage)
-			{
+			if self.diff.current() == (path.clone(), is_stage) {
 				// we are already showing a diff of the right file
 				// maybe the diff changed (outside file change)
 				if let Some((params, last)) = self.git_diff.last()? {
 					if params == diff_params {
 						// all params match, so we might need to update
-						self.diff.update(
-							old_path, new_path, status, is_stage,
-							last,
-						);
+						self.diff.update(path, is_stage, last);
 					} else {
 						// params changed, we need to request the right diff
 						self.request_diff(
 							diff_params,
-							old_path,
-							new_path,
-							status,
+							path,
 							is_stage,
 						)?;
 					}
 				}
 			} else {
 				// we dont show the right diff right now, so we need to request
-				self.request_diff(
-					diff_params,
-					old_path,
-					new_path,
-					status,
-					is_stage,
-				)?;
+				self.request_diff(diff_params, path, is_stage)?;
 			}
 		} else {
 			self.diff.clear(false);
@@ -550,14 +523,11 @@ impl Status {
 	fn request_diff(
 		&mut self,
 		diff_params: DiffParams,
-		old_path: Option<String>,
-		new_path: String,
-		status: StatusItemType,
+		path: String,
 		is_stage: bool,
 	) -> Result<(), anyhow::Error> {
 		if let Some(diff) = self.git_diff.request(diff_params)? {
-			self.diff
-				.update(old_path, new_path, status, is_stage, diff);
+			self.diff.update(path, is_stage, diff);
 		} else {
 			self.diff.clear(true);
 		}
@@ -569,8 +539,7 @@ impl Status {
 	pub fn reset(&mut self, item: &ResetItem) -> bool {
 		if let Err(e) = sync::reset_workdir(
 			&self.repo.borrow(),
-			item.old_path.as_deref(),
-			item.new_path.as_str(),
+			item.path.as_str(),
 		) {
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
 				"reset failed:\n{}",
@@ -732,13 +701,6 @@ impl Status {
 	}
 }
 
-pub struct DiffData {
-	old_path: Option<String>,
-	new_path: String,
-	status: StatusItemType,
-	is_stage: bool,
-}
-
 impl Component for Status {
 	fn commands(
 		&self,
@@ -856,10 +818,10 @@ impl Component for Status {
 					&& (self.can_focus_diff()
 						|| self.is_focus_on_diff())
 				{
-					if let Some(diff_data) = self.selected_data() {
+					if let Some((path, _)) = self.selected_path() {
 						self.queue.push(
 							InternalEvent::OpenExternalEditor(Some(
-								diff_data.new_path,
+								path,
 							)),
 						);
 					}

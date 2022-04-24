@@ -42,7 +42,7 @@ pub fn abort_pending_state(repo_path: &RepoPath) -> Result<()> {
 	let repo = repo(repo_path)?;
 
 	reset_stage(repo_path, "*")?;
-	reset_workdir(repo_path, None, "*")?;
+	reset_workdir(repo_path, "*")?;
 
 	repo.cleanup_state()?;
 

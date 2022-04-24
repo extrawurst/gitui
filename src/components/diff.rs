@@ -14,7 +14,7 @@ use anyhow::Result;
 use asyncgit::{
 	hash,
 	sync::{self, diff::DiffLinePosition, RepoPathRef},
-	DiffLine, DiffLineType, Error, FileDiff, StatusItemType,
+	DiffLine, DiffLineType, FileDiff,
 };
 use bytesize::ByteSize;
 use crossterm::event::Event;
@@ -30,8 +30,7 @@ use tui::{
 
 #[derive(Default)]
 struct Current {
-	old_path: Option<String>,
-	new_path: String,
+	path: String,
 	is_stage: bool,
 	hash: u64,
 }
@@ -149,12 +148,8 @@ impl DiffComponent {
 			.unwrap_or_default()
 	}
 	///
-	pub fn current(&self) -> (Option<String>, String, bool) {
-		(
-			self.current.old_path.clone(),
-			self.current.new_path.clone(),
-			self.current.is_stage,
-		)
+	pub fn current(&self) -> (String, bool) {
+		(self.current.path.clone(), self.current.is_stage)
 	}
 	///
 	pub fn clear(&mut self, pending: bool) {
@@ -168,9 +163,7 @@ impl DiffComponent {
 	///
 	pub fn update(
 		&mut self,
-		old_path: Option<String>,
-		new_path: String,
-		status: StatusItemType,
+		path: String,
 		is_stage: bool,
 		diff: FileDiff,
 	) {
@@ -179,15 +172,10 @@ impl DiffComponent {
 		let hash = hash(&diff);
 
 		if self.current.hash != hash {
-			let reset_selection = self.current.new_path != new_path;
+			let reset_selection = self.current.path != path;
 
 			self.current = Current {
-				old_path: if status == StatusItemType::Renamed {
-					old_path
-				} else {
-					None
-				},
-				new_path,
+				path,
 				is_stage,
 				hash,
 			};
@@ -475,11 +463,7 @@ impl DiffComponent {
 				let hash = diff.hunks[hunk].header_hash;
 				sync::unstage_hunk(
 					&self.repo.borrow(),
-					self.current
-						.old_path
-						.as_ref()
-						.unwrap_or(&self.current.new_path),
-					&self.current.new_path,
+					&self.current.path,
 					hash,
 				)?;
 				self.queue_update();
@@ -495,17 +479,13 @@ impl DiffComponent {
 				if diff.untracked {
 					sync::stage_add_file(
 						&self.repo.borrow(),
-						Path::new(&self.current.new_path),
+						Path::new(&self.current.path),
 					)?;
 				} else {
 					let hash = diff.hunks[hunk].header_hash;
 					sync::stage_hunk(
 						&self.repo.borrow(),
-						self.current
-							.old_path
-							.as_ref()
-							.unwrap_or(&self.current.new_path),
-						&self.current.new_path,
+						&self.current.path,
 						hash,
 					)?;
 				}
@@ -521,32 +501,25 @@ impl DiffComponent {
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 	}
 
-	fn reset_hunk(&self) -> Result<()> {
-		if self.current.old_path.is_some() {
-			return Err(Error::Generic(
-				"Cannot reset in renamed files".to_string(),
-			)
-			.into());
-		}
+	fn reset_hunk(&self) {
 		if let Some(diff) = &self.diff {
 			if let Some(hunk) = self.selected_hunk {
 				let hash = diff.hunks[hunk].header_hash;
 
 				self.queue.push(InternalEvent::ConfirmAction(
 					Action::ResetHunk(
-						self.current.new_path.clone(),
+						self.current.path.clone(),
 						hash,
 					),
 				));
 			}
 		}
-		Ok(())
 	}
 
 	fn reset_lines(&self) {
 		self.queue.push(InternalEvent::ConfirmAction(
 			Action::ResetLines(
-				self.current.new_path.clone(),
+				self.current.path.clone(),
 				self.selected_lines(),
 			),
 		));
@@ -563,7 +536,7 @@ impl DiffComponent {
 					"(un)stage lines:",
 					sync::stage_lines(
 						&self.repo.borrow(),
-						&self.current.new_path,
+						&self.current.path,
 						self.is_stage(),
 						&selected_lines,
 					)
@@ -602,8 +575,7 @@ impl DiffComponent {
 	fn reset_untracked(&self) {
 		self.queue.push(InternalEvent::ConfirmAction(Action::Reset(
 			ResetItem {
-				old_path: self.current.old_path.clone(),
-				new_path: self.current.new_path.clone(),
+				path: self.current.path.clone(),
 				is_folder: false,
 			},
 		)));
@@ -644,14 +616,9 @@ impl DrawableComponent for DiffComponent {
 		);
 
 		let title = format!(
-			"{}{}{}",
+			"{}{}",
 			strings::title_diff(&self.key_config),
-			self.current
-				.old_path
-				.as_ref()
-				.map(|path| format!("{} -> ", path))
-				.unwrap_or_default(),
-			self.current.new_path
+			self.current.path
 		);
 
 		let txt = if self.pending {
@@ -800,11 +767,7 @@ impl Component for DiffComponent {
 						if diff.untracked {
 							self.reset_untracked();
 						} else {
-							try_or_popup!(
-								self,
-								"hunk error: ",
-								self.reset_hunk()
-							);
+							self.reset_hunk();
 						}
 					}
 					Ok(EventState::Consumed)

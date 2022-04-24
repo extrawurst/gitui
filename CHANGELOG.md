@@ -63,7 +63,6 @@ This is was a immediate followup patch release to `0.20` see [release notes](htt
 - support inspecting annotation of tag ([#1076](https://github.com/extrawurst/gitui/issues/1076))
 - support deleting tag on remote ([#1074](https://github.com/extrawurst/gitui/issues/1074))
 - support git credentials helper (https) ([#800](https://github.com/extrawurst/gitui/issues/800))
-- Correct diff of renamed files [[@Mifom](https://github.com/Mifom)] ([#1038](https://github.com/extrawurst/gitui/issues/1038))
 
 ### Fixed
 - Keep commit message when pre-commit hook fails ([#1035](https://github.com/extrawurst/gitui/issues/1035))

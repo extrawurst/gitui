@@ -335,8 +335,7 @@ mod tests {
 
 		// And that file is test.txt
 		let diff =
-			get_diff(repo_path, "test.txt", "test.txt", true, None)
-				.unwrap();
+			get_diff(repo_path, "test.txt", true, None).unwrap();
 		assert_eq!(&*diff.hunks[0].lines[0].content, "@@ -1 +1 @@");
 	}
 
