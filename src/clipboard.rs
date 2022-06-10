@@ -45,21 +45,29 @@ fn gen_command(
 
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
 pub fn copy_string(string: &str) -> Result<()> {
+	use std::env;
 	use std::path::PathBuf;
 	use which::which;
-	let (path, xclip_syntax) = which("xclip").ok().map_or_else(
-		|| {
-			(
-				which("xsel")
-					.ok()
-					.unwrap_or_else(|| PathBuf::from("xsel")),
-				false,
-			)
-		},
-		|path| (path, true),
-	);
-
-	let cmd = gen_command(path, xclip_syntax);
+	let cmd = if env::var("WAYLAND_DISPLAY").is_ok() {
+		Command::new(
+			which("wl-copy")
+				.ok()
+				.unwrap_or_else(|| PathBuf::from("wl-copy")),
+		)
+	} else {
+		let (path, xclip_syntax) = which("xclip").ok().map_or_else(
+			|| {
+				(
+					which("xsel")
+						.ok()
+						.unwrap_or_else(|| PathBuf::from("xsel")),
+					false,
+				)
+			},
+			|path| (path, true),
+		);
+		gen_command(path, xclip_syntax)
+	};
 	execute_copy_command(cmd, string)
 }
 
