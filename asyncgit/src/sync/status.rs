@@ -12,7 +12,7 @@ use std::path::Path;
 use super::{RepoPath, ShowUntrackedFilesConfig};
 
 ///
-#[derive(Copy, Clone, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
 pub enum StatusItemType {
 	///
 	New,
@@ -59,7 +59,7 @@ impl From<Delta> for StatusItemType {
 }
 
 ///
-#[derive(Clone, Hash, PartialEq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct StatusItem {
 	///
 	pub path: String,

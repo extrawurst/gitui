@@ -192,7 +192,7 @@ pub enum Direction {
 }
 
 ///
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum CommandBlocking {
 	Blocking,
 	PassingOn,
@@ -220,7 +220,7 @@ pub trait DrawableComponent {
 }
 
 ///
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum EventState {
 	Consumed,
 	NotConsumed,

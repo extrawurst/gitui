@@ -32,7 +32,7 @@ use tui::{
 };
 
 /// what part of the screen is focused
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 enum Focus {
 	WorkDir,
 	Diff,
@@ -51,7 +51,7 @@ impl Focus {
 }
 
 /// which target are we showing a diff against
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone)]
 enum DiffTarget {
 	Stage,
 	WorkingDir,
