@@ -14,7 +14,7 @@ use sync::Tags;
 
 ///
 #[derive(Default, Clone)]
-struct TagsResult {
+pub struct TagsResult {
 	hash: u64,
 	tags: Tags,
 }
@@ -77,6 +77,15 @@ impl AsyncTags {
 					.as_ref()
 					.map_or(0, |(_, result)| result.hash),
 			));
+
+			if let Some(job) = self.job.take_last() {
+				if let Some(result) = job.result() {
+					match result {
+						Ok(result) => self.last = Some(result),
+						Err(_) => (),
+					}
+				}
+			}
 		} else {
 			self.sender
 				.send(AsyncGitNotification::FinishUnchanged)?;
@@ -106,6 +115,20 @@ impl AsyncTagsJob {
 				last_hash,
 			)))),
 		}
+	}
+
+	///
+	pub fn result(&self) -> Option<Result<(Instant, TagsResult)>> {
+		if let Ok(mut state) = self.state.lock() {
+			if let Some(state) = state.take() {
+				return match state {
+					JobState::Request(_) => None,
+					JobState::Response(result) => Some(result),
+				};
+			}
+		}
+
+		None
 	}
 }
 
