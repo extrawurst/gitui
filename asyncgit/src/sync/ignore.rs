@@ -1,5 +1,8 @@
-use super::utils::{repo, work_dir};
-use crate::error::{Error, Result};
+use super::{utils::work_dir, RepoPath};
+use crate::{
+	error::{Error, Result},
+	sync::repository::repo,
+};
 use scopetime::scope_time;
 use std::{
 	fs::{File, OpenOptions},
@@ -11,7 +14,7 @@ static GITIGNORE: &str = ".gitignore";
 
 /// add file or path to root ignore file
 pub fn add_to_ignore(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	path_to_ignore: &str,
 ) -> Result<()> {
 	scope_time!("add_to_ignore");
@@ -71,7 +74,8 @@ mod tests {
 		let file_path = Path::new("foo.txt");
 		let (_td, repo) = repo_init()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?.write_all(b"test")?;
 
@@ -98,7 +102,8 @@ mod tests {
 		let file_path = Path::new("foo.txt");
 		let (_td, repo) = repo_init()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?.write_all(b"test")?;
 		File::create(&root.join(ignore_file_path))?
@@ -119,7 +124,8 @@ mod tests {
 		let file_path = Path::new("foo.txt");
 		let (_td, repo) = repo_init()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?.write_all(b"test")?;
 		File::create(&root.join(ignore_file_path))?
@@ -139,7 +145,8 @@ mod tests {
 		let ignore_file_path = Path::new(".gitignore");
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		repo_write_file(&repo, ".gitignore", "#foo").unwrap();
 

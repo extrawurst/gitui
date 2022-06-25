@@ -3,7 +3,7 @@ use crate::{
 	components::{
 		command_pump, event_pump, visibility_blocking,
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
-		EventState, FileTreeComponent,
+		EventState, StatusTreeComponent,
 	},
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, Queue},
@@ -12,8 +12,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{self, status::StatusType},
-	AsyncGitNotification, AsyncStatus, StatusParams, CWD,
+	sync::{self, status::StatusType, RepoPathRef},
+	AsyncGitNotification, AsyncStatus, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -31,7 +31,8 @@ pub struct StashingOptions {
 }
 
 pub struct Stashing {
-	index: FileTreeComponent,
+	repo: RepoPathRef,
+	index: StatusTreeComponent,
 	visible: bool,
 	options: StashingOptions,
 	theme: SharedTheme,
@@ -45,13 +46,15 @@ impl Stashing {
 
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		sender: &Sender<AsyncGitNotification>,
 		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
-			index: FileTreeComponent::new(
+			repo: repo.clone(),
+			index: StatusTreeComponent::new(
 				&strings::stashing_files_title(&key_config),
 				true,
 				Some(queue.clone()),
@@ -64,7 +67,10 @@ impl Stashing {
 				stash_untracked: true,
 			},
 			theme,
-			git_status: AsyncStatus::new(sender.clone()),
+			git_status: AsyncStatus::new(
+				repo.borrow().clone(),
+				sender.clone(),
+			),
 			queue: queue.clone(),
 			key_config,
 		}
@@ -91,11 +97,9 @@ impl Stashing {
 		&mut self,
 		ev: AsyncGitNotification,
 	) -> Result<()> {
-		if self.is_visible() {
-			if let AsyncGitNotification::Status = ev {
-				let status = self.git_status.last()?;
-				self.index.update(&status.items)?;
-			}
+		if self.is_visible() && ev == AsyncGitNotification::Status {
+			let status = self.git_status.last()?;
+			self.index.update(&status.items)?;
 		}
 
 		Ok(())
@@ -219,7 +223,7 @@ impl Component for Stashing {
 			}
 
 			if let Event::Key(k) = ev {
-				return if k == self.key_config.stashing_save
+				return if k == self.key_config.keys.stashing_save
 					&& !self.index.is_empty()
 				{
 					self.queue.push(InternalEvent::PopupStashing(
@@ -227,13 +231,15 @@ impl Component for Stashing {
 					));
 
 					Ok(EventState::Consumed)
-				} else if k == self.key_config.stashing_toggle_index {
+				} else if k
+					== self.key_config.keys.stashing_toggle_index
+				{
 					self.options.keep_index =
 						!self.options.keep_index;
 					self.update()?;
 					Ok(EventState::Consumed)
 				} else if k
-					== self.key_config.stashing_toggle_untracked
+					== self.key_config.keys.stashing_toggle_untracked
 				{
 					self.options.stash_untracked =
 						!self.options.stash_untracked;
@@ -258,11 +264,12 @@ impl Component for Stashing {
 
 	fn show(&mut self) -> Result<()> {
 		let config_untracked_files =
-			sync::untracked_files_config(CWD)?;
+			sync::untracked_files_config(&self.repo.borrow())?;
 
 		self.options.stash_untracked =
 			!config_untracked_files.include_none();
 
+		self.index.show()?;
 		self.visible = true;
 		self.update()?;
 		Ok(())

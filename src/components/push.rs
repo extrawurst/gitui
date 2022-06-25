@@ -15,10 +15,10 @@ use asyncgit::{
 			extract_username_password, need_username_password,
 			BasicAuthCredential,
 		},
-		get_branch_remote, get_default_remote,
+		get_branch_remote, get_default_remote, RepoPathRef,
 	},
-	AsyncGitNotification, AsyncPush, PushRequest, RemoteProgress,
-	RemoteProgressState, CWD,
+	AsyncGitNotification, AsyncPush, PushRequest, PushType,
+	RemoteProgress, RemoteProgressState,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -50,12 +50,14 @@ impl PushComponentModifier {
 
 ///
 pub struct PushComponent {
+	repo: RepoPathRef,
 	modifier: PushComponentModifier,
 	visible: bool,
 	git_push: AsyncPush,
 	progress: Option<RemoteProgress>,
 	pending: bool,
 	branch: String,
+	push_type: PushType,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -65,18 +67,21 @@ pub struct PushComponent {
 impl PushComponent {
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			queue: queue.clone(),
 			modifier: PushComponentModifier::None,
 			pending: false,
 			visible: false,
 			branch: String::new(),
-			git_push: AsyncPush::new(sender),
+			push_type: PushType::Branch,
+			git_push: AsyncPush::new(repo.borrow().clone(), sender),
 			progress: None,
 			input_cred: CredComponent::new(
 				theme.clone(),
@@ -91,10 +96,12 @@ impl PushComponent {
 	pub fn push(
 		&mut self,
 		branch: String,
+		push_type: PushType,
 		force: bool,
 		delete: bool,
 	) -> Result<()> {
 		self.branch = branch;
+		self.push_type = push_type;
 		self.modifier = match (force, delete) {
 			(true, true) => PushComponentModifier::ForceDelete,
 			(false, true) => PushComponentModifier::Delete,
@@ -104,9 +111,9 @@ impl PushComponent {
 
 		self.show()?;
 
-		if need_username_password()? {
-			let cred =
-				extract_username_password().unwrap_or_else(|_| {
+		if need_username_password(&self.repo.borrow())? {
+			let cred = extract_username_password(&self.repo.borrow())
+				.unwrap_or_else(|_| {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
@@ -126,13 +133,13 @@ impl PushComponent {
 		force: bool,
 	) -> Result<()> {
 		let remote = if let Ok(Some(remote)) =
-			get_branch_remote(CWD, &self.branch)
+			get_branch_remote(&self.repo.borrow(), &self.branch)
 		{
 			log::info!("push: branch '{}' has upstream for remote '{}' - using that",self.branch,remote);
 			remote
 		} else {
 			log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
-			let remote = get_default_remote(CWD)?;
+			let remote = get_default_remote(&self.repo.borrow())?;
 			log::info!(
 				"push: branch '{}' to remote '{}'",
 				self.branch,
@@ -146,6 +153,7 @@ impl PushComponent {
 		self.git_push.request(PushRequest {
 			remote,
 			branch: self.branch.clone(),
+			push_type: self.push_type,
 			force,
 			delete: self.modifier.delete(),
 			basic_credential: cred,
@@ -158,10 +166,8 @@ impl PushComponent {
 		&mut self,
 		ev: AsyncGitNotification,
 	) -> Result<()> {
-		if self.is_visible() {
-			if let AsyncGitNotification::Push = ev {
-				self.update()?;
-			}
+		if self.is_visible() && ev == AsyncGitNotification::Push {
+			self.update()?;
 		}
 
 		Ok(())
@@ -306,7 +312,7 @@ impl Component for PushComponent {
 						)?;
 						self.input_cred.hide();
 					}
-				} else if e == self.key_config.exit_popup
+				} else if e == self.key_config.keys.exit_popup
 					&& !self.pending
 				{
 					self.hide();

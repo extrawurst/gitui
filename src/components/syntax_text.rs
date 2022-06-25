@@ -1,9 +1,10 @@
 use super::{
-	tabs_to_spaces, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState,
+	CommandBlocking, CommandInfo, Component, DrawableComponent,
+	EventState,
 };
 use crate::{
 	keys::SharedKeyConfig,
+	string_utils::tabs_to_spaces,
 	strings,
 	ui::{
 		self, common_nav, style::SharedTheme, AsyncSyntaxJob,
@@ -14,8 +15,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	asyncjob::AsyncSingleJob,
-	sync::{self, TreeFile},
-	ProgressPercent, CWD,
+	sync::{self, RepoPathRef, TreeFile},
+	ProgressPercent,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -31,6 +32,7 @@ use tui::{
 };
 
 pub struct SyntaxTextComponent {
+	repo: RepoPathRef,
 	current_file: Option<(String, Either<ui::SyntaxText, String>)>,
 	async_highlighting: AsyncSingleJob<AsyncSyntaxJob>,
 	syntax_progress: Option<ProgressPercent>,
@@ -43,6 +45,7 @@ pub struct SyntaxTextComponent {
 impl SyntaxTextComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		sender: &Sender<AsyncAppNotification>,
 		key_config: SharedKeyConfig,
 		theme: SharedTheme,
@@ -55,6 +58,7 @@ impl SyntaxTextComponent {
 			focused: false,
 			key_config,
 			theme,
+			repo,
 		}
 	}
 
@@ -109,7 +113,7 @@ impl SyntaxTextComponent {
 
 		if !already_loaded {
 			//TODO: fetch file content async aswell
-			match sync::tree_file_content(CWD, item) {
+			match sync::tree_file_content(&self.repo.borrow(), item) {
 				Ok(content) => {
 					let content = tabs_to_spaces(content);
 					self.syntax_progress =

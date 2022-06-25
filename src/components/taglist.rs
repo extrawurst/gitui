@@ -18,8 +18,10 @@ use asyncgit::{
 		extract_username_password, need_username_password,
 		BasicAuthCredential,
 	},
-	sync::{get_tags_with_metadata, TagWithMetadata},
-	AsyncGitNotification, CWD,
+	sync::{
+		self, get_tags_with_metadata, RepoPathRef, TagWithMetadata,
+	},
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -38,6 +40,7 @@ use ui::style::SharedTheme;
 
 ///
 pub struct TagListComponent {
+	repo: RepoPathRef,
 	theme: SharedTheme,
 	queue: Queue,
 	tags: Option<Vec<TagWithMetadata>>,
@@ -45,6 +48,7 @@ pub struct TagListComponent {
 	table_state: std::cell::Cell<TableState>,
 	current_height: std::cell::Cell<usize>,
 	missing_remote_tags: Option<Vec<String>>,
+	has_remotes: bool,
 	basic_credential: Option<BasicAuthCredential>,
 	async_remote_tags: AsyncSingleJob<AsyncRemoteTagsJob>,
 	key_config: SharedKeyConfig,
@@ -84,6 +88,8 @@ impl DrawableComponent for TagListComponent {
 				Constraint::Length(10),
 				// author width
 				Constraint::Length(19),
+				// attachement
+				Constraint::Length(1),
 				// commit id
 				Constraint::Percentage(100),
 			];
@@ -167,7 +173,14 @@ impl Component for TagListComponent {
 			));
 			out.push(CommandInfo::new(
 				strings::commands::push_tags(&self.key_config),
+				self.has_remotes,
 				true,
+			));
+			out.push(CommandInfo::new(
+				strings::commands::show_tag_annotation(
+					&self.key_config,
+				),
+				self.can_show_annotation(),
 				true,
 			));
 		}
@@ -177,25 +190,29 @@ impl Component for TagListComponent {
 	fn event(&mut self, event: Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(key) = event {
-				if key == self.key_config.exit_popup {
+				if key == self.key_config.keys.exit_popup {
 					self.hide();
-				} else if key == self.key_config.move_up {
+				} else if key == self.key_config.keys.move_up {
 					self.move_selection(ScrollType::Up);
-				} else if key == self.key_config.move_down {
+				} else if key == self.key_config.keys.move_down {
 					self.move_selection(ScrollType::Down);
-				} else if key == self.key_config.shift_up
-					|| key == self.key_config.home
+				} else if key == self.key_config.keys.shift_up
+					|| key == self.key_config.keys.home
 				{
 					self.move_selection(ScrollType::Home);
-				} else if key == self.key_config.shift_down
-					|| key == self.key_config.end
+				} else if key == self.key_config.keys.shift_down
+					|| key == self.key_config.keys.end
 				{
 					self.move_selection(ScrollType::End);
-				} else if key == self.key_config.page_down {
+				} else if key == self.key_config.keys.page_down {
 					self.move_selection(ScrollType::PageDown);
-				} else if key == self.key_config.page_up {
+				} else if key == self.key_config.keys.page_up {
 					self.move_selection(ScrollType::PageUp);
-				} else if key == self.key_config.delete_tag {
+				} else if key == self.key_config.keys.move_right
+					&& self.can_show_annotation()
+				{
+					self.show_annotation();
+				} else if key == self.key_config.keys.delete_tag {
 					return self.selected_tag().map_or(
 						Ok(EventState::NotConsumed),
 						|tag| {
@@ -209,7 +226,7 @@ impl Component for TagListComponent {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if key == self.key_config.select_tag {
+				} else if key == self.key_config.keys.select_tag {
 					return self.selected_tag().map_or(
 						Ok(EventState::NotConsumed),
 						|tag| {
@@ -221,7 +238,9 @@ impl Component for TagListComponent {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if key == self.key_config.push {
+				} else if key == self.key_config.keys.push
+					&& self.has_remotes
+				{
 					self.queue.push(InternalEvent::PushTags);
 				}
 			}
@@ -249,6 +268,7 @@ impl Component for TagListComponent {
 
 impl TagListComponent {
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
@@ -259,12 +279,14 @@ impl TagListComponent {
 			queue: queue.clone(),
 			tags: None,
 			visible: false,
+			has_remotes: false,
 			table_state: std::cell::Cell::new(TableState::default()),
 			current_height: std::cell::Cell::new(0),
 			basic_credential: None,
 			missing_remote_tags: None,
 			async_remote_tags: AsyncSingleJob::new(sender.clone()),
 			key_config,
+			repo,
 		}
 	}
 
@@ -273,11 +295,21 @@ impl TagListComponent {
 		self.table_state.get_mut().select(Some(0));
 		self.show()?;
 
-		let basic_credential = if need_username_password()? {
-			let credential = extract_username_password()?;
+		self.has_remotes =
+			sync::get_branches_info(&self.repo.borrow(), false)
+				.map(|branches| !branches.is_empty())
+				.unwrap_or(false);
 
-			if credential.is_complete() {
-				Some(credential)
+		let basic_credential = if self.has_remotes {
+			if need_username_password(&self.repo.borrow())? {
+				let credential =
+					extract_username_password(&self.repo.borrow())?;
+
+				if credential.is_complete() {
+					Some(credential)
+				} else {
+					None
+				}
 			} else {
 				None
 			}
@@ -320,7 +352,7 @@ impl TagListComponent {
 
 	/// fetch list of tags
 	pub fn update_tags(&mut self) -> Result<()> {
-		let tags = get_tags_with_metadata(CWD)?;
+		let tags = get_tags_with_metadata(&self.repo.borrow())?;
 
 		self.tags = Some(tags);
 
@@ -328,9 +360,12 @@ impl TagListComponent {
 	}
 
 	pub fn update_missing_remote_tags(&mut self) {
-		self.async_remote_tags.spawn(AsyncRemoteTagsJob::new(
-			self.basic_credential.clone(),
-		));
+		if self.has_remotes {
+			self.async_remote_tags.spawn(AsyncRemoteTagsJob::new(
+				self.repo.borrow().clone(),
+				self.basic_credential.clone(),
+			));
+		}
 	}
 
 	///
@@ -366,18 +401,33 @@ impl TagListComponent {
 		needs_update
 	}
 
+	fn show_annotation(&self) {
+		if let Some(tag) = self.selected_tag() {
+			if let Some(annotation) = &tag.annotation {
+				self.queue.push(InternalEvent::ShowInfoMsg(
+					annotation.clone(),
+				));
+			}
+		}
+	}
+
+	fn can_show_annotation(&self) -> bool {
+		self.selected_tag()
+			.and_then(|t| t.annotation.as_ref())
+			.is_some()
+	}
+
 	///
 	fn get_rows(&self) -> Vec<Row> {
-		if let Some(ref tags) = self.tags {
+		self.tags.as_ref().map_or_else(Vec::new, |tags| {
 			tags.iter().map(|tag| self.get_row(tag)).collect()
-		} else {
-			vec![]
-		}
+		})
 	}
 
 	///
 	fn get_row(&self, tag: &TagWithMetadata) -> Row {
 		const UPSTREAM_SYMBOL: &str = "\u{2191}";
+		const ATTACHEMENT_SYMBOL: &str = "@";
 		const EMPTY_SYMBOL: &str = " ";
 
 		let is_tag_missing_on_remote = self
@@ -395,6 +445,12 @@ impl TagListComponent {
 			EMPTY_SYMBOL
 		};
 
+		let has_attachement_str = if tag.annotation.is_some() {
+			ATTACHEMENT_SYMBOL
+		} else {
+			EMPTY_SYMBOL
+		};
+
 		let cells: Vec<Cell> = vec![
 			Cell::from(has_remote_str)
 				.style(self.theme.commit_author(false)),
@@ -404,6 +460,8 @@ impl TagListComponent {
 				.style(self.theme.commit_time(false)),
 			Cell::from(tag.author.clone())
 				.style(self.theme.commit_author(false)),
+			Cell::from(has_attachement_str)
+				.style(self.theme.text_danger()),
 			Cell::from(tag.message.clone())
 				.style(self.theme.text(true, false)),
 		];

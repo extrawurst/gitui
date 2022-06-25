@@ -1,10 +1,9 @@
 use crate::{
 	error::Result,
-	sync::{utils::repo, CommitId, LogWalker, LogWalkerFilter},
-	AsyncGitNotification, CWD,
+	sync::{repo, CommitId, LogWalker, LogWalkerFilter, RepoPath},
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
-use git2::Oid;
 use scopetime::scope_time;
 use std::{
 	sync::{
@@ -29,10 +28,12 @@ pub enum FetchStatus {
 ///
 pub struct AsyncLog {
 	current: Arc<Mutex<Vec<CommitId>>>,
+	current_head: Arc<Mutex<Option<CommitId>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicBool>,
 	background: Arc<AtomicBool>,
 	filter: Option<LogWalkerFilter>,
+	repo: RepoPath,
 }
 
 static LIMIT_COUNT: usize = 3000;
@@ -42,11 +43,14 @@ static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 impl AsyncLog {
 	///
 	pub fn new(
+		repo: RepoPath,
 		sender: &Sender<AsyncGitNotification>,
 		filter: Option<LogWalkerFilter>,
 	) -> Self {
 		Self {
+			repo,
 			current: Arc::new(Mutex::new(Vec::new())),
+			current_head: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
 			pending: Arc::new(AtomicBool::new(false)),
 			background: Arc::new(AtomicBool::new(false)),
@@ -55,7 +59,7 @@ impl AsyncLog {
 	}
 
 	///
-	pub fn count(&mut self) -> Result<usize> {
+	pub fn count(&self) -> Result<usize> {
 		Ok(self.current.lock()?.len())
 	}
 
@@ -92,20 +96,16 @@ impl AsyncLog {
 	}
 
 	///
-	fn current_head(&self) -> Result<CommitId> {
-		Ok(self
-			.current
-			.lock()?
-			.first()
-			.map_or(Oid::zero().into(), |f| *f))
+	fn current_head(&self) -> Result<Option<CommitId>> {
+		Ok(*self.current_head.lock()?)
 	}
 
 	///
 	fn head_changed(&self) -> Result<bool> {
-		if let Ok(head) = repo(CWD)?.head() {
-			if let Some(head) = head.target() {
-				return Ok(head != self.current_head()?.into());
-			}
+		if let Ok(head) = repo(&self.repo)?.head() {
+			return Ok(
+				head.target() != self.current_head()?.map(Into::into)
+			);
 		}
 		Ok(false)
 	}
@@ -128,15 +128,21 @@ impl AsyncLog {
 		let sender = self.sender.clone();
 		let arc_pending = Arc::clone(&self.pending);
 		let arc_background = Arc::clone(&self.background);
+		let filter = self.filter.clone();
+		let repo_path = self.repo.clone();
 
 		self.pending.store(true, Ordering::Relaxed);
 
-		let filter = self.filter.clone();
+		if let Ok(head) = repo(&self.repo)?.head() {
+			*self.current_head.lock()? =
+				head.target().map(CommitId::new);
+		}
 
 		rayon_core::spawn(move || {
 			scope_time!("async::revlog");
 
 			Self::fetch_helper(
+				&repo_path,
 				&arc_current,
 				&arc_background,
 				&sender,
@@ -153,13 +159,14 @@ impl AsyncLog {
 	}
 
 	fn fetch_helper(
+		repo_path: &RepoPath,
 		arc_current: &Arc<Mutex<Vec<CommitId>>>,
 		arc_background: &Arc<AtomicBool>,
 		sender: &Sender<AsyncGitNotification>,
 		filter: Option<LogWalkerFilter>,
 	) -> Result<()> {
 		let mut entries = Vec::with_capacity(LIMIT_COUNT);
-		let r = repo(CWD)?;
+		let r = repo(repo_path)?;
 		let mut walker =
 			LogWalker::new(&r, LIMIT_COUNT)?.filter(filter);
 		loop {
@@ -190,6 +197,7 @@ impl AsyncLog {
 
 	fn clear(&mut self) -> Result<()> {
 		self.current.lock()?.clear();
+		*self.current_head.lock()? = None;
 		Ok(())
 	}
 

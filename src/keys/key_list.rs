@@ -1,26 +1,9 @@
-//TODO: remove once fixed https://github.com/rust-lang/rust-clippy/issues/6818
-#![allow(clippy::use_self)]
-
-use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ron::{
-	self,
-	ser::{to_string_pretty, PrettyConfig},
-};
-use serde::{Deserialize, Serialize};
-use std::{
-	fs::{self, File},
-	io::{Read, Write},
-	path::PathBuf,
-	rc::Rc,
-};
+use std::path::PathBuf;
 
-use crate::{args::get_app_config_path, strings::symbol};
+use super::key_list_file::KeysListFile;
 
-pub type SharedKeyConfig = Rc<KeyConfig>;
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct KeyConfig {
+pub struct KeysList {
 	pub tab_status: KeyEvent,
 	pub tab_log: KeyEvent,
 	pub tab_files: KeyEvent,
@@ -48,12 +31,15 @@ pub struct KeyConfig {
 	pub end: KeyEvent,
 	pub move_up: KeyEvent,
 	pub move_down: KeyEvent,
+	pub popup_up: KeyEvent,
+	pub popup_down: KeyEvent,
 	pub page_down: KeyEvent,
 	pub page_up: KeyEvent,
 	pub shift_up: KeyEvent,
 	pub shift_down: KeyEvent,
 	pub enter: KeyEvent,
 	pub blame: KeyEvent,
+	pub file_history: KeyEvent,
 	pub edit_file: KeyEvent,
 	pub status_stage_all: KeyEvent,
 	pub status_reset_item: KeyEvent,
@@ -83,14 +69,17 @@ pub struct KeyConfig {
 	pub select_tag: KeyEvent,
 	pub push: KeyEvent,
 	pub open_file_tree: KeyEvent,
+	pub file_find: KeyEvent,
 	pub force_push: KeyEvent,
 	pub pull: KeyEvent,
 	pub abort_merge: KeyEvent,
 	pub undo_commit: KeyEvent,
+	pub stage_unstage_item: KeyEvent,
+	pub tag_annotate: KeyEvent,
 }
 
 #[rustfmt::skip]
-impl Default for KeyConfig {
+impl Default for KeysList {
 	fn default() -> Self {
 		Self {
 			tab_status: KeyEvent { code: KeyCode::Char('1'), modifiers: KeyModifiers::empty()},
@@ -120,12 +109,15 @@ impl Default for KeyConfig {
 			end: KeyEvent { code: KeyCode::End, modifiers: KeyModifiers::empty()},
 			move_up: KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::empty()},
 			move_down: KeyEvent { code: KeyCode::Down, modifiers: KeyModifiers::empty()},
+			popup_up: KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::empty()},
+			popup_down: KeyEvent { code: KeyCode::Down, modifiers: KeyModifiers::empty()},
 			page_down: KeyEvent { code: KeyCode::PageDown, modifiers: KeyModifiers::empty()},
 			page_up: KeyEvent { code: KeyCode::PageUp, modifiers: KeyModifiers::empty()},
 			shift_up: KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::SHIFT},
 			shift_down: KeyEvent { code: KeyCode::Down, modifiers: KeyModifiers::SHIFT},
 			enter: KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::empty()},
 			blame: KeyEvent { code: KeyCode::Char('B'), modifiers: KeyModifiers::SHIFT},
+			file_history: KeyEvent { code: KeyCode::Char('H'), modifiers: KeyModifiers::SHIFT},
 			edit_file: KeyEvent { code: KeyCode::Char('e'), modifiers: KeyModifiers::empty()},
 			status_stage_all: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::empty()},
 			status_reset_item: KeyEvent { code: KeyCode::Char('D'), modifiers: KeyModifiers::SHIFT},
@@ -157,158 +149,23 @@ impl Default for KeyConfig {
 			force_push: KeyEvent { code: KeyCode::Char('P'), modifiers: KeyModifiers::SHIFT},
 			undo_commit: KeyEvent { code: KeyCode::Char('U'), modifiers: KeyModifiers::SHIFT},
 			pull: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
-			abort_merge: KeyEvent { code: KeyCode::Char('M'), modifiers: KeyModifiers::SHIFT},
+			abort_merge: KeyEvent { code: KeyCode::Char('A'), modifiers: KeyModifiers::SHIFT},
 			open_file_tree: KeyEvent { code: KeyCode::Char('F'), modifiers: KeyModifiers::SHIFT},
+			file_find: KeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty()},
+			stage_unstage_item: KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::empty()},
+			tag_annotate: KeyEvent { code: KeyCode::Char('a'), modifiers: KeyModifiers::CONTROL},
 		}
 	}
 }
 
-impl KeyConfig {
-	fn save(&self, file: PathBuf) -> Result<()> {
-		let mut file = File::create(file)?;
-		let data = to_string_pretty(self, PrettyConfig::default())?;
-		file.write_all(data.as_bytes())?;
-		Ok(())
-	}
-
-	pub fn get_config_file() -> Result<PathBuf> {
-		let app_home = get_app_config_path()?;
-		Ok(app_home.join("key_config.ron"))
-	}
-
-	fn read_file(config_file: PathBuf) -> Result<Self> {
-		let mut f = File::open(config_file)?;
-		let mut buffer = Vec::new();
-		f.read_to_end(&mut buffer)?;
-		Ok(ron::de::from_bytes(&buffer)?)
-	}
-
-	pub fn init(file: PathBuf) -> Result<Self> {
+impl KeysList {
+	pub fn init(file: PathBuf) -> Self {
 		if file.exists() {
-			match Self::read_file(file.clone()) {
-				Err(e) => {
-					let config_path = file.clone();
-					let config_path_old =
-						format!("{}.old", file.to_string_lossy());
-					fs::rename(
-						config_path.clone(),
-						config_path_old.clone(),
-					)?;
-
-					Self::default().save(file)?;
-
-					Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
-						e,config_path_old,config_path.to_string_lossy()))
-				}
-				Ok(res) => Ok(res),
-			}
+			let file =
+				KeysListFile::read_file(file).unwrap_or_default();
+			file.get_list()
 		} else {
-			Self::default().save(file)?;
-			Ok(Self::default())
+			Self::default()
 		}
-	}
-
-	//TODO: make this configurable (https://github.com/extrawurst/gitui/issues/465)
-	#[allow(clippy::unused_self)]
-	const fn get_key_symbol(&self, k: KeyCode) -> &str {
-		match k {
-			KeyCode::Enter => "\u{23ce}",     //⏎
-			KeyCode::Left => "\u{2190}",      //←
-			KeyCode::Right => "\u{2192}",     //→
-			KeyCode::Up => "\u{2191}",        //↑
-			KeyCode::Down => "\u{2193}",      //↓
-			KeyCode::Backspace => "\u{232b}", //⌫
-			KeyCode::Home => "\u{2912}",      //⤒
-			KeyCode::End => "\u{2913}",       //⤓
-			KeyCode::PageUp => "\u{21de}",    //⇞
-			KeyCode::PageDown => "\u{21df}",  //⇟
-			KeyCode::Tab => "\u{21e5}",       //⇥
-			KeyCode::BackTab => "\u{21e4}",   //⇤
-			KeyCode::Delete => "\u{2326}",    //⌦
-			KeyCode::Insert => "\u{2380}",    //⎀
-			KeyCode::Esc => "\u{238b}",       //⎋
-			_ => "?",
-		}
-	}
-
-	pub fn get_hint(&self, ev: KeyEvent) -> String {
-		match ev.code {
-			KeyCode::Down
-			| KeyCode::Up
-			| KeyCode::Right
-			| KeyCode::Left
-			| KeyCode::Enter
-			| KeyCode::Backspace
-			| KeyCode::Home
-			| KeyCode::End
-			| KeyCode::PageUp
-			| KeyCode::PageDown
-			| KeyCode::Tab
-			| KeyCode::BackTab
-			| KeyCode::Delete
-			| KeyCode::Insert
-			| KeyCode::Esc => {
-				format!(
-					"{}{}",
-					Self::get_modifier_hint(ev.modifiers),
-					self.get_key_symbol(ev.code)
-				)
-			}
-			KeyCode::Char(' ') => String::from(symbol::SPACE),
-			KeyCode::Char(c) => {
-				format!(
-					"{}{}",
-					Self::get_modifier_hint(ev.modifiers),
-					c
-				)
-			}
-			KeyCode::F(u) => {
-				format!(
-					"{}F{}",
-					Self::get_modifier_hint(ev.modifiers),
-					u
-				)
-			}
-			KeyCode::Null => Self::get_modifier_hint(ev.modifiers),
-		}
-	}
-
-	//TODO: make customizable (see https://github.com/extrawurst/gitui/issues/465)
-	fn get_modifier_hint(modifier: KeyModifiers) -> String {
-		match modifier {
-			KeyModifiers::CONTROL => "^".to_string(),
-			KeyModifiers::SHIFT => {
-				"\u{21e7}".to_string() //⇧
-			}
-			KeyModifiers::ALT => {
-				"\u{2325}".to_string() //⌥
-			}
-			_ => String::new(),
-		}
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::KeyConfig;
-	use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-
-	#[test]
-	fn test_get_hint() {
-		let config = KeyConfig::default();
-		let h = config.get_hint(KeyEvent {
-			code: KeyCode::Char('c'),
-			modifiers: KeyModifiers::CONTROL,
-		});
-		assert_eq!(h, "^c");
-	}
-
-	#[test]
-	fn test_load_vim_style_example() {
-		assert_eq!(
-			KeyConfig::read_file("vim_style_key_config.ron".into())
-				.is_ok(),
-			true
-		);
 	}
 }

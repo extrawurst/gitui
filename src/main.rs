@@ -27,9 +27,11 @@ mod components;
 mod input;
 mod keys;
 mod notify_mutex;
+mod popup_stack;
 mod profiler;
 mod queue;
 mod spinner;
+mod string_utils;
 mod strings;
 mod tabs;
 mod ui;
@@ -37,7 +39,7 @@ mod version;
 
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
-use asyncgit::AsyncGitNotification;
+use asyncgit::{sync::RepoPath, AsyncGitNotification};
 use backtrace::Backtrace;
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
@@ -54,6 +56,7 @@ use scopeguard::defer;
 use scopetime::scope_time;
 use spinner::Spinner;
 use std::{
+	cell::RefCell,
 	io::{self, Write},
 	panic, process,
 	time::{Duration, Instant},
@@ -103,12 +106,12 @@ fn main() -> Result<()> {
 
 	asyncgit::register_tracing_logging();
 
-	if !valid_path()? {
+	if !valid_path(&cliargs.repo_path) {
 		eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
 		return Ok(());
 	}
 
-	let key_config = KeyConfig::init(KeyConfig::get_config_file()?)
+	let key_config = KeyConfig::init()
 		.map_err(|e| eprintln!("KeyConfig loading error: {}", e))
 		.unwrap_or_default();
 	let theme = Theme::init(cliargs.theme)
@@ -133,8 +136,14 @@ fn main() -> Result<()> {
 	let ticker = tick(TICK_INTERVAL);
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
-	let mut app =
-		App::new(&tx_git, &tx_app, input, theme, key_config);
+	let mut app = App::new(
+		RefCell::new(cliargs.repo_path),
+		&tx_git,
+		&tx_app,
+		input,
+		theme,
+		key_config,
+	);
 
 	let mut spinner = Spinner::default();
 	let mut first_update = true;
@@ -228,8 +237,8 @@ fn draw<B: Backend>(
 		terminal.resize(terminal.size()?)?;
 	}
 
-	terminal.draw(|mut f| {
-		if let Err(e) = app.draw(&mut f) {
+	terminal.draw(|f| {
+		if let Err(e) = app.draw(f) {
 			log::error!("failed to draw: {:?}", e);
 		}
 	})?;
@@ -237,9 +246,8 @@ fn draw<B: Backend>(
 	Ok(())
 }
 
-fn valid_path() -> Result<bool> {
-	Ok(asyncgit::sync::is_repo(asyncgit::CWD)
-		&& !asyncgit::sync::is_bare_repo(asyncgit::CWD)?)
+fn valid_path(repo_path: &RepoPath) -> bool {
+	asyncgit::sync::is_repo(repo_path)
 }
 
 fn select_event(

@@ -2,7 +2,8 @@
 .PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
 ARGS=-l
-# ARGS=-l -d <some_path>
+# ARGS=-l -d ~/code/git-bare-test.git
+# ARGS=-l -d ~/code/git-bare-test.git -w ~/code/git-bare-test
 
 profile:
 	cargo run --features=timing,pprof -- ${ARGS}
@@ -26,7 +27,7 @@ release-mac: build-release
 release-win: build-release
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
-	cargo install cargo-wix
+	cargo install cargo-wix --version 0.3.1
 	cargo wix --no-build --nocapture --output ./release/gitui.msi
 	ls -l ./release/gitui.msi 
 
@@ -51,13 +52,9 @@ fmt:
 	cargo fmt -- --check
 
 clippy:
-	touch src/main.rs
-	cargo clean -p gitui -p asyncgit -p scopetime -p filetreelist
 	cargo clippy --workspace --all-features
 
 clippy-nightly:
-	touch src/main.rs
-	cargo clean -p gitui -p asyncgit -p scopetime -p filetreelist
 	cargo +nightly clippy --workspace --all-features
 
 check: fmt clippy test
@@ -67,3 +64,6 @@ install:
 
 install-timing:
 	cargo install --features=timing --path "." --offline
+
+licenses:
+	cargo bundle-licenses --format toml --output THIRDPARTY.toml

@@ -1,8 +1,8 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self, diff::DiffOptions, CommitId},
-	AsyncGitNotification, FileDiff, CWD,
+	sync::{self, diff::DiffOptions, CommitId, RepoPath},
+	AsyncGitNotification, FileDiff,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -42,7 +42,6 @@ struct Request<R, A>(R, Option<A>);
 #[derive(Default, Clone)]
 struct LastResult<P, R> {
 	params: P,
-	hash: u64,
 	result: R,
 }
 
@@ -52,12 +51,17 @@ pub struct AsyncDiff {
 	last: Arc<Mutex<Option<LastResult<DiffParams, FileDiff>>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicUsize>,
+	repo: RepoPath,
 }
 
 impl AsyncDiff {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			current: Arc::new(Mutex::new(Request(0, None))),
 			last: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
@@ -110,11 +114,13 @@ impl AsyncDiff {
 		let arc_last = Arc::clone(&self.last);
 		let sender = self.sender.clone();
 		let arc_pending = Arc::clone(&self.pending);
+		let repo = self.repo.clone();
 
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
 			let notify = Self::get_diff_helper(
+				&repo,
 				params,
 				&arc_last,
 				&arc_current,
@@ -144,6 +150,7 @@ impl AsyncDiff {
 	}
 
 	fn get_diff_helper(
+		repo_path: &RepoPath,
 		params: DiffParams,
 		arc_last: &Arc<
 			Mutex<Option<LastResult<DiffParams, FileDiff>>>,
@@ -153,26 +160,28 @@ impl AsyncDiff {
 	) -> Result<bool> {
 		let res = match params.diff_type {
 			DiffType::Stage => sync::diff::get_diff(
-				CWD,
+				repo_path,
 				&params.path,
 				true,
 				Some(params.options),
 			)?,
 			DiffType::WorkDir => sync::diff::get_diff(
-				CWD,
+				repo_path,
 				&params.path,
 				false,
 				Some(params.options),
 			)?,
 			DiffType::Commit(id) => sync::diff::get_diff_commit(
-				CWD,
+				repo_path,
 				id,
 				params.path.clone(),
+				Some(params.options),
 			)?,
 			DiffType::Commits(ids) => sync::diff::get_diff_commits(
-				CWD,
+				repo_path,
 				ids,
 				params.path.clone(),
+				Some(params.options),
 			)?,
 		};
 
@@ -189,7 +198,6 @@ impl AsyncDiff {
 			let mut last = arc_last.lock()?;
 			*last = Some(LastResult {
 				result: res,
-				hash,
 				params,
 			});
 		}

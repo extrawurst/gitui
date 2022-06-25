@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use super::push::ProgressNotification;
 use crate::{error::Result, sync::cred::BasicAuthCredential};
 use crossbeam_channel::Sender;
@@ -92,6 +90,14 @@ impl Callbacks {
 				)
 			},
 		);
+
+		callbacks.sideband_progress(move |data| {
+			log::debug!(
+				"sideband transfer: '{}'",
+				String::from_utf8_lossy(data).trim()
+			);
+			true
+		});
 
 		callbacks
 	}

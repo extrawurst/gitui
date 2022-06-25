@@ -41,7 +41,7 @@ impl DrawableComponent for ConfirmComponent {
 			let area = ui::centered_rect(50, 20, f.size());
 			f.render_widget(Clear, area);
 			f.render_widget(
-				popup_paragraph(&title, txt, &self.theme, true),
+				popup_paragraph(&title, txt, &self.theme, true, true),
 				area,
 			);
 		}
@@ -73,9 +73,9 @@ impl Component for ConfirmComponent {
 	fn event(&mut self, ev: Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
-				if e == self.key_config.exit_popup {
+				if e == self.key_config.keys.exit_popup {
 					self.hide();
-				} else if e == self.key_config.enter {
+				} else if e == self.key_config.keys.enter {
 					self.confirm();
 				}
 
@@ -157,7 +157,7 @@ impl ConfirmComponent {
                     strings::confirm_title_reset(),
                     strings::confirm_msg_reset_lines(lines.len()),
                 ),
-                Action::DeleteBranch(branch_ref, true) => (
+                Action::DeleteLocalBranch(branch_ref) => (
                     strings::confirm_title_delete_branch(
                         &self.key_config,
                     ),
@@ -166,7 +166,7 @@ impl ConfirmComponent {
                         branch_ref,
                     ),
                 ),
-                Action::DeleteBranch(branch_ref, false) => (
+                Action::DeleteRemoteBranch(branch_ref) => (
                     strings::confirm_title_delete_remote_branch(
                         &self.key_config,
                     ),
@@ -184,6 +184,10 @@ impl ConfirmComponent {
                         tag_name,
                     ),
                 ),
+				Action::DeleteRemoteTag(_tag_name,remote) => (
+                    strings::confirm_title_delete_tag_remote(),
+                    strings::confirm_msg_delete_tag_remote(remote),
+                ),
                 Action::ForcePush(branch, _force) => (
                     strings::confirm_title_force_push(
                         &self.key_config,
@@ -199,7 +203,15 @@ impl ConfirmComponent {
                 ),
                 Action::AbortMerge => (
                     strings::confirm_title_abortmerge(),
-                    strings::confirm_msg_abortmerge(),
+                    strings::confirm_msg_revertchanges(),
+                ),
+				Action::AbortRebase => (
+                    strings::confirm_title_abortrebase(),
+                    strings::confirm_msg_abortrebase(),
+                ),
+				Action::AbortRevert => (
+                    strings::confirm_title_abortrevert(),
+                    strings::confirm_msg_revertchanges(),
                 ),
             };
 		}

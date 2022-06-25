@@ -86,7 +86,8 @@ jobs:
     - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
       run: |
-        cargo install cargo-wix
+        cargo install cargo-wix --version 0.3.1
+        cargo wix --version
         cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
         ls -l ./target/wix/gitui.msi
 
@@ -131,7 +132,7 @@ jobs:
         make test-linux-musl
 
   rustfmt:
-    name: Rustfmt
+    name: Formatting
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
@@ -141,6 +142,11 @@ jobs:
         toolchain: stable
         components: rustfmt
     - run: cargo fmt -- --check
+
+    - name: cargo-sort
+      run: |
+        cargo install cargo-sort --force
+        cargo sort -c -w
 
   sec:
     name: Security audit

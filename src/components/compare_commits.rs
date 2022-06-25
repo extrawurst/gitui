@@ -1,17 +1,20 @@
 use super::{
 	command_pump, event_pump, visibility_blocking, CommandBlocking,
 	CommandInfo, CommitDetailsComponent, Component, DiffComponent,
-	DrawableComponent, EventState,
+	DrawableComponent, EventState, InspectCommitOpen,
 };
 use crate::{
-	accessors, keys::SharedKeyConfig, queue::Queue, strings,
+	accessors,
+	keys::SharedKeyConfig,
+	queue::{InternalEvent, Queue, StackablePopupOpen},
+	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{self, diff::DiffOptions, CommitId},
+	sync::{self, diff::DiffOptions, CommitId, RepoPathRef},
 	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
-	DiffType, CWD,
+	DiffType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -23,12 +26,14 @@ use tui::{
 };
 
 pub struct CompareCommitsComponent {
-	commit_ids: Option<(CommitId, CommitId)>,
+	repo: RepoPathRef,
+	open_request: Option<InspectCommitOpen>,
 	diff: DiffComponent,
 	details: CommitDetailsComponent,
 	git_diff: AsyncDiff,
 	visible: bool,
 	key_config: SharedKeyConfig,
+	queue: Queue,
 }
 
 impl DrawableComponent for CompareCommitsComponent {
@@ -108,24 +113,27 @@ impl Component for CompareCommitsComponent {
 			if event_pump(ev, self.components_mut().as_mut_slice())?
 				.is_consumed()
 			{
+				if !self.details.is_visible() {
+					self.hide_stacked(true);
+				}
 				return Ok(EventState::Consumed);
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.exit_popup {
-					self.hide();
-				} else if e == self.key_config.focus_right
+				if e == self.key_config.keys.exit_popup {
+					self.hide_stacked(false);
+				} else if e == self.key_config.keys.focus_right
 					&& self.can_focus_diff()
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if e == self.key_config.focus_left
+				} else if e == self.key_config.keys.focus_left
 					&& self.diff.focused()
 				{
 					self.details.focus(true);
 					self.diff.focus(false);
-				} else if e == self.key_config.focus_left {
-					self.hide();
+				} else if e == self.key_config.keys.focus_left {
+					self.hide_stacked(false);
 				}
 
 				return Ok(EventState::Consumed);
@@ -156,43 +164,48 @@ impl CompareCommitsComponent {
 
 	///
 	pub fn new(
+		repo: &RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo: repo.clone(),
 			details: CommitDetailsComponent::new(
+				repo,
 				queue,
 				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
 			diff: DiffComponent::new(
+				repo.clone(),
 				queue.clone(),
 				theme,
 				key_config.clone(),
 				true,
 			),
-			commit_ids: None,
-			git_diff: AsyncDiff::new(sender),
+			open_request: None,
+			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),
 			visible: false,
 			key_config,
+			queue: queue.clone(),
 		}
 	}
 
 	///
-	pub fn open(
-		&mut self,
-		id: CommitId,
-		other: Option<CommitId>,
-	) -> Result<()> {
-		let other = if let Some(other) = other {
-			other
+	pub fn open(&mut self, open: InspectCommitOpen) -> Result<()> {
+		let compare_id = if let Some(compare_id) = open.compare_id {
+			compare_id
 		} else {
-			sync::get_head_tuple(CWD)?.id
+			sync::get_head_tuple(&self.repo.borrow())?.id
 		};
-		self.commit_ids = Some((id, other));
+		self.open_request = Some(InspectCommitOpen {
+			commit_id: open.commit_id,
+			compare_id: Some(compare_id),
+			tags: open.tags,
+		});
 		self.show()?;
 
 		Ok(())
@@ -209,9 +222,9 @@ impl CompareCommitsComponent {
 		ev: AsyncGitNotification,
 	) -> Result<()> {
 		if self.is_visible() {
-			if let AsyncGitNotification::CommitFiles = ev {
+			if ev == AsyncGitNotification::CommitFiles {
 				self.update()?;
-			} else if let AsyncGitNotification::Diff = ev {
+			} else if ev == AsyncGitNotification::Diff {
 				self.update_diff()?;
 			}
 		}
@@ -219,10 +232,22 @@ impl CompareCommitsComponent {
 		Ok(())
 	}
 
+	fn get_ids(&self) -> Option<(CommitId, CommitId)> {
+		let other = self
+			.open_request
+			.as_ref()
+			.and_then(|open| open.compare_id);
+
+		self.open_request
+			.as_ref()
+			.map(|open| open.commit_id)
+			.zip(other)
+	}
+
 	/// called when any tree component changed selection
 	pub fn update_diff(&mut self) -> Result<()> {
 		if self.is_visible() {
-			if let Some(ids) = self.commit_ids {
+			if let Some(ids) = self.get_ids() {
 				if let Some(f) = self.details.files().selection_file()
 				{
 					let diff_params = DiffParams {
@@ -254,7 +279,7 @@ impl CompareCommitsComponent {
 
 	fn update(&mut self) -> Result<()> {
 		self.details.set_commits(
-			self.commit_ids.map(CommitFilesParams::from),
+			self.get_ids().map(CommitFilesParams::from),
 			None,
 		)?;
 		self.update_diff()?;
@@ -264,5 +289,18 @@ impl CompareCommitsComponent {
 
 	fn can_focus_diff(&self) -> bool {
 		self.details.files().selection_file().is_some()
+	}
+
+	fn hide_stacked(&mut self, stack: bool) {
+		self.hide();
+		if stack {
+			if let Some(request) = self.open_request.clone() {
+				self.queue.push(InternalEvent::PopupStackPush(
+					StackablePopupOpen::CompareCommits(request),
+				));
+			}
+		} else {
+			self.queue.push(InternalEvent::PopupStackPop);
+		}
 	}
 }

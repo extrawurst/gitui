@@ -11,9 +11,8 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self, CommitDetails, CommitId, CommitMessage},
-	CWD,
+use asyncgit::sync::{
+	self, CommitDetails, CommitId, CommitMessage, RepoPathRef, Tag,
 };
 use crossterm::event::Event;
 use std::clone::Clone;
@@ -30,8 +29,9 @@ use tui::{
 use super::style::Detail;
 
 pub struct DetailsComponent {
+	repo: RepoPathRef,
 	data: Option<CommitDetails>,
-	tags: Vec<String>,
+	tags: Vec<Tag>,
 	theme: SharedTheme,
 	focused: bool,
 	current_width: Cell<u16>,
@@ -46,11 +46,13 @@ type WrappedCommitMessage<'a> =
 impl DetailsComponent {
 	///
 	pub const fn new(
+		repo: RepoPathRef,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 		focused: bool,
 	) -> Self {
 		Self {
+			repo,
 			data: None,
 			tags: Vec::new(),
 			theme,
@@ -69,8 +71,9 @@ impl DetailsComponent {
 	) {
 		self.tags.clear();
 
-		self.data =
-			id.and_then(|id| sync::get_commit_details(CWD, id).ok());
+		self.data = id.and_then(|id| {
+			sync::get_commit_details(&self.repo.borrow(), id).ok()
+		});
 
 		self.scroll.reset();
 
@@ -151,7 +154,7 @@ impl DetailsComponent {
 
 	#[allow(unstable_name_collisions, clippy::too_many_lines)]
 	fn get_text_info(&self) -> Vec<Spans> {
-		if let Some(ref data) = self.data {
+		self.data.as_ref().map_or_else(Vec::new, |data| {
 			let mut res = vec![
 				Spans::from(vec![
 					style_detail(&self.theme, &Detail::Author),
@@ -221,7 +224,7 @@ impl DetailsComponent {
 					itertools::Itertools::intersperse(
 						self.tags.iter().map(|tag| {
 							Span::styled(
-								Cow::from(tag),
+								Cow::from(&tag.name),
 								self.theme.text(true, false),
 							)
 						}),
@@ -235,9 +238,7 @@ impl DetailsComponent {
 			}
 
 			res
-		} else {
-			vec![]
-		}
+		})
 	}
 
 	fn move_scroll_top(&mut self, move_type: ScrollType) -> bool {
@@ -359,16 +360,16 @@ impl Component for DetailsComponent {
 	fn event(&mut self, event: Event) -> Result<EventState> {
 		if self.focused {
 			if let Event::Key(e) = event {
-				return Ok(if e == self.key_config.move_up {
+				return Ok(if e == self.key_config.keys.move_up {
 					self.move_scroll_top(ScrollType::Up).into()
-				} else if e == self.key_config.move_down {
+				} else if e == self.key_config.keys.move_down {
 					self.move_scroll_top(ScrollType::Down).into()
-				} else if e == self.key_config.home
-					|| e == self.key_config.shift_up
+				} else if e == self.key_config.keys.home
+					|| e == self.key_config.keys.shift_up
 				{
 					self.move_scroll_top(ScrollType::Home).into()
-				} else if e == self.key_config.end
-					|| e == self.key_config.shift_down
+				} else if e == self.key_config.keys.end
+					|| e == self.key_config.keys.shift_down
 				{
 					self.move_scroll_top(ScrollType::End).into()
 				} else {
@@ -404,7 +405,7 @@ mod tests {
 		width: usize,
 	) -> Vec<Cow<'_, str>> {
 		let (wrapped_title, wrapped_message) =
-			DetailsComponent::wrap_commit_details(&message, width);
+			DetailsComponent::wrap_commit_details(message, width);
 
 		[&wrapped_title[..], &wrapped_message[..]].concat()
 	}

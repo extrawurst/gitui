@@ -1,7 +1,8 @@
-use super::utils::repo;
 use crate::error::Result;
 use git2::Repository;
 use scopetime::scope_time;
+
+use super::{repository::repo, RepoPath};
 
 // see https://git-scm.com/docs/git-config#Documentation/git-config.txt-statusshowUntrackedFiles
 /// represents the `status.showUntrackedFiles` git config state
@@ -57,7 +58,7 @@ pub fn untracked_files_config_repo(
 
 ///
 pub fn untracked_files_config(
-	repo_path: &str,
+	repo_path: &RepoPath,
 ) -> Result<ShowUntrackedFilesConfig> {
 	let repo = repo(repo_path)?;
 	untracked_files_config_repo(&repo)
@@ -65,7 +66,7 @@ pub fn untracked_files_config(
 
 /// get string from config
 pub fn get_config_string(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	key: &str,
 ) -> Result<Option<String>> {
 	let repo = repo(repo_path)?;
@@ -103,18 +104,21 @@ mod tests {
 
 	#[test]
 	fn test_get_config() {
-		let bad_dir_cfg =
-			get_config_string("oodly_noodly", "this.doesnt.exist");
+		let bad_dir_cfg = get_config_string(
+			&"oodly_noodly".into(),
+			"this.doesnt.exist",
+		);
 		assert!(bad_dir_cfg.is_err());
 
 		let (_td, repo) = repo_init().unwrap();
 		let path = repo.path();
 		let rpath = path.as_os_str().to_str().unwrap();
-		let bad_cfg = get_config_string(rpath, "this.doesnt.exist");
+		let bad_cfg =
+			get_config_string(&rpath.into(), "this.doesnt.exist");
 		assert!(bad_cfg.is_ok());
 		assert!(bad_cfg.unwrap().is_none());
 		// repo init sets user.name
-		let good_cfg = get_config_string(rpath, "user.name");
+		let good_cfg = get_config_string(&rpath.into(), "user.name");
 		assert!(good_cfg.is_ok());
 		assert!(good_cfg.unwrap().is_some());
 	}

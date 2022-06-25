@@ -3,8 +3,9 @@ use crate::{
 	sync::{
 		cred::BasicAuthCredential,
 		remotes::tags::{push_tags, PushTagsProgress},
+		RepoPath,
 	},
-	AsyncGitNotification, RemoteProgress, CWD,
+	AsyncGitNotification, RemoteProgress,
 };
 use crossbeam_channel::{unbounded, Sender};
 use std::{
@@ -21,10 +22,9 @@ pub struct PushTagsRequest {
 	pub basic_credential: Option<BasicAuthCredential>,
 }
 
+//TODO: since this is empty we can go with a simple AtomicBool to mark that we are fetching or not
 #[derive(Default, Clone, Debug)]
-struct PushState {
-	request: PushTagsRequest,
-}
+struct PushState {}
 
 ///
 pub struct AsyncPushTags {
@@ -32,12 +32,17 @@ pub struct AsyncPushTags {
 	last_result: Arc<Mutex<Option<String>>>,
 	progress: Arc<Mutex<Option<PushTagsProgress>>>,
 	sender: Sender<AsyncGitNotification>,
+	repo: RepoPath,
 }
 
 impl AsyncPushTags {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			state: Arc::new(Mutex::new(None)),
 			last_result: Arc::new(Mutex::new(None)),
 			progress: Arc::new(Mutex::new(None)),
@@ -78,6 +83,7 @@ impl AsyncPushTags {
 		let arc_res = Arc::clone(&self.last_result);
 		let arc_progress = Arc::clone(&self.progress);
 		let sender = self.sender.clone();
+		let repo = self.repo.clone();
 
 		thread::spawn(move || {
 			let (progress_sender, receiver) = unbounded();
@@ -90,7 +96,7 @@ impl AsyncPushTags {
 			);
 
 			let res = push_tags(
-				CWD,
+				&repo,
 				params.remote.as_str(),
 				params.basic_credential.clone(),
 				Some(progress_sender),
@@ -110,16 +116,14 @@ impl AsyncPushTags {
 		Ok(())
 	}
 
-	fn set_request(&self, params: &PushTagsRequest) -> Result<()> {
+	fn set_request(&self, _params: &PushTagsRequest) -> Result<()> {
 		let mut state = self.state.lock()?;
 
 		if state.is_some() {
 			return Err(Error::Generic("pending request".into()));
 		}
 
-		*state = Some(PushState {
-			request: params.clone(),
-		});
+		*state = Some(PushState {});
 
 		Ok(())
 	}

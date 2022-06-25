@@ -1,15 +1,17 @@
 use super::{apply_selection, load_file};
-use crate::error::Result;
-use crate::sync::{
-	diff::DiffLinePosition,
-	patches::get_file_diff_patch_and_hunklines,
-	utils::{repo, repo_write_file},
+use crate::{
+	error::Result,
+	sync::{
+		diff::DiffLinePosition,
+		patches::get_file_diff_patch_and_hunklines, repository::repo,
+		utils::repo_write_file, RepoPath,
+	},
 };
 use scopetime::scope_time;
 
 /// discards specific lines in an unstaged hunk of a diff
 pub fn discard_lines(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	file_path: &str,
 	lines: &[DiffLinePosition],
 ) -> Result<()> {
@@ -69,7 +71,7 @@ mod test {
 ";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
@@ -114,7 +116,7 @@ end
 ";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
@@ -153,7 +155,7 @@ end
 ";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
@@ -200,7 +202,7 @@ end
 ";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
@@ -243,7 +245,7 @@ end
 ";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
@@ -288,7 +290,7 @@ end
 ";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 
@@ -321,7 +323,7 @@ end
 ";
 
 		let (path, repo) = repo_init().unwrap();
-		let path = path.path().to_str().unwrap();
+		let path: &RepoPath = &path.path().to_str().unwrap().into();
 
 		write_commit_file(&repo, "test.txt", FILE_1, "c1");
 

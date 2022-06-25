@@ -13,6 +13,7 @@ use anyhow::Result;
 use asyncgit::sync::{CommitId, Tags};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
+use itertools::Itertools;
 use std::{
 	borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
 };
@@ -135,6 +136,11 @@ impl CommitList {
 	///
 	pub fn marked(&self) -> &[CommitId] {
 		&self.marked
+	}
+
+	///
+	pub fn clear_marked(&mut self) {
+		self.marked.clear();
 	}
 
 	pub fn copy_entry_hash(&self) -> Result<()> {
@@ -286,11 +292,10 @@ impl CommitList {
 
 		// commit tags
 		txt.push(Span::styled(
-			Cow::from(if let Some(tags) = tags {
-				format!(" {}", tags)
-			} else {
-				String::from("")
-			}),
+			Cow::from(tags.map_or_else(
+				|| String::from(""),
+				|tags| format!(" {}", tags),
+			)),
 			theme.tags(selected),
 		));
 
@@ -321,11 +326,10 @@ impl CommitList {
 			.take(height)
 			.enumerate()
 		{
-			let tags = self
-				.tags
-				.as_ref()
-				.and_then(|t| t.get(&e.id))
-				.map(|tags| tags.join(" "));
+			let tags =
+				self.tags.as_ref().and_then(|t| t.get(&e.id)).map(
+					|tags| tags.iter().map(|t| &t.name).join(" "),
+				);
 
 			let marked = if any_marked {
 				self.is_marked(&e.id)
@@ -424,28 +428,29 @@ impl DrawableComponent for CommitList {
 impl Component for CommitList {
 	fn event(&mut self, ev: Event) -> Result<EventState> {
 		if let Event::Key(k) = ev {
-			let selection_changed = if k == self.key_config.move_up {
-				self.move_selection(ScrollType::Up)?
-			} else if k == self.key_config.move_down {
-				self.move_selection(ScrollType::Down)?
-			} else if k == self.key_config.shift_up
-				|| k == self.key_config.home
-			{
-				self.move_selection(ScrollType::Home)?
-			} else if k == self.key_config.shift_down
-				|| k == self.key_config.end
-			{
-				self.move_selection(ScrollType::End)?
-			} else if k == self.key_config.page_up {
-				self.move_selection(ScrollType::PageUp)?
-			} else if k == self.key_config.page_down {
-				self.move_selection(ScrollType::PageDown)?
-			} else if k == self.key_config.log_mark_commit {
-				self.mark();
-				true
-			} else {
-				false
-			};
+			let selection_changed =
+				if k == self.key_config.keys.move_up {
+					self.move_selection(ScrollType::Up)?
+				} else if k == self.key_config.keys.move_down {
+					self.move_selection(ScrollType::Down)?
+				} else if k == self.key_config.keys.shift_up
+					|| k == self.key_config.keys.home
+				{
+					self.move_selection(ScrollType::Home)?
+				} else if k == self.key_config.keys.shift_down
+					|| k == self.key_config.keys.end
+				{
+					self.move_selection(ScrollType::End)?
+				} else if k == self.key_config.keys.page_up {
+					self.move_selection(ScrollType::PageUp)?
+				} else if k == self.key_config.keys.page_down {
+					self.move_selection(ScrollType::PageDown)?
+				} else if k == self.key_config.keys.log_mark_commit {
+					self.mark();
+					true
+				} else {
+					false
+				};
 			return Ok(selection_changed.into());
 		}
 

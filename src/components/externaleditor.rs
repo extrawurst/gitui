@@ -8,9 +8,8 @@ use crate::{
 	ui::{self, style::SharedTheme},
 };
 use anyhow::{anyhow, bail, Result};
-use asyncgit::{
-	sync::{get_config_string, utils::repo_work_dir},
-	CWD,
+use asyncgit::sync::{
+	get_config_string, utils::repo_work_dir, RepoPath,
 };
 use crossterm::{
 	event::Event,
@@ -49,8 +48,11 @@ impl ExternalEditorComponent {
 	}
 
 	/// opens file at given `path` in an available editor
-	pub fn open_file_in_editor(path: &Path) -> Result<()> {
-		let work_dir = repo_work_dir(CWD)?;
+	pub fn open_file_in_editor(
+		repo: &RepoPath,
+		path: &Path,
+	) -> Result<()> {
+		let work_dir = repo_work_dir(repo)?;
 
 		let path = if path.is_relative() {
 			Path::new(&work_dir).join(path)
@@ -71,7 +73,9 @@ impl ExternalEditorComponent {
 
 		let editor = env::var(environment_options[0])
 			.ok()
-			.or_else(|| get_config_string(CWD, "core.editor").ok()?)
+			.or_else(|| {
+				get_config_string(repo, "core.editor").ok()?
+			})
 			.or_else(|| env::var(environment_options[1]).ok())
 			.or_else(|| env::var(environment_options[2]).ok())
 			.unwrap_or_else(|| String::from("vi"));
@@ -104,7 +108,7 @@ impl ExternalEditorComponent {
 		let remainder = remainder_str.split_whitespace();
 
 		let mut args: Vec<&OsStr> =
-			remainder.map(|s| OsStr::new(s)).collect();
+			remainder.map(OsStr::new).collect();
 
 		args.push(path.as_os_str());
 

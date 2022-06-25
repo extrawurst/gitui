@@ -54,6 +54,11 @@ impl FileTree {
 	}
 
 	///
+	pub const fn selection(&self) -> Option<usize> {
+		self.selection
+	}
+
+	///
 	pub fn collapse_but_root(&mut self) {
 		if !self.is_empty() {
 			self.items.collapse(0, true);
@@ -140,6 +145,25 @@ impl FileTree {
 
 			changed_index || new_index.is_some()
 		})
+	}
+
+	pub fn select_file(&mut self, path: &Path) -> bool {
+		let new_selection = self
+			.items
+			.tree_items
+			.iter()
+			.position(|item| item.info().full_path() == path);
+
+		if new_selection == self.selection {
+			return false;
+		}
+
+		self.selection = new_selection;
+		if let Some(selection) = self.selection {
+			self.items.show_element(selection);
+		}
+		self.visual_selection = self.calc_visual_selection();
+		true
 	}
 
 	fn visual_index_to_absolute(

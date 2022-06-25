@@ -1,7 +1,7 @@
 use crate::{
 	error::Result,
-	sync::{self, CommitId},
-	AsyncGitNotification, StatusItem, CWD,
+	sync::{self, CommitId, RepoPath},
+	AsyncGitNotification, StatusItem,
 };
 use crossbeam_channel::Sender;
 use std::sync::{
@@ -42,12 +42,17 @@ pub struct AsyncCommitFiles {
 		Arc<Mutex<Option<Request<CommitFilesParams, ResultType>>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicUsize>,
+	repo: RepoPath,
 }
 
 impl AsyncCommitFiles {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
+			repo,
 			current: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
 			pending: Arc::new(AtomicUsize::new(0)),
@@ -89,11 +94,12 @@ impl AsyncCommitFiles {
 		let arc_current = Arc::clone(&self.current);
 		let sender = self.sender.clone();
 		let arc_pending = Arc::clone(&self.pending);
+		let repo = self.repo.clone();
 
 		self.pending.fetch_add(1, Ordering::Relaxed);
 
 		rayon_core::spawn(move || {
-			Self::fetch_helper(params, &arc_current)
+			Self::fetch_helper(&repo, params, &arc_current)
 				.expect("failed to fetch");
 
 			arc_pending.fetch_sub(1, Ordering::Relaxed);
@@ -107,13 +113,17 @@ impl AsyncCommitFiles {
 	}
 
 	fn fetch_helper(
+		repo_path: &RepoPath,
 		params: CommitFilesParams,
 		arc_current: &Arc<
 			Mutex<Option<Request<CommitFilesParams, ResultType>>>,
 		>,
 	) -> Result<()> {
-		let res =
-			sync::get_commit_files(CWD, params.id, params.other)?;
+		let res = sync::get_commit_files(
+			repo_path,
+			params.id,
+			params.other,
+		)?;
 
 		log::trace!("get_commit_files: {:?} ({})", params, res.len());
 

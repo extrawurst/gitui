@@ -84,7 +84,11 @@ impl Theme {
 		};
 
 		if selected {
-			branch.patch(Style::default().bg(self.selection_bg))
+			branch.patch(
+				Style::default()
+					.fg(self.command_fg)
+					.bg(self.selection_bg),
+			)
 		} else {
 			branch
 		}
@@ -113,7 +117,8 @@ impl Theme {
 
 	pub fn text(&self, enabled: bool, selected: bool) -> Style {
 		match (enabled, selected) {
-			(false, _) => Style::default().fg(self.disabled_fg),
+			(false, false) => Style::default().fg(self.disabled_fg),
+			(false, true) => Style::default().bg(self.selection_bg),
 			(true, false) => Style::default(),
 			(true, true) => Style::default()
 				.fg(self.command_fg)

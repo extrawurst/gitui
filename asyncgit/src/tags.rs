@@ -2,8 +2,8 @@ use crate::{
 	asyncjob::{AsyncJob, AsyncSingleJob, RunParams},
 	error::Result,
 	hash,
-	sync::{self},
-	AsyncGitNotification, CWD,
+	sync::{self, RepoPath},
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
 use std::{
@@ -28,7 +28,10 @@ pub struct AsyncTags {
 
 impl AsyncTags {
 	///
-	pub fn new(sender: &Sender<AsyncGitNotification>) -> Self {
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
 		Self {
 			last: None,
 			sender: sender.clone(),

@@ -10,7 +10,9 @@ mod create_branch;
 mod cred;
 mod diff;
 mod externaleditor;
-mod filetree;
+mod fetch;
+mod file_find_popup;
+mod file_revlog;
 mod help;
 mod inspect_commit;
 mod msg;
@@ -23,14 +25,15 @@ mod reset;
 mod revision_files;
 mod revision_files_popup;
 mod stashmsg;
+mod status_tree;
 mod syntax_text;
 mod tag_commit;
 mod taglist;
 mod textinput;
 mod utils;
 
-pub use self::filetree::FileTreeComponent;
-pub use blame_file::BlameFileComponent;
+pub use self::status_tree::StatusTreeComponent;
+pub use blame_file::{BlameFileComponent, BlameFileOpen};
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
@@ -41,8 +44,11 @@ pub use compare_commits::CompareCommitsComponent;
 pub use create_branch::CreateBranchComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
+pub use fetch::FetchComponent;
+pub use file_find_popup::FileFindPopup;
+pub use file_revlog::{FileRevOpen, FileRevlogComponent};
 pub use help::HelpComponent;
-pub use inspect_commit::InspectCommitComponent;
+pub use inspect_commit::{InspectCommitComponent, InspectCommitOpen};
 pub use msg::MsgComponent;
 pub use options_popup::{
 	AppOption, OptionsPopupComponent, SharedOptions,
@@ -53,7 +59,7 @@ pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ConfirmComponent;
 pub use revision_files::RevisionFilesComponent;
-pub use revision_files_popup::RevisionFilesPopup;
+pub use revision_files_popup::{FileTreeOpen, RevisionFilesPopup};
 pub use stashmsg::StashMsgComponent;
 pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;
@@ -133,8 +139,8 @@ macro_rules! draw_popups {
 #[macro_export]
 macro_rules! setup_popups {
     ($self:ident, [$($element:ident),+]) => {
-        crate::any_popup_visible!($self, [$($element),+]);
-        crate::draw_popups!($self, [ $($element),+ ]);
+        $crate::any_popup_visible!($self, [$($element),+]);
+        $crate::draw_popups!($self, [ $($element),+ ]);
     };
 }
 
@@ -239,6 +245,9 @@ impl From<bool> for EventState {
 /// base component trait
 pub trait Component {
 	///
+	//TODO: remove once workaround for clippy bug:
+	//<https://github.com/rust-lang/rust-clippy/issues/8366>
+	#[allow(clippy::ptr_arg)]
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -297,27 +306,24 @@ fn popup_paragraph<'a, T>(
 	content: T,
 	theme: &Theme,
 	focused: bool,
+	block: bool,
 ) -> Paragraph<'a>
 where
 	T: Into<Text<'a>>,
 {
-	Paragraph::new(content.into())
-		.block(
+	let paragraph = Paragraph::new(content.into())
+		.alignment(Alignment::Left)
+		.wrap(Wrap { trim: true });
+
+	if block {
+		paragraph.block(
 			Block::default()
 				.title(Span::styled(title, theme.title(focused)))
 				.borders(Borders::ALL)
 				.border_type(BorderType::Thick)
 				.border_style(theme.block(focused)),
 		)
-		.alignment(Alignment::Left)
-		.wrap(Wrap { trim: true })
-}
-
-//TODO: allow customize tabsize
-pub fn tabs_to_spaces(input: String) -> String {
-	if input.contains('\t') {
-		input.replace("\t", "  ")
 	} else {
-		input
+		paragraph
 	}
 }

@@ -1,24 +1,25 @@
 use super::{
-	utils::scroll_vertical::VerticalScroll, CommandBlocking,
-	CommandInfo, Component, DrawableComponent, EventState,
-	SyntaxTextComponent,
+	utils::scroll_vertical::VerticalScroll, BlameFileOpen,
+	CommandBlocking, CommandInfo, Component, DrawableComponent,
+	EventState, FileRevOpen, SyntaxTextComponent,
 };
 use crate::{
 	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
-	strings::{self, order},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
+	strings::{self, order, symbol},
 	ui::{self, common_nav, style::SharedTheme},
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self, CommitId, TreeFile},
-	CWD,
-};
+use asyncgit::sync::{self, CommitId, RepoPathRef, TreeFile};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
-use std::{collections::BTreeSet, convert::From, path::Path};
+use std::{
+	collections::BTreeSet,
+	convert::From,
+	path::{Path, PathBuf},
+};
 use tui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
@@ -27,16 +28,13 @@ use tui::{
 	Frame,
 };
 
-const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
-const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
-const EMPTY_STR: &str = "";
-
 enum Focus {
 	Tree,
 	File,
 }
 
 pub struct RevisionFilesComponent {
+	repo: RepoPathRef,
 	queue: Queue,
 	theme: SharedTheme,
 	//TODO: store TreeFiles in `tree`
@@ -44,6 +42,7 @@ pub struct RevisionFilesComponent {
 	current_file: SyntaxTextComponent,
 	tree: FileTree,
 	scroll: VerticalScroll,
+	visible: bool,
 	revision: Option<CommitId>,
 	focus: Focus,
 	key_config: SharedKeyConfig,
@@ -52,6 +51,7 @@ pub struct RevisionFilesComponent {
 impl RevisionFilesComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncAppNotification>,
 		theme: SharedTheme,
@@ -62,6 +62,7 @@ impl RevisionFilesComponent {
 			tree: FileTree::default(),
 			scroll: VerticalScroll::new(),
 			current_file: SyntaxTextComponent::new(
+				repo.clone(),
 				sender,
 				key_config.clone(),
 				theme.clone(),
@@ -71,15 +72,20 @@ impl RevisionFilesComponent {
 			revision: None,
 			focus: Focus::Tree,
 			key_config,
+			repo,
+			visible: false,
 		}
 	}
 
 	///
 	pub fn set_commit(&mut self, commit: CommitId) -> Result<()> {
+		self.show()?;
+
 		let same_id =
 			self.revision.map(|c| c == commit).unwrap_or_default();
 		if !same_id {
-			self.files = sync::tree_files(CWD, commit)?;
+			self.files =
+				sync::tree_files(&self.repo.borrow(), commit)?;
 			let filenames: Vec<&Path> =
 				self.files.iter().map(|f| f.path.as_path()).collect();
 			self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
@@ -88,6 +94,16 @@ impl RevisionFilesComponent {
 		}
 
 		Ok(())
+	}
+
+	///
+	pub const fn revision(&self) -> Option<CommitId> {
+		self.revision
+	}
+
+	///
+	pub const fn selection(&self) -> Option<usize> {
+		self.tree.selection()
 	}
 
 	///
@@ -117,12 +133,12 @@ impl RevisionFilesComponent {
 		let is_path = item.kind().is_path();
 		let path_arrow = if is_path {
 			if item.kind().is_path_collapsed() {
-				FOLDER_ICON_COLLAPSED
+				symbol::FOLDER_ICON_COLLAPSED
 			} else {
-				FOLDER_ICON_EXPANDED
+				symbol::FOLDER_ICON_EXPANDED
 			}
 		} else {
-			EMPTY_STR
+			symbol::EMPTY_STR
 		};
 
 		let path = format!("{}{}{}", indent_str, path_arrow, path);
@@ -130,24 +146,64 @@ impl RevisionFilesComponent {
 	}
 
 	fn blame(&self) -> bool {
-		self.tree.selected_file().map_or(false, |file| {
-			self.queue.push(InternalEvent::BlameFile(
-				file.full_path_str()
-					.strip_prefix("./")
-					.unwrap_or_default()
-					.to_string(),
+		self.selected_file_path().map_or(false, |path| {
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::BlameFile(BlameFileOpen {
+					file_path: path,
+					commit_id: self.revision,
+					selection: None,
+				}),
 			));
+
 			true
+		})
+	}
+
+	fn file_history(&self) -> bool {
+		self.selected_file_path().map_or(false, |path| {
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::FileRevlog(FileRevOpen::new(
+					path,
+				)),
+			));
+
+			true
+		})
+	}
+
+	fn open_finder(&self) {
+		self.queue
+			.push(InternalEvent::OpenFileFinder(self.files.clone()));
+	}
+
+	pub fn find_file(&mut self, file: &Option<PathBuf>) {
+		if let Some(file) = file {
+			self.tree.collapse_but_root();
+			if self.tree.select_file(file) {
+				self.selection_changed();
+			}
+		}
+	}
+
+	fn selected_file_path_with_prefix(&self) -> Option<String> {
+		self.tree
+			.selected_file()
+			.map(|file| file.full_path_str().to_string())
+	}
+
+	fn selected_file_path(&self) -> Option<String> {
+		self.tree.selected_file().map(|file| {
+			file.full_path_str()
+				.strip_prefix("./")
+				.unwrap_or_default()
+				.to_string()
 		})
 	}
 
 	fn selection_changed(&mut self) {
 		//TODO: retrieve TreeFile from tree datastructure
-		if let Some(file) = self
-			.tree
-			.selected_file()
-			.map(|file| file.full_path_str().to_string())
-		{
+		if let Some(file) = self.selected_file_path_with_prefix() {
+			log::info!("selected: {:?}", file);
 			let path = Path::new(&file);
 			if let Some(item) =
 				self.files.iter().find(|f| f.path == path)
@@ -192,7 +248,7 @@ impl RevisionFilesComponent {
 			"Files at [{}]",
 			self.revision
 				.map(|c| c.get_short_string())
-				.unwrap_or_default()
+				.unwrap_or_default(),
 		);
 		ui::draw_list_block(
 			f,
@@ -245,7 +301,13 @@ impl Component for RevisionFilesComponent {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
-		if matches!(self.focus, Focus::Tree) || force_all {
+		if !self.is_visible() && !force_all {
+			return CommandBlocking::PassingOn;
+		}
+
+		let is_tree_focused = matches!(self.focus, Focus::Tree);
+
+		if is_tree_focused || force_all {
 			out.push(
 				CommandInfo::new(
 					strings::commands::blame_file(&self.key_config),
@@ -253,6 +315,21 @@ impl Component for RevisionFilesComponent {
 					true,
 				)
 				.order(order::NAV),
+			);
+			out.push(CommandInfo::new(
+				strings::commands::edit_item(&self.key_config),
+				self.tree.selected_file().is_some(),
+				true,
+			));
+			out.push(
+				CommandInfo::new(
+					strings::commands::open_file_history(
+						&self.key_config,
+					),
+					self.tree.selected_file().is_some(),
+					true,
+				)
+				.order(order::RARE_ACTION),
 			);
 			tree_nav_cmds(&self.tree, &self.key_config, out);
 		} else {
@@ -266,6 +343,10 @@ impl Component for RevisionFilesComponent {
 		&mut self,
 		event: crossterm::event::Event,
 	) -> Result<EventState> {
+		if !self.is_visible() {
+			return Ok(EventState::NotConsumed);
+		}
+
 		if let Event::Key(key) = event {
 			let is_tree_focused = matches!(self.focus, Focus::Tree);
 			if is_tree_focused
@@ -273,23 +354,45 @@ impl Component for RevisionFilesComponent {
 			{
 				self.selection_changed();
 				return Ok(EventState::Consumed);
-			} else if key == self.key_config.blame {
+			} else if key == self.key_config.keys.blame {
 				if self.blame() {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.move_right {
+			} else if key == self.key_config.keys.file_history {
+				if self.file_history() {
+					self.hide();
+					return Ok(EventState::Consumed);
+				}
+			} else if key == self.key_config.keys.move_right {
 				if is_tree_focused {
 					self.focus = Focus::File;
 					self.current_file.focus(true);
 					self.focus(true);
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.move_left {
+			} else if key == self.key_config.keys.move_left {
 				if !is_tree_focused {
 					self.focus = Focus::Tree;
 					self.current_file.focus(false);
 					self.focus(false);
+					return Ok(EventState::Consumed);
+				}
+			} else if key == self.key_config.keys.file_find {
+				if is_tree_focused {
+					self.open_finder();
+					return Ok(EventState::Consumed);
+				}
+			} else if key == self.key_config.keys.edit_file {
+				if let Some(file) =
+					self.selected_file_path_with_prefix()
+				{
+					//Note: switch to status tab so its clear we are
+					// not altering a file inside a revision here
+					self.queue.push(InternalEvent::TabSwitchStatus);
+					self.queue.push(
+						InternalEvent::OpenExternalEditor(Some(file)),
+					);
 					return Ok(EventState::Consumed);
 				}
 			} else if !is_tree_focused {
@@ -298,6 +401,19 @@ impl Component for RevisionFilesComponent {
 		}
 
 		Ok(EventState::NotConsumed)
+	}
+
+	fn hide(&mut self) {
+		self.visible = false;
+	}
+
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+		Ok(())
 	}
 }
 
@@ -325,10 +441,10 @@ fn tree_nav(
 ) -> bool {
 	if let Some(common_nav) = common_nav(key, key_config) {
 		tree.move_selection(common_nav)
-	} else if key == key_config.tree_collapse_recursive {
+	} else if key == key_config.keys.tree_collapse_recursive {
 		tree.collapse_recursive();
 		true
-	} else if key == key_config.tree_expand_recursive {
+	} else if key == key_config.keys.tree_expand_recursive {
 		tree.expand_recursive();
 		true
 	} else {

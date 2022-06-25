@@ -7,7 +7,8 @@ pub mod blame;
 pub mod branch;
 mod commit;
 mod commit_details;
-mod commit_files;
+pub mod commit_files;
+mod commit_revert;
 mod commits_info;
 mod config;
 pub mod cred;
@@ -20,6 +21,7 @@ mod merge;
 mod patches;
 mod rebase;
 pub mod remotes;
+mod repository;
 mod reset;
 mod staging;
 mod stash;
@@ -38,11 +40,12 @@ pub use branch::{
 	merge_rebase::merge_upstream_rebase, rename::rename_branch,
 	validate_branch_name, BranchCompare, BranchInfo,
 };
-pub use commit::{amend, commit, tag};
+pub use commit::{amend, commit, tag_commit};
 pub use commit_details::{
 	get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };
 pub use commit_files::get_commit_files;
+pub use commit_revert::{commit_revert, revert_commit, revert_head};
 pub use commits_info::{
 	get_commit_info, get_commits_info, CommitId, CommitInfo,
 };
@@ -51,43 +54,51 @@ pub use config::{
 	ShowUntrackedFilesConfig,
 };
 pub use diff::get_diff_commit;
+pub use git2::BranchType;
 pub use hooks::{
 	hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,
 };
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
-pub use logwalker::{LogWalker, LogWalkerFilter};
+pub use logwalker::{diff_contains_file, LogWalker, LogWalkerFilter};
 pub use merge::{
-	abort_merge, merge_branch, merge_commit, merge_msg,
-	mergehead_ids, rebase_branch,
+	abort_pending_rebase, abort_pending_state,
+	continue_pending_rebase, merge_branch, merge_commit, merge_msg,
+	mergehead_ids, rebase_progress,
 };
+pub use rebase::rebase_branch;
 pub use remotes::{
 	get_default_remote, get_remotes, push::AsyncProgress,
 	tags::PushTagsProgress,
 };
+pub(crate) use repository::repo;
+pub use repository::{RepoPath, RepoPathRef};
 pub use reset::{reset_stage, reset_workdir};
 pub use staging::{discard_lines, stage_lines};
 pub use stash::{
 	get_stashes, stash_apply, stash_drop, stash_pop, stash_save,
 };
 pub use state::{repo_state, RepoState};
+pub use status::is_workdir_clean;
 pub use tags::{
-	delete_tag, get_tags, get_tags_with_metadata, CommitTags,
+	delete_tag, get_tags, get_tags_with_metadata, CommitTags, Tag,
 	TagWithMetadata, Tags,
 };
 pub use tree::{tree_file_content, tree_files, TreeFile};
 pub use utils::{
-	get_head, get_head_tuple, is_bare_repo, is_repo, repo_dir,
-	stage_add_all, stage_add_file, stage_addremoved, Head,
+	get_head, get_head_tuple, is_repo, repo_dir, stage_add_all,
+	stage_add_file, stage_addremoved, Head,
 };
 
 #[cfg(test)]
 mod tests {
 	use super::{
-		commit, stage_add_file,
+		commit,
+		repository::repo,
+		stage_add_file,
 		status::{get_status, StatusType},
-		utils::{get_head_repo, repo, repo_write_file},
-		CommitId, LogWalker,
+		utils::{get_head_repo, repo_write_file},
+		CommitId, LogWalker, RepoPath,
 	};
 	use crate::error::Result;
 	use git2::Repository;
@@ -126,13 +137,16 @@ mod tests {
 		repo_write_file(repo, file, content).unwrap();
 
 		stage_add_file(
-			repo.workdir().unwrap().to_str().unwrap(),
+			&repo.workdir().unwrap().to_str().unwrap().into(),
 			Path::new(file),
 		)
 		.unwrap();
 
-		commit(repo.workdir().unwrap().to_str().unwrap(), commit_name)
-			.unwrap()
+		commit(
+			&repo.workdir().unwrap().to_str().unwrap().into(),
+			commit_name,
+		)
+		.unwrap()
 	}
 
 	/// write, stage and commit a file giving the commit a specific timestamp
@@ -145,7 +159,8 @@ mod tests {
 	) -> CommitId {
 		repo_write_file(repo, file, content).unwrap();
 
-		let path = repo.workdir().unwrap().to_str().unwrap();
+		let path: &RepoPath =
+			&repo.workdir().unwrap().to_str().unwrap().into();
 
 		stage_add_file(path, Path::new(file)).unwrap();
 
@@ -153,7 +168,7 @@ mod tests {
 	}
 
 	fn commit_at(
-		repo_path: &str,
+		repo_path: &RepoPath,
 		msg: &str,
 		time: git2::Time,
 	) -> CommitId {
@@ -255,7 +270,7 @@ mod tests {
 	}
 
 	/// helper returning amount of files with changes in the (wd,stage)
-	pub fn get_statuses(repo_path: &str) -> (usize, usize) {
+	pub fn get_statuses(repo_path: &RepoPath) -> (usize, usize) {
 		(
 			get_status(repo_path, StatusType::WorkingDir, None)
 				.unwrap()
@@ -267,7 +282,7 @@ mod tests {
 	}
 
 	///
-	pub fn debug_cmd_print(path: &str, cmd: &str) {
+	pub fn debug_cmd_print(path: &RepoPath, cmd: &str) {
 		let cmd = debug_cmd(path, cmd);
 		eprintln!("\n----\n{}", cmd);
 	}
@@ -286,18 +301,18 @@ mod tests {
 		commit_ids
 	}
 
-	fn debug_cmd(path: &str, cmd: &str) -> String {
+	fn debug_cmd(path: &RepoPath, cmd: &str) -> String {
 		let output = if cfg!(target_os = "windows") {
 			Command::new("cmd")
 				.args(&["/C", cmd])
-				.current_dir(path)
+				.current_dir(path.gitpath())
 				.output()
 				.unwrap()
 		} else {
 			Command::new("sh")
 				.arg("-c")
 				.arg(cmd)
-				.current_dir(path)
+				.current_dir(path.gitpath())
 				.output()
 				.unwrap()
 		};

@@ -1,15 +1,18 @@
-use std::cmp::Ordering;
+//! Functions for getting infos about files in commits
 
-use super::{stash::is_stash_commit, utils::repo, CommitId};
-use crate::{
-	error::Error, error::Result, StatusItem, StatusItemType,
+use super::{
+	diff::DiffOptions, stash::is_stash_commit, CommitId, RepoPath,
 };
-use git2::{Diff, DiffDelta, DiffOptions, Repository};
+use crate::{
+	error::Result, sync::repository::repo, StatusItem, StatusItemType,
+};
+use git2::{Diff, Repository};
 use scopetime::scope_time;
+use std::cmp::Ordering;
 
 /// get all files that are part of a commit
 pub fn get_commit_files(
-	repo_path: &str,
+	repo_path: &RepoPath,
 	id: CommitId,
 	other: Option<CommitId>,
 ) -> Result<Vec<StatusItem>> {
@@ -18,38 +21,37 @@ pub fn get_commit_files(
 	let repo = repo(repo_path)?;
 
 	let diff = if let Some(other) = other {
-		get_compare_commits_diff(&repo, (id, other), None)?
+		get_compare_commits_diff(&repo, (id, other), None, None)?
 	} else {
-		get_commit_diff(&repo, id, None)?
+		get_commit_diff(repo_path, &repo, id, None, None)?
 	};
 
-	let mut res = Vec::new();
+	let res = diff
+		.deltas()
+		.map(|delta| {
+			let status = StatusItemType::from(delta.status());
 
-	diff.foreach(
-		&mut |delta: DiffDelta<'_>, _progress| {
-			res.push(StatusItem {
+			StatusItem {
 				path: delta
 					.new_file()
 					.path()
 					.map(|p| p.to_str().unwrap_or("").to_string())
 					.unwrap_or_default(),
-				status: StatusItemType::from(delta.status()),
-			});
-			true
-		},
-		None,
-		None,
-		None,
-	)?;
+				status,
+			}
+		})
+		.collect::<Vec<_>>();
 
 	Ok(res)
 }
 
+/// get diff of two arbitrary commits
 #[allow(clippy::needless_pass_by_value)]
 pub fn get_compare_commits_diff(
 	repo: &Repository,
 	ids: (CommitId, CommitId),
 	pathspec: Option<String>,
+	options: Option<DiffOptions>,
 ) -> Result<Diff<'_>> {
 	// scope_time!("get_compare_commits_diff");
 
@@ -68,7 +70,12 @@ pub fn get_compare_commits_diff(
 
 	let trees = (commits.0.tree()?, commits.1.tree()?);
 
-	let mut opts = DiffOptions::new();
+	let mut opts = git2::DiffOptions::new();
+	if let Some(options) = options {
+		opts.context_lines(options.context);
+		opts.ignore_whitespace(options.ignore_whitespace);
+		opts.interhunk_lines(options.interhunk_lines);
+	}
 	if let Some(p) = &pathspec {
 		opts.pathspec(p.clone());
 	}
@@ -83,12 +90,14 @@ pub fn get_compare_commits_diff(
 	Ok(diff)
 }
 
-#[allow(clippy::redundant_pub_crate)]
-pub(crate) fn get_commit_diff(
-	repo: &Repository,
+/// get diff of a commit to its first parent
+pub fn get_commit_diff<'a>(
+	repo_path: &RepoPath,
+	repo: &'a Repository,
 	id: CommitId,
 	pathspec: Option<String>,
-) -> Result<Diff<'_>> {
+	options: Option<DiffOptions>,
+) -> Result<Diff<'a>> {
 	// scope_time!("get_commit_diff");
 
 	let commit = repo.find_commit(id.into())?;
@@ -102,7 +111,12 @@ pub(crate) fn get_commit_diff(
 		None
 	};
 
-	let mut opts = DiffOptions::new();
+	let mut opts = git2::DiffOptions::new();
+	if let Some(options) = options {
+		opts.context_lines(options.context);
+		opts.ignore_whitespace(options.ignore_whitespace);
+		opts.interhunk_lines(options.interhunk_lines);
+	}
 	if let Some(p) = &pathspec {
 		opts.pathspec(p.clone());
 	}
@@ -114,18 +128,14 @@ pub(crate) fn get_commit_diff(
 		Some(&mut opts),
 	)?;
 
-	if is_stash_commit(
-		repo.path().to_str().map_or_else(
-			|| Err(Error::Generic("repo path utf8 err".to_owned())),
-			Ok,
-		)?,
-		&id,
-	)? {
+	if is_stash_commit(repo_path, &id)? {
 		if let Ok(untracked_commit) = commit.parent_id(2) {
 			let untracked_diff = get_commit_diff(
+				repo_path,
 				repo,
 				CommitId::new(untracked_commit),
 				pathspec,
+				options,
 			)?;
 
 			diff.merge(&untracked_diff)?;
@@ -143,6 +153,7 @@ mod tests {
 		sync::{
 			commit, stage_add_file, stash_save,
 			tests::{get_statuses, repo_init},
+			RepoPath,
 		},
 		StatusItemType,
 	};
@@ -153,7 +164,8 @@ mod tests {
 		let file_path = Path::new("file1.txt");
 		let (_td, repo) = repo_init()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?
 			.write_all(b"test file1 content")?;
@@ -175,7 +187,8 @@ mod tests {
 		let file_path = Path::new("file1.txt");
 		let (_td, repo) = repo_init()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path))?
 			.write_all(b"test file1 content")?;
@@ -196,7 +209,8 @@ mod tests {
 		let file_path2 = Path::new("file2.txt");
 		let (_td, repo) = repo_init()?;
 		let root = repo.path().parent().unwrap();
-		let repo_path = root.as_os_str().to_str().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
 
 		File::create(&root.join(file_path1))?.write_all(b"test")?;
 		stage_add_file(repo_path, file_path1)?;

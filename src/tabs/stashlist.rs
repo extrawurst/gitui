@@ -2,20 +2,19 @@ use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitList, Component, DrawableComponent, EventState,
+		InspectCommitOpen,
 	},
 	keys::SharedKeyConfig,
-	queue::{Action, InternalEvent, Queue},
+	queue::{Action, InternalEvent, Queue, StackablePopupOpen},
 	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{self, CommitId},
-	CWD,
-};
+use asyncgit::sync::{self, CommitId, RepoPath, RepoPathRef};
 use crossterm::event::Event;
 
 pub struct StashList {
+	repo: RepoPathRef,
 	list: CommitList,
 	visible: bool,
 	queue: Queue,
@@ -25,6 +24,7 @@ pub struct StashList {
 impl StashList {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -38,15 +38,19 @@ impl StashList {
 			),
 			queue: queue.clone(),
 			key_config,
+			repo,
 		}
 	}
 
 	///
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			let stashes = sync::get_stashes(CWD)?;
-			let commits =
-				sync::get_commits_info(CWD, stashes.as_slice(), 100)?;
+			let stashes = sync::get_stashes(&self.repo.borrow())?;
+			let commits = sync::get_commits_info(
+				&self.repo.borrow(),
+				stashes.as_slice(),
+				100,
+			)?;
 
 			self.list.set_count_total(commits.len());
 			self.list.items().set_items(0, commits);
@@ -57,9 +61,10 @@ impl StashList {
 
 	fn apply_stash(&mut self) {
 		if let Some(e) = self.list.selected_entry() {
-			match sync::stash_apply(CWD, e.id, false) {
+			match sync::stash_apply(&self.repo.borrow(), e.id, false)
+			{
 				Ok(_) => {
-					self.queue.push(InternalEvent::TabSwitch);
+					self.queue.push(InternalEvent::TabSwitchStatus);
 				}
 				Err(e) => {
 					self.queue.push(InternalEvent::ShowErrorMsg(
@@ -92,31 +97,50 @@ impl StashList {
 
 	fn inspect(&mut self) {
 		if let Some(e) = self.list.selected_entry() {
-			self.queue.push(InternalEvent::InspectCommit(e.id, None));
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::InspectCommit(
+					InspectCommitOpen::new(e.id),
+				),
+			));
 		}
 	}
 
 	/// Called when a pending stash action has been confirmed
-	pub fn action_confirmed(action: &Action) -> Result<()> {
+	pub fn action_confirmed(
+		&mut self,
+		repo: &RepoPath,
+		action: &Action,
+	) -> Result<()> {
 		match action {
-			Action::StashDrop(ids) => Self::drop(ids)?,
-			Action::StashPop(id) => Self::pop(*id)?,
+			Action::StashDrop(ids) => self.drop(repo, ids)?,
+			Action::StashPop(id) => self.pop(repo, *id)?,
 			_ => (),
 		};
 
 		Ok(())
 	}
 
-	fn drop(ids: &[CommitId]) -> Result<()> {
+	fn drop(
+		&mut self,
+		repo: &RepoPath,
+		ids: &[CommitId],
+	) -> Result<()> {
 		for id in ids {
-			sync::stash_drop(CWD, *id)?;
+			sync::stash_drop(repo, *id)?;
 		}
+
+		self.list.clear_marked();
+		self.update()?;
 
 		Ok(())
 	}
 
-	fn pop(id: CommitId) -> Result<()> {
-		sync::stash_pop(CWD, id)?;
+	fn pop(&mut self, repo: &RepoPath, id: CommitId) -> Result<()> {
+		sync::stash_pop(repo, id)?;
+
+		self.list.clear_marked();
+		self.update()?;
+
 		Ok(())
 	}
 }
@@ -184,13 +208,13 @@ impl Component for StashList {
 			}
 
 			if let Event::Key(k) = ev {
-				if k == self.key_config.enter {
+				if k == self.key_config.keys.enter {
 					self.pop_stash();
-				} else if k == self.key_config.stash_apply {
+				} else if k == self.key_config.keys.stash_apply {
 					self.apply_stash();
-				} else if k == self.key_config.stash_drop {
+				} else if k == self.key_config.keys.stash_drop {
 					self.drop_stash();
-				} else if k == self.key_config.stash_open {
+				} else if k == self.key_config.keys.stash_open {
 					self.inspect();
 				}
 			}

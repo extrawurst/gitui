@@ -1,5 +1,6 @@
 use crate::bug_report;
 use anyhow::{anyhow, Result};
+use asyncgit::sync::RepoPath;
 use clap::{
 	crate_authors, crate_description, crate_name, crate_version,
 	App as ClapApp, Arg,
@@ -13,6 +14,7 @@ use std::{
 
 pub struct CliArgs {
 	pub theme: PathBuf,
+	pub repo_path: RepoPath,
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
@@ -41,9 +43,18 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		)
 		.arg(
 			Arg::with_name("directory")
-				.help("Set the working directory")
+				.help("Set the git directory")
 				.short("d")
 				.long("directory")
+				.env("GIT_DIR")
+				.takes_value(true),
+		)
+		.arg(
+			Arg::with_name("workdir")
+				.help("Set the working directory")
+				.short("w")
+				.long("workdir")
+				.env("GIT_WORK_TREE")
 				.takes_value(true),
 		);
 
@@ -55,20 +66,31 @@ pub fn process_cmdline() -> Result<CliArgs> {
 	if arg_matches.is_present("logging") {
 		setup_logging()?;
 	}
-	if arg_matches.is_present("directory") {
-		let directory =
-			arg_matches.value_of("directory").unwrap_or(".");
-		env::set_current_dir(directory)?;
-	}
+
+	let workdir = arg_matches.value_of("workdir").map(PathBuf::from);
+	let gitdir = arg_matches
+		.value_of("directory")
+		.map_or_else(|| PathBuf::from("."), PathBuf::from);
+
+	#[allow(clippy::option_if_let_else)]
+	let repo_path = if let Some(w) = workdir {
+		RepoPath::Workdir { gitdir, workdir: w }
+	} else {
+		RepoPath::Path(gitdir)
+	};
+
 	let arg_theme =
 		arg_matches.value_of("theme").unwrap_or("theme.ron");
+
 	if get_app_config_path()?.join(arg_theme).is_file() {
 		Ok(CliArgs {
 			theme: get_app_config_path()?.join(arg_theme),
+			repo_path,
 		})
 	} else {
 		Ok(CliArgs {
 			theme: get_app_config_path()?.join("theme.ron"),
+			repo_path,
 		})
 	}
 }

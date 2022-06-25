@@ -1,7 +1,18 @@
-use crate::{components::AppOption, tabs::StashingOptions};
-use asyncgit::sync::{diff::DiffLinePosition, CommitId, CommitTags};
+use crate::{
+	components::{
+		AppOption, BlameFileOpen, FileRevOpen, FileTreeOpen,
+		InspectCommitOpen,
+	},
+	tabs::StashingOptions,
+};
+use asyncgit::{
+	sync::{diff::DiffLinePosition, CommitId, TreeFile},
+	PushType,
+};
 use bitflags::bitflags;
-use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use std::{
+	cell::RefCell, collections::VecDeque, path::PathBuf, rc::Rc,
+};
 
 bitflags! {
 	/// flags defining what part of the app need to update
@@ -32,11 +43,29 @@ pub enum Action {
 	ResetLines(String, Vec<DiffLinePosition>),
 	StashDrop(Vec<CommitId>),
 	StashPop(CommitId),
-	DeleteBranch(String, bool),
+	DeleteLocalBranch(String),
+	DeleteRemoteBranch(String),
 	DeleteTag(String),
+	DeleteRemoteTag(String, String),
 	ForcePush(String, bool),
 	PullMerge { incoming: usize, rebase: bool },
 	AbortMerge,
+	AbortRebase,
+	AbortRevert,
+}
+
+#[derive(Debug)]
+pub enum StackablePopupOpen {
+	///
+	BlameFile(BlameFileOpen),
+	///
+	FileRevlog(FileRevOpen),
+	///
+	FileTree(FileTreeOpen),
+	///
+	InspectCommit(InspectCommitOpen),
+	///
+	CompareCommits(InspectCommitOpen),
 }
 
 ///
@@ -48,6 +77,8 @@ pub enum InternalEvent {
 	///
 	ShowErrorMsg(String),
 	///
+	ShowInfoMsg(String),
+	///
 	Update(NeedsUpdate),
 	///
 	StatusLastFileMoved,
@@ -56,19 +87,13 @@ pub enum InternalEvent {
 	///
 	PopupStashing(StashingOptions),
 	///
-	TabSwitch,
-	///
-	InspectCommit(CommitId, Option<CommitTags>),
-	///
-	CompareCommits(CommitId, Option<CommitId>),
+	TabSwitchStatus,
 	///
 	SelectCommitInRevlog(CommitId),
 	///
 	TagCommit(CommitId),
 	///
 	Tags,
-	///
-	BlameFile(String),
 	///
 	CreateBranch,
 	///
@@ -78,15 +103,25 @@ pub enum InternalEvent {
 	///
 	OpenExternalEditor(Option<String>),
 	///
-	Push(String, bool, bool),
+	Push(String, PushType, bool, bool),
 	///
 	Pull(String),
 	///
 	PushTags,
 	///
-	OpenFileTree(CommitId),
-	///
 	OptionSwitched(AppOption),
+	///
+	OpenFileFinder(Vec<TreeFile>),
+	///
+	FileFinderChanged(Option<PathBuf>),
+	///
+	FetchRemotes,
+	///
+	OpenPopup(StackablePopupOpen),
+	///
+	PopupStackPop,
+	///
+	PopupStackPush(StackablePopupOpen),
 }
 
 /// single threaded simple queue for components to communicate with each other

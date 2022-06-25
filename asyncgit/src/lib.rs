@@ -28,8 +28,9 @@ pub mod cached;
 mod commit_files;
 mod diff;
 mod error;
-mod fetch;
+mod fetch_job;
 mod progress;
+mod pull;
 mod push;
 mod push_tags;
 pub mod remote_progress;
@@ -44,8 +45,9 @@ pub use crate::{
 	commit_files::{AsyncCommitFiles, CommitFilesParams},
 	diff::{AsyncDiff, DiffParams, DiffType},
 	error::{Error, Result},
-	fetch::{AsyncFetch, FetchRequest},
+	fetch_job::AsyncFetchJob,
 	progress::ProgressPercent,
+	pull::{AsyncPull, FetchRequest},
 	push::{AsyncPush, PushRequest},
 	push_tags::{AsyncPushTags, PushTagsRequest},
 	remote_progress::{RemoteProgress, RemoteProgressState},
@@ -53,10 +55,12 @@ pub use crate::{
 	status::{AsyncStatus, StatusParams},
 	sync::{
 		diff::{DiffLine, DiffLineType, FileDiff},
+		remotes::push::PushType,
 		status::{StatusItem, StatusItemType},
 	},
 	tags::AsyncTags,
 };
+pub use git2::message_prettify;
 use std::{
 	collections::hash_map::DefaultHasher,
 	hash::{Hash, Hasher},
@@ -74,6 +78,8 @@ pub enum AsyncGitNotification {
 	///
 	Log,
 	///
+	FileLog,
+	///
 	CommitFiles,
 	///
 	Tags,
@@ -82,15 +88,14 @@ pub enum AsyncGitNotification {
 	///
 	PushTags,
 	///
-	Fetch,
+	Pull,
 	///
 	Blame,
 	///
 	RemoteTags,
+	///
+	Fetch,
 }
-
-/// current working directory `./`
-pub static CWD: &str = "./";
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait
 pub fn hash<T: Hash + ?Sized>(v: &T) -> u64 {
@@ -100,10 +105,16 @@ pub fn hash<T: Hash + ?Sized>(v: &T) -> u64 {
 }
 
 ///
+#[cfg(feature = "trace-libgit")]
 pub fn register_tracing_logging() -> bool {
+	fn git_trace(level: git2::TraceLevel, msg: &str) {
+		log::info!("[{:?}]: {}", level, msg);
+	}
 	git2::trace_set(git2::TraceLevel::Trace, git_trace)
 }
 
-fn git_trace(level: git2::TraceLevel, msg: &str) {
-	log::info!("[{:?}]: {}", level, msg);
+///
+#[cfg(not(feature = "trace-libgit"))]
+pub fn register_tracing_logging() -> bool {
+	true
 }

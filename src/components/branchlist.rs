@@ -1,12 +1,14 @@
 use super::{
 	utils::scroll_vertical::VerticalScroll, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+	EventState, InspectCommitOpen,
 };
 use crate::{
 	components::ScrollType,
 	keys::SharedKeyConfig,
-	queue::{Action, InternalEvent, NeedsUpdate, Queue},
+	queue::{
+		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
+	},
 	strings, try_or_popup,
 	ui::{self, Size},
 };
@@ -18,9 +20,10 @@ use asyncgit::{
 			checkout_remote_branch, BranchDetails, LocalBranch,
 			RemoteBranch,
 		},
-		checkout_branch, get_branches_info, BranchInfo, CommitId,
+		checkout_branch, get_branches_info, BranchInfo, BranchType,
+		CommitId, RepoPathRef, RepoState,
 	},
-	AsyncGitNotification, CWD,
+	AsyncGitNotification,
 };
 use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
@@ -38,8 +41,10 @@ use unicode_truncate::UnicodeTruncateStr;
 
 ///
 pub struct BranchListComponent {
+	repo: RepoPathRef,
 	branches: Vec<BranchInfo>,
 	local: bool,
+	has_remotes: bool,
 	visible: bool,
 	selection: u16,
 	scroll: VerticalScroll,
@@ -177,7 +182,7 @@ impl Component for BranchListComponent {
 					&self.key_config,
 				),
 				!self.selection_is_cur_branch(),
-				self.local,
+				true,
 			));
 
 			out.push(CommandInfo::new(
@@ -185,7 +190,7 @@ impl Component for BranchListComponent {
 					&self.key_config,
 				),
 				!self.selection_is_cur_branch(),
-				self.local,
+				true,
 			));
 
 			out.push(CommandInfo::new(
@@ -194,6 +199,12 @@ impl Component for BranchListComponent {
 				),
 				true,
 				self.local,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::fetch_remotes(&self.key_config),
+				self.has_remotes,
+				!self.local,
 			));
 		}
 		visibility_blocking(self)
@@ -207,46 +218,56 @@ impl Component for BranchListComponent {
 		}
 
 		if let Event::Key(e) = ev {
-			if e == self.key_config.exit_popup {
+			if e == self.key_config.keys.exit_popup {
 				self.hide();
-			} else if e == self.key_config.move_down {
+			} else if e == self.key_config.keys.move_down {
 				return self
 					.move_selection(ScrollType::Up)
 					.map(Into::into);
-			} else if e == self.key_config.move_up {
+			} else if e == self.key_config.keys.move_up {
 				return self
 					.move_selection(ScrollType::Down)
 					.map(Into::into);
-			} else if e == self.key_config.page_down {
+			} else if e == self.key_config.keys.page_down {
 				return self
 					.move_selection(ScrollType::PageDown)
 					.map(Into::into);
-			} else if e == self.key_config.page_up {
+			} else if e == self.key_config.keys.page_up {
 				return self
 					.move_selection(ScrollType::PageUp)
 					.map(Into::into);
-			} else if e == self.key_config.tab_toggle {
+			} else if e == self.key_config.keys.home {
+				return self
+					.move_selection(ScrollType::Home)
+					.map(Into::into);
+			} else if e == self.key_config.keys.end {
+				return self
+					.move_selection(ScrollType::End)
+					.map(Into::into);
+			} else if e == self.key_config.keys.tab_toggle {
 				self.local = !self.local;
+				self.check_remotes();
 				self.update_branches()?;
-			} else if e == self.key_config.enter {
+			} else if e == self.key_config.keys.enter {
 				try_or_popup!(
 					self,
 					"switch branch error:",
 					self.switch_to_selected_branch()
 				);
-			} else if e == self.key_config.create_branch && self.local
+			} else if e == self.key_config.keys.create_branch
+				&& self.local
 			{
 				self.queue.push(InternalEvent::CreateBranch);
-			} else if e == self.key_config.rename_branch
+			} else if e == self.key_config.keys.rename_branch
 				&& self.valid_selection()
 			{
 				self.rename_branch();
-			} else if e == self.key_config.delete_branch
+			} else if e == self.key_config.keys.delete_branch
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
 				self.delete_branch();
-			} else if e == self.key_config.merge_branch
+			} else if e == self.key_config.keys.merge_branch
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
@@ -255,7 +276,7 @@ impl Component for BranchListComponent {
 					"merge branch error:",
 					self.merge_branch()
 				);
-			} else if e == self.key_config.rebase_branch
+			} else if e == self.key_config.keys.rebase_branch
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
@@ -264,22 +285,28 @@ impl Component for BranchListComponent {
 					"rebase error:",
 					self.rebase_branch()
 				);
-			} else if e == self.key_config.move_right
+			} else if e == self.key_config.keys.move_right
+				&& self.valid_selection()
+			{
+				self.inspect_head_of_branch();
+			} else if e == self.key_config.keys.compare_commits
 				&& self.valid_selection()
 			{
 				self.hide();
-				if let Some(b) = self.get_selected() {
-					self.queue
-						.push(InternalEvent::InspectCommit(b, None));
+				if let Some(commit_id) = self.get_selected() {
+					self.queue.push(InternalEvent::OpenPopup(
+						StackablePopupOpen::CompareCommits(
+							InspectCommitOpen::new(commit_id),
+						),
+					));
 				}
-			} else if e == self.key_config.compare_commits
-				&& self.valid_selection()
+			} else if e == self.key_config.keys.pull
+				&& !self.local && self.has_remotes
 			{
-				self.hide();
-				if let Some(b) = self.get_selected() {
-					self.queue
-						.push(InternalEvent::CompareCommits(b, None));
-				}
+				self.queue.push(InternalEvent::FetchRemotes);
+			} else if e == self.key_config.keys.cmd_bar_toggle {
+				//do not consume if its the more key
+				return Ok(EventState::NotConsumed);
 			}
 		}
 
@@ -303,6 +330,7 @@ impl Component for BranchListComponent {
 
 impl BranchListComponent {
 	pub fn new(
+		repo: RepoPathRef,
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -310,6 +338,7 @@ impl BranchListComponent {
 		Self {
 			branches: Vec::new(),
 			local: true,
+			has_remotes: false,
 			visible: false,
 			selection: 0,
 			scroll: VerticalScroll::new(),
@@ -317,6 +346,7 @@ impl BranchListComponent {
 			theme,
 			key_config,
 			current_height: Cell::new(0),
+			repo,
 		}
 	}
 
@@ -328,10 +358,21 @@ impl BranchListComponent {
 		Ok(())
 	}
 
+	fn check_remotes(&mut self) {
+		if !self.local {
+			self.has_remotes =
+				get_branches_info(&self.repo.borrow(), false)
+					.map(|branches| !branches.is_empty())
+					.unwrap_or(false);
+		}
+	}
+
 	/// fetch list of branches
 	pub fn update_branches(&mut self) -> Result<()> {
 		if self.is_visible() {
-			self.branches = get_branches_info(CWD, self.local)?;
+			self.check_remotes();
+			self.branches =
+				get_branches_info(&self.repo.borrow(), self.local)?;
 			//remove remote branch called `HEAD`
 			if !self.local {
 				self.branches
@@ -349,10 +390,8 @@ impl BranchListComponent {
 		&mut self,
 		ev: AsyncGitNotification,
 	) -> Result<()> {
-		if self.is_visible() {
-			if let AsyncGitNotification::Push = ev {
-				self.update_branches()?;
-			}
+		if self.is_visible() && ev == AsyncGitNotification::Push {
+			self.update_branches()?;
 		}
 
 		Ok(())
@@ -366,22 +405,60 @@ impl BranchListComponent {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
-			sync::merge_branch(CWD, &branch.name)?;
+			sync::merge_branch(
+				&self.repo.borrow(),
+				&branch.name,
+				self.get_branch_type(),
+			)?;
 
-			self.hide();
-			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+			self.hide_and_switch_tab()?;
 		}
 
 		Ok(())
 	}
 
-	fn rebase_branch(&self) -> Result<()> {
+	fn rebase_branch(&mut self) -> Result<()> {
 		if let Some(branch) =
 			self.branches.get(usize::from(self.selection))
 		{
-			sync::rebase_branch(CWD, &branch.name)?;
+			sync::rebase_branch(
+				&self.repo.borrow(),
+				&branch.name,
+				self.get_branch_type(),
+			)?;
 
-			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+			self.hide_and_switch_tab()?;
+		}
+
+		Ok(())
+	}
+
+	fn inspect_head_of_branch(&mut self) {
+		if let Some(commit_id) = self.get_selected() {
+			self.hide();
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::InspectCommit(
+					InspectCommitOpen::new(commit_id),
+				),
+			));
+		}
+	}
+
+	const fn get_branch_type(&self) -> BranchType {
+		if self.local {
+			BranchType::Local
+		} else {
+			BranchType::Remote
+		}
+	}
+
+	fn hide_and_switch_tab(&mut self) -> Result<()> {
+		self.hide();
+		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+
+		if sync::repo_state(&self.repo.borrow())? != RepoState::Clean
+		{
+			self.queue.push(InternalEvent::TabSwitchStatus);
 		}
 
 		Ok(())
@@ -419,7 +496,12 @@ impl BranchListComponent {
 			ScrollType::PageUp => self
 				.selection
 				.saturating_sub(self.current_height.get()),
-			_ => self.selection,
+			ScrollType::Home => 0,
+			ScrollType::End => {
+				let num_branches: u16 =
+					self.branches.len().try_into()?;
+				num_branches.saturating_sub(1)
+			}
 		};
 
 		self.set_selection(new_selection)?;
@@ -564,13 +646,13 @@ impl BranchListComponent {
 
 		if self.local {
 			checkout_branch(
-				asyncgit::CWD,
+				&self.repo.borrow(),
 				&self.branches[self.selection as usize].reference,
 			)?;
 			self.hide();
 		} else {
 			checkout_remote_branch(
-				CWD,
+				&self.repo.borrow(),
 				&self.branches[self.selection as usize],
 			)?;
 			self.local = true;
@@ -647,13 +729,15 @@ impl BranchListComponent {
 	}
 
 	fn delete_branch(&mut self) {
+		let reference =
+			self.branches[self.selection as usize].reference.clone();
+
 		self.queue.push(InternalEvent::ConfirmAction(
-			Action::DeleteBranch(
-				self.branches[self.selection as usize]
-					.reference
-					.clone(),
-				self.local,
-			),
+			if self.local {
+				Action::DeleteLocalBranch(reference)
+			} else {
+				Action::DeleteRemoteBranch(reference)
+			},
 		));
 	}
 }
