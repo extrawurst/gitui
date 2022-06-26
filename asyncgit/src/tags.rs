@@ -24,6 +24,7 @@ pub struct AsyncTags {
 	last: Option<(Instant, TagsResult)>,
 	sender: Sender<AsyncGitNotification>,
 	job: AsyncSingleJob<AsyncTagsJob>,
+	repo: RepoPath,
 }
 
 impl AsyncTags {
@@ -33,6 +34,7 @@ impl AsyncTags {
 		sender: &Sender<AsyncGitNotification>,
 	) -> Self {
 		Self {
+			repo,
 			last: None,
 			sender: sender.clone(),
 			job: AsyncSingleJob::new(sender.clone()),
@@ -74,11 +76,14 @@ impl AsyncTags {
 			return Ok(());
 		}
 
+		let repo = self.repo.clone();
+
 		if outdated {
 			self.job.spawn(AsyncTagsJob::new(
 				self.last
 					.as_ref()
 					.map_or(0, |(_, result)| result.hash),
+				repo,
 			));
 
 			if let Some(job) = self.job.take_last() {
@@ -99,7 +104,7 @@ impl AsyncTags {
 }
 
 enum JobState {
-	Request(u64),
+	Request(u64, RepoPath),
 	Response(Result<(Instant, TagsResult)>),
 }
 
@@ -112,10 +117,10 @@ pub struct AsyncTagsJob {
 ///
 impl AsyncTagsJob {
 	///
-	pub fn new(last_hash: u64) -> Self {
+	pub fn new(last_hash: u64, repo: RepoPath) -> Self {
 		Self {
 			state: Arc::new(Mutex::new(Some(JobState::Request(
-				last_hash,
+				last_hash, repo,
 			)))),
 		}
 	}
@@ -125,7 +130,7 @@ impl AsyncTagsJob {
 		if let Ok(mut state) = self.state.lock() {
 			if let Some(state) = state.take() {
 				return match state {
-					JobState::Request(_) => None,
+					JobState::Request(_, _) => None,
 					JobState::Response(result) => Some(result),
 				};
 			}
@@ -146,8 +151,8 @@ impl AsyncJob for AsyncTagsJob {
 		let mut notification = AsyncGitNotification::FinishUnchanged;
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
-				JobState::Request(last_hash) => {
-					let tags = sync::get_tags(CWD);
+				JobState::Request(last_hash, repo) => {
+					let tags = sync::get_tags(&repo);
 
 					JobState::Response(tags.map(|tags| {
 						let hash = hash(&tags);
