@@ -87,10 +87,8 @@ impl AsyncTags {
 			));
 
 			if let Some(job) = self.job.take_last() {
-				if let Some(result) = job.result() {
-					if let Ok(result) = result {
-						self.last = Some(result)
-					}
+				if let Some(Ok(result)) = job.result() {
+					self.last = Some(result);
 				}
 			}
 		} else {
