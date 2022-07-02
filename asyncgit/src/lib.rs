@@ -67,7 +67,7 @@ use std::{
 };
 
 /// this type is used to communicate events back through the channel
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum AsyncGitNotification {
 	/// this indicates that no new state was fetched but that a async process finished
 	FinishUnchanged,

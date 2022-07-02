@@ -6,7 +6,7 @@ use super::{repository::repo, RepoPath};
 
 // see https://git-scm.com/docs/git-config#Documentation/git-config.txt-statusshowUntrackedFiles
 /// represents the `status.showUntrackedFiles` git config state
-#[derive(Hash, Copy, Clone, PartialEq)]
+#[derive(Hash, Copy, Clone, PartialEq, Eq)]
 pub enum ShowUntrackedFilesConfig {
 	///
 	No,

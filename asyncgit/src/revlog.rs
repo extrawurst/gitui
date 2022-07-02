@@ -15,7 +15,7 @@ use std::{
 };
 
 ///
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum FetchStatus {
 	/// previous fetch still running
 	Pending,

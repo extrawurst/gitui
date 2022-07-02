@@ -17,7 +17,7 @@ use scopetime::scope_time;
 use std::collections::HashSet;
 
 ///
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum PushTagsProgress {
 	/// fetching tags from remote to check which local tags need pushing
 	CheckRemote,

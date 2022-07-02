@@ -153,7 +153,7 @@ pub fn hooks_post_commit(repo_path: &RepoPath) -> Result<HookResult> {
 }
 
 ///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum HookResult {
 	/// Everything went fine
 	Ok,

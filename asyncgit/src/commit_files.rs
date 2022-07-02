@@ -13,7 +13,7 @@ type ResultType = Vec<StatusItem>;
 struct Request<R, A>(R, A);
 
 ///
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct CommitFilesParams {
 	///
 	pub id: CommitId,

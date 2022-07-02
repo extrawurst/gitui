@@ -11,7 +11,7 @@ use std::{
 };
 
 /// `tree_files` returns a list of `FileTree`
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TreeFile {
 	/// path of this file
 	pub path: PathBuf,

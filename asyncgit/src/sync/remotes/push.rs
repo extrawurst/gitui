@@ -22,7 +22,7 @@ pub trait AsyncProgress: Clone + Send + Sync {
 }
 
 ///
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProgressNotification {
 	///
 	UpdateTips {

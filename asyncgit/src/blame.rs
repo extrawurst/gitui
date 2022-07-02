@@ -14,7 +14,7 @@ use std::{
 };
 
 ///
-#[derive(Hash, Clone, PartialEq)]
+#[derive(Hash, Clone, PartialEq, Eq)]
 pub struct BlameParams {
 	/// path to the file to blame
 	pub file_path: String,

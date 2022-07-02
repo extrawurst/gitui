@@ -4,7 +4,7 @@ use easy_cast::{Conv, ConvFloat};
 use std::cmp;
 
 ///
-#[derive(Clone, Copy, Default, Debug, PartialEq)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub struct ProgressPercent {
 	/// percent 0..100
 	pub progress: u8,
