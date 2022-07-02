@@ -22,7 +22,7 @@ use tui::{
 	Frame,
 };
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum InputType {
 	Singleline,
 	Multiline,

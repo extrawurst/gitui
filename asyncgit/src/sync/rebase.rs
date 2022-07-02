@@ -69,7 +69,7 @@ pub fn conflict_free_rebase(
 }
 
 ///
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum RebaseState {
 	///
 	Finished,
@@ -144,7 +144,7 @@ pub fn continue_rebase(
 }
 
 ///
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct RebaseProgress {
 	///
 	pub steps: usize,

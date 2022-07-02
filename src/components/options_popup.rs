@@ -23,7 +23,7 @@ use tui::{
 	Frame,
 };
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum AppOption {
 	StatusShowUntracked,
 	DiffIgnoreWhitespaces,

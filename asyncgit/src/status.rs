@@ -29,7 +29,7 @@ pub struct Status {
 }
 
 ///
-#[derive(Default, Hash, Copy, Clone, PartialEq)]
+#[derive(Default, Hash, Copy, Clone, PartialEq, Eq)]
 pub struct StatusParams {
 	tick: u128,
 	status_type: StatusType,

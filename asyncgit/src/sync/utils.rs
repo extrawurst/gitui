@@ -16,7 +16,7 @@ use std::{
 };
 
 ///
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Head {
 	///
 	pub name: String,

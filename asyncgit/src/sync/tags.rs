@@ -10,7 +10,7 @@ use std::{
 };
 
 ///
-#[derive(Clone, Hash, PartialEq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct Tag {
 	/// tag name
 	pub name: String,

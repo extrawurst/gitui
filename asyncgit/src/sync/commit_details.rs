@@ -4,7 +4,7 @@ use git2::Signature;
 use scopetime::scope_time;
 
 ///
-#[derive(Debug, PartialEq, Default, Clone)]
+#[derive(Debug, PartialEq, Eq, Default, Clone)]
 pub struct CommitSignature {
 	///
 	pub name: String,

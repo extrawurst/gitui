@@ -7,7 +7,7 @@ use crate::error::{Error, Result};
 use git2::CredentialHelper;
 
 /// basic Authentication Credentials
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct BasicAuthCredential {
 	///
 	pub username: Option<String>,

@@ -83,11 +83,11 @@ impl TreeItemInfo {
 }
 
 /// attribute used to indicate the collapse/expand state of a path item
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct PathCollapsed(pub bool);
 
 /// `FileTreeItem` can be of two kinds
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum FileTreeItemKind {
 	Path(PathCollapsed),
 	File,
