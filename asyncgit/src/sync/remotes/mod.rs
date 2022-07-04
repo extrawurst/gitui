@@ -162,7 +162,7 @@ pub(crate) fn fetch(
 		.into_reference();
 	let branch_ref = bytes2string(branch_ref.name_bytes())?;
 	let remote_name = repo.branch_upstream_remote(&branch_ref)?;
-	let remote_name = bytes2string(&*remote_name)?;
+	let remote_name = bytes2string(&remote_name)?;
 	let mut remote = repo.find_remote(&remote_name)?;
 
 	let mut options = FetchOptions::new();
