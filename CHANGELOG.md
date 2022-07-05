@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * switch focus to index after staging last file ([#1169](https://github.com/extrawurst/gitui/pull/1169))
 * fix stashlist multi marking not updated after dropping ([#1207](https://github.com/extrawurst/gitui/pull/1207))
 * exact matches have a higher priority and are placed to the top of the list when fuzzily finding files ([#1183](https://github.com/extrawurst/gitui/pull/1183))
+* support horizontal scrolling in diff view ([#1017](https://github.com/extrawurst/gitui/issues/1017))
 
 ## [0.20.1] - 2021-01-26
 
