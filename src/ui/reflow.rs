@@ -1,6 +1,6 @@
+use crate::string_utils::trim_offset;
 use easy_cast::Cast;
 use tui::text::StyledGrapheme;
-use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 const NBSP: &str = "\u{00a0}";
@@ -231,22 +231,6 @@ impl<'a, 'b> LineComposer<'a> for LineTruncator<'a, 'b> {
 			Some((&self.current_line[..], current_line_width))
 		}
 	}
-}
-
-/// This function will return a str slice which start at specified offset.
-/// As src is a unicode str, start offset has to be calculated with each character.
-fn trim_offset(src: &str, mut offset: usize) -> &str {
-	let mut start = 0;
-	for c in UnicodeSegmentation::graphemes(src, true) {
-		let w = c.width();
-		if w <= offset {
-			offset -= w;
-			start += c.len();
-		} else {
-			break;
-		}
-	}
-	&src[start..]
 }
 
 #[cfg(test)]

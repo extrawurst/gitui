@@ -1,3 +1,6 @@
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
+
 ///
 pub fn trim_length_left(s: &str, width: usize) -> &str {
 	let len = s.len();
@@ -19,6 +22,22 @@ pub fn tabs_to_spaces(input: String) -> String {
 	} else {
 		input
 	}
+}
+
+/// This function will return a str slice which start at specified offset.
+/// As src is a unicode str, start offset has to be calculated with each character.
+pub fn trim_offset(src: &str, mut offset: usize) -> &str {
+	let mut start = 0;
+	for c in UnicodeSegmentation::graphemes(src, true) {
+		let w = c.width();
+		if w <= offset {
+			offset -= w;
+			start += c.len();
+		} else {
+			break;
+		}
+	}
+	&src[start..]
 }
 
 #[cfg(test)]
