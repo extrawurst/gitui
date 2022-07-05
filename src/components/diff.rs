@@ -7,8 +7,9 @@ use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	string_utils::tabs_to_spaces,
+	string_utils::trim_offset,
 	strings, try_or_popup,
-	ui::style::SharedTheme,
+	ui::{draw_scrollbar, style::SharedTheme, Orientation},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -102,6 +103,7 @@ impl Selection {
 pub struct DiffComponent {
 	repo: RepoPathRef,
 	diff: Option<FileDiff>,
+	longest_line: usize,
 	pending: bool,
 	selection: Selection,
 	selected_hunk: Option<usize>,
@@ -113,6 +115,7 @@ pub struct DiffComponent {
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	is_immutable: bool,
+	scrolled_right: usize,
 }
 
 impl DiffComponent {
@@ -131,6 +134,7 @@ impl DiffComponent {
 			pending: false,
 			selected_hunk: None,
 			diff: None,
+			longest_line: 0,
 			current_size: Cell::new((0, 0)),
 			selection: Selection::Single(0),
 			scroll: VerticalScroll::new(),
@@ -138,6 +142,7 @@ impl DiffComponent {
 			key_config,
 			is_immutable,
 			repo,
+			scrolled_right: 0,
 		}
 	}
 	///
@@ -155,10 +160,12 @@ impl DiffComponent {
 	pub fn clear(&mut self, pending: bool) {
 		self.current = Current::default();
 		self.diff = None;
+		self.longest_line = 0;
 		self.scroll.reset();
 		self.selection = Selection::Single(0);
 		self.selected_hunk = None;
 		self.pending = pending;
+		self.scrolled_right = 0;
 	}
 	///
 	pub fn update(
@@ -181,6 +188,24 @@ impl DiffComponent {
 			};
 
 			self.diff = Some(diff);
+
+			self.longest_line = self
+				.diff
+				.as_ref()
+				.map(|diff| {
+					diff.hunks
+						.iter()
+						.map(|hunk| {
+							hunk.lines
+								.iter()
+								.map(|line| line.content.len())
+								.max()
+								.unwrap_or(0)
+						})
+						.max()
+						.unwrap_or(0)
+				})
+				.unwrap_or(0);
 
 			if reset_selection {
 				self.scroll.reset();
@@ -239,6 +264,11 @@ impl DiffComponent {
 
 	fn lines_count(&self) -> usize {
 		self.diff.as_ref().map_or(0, |diff| diff.lines)
+	}
+
+	fn max_scroll_right(&self) -> usize {
+		self.longest_line
+			.saturating_sub(self.current_size.get().0.into())
 	}
 
 	fn modify_selection(&mut self, direction: Direction) {
@@ -378,6 +408,7 @@ impl DiffComponent {
 									hunk_selected,
 									i == hunk_len - 1,
 									&self.theme,
+									self.scrolled_right,
 								));
 								lines_added += 1;
 							}
@@ -400,6 +431,7 @@ impl DiffComponent {
 		selected_hunk: bool,
 		end_of_hunk: bool,
 		theme: &SharedTheme,
+		scrolled_right: usize,
 	) -> Spans<'a> {
 		let style = theme.diff_hunk_marker(selected_hunk);
 
@@ -418,18 +450,22 @@ impl DiffComponent {
 			}
 		};
 
+		let content =
+			tabs_to_spaces(line.content.as_ref().to_string());
+		let content = trim_offset(&content, scrolled_right);
+
 		let filled = if selected {
 			// selected line
-			format!("{:w$}\n", line.content, w = width as usize)
+			format!("{:w$}\n", content, w = width as usize)
 		} else {
 			// weird eof missing eol line
-			format!("{}\n", line.content)
+			format!("{}\n", content)
 		};
 
 		Spans::from(vec![
 			left_side_of_line,
 			Span::styled(
-				Cow::from(tabs_to_spaces(filled)),
+				Cow::from(filled),
 				theme.diff_line(line.line_type, selected),
 			),
 		])
@@ -644,6 +680,17 @@ impl DrawableComponent for DiffComponent {
 
 		if self.focused() {
 			self.scroll.draw(f, r, &self.theme);
+
+			if self.scrolled_right != 0 {
+				draw_scrollbar(
+					f,
+					r,
+					&self.theme,
+					self.max_scroll_right(),
+					self.scrolled_right,
+					Orientation::Horizontal,
+				);
+			}
 		}
 
 		Ok(())
@@ -753,6 +800,19 @@ impl Component for DiffComponent {
 				} else if key_match(e, self.key_config.keys.page_down)
 				{
 					self.move_selection(ScrollType::PageDown);
+					Ok(EventState::Consumed)
+				} else if key_match(
+					e,
+					self.key_config.keys.move_right,
+				) {
+					if self.scrolled_right < self.max_scroll_right() {
+						self.scrolled_right += 1;
+					}
+					Ok(EventState::Consumed)
+				} else if key_match(e, self.key_config.keys.move_left)
+					&& self.scrolled_right > 0
+				{
+					self.scrolled_right -= 1;
 					Ok(EventState::Consumed)
 				} else if key_match(
 					e,
