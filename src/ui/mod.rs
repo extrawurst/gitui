@@ -6,7 +6,7 @@ pub mod style;
 mod syntax_text;
 
 use filetreelist::MoveSelection;
-pub use scrollbar::draw_scrollbar;
+pub use scrollbar::{draw_scrollbar, Orientation};
 pub use scrolllist::{draw_list, draw_list_block};
 pub use stateful_paragraph::{
 	ParagraphState, ScrollPos, StatefulParagraph,

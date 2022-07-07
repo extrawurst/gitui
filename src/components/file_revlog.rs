@@ -9,7 +9,7 @@ use crate::{
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
-	ui::{draw_scrollbar, style::SharedTheme},
+	ui::{draw_scrollbar, style::SharedTheme, Orientation},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -410,6 +410,7 @@ impl FileRevlogComponent {
 			&self.theme,
 			self.count_total,
 			table_state.selected().unwrap_or(0),
+			Orientation::Vertical,
 		);
 
 		self.table_state.set(table_state);

@@ -128,6 +128,7 @@ impl DrawableComponent for TagListComponent {
 				&self.theme,
 				number_of_rows,
 				table_state.selected().unwrap_or(0),
+				ui::Orientation::Vertical,
 			);
 
 			self.table_state.set(table_state);

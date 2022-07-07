@@ -123,6 +123,7 @@ impl DrawableComponent for BlameFileComponent {
 				//
 				// https://github.com/fdehau/tui-rs/issues/448
 				table_state.selected().unwrap_or(0),
+				ui::Orientation::Vertical,
 			);
 
 			self.table_state.set(table_state);
