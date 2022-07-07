@@ -238,6 +238,7 @@ impl DrawableComponent for SyntaxTextComponent {
 					state.height().saturating_sub(2),
 				)),
 				usize::from(state.scroll().y),
+				ui::Orientation::Vertical,
 			);
 		}
 
