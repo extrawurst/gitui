@@ -269,15 +269,21 @@ impl AsyncJob for AsyncFileLogJob {
 		&mut self,
 		_params: RunParams<Self::Notification, Self::Progress>,
 	) -> Result<Self::Notification> {
+		let mut notification = AsyncGitNotification::FinishUnchanged;
+
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
-				JobState::Request(_, _) => JobState::Response(()),
+				JobState::Request(_, _) => {
+					notification = AsyncGitNotification::Log;
+
+					JobState::Response(())
+				}
 				JobState::Response(result) => {
 					JobState::Response(result)
 				}
 			});
 		}
 
-		Ok(AsyncGitNotification::FinishUnchanged)
+		Ok(notification)
 	}
 }
