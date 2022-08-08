@@ -259,6 +259,22 @@ impl AsyncFileLogJob {
 
 		None
 	}
+
+	fn fetch_log(repo_path: &RepoPath) -> Result<()> {
+		let mut entries = Vec::with_capacity(LIMIT_COUNT);
+		let repo = repo(&repo_path)?;
+		let mut walker =
+			LogWalker::new(&repo, LIMIT_COUNT)?.filter(None);
+
+		loop {
+			entries.clear();
+			let _res_is_err = walker.read(&mut entries).is_err();
+
+			break;
+		}
+
+		Ok(())
+	}
 }
 
 impl AsyncJob for AsyncFileLogJob {
@@ -273,7 +289,10 @@ impl AsyncJob for AsyncFileLogJob {
 
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
-				JobState::Request(_, _) => {
+				JobState::Request(repo_path, _) => {
+					Self::fetch_log(&repo_path)
+						.expect("failed to fetch");
+
 					notification = AsyncGitNotification::Log;
 
 					JobState::Response(())
