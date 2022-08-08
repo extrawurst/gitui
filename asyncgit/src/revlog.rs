@@ -224,6 +224,7 @@ impl AsyncLog {
 
 enum JobState {
 	Request(RepoPath, Option<LogWalkerFilter>),
+	Response(()),
 }
 
 ///
@@ -251,6 +252,7 @@ impl AsyncFileLogJob {
 			if let Some(state) = state.take() {
 				return match state {
 					JobState::Request(_, _) => None,
+					JobState::Response(_) => None,
 				};
 			}
 		}
@@ -267,6 +269,15 @@ impl AsyncJob for AsyncFileLogJob {
 		&mut self,
 		_params: RunParams<Self::Notification, Self::Progress>,
 	) -> Result<Self::Notification> {
+		if let Ok(mut state) = self.state.lock() {
+			*state = state.take().map(|state| match state {
+				JobState::Request(_, _) => JobState::Response(()),
+				JobState::Response(result) => {
+					JobState::Response(result)
+				}
+			});
+		}
+
 		Ok(AsyncGitNotification::FinishUnchanged)
 	}
 }
