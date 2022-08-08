@@ -30,6 +30,7 @@ pub enum FetchStatus {
 pub struct AsyncLog {
 	current: Arc<Mutex<Vec<CommitId>>>,
 	current_head: Arc<Mutex<Option<CommitId>>>,
+	last: Option<()>,
 	sender: Sender<AsyncGitNotification>,
 	job: AsyncSingleJob<AsyncFileLogJob>,
 	background: Arc<AtomicBool>,
@@ -52,6 +53,7 @@ impl AsyncLog {
 			repo,
 			current: Arc::new(Mutex::new(Vec::new())),
 			current_head: Arc::new(Mutex::new(None)),
+			last: None,
 			sender: sender.clone(),
 			job: AsyncSingleJob::new(sender.clone()),
 			background: Arc::new(AtomicBool::new(false)),
@@ -210,6 +212,12 @@ impl AsyncLog {
 			self.filter.clone(),
 		));
 
+		if let Some(job) = self.job.take_last() {
+			if let Some(Ok(result)) = job.result() {
+				self.last = Some(result);
+			}
+		}
+
 		Ok(())
 	}
 }
@@ -238,7 +246,6 @@ impl AsyncFileLogJob {
 	}
 
 	///
-	#[allow(dead_code)]
 	pub fn result(&self) -> Option<Result<()>> {
 		if let Ok(mut state) = self.state.lock() {
 			if let Some(state) = state.take() {
