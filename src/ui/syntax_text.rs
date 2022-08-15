@@ -118,7 +118,14 @@ impl SyntaxText {
 			))?;
 
 			for (number, line) in text.lines().enumerate() {
-				let ops = state.parse_line(line, &SYNTAX_SET);
+				let ops = state
+					.parse_line(line, &SYNTAX_SET)
+					.map_err(|e| {
+						log::error!("syntax error: {:?}", e);
+						asyncgit::Error::Generic(
+							"syntax error".to_string(),
+						)
+					})?;
 				let iter = RangedHighlightIterator::new(
 					&mut highlight_state,
 					&ops[..],
