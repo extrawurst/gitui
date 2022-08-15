@@ -2,7 +2,7 @@
 name = "asyncgit"
 version = "0.21.0"
 authors = ["extrawurst <mail@rusticorn.com>"]
-edition = "2018"
+edition = "2021"
 description = "allow using git2 in a asynchronous context"
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"

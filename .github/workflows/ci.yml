@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [nightly, stable, '1.50']
+        rust: [nightly, stable, '1.59']
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 
@@ -49,7 +49,7 @@ jobs:
         components: clippy
 
     - name: New Resolver
-      if: matrix.rust != '1.50'
+      if: matrix.rust != '1.59'
       run: |
         cargo install cargo-modify --force
         cargo modify new-resolver
@@ -96,7 +96,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [nightly, stable, '1.50']
+        rust: [nightly, stable, '1.59']
     continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
     - uses: actions/checkout@master
@@ -110,7 +110,7 @@ jobs:
 
     # TODO: remove once we depend on 1.51 as a msrv and resolver is supported by default
     - name: New Resolver
-      if: matrix.rust != '1.50'
+      if: matrix.rust != '1.59'
       run: |
         cargo install cargo-modify --force
         cargo modify new-resolver

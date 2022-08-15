@@ -2,7 +2,7 @@
 name = "scopetime"
 version = "0.1.1"
 authors = ["extrawurst <mail@rusticorn.com>"]
-edition = "2018"
+edition = "2021"
 description = "log runtime of arbitrary scope"
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
