@@ -136,9 +136,16 @@ jobs:
         cargo install cargo-sort --force
         cargo sort -c -w
 
-    - name: cargo-deny bans
+    - name: cargo-deny install
       run: |
         cargo install --locked cargo-deny
+
+    - name: cargo-deny licenses
+      run: |
+        cargo deny check licenses
+
+    - name: cargo-deny bans
+      run: |
         cargo deny check bans
 
   sec:
