@@ -118,8 +118,8 @@ jobs:
       run: |
         make test-linux-musl
 
-  rustfmt:
-    name: Formatting
+  linting:
+    name: Lints
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
@@ -128,6 +128,7 @@ jobs:
       with:
         toolchain: stable
         components: rustfmt
+    
     - run: cargo fmt -- --check
 
     - name: cargo-sort
@@ -135,20 +136,9 @@ jobs:
         cargo install cargo-sort --force
         cargo sort -c -w
 
-  deny:
-    name: Cargo-Deny
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        components: rustfmt
-    - run: cargo install --locked cargo-deny
-
     - name: cargo-deny bans
       run: |
+        cargo install --locked cargo-deny
         cargo deny check bans
 
   sec:
