@@ -25,7 +25,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		.arg(
 			Arg::with_name("theme")
 				.help("Set the color theme (defaults to theme.ron)")
-				.short("t")
+				.short('t')
 				.long("theme")
 				.value_name("THEME")
 				.takes_value(true),
@@ -33,7 +33,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		.arg(
 			Arg::with_name("logging")
 				.help("Stores logging output into a cache directory")
-				.short("l")
+				.short('l')
 				.long("logging"),
 		)
 		.arg(
@@ -44,7 +44,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		.arg(
 			Arg::with_name("directory")
 				.help("Set the git directory")
-				.short("d")
+				.short('d')
 				.long("directory")
 				.env("GIT_DIR")
 				.takes_value(true),
@@ -52,7 +52,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		.arg(
 			Arg::with_name("workdir")
 				.help("Set the working directory")
-				.short("w")
+				.short('w')
 				.long("workdir")
 				.env("GIT_WORK_TREE")
 				.takes_value(true),

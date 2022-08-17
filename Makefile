@@ -27,8 +27,8 @@ release-mac: build-release
 release-win: build-release
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
-	cargo install cargo-wix --version 0.3.1
-	cargo wix --no-build --nocapture --output ./release/gitui.msi
+	cargo install cargo-wix --version 0.3.3
+	cargo wix -p gitui --no-build --nocapture --output ./release/gitui.msi
 	ls -l ./release/gitui.msi 
 
 release-linux-musl: build-linux-musl-release

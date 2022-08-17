@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [nightly, stable, '1.50']
+        rust: [nightly, stable, '1.60']
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 
@@ -47,12 +47,6 @@ jobs:
         default: true
         profile: minimal
         components: clippy
-
-    - name: New Resolver
-      if: matrix.rust != '1.50'
-      run: |
-        cargo install cargo-modify --force
-        cargo modify new-resolver
 
     - name: Build Debug
       run: |
@@ -86,9 +80,9 @@ jobs:
     - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
       run: |
-        cargo install cargo-wix --version 0.3.1
+        cargo install cargo-wix --version 0.3.3
         cargo wix --version
-        cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
+        cargo wix -p gitui --no-build --nocapture --output ./target/wix/gitui.msi
         ls -l ./target/wix/gitui.msi
 
   build-linux-musl:
@@ -96,7 +90,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [nightly, stable, '1.50']
+        rust: [nightly, stable, '1.60']
     continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
     - uses: actions/checkout@master
@@ -107,13 +101,6 @@ jobs:
         profile: minimal
         default: true
         target: x86_64-unknown-linux-musl
-
-    # TODO: remove once we depend on 1.51 as a msrv and resolver is supported by default
-    - name: New Resolver
-      if: matrix.rust != '1.50'
-      run: |
-        cargo install cargo-modify --force
-        cargo modify new-resolver
 
     - name: Setup MUSL
       run: |
