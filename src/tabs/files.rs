@@ -1,9 +1,3 @@
-#![allow(
-	dead_code,
-	clippy::missing_const_for_fn,
-	clippy::unused_self
-)]
-
 use std::path::PathBuf;
 
 use crate::{
@@ -23,8 +17,6 @@ use crossbeam_channel::Sender;
 pub struct FilesTab {
 	repo: RepoPathRef,
 	visible: bool,
-	theme: SharedTheme,
-	key_config: SharedKeyConfig,
 	files: RevisionFilesComponent,
 }
 
@@ -43,11 +35,9 @@ impl FilesTab {
 				repo.clone(),
 				queue,
 				sender,
-				theme.clone(),
-				key_config.clone(),
+				theme,
+				key_config,
 			),
-			theme,
-			key_config,
 			repo,
 		}
 	}
