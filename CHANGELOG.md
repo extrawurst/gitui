@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.21.0] - 2021-08-17
+
 **popup stacking**
 
 ![popup-stacking](assets/popup-stacking.gif)
