@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	accessors,
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings,
 	ui::style::SharedTheme,
@@ -108,7 +108,7 @@ impl Component for CompareCommitsComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.is_visible() {
 			if event_pump(ev, self.components_mut().as_mut_slice())?
 				.is_consumed()
@@ -120,19 +120,26 @@ impl Component for CompareCommitsComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.keys.exit_popup {
+				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide_stacked(false);
-				} else if e == self.key_config.keys.focus_right
-					&& self.can_focus_diff()
+				} else if key_match(
+					e,
+					self.key_config.keys.focus_right,
+				) && self.can_focus_diff()
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if e == self.key_config.keys.focus_left
-					&& self.diff.focused()
+				} else if key_match(
+					e,
+					self.key_config.keys.focus_left,
+				) && self.diff.focused()
 				{
 					self.details.focus(true);
 					self.diff.focus(false);
-				} else if e == self.key_config.keys.focus_left {
+				} else if key_match(
+					e,
+					self.key_config.keys.focus_left,
+				) {
 					self.hide_stacked(false);
 				}
 

@@ -161,7 +161,7 @@ impl Component for CompareDetailsComponent {
 		CommandBlocking::PassingOn
 	}
 
-	fn event(&mut self, _event: Event) -> Result<EventState> {
+	fn event(&mut self, _event: &Event) -> Result<EventState> {
 		Ok(EventState::NotConsumed)
 	}
 

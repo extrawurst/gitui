@@ -7,7 +7,10 @@ use super::{
 	Component, DrawableComponent, EventState, StatusTreeComponent,
 };
 use crate::{
-	accessors, keys::SharedKeyConfig, queue::Queue, strings,
+	accessors,
+	keys::{key_match, SharedKeyConfig},
+	queue::Queue,
+	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -215,7 +218,7 @@ impl Component for CommitDetailsComponent {
 		CommandBlocking::PassingOn
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if event_pump(ev, self.components_mut().as_mut_slice())?
 			.is_consumed()
 		{
@@ -228,14 +231,18 @@ impl Component for CommitDetailsComponent {
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.keys.focus_below
-					&& self.details_focused()
+				return if key_match(
+					e,
+					self.key_config.keys.focus_below,
+				) && self.details_focused()
 				{
 					self.set_details_focus(false);
 					self.file_tree.focus(true);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.focus_above
-					&& self.file_tree.focused()
+				} else if key_match(
+					e,
+					self.key_config.keys.focus_above,
+				) && self.file_tree.focused()
 					&& !self.is_compare()
 				{
 					self.file_tree.focus(false);

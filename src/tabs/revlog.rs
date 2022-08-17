@@ -5,7 +5,7 @@ use crate::{
 		DrawableComponent, EventState, FileTreeOpen,
 		InspectCommitOpen,
 	},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -242,7 +242,9 @@ impl DrawableComponent for Revlog {
 }
 
 impl Component for Revlog {
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	//TODO: cleanup
+	#[allow(clippy::too_many_lines)]
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
 			let event_used = self.list.event(ev)?;
 
@@ -250,17 +252,20 @@ impl Component for Revlog {
 				self.update()?;
 				return Ok(EventState::Consumed);
 			} else if let Event::Key(k) = ev {
-				if k == self.key_config.keys.enter {
+				if key_match(k, self.key_config.keys.enter) {
 					self.commit_details.toggle_visible()?;
 					self.update()?;
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.copy {
+				} else if key_match(k, self.key_config.keys.copy) {
 					self.copy_commit_hash()?;
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.push {
+				} else if key_match(k, self.key_config.keys.push) {
 					self.queue.push(InternalEvent::PushTags);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.log_tag_commit {
+				} else if key_match(
+					k,
+					self.key_config.keys.log_tag_commit,
+				) {
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -269,16 +274,23 @@ impl Component for Revlog {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.keys.focus_right
-					&& self.commit_details.is_visible()
+				} else if key_match(
+					k,
+					self.key_config.keys.focus_right,
+				) && self.commit_details.is_visible()
 				{
 					self.inspect_commit();
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.select_branch {
+				} else if key_match(
+					k,
+					self.key_config.keys.select_branch,
+				) {
 					self.queue.push(InternalEvent::SelectBranch);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.status_reset_item
-				{
+				} else if key_match(
+					k,
+					self.key_config.keys.status_reset_item,
+				) {
 					try_or_popup!(
 						self,
 						"revert error:",
@@ -286,7 +298,10 @@ impl Component for Revlog {
 					);
 
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.open_file_tree {
+				} else if key_match(
+					k,
+					self.key_config.keys.open_file_tree,
+				) {
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -300,11 +315,13 @@ impl Component for Revlog {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.keys.tags {
+				} else if key_match(k, self.key_config.keys.tags) {
 					self.queue.push(InternalEvent::Tags);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.compare_commits
-					&& self.list.marked_count() > 0
+				} else if key_match(
+					k,
+					self.key_config.keys.compare_commits,
+				) && self.list.marked_count() > 0
 				{
 					if self.list.marked_count() == 1 {
 						// compare against head

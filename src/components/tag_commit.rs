@@ -4,7 +4,7 @@ use super::{
 	EventState,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
 	ui::style::SharedTheme,
@@ -67,19 +67,21 @@ impl Component for TagCommitComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.is_visible() {
 			if self.input.event(ev)?.is_consumed() {
 				return Ok(EventState::Consumed);
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.keys.enter
+				if key_match(e, self.key_config.keys.enter)
 					&& self.is_valid_tag()
 				{
 					self.tag();
-				} else if e == self.key_config.keys.tag_annotate
-					&& self.is_valid_tag()
+				} else if key_match(
+					e,
+					self.key_config.keys.tag_annotate,
+				) && self.is_valid_tag()
 				{
 					let tag_name: String =
 						self.input.get_text().into();

@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue, StackablePopupOpen},
 	strings::{self, order},
 	ui,
@@ -419,10 +419,10 @@ impl Component for StatusTreeComponent {
 		CommandBlocking::PassingOn
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.focused {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.keys.blame {
+				return if key_match(e, self.key_config.keys.blame) {
 					if let Some(status_item) = self.selection_file() {
 						self.hide();
 						if let Some(queue) = &self.queue {
@@ -438,7 +438,10 @@ impl Component for StatusTreeComponent {
 						}
 					}
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.file_history {
+				} else if key_match(
+					e,
+					self.key_config.keys.file_history,
+				) {
 					if let Some(status_item) = self.selection_file() {
 						self.hide();
 						if let Some(queue) = &self.queue {
@@ -452,27 +455,32 @@ impl Component for StatusTreeComponent {
 						}
 					}
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.move_down {
+				} else if key_match(e, self.key_config.keys.move_down)
+				{
 					Ok(self
 						.move_selection(MoveSelection::Down)
 						.into())
-				} else if e == self.key_config.keys.move_up {
+				} else if key_match(e, self.key_config.keys.move_up) {
 					Ok(self.move_selection(MoveSelection::Up).into())
-				} else if e == self.key_config.keys.home
-					|| e == self.key_config.keys.shift_up
+				} else if key_match(e, self.key_config.keys.home)
+					|| key_match(e, self.key_config.keys.shift_up)
 				{
 					Ok(self
 						.move_selection(MoveSelection::Home)
 						.into())
-				} else if e == self.key_config.keys.end
-					|| e == self.key_config.keys.shift_down
+				} else if key_match(e, self.key_config.keys.end)
+					|| key_match(e, self.key_config.keys.shift_down)
 				{
 					Ok(self.move_selection(MoveSelection::End).into())
-				} else if e == self.key_config.keys.move_left {
+				} else if key_match(e, self.key_config.keys.move_left)
+				{
 					Ok(self
 						.move_selection(MoveSelection::Left)
 						.into())
-				} else if e == self.key_config.keys.move_right {
+				} else if key_match(
+					e,
+					self.key_config.keys.move_right,
+				) {
 					Ok(self
 						.move_selection(MoveSelection::Right)
 						.into())

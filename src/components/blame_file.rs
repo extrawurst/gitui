@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	components::{utils::string_width_align, ScrollType},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	string_utils::tabs_to_spaces,
 	strings,
@@ -183,29 +183,48 @@ impl Component for BlameFileComponent {
 
 	fn event(
 		&mut self,
-		event: crossterm::event::Event,
+		event: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if self.is_visible() {
 			if let Event::Key(key) = event {
-				if key == self.key_config.keys.exit_popup {
+				if key_match(key, self.key_config.keys.exit_popup) {
 					self.hide_stacked(false);
-				} else if key == self.key_config.keys.move_up {
+				} else if key_match(key, self.key_config.keys.move_up)
+				{
 					self.move_selection(ScrollType::Up);
-				} else if key == self.key_config.keys.move_down {
+				} else if key_match(
+					key,
+					self.key_config.keys.move_down,
+				) {
 					self.move_selection(ScrollType::Down);
-				} else if key == self.key_config.keys.shift_up
-					|| key == self.key_config.keys.home
-				{
+				} else if key_match(
+					key,
+					self.key_config.keys.shift_up,
+				) || key_match(
+					key,
+					self.key_config.keys.home,
+				) {
 					self.move_selection(ScrollType::Home);
-				} else if key == self.key_config.keys.shift_down
-					|| key == self.key_config.keys.end
-				{
+				} else if key_match(
+					key,
+					self.key_config.keys.shift_down,
+				) || key_match(
+					key,
+					self.key_config.keys.end,
+				) {
 					self.move_selection(ScrollType::End);
-				} else if key == self.key_config.keys.page_down {
+				} else if key_match(
+					key,
+					self.key_config.keys.page_down,
+				) {
 					self.move_selection(ScrollType::PageDown);
-				} else if key == self.key_config.keys.page_up {
+				} else if key_match(key, self.key_config.keys.page_up)
+				{
 					self.move_selection(ScrollType::PageUp);
-				} else if key == self.key_config.keys.focus_right {
+				} else if key_match(
+					key,
+					self.key_config.keys.focus_right,
+				) {
 					if let Some(commit_id) = self.selected_commit() {
 						self.hide_stacked(true);
 						self.queue.push(InternalEvent::OpenPopup(
@@ -214,7 +233,10 @@ impl Component for BlameFileComponent {
 							),
 						));
 					}
-				} else if key == self.key_config.keys.file_history {
+				} else if key_match(
+					key,
+					self.key_config.keys.file_history,
+				) {
 					if let Some(filepath) = self
 						.params
 						.as_ref()

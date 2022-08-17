@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -256,15 +256,17 @@ impl Component for ChangesComponent {
 		CommandBlocking::PassingOn
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.files.event(ev)?.is_consumed() {
 			return Ok(EventState::Consumed);
 		}
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.keys.stage_unstage_item
-				{
+				return if key_match(
+					e,
+					self.key_config.keys.stage_unstage_item,
+				) {
 					try_or_popup!(
 						self,
 						"staging error:",
@@ -275,8 +277,10 @@ impl Component for ChangesComponent {
 						NeedsUpdate::ALL,
 					));
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.status_stage_all
-					&& !self.is_empty()
+				} else if key_match(
+					e,
+					self.key_config.keys.status_stage_all,
+				) && !self.is_empty()
 				{
 					if self.is_working_dir {
 						try_or_popup!(
@@ -290,12 +294,16 @@ impl Component for ChangesComponent {
 					self.queue
 						.push(InternalEvent::StatusLastFileMoved);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.status_reset_item
-					&& self.is_working_dir
+				} else if key_match(
+					e,
+					self.key_config.keys.status_reset_item,
+				) && self.is_working_dir
 				{
 					Ok(self.dispatch_reset_workdir().into())
-				} else if e == self.key_config.keys.status_ignore_file
-					&& self.is_working_dir
+				} else if key_match(
+					e,
+					self.key_config.keys.status_ignore_file,
+				) && self.is_working_dir
 					&& !self.is_empty()
 				{
 					Ok(self.add_to_ignore().into())

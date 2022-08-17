@@ -1,3 +1,4 @@
+use crate::keys::key_match;
 use crate::strings::symbol;
 use crate::ui::Size;
 use crate::{
@@ -348,10 +349,10 @@ impl Component for TextInputComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
-				if e == self.key_config.keys.exit_popup {
+				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}

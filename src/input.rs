@@ -21,7 +21,7 @@ pub enum InputState {
 }
 
 ///
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum InputEvent {
 	Input(Event),
 	State(InputState),

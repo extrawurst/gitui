@@ -71,7 +71,7 @@ static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
 
 ///
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum QueueEvent {
 	Tick,
 	SpinnerUpdate,

@@ -3,7 +3,7 @@ use crate::{
 		popup_paragraph, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, Queue},
 	strings, ui,
 };
@@ -70,12 +70,12 @@ impl Component for ConfirmComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
-				if e == self.key_config.keys.exit_popup {
+				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide();
-				} else if e == self.key_config.keys.enter {
+				} else if key_match(e, self.key_config.keys.enter) {
 					self.confirm();
 				}
 

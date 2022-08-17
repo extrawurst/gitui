@@ -6,7 +6,7 @@ use super::{
 	EventState,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self},
 	ui::style::SharedTheme,
@@ -146,11 +146,11 @@ impl Component for RevisionFilesPopup {
 
 	fn event(
 		&mut self,
-		event: crossterm::event::Event,
+		event: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if self.is_visible() {
-			if let Event::Key(key) = &event {
-				if *key == self.key_config.keys.exit_popup {
+			if let Event::Key(key) = event {
+				if key_match(key, self.key_config.keys.exit_popup) {
 					self.hide_stacked(false);
 				}
 			}

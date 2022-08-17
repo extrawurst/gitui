@@ -267,7 +267,7 @@ impl Component for SyntaxTextComponent {
 
 	fn event(
 		&mut self,
-		event: crossterm::event::Event,
+		event: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if let Event::Key(key) = event {
 			if let Some(nav) = common_nav(key, &self.key_config) {
