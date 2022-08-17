@@ -80,7 +80,7 @@ jobs:
     - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
       run: |
-        cargo install cargo-wix --version 0.3.1
+        cargo install cargo-wix
         cargo wix --version
         cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
         ls -l ./target/wix/gitui.msi
