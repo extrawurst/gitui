@@ -303,8 +303,9 @@ impl DiffComponent {
 		if let Some(diff) = &self.diff {
 			if diff.hunks.is_empty() {
 				let is_positive = diff.size_delta >= 0;
-				let delta_byte_size =
-					ByteSize::b(diff.size_delta.abs() as u64);
+				let delta_byte_size = ByteSize::b(
+					diff.size_delta.unsigned_abs() as u64,
+				);
 				let sign = if is_positive { "+" } else { "-" };
 				res.extend(vec![Spans::from(vec![
 					Span::raw(Cow::from("size: ")),
