@@ -82,7 +82,7 @@ jobs:
       run: |
         cargo install cargo-wix
         cargo wix --version
-        cargo wix --no-build --nocapture --output ./target/wix/gitui.msi
+        cargo wix -p gitui --no-build --nocapture --output ./target/wix/gitui.msi
         ls -l ./target/wix/gitui.msi
 
   build-linux-musl:
