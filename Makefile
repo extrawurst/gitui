@@ -57,7 +57,10 @@ clippy:
 clippy-nightly:
 	cargo +nightly clippy --workspace --all-features
 
-check: fmt clippy test
+check: fmt clippy test deny
+
+deny:
+	cargo deny check
 
 install:
 	cargo install --path "." --offline
