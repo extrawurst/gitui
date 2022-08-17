@@ -118,8 +118,8 @@ jobs:
       run: |
         make test-linux-musl
 
-  rustfmt:
-    name: Formatting
+  linting:
+    name: Lints
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
@@ -128,12 +128,25 @@ jobs:
       with:
         toolchain: stable
         components: rustfmt
+    
     - run: cargo fmt -- --check
 
     - name: cargo-sort
       run: |
         cargo install cargo-sort --force
         cargo sort -c -w
+
+    - name: cargo-deny install
+      run: |
+        cargo install --locked cargo-deny
+
+    - name: cargo-deny licenses
+      run: |
+        cargo deny check licenses
+
+    - name: cargo-deny bans
+      run: |
+        cargo deny check bans
 
   sec:
     name: Security audit
