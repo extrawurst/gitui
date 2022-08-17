@@ -18,6 +18,46 @@ pub struct CliArgs {
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
+	let app = app();
+
+	let arg_matches = app.get_matches();
+	if arg_matches.is_present("bugreport") {
+		bug_report::generate_bugreport();
+		std::process::exit(0);
+	}
+	if arg_matches.is_present("logging") {
+		setup_logging()?;
+	}
+
+	let workdir = arg_matches.value_of("workdir").map(PathBuf::from);
+	let gitdir = arg_matches
+		.value_of("directory")
+		.map_or_else(|| PathBuf::from("."), PathBuf::from);
+
+	#[allow(clippy::option_if_let_else)]
+	let repo_path = if let Some(w) = workdir {
+		RepoPath::Workdir { gitdir, workdir: w }
+	} else {
+		RepoPath::Path(gitdir)
+	};
+
+	let arg_theme =
+		arg_matches.value_of("theme").unwrap_or("theme.ron");
+
+	if get_app_config_path()?.join(arg_theme).is_file() {
+		Ok(CliArgs {
+			theme: get_app_config_path()?.join(arg_theme),
+			repo_path,
+		})
+	} else {
+		Ok(CliArgs {
+			theme: get_app_config_path()?.join("theme.ron"),
+			repo_path,
+		})
+	}
+}
+
+fn app() -> ClapApp<'static> {
 	let app = ClapApp::new(crate_name!())
 		.author(crate_authors!())
 		.version(crate_version!())
@@ -57,42 +97,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 				.env("GIT_WORK_TREE")
 				.takes_value(true),
 		);
-
-	let arg_matches = app.get_matches();
-	if arg_matches.is_present("bugreport") {
-		bug_report::generate_bugreport();
-		std::process::exit(0);
-	}
-	if arg_matches.is_present("logging") {
-		setup_logging()?;
-	}
-
-	let workdir = arg_matches.value_of("workdir").map(PathBuf::from);
-	let gitdir = arg_matches
-		.value_of("directory")
-		.map_or_else(|| PathBuf::from("."), PathBuf::from);
-
-	#[allow(clippy::option_if_let_else)]
-	let repo_path = if let Some(w) = workdir {
-		RepoPath::Workdir { gitdir, workdir: w }
-	} else {
-		RepoPath::Path(gitdir)
-	};
-
-	let arg_theme =
-		arg_matches.value_of("theme").unwrap_or("theme.ron");
-
-	if get_app_config_path()?.join(arg_theme).is_file() {
-		Ok(CliArgs {
-			theme: get_app_config_path()?.join(arg_theme),
-			repo_path,
-		})
-	} else {
-		Ok(CliArgs {
-			theme: get_app_config_path()?.join("theme.ron"),
-			repo_path,
-		})
-	}
+	app
 }
 
 fn setup_logging() -> Result<()> {
@@ -128,4 +133,9 @@ pub fn get_app_config_path() -> Result<PathBuf> {
 	path.push("gitui");
 	fs::create_dir_all(&path)?;
 	Ok(path)
+}
+
+#[test]
+fn verify_app() {
+	app().debug_assert();
 }
