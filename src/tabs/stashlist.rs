@@ -4,7 +4,7 @@ use crate::{
 		CommitList, Component, DrawableComponent, EventState,
 		InspectCommitOpen,
 	},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, Queue, StackablePopupOpen},
 	strings,
 	ui::style::SharedTheme,
@@ -200,7 +200,7 @@ impl Component for StashList {
 
 	fn event(
 		&mut self,
-		ev: crossterm::event::Event,
+		ev: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if self.is_visible() {
 			if self.list.event(ev)?.is_consumed() {
@@ -208,13 +208,22 @@ impl Component for StashList {
 			}
 
 			if let Event::Key(k) = ev {
-				if k == self.key_config.keys.enter {
+				if key_match(k, self.key_config.keys.enter) {
 					self.pop_stash();
-				} else if k == self.key_config.keys.stash_apply {
+				} else if key_match(
+					k,
+					self.key_config.keys.stash_apply,
+				) {
 					self.apply_stash();
-				} else if k == self.key_config.keys.stash_drop {
+				} else if key_match(
+					k,
+					self.key_config.keys.stash_drop,
+				) {
 					self.drop_stash();
-				} else if k == self.key_config.keys.stash_open {
+				} else if key_match(
+					k,
+					self.key_config.keys.stash_open,
+				) {
 					self.inspect();
 				}
 			}

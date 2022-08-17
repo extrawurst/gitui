@@ -146,7 +146,7 @@ macro_rules! setup_popups {
 
 /// returns `true` if event was consumed
 pub fn event_pump(
-	ev: Event,
+	ev: &Event,
 	components: &mut [&mut dyn Component],
 ) -> Result<EventState> {
 	for c in components {
@@ -255,7 +255,7 @@ pub trait Component {
 	) -> CommandBlocking;
 
 	///
-	fn event(&mut self, ev: Event) -> Result<EventState>;
+	fn event(&mut self, ev: &Event) -> Result<EventState>;
 
 	///
 	fn focused(&self) -> bool {

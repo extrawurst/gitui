@@ -4,7 +4,7 @@ use super::{
 	EventState,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
 	tabs::StashingOptions,
@@ -56,14 +56,14 @@ impl Component for StashMsgComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.is_visible() {
 			if self.input.event(ev)?.is_consumed() {
 				return Ok(EventState::Consumed);
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.keys.enter {
+				if key_match(e, self.key_config.keys.enter) {
 					let result = sync::stash_save(
 						&self.repo.borrow(),
 						if self.input.get_text().is_empty() {

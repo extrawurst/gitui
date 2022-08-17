@@ -29,7 +29,7 @@ bytesize = { version = "1.1", default-features = false }
 chrono = { version = "0.4", default-features = false, features = [ "clock" ] }
 clap = { version = "3.2", features = [ "env", "cargo" ] }
 crossbeam-channel = "0.5"
-crossterm = { version = "0.23", features = [ "serde" ] }
+crossterm = { version = "0.25", features = [ "serde" ] }
 dirs-next = "2.0"
 easy-cast = "0.4"
 filetreelist = { path = "./filetreelist", version = "0.5" }
@@ -46,7 +46,7 @@ serde = "1.0"
 simplelog = { version = "0.12", default-features = false }
 syntect = { version = "5.0", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "html", "regex-fancy"] }
 textwrap = "0.15"
-tui = { version = "0.18", default-features = false, features = ['crossterm', 'serde'] }
+tui = { version = "0.19", default-features = false, features = ['crossterm', 'serde'] }
 unicode-segmentation = "1.9"
 unicode-truncate = "0.2"
 unicode-width = "0.1"

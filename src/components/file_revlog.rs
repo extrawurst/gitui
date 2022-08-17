@@ -1,5 +1,6 @@
 use super::{utils::logitems::ItemBatch, SharedOptions};
 use super::{visibility_blocking, BlameFileOpen, InspectCommitOpen};
+use crate::keys::key_match;
 use crate::queue::StackablePopupOpen;
 use crate::{
 	components::{
@@ -470,7 +471,7 @@ impl DrawableComponent for FileRevlogComponent {
 }
 
 impl Component for FileRevlogComponent {
-	fn event(&mut self, event: Event) -> Result<EventState> {
+	fn event(&mut self, event: &Event) -> Result<EventState> {
 		if self.is_visible() {
 			if event_pump(
 				event,
@@ -482,17 +483,22 @@ impl Component for FileRevlogComponent {
 			}
 
 			if let Event::Key(key) = event {
-				if key == self.key_config.keys.exit_popup {
+				if key_match(key, self.key_config.keys.exit_popup) {
 					self.hide_stacked(false);
-				} else if key == self.key_config.keys.focus_right
-					&& self.can_focus_diff()
+				} else if key_match(
+					key,
+					self.key_config.keys.focus_right,
+				) && self.can_focus_diff()
 				{
 					self.diff.focus(true);
-				} else if key == self.key_config.keys.focus_left {
+				} else if key_match(
+					key,
+					self.key_config.keys.focus_left,
+				) {
 					if self.diff.focused() {
 						self.diff.focus(false);
 					}
-				} else if key == self.key_config.keys.enter {
+				} else if key_match(key, self.key_config.keys.enter) {
 					if let Some(commit_id) = self.selected_commit() {
 						self.hide_stacked(true);
 						self.queue.push(InternalEvent::OpenPopup(
@@ -501,7 +507,7 @@ impl Component for FileRevlogComponent {
 							),
 						));
 					};
-				} else if key == self.key_config.keys.blame {
+				} else if key_match(key, self.key_config.keys.blame) {
 					if let Some(open_request) =
 						self.open_request.clone()
 					{
@@ -516,21 +522,37 @@ impl Component for FileRevlogComponent {
 							),
 						));
 					}
-				} else if key == self.key_config.keys.move_up {
+				} else if key_match(key, self.key_config.keys.move_up)
+				{
 					self.move_selection(ScrollType::Up);
-				} else if key == self.key_config.keys.move_down {
+				} else if key_match(
+					key,
+					self.key_config.keys.move_down,
+				) {
 					self.move_selection(ScrollType::Down);
-				} else if key == self.key_config.keys.shift_up
-					|| key == self.key_config.keys.home
-				{
+				} else if key_match(
+					key,
+					self.key_config.keys.shift_up,
+				) || key_match(
+					key,
+					self.key_config.keys.home,
+				) {
 					self.move_selection(ScrollType::Home);
-				} else if key == self.key_config.keys.shift_down
-					|| key == self.key_config.keys.end
-				{
+				} else if key_match(
+					key,
+					self.key_config.keys.shift_down,
+				) || key_match(
+					key,
+					self.key_config.keys.end,
+				) {
 					self.move_selection(ScrollType::End);
-				} else if key == self.key_config.keys.page_up {
+				} else if key_match(key, self.key_config.keys.page_up)
+				{
 					self.move_selection(ScrollType::PageUp);
-				} else if key == self.key_config.keys.page_down {
+				} else if key_match(
+					key,
+					self.key_config.keys.page_down,
+				) {
 					self.move_selection(ScrollType::PageDown);
 				}
 			}

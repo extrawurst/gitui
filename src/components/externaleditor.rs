@@ -170,7 +170,7 @@ impl Component for ExternalEditorComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, _ev: Event) -> Result<EventState> {
+	fn event(&mut self, _ev: &Event) -> Result<EventState> {
 		if self.visible {
 			return Ok(EventState::Consumed);
 		}

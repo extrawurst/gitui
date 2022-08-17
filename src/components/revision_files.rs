@@ -4,7 +4,7 @@ use super::{
 	EventState, FileRevOpen, SyntaxTextComponent,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order, symbol},
 	ui::{self, common_nav, style::SharedTheme},
@@ -341,7 +341,7 @@ impl Component for RevisionFilesComponent {
 
 	fn event(
 		&mut self,
-		event: crossterm::event::Event,
+		event: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if !self.is_visible() {
 			return Ok(EventState::NotConsumed);
@@ -354,36 +354,40 @@ impl Component for RevisionFilesComponent {
 			{
 				self.selection_changed();
 				return Ok(EventState::Consumed);
-			} else if key == self.key_config.keys.blame {
+			} else if key_match(key, self.key_config.keys.blame) {
 				if self.blame() {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.keys.file_history {
+			} else if key_match(
+				key,
+				self.key_config.keys.file_history,
+			) {
 				if self.file_history() {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.keys.move_right {
+			} else if key_match(key, self.key_config.keys.move_right)
+			{
 				if is_tree_focused {
 					self.focus = Focus::File;
 					self.current_file.focus(true);
 					self.focus(true);
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.keys.move_left {
+			} else if key_match(key, self.key_config.keys.move_left) {
 				if !is_tree_focused {
 					self.focus = Focus::Tree;
 					self.current_file.focus(false);
 					self.focus(false);
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.keys.file_find {
+			} else if key_match(key, self.key_config.keys.file_find) {
 				if is_tree_focused {
 					self.open_finder();
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.keys.edit_file {
+			} else if key_match(key, self.key_config.keys.edit_file) {
 				if let Some(file) =
 					self.selected_file_path_with_prefix()
 				{
@@ -437,14 +441,15 @@ fn tree_nav_cmds(
 fn tree_nav(
 	tree: &mut FileTree,
 	key_config: &SharedKeyConfig,
-	key: crossterm::event::KeyEvent,
+	key: &crossterm::event::KeyEvent,
 ) -> bool {
 	if let Some(common_nav) = common_nav(key, key_config) {
 		tree.move_selection(common_nav)
-	} else if key == key_config.keys.tree_collapse_recursive {
+	} else if key_match(key, key_config.keys.tree_collapse_recursive)
+	{
 		tree.collapse_recursive();
 		true
-	} else if key == key_config.keys.tree_expand_recursive {
+	} else if key_match(key, key_config.keys.tree_expand_recursive) {
 		tree.expand_recursive();
 		true
 	} else {

@@ -3,7 +3,7 @@ use crate::{
 		cred::CredComponent, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
 	strings,
 	ui::{self, style::SharedTheme},
@@ -297,7 +297,7 @@ impl Component for PushComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
 				if self.input_cred.is_visible() {
@@ -312,8 +312,10 @@ impl Component for PushComponent {
 						)?;
 						self.input_cred.hide();
 					}
-				} else if e == self.key_config.keys.exit_popup
-					&& !self.pending
+				} else if key_match(
+					e,
+					self.key_config.keys.exit_popup,
+				) && !self.pending
 				{
 					self.hide();
 				}

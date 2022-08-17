@@ -4,7 +4,7 @@ use super::{
 	EventState, ExternalEditorComponent,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -333,14 +333,14 @@ impl Component for CommitComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.is_visible() {
 			if self.input.event(ev)?.is_consumed() {
 				return Ok(EventState::Consumed);
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.keys.enter
+				if key_match(e, self.key_config.keys.enter)
 					&& self.can_commit()
 				{
 					try_or_popup!(
@@ -348,12 +348,16 @@ impl Component for CommitComponent {
 						"commit error:",
 						self.commit()
 					);
-				} else if e == self.key_config.keys.commit_amend
-					&& self.can_amend()
+				} else if key_match(
+					e,
+					self.key_config.keys.commit_amend,
+				) && self.can_amend()
 				{
 					self.amend()?;
-				} else if e == self.key_config.keys.open_commit_editor
-				{
+				} else if key_match(
+					e,
+					self.key_config.keys.open_commit_editor,
+				) {
 					self.queue.push(
 						InternalEvent::OpenExternalEditor(None),
 					);

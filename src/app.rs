@@ -14,7 +14,7 @@ use crate::{
 		TagCommitComponent, TagListComponent,
 	},
 	input::{Input, InputEvent, InputState},
-	keys::{KeyConfig, SharedKeyConfig},
+	keys::{key_match, KeyConfig, SharedKeyConfig},
 	popup_stack::PopupStack,
 	queue::{
 		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
@@ -345,38 +345,57 @@ impl App {
 		log::trace!("event: {:?}", ev);
 
 		if let InputEvent::Input(ev) = ev {
-			if self.check_hard_exit(ev) || self.check_quit(ev) {
+			if self.check_hard_exit(&ev) || self.check_quit(&ev) {
 				return Ok(());
 			}
 
 			let mut flags = NeedsUpdate::empty();
 
-			if event_pump(ev, self.components_mut().as_mut_slice())?
+			if event_pump(&ev, self.components_mut().as_mut_slice())?
 				.is_consumed()
 			{
 				flags.insert(NeedsUpdate::COMMANDS);
-			} else if let Event::Key(k) = ev {
-				let new_flags = if k
-					== self.key_config.keys.tab_toggle
-				{
+			} else if let Event::Key(k) = &ev {
+				let new_flags = if key_match(
+					k,
+					self.key_config.keys.tab_toggle,
+				) {
 					self.toggle_tabs(false)?;
 					NeedsUpdate::COMMANDS
-				} else if k == self.key_config.keys.tab_toggle_reverse
-				{
+				} else if key_match(
+					k,
+					self.key_config.keys.tab_toggle_reverse,
+				) {
 					self.toggle_tabs(true)?;
 					NeedsUpdate::COMMANDS
-				} else if k == self.key_config.keys.tab_status
-					|| k == self.key_config.keys.tab_log
-					|| k == self.key_config.keys.tab_files
-					|| k == self.key_config.keys.tab_stashing
-					|| k == self.key_config.keys.tab_stashes
-				{
+				} else if key_match(
+					k,
+					self.key_config.keys.tab_status,
+				) || key_match(
+					k,
+					self.key_config.keys.tab_log,
+				) || key_match(
+					k,
+					self.key_config.keys.tab_files,
+				) || key_match(
+					k,
+					self.key_config.keys.tab_stashing,
+				) || key_match(
+					k,
+					self.key_config.keys.tab_stashes,
+				) {
 					self.switch_tab(k)?;
 					NeedsUpdate::COMMANDS
-				} else if k == self.key_config.keys.cmd_bar_toggle {
+				} else if key_match(
+					k,
+					self.key_config.keys.cmd_bar_toggle,
+				) {
 					self.cmdbar.borrow_mut().toggle_more();
 					NeedsUpdate::empty()
-				} else if k == self.key_config.keys.open_options {
+				} else if key_match(
+					k,
+					self.key_config.keys.open_options,
+				) {
 					self.options_popup.show()?;
 					NeedsUpdate::ALL
 				} else {
@@ -563,12 +582,12 @@ impl App {
 		]
 	);
 
-	fn check_quit(&mut self, ev: Event) -> bool {
+	fn check_quit(&mut self, ev: &Event) -> bool {
 		if self.any_popup_visible() {
 			return false;
 		}
 		if let Event::Key(e) = ev {
-			if e == self.key_config.keys.quit {
+			if key_match(e, self.key_config.keys.quit) {
 				self.do_quit = true;
 				return true;
 			}
@@ -576,9 +595,9 @@ impl App {
 		false
 	}
 
-	fn check_hard_exit(&mut self, ev: Event) -> bool {
+	fn check_hard_exit(&mut self, ev: &Event) -> bool {
 		if let Event::Key(e) = ev {
-			if e == self.key_config.keys.exit {
+			if key_match(e, self.key_config.keys.exit) {
 				self.do_quit = true;
 				return true;
 			}
@@ -607,16 +626,16 @@ impl App {
 		self.set_tab(new_tab)
 	}
 
-	fn switch_tab(&mut self, k: KeyEvent) -> Result<()> {
-		if k == self.key_config.keys.tab_status {
+	fn switch_tab(&mut self, k: &KeyEvent) -> Result<()> {
+		if key_match(k, self.key_config.keys.tab_status) {
 			self.set_tab(0)?;
-		} else if k == self.key_config.keys.tab_log {
+		} else if key_match(k, self.key_config.keys.tab_log) {
 			self.set_tab(1)?;
-		} else if k == self.key_config.keys.tab_files {
+		} else if key_match(k, self.key_config.keys.tab_files) {
 			self.set_tab(2)?;
-		} else if k == self.key_config.keys.tab_stashing {
+		} else if key_match(k, self.key_config.keys.tab_stashing) {
 			self.set_tab(3)?;
-		} else if k == self.key_config.keys.tab_stashes {
+		} else if key_match(k, self.key_config.keys.tab_stashes) {
 			self.set_tab(4)?;
 		}
 

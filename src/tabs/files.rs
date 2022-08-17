@@ -98,7 +98,7 @@ impl Component for FilesTab {
 
 	fn event(
 		&mut self,
-		ev: crossterm::event::Event,
+		ev: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if self.visible {
 			return self.files.event(ev);

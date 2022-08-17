@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	string_utils::tabs_to_spaces,
 	strings, try_or_popup,
@@ -723,35 +723,43 @@ impl Component for DiffComponent {
 	}
 
 	#[allow(clippy::cognitive_complexity)]
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.keys.move_down {
+				return if key_match(e, self.key_config.keys.move_down)
+				{
 					self.move_selection(ScrollType::Down);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.shift_down {
+				} else if key_match(
+					e,
+					self.key_config.keys.shift_down,
+				) {
 					self.modify_selection(Direction::Down);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.shift_up {
+				} else if key_match(e, self.key_config.keys.shift_up)
+				{
 					self.modify_selection(Direction::Up);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.end {
+				} else if key_match(e, self.key_config.keys.end) {
 					self.move_selection(ScrollType::End);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.home {
+				} else if key_match(e, self.key_config.keys.home) {
 					self.move_selection(ScrollType::Home);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.move_up {
+				} else if key_match(e, self.key_config.keys.move_up) {
 					self.move_selection(ScrollType::Up);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.page_up {
+				} else if key_match(e, self.key_config.keys.page_up) {
 					self.move_selection(ScrollType::PageUp);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.page_down {
+				} else if key_match(e, self.key_config.keys.page_down)
+				{
 					self.move_selection(ScrollType::PageDown);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.stage_unstage_item
-					&& !self.is_immutable
+				} else if key_match(
+					e,
+					self.key_config.keys.stage_unstage_item,
+				) && !self.is_immutable
 				{
 					try_or_popup!(
 						self,
@@ -760,8 +768,10 @@ impl Component for DiffComponent {
 					);
 
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.status_reset_item
-					&& !self.is_immutable
+				} else if key_match(
+					e,
+					self.key_config.keys.status_reset_item,
+				) && !self.is_immutable
 					&& !self.is_stage()
 				{
 					if let Some(diff) = &self.diff {
@@ -772,13 +782,17 @@ impl Component for DiffComponent {
 						}
 					}
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.diff_stage_lines
-					&& !self.is_immutable
+				} else if key_match(
+					e,
+					self.key_config.keys.diff_stage_lines,
+				) && !self.is_immutable
 				{
 					self.stage_lines();
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.diff_reset_lines
-					&& !self.is_immutable
+				} else if key_match(
+					e,
+					self.key_config.keys.diff_reset_lines,
+				) && !self.is_immutable
 					&& !self.is_stage()
 				{
 					if let Some(diff) = &self.diff {
@@ -788,7 +802,7 @@ impl Component for DiffComponent {
 						}
 					}
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.copy {
+				} else if key_match(e, self.key_config.keys.copy) {
 					self.copy_selection();
 					Ok(EventState::Consumed)
 				} else {
