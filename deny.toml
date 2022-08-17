@@ -1,0 +1,6 @@
+# This section is considered when running `cargo deny check bans`.
+# More documentation about the 'bans' section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html
+[bans]
+# Lint level for when multiple versions of the same crate are detected
+multiple-versions = "deny"

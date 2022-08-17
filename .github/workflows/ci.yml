@@ -135,6 +135,22 @@ jobs:
         cargo install cargo-sort --force
         cargo sort -c -w
 
+  deny:
+    name: Cargo-Deny
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt
+    - run: cargo install --locked cargo-deny
+
+    - name: cargo-deny bans
+      run: |
+        cargo deny check bans
+
   sec:
     name: Security audit
     runs-on: ubuntu-latest
