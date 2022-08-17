@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * use `GIT_DIR` and `GIT_WORK_DIR` from environment if set ([#1191](https://github.com/extrawurst/gitui/pull/1191))
 * new [FAQ](./FAQ.md)s page
 * mention macports in install section [[@fs111](https://github.com/fs111)]([#1237](https://github.com/extrawurst/gitui/pull/1237))
-* support copy to clipboard on wayland ([#397](https://github.com/extrawurst/gitui/issues/397))
+* support copy to clipboard on wayland [[@JayceFayne](https://github.com/JayceFayne)] ([#397](https://github.com/extrawurst/gitui/issues/397))
 
 ### Fixed
 * opening tags list without remotes ([#1111](https://github.com/extrawurst/gitui/issues/1111))
