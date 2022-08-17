@@ -39,7 +39,7 @@ itertools = "0.10"
 lazy_static = "1.4"
 log = "0.4"
 rayon-core = "1.9"
-ron = "0.7"
+ron = "0.8"
 scopeguard = "1.1"
 scopetime = { path = "./scopetime", version = "0.1" }
 serde = "1.0"
