@@ -34,7 +34,7 @@ pub struct CommitList {
 	branch: Option<String>,
 	count_total: usize,
 	items: ItemBatch,
-	marked: Vec<CommitId>,
+	marked: Vec<(usize, CommitId)>,
 	scroll_state: (Instant, f32),
 	tags: Option<Tags>,
 	current_size: Cell<(u16, u16)>,
@@ -134,7 +134,7 @@ impl CommitList {
 	}
 
 	///
-	pub fn marked(&self) -> &[CommitId] {
+	pub fn marked(&self) -> &[(usize, CommitId)] {
 		&self.marked
 	}
 
@@ -143,11 +143,75 @@ impl CommitList {
 		self.marked.clear();
 	}
 
+	///
+	pub fn marked_indexes(&self) -> Vec<usize> {
+		let (indexes, _): (Vec<usize>, Vec<_>) =
+			self.marked.iter().copied().unzip();
+
+		indexes
+	}
+
+	///
+	pub fn marked_commits(&self) -> Vec<CommitId> {
+		let (_, commits): (Vec<_>, Vec<CommitId>) =
+			self.marked.iter().copied().unzip();
+
+		commits
+	}
+
+	fn marked_consecutive(&self) -> bool {
+		let mut marked = self.marked_indexes();
+		marked.sort_unstable();
+
+		for i in 1..marked.len() {
+			if marked[i - 1] + 1 != marked[i] {
+				return false;
+			}
+		}
+
+		true
+	}
+
 	pub fn copy_entry_hash(&self) -> Result<()> {
-		if let Some(e) = self.items.iter().nth(
-			self.selection.saturating_sub(self.items.index_offset()),
-		) {
-			crate::clipboard::copy_string(&e.hash_short)?;
+		if self.marked_count() > 1 {
+			if self.marked_consecutive() {
+				let mut sorted = self.marked_indexes();
+				sorted.sort_unstable();
+
+				let yank = format!(
+					"{}^..{}",
+					self.marked()[sorted[0]].1.to_string(),
+					self.marked()[sorted.len() - 1].1.to_string()
+				);
+
+				crate::clipboard::copy_string(&yank)?;
+			} else {
+				let separate = self
+					.marked_commits()
+					.iter()
+					.map(std::string::ToString::to_string)
+					.join(" ");
+
+				crate::clipboard::copy_string(&separate)?;
+			}
+		} else {
+			match self.marked_count() {
+				0 => {
+					if let Some(e) = self.items.iter().nth(
+						self.selection.saturating_sub(
+							self.items.index_offset(),
+						),
+					) {
+						crate::clipboard::copy_string(&e.hash_short)?;
+					}
+				}
+				1 => {
+					crate::clipboard::copy_string(
+						&self.marked()[0].1.to_string(),
+					)?;
+				}
+				_ => {}
+			}
 		}
 		Ok(())
 	}
@@ -191,10 +255,13 @@ impl CommitList {
 	fn mark(&mut self) {
 		if let Some(e) = self.selected_entry() {
 			let id = e.id;
+			let selected = self
+				.selection
+				.saturating_sub(self.items.index_offset());
 			if self.is_marked(&id).unwrap_or_default() {
-				self.marked.retain(|marked| marked != &id);
+				self.marked.retain(|marked| marked.1 != id);
 			} else {
-				self.marked.push(id);
+				self.marked.push((selected, id));
 			}
 		}
 	}
@@ -227,7 +294,8 @@ impl CommitList {
 		if self.marked.is_empty() {
 			None
 		} else {
-			let found = self.marked.iter().any(|entry| entry == id);
+			let found =
+				self.marked.iter().any(|entry| entry.1 == *id);
 			Some(found)
 		}
 	}
