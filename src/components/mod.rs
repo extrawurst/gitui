@@ -245,9 +245,6 @@ impl From<bool> for EventState {
 /// base component trait
 pub trait Component {
 	///
-	//TODO: remove once workaround for clippy bug:
-	//<https://github.com/rust-lang/rust-clippy/issues/8366>
-	#[allow(clippy::ptr_arg)]
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
