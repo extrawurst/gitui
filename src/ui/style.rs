@@ -1,6 +1,3 @@
-//TODO: remove once fixed https://github.com/rust-lang/rust-clippy/issues/6818
-#![allow(clippy::use_self)]
-
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
 use ron::{
