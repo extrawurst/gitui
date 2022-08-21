@@ -318,10 +318,9 @@ impl InspectCommitComponent {
 
 	fn update(&mut self) -> Result<()> {
 		if let Some(request) = &self.open_request {
-			//TODO: pass as reference and only clone if details changed
 			self.details.set_commits(
 				Some(request.commit_id.into()),
-				request.tags.clone(),
+				&request.tags,
 			)?;
 			self.update_diff()?;
 		}
