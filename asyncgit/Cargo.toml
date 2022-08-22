@@ -13,7 +13,7 @@ keywords = ["git"]
 
 [dependencies]
 crossbeam-channel = "0.5"
-easy-cast = "0.4"
+easy-cast = "0.5"
 git2 = "0.15"
 log = "0.4"
 # git2 = { path = "../../extern/git2-rs", features = ["vendored-openssl"]}

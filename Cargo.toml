@@ -31,7 +31,7 @@ clap = { version = "3.2", features = [ "env", "cargo" ] }
 crossbeam-channel = "0.5"
 crossterm = { version = "0.25", features = [ "serde" ] }
 dirs-next = "2.0"
-easy-cast = "0.4"
+easy-cast = "0.5"
 filetreelist = { path = "./filetreelist", version = "0.5" }
 fuzzy-matcher = "0.3"
 gh-emoji = { version = "1.0", optional = true }
