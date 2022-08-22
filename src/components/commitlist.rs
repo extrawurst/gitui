@@ -34,7 +34,8 @@ pub struct CommitList {
 	branch: Option<String>,
 	count_total: usize,
 	items: ItemBatch,
-	marked: Vec<(usize, CommitId)>,
+	marked: Vec<CommitId>,
+	marked_indexes: Vec<usize>,
 	scroll_state: (Instant, f32),
 	tags: Option<Tags>,
 	current_size: Cell<(u16, u16)>,
@@ -53,6 +54,7 @@ impl CommitList {
 		Self {
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
+			marked_indexes: Vec::new(),
 			selection: 0,
 			branch: None,
 			count_total: 0,
@@ -134,34 +136,23 @@ impl CommitList {
 	}
 
 	///
-	pub fn marked(&self) -> &[(usize, CommitId)] {
+	pub fn marked(&self) -> &[CommitId] {
 		&self.marked
 	}
 
 	///
 	pub fn clear_marked(&mut self) {
 		self.marked.clear();
+		self.marked_indexes.clear();
 	}
 
 	///
-	pub fn marked_indexes(&self) -> Vec<usize> {
-		let (indexes, _): (Vec<usize>, Vec<_>) =
-			self.marked.iter().copied().unzip();
-
-		indexes
-	}
-
-	///
-	pub fn marked_commits(&self) -> Vec<CommitId> {
-		let (_, commits): (Vec<_>, Vec<CommitId>) =
-			self.marked.iter().copied().unzip();
-
-		commits
+	pub fn marked_indexes(&self) -> &Vec<usize> {
+		&self.marked_indexes
 	}
 
 	fn marked_consecutive(&self) -> bool {
-		let mut marked = self.marked_indexes();
-		marked.sort_unstable();
+		let marked = self.marked_indexes();
 
 		for i in 1..marked.len() {
 			if marked[i - 1] + 1 != marked[i] {
@@ -172,46 +163,58 @@ impl CommitList {
 		true
 	}
 
-	pub fn copy_entry_hash(&self) -> Result<()> {
-		if self.marked_count() > 1 {
-			if self.marked_consecutive() {
-				let mut sorted = self.marked_indexes();
-				sorted.sort_unstable();
+	pub fn copy_marked_hashes(&self) -> Result<()> {
+		if self.marked_consecutive() {
+			let m = self.marked_indexes();
 
-				let yank = format!(
-					"{}^..{}",
-					self.marked()[sorted[0]].1.to_string(),
-					self.marked()[sorted.len() - 1].1.to_string()
-				);
+			let first = self.items.iter().nth(m[0]);
 
+			let last = self.items.iter().nth(m[m.len() - 1]);
+
+			if let (Some(f), Some(l)) = (first, last) {
+				let yank =
+					format!("{}^..{}", f.hash_short, l.hash_short);
 				crate::clipboard::copy_string(&yank)?;
-			} else {
-				let separate = self
-					.marked_commits()
-					.iter()
-					.map(std::string::ToString::to_string)
-					.join(" ");
-
-				crate::clipboard::copy_string(&separate)?;
-			}
+			};
 		} else {
-			match self.marked_count() {
-				0 => {
-					if let Some(e) = self.items.iter().nth(
-						self.selection.saturating_sub(
-							self.items.index_offset(),
-						),
-					) {
-						crate::clipboard::copy_string(&e.hash_short)?;
+			let separate = self
+				.marked_indexes()
+				.iter()
+				.map(|e| {
+					let nth = self.items.iter().nth(*e);
+
+					if let Some(get) = nth {
+						get.hash_short.to_string()
+					} else {
+						String::from("")
 					}
+				})
+				.join(" ");
+
+			crate::clipboard::copy_string(&separate)?;
+		}
+
+		Ok(())
+	}
+
+	pub fn copy_entry_hash(&self) -> Result<()> {
+		match self.marked_count() {
+			0 => {
+				if let Some(e) = self.items.iter().nth(
+					self.selection
+						.saturating_sub(self.items.index_offset()),
+				) {
+					crate::clipboard::copy_string(&e.hash_short)?;
 				}
-				1 => {
-					crate::clipboard::copy_string(
-						&self.marked()[0].1.to_string(),
-					)?;
-				}
-				_ => {}
 			}
+			1 => {
+				if let Some(e) =
+					self.items.iter().nth(self.marked_indexes()[0])
+				{
+					crate::clipboard::copy_string(&e.hash_short)?;
+				}
+			}
+			_ => {}
 		}
 		Ok(())
 	}
@@ -259,9 +262,14 @@ impl CommitList {
 				.selection
 				.saturating_sub(self.items.index_offset());
 			if self.is_marked(&id).unwrap_or_default() {
-				self.marked.retain(|marked| marked.1 != id);
+				self.marked.retain(|marked| marked != &id);
+
+				self.marked_indexes.retain(|m| m != &selected);
 			} else {
-				self.marked.push((selected, id));
+				self.marked.push(id);
+
+				self.marked_indexes.push(selected);
+				self.marked_indexes.sort_unstable();
 			}
 		}
 	}
@@ -294,8 +302,7 @@ impl CommitList {
 		if self.marked.is_empty() {
 			None
 		} else {
-			let found =
-				self.marked.iter().any(|entry| entry.1 == *id);
+			let found = self.marked.iter().any(|entry| entry == id);
 			Some(found)
 		}
 	}

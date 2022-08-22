@@ -77,11 +77,8 @@ impl StashList {
 
 	fn drop_stash(&mut self) {
 		if self.list.marked_count() > 0 {
-			let (_, commits): (Vec<_>, Vec<CommitId>) =
-				self.list.marked().to_vec().iter().copied().unzip();
-
 			self.queue.push(InternalEvent::ConfirmAction(
-				Action::StashDrop(commits),
+				Action::StashDrop(self.list.marked().to_vec()),
 			));
 		} else if let Some(e) = self.list.selected_entry() {
 			self.queue.push(InternalEvent::ConfirmAction(
