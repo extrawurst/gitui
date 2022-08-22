@@ -147,7 +147,7 @@ impl CommitList {
 	}
 
 	///
-	pub fn marked_indexes(&self) -> &Vec<usize> {
+	pub const fn marked_indexes(&self) -> &Vec<usize> {
 		&self.marked_indexes
 	}
 
@@ -181,13 +181,10 @@ impl CommitList {
 				.marked_indexes()
 				.iter()
 				.map(|e| {
-					let nth = self.items.iter().nth(*e);
-
-					if let Some(get) = nth {
-						get.hash_short.to_string()
-					} else {
-						String::from("")
-					}
+					self.items.iter().nth(*e).map_or_else(
+						|| String::from(""),
+						|le| le.hash_short.to_string(),
+					)
 				})
 				.join(" ");
 
