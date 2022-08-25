@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use git2::SubmoduleUpdateOptions;
+use scopetime::scope_time;
 
 use super::{repo, CommitId, RepoPath};
 use crate::error::Result;
@@ -21,6 +22,8 @@ pub struct SubmoduleInfo {
 pub fn get_submodules(
 	repo_path: &RepoPath,
 ) -> Result<Vec<SubmoduleInfo>> {
+	scope_time!("get_submodules");
+
 	let repo = repo(repo_path)?;
 
 	let res = repo
