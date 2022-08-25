@@ -14,11 +14,9 @@ use crate::{
 	ui::{self, Size},
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{get_submodules, RepoPathRef, SubmoduleInfo},
-	AsyncGitNotification,
-};
+use asyncgit::sync::{get_submodules, RepoPathRef, SubmoduleInfo};
 use crossterm::event::Event;
+use unicode_truncate::UnicodeTruncateStr;
 use std::{cell::Cell, convert::TryInto};
 use tui::{
 	backend::Backend,
@@ -30,7 +28,6 @@ use tui::{
 	Frame,
 };
 use ui::style::SharedTheme;
-use unicode_truncate::UnicodeTruncateStr;
 
 ///
 pub struct SubmodulesListComponent {
@@ -216,20 +213,6 @@ impl SubmodulesListComponent {
 
 			self.set_selection(self.selection)?;
 		}
-		Ok(())
-	}
-
-	///
-	//TODO: cleanup clippy ignores?
-	#[allow(clippy::unused_self, clippy::unnecessary_wraps)]
-	pub fn update_git(
-		&mut self,
-		_ev: AsyncGitNotification,
-	) -> Result<()> {
-		// if self.is_visible() && ev == AsyncGitNotification::Push {
-		// 	self.update_submodules()?;
-		// }
-
 		Ok(())
 	}
 
