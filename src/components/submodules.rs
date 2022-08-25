@@ -2,12 +2,10 @@
 #![allow(dead_code)]
 
 use super::{
-	utils::scroll_vertical::VerticalScroll, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState,
 };
 use crate::{
-	components::ScrollType,
 	keys::{key_match, SharedKeyConfig},
 	queue::Queue,
 	strings,
@@ -16,26 +14,22 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::{get_submodules, RepoPathRef, SubmoduleInfo};
 use crossterm::event::Event;
-use unicode_truncate::UnicodeTruncateStr;
 use std::{cell::Cell, convert::TryInto};
 use tui::{
 	backend::Backend,
-	layout::{
-		Alignment, Constraint, Direction, Layout, Margin, Rect,
-	},
+	layout::{Alignment, Margin, Rect},
 	text::{Span, Spans, Text},
 	widgets::{Block, BorderType, Borders, Clear, Paragraph},
 	Frame,
 };
 use ui::style::SharedTheme;
+use unicode_truncate::UnicodeTruncateStr;
 
 ///
 pub struct SubmodulesListComponent {
 	repo: RepoPathRef,
 	submodules: Vec<SubmoduleInfo>,
 	visible: bool,
-	selection: u16,
-	scroll: VerticalScroll,
 	current_height: Cell<u16>,
 	queue: Queue,
 	theme: SharedTheme,
@@ -76,15 +70,15 @@ impl DrawableComponent for SubmodulesListComponent {
 				horizontal: 1,
 			});
 
-			let chunks = Layout::default()
-				.direction(Direction::Vertical)
-				.constraints(
-					[Constraint::Length(2), Constraint::Min(1)]
-						.as_ref(),
-				)
-				.split(area);
+			// let chunks = Layout::default()
+			// 	.direction(Direction::Vertical)
+			// 	.constraints(
+			// 		[Constraint::Length(2), Constraint::Min(1)]
+			// 			.as_ref(),
+			// 	)
+			// 	.split(area);
 
-			self.draw_list(f, chunks[1])?;
+			self.draw_list(f, area)?;
 		}
 
 		Ok(())
@@ -127,30 +121,30 @@ impl Component for SubmodulesListComponent {
 		if let Event::Key(e) = ev {
 			if key_match(e, self.key_config.keys.exit_popup) {
 				self.hide();
-			} else if key_match(e, self.key_config.keys.move_down) {
-				return self
-					.move_selection(ScrollType::Up)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.move_up) {
-				return self
-					.move_selection(ScrollType::Down)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.page_down) {
-				return self
-					.move_selection(ScrollType::PageDown)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.page_up) {
-				return self
-					.move_selection(ScrollType::PageUp)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.home) {
-				return self
-					.move_selection(ScrollType::Home)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.end) {
-				return self
-					.move_selection(ScrollType::End)
-					.map(Into::into);
+			// } else if key_match(e, self.key_config.keys.move_down) {
+			// 	return self
+			// 		.move_selection(ScrollType::Up)
+			// 		.map(Into::into);
+			// } else if key_match(e, self.key_config.keys.move_up) {
+			// 	return self
+			// 		.move_selection(ScrollType::Down)
+			// 		.map(Into::into);
+			// } else if key_match(e, self.key_config.keys.page_down) {
+			// 	return self
+			// 		.move_selection(ScrollType::PageDown)
+			// 		.map(Into::into);
+			// } else if key_match(e, self.key_config.keys.page_up) {
+			// 	return self
+			// 		.move_selection(ScrollType::PageUp)
+			// 		.map(Into::into);
+			// } else if key_match(e, self.key_config.keys.home) {
+			// 	return self
+			// 		.move_selection(ScrollType::Home)
+			// 		.map(Into::into);
+			// } else if key_match(e, self.key_config.keys.end) {
+			// 	return self
+			// 		.move_selection(ScrollType::End)
+			// 		.map(Into::into);
 			} else if key_match(
 				e,
 				self.key_config.keys.cmd_bar_toggle,
@@ -188,8 +182,6 @@ impl SubmodulesListComponent {
 		Self {
 			submodules: Vec::new(),
 			visible: false,
-			selection: 0,
-			scroll: VerticalScroll::new(),
 			queue,
 			theme,
 			key_config,
@@ -206,53 +198,18 @@ impl SubmodulesListComponent {
 		Ok(())
 	}
 
-	/// fetch list of branches
+	///
 	pub fn update_submodules(&mut self) -> Result<()> {
 		if self.is_visible() {
 			self.submodules = get_submodules(&self.repo.borrow())?;
 
-			self.set_selection(self.selection)?;
+			// self.set_selection(self.selection)?;
 		}
 		Ok(())
 	}
 
 	fn valid_selection(&self) -> bool {
 		!self.submodules.is_empty()
-	}
-
-	///
-	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
-		let new_selection = match scroll {
-			ScrollType::Up => self.selection.saturating_add(1),
-			ScrollType::Down => self.selection.saturating_sub(1),
-			ScrollType::PageDown => self
-				.selection
-				.saturating_add(self.current_height.get()),
-			ScrollType::PageUp => self
-				.selection
-				.saturating_sub(self.current_height.get()),
-			ScrollType::Home => 0,
-			ScrollType::End => {
-				let num_branches: u16 =
-					self.submodules.len().try_into()?;
-				num_branches.saturating_sub(1)
-			}
-		};
-
-		self.set_selection(new_selection)?;
-
-		Ok(true)
-	}
-
-	fn set_selection(&mut self, selection: u16) -> Result<()> {
-		let num: u16 = self.submodules.len().try_into()?;
-		let num = num.saturating_sub(1);
-
-		let selection = if selection > num { num } else { selection };
-
-		self.selection = selection;
-
-		Ok(())
 	}
 
 	fn get_text(
@@ -284,7 +241,7 @@ impl SubmodulesListComponent {
 		for (i, displaybranch) in self
 			.submodules
 			.iter()
-			.skip(self.scroll.get_top())
+			// .skip(self.scroll.get_top())
 			.take(height)
 			.enumerate()
 		{
@@ -306,9 +263,10 @@ impl SubmodulesListComponent {
 				module_path += THREE_DOTS;
 			}
 
-			let selected = (self.selection as usize
-				- self.scroll.get_top())
-				== i;
+			// let selected = (self.selection as usize
+			// 	- self.scroll.get_top())
+			// 	== i;
+			let selected = false;
 
 			let span_hash = Span::styled(
 				format!(
@@ -344,11 +302,11 @@ impl SubmodulesListComponent {
 		let height_in_lines = r.height as usize;
 		self.current_height.set(height_in_lines.try_into()?);
 
-		self.scroll.update(
-			self.selection as usize,
-			self.submodules.len(),
-			height_in_lines,
-		);
+		// self.scroll.update(
+		// 	self.selection as usize,
+		// 	self.submodules.len(),
+		// 	height_in_lines,
+		// );
 
 		f.render_widget(
 			Paragraph::new(self.get_text(
@@ -365,7 +323,7 @@ impl SubmodulesListComponent {
 		r.height += 2;
 		r.y = r.y.saturating_sub(1);
 
-		self.scroll.draw(f, r, &self.theme);
+		// self.scroll.draw(f, r, &self.theme);
 
 		Ok(())
 	}
