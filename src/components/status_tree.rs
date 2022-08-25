@@ -264,8 +264,6 @@ impl StatusTreeComponent {
 				should_skip_over += 1;
 
 				// don't fold files up
-				//TODO: remove once fixed (https://github.com/rust-lang/rust-clippy/issues/7383)
-				#[allow(clippy::if_same_then_else)]
 				if let FileTreeItemKind::File(_) =
 					&tree_items[idx_temp].kind
 				{
