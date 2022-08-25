@@ -220,6 +220,8 @@ impl SubmodulesListComponent {
 	}
 
 	///
+	//TODO: cleanup clippy ignores?
+	#[allow(clippy::unused_self, clippy::unnecessary_wraps)]
 	pub fn update_git(
 		&mut self,
 		_ev: AsyncGitNotification,
