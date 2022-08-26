@@ -2,8 +2,9 @@
 #![allow(dead_code)]
 
 use super::{
-	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState,
+	utils::scroll_vertical::VerticalScroll, visibility_blocking,
+	CommandBlocking, CommandInfo, Component, DrawableComponent,
+	EventState, ScrollType,
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
@@ -31,6 +32,8 @@ pub struct SubmodulesListComponent {
 	submodules: Vec<SubmoduleInfo>,
 	visible: bool,
 	current_height: Cell<u16>,
+	selection: u16,
+	scroll: VerticalScroll,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -43,8 +46,8 @@ impl DrawableComponent for SubmodulesListComponent {
 		rect: Rect,
 	) -> Result<()> {
 		if self.is_visible() {
-			const PERCENT_SIZE: Size = Size::new(70, 50);
-			const MIN_SIZE: Size = Size::new(70, 30);
+			const PERCENT_SIZE: Size = Size::new(80, 80);
+			const MIN_SIZE: Size = Size::new(60, 30);
 
 			let area = ui::centered_rect(
 				PERCENT_SIZE.width,
@@ -120,30 +123,30 @@ impl Component for SubmodulesListComponent {
 		if let Event::Key(e) = ev {
 			if key_match(e, self.key_config.keys.exit_popup) {
 				self.hide();
-			// } else if key_match(e, self.key_config.keys.move_down) {
-			// 	return self
-			// 		.move_selection(ScrollType::Up)
-			// 		.map(Into::into);
-			// } else if key_match(e, self.key_config.keys.move_up) {
-			// 	return self
-			// 		.move_selection(ScrollType::Down)
-			// 		.map(Into::into);
-			// } else if key_match(e, self.key_config.keys.page_down) {
-			// 	return self
-			// 		.move_selection(ScrollType::PageDown)
-			// 		.map(Into::into);
-			// } else if key_match(e, self.key_config.keys.page_up) {
-			// 	return self
-			// 		.move_selection(ScrollType::PageUp)
-			// 		.map(Into::into);
-			// } else if key_match(e, self.key_config.keys.home) {
-			// 	return self
-			// 		.move_selection(ScrollType::Home)
-			// 		.map(Into::into);
-			// } else if key_match(e, self.key_config.keys.end) {
-			// 	return self
-			// 		.move_selection(ScrollType::End)
-			// 		.map(Into::into);
+			} else if key_match(e, self.key_config.keys.move_down) {
+				return self
+					.move_selection(ScrollType::Up)
+					.map(Into::into);
+			} else if key_match(e, self.key_config.keys.move_up) {
+				return self
+					.move_selection(ScrollType::Down)
+					.map(Into::into);
+			} else if key_match(e, self.key_config.keys.page_down) {
+				return self
+					.move_selection(ScrollType::PageDown)
+					.map(Into::into);
+			} else if key_match(e, self.key_config.keys.page_up) {
+				return self
+					.move_selection(ScrollType::PageUp)
+					.map(Into::into);
+			} else if key_match(e, self.key_config.keys.home) {
+				return self
+					.move_selection(ScrollType::Home)
+					.map(Into::into);
+			} else if key_match(e, self.key_config.keys.end) {
+				return self
+					.move_selection(ScrollType::End)
+					.map(Into::into);
 			} else if key_match(
 				e,
 				self.key_config.keys.cmd_bar_toggle,
@@ -180,6 +183,8 @@ impl SubmodulesListComponent {
 	) -> Self {
 		Self {
 			submodules: Vec::new(),
+			scroll: VerticalScroll::new(),
+			selection: 0,
 			visible: false,
 			queue: queue.clone(),
 			theme,
@@ -202,7 +207,7 @@ impl SubmodulesListComponent {
 		if self.is_visible() {
 			self.submodules = get_submodules(&self.repo.borrow())?;
 
-			// self.set_selection(self.selection)?;
+			self.set_selection(self.selection)?;
 		}
 		Ok(())
 	}
@@ -211,62 +216,83 @@ impl SubmodulesListComponent {
 		!self.submodules.is_empty()
 	}
 
+	//TODO: dedup this almost identical with BranchListComponent
+	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
+		let new_selection = match scroll {
+			ScrollType::Up => self.selection.saturating_add(1),
+			ScrollType::Down => self.selection.saturating_sub(1),
+			ScrollType::PageDown => self
+				.selection
+				.saturating_add(self.current_height.get()),
+			ScrollType::PageUp => self
+				.selection
+				.saturating_sub(self.current_height.get()),
+			ScrollType::Home => 0,
+			ScrollType::End => {
+				let count: u16 = self.submodules.len().try_into()?;
+				count.saturating_sub(1)
+			}
+		};
+
+		self.set_selection(new_selection)?;
+
+		Ok(true)
+	}
+
+	fn set_selection(&mut self, selection: u16) -> Result<()> {
+		let num_branches: u16 = self.submodules.len().try_into()?;
+		let num_branches = num_branches.saturating_sub(1);
+
+		let selection = if selection > num_branches {
+			num_branches
+		} else {
+			selection
+		};
+
+		self.selection = selection;
+
+		Ok(())
+	}
+
 	fn get_text(
 		&self,
 		theme: &SharedTheme,
 		width_available: u16,
 		height: usize,
 	) -> Text {
-		const UPSTREAM_SYMBOL: char = '\u{2191}';
-		const TRACKING_SYMBOL: char = '\u{2193}';
-		const HEAD_SYMBOL: char = '*';
-		const EMPTY_SYMBOL: char = ' ';
 		const THREE_DOTS: &str = "...";
-		const COMMIT_HASH_LENGTH: usize = 8;
-		const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
 		const THREE_DOTS_LENGTH: usize = THREE_DOTS.len(); // "..."
+		const COMMIT_HASH_LENGTH: usize = 8;
 
-		let branch_name_length: usize =
-			width_available as usize * 40 / 100;
-		// commit message takes up the remaining width
-		let _commit_message_length: usize = (width_available
-			as usize)
+		let mut txt = Vec::with_capacity(3);
+
+		let name_length: usize = (width_available as usize)
 			.saturating_sub(COMMIT_HASH_LENGTH)
-			.saturating_sub(branch_name_length)
-			.saturating_sub(IS_HEAD_STAR_LENGTH)
 			.saturating_sub(THREE_DOTS_LENGTH);
-		let mut txt = Vec::new();
 
-		for (_i, submodule) in self
+		for (i, submodule) in self
 			.submodules
 			.iter()
-			// .skip(self.scroll.get_top())
+			.skip(self.scroll.get_top())
 			.take(height)
 			.enumerate()
 		{
-			// submodule.url
 			let mut module_path = submodule
 				.path
 				.as_os_str()
 				.to_string_lossy()
 				.to_string();
-			if module_path.len()
-				> branch_name_length.saturating_sub(THREE_DOTS_LENGTH)
-			{
-				module_path = module_path
-					.unicode_truncate(
-						branch_name_length
-							.saturating_sub(THREE_DOTS_LENGTH),
-					)
-					.0
-					.to_string();
+
+			if module_path.len() > name_length {
+				module_path.unicode_truncate(
+					name_length.saturating_sub(THREE_DOTS_LENGTH),
+				);
 				module_path += THREE_DOTS;
 			}
 
-			// let selected = (self.selection as usize
-			// 	- self.scroll.get_top())
-			// 	== i;
-			let selected = false;
+			let selected = (self.selection as usize
+				- self.scroll.get_top())
+				== i;
 
 			let span_hash = Span::styled(
 				format!(
@@ -280,11 +306,7 @@ impl SubmodulesListComponent {
 			);
 
 			let span_name = Span::styled(
-				format!(
-					"{:w$} ",
-					module_path,
-					w = branch_name_length
-				),
+				format!("{:w$} ", module_path, w = name_length),
 				theme.branch(selected, true),
 			);
 
@@ -302,11 +324,11 @@ impl SubmodulesListComponent {
 		let height_in_lines = r.height as usize;
 		self.current_height.set(height_in_lines.try_into()?);
 
-		// self.scroll.update(
-		// 	self.selection as usize,
-		// 	self.submodules.len(),
-		// 	height_in_lines,
-		// );
+		self.scroll.update(
+			self.selection as usize,
+			self.submodules.len(),
+			height_in_lines,
+		);
 
 		f.render_widget(
 			Paragraph::new(self.get_text(
@@ -323,7 +345,7 @@ impl SubmodulesListComponent {
 		r.height += 2;
 		r.y = r.y.saturating_sub(1);
 
-		// self.scroll.draw(f, r, &self.theme);
+		self.scroll.draw(f, r, &self.theme);
 
 		Ok(())
 	}

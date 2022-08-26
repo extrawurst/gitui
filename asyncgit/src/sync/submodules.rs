@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
-use git2::{SubmoduleStatus, SubmoduleUpdateOptions};
-use log::debug;
+use git2::SubmoduleUpdateOptions;
 use scopetime::scope_time;
 
 use super::{repo, CommitId, RepoPath};
 use crate::error::Result;
+
+pub use git2::SubmoduleStatus;
 
 ///
 pub struct SubmoduleInfo {
@@ -17,6 +18,8 @@ pub struct SubmoduleInfo {
 	pub id: Option<CommitId>,
 	///
 	pub head_id: Option<CommitId>,
+	///
+	pub status: SubmoduleStatus,
 }
 
 ///
@@ -25,9 +28,9 @@ pub fn get_submodules(
 ) -> Result<Vec<SubmoduleInfo>> {
 	scope_time!("get_submodules");
 
-	let (repo, repo2) = (repo(repo_path)?, repo(repo_path)?);
+	let (r, repo2) = (repo(repo_path)?, repo(repo_path)?);
 
-	let res = repo
+	let res = r
 		.submodules()?
 		.iter()
 		.map(|s| {
@@ -37,12 +40,13 @@ pub fn get_submodules(
 					git2::SubmoduleIgnore::None,
 				)
 				.unwrap_or(SubmoduleStatus::empty());
-			debug!("status: {:?}", status);
+
 			SubmoduleInfo {
 				path: s.path().to_path_buf(),
 				id: s.workdir_id().map(CommitId::from),
 				head_id: s.head_id().map(CommitId::from),
 				url: s.url().map(String::from),
+				status,
 			}
 		})
 		.collect();
