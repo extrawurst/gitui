@@ -650,26 +650,6 @@ impl Status {
 		);
 	}
 
-	fn view_submodules(&self) {
-		try_or_popup!(
-			self,
-			"view submodules",
-			Self::submodules(&self.repo.borrow(), &self.queue)
-		);
-	}
-
-	fn submodules(repo: &RepoPath, q: &Queue) -> Result<()> {
-		let s = sync::get_submodules(repo)?;
-
-		q.push(InternalEvent::ShowInfoMsg(
-			s.iter()
-				.map(|s| s.path.as_os_str().to_string_lossy())
-				.join(","),
-		));
-
-		Ok(())
-	}
-
 	fn commands_nav(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -960,8 +940,7 @@ impl Component for Status {
 					k,
 					self.key_config.keys.view_submodules,
 				) {
-					self.view_submodules();
-
+					self.queue.push(InternalEvent::ViewSubmodules);
 					Ok(EventState::Consumed)
 				} else {
 					Ok(EventState::NotConsumed)

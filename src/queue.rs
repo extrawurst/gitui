@@ -122,6 +122,8 @@ pub enum InternalEvent {
 	PopupStackPop,
 	///
 	PopupStackPush(StackablePopupOpen),
+	///
+	ViewSubmodules,
 }
 
 /// single threaded simple queue for components to communicate with each other

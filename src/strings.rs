@@ -23,6 +23,8 @@ pub static PUSH_TAGS_STATES_FETCHING: &str = "fetching";
 pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
 pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
+pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
+
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓

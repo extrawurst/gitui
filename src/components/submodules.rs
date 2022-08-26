@@ -43,23 +43,22 @@ impl DrawableComponent for SubmodulesListComponent {
 		rect: Rect,
 	) -> Result<()> {
 		if self.is_visible() {
-			const PERCENT_SIZE: Size = Size::new(80, 50);
-			const MIN_SIZE: Size = Size::new(60, 20);
+			const PERCENT_SIZE: Size = Size::new(70, 50);
+			const MIN_SIZE: Size = Size::new(70, 30);
 
 			let area = ui::centered_rect(
 				PERCENT_SIZE.width,
 				PERCENT_SIZE.height,
-				f.size(),
+				rect,
 			);
-			let area =
-				ui::rect_inside(MIN_SIZE, f.size().into(), area);
+			let area = ui::rect_inside(MIN_SIZE, rect.into(), area);
 			let area = area.intersection(rect);
 
 			f.render_widget(Clear, area);
 
 			f.render_widget(
 				Block::default()
-					.title(strings::title_branches())
+					.title(strings::POPUP_TITLE_SUBMODULES)
 					.border_type(BorderType::Thick)
 					.borders(Borders::ALL),
 				area,
@@ -175,14 +174,14 @@ impl Component for SubmodulesListComponent {
 impl SubmodulesListComponent {
 	pub fn new(
 		repo: RepoPathRef,
-		queue: Queue,
+		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
 			submodules: Vec::new(),
 			visible: false,
-			queue,
+			queue: queue.clone(),
 			theme,
 			key_config,
 			current_height: Cell::new(0),
@@ -238,14 +237,15 @@ impl SubmodulesListComponent {
 			.saturating_sub(THREE_DOTS_LENGTH);
 		let mut txt = Vec::new();
 
-		for (i, displaybranch) in self
+		for (_i, submodule) in self
 			.submodules
 			.iter()
 			// .skip(self.scroll.get_top())
 			.take(height)
 			.enumerate()
 		{
-			let mut module_path = displaybranch
+			// submodule.url
+			let mut module_path = submodule
 				.path
 				.as_os_str()
 				.to_string_lossy()
@@ -271,7 +271,7 @@ impl SubmodulesListComponent {
 			let span_hash = Span::styled(
 				format!(
 					"{} ",
-					displaybranch
+					submodule
 						.head_id
 						.unwrap_or_default()
 						.get_short_string()
