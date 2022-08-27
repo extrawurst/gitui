@@ -86,7 +86,7 @@ impl DrawableComponent for SubmodulesListComponent {
 				.split(area);
 
 			self.draw_list(f, chunks[0])?;
-			self.draw_info(f, chunks[1])?;
+			self.draw_info(f, chunks[1]);
 		}
 
 		Ok(())
@@ -327,34 +327,32 @@ impl SubmodulesListComponent {
 	}
 
 	fn get_info_text(&self, theme: &SharedTheme) -> Text {
-		if let Some(submodule) = self.selected_entry() {
-			let span_title_commit =
-				Span::styled("Commit:", theme.text(false, false));
-			let span_commit = Span::styled(
-				format!(
-					"{}",
-					submodule.id.unwrap_or_default().to_string()
-				),
-				theme.commit_hash(false),
-			);
+		self.selected_entry().map_or_else(
+			Text::default,
+			|submodule| {
+				let span_title_commit =
+					Span::styled("Commit:", theme.text(false, false));
+				let span_commit = Span::styled(
+					submodule.id.unwrap_or_default().to_string(),
+					theme.commit_hash(false),
+				);
 
-			let span_title_status =
-				Span::styled("Status:", theme.text(false, false));
-			let span_status = Span::styled(
-				format!("{:?}", submodule.status),
-				theme.text(true, false),
-			);
+				let span_title_status =
+					Span::styled("Status:", theme.text(false, false));
+				let span_status = Span::styled(
+					format!("{:?}", submodule.status),
+					theme.text(true, false),
+				);
 
-			Text::from(vec![
-				Spans::from(vec![span_title_commit]),
-				Spans::from(vec![span_commit]),
-				Spans::from(vec![]),
-				Spans::from(vec![span_title_status]),
-				Spans::from(vec![span_status]),
-			])
-		} else {
-			Text::default()
-		}
+				Text::from(vec![
+					Spans::from(vec![span_title_commit]),
+					Spans::from(vec![span_commit]),
+					Spans::from(vec![]),
+					Spans::from(vec![span_title_status]),
+					Spans::from(vec![span_status]),
+				])
+			},
+		)
 	}
 
 	fn draw_list<B: Backend>(
@@ -391,17 +389,11 @@ impl SubmodulesListComponent {
 		Ok(())
 	}
 
-	fn draw_info<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		r: Rect,
-	) -> Result<()> {
+	fn draw_info<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
 		f.render_widget(
 			Paragraph::new(self.get_info_text(&self.theme))
 				.alignment(Alignment::Left),
 			r,
 		);
-
-		Ok(())
 	}
 }
