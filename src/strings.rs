@@ -702,6 +702,19 @@ pub mod commands {
 		)
 	}
 
+	pub fn view_submodules(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Submodules [{}]",
+				key_config.get_hint(key_config.keys.view_submodules),
+			),
+			"open submodule view",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
 	pub fn continue_rebase(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

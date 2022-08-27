@@ -1,6 +1,3 @@
-//TODO:
-#![allow(dead_code)]
-
 use super::{
 	utils::scroll_vertical::VerticalScroll, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
@@ -8,7 +5,6 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
-	queue::Queue,
 	strings,
 	ui::{self, Size},
 };
@@ -36,7 +32,6 @@ pub struct SubmodulesListComponent {
 	current_height: Cell<u16>,
 	selection: u16,
 	scroll: VerticalScroll,
-	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 }
@@ -112,8 +107,6 @@ impl Component for SubmodulesListComponent {
 				true,
 				true,
 			));
-
-			//TODO: update submodules
 		}
 		visibility_blocking(self)
 	}
@@ -180,7 +173,6 @@ impl Component for SubmodulesListComponent {
 impl SubmodulesListComponent {
 	pub fn new(
 		repo: RepoPathRef,
-		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
@@ -189,7 +181,6 @@ impl SubmodulesListComponent {
 			scroll: VerticalScroll::new(),
 			selection: 0,
 			visible: false,
-			queue: queue.clone(),
 			theme,
 			key_config,
 			current_height: Cell::new(0),
@@ -213,10 +204,6 @@ impl SubmodulesListComponent {
 			self.set_selection(self.selection)?;
 		}
 		Ok(())
-	}
-
-	fn valid_selection(&self) -> bool {
-		!self.submodules.is_empty()
 	}
 
 	fn selected_entry(&self) -> Option<&SubmoduleInfo> {

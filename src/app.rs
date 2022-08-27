@@ -235,7 +235,6 @@ impl App {
 			),
 			submodule_popup: SubmodulesListComponent::new(
 				repo.clone(),
-				&queue,
 				theme.clone(),
 				key_config.clone(),
 			),

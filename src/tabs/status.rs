@@ -781,6 +781,12 @@ impl Component for Status {
 				true,
 				self.pending_revert() || force_all,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::view_submodules(&self.key_config),
+				true,
+				true,
+			));
 		}
 
 		{
