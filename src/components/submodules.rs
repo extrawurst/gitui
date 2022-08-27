@@ -301,7 +301,7 @@ impl SubmodulesListComponent {
 
 			let span_name = Span::styled(
 				format!("{:w$} ", module_path, w = name_length),
-				theme.branch(selected, true),
+				theme.text(true, selected),
 			);
 
 			txt.push(Spans::from(vec![span_name, span_hash]));
@@ -318,7 +318,7 @@ impl SubmodulesListComponent {
 					Span::styled("Path:", theme.text(false, false));
 				let span_path = Span::styled(
 					submodule.path.to_string_lossy(),
-					theme.text(true, true),
+					theme.text(true, false),
 				);
 
 				let span_title_commit =
@@ -384,7 +384,6 @@ impl SubmodulesListComponent {
 		);
 
 		let mut r = r;
-		r.width += 1;
 		r.height += 2;
 		r.y = r.y.saturating_sub(1);
 
