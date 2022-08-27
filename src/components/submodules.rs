@@ -327,6 +327,13 @@ impl SubmodulesListComponent {
 		self.selected_entry().map_or_else(
 			Text::default,
 			|submodule| {
+				let span_title_path =
+					Span::styled("Path:", theme.text(false, false));
+				let span_path = Span::styled(
+					submodule.path.to_string_lossy(),
+					theme.text(true, true),
+				);
+
 				let span_title_commit =
 					Span::styled("Commit:", theme.text(false, false));
 				let span_commit = Span::styled(
@@ -349,6 +356,9 @@ impl SubmodulesListComponent {
 				);
 
 				Text::from(vec![
+					Spans::from(vec![span_title_path]),
+					Spans::from(vec![span_path]),
+					Spans::from(vec![]),
 					Spans::from(vec![span_title_commit]),
 					Spans::from(vec![span_commit]),
 					Spans::from(vec![]),
