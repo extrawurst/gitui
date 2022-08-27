@@ -77,11 +77,8 @@ impl DrawableComponent for SubmodulesListComponent {
 			let chunks = Layout::default()
 				.direction(Direction::Horizontal)
 				.constraints(
-					[
-						Constraint::Min(1),
-						Constraint::Length(area.width / 3),
-					]
-					.as_ref(),
+					[Constraint::Min(40), Constraint::Length(40)]
+						.as_ref(),
 				)
 				.split(area);
 
@@ -337,6 +334,13 @@ impl SubmodulesListComponent {
 					theme.commit_hash(false),
 				);
 
+				let span_title_url =
+					Span::styled("Url:", theme.text(false, false));
+				let span_url = Span::styled(
+					submodule.url.clone().unwrap_or_default(),
+					theme.text(true, false),
+				);
+
 				let span_title_status =
 					Span::styled("Status:", theme.text(false, false));
 				let span_status = Span::styled(
@@ -347,6 +351,9 @@ impl SubmodulesListComponent {
 				Text::from(vec![
 					Spans::from(vec![span_title_commit]),
 					Spans::from(vec![span_commit]),
+					Spans::from(vec![]),
+					Spans::from(vec![span_title_url]),
+					Spans::from(vec![span_url]),
 					Spans::from(vec![]),
 					Spans::from(vec![span_title_status]),
 					Spans::from(vec![span_status]),
