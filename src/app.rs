@@ -11,7 +11,8 @@ use crate::{
 		MsgComponent, OptionsPopupComponent, PullComponent,
 		PushComponent, PushTagsComponent, RenameBranchComponent,
 		RevisionFilesPopup, SharedOptions, StashMsgComponent,
-		TagCommitComponent, TagListComponent,
+		SubmodulesListComponent, TagCommitComponent,
+		TagListComponent,
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{key_match, KeyConfig, SharedKeyConfig},
@@ -70,6 +71,7 @@ pub struct App {
 	rename_branch_popup: RenameBranchComponent,
 	select_branch_popup: BranchListComponent,
 	options_popup: OptionsPopupComponent,
+	submodule_popup: SubmodulesListComponent,
 	tags_popup: TagListComponent,
 	cmdbar: RefCell<CommandBar>,
 	tab: usize,
@@ -230,6 +232,11 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 				options.clone(),
+			),
+			submodule_popup: SubmodulesListComponent::new(
+				repo.clone(),
+				theme.clone(),
+				key_config.clone(),
 			),
 			find_file_popup: FileFindPopup::new(
 				&queue,
@@ -543,6 +550,7 @@ impl App {
 			rename_branch_popup,
 			select_branch_popup,
 			revision_files_popup,
+			submodule_popup,
 			tags_popup,
 			options_popup,
 			help,
@@ -567,6 +575,7 @@ impl App {
 			external_editor_popup,
 			tag_commit_popup,
 			select_branch_popup,
+			submodule_popup,
 			tags_popup,
 			create_branch_popup,
 			rename_branch_popup,
@@ -774,6 +783,9 @@ impl App {
 			}
 			InternalEvent::SelectBranch => {
 				self.select_branch_popup.open()?;
+			}
+			InternalEvent::ViewSubmodules => {
+				self.submodule_popup.open()?;
 			}
 			InternalEvent::Tags => {
 				self.tags_popup.open()?;

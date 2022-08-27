@@ -541,9 +541,9 @@ impl BranchListComponent {
 		const HEAD_SYMBOL: char = '*';
 		const EMPTY_SYMBOL: char = ' ';
 		const THREE_DOTS: &str = "...";
+		const THREE_DOTS_LENGTH: usize = THREE_DOTS.len(); // "..."
 		const COMMIT_HASH_LENGTH: usize = 8;
 		const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
-		const THREE_DOTS_LENGTH: usize = THREE_DOTS.len(); // "..."
 
 		let branch_name_length: usize =
 			width_available as usize * 40 / 100;

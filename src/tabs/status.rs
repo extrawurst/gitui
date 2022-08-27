@@ -781,6 +781,12 @@ impl Component for Status {
 				true,
 				self.pending_revert() || force_all,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::view_submodules(&self.key_config),
+				true,
+				true,
+			));
 		}
 
 		{
@@ -935,6 +941,12 @@ impl Component for Status {
 					self.queue.push(InternalEvent::Update(
 						NeedsUpdate::ALL,
 					));
+					Ok(EventState::Consumed)
+				} else if key_match(
+					k,
+					self.key_config.keys.view_submodules,
+				) {
+					self.queue.push(InternalEvent::ViewSubmodules);
 					Ok(EventState::Consumed)
 				} else {
 					Ok(EventState::NotConsumed)

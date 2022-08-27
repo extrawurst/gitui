@@ -23,6 +23,8 @@ pub static PUSH_TAGS_STATES_FETCHING: &str = "fetching";
 pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
 pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
+pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
+
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
@@ -696,6 +698,19 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.abort_merge),
 			),
 			"abort ongoing revert",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn view_submodules(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Submodules [{}]",
+				key_config.get_hint(key_config.keys.view_submodules),
+			),
+			"open submodule view",
 			CMD_GROUP_GENERAL,
 		)
 	}

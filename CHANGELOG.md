@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**submodules view**
+
+![submodules](assets/submodules.png)
+
+### Added
+* submodules support ([#1087](https://github.com/extrawurst/gitui/issues/1087))
+
 ## [0.21.0] - 2021-08-17
 
 **popup stacking**
