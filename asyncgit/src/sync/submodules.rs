@@ -4,7 +4,7 @@ use git2::SubmoduleUpdateOptions;
 use scopetime::scope_time;
 
 use super::{repo, CommitId, RepoPath};
-use crate::error::Result;
+use crate::{error::Result, Error};
 
 pub use git2::SubmoduleStatus;
 
@@ -20,6 +20,19 @@ pub struct SubmoduleInfo {
 	pub head_id: Option<CommitId>,
 	///
 	pub status: SubmoduleStatus,
+}
+
+impl SubmoduleInfo {
+	///
+	pub fn get_repo_path(
+		&self,
+		repo_path: &RepoPath,
+	) -> Result<RepoPath> {
+		let repo = repo(repo_path)?;
+		let wd = repo.workdir().ok_or(Error::NoWorkDir)?;
+
+		Ok(RepoPath::Path(wd.join(self.path.clone())))
+	}
 }
 
 ///

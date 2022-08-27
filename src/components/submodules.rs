@@ -18,7 +18,9 @@ use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
 use tui::{
 	backend::Backend,
-	layout::{Alignment, Margin, Rect},
+	layout::{
+		Alignment, Constraint, Direction, Layout, Margin, Rect,
+	},
 	text::{Span, Spans, Text},
 	widgets::{Block, BorderType, Borders, Clear, Paragraph},
 	Frame,
@@ -72,15 +74,19 @@ impl DrawableComponent for SubmodulesListComponent {
 				horizontal: 1,
 			});
 
-			// let chunks = Layout::default()
-			// 	.direction(Direction::Vertical)
-			// 	.constraints(
-			// 		[Constraint::Length(2), Constraint::Min(1)]
-			// 			.as_ref(),
-			// 	)
-			// 	.split(area);
+			let chunks = Layout::default()
+				.direction(Direction::Horizontal)
+				.constraints(
+					[
+						Constraint::Min(1),
+						Constraint::Length(area.width / 3),
+					]
+					.as_ref(),
+				)
+				.split(area);
 
-			self.draw_list(f, area)?;
+			self.draw_list(f, chunks[0])?;
+			self.draw_info(f, chunks[1])?;
 		}
 
 		Ok(())
@@ -216,6 +222,10 @@ impl SubmodulesListComponent {
 		!self.submodules.is_empty()
 	}
 
+	fn selected_entry(&self) -> Option<&SubmoduleInfo> {
+		self.submodules.get(self.selection as usize)
+	}
+
 	//TODO: dedup this almost identical with BranchListComponent
 	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
 		let new_selection = match scroll {
@@ -316,6 +326,37 @@ impl SubmodulesListComponent {
 		Text::from(txt)
 	}
 
+	fn get_info_text(&self, theme: &SharedTheme) -> Text {
+		if let Some(submodule) = self.selected_entry() {
+			let span_title_commit =
+				Span::styled("Commit:", theme.text(false, false));
+			let span_commit = Span::styled(
+				format!(
+					"{}",
+					submodule.id.unwrap_or_default().to_string()
+				),
+				theme.commit_hash(false),
+			);
+
+			let span_title_status =
+				Span::styled("Status:", theme.text(false, false));
+			let span_status = Span::styled(
+				format!("{:?}", submodule.status),
+				theme.text(true, false),
+			);
+
+			Text::from(vec![
+				Spans::from(vec![span_title_commit]),
+				Spans::from(vec![span_commit]),
+				Spans::from(vec![]),
+				Spans::from(vec![span_title_status]),
+				Spans::from(vec![span_status]),
+			])
+		} else {
+			Text::default()
+		}
+	}
+
 	fn draw_list<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -346,6 +387,20 @@ impl SubmodulesListComponent {
 		r.y = r.y.saturating_sub(1);
 
 		self.scroll.draw(f, r, &self.theme);
+
+		Ok(())
+	}
+
+	fn draw_info<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		r: Rect,
+	) -> Result<()> {
+		f.render_widget(
+			Paragraph::new(self.get_info_text(&self.theme))
+				.alignment(Alignment::Left),
+			r,
+		);
 
 		Ok(())
 	}
