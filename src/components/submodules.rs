@@ -5,6 +5,7 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue},
 	strings,
 	ui::{self, Size},
 };
@@ -27,6 +28,7 @@ use unicode_truncate::UnicodeTruncateStr;
 ///
 pub struct SubmodulesListComponent {
 	repo: RepoPathRef,
+	queue: Queue,
 	submodules: Vec<SubmoduleInfo>,
 	visible: bool,
 	current_height: Cell<u16>,
@@ -143,6 +145,12 @@ impl Component for SubmodulesListComponent {
 				return self
 					.move_selection(ScrollType::End)
 					.map(Into::into);
+			} else if key_match(e, self.key_config.keys.enter) {
+				if let Some(submodule) = self.selected_entry() {
+					self.queue.push(InternalEvent::OpenSubmodule {
+						name: submodule.name.clone(),
+					});
+				}
 			} else if key_match(
 				e,
 				self.key_config.keys.cmd_bar_toggle,
@@ -173,12 +181,14 @@ impl Component for SubmodulesListComponent {
 impl SubmodulesListComponent {
 	pub fn new(
 		repo: RepoPathRef,
+		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
 			submodules: Vec::new(),
 			scroll: VerticalScroll::new(),
+			queue: queue.clone(),
 			selection: 0,
 			visible: false,
 			theme,

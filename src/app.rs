@@ -235,6 +235,7 @@ impl App {
 			),
 			submodule_popup: SubmodulesListComponent::new(
 				repo.clone(),
+				&queue,
 				theme.clone(),
 				key_config.clone(),
 			),
@@ -877,6 +878,9 @@ impl App {
 				self.popup_stack.push(popup);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::OpenSubmodule { name } => {
+				log::info!("open submodule: {}", name);
 			}
 		};
 

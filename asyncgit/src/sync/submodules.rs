@@ -11,6 +11,8 @@ pub use git2::SubmoduleStatus;
 ///
 pub struct SubmoduleInfo {
 	///
+	pub name: String,
+	///
 	pub path: PathBuf,
 	///
 	pub url: Option<String>,
@@ -55,6 +57,7 @@ pub fn get_submodules(
 				.unwrap_or(SubmoduleStatus::empty());
 
 			SubmoduleInfo {
+				name: s.name().unwrap_or_default().into(),
 				path: s.path().to_path_buf(),
 				id: s.workdir_id().map(CommitId::from),
 				head_id: s.head_id().map(CommitId::from),
