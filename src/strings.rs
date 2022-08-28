@@ -24,6 +24,7 @@ pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
 pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
 pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
+pub static POPUP_TITLE_FUZZY_FIND: &str = "Fuzzy Finder";
 
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·

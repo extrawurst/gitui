@@ -199,8 +199,7 @@ impl DrawableComponent for FileFindPopup {
 					.borders(Borders::all())
 					.style(self.theme.title(true))
 					.title(Span::styled(
-						//TODO: strings
-						"Fuzzy find",
+						strings::POPUP_TITLE_FUZZY_FIND,
 						self.theme.title(true),
 					)),
 				area,
