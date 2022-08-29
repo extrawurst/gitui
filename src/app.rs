@@ -28,14 +28,14 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use asyncgit::{
-	sync::{self, RepoPathRef},
+	sync::{self, utils::repo_work_dir, RepoPath, RepoPathRef},
 	AsyncGitNotification, PushType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
 use std::{
 	cell::{Cell, RefCell},
-	path::{Path, PathBuf},
+	path::Path,
 	rc::Rc,
 };
 use tui::{
@@ -50,7 +50,7 @@ use tui::{
 pub enum QuitState {
 	None,
 	Close,
-	OpenSubmodule(PathBuf),
+	OpenSubmodule(RepoPath),
 }
 
 /// the main app type
@@ -895,7 +895,13 @@ impl App {
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
 			InternalEvent::OpenSubmodule { path } => {
-				self.do_quit = QuitState::OpenSubmodule(path);
+				let submodule_repo_path = RepoPath::Path(
+					Path::new(&repo_work_dir(&self.repo.borrow())?)
+						.join(path),
+				);
+				//TODO: validate this is a valid repo first, so we can show proper error otherwise
+				self.do_quit =
+					QuitState::OpenSubmodule(submodule_repo_path);
 			}
 		};
 

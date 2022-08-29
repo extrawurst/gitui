@@ -40,10 +40,7 @@ mod version;
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
 use app::QuitState;
-use asyncgit::{
-	sync::{utils::repo_work_dir, RepoPath},
-	AsyncGitNotification,
-};
+use asyncgit::{sync::RepoPath, AsyncGitNotification};
 use backtrace::Backtrace;
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
@@ -62,9 +59,7 @@ use spinner::Spinner;
 use std::{
 	cell::RefCell,
 	io::{self, Write},
-	panic,
-	path::Path,
-	process,
+	panic, process,
 	time::{Duration, Instant},
 };
 use tui::{
@@ -144,9 +139,7 @@ fn main() -> Result<()> {
 
 		match quit_state {
 			QuitState::OpenSubmodule(p) => {
-				repo_path = RepoPath::Path(
-					Path::new(&repo_work_dir(&repo_path)?).join(p),
-				);
+				repo_path = p;
 			}
 			_ => break,
 		}
