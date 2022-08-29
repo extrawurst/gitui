@@ -148,7 +148,7 @@ impl Component for SubmodulesListComponent {
 			} else if key_match(e, self.key_config.keys.enter) {
 				if let Some(submodule) = self.selected_entry() {
 					self.queue.push(InternalEvent::OpenSubmodule {
-						name: submodule.name.clone(),
+						path: submodule.path.clone(),
 					});
 				}
 			} else if key_match(

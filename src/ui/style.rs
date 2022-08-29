@@ -15,7 +15,7 @@ use tui::style::{Color, Modifier, Style};
 
 pub type SharedTheme = Rc<Theme>;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Theme {
 	selected_tab: Color,
 	#[serde(with = "Color")]

@@ -125,7 +125,7 @@ pub enum InternalEvent {
 	///
 	ViewSubmodules,
 	///
-	OpenSubmodule { name: String },
+	OpenSubmodule { path: PathBuf },
 }
 
 /// single threaded simple queue for components to communicate with each other

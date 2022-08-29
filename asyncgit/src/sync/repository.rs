@@ -11,7 +11,7 @@ use crate::error::Result;
 pub type RepoPathRef = RefCell<RepoPath>;
 
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum RepoPath {
 	///
 	Path(PathBuf),

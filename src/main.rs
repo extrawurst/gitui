@@ -39,7 +39,11 @@ mod version;
 
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
-use asyncgit::{sync::RepoPath, AsyncGitNotification};
+use app::QuitState;
+use asyncgit::{
+	sync::{utils::repo_work_dir, RepoPath},
+	AsyncGitNotification,
+};
 use backtrace::Backtrace;
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
@@ -58,7 +62,9 @@ use spinner::Spinner;
 use std::{
 	cell::RefCell,
 	io::{self, Write},
-	panic, process,
+	panic,
+	path::Path,
+	process,
 	time::{Duration, Instant},
 };
 use tui::{
@@ -126,18 +132,45 @@ fn main() -> Result<()> {
 	set_panic_handlers()?;
 
 	let mut terminal = start_terminal(io::stdout())?;
+	let mut repo_path = cliargs.repo_path;
 
+	loop {
+		let quit_state = run_app(
+			repo_path.clone(),
+			theme,
+			key_config.clone(),
+			&mut terminal,
+		)?;
+
+		match quit_state {
+			QuitState::OpenSubmodule(p) => {
+				repo_path = RepoPath::Path(
+					Path::new(&repo_work_dir(&repo_path)?).join(p),
+				);
+			}
+			_ => break,
+		}
+	}
+
+	Ok(())
+}
+
+fn run_app(
+	repo: RepoPath,
+	theme: Theme,
+	key_config: KeyConfig,
+	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
 
 	let input = Input::new();
-
 	let rx_input = input.receiver();
 	let ticker = tick(TICK_INTERVAL);
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
 	let mut app = App::new(
-		RefCell::new(cliargs.repo_path),
+		RefCell::new(repo),
 		&tx_git,
 		&tx_app,
 		input,
@@ -165,7 +198,7 @@ fn main() -> Result<()> {
 		{
 			if let QueueEvent::SpinnerUpdate = event {
 				spinner.update();
-				spinner.draw(&mut terminal)?;
+				spinner.draw(terminal)?;
 				continue;
 			}
 
@@ -194,10 +227,10 @@ fn main() -> Result<()> {
 				QueueEvent::SpinnerUpdate => unreachable!(),
 			}
 
-			draw(&mut terminal, &app)?;
+			draw(terminal, &app)?;
 
 			spinner.set_state(app.any_work_pending());
-			spinner.draw(&mut terminal)?;
+			spinner.draw(terminal)?;
 
 			if app.is_quit() {
 				break;
@@ -205,7 +238,7 @@ fn main() -> Result<()> {
 		}
 	}
 
-	Ok(())
+	Ok(app.quit_state())
 }
 
 fn setup_terminal() -> Result<()> {

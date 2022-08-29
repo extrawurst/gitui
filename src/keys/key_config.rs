@@ -11,7 +11,7 @@ use super::{
 
 pub type SharedKeyConfig = Rc<KeyConfig>;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct KeyConfig {
 	pub keys: KeysList,
 	symbols: KeySymbols,
