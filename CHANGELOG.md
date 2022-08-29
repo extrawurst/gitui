@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * submodules support ([#1087](https://github.com/extrawurst/gitui/issues/1087))
+* selected lines in files and log lists now fills the entire container
+* new color for command bar items background (`cmdbar_bg`)
 
 ## [0.21.0] - 2021-08-17
 
