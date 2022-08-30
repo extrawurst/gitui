@@ -57,7 +57,7 @@ which = "4.2"
 pprof = { version = "0.10", features = ["flamegraph"], optional = true }
 
 [dev-dependencies]
-pretty_assertions = "1.0"
+pretty_assertions = "1.3"
 
 [badges]
 maintenance = { status = "actively-developed" }

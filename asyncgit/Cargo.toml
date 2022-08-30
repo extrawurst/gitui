@@ -29,7 +29,7 @@ url = "2.2"
 
 [dev-dependencies]
 invalidstring = { path = "../invalidstring", version = "0.1" }
-pretty_assertions = "1.0"
+pretty_assertions = "1.3"
 serial_test = "0.9"
 tempfile = "3.2"
 
