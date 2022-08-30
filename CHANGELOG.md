@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * submodules support ([#1087](https://github.com/extrawurst/gitui/issues/1087))
 
+### Fixes
+* remove insecure dependency `ansi_term` ([#1290](https://github.com/extrawurst/gitui/issues/1290))
+
 ## [0.21.0] - 2021-08-17
 
 **popup stacking**
