@@ -51,6 +51,7 @@
 - Browse commit log, diff committed changes
 - Scalable terminal UI layout
 - Async git API for fluid control
+- Submodule support
 
 ## 2. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
 

@@ -10,7 +10,9 @@ use crate::{
 	ui::{self, Size},
 };
 use anyhow::Result;
-use asyncgit::sync::{get_submodules, RepoPathRef, SubmoduleInfo};
+use asyncgit::sync::{
+	get_submodules, submodule_parent_info, RepoPathRef, SubmoduleInfo,
+};
 use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
 use tui::{
@@ -216,6 +218,11 @@ impl SubmodulesListComponent {
 	pub fn update_submodules(&mut self) -> Result<()> {
 		if self.is_visible() {
 			self.submodules = get_submodules(&self.repo.borrow())?;
+
+			log::info!(
+				"submodule parent: {:?}",
+				submodule_parent_info(&self.repo.borrow())?
+			);
 
 			self.set_selection(self.selection)?;
 		}
