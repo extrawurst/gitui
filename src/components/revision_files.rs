@@ -119,6 +119,7 @@ impl RevisionFilesComponent {
 	fn tree_item_to_span<'a>(
 		item: &'a FileTreeItem,
 		theme: &SharedTheme,
+		width: usize,
 		selected: bool,
 	) -> Span<'a> {
 		let path = item.info().path_str();
@@ -141,7 +142,17 @@ impl RevisionFilesComponent {
 			symbol::EMPTY_STR
 		};
 
-		let path = format!("{}{}{}", indent_str, path_arrow, path);
+		let available_width =
+			width.saturating_sub(indent_str.len() + path_arrow.len());
+
+		let path = format!(
+			"{}{}{:w$}",
+			indent_str,
+			path_arrow,
+			path,
+			w = available_width
+		);
+
 		Span::styled(path, theme.file_tree_item(is_path, selected))
 	}
 
@@ -221,6 +232,7 @@ impl RevisionFilesComponent {
 
 	fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
 		let tree_height = usize::from(area.height.saturating_sub(2));
+		let tree_width = usize::from(area.width);
 
 		self.tree.visual_selection().map_or_else(
 			|| {
@@ -239,7 +251,12 @@ impl RevisionFilesComponent {
 			.tree
 			.iterate(self.scroll.get_top(), tree_height)
 			.map(|(item, selected)| {
-				Self::tree_item_to_span(item, &self.theme, selected)
+				Self::tree_item_to_span(
+					item,
+					&self.theme,
+					tree_width,
+					selected,
+				)
 			});
 
 		let is_tree_focused = matches!(self.focus, Focus::Tree);
