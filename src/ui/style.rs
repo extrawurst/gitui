@@ -23,6 +23,8 @@ pub struct Theme {
 	#[serde(with = "Color")]
 	selection_bg: Color,
 	#[serde(with = "Color")]
+	cmdbar_bg: Color,
+	#[serde(with = "Color")]
 	cmdbar_extra_lines_bg: Color,
 	#[serde(with = "Color")]
 	disabled_fg: Color,
@@ -220,7 +222,7 @@ impl Theme {
 			Style::default().fg(self.disabled_fg)
 		}
 		.bg(if line == 0 {
-			self.selection_bg
+			self.cmdbar_bg
 		} else {
 			self.cmdbar_extra_lines_bg
 		})
@@ -323,6 +325,7 @@ impl Default for Theme {
 			selected_tab: Color::Reset,
 			command_fg: Color::White,
 			selection_bg: Color::Blue,
+			cmdbar_bg: Color::Reset,
 			cmdbar_extra_lines_bg: Color::Blue,
 			disabled_fg: Color::DarkGray,
 			diff_line_add: Color::Green,
