@@ -109,6 +109,12 @@ impl Component for SubmodulesListComponent {
 				true,
 				true,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::open_submodule(&self.key_config),
+				self.is_valid_selection(),
+				true,
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -218,6 +224,10 @@ impl SubmodulesListComponent {
 
 	fn selected_entry(&self) -> Option<&SubmoduleInfo> {
 		self.submodules.get(self.selection as usize)
+	}
+
+	fn is_valid_selection(&self) -> bool {
+		self.selected_entry().is_some()
 	}
 
 	//TODO: dedup this almost identical with BranchListComponent
