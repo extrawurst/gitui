@@ -1,9 +1,12 @@
 //TODO:
 // #![allow(unused_variables, dead_code)]
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use git2::{Repository, Submodule, SubmoduleUpdateOptions};
+use git2::{
+	Repository, RepositoryOpenFlags, Submodule,
+	SubmoduleUpdateOptions,
+};
 use scopetime::scope_time;
 
 use super::{repo, CommitId, RepoPath};
@@ -112,16 +115,26 @@ pub fn submodule_parent_info(
 	let repo = repo(repo_path)?;
 	let repo_wd = work_dir(&repo)?.to_path_buf();
 
-	if let Some(parent_path) =
-		repo.path().parent().and_then(std::path::Path::parent)
-	{
-		if let Ok(parent) = Repository::open(parent_path) {
+	log::trace!("[sub] repo_wd: {:?}", repo_wd);
+	log::trace!("[sub] repo_path: {:?}", repo.path());
+
+	if let Some(parent_path) = repo_wd.parent() {
+		log::trace!("[sub] parent_path: {:?}", parent_path);
+
+		if let Ok(parent) = Repository::open_ext(
+			parent_path,
+			RepositoryOpenFlags::empty(),
+			Vec::<&Path>::new(),
+		) {
 			let parent_wd = work_dir(&parent)?.to_path_buf();
+			log::trace!("[sub] parent_wd: {:?}", parent_wd);
 
 			let submodule_name = repo_wd
 				.strip_prefix(parent_wd)?
 				.to_string_lossy()
 				.to_string();
+
+			log::trace!("[sub] submodule_name: {:?}", submodule_name);
 
 			if let Ok(submodule) =
 				parent.find_submodule(&submodule_name)
@@ -142,17 +155,20 @@ pub fn submodule_parent_info(
 
 #[cfg(test)]
 mod tests {
-	use git2::Repository;
-
+	use super::get_submodules;
 	use crate::sync::{
 		submodules::submodule_parent_info, tests::repo_init, RepoPath,
 	};
+	use git2::Repository;
 	use std::path::Path;
-
-	use super::get_submodules;
 
 	#[test]
 	fn test_smoke() {
+		let _ = env_logger::builder()
+			.is_test(true)
+			.filter_level(log::LevelFilter::Trace)
+			.try_init();
+
 		let (dir, _r) = repo_init().unwrap();
 
 		{
@@ -161,7 +177,7 @@ mod tests {
 				.submodule(
 					//TODO: use local git
 					"https://github.com/extrawurst/brewdump.git",
-					Path::new("foo"),
+					Path::new("foo/bar"),
 					false,
 				)
 				.unwrap();
@@ -174,7 +190,7 @@ mod tests {
 		let subs = get_submodules(&repo_p).unwrap();
 
 		assert_eq!(subs.len(), 1);
-		assert_eq!(&subs[0].name, "foo");
+		assert_eq!(&subs[0].name, "foo/bar");
 
 		let info = submodule_parent_info(
 			&subs[0].get_repo_path(&repo_p).unwrap(),
@@ -184,6 +200,6 @@ mod tests {
 
 		dbg!(&info);
 
-		assert_eq!(&info.submodule_info.name, "foo");
+		assert_eq!(&info.submodule_info.name, "foo/bar");
 	}
 }
