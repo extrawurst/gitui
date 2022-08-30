@@ -113,7 +113,7 @@ pub fn submodule_parent_info(
 	let repo_wd = work_dir(&repo)?.to_path_buf();
 
 	if let Some(parent_path) =
-		repo.path().parent().map(|r| r.parent()).flatten()
+		repo.path().parent().and_then(std::path::Path::parent)
 	{
 		if let Ok(parent) = Repository::open(parent_path) {
 			let parent_wd = work_dir(&parent)?.to_path_buf();
