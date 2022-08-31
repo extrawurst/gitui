@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
 	ui::{self, Size},
 };
@@ -190,11 +190,6 @@ impl Component for SubmodulesListComponent {
 				self.key_config.keys.update_submodule,
 			) {
 				if let Some(submodule) = self.selected_entry() {
-					log::info!(
-						"update submodule: {}",
-						submodule.name
-					);
-
 					try_or_popup!(
 						self,
 						"update submodule:",
@@ -203,6 +198,12 @@ impl Component for SubmodulesListComponent {
 							&submodule.name,
 						)
 					);
+
+					self.update_submodules()?;
+
+					self.queue.push(InternalEvent::Update(
+						NeedsUpdate::ALL,
+					));
 				}
 			} else if key_match(
 				e,
