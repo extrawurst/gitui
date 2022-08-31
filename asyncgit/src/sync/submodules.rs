@@ -160,15 +160,11 @@ mod tests {
 		submodules::submodule_parent_info, tests::repo_init, RepoPath,
 	};
 	use git2::Repository;
+	use pretty_assertions::assert_eq;
 	use std::path::Path;
 
 	#[test]
 	fn test_smoke() {
-		let _ = env_logger::builder()
-			.is_test(true)
-			.filter_level(log::LevelFilter::Trace)
-			.try_init();
-
 		let (dir, _r) = repo_init().unwrap();
 
 		{
