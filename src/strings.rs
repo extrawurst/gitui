@@ -743,6 +743,19 @@ pub mod commands {
 		)
 	}
 
+	pub fn update_submodule(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Update [{}]",
+				key_config.get_hint(key_config.keys.update_submodule),
+			),
+			"update submodule",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
 	pub fn continue_rebase(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

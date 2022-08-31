@@ -110,6 +110,7 @@ pub struct KeysList {
 	pub tag_annotate: GituiKeyEvent,
 	pub view_submodules: GituiKeyEvent,
 	pub view_submodule_parent: GituiKeyEvent,
+	pub update_submodule: GituiKeyEvent,
 }
 
 #[rustfmt::skip]
@@ -190,6 +191,7 @@ impl Default for KeysList {
 			tag_annotate: GituiKeyEvent::new(KeyCode::Char('a'),  KeyModifiers::CONTROL),
 			view_submodules: GituiKeyEvent::new(KeyCode::Char('S'),  KeyModifiers::SHIFT),
 			view_submodule_parent: GituiKeyEvent::new(KeyCode::Char('p'),  KeyModifiers::empty()),
+			update_submodule: GituiKeyEvent::new(KeyCode::Char('u'),  KeyModifiers::empty()),
 		}
 	}
 }
