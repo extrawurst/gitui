@@ -22,7 +22,7 @@ use tui::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
 	text::{Span, Spans, Text},
-	widgets::{Block, BorderType, Borders, Clear, Paragraph},
+	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
 };
 use ui::style::SharedTheme;
@@ -66,7 +66,6 @@ impl DrawableComponent for SubmodulesListComponent {
 			f.render_widget(
 				Block::default()
 					.title(strings::POPUP_TITLE_SUBMODULES)
-					.border_type(BorderType::Thick)
 					.borders(Borders::ALL),
 				area,
 			);
@@ -79,7 +78,7 @@ impl DrawableComponent for SubmodulesListComponent {
 			let chunks_vertical = Layout::default()
 				.direction(Direction::Vertical)
 				.constraints(
-					[Constraint::Min(1), Constraint::Length(4)]
+					[Constraint::Min(1), Constraint::Length(5)]
 						.as_ref(),
 				)
 				.split(area);
@@ -294,11 +293,11 @@ impl SubmodulesListComponent {
 	}
 
 	fn set_selection(&mut self, selection: u16) -> Result<()> {
-		let num_branches: u16 = self.submodules.len().try_into()?;
-		let num_branches = num_branches.saturating_sub(1);
+		let num_entriess: u16 = self.submodules.len().try_into()?;
+		let num_entriess = num_entriess.saturating_sub(1);
 
-		let selection = if selection > num_branches {
-			num_branches
+		let selection = if selection > num_entriess {
+			num_entriess
 		} else {
 			selection
 		};
@@ -491,6 +490,7 @@ impl SubmodulesListComponent {
 	fn draw_local_info<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
 		f.render_widget(
 			Paragraph::new(self.get_local_info_text(&self.theme))
+				.block(Block::default().borders(Borders::TOP))
 				.alignment(Alignment::Left),
 			r,
 		);
