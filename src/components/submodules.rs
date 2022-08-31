@@ -419,22 +419,20 @@ impl SubmodulesListComponent {
 	}
 
 	fn get_local_info_text(&self, theme: &SharedTheme) -> Text {
-		let mut spans = Vec::new();
-
-		spans.push(Spans::from(vec![Span::styled(
-			"Current:",
-			theme.text(false, false),
-		)]));
-
-		spans.push(Spans::from(vec![Span::styled(
-			self.repo_path.to_string(),
-			theme.text(true, false),
-		)]));
-
-		spans.push(Spans::from(vec![Span::styled(
-			"Parent:",
-			theme.text(false, false),
-		)]));
+		let mut spans = vec![
+			Spans::from(vec![Span::styled(
+				"Current:",
+				theme.text(false, false),
+			)]),
+			Spans::from(vec![Span::styled(
+				self.repo_path.to_string(),
+				theme.text(true, false),
+			)]),
+			Spans::from(vec![Span::styled(
+				"Parent:",
+				theme.text(false, false),
+			)]),
+		];
 
 		if let Some(parent_info) = &self.submodule_parent {
 			spans.push(Spans::from(vec![Span::styled(
