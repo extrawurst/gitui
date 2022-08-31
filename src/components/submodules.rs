@@ -5,11 +5,15 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue},
 	strings,
 	ui::{self, Size},
 };
 use anyhow::Result;
-use asyncgit::sync::{get_submodules, RepoPathRef, SubmoduleInfo};
+use asyncgit::sync::{
+	get_submodules, repo_dir, submodule_parent_info, RepoPathRef,
+	SubmoduleInfo, SubmoduleParentInfo,
+};
 use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
 use tui::{
@@ -18,7 +22,7 @@ use tui::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
 	text::{Span, Spans, Text},
-	widgets::{Block, BorderType, Borders, Clear, Paragraph},
+	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
 };
 use ui::style::SharedTheme;
@@ -27,7 +31,10 @@ use unicode_truncate::UnicodeTruncateStr;
 ///
 pub struct SubmodulesListComponent {
 	repo: RepoPathRef,
+	repo_path: String,
+	queue: Queue,
 	submodules: Vec<SubmoduleInfo>,
+	submodule_parent: Option<SubmoduleParentInfo>,
 	visible: bool,
 	current_height: Cell<u16>,
 	selection: u16,
@@ -59,7 +66,6 @@ impl DrawableComponent for SubmodulesListComponent {
 			f.render_widget(
 				Block::default()
 					.title(strings::POPUP_TITLE_SUBMODULES)
-					.border_type(BorderType::Thick)
 					.borders(Borders::ALL),
 				area,
 			);
@@ -69,16 +75,25 @@ impl DrawableComponent for SubmodulesListComponent {
 				horizontal: 1,
 			});
 
+			let chunks_vertical = Layout::default()
+				.direction(Direction::Vertical)
+				.constraints(
+					[Constraint::Min(1), Constraint::Length(5)]
+						.as_ref(),
+				)
+				.split(area);
+
 			let chunks = Layout::default()
 				.direction(Direction::Horizontal)
 				.constraints(
 					[Constraint::Min(40), Constraint::Length(40)]
 						.as_ref(),
 				)
-				.split(area);
+				.split(chunks_vertical[0]);
 
 			self.draw_list(f, chunks[0])?;
 			self.draw_info(f, chunks[1]);
+			self.draw_local_info(f, chunks_vertical[1]);
 		}
 
 		Ok(())
@@ -105,6 +120,20 @@ impl Component for SubmodulesListComponent {
 			out.push(CommandInfo::new(
 				strings::commands::close_popup(&self.key_config),
 				true,
+				true,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::open_submodule(&self.key_config),
+				self.is_valid_selection(),
+				true,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::open_submodule_parent(
+					&self.key_config,
+				),
+				self.submodule_parent.is_some(),
 				true,
 			));
 		}
@@ -143,6 +172,21 @@ impl Component for SubmodulesListComponent {
 				return self
 					.move_selection(ScrollType::End)
 					.map(Into::into);
+			} else if key_match(e, self.key_config.keys.enter) {
+				if let Some(submodule) = self.selected_entry() {
+					self.queue.push(InternalEvent::OpenRepo {
+						path: submodule.path.clone(),
+					});
+				}
+			} else if key_match(
+				e,
+				self.key_config.keys.view_submodule_parent,
+			) {
+				if let Some(parent) = &self.submodule_parent {
+					self.queue.push(InternalEvent::OpenRepo {
+						path: parent.parent_gitpath.clone(),
+					});
+				}
 			} else if key_match(
 				e,
 				self.key_config.keys.cmd_bar_toggle,
@@ -173,18 +217,22 @@ impl Component for SubmodulesListComponent {
 impl SubmodulesListComponent {
 	pub fn new(
 		repo: RepoPathRef,
+		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
 			submodules: Vec::new(),
+			submodule_parent: None,
 			scroll: VerticalScroll::new(),
+			queue: queue.clone(),
 			selection: 0,
 			visible: false,
 			theme,
 			key_config,
 			current_height: Cell::new(0),
 			repo,
+			repo_path: String::new(),
 		}
 	}
 
@@ -201,6 +249,13 @@ impl SubmodulesListComponent {
 		if self.is_visible() {
 			self.submodules = get_submodules(&self.repo.borrow())?;
 
+			self.submodule_parent =
+				submodule_parent_info(&self.repo.borrow())?;
+
+			self.repo_path = repo_dir(&self.repo.borrow())
+				.map(|e| e.to_string_lossy().to_string())
+				.unwrap_or_default();
+
 			self.set_selection(self.selection)?;
 		}
 		Ok(())
@@ -208,6 +263,10 @@ impl SubmodulesListComponent {
 
 	fn selected_entry(&self) -> Option<&SubmoduleInfo> {
 		self.submodules.get(self.selection as usize)
+	}
+
+	fn is_valid_selection(&self) -> bool {
+		self.selected_entry().is_some()
 	}
 
 	//TODO: dedup this almost identical with BranchListComponent
@@ -234,11 +293,11 @@ impl SubmodulesListComponent {
 	}
 
 	fn set_selection(&mut self, selection: u16) -> Result<()> {
-		let num_branches: u16 = self.submodules.len().try_into()?;
-		let num_branches = num_branches.saturating_sub(1);
+		let num_entriess: u16 = self.submodules.len().try_into()?;
+		let num_entriess = num_entriess.saturating_sub(1);
 
-		let selection = if selection > num_branches {
-			num_branches
+		let selection = if selection > num_entriess {
+			num_entriess
 		} else {
 			selection
 		};
@@ -359,6 +418,32 @@ impl SubmodulesListComponent {
 		)
 	}
 
+	fn get_local_info_text(&self, theme: &SharedTheme) -> Text {
+		let mut spans = vec![
+			Spans::from(vec![Span::styled(
+				"Current:",
+				theme.text(false, false),
+			)]),
+			Spans::from(vec![Span::styled(
+				self.repo_path.to_string(),
+				theme.text(true, false),
+			)]),
+			Spans::from(vec![Span::styled(
+				"Parent:",
+				theme.text(false, false),
+			)]),
+		];
+
+		if let Some(parent_info) = &self.submodule_parent {
+			spans.push(Spans::from(vec![Span::styled(
+				parent_info.parent_gitpath.to_string_lossy(),
+				theme.text(true, false),
+			)]));
+		}
+
+		Text::from(spans)
+	}
+
 	fn draw_list<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -395,6 +480,15 @@ impl SubmodulesListComponent {
 	fn draw_info<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
 		f.render_widget(
 			Paragraph::new(self.get_info_text(&self.theme))
+				.alignment(Alignment::Left),
+			r,
+		);
+	}
+
+	fn draw_local_info<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+		f.render_widget(
+			Paragraph::new(self.get_local_info_text(&self.theme))
+				.block(Block::default().borders(Borders::TOP))
 				.alignment(Alignment::Left),
 			r,
 		);

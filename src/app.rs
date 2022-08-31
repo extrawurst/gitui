@@ -28,7 +28,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use asyncgit::{
-	sync::{self, RepoPathRef},
+	sync::{self, utils::repo_work_dir, RepoPath, RepoPathRef},
 	AsyncGitNotification, PushType,
 };
 use crossbeam_channel::Sender;
@@ -46,10 +46,17 @@ use tui::{
 	Frame,
 };
 
+#[derive(Clone)]
+pub enum QuitState {
+	None,
+	Close,
+	OpenSubmodule(RepoPath),
+}
+
 /// the main app type
 pub struct App {
 	repo: RepoPathRef,
-	do_quit: bool,
+	do_quit: QuitState,
 	help: HelpComponent,
 	msg: MsgComponent,
 	reset: ConfirmComponent,
@@ -103,6 +110,8 @@ impl App {
 		theme: Theme,
 		key_config: KeyConfig,
 	) -> Self {
+		log::trace!("open repo at: {:?}", repo);
+
 		let queue = Queue::new();
 		let theme = Rc::new(theme);
 		let key_config = Rc::new(key_config);
@@ -235,6 +244,7 @@ impl App {
 			),
 			submodule_popup: SubmodulesListComponent::new(
 				repo.clone(),
+				&queue,
 				theme.clone(),
 				key_config.clone(),
 			),
@@ -243,7 +253,7 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
-			do_quit: false,
+			do_quit: QuitState::None,
 			cmdbar: RefCell::new(CommandBar::new(
 				theme.clone(),
 				key_config.clone(),
@@ -493,7 +503,13 @@ impl App {
 
 	///
 	pub fn is_quit(&self) -> bool {
-		self.do_quit || self.input.is_aborted()
+		!matches!(self.do_quit, QuitState::None)
+			|| self.input.is_aborted()
+	}
+
+	///
+	pub fn quit_state(&self) -> QuitState {
+		self.do_quit.clone()
 	}
 
 	///
@@ -597,7 +613,7 @@ impl App {
 		}
 		if let Event::Key(e) = ev {
 			if key_match(e, self.key_config.keys.quit) {
-				self.do_quit = true;
+				self.do_quit = QuitState::Close;
 				return true;
 			}
 		}
@@ -607,7 +623,7 @@ impl App {
 	fn check_hard_exit(&mut self, ev: &Event) -> bool {
 		if let Event::Key(e) = ev {
 			if key_match(e, self.key_config.keys.exit) {
-				self.do_quit = true;
+				self.do_quit = QuitState::Close;
 				return true;
 			}
 		}
@@ -877,6 +893,15 @@ impl App {
 				self.popup_stack.push(popup);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::OpenRepo { path } => {
+				let submodule_repo_path = RepoPath::Path(
+					Path::new(&repo_work_dir(&self.repo.borrow())?)
+						.join(path),
+				);
+				//TODO: validate this is a valid repo first, so we can show proper error otherwise
+				self.do_quit =
+					QuitState::OpenSubmodule(submodule_repo_path);
 			}
 		};
 

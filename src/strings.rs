@@ -716,6 +716,33 @@ pub mod commands {
 		)
 	}
 
+	pub fn open_submodule(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Open [{}]",
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"open submodule",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn open_submodule_parent(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Open Parent [{}]",
+				key_config
+					.get_hint(key_config.keys.view_submodule_parent),
+			),
+			"open submodule parent repo",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
 	pub fn continue_rebase(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

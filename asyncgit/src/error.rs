@@ -1,6 +1,9 @@
 #![allow(renamed_and_removed_lints, clippy::unknown_clippy_lints)]
 
-use std::{num::TryFromIntError, string::FromUtf8Error};
+use std::{
+	num::TryFromIntError, path::StripPrefixError,
+	string::FromUtf8Error,
+};
 use thiserror::Error;
 
 ///
@@ -49,6 +52,10 @@ pub enum Error {
 	///
 	#[error("git error:{0}")]
 	Git(#[from] git2::Error),
+
+	///
+	#[error("strip prefix error: {0}")]
+	StripPrefix(#[from] StripPrefixError),
 
 	///
 	#[error("utf8 error:{0}")]

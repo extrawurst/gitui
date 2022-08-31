@@ -39,6 +39,7 @@ mod version;
 
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
+use app::QuitState;
 use asyncgit::{sync::RepoPath, AsyncGitNotification};
 use backtrace::Backtrace;
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
@@ -114,7 +115,7 @@ fn main() -> Result<()> {
 	let key_config = KeyConfig::init()
 		.map_err(|e| eprintln!("KeyConfig loading error: {}", e))
 		.unwrap_or_default();
-	let theme = Theme::init(cliargs.theme)
+	let theme = Theme::init(&cliargs.theme)
 		.map_err(|e| eprintln!("Theme loading error: {}", e))
 		.unwrap_or_default();
 
@@ -126,21 +127,48 @@ fn main() -> Result<()> {
 	set_panic_handlers()?;
 
 	let mut terminal = start_terminal(io::stdout())?;
+	let mut repo_path = cliargs.repo_path;
+	let input = Input::new();
 
+	loop {
+		let quit_state = run_app(
+			repo_path.clone(),
+			theme,
+			key_config.clone(),
+			&input,
+			&mut terminal,
+		)?;
+
+		match quit_state {
+			QuitState::OpenSubmodule(p) => {
+				repo_path = p;
+			}
+			_ => break,
+		}
+	}
+
+	Ok(())
+}
+
+fn run_app(
+	repo: RepoPath,
+	theme: Theme,
+	key_config: KeyConfig,
+	input: &Input,
+	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
-
-	let input = Input::new();
 
 	let rx_input = input.receiver();
 	let ticker = tick(TICK_INTERVAL);
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
 	let mut app = App::new(
-		RefCell::new(cliargs.repo_path),
+		RefCell::new(repo),
 		&tx_git,
 		&tx_app,
-		input,
+		input.clone(),
 		theme,
 		key_config,
 	);
@@ -165,7 +193,7 @@ fn main() -> Result<()> {
 		{
 			if let QueueEvent::SpinnerUpdate = event {
 				spinner.update();
-				spinner.draw(&mut terminal)?;
+				spinner.draw(terminal)?;
 				continue;
 			}
 
@@ -194,10 +222,10 @@ fn main() -> Result<()> {
 				QueueEvent::SpinnerUpdate => unreachable!(),
 			}
 
-			draw(&mut terminal, &app)?;
+			draw(terminal, &app)?;
 
 			spinner.set_state(app.any_work_pending());
-			spinner.draw(&mut terminal)?;
+			spinner.draw(terminal)?;
 
 			if app.is_quit() {
 				break;
@@ -205,7 +233,7 @@ fn main() -> Result<()> {
 		}
 	}
 
-	Ok(())
+	Ok(app.quit_state())
 }
 
 fn setup_terminal() -> Result<()> {

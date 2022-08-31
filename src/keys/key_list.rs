@@ -34,6 +34,7 @@ impl From<&GituiKeyEvent> for KeyEvent {
 	}
 }
 
+#[derive(Clone)]
 pub struct KeysList {
 	pub tab_status: GituiKeyEvent,
 	pub tab_log: GituiKeyEvent,
@@ -108,6 +109,7 @@ pub struct KeysList {
 	pub stage_unstage_item: GituiKeyEvent,
 	pub tag_annotate: GituiKeyEvent,
 	pub view_submodules: GituiKeyEvent,
+	pub view_submodule_parent: GituiKeyEvent,
 }
 
 #[rustfmt::skip]
@@ -187,7 +189,7 @@ impl Default for KeysList {
 			stage_unstage_item: GituiKeyEvent::new(KeyCode::Enter,  KeyModifiers::empty()),
 			tag_annotate: GituiKeyEvent::new(KeyCode::Char('a'),  KeyModifiers::CONTROL),
 			view_submodules: GituiKeyEvent::new(KeyCode::Char('S'),  KeyModifiers::SHIFT),
-
+			view_submodule_parent: GituiKeyEvent::new(KeyCode::Char('p'),  KeyModifiers::empty()),
 		}
 	}
 }

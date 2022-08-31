@@ -3,7 +3,7 @@ use std::{fs::File, io::Read, path::PathBuf};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct KeySymbols {
 	pub enter: String,
 	pub left: String,

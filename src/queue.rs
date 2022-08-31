@@ -124,6 +124,8 @@ pub enum InternalEvent {
 	PopupStackPush(StackablePopupOpen),
 	///
 	ViewSubmodules,
+	///
+	OpenRepo { path: PathBuf },
 }
 
 /// single threaded simple queue for components to communicate with each other

@@ -15,7 +15,7 @@ use tui::style::{Color, Modifier, Style};
 
 pub type SharedTheme = Rc<Theme>;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Theme {
 	selected_tab: Color,
 	#[serde(with = "Color")]
@@ -279,7 +279,7 @@ impl Theme {
 	}
 
 	// This will only be called when theme.ron doesn't already exists
-	fn save(&self, theme_file: PathBuf) -> Result<()> {
+	fn save(&self, theme_file: &PathBuf) -> Result<()> {
 		let mut file = File::create(theme_file)?;
 		let data = to_string_pretty(self, PrettyConfig::default())?;
 		file.write_all(data.as_bytes())?;
@@ -293,7 +293,7 @@ impl Theme {
 		Ok(from_bytes(&buffer)?)
 	}
 
-	pub fn init(file: PathBuf) -> Result<Self> {
+	pub fn init(file: &PathBuf) -> Result<Self> {
 		if file.exists() {
 			match Self::read_file(file.clone()) {
 				Err(e) => {
