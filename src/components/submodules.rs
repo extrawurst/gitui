@@ -67,6 +67,7 @@ impl DrawableComponent for SubmodulesListComponent {
 			f.render_widget(
 				Block::default()
 					.title(strings::POPUP_TITLE_SUBMODULES)
+					.border_type(tui::widgets::BorderType::Thick)
 					.borders(Borders::ALL),
 				area,
 			);
