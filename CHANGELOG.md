@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **submodules view**
 
-![submodules](assets/submodules.png)
+![submodules](assets/submodules.gif)
 
 ### Added
 * submodules support ([#1087](https://github.com/extrawurst/gitui/issues/1087))
