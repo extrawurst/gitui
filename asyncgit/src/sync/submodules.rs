@@ -1,6 +1,3 @@
-//TODO:
-// #![allow(unused_variables, dead_code)]
-
 use std::path::{Path, PathBuf};
 
 use git2::{
@@ -93,13 +90,16 @@ pub fn get_submodules(
 ///
 pub fn update_submodule(
 	repo_path: &RepoPath,
-	path: &str,
+	name: &str,
 ) -> Result<()> {
+	scope_time!("update_submodule");
+
 	let repo = repo(repo_path)?;
 
-	let mut submodule = repo.find_submodule(path)?;
+	let mut submodule = repo.find_submodule(name)?;
 
 	let mut options = SubmoduleUpdateOptions::new();
+	options.allow_fetch(true);
 
 	submodule.update(true, Some(&mut options))?;
 

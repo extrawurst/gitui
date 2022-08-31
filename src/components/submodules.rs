@@ -5,14 +5,15 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
-	queue::{InternalEvent, Queue},
-	strings,
+	queue::{InternalEvent, NeedsUpdate, Queue},
+	strings, try_or_popup,
 	ui::{self, Size},
 };
 use anyhow::Result;
 use asyncgit::sync::{
-	get_submodules, repo_dir, submodule_parent_info, RepoPathRef,
-	SubmoduleInfo, SubmoduleParentInfo,
+	get_submodules, repo_dir, submodule_parent_info,
+	update_submodule, RepoPathRef, SubmoduleInfo,
+	SubmoduleParentInfo,
 };
 use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
@@ -130,6 +131,12 @@ impl Component for SubmodulesListComponent {
 			));
 
 			out.push(CommandInfo::new(
+				strings::commands::update_submodule(&self.key_config),
+				self.is_valid_selection(),
+				true,
+			));
+
+			out.push(CommandInfo::new(
 				strings::commands::open_submodule_parent(
 					&self.key_config,
 				),
@@ -177,6 +184,26 @@ impl Component for SubmodulesListComponent {
 					self.queue.push(InternalEvent::OpenRepo {
 						path: submodule.path.clone(),
 					});
+				}
+			} else if key_match(
+				e,
+				self.key_config.keys.update_submodule,
+			) {
+				if let Some(submodule) = self.selected_entry() {
+					try_or_popup!(
+						self,
+						"update submodule:",
+						update_submodule(
+							&self.repo.borrow(),
+							&submodule.name,
+						)
+					);
+
+					self.update_submodules()?;
+
+					self.queue.push(InternalEvent::Update(
+						NeedsUpdate::ALL,
+					));
 				}
 			} else if key_match(
 				e,
