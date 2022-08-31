@@ -128,12 +128,14 @@ fn main() -> Result<()> {
 
 	let mut terminal = start_terminal(io::stdout())?;
 	let mut repo_path = cliargs.repo_path;
+	let input = Input::new();
 
 	loop {
 		let quit_state = run_app(
 			repo_path.clone(),
 			theme,
 			key_config.clone(),
+			&input,
 			&mut terminal,
 		)?;
 
@@ -152,12 +154,12 @@ fn run_app(
 	repo: RepoPath,
 	theme: Theme,
 	key_config: KeyConfig,
+	input: &Input,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 ) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
 
-	let input = Input::new();
 	let rx_input = input.receiver();
 	let ticker = tick(TICK_INTERVAL);
 	let spinner_ticker = tick(SPINNER_INTERVAL);
@@ -166,7 +168,7 @@ fn run_app(
 		RefCell::new(repo),
 		&tx_git,
 		&tx_app,
-		input,
+		input.clone(),
 		theme,
 		key_config,
 	);

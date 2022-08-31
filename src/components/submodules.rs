@@ -11,7 +11,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::sync::{
-	get_submodules, submodule_parent_info, RepoPathRef, SubmoduleInfo,
+	get_submodules, repo_dir, submodule_parent_info, RepoPathRef,
+	SubmoduleInfo, SubmoduleParentInfo,
 };
 use crossterm::event::Event;
 use std::{cell::Cell, convert::TryInto};
@@ -30,8 +31,10 @@ use unicode_truncate::UnicodeTruncateStr;
 ///
 pub struct SubmodulesListComponent {
 	repo: RepoPathRef,
+	repo_path: String,
 	queue: Queue,
 	submodules: Vec<SubmoduleInfo>,
+	submodule_parent: Option<SubmoduleParentInfo>,
 	visible: bool,
 	current_height: Cell<u16>,
 	selection: u16,
@@ -73,16 +76,25 @@ impl DrawableComponent for SubmodulesListComponent {
 				horizontal: 1,
 			});
 
+			let chunks_vertical = Layout::default()
+				.direction(Direction::Vertical)
+				.constraints(
+					[Constraint::Min(1), Constraint::Length(4)]
+						.as_ref(),
+				)
+				.split(area);
+
 			let chunks = Layout::default()
 				.direction(Direction::Horizontal)
 				.constraints(
 					[Constraint::Min(40), Constraint::Length(40)]
 						.as_ref(),
 				)
-				.split(area);
+				.split(chunks_vertical[0]);
 
 			self.draw_list(f, chunks[0])?;
 			self.draw_info(f, chunks[1]);
+			self.draw_local_info(f, chunks_vertical[1]);
 		}
 
 		Ok(())
@@ -115,6 +127,14 @@ impl Component for SubmodulesListComponent {
 			out.push(CommandInfo::new(
 				strings::commands::open_submodule(&self.key_config),
 				self.is_valid_selection(),
+				true,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::open_submodule_parent(
+					&self.key_config,
+				),
+				self.submodule_parent.is_some(),
 				true,
 			));
 		}
@@ -155,8 +175,17 @@ impl Component for SubmodulesListComponent {
 					.map(Into::into);
 			} else if key_match(e, self.key_config.keys.enter) {
 				if let Some(submodule) = self.selected_entry() {
-					self.queue.push(InternalEvent::OpenSubmodule {
+					self.queue.push(InternalEvent::OpenRepo {
 						path: submodule.path.clone(),
+					});
+				}
+			} else if key_match(
+				e,
+				self.key_config.keys.view_submodule_parent,
+			) {
+				if let Some(parent) = &self.submodule_parent {
+					self.queue.push(InternalEvent::OpenRepo {
+						path: parent.parent_gitpath.clone(),
 					});
 				}
 			} else if key_match(
@@ -195,6 +224,7 @@ impl SubmodulesListComponent {
 	) -> Self {
 		Self {
 			submodules: Vec::new(),
+			submodule_parent: None,
 			scroll: VerticalScroll::new(),
 			queue: queue.clone(),
 			selection: 0,
@@ -203,6 +233,7 @@ impl SubmodulesListComponent {
 			key_config,
 			current_height: Cell::new(0),
 			repo,
+			repo_path: String::new(),
 		}
 	}
 
@@ -219,10 +250,12 @@ impl SubmodulesListComponent {
 		if self.is_visible() {
 			self.submodules = get_submodules(&self.repo.borrow())?;
 
-			log::info!(
-				"submodule parent: {:?}",
-				submodule_parent_info(&self.repo.borrow())?
-			);
+			self.submodule_parent =
+				submodule_parent_info(&self.repo.borrow())?;
+
+			self.repo_path = repo_dir(&self.repo.borrow())
+				.map(|e| e.to_string_lossy().to_string())
+				.unwrap_or_default();
 
 			self.set_selection(self.selection)?;
 		}
@@ -386,6 +419,34 @@ impl SubmodulesListComponent {
 		)
 	}
 
+	fn get_local_info_text(&self, theme: &SharedTheme) -> Text {
+		let mut spans = Vec::new();
+
+		spans.push(Spans::from(vec![Span::styled(
+			"Current:",
+			theme.text(false, false),
+		)]));
+
+		spans.push(Spans::from(vec![Span::styled(
+			self.repo_path.to_string(),
+			theme.text(true, false),
+		)]));
+
+		spans.push(Spans::from(vec![Span::styled(
+			"Parent:",
+			theme.text(false, false),
+		)]));
+
+		if let Some(parent_info) = &self.submodule_parent {
+			spans.push(Spans::from(vec![Span::styled(
+				parent_info.parent_gitpath.to_string_lossy(),
+				theme.text(true, false),
+			)]));
+		}
+
+		Text::from(spans)
+	}
+
 	fn draw_list<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -422,6 +483,14 @@ impl SubmodulesListComponent {
 	fn draw_info<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
 		f.render_widget(
 			Paragraph::new(self.get_info_text(&self.theme))
+				.alignment(Alignment::Left),
+			r,
+		);
+	}
+
+	fn draw_local_info<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+		f.render_widget(
+			Paragraph::new(self.get_local_info_text(&self.theme))
 				.alignment(Alignment::Left),
 			r,
 		);

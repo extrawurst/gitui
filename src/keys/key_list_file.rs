@@ -168,6 +168,7 @@ impl KeysListFile {
 			stage_unstage_item: self.stage_unstage_item.unwrap_or(default.stage_unstage_item),
 			tag_annotate: self.tag_annotate.unwrap_or(default.tag_annotate),
 			view_submodules: self.view_submodules.unwrap_or(default.view_submodules),
+			view_submodule_parent: self.view_submodules.unwrap_or(default.view_submodule_parent),
 		}
 	}
 }

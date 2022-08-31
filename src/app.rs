@@ -894,7 +894,7 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
-			InternalEvent::OpenSubmodule { path } => {
+			InternalEvent::OpenRepo { path } => {
 				let submodule_repo_path = RepoPath::Path(
 					Path::new(&repo_work_dir(&self.repo.borrow())?)
 						.join(path),
