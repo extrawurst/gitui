@@ -489,9 +489,10 @@ impl SubmodulesListComponent {
 		f.render_widget(
 			Paragraph::new(self.get_text(
 				&self.theme,
-				r.width,
+				r.width.saturating_add(1),
 				height_in_lines,
 			))
+			.block(Block::default().borders(Borders::RIGHT))
 			.alignment(Alignment::Left),
 			r,
 		);
