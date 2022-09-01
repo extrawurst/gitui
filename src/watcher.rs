@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crossbeam_channel::{unbounded, Sender};
-use notify::{Error, FsEventWatcher, RecursiveMode};
+use notify::{Error, RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{
 	new_debouncer, DebouncedEvent, Debouncer,
 };
@@ -11,7 +11,7 @@ use std::{
 pub struct RepoWatcher {
 	receiver: crossbeam_channel::Receiver<()>,
 	#[allow(dead_code)]
-	debouncer: Debouncer<FsEventWatcher>,
+	debouncer: Debouncer<RecommendedWatcher>,
 }
 
 impl RepoWatcher {
@@ -21,8 +21,8 @@ impl RepoWatcher {
 		let mut debouncer =
 			new_debouncer(Duration::from_secs(2), None, tx)?;
 
-		let watcher = debouncer.watcher();
-		watcher
+		debouncer
+			.watcher()
 			.watch(Path::new(workdir), RecursiveMode::Recursive)?;
 
 		let (out_tx, out_rx) = unbounded();
