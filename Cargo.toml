@@ -38,6 +38,8 @@ gh-emoji = { version = "1.0", optional = true }
 itertools = "0.10"
 lazy_static = "1.4"
 log = "0.4"
+notify = "5.0"
+notify-debouncer-mini = "0.2" 
 rayon-core = "1.9"
 ron = "0.8"
 scopeguard = "1.1"
