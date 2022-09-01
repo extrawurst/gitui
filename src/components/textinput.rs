@@ -498,7 +498,6 @@ impl TextInputComponent {
 }
 
 impl TextInputComponent {
-    ///
     pub fn new(
         theme: SharedTheme,
         key_config: SharedKeyConfig,
@@ -552,19 +551,28 @@ impl TextInputComponent {
     fn insert_new_line(&mut self) {
         const BORDER_SIZE: usize = 1;
 
+        // if the last line is just a new line with no
+        // characters, and the cursor position is just before
+        //it (on the previous line), shift to the new line
+        if self.msg.ends_with('\n')
+            && self.cursor_position
+                == self.msg.chars().count().saturating_sub(1)
+        {
+            self.incr_cursor();
+            return;
+        }
+
         self.msg.insert(self.cursor_position, '\n');
         self.incr_cursor();
         self.scroll_max += 1;
 
         // if the text box height increased,
-        // componsate by scrolling up one
+        // compensate by scrolling up one
         if self.scroll_max
             < (self.frame_height.get())
                 .saturating_sub(BORDER_SIZE * 2)
-        //&& self.scroll_max >= 3
         {
             self.scroll_top = self.scroll_top.saturating_sub(1);
-            //self.cur_line = self.cur_line.saturating_sub(1);
         }
     }
 
@@ -616,24 +624,46 @@ impl TextInputComponent {
     /// Move the cursor up a line.
     /// Only for multi-line textinputs
     fn line_up_cursor(&mut self) {
-        let mut nearest_newline: usize = 0;
-        let mut prev_line_newline_loc = 0;
+        let mut top_line_start: usize = 0;
+        let mut top_line_end: usize = 0;
+        let mut middle_line_start: usize = 0;
+        let mut middle_line_end: usize = 0;
+        let mut bottom_line_start: usize = 0;
+
         for (i, c) in self.msg.chars().enumerate() {
             if c == '\n' {
-                prev_line_newline_loc = nearest_newline;
-                nearest_newline = i;
+                top_line_start = middle_line_start;
+                top_line_end = middle_line_end;
+                middle_line_start = bottom_line_start;
+                middle_line_end = i.saturating_sub(1);
+                bottom_line_start = i;
             }
 
-            if i >= self.cursor_position {
+            if i == self.cursor_position {
+                //for when cursor position is on a new line just before text
+                if c == '\n' {
+                    bottom_line_start = middle_line_start;
+                    middle_line_start = top_line_start;
+                    middle_line_end = top_line_end;
+                }
                 break;
             }
         }
-        self.cursor_position = (prev_line_newline_loc
-            + self.cursor_position)
-            .saturating_sub(nearest_newline);
-        if prev_line_newline_loc == 0 {
-            self.cursor_position = 0;
-            //self.cursor_position.saturating_sub(1);
+
+        let mut cursor_position_in_line =
+            self.cursor_position.saturating_sub(bottom_line_start);
+
+        //for when moving up to first line
+        if middle_line_start == 0 {
+            cursor_position_in_line =
+                cursor_position_in_line.saturating_sub(1);
+        }
+        self.cursor_position =
+            middle_line_start.saturating_add(cursor_position_in_line);
+
+        //for when moving uo to a new line from a line with characters
+        if self.cursor_position > middle_line_end {
+            self.cursor_position = middle_line_end.saturating_add(1);
         }
 
         while !self.msg.is_char_boundary(self.cursor_position) {
@@ -648,51 +678,64 @@ impl TextInputComponent {
     /// Move the cursor down a line.
     /// Only for multi-line textinputs
     fn line_down_cursor(&mut self) {
-        //
-        let mut nearest_newline: usize = 0;
-        let mut prev_line_newline_loc = 0;
-
-        let mut chars_not_printed = 0;
+        let mut top_line_start: usize = 0;
+        let mut middle_line_start: usize = 0;
+        let mut middle_line_end: usize = 0;
+        let mut bottom_line_start: usize = 0;
+        let mut drop_count: usize = 0;
 
         for (i, c) in self.msg.chars().enumerate() {
             if c == '\n' {
-                chars_not_printed = 0;
-                prev_line_newline_loc = nearest_newline;
-                nearest_newline = i;
-                if nearest_newline > self.cursor_position {
-                    break;
+                top_line_start = middle_line_start;
+                middle_line_start = bottom_line_start;
+                middle_line_end = i.saturating_sub(1);
+                bottom_line_start = i;
+
+                if i >= self.cursor_position {
+                    drop_count += 1;
                 }
             }
 
-            // To capture unicode multi-byte characters
-            //chars_not_printed += c.len_utf8() - 1;
-            if !self.msg.is_char_boundary(i) {
-                // self.msg.is_char_boundary(i) c.is_alphanumeric() {
-                // unprintable
-                chars_not_printed += 1;
+            if drop_count == 2 {
+                break;
+            }
+
+            if i == self.msg.len().saturating_sub(1) && c != '\n' {
+                top_line_start = middle_line_start;
+                middle_line_start = bottom_line_start;
+                middle_line_end = i.saturating_sub(1);
+            } else if i == self.msg.len().saturating_sub(1)
+                && c == '\n'
+            {
+                top_line_start = middle_line_start;
+                middle_line_start = bottom_line_start;
+                middle_line_end = bottom_line_start;
             }
         }
-        self.cursor_position = self
-            .cursor_position
-            .saturating_sub(prev_line_newline_loc)
-            .saturating_add(nearest_newline)
-            .saturating_add(chars_not_printed);
 
-        if prev_line_newline_loc == 0
-            && self.cursor_position < self.msg.len().saturating_sub(1)
+        let mut cursor_position_in_line =
+            self.cursor_position.saturating_sub(top_line_start);
+
+        if top_line_start == 0 {
+            cursor_position_in_line += 1;
+        }
+        self.cursor_position =
+            middle_line_start.saturating_add(cursor_position_in_line);
+
+        if self.cursor_position > middle_line_end
+            && self.cursor_position
+                != middle_line_end.saturating_add(1)
         {
-            self.cursor_position += 1;
+            self.cursor_position = middle_line_end + 1;
         }
 
         if self.cursor_position < self.msg.len() {
             while !self.msg.is_char_boundary(self.cursor_position) {
                 self.cursor_position += 1;
             }
-        } else {
-            self.cursor_position = self.msg.len().saturating_sub(1);
         }
 
-        if self.cur_line < self.scroll_max.saturating_sub(2) {
+        if self.cur_line < self.scroll_max {
             self.cur_line += 1;
             if self.cur_line
                 > self.scroll_top
