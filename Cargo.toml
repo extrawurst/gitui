@@ -50,7 +50,7 @@ tui = { version = "0.19", default-features = false, features = ['crossterm', 'se
 unicode-segmentation = "1.9"
 unicode-truncate = "0.2"
 unicode-width = "0.1"
-which = "4.2"
+which = "4.3"
 
 # pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]
