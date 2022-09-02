@@ -96,7 +96,7 @@ impl KeyConfig {
 			KeyCode::Null => {
 				self.get_modifier_hint(ev.modifiers).into()
 			}
-			_ => "".into(),
+			_ => String::new(),
 		}
 	}
 

@@ -126,7 +126,7 @@ impl RevisionFilesComponent {
 		let indent = item.info().indent();
 
 		let indent_str = if indent == 0 {
-			String::from("")
+			String::new()
 		} else {
 			format!("{:w$}", " ", w = (indent as usize) * 2)
 		};

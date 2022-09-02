@@ -75,17 +75,20 @@ pub fn get_tags(repo_path: &RepoPath) -> Result<Tags> {
 			// works on annotated tags lightweight tags `id` already
 			// points to the target commit
 			// see https://github.com/libgit2/libgit2/issues/5586
-			let commit = if let Ok(commit) = repo
+			let commit = repo
 				.find_tag(id)
 				.and_then(|tag| tag.target())
 				.and_then(|target| target.peel_to_commit())
-			{
-				Some(CommitId::new(commit.id()))
-			} else if repo.find_commit(id).is_ok() {
-				Some(CommitId::new(id))
-			} else {
-				None
-			};
+				.map_or_else(
+					|_| {
+						if repo.find_commit(id).is_ok() {
+							Some(CommitId::new(id))
+						} else {
+							None
+						}
+					},
+					|commit| Some(CommitId::new(commit.id())),
+				);
 
 			let annotation = repo
 				.find_tag(id)

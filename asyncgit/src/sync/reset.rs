@@ -13,9 +13,9 @@ pub fn reset_stage(repo_path: &RepoPath, path: &str) -> Result<()> {
 		let obj =
 			repo.find_object(id.into(), Some(ObjectType::Commit))?;
 
-		repo.reset_default(Some(&obj), &[path])?;
+		repo.reset_default(Some(&obj), [path])?;
 	} else {
-		repo.reset_default(None, &[path])?;
+		repo.reset_default(None, [path])?;
 	}
 
 	Ok(())

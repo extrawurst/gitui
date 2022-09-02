@@ -96,11 +96,7 @@ impl<J: 'static + AsyncJob> AsyncSingleJob<J> {
 
 	/// take out last finished job
 	pub fn take_last(&self) -> Option<J> {
-		if let Ok(mut last) = self.last.lock() {
-			last.take()
-		} else {
-			None
-		}
+		self.last.lock().map_or(None, |mut last| last.take())
 	}
 
 	/// spawns `task` if nothing is running currently,
@@ -164,11 +160,7 @@ impl<J: 'static + AsyncJob> AsyncSingleJob<J> {
 	}
 
 	fn take_next(&self) -> Option<J> {
-		if let Ok(mut next) = self.next.lock() {
-			next.take()
-		} else {
-			None
-		}
+		self.next.lock().map_or(None, |mut next| next.take())
 	}
 }
 
