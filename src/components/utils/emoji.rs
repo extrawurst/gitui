@@ -1,10 +1,8 @@
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use std::borrow::Cow;
 
-lazy_static! {
-	static ref EMOJI_REPLACER: gh_emoji::Replacer =
-		gh_emoji::Replacer::new();
-}
+static EMOJI_REPLACER: Lazy<gh_emoji::Replacer> =
+	Lazy::new(gh_emoji::Replacer::new);
 
 // Replace markdown emojis with Unicode equivalent
 // :hammer: --> 🔨

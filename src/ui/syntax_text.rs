@@ -2,7 +2,7 @@ use asyncgit::{
 	asyncjob::{AsyncJob, RunParams},
 	ProgressPercent,
 };
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use scopetime::scope_time;
 use std::{
 	ffi::OsStr,
@@ -32,11 +32,9 @@ pub struct SyntaxText {
 	path: PathBuf,
 }
 
-lazy_static! {
-	static ref SYNTAX_SET: SyntaxSet =
-		SyntaxSet::load_defaults_nonewlines();
-	static ref THEME_SET: ThemeSet = ThemeSet::load_defaults();
-}
+static SYNTAX_SET: Lazy<SyntaxSet> =
+	Lazy::new(SyntaxSet::load_defaults_nonewlines);
+static THEME_SET: Lazy<ThemeSet> = Lazy::new(ThemeSet::load_defaults);
 
 pub struct AsyncProgressBuffer {
 	current: usize,
