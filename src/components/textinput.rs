@@ -154,6 +154,7 @@ impl TextInputComponent {
 		let mut index = self.cursor_position.saturating_add(1);
 		while index < self.msg.len() {
 			if !self.msg.is_char_boundary(index) {
+				index += 1;
 				continue;
 			}
 
@@ -712,6 +713,43 @@ mod tests {
 		comp.cursor_position = 1;
 		assert_eq!(comp.previous_word_position(), Some(0));
 		// from string start
+		comp.cursor_position = 0;
+		assert_eq!(comp.previous_word_position(), None);
+	}
+
+	#[test]
+	fn test_next_word_multibyte() {
+		let mut comp = TextInputComponent::new(
+			SharedTheme::default(),
+			SharedKeyConfig::default(),
+			"",
+			"",
+			false,
+		);
+
+		//              "01245       89A        EFG"
+		let text = dbg!("a à \u{2764}ab\u{1F92F} a");
+
+		comp.set_text(String::from(text));
+
+		comp.cursor_position = 0;
+		assert_eq!(comp.next_word_position(), Some(2));
+		comp.cursor_position = 2;
+		assert_eq!(comp.next_word_position(), Some(8));
+		comp.cursor_position = 8;
+		assert_eq!(comp.next_word_position(), Some(15));
+		comp.cursor_position = 15;
+		assert_eq!(comp.next_word_position(), Some(16));
+		comp.cursor_position = 16;
+		assert_eq!(comp.next_word_position(), None);
+
+		assert_eq!(comp.previous_word_position(), Some(15));
+		comp.cursor_position = 15;
+		assert_eq!(comp.previous_word_position(), Some(8));
+		comp.cursor_position = 8;
+		assert_eq!(comp.previous_word_position(), Some(2));
+		comp.cursor_position = 2;
+		assert_eq!(comp.previous_word_position(), Some(0));
 		comp.cursor_position = 0;
 		assert_eq!(comp.previous_word_position(), None);
 	}
