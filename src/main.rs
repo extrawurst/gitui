@@ -36,11 +36,15 @@ mod strings;
 mod tabs;
 mod ui;
 mod version;
+mod watcher;
 
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
 use app::QuitState;
-use asyncgit::{sync::RepoPath, AsyncGitNotification};
+use asyncgit::{
+	sync::{utils::repo_work_dir, RepoPath},
+	AsyncGitNotification,
+};
 use backtrace::Backtrace;
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
@@ -67,14 +71,14 @@ use tui::{
 	Terminal,
 };
 use ui::style::Theme;
+use watcher::RepoWatcher;
 
-static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
 
 ///
 #[derive(Clone)]
 pub enum QueueEvent {
-	Tick,
+	Notify,
 	SpinnerUpdate,
 	AsyncEvent(AsyncNotification),
 	InputEvent(InputEvent),
@@ -161,7 +165,8 @@ fn run_app(
 	let (tx_app, rx_app) = unbounded();
 
 	let rx_input = input.receiver();
-	let ticker = tick(TICK_INTERVAL);
+	let watcher = RepoWatcher::new(repo_work_dir(&repo)?.as_str())?;
+	let rx_watcher = watcher.receiver();
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
 	let mut app = App::new(
@@ -179,13 +184,13 @@ fn run_app(
 	loop {
 		let event = if first_update {
 			first_update = false;
-			QueueEvent::Tick
+			QueueEvent::Notify
 		} else {
 			select_event(
 				&rx_input,
 				&rx_git,
 				&rx_app,
-				&ticker,
+				&rx_watcher,
 				&spinner_ticker,
 			)?
 		};
@@ -208,7 +213,7 @@ fn run_app(
 					}
 					app.event(ev)?;
 				}
-				QueueEvent::Tick => app.update()?,
+				QueueEvent::Notify => app.update()?,
 				QueueEvent::AsyncEvent(ev) => {
 					if !matches!(
 						ev,
@@ -282,7 +287,7 @@ fn select_event(
 	rx_input: &Receiver<InputEvent>,
 	rx_git: &Receiver<AsyncGitNotification>,
 	rx_app: &Receiver<AsyncAppNotification>,
-	rx_ticker: &Receiver<Instant>,
+	rx_notify: &Receiver<()>,
 	rx_spinner: &Receiver<Instant>,
 ) -> Result<QueueEvent> {
 	let mut sel = Select::new();
@@ -290,7 +295,7 @@ fn select_event(
 	sel.recv(rx_input);
 	sel.recv(rx_git);
 	sel.recv(rx_app);
-	sel.recv(rx_ticker);
+	sel.recv(rx_notify);
 	sel.recv(rx_spinner);
 
 	let oper = sel.select();
@@ -304,7 +309,7 @@ fn select_event(
 		2 => oper.recv(rx_app).map(|e| {
 			QueueEvent::AsyncEvent(AsyncNotification::App(e))
 		}),
-		3 => oper.recv(rx_ticker).map(|_| QueueEvent::Tick),
+		3 => oper.recv(rx_notify).map(|_| QueueEvent::Notify),
 		4 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
 		_ => bail!("unknown select source"),
 	}?;

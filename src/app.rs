@@ -110,7 +110,7 @@ impl App {
 		theme: Theme,
 		key_config: KeyConfig,
 	) -> Self {
-		log::trace!("open repo at: {:?}", repo);
+		log::trace!("open repo at: {:?}", &repo);
 
 		let queue = Queue::new();
 		let theme = Rc::new(theme);
