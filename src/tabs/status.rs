@@ -264,21 +264,21 @@ impl Status {
 						.join(",")
 				)
 			}
-			RepoState::Rebase => {
-				if let Ok(p) = sync::rebase_progress(repo) {
-					format!(
-						"Step: {}/{} Current Commit: {}",
-						p.current + 1,
-						p.steps,
-						p.current_commit
-							.as_ref()
-							.map(CommitId::get_short_string)
-							.unwrap_or_default(),
-					)
-				} else {
-					String::new()
-				}
-			}
+			RepoState::Rebase => sync::rebase_progress(repo)
+				.map_or_else(
+					|_| String::new(),
+					|p| {
+						format!(
+							"Step: {}/{} Current Commit: {}",
+							p.current + 1,
+							p.steps,
+							p.current_commit
+								.as_ref()
+								.map(CommitId::get_short_string)
+								.unwrap_or_default(),
+						)
+					},
+				),
 			RepoState::Revert => {
 				format!(
 					"Revert {}",

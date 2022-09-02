@@ -488,10 +488,9 @@ impl BlameFileComponent {
 			truncated_author,
 			author_width = MAX_AUTHOR_WIDTH
 		);
-		let time = blame_hunk.map_or_else(
-			|| "".into(),
-			|hunk| utils::time_to_string(hunk.time, true),
-		);
+		let time = blame_hunk.map_or_else(String::new, |hunk| {
+			utils::time_to_string(hunk.time, true)
+		});
 
 		let is_blamed_commit = self
 			.file_blame

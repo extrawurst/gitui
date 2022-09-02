@@ -73,18 +73,19 @@ pub fn extract_username_password(
 
 /// extract credentials from url
 pub fn extract_cred_from_url(url: &str) -> BasicAuthCredential {
-	if let Ok(url) = url::Url::parse(url) {
-		BasicAuthCredential::new(
-			if url.username() == "" {
-				None
-			} else {
-				Some(url.username().to_owned())
-			},
-			url.password().map(std::borrow::ToOwned::to_owned),
-		)
-	} else {
-		BasicAuthCredential::new(None, None)
-	}
+	url::Url::parse(url).map_or_else(
+		|_| BasicAuthCredential::new(None, None),
+		|url| {
+			BasicAuthCredential::new(
+				if url.username() == "" {
+					None
+				} else {
+					Some(url.username().to_owned())
+				},
+				url.password().map(std::borrow::ToOwned::to_owned),
+			)
+		},
+	)
 }
 
 #[cfg(test)]
