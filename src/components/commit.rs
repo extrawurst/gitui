@@ -42,7 +42,6 @@ enum Mode {
 	Revert,
 }
 
-<<<<<<< HEAD
 pub struct CommitComponent {
 	repo: RepoPathRef,
 	input: TextInputComponent,
@@ -52,85 +51,6 @@ pub struct CommitComponent {
 	git_branch_name: cached::BranchName,
 	commit_template: Option<String>,
 	theme: SharedTheme,
-=======
-impl Component for CommitComponent {
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
-    ) -> CommandBlocking {
-        self.input.commands(out, force_all);
-
-        if self.is_visible() || force_all {
-            out.push(CommandInfo::new(
-                strings::commands::commit(&self.key_config),
-                self.can_commit(),
-                true,
-            ));
-
-            out.push(CommandInfo::new(
-                strings::commands::commit_amend(&self.key_config),
-                self.can_amend(),
-                true,
-            ));
-
-            out.push(CommandInfo::new(
-                strings::commands::commit_open_editor(
-                    &self.key_config,
-                ),
-                true,
-                true,
-            ));
-        }
-
-        visibility_blocking(self)
-    }
-
-    fn event(&mut self, ev: Event) -> Result<bool> {
-        if self.is_visible() {
-            if let Event::Key(e) = ev {
-                if e == self.key_config.commit && self.can_commit() {
-                    self.commit()?;
-                } else if e == self.key_config.commit_amend
-                    && self.can_amend()
-                {
-                    self.amend()?;
-                } else if e == self.key_config.open_commit_editor {
-                    self.queue.borrow_mut().push_back(
-                        InternalEvent::OpenExternalEditor(None),
-                    );
-                    self.hide();
-                }
-
-                // stop key event propagation
-                return Ok(true);
-            }
-        }
-
-        Ok(false)
-    }
-
-    fn is_visible(&self) -> bool {
-        self.input.is_visible()
-    }
-
-    fn hide(&mut self) {
-        self.input.hide()
-    }
-
-    fn show(&mut self) -> Result<()> {
-        if self.amend.is_some() {
-            self.input.clear();
-        }
-        self.amend = None;
-
-        self.input
-            .set_title(strings::commit_title(&self.key_config));
-        self.input.show()?;
-
-        Ok(())
-    }
->>>>>>> commit via ctrl+o
 }
 
 const FIRST_LINE_LIMIT: usize = 50;

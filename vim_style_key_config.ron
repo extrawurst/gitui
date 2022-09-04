@@ -43,22 +43,7 @@
     stashing_save: Some(( code: Char('w'), modifiers: ( bits: 0,),)),
     stashing_toggle_index: Some(( code: Char('m'), modifiers: ( bits: 0,),)),
 
-<<<<<<< HEAD
     stash_open: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
-=======
-    cmd_bar_toggle: ( code: Char('.'), modifiers: ( bits: 0,),),
-    log_tag_commit: ( code: Char('t'), modifiers: ( bits: 0,),),
-    commit_amend: ( code: Char('a'), modifiers: ( bits: 2,),),
-    commit: ( code: Char('m'), modifiers: ( bits: 2,),),
-    copy: ( code: Char('y'), modifiers: ( bits: 0,),),
-    create_branch: ( code: Char('c'), modifiers: ( bits: 0,),),
-    rename_branch: ( code: Char('r'), modifiers: ( bits: 0,),),
-    select_branch: ( code: Char('b'), modifiers: ( bits: 0,),),
-    delete_branch: ( code: Char('D'), modifiers: ( bits: 1,),),
-    push: ( code: Char('p'), modifiers: ( bits: 0,),),
-    force_push: ( code: Char('P'), modifiers: ( bits: 1,),),
-    pull: ( code: Char('f'), modifiers: ( bits: 0,),),
->>>>>>> commit via ctrl+o
 
     abort_merge: Some(( code: Char('M'), modifiers: ( bits: 1,),)),
 )
