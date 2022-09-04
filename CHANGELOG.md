@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-<<<<<<< HEAD
 **submodules view**
 
 ![submodules](assets/submodules.gif)
@@ -162,10 +161,6 @@ The way this works got changed and simplified ([See docs](https://github.com/ext
 - visualize progress during async syntax highlighting ([#889](https://github.com/extrawurst/gitui/issues/889))
 - added support for markdown emoji's in commits [[@andrewpollack](https://github.com/andrewpollack)] ([#768](https://github.com/extrawurst/gitui/issues/768))
 - added scrollbar to revlog [[@ashvin021](https://github.com/ashvin021)] ([#868](https://github.com/extrawurst/gitui/issues/868))
-=======
-### Changed
-- `enter` adds *newline* to commit msg (*commit* via `ctrl+o` now) [[@WizardOhio24](https://github.com/WizardOhio24)] ([#509](https://github.com/extrawurst/gitui/issues/509))
->>>>>>> commit via ctrl+o
 
 ### Fixed
 - fix build when system level libgit2 version was used ([#883](https://github.com/extrawurst/gitui/issues/883))
