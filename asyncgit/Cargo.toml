@@ -25,7 +25,7 @@ scopetime = { path = "../scopetime", version = "0.1" }
 shellexpand = "2.1"
 thiserror = "1.0"
 unicode-truncate = "0.2.0"
-url = "2.2"
+url = "2.3"
 
 [dev-dependencies]
 env_logger = "0.9"
