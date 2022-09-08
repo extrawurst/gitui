@@ -130,6 +130,75 @@ impl TextInputComponent {
 		Some(index)
 	}
 
+	/// Helper for `next/previous_word_position`.
+	fn at_alphanumeric(&self, i: usize) -> bool {
+		self.msg[i..]
+			.chars()
+			.next()
+			.map_or(false, char::is_alphanumeric)
+	}
+
+	/// Get the position of the first character of the next word, or, if there
+	/// isn't a next word, the `msg.len()`.
+	/// Returns None when the cursor is already at `msg.len()`.
+	///
+	/// A Word is continuous sequence of alphanumeric characters.
+	fn next_word_position(&self) -> Option<usize> {
+		if self.cursor_position >= self.msg.len() {
+			return None;
+		}
+
+		let mut was_in_word =
+			self.at_alphanumeric(self.cursor_position);
+
+		let mut index = self.cursor_position.saturating_add(1);
+		while index < self.msg.len() {
+			if !self.msg.is_char_boundary(index) {
+				index += 1;
+				continue;
+			}
+
+			let is_in_word = self.at_alphanumeric(index);
+			if !was_in_word && is_in_word {
+				break;
+			}
+			was_in_word = is_in_word;
+			index += 1;
+		}
+		Some(index)
+	}
+
+	/// Get the position of the first character of the previous word, or, if there
+	/// isn't a previous word, returns `0`.
+	/// Returns None when the cursor is already at `0`.
+	///
+	/// A Word is continuous sequence of alphanumeric characters.
+	fn previous_word_position(&self) -> Option<usize> {
+		if self.cursor_position == 0 {
+			return None;
+		}
+
+		let mut was_in_word = false;
+
+		let mut last_pos = self.cursor_position;
+		let mut index = self.cursor_position;
+		while index > 0 {
+			index -= 1;
+			if !self.msg.is_char_boundary(index) {
+				continue;
+			}
+
+			let is_in_word = self.at_alphanumeric(index);
+			if was_in_word && !is_in_word {
+				return Some(last_pos);
+			}
+
+			last_pos = index;
+			was_in_word = is_in_word;
+		}
+		Some(0)
+	}
+
 	fn backspace(&mut self) {
 		if self.cursor_position > 0 {
 			self.decr_cursor();
@@ -366,6 +435,43 @@ impl Component for TextInputComponent {
 						self.incr_cursor();
 						return Ok(EventState::Consumed);
 					}
+					KeyCode::Delete if is_ctrl => {
+						if let Some(pos) = self.next_word_position() {
+							self.msg.replace_range(
+								self.cursor_position..pos,
+								"",
+							);
+						}
+						return Ok(EventState::Consumed);
+					}
+					KeyCode::Backspace | KeyCode::Char('w')
+						if is_ctrl =>
+					{
+						if let Some(pos) =
+							self.previous_word_position()
+						{
+							self.msg.replace_range(
+								pos..self.cursor_position,
+								"",
+							);
+							self.cursor_position = pos;
+						}
+						return Ok(EventState::Consumed);
+					}
+					KeyCode::Left if is_ctrl => {
+						if let Some(pos) =
+							self.previous_word_position()
+						{
+							self.cursor_position = pos;
+						}
+						return Ok(EventState::Consumed);
+					}
+					KeyCode::Right if is_ctrl => {
+						if let Some(pos) = self.next_word_position() {
+							self.cursor_position = pos;
+						}
+						return Ok(EventState::Consumed);
+					}
 					KeyCode::Delete => {
 						if self.cursor_position < self.msg.len() {
 							self.msg.remove(self.cursor_position);
@@ -556,6 +662,96 @@ mod tests {
 		assert_eq!(get_text(&txt.lines[0].0[1]), Some(""));
 		assert_eq!(get_style(&txt.lines[0].0[0]), Some(&underlined));
 		assert_eq!(get_text(&txt.lines[1].0[0]), Some("b"));
+	}
+
+	#[test]
+	fn test_next_word_position() {
+		let mut comp = TextInputComponent::new(
+			SharedTheme::default(),
+			SharedKeyConfig::default(),
+			"",
+			"",
+			false,
+		);
+
+		comp.set_text(String::from("aa b;c"));
+		// from word start
+		comp.cursor_position = 0;
+		assert_eq!(comp.next_word_position(), Some(3));
+		// from inside start
+		comp.cursor_position = 4;
+		assert_eq!(comp.next_word_position(), Some(5));
+		// to string end
+		comp.cursor_position = 5;
+		assert_eq!(comp.next_word_position(), Some(6));
+		// from string end
+		comp.cursor_position = 6;
+		assert_eq!(comp.next_word_position(), None);
+	}
+
+	#[test]
+	fn test_previous_word_position() {
+		let mut comp = TextInputComponent::new(
+			SharedTheme::default(),
+			SharedKeyConfig::default(),
+			"",
+			"",
+			false,
+		);
+
+		comp.set_text(String::from(" a bb;c"));
+		// from string end
+		comp.cursor_position = 7;
+		assert_eq!(comp.previous_word_position(), Some(6));
+		// from inside word
+		comp.cursor_position = 4;
+		assert_eq!(comp.previous_word_position(), Some(3));
+		// from word start
+		comp.cursor_position = 3;
+		assert_eq!(comp.previous_word_position(), Some(1));
+		// to string start
+		comp.cursor_position = 1;
+		assert_eq!(comp.previous_word_position(), Some(0));
+		// from string start
+		comp.cursor_position = 0;
+		assert_eq!(comp.previous_word_position(), None);
+	}
+
+	#[test]
+	fn test_next_word_multibyte() {
+		let mut comp = TextInputComponent::new(
+			SharedTheme::default(),
+			SharedKeyConfig::default(),
+			"",
+			"",
+			false,
+		);
+
+		//              "01245       89A        EFG"
+		let text = dbg!("a à \u{2764}ab\u{1F92F} a");
+
+		comp.set_text(String::from(text));
+
+		comp.cursor_position = 0;
+		assert_eq!(comp.next_word_position(), Some(2));
+		comp.cursor_position = 2;
+		assert_eq!(comp.next_word_position(), Some(8));
+		comp.cursor_position = 8;
+		assert_eq!(comp.next_word_position(), Some(15));
+		comp.cursor_position = 15;
+		assert_eq!(comp.next_word_position(), Some(16));
+		comp.cursor_position = 16;
+		assert_eq!(comp.next_word_position(), None);
+
+		assert_eq!(comp.previous_word_position(), Some(15));
+		comp.cursor_position = 15;
+		assert_eq!(comp.previous_word_position(), Some(8));
+		comp.cursor_position = 8;
+		assert_eq!(comp.previous_word_position(), Some(2));
+		comp.cursor_position = 2;
+		assert_eq!(comp.previous_word_position(), Some(0));
+		comp.cursor_position = 0;
+		assert_eq!(comp.previous_word_position(), None);
 	}
 
 	fn get_text<'a>(t: &'a Span) -> Option<&'a str> {
