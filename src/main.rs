@@ -113,7 +113,7 @@ fn main() -> Result<()> {
 
 	if !valid_path(&cliargs.repo_path) {
 		eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
-		return Ok(());
+		process::exit(1);
 	}
 
 	let key_config = KeyConfig::init()
