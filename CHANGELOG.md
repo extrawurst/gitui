@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * customizable `cmdbar_bg` theme color & screen spanning selected line bg [[@gigitsu](https://github.com/gigitsu)] ([#1299](https://github.com/extrawurst/gitui/pull/1299))
 * use filewatcher instead of polling updates ([#1](https://github.com/extrawurst/gitui/issues/1))
 * word motions to text input [[@Rodrigodd](https://github.com/Rodrigodd)] ([#1256](https://github.com/extrawurst/gitui/issues/1256))
+* add `regex-fancy` and `regex-onig` features to allow building Syntect with Onigumara regex engine instead of the default engine based on fancy-regex [[@jirutka](https://github.com/jirutka)]
 
 ### Fixes
 * remove insecure dependency `ansi_term` ([#1290](https://github.com/extrawurst/gitui/issues/1290))
