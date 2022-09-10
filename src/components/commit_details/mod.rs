@@ -102,6 +102,8 @@ impl CommitDetailsComponent {
 		self.commit = params;
 
 		if let Some(id) = params {
+			self.file_tree.set_commit(Some(id.id));
+
 			if let Some(other) = id.other {
 				self.compare_details
 					.set_commits(Some((id.id, other)));
