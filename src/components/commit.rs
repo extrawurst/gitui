@@ -359,7 +359,7 @@ impl Component for CommitComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if key_match(e, self.key_config.keys.enter)
+				if key_match(e, self.key_config.keys.confirm_commit)
 					&& self.can_commit()
 				{
 					try_or_popup!(

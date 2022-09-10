@@ -199,6 +199,161 @@ impl TextInputComponent {
 		Some(0)
 	}
 
+	fn previous_line_start(&self) -> Option<usize> {
+		let mut index = self.cursor_position;
+		let mut newline_count = 0;
+		while index > 0 {
+			index -= 1;
+			let is_newline =
+				matches!(self.msg.as_bytes()[index] as char, '\n');
+
+			if is_newline {
+				newline_count += 1;
+			}
+			if is_newline && newline_count == 2 {
+				return Some(index);
+			}
+		}
+		None
+	}
+
+	fn line_start(&self) -> Option<usize> {
+		let mut index = self.cursor_position;
+		while index > 0 {
+			index -= 1;
+			if self.msg.as_bytes()[index] as char == '\n' {
+				return Some(index);
+			}
+		}
+		None
+	}
+
+	fn cursor_up(&mut self) {
+		if self.cursor_position == 0 {
+			return;
+		}
+
+		let prev_line_start = self.previous_line_start().unwrap_or(0);
+		let line_start = self.line_start().unwrap_or(0);
+
+		if line_start == prev_line_start {
+			self.cursor_position = line_start;
+			return;
+		}
+
+		let mut dist =
+			self.get_real_distance(line_start, self.cursor_position);
+		self.cursor_position = prev_line_start;
+
+		if prev_line_start == 0 && dist > 1 {
+			dist -= 1;
+		}
+
+		self.cursor_forward(dist);
+	}
+
+	fn line_end(&self) -> Option<usize> {
+		let mut index = self.cursor_position;
+		while index < self.msg.len() - 1 {
+			if self.msg.as_bytes()[index] as char == '\n' {
+				return Some(index);
+			}
+			index += 1;
+		}
+		None
+	}
+
+	fn next_line_end(&self) -> Option<usize> {
+		let mut index = self.cursor_position;
+		let mut newline_count = 0;
+		while index < self.msg.len() - 1 {
+			if !self.msg.is_char_boundary(index) {
+				index += 1;
+				continue;
+			}
+			let is_newline =
+				matches!(self.msg.as_bytes()[index] as char, '\n');
+
+			if is_newline {
+				newline_count += 1;
+			}
+			if is_newline && newline_count == 2 {
+				return Some(index);
+			}
+			index += 1;
+		}
+		None
+	}
+
+	fn cursor_down(&mut self) {
+		let line_start = self.line_start().unwrap_or(0);
+		let line_end = self.line_end().unwrap_or(self.msg.len());
+		let next_end = self.next_line_end().unwrap_or(self.msg.len());
+
+		if line_end == next_end {
+			self.cursor_position = next_end;
+			return;
+		}
+
+		if self.cursor_position - line_start > next_end {
+			self.cursor_position = next_end;
+			return;
+		}
+
+		let mut dist =
+			self.get_real_distance(line_start, self.cursor_position);
+
+		self.cursor_position = line_end;
+
+		if line_start != 0 {
+			dist -= 1;
+		}
+
+		self.cursor_forward(dist + 1);
+	}
+
+	fn get_real_distance(&self, start: usize, end: usize) -> usize {
+		let mut index = start;
+		let mut dist = 0;
+		while index <= end {
+			if self.msg.is_char_boundary(index) {
+				dist += 1;
+			}
+			index += 1;
+		}
+		dist
+	}
+
+	/// Move forward `distance` amount of characters stopping at a newline
+	fn cursor_forward(&mut self, distance: usize) {
+		let mut travelled = 0;
+		let mut index = self.cursor_position;
+		while index < self.msg.len() + 1 {
+			if self.msg.is_char_boundary(index) {
+				travelled += 1;
+			}
+
+			if travelled == distance {
+				self.cursor_position = index;
+				break;
+			}
+
+			if index == self.msg.len() - 1 {
+				self.cursor_position = index + 1;
+				break;
+			}
+
+			index += 1;
+
+			if index != self.msg.len() - 1
+				&& self.msg.as_bytes()[index] as char == '\n'
+			{
+				self.cursor_position = index;
+				break;
+			}
+		}
+	}
+
 	fn backspace(&mut self) {
 		if self.cursor_position > 0 {
 			self.decr_cursor();
@@ -303,7 +458,7 @@ impl TextInputComponent {
 	}
 
 	fn draw_char_count<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-		let count = self.msg.len();
+		let count = self.msg.chars().count();
 		if count > 0 {
 			let w = Paragraph::new(format!("[{count} chars]"))
 				.alignment(Alignment::Right);
@@ -374,7 +529,7 @@ impl DrawableComponent for TextInputComponent {
 							area,
 						)
 					}
-					_ => ui::centered_rect_absolute(32, 3, f.size()),
+					_ => ui::centered_rect_absolute(64, 3, f.size()),
 				}
 			};
 
@@ -430,6 +585,14 @@ impl Component for TextInputComponent {
 					e.modifiers.contains(KeyModifiers::CONTROL);
 
 				match e.code {
+					KeyCode::Enter
+						if self.input_type
+							== InputType::Multiline && !is_ctrl =>
+					{
+						self.msg.insert(self.cursor_position, '\n');
+						self.incr_cursor();
+						return Ok(EventState::Consumed);
+					}
 					KeyCode::Char(c) if !is_ctrl => {
 						self.msg.insert(self.cursor_position, c);
 						self.incr_cursor();
@@ -488,6 +651,14 @@ impl Component for TextInputComponent {
 					}
 					KeyCode::Right => {
 						self.incr_cursor();
+						return Ok(EventState::Consumed);
+					}
+					KeyCode::Up => {
+						self.cursor_up();
+						return Ok(EventState::Consumed);
+					}
+					KeyCode::Down => {
+						self.cursor_down();
 						return Ok(EventState::Consumed);
 					}
 					KeyCode::Home => {
@@ -715,6 +886,55 @@ mod tests {
 		// from string start
 		comp.cursor_position = 0;
 		assert_eq!(comp.previous_word_position(), None);
+	}
+
+	#[test]
+	fn test_line_change() {
+		let mut comp = TextInputComponent::new(
+			SharedTheme::default(),
+			SharedKeyConfig::default(),
+			"",
+			"",
+			false,
+		);
+
+		comp.set_text(String::from("aaaaa\näaa\naaa\naaa"));
+
+		comp.cursor_position = 0;
+		comp.cursor_down();
+		assert_eq!(comp.cursor_position, 6);
+
+		comp.cursor_position = 2;
+		comp.cursor_down();
+		assert_eq!(comp.cursor_position, 9);
+
+		comp.cursor_position = 10;
+		comp.cursor_down();
+		assert_eq!(comp.cursor_position, 14);
+
+		comp.cursor_position = 8;
+		comp.cursor_down();
+		assert_eq!(comp.cursor_position, 12);
+
+		comp.cursor_position = 13;
+		comp.cursor_down();
+		assert_eq!(comp.cursor_position, 17);
+
+		comp.cursor_position = 6;
+		comp.cursor_up();
+		assert_eq!(comp.cursor_position, 0);
+
+		comp.cursor_position = 9;
+		comp.cursor_up();
+		assert_eq!(comp.cursor_position, 2);
+
+		comp.cursor_position = 0;
+		comp.cursor_up();
+		assert_eq!(comp.cursor_position, 0);
+
+		comp.cursor_position = 4;
+		comp.cursor_up();
+		assert_eq!(comp.cursor_position, 0);
 	}
 
 	#[test]

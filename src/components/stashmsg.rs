@@ -139,7 +139,8 @@ impl StashMsgComponent {
 				&strings::stash_popup_title(&key_config),
 				&strings::stash_popup_msg(&key_config),
 				true,
-			),
+			)
+			.with_input_type(super::InputType::Singleline),
 			key_config,
 			repo,
 		}

@@ -104,7 +104,8 @@ impl RenameBranchComponent {
 				&strings::rename_branch_popup_title(&key_config),
 				&strings::rename_branch_popup_msg(&key_config),
 				true,
-			),
+			)
+			.with_input_type(super::InputType::Singleline),
 			branch_ref: None,
 			key_config,
 		}

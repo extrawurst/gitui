@@ -48,7 +48,8 @@ impl FileFindPopup {
 			"",
 			"start typing..",
 			false,
-		);
+		)
+		.with_input_type(super::InputType::Singleline);
 		find_text.embed();
 
 		Self {

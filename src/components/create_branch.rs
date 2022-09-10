@@ -109,7 +109,8 @@ impl CreateBranchComponent {
 				&strings::create_branch_popup_title(&key_config),
 				&strings::create_branch_popup_msg(&key_config),
 				true,
-			),
+			)
+			.with_input_type(super::InputType::Singleline),
 			theme,
 			key_config,
 			repo,

@@ -874,7 +874,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Commit [{}]",
-				key_config.get_hint(key_config.keys.enter),
+				key_config.get_hint(key_config.keys.confirm_commit),
 			),
 			"commit (available when commit message is non-empty)",
 			CMD_GROUP_COMMIT,
