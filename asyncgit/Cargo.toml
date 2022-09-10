@@ -19,7 +19,7 @@ log = "0.4"
 # git2 = { path = "../../extern/git2-rs", features = ["vendored-openssl"]}
 # git2 = { git="https://github.com/extrawurst/git2-rs.git", rev="fc13dcc", features = ["vendored-openssl"]}
 # pinning to vendored openssl, using the git2 feature this gets lost with new resolver
-openssl-sys = { version = '0.9', features = ["vendored"] }
+openssl-sys = { version = '0.9', features = ["vendored"], optional = true }
 rayon-core = "1.9"
 scopetime = { path = "../scopetime", version = "0.1" }
 shellexpand = "2.1"
@@ -37,3 +37,4 @@ tempfile = "3.2"
 [features]
 default = ["trace-libgit"]
 trace-libgit = []
+vendor-openssl = ["openssl-sys"]

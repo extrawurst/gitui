@@ -65,13 +65,14 @@ pretty_assertions = "1.3"
 maintenance = { status = "actively-developed" }
 
 [features]
-default =["ghemoji", "regex-fancy", "trace-libgit"]
+default =["ghemoji", "regex-fancy", "trace-libgit", "vendor-openssl"]
 ghemoji =["gh-emoji"]
 # regex-* features are mutually exclusive.
 regex-fancy = ["syntect/regex-fancy"]
 regex-onig = ["syntect/regex-onig"]
 timing =["scopetime/enabled"]
 trace-libgit =["asyncgit/trace-libgit"]
+vendor-openssl = ["asyncgit/vendor-openssl"]
 
 [workspace]
 members =[
