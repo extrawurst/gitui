@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![submodules](assets/submodules.gif)
 
-
 ### Added
 * submodules support ([#1087](https://github.com/extrawurst/gitui/issues/1087))
 * customizable `cmdbar_bg` theme color & screen spanning selected line bg [[@gigitsu](https://github.com/gigitsu)] ([#1299](https://github.com/extrawurst/gitui/pull/1299))
