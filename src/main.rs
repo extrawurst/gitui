@@ -327,13 +327,19 @@ fn start_terminal<W: Write>(
 	Ok(terminal)
 }
 
+// do log::error! and eprintln! in one line, pass sting, error and backtrace
+macro_rules! log_eprintln {
+	($string:expr, $e:expr, $bt:expr) => {
+		log::error!($string, $e, $bt);
+		eprintln!($string, $e, $bt);
+	};
+}
+
 fn set_panic_handlers() -> Result<()> {
 	// regular panic handler
 	panic::set_hook(Box::new(|e| {
 		let backtrace = Backtrace::new();
-		//TODO: create macro to do both in one
-		log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
-		eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+		log_eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
 		shutdown_terminal();
 	}));
 
@@ -341,9 +347,7 @@ fn set_panic_handlers() -> Result<()> {
 	rayon_core::ThreadPoolBuilder::new()
 		.panic_handler(|e| {
 			let backtrace = Backtrace::new();
-			//TODO: create macro to do both in one
-			log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
-			eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+			log_eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
 			shutdown_terminal();
 			process::abort();
 		})
