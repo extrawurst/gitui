@@ -189,32 +189,23 @@ impl DiffComponent {
 
 			self.diff = Some(diff);
 
-			self.longest_line =
-				self.diff.as_ref().map_or(0, |diff| {
-					diff.hunks
-						.iter()
-						.map(|hunk| {
-							hunk.lines
-								.iter()
-								.map(|line| {
-									let converted_content =
-										tabs_to_spaces(
-											line.content
-												.as_ref()
-												.to_string(),
-										);
+			self.longest_line = self
+				.diff
+				.iter()
+				.flat_map(|diff| diff.hunks.iter())
+				.flat_map(|hunk| hunk.lines.iter())
+				.map(|line| {
+					let converted_content = tabs_to_spaces(
+						line.content.as_ref().to_string(),
+					);
 
-									converted_content.len()
-								})
-								.max()
-								.map_or(0, |len| {
-									// Each hunk uses a 1-character wide vertical bar to its left to indicate
-									// selection.
-									len + 1
-								})
-						})
-						.max()
-						.unwrap_or(0)
+					converted_content.len()
+				})
+				.max()
+				.map_or(0, |len| {
+					// Each hunk uses a 1-character wide vertical bar to its left to indicate
+					// selection.
+					len + 1
 				});
 
 			if reset_selection {
