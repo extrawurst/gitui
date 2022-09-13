@@ -189,10 +189,8 @@ impl DiffComponent {
 
 			self.diff = Some(diff);
 
-			self.longest_line = self
-				.diff
-				.as_ref()
-				.map(|diff| {
+			self.longest_line =
+				self.diff.as_ref().map_or(0, |diff| {
 					diff.hunks
 						.iter()
 						.map(|hunk| {
@@ -217,8 +215,7 @@ impl DiffComponent {
 						})
 						.max()
 						.unwrap_or(0)
-				})
-				.unwrap_or(0);
+				});
 
 			if reset_selection {
 				self.scroll.reset();

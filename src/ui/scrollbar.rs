@@ -124,7 +124,7 @@ impl Widget for Scrollbar {
 		match &self.orientation {
 			Orientation::Vertical => self.render_vertical(area, buf),
 			Orientation::Horizontal => {
-				self.render_horizontal(area, buf)
+				self.render_horizontal(area, buf);
 			}
 		}
 	}
