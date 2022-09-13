@@ -209,7 +209,11 @@ impl DiffComponent {
 									converted_content.len()
 								})
 								.max()
-								.unwrap_or(0)
+								.map_or(0, |len| {
+									// Each hunk uses a 1-character wide vertical bar to its left to indicate
+									// selection.
+									len + 1
+								})
 						})
 						.max()
 						.unwrap_or(0)
