@@ -198,7 +198,16 @@ impl DiffComponent {
 						.map(|hunk| {
 							hunk.lines
 								.iter()
-								.map(|line| line.content.len())
+								.map(|line| {
+									let converted_content =
+										tabs_to_spaces(
+											line.content
+												.as_ref()
+												.to_string(),
+										);
+
+									converted_content.len()
+								})
 								.max()
 								.unwrap_or(0)
 						})
