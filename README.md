@@ -130,6 +130,12 @@ brew install gitui
 port install gitui
 ```
 
+### [Winget](https://learn.microsoft.com/en-us/windows/package-manager/) (Windows)
+
+```
+scoop install gitui
+```
+
 ### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)
 
 ```
