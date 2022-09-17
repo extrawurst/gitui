@@ -130,7 +130,7 @@ brew install gitui
 port install gitui
 ```
 
-### [Winget](https://learn.microsoft.com/en-us/windows/package-manager/) (Windows)
+### [Winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/StephanDilly/gitui) (Windows)
 
 ```
 winget install gitui
