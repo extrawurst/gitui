@@ -176,7 +176,7 @@ fn run_app(
 		input.clone(),
 		theme,
 		key_config,
-	);
+	)?;
 
 	let mut spinner = Spinner::default();
 	let mut first_update = true;

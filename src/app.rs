@@ -111,7 +111,7 @@ impl App {
 		input: Input,
 		theme: Theme,
 		key_config: KeyConfig,
-	) -> Self {
+	) -> Result<Self> {
 		log::trace!("open repo at: {:?}", &repo);
 
 		let queue = Queue::new();
@@ -313,9 +313,9 @@ impl App {
 			popup_stack: PopupStack::default(),
 		};
 
-		app.set_tab(tab).expect("impossible");
+		app.set_tab(tab)?;
 
-		app
+		Ok(app)
 	}
 
 	///
