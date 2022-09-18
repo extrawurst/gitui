@@ -51,9 +51,7 @@ pub use file_revlog::{FileRevOpen, FileRevlogComponent};
 pub use help::HelpComponent;
 pub use inspect_commit::{InspectCommitComponent, InspectCommitOpen};
 pub use msg::MsgComponent;
-pub use options_popup::{
-	AppOption, OptionsPopupComponent, SharedOptions,
-};
+pub use options_popup::{AppOption, OptionsPopupComponent};
 pub use pull::PullComponent;
 pub use push::PushComponent;
 pub use push_tags::PushTagsComponent;

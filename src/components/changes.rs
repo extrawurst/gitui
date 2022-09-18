@@ -1,11 +1,12 @@
 use super::{
 	status_tree::StatusTreeComponent,
 	utils::filetree::{FileTreeItem, FileTreeItemKind},
-	CommandBlocking, DrawableComponent, SharedOptions,
+	CommandBlocking, DrawableComponent,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
 	ui::style::SharedTheme,

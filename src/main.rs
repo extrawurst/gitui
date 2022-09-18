@@ -27,6 +27,7 @@ mod components;
 mod input;
 mod keys;
 mod notify_mutex;
+mod options;
 mod popup_stack;
 mod profiler;
 mod queue;

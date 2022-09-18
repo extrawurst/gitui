@@ -1,6 +1,7 @@
-use super::{utils::logitems::ItemBatch, SharedOptions};
+use super::utils::logitems::ItemBatch;
 use super::{visibility_blocking, BlameFileOpen, InspectCommitOpen};
 use crate::keys::key_match;
+use crate::options::SharedOptions;
 use crate::queue::StackablePopupOpen;
 use crate::{
 	components::{
@@ -191,7 +192,7 @@ impl FileRevlogComponent {
 					let diff_params = DiffParams {
 						path: open_request.file_path.clone(),
 						diff_type: DiffType::Commit(commit_id),
-						options: self.options.borrow().diff,
+						options: self.options.borrow().diff_options(),
 					};
 
 					if let Some((params, last)) =
