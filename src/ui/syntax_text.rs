@@ -73,7 +73,6 @@ impl SyntaxText {
 		params: &RunParams<AsyncAppNotification, ProgressPercent>,
 	) -> asyncgit::Result<Self> {
 		scope_time!("syntax_highlighting");
-		log::debug!("syntax: {:?}", file_path);
 
 		let mut state = {
 			scope_time!("syntax_highlighting.0");

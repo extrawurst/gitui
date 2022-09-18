@@ -214,7 +214,6 @@ impl RevisionFilesComponent {
 	fn selection_changed(&mut self) {
 		//TODO: retrieve TreeFile from tree datastructure
 		if let Some(file) = self.selected_file_path_with_prefix() {
-			log::info!("selected: {:?}", file);
 			let path = Path::new(&file);
 			if let Some(item) =
 				self.files.iter().find(|f| f.path == path)
