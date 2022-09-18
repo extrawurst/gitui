@@ -34,8 +34,7 @@ pub struct CommitList {
 	branch: Option<String>,
 	count_total: usize,
 	items: ItemBatch,
-	marked: Vec<CommitId>,
-	marked_indexes: Vec<usize>,
+	marked: Vec<(usize, CommitId)>,
 	scroll_state: (Instant, f32),
 	tags: Option<Tags>,
 	current_size: Cell<(u16, u16)>,
@@ -54,7 +53,6 @@ impl CommitList {
 		Self {
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
-			marked_indexes: Vec::new(),
 			selection: 0,
 			branch: None,
 			count_total: 0,
@@ -136,19 +134,29 @@ impl CommitList {
 	}
 
 	///
-	pub fn marked(&self) -> &[CommitId] {
+	pub fn marked(&self) -> &[(usize, CommitId)] {
 		&self.marked
 	}
 
 	///
 	pub fn clear_marked(&mut self) {
 		self.marked.clear();
-		self.marked_indexes.clear();
 	}
 
 	///
-	pub const fn marked_indexes(&self) -> &Vec<usize> {
-		&self.marked_indexes
+	pub fn marked_indexes(&self) -> Vec<usize> {
+		let (indexes, _): (Vec<usize>, Vec<_>) =
+			self.marked.iter().copied().unzip();
+
+		indexes
+	}
+
+	///
+	pub fn marked_commits(&self) -> Vec<CommitId> {
+		let (_, commits): (Vec<_>, Vec<CommitId>) =
+			self.marked.iter().copied().unzip();
+
+		commits
 	}
 
 	fn marked_consecutive(&self) -> bool {
@@ -259,14 +267,13 @@ impl CommitList {
 				.selection
 				.saturating_sub(self.items.index_offset());
 			if self.is_marked(&id).unwrap_or_default() {
-				self.marked.retain(|marked| marked != &id);
-
-				self.marked_indexes.retain(|m| m != &selected);
+				self.marked.retain(|marked| marked.1 != id);
 			} else {
-				self.marked.push(id);
+				self.marked.push((selected, id));
 
-				self.marked_indexes.push(selected);
-				self.marked_indexes.sort_unstable();
+				self.marked.sort_unstable_by(|first, second| {
+					first.0.cmp(&second.0)
+				});
 			}
 		}
 	}
@@ -299,7 +306,8 @@ impl CommitList {
 		if self.marked.is_empty() {
 			None
 		} else {
-			let found = self.marked.iter().any(|entry| entry == id);
+			let found =
+				self.marked.iter().any(|entry| entry.1 == *id);
 			Some(found)
 		}
 	}
