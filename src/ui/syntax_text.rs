@@ -2,7 +2,7 @@ use asyncgit::{
 	asyncjob::{AsyncJob, RunParams},
 	ProgressPercent,
 };
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use scopetime::scope_time;
 use std::{
 	ffi::OsStr,
@@ -32,11 +32,9 @@ pub struct SyntaxText {
 	path: PathBuf,
 }
 
-lazy_static! {
-	static ref SYNTAX_SET: SyntaxSet =
-		SyntaxSet::load_defaults_nonewlines();
-	static ref THEME_SET: ThemeSet = ThemeSet::load_defaults();
-}
+static SYNTAX_SET: Lazy<SyntaxSet> =
+	Lazy::new(SyntaxSet::load_defaults_nonewlines);
+static THEME_SET: Lazy<ThemeSet> = Lazy::new(ThemeSet::load_defaults);
 
 pub struct AsyncProgressBuffer {
 	current: usize,
@@ -75,7 +73,6 @@ impl SyntaxText {
 		params: &RunParams<AsyncAppNotification, ProgressPercent>,
 	) -> asyncgit::Result<Self> {
 		scope_time!("syntax_highlighting");
-		log::debug!("syntax: {:?}", file_path);
 
 		let mut state = {
 			scope_time!("syntax_highlighting.0");
@@ -232,6 +229,7 @@ impl AsyncSyntaxJob {
 		}
 	}
 
+	///
 	pub fn result(&self) -> Option<SyntaxText> {
 		if let Ok(mut state) = self.state.lock() {
 			if let Some(state) = state.take() {

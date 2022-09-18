@@ -23,6 +23,9 @@ pub static PUSH_TAGS_STATES_FETCHING: &str = "fetching";
 pub static PUSH_TAGS_STATES_PUSHING: &str = "pushing";
 pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
+pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
+pub static POPUP_TITLE_FUZZY_FIND: &str = "Fuzzy Finder";
+
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
@@ -696,6 +699,59 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.abort_merge),
 			),
 			"abort ongoing revert",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn view_submodules(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Submodules [{}]",
+				key_config.get_hint(key_config.keys.view_submodules),
+			),
+			"open submodule view",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn open_submodule(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Open [{}]",
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"open submodule",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn open_submodule_parent(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Open Parent [{}]",
+				key_config
+					.get_hint(key_config.keys.view_submodule_parent),
+			),
+			"open submodule parent repo",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn update_submodule(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Update [{}]",
+				key_config.get_hint(key_config.keys.update_submodule),
+			),
+			"update submodule",
 			CMD_GROUP_GENERAL,
 		)
 	}

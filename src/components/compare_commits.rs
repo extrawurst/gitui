@@ -287,7 +287,7 @@ impl CompareCommitsComponent {
 	fn update(&mut self) -> Result<()> {
 		self.details.set_commits(
 			self.get_ids().map(CommitFilesParams::from),
-			None,
+			&None,
 		)?;
 		self.update_diff()?;
 

@@ -51,6 +51,7 @@
 - Browse commit log, diff committed changes
 - Scalable terminal UI layout
 - Async git API for fluid control
+- Submodule support
 
 ## 2. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -76,10 +77,7 @@ These are the high level goals before calling out `1.0`:
 
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
-* notify-based change detection ([#1](https://github.com/extrawurst/gitui/issues/1))
 * interactive rebase ([#32](https://github.com/extrawurst/gitui/issues/32))
-* popup history and back button ([#846](https://github.com/extrawurst/gitui/issues/846))
-* submodule support ([#1087](https://github.com/extrawurst/gitui/issues/1087))
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -130,6 +128,12 @@ brew install gitui
 
 ```sh
 port install gitui
+```
+
+### [Winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/StephanDilly/gitui) (Windows)
+
+```
+winget install gitui
 ```
 
 ### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)

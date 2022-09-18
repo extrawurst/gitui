@@ -27,6 +27,7 @@ mod staging;
 mod stash;
 mod state;
 pub mod status;
+mod submodules;
 mod tags;
 mod tree;
 pub mod utils;
@@ -80,6 +81,10 @@ pub use stash::{
 };
 pub use state::{repo_state, RepoState};
 pub use status::is_workdir_clean;
+pub use submodules::{
+	get_submodules, submodule_parent_info, update_submodule,
+	SubmoduleInfo, SubmoduleParentInfo, SubmoduleStatus,
+};
 pub use tags::{
 	delete_tag, get_tags, get_tags_with_metadata, CommitTags, Tag,
 	TagWithMetadata, Tags,
@@ -205,6 +210,8 @@ mod tests {
 
 	///
 	pub fn repo_init_empty() -> Result<(TempDir, Repository)> {
+		init_log();
+
 		sandbox_config_files();
 
 		let td = TempDir::new()?;
@@ -219,6 +226,8 @@ mod tests {
 
 	///
 	pub fn repo_init() -> Result<(TempDir, Repository)> {
+		init_log();
+
 		sandbox_config_files();
 
 		let td = TempDir::new()?;
@@ -262,8 +271,18 @@ mod tests {
 		Ok((td, repo))
 	}
 
+	// init log
+	fn init_log() {
+		let _ = env_logger::builder()
+			.is_test(true)
+			.filter_level(log::LevelFilter::Trace)
+			.try_init();
+	}
+
 	/// Same as repo_init, but the repo is a bare repo (--bare)
 	pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
+		init_log();
+
 		let tmp_repo_dir = TempDir::new()?;
 		let bare_repo = Repository::init_bare(tmp_repo_dir.path())?;
 		Ok((tmp_repo_dir, bare_repo))

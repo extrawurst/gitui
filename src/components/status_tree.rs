@@ -14,7 +14,7 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{hash, StatusItem, StatusItemType};
+use asyncgit::{hash, sync::CommitId, StatusItem, StatusItemType};
 use crossterm::event::Event;
 use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
 use tui::{backend::Backend, layout::Rect, text::Span, Frame};
@@ -35,6 +35,7 @@ pub struct StatusTreeComponent {
 	key_config: SharedKeyConfig,
 	scroll_top: Cell<usize>,
 	visible: bool,
+	revision: Option<CommitId>,
 }
 
 impl StatusTreeComponent {
@@ -58,7 +59,12 @@ impl StatusTreeComponent {
 			scroll_top: Cell::new(0),
 			pending: true,
 			visible: false,
+			revision: None,
 		}
+	}
+
+	pub fn set_commit(&mut self, revision: Option<CommitId>) {
+		self.revision = revision;
 	}
 
 	///
@@ -159,7 +165,7 @@ impl StatusTreeComponent {
 		theme: &'b SharedTheme,
 	) -> Option<Span<'b>> {
 		let indent_str = if indent == 0 {
-			String::from("")
+			String::new()
 		} else {
 			format!("{:w$}", " ", w = (indent as usize) * 2)
 		};
@@ -264,8 +270,6 @@ impl StatusTreeComponent {
 				should_skip_over += 1;
 
 				// don't fold files up
-				//TODO: remove once fixed (https://github.com/rust-lang/rust-clippy/issues/7383)
-				#[allow(clippy::if_same_then_else)]
 				if let FileTreeItemKind::File(_) =
 					&tree_items[idx_temp].kind
 				{
@@ -430,7 +434,7 @@ impl Component for StatusTreeComponent {
 								StackablePopupOpen::BlameFile(
 									BlameFileOpen {
 										file_path: status_item.path,
-										commit_id: None,
+										commit_id: self.revision,
 										selection: None,
 									},
 								),

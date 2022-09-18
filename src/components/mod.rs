@@ -26,6 +26,7 @@ mod revision_files;
 mod revision_files_popup;
 mod stashmsg;
 mod status_tree;
+mod submodules;
 mod syntax_text;
 mod tag_commit;
 mod taglist;
@@ -50,9 +51,7 @@ pub use file_revlog::{FileRevOpen, FileRevlogComponent};
 pub use help::HelpComponent;
 pub use inspect_commit::{InspectCommitComponent, InspectCommitOpen};
 pub use msg::MsgComponent;
-pub use options_popup::{
-	AppOption, OptionsPopupComponent, SharedOptions,
-};
+pub use options_popup::{AppOption, OptionsPopupComponent};
 pub use pull::PullComponent;
 pub use push::PushComponent;
 pub use push_tags::PushTagsComponent;
@@ -61,6 +60,7 @@ pub use reset::ConfirmComponent;
 pub use revision_files::RevisionFilesComponent;
 pub use revision_files_popup::{FileTreeOpen, RevisionFilesPopup};
 pub use stashmsg::StashMsgComponent;
+pub use submodules::SubmodulesListComponent;
 pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;
 pub use taglist::TagListComponent;
@@ -245,9 +245,6 @@ impl From<bool> for EventState {
 /// base component trait
 pub trait Component {
 	///
-	//TODO: remove once workaround for clippy bug:
-	//<https://github.com/rust-lang/rust-clippy/issues/8366>
-	#[allow(clippy::ptr_arg)]
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

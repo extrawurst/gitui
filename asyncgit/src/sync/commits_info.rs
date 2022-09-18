@@ -10,6 +10,12 @@ use unicode_truncate::UnicodeTruncateStr;
 )]
 pub struct CommitId(Oid);
 
+impl Default for CommitId {
+	fn default() -> Self {
+		Self(Oid::zero())
+	}
+}
+
 impl CommitId {
 	/// create new `CommitId`
 	pub const fn new(id: Oid) -> Self {
@@ -27,8 +33,6 @@ impl CommitId {
 	}
 }
 
-//TODO: remove once clippy fixed: https://github.com/rust-lang/rust-clippy/issues/6983
-#[allow(clippy::wrong_self_convention)]
 impl ToString for CommitId {
 	fn to_string(&self) -> String {
 		self.0.to_string()

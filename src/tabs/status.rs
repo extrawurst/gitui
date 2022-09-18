@@ -4,9 +4,10 @@ use crate::{
 		command_pump, event_pump, visibility_blocking,
 		ChangesComponent, CommandBlocking, CommandInfo, Component,
 		DiffComponent, DrawableComponent, EventState,
-		FileTreeItemKind, SharedOptions,
+		FileTreeItemKind,
 	},
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -264,21 +265,21 @@ impl Status {
 						.join(",")
 				)
 			}
-			RepoState::Rebase => {
-				if let Ok(p) = sync::rebase_progress(repo) {
-					format!(
-						"Step: {}/{} Current Commit: {}",
-						p.current + 1,
-						p.steps,
-						p.current_commit
-							.as_ref()
-							.map(CommitId::get_short_string)
-							.unwrap_or_default(),
-					)
-				} else {
-					String::new()
-				}
-			}
+			RepoState::Rebase => sync::rebase_progress(repo)
+				.map_or_else(
+					|_| String::new(),
+					|p| {
+						format!(
+							"Step: {}/{} Current Commit: {}",
+							p.current + 1,
+							p.steps,
+							p.current_commit
+								.as_ref()
+								.map(CommitId::get_short_string)
+								.unwrap_or_default(),
+						)
+					},
+				),
 			RepoState::Revert => {
 				format!(
 					"Revert {}",
@@ -490,7 +491,7 @@ impl Status {
 			let diff_params = DiffParams {
 				path: path.clone(),
 				diff_type,
-				options: self.options.borrow().diff,
+				options: self.options.borrow().diff_options(),
 			};
 
 			if self.diff.current() == (path.clone(), is_stage) {
@@ -781,6 +782,12 @@ impl Component for Status {
 				true,
 				self.pending_revert() || force_all,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::view_submodules(&self.key_config),
+				true,
+				true,
+			));
 		}
 
 		{
@@ -935,6 +942,12 @@ impl Component for Status {
 					self.queue.push(InternalEvent::Update(
 						NeedsUpdate::ALL,
 					));
+					Ok(EventState::Consumed)
+				} else if key_match(
+					k,
+					self.key_config.keys.view_submodules,
+				) {
+					self.queue.push(InternalEvent::ViewSubmodules);
 					Ok(EventState::Consumed)
 				} else {
 					Ok(EventState::NotConsumed)

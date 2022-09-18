@@ -1,6 +1,2 @@
 [advisories]
-ignore = [
-    # see https://github.com/extrawurst/gitui/issues/951
-    "RUSTSEC-2020-0159", 
-    # see https://github.com/extrawurst/gitui/issues/950
-    "RUSTSEC-2020-0071"]
+ignore = []

@@ -10,11 +10,13 @@ use crate::{
 		FileRevlogComponent, HelpComponent, InspectCommitComponent,
 		MsgComponent, OptionsPopupComponent, PullComponent,
 		PushComponent, PushTagsComponent, RenameBranchComponent,
-		RevisionFilesPopup, SharedOptions, StashMsgComponent,
-		TagCommitComponent, TagListComponent,
+		RevisionFilesPopup, StashMsgComponent,
+		SubmodulesListComponent, TagCommitComponent,
+		TagListComponent,
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{key_match, KeyConfig, SharedKeyConfig},
+	options::{Options, SharedOptions},
 	popup_stack::PopupStack,
 	queue::{
 		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
@@ -27,7 +29,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use asyncgit::{
-	sync::{self, RepoPathRef},
+	sync::{self, utils::repo_work_dir, RepoPath, RepoPathRef},
 	AsyncGitNotification, PushType,
 };
 use crossbeam_channel::Sender;
@@ -45,10 +47,17 @@ use tui::{
 	Frame,
 };
 
+#[derive(Clone)]
+pub enum QuitState {
+	None,
+	Close,
+	OpenSubmodule(RepoPath),
+}
+
 /// the main app type
 pub struct App {
 	repo: RepoPathRef,
-	do_quit: bool,
+	do_quit: QuitState,
 	help: HelpComponent,
 	msg: MsgComponent,
 	reset: ConfirmComponent,
@@ -70,6 +79,7 @@ pub struct App {
 	rename_branch_popup: RenameBranchComponent,
 	select_branch_popup: BranchListComponent,
 	options_popup: OptionsPopupComponent,
+	submodule_popup: SubmodulesListComponent,
 	tags_popup: TagListComponent,
 	cmdbar: RefCell<CommandBar>,
 	tab: usize,
@@ -83,6 +93,7 @@ pub struct App {
 	key_config: SharedKeyConfig,
 	input: Input,
 	popup_stack: PopupStack,
+	options: SharedOptions,
 
 	// "Flags"
 	requires_redraw: Cell<bool>,
@@ -100,13 +111,17 @@ impl App {
 		input: Input,
 		theme: Theme,
 		key_config: KeyConfig,
-	) -> Self {
+	) -> Result<Self> {
+		log::trace!("open repo at: {:?}", &repo);
+
 		let queue = Queue::new();
 		let theme = Rc::new(theme);
 		let key_config = Rc::new(key_config);
-		let options = SharedOptions::default();
+		let options = Options::new(repo.clone());
 
-		Self {
+		let tab = options.borrow().current_tab();
+
+		let mut app = Self {
 			input,
 			reset: ConfirmComponent::new(
 				queue.clone(),
@@ -231,12 +246,18 @@ impl App {
 				key_config.clone(),
 				options.clone(),
 			),
+			submodule_popup: SubmodulesListComponent::new(
+				repo.clone(),
+				&queue,
+				theme.clone(),
+				key_config.clone(),
+			),
 			find_file_popup: FileFindPopup::new(
 				&queue,
 				theme.clone(),
 				key_config.clone(),
 			),
-			do_quit: false,
+			do_quit: QuitState::None,
 			cmdbar: RefCell::new(CommandBar::new(
 				theme.clone(),
 				key_config.clone(),
@@ -246,7 +267,6 @@ impl App {
 				key_config.clone(),
 			),
 			msg: MsgComponent::new(theme.clone(), key_config.clone()),
-			tab: 0,
 			revlog: Revlog::new(
 				&repo,
 				&queue,
@@ -260,7 +280,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
-				options,
+				options.clone(),
 			),
 			stashing_tab: Stashing::new(
 				&repo,
@@ -282,14 +302,20 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
+			tab: 0,
 			queue,
 			theme,
+			options,
 			key_config,
 			requires_redraw: Cell::new(false),
 			file_to_open: None,
 			repo,
 			popup_stack: PopupStack::default(),
-		}
+		};
+
+		app.set_tab(tab)?;
+
+		Ok(app)
 	}
 
 	///
@@ -486,7 +512,13 @@ impl App {
 
 	///
 	pub fn is_quit(&self) -> bool {
-		self.do_quit || self.input.is_aborted()
+		!matches!(self.do_quit, QuitState::None)
+			|| self.input.is_aborted()
+	}
+
+	///
+	pub fn quit_state(&self) -> QuitState {
+		self.do_quit.clone()
 	}
 
 	///
@@ -543,6 +575,7 @@ impl App {
 			rename_branch_popup,
 			select_branch_popup,
 			revision_files_popup,
+			submodule_popup,
 			tags_popup,
 			options_popup,
 			help,
@@ -567,6 +600,7 @@ impl App {
 			external_editor_popup,
 			tag_commit_popup,
 			select_branch_popup,
+			submodule_popup,
 			tags_popup,
 			create_branch_popup,
 			rename_branch_popup,
@@ -588,7 +622,7 @@ impl App {
 		}
 		if let Event::Key(e) = ev {
 			if key_match(e, self.key_config.keys.quit) {
-				self.do_quit = true;
+				self.do_quit = QuitState::Close;
 				return true;
 			}
 		}
@@ -598,7 +632,7 @@ impl App {
 	fn check_hard_exit(&mut self, ev: &Event) -> bool {
 		if let Event::Key(e) = ev {
 			if key_match(e, self.key_config.keys.exit) {
-				self.do_quit = true;
+				self.do_quit = QuitState::Close;
 				return true;
 			}
 		}
@@ -653,6 +687,7 @@ impl App {
 		}
 
 		self.tab = tab;
+		self.options.borrow_mut().set_current_tab(tab);
 
 		Ok(())
 	}
@@ -775,6 +810,9 @@ impl App {
 			InternalEvent::SelectBranch => {
 				self.select_branch_popup.open()?;
 			}
+			InternalEvent::ViewSubmodules => {
+				self.submodule_popup.open()?;
+			}
 			InternalEvent::Tags => {
 				self.tags_popup.open()?;
 			}
@@ -865,6 +903,15 @@ impl App {
 				self.popup_stack.push(popup);
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::OpenRepo { path } => {
+				let submodule_repo_path = RepoPath::Path(
+					Path::new(&repo_work_dir(&self.repo.borrow())?)
+						.join(path),
+				);
+				//TODO: validate this is a valid repo first, so we can show proper error otherwise
+				self.do_quit =
+					QuitState::OpenSubmodule(submodule_repo_path);
 			}
 		};
 

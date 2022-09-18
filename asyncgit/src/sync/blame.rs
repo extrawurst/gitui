@@ -131,12 +131,12 @@ pub fn blame_file(
 
 					return (
 						Some(hunk),
-						line.unwrap_or_else(|_| "".into()),
+						line.unwrap_or_else(|_| String::new()),
 					);
 				}
 			}
 
-			(None, line.unwrap_or_else(|_| "".into()))
+			(None, line.unwrap_or_else(|_| String::new()))
 		})
 		.collect();
 

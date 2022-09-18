@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState,
@@ -7,12 +5,13 @@ use super::{
 use crate::{
 	components::utils::string_width_align,
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{InternalEvent, Queue},
 	strings::{self},
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::sync::{diff::DiffOptions, ShowUntrackedFilesConfig};
+use asyncgit::sync::ShowUntrackedFilesConfig;
 use crossterm::event::Event;
 use tui::{
 	backend::Backend,
@@ -30,14 +29,6 @@ pub enum AppOption {
 	DiffContextLines,
 	DiffInterhunkLines,
 }
-
-#[derive(Default, Copy, Clone)]
-pub struct Options {
-	pub status_show_untracked: Option<ShowUntrackedFilesConfig>,
-	pub diff: DiffOptions,
-}
-
-pub type SharedOptions = Rc<RefCell<Options>>;
 
 pub struct OptionsPopupComponent {
 	selection: AppOption,
@@ -91,26 +82,27 @@ impl OptionsPopupComponent {
 		);
 		Self::add_header(txt, "");
 
+		let diff = self.options.borrow().diff_options();
 		Self::add_header(txt, "Diff");
 		self.add_entry(
 			txt,
 			width,
 			"Ignore whitespaces",
-			&self.options.borrow().diff.ignore_whitespace.to_string(),
+			&diff.ignore_whitespace.to_string(),
 			self.is_select(AppOption::DiffIgnoreWhitespaces),
 		);
 		self.add_entry(
 			txt,
 			width,
 			"Context lines",
-			&self.options.borrow().diff.context.to_string(),
+			&diff.context.to_string(),
 			self.is_select(AppOption::DiffContextLines),
 		);
 		self.add_entry(
 			txt,
 			width,
 			"Inter hunk lines",
-			&self.options.borrow().diff.interhunk_lines.to_string(),
+			&diff.interhunk_lines.to_string(),
 			self.is_select(AppOption::DiffInterhunkLines),
 		);
 	}

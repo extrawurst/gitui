@@ -11,7 +11,7 @@ use super::{
 
 pub type SharedKeyConfig = Rc<KeyConfig>;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct KeyConfig {
 	pub keys: KeysList,
 	symbols: KeySymbols,
@@ -96,7 +96,7 @@ impl KeyConfig {
 			KeyCode::Null => {
 				self.get_modifier_hint(ev.modifiers).into()
 			}
-			_ => "".into(),
+			_ => String::new(),
 		}
 	}
 

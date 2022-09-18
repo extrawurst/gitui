@@ -113,7 +113,7 @@ impl Revlog {
 
 				self.commit_details.set_commits(
 					commit.map(CommitFilesParams::from),
-					tags,
+					&tags,
 				)?;
 			}
 		}

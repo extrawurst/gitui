@@ -92,7 +92,7 @@ impl CommitDetailsComponent {
 	pub fn set_commits(
 		&mut self,
 		params: Option<CommitFilesParams>,
-		tags: Option<CommitTags>,
+		tags: &Option<CommitTags>,
 	) -> Result<()> {
 		if params.is_none() {
 			self.single_details.set_commit(None, None);
@@ -102,11 +102,14 @@ impl CommitDetailsComponent {
 		self.commit = params;
 
 		if let Some(id) = params {
+			self.file_tree.set_commit(Some(id.id));
+
 			if let Some(other) = id.other {
 				self.compare_details
 					.set_commits(Some((id.id, other)));
 			} else {
-				self.single_details.set_commit(Some(id.id), tags);
+				self.single_details
+					.set_commit(Some(id.id), tags.clone());
 			}
 
 			if let Some((fetched_id, res)) =

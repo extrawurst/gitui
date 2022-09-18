@@ -73,18 +73,19 @@ pub fn extract_username_password(
 
 /// extract credentials from url
 pub fn extract_cred_from_url(url: &str) -> BasicAuthCredential {
-	if let Ok(url) = url::Url::parse(url) {
-		BasicAuthCredential::new(
-			if url.username() == "" {
-				None
-			} else {
-				Some(url.username().to_owned())
-			},
-			url.password().map(std::borrow::ToOwned::to_owned),
-		)
-	} else {
-		BasicAuthCredential::new(None, None)
-	}
+	url::Url::parse(url).map_or_else(
+		|_| BasicAuthCredential::new(None, None),
+		|url| {
+			BasicAuthCredential::new(
+				if url.username() == "" {
+					None
+				} else {
+					Some(url.username().to_owned())
+				},
+				url.password().map(std::borrow::ToOwned::to_owned),
+			)
+		},
+	)
 }
 
 #[cfg(test)]
@@ -171,8 +172,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
 			.unwrap();
 
@@ -187,8 +186,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "git@github.com:user/repo")
 			.unwrap();
 
@@ -224,9 +221,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
-
 		need_username_password(repo_path).unwrap();
 	}
 
@@ -238,8 +232,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(
 			DEFAULT_REMOTE_NAME,
 			"http://user:pass@github.com",
@@ -263,8 +255,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
 			.unwrap();
 
@@ -283,9 +273,6 @@ mod tests {
 		let root = repo.path().parent().unwrap();
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
-
-		//TODO: not needed anymore?
-		// env::set_current_dir(repo_path).unwrap();
 
 		extract_username_password(repo_path).unwrap();
 	}

@@ -13,26 +13,28 @@ keywords = ["git"]
 
 [dependencies]
 crossbeam-channel = "0.5"
-easy-cast = "0.4"
+easy-cast = "0.5"
 git2 = "0.15"
 log = "0.4"
 # git2 = { path = "../../extern/git2-rs", features = ["vendored-openssl"]}
 # git2 = { git="https://github.com/extrawurst/git2-rs.git", rev="fc13dcc", features = ["vendored-openssl"]}
 # pinning to vendored openssl, using the git2 feature this gets lost with new resolver
-openssl-sys = { version = '0.9', features = ["vendored"] }
+openssl-sys = { version = '0.9', features = ["vendored"], optional = true }
 rayon-core = "1.9"
 scopetime = { path = "../scopetime", version = "0.1" }
 shellexpand = "2.1"
 thiserror = "1.0"
 unicode-truncate = "0.2.0"
-url = "2.2"
+url = "2.3"
 
 [dev-dependencies]
+env_logger = "0.9"
 invalidstring = { path = "../invalidstring", version = "0.1" }
-pretty_assertions = "1.0"
+pretty_assertions = "1.3"
 serial_test = "0.9"
 tempfile = "3.2"
 
 [features]
 default = ["trace-libgit"]
 trace-libgit = []
+vendor-openssl = ["openssl-sys"]

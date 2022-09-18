@@ -372,18 +372,21 @@ impl CommitList {
 
 		// commit tags
 		txt.push(Span::styled(
-			Cow::from(tags.map_or_else(
-				|| String::from(""),
-				|tags| format!(" {}", tags),
-			)),
+			Cow::from(tags.map_or_else(String::new, |tags| {
+				format!(" {}", tags)
+			})),
 			theme.tags(selected),
 		));
 
 		txt.push(splitter);
 
+		let message_width = width.saturating_sub(
+			txt.iter().map(|span| span.content.len()).sum(),
+		);
+
 		// commit msg
 		txt.push(Span::styled(
-			Cow::from(&*e.msg),
+			format!("{:w$}", &e.msg, w = message_width),
 			theme.text(true, selected),
 		));
 

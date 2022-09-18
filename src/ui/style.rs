@@ -1,6 +1,3 @@
-//TODO: remove once fixed https://github.com/rust-lang/rust-clippy/issues/6818
-#![allow(clippy::use_self)]
-
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
 use ron::{
@@ -18,13 +15,15 @@ use tui::style::{Color, Modifier, Style};
 
 pub type SharedTheme = Rc<Theme>;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Theme {
 	selected_tab: Color,
 	#[serde(with = "Color")]
 	command_fg: Color,
 	#[serde(with = "Color")]
 	selection_bg: Color,
+	#[serde(with = "Color")]
+	cmdbar_bg: Color,
 	#[serde(with = "Color")]
 	cmdbar_extra_lines_bg: Color,
 	#[serde(with = "Color")]
@@ -223,7 +222,7 @@ impl Theme {
 			Style::default().fg(self.disabled_fg)
 		}
 		.bg(if line == 0 {
-			self.selection_bg
+			self.cmdbar_bg
 		} else {
 			self.cmdbar_extra_lines_bg
 		})
@@ -280,7 +279,7 @@ impl Theme {
 	}
 
 	// This will only be called when theme.ron doesn't already exists
-	fn save(&self, theme_file: PathBuf) -> Result<()> {
+	fn save(&self, theme_file: &PathBuf) -> Result<()> {
 		let mut file = File::create(theme_file)?;
 		let data = to_string_pretty(self, PrettyConfig::default())?;
 		file.write_all(data.as_bytes())?;
@@ -294,7 +293,7 @@ impl Theme {
 		Ok(from_bytes(&buffer)?)
 	}
 
-	pub fn init(file: PathBuf) -> Result<Self> {
+	pub fn init(file: &PathBuf) -> Result<Self> {
 		if file.exists() {
 			match Self::read_file(file.clone()) {
 				Err(e) => {
@@ -326,6 +325,7 @@ impl Default for Theme {
 			selected_tab: Color::Reset,
 			command_fg: Color::White,
 			selection_bg: Color::Blue,
+			cmdbar_bg: Color::Blue,
 			cmdbar_extra_lines_bg: Color::Blue,
 			disabled_fg: Color::DarkGray,
 			diff_line_add: Color::Green,
