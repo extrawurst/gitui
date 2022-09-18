@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * use filewatcher instead of polling updates ([#1](https://github.com/extrawurst/gitui/issues/1))
 * word motions to text input [[@Rodrigodd](https://github.com/Rodrigodd)] ([#1256](https://github.com/extrawurst/gitui/issues/1256))
 * file blame at right revision from commit-details [[@heiskane](https://github.com/heiskane)] ([#1122](https://github.com/extrawurst/gitui/issues/1122))
+* add `regex-fancy` and `regex-onig` features to allow building Syntect with Onigumara regex engine instead of the default engine based on fancy-regex [[@jirutka](https://github.com/jirutka)]
+* add `vendor-openssl` feature to allow building without vendored openssl [[@jirutka](https://github.com/jirutka)]
 
 ### Fixes
 * remove insecure dependency `ansi_term` ([#1290](https://github.com/extrawurst/gitui/issues/1290))
