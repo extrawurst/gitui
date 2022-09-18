@@ -10,12 +10,13 @@ use crate::{
 		FileRevlogComponent, HelpComponent, InspectCommitComponent,
 		MsgComponent, OptionsPopupComponent, PullComponent,
 		PushComponent, PushTagsComponent, RenameBranchComponent,
-		RevisionFilesPopup, SharedOptions, StashMsgComponent,
+		RevisionFilesPopup, StashMsgComponent,
 		SubmodulesListComponent, TagCommitComponent,
 		TagListComponent,
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{key_match, KeyConfig, SharedKeyConfig},
+	options::{Options, SharedOptions},
 	popup_stack::PopupStack,
 	queue::{
 		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
@@ -92,6 +93,7 @@ pub struct App {
 	key_config: SharedKeyConfig,
 	input: Input,
 	popup_stack: PopupStack,
+	options: SharedOptions,
 
 	// "Flags"
 	requires_redraw: Cell<bool>,
@@ -109,15 +111,17 @@ impl App {
 		input: Input,
 		theme: Theme,
 		key_config: KeyConfig,
-	) -> Self {
+	) -> Result<Self> {
 		log::trace!("open repo at: {:?}", &repo);
 
 		let queue = Queue::new();
 		let theme = Rc::new(theme);
 		let key_config = Rc::new(key_config);
-		let options = SharedOptions::default();
+		let options = Options::new(repo.clone());
 
-		Self {
+		let tab = options.borrow().current_tab();
+
+		let mut app = Self {
 			input,
 			reset: ConfirmComponent::new(
 				queue.clone(),
@@ -263,7 +267,6 @@ impl App {
 				key_config.clone(),
 			),
 			msg: MsgComponent::new(theme.clone(), key_config.clone()),
-			tab: 0,
 			revlog: Revlog::new(
 				&repo,
 				&queue,
@@ -277,7 +280,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
-				options,
+				options.clone(),
 			),
 			stashing_tab: Stashing::new(
 				&repo,
@@ -299,14 +302,20 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
+			tab: 0,
 			queue,
 			theme,
+			options,
 			key_config,
 			requires_redraw: Cell::new(false),
 			file_to_open: None,
 			repo,
 			popup_stack: PopupStack::default(),
-		}
+		};
+
+		app.set_tab(tab)?;
+
+		Ok(app)
 	}
 
 	///
@@ -678,6 +687,7 @@ impl App {
 		}
 
 		self.tab = tab;
+		self.options.borrow_mut().set_current_tab(tab);
 
 		Ok(())
 	}

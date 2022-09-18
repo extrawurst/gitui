@@ -27,6 +27,7 @@ mod components;
 mod input;
 mod keys;
 mod notify_mutex;
+mod options;
 mod popup_stack;
 mod profiler;
 mod queue;
@@ -175,7 +176,7 @@ fn run_app(
 		input.clone(),
 		theme,
 		key_config,
-	);
+	)?;
 
 	let mut spinner = Spinner::default();
 	let mut first_update = true;

@@ -4,9 +4,10 @@ use crate::{
 		command_pump, event_pump, visibility_blocking,
 		ChangesComponent, CommandBlocking, CommandInfo, Component,
 		DiffComponent, DrawableComponent, EventState,
-		FileTreeItemKind, SharedOptions,
+		FileTreeItemKind,
 	},
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -490,7 +491,7 @@ impl Status {
 			let diff_params = DiffParams {
 				path: path.clone(),
 				diff_type,
-				options: self.options.borrow().diff,
+				options: self.options.borrow().diff_options(),
 			};
 
 			if self.diff.current() == (path.clone(), is_stage) {
