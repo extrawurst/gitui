@@ -189,10 +189,12 @@ impl CommitList {
 				.marked_indexes()
 				.iter()
 				.map(|e| {
-					self.items.iter().nth(*e).map_or_else(
-						|| String::from(""),
-						|le| le.hash_short.to_string(),
-					)
+					self.items
+						.iter()
+						.nth(*e)
+						.map_or_else(String::new, |le| {
+							le.hash_short.to_string()
+						})
 				})
 				.join(" ");
 
