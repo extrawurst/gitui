@@ -19,14 +19,12 @@ use std::{
 #[derive(Default, Copy, Clone, Serialize, Deserialize)]
 struct OptionsData {
 	pub tab: usize,
+	pub diff: DiffOptions,
+	pub status_show_untracked: Option<ShowUntrackedFilesConfig>,
 }
 
 #[derive(Clone)]
 pub struct Options {
-	//TODO: un-pub and use getters/setters and move into persisted data
-	pub status_show_untracked: Option<ShowUntrackedFilesConfig>,
-	pub diff: DiffOptions,
-
 	repo: RepoPathRef,
 	data: OptionsData,
 }
@@ -37,8 +35,6 @@ impl Options {
 	pub fn new(repo: RepoPathRef) -> SharedOptions {
 		Rc::new(RefCell::new(Self {
 			data: Self::read(&repo).unwrap_or_default(),
-			diff: DiffOptions::default(),
-			status_show_untracked: None,
 			repo,
 		}))
 	}
@@ -53,7 +49,48 @@ impl Options {
 	}
 
 	pub const fn diff_options(&self) -> DiffOptions {
-		self.diff
+		self.data.diff
+	}
+
+	pub const fn status_show_untracked(
+		&self,
+	) -> Option<ShowUntrackedFilesConfig> {
+		self.data.status_show_untracked
+	}
+
+	pub fn set_status_show_untracked(
+		&mut self,
+		value: Option<ShowUntrackedFilesConfig>,
+	) {
+		self.data.status_show_untracked = value;
+		self.save();
+	}
+
+	pub fn diff_context_change(&mut self, increase: bool) {
+		self.data.diff.context = if increase {
+			self.data.diff.context.saturating_add(1)
+		} else {
+			self.data.diff.context.saturating_sub(1)
+		};
+
+		self.save();
+	}
+
+	pub fn diff_hunk_lines_change(&mut self, increase: bool) {
+		self.data.diff.interhunk_lines = if increase {
+			self.data.diff.interhunk_lines.saturating_add(1)
+		} else {
+			self.data.diff.interhunk_lines.saturating_sub(1)
+		};
+
+		self.save();
+	}
+
+	pub fn diff_toggle_whitespace(&mut self) {
+		self.data.diff.ignore_whitespace =
+			!self.data.diff.ignore_whitespace;
+
+		self.save();
 	}
 
 	fn save(&self) {

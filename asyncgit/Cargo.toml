@@ -22,6 +22,7 @@ log = "0.4"
 openssl-sys = { version = '0.9', features = ["vendored"], optional = true }
 rayon-core = "1.9"
 scopetime = { path = "../scopetime", version = "0.1" }
+serde = "1.0"
 shellexpand = "2.1"
 thiserror = "1.0"
 unicode-truncate = "0.2.0"

@@ -13,6 +13,7 @@ use git2::{
 	Delta, Diff, DiffDelta, DiffFormat, DiffHunk, Patch, Repository,
 };
 use scopetime::scope_time;
+use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, fs, path::Path, rc::Rc};
 
 /// type of diff of a single line
@@ -127,7 +128,9 @@ pub struct FileDiff {
 }
 
 /// see <https://libgit2.org/libgit2/#HEAD/type/git_diff_options>
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(
+	Debug, Hash, Clone, Copy, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub struct DiffOptions {
 	/// see <https://libgit2.org/libgit2/#HEAD/type/git_diff_options>
 	pub ignore_whitespace: bool,

@@ -1,12 +1,15 @@
 use crate::error::Result;
 use git2::Repository;
 use scopetime::scope_time;
+use serde::{Deserialize, Serialize};
 
 use super::{repository::repo, RepoPath};
 
 // see https://git-scm.com/docs/git-config#Documentation/git-config.txt-statusshowUntrackedFiles
 /// represents the `status.showUntrackedFiles` git config state
-#[derive(Hash, Copy, Clone, PartialEq, Eq)]
+#[derive(
+	Hash, Copy, Clone, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub enum ShowUntrackedFilesConfig {
 	///
 	No,

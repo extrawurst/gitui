@@ -75,6 +75,7 @@ dependencies = [
  "pretty_assertions",
  "rayon-core",
  "scopetime",
+ "serde",
  "serial_test",
  "shellexpand",
  "tempfile",
