@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * file blame at right revision from commit-details [[@heiskane](https://github.com/heiskane)] ([#1122](https://github.com/extrawurst/gitui/issues/1122))
 * add `regex-fancy` and `regex-onig` features to allow building Syntect with Onigumara regex engine instead of the default engine based on fancy-regex [[@jirutka](https://github.com/jirutka)]
 * add `vendor-openssl` feature to allow building without vendored openssl [[@jirutka](https://github.com/jirutka)]
+* allow copying marked commits [[@remique](https://github.com/remique)] ([#1288](https://github.com/extrawurst/gitui/issues/1288))
 
 ### Fixes
 * remove insecure dependency `ansi_term` ([#1290](https://github.com/extrawurst/gitui/issues/1290))
