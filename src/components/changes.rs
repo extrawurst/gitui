@@ -107,7 +107,7 @@ impl ChangesComponent {
 					};
 				} else {
 					let config =
-						self.options.borrow().status_show_untracked;
+						self.options.borrow().status_show_untracked();
 
 					//TODO: check if we can handle the one file case with it aswell
 					sync::stage_add_all(
@@ -123,7 +123,7 @@ impl ChangesComponent {
 				// would mean that after staging the workdir becomes empty
 				if sync::is_workdir_clean(
 					&self.repo.borrow(),
-					self.options.borrow().status_show_untracked,
+					self.options.borrow().status_show_untracked(),
 				)? {
 					self.queue
 						.push(InternalEvent::StatusLastFileMoved);
@@ -141,7 +141,7 @@ impl ChangesComponent {
 	}
 
 	fn index_add_all(&mut self) -> Result<()> {
-		let config = self.options.borrow().status_show_untracked;
+		let config = self.options.borrow().status_show_untracked();
 
 		sync::stage_add_all(&self.repo.borrow(), "*", config)?;
 

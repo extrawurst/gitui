@@ -397,7 +397,8 @@ impl Status {
 		self.git_branch_name.lookup().map(Some).unwrap_or(None);
 
 		if self.is_visible() {
-			let config = self.options.borrow().status_show_untracked;
+			let config =
+				self.options.borrow().status_show_untracked();
 
 			self.git_diff.refresh()?;
 			self.git_status_workdir.fetch(&StatusParams::new(

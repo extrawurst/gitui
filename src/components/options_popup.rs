@@ -72,7 +72,7 @@ impl OptionsPopupComponent {
 			txt,
 			width,
 			"Show untracked",
-			match self.options.borrow().status_show_untracked {
+			match self.options.borrow().status_show_untracked() {
 				None => "Gitconfig",
 				Some(ShowUntrackedFilesConfig::No) => "No",
 				Some(ShowUntrackedFilesConfig::Normal) => "Normal",
@@ -179,7 +179,7 @@ impl OptionsPopupComponent {
 			match self.selection {
 				AppOption::StatusShowUntracked => {
 					let untracked =
-						self.options.borrow().status_show_untracked;
+						self.options.borrow().status_show_untracked();
 
 					let untracked = match untracked {
 						None => {
@@ -194,34 +194,31 @@ impl OptionsPopupComponent {
 						Some(ShowUntrackedFilesConfig::No) => None,
 					};
 
-					self.options.borrow_mut().status_show_untracked =
-						untracked;
-				}
-				AppOption::DiffIgnoreWhitespaces => {
-					let old =
-						self.options.borrow().diff.ignore_whitespace;
 					self.options
 						.borrow_mut()
-						.diff
-						.ignore_whitespace = !old;
+						.set_status_show_untracked(untracked);
+				}
+				AppOption::DiffIgnoreWhitespaces => {
+					self.options
+						.borrow_mut()
+						.diff_toggle_whitespace();
 				}
 				AppOption::DiffContextLines => {
-					let old = self.options.borrow().diff.context;
-					self.options.borrow_mut().diff.context =
-						old.saturating_add(1);
+					self.options
+						.borrow_mut()
+						.diff_context_change(true);
 				}
 				AppOption::DiffInterhunkLines => {
-					let old =
-						self.options.borrow().diff.interhunk_lines;
-					self.options.borrow_mut().diff.interhunk_lines =
-						old.saturating_add(1);
+					self.options
+						.borrow_mut()
+						.diff_hunk_lines_change(true);
 				}
 			};
 		} else {
 			match self.selection {
 				AppOption::StatusShowUntracked => {
 					let untracked =
-						self.options.borrow().status_show_untracked;
+						self.options.borrow().status_show_untracked();
 
 					let untracked = match untracked {
 						None => Some(ShowUntrackedFilesConfig::No),
@@ -236,27 +233,24 @@ impl OptionsPopupComponent {
 						}
 					};
 
-					self.options.borrow_mut().status_show_untracked =
-						untracked;
-				}
-				AppOption::DiffIgnoreWhitespaces => {
-					let old =
-						self.options.borrow().diff.ignore_whitespace;
 					self.options
 						.borrow_mut()
-						.diff
-						.ignore_whitespace = !old;
+						.set_status_show_untracked(untracked);
+				}
+				AppOption::DiffIgnoreWhitespaces => {
+					self.options
+						.borrow_mut()
+						.diff_toggle_whitespace();
 				}
 				AppOption::DiffContextLines => {
-					let old = self.options.borrow().diff.context;
-					self.options.borrow_mut().diff.context =
-						old.saturating_sub(1);
+					self.options
+						.borrow_mut()
+						.diff_context_change(false);
 				}
 				AppOption::DiffInterhunkLines => {
-					let old =
-						self.options.borrow().diff.interhunk_lines;
-					self.options.borrow_mut().diff.interhunk_lines =
-						old.saturating_sub(1);
+					self.options
+						.borrow_mut()
+						.diff_hunk_lines_change(false);
 				}
 			};
 		}
