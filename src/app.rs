@@ -133,6 +133,7 @@ impl App {
 				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			blame_file_popup: BlameFileComponent::new(
 				&repo,

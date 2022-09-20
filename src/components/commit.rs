@@ -5,6 +5,7 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -51,6 +52,7 @@ pub struct CommitComponent {
 	git_branch_name: cached::BranchName,
 	commit_template: Option<String>,
 	theme: SharedTheme,
+	options: SharedOptions,
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
@@ -62,6 +64,7 @@ impl CommitComponent {
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			queue,
@@ -78,6 +81,7 @@ impl CommitComponent {
 			commit_template: None,
 			theme,
 			repo,
+			options,
 		}
 	}
 
@@ -186,6 +190,10 @@ impl CommitComponent {
 			self.commit_with_msg(msg)?,
 			CommitResult::ComitDone
 		) {
+			self.options
+				.borrow_mut()
+				.add_commit_msg(self.input.get_text());
+
 			self.hide();
 			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 			self.input.clear();
