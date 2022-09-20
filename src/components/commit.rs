@@ -52,6 +52,7 @@ pub struct CommitComponent {
 	git_branch_name: cached::BranchName,
 	commit_template: Option<String>,
 	theme: SharedTheme,
+	commit_msg_history_idx: usize,
 	options: SharedOptions,
 }
 
@@ -81,6 +82,7 @@ impl CommitComponent {
 			commit_template: None,
 			theme,
 			repo,
+			commit_msg_history_idx: 0,
 			options,
 		}
 	}
@@ -193,6 +195,7 @@ impl CommitComponent {
 			self.options
 				.borrow_mut()
 				.add_commit_msg(self.input.get_text());
+			self.commit_msg_history_idx = 0;
 
 			self.hide();
 			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
@@ -336,6 +339,14 @@ impl Component for CommitComponent {
 				true,
 				true,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::commit_next_msg_from_history(
+					&self.key_config,
+				),
+				true,
+				true,
+			));
 		}
 
 		visibility_blocking(self)
@@ -370,6 +381,18 @@ impl Component for CommitComponent {
 						InternalEvent::OpenExternalEditor(None),
 					);
 					self.hide();
+				} else if key_match(
+					e,
+					self.key_config.keys.commit_history_next,
+				) {
+					if let Some(msg) = self
+						.options
+						.borrow()
+						.commit_msg(self.commit_msg_history_idx)
+					{
+						self.input.set_text(msg);
+						self.commit_msg_history_idx += 1;
+					}
 				} else {
 				}
 				// stop key event propagation
@@ -432,6 +455,7 @@ impl Component for CommitComponent {
 			}
 		};
 
+		self.commit_msg_history_idx = 0;
 		self.input.show()?;
 
 		Ok(())

@@ -837,6 +837,19 @@ pub mod commands {
 			CMD_GROUP_COMMIT,
 		)
 	}
+	pub fn commit_next_msg_from_history(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Previous Msg [{}]",
+				key_config
+					.get_hint(key_config.keys.commit_history_next),
+			),
+			"use previous commit message from history",
+			CMD_GROUP_COMMIT,
+		)
+	}
 	pub fn commit_enter(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
