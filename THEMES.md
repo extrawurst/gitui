@@ -13,10 +13,9 @@ to change the colors of the default theme you have to modify `theme.ron` file
 
 Alternatively you may make a theme in the same directory mentioned above with and select with the `-t` flag followed by the name of the file in the directory. E.g. If you are on linux calling `gitui -t arc.ron` wil use `$XDG_CONFIG_HOME/gitui/arc.ron` or `$HOME/.config/gitui/arc.ron`
 
-Valid colors can be found in tui-rs' [Color](https://docs.rs/tui/0.12.0/tui/style/enum.Color.html) struct. 
-
 Notes:
 
 * rgb colors might not be supported in every terminal. 
 * using a color like `yellow` might appear in whatever your terminal/theme defines for `yellow`
-
+* valid colors can be found in tui-rs' [Color](https://docs.rs/tui/0.12.0/tui/style/enum.Color.html) struct. 
+* all customizable theme elements can be found in `style.rs` in the `impl Default for Theme` block
