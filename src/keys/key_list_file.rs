@@ -82,6 +82,7 @@ pub struct KeysListFile {
 	pub view_submodules: Option<GituiKeyEvent>,
 	pub view_submodule_parent: Option<GituiKeyEvent>,
 	pub update_dubmodule: Option<GituiKeyEvent>,
+	pub commit_history_next: Option<GituiKeyEvent>,
 }
 
 impl KeysListFile {
@@ -172,6 +173,7 @@ impl KeysListFile {
 			view_submodules: self.view_submodules.unwrap_or(default.view_submodules),
 			view_submodule_parent: self.view_submodule_parent.unwrap_or(default.view_submodule_parent),
 			update_submodule: self.update_dubmodule.unwrap_or(default.update_submodule),
+			commit_history_next: self.commit_history_next.unwrap_or(default.commit_history_next),
 		}
 	}
 }

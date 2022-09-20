@@ -16,12 +16,15 @@ use std::{
 	rc::Rc,
 };
 
-#[derive(Default, Copy, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 struct OptionsData {
 	pub tab: usize,
 	pub diff: DiffOptions,
 	pub status_show_untracked: Option<ShowUntrackedFilesConfig>,
+	pub commit_msgs: Vec<String>,
 }
+
+const COMMIT_MSG_HISTRY_LENGTH: usize = 20;
 
 #[derive(Clone)]
 pub struct Options {
@@ -91,6 +94,26 @@ impl Options {
 			!self.data.diff.ignore_whitespace;
 
 		self.save();
+	}
+
+	pub fn add_commit_msg(&mut self, msg: &str) {
+		self.data.commit_msgs.push(msg.to_owned());
+		while self.data.commit_msgs.len() > COMMIT_MSG_HISTRY_LENGTH {
+			self.data.commit_msgs.remove(0);
+		}
+		self.save();
+	}
+
+	pub fn commit_msg(&self, idx: usize) -> Option<String> {
+		if self.data.commit_msgs.is_empty() {
+			None
+		} else {
+			Some(
+				self.data.commit_msgs
+					[idx % self.data.commit_msgs.len()]
+				.to_string(),
+			)
+		}
 	}
 
 	fn save(&self) {
