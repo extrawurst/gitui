@@ -18,39 +18,22 @@ pub type SharedTheme = Rc<Theme>;
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Theme {
 	selected_tab: Color,
-	#[serde(with = "Color")]
 	command_fg: Color,
-	#[serde(with = "Color")]
 	selection_bg: Color,
-	#[serde(with = "Color")]
 	cmdbar_bg: Color,
-	#[serde(with = "Color")]
 	cmdbar_extra_lines_bg: Color,
-	#[serde(with = "Color")]
 	disabled_fg: Color,
-	#[serde(with = "Color")]
 	diff_line_add: Color,
-	#[serde(with = "Color")]
 	diff_line_delete: Color,
-	#[serde(with = "Color")]
 	diff_file_added: Color,
-	#[serde(with = "Color")]
 	diff_file_removed: Color,
-	#[serde(with = "Color")]
 	diff_file_moved: Color,
-	#[serde(with = "Color")]
 	diff_file_modified: Color,
-	#[serde(with = "Color")]
 	commit_hash: Color,
-	#[serde(with = "Color")]
 	commit_time: Color,
-	#[serde(with = "Color")]
 	commit_author: Color,
-	#[serde(with = "Color")]
 	danger_fg: Color,
-	#[serde(with = "Color")]
 	push_gauge_bg: Color,
-	#[serde(with = "Color")]
 	push_gauge_fg: Color,
 }
 
