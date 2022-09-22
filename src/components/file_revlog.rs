@@ -446,7 +446,7 @@ impl DrawableComponent for FileRevlogComponent {
 	) -> Result<()> {
 		if self.visible {
 			let percentages = if self.diff.focused() {
-				(30, 70)
+				(0, 100)
 			} else {
 				(50, 50)
 			};

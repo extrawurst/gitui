@@ -71,7 +71,7 @@ impl DrawableComponent for InspectCommitComponent {
 	) -> Result<()> {
 		if self.is_visible() {
 			let percentages = if self.diff.focused() {
-				(30, 70)
+				(0, 100)
 			} else {
 				(50, 50)
 			};
