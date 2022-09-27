@@ -14,7 +14,11 @@
 #![deny(clippy::match_like_matches_macro)]
 #![deny(clippy::needless_update)]
 #![allow(clippy::module_name_repetitions)]
-#![allow(clippy::multiple_crate_versions)]
+#![allow(
+	clippy::multiple_crate_versions,
+	clippy::bool_to_int_with_if,
+	clippy::module_name_repetitions
+)]
 //TODO:
 // #![deny(clippy::expect_used)]
 
