@@ -20,6 +20,7 @@ pub struct Theme {
 	selected_tab: Color,
 	command_fg: Color,
 	selection_bg: Color,
+	selection_fg: Color,
 	cmdbar_bg: Color,
 	cmdbar_extra_lines_bg: Color,
 	disabled_fg: Color,
@@ -147,7 +148,7 @@ impl Theme {
 
 	fn apply_select(&self, style: Style, selected: bool) -> Style {
 		if selected {
-			style.bg(self.selection_bg)
+			style.bg(self.selection_bg).fg(self.selection_fg)
 		} else {
 			style
 		}
@@ -308,6 +309,7 @@ impl Default for Theme {
 			selected_tab: Color::Reset,
 			command_fg: Color::White,
 			selection_bg: Color::Blue,
+			selection_fg: Color::White,
 			cmdbar_bg: Color::Blue,
 			cmdbar_extra_lines_bg: Color::Blue,
 			disabled_fg: Color::DarkGray,
