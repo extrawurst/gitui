@@ -45,9 +45,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 
 	let arg_theme = arg_matches
 		.get_one::<String>("theme")
-		.map(PathBuf::from)
-		.unwrap_or_else(|| PathBuf::from("theme.ron"));
-
+		.map_or_else(|| PathBuf::from("theme.ron"), PathBuf::from);
 	if get_app_config_path()?.join(&arg_theme).is_file() {
 		Ok(CliArgs {
 			theme: get_app_config_path()?.join(&arg_theme),
@@ -62,7 +60,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 }
 
 fn app() -> ClapApp {
-	let app = ClapApp::new(crate_name!())
+	ClapApp::new(crate_name!())
 		.author(crate_authors!())
 		.version(crate_version!())
 		.about(crate_description!())
@@ -100,8 +98,7 @@ fn app() -> ClapApp {
 				.long("workdir")
 				.env("GIT_WORK_TREE")
 				.num_args(1),
-		);
-	app
+		)
 }
 
 fn setup_logging() -> Result<()> {
