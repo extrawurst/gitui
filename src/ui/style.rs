@@ -36,6 +36,7 @@ pub struct Theme {
 	danger_fg: Color,
 	push_gauge_bg: Color,
 	push_gauge_fg: Color,
+	tag_fg: Color,
 }
 
 impl Theme {
@@ -89,7 +90,7 @@ impl Theme {
 
 	pub fn tags(&self, selected: bool) -> Style {
 		Style::default()
-			.fg(self.selected_tab)
+			.fg(self.tag_fg)
 			.add_modifier(Modifier::BOLD)
 			.bg(if selected {
 				self.selection_bg
@@ -325,6 +326,7 @@ impl Default for Theme {
 			danger_fg: Color::Red,
 			push_gauge_bg: Color::Blue,
 			push_gauge_fg: Color::Reset,
+			tag_fg: Color::LightMagenta,
 		}
 	}
 }

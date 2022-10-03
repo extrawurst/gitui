@@ -373,12 +373,10 @@ impl CommitList {
 		txt.push(splitter.clone());
 
 		// commit tags
-		txt.push(Span::styled(
-			Cow::from(tags.map_or_else(String::new, |tags| {
-				format!(" {}", tags)
-			})),
-			theme.tags(selected),
-		));
+		if let Some(tags) = tags {
+			txt.push(splitter.clone());
+			txt.push(Span::styled(tags, theme.tags(selected)));
+		}
 
 		txt.push(splitter);
 
@@ -413,7 +411,11 @@ impl CommitList {
 		{
 			let tags =
 				self.tags.as_ref().and_then(|t| t.get(&e.id)).map(
-					|tags| tags.iter().map(|t| &t.name).join(" "),
+					|tags| {
+						tags.iter()
+							.map(|t| format!("<{}>", t.name))
+							.join(" ")
+					},
 				);
 
 			let marked = if any_marked {
