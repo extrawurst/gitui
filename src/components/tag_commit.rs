@@ -4,10 +4,10 @@ use super::{
 	EventState,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
-	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::sync::{
@@ -126,24 +126,18 @@ impl Component for TagCommitComponent {
 
 impl TagCommitComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			queue,
+			queue: env.queue.clone(),
 			input: TextInputComponent::new(
-				theme,
-				key_config.clone(),
+				env,
 				&strings::tag_popup_name_title(),
 				&strings::tag_popup_name_msg(),
 				true,
 			),
 			commit_id: None,
-			key_config,
-			repo,
+			key_config: env.key_config.clone(),
+			repo: env.repo.clone(),
 			mode: Mode::Name,
 		}
 	}

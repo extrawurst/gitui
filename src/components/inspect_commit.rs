@@ -5,18 +5,17 @@ use super::{
 };
 use crate::{
 	accessors,
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings,
-	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{CommitId, CommitTags, RepoPathRef},
+	sync::{CommitId, CommitTags},
 	AsyncDiff, AsyncGitNotification, DiffParams, DiffType,
 };
-use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
@@ -204,36 +203,19 @@ impl InspectCommitComponent {
 	accessors!(self, [diff, details]);
 
 	///
-	pub fn new(
-		repo: &RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-		options: SharedOptions,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			queue: queue.clone(),
-			details: CommitDetailsComponent::new(
-				repo,
-				queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-			),
-			diff: DiffComponent::new(
-				repo.clone(),
-				queue.clone(),
-				theme,
-				key_config.clone(),
-				true,
-				options.clone(),
-			),
+			queue: env.queue.clone(),
+			details: CommitDetailsComponent::new(env),
+			diff: DiffComponent::new(env, true),
 			open_request: None,
-			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),
+			git_diff: AsyncDiff::new(
+				env.repo.borrow().clone(),
+				&env.sender_git,
+			),
 			visible: false,
-			key_config,
-			options,
+			key_config: env.key_config.clone(),
+			options: env.options.clone(),
 		}
 	}
 

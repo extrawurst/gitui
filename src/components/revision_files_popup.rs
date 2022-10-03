@@ -6,18 +6,14 @@ use super::{
 	EventState,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self},
-	ui::style::SharedTheme,
-	AsyncAppNotification, AsyncNotification,
+	AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::{
-	sync::{CommitId, RepoPathRef},
-	AsyncGitNotification,
-};
-use crossbeam_channel::Sender;
+use asyncgit::sync::CommitId;
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend, layout::Rect, widgets::Clear, Frame,
@@ -48,27 +44,13 @@ pub struct RevisionFilesPopup {
 
 impl RevisionFilesPopup {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncAppNotification>,
-		sender_git: Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			files: RevisionFilesComponent::new(
-				repo,
-				queue,
-				sender,
-				sender_git,
-				theme,
-				key_config.clone(),
-			),
+			files: RevisionFilesComponent::new(env),
 			visible: false,
-			key_config,
+			key_config: env.key_config.clone(),
 			open_request: None,
-			queue: queue.clone(),
+			queue: env.queue.clone(),
 		}
 	}
 

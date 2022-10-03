@@ -4,6 +4,7 @@ use super::{
 	TextInputComponent,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
 	string_utils::trim_length_left,
@@ -39,30 +40,21 @@ pub struct FuzzyFindPopup {
 
 impl FuzzyFindPopup {
 	///
-	pub fn new(
-		queue: &Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
-		let mut find_text = TextInputComponent::new(
-			theme.clone(),
-			key_config.clone(),
-			"",
-			"start typing..",
-			false,
-		);
+	pub fn new(env: &Environment) -> Self {
+		let mut find_text =
+			TextInputComponent::new(env, "", "start typing..", false);
 		find_text.embed();
 
 		Self {
-			queue: queue.clone(),
+			queue: env.queue.clone(),
 			visible: false,
 			query: None,
 			find_text,
-			theme,
+			theme: env.theme.clone(),
 			contents: Vec::new(),
 			filtered: Vec::new(),
 			selected_index: None,
-			key_config,
+			key_config: env.key_config.clone(),
 			selection: 0,
 			target: None,
 		}

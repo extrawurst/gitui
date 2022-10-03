@@ -4,6 +4,7 @@ use super::{
 	EventState,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
@@ -95,24 +96,18 @@ impl Component for CreateBranchComponent {
 
 impl CreateBranchComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			queue,
+			queue: env.queue.clone(),
 			input: TextInputComponent::new(
-				theme.clone(),
-				key_config.clone(),
-				&strings::create_branch_popup_title(&key_config),
-				&strings::create_branch_popup_msg(&key_config),
+				env,
+				&strings::create_branch_popup_title(&env.key_config),
+				&strings::create_branch_popup_msg(&env.key_config),
 				true,
 			),
-			theme,
-			key_config,
-			repo,
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
+			repo: env.repo.clone(),
 		}
 	}
 

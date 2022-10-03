@@ -4,6 +4,7 @@ use super::{
 	EventState, ScrollType,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
@@ -245,23 +246,18 @@ impl Component for SubmodulesListComponent {
 }
 
 impl SubmodulesListComponent {
-	pub fn new(
-		repo: RepoPathRef,
-		queue: &Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			submodules: Vec::new(),
 			submodule_parent: None,
 			scroll: VerticalScroll::new(),
-			queue: queue.clone(),
+			queue: env.queue.clone(),
 			selection: 0,
 			visible: false,
-			theme,
-			key_config,
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 			current_height: Cell::new(0),
-			repo,
+			repo: env.repo.clone(),
 			repo_path: String::new(),
 		}
 	}

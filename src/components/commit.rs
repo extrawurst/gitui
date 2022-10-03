@@ -65,30 +65,25 @@ const FIRST_LINE_LIMIT: usize = 50;
 
 impl CommitComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-		options: SharedOptions,
-	) -> Self {
+	pub fn new(env: &crate::app::Environment) -> Self {
 		Self {
-			queue,
+			queue: env.queue.clone(),
 			mode: Mode::Normal,
 			input: TextInputComponent::new(
-				theme.clone(),
-				key_config.clone(),
+				env,
 				"",
-				&strings::commit_msg(&key_config),
+				&strings::commit_msg(&env.key_config),
 				true,
 			),
-			key_config,
-			git_branch_name: cached::BranchName::new(repo.clone()),
+			key_config: env.key_config.clone(),
+			git_branch_name: cached::BranchName::new(
+				env.repo.clone(),
+			),
 			commit_template: None,
-			theme,
-			repo,
+			theme: env.theme.clone(),
+			repo: env.repo.clone(),
 			commit_msg_history_idx: 0,
-			options,
+			options: env.options.clone(),
 			verify: true,
 		}
 	}

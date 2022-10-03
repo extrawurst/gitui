@@ -1,5 +1,6 @@
 use super::PushComponent;
 use crate::{
+	app::Environment,
 	components::{
 		cred::CredComponent, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
@@ -21,7 +22,7 @@ use asyncgit::{
 	},
 	AsyncGitNotification, AsyncPull, FetchRequest, RemoteProgress,
 };
-use crossbeam_channel::Sender;
+
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
@@ -47,27 +48,21 @@ pub struct PullComponent {
 
 impl PullComponent {
 	///
-	pub fn new(
-		repo: &RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			repo: repo.clone(),
-			queue: queue.clone(),
+			repo: env.repo.clone(),
+			queue: env.queue.clone(),
 			pending: false,
 			visible: false,
 			branch: String::new(),
-			git_fetch: AsyncPull::new(repo.borrow().clone(), sender),
-			progress: None,
-			input_cred: CredComponent::new(
-				theme.clone(),
-				key_config.clone(),
+			git_fetch: AsyncPull::new(
+				env.repo.borrow().clone(),
+				&env.sender_git,
 			),
-			theme,
-			key_config,
+			progress: None,
+			input_cred: CredComponent::new(env),
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 		}
 	}
 

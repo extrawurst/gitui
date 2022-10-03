@@ -203,8 +203,8 @@ fn run_app(
 
 	let mut app = App::new(
 		RefCell::new(repo),
-		&tx_git,
-		&tx_app,
+		tx_git,
+		tx_app,
 		input.clone(),
 		theme,
 		key_config,

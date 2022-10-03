@@ -4,12 +4,12 @@ use super::{
 	CommandBlocking, DrawableComponent,
 };
 use crate::{
+	app::Environment,
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
-	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -35,28 +35,18 @@ impl ChangesComponent {
 	//TODO: fix
 	#[allow(clippy::too_many_arguments)]
 	pub fn new(
-		repo: RepoPathRef,
+		env: &Environment,
 		title: &str,
 		focus: bool,
 		is_working_dir: bool,
-		queue: Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-		options: SharedOptions,
 	) -> Self {
 		Self {
-			files: StatusTreeComponent::new(
-				title,
-				focus,
-				Some(queue.clone()),
-				theme,
-				key_config.clone(),
-			),
+			files: StatusTreeComponent::new(env, title, focus),
 			is_working_dir,
-			queue,
-			key_config,
-			options,
-			repo,
+			queue: env.queue.clone(),
+			key_config: env.key_config.clone(),
+			options: env.options.clone(),
+			repo: env.repo.clone(),
 		}
 	}
 

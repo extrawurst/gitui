@@ -1,5 +1,6 @@
 use super::utils::logitems::ItemBatch;
 use super::{visibility_blocking, BlameFileOpen, InspectCommitOpen};
+use crate::app::Environment;
 use crate::keys::key_match;
 use crate::options::SharedOptions;
 use crate::queue::StackablePopupOpen;
@@ -70,41 +71,27 @@ pub struct FileRevlogComponent {
 
 impl FileRevlogComponent {
 	///
-	pub fn new(
-		repo_path: &RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-		options: SharedOptions,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			theme: theme.clone(),
-			queue: queue.clone(),
-			sender: sender.clone(),
-			diff: DiffComponent::new(
-				repo_path.clone(),
-				queue.clone(),
-				theme,
-				key_config.clone(),
-				true,
-				options.clone(),
-			),
+			theme: env.theme.clone(),
+			queue: env.queue.clone(),
+			sender: env.sender_git.clone(),
+			diff: DiffComponent::new(env, true),
 			git_log: None,
 			git_diff: AsyncDiff::new(
-				repo_path.borrow().clone(),
-				sender,
+				env.repo.borrow().clone(),
+				&env.sender_git,
 			),
 			visible: false,
-			repo_path: repo_path.clone(),
+			repo_path: env.repo.clone(),
 			open_request: None,
 			table_state: std::cell::Cell::new(TableState::default()),
 			items: ItemBatch::default(),
 			count_total: 0,
-			key_config,
+			key_config: env.key_config.clone(),
 			current_width: std::cell::Cell::new(0),
 			current_height: std::cell::Cell::new(0),
-			options,
+			options: env.options.clone(),
 		}
 	}
 

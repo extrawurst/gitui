@@ -4,6 +4,7 @@ use super::{
 	Direction, DrawableComponent, HorizontalScrollType, ScrollType,
 };
 use crate::{
+	app::Environment,
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
@@ -123,17 +124,10 @@ pub struct DiffComponent {
 
 impl DiffComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-		is_immutable: bool,
-		options: SharedOptions,
-	) -> Self {
+	pub fn new(env: &Environment, is_immutable: bool) -> Self {
 		Self {
 			focused: false,
-			queue,
+			queue: env.queue.clone(),
 			current: Current::default(),
 			pending: false,
 			selected_hunk: None,
@@ -143,11 +137,11 @@ impl DiffComponent {
 			selection: Selection::Single(0),
 			vertical_scroll: VerticalScroll::new(),
 			horizontal_scroll: HorizontalScroll::new(),
-			theme,
-			key_config,
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 			is_immutable,
-			repo,
-			options,
+			repo: env.repo.clone(),
+			options: env.options.clone(),
 		}
 	}
 	///

@@ -1,4 +1,5 @@
 use crate::{
+	app::Environment,
 	components::{
 		cred::CredComponent, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
@@ -20,7 +21,6 @@ use asyncgit::{
 	},
 	AsyncGitNotification, AsyncPushTags, PushTagsRequest,
 };
-use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
@@ -45,29 +45,20 @@ pub struct PushTagsComponent {
 
 impl PushTagsComponent {
 	///
-	pub fn new(
-		repo: &RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			repo: repo.clone(),
-			queue: queue.clone(),
+			repo: env.repo.clone(),
+			queue: env.queue.clone(),
 			pending: false,
 			visible: false,
 			git_push: AsyncPushTags::new(
-				repo.borrow().clone(),
-				sender,
+				env.repo.borrow().clone(),
+				&env.sender_git,
 			),
 			progress: None,
-			input_cred: CredComponent::new(
-				theme.clone(),
-				key_config.clone(),
-			),
-			theme,
-			key_config,
+			input_cred: CredComponent::new(env),
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 		}
 	}
 

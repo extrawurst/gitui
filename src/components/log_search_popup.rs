@@ -3,6 +3,7 @@ use super::{
 	DrawableComponent, EventState, TextInputComponent,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
 	strings::{self, POPUP_COMMIT_SHA_INVALID},
@@ -55,33 +56,23 @@ pub struct LogSearchPopupComponent {
 
 impl LogSearchPopupComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: &Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
-		let mut find_text = TextInputComponent::new(
-			theme.clone(),
-			key_config.clone(),
-			"",
-			"search text",
-			false,
-		);
+	pub fn new(env: &Environment) -> Self {
+		let mut find_text =
+			TextInputComponent::new(env, "", "search text", false);
 		find_text.embed();
 		find_text.enabled(true);
 
 		Self {
-			repo,
-			queue: queue.clone(),
+			repo: env.repo.clone(),
+			queue: env.queue.clone(),
 			visible: false,
 			mode: PopupMode::Search,
-			key_config,
+			key_config: env.key_config.clone(),
 			options: (
 				SearchFields::default(),
 				SearchOptions::default(),
 			),
-			theme,
+			theme: env.theme.clone(),
 			find_text,
 			selection: Selection::EnterText,
 			jump_commit_id: None,

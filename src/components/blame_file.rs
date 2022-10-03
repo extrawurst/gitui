@@ -4,6 +4,7 @@ use super::{
 	InspectCommitOpen,
 };
 use crate::{
+	app::Environment,
 	components::{utils::string_width_align, ScrollType},
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
@@ -13,10 +14,9 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{BlameHunk, CommitId, FileBlame, RepoPathRef},
+	sync::{BlameHunk, CommitId, FileBlame},
 	AsyncBlame, AsyncGitNotification, BlameParams,
 };
-use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
@@ -272,28 +272,21 @@ impl Component for BlameFileComponent {
 
 impl BlameFileComponent {
 	///
-	pub fn new(
-		repo: &RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		title: &str,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment, title: &str) -> Self {
 		Self {
 			title: String::from(title),
-			theme,
+			theme: env.theme.clone(),
 			async_blame: AsyncBlame::new(
-				repo.borrow().clone(),
-				sender,
+				env.repo.borrow().clone(),
+				&env.sender_git,
 			),
-			queue: queue.clone(),
+			queue: env.queue.clone(),
 			visible: false,
 			params: None,
 			file_blame: None,
 			open_request: None,
 			table_state: std::cell::Cell::new(TableState::default()),
-			key_config,
+			key_config: env.key_config.clone(),
 			current_height: std::cell::Cell::new(0),
 		}
 	}

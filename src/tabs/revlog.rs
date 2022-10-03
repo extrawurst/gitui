@@ -1,4 +1,5 @@
 use crate::{
+	app::Environment,
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitDetailsComponent, CommitList, Component,
@@ -70,43 +71,35 @@ pub struct Revlog {
 
 impl Revlog {
 	///
-	pub fn new(
-		repo: &RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			repo: repo.clone(),
-			queue: queue.clone(),
-			commit_details: CommitDetailsComponent::new(
-				repo,
-				queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-			),
+			repo: env.repo.clone(),
+			queue: env.queue.clone(),
+			commit_details: CommitDetailsComponent::new(env),
 			list: CommitList::new(
-				repo.clone(),
-				&strings::log_title(&key_config),
-				theme.clone(),
-				queue.clone(),
-				key_config.clone(),
+				env,
+				&strings::log_title(&env.key_config),
 			),
 			git_log: AsyncLog::new(
-				repo.borrow().clone(),
-				sender,
+				env.repo.borrow().clone(),
+				&env.sender_git,
 				None,
 			),
 			search: LogSearch::Off,
-			git_tags: AsyncTags::new(repo.borrow().clone(), sender),
-			git_local_branches: AsyncSingleJob::new(sender.clone()),
-			git_remote_branches: AsyncSingleJob::new(sender.clone()),
+			git_tags: AsyncTags::new(
+				env.repo.borrow().clone(),
+				&env.sender_git,
+			),
+			git_local_branches: AsyncSingleJob::new(
+				env.sender_git.clone(),
+			),
+			git_remote_branches: AsyncSingleJob::new(
+				env.sender_git.clone(),
+			),
 			visible: false,
-			key_config,
-			sender: sender.clone(),
-			theme,
+			key_config: env.key_config.clone(),
+			sender: env.sender_git.clone(),
+			theme: env.theme.clone(),
 		}
 	}
 

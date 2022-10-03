@@ -113,14 +113,41 @@ pub struct App {
 	file_to_open: Option<String>,
 }
 
+pub struct Environment {
+	pub queue: Queue,
+	pub theme: SharedTheme,
+	pub key_config: SharedKeyConfig,
+	pub repo: RepoPathRef,
+	pub options: SharedOptions,
+	pub sender_git: Sender<AsyncGitNotification>,
+	pub sender_app: Sender<AsyncAppNotification>,
+}
+
+/// The need to construct a "whatever" environment only arises in testing right now
+#[cfg(test)]
+impl Default for Environment {
+	fn default() -> Self {
+		use crossbeam_channel::unbounded;
+		Self {
+			queue: Queue::new(),
+			theme: Default::default(),
+			key_config: Default::default(),
+			repo: RefCell::new(RepoPath::Path(Default::default())),
+			options: Default::default(),
+			sender_git: unbounded().0,
+			sender_app: unbounded().0,
+		}
+	}
+}
+
 // public interface
 impl App {
 	///
 	#[allow(clippy::too_many_lines)]
 	pub fn new(
 		repo: RepoPathRef,
-		sender: &Sender<AsyncGitNotification>,
-		sender_app: &Sender<AsyncAppNotification>,
+		sender_git: Sender<AsyncGitNotification>,
+		sender_app: Sender<AsyncAppNotification>,
 		input: Input,
 		theme: Theme,
 		key_config: KeyConfig,
@@ -130,219 +157,66 @@ impl App {
 		let repo_path_text =
 			repo_work_dir(&repo.borrow()).unwrap_or_default();
 
-		let queue = Queue::new();
-		let theme = Rc::new(theme);
-		let key_config = Rc::new(key_config);
-		let options = Options::new(repo.clone());
+		let env = Environment {
+			queue: Queue::new(),
+			theme: Rc::new(theme),
+			key_config: Rc::new(key_config),
+			options: Options::new(repo.clone()),
+			repo,
+			sender_git,
+			sender_app,
+		};
 
-		let tab = options.borrow().current_tab();
+		let tab = env.options.borrow().current_tab();
 
 		let mut app = Self {
 			input,
-			reset: ConfirmComponent::new(
-				queue.clone(),
-				theme.clone(),
-				key_config.clone(),
-			),
-			commit: CommitComponent::new(
-				repo.clone(),
-				queue.clone(),
-				theme.clone(),
-				key_config.clone(),
-				options.clone(),
-			),
+			reset: ConfirmComponent::new(&env),
+			commit: CommitComponent::new(&env),
 			blame_file_popup: BlameFileComponent::new(
-				&repo,
-				&queue,
-				sender,
-				&strings::blame_title(&key_config),
-				theme.clone(),
-				key_config.clone(),
+				&env,
+				&strings::blame_title(&env.key_config),
 			),
-			file_revlog_popup: FileRevlogComponent::new(
-				&repo,
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-				options.clone(),
-			),
-			revision_files_popup: RevisionFilesPopup::new(
-				repo.clone(),
-				&queue,
-				sender_app,
-				sender.clone(),
-				theme.clone(),
-				key_config.clone(),
-			),
-			stashmsg_popup: StashMsgComponent::new(
-				repo.clone(),
-				queue.clone(),
-				theme.clone(),
-				key_config.clone(),
-			),
-			inspect_commit_popup: InspectCommitComponent::new(
-				&repo,
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-				options.clone(),
-			),
-			compare_commits_popup: CompareCommitsComponent::new(
-				&repo,
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-				options.clone(),
-			),
-			external_editor_popup: ExternalEditorComponent::new(
-				theme.clone(),
-				key_config.clone(),
-			),
-			push_popup: PushComponent::new(
-				&repo,
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-			),
-			push_tags_popup: PushTagsComponent::new(
-				&repo,
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-			),
-			reset_popup: ResetPopupComponent::new(
-				&queue,
-				&repo,
-				theme.clone(),
-				key_config.clone(),
-			),
-			pull_popup: PullComponent::new(
-				&repo,
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-			),
-			fetch_popup: FetchComponent::new(
-				repo.clone(),
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-			),
-			tag_commit_popup: TagCommitComponent::new(
-				repo.clone(),
-				queue.clone(),
-				theme.clone(),
-				key_config.clone(),
-			),
-			create_branch_popup: CreateBranchComponent::new(
-				repo.clone(),
-				queue.clone(),
-				theme.clone(),
-				key_config.clone(),
-			),
-			rename_branch_popup: RenameBranchComponent::new(
-				repo.clone(),
-				queue.clone(),
-				theme.clone(),
-				key_config.clone(),
-			),
-			select_branch_popup: BranchListComponent::new(
-				repo.clone(),
-				queue.clone(),
-				theme.clone(),
-				key_config.clone(),
-			),
-			tags_popup: TagListComponent::new(
-				repo.clone(),
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-			),
-			options_popup: OptionsPopupComponent::new(
-				&queue,
-				theme.clone(),
-				key_config.clone(),
-				options.clone(),
-			),
-			submodule_popup: SubmodulesListComponent::new(
-				repo.clone(),
-				&queue,
-				theme.clone(),
-				key_config.clone(),
-			),
-			log_search_popup: LogSearchPopupComponent::new(
-				repo.clone(),
-				&queue,
-				theme.clone(),
-				key_config.clone(),
-			),
-			fuzzy_find_popup: FuzzyFindPopup::new(
-				&queue,
-				theme.clone(),
-				key_config.clone(),
-			),
+			file_revlog_popup: FileRevlogComponent::new(&env),
+			revision_files_popup: RevisionFilesPopup::new(&env),
+			stashmsg_popup: StashMsgComponent::new(&env),
+			inspect_commit_popup: InspectCommitComponent::new(&env),
+			compare_commits_popup: CompareCommitsComponent::new(&env),
+			external_editor_popup: ExternalEditorComponent::new(&env),
+			push_popup: PushComponent::new(&env),
+			push_tags_popup: PushTagsComponent::new(&env),
+			reset_popup: ResetPopupComponent::new(&env),
+			pull_popup: PullComponent::new(&env),
+			fetch_popup: FetchComponent::new(&env),
+			tag_commit_popup: TagCommitComponent::new(&env),
+			create_branch_popup: CreateBranchComponent::new(&env),
+			rename_branch_popup: RenameBranchComponent::new(&env),
+			select_branch_popup: BranchListComponent::new(&env),
+			tags_popup: TagListComponent::new(&env),
+			options_popup: OptionsPopupComponent::new(&env),
+			submodule_popup: SubmodulesListComponent::new(&env),
+			log_search_popup: LogSearchPopupComponent::new(&env),
+			fuzzy_find_popup: FuzzyFindPopup::new(&env),
 			do_quit: QuitState::None,
 			cmdbar: RefCell::new(CommandBar::new(
-				theme.clone(),
-				key_config.clone(),
+				env.theme.clone(),
+				env.key_config.clone(),
 			)),
-			help: HelpComponent::new(
-				theme.clone(),
-				key_config.clone(),
-			),
-			msg: MsgComponent::new(theme.clone(), key_config.clone()),
-			revlog: Revlog::new(
-				&repo,
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-			),
-			status_tab: Status::new(
-				repo.clone(),
-				&queue,
-				sender,
-				theme.clone(),
-				key_config.clone(),
-				options.clone(),
-			),
-			stashing_tab: Stashing::new(
-				&repo,
-				sender,
-				&queue,
-				theme.clone(),
-				key_config.clone(),
-			),
-			stashlist_tab: StashList::new(
-				repo.clone(),
-				&queue,
-				theme.clone(),
-				key_config.clone(),
-			),
-			files_tab: FilesTab::new(
-				repo.clone(),
-				sender_app,
-				sender.clone(),
-				&queue,
-				theme.clone(),
-				key_config.clone(),
-			),
+			help: HelpComponent::new(&env),
+			msg: MsgComponent::new(&env),
+			revlog: Revlog::new(&env),
+			status_tab: Status::new(&env),
+			stashing_tab: Stashing::new(&env),
+			stashlist_tab: StashList::new(&env),
+			files_tab: FilesTab::new(&env),
 			tab: 0,
-			queue,
-			theme,
-			options,
-			key_config,
+			queue: env.queue,
+			theme: env.theme,
+			options: env.options,
+			key_config: env.key_config,
 			requires_redraw: Cell::new(false),
 			file_to_open: None,
-			repo,
+			repo: env.repo,
 			repo_path_text,
 			popup_stack: PopupStack::default(),
 		};

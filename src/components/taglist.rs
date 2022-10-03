@@ -3,6 +3,7 @@ use super::{
 	Component, DrawableComponent, EventState,
 };
 use crate::{
+	app::Environment,
 	components::ScrollType,
 	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, Queue},
@@ -23,7 +24,7 @@ use asyncgit::{
 	},
 	AsyncGitNotification,
 };
-use crossbeam_channel::Sender;
+
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
@@ -292,16 +293,10 @@ impl Component for TagListComponent {
 }
 
 impl TagListComponent {
-	pub fn new(
-		repo: RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			theme,
-			queue: queue.clone(),
+			theme: env.theme.clone(),
+			queue: env.queue.clone(),
 			tags: None,
 			visible: false,
 			has_remotes: false,
@@ -309,9 +304,11 @@ impl TagListComponent {
 			current_height: std::cell::Cell::new(0),
 			basic_credential: None,
 			missing_remote_tags: None,
-			async_remote_tags: AsyncSingleJob::new(sender.clone()),
-			key_config,
-			repo,
+			async_remote_tags: AsyncSingleJob::new(
+				env.sender_git.clone(),
+			),
+			key_config: env.key_config.clone(),
+			repo: env.repo.clone(),
 		}
 	}
 

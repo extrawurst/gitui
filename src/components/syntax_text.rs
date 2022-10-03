@@ -3,6 +3,7 @@ use super::{
 	EventState,
 };
 use crate::{
+	app::Environment,
 	keys::SharedKeyConfig,
 	string_utils::tabs_to_spaces,
 	strings,
@@ -18,7 +19,6 @@ use asyncgit::{
 	sync::{self, RepoPathRef, TreeFile},
 	ProgressPercent,
 };
-use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::MoveSelection;
 use itertools::Either;
@@ -44,21 +44,18 @@ pub struct SyntaxTextComponent {
 
 impl SyntaxTextComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		sender: &Sender<AsyncAppNotification>,
-		key_config: SharedKeyConfig,
-		theme: SharedTheme,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			async_highlighting: AsyncSingleJob::new(sender.clone()),
+			async_highlighting: AsyncSingleJob::new(
+				env.sender_app.clone(),
+			),
 			syntax_progress: None,
 			current_file: None,
 			paragraph_state: Cell::new(ParagraphState::default()),
 			focused: false,
-			key_config,
-			theme,
-			repo,
+			key_config: env.key_config.clone(),
+			theme: env.theme.clone(),
+			repo: env.repo.clone(),
 		}
 	}
 

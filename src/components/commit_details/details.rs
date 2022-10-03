@@ -1,4 +1,5 @@
 use crate::{
+	app::Environment,
 	components::{
 		commit_details::style::style_detail,
 		dialog_paragraph,
@@ -45,22 +46,17 @@ type WrappedCommitMessage<'a> =
 
 impl DetailsComponent {
 	///
-	pub const fn new(
-		repo: RepoPathRef,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-		focused: bool,
-	) -> Self {
+	pub fn new(env: &Environment, focused: bool) -> Self {
 		Self {
-			repo,
+			repo: env.repo.clone(),
 			data: None,
 			tags: Vec::new(),
-			theme,
+			theme: env.theme.clone(),
 			focused,
 			scroll_to_bottom_next_draw: Cell::new(false),
 			current_width: Cell::new(0),
 			scroll: VerticalScroll::new(),
-			key_config,
+			key_config: env.key_config.clone(),
 		}
 	}
 

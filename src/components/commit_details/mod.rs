@@ -8,18 +8,15 @@ use super::{
 };
 use crate::{
 	accessors,
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
-	queue::Queue,
 	strings,
-	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{CommitTags, RepoPathRef},
-	AsyncCommitFiles, AsyncGitNotification, CommitFilesParams,
+	sync::CommitTags, AsyncCommitFiles, CommitFilesParams,
 };
 use compare_details::CompareDetailsComponent;
-use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use details::DetailsComponent;
 use ratatui::{
@@ -42,39 +39,18 @@ impl CommitDetailsComponent {
 	accessors!(self, [single_details, compare_details, file_tree]);
 
 	///
-	pub fn new(
-		repo: &RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			single_details: DetailsComponent::new(
-				repo.clone(),
-				theme.clone(),
-				key_config.clone(),
-				false,
-			),
-			compare_details: CompareDetailsComponent::new(
-				repo.clone(),
-				theme.clone(),
-				false,
-			),
+			single_details: DetailsComponent::new(env, false),
+			compare_details: CompareDetailsComponent::new(env, false),
 			git_commit_files: AsyncCommitFiles::new(
-				repo.borrow().clone(),
-				sender,
+				env.repo.borrow().clone(),
+				&env.sender_git,
 			),
-			file_tree: StatusTreeComponent::new(
-				"",
-				false,
-				Some(queue.clone()),
-				theme,
-				key_config.clone(),
-			),
+			file_tree: StatusTreeComponent::new(env, "", false),
 			visible: false,
 			commit: None,
-			key_config,
+			key_config: env.key_config.clone(),
 		}
 	}
 
