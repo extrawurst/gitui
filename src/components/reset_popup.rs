@@ -3,6 +3,7 @@ use super::{
 	DrawableComponent, EventState,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::Queue,
 	strings, try_or_popup,
@@ -11,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	cached,
-	sync::{CommitId, RepoPath, RepoPathRef, ResetType},
+	sync::{CommitId, RepoPath, ResetType},
 };
 use crossterm::event::Event;
 use ratatui::{
@@ -52,21 +53,18 @@ pub struct ResetPopupComponent {
 
 impl ResetPopupComponent {
 	///
-	pub fn new(
-		queue: &Queue,
-		repo: &RepoPathRef,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			queue: queue.clone(),
-			repo: repo.borrow().clone(),
+			queue: env.queue.clone(),
+			repo: env.repo.borrow().clone(),
 			commit: None,
 			kind: ResetType::Soft,
-			git_branch_name: cached::BranchName::new(repo.clone()),
+			git_branch_name: cached::BranchName::new(
+				env.repo.clone(),
+			),
 			visible: false,
-			key_config,
-			theme,
+			key_config: env.key_config.clone(),
+			theme: env.theme.clone(),
 		}
 	}
 

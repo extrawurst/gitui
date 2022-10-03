@@ -4,11 +4,11 @@ use super::{
 	EventState,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::{AppTabs, InternalEvent, Queue},
 	strings,
 	tabs::StashingOptions,
-	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
@@ -126,24 +126,18 @@ impl Component for StashMsgComponent {
 
 impl StashMsgComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			options: StashingOptions::default(),
-			queue,
+			queue: env.queue.clone(),
 			input: TextInputComponent::new(
-				theme,
-				key_config.clone(),
-				&strings::stash_popup_title(&key_config),
-				&strings::stash_popup_msg(&key_config),
+				env,
+				&strings::stash_popup_title(&env.key_config),
+				&strings::stash_popup_msg(&env.key_config),
 				true,
 			),
-			key_config,
-			repo,
+			key_config: env.key_config.clone(),
+			repo: env.repo.clone(),
 		}
 	}
 

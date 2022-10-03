@@ -1,3 +1,4 @@
+use crate::app::Environment;
 use crate::keys::key_match;
 use crate::strings::symbol;
 use crate::ui::Size;
@@ -51,8 +52,7 @@ pub struct TextInputComponent {
 impl TextInputComponent {
 	///
 	pub fn new(
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
+		env: &Environment,
 		title: &str,
 		default_msg: &str,
 		show_char_count: bool,
@@ -60,8 +60,8 @@ impl TextInputComponent {
 		Self {
 			msg: String::new(),
 			visible: false,
-			theme,
-			key_config,
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 			show_char_count,
 			title: title.to_string(),
 			default_msg: default_msg.to_string(),
@@ -555,8 +555,7 @@ mod tests {
 	#[test]
 	fn test_smoke() {
 		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
+			&Environment::default(),
 			"",
 			"",
 			false,
@@ -576,8 +575,7 @@ mod tests {
 	#[test]
 	fn text_cursor_initial_position() {
 		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
+			&Environment::default(),
 			"",
 			"",
 			false,
@@ -602,8 +600,7 @@ mod tests {
 	#[test]
 	fn test_cursor_second_position() {
 		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
+			&Environment::default(),
 			"",
 			"",
 			false,
@@ -639,8 +636,7 @@ mod tests {
 	#[test]
 	fn test_visualize_newline() {
 		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
+			&Environment::default(),
 			"",
 			"",
 			false,
@@ -675,8 +671,7 @@ mod tests {
 	#[test]
 	fn test_invisible_newline() {
 		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
+			&Environment::default(),
 			"",
 			"",
 			false,
@@ -706,8 +701,7 @@ mod tests {
 	#[test]
 	fn test_next_word_position() {
 		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
+			&Environment::default(),
 			"",
 			"",
 			false,
@@ -731,8 +725,7 @@ mod tests {
 	#[test]
 	fn test_previous_word_position() {
 		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
+			&Environment::default(),
 			"",
 			"",
 			false,
@@ -759,8 +752,7 @@ mod tests {
 	#[test]
 	fn test_next_word_multibyte() {
 		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
+			&Environment::default(),
 			"",
 			"",
 			false,

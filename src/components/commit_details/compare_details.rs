@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use crate::{
+	app::Environment,
 	components::{
 		commit_details::style::{style_detail, Detail},
 		dialog_paragraph,
@@ -30,16 +31,12 @@ pub struct CompareDetailsComponent {
 
 impl CompareDetailsComponent {
 	///
-	pub const fn new(
-		repo: RepoPathRef,
-		theme: SharedTheme,
-		focused: bool,
-	) -> Self {
+	pub fn new(env: &Environment, focused: bool) -> Self {
 		Self {
 			data: None,
-			theme,
+			theme: env.theme.clone(),
 			focused,
-			repo,
+			repo: env.repo.clone(),
 		}
 	}
 

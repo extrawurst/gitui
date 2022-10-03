@@ -1,5 +1,6 @@
 use crate::{
 	accessors,
+	app::Environment,
 	components::{
 		command_pump, event_pump, visibility_blocking,
 		ChangesComponent, CommandBlocking, CommandInfo, Component,
@@ -10,7 +11,7 @@ use crate::{
 	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
-	ui::style::{SharedTheme, Theme},
+	ui::style::Theme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -23,7 +24,7 @@ use asyncgit::{
 	AsyncBranchesJob, AsyncDiff, AsyncGitNotification, AsyncStatus,
 	DiffParams, DiffType, PushType, StatusItem, StatusParams,
 };
-use crossbeam_channel::Sender;
+
 use crossterm::event::Event;
 use itertools::Itertools;
 use ratatui::{
@@ -153,66 +154,49 @@ impl Status {
 	accessors!(self, [index, index_wd, diff]);
 
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-		options: SharedOptions,
-	) -> Self {
-		let repo_clone = repo.borrow().clone();
+	pub fn new(env: &Environment) -> Self {
+		let repo_clone = env.repo.borrow().clone();
 		Self {
-			queue: queue.clone(),
+			queue: env.queue.clone(),
 			visible: true,
 			has_remotes: false,
 			git_state: RepoState::Clean,
 			focus: Focus::WorkDir,
 			diff_target: DiffTarget::WorkingDir,
 			index_wd: ChangesComponent::new(
-				repo.clone(),
-				&strings::title_status(&key_config),
+				env,
+				&strings::title_status(&env.key_config),
 				true,
 				true,
-				queue.clone(),
-				theme.clone(),
-				key_config.clone(),
-				options.clone(),
 			),
 			index: ChangesComponent::new(
-				repo.clone(),
-				&strings::title_index(&key_config),
+				env,
+				&strings::title_index(&env.key_config),
 				false,
 				false,
-				queue.clone(),
-				theme.clone(),
-				key_config.clone(),
-				options.clone(),
 			),
-			diff: DiffComponent::new(
-				repo.clone(),
-				queue.clone(),
-				theme,
-				key_config.clone(),
-				false,
-				options.clone(),
+			diff: DiffComponent::new(env, false),
+			git_diff: AsyncDiff::new(
+				repo_clone.clone(),
+				&env.sender_git,
 			),
-			git_diff: AsyncDiff::new(repo_clone.clone(), sender),
 			git_status_workdir: AsyncStatus::new(
 				repo_clone.clone(),
-				sender.clone(),
+				env.sender_git.clone(),
 			),
 			git_status_stage: AsyncStatus::new(
 				repo_clone,
-				sender.clone(),
+				env.sender_git.clone(),
 			),
-			git_branches: AsyncSingleJob::new(sender.clone()),
+			git_branches: AsyncSingleJob::new(env.sender_git.clone()),
 			git_action_executed: false,
 			git_branch_state: None,
-			git_branch_name: cached::BranchName::new(repo.clone()),
-			key_config,
-			options,
-			repo,
+			git_branch_name: cached::BranchName::new(
+				env.repo.clone(),
+			),
+			key_config: env.key_config.clone(),
+			options: env.options.clone(),
+			repo: env.repo.clone(),
 		}
 	}
 

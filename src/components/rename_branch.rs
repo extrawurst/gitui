@@ -4,10 +4,10 @@ use super::{
 	EventState,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
-	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
@@ -89,24 +89,18 @@ impl Component for RenameBranchComponent {
 
 impl RenameBranchComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			repo,
-			queue,
+			repo: env.repo.clone(),
+			queue: env.queue.clone(),
 			input: TextInputComponent::new(
-				theme,
-				key_config.clone(),
-				&strings::rename_branch_popup_title(&key_config),
-				&strings::rename_branch_popup_msg(&key_config),
+				env,
+				&strings::rename_branch_popup_title(&env.key_config),
+				&strings::rename_branch_popup_msg(&env.key_config),
 				true,
 			),
 			branch_ref: None,
-			key_config,
+			key_config: env.key_config.clone(),
 		}
 	}
 

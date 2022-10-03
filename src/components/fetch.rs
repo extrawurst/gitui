@@ -1,4 +1,5 @@
 use crate::{
+	app::Environment,
 	components::{
 		cred::CredComponent, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
@@ -20,7 +21,7 @@ use asyncgit::{
 	},
 	AsyncFetchJob, AsyncGitNotification, ProgressPercent,
 };
-use crossbeam_channel::Sender;
+
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
@@ -45,26 +46,17 @@ pub struct FetchComponent {
 
 impl FetchComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			queue: queue.clone(),
+			queue: env.queue.clone(),
 			pending: false,
 			visible: false,
-			async_fetch: AsyncSingleJob::new(sender.clone()),
+			async_fetch: AsyncSingleJob::new(env.sender_git.clone()),
 			progress: None,
-			input_cred: CredComponent::new(
-				theme.clone(),
-				key_config.clone(),
-			),
-			theme,
-			key_config,
-			repo,
+			input_cred: CredComponent::new(env),
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
+			repo: env.repo.clone(),
 		}
 	}
 

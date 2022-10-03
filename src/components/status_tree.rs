@@ -6,6 +6,7 @@ use super::{
 	BlameFileOpen, CommandBlocking, DrawableComponent, FileRevOpen,
 };
 use crate::{
+	app::Environment,
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue, StackablePopupOpen},
@@ -30,7 +31,7 @@ pub struct StatusTreeComponent {
 	current_hash: u64,
 	focused: bool,
 	show_selection: bool,
-	queue: Option<Queue>,
+	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	scroll_top: Cell<usize>,
@@ -40,22 +41,16 @@ pub struct StatusTreeComponent {
 
 impl StatusTreeComponent {
 	///
-	pub fn new(
-		title: &str,
-		focus: bool,
-		queue: Option<Queue>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment, title: &str, focus: bool) -> Self {
 		Self {
 			title: title.to_string(),
 			tree: StatusTree::default(),
 			current_hash: 0,
 			focused: focus,
 			show_selection: focus,
-			queue,
-			theme,
-			key_config,
+			queue: env.queue.clone(),
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 			scroll_top: Cell::new(0),
 			pending: true,
 			visible: false,
@@ -137,9 +132,7 @@ impl StatusTreeComponent {
 		let changed = self.tree.move_selection(dir);
 
 		if changed {
-			if let Some(ref queue) = self.queue {
-				queue.push(InternalEvent::Update(NeedsUpdate::DIFF));
-			}
+			self.queue.push(InternalEvent::Update(NeedsUpdate::DIFF));
 		}
 
 		changed
@@ -309,11 +302,9 @@ impl StatusTreeComponent {
 			if crate::clipboard::copy_string(&item.info.full_path)
 				.is_err()
 			{
-				if let Some(queue) = &self.queue {
-					queue.push(InternalEvent::ShowErrorMsg(
-						strings::POPUP_FAIL_COPY.to_string(),
-					));
-				}
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					strings::POPUP_FAIL_COPY.to_string(),
+				));
 			}
 		}
 	}
@@ -463,17 +454,15 @@ impl Component for StatusTreeComponent {
 				return if key_match(e, self.key_config.keys.blame) {
 					if let Some(status_item) = self.selection_file() {
 						self.hide();
-						if let Some(queue) = &self.queue {
-							queue.push(InternalEvent::OpenPopup(
-								StackablePopupOpen::BlameFile(
-									BlameFileOpen {
-										file_path: status_item.path,
-										commit_id: self.revision,
-										selection: None,
-									},
-								),
-							));
-						}
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::BlameFile(
+								BlameFileOpen {
+									file_path: status_item.path,
+									commit_id: self.revision,
+									selection: None,
+								},
+							),
+						));
 					}
 					Ok(EventState::Consumed)
 				} else if key_match(
@@ -482,27 +471,21 @@ impl Component for StatusTreeComponent {
 				) {
 					if let Some(status_item) = self.selection_file() {
 						self.hide();
-						if let Some(queue) = &self.queue {
-							queue.push(InternalEvent::OpenPopup(
-								StackablePopupOpen::FileRevlog(
-									FileRevOpen::new(
-										status_item.path,
-									),
-								),
-							));
-						}
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::FileRevlog(
+								FileRevOpen::new(status_item.path),
+							),
+						));
 					}
 					Ok(EventState::Consumed)
 				} else if key_match(e, self.key_config.keys.edit_file)
 				{
 					if let Some(status_item) = self.selection_file() {
-						if let Some(queue) = &self.queue {
-							queue.push(
-								InternalEvent::OpenExternalEditor(
-									Some(status_item.path),
-								),
-							);
-						}
+						self.queue.push(
+							InternalEvent::OpenExternalEditor(Some(
+								status_item.path,
+							)),
+						);
 					}
 					Ok(EventState::Consumed)
 				} else if key_match(e, self.key_config.keys.copy) {
@@ -607,11 +590,9 @@ mod tests {
 
 		// set up file tree
 		let mut ftc = StatusTreeComponent::new(
+			&Default::default(),
 			"title",
 			true,
-			None,
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
 		);
 		ftc.update(&items)
 			.expect("Updating FileTreeComponent failed");
@@ -649,11 +630,9 @@ mod tests {
 
 		// set up file tree
 		let mut ftc = StatusTreeComponent::new(
+			&Default::default(),
 			"title",
 			true,
-			None,
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
 		);
 		ftc.update(&items)
 			.expect("Updating FileTreeComponent failed");
