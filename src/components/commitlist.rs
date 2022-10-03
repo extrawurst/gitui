@@ -1,5 +1,6 @@
 use super::utils::logitems::{ItemBatch, LogEntry};
 use crate::{
+	app::Environment,
 	components::{
 		utils::string_width_align, CommandBlocking, CommandInfo,
 		Component, DrawableComponent, EventState, ScrollType,
@@ -59,15 +60,9 @@ pub struct CommitList {
 
 impl CommitList {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		title: &str,
-		theme: SharedTheme,
-		queue: Queue,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment, title: &str) -> Self {
 		Self {
-			repo,
+			repo: env.repo.clone(),
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
 			selection: 0,
@@ -80,9 +75,9 @@ impl CommitList {
 			remote_branches: BTreeMap::default(),
 			current_size: Cell::new(None),
 			scroll_top: Cell::new(0),
-			theme,
-			queue,
-			key_config,
+			theme: env.theme.clone(),
+			queue: env.queue.clone(),
+			key_config: env.key_config.clone(),
 			title: title.into(),
 		}
 	}

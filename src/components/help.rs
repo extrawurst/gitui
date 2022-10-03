@@ -3,6 +3,7 @@ use super::{
 	DrawableComponent, EventState,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	strings, ui,
 	version::Version,
@@ -167,16 +168,13 @@ impl Component for HelpComponent {
 }
 
 impl HelpComponent {
-	pub const fn new(
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			cmds: vec![],
 			visible: false,
 			selection: 0,
-			theme,
-			key_config,
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 		}
 	}
 	///

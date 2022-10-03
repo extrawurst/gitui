@@ -3,6 +3,7 @@ use super::{
 	DrawableComponent, EventState,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	strings, ui,
 };
@@ -121,16 +122,13 @@ impl Component for MsgComponent {
 }
 
 impl MsgComponent {
-	pub const fn new(
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			title: String::new(),
 			msg: String::new(),
 			visible: false,
-			theme,
-			key_config,
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 		}
 	}
 

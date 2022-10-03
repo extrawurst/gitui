@@ -4,6 +4,7 @@ use super::{
 	EventState, FuzzyFinderTarget, InspectCommitOpen,
 };
 use crate::{
+	app::Environment,
 	components::ScrollType,
 	keys::{key_match, SharedKeyConfig},
 	queue::{
@@ -329,12 +330,7 @@ impl Component for BranchListComponent {
 }
 
 impl BranchListComponent {
-	pub fn new(
-		repo: RepoPathRef,
-		queue: Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			branches: Vec::new(),
 			local: true,
@@ -342,11 +338,11 @@ impl BranchListComponent {
 			visible: false,
 			selection: 0,
 			scroll: VerticalScroll::new(),
-			queue,
-			theme,
-			key_config,
+			queue: env.queue.clone(),
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 			current_height: Cell::new(0),
-			repo,
+			repo: env.repo.clone(),
 		}
 	}
 
