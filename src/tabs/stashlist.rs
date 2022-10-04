@@ -34,6 +34,7 @@ impl StashList {
 			list: CommitList::new(
 				&strings::stashlist_title(&key_config),
 				theme,
+				queue.clone(),
 				key_config.clone(),
 			),
 			queue: queue.clone(),

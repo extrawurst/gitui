@@ -5,6 +5,7 @@ use crate::{
 		Component, DrawableComponent, EventState, ScrollType,
 	},
 	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue},
 	strings::{self, symbol},
 	ui::style::{SharedTheme, Theme},
 	ui::{calc_scroll_top, draw_scrollbar},
@@ -26,6 +27,7 @@ use tui::{
 };
 
 const ELEMENTS_PER_LINE: usize = 9;
+const SUCCESS_COPY: &str = "Correctly Copied";
 
 ///
 pub struct CommitList {
@@ -40,6 +42,7 @@ pub struct CommitList {
 	current_size: Cell<(u16, u16)>,
 	scroll_top: Cell<usize>,
 	theme: SharedTheme,
+	queue: Queue,
 	key_config: SharedKeyConfig,
 }
 
@@ -48,6 +51,7 @@ impl CommitList {
 	pub fn new(
 		title: &str,
 		theme: SharedTheme,
+		queue: Queue,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
@@ -61,6 +65,7 @@ impl CommitList {
 			current_size: Cell::new((0, 0)),
 			scroll_top: Cell::new(0),
 			theme,
+			queue,
 			key_config,
 			title: title.into(),
 		}
@@ -183,6 +188,9 @@ impl CommitList {
 				let yank =
 					format!("{}^..{}", f.hash_short, l.hash_short);
 				crate::clipboard::copy_string(&yank)?;
+				self.queue.push(InternalEvent::ShowInfoMsg(
+					String::from(SUCCESS_COPY),
+				));
 			};
 		} else {
 			let separate = self
@@ -199,6 +207,9 @@ impl CommitList {
 				.join(" ");
 
 			crate::clipboard::copy_string(&separate)?;
+			self.queue.push(InternalEvent::ShowInfoMsg(
+				String::from(SUCCESS_COPY),
+			));
 		}
 
 		Ok(())
@@ -212,6 +223,9 @@ impl CommitList {
 						.saturating_sub(self.items.index_offset()),
 				) {
 					crate::clipboard::copy_string(&e.hash_short)?;
+					self.queue.push(InternalEvent::ShowInfoMsg(
+						String::from(SUCCESS_COPY),
+					));
 				}
 			}
 			1 => {
@@ -219,6 +233,9 @@ impl CommitList {
 					self.items.iter().nth(self.marked_indexes()[0])
 				{
 					crate::clipboard::copy_string(&e.hash_short)?;
+					self.queue.push(InternalEvent::ShowInfoMsg(
+						String::from(SUCCESS_COPY),
+					));
 				}
 			}
 			_ => {}
