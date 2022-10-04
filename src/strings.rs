@@ -888,6 +888,19 @@ pub mod commands {
 		)
 		.hide_help()
 	}
+	pub fn commit_no_verify(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Commit no-verify [{}]",
+				key_config.get_hint(key_config.keys.commit_no_verify),
+			),
+			"amend last commit (available in commit popup)",
+			CMD_GROUP_COMMIT,
+		)
+	}
+
 	pub fn commit_amend(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(

@@ -201,7 +201,7 @@ impl CommitComponent {
 		Ok(())
 	}
 
-	fn commit(&mut self) -> Result<()> {
+	fn commit(&mut self, verify: bool) -> Result<()> {
 		let gpgsign =
 			get_config_string(&self.repo.borrow(), "commit.gpgsign")
 				.ok()
@@ -216,7 +216,7 @@ impl CommitComponent {
 		let msg = self.input.get_text().to_string();
 
 		if matches!(
-			self.commit_with_msg(msg)?,
+			self.commit_with_msg(msg, verify)?,
 			CommitResult::ComitDone
 		) {
 			self.options
@@ -235,7 +235,12 @@ impl CommitComponent {
 	fn commit_with_msg(
 		&mut self,
 		msg: String,
+		verify: bool,
 	) -> Result<CommitResult> {
+		if !verify {
+			self.do_commit(&msg)?;
+			return Ok(CommitResult::ComitDone);
+		}
 		if let HookResult::NotOk(e) =
 			sync::hooks_pre_commit(&self.repo.borrow())?
 		{
@@ -258,18 +263,7 @@ impl CommitComponent {
 			return Ok(CommitResult::Aborted);
 		}
 
-		match &self.mode {
-			Mode::Normal => sync::commit(&self.repo.borrow(), &msg)?,
-			Mode::Amend(amend) => {
-				sync::amend(&self.repo.borrow(), *amend, &msg)?
-			}
-			Mode::Merge(ids) => {
-				sync::merge_commit(&self.repo.borrow(), &msg, ids)?
-			}
-			Mode::Revert => {
-				sync::commit_revert(&self.repo.borrow(), &msg)?
-			}
-		};
+		self.do_commit(&msg)?;
 
 		if let HookResult::NotOk(e) =
 			sync::hooks_post_commit(&self.repo.borrow())?
@@ -282,6 +276,22 @@ impl CommitComponent {
 		}
 
 		Ok(CommitResult::ComitDone)
+	}
+
+	fn do_commit(&self, msg: &str) -> Result<()> {
+		match &self.mode {
+			Mode::Normal => sync::commit(&self.repo.borrow(), msg)?,
+			Mode::Amend(amend) => {
+				sync::amend(&self.repo.borrow(), *amend, msg)?
+			}
+			Mode::Merge(ids) => {
+				sync::merge_commit(&self.repo.borrow(), msg, ids)?
+			}
+			Mode::Revert => {
+				sync::commit_revert(&self.repo.borrow(), msg)?
+			}
+		};
+		Ok(())
 	}
 
 	fn can_commit(&self) -> bool {
@@ -354,6 +364,12 @@ impl Component for CommitComponent {
 			));
 
 			out.push(CommandInfo::new(
+				strings::commands::commit_no_verify(&self.key_config),
+				self.can_commit(),
+				true,
+			));
+
+			out.push(CommandInfo::new(
 				strings::commands::commit_amend(&self.key_config),
 				self.can_amend(),
 				true,
@@ -392,8 +408,14 @@ impl Component for CommitComponent {
 					try_or_popup!(
 						self,
 						"commit error:",
-						self.commit()
+						self.commit(true)
 					);
+				} else if key_match(
+					e,
+					self.key_config.keys.commit_no_verify,
+				) && self.can_commit()
+				{
+					self.commit(false)?;
 				} else if key_match(
 					e,
 					self.key_config.keys.commit_amend,
@@ -462,6 +484,7 @@ impl Component for CommitComponent {
 					.set_text(sync::merge_msg(&self.repo.borrow())?);
 				Mode::Revert
 			}
+
 			_ => {
 				self.commit_template = get_config_string(
 					&self.repo.borrow(),
