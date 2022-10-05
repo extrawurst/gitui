@@ -171,7 +171,15 @@ impl CommitList {
 		true
 	}
 
-	pub fn copy_marked_hashes(&self) -> Result<()> {
+	pub fn copy_commit_hash(&self) -> Result<()> {
+		if self.marked_count() > 1 {
+			self.copy_marked_hashes()
+		} else {
+			self.copy_entry_hash()
+		}
+	}
+
+	fn copy_marked_hashes(&self) -> Result<()> {
 		if self.marked_consecutive() {
 			let m = self.marked_indexes();
 
@@ -220,7 +228,7 @@ impl CommitList {
 		Ok(())
 	}
 
-	pub fn copy_entry_hash(&self) -> Result<()> {
+	fn copy_entry_hash(&self) -> Result<()> {
 		match self.marked_count() {
 			0 => {
 				if let Some(e) = self.items.iter().nth(
