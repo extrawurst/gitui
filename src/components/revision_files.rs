@@ -11,10 +11,14 @@ use crate::{
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::sync::{self, CommitId, RepoPathRef, TreeFile};
+use asyncgit::sync::{
+	self, get_commit_info, CommitId, CommitInfo, RepoPathRef,
+	TreeFile,
+};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
+use std::fmt::Write;
 use std::{
 	collections::BTreeSet,
 	convert::From,
@@ -27,6 +31,8 @@ use tui::{
 	widgets::{Block, Borders},
 	Frame,
 };
+use unicode_truncate::UnicodeTruncateStr;
+use unicode_width::UnicodeWidthStr;
 
 enum Focus {
 	Tree,
@@ -43,7 +49,7 @@ pub struct RevisionFilesComponent {
 	tree: FileTree,
 	scroll: VerticalScroll,
 	visible: bool,
-	revision: Option<CommitId>,
+	revision: Option<CommitInfo>,
 	focus: Focus,
 	key_config: SharedKeyConfig,
 }
@@ -82,7 +88,7 @@ impl RevisionFilesComponent {
 		self.show()?;
 
 		let same_id =
-			self.revision.map(|c| c == commit).unwrap_or_default();
+			self.revision.as_ref().map_or(false, |c| c.id == commit);
 		if !same_id {
 			self.files =
 				sync::tree_files(&self.repo.borrow(), commit)?;
@@ -90,15 +96,16 @@ impl RevisionFilesComponent {
 				self.files.iter().map(|f| f.path.as_path()).collect();
 			self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
 			self.tree.collapse_but_root();
-			self.revision = Some(commit);
+			self.revision =
+				Some(get_commit_info(&self.repo.borrow(), &commit)?);
 		}
 
 		Ok(())
 	}
 
 	///
-	pub const fn revision(&self) -> Option<CommitId> {
-		self.revision
+	pub const fn revision(&self) -> Option<&CommitInfo> {
+		self.revision.as_ref()
 	}
 
 	///
@@ -161,7 +168,7 @@ impl RevisionFilesComponent {
 			self.queue.push(InternalEvent::OpenPopup(
 				StackablePopupOpen::BlameFile(BlameFileOpen {
 					file_path: path,
-					commit_id: self.revision,
+					commit_id: self.revision.as_ref().map(|c| c.id),
 					selection: None,
 				}),
 			));
@@ -260,12 +267,7 @@ impl RevisionFilesComponent {
 
 		let is_tree_focused = matches!(self.focus, Focus::Tree);
 
-		let title = format!(
-			"Files at [{}]",
-			self.revision
-				.map(|c| c.get_short_string())
-				.unwrap_or_default(),
-		);
+		let title = self.title_within(tree_width);
 		ui::draw_list_block(
 			f,
 			area,
@@ -282,6 +284,40 @@ impl RevisionFilesComponent {
 		if is_tree_focused {
 			self.scroll.draw(f, area, &self.theme);
 		}
+	}
+
+	fn title_within(&self, tree_width: usize) -> String {
+		let mut title = String::from("Files at");
+		let message = self.revision.as_ref().and_then(|c| {
+			let _ = write!(title, " {{{}}}", c.id.get_short_string());
+
+			c.message.lines().next()
+		});
+
+		if let Some(message) = message {
+			const ELLIPSIS: char = '\u{2026}'; // …
+
+			let available = tree_width
+				.saturating_sub(title.width())
+				.saturating_sub(
+					2 /* frame end corners */ + 1 /* space */ + 2, /* square brackets */
+				);
+
+			if message.width() <= available {
+				let _ = write!(title, " [{}]", message);
+			} else if available > 1 {
+				let _ = write!(
+					title,
+					" [{}{}]",
+					message.unicode_truncate(available - 1).0,
+					ELLIPSIS
+				);
+			} else {
+				title.push(ELLIPSIS);
+			}
+		}
+
+		title
 	}
 }
 
