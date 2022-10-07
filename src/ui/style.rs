@@ -37,6 +37,7 @@ pub struct Theme {
 	push_gauge_bg: Color,
 	push_gauge_fg: Color,
 	tag_fg: Color,
+	branch_fg: Color,
 }
 
 impl Theme {
@@ -65,14 +66,11 @@ impl Theme {
 			Style::default().add_modifier(Modifier::BOLD)
 		} else {
 			Style::default()
-		};
+		}
+		.fg(self.branch_fg);
 
 		if selected {
-			branch.patch(
-				Style::default()
-					.fg(self.command_fg)
-					.bg(self.selection_bg),
-			)
+			branch.patch(Style::default().bg(self.selection_bg))
 		} else {
 			branch
 		}
@@ -327,6 +325,7 @@ impl Default for Theme {
 			push_gauge_bg: Color::Blue,
 			push_gauge_fg: Color::Reset,
 			tag_fg: Color::LightMagenta,
+			branch_fg: Color::LightYellow,
 		}
 	}
 }
