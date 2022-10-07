@@ -848,28 +848,42 @@ impl Component for Status {
 				{
 					self.switch_focus(self.focus.toggled_focus())
 						.map(Into::into)
-				} else if key_match(
+				} else if (key_match(
 					k,
 					self.key_config.keys.focus_right,
-				) && self.can_focus_diff()
+				) || key_match(
+					k,
+					self.key_config.keys.focus_pane_right,
+				)) && self.can_focus_diff()
 				{
 					self.switch_focus(Focus::Diff).map(Into::into)
 				} else if key_match(
 					k,
 					self.key_config.keys.focus_left,
+				) || key_match(
+					k,
+					self.key_config.keys.focus_pane_left,
 				) {
 					self.switch_focus(match self.diff_target {
 						DiffTarget::Stage => Focus::Stage,
 						DiffTarget::WorkingDir => Focus::WorkDir,
 					})
 					.map(Into::into)
-				} else if key_match(k, self.key_config.keys.move_down)
-					&& self.focus == Focus::WorkDir
+				} else if (key_match(
+					k,
+					self.key_config.keys.move_down,
+				) || key_match(
+					k,
+					self.key_config.keys.focus_pane_below,
+				)) && self.focus == Focus::WorkDir
 					&& !self.index.is_empty()
 				{
 					self.switch_focus(Focus::Stage).map(Into::into)
-				} else if key_match(k, self.key_config.keys.move_up)
-					&& self.focus == Focus::Stage
+				} else if (key_match(k, self.key_config.keys.move_up)
+					|| key_match(
+						k,
+						self.key_config.keys.focus_pane_above,
+					)) && self.focus == Focus::Stage
 					&& !self.index_wd.is_empty()
 				{
 					self.switch_focus(Focus::WorkDir).map(Into::into)

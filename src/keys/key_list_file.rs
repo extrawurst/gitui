@@ -83,6 +83,10 @@ pub struct KeysListFile {
 	pub view_submodule_parent: Option<GituiKeyEvent>,
 	pub update_dubmodule: Option<GituiKeyEvent>,
 	pub commit_history_next: Option<GituiKeyEvent>,
+	pub focus_pane_right: Option<GituiKeyEvent>,
+	pub focus_pane_left: Option<GituiKeyEvent>,
+	pub focus_pane_above: Option<GituiKeyEvent>,
+	pub focus_pane_below: Option<GituiKeyEvent>,
 }
 
 impl KeysListFile {
@@ -174,6 +178,10 @@ impl KeysListFile {
 			view_submodule_parent: self.view_submodule_parent.unwrap_or(default.view_submodule_parent),
 			update_submodule: self.update_dubmodule.unwrap_or(default.update_submodule),
 			commit_history_next: self.commit_history_next.unwrap_or(default.commit_history_next),
+			focus_pane_right: self.focus_pane_right.unwrap_or(default.focus_pane_right),
+			focus_pane_left: self.focus_pane_left.unwrap_or(default.focus_pane_left),
+			focus_pane_above: self.focus_pane_above.unwrap_or(default.focus_pane_above),
+			focus_pane_below: self.focus_pane_below.unwrap_or(default.focus_pane_below),
 		}
 	}
 }
