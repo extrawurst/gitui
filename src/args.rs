@@ -1,7 +1,7 @@
 use crate::bug_report;
 use anyhow::{anyhow, Result};
-use asyncgit::sync::RepoPath;
-use clap::Parser;
+use asyncgit::sync::{utils::repo_work_dir, RepoPath};
+use clap::{Parser, Subcommand};
 use simplelog::{Config, LevelFilter, WriteLogger};
 use std::{
 	fs::{self, File},
@@ -12,6 +12,13 @@ pub struct CliArgs {
 	pub theme: PathBuf,
 	pub repo_path: RepoPath,
 	pub notify_watcher: bool,
+	pub start_mode: Option<StartMode>,
+}
+
+#[derive(Debug, Clone)]
+pub enum StartMode {
+	BlameFile { path_in_workdir: PathBuf },
+	Stash,
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
@@ -44,10 +51,16 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		})
 		.unwrap_or_else(|| cfg_path.join("theme.ron"));
 
+	let start_mode = args
+		.command
+		.map(|cmd| parse_start_mode(cmd, &repo_path))
+		.transpose()?;
+
 	Ok(CliArgs {
 		theme,
 		repo_path,
 		notify_watcher: args.watcher,
+		start_mode,
 	})
 }
 
@@ -91,6 +104,17 @@ struct AppOptions {
 	/// Set the working directory
 	#[arg(short = 'w', long, env = "GIT_WORK_TREE")]
 	workdir: Option<PathBuf>,
+
+	#[clap(subcommand)]
+	command: Option<Command>,
+}
+
+#[derive(Subcommand)]
+enum Command {
+	/// Start with a stash view
+	Stash,
+	/// Show blame view for a file
+	Blame { file: PathBuf },
 }
 
 fn setup_logging() -> Result<()> {
@@ -128,4 +152,57 @@ pub fn get_app_config_path() -> Result<PathBuf> {
 	path.push("gitui");
 	fs::create_dir_all(&path)?;
 	Ok(path)
+}
+
+fn parse_start_mode(
+	cmd: Command,
+	repo_path: &RepoPath,
+) -> Result<StartMode> {
+	match cmd {
+		Command::Stash => Ok(StartMode::Stash),
+		Command::Blame { file } => {
+			let path = &file;
+
+			let workdir =
+				PathBuf::try_from(repo_work_dir(repo_path)?)?
+					.canonicalize()?;
+
+			let make_error = |e: Option<std::io::Error>| {
+				let display_path = if path.is_absolute() {
+					path.display().to_string()
+				} else {
+					let dot = PathBuf::from(".");
+					dot.canonicalize()
+						.unwrap_or(dot)
+						.join(path)
+						.display()
+						.to_string()
+				};
+				let e =
+					e.map(|e| format!("{e}: ")).unwrap_or_default();
+				anyhow::anyhow!(
+					"{e}\"{}\" is not in the working directory (\"{}\")",
+					display_path,
+					workdir.display(),
+				)
+			};
+
+			let mut work_dir_comp = workdir.components();
+			let path_in_workdir: PathBuf = path
+				.canonicalize()
+				.map_err(|e| make_error(Some(e)))?
+				.components()
+				.skip_while(|f_comp| {
+					Some(f_comp) == work_dir_comp.next().as_ref()
+				})
+				.collect();
+
+			if work_dir_comp.next().is_some() {
+				// workdir components not exhausted
+				// this means the file is not in the work dir
+				return Err(make_error(None));
+			}
+			Ok(StartMode::BlameFile { path_in_workdir })
+		}
+	}
 }
