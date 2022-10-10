@@ -50,6 +50,7 @@ mod watcher;
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
 use app::QuitState;
+use args::StartMode;
 use asyncgit::{
 	sync::{utils::repo_work_dir, RepoPath},
 	AsyncGitNotification,
@@ -146,6 +147,7 @@ fn main() -> Result<()> {
 	let mut terminal = start_terminal(io::stdout())?;
 	let mut repo_path = cliargs.repo_path;
 	let input = Input::new();
+	let mut start_mode = cliargs.start_mode;
 
 	let updater = if cliargs.notify_watcher {
 		Updater::NotifyWatcher
@@ -159,6 +161,7 @@ fn main() -> Result<()> {
 			repo_path.clone(),
 			theme,
 			key_config.clone(),
+			&start_mode.take(), // so start_mode is passed only once at start
 			&input,
 			updater,
 			&mut terminal,
@@ -175,11 +178,13 @@ fn main() -> Result<()> {
 	Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_app(
 	app_start: Instant,
 	repo: RepoPath,
 	theme: Theme,
 	key_config: KeyConfig,
+	start_mode: &Option<StartMode>,
 	input: &Input,
 	updater: Updater,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
@@ -208,6 +213,7 @@ fn run_app(
 		input.clone(),
 		theme,
 		key_config,
+		start_mode,
 	)?;
 
 	let mut spinner = Spinner::default();

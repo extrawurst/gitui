@@ -1,5 +1,6 @@
 use crate::{
 	accessors,
+	args::StartMode,
 	cmdbar::CommandBar,
 	components::{
 		command_pump, event_pump, AppOption, BlameFileComponent,
@@ -119,6 +120,7 @@ impl App {
 		input: Input,
 		theme: Theme,
 		key_config: KeyConfig,
+		start_mode: &Option<StartMode>,
 	) -> Result<Self> {
 		log::trace!("open repo at: {:?}", &repo);
 
@@ -130,7 +132,11 @@ impl App {
 		let key_config = Rc::new(key_config);
 		let options = Options::new(repo.clone());
 
-		let tab = options.borrow().current_tab();
+		let tab = if matches!(start_mode, Some(StartMode::Stash)) {
+			4
+		} else {
+			options.borrow().current_tab()
+		};
 
 		let mut app = Self {
 			input,
