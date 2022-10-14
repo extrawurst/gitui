@@ -490,8 +490,7 @@ mod tests {
 				.unwrap()
 				.map(std::result::Result::unwrap)
 				.map(|(i, _)| i.name().unwrap().unwrap().to_string())
-				.find(|i| i == "test_branch")
-				.is_some(),
+				.any(|i| &i == "test_branch"),
 			true
 		);
 
@@ -517,8 +516,7 @@ mod tests {
 				.unwrap()
 				.map(std::result::Result::unwrap)
 				.map(|(i, _)| i.name().unwrap().unwrap().to_string())
-				.find(|i| i == "test_branch")
-				.is_some(),
+				.any(|i| &i == "test_branch"),
 			false
 		);
 	}

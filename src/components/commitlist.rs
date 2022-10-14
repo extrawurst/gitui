@@ -366,7 +366,7 @@ impl CommitList {
 		txt.push(splitter.clone());
 
 		let author_width =
-			(width.saturating_sub(19) / 3).max(3).min(20);
+			(width.saturating_sub(19) / 3).clamp(3, 20);
 		let author = string_width_align(&e.author, author_width);
 
 		// commit author
