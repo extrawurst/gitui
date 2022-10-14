@@ -170,10 +170,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		assert!(matches!(
-			blame_file(&repo_path, "foo", None),
-			Err(_)
-		));
+		assert!(matches!(blame_file(repo_path, "foo", None), Err(_)));
 
 		File::create(&root.join(file_path))?
 			.write_all(b"line 1\n")?;
@@ -181,7 +178,7 @@ mod tests {
 		stage_add_file(repo_path, file_path)?;
 		commit(repo_path, "first commit")?;
 
-		let blame = blame_file(&repo_path, "foo", None)?;
+		let blame = blame_file(repo_path, "foo", None)?;
 
 		assert!(matches!(
 			blame.lines.as_slice(),
@@ -205,7 +202,7 @@ mod tests {
 		stage_add_file(repo_path, file_path)?;
 		commit(repo_path, "second commit")?;
 
-		let blame = blame_file(&repo_path, "foo", None)?;
+		let blame = blame_file(repo_path, "foo", None)?;
 
 		assert!(matches!(
 			blame.lines.as_slice(),
@@ -232,14 +229,14 @@ mod tests {
 
 		file.write(b"line 3\n")?;
 
-		let blame = blame_file(&repo_path, "foo", None)?;
+		let blame = blame_file(repo_path, "foo", None)?;
 
 		assert_eq!(blame.lines.len(), 2);
 
 		stage_add_file(repo_path, file_path)?;
 		commit(repo_path, "third commit")?;
 
-		let blame = blame_file(&repo_path, "foo", None)?;
+		let blame = blame_file(repo_path, "foo", None)?;
 
 		assert_eq!(blame.lines.len(), 3);
 
@@ -264,6 +261,6 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 		commit(repo_path, "first commit").unwrap();
 
-		assert!(blame_file(&repo_path, "bar\\foo", None).is_ok());
+		assert!(blame_file(repo_path, "bar\\foo", None).is_ok());
 	}
 }

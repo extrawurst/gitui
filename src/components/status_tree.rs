@@ -167,7 +167,7 @@ impl StatusTreeComponent {
 		let indent_str = if indent == 0 {
 			String::new()
 		} else {
-			format!("{:w$}", " ", w = (indent as usize) * 2)
+			format!("{:w$}", " ", w = indent * 2)
 		};
 
 		if !visible {
@@ -192,7 +192,7 @@ impl StatusTreeComponent {
 						w = width as usize
 					)
 				} else {
-					format!("{} {}{}", status_char, indent_str, file)
+					format!("{status_char} {indent_str}{file}")
 				};
 
 				Some(Span::styled(

@@ -158,7 +158,7 @@ mod test {
 			false,
 			false,
 			None,
-			None.into(),
+			None,
 		)
 		.is_err());
 
@@ -195,7 +195,7 @@ mod test {
 		//verify commit msg
 		let details = crate::sync::get_commit_details(
 			&clone2_dir.into(),
-			merge_commit.into(),
+			merge_commit,
 		)
 		.unwrap();
 		assert_eq!(

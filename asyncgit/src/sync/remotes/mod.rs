@@ -216,7 +216,7 @@ mod tests {
 
 		debug_cmd_print(
 			repo_path,
-			&format!("git remote add second {}", remote_path)[..],
+			&format!("git remote add second {remote_path}")[..],
 		);
 
 		let remotes = get_remotes(repo_path).unwrap();
@@ -251,7 +251,7 @@ mod tests {
 
 		debug_cmd_print(
 			repo_path,
-			&format!("git remote add origin {}", remote_path)[..],
+			&format!("git remote add origin {remote_path}")[..],
 		);
 
 		//NOTE: aparently remotes are not chronolically sorted but alphabetically
@@ -287,7 +287,7 @@ mod tests {
 
 		debug_cmd_print(
 			repo_path,
-			&format!("git remote add someremote {}", remote_path)[..],
+			&format!("git remote add someremote {remote_path}")[..],
 		);
 
 		let remotes = get_remotes(repo_path).unwrap();

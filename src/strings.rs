@@ -110,7 +110,7 @@ pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {
 	"type commit message..".to_string()
 }
 pub fn commit_first_line_warning(count: usize) -> String {
-	format!("[subject length: {}]", count)
+	format!("[subject length: {count}]")
 }
 pub const fn branch_name_invalid() -> &'static str {
 	"[invalid name]"
@@ -157,9 +157,9 @@ pub fn confirm_msg_merge(
 	rebase: bool,
 ) -> String {
 	if rebase {
-		format!("Rebase onto {} incoming commits?", incoming)
+		format!("Rebase onto {incoming} incoming commits?")
 	} else {
-		format!("Merge of {} incoming commits?", incoming)
+		format!("Merge of {incoming} incoming commits?")
 	}
 }
 
@@ -225,7 +225,7 @@ pub fn confirm_msg_delete_branch(
 	_key_config: &SharedKeyConfig,
 	branch_ref: &str,
 ) -> String {
-	format!("Confirm deleting branch: '{}' ?", branch_ref)
+	format!("Confirm deleting branch: '{branch_ref}' ?")
 }
 pub fn confirm_title_delete_remote_branch(
 	_key_config: &SharedKeyConfig,
@@ -236,7 +236,7 @@ pub fn confirm_msg_delete_remote_branch(
 	_key_config: &SharedKeyConfig,
 	branch_ref: &str,
 ) -> String {
-	format!("Confirm deleting remote branch: '{}' ?", branch_ref)
+	format!("Confirm deleting remote branch: '{branch_ref}' ?")
 }
 pub fn confirm_title_delete_tag(
 	_key_config: &SharedKeyConfig,
@@ -247,13 +247,13 @@ pub fn confirm_msg_delete_tag(
 	_key_config: &SharedKeyConfig,
 	tag_name: &str,
 ) -> String {
-	format!("Confirm deleting Tag: '{}' ?", tag_name)
+	format!("Confirm deleting Tag: '{tag_name}' ?")
 }
 pub fn confirm_title_delete_tag_remote() -> String {
 	"Delete Tag (remote)".to_string()
 }
 pub fn confirm_msg_delete_tag_remote(remote_name: &str) -> String {
-	format!("Confirm deleting tag on remote '{}'?", remote_name)
+	format!("Confirm deleting tag on remote '{remote_name}'?")
 }
 pub fn confirm_title_force_push(
 	_key_config: &SharedKeyConfig,
@@ -292,7 +292,7 @@ pub fn tag_popup_name_msg() -> String {
 	"type tag name".to_string()
 }
 pub fn tag_popup_annotation_title(name: &str) -> String {
-	format!("Tag Annotation ({})", name)
+	format!("Tag Annotation ({name})")
 }
 pub fn tag_popup_annotation_msg() -> String {
 	"type tag annotation".to_string()
@@ -378,7 +378,7 @@ pub mod commit {
 		old: bool,
 		hash: &str,
 	) -> String {
-		format!("{}: {}", if old { "Old" } else { "New" }, hash)
+		format!("{}: {hash}", if old { "Old" } else { "New" })
 	}
 	pub fn details_message_title(
 		_key_config: &SharedKeyConfig,
@@ -1065,7 +1065,7 @@ pub mod commands {
 				if marked == 0 {
 					String::default()
 				} else {
-					format!(" {}", marked)
+					format!(" {marked}")
 				},
 				key_config.get_hint(key_config.keys.stash_drop),
 			),

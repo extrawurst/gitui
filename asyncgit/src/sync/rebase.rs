@@ -202,7 +202,7 @@ mod test_conflict_free_rebase {
 			.find_commit(c.into())
 			.unwrap()
 			.parent_ids()
-			.map(|id| CommitId::from(id))
+			.map(CommitId::from)
 			.collect();
 
 		foo

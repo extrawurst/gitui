@@ -94,7 +94,7 @@ impl CommitComponent {
 
 	fn draw_branch_name<B: Backend>(&self, f: &mut Frame<B>) {
 		if let Some(name) = self.git_branch_name.last() {
-			let w = Paragraph::new(format!("{{{}}}", name))
+			let w = Paragraph::new(format!("{{{name}}}"))
 				.alignment(Alignment::Right);
 
 			let rect = {

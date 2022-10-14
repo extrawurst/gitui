@@ -163,7 +163,7 @@ c = 4";
 
 		assert_eq!(get_statuses(path), (1, 0));
 
-		stage_add_file(path, &Path::new("test.txt")).unwrap();
+		stage_add_file(path, Path::new("test.txt")).unwrap();
 
 		assert_eq!(get_statuses(path), (0, 1));
 

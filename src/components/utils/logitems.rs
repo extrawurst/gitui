@@ -55,7 +55,7 @@ impl LogEntry {
 			} else {
 				format!("{:0>2}m ago", delta.num_minutes())
 			};
-			format!("{: <10}", delta_str)
+			format!("{delta_str: <10}")
 		} else if self.time.date() == now.date() {
 			self.time.format("%T  ").to_string()
 		} else {

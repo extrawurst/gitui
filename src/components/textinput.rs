@@ -305,7 +305,7 @@ impl TextInputComponent {
 	fn draw_char_count<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
 		let count = self.msg.len();
 		if count > 0 {
-			let w = Paragraph::new(format!("[{} chars]", count))
+			let w = Paragraph::new(format!("[{count} chars]"))
 				.alignment(Alignment::Right);
 
 			let mut rect = {

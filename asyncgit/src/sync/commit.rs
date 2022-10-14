@@ -138,7 +138,7 @@ mod tests {
 
 	fn count_commits(repo: &Repository, max: usize) -> usize {
 		let mut items = Vec::new();
-		let mut walk = LogWalker::new(&repo, max).unwrap();
+		let mut walk = LogWalker::new(repo, max).unwrap();
 		walk.read(&mut items).unwrap();
 		items.len()
 	}

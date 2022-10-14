@@ -290,7 +290,7 @@ impl Status {
 						.unwrap_or_default(),
 				)
 			}
-			_ => format!("{:?}", state),
+			_ => format!("{state:?}"),
 		}
 	}
 

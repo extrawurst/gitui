@@ -87,7 +87,7 @@ impl HookPaths {
 		} else {
 			let err = String::from_utf8_lossy(&output.stderr);
 			let out = String::from_utf8_lossy(&output.stdout);
-			let formatted = format!("{}{}", out, err);
+			let formatted = format!("{out}{err}");
 
 			Ok(HookResult::NotOk(formatted))
 		}
@@ -324,7 +324,7 @@ exit 1
 		let workdir = TempDir::new().unwrap();
 		let git_root = git_root.into_path();
 		let repo_path = &RepoPath::Workdir {
-			gitdir: dbg!(git_root.to_path_buf()),
+			gitdir: dbg!(git_root),
 			workdir: dbg!(workdir.into_path()),
 		};
 
@@ -541,7 +541,7 @@ exit 1
 		let workdir = TempDir::new().unwrap();
 		let git_root = git_root.into_path();
 		let repo_path = &RepoPath::Workdir {
-			gitdir: dbg!(git_root.to_path_buf()),
+			gitdir: dbg!(git_root),
 			workdir: dbg!(workdir.path().to_path_buf()),
 		};
 

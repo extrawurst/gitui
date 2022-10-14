@@ -399,7 +399,7 @@ impl CommitList {
 
 		// commit msg
 		txt.push(Span::styled(
-			format!("{:w$}", &e.msg, w = message_width),
+			format!("{:message_width$}", &e.msg),
 			theme.text(true, selected),
 		));
 
@@ -434,7 +434,7 @@ impl CommitList {
 			let branches = self.branches.get(&e.id).map(|names| {
 				names
 					.iter()
-					.map(|name| format!("{{{}}}", name))
+					.map(|name| format!("{{{name}}}"))
 					.join(" ")
 			});
 
@@ -502,7 +502,7 @@ impl DrawableComponent for CommitList {
 		));
 
 		let branch_post_fix =
-			self.branch.as_ref().map(|b| format!("- {{{}}}", b));
+			self.branch.as_ref().map(|b| format!("- {{{b}}}"));
 
 		let title = format!(
 			"{} {}/{} {}",

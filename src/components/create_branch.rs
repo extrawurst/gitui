@@ -142,7 +142,7 @@ impl CreateBranchComponent {
 			Err(e) => {
 				log::error!("create branch: {}", e,);
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("create branch error:\n{}", e,),
+					format!("create branch error:\n{e}",),
 				));
 			}
 		}
