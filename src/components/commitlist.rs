@@ -6,7 +6,7 @@ use crate::{
 	},
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
-	strings::{self, symbol},
+	strings::{self, copy_fail, copy_success, symbol},
 	ui::style::{SharedTheme, Theme},
 	ui::{calc_scroll_top, draw_scrollbar},
 };
@@ -27,8 +27,6 @@ use tui::{
 };
 
 const ELEMENTS_PER_LINE: usize = 9;
-const FAIL_COPY: &str = "Failed to copy the Text";
-const SUCCESS_COPY: &str = "Copied Text";
 
 ///
 pub struct CommitList {
@@ -188,14 +186,14 @@ impl CommitList {
 			if let (Some(f), Some(l)) = (first, last) {
 				let yank =
 					format!("{}^..{}", f.hash_short, l.hash_short);
-                if let Err(e) = crate::clipboard::copy_string(&yank) {
-                    self.queue.push(InternalEvent::ShowErrorMsg(
-                        format!("{}: {}", FAIL_COPY, e),
-                    ));
-                    return Err(e);
-                }
+				if let Err(e) = crate::clipboard::copy_string(&yank) {
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						copy_fail(e.to_string()),
+					));
+					return Err(e);
+				}
 				self.queue.push(InternalEvent::ShowInfoMsg(
-					format!("{} \"{}\"", SUCCESS_COPY, &yank),
+					copy_success(&yank),
 				));
 			};
 		} else {
@@ -212,14 +210,13 @@ impl CommitList {
 				})
 				.join(" ");
 
-            if let Err(e) = crate::clipboard::copy_string(&separate) {
-                self.queue.push(InternalEvent::ShowErrorMsg(
-                    format!("{}: {}", FAIL_COPY, e),
-                ));
-                return Err(e);
-            }
+			if let Err(e) = crate::clipboard::copy_string(&separate) {
+				self.queue
+					.push(InternalEvent::ShowErrorMsg(copy_fail(e.to_string())));
+				return Err(e);
+			}
 			self.queue.push(InternalEvent::ShowInfoMsg(
-				format!("{} \"{}\"", SUCCESS_COPY, &separate),
+				copy_success(&separate),
 			));
 		}
 
@@ -233,14 +230,16 @@ impl CommitList {
 					self.selection
 						.saturating_sub(self.items.index_offset()),
 				) {
-					if let Err(e) = crate::clipboard::copy_string(&e.hash_short) {
-                        self.queue.push(InternalEvent::ShowErrorMsg(
-                            format!("{}: {}", FAIL_COPY, e),
-                        ));
-                        return Err(e);
-                    }
+					if let Err(e) =
+						crate::clipboard::copy_string(&e.hash_short)
+					{
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							copy_fail(e.to_string()),
+						));
+						return Err(e);
+					}
 					self.queue.push(InternalEvent::ShowInfoMsg(
-				        format!("{} \"{}\"", SUCCESS_COPY, &e.hash_short),
+						copy_success(&e.hash_short),
 					));
 				}
 			}
@@ -248,14 +247,16 @@ impl CommitList {
 				if let Some(e) =
 					self.items.iter().nth(self.marked_indexes()[0])
 				{
-					if let Err(e) = crate::clipboard::copy_string(&e.hash_short) {
-                        self.queue.push(InternalEvent::ShowErrorMsg(
-                            format!("{}: {}", FAIL_COPY, e),
-                        ));
-                        return Err(e);
-                    }
+					if let Err(e) =
+						crate::clipboard::copy_string(&e.hash_short)
+					{
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							copy_fail(e.to_string()),
+						));
+						return Err(e);
+					}
 					self.queue.push(InternalEvent::ShowInfoMsg(
-				        format!("{} \"{}\"", SUCCESS_COPY, &e.hash_short),
+						copy_success(&e.hash_short),
 					));
 				}
 			}
