@@ -70,3 +70,6 @@ install-timing:
 
 licenses:
 	cargo bundle-licenses --format toml --output THIRDPARTY.toml
+
+clean:
+	cargo clean
