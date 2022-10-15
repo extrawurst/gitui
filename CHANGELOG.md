@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * add `vendor-openssl` feature to allow building without vendored openssl [[@jirutka](https://github.com/jirutka)]
 * allow copying marked commits [[@remique](https://github.com/remique)] ([#1288](https://github.com/extrawurst/gitui/issues/1288))
 * Add notification when correctly copying hash commit ([#1160](https://github.com/extrawurst/gitui/issues/1160))
+* Add a notification with details when the copy throws an error
 
 ### Fixes
 * remove insecure dependency `ansi_term` ([#1290](https://github.com/extrawurst/gitui/issues/1290))
