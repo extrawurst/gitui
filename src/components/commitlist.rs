@@ -10,12 +10,13 @@ use crate::{
 	ui::{calc_scroll_top, draw_scrollbar},
 };
 use anyhow::Result;
-use asyncgit::sync::{CommitId, Tags};
+use asyncgit::sync::{BranchInfo, CommitId, Tags};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
 use itertools::Itertools;
 use std::{
-	borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
+	borrow::Cow, cell::Cell, cmp, collections::BTreeMap,
+	convert::TryFrom, time::Instant,
 };
 use tui::{
 	backend::Backend,
@@ -37,6 +38,7 @@ pub struct CommitList {
 	marked: Vec<(usize, CommitId)>,
 	scroll_state: (Instant, f32),
 	tags: Option<Tags>,
+	branches: BTreeMap<CommitId, Vec<String>>,
 	current_size: Cell<(u16, u16)>,
 	scroll_top: Cell<usize>,
 	theme: SharedTheme,
@@ -58,6 +60,7 @@ impl CommitList {
 			count_total: 0,
 			scroll_state: (Instant::now(), 0_f32),
 			tags: None,
+			branches: BTreeMap::default(),
 			current_size: Cell::new((0, 0)),
 			scroll_top: Cell::new(0),
 			theme,
@@ -314,10 +317,12 @@ impl CommitList {
 		}
 	}
 
+	#[allow(clippy::too_many_arguments)]
 	fn get_entry_to_add<'a>(
 		e: &'a LogEntry,
 		selected: bool,
 		tags: Option<String>,
+		branches: Option<String>,
 		theme: &Theme,
 		width: usize,
 		now: DateTime<Local>,
@@ -373,12 +378,18 @@ impl CommitList {
 		txt.push(splitter.clone());
 
 		// commit tags
-		txt.push(Span::styled(
-			Cow::from(tags.map_or_else(String::new, |tags| {
-				format!(" {}", tags)
-			})),
-			theme.tags(selected),
-		));
+		if let Some(tags) = tags {
+			txt.push(splitter.clone());
+			txt.push(Span::styled(tags, theme.tags(selected)));
+		}
+
+		if let Some(branches) = branches {
+			txt.push(splitter.clone());
+			txt.push(Span::styled(
+				branches,
+				theme.branch(selected, true),
+			));
+		}
 
 		txt.push(splitter);
 
@@ -413,8 +424,19 @@ impl CommitList {
 		{
 			let tags =
 				self.tags.as_ref().and_then(|t| t.get(&e.id)).map(
-					|tags| tags.iter().map(|t| &t.name).join(" "),
+					|tags| {
+						tags.iter()
+							.map(|t| format!("<{}>", t.name))
+							.join(" ")
+					},
 				);
+
+			let branches = self.branches.get(&e.id).map(|names| {
+				names
+					.iter()
+					.map(|name| format!("[{}]", name))
+					.join(" ")
+			});
 
 			let marked = if any_marked {
 				self.is_marked(&e.id)
@@ -426,6 +448,7 @@ impl CommitList {
 				e,
 				idx + self.scroll_top.get() == selection,
 				tags,
+				branches,
 				&self.theme,
 				width,
 				now,
@@ -443,6 +466,17 @@ impl CommitList {
 
 	pub fn select_entry(&mut self, position: usize) {
 		self.selection = position;
+	}
+
+	pub fn set_branches(&mut self, branches: Vec<BranchInfo>) {
+		self.branches.clear();
+
+		for b in branches {
+			self.branches
+				.entry(b.top_commit)
+				.or_default()
+				.push(b.name);
+		}
 	}
 }
 

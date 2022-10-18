@@ -13,7 +13,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{
 	cached,
-	sync::{self, CommitId, RepoPathRef},
+	sync::{self, get_branches_info, CommitId, RepoPathRef},
 	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
 	FetchStatus,
 };
@@ -106,6 +106,11 @@ impl Revlog {
 			self.list.set_branch(
 				self.branch_name.lookup().map(Some).unwrap_or(None),
 			);
+
+			self.list.set_branches(get_branches_info(
+				&self.repo.borrow(),
+				true,
+			)?);
 
 			if self.commit_details.is_visible() {
 				let commit = self.selected_commit();
