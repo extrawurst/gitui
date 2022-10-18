@@ -434,7 +434,7 @@ impl CommitList {
 			let branches = self.branches.get(&e.id).map(|names| {
 				names
 					.iter()
-					.map(|name| format!("[{}]", name))
+					.map(|name| format!("{{{}}}", name))
 					.join(" ")
 			});
 
