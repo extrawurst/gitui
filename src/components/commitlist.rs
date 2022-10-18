@@ -214,8 +214,9 @@ impl CommitList {
 				.join(" ");
 
 			if let Err(e) = crate::clipboard::copy_string(&separate) {
-				self.queue
-					.push(InternalEvent::ShowErrorMsg(copy_fail(e.to_string())));
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					copy_fail(e.to_string()),
+				));
 				return Err(e);
 			}
 			self.queue.push(InternalEvent::ShowInfoMsg(
