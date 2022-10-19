@@ -12,7 +12,6 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	cached,
 	sync::{self, get_branches_info, CommitId, RepoPathRef},
 	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
 	FetchStatus,
@@ -38,7 +37,6 @@ pub struct Revlog {
 	git_tags: AsyncTags,
 	queue: Queue,
 	visible: bool,
-	branch_name: cached::BranchName,
 	key_config: SharedKeyConfig,
 }
 
@@ -73,7 +71,6 @@ impl Revlog {
 			),
 			git_tags: AsyncTags::new(repo.borrow().clone(), sender),
 			visible: false,
-			branch_name: cached::BranchName::new(repo.clone()),
 			key_config,
 		}
 	}
@@ -102,10 +99,6 @@ impl Revlog {
 			}
 
 			self.git_tags.request(Duration::from_secs(3), false)?;
-
-			self.list.set_branch(
-				self.branch_name.lookup().map(Some).unwrap_or(None),
-			);
 
 			self.list.set_branches(get_branches_info(
 				&self.repo.borrow(),
