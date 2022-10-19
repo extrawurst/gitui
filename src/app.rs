@@ -448,7 +448,7 @@ impl App {
 
 				if let Err(e) = result {
 					let msg =
-						format!("failed to launch editor:\n{}", e);
+						format!("failed to launch editor:\n{e}");
 					log::error!("{}", msg.as_str());
 					self.msg.show_error(msg.as_str())?;
 				}

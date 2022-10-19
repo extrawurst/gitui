@@ -87,8 +87,8 @@ pub fn centered_rect(
 
 /// makes sure Rect `r` at least stays as big as min and not bigger than max
 pub fn rect_inside(min: Size, max: Size, r: Rect) -> Rect {
-	let new_width = r.width.max(min.width).min(max.width);
-	let new_height = r.height.max(min.height).min(max.height);
+	let new_width = r.width.clamp(min.width, max.width);
+	let new_height = r.height.clamp(min.height, max.height);
 	let diff_width = new_width.saturating_sub(r.width);
 	let diff_height = new_height.saturating_sub(r.height);
 

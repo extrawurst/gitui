@@ -20,6 +20,8 @@ pub struct Tag {
 
 impl Tag {
 	///
+	#[allow(clippy::missing_const_for_fn)]
+	// clippy doesn't realise allocating a String is not const
 	pub fn new(name: &str) -> Self {
 		Self {
 			name: name.into(),

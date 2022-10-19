@@ -134,7 +134,7 @@ impl OptionsPopupComponent {
 				self.theme.text(true, false),
 			),
 			Span::styled(
-				format!("{:^w$}", value, w = half),
+				format!("{value:^half$}"),
 				self.theme.text(true, selected),
 			),
 		]));

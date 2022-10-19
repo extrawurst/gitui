@@ -125,10 +125,10 @@ mod tests {
 			let temp_dir = TempDir::new().unwrap();
 			let path = temp_dir.path();
 
-			set_search_path(ConfigLevel::System, &path).unwrap();
-			set_search_path(ConfigLevel::Global, &path).unwrap();
-			set_search_path(ConfigLevel::XDG, &path).unwrap();
-			set_search_path(ConfigLevel::ProgramData, &path).unwrap();
+			set_search_path(ConfigLevel::System, path).unwrap();
+			set_search_path(ConfigLevel::Global, path).unwrap();
+			set_search_path(ConfigLevel::XDG, path).unwrap();
+			set_search_path(ConfigLevel::ProgramData, path).unwrap();
 		});
 	}
 
@@ -279,7 +279,7 @@ mod tests {
 			.try_init();
 	}
 
-	/// Same as repo_init, but the repo is a bare repo (--bare)
+	/// Same as `repo_init`, but the repo is a bare repo (--bare)
 	pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
 		init_log();
 
@@ -303,7 +303,7 @@ mod tests {
 	///
 	pub fn debug_cmd_print(path: &RepoPath, cmd: &str) {
 		let cmd = debug_cmd(path, cmd);
-		eprintln!("\n----\n{}", cmd);
+		eprintln!("\n----\n{cmd}");
 	}
 
 	/// helper to fetch commmit details using log walker
@@ -323,7 +323,7 @@ mod tests {
 	fn debug_cmd(path: &RepoPath, cmd: &str) -> String {
 		let output = if cfg!(target_os = "windows") {
 			Command::new("cmd")
-				.args(&["/C", cmd])
+				.args(["/C", cmd])
 				.current_dir(path.gitpath())
 				.output()
 				.unwrap()
@@ -343,12 +343,12 @@ mod tests {
 			if stdout.is_empty() {
 				String::new()
 			} else {
-				format!("out:\n{}", stdout)
+				format!("out:\n{stdout}")
 			},
 			if stderr.is_empty() {
 				String::new()
 			} else {
-				format!("err:\n{}", stderr)
+				format!("err:\n{stderr}")
 			}
 		)
 	}

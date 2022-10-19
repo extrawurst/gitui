@@ -60,7 +60,7 @@ impl CommitMessage {
 	///
 	pub fn combine(self) -> String {
 		if let Some(body) = self.body {
-			format!("{}\n{}", self.subject, body)
+			format!("{}\n{body}", self.subject)
 		} else {
 			self.subject
 		}
@@ -82,6 +82,8 @@ pub struct CommitDetails {
 
 impl CommitDetails {
 	///
+	#[allow(clippy::missing_const_for_fn)]
+	// clippy doesn't realise indexing a String is not const
 	pub fn short_hash(&self) -> &str {
 		&self.hash[0..7]
 	}

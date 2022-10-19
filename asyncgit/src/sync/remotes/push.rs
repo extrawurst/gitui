@@ -164,7 +164,7 @@ pub fn push_raw(
 	};
 
 	let branch_name =
-		format!("{}refs/{}/{}", branch_modifier, ref_type, branch);
+		format!("{branch_modifier}refs/{ref_type}/{branch}");
 	remote.push(&[branch_name.as_str()], Some(&mut options))?;
 
 	if let Some((reference, msg)) =
@@ -488,11 +488,9 @@ mod tests {
 			upstream_repo
 				.branches(None)
 				.unwrap()
-				.map(|i| i.unwrap())
+				.map(std::result::Result::unwrap)
 				.map(|(i, _)| i.name().unwrap().unwrap().to_string())
-				.filter(|i| i == "test_branch")
-				.next()
-				.is_some(),
+				.any(|i| &i == "test_branch"),
 			true
 		);
 
@@ -516,11 +514,9 @@ mod tests {
 			upstream_repo
 				.branches(None)
 				.unwrap()
-				.map(|i| i.unwrap())
+				.map(std::result::Result::unwrap)
 				.map(|(i, _)| i.name().unwrap().unwrap().to_string())
-				.filter(|i| i == "test_branch")
-				.next()
-				.is_some(),
+				.any(|i| &i == "test_branch"),
 			false
 		);
 	}

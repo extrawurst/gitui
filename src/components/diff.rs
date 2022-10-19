@@ -198,7 +198,7 @@ impl DiffComponent {
 
 	fn move_selection(&mut self, move_type: ScrollType) {
 		if let Some(diff) = &self.diff {
-			let max = diff.lines.saturating_sub(1) as usize;
+			let max = diff.lines.saturating_sub(1);
 
 			let new_start = match move_type {
 				ScrollType::Down => {
@@ -229,7 +229,7 @@ impl DiffComponent {
 
 	fn update_selection(&mut self, new_start: usize) {
 		if let Some(diff) = &self.diff {
-			let max = diff.lines.saturating_sub(1) as usize;
+			let max = diff.lines.saturating_sub(1);
 			let new_start = cmp::min(max, new_start);
 			self.selection = Selection::Single(new_start);
 			self.selected_hunk =
@@ -303,9 +303,8 @@ impl DiffComponent {
 		if let Some(diff) = &self.diff {
 			if diff.hunks.is_empty() {
 				let is_positive = diff.size_delta >= 0;
-				let delta_byte_size = ByteSize::b(
-					diff.size_delta.unsigned_abs() as u64,
-				);
+				let delta_byte_size =
+					ByteSize::b(diff.size_delta.unsigned_abs());
 				let sign = if is_positive { "+" } else { "-" };
 				res.extend(vec![Spans::from(vec![
 					Span::raw(Cow::from("size: ")),
@@ -378,7 +377,7 @@ impl DiffComponent {
 											.selection
 											.contains(line_cursor),
 									hunk_selected,
-									i == hunk_len as usize - 1,
+									i == hunk_len - 1,
 									&self.theme,
 								));
 								lines_added += 1;

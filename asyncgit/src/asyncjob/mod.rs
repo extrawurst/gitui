@@ -207,7 +207,7 @@ mod test {
 			let res =
 				self.v.fetch_add(self.value_to_add, Ordering::SeqCst);
 
-			println!("[job] value: {}", res);
+			println!("[job] value: {res}");
 
 			Ok(())
 		}
@@ -236,8 +236,8 @@ mod test {
 		}
 
 		println!("recv");
-		let _foo = receiver.recv().unwrap();
-		let _foo = receiver.recv().unwrap();
+		receiver.recv().unwrap();
+		receiver.recv().unwrap();
 		assert!(receiver.is_empty());
 
 		assert_eq!(
@@ -282,7 +282,7 @@ mod test {
 		wait_for_job(&job);
 
 		println!("recv");
-		let _foo = receiver.recv().unwrap();
+		receiver.recv().unwrap();
 		println!("received");
 
 		assert_eq!(

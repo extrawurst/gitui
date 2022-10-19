@@ -118,7 +118,7 @@ impl PullComponent {
 				self.pending = false;
 				self.hide();
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("fetch failed:\n{}", error),
+					format!("fetch failed:\n{error}"),
 				));
 			}
 		}

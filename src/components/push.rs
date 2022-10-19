@@ -181,7 +181,7 @@ impl PushComponent {
 		if !self.pending {
 			if let Some(err) = self.git_push.last_result()? {
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("push failed:\n{}", err),
+					format!("push failed:\n{err}"),
 				));
 			}
 			self.hide();

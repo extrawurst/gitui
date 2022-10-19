@@ -19,6 +19,8 @@
 	clippy::bool_to_int_with_if,
 	clippy::module_name_repetitions
 )]
+#![allow(clippy::missing_const_for_fn)] // high number of false positives on nightly
+
 //TODO:
 // #![deny(clippy::expect_used)]
 
@@ -121,10 +123,10 @@ fn main() -> Result<()> {
 	}
 
 	let key_config = KeyConfig::init()
-		.map_err(|e| eprintln!("KeyConfig loading error: {}", e))
+		.map_err(|e| eprintln!("KeyConfig loading error: {e}"))
 		.unwrap_or_default();
 	let theme = Theme::init(&cliargs.theme)
-		.map_err(|e| eprintln!("Theme loading error: {}", e))
+		.map_err(|e| eprintln!("Theme loading error: {e}"))
 		.unwrap_or_default();
 
 	setup_terminal()?;
@@ -256,13 +258,13 @@ fn shutdown_terminal() {
 		io::stdout().execute(LeaveAlternateScreen).map(|_f| ());
 
 	if let Err(e) = leave_screen {
-		eprintln!("leave_screen failed:\n{}", e);
+		eprintln!("leave_screen failed:\n{e}");
 	}
 
 	let leave_raw_mode = disable_raw_mode();
 
 	if let Err(e) = leave_raw_mode {
-		eprintln!("leave_raw_mode failed:\n{}", e);
+		eprintln!("leave_raw_mode failed:\n{e}");
 	}
 }
 

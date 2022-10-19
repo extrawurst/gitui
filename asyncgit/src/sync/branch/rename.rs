@@ -24,7 +24,7 @@ pub fn rename_branch(
 
 #[cfg(test)]
 mod test {
-	use super::super::*;
+	use super::super::{checkout_branch, create_branch, RepoPath};
 	use super::rename_branch;
 	use crate::sync::tests::repo_init;
 
@@ -42,7 +42,7 @@ mod test {
 		assert_eq!(
 			repo.branches(None)
 				.unwrap()
-				.nth(0)
+				.next()
 				.unwrap()
 				.unwrap()
 				.0
@@ -58,7 +58,7 @@ mod test {
 		assert_eq!(
 			repo.branches(None)
 				.unwrap()
-				.nth(0)
+				.next()
 				.unwrap()
 				.unwrap()
 				.0

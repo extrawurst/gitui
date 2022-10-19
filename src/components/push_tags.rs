@@ -123,7 +123,7 @@ impl PushTagsComponent {
 		if !self.pending {
 			if let Some(err) = self.git_push.last_result()? {
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("push tags failed:\n{}", err),
+					format!("push tags failed:\n{err}"),
 				));
 			}
 			self.hide();

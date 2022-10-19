@@ -206,7 +206,7 @@ pub(crate) fn branch_set_upstream(
 
 	if branch.upstream().is_err() {
 		let remote = get_default_remote_in_repo(repo)?;
-		let upstream_name = format!("{}/{}", remote, branch_name);
+		let upstream_name = format!("{remote}/{branch_name}");
 		branch.set_upstream(Some(upstream_name.as_str()))?;
 	}
 

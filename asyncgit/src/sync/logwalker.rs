@@ -162,7 +162,7 @@ mod tests {
 		walk.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 1);
-		assert_eq!(items[0], oid2.into());
+		assert_eq!(items[0], oid2);
 
 		Ok(())
 	}
@@ -190,7 +190,7 @@ mod tests {
 		dbg!(&info);
 
 		assert_eq!(items.len(), 2);
-		assert_eq!(items[0], oid2.into());
+		assert_eq!(items[0], oid2);
 
 		let mut items = Vec::new();
 		walk.read(&mut items).unwrap();
@@ -235,7 +235,7 @@ mod tests {
 		walker.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 1);
-		assert_eq!(items[0], second_commit_id.into());
+		assert_eq!(items[0], second_commit_id);
 
 		let mut items = Vec::new();
 		walker.read(&mut items).unwrap();
