@@ -4,9 +4,9 @@ use crate::{
 	cmdbar::CommandBar,
 	components::{
 		command_pump, event_pump, AppOption, BlameFileComponent,
-		BranchListComponent, CommandInfo, CommitComponent,
-		CompareCommitsComponent, Component, ConfirmComponent,
-		CreateBranchComponent, DrawableComponent,
+		BlameFileOpen, BranchListComponent, CommandInfo,
+		CommitComponent, CompareCommitsComponent, Component,
+		ConfirmComponent, CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, FetchComponent, FileRevlogComponent,
 		FuzzyFindPopup, FuzzyFinderTarget, HelpComponent,
 		InspectCommitComponent, LogSearchPopupComponent,
@@ -137,6 +137,18 @@ impl App {
 		} else {
 			options.borrow().current_tab()
 		};
+
+		if let Some(StartMode::BlameFile { path_in_workdir }) =
+			start_mode
+		{
+			queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::BlameFile(BlameFileOpen {
+					file_path: path_in_workdir.display().to_string(),
+					commit_id: None,
+					selection: None,
+				}),
+			));
+		}
 
 		let mut app = Self {
 			input,
@@ -511,6 +523,7 @@ impl App {
 		self.reset_popup.update()?;
 
 		self.update_commands();
+		self.process_internal_events()?;
 
 		Ok(())
 	}
