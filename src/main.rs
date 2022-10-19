@@ -19,7 +19,8 @@
 	clippy::bool_to_int_with_if,
 	clippy::module_name_repetitions
 )]
-#![allow(clippy::missing_const_for_fn)] // high number of false positives on nightly
+// high number of false positives on nightly (as of Oct 2022 with 1.66.0-nightly)
+#![allow(clippy::missing_const_for_fn)]
 
 //TODO:
 // #![deny(clippy::expect_used)]
