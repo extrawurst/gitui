@@ -33,7 +33,6 @@ const ELEMENTS_PER_LINE: usize = 9;
 pub struct CommitList {
 	title: Box<str>,
 	selection: usize,
-	branch: Option<String>,
 	count_total: usize,
 	items: ItemBatch,
 	marked: Vec<(usize, CommitId)>,
@@ -59,7 +58,6 @@ impl CommitList {
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
 			selection: 0,
-			branch: None,
 			count_total: 0,
 			scroll_state: (Instant::now(), 0_f32),
 			tags: None,
@@ -76,11 +74,6 @@ impl CommitList {
 	///
 	pub fn items(&mut self) -> &mut ItemBatch {
 		&mut self.items
-	}
-
-	///
-	pub fn set_branch(&mut self, name: Option<String>) {
-		self.branch = name;
 	}
 
 	///
@@ -406,7 +399,7 @@ impl CommitList {
 		txt.push(splitter.clone());
 
 		let author_width =
-			(width.saturating_sub(19) / 3).max(3).min(20);
+			(width.saturating_sub(19) / 3).clamp(3, 20);
 		let author = string_width_align(&e.author, author_width);
 
 		// commit author
@@ -439,7 +432,7 @@ impl CommitList {
 
 		// commit msg
 		txt.push(Span::styled(
-			format!("{:w$}", &e.msg, w = message_width),
+			format!("{:message_width$}", &e.msg),
 			theme.text(true, selected),
 		));
 
@@ -474,7 +467,7 @@ impl CommitList {
 			let branches = self.branches.get(&e.id).map(|names| {
 				names
 					.iter()
-					.map(|name| format!("{{{}}}", name))
+					.map(|name| format!("{{{name}}}"))
 					.join(" ")
 			});
 
@@ -541,15 +534,11 @@ impl DrawableComponent for CommitList {
 			selection,
 		));
 
-		let branch_post_fix =
-			self.branch.as_ref().map(|b| format!("- {{{}}}", b));
-
 		let title = format!(
-			"{} {}/{} {}",
+			"{} {}/{}",
 			self.title,
 			self.count_total.saturating_sub(self.selection),
 			self.count_total,
-			branch_post_fix.as_deref().unwrap_or(""),
 		);
 
 		f.render_widget(

@@ -231,7 +231,7 @@ impl FileRevlogComponent {
 			let commits = get_commits_info(
 				&self.repo_path.borrow(),
 				&git_log.get_slice(start, SLICE_SIZE)?,
-				self.current_width.get() as usize,
+				self.current_width.get(),
 			);
 
 			if let Ok(commits) = commits {

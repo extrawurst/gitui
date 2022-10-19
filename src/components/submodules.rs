@@ -387,7 +387,7 @@ impl SubmodulesListComponent {
 			);
 
 			let span_name = Span::styled(
-				format!("{:w$} ", module_path, w = name_length),
+				format!("{module_path:name_length$} "),
 				theme.text(true, selected),
 			);
 

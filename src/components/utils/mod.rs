@@ -47,11 +47,11 @@ pub fn string_width_align(s: &str, width: usize) -> String {
 	if (len >= width_wo_postfix && len <= width)
 		|| (len <= width_wo_postfix)
 	{
-		format!("{:w$}", s, w = width)
+		format!("{s:width$}")
 	} else {
 		let mut s = s.to_string();
 		s.truncate(find_truncate_point(&s, width_wo_postfix));
-		format!("{}{}", s, POSTFIX)
+		format!("{s}{POSTFIX}")
 	}
 }
 

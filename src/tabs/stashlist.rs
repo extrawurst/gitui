@@ -69,7 +69,7 @@ impl StashList {
 				}
 				Err(e) => {
 					self.queue.push(InternalEvent::ShowErrorMsg(
-						format!("stash apply error:\n{}", e,),
+						format!("stash apply error:\n{e}",),
 					));
 				}
 			}

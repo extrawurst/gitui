@@ -609,7 +609,7 @@ impl BranchListComponent {
 			};
 
 			let span_prefix = Span::styled(
-				format!("{}{} ", is_head_str, upstream_tracking_str),
+				format!("{is_head_str}{upstream_tracking_str} "),
 				theme.commit_author(selected),
 			);
 			let span_hash = Span::styled(

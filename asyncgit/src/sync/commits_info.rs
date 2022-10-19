@@ -164,8 +164,7 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 		let c2 = commit(repo_path, "commit2").unwrap();
 
-		let res =
-			get_commits_info(repo_path, &vec![c2, c1], 50).unwrap();
+		let res = get_commits_info(repo_path, &[c2, c1], 50).unwrap();
 
 		assert_eq!(res.len(), 2);
 		assert_eq!(res[0].message.as_str(), "commit2");
@@ -187,7 +186,7 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 		let c1 = commit(repo_path, "subject\nbody").unwrap();
 
-		let res = get_commits_info(repo_path, &vec![c1], 50).unwrap();
+		let res = get_commits_info(repo_path, &[c1], 50).unwrap();
 
 		assert_eq!(res.len(), 1);
 		assert_eq!(res[0].message.as_str(), "subject");
@@ -211,7 +210,7 @@ mod tests {
 
 		let res = get_commits_info(
 			repo_path,
-			&vec![get_head_repo(&repo).unwrap().into()],
+			&[get_head_repo(&repo).unwrap()],
 			50,
 		)
 		.unwrap();
