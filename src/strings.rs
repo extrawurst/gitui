@@ -354,7 +354,7 @@ pub fn rename_branch_popup_msg(
 pub fn copy_success(s: &str) -> String {
 	format!("{} \"{}\"", POPUP_SUCCESS_COPY, s)
 }
-pub fn copy_fail(e: String) -> String {
+pub fn copy_fail(e: &str) -> String {
 	format!("{}: {}", POPUP_FAIL_COPY, e)
 }
 

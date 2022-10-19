@@ -184,7 +184,7 @@ impl CommitList {
 					format!("{}^..{}", f.hash_short, l.hash_short);
 				if let Err(e) = crate::clipboard::copy_string(&yank) {
 					self.queue.push(InternalEvent::ShowErrorMsg(
-						copy_fail(e.to_string()),
+						copy_fail(&e.to_string()),
 					));
 					return Err(e);
 				}
@@ -208,7 +208,7 @@ impl CommitList {
 
 			if let Err(e) = crate::clipboard::copy_string(&separate) {
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					copy_fail(e.to_string()),
+					copy_fail(&e.to_string()),
 				));
 				return Err(e);
 			}
@@ -231,7 +231,7 @@ impl CommitList {
 						crate::clipboard::copy_string(&e.hash_short)
 					{
 						self.queue.push(InternalEvent::ShowErrorMsg(
-							copy_fail(e.to_string()),
+							copy_fail(&e.to_string()),
 						));
 						return Err(e);
 					}
@@ -248,7 +248,7 @@ impl CommitList {
 						crate::clipboard::copy_string(&e.hash_short)
 					{
 						self.queue.push(InternalEvent::ShowErrorMsg(
-							copy_fail(e.to_string()),
+							copy_fail(&e.to_string()),
 						));
 						return Err(e);
 					}
