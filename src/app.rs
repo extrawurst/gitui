@@ -22,7 +22,7 @@ use crate::{
 		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
 	},
 	setup_popups,
-	strings::{self, order},
+	strings::{self, ellipsis_trim_start, order},
 	tabs::{FilesTab, Revlog, StashList, Stashing, Status},
 	ui::style::{SharedTheme, Theme},
 	AsyncAppNotification, AsyncNotification,
@@ -41,11 +41,14 @@ use std::{
 };
 use tui::{
 	backend::Backend,
-	layout::{Constraint, Direction, Layout, Margin, Rect},
+	layout::{
+		Alignment, Constraint, Direction, Layout, Margin, Rect,
+	},
 	text::{Span, Spans},
-	widgets::{Block, Borders, Tabs},
+	widgets::{Block, Borders, Paragraph, Tabs},
 	Frame,
 };
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Clone)]
 pub enum QuitState {
@@ -94,6 +97,7 @@ pub struct App {
 	input: Input,
 	popup_stack: PopupStack,
 	options: SharedOptions,
+	repo_path_text: String,
 
 	// "Flags"
 	requires_redraw: Cell<bool>,
@@ -113,6 +117,9 @@ impl App {
 		key_config: KeyConfig,
 	) -> Result<Self> {
 		log::trace!("open repo at: {:?}", &repo);
+
+		let repo_path_text =
+			repo_work_dir(&repo.borrow()).unwrap_or_default();
 
 		let queue = Queue::new();
 		let theme = Rc::new(theme);
@@ -311,6 +318,7 @@ impl App {
 			requires_redraw: Cell::new(false),
 			file_to_open: None,
 			repo,
+			repo_path_text,
 			popup_stack: PopupStack::default(),
 		};
 
@@ -339,7 +347,7 @@ impl App {
 
 		self.cmdbar.borrow().draw(f, chunks_main[2]);
 
-		self.draw_tabs(f, chunks_main[0]);
+		self.draw_top_bar(f, chunks_main[0]);
 
 		//TODO: component property + a macro `fullscreen_popup_open!`
 		// to make this scale better?
@@ -1104,23 +1112,47 @@ impl App {
 	}
 
 	//TODO: make this dynamic
-	fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+	fn draw_top_bar<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+		const DIVIDER_PAD_SPACES: usize = 2;
+		const SIDE_PADS: usize = 2;
+		const MARGIN_LEFT_AND_RIGHT: usize = 2;
+
 		let r = r.inner(&Margin {
 			vertical: 0,
 			horizontal: 1,
 		});
 
-		let tabs = [
+		let tab_labels = [
 			Span::raw(strings::tab_status(&self.key_config)),
 			Span::raw(strings::tab_log(&self.key_config)),
 			Span::raw(strings::tab_files(&self.key_config)),
 			Span::raw(strings::tab_stashing(&self.key_config)),
 			Span::raw(strings::tab_stashes(&self.key_config)),
-		]
-		.iter()
-		.cloned()
-		.map(Spans::from)
-		.collect();
+		];
+		let divider = strings::tab_divider(&self.key_config);
+
+		// heuristic, since tui doesn't provide a way to know
+		// how much space is needed to draw a `Tabs`
+		let tabs_len: usize =
+			tab_labels.iter().map(Span::width).sum::<usize>()
+				+ tab_labels.len().saturating_sub(1)
+					* (divider.width() + DIVIDER_PAD_SPACES)
+				+ SIDE_PADS + MARGIN_LEFT_AND_RIGHT;
+
+		let left_right = Layout::default()
+			.direction(Direction::Horizontal)
+			.constraints(vec![
+				Constraint::Length(
+					u16::try_from(tabs_len).unwrap_or(r.width),
+				),
+				Constraint::Min(0),
+			])
+			.split(r);
+
+		let table_area = r; // use entire area to allow drawing the horizontal separator line
+		let text_area = left_right[1];
+
+		let tabs = tab_labels.into_iter().map(Spans::from).collect();
 
 		f.render_widget(
 			Tabs::new(tabs)
@@ -1131,9 +1163,21 @@ impl App {
 				)
 				.style(self.theme.tab(false))
 				.highlight_style(self.theme.tab(true))
-				.divider(strings::tab_divider(&self.key_config))
+				.divider(divider)
 				.select(self.tab),
-			r,
+			table_area,
+		);
+
+		f.render_widget(
+			Paragraph::new(Spans::from(vec![Span::styled(
+				ellipsis_trim_start(
+					&self.repo_path_text,
+					text_area.width as usize,
+				),
+				self.theme.title(true),
+			)]))
+			.alignment(Alignment::Right),
+			text_area,
 		);
 	}
 }
