@@ -1,5 +1,5 @@
 use anyhow::Result;
-use asyncgit::sync::{RepoPathRef, worktrees};
+use asyncgit::sync::{RepoPathRef, WorkTree};
 use tui::{backend::Backend, Frame, layout::Rect, widgets::{Block, Borders}, text::Span, style::Style};
 
 use crate::ui::{style::SharedTheme, self};
@@ -11,6 +11,7 @@ pub struct WorkTreesComponent {
 	repo: RepoPathRef,
 	visible: bool,
     theme: SharedTheme,
+    worktrees: Vec<WorkTree>,
 }
 
 impl WorkTreesComponent {
@@ -23,8 +24,14 @@ impl WorkTreesComponent {
 			repo,
 			visible: false,
             theme,
+            worktrees: Vec::new(),
 		}
 	}
+
+    pub fn set_worktrees(&mut self, worktrees: Vec<WorkTree>) -> Result<()> {
+        self.worktrees = worktrees;
+        Ok(())
+    }
 
 	fn is_visible(&self) -> bool {
 		self.visible
@@ -41,8 +48,8 @@ impl DrawableComponent for WorkTreesComponent {
         log::trace!("delete me later {:?}", self.repo);
 		if self.is_visible() {
 		}
-        worktrees(&self.repo.borrow())?;
-        let items = vec![Span::styled("pls", Style::default())].into_iter();
+        let items = self.worktrees.iter().map(|w| Span::styled(w.name.clone(), Style::default()));
+        //let items = vec![Span::styled("pls", Style::default())].into_iter();
 		ui::draw_list_block(
 			f,
 			area,

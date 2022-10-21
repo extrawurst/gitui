@@ -5,7 +5,7 @@ use crate::{
 	}, ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::sync::RepoPathRef;
+use asyncgit::sync::{RepoPathRef, worktrees};
 
 
 pub struct WorkTreesTab {
@@ -30,8 +30,13 @@ impl WorkTreesTab {
 		}
 	}
 	
-    pub fn update(&mut self) -> Result<()> {
-        log::trace!("repo: {:?}", self.repo);
+	pub fn update(&mut self) -> Result<()> {
+		if self.is_visible() {
+			if let Ok(worktrees) = worktrees(&self.repo.borrow()) {
+				self.worktrees.set_worktrees(worktrees)?;
+			}
+		}
+
 		Ok(())
 	}
 }
