@@ -86,6 +86,12 @@ pub fn tab_stashes(key_config: &SharedKeyConfig) -> String {
 		key_config.get_hint(key_config.keys.tab_stashes)
 	)
 }
+pub fn tab_worktrees(key_config: &SharedKeyConfig) -> String {
+	format!(
+		"Worktrees [{}]",
+		key_config.get_hint(key_config.keys.tab_worktrees)
+	)
+}
 pub fn tab_divider(_key_config: &SharedKeyConfig) -> String {
 	" | ".to_string()
 }
