@@ -31,6 +31,7 @@ mod submodules;
 mod tags;
 mod tree;
 pub mod utils;
+mod worktree;
 
 pub use blame::{blame_file, BlameHunk, FileBlame};
 pub use branch::{
@@ -96,6 +97,7 @@ pub use utils::{
 	stage_add_file, stage_addremoved, Head,
 };
 
+pub use worktree::worktrees;
 pub use git2::ResetType;
 
 #[cfg(test)]

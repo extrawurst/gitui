@@ -1,8 +1,8 @@
 use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
-		DrawableComponent, EventState,
-	},
+		DrawableComponent, EventState, WorkTreesComponent,
+	}, ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::sync::RepoPathRef;
@@ -11,15 +11,21 @@ use asyncgit::sync::RepoPathRef;
 pub struct WorkTreesTab {
 	repo: RepoPathRef,
 	visible: bool,
+    worktrees: WorkTreesComponent,
 }
 
 impl WorkTreesTab {
 	///
 	pub fn new(
 		repo: RepoPathRef,
+	    theme: SharedTheme,
 	) -> Self {
 		Self {
 			visible: false,
+            worktrees: WorkTreesComponent::new(
+                repo.clone(),
+                theme,
+            ),
 			repo,
 		}
 	}
@@ -39,6 +45,7 @@ impl DrawableComponent for WorkTreesTab {
 		if self.is_visible() {
             // TODO: Do stuff
 			//self.files.draw(f, rect)?;
+            self.worktrees.draw(f, rect)?;
             log::trace!("trying to draw worktrees");
 		}
 		Ok(())

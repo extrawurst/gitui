@@ -323,6 +323,7 @@ impl App {
 			),
             worktrees_tab: WorkTreesTab::new(
                 repo.clone(),
+                theme.clone(),
             ),
 			tab: 0,
 			queue,

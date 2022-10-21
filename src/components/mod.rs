@@ -33,6 +33,7 @@ mod tag_commit;
 mod taglist;
 mod textinput;
 mod utils;
+mod worktrees;
 
 pub use self::status_tree::StatusTreeComponent;
 pub use blame_file::{BlameFileComponent, BlameFileOpen};
@@ -68,6 +69,7 @@ pub use tag_commit::TagCommitComponent;
 pub use taglist::TagListComponent;
 pub use textinput::{InputType, TextInputComponent};
 pub use utils::filetree::FileTreeItemKind;
+pub use worktrees::WorkTreesComponent;
 
 use crate::ui::style::Theme;
 use anyhow::Result;
