@@ -2,7 +2,7 @@ use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
 		DrawableComponent, EventState, WorkTreesComponent,
-	}, ui::style::SharedTheme,
+	}, ui::style::SharedTheme, keys::SharedKeyConfig,
 };
 use anyhow::Result;
 use asyncgit::sync::{RepoPathRef, worktrees};
@@ -12,6 +12,7 @@ pub struct WorkTreesTab {
 	repo: RepoPathRef,
 	visible: bool,
     worktrees: WorkTreesComponent,
+    key_config: SharedKeyConfig,
 }
 
 impl WorkTreesTab {
@@ -19,14 +20,18 @@ impl WorkTreesTab {
 	pub fn new(
 		repo: RepoPathRef,
 	    theme: SharedTheme,
+        key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
 			visible: false,
             worktrees: WorkTreesComponent::new(
+                "Hello Worktrees",
                 repo.clone(),
                 theme,
+                key_config.clone(),
             ),
 			repo,
+            key_config,
 		}
 	}
 	
@@ -70,7 +75,19 @@ impl Component for WorkTreesTab {
 		&mut self,
 		ev: &crossterm::event::Event,
 	) -> Result<EventState> {
-		Ok(EventState::NotConsumed)
+        if !self.visible {
+		    return Ok(EventState::NotConsumed);
+        }
+        log::trace!("TODO: delete me {:?}", self.key_config.keys.tab_status);
+        log::trace!("TODO: delete me {:?}", ev);
+        let event_used = self.worktrees.event(ev)?;
+
+        if event_used.is_consumed() {
+            self.update()?;
+            return Ok(EventState::Consumed);
+        }
+
+        Ok(EventState::NotConsumed)
 	}
 
 	fn is_visible(&self) -> bool {
