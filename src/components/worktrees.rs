@@ -64,19 +64,19 @@ impl WorkTreesComponent {
 	fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
 		let mut txt: Vec<Spans> = Vec::with_capacity(height);
         for (idx, e) in self.worktrees.iter().take(height).enumerate() {
-            log::trace!("creating text");
-            
             txt.push(Spans::from(vec![
                 Span::styled(
-                    string_width_align(&e.name.clone(), 123),
-                    self.theme.text(true, idx == self.selection))
+                    string_width_align(&e.name.clone(), 20),
+                    self.theme.text(true, idx == self.selection)),
+                Span::styled(
+                    string_width_align(&e.branch.clone(), width),
+                    self.theme.text(true, idx == self.selection)),
             ]));
         }
         txt
     }
 
 	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
-        log::trace!("wtf is a scroll {:?}", scroll);
 
 		//#[allow(clippy::cast_possible_truncation)]
 		let speed_int = usize::try_from(self.scroll_state.1 as i64)?.max(1);
@@ -104,7 +104,6 @@ impl WorkTreesComponent {
 		let new_selection =
 			cmp::min(new_selection, self.selection_max());
 
-        log::trace!("selection: {}", new_selection);
 		let needs_update = new_selection != self.selection;
 
 		self.selection = new_selection;
@@ -189,9 +188,7 @@ impl DrawableComponent for WorkTreesComponent {
 
 impl Component for WorkTreesComponent {
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
-        log::trace!("selected worktree: {}", self.selection);
         if let Event::Key(k) = ev {
-            log::trace!("key pressed: {:?}", k);
 			let selection_changed =
 				if key_match(k, self.key_config.keys.move_up) {
 					self.move_selection(ScrollType::Up)?
@@ -216,7 +213,6 @@ impl Component for WorkTreesComponent {
 				} else {
 					false
 				};
-            log::trace!("selection changed {}", selection_changed);
             return Ok(selection_changed.into())
         }
 

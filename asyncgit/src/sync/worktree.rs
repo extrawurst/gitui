@@ -1,4 +1,4 @@
-use crate::sync::{repository::{repo}, branch::get_branch_name};
+use crate::sync::{repository::repo, branch::get_branch_name};
 use scopetime::scope_time;
 use crate::error::Result;
 
@@ -9,6 +9,8 @@ use super::RepoPath;
 pub struct WorkTree {
     /// Worktree name (wich is also the folder i think)
 	pub name: String,
+    /// Worktree branch name
+    pub branch: String,
 }
 
 /// TODO: Do stuff
@@ -22,16 +24,17 @@ pub fn worktrees(
     let result: Vec<WorkTree> = repo_obj.worktrees()?
        .iter()
        .map(|s| WorkTree {
-           name: s.unwrap().to_string()
+           name: s.unwrap().to_string(),
+           branch: worktree_branch(s.unwrap(), repo_path).unwrap(),
        })
        .collect();
-
-    for r in result.iter() {
-        let worktree = repo_obj.find_worktree(&r.name)?;
-        let worktree_path = RepoPath::from(worktree.path().to_str().unwrap());
-        log::trace!("repo branch: {}", get_branch_name(&worktree_path)?);
-        log::trace!("worktree path: {:?}", worktree.path());
-    }
-
     Ok(result)
 }
+
+fn worktree_branch(name: &str, repo_path: &RepoPath) -> Result<String> {
+	let repo_obj = repo(repo_path)?;
+    let worktree = repo_obj.find_worktree(name)?;
+    let worktree_path = RepoPath::from(worktree.path().to_str().unwrap());
+    get_branch_name(&worktree_path)
+}
+
