@@ -1,10 +1,10 @@
 use anyhow::Result;
 use asyncgit::sync::{RepoPathRef, WorkTree};
 use crossterm::event::Event;
-use tui::{backend::Backend, Frame, layout::{Rect, Alignment}, text::{Span, Spans}, style::Style, widgets::{Paragraph, Block, Borders}};
+use tui::{backend::Backend, Frame, layout::{Rect, Alignment}, text::{Span, Spans}, widgets::{Paragraph, Block, Borders}};
 use std::{cell::Cell, time::Instant, cmp};
 
-use crate::{ui::{style::SharedTheme, calc_scroll_top, draw_scrollbar}, strings, keys::{SharedKeyConfig, key_match}, components::ScrollType};
+use crate::{ui::{style::SharedTheme, calc_scroll_top, draw_scrollbar}, strings, keys::{SharedKeyConfig, key_match}, components::{ScrollType, utils::string_width_align}};
 
 use super::{DrawableComponent, Component, EventState, CommandInfo, CommandBlocking};
 
@@ -62,11 +62,17 @@ impl WorkTreesComponent {
 	}
 
 	fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
-        self.worktrees.iter().map(|w| {
-            Spans::from(vec![
-                Span::styled(w.name.clone(), self.theme.text(true, true)),
-            ])
-        }).collect::<Vec<Spans>>()
+		let mut txt: Vec<Spans> = Vec::with_capacity(height);
+        for (idx, e) in self.worktrees.iter().take(height).enumerate() {
+            log::trace!("creating text");
+            
+            txt.push(Spans::from(vec![
+                Span::styled(
+                    string_width_align(&e.name.clone(), 123),
+                    self.theme.text(true, idx == self.selection))
+            ]));
+        }
+        txt
     }
 
 	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
@@ -126,7 +132,7 @@ impl DrawableComponent for WorkTreesComponent {
 	) -> Result<()> {
         log::trace!("delete me later {:?}", self.repo);
         log::trace!("shut clippy up: {}", self.is_visible());
-        let items = self.worktrees.iter().map(|w| Span::styled(w.name.clone(), Style::default()));
+
 		let current_size = (
 			area.width.saturating_sub(2),
 			area.height.saturating_sub(2),
