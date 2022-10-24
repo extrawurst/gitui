@@ -1,4 +1,8 @@
+use std::borrow::Cow;
+
 use asyncgit::sync::CommitId;
+use unicode_truncate::UnicodeTruncateStr;
+use unicode_width::UnicodeWidthStr;
 
 use crate::keys::SharedKeyConfig;
 
@@ -37,6 +41,7 @@ pub mod symbol {
 	pub const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
 	pub const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 	pub const EMPTY_STR: &str = "";
+	pub const ELLIPSIS: char = '\u{2026}'; // …
 }
 
 pub fn title_branches() -> String {
@@ -354,8 +359,24 @@ pub fn rename_branch_popup_msg(
 pub fn copy_success(s: &str) -> String {
 	format!("{} \"{}\"", POPUP_SUCCESS_COPY, s)
 }
+
 pub fn copy_fail(e: &str) -> String {
 	format!("{}: {}", POPUP_FAIL_COPY, e)
+}
+
+pub fn ellipsis_trim_start(s: &str, width: usize) -> Cow<str> {
+	if s.width() <= width {
+		Cow::Borrowed(s)
+	} else {
+		Cow::Owned(format!(
+			"[{}]{}",
+			symbol::ELLIPSIS,
+			s.unicode_truncate_start(
+				width.saturating_sub(3 /* front indicator */)
+			)
+			.0
+		))
+	}
 }
 
 pub mod commit {
