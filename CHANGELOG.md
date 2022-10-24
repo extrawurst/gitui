@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![submodules](assets/submodules.gif)
 
+**commit message history**
+
+![commit-history](assets/commit-msg-history.gif)
+
 ### Added
 * submodules support ([#1087](https://github.com/extrawurst/gitui/issues/1087))
 * remember tab between app starts ([#1338](https://github.com/extrawurst/gitui/issues/1338))
