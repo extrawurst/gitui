@@ -45,6 +45,7 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
         default: true
+        override: true
         profile: minimal
         components: clippy
 
@@ -100,6 +101,7 @@ jobs:
         toolchain: ${{ matrix.rust }}
         profile: minimal
         default: true
+        override: true
         target: x86_64-unknown-linux-musl
 
     - name: Setup MUSL
@@ -127,6 +129,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+        override: true
         components: rustfmt
     
     - run: cargo fmt -- --check
