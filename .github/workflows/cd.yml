@@ -25,6 +25,7 @@ jobs:
       with:
         toolchain: stable
         profile: minimal
+        override: true
         components: clippy
 
     - name: Build
