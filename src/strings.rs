@@ -892,14 +892,15 @@ pub mod commands {
 		key_config: &SharedKeyConfig,
 		current_verify: bool,
 	) -> CommandText {
+		let verb = if current_verify { "disable" } else { "enable" };
 		CommandText::new(
 			format!(
-				"toggle verify ({}) [{}]",
-				current_verify,
+				"{} hooks [{}]",
+				verb,
 				key_config.get_hint(key_config.keys.toggle_verify),
 			),
-			"toggle no verify flag (available in commit popup)",
-			CMD_GROUP_COMMIT,
+			"toggle running on commit hooks (available in commit popup)",
+			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
 

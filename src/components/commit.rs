@@ -240,6 +240,7 @@ impl CommitComponent {
 	) -> Result<CommitResult> {
 		if !self.verify {
 			self.do_commit(&msg)?;
+			self.verify = true;
 			return Ok(CommitResult::ComitDone);
 		}
 		if let HookResult::NotOk(e) =
