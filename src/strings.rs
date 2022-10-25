@@ -357,11 +357,11 @@ pub fn rename_branch_popup_msg(
 }
 
 pub fn copy_success(s: &str) -> String {
-	format!("{} \"{}\"", POPUP_SUCCESS_COPY, s)
+	format!("{POPUP_SUCCESS_COPY} \"{s}\"")
 }
 
 pub fn copy_fail(e: &str) -> String {
-	format!("{}: {}", POPUP_FAIL_COPY, e)
+	format!("{POPUP_FAIL_COPY}: {e}")
 }
 
 pub fn ellipsis_trim_start(s: &str, width: usize) -> Cow<str> {
