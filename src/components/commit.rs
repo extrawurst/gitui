@@ -55,6 +55,7 @@ pub struct CommitComponent {
 	theme: SharedTheme,
 	commit_msg_history_idx: usize,
 	options: SharedOptions,
+	verify: bool,
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
@@ -85,6 +86,7 @@ impl CommitComponent {
 			repo,
 			commit_msg_history_idx: 0,
 			options,
+			verify: true,
 		}
 	}
 
@@ -201,7 +203,7 @@ impl CommitComponent {
 		Ok(())
 	}
 
-	fn commit(&mut self, verify: bool) -> Result<()> {
+	fn commit(&mut self) -> Result<()> {
 		let gpgsign =
 			get_config_string(&self.repo.borrow(), "commit.gpgsign")
 				.ok()
@@ -216,7 +218,7 @@ impl CommitComponent {
 		let msg = self.input.get_text().to_string();
 
 		if matches!(
-			self.commit_with_msg(msg, verify)?,
+			self.commit_with_msg(msg)?,
 			CommitResult::ComitDone
 		) {
 			self.options
@@ -235,9 +237,8 @@ impl CommitComponent {
 	fn commit_with_msg(
 		&mut self,
 		msg: String,
-		verify: bool,
 	) -> Result<CommitResult> {
-		if !verify {
+		if !self.verify {
 			self.do_commit(&msg)?;
 			return Ok(CommitResult::ComitDone);
 		}
@@ -330,6 +331,9 @@ impl CommitComponent {
 
 		Ok(())
 	}
+	fn toggle_verify(&mut self) {
+		self.verify = !self.verify
+	}
 }
 
 impl DrawableComponent for CommitComponent {
@@ -364,7 +368,10 @@ impl Component for CommitComponent {
 			));
 
 			out.push(CommandInfo::new(
-				strings::commands::commit_no_verify(&self.key_config),
+				strings::commands::toggle_verify(
+					&self.key_config,
+					self.verify,
+				),
 				self.can_commit(),
 				true,
 			));
@@ -408,14 +415,14 @@ impl Component for CommitComponent {
 					try_or_popup!(
 						self,
 						"commit error:",
-						self.commit(true)
+						self.commit()
 					);
 				} else if key_match(
 					e,
-					self.key_config.keys.commit_no_verify,
+					self.key_config.keys.toggle_verify,
 				) && self.can_commit()
 				{
-					self.commit(false)?;
+					self.toggle_verify();
 				} else if key_match(
 					e,
 					self.key_config.keys.commit_amend,

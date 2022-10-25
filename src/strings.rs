@@ -888,15 +888,17 @@ pub mod commands {
 		)
 		.hide_help()
 	}
-	pub fn commit_no_verify(
+	pub fn toggle_verify(
 		key_config: &SharedKeyConfig,
+		current_verify: bool,
 	) -> CommandText {
 		CommandText::new(
 			format!(
-				"Commit no-verify [{}]",
-				key_config.get_hint(key_config.keys.commit_no_verify),
+				"toggle verify ({}) [{}]",
+				current_verify,
+				key_config.get_hint(key_config.keys.toggle_verify),
 			),
-			"amend last commit (available in commit popup)",
+			"toggle no verify flag (available in commit popup)",
 			CMD_GROUP_COMMIT,
 		)
 	}
