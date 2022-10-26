@@ -17,6 +17,7 @@ fn exec_copy_with_args(
 		.args(args)
 		.stdin(Stdio::piped())
 		.stdout(Stdio::null())
+		.stderr(Stdio::piped())
 		.spawn()
 		.map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
 
@@ -27,11 +28,20 @@ fn exec_copy_with_args(
 		.write_all(text.as_bytes())
 		.map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
 
-	process
-		.wait()
+	let out = process
+		.wait_with_output()
 		.map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
 
-	Ok(())
+	if out.status.success() {
+		Ok(())
+	} else {
+		let msg = if out.stderr.is_empty() {
+			format!("{}", out.status).into()
+		} else {
+			String::from_utf8_lossy(&out.stderr)
+		};
+		Err(anyhow!("`{command:?}`: {msg}"))
+	}
 }
 
 fn exec_copy(command: &str, text: &str) -> Result<()> {
