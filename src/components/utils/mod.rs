@@ -12,7 +12,7 @@ pub mod statustree;
 /// It will show a popup in that case
 #[macro_export]
 macro_rules! try_or_popup {
-	($self:ident, $msg:literal, $e:expr) => {
+	($self:ident, $msg:expr, $e:expr) => {
 		if let Err(err) = $e {
 			::log::error!("{} {}", $msg, err);
 			$self.queue.push(InternalEvent::ShowErrorMsg(format!(

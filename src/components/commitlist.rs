@@ -6,7 +6,7 @@ use crate::{
 	},
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
-	strings::{self, copy_fail, copy_success, symbol},
+	strings::{self, symbol},
 	ui::style::{SharedTheme, Theme},
 	ui::{calc_scroll_top, draw_scrollbar},
 };
@@ -188,14 +188,9 @@ impl CommitList {
 		};
 
 		if let Some(yank) = yank {
-			if let Err(e) = crate::clipboard::copy_string(&yank) {
-				self.queue.push(InternalEvent::ShowErrorMsg(
-					copy_fail(&e.to_string()),
-				));
-				return Err(e);
-			}
+			crate::clipboard::copy_string(&yank)?;
 			self.queue.push(InternalEvent::ShowInfoMsg(
-				copy_success(&yank),
+				strings::copy_success(&yank),
 			));
 		}
 		Ok(())

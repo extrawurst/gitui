@@ -251,7 +251,11 @@ impl Component for Revlog {
 					self.update()?;
 					return Ok(EventState::Consumed);
 				} else if key_match(k, self.key_config.keys.copy) {
-					self.list.copy_commit_hash()?;
+					try_or_popup!(
+						self,
+						strings::POPUP_FAIL_COPY,
+						self.list.copy_commit_hash()
+					);
 					return Ok(EventState::Consumed);
 				} else if key_match(k, self.key_config.keys.push) {
 					self.queue.push(InternalEvent::PushTags);
