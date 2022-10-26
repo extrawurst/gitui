@@ -30,6 +30,9 @@ pub static PUSH_TAGS_STATES_DONE: &str = "done";
 pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
 pub static POPUP_TITLE_FUZZY_FIND: &str = "Fuzzy Finder";
 
+pub static POPUP_FAIL_COPY: &str = "Failed to copy the Text";
+pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
+
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
@@ -351,6 +354,14 @@ pub fn rename_branch_popup_msg(
 	_key_config: &SharedKeyConfig,
 ) -> String {
 	"new branch name".to_string()
+}
+
+pub fn copy_success(s: &str) -> String {
+	format!("{POPUP_SUCCESS_COPY} \"{s}\"")
+}
+
+pub fn copy_fail(e: &str) -> String {
+	format!("{POPUP_FAIL_COPY}: {e}")
 }
 
 pub fn ellipsis_trim_start(s: &str, width: usize) -> Cow<str> {

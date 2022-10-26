@@ -62,6 +62,7 @@ impl Revlog {
 			list: CommitList::new(
 				&strings::log_title(&key_config),
 				theme,
+				queue.clone(),
 				key_config.clone(),
 			),
 			git_log: AsyncLog::new(

@@ -5,7 +5,8 @@ use crate::{
 		Component, DrawableComponent, EventState, ScrollType,
 	},
 	keys::{key_match, SharedKeyConfig},
-	strings::{self, symbol},
+	queue::{InternalEvent, Queue},
+	strings::{self, copy_fail, copy_success, symbol},
 	ui::style::{SharedTheme, Theme},
 	ui::{calc_scroll_top, draw_scrollbar},
 };
@@ -41,6 +42,7 @@ pub struct CommitList {
 	current_size: Cell<(u16, u16)>,
 	scroll_top: Cell<usize>,
 	theme: SharedTheme,
+	queue: Queue,
 	key_config: SharedKeyConfig,
 }
 
@@ -49,6 +51,7 @@ impl CommitList {
 	pub fn new(
 		title: &str,
 		theme: SharedTheme,
+		queue: Queue,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
@@ -62,6 +65,7 @@ impl CommitList {
 			current_size: Cell::new((0, 0)),
 			scroll_top: Cell::new(0),
 			theme,
+			queue,
 			key_config,
 			title: title.into(),
 		}
@@ -178,7 +182,15 @@ impl CommitList {
 			if let (Some(f), Some(l)) = (first, last) {
 				let yank =
 					format!("{}^..{}", f.hash_short, l.hash_short);
-				crate::clipboard::copy_string(&yank)?;
+				if let Err(e) = crate::clipboard::copy_string(&yank) {
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						copy_fail(&e.to_string()),
+					));
+					return Err(e);
+				}
+				self.queue.push(InternalEvent::ShowInfoMsg(
+					copy_success(&yank),
+				));
 			};
 		} else {
 			let separate = self
@@ -194,7 +206,15 @@ impl CommitList {
 				})
 				.join(" ");
 
-			crate::clipboard::copy_string(&separate)?;
+			if let Err(e) = crate::clipboard::copy_string(&separate) {
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					copy_fail(&e.to_string()),
+				));
+				return Err(e);
+			}
+			self.queue.push(InternalEvent::ShowInfoMsg(
+				copy_success(&separate),
+			));
 		}
 
 		Ok(())
@@ -207,14 +227,34 @@ impl CommitList {
 					self.selection
 						.saturating_sub(self.items.index_offset()),
 				) {
-					crate::clipboard::copy_string(&e.hash_short)?;
+					if let Err(e) =
+						crate::clipboard::copy_string(&e.hash_short)
+					{
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							copy_fail(&e.to_string()),
+						));
+						return Err(e);
+					}
+					self.queue.push(InternalEvent::ShowInfoMsg(
+						copy_success(&e.hash_short),
+					));
 				}
 			}
 			1 => {
 				if let Some(e) =
 					self.items.iter().nth(self.marked_indexes()[0])
 				{
-					crate::clipboard::copy_string(&e.hash_short)?;
+					if let Err(e) =
+						crate::clipboard::copy_string(&e.hash_short)
+					{
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							copy_fail(&e.to_string()),
+						));
+						return Err(e);
+					}
+					self.queue.push(InternalEvent::ShowInfoMsg(
+						copy_success(&e.hash_short),
+					));
 				}
 			}
 			_ => {}
