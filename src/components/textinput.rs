@@ -23,6 +23,8 @@ use tui::{
 	Frame,
 };
 
+use super::utils::scroll_vertical::VerticalScroll;
+
 #[derive(PartialEq, Eq)]
 pub enum InputType {
 	Singleline,
@@ -43,6 +45,8 @@ pub struct TextInputComponent {
 	input_type: InputType,
 	current_area: Cell<Rect>,
 	embed: bool,
+	scroll: VerticalScroll,
+	current_height: Cell<u16>,
 }
 
 impl TextInputComponent {
@@ -66,6 +70,8 @@ impl TextInputComponent {
 			input_type: InputType::Multiline,
 			current_area: Cell::new(Rect::default()),
 			embed: false,
+			scroll: VerticalScroll::new(),
+			current_height: Cell::new(0),
 		}
 	}
 
@@ -378,6 +384,15 @@ impl DrawableComponent for TextInputComponent {
 				}
 			};
 
+            let height_in_lines = area.height as usize;
+            self.current_height.set(height_in_lines.try_into()?);
+
+            self.scroll.update(
+                1,
+                (self.msg.chars().count() / (area.width - 2) as usize) + 1,
+                height_in_lines - 2, // Compensate for extra lines at top and bottom
+            );
+
 			f.render_widget(Clear, area);
 			f.render_widget(
 				popup_paragraph(
@@ -390,9 +405,20 @@ impl DrawableComponent for TextInputComponent {
 				area,
 			);
 
-			if self.show_char_count {
-				self.draw_char_count(f, area);
-			}
+            let mut r = rect;
+            r.width += 1;
+            r.height += 2;
+            r.y = r.y.saturating_sub(1);
+
+            log::trace!("Height in lines: {height_in_lines}");
+            log::trace!("area: {area:?}");
+            log::trace!("Should be max lines: {}", (self.msg.chars().count() / (area.width - 2) as usize) + 1);
+
+            self.scroll.draw(f, area, &self.theme);
+
+            if self.show_char_count {
+                self.draw_char_count(f, area);
+            }
 
 			self.current_area.set(area);
 		}
