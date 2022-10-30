@@ -376,7 +376,6 @@ impl DrawableComponent for TextInputComponent {
 				self.get_draw_text()
 			};
 
-
 			let area = if self.embed {
 				rect
 			} else {
@@ -397,21 +396,31 @@ impl DrawableComponent for TextInputComponent {
             let height_in_lines = area.height as usize;
             self.current_height.set(height_in_lines.try_into()?);
 
+            let selection = self.get_selection(area);
+
             self.scroll.update(
-                self.get_selection(area), // TODO: Do UTF8 Stuff
+                selection, // TODO: Do UTF8 Stuff
                 self.line_count(area),
                 height_in_lines - 2, // Compensate for extra lines at top and bottom
             );
 
-			f.render_widget(Clear, area);
-			f.render_widget(
+            let content = 
 				popup_paragraph(
 					self.title.as_str(),
-					txt.clone(),
+					txt,
 					&self.theme,
 					true,
 					!self.embed,
-				),
+				);
+
+            let scroll_start = match selection > height_in_lines - 3 {
+                true => selection - (height_in_lines - 3),
+                _ => 0,
+            };
+
+			f.render_widget(Clear, area);
+			f.render_widget(
+                content.clone().scroll((scroll_start as u16, 0)),
 				area,
 			);
 
@@ -420,7 +429,7 @@ impl DrawableComponent for TextInputComponent {
             r.height += 2;
             r.y = r.y.saturating_sub(1);
 
-            log::trace!("Height in lines: {height_in_lines}");
+            log::trace!("selection: {selection}");
             log::trace!("area: {area:?}");
 
             self.scroll.draw(f, area, &self.theme);
