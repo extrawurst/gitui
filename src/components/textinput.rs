@@ -104,6 +104,10 @@ impl TextInputComponent {
 		self.embed = true;
 	}
 
+    fn line_count(&self, area: Rect) -> usize {
+        (self.msg.chars().count() / (area.width - 2) as usize) + 1
+    }
+
 	/// Move the cursor right one char.
 	fn incr_cursor(&mut self) {
 		if let Some(pos) = self.next_char_position() {
@@ -232,6 +236,7 @@ impl TextInputComponent {
 		let style = self.theme.text(true, false);
 
 		let mut txt = Text::default();
+
 		// The portion of the text before the cursor is added
 		// if the cursor is not at the first character.
 		if self.cursor_position > 0 {
@@ -301,6 +306,10 @@ impl TextInputComponent {
 		txt
 	}
 
+    fn get_selection(&self, area: Rect) -> usize {
+        self.cursor_position / area.width as usize
+    }
+
 	fn get_msg(&self, range: Range<usize>) -> String {
 		match self.input_type {
 			InputType::Password => range.map(|_| "*").join(""),
@@ -367,6 +376,7 @@ impl DrawableComponent for TextInputComponent {
 				self.get_draw_text()
 			};
 
+
 			let area = if self.embed {
 				rect
 			} else {
@@ -388,8 +398,8 @@ impl DrawableComponent for TextInputComponent {
             self.current_height.set(height_in_lines.try_into()?);
 
             self.scroll.update(
-                1,
-                (self.msg.chars().count() / (area.width - 2) as usize) + 1,
+                self.get_selection(area), // TODO: Do UTF8 Stuff
+                self.line_count(area),
                 height_in_lines - 2, // Compensate for extra lines at top and bottom
             );
 
@@ -397,7 +407,7 @@ impl DrawableComponent for TextInputComponent {
 			f.render_widget(
 				popup_paragraph(
 					self.title.as_str(),
-					txt,
+					txt.clone(),
 					&self.theme,
 					true,
 					!self.embed,
@@ -412,7 +422,6 @@ impl DrawableComponent for TextInputComponent {
 
             log::trace!("Height in lines: {height_in_lines}");
             log::trace!("area: {area:?}");
-            log::trace!("Should be max lines: {}", (self.msg.chars().count() / (area.width - 2) as usize) + 1);
 
             self.scroll.draw(f, area, &self.theme);
 
