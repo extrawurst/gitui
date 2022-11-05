@@ -163,15 +163,6 @@ impl Revlog {
 		self.list.selected_entry().map(|e| e.id)
 	}
 
-	fn copy_commit_hash(&self) -> Result<()> {
-		if self.list.marked_count() > 1 {
-			self.list.copy_marked_hashes()?;
-		} else {
-			self.list.copy_entry_hash()?;
-		}
-		Ok(())
-	}
-
 	fn selected_commit_tags(
 		&self,
 		commit: &Option<CommitId>,
@@ -260,7 +251,11 @@ impl Component for Revlog {
 					self.update()?;
 					return Ok(EventState::Consumed);
 				} else if key_match(k, self.key_config.keys.copy) {
-					self.copy_commit_hash()?;
+					try_or_popup!(
+						self,
+						strings::POPUP_FAIL_COPY,
+						self.list.copy_commit_hash()
+					);
 					return Ok(EventState::Consumed);
 				} else if key_match(k, self.key_config.keys.push) {
 					self.queue.push(InternalEvent::PushTags);

@@ -6,7 +6,7 @@ use crate::{
 	},
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
-	strings::{self, copy_fail, copy_success, symbol},
+	strings::{self, symbol},
 	ui::style::{SharedTheme, Theme},
 	ui::{calc_scroll_top, draw_scrollbar},
 };
@@ -144,14 +144,6 @@ impl CommitList {
 	}
 
 	///
-	pub fn marked_indexes(&self) -> Vec<usize> {
-		let (indexes, _): (Vec<usize>, Vec<_>) =
-			self.marked.iter().copied().unzip();
-
-		indexes
-	}
-
-	///
 	pub fn marked_commits(&self) -> Vec<CommitId> {
 		let (_, commits): (Vec<_>, Vec<CommitId>) =
 			self.marked.iter().copied().unzip();
@@ -159,105 +151,47 @@ impl CommitList {
 		commits
 	}
 
-	fn marked_consecutive(&self) -> bool {
-		let marked = self.marked_indexes();
-
-		for i in 1..marked.len() {
-			if marked[i - 1] + 1 != marked[i] {
-				return false;
-			}
-		}
-
-		true
-	}
-
-	pub fn copy_marked_hashes(&self) -> Result<()> {
-		if self.marked_consecutive() {
-			let m = self.marked_indexes();
-
-			let first = self.items.iter().nth(m[0]);
-
-			let last = self.items.iter().nth(m[m.len() - 1]);
-
-			if let (Some(f), Some(l)) = (first, last) {
-				let yank =
-					format!("{}^..{}", f.hash_short, l.hash_short);
-				if let Err(e) = crate::clipboard::copy_string(&yank) {
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						copy_fail(&e.to_string()),
-					));
-					return Err(e);
-				}
-				self.queue.push(InternalEvent::ShowInfoMsg(
-					copy_success(&yank),
-				));
-			};
-		} else {
-			let separate = self
-				.marked_indexes()
+	pub fn copy_commit_hash(&self) -> Result<()> {
+		let marked = self.marked.as_slice();
+		let yank: Option<Cow<str>> = match marked {
+			[] => self
+				.items
 				.iter()
-				.map(|e| {
-					self.items
-						.iter()
-						.nth(*e)
-						.map_or_else(String::new, |le| {
-							le.hash_short.to_string()
-						})
-				})
-				.join(" ");
-
-			if let Err(e) = crate::clipboard::copy_string(&separate) {
-				self.queue.push(InternalEvent::ShowErrorMsg(
-					copy_fail(&e.to_string()),
-				));
-				return Err(e);
-			}
-			self.queue.push(InternalEvent::ShowInfoMsg(
-				copy_success(&separate),
-			));
-		}
-
-		Ok(())
-	}
-
-	pub fn copy_entry_hash(&self) -> Result<()> {
-		match self.marked_count() {
-			0 => {
-				if let Some(e) = self.items.iter().nth(
+				.nth(
 					self.selection
 						.saturating_sub(self.items.index_offset()),
-				) {
-					if let Err(e) =
-						crate::clipboard::copy_string(&e.hash_short)
-					{
-						self.queue.push(InternalEvent::ShowErrorMsg(
-							copy_fail(&e.to_string()),
-						));
-						return Err(e);
-					}
-					self.queue.push(InternalEvent::ShowInfoMsg(
-						copy_success(&e.hash_short),
-					));
-				}
+				)
+				.map(|e| Cow::Borrowed(e.hash_short.as_ref())),
+			[(_idx, commit)] => {
+				Some(commit.get_short_string().into())
 			}
-			1 => {
-				if let Some(e) =
-					self.items.iter().nth(self.marked_indexes()[0])
-				{
-					if let Err(e) =
-						crate::clipboard::copy_string(&e.hash_short)
-					{
-						self.queue.push(InternalEvent::ShowErrorMsg(
-							copy_fail(&e.to_string()),
-						));
-						return Err(e);
-					}
-					self.queue.push(InternalEvent::ShowInfoMsg(
-						copy_success(&e.hash_short),
-					));
-				}
+			[first, .., last] => {
+				let marked_consecutive =
+					marked.windows(2).all(|w| w[0].0 + 1 == w[1].0);
+
+				let yank = if marked_consecutive {
+					format!(
+						"{}^..{}",
+						first.1.get_short_string(),
+						last.1.get_short_string()
+					)
+				} else {
+					marked
+						.iter()
+						.map(|(_idx, commit)| {
+							commit.get_short_string()
+						})
+						.join(" ")
+				};
+				Some(yank.into())
 			}
-			_ => {}
+		};
+
+		if let Some(yank) = yank {
+			crate::clipboard::copy_string(&yank)?;
+			self.queue.push(InternalEvent::ShowInfoMsg(
+				strings::copy_success(&yank),
+			));
 		}
 		Ok(())
 	}
