@@ -67,7 +67,7 @@ jobs:
       if: matrix.os != 'windows-latest'
       run: |
         ls -l ./target/release/gitui
-    
+
     - name: Binary Size (win)
       if: matrix.os == 'windows-latest'
       run: |
@@ -120,6 +120,45 @@ jobs:
       run: |
         make test-linux-musl
 
+  build-linux-arm:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [nightly, stable, '1.60']
+    continue-on-error: ${{ matrix.rust == 'nightly' }}
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        profile: minimal
+        default: true
+        override: true
+    - name: Setup ARM toolchain
+      run: |
+        rustup target add aarch64-unknown-linux-gnu
+        rustup target add armv7-unknown-linux-gnueabihf
+        rustup target add arm-unknown-linux-gnueabihf
+
+        curl -o $GITHUB_WORKSPACE/aarch64.tar.xz https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-a/8.2-2018.08/gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu.tar.xz
+        curl -o $GITHUB_WORKSPACE/arm.tar.xz https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-a/8.2-2018.08/gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf.tar.xz
+
+        tar xf $GITHUB_WORKSPACE/aarch64.tar.xz
+        tar xf $GITHUB_WORKSPACE/arm.tar.xz
+
+        echo "$GITHUB_WORKSPACE/gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu/bin" >> $GITHUB_PATH
+        echo "$GITHUB_WORKSPACE/gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf/bin" >> $GITHUB_PATH
+
+    - name: Build Debug
+      run: |
+        make build-linux-arm-debug
+    - name: Build Release
+      run: |
+        make build-linux-arm-release
+        ls -l ./target/aarch64-unknown-linux-gnu/release/gitui || ls -l ./target/armv7-unknown-linux-gnueabihf/release/gitui || ls -l ./target/arm-unknown-linux-gnueabihf/release/gitui
+
   linting:
     name: Lints
     runs-on: ubuntu-latest
@@ -131,7 +170,7 @@ jobs:
         toolchain: stable
         override: true
         components: rustfmt
-    
+
     - run: cargo fmt -- --check
 
     - name: cargo-sort

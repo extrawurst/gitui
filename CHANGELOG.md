@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Feedback for success/failure of copying hash commit [[@sergioribera]](https://github.com/sergioribera)([#1160](https://github.com/extrawurst/gitui/issues/1160))
 * display tags and branches in the log view [[@alexmaco]](https://github.com/alexmaco)([#1371](https://github.com/extrawurst/gitui/pull/1371))
 * display current repository path in the top-right corner [[@alexmaco]](https://github.com/alexmaco)([#1387](https://github.com/extrawurst/gitui/pull/1387))
+* Add Linux targets for ARM, ARMv7 and AARCH64 [@adur1990](https://github.com/adur1990) ([#1419](https://github.com/extrawurst/gitui/pull/1419))
 
 ### Fixes
 * remove insecure dependency `ansi_term` ([#1290](https://github.com/extrawurst/gitui/issues/1290))

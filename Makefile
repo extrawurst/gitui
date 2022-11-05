@@ -45,6 +45,27 @@ build-linux-musl-release:
 test-linux-musl:
 	cargo test --workspace --target=x86_64-unknown-linux-musl
 
+release-linux-arm: build-linux-arm-release
+	mkdir -p release
+
+	aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/gitui
+	arm-linux-gnueabihf-strip target/armv7-unknown-linux-gnueabihf/release/gitui
+	arm-linux-gnueabihf-strip target/arm-unknown-linux-gnueabihf/release/gitui
+
+	tar -C ./target/aarch64-unknown-linux-gnu/release/ -czvf ./release/gitui-linux-aarch64.tar.gz ./gitui
+	tar -C ./target/armv7-unknown-linux-gnueabihf/release/ -czvf ./release/gitui-linux-armv7.tar.gz ./gitui
+	tar -C ./target/arm-unknown-linux-gnueabihf/release/ -czvf ./release/gitui-linux-arm.tar.gz ./gitui
+
+build-linux-arm-debug:
+	cargo build --target=aarch64-unknown-linux-gnu
+	cargo build --target=armv7-unknown-linux-gnueabihf
+	cargo build --target=arm-unknown-linux-gnueabihf
+
+build-linux-arm-release:
+	cargo build --release --target=aarch64-unknown-linux-gnu
+	cargo build --release --target=armv7-unknown-linux-gnueabihf
+	cargo build --release --target=arm-unknown-linux-gnueabihf
+
 test:
 	cargo test --workspace
 
