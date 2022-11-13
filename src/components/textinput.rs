@@ -47,6 +47,7 @@ pub struct TextInputComponent {
 	embed: bool,
 	scroll: VerticalScroll,
 	current_height: Cell<u16>,
+    scroll_start: Cell<u16>,
 }
 
 impl TextInputComponent {
@@ -72,6 +73,7 @@ impl TextInputComponent {
 			embed: false,
 			scroll: VerticalScroll::new(),
 			current_height: Cell::new(0),
+            scroll_start: Cell::new(0),
 		}
 	}
 
@@ -303,18 +305,18 @@ impl TextInputComponent {
 	}
 
     fn get_selection(&self, width: usize) -> usize {
-        let wrapped_msg = textwrap::wrap(&self.msg, (width - 3) as usize);
-        let mut cursor_position: i32 = self.cursor_position as i32;
-        let mut curr_line = 0;
+        let wrapped_msg = textwrap::wrap(&self.msg, width);
 
+        let mut curr_line = 0;
+        let mut distance = 0;
         for line in wrapped_msg.iter() {
-            log::trace!("position: {}", cursor_position);
-            log::trace!("curr_line: {}", curr_line);
-            if cursor_position <= 0 {
-                return curr_line
+            log::trace!("line: {line}");
+            distance += line.len();
+
+            if distance > self.cursor_position {
+                return curr_line;
             }
 
-            cursor_position -= line.len() as i32;
             curr_line += 1;
         }
         curr_line
@@ -395,6 +397,22 @@ impl DrawableComponent for TextInputComponent {
 				}
 			};
 
+            // Accoutn for top and bottom side
+            let height_in_lines = (area.height - 2) as usize;
+            self.current_height.set(height_in_lines.try_into()?);
+
+            let real_width = (area.width - 2) as usize;
+
+            let selection = self.get_selection(real_width);
+
+            //self.msg = textwrap::fill(&self.msg, real_width);
+
+            self.scroll.update(
+                selection,
+                textwrap::wrap(&self.msg, real_width).len(),
+                height_in_lines,
+            );
+
 			let txt = if self.msg.is_empty() {
 				Text::styled(
 					self.default_msg.as_str(),
@@ -403,17 +421,6 @@ impl DrawableComponent for TextInputComponent {
 			} else {
 				self.get_draw_text()
 			};
-
-            let height_in_lines = (area.height - 2) as usize;
-            self.current_height.set(height_in_lines.try_into()?);
-
-            let selection = self.get_selection(area.width as usize);
-
-            self.scroll.update(
-                selection, // TODO: Do UTF8 Stuff
-                textwrap::wrap(&self.msg, (area.width - 3) as usize).len(),
-                height_in_lines,
-            );
 
             let content = 
 				popup_paragraph(
@@ -429,9 +436,25 @@ impl DrawableComponent for TextInputComponent {
                 _ => 0,
             };
 
+            log::trace!("height_in_lines: {height_in_lines}");
+            log::trace!("scroll_box?: {:?} - {:?}", self.scroll_start, self.scroll_start.get() + height_in_lines as u16);
+
+            if selection > self.scroll_start.get() as usize + height_in_lines {
+                self.scroll_start.set(self.scroll_start.get() + 1);
+            }
+
+            log::trace!("selection: {selection}");
+            log::trace!("scroll_start: {:?}", self.scroll_start);
+            if selection < self.scroll_start.get() as usize {
+                self.scroll_start.set(self.scroll_start.get() - 1);
+            }
+
+            // if sel > scroll box increment 1
+            // if sel < scroll box decrement 1 1
+
 			f.render_widget(Clear, area);
 			f.render_widget(
-                content.clone().scroll((scroll_start as u16, 0)),
+                content.clone().scroll((self.scroll_start.get(), 0)),
 				area,
 			);
 
