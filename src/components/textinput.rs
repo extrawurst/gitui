@@ -313,7 +313,7 @@ impl TextInputComponent {
             log::trace!("line: {line}");
             distance += line.len();
 
-            if distance > self.cursor_position {
+            if distance >= self.cursor_position {
                 return curr_line;
             }
 
