@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+* changes in commit message inside external editor [[@bc-universe]](https://github.com/bc-universe) ([#1420](https://github.com/extrawurst/gitui/issues/1420))
+
 ### Fixes
 * commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
 * improve help documentation for amend cmd ([#1448](https://github.com/extrawurst/gitui/issues/1448))

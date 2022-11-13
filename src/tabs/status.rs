@@ -21,7 +21,7 @@ use asyncgit::{
 	},
 	sync::{BranchCompare, CommitId},
 	AsyncBranchesJob, AsyncDiff, AsyncGitNotification, AsyncStatus,
-	DiffParams, DiffType, PushType, StatusParams,
+	DiffParams, DiffType, PushType, StatusItem, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -463,6 +463,10 @@ impl Status {
 		}
 
 		Ok(())
+	}
+
+	pub fn get_files_changes(&mut self) -> Result<Vec<StatusItem>> {
+		Ok(self.git_status_stage.last()?.items)
 	}
 
 	fn update_status(&mut self) -> Result<()> {

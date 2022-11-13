@@ -446,15 +446,17 @@ impl App {
 		} else if let InputEvent::State(polling_state) = ev {
 			self.external_editor_popup.hide();
 			if matches!(polling_state, InputState::Paused) {
-				let result = match self.file_to_open.take() {
-					Some(path) => {
+				let result =
+					if let Some(path) = self.file_to_open.take() {
 						ExternalEditorComponent::open_file_in_editor(
 							&self.repo.borrow(),
 							Path::new(&path),
 						)
-					}
-					None => self.commit.show_editor(),
-				};
+					} else {
+						let changes =
+							self.status_tab.get_files_changes()?;
+						self.commit.show_editor(changes)
+					};
 
 				if let Err(e) = result {
 					let msg =
