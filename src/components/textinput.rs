@@ -104,10 +104,6 @@ impl TextInputComponent {
 		self.embed = true;
 	}
 
-    fn line_count(&self, area: Rect) -> usize {
-        (self.msg.chars().count() / (area.width - 2) as usize) + 1
-    }
-
 	/// Move the cursor right one char.
 	fn incr_cursor(&mut self) {
 		if let Some(pos) = self.next_char_position() {
@@ -306,8 +302,22 @@ impl TextInputComponent {
 		txt
 	}
 
-    fn get_selection(&self, area: Rect) -> usize {
-        self.cursor_position / area.width as usize
+    fn get_selection(&self, width: usize) -> usize {
+        let wrapped_msg = textwrap::wrap(&self.msg, (width - 3) as usize);
+        let mut cursor_position: i32 = self.cursor_position as i32;
+        let mut curr_line = 0;
+
+        for line in wrapped_msg.iter() {
+            log::trace!("position: {}", cursor_position);
+            log::trace!("curr_line: {}", curr_line);
+            if cursor_position <= 0 {
+                return curr_line
+            }
+
+            cursor_position -= line.len() as i32;
+            curr_line += 1;
+        }
+        curr_line
     }
 
 	fn get_msg(&self, range: Range<usize>) -> String {
@@ -366,16 +376,8 @@ impl DrawableComponent for TextInputComponent {
 		f: &mut Frame<B>,
 		rect: Rect,
 	) -> Result<()> {
-		if self.visible {
-			let txt = if self.msg.is_empty() {
-				Text::styled(
-					self.default_msg.as_str(),
-					self.theme.text(false, false),
-				)
-			} else {
-				self.get_draw_text()
-			};
 
+		if self.visible {
 			let area = if self.embed {
 				rect
 			} else {
@@ -393,15 +395,24 @@ impl DrawableComponent for TextInputComponent {
 				}
 			};
 
-            let height_in_lines = area.height as usize;
+			let txt = if self.msg.is_empty() {
+				Text::styled(
+					self.default_msg.as_str(),
+					self.theme.text(false, false),
+				)
+			} else {
+				self.get_draw_text()
+			};
+
+            let height_in_lines = (area.height - 2) as usize;
             self.current_height.set(height_in_lines.try_into()?);
 
-            let selection = self.get_selection(area);
+            let selection = self.get_selection(area.width as usize);
 
             self.scroll.update(
                 selection, // TODO: Do UTF8 Stuff
-                self.line_count(area),
-                height_in_lines - 2, // Compensate for extra lines at top and bottom
+                textwrap::wrap(&self.msg, (area.width - 3) as usize).len(),
+                height_in_lines,
             );
 
             let content = 
@@ -413,8 +424,8 @@ impl DrawableComponent for TextInputComponent {
 					!self.embed,
 				);
 
-            let scroll_start = match selection > height_in_lines - 3 {
-                true => selection - (height_in_lines - 3),
+            let scroll_start = match selection > height_in_lines - 1 {
+                true => selection - height_in_lines,
                 _ => 0,
             };
 
@@ -428,9 +439,6 @@ impl DrawableComponent for TextInputComponent {
             r.width += 1;
             r.height += 2;
             r.y = r.y.saturating_sub(1);
-
-            log::trace!("selection: {selection}");
-            log::trace!("area: {area:?}");
 
             self.scroll.draw(f, area, &self.theme);
 
