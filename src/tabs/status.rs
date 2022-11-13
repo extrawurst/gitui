@@ -13,15 +13,9 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-	cached,
-	sync::{
-		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
-	},
-	sync::{BranchCompare, CommitId},
-	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
-	DiffType, PushType, StatusParams,
-};
+use asyncgit::{cached, sync::{
+	self, status::StatusType, RepoPath, RepoPathRef, RepoState,
+}, sync::{BranchCompare, CommitId}, AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams, DiffType, PushType, StatusParams, StatusItem};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -450,6 +444,10 @@ impl Status {
 		}
 
 		Ok(())
+	}
+	
+	pub fn get_files_changes(&mut self) -> Result<Vec<StatusItem>> {
+		Ok(self.git_status_stage.last()?.items)
 	}
 
 	fn update_status(&mut self) -> Result<()> {

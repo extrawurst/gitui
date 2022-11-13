@@ -11,13 +11,10 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{
-	cached, message_prettify,
-	sync::{
-		self, get_config_string, CommitId, HookResult, RepoPathRef,
-		RepoState,
-	},
-};
+use asyncgit::{cached, message_prettify, StatusItem, StatusItemType, sync::{
+	self, get_config_string, CommitId, HookResult, RepoPathRef,
+	RepoState,
+}};
 use crossterm::event::Event;
 use easy_cast::Cast;
 use std::{
@@ -139,7 +136,18 @@ impl CommitComponent {
 		}
 	}
 
-	pub fn show_editor(&mut self) -> Result<()> {
+	const fn item_status_char(item_type: StatusItemType) -> &'static str {
+		match item_type {
+			StatusItemType::Modified => "modified",
+			StatusItemType::New => "new file",
+			StatusItemType::Deleted => "file deleted",
+			StatusItemType::Renamed => "renamed",
+			StatusItemType::Typechange => " ",
+			StatusItemType::Conflicted => "conflicted",
+		}
+	}
+
+	pub fn show_editor(&mut self, changes: Vec<StatusItem>) -> Result<()> {
 		let file_path = sync::repo_dir(&self.repo.borrow())?
 			.join("COMMIT_EDITMSG");
 
@@ -153,6 +161,12 @@ impl CommitComponent {
 				strings::commit_editor_msg(&self.key_config)
 					.as_bytes(),
 			)?;
+
+			for change in changes {
+				let status_char = Self::item_status_char(change.status);
+				let message = format! ("\n#\t{}: {}", status_char, change.path);
+				file.write(message.as_bytes())?;
+			}
 		}
 
 		ExternalEditorComponent::open_file_in_editor(
