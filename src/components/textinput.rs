@@ -316,7 +316,7 @@ impl TextInputComponent {
 
 		let mut curr_line = 0;
 		let mut distance = 0;
-		for line in wrapped_msg.iter() {
+		for line in &wrapped_msg {
 			log::trace!("line: {line}");
 			distance += line.len();
 
@@ -433,21 +433,12 @@ impl DrawableComponent for TextInputComponent {
 				!self.embed,
 			);
 
-			log::trace!("height_in_lines: {height_in_lines}");
-			log::trace!(
-				"scroll_box?: {:?} - {:?}",
-				self.scroll_start,
-				self.scroll_start.get() + height_in_lines as u16
-			);
-
 			if selection
 				> self.scroll_start.get() as usize + height_in_lines
 			{
 				self.scroll_start.set(self.scroll_start.get() + 1);
 			}
 
-			log::trace!("selection: {selection}");
-			log::trace!("scroll_start: {:?}", self.scroll_start);
 			if selection < self.scroll_start.get() as usize {
 				self.scroll_start.set(self.scroll_start.get() - 1);
 			}
