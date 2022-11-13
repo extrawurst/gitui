@@ -146,7 +146,7 @@ impl CommitComponent {
 		match item_type {
 			StatusItemType::Modified => "modified",
 			StatusItemType::New => "new file",
-			StatusItemType::Deleted => "file deleted",
+			StatusItemType::Deleted => "deleted",
 			StatusItemType::Renamed => "renamed",
 			StatusItemType::Typechange => " ",
 			StatusItemType::Conflicted => "conflicted",
