@@ -176,7 +176,7 @@ impl CommitComponent {
 					Self::item_status_char(change.status);
 				let message =
 					format!("\n#\t{}: {}", status_char, change.path);
-				file.write(message.as_bytes())?;
+				file.write_all(message.as_bytes())?;
 			}
 		}
 
