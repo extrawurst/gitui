@@ -258,12 +258,16 @@ impl TextInputComponent {
 				self.get_msg(self.cursor_position..pos)
 			});
 
-        let space_highlight = format!("{}{}", symbol::ZERO_WIDTH_SPACE, symbol::WHITESPACE);
+		let space_highlight = format!(
+			"{}{}",
+			symbol::ZERO_WIDTH_SPACE,
+			symbol::WHITESPACE
+		);
 		let cursor_highlighting = {
 			let mut h = HashMap::with_capacity(2);
 			h.insert("\n", "\u{21b5}\n\r");
-            // TODO: ZeroWidthSpace to avoid wrapping text because of the cursor?
-            // Why is it not working?
+			// TODO: ZeroWidthSpace to avoid wrapping text because of the cursor?
+			// Why is it not working?
 			h.insert(" ", "\u{200b}\u{00B7}"); // TODO: HERE?
 			h
 		};
