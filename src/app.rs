@@ -452,9 +452,10 @@ impl App {
 						)
 					}
 					None => {
-						let changes = self.status_tab.get_files_changes()?;
+						let changes =
+							self.status_tab.get_files_changes()?;
 						self.commit.show_editor(changes)
-					},
+					}
 				};
 
 				if let Err(e) = result {
