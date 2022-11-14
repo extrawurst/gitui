@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * display current repository path in the top-right corner [[@alexmaco](https://github.com/alexmaco)]([#1387](https://github.com/extrawurst/gitui/pull/1387))
 * add Linux targets for ARM, ARMv7 and AARCH64 [[@adur1990](https://github.com/adur1990)] ([#1419](https://github.com/extrawurst/gitui/pull/1419))
 * display commit description in file view [[@alexmaco](https://github.com/alexmaco)] ([#1380](https://github.com/extrawurst/gitui/pull/1380))
+* allow launching editor from Compare Commits view ([#1409](https://github.com/extrawurst/gitui/pull/1409))
 
 ### Fixes
 * remove insecure dependency `ansi_term` ([#1290](https://github.com/extrawurst/gitui/issues/1290))

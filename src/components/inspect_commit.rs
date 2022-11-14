@@ -138,6 +138,12 @@ impl Component for InspectCommitComponent {
 				true,
 				true,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::edit_item(&self.key_config),
+				true,
+				true,
+			));
 		}
 
 		visibility_blocking(self)
