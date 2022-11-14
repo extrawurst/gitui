@@ -304,7 +304,7 @@ impl RevisionFilesComponent {
 				);
 
 			if message.width() <= available {
-				let _ = write!(title, " [{}]", message);
+				let _ = write!(title, " [{message}]");
 			} else if available > 1 {
 				let _ = write!(
 					title,
