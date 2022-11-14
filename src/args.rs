@@ -2,8 +2,8 @@ use crate::bug_report;
 use anyhow::{anyhow, Result};
 use asyncgit::sync::RepoPath;
 use clap::{
-	crate_authors, crate_description, crate_name, crate_version,
-	App as ClapApp, Arg,
+	crate_authors, crate_description, crate_name, crate_version, Arg,
+	Command as ClapApp,
 };
 use simplelog::{Config, LevelFilter, WriteLogger};
 use std::{
@@ -21,17 +21,18 @@ pub fn process_cmdline() -> Result<CliArgs> {
 	let app = app();
 
 	let arg_matches = app.get_matches();
-	if arg_matches.is_present("bugreport") {
+	if arg_matches.contains_id("bugreport") {
 		bug_report::generate_bugreport();
 		std::process::exit(0);
 	}
-	if arg_matches.is_present("logging") {
+	if arg_matches.contains_id("logging") {
 		setup_logging()?;
 	}
 
-	let workdir = arg_matches.value_of("workdir").map(PathBuf::from);
+	let workdir =
+		arg_matches.get_one::<String>("workdir").map(PathBuf::from);
 	let gitdir = arg_matches
-		.value_of("directory")
+		.get_one::<String>("directory")
 		.map_or_else(|| PathBuf::from("."), PathBuf::from);
 
 	#[allow(clippy::option_if_let_else)]
@@ -41,10 +42,11 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		RepoPath::Path(gitdir)
 	};
 
-	let arg_theme =
-		arg_matches.value_of("theme").unwrap_or("theme.ron");
+	let arg_theme = arg_matches
+		.get_one::<String>("theme")
+		.map_or_else(|| PathBuf::from("theme.ron"), PathBuf::from);
 
-	if get_app_config_path()?.join(arg_theme).is_file() {
+	if get_app_config_path()?.join(&arg_theme).is_file() {
 		Ok(CliArgs {
 			theme: get_app_config_path()?.join(arg_theme),
 			repo_path,
@@ -57,47 +59,58 @@ pub fn process_cmdline() -> Result<CliArgs> {
 	}
 }
 
-fn app() -> ClapApp<'static> {
-	let app = ClapApp::new(crate_name!())
+fn app() -> ClapApp {
+	ClapApp::new(crate_name!())
 		.author(crate_authors!())
 		.version(crate_version!())
 		.about(crate_description!())
+		.help_template(
+			"\
+{before-help}gitui {version}
+{author}
+{about}
+
+{usage-heading} {usage}
+
+{all-args}{after-help}
+		",
+		)
 		.arg(
-			Arg::with_name("theme")
+			Arg::new("theme")
 				.help("Set the color theme (defaults to theme.ron)")
 				.short('t')
 				.long("theme")
 				.value_name("THEME")
-				.takes_value(true),
+				.num_args(1),
 		)
 		.arg(
-			Arg::with_name("logging")
+			Arg::new("logging")
 				.help("Stores logging output into a cache directory")
 				.short('l')
-				.long("logging"),
+				.long("logging")
+				.num_args(0),
 		)
 		.arg(
-			Arg::with_name("bugreport")
+			Arg::new("bugreport")
 				.help("Generate a bug report")
 				.long("bugreport"),
 		)
 		.arg(
-			Arg::with_name("directory")
+			Arg::new("directory")
 				.help("Set the git directory")
 				.short('d')
 				.long("directory")
 				.env("GIT_DIR")
-				.takes_value(true),
+				.num_args(1),
 		)
 		.arg(
-			Arg::with_name("workdir")
+			Arg::new("workdir")
 				.help("Set the working directory")
 				.short('w')
 				.long("workdir")
 				.env("GIT_WORK_TREE")
-				.takes_value(true),
-		);
-	app
+				.num_args(1),
+		)
 }
 
 fn setup_logging() -> Result<()> {
