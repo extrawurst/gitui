@@ -95,7 +95,7 @@ impl RevisionFilesPopup {
 			if let Some(revision) = self.files.revision() {
 				self.queue.push(InternalEvent::PopupStackPush(
 					StackablePopupOpen::FileTree(FileTreeOpen {
-						commit_id: revision,
+						commit_id: revision.id,
 						selection: self.files.selection(),
 					}),
 				));
