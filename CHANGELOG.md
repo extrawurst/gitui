@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.22.0] - 2022-11-19
+
 **submodules view**
 
 ![submodules](assets/submodules.gif)
@@ -38,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * remove insecure dependency `ansi_term` ([#1290](https://github.com/extrawurst/gitui/issues/1290))
 * use filewatcher instead of polling updates ([#1](https://github.com/extrawurst/gitui/issues/1))
 
-## [0.21.0] - 2021-08-17
+## [0.21.0] - 2022-08-17
 
 **popup stacking**
 
@@ -67,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * minimum supported rust version bumped to 1.60 ([#1279](https://github.com/extrawurst/gitui/pull/1279))
 
-## [0.20.1] - 2021-01-26
+## [0.20.1] - 2022-01-26
 
 This is was a immediate followup patch release to `0.20` see [release notes](https://github.com/extrawurst/gitui/releases/tag/v0.20.0) for the whole list of goodies in `0.20`.
 
@@ -79,7 +81,7 @@ This is was a immediate followup patch release to `0.20` see [release notes](htt
 * several smaller performance improvements via caching ([#1104](https://github.com/extrawurst/gitui/issues/1104))
 * windows release deployment via CD broken
 
-## [0.20] - 2021-01-25 - Tag Annotations
+## [0.20] - 2022-01-25 - Tag Annotations
 
 **support tag annotations**
 
