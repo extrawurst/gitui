@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Fixes
-* improve performance by requesting branches info asynchronous (92f63d1)
+* improve performance by requesting branches info asynchronous ([92f63d1](https://github.com/extrawurst/gitui/commit/92f63d107c1dca1f10139668ff5b3ca752261b0f))
 * fix app startup delay due to using file watcher ([#1436](https://github.com/extrawurst/gitui/issues/1436))
 
 ## [0.22.0] - 2022-11-19
