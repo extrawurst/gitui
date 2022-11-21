@@ -113,6 +113,8 @@ pub enum AsyncNotification {
 }
 
 fn main() -> Result<()> {
+	let app_start = Instant::now();
+
 	let cliargs = process_cmdline()?;
 
 	let _profiler = Profiler::new();
@@ -143,6 +145,7 @@ fn main() -> Result<()> {
 
 	loop {
 		let quit_state = run_app(
+			app_start,
 			repo_path.clone(),
 			theme,
 			key_config.clone(),
@@ -162,6 +165,7 @@ fn main() -> Result<()> {
 }
 
 fn run_app(
+	app_start: Instant,
 	repo: RepoPath,
 	theme: Theme,
 	key_config: KeyConfig,
@@ -187,6 +191,8 @@ fn run_app(
 
 	let mut spinner = Spinner::default();
 	let mut first_update = true;
+
+	log::trace!("app start: {} ms", app_start.elapsed().as_millis());
 
 	loop {
 		let event = if first_update {
