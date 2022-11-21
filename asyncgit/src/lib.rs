@@ -40,6 +40,7 @@ mod revlog;
 mod status;
 pub mod sync;
 mod tags;
+mod treefiles;
 
 pub use crate::{
 	blame::{AsyncBlame, BlameParams},
@@ -61,6 +62,7 @@ pub use crate::{
 		status::{StatusItem, StatusItemType},
 	},
 	tags::AsyncTags,
+	treefiles::AsyncTreeFilesJob,
 };
 pub use git2::message_prettify;
 use std::{
@@ -99,6 +101,8 @@ pub enum AsyncGitNotification {
 	Fetch,
 	///
 	Branches,
+	///
+	TreeFiles,
 }
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait
