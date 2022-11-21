@@ -4,6 +4,7 @@ use notify::{Error, RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{
 	new_debouncer, DebouncedEvent, Debouncer,
 };
+use scopetime::scope_time;
 use std::{
 	path::Path, sync::mpsc::RecvError, thread, time::Duration,
 };
@@ -16,6 +17,8 @@ pub struct RepoWatcher {
 
 impl RepoWatcher {
 	pub fn new(workdir: &str) -> Result<Self> {
+		scope_time!("RepoWatcher::new");
+
 		let (tx, rx) = std::sync::mpsc::channel();
 
 		let mut debouncer =
