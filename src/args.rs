@@ -2,8 +2,8 @@ use crate::bug_report;
 use anyhow::{anyhow, Result};
 use asyncgit::sync::RepoPath;
 use clap::{
-	crate_authors, crate_description, crate_name, crate_version, Arg,
-	Command as ClapApp,
+	crate_authors, crate_description, crate_name, crate_version,
+	value_parser, Arg, Command as ClapApp,
 };
 use simplelog::{Config, LevelFilter, WriteLogger};
 use std::{
@@ -15,6 +15,7 @@ use std::{
 pub struct CliArgs {
 	pub theme: PathBuf,
 	pub repo_path: RepoPath,
+	pub poll_watcher: bool,
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
@@ -46,17 +47,20 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		.get_one::<String>("theme")
 		.map_or_else(|| PathBuf::from("theme.ron"), PathBuf::from);
 
-	if get_app_config_path()?.join(&arg_theme).is_file() {
-		Ok(CliArgs {
-			theme: get_app_config_path()?.join(arg_theme),
-			repo_path,
-		})
+	let theme = if get_app_config_path()?.join(&arg_theme).is_file() {
+		get_app_config_path()?.join(arg_theme)
 	} else {
-		Ok(CliArgs {
-			theme: get_app_config_path()?.join("theme.ron"),
-			repo_path,
-		})
-	}
+		get_app_config_path()?.join("theme.ron")
+	};
+
+	let arg_poll: bool =
+		*arg_matches.get_one("poll").unwrap_or(&false);
+
+	Ok(CliArgs {
+		theme,
+		poll_watcher: arg_poll,
+		repo_path,
+	})
 }
 
 fn app() -> ClapApp {
@@ -89,6 +93,13 @@ fn app() -> ClapApp {
 				.short('l')
 				.long("logging")
 				.num_args(0),
+		)
+		.arg(
+			Arg::new("poll")
+				.help("Poll folder for changes instead of using file system events. This can be useful if you run into issues with maximum # of file descriptors")
+				.long("polling")
+				.num_args(0)
+				.value_parser(value_parser!(bool)),
 		)
 		.arg(
 			Arg::new("bugreport")

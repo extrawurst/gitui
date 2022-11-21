@@ -150,6 +150,7 @@ fn main() -> Result<()> {
 			theme,
 			key_config.clone(),
 			&input,
+			cliargs.poll_watcher,
 			&mut terminal,
 		)?;
 
@@ -170,13 +171,17 @@ fn run_app(
 	theme: Theme,
 	key_config: KeyConfig,
 	input: &Input,
+	poll_watcher: bool,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 ) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
 
 	let rx_input = input.receiver();
-	let watcher = RepoWatcher::new(repo_work_dir(&repo)?.as_str())?;
+	let watcher = RepoWatcher::new(
+		repo_work_dir(&repo)?.as_str(),
+		poll_watcher,
+	);
 	let rx_watcher = watcher.receiver();
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
