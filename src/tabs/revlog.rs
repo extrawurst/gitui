@@ -140,10 +140,6 @@ impl Revlog {
 					{
 						if let Some(Ok(branches)) = branches.result()
 						{
-							log::info!(
-								"branches: {}",
-								branches.len()
-							);
 							self.list.set_branches(branches);
 							self.update()?;
 						}
