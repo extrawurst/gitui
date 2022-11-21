@@ -162,6 +162,7 @@ impl App {
 				repo.clone(),
 				&queue,
 				sender_app,
+				sender.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
@@ -306,6 +307,7 @@ impl App {
 			files_tab: FilesTab::new(
 				repo.clone(),
 				sender_app,
+				sender.clone(),
 				&queue,
 				theme.clone(),
 				key_config.clone(),
@@ -508,8 +510,8 @@ impl App {
 			self.select_branch_popup.update_git(ev)?;
 		}
 
-		self.files_tab.update_async(ev);
-		self.revision_files_popup.update(ev);
+		self.files_tab.update_async(ev)?;
+		self.revision_files_popup.update(ev)?;
 		self.tags_popup.update(ev);
 
 		//TODO: better system for this
