@@ -70,6 +70,7 @@ impl StatusTreeComponent {
 	///
 	pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
 		self.pending = false;
+
 		let new_hash = hash(list);
 		if self.current_hash != new_hash {
 			self.tree.update(list)?;
@@ -373,6 +374,7 @@ impl DrawableComponent for StatusTreeComponent {
 					)
 				})
 				.skip(self.scroll_top.get());
+
 			ui::draw_list(
 				f,
 				r,

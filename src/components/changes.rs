@@ -320,7 +320,21 @@ impl Component for ChangesComponent {
 	fn focused(&self) -> bool {
 		self.files.focused()
 	}
+
 	fn focus(&mut self, focus: bool) {
 		self.files.focus(focus);
+	}
+
+	fn is_visible(&self) -> bool {
+		self.files.is_visible()
+	}
+
+	fn hide(&mut self) {
+		self.files.hide();
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.files.show()?;
+		Ok(())
 	}
 }

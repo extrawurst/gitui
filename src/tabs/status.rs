@@ -427,6 +427,7 @@ impl Status {
 	}
 
 	fn check_remotes(&mut self) {
+		//TODO: make get_branches_info async
 		self.has_remotes =
 			sync::get_branches_info(&self.repo.borrow(), false)
 				.map(|branches| !branches.is_empty())
@@ -965,10 +966,16 @@ impl Component for Status {
 
 	fn hide(&mut self) {
 		self.visible = false;
+
+		self.index.hide();
+		self.index_wd.hide();
 	}
 
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
+		self.index.show()?;
+		self.index_wd.show()?;
+
 		self.check_remotes();
 		self.update()?;
 
