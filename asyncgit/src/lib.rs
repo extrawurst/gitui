@@ -24,6 +24,7 @@
 
 pub mod asyncjob;
 mod blame;
+mod branches;
 pub mod cached;
 mod commit_files;
 mod diff;
@@ -42,6 +43,7 @@ mod tags;
 
 pub use crate::{
 	blame::{AsyncBlame, BlameParams},
+	branches::AsyncBranchesJob,
 	commit_files::{AsyncCommitFiles, CommitFilesParams},
 	diff::{AsyncDiff, DiffParams, DiffType},
 	error::{Error, Result},
@@ -95,6 +97,8 @@ pub enum AsyncGitNotification {
 	RemoteTags,
 	///
 	Fetch,
+	///
+	Branches,
 }
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait

@@ -12,9 +12,10 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{self, get_branches_info, CommitId, RepoPathRef},
-	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
-	FetchStatus,
+	asyncjob::AsyncSingleJob,
+	sync::{self, CommitId, RepoPathRef},
+	AsyncBranchesJob, AsyncGitNotification, AsyncLog, AsyncTags,
+	CommitFilesParams, FetchStatus,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -35,6 +36,7 @@ pub struct Revlog {
 	list: CommitList,
 	git_log: AsyncLog,
 	git_tags: AsyncTags,
+	git_branches: AsyncSingleJob<AsyncBranchesJob>,
 	queue: Queue,
 	visible: bool,
 	key_config: SharedKeyConfig,
@@ -71,6 +73,7 @@ impl Revlog {
 				None,
 			),
 			git_tags: AsyncTags::new(repo.borrow().clone(), sender),
+			git_branches: AsyncSingleJob::new(sender.clone()),
 			visible: false,
 			key_config,
 		}
@@ -80,6 +83,7 @@ impl Revlog {
 	pub fn any_work_pending(&self) -> bool {
 		self.git_log.is_pending()
 			|| self.git_tags.is_pending()
+			|| self.git_branches.is_pending()
 			|| self.commit_details.any_work_pending()
 	}
 
@@ -100,11 +104,6 @@ impl Revlog {
 			}
 
 			self.git_tags.request(Duration::from_secs(3), false)?;
-
-			self.list.set_branches(get_branches_info(
-				&self.repo.borrow(),
-				true,
-			)?);
 
 			if self.commit_details.is_visible() {
 				let commit = self.selected_commit();
@@ -133,6 +132,21 @@ impl Revlog {
 					if let Some(tags) = self.git_tags.last()? {
 						self.list.set_tags(tags);
 						self.update()?;
+					}
+				}
+				AsyncGitNotification::Branches => {
+					if let Some(branches) =
+						self.git_branches.take_last()
+					{
+						if let Some(Ok(branches)) = branches.result()
+						{
+							log::info!(
+								"branches: {}",
+								branches.len()
+							);
+							self.list.set_branches(branches);
+							self.update()?;
+						}
 					}
 				}
 				_ => (),
@@ -447,6 +461,12 @@ impl Component for Revlog {
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
 		self.list.clear();
+
+		self.git_branches.spawn(AsyncBranchesJob::new(
+			self.repo.borrow().clone(),
+			true,
+		));
+
 		self.update()?;
 
 		Ok(())

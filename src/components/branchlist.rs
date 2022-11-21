@@ -364,7 +364,7 @@ impl BranchListComponent {
 	}
 
 	fn check_remotes(&mut self) {
-		if !self.local {
+		if !self.local && self.visible {
 			self.has_remotes =
 				get_branches_info(&self.repo.borrow(), false)
 					.map(|branches| !branches.is_empty())

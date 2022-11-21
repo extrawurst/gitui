@@ -14,13 +14,14 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
+	asyncjob::AsyncSingleJob,
 	cached,
 	sync::{
 		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
 	},
 	sync::{BranchCompare, CommitId},
-	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
-	DiffType, PushType, StatusParams,
+	AsyncBranchesJob, AsyncDiff, AsyncGitNotification, AsyncStatus,
+	DiffParams, DiffType, PushType, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -73,6 +74,7 @@ pub struct Status {
 	git_status_stage: AsyncStatus,
 	git_branch_state: Option<BranchCompare>,
 	git_branch_name: cached::BranchName,
+	git_branches: AsyncSingleJob<AsyncBranchesJob>,
 	queue: Queue,
 	git_action_executed: bool,
 	options: SharedOptions,
@@ -203,6 +205,7 @@ impl Status {
 				repo_clone,
 				sender.clone(),
 			),
+			git_branches: AsyncSingleJob::new(sender.clone()),
 			git_action_executed: false,
 			git_branch_state: None,
 			git_branch_name: cached::BranchName::new(repo.clone()),
@@ -424,14 +427,22 @@ impl Status {
 		self.git_diff.is_pending()
 			|| self.git_status_stage.is_pending()
 			|| self.git_status_workdir.is_pending()
+			|| self.git_branches.is_pending()
 	}
 
 	fn check_remotes(&mut self) {
-		//TODO: make get_branches_info async
-		self.has_remotes =
-			sync::get_branches_info(&self.repo.borrow(), false)
-				.map(|branches| !branches.is_empty())
-				.unwrap_or(false);
+		self.has_remotes = false;
+
+		if let Some(result) = self.git_branches.take_last() {
+			if let Some(Ok(branches)) = result.result() {
+				self.has_remotes = !branches.is_empty();
+			}
+		} else {
+			self.git_branches.spawn(AsyncBranchesJob::new(
+				self.repo.borrow().clone(),
+				false,
+			));
+		}
 	}
 
 	///
@@ -442,6 +453,7 @@ impl Status {
 		match ev {
 			AsyncGitNotification::Diff => self.update_diff()?,
 			AsyncGitNotification::Status => self.update_status()?,
+			AsyncGitNotification::Branches => self.check_remotes(),
 			AsyncGitNotification::Push
 			| AsyncGitNotification::Pull
 			| AsyncGitNotification::CommitFiles => {
@@ -461,7 +473,6 @@ impl Status {
 		self.index_wd.set_items(&workdir_status.items)?;
 
 		self.update_diff()?;
-		self.check_remotes();
 
 		if self.git_action_executed {
 			self.git_action_executed = false;
