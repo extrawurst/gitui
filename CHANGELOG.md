@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Bugfix followup release - check `0.22.0` notes for more infos!
 
+### Added
+* new arg `--polling` to use poll-based change detection and not filesystem watcher (use if you see problems running into file descriptor limits)
+
 ### Fixes
 * improve performance by requesting branches info asynchronous ([92f63d1](https://github.com/extrawurst/gitui/commit/92f63d107c1dca1f10139668ff5b3ca752261b0f))
 * fix app startup delay due to using file watcher ([#1436](https://github.com/extrawurst/gitui/issues/1436))
