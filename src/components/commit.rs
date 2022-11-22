@@ -344,7 +344,7 @@ impl Component for CommitComponent {
 				strings::commands::commit_next_msg_from_history(
 					&self.key_config,
 				),
-				true,
+				self.options.borrow().has_commit_msg_history(),
 				true,
 			));
 		}

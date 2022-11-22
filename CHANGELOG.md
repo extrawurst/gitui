@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixes
+* commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
+
 ## [0.22.1] - 2022-11-22
 
 Bugfix followup release - check `0.22.0` notes for more infos!
