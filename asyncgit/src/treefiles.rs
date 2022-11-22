@@ -6,9 +6,17 @@ use crate::{
 };
 use std::sync::{Arc, Mutex};
 
+///
+pub struct FileTreeResult {
+	///
+	pub commit: CommitId,
+	///
+	pub result: Result<Vec<TreeFile>>,
+}
+
 enum JobState {
 	Request { commit: CommitId, repo: RepoPath },
-	Response(Result<Vec<TreeFile>>),
+	Response(FileTreeResult),
 }
 
 ///
@@ -30,7 +38,7 @@ impl AsyncTreeFilesJob {
 	}
 
 	///
-	pub fn result(&self) -> Option<Result<Vec<TreeFile>>> {
+	pub fn result(&self) -> Option<FileTreeResult> {
 		if let Ok(mut state) = self.state.lock() {
 			if let Some(state) = state.take() {
 				return match state {
@@ -60,7 +68,10 @@ impl AsyncJob for AsyncTreeFilesJob {
 					std::thread::sleep(
 						std::time::Duration::from_secs(2),
 					);
-					JobState::Response(files)
+					JobState::Response(FileTreeResult {
+						commit,
+						result: files,
+					})
 				}
 				JobState::Response(result) => {
 					JobState::Response(result)

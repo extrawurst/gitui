@@ -99,10 +99,7 @@ impl RevisionFilesComponent {
 		if !same_id {
 			self.files = None;
 
-			self.async_treefiles.spawn(AsyncTreeFilesJob::new(
-				self.repo.borrow().clone(),
-				commit,
-			));
+			self.request_files(commit);
 
 			self.revision =
 				Some(get_commit_info(&self.repo.borrow(), &commit)?);
@@ -129,17 +126,36 @@ impl RevisionFilesComponent {
 			ev,
 			AsyncNotification::Git(AsyncGitNotification::TreeFiles)
 		) {
-			if let Some(last) = self.async_treefiles.take_last() {
-				if let Some(Ok(last)) = last.result() {
-					let filenames: Vec<&Path> = last
-						.iter()
-						.map(|f| f.path.as_path())
-						.collect();
-					self.tree =
-						FileTree::new(&filenames, &BTreeSet::new())?;
-					self.tree.collapse_but_root();
+			self.refresh_files()?;
+		}
 
-					self.files = Some(last);
+		Ok(())
+	}
+
+	fn refresh_files(&mut self) -> Result<(), anyhow::Error> {
+		if let Some(last) = self.async_treefiles.take_last() {
+			if let Some(result) = last.result() {
+				if self
+					.revision
+					.as_ref()
+					.map(|commit| commit.id == result.commit)
+					.unwrap_or_default()
+				{
+					if let Ok(last) = result.result {
+						let filenames: Vec<&Path> = last
+							.iter()
+							.map(|f| f.path.as_path())
+							.collect();
+						self.tree = FileTree::new(
+							&filenames,
+							&BTreeSet::new(),
+						)?;
+						self.tree.collapse_but_root();
+
+						self.files = Some(last);
+					}
+				} else if let Some(rev) = &self.revision {
+					self.request_files(rev.id);
 				}
 			}
 		}
@@ -364,6 +380,13 @@ impl RevisionFilesComponent {
 
 		title
 	}
+
+	fn request_files(&mut self, commit: CommitId) {
+		self.async_treefiles.spawn(AsyncTreeFilesJob::new(
+			self.repo.borrow().clone(),
+			commit,
+		));
+	}
 }
 
 impl DrawableComponent for RevisionFilesComponent {
@@ -514,6 +537,7 @@ impl Component for RevisionFilesComponent {
 
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
+		self.refresh_files()?;
 		Ok(())
 	}
 }
