@@ -113,6 +113,8 @@ pub enum AsyncNotification {
 }
 
 fn main() -> Result<()> {
+	let app_start = Instant::now();
+
 	let cliargs = process_cmdline()?;
 
 	let _profiler = Profiler::new();
@@ -143,10 +145,12 @@ fn main() -> Result<()> {
 
 	loop {
 		let quit_state = run_app(
+			app_start,
 			repo_path.clone(),
 			theme,
 			key_config.clone(),
 			&input,
+			cliargs.poll_watcher,
 			&mut terminal,
 		)?;
 
@@ -162,17 +166,22 @@ fn main() -> Result<()> {
 }
 
 fn run_app(
+	app_start: Instant,
 	repo: RepoPath,
 	theme: Theme,
 	key_config: KeyConfig,
 	input: &Input,
+	poll_watcher: bool,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 ) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
 
 	let rx_input = input.receiver();
-	let watcher = RepoWatcher::new(repo_work_dir(&repo)?.as_str())?;
+	let watcher = RepoWatcher::new(
+		repo_work_dir(&repo)?.as_str(),
+		poll_watcher,
+	);
 	let rx_watcher = watcher.receiver();
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
@@ -187,6 +196,8 @@ fn run_app(
 
 	let mut spinner = Spinner::default();
 	let mut first_update = true;
+
+	log::trace!("app start: {} ms", app_start.elapsed().as_millis());
 
 	loop {
 		let event = if first_update {

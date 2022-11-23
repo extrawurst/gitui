@@ -22,11 +22,18 @@ pub struct LogEntry {
 
 impl From<CommitInfo> for LogEntry {
 	fn from(c: CommitInfo) -> Self {
-		let time =
+		let hash_short = c.id.get_short_string().into();
+
+		let time = {
+			let date = NaiveDateTime::from_timestamp_opt(c.time, 0);
+			if date.is_none() {
+				log::error!("error reading commit date: {hash_short} - timestamp: {}",c.time);
+			}
 			DateTime::<Local>::from(DateTime::<Utc>::from_utc(
-				NaiveDateTime::from_timestamp(c.time, 0),
+				date.unwrap_or_default(),
 				Utc,
-			));
+			))
+		};
 
 		let author = c.author;
 		#[allow(unused_mut)]
@@ -40,7 +47,7 @@ impl From<CommitInfo> for LogEntry {
 			author: author.into(),
 			msg: msg.into(),
 			time,
-			hash_short: c.id.get_short_string().into(),
+			hash_short,
 			id: c.id,
 		}
 	}
@@ -56,7 +63,7 @@ impl LogEntry {
 				format!("{:0>2}m ago", delta.num_minutes())
 			};
 			format!("{delta_str: <10}")
-		} else if self.time.date() == now.date() {
+		} else if self.time.date_naive() == now.date_naive() {
 			self.time.format("%T  ").to_string()
 		} else {
 			self.time.format("%Y-%m-%d").to_string()

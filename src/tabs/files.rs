@@ -11,7 +11,10 @@ use crate::{
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::sync::{self, RepoPathRef};
+use asyncgit::{
+	sync::{self, RepoPathRef},
+	AsyncGitNotification,
+};
 use crossbeam_channel::Sender;
 
 pub struct FilesTab {
@@ -25,6 +28,7 @@ impl FilesTab {
 	pub fn new(
 		repo: RepoPathRef,
 		sender: &Sender<AsyncAppNotification>,
+		sender_git: Sender<AsyncGitNotification>,
 		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -35,6 +39,7 @@ impl FilesTab {
 				repo.clone(),
 				queue,
 				sender,
+				sender_git,
 				theme,
 				key_config,
 			),
@@ -59,10 +64,15 @@ impl FilesTab {
 	}
 
 	///
-	pub fn update_async(&mut self, ev: AsyncNotification) {
+	pub fn update_async(
+		&mut self,
+		ev: AsyncNotification,
+	) -> Result<()> {
 		if self.is_visible() {
-			self.files.update(ev);
+			self.files.update(ev)?;
 		}
+
+		Ok(())
 	}
 
 	pub fn file_finder_update(&mut self, file: &Option<PathBuf>) {

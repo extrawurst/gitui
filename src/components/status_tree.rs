@@ -70,6 +70,7 @@ impl StatusTreeComponent {
 	///
 	pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
 		self.pending = false;
+
 		let new_hash = hash(list);
 		if self.current_hash != new_hash {
 			self.tree.update(list)?;
@@ -373,6 +374,7 @@ impl DrawableComponent for StatusTreeComponent {
 					)
 				})
 				.skip(self.scroll_top.get());
+
 			ui::draw_list(
 				f,
 				r,
@@ -419,6 +421,14 @@ impl Component for StatusTreeComponent {
 			)
 			.order(order::RARE_ACTION),
 		);
+		out.push(
+			CommandInfo::new(
+				strings::commands::edit_item(&self.key_config),
+				self.selection_file().is_some(),
+				self.focused || force_all,
+			)
+			.order(order::RARE_ACTION),
+		);
 
 		CommandBlocking::PassingOn
 	}
@@ -456,6 +466,18 @@ impl Component for StatusTreeComponent {
 									),
 								),
 							));
+						}
+					}
+					Ok(EventState::Consumed)
+				} else if key_match(e, self.key_config.keys.edit_file)
+				{
+					if let Some(status_item) = self.selection_file() {
+						if let Some(queue) = &self.queue {
+							queue.push(
+								InternalEvent::OpenExternalEditor(
+									Some(status_item.path),
+								),
+							);
 						}
 					}
 					Ok(EventState::Consumed)

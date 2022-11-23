@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.21.0"
+version = "0.22.1"
 authors = ["extrawurst <mail@rusticorn.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2021"
@@ -21,13 +21,13 @@ keywords = [
 
 [dependencies]
 anyhow = "1.0"
-asyncgit = { path = "./asyncgit", version = "0.21", default-features = false }
+asyncgit = { path = "./asyncgit", version = "0.22", default-features = false }
 backtrace = "0.3"
 bitflags = "1.3"
 bugreport = "0.5"
 bytesize = { version = "1.1", default-features = false }
 chrono = { version = "0.4", default-features = false, features = [ "clock" ] }
-clap = { version = "3.2", features = [ "env", "cargo" ] }
+clap = { version = "4.0", features = [ "env", "cargo" ] }
 crossbeam-channel = "0.5"
 crossterm = { version = "0.25", features = [ "serde" ] }
 dirs-next = "2.0"
@@ -47,7 +47,7 @@ scopetime = { path = "./scopetime", version = "0.1" }
 serde = "1.0"
 simplelog = { version = "0.12", default-features = false }
 syntect = { version = "5.0", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "html"] }
-textwrap = "0.15"
+textwrap = "0.16"
 tui = { version = "0.19", default-features = false, features = ['crossterm', 'serde'] }
 unicode-segmentation = "1.10"
 unicode-truncate = "0.2"
@@ -91,6 +91,3 @@ codegen-units = 1
 # makes their debug profile slow
 [profile.dev.package."tui"]
 opt-level = 3
-
-[profile.dev]
-split-debuginfo = "unpacked"

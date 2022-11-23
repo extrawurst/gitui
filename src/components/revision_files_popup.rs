@@ -13,7 +13,10 @@ use crate::{
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::sync::{CommitId, RepoPathRef};
+use asyncgit::{
+	sync::{CommitId, RepoPathRef},
+	AsyncGitNotification,
+};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use tui::{backend::Backend, layout::Rect, widgets::Clear, Frame};
@@ -47,6 +50,7 @@ impl RevisionFilesPopup {
 		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncAppNotification>,
+		sender_git: Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
@@ -55,6 +59,7 @@ impl RevisionFilesPopup {
 				repo,
 				queue,
 				sender,
+				sender_git,
 				theme,
 				key_config.clone(),
 			),
@@ -75,8 +80,8 @@ impl RevisionFilesPopup {
 	}
 
 	///
-	pub fn update(&mut self, ev: AsyncNotification) {
-		self.files.update(ev);
+	pub fn update(&mut self, ev: AsyncNotification) -> Result<()> {
+		self.files.update(ev)
 	}
 
 	///
@@ -95,7 +100,7 @@ impl RevisionFilesPopup {
 			if let Some(revision) = self.files.revision() {
 				self.queue.push(InternalEvent::PopupStackPush(
 					StackablePopupOpen::FileTree(FileTreeOpen {
-						commit_id: revision,
+						commit_id: revision.id,
 						selection: self.files.selection(),
 					}),
 				));

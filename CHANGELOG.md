@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixes
+* commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
+
+## [0.22.1] - 2022-11-22
+
+Bugfix followup release - check `0.22.0` notes for more infos!
+
+### Added
+* new arg `--polling` to use poll-based change detection and not filesystem watcher (use if you see problems running into file descriptor limits)
+* add changes to commit message when opening external editor [[@bc-universe]](https://github.com/bc-universe) ([#1420](https://github.com/extrawurst/gitui/issues/1420))
+
+### Fixes
+* improve performance by requesting branches info asynchronous ([92f63d1](https://github.com/extrawurst/gitui/commit/92f63d107c1dca1f10139668ff5b3ca752261b0f))
+* fix app startup delay due to using file watcher ([#1436](https://github.com/extrawurst/gitui/issues/1436))
+* make git tree file fetch async ([#734](https://github.com/extrawurst/gitui/issues/734))
+
+## [0.22.0] - 2022-11-19
+
 **submodules view**
 
 ![submodules](assets/submodules.gif)
@@ -27,17 +45,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * add `regex-fancy` and `regex-onig` features to allow building Syntect with Onigumara regex engine instead of the default engine based on fancy-regex [[@jirutka](https://github.com/jirutka)]
 * add `vendor-openssl` feature to allow building without vendored openssl [[@jirutka](https://github.com/jirutka)]
 * allow copying marked commits [[@remique](https://github.com/remique)] ([#1288](https://github.com/extrawurst/gitui/issues/1288))
-* Feedback for success/failure of copying hash commit [[@sergioribera]](https://github.com/sergioribera)([#1160](https://github.com/extrawurst/gitui/issues/1160))
-* display tags and branches in the log view [[@alexmaco]](https://github.com/alexmaco)([#1371](https://github.com/extrawurst/gitui/pull/1371))
-* display current repository path in the top-right corner [[@alexmaco]](https://github.com/alexmaco)([#1387](https://github.com/extrawurst/gitui/pull/1387))
-* Add Linux targets for ARM, ARMv7 and AARCH64 [@adur1990](https://github.com/adur1990) ([#1419](https://github.com/extrawurst/gitui/pull/1419))
-* Add changes to commit message when opening external editor [[@bc-universe]](https://github.com/bc-universe) ([#1420](https://github.com/extrawurst/gitui/issues/1420))
+* feedback for success/failure of copying hash commit [[@sergioribera](https://github.com/sergioribera)]([#1160](https://github.com/extrawurst/gitui/issues/1160))
+* display tags and branches in the log view [[@alexmaco](https://github.com/alexmaco)] ([#1371](https://github.com/extrawurst/gitui/pull/1371))
+* display current repository path in the top-right corner [[@alexmaco](https://github.com/alexmaco)]([#1387](https://github.com/extrawurst/gitui/pull/1387))
+* add Linux targets for ARM, ARMv7 and AARCH64 [[@adur1990](https://github.com/adur1990)] ([#1419](https://github.com/extrawurst/gitui/pull/1419))
+* display commit description in file view [[@alexmaco](https://github.com/alexmaco)] ([#1380](https://github.com/extrawurst/gitui/pull/1380))
+* allow launching editor from Compare Commits view ([#1409](https://github.com/extrawurst/gitui/pull/1409))
 
 ### Fixes
 * remove insecure dependency `ansi_term` ([#1290](https://github.com/extrawurst/gitui/issues/1290))
 * use filewatcher instead of polling updates ([#1](https://github.com/extrawurst/gitui/issues/1))
 
-## [0.21.0] - 2021-08-17
+## [0.21.0] - 2022-08-17
 
 **popup stacking**
 
@@ -66,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * minimum supported rust version bumped to 1.60 ([#1279](https://github.com/extrawurst/gitui/pull/1279))
 
-## [0.20.1] - 2021-01-26
+## [0.20.1] - 2022-01-26
 
 This is was a immediate followup patch release to `0.20` see [release notes](https://github.com/extrawurst/gitui/releases/tag/v0.20.0) for the whole list of goodies in `0.20`.
 
@@ -78,7 +97,7 @@ This is was a immediate followup patch release to `0.20` see [release notes](htt
 * several smaller performance improvements via caching ([#1104](https://github.com/extrawurst/gitui/issues/1104))
 * windows release deployment via CD broken
 
-## [0.20] - 2021-01-25 - Tag Annotations
+## [0.20] - 2022-01-25 - Tag Annotations
 
 **support tag annotations**
 

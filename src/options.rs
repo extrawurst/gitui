@@ -104,15 +104,24 @@ impl Options {
 		self.save();
 	}
 
+	pub fn has_commit_msg_history(&self) -> bool {
+		!self.data.commit_msgs.is_empty()
+	}
+
 	pub fn commit_msg(&self, idx: usize) -> Option<String> {
 		if self.data.commit_msgs.is_empty() {
 			None
 		} else {
-			Some(
-				self.data.commit_msgs
-					[idx % self.data.commit_msgs.len()]
-				.to_string(),
-			)
+			let entries = self.data.commit_msgs.len();
+			let mut index = idx;
+
+			while index >= entries {
+				index -= entries;
+			}
+
+			index = entries.saturating_sub(1) - index;
+
+			Some(self.data.commit_msgs[index].to_string())
 		}
 	}
 
