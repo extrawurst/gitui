@@ -426,7 +426,7 @@ pub mod commands {
 	static CMD_GROUP_GENERAL: &str = "-- General --";
 	static CMD_GROUP_DIFF: &str = "-- Diff --";
 	static CMD_GROUP_CHANGES: &str = "-- Changes --";
-	static CMD_GROUP_COMMIT: &str = "-- Commit --";
+	static CMD_GROUP_COMMIT_POPUP: &str = "-- Commit Popup --";
 	static CMD_GROUP_STASHING: &str = "-- Stashing --";
 	static CMD_GROUP_STASHES: &str = "-- Stashes --";
 	static CMD_GROUP_LOG: &str = "-- Log --";
@@ -848,7 +848,7 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.open_commit),
 			),
 			"open commit popup (available in non-empty stage)",
-			CMD_GROUP_COMMIT,
+			CMD_GROUP_GENERAL,
 		)
 	}
 	pub fn commit_open_editor(
@@ -861,7 +861,7 @@ pub mod commands {
 					.get_hint(key_config.keys.open_commit_editor),
 			),
 			"open commit editor (available in commit popup)",
-			CMD_GROUP_COMMIT,
+			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
 	pub fn commit_next_msg_from_history(
@@ -874,7 +874,7 @@ pub mod commands {
 					.get_hint(key_config.keys.commit_history_next),
 			),
 			"use previous commit message from history",
-			CMD_GROUP_COMMIT,
+			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
 	pub fn commit_enter(key_config: &SharedKeyConfig) -> CommandText {
@@ -884,7 +884,7 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.enter),
 			),
 			"commit (available when commit message is non-empty)",
-			CMD_GROUP_COMMIT,
+			CMD_GROUP_COMMIT_POPUP,
 		)
 		.hide_help()
 	}
@@ -895,7 +895,7 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.commit_amend),
 			),
 			"amend last commit (available in commit popup)",
-			CMD_GROUP_COMMIT,
+			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
 	pub fn edit_item(key_config: &SharedKeyConfig) -> CommandText {

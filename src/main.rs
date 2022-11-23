@@ -214,7 +214,7 @@ fn run_app(
 		};
 
 		{
-			if let QueueEvent::SpinnerUpdate = event {
+			if matches!(event, QueueEvent::SpinnerUpdate) {
 				spinner.update();
 				spinner.draw(terminal)?;
 				continue;
@@ -224,8 +224,10 @@ fn run_app(
 
 			match event {
 				QueueEvent::InputEvent(ev) => {
-					if let InputEvent::State(InputState::Polling) = ev
-					{
+					if matches!(
+						ev,
+						InputEvent::State(InputState::Polling)
+					) {
 						//Note: external ed closed, we need to re-hide cursor
 						terminal.hide_cursor()?;
 					}
