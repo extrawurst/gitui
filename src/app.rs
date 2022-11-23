@@ -445,7 +445,7 @@ impl App {
 			self.process_queue(flags)?;
 		} else if let InputEvent::State(polling_state) = ev {
 			self.external_editor_popup.hide();
-			if let InputState::Paused = polling_state {
+			if matches!(polling_state, InputState::Paused) {
 				let result = match self.file_to_open.take() {
 					Some(path) => {
 						ExternalEditorComponent::open_file_in_editor(

@@ -253,8 +253,8 @@ pub fn get_diff_commits(
 ///
 //TODO: refactor into helper type with the inline closures as dedicated functions
 #[allow(clippy::too_many_lines)]
-fn raw_diff_to_file_diff<'a>(
-	diff: &'a Diff,
+fn raw_diff_to_file_diff(
+	diff: &Diff,
 	work_dir: &Path,
 ) -> Result<FileDiff> {
 	let res = Rc::new(RefCell::new(FileDiff::default()));
