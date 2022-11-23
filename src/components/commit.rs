@@ -171,6 +171,8 @@ impl CommitComponent {
 					.as_bytes(),
 			)?;
 
+			file.write_all(b"\n#\n# Changes to be commited:")?;
+
 			for change in changes {
 				let status_char =
 					Self::item_status_char(change.status);
