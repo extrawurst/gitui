@@ -65,9 +65,6 @@ impl AsyncJob for AsyncTreeFilesJob {
 				JobState::Request { commit, repo } => {
 					let files = tree_files(&repo, commit);
 
-					std::thread::sleep(
-						std::time::Duration::from_secs(2),
-					);
 					JobState::Response(FileTreeResult {
 						commit,
 						result: files,
