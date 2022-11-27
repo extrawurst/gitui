@@ -457,10 +457,10 @@ impl DiffComponent {
 
 		let filled = if selected {
 			// selected line
-			format!("{:w$}\n", content, w = width as usize)
+			format!("{content:w$}\n", w = width as usize)
 		} else {
 			// weird eof missing eol line
-			format!("{}\n", content)
+			format!("{content}\n")
 		};
 
 		Spans::from(vec![
