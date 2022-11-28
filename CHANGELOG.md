@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
 * improve help documentation for amend cmd ([#1448](https://github.com/extrawurst/gitui/issues/1448))
 * lag issue when showing files tab ([#1451](https://github.com/extrawurst/gitui/issues/1451))
+* fix key binding shown in bottom bar for `stash_open` ([#1454](https://github.com/extrawurst/gitui/issues/1454))
 
 ## [0.22.1] - 2022-11-22
 

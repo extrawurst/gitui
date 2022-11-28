@@ -1118,7 +1118,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Inspect [{}]",
-				key_config.get_hint(key_config.keys.focus_right),
+				key_config.get_hint(key_config.keys.stash_open),
 			),
 			"open stash commit details (allows to diff files)",
 			CMD_GROUP_STASHES,
