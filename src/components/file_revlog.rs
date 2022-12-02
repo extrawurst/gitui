@@ -486,20 +486,17 @@ impl Component for FileRevlogComponent {
 
 			if let Event::Key(key) = event {
 				if key_match(key, self.key_config.keys.exit_popup) {
-					self.hide_stacked(false);
+					if self.diff.focused() {
+						self.diff.focus(false);
+					} else {
+						self.hide_stacked(false);
+					}
 				} else if key_match(
 					key,
 					self.key_config.keys.focus_right,
 				) && self.can_focus_diff()
 				{
 					self.diff.focus(true);
-				} else if key_match(
-					key,
-					self.key_config.keys.focus_left,
-				) {
-					if self.diff.focused() {
-						self.diff.focus(false);
-					}
 				} else if key_match(key, self.key_config.keys.enter) {
 					if let Some(commit_id) = self.selected_commit() {
 						self.hide_stacked(true);

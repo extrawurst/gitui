@@ -811,9 +811,10 @@ impl Component for DiffComponent {
 					}
 					Ok(EventState::Consumed)
 				} else if key_match(e, self.key_config.keys.move_left)
-					&& self.scrolled_right > 0
 				{
-					self.scrolled_right -= 1;
+					if self.scrolled_right > 0 {
+						self.scrolled_right -= 1;
+					}
 					Ok(EventState::Consumed)
 				} else if key_match(
 					e,
