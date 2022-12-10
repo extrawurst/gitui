@@ -140,7 +140,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 
 		let msg = invalidstring::invalid_utf8("test msg");

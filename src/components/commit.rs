@@ -241,8 +241,7 @@ impl CommitComponent {
 		{
 			log::error!("pre-commit hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"pre-commit hook error:\n{}",
-				e
+				"pre-commit hook error:\n{e}"
 			)));
 			return Ok(CommitResult::Aborted);
 		}
@@ -252,8 +251,7 @@ impl CommitComponent {
 		{
 			log::error!("commit-msg hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"commit-msg hook error:\n{}",
-				e
+				"commit-msg hook error:\n{e}"
 			)));
 			return Ok(CommitResult::Aborted);
 		}
@@ -276,8 +274,7 @@ impl CommitComponent {
 		{
 			log::error!("post-commit hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"post-commit hook error:\n{}",
-				e
+				"post-commit hook error:\n{e}"
 			)));
 		}
 

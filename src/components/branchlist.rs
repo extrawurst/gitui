@@ -624,11 +624,7 @@ impl BranchListComponent {
 				theme.text(true, selected),
 			);
 			let span_name = Span::styled(
-				format!(
-					"{:w$} ",
-					branch_name,
-					w = branch_name_length
-				),
+				format!("{branch_name:branch_name_length$} "),
 				theme.branch(selected, is_head),
 			);
 

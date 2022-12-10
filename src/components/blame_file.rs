@@ -454,10 +454,7 @@ impl BlameFileComponent {
 		let line_number_width = self.get_line_number_width();
 		cells.push(
 			Cell::from(format!(
-				"{:>line_number_width$}{}",
-				line_number,
-				VERTICAL,
-				line_number_width = line_number_width,
+				"{line_number:>line_number_width$}{VERTICAL}",
 			))
 			.style(self.theme.text(true, false)),
 		);
@@ -483,11 +480,7 @@ impl BlameFileComponent {
 			|| NO_AUTHOR.into(),
 			|hunk| string_width_align(&hunk.author, author_width),
 		);
-		let author = format!(
-			"{:author_width$}",
-			truncated_author,
-			author_width = MAX_AUTHOR_WIDTH
-		);
+		let author = format!("{truncated_author:MAX_AUTHOR_WIDTH$}");
 		let time = blame_hunk.map_or_else(String::new, |hunk| {
 			utils::time_to_string(hunk.time, true)
 		});

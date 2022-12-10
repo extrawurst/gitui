@@ -193,8 +193,7 @@ pub fn confirm_msg_reset() -> String {
 }
 pub fn confirm_msg_reset_lines(lines: usize) -> String {
 	format!(
-		"are you sure you want to discard {} selected lines?",
-		lines
+		"are you sure you want to discard {lines} selected lines?"
 	)
 }
 pub fn confirm_msg_stashdrop(
@@ -273,8 +272,7 @@ pub fn confirm_msg_force_push(
 	branch_ref: &str,
 ) -> String {
 	format!(
-        "Confirm force push to branch '{}' ?  This may rewrite history.",
-        branch_ref
+        "Confirm force push to branch '{branch_ref}' ?  This may rewrite history."
     )
 }
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
@@ -285,10 +283,7 @@ pub fn file_log_title(
 	selected: usize,
 	revisions: usize,
 ) -> String {
-	format!(
-		"Revisions of '{}' ({}/{})",
-		file_path, selected, revisions
-	)
+	format!("Revisions of '{file_path}' ({selected}/{revisions})")
 }
 pub fn blame_title(_key_config: &SharedKeyConfig) -> String {
 	"Blame".to_string()

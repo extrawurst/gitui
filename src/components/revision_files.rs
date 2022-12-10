@@ -199,11 +199,7 @@ impl RevisionFilesComponent {
 			width.saturating_sub(indent_str.len() + path_arrow.len());
 
 		let path = format!(
-			"{}{}{:w$}",
-			indent_str,
-			path_arrow,
-			path,
-			w = available_width
+			"{indent_str}{path_arrow}{path:available_width$}"
 		);
 
 		Span::styled(path, theme.file_tree_item(is_path, selected))

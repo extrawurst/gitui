@@ -232,8 +232,7 @@ impl Status {
 				});
 
 			let w = Paragraph::new(format!(
-				"{}{{{}}}",
-				ahead_behind, branch_name
+				"{ahead_behind}{{{branch_name}}}"
 			))
 			.alignment(Alignment::Right);
 
@@ -560,8 +559,7 @@ impl Status {
 			item.path.as_str(),
 		) {
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"reset failed:\n{}",
-				e
+				"reset failed:\n{e}"
 			)));
 
 			false

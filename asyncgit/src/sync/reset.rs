@@ -136,8 +136,8 @@ mod tests {
 			&root.as_os_str().to_str().unwrap().into();
 
 		{
-			fs::create_dir(&root.join("foo")).unwrap();
-			File::create(&root.join("foo/bar.txt"))
+			fs::create_dir(root.join("foo")).unwrap();
+			File::create(root.join("foo/bar.txt"))
 				.unwrap()
 				.write_all(b"test\nfoo")
 				.unwrap();
@@ -162,12 +162,12 @@ mod tests {
 			&root.as_os_str().to_str().unwrap().into();
 
 		{
-			fs::create_dir(&root.join("foo"))?;
-			File::create(&root.join("foo/file1.txt"))?
+			fs::create_dir(root.join("foo"))?;
+			File::create(root.join("foo/file1.txt"))?
 				.write_all(b"file1")?;
-			File::create(&root.join("foo/file2.txt"))?
+			File::create(root.join("foo/file2.txt"))?
 				.write_all(b"file1")?;
-			File::create(&root.join("file3.txt"))?
+			File::create(root.join("file3.txt"))?
 				.write_all(b"file3")?;
 		}
 
@@ -175,14 +175,14 @@ mod tests {
 		commit(repo_path, "msg").unwrap();
 
 		{
-			File::create(&root.join("foo/file1.txt"))?
+			File::create(root.join("foo/file1.txt"))?
 				.write_all(b"file1\nadded line")?;
-			fs::remove_file(&root.join("foo/file2.txt"))?;
-			File::create(&root.join("foo/file4.txt"))?
+			fs::remove_file(root.join("foo/file2.txt"))?;
+			File::create(root.join("foo/file4.txt"))?
 				.write_all(b"file4")?;
-			File::create(&root.join("foo/file5.txt"))?
+			File::create(root.join("foo/file5.txt"))?
 				.write_all(b"file5")?;
-			File::create(&root.join("file3.txt"))?
+			File::create(root.join("file3.txt"))?
 				.write_all(b"file3\nadded line")?;
 		}
 
@@ -209,8 +209,8 @@ mod tests {
 		let file = "foo/bar.txt";
 
 		{
-			fs::create_dir(&root.join("foo")).unwrap();
-			File::create(&root.join(file))
+			fs::create_dir(root.join("foo")).unwrap();
+			File::create(root.join(file))
 				.unwrap()
 				.write_all(b"test\nfoo")
 				.unwrap();
@@ -223,7 +223,7 @@ mod tests {
 		debug_cmd_print(repo_path, "git status");
 
 		{
-			File::create(&root.join(file))
+			File::create(root.join(file))
 				.unwrap()
 				.write_all(b"test\nfoo\nnewend")
 				.unwrap();
@@ -248,7 +248,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"test\nfoo")
 			.unwrap();
@@ -272,8 +272,8 @@ mod tests {
 			&root.as_os_str().to_str().unwrap().into();
 
 		{
-			fs::create_dir(&root.join("foo")).unwrap();
-			File::create(&root.join("foo/bar.txt"))
+			fs::create_dir(root.join("foo")).unwrap();
+			File::create(root.join("foo/bar.txt"))
 				.unwrap()
 				.write_all(b"test\nfoo")
 				.unwrap();
@@ -302,8 +302,8 @@ mod tests {
 			&root.as_os_str().to_str().unwrap().into();
 
 		{
-			fs::create_dir_all(&root.join("foo/bar")).unwrap();
-			File::create(&root.join("foo/bar/baz.txt"))
+			fs::create_dir_all(root.join("foo/bar")).unwrap();
+			File::create(root.join("foo/bar/baz.txt"))
 				.unwrap()
 				.write_all(b"test\nfoo")
 				.unwrap();

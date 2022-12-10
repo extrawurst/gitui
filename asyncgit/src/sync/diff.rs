@@ -439,8 +439,8 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 
-		fs::create_dir(&root.join("foo")).unwrap();
-		File::create(&root.join("foo/bar.txt"))
+		fs::create_dir(root.join("foo")).unwrap();
+		File::create(root.join("foo/bar.txt"))
 			.unwrap()
 			.write_all(b"test\nfoo")
 			.unwrap();
@@ -464,7 +464,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"test\nfoo")
 			.unwrap();
@@ -563,7 +563,7 @@ mod tests {
 		let sub_path = root.join("foo/");
 
 		fs::create_dir_all(&sub_path).unwrap();
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"test")
 			.unwrap();
@@ -587,14 +587,13 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"\x00")?;
+		File::create(root.join(file_path))?.write_all(b"\x00")?;
 
 		stage_add_file(repo_path, file_path).unwrap();
 
 		commit(repo_path, "commit").unwrap();
 
-		File::create(&root.join(file_path))?
-			.write_all(b"\x00\x02")?;
+		File::create(root.join(file_path))?.write_all(b"\x00\x02")?;
 
 		let diff = get_diff(
 			repo_path,
@@ -619,8 +618,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?
-			.write_all(b"\x00\xc7")?;
+		File::create(root.join(file_path))?.write_all(b"\x00\xc7")?;
 
 		let diff = get_diff(
 			repo_path,
@@ -645,14 +643,13 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"\x00")?;
+		File::create(root.join(file_path))?.write_all(b"\x00")?;
 
 		stage_add_file(repo_path, file_path).unwrap();
 
 		commit(repo_path, "").unwrap();
 
-		File::create(&root.join(file_path))?
-			.write_all(b"\x00\x02")?;
+		File::create(root.join(file_path))?.write_all(b"\x00\x02")?;
 
 		stage_add_file(repo_path, file_path).unwrap();
 

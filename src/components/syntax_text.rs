@@ -132,8 +132,7 @@ impl SyntaxTextComponent {
 					self.current_file = Some((
 						path,
 						Either::Right(format!(
-							"error loading file: {}",
-							e
+							"error loading file: {e}"
 						)),
 					));
 				}

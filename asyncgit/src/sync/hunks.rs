@@ -168,7 +168,7 @@ mod tests {
 		let sub_path = root.join("foo/");
 
 		fs::create_dir_all(&sub_path)?;
-		File::create(&root.join(file_path))?.write_all(b"test")?;
+		File::create(root.join(file_path))?.write_all(b"test")?;
 
 		let sub_path: &RepoPath = &sub_path.to_str().unwrap().into();
 		let diff = get_diff(

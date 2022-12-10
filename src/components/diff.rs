@@ -326,8 +326,7 @@ impl DiffComponent {
 					Span::raw(Cow::from(" (")),
 					Span::styled(
 						Cow::from(format!(
-							"{}{:}",
-							sign, delta_byte_size
+							"{sign}{delta_byte_size:}"
 						)),
 						self.theme.diff_line(
 							if is_positive {

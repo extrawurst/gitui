@@ -151,7 +151,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"test\nfoo")
 			.unwrap();
@@ -177,7 +177,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"test\nfoo")
 			.unwrap();
@@ -202,14 +202,14 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path1))?.write_all(b"test1")?;
+		File::create(root.join(file_path1))?.write_all(b"test1")?;
 
 		stage_add_file(repo_path, file_path1)?;
 		let id = commit(repo_path, "commit msg")?;
 
 		assert_eq!(count_commits(&repo, 10), 1);
 
-		File::create(&root.join(file_path2))?.write_all(b"test2")?;
+		File::create(root.join(file_path2))?.write_all(b"test2")?;
 
 		stage_add_file(repo_path, file_path2)?;
 
@@ -239,7 +239,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?
+		File::create(root.join(file_path))?
 			.write_all(b"test\nfoo")?;
 
 		stage_add_file(repo_path, file_path)?;
@@ -281,7 +281,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?
+		File::create(root.join(file_path))?
 			.write_all(b"test\nfoo")?;
 
 		stage_add_file(repo_path, file_path)?;
@@ -315,7 +315,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?
+		File::create(root.join(file_path))?
 			.write_all(b"test\nfoo")?;
 
 		stage_add_file(repo_path, file_path)?;
@@ -351,7 +351,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?
+		File::create(root.join(file_path))?
 			.write_all(b"test\nfoo")?;
 
 		stage_add_file(repo_path, file_path)?;

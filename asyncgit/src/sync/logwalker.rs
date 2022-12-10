@@ -150,10 +150,10 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		commit(repo_path, "commit1").unwrap();
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
@@ -175,10 +175,10 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		commit(repo_path, "commit1").unwrap();
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
@@ -209,18 +209,17 @@ mod tests {
 		let repo_path: RepoPath =
 			root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(&repo_path, file_path).unwrap();
 
 		let _first_commit_id = commit(&repo_path, "commit1").unwrap();
 
-		File::create(&root.join(second_file_path))?
-			.write_all(b"a")?;
+		File::create(root.join(second_file_path))?.write_all(b"a")?;
 		stage_add_file(&repo_path, second_file_path).unwrap();
 
 		let second_commit_id = commit(&repo_path, "commit2").unwrap();
 
-		File::create(&root.join(file_path))?.write_all(b"b")?;
+		File::create(root.join(file_path))?.write_all(b"b")?;
 		stage_add_file(&repo_path, file_path).unwrap();
 
 		let _third_commit_id = commit(&repo_path, "commit3").unwrap();

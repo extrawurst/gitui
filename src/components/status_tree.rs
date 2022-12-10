@@ -215,10 +215,7 @@ impl StatusTreeComponent {
 						w = width as usize
 					)
 				} else {
-					format!(
-						"  {}{}{}",
-						indent_str, collapse_char, string,
-					)
+					format!("  {indent_str}{collapse_char}{string}",)
 				};
 
 				Some(Span::styled(

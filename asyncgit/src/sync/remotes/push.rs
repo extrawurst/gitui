@@ -171,8 +171,7 @@ pub fn push_raw(
 		callbacks.get_stats()?.push_rejected_msg
 	{
 		return Err(Error::Generic(format!(
-			"push to '{}' rejected: {}",
-			reference, msg
+			"push to '{reference}' rejected: {msg}"
 		)));
 	}
 

@@ -172,8 +172,7 @@ mod tests {
 
 		assert!(matches!(blame_file(repo_path, "foo", None), Err(_)));
 
-		File::create(&root.join(file_path))?
-			.write_all(b"line 1\n")?;
+		File::create(root.join(file_path))?.write_all(b"line 1\n")?;
 
 		stage_add_file(repo_path, file_path)?;
 		commit(repo_path, "first commit")?;
@@ -195,7 +194,7 @@ mod tests {
 
 		let mut file = OpenOptions::new()
 			.append(true)
-			.open(&root.join(file_path))?;
+			.open(root.join(file_path))?;
 
 		file.write(b"line 2\n")?;
 
@@ -251,9 +250,9 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		std::fs::create_dir(&root.join("bar")).unwrap();
+		std::fs::create_dir(root.join("bar")).unwrap();
 
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"line 1\n")
 			.unwrap();

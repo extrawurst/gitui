@@ -985,8 +985,7 @@ impl App {
 					branch_ref.rsplit('/').next().map_or_else(
 						|| {
 							InternalEvent::ShowErrorMsg(format!(
-						"Failed to find the branch name in {}",
-						branch_ref
+						"Failed to find the branch name in {branch_ref}"
 					))
 						},
 						|name| {
