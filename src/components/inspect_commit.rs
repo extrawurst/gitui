@@ -1,7 +1,7 @@
 use super::{
 	command_pump, event_pump, visibility_blocking, CommandBlocking,
 	CommandInfo, CommitDetailsComponent, Component, DiffComponent,
-	DrawableComponent, EventState, FileTreeOpen,
+	DrawableComponent, EventState,
 };
 use crate::{
 	accessors,
@@ -138,12 +138,6 @@ impl Component for InspectCommitComponent {
 				true,
 				true,
 			));
-
-			out.push(CommandInfo::new(
-				strings::commands::edit_item(&self.key_config),
-				true,
-				true,
-			));
 		}
 
 		visibility_blocking(self)
@@ -178,22 +172,6 @@ impl Component for InspectCommitComponent {
 				{
 					self.details.focus(true);
 					self.diff.focus(false);
-				} else if key_match(
-					e,
-					self.key_config.keys.open_file_tree,
-				) {
-					if let Some(commit) = self
-						.open_request
-						.as_ref()
-						.map(|open| open.commit_id)
-					{
-						self.hide_stacked(true);
-						self.queue.push(InternalEvent::OpenPopup(
-							StackablePopupOpen::FileTree(
-								FileTreeOpen::new(commit),
-							),
-						));
-					}
 				} else if key_match(
 					e,
 					self.key_config.keys.focus_left,

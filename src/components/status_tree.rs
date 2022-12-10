@@ -403,6 +403,7 @@ impl Component for StatusTreeComponent {
 			)
 			.order(order::NAV),
 		);
+
 		out.push(
 			CommandInfo::new(
 				strings::commands::blame_file(&self.key_config),
@@ -411,6 +412,7 @@ impl Component for StatusTreeComponent {
 			)
 			.order(order::RARE_ACTION),
 		);
+
 		out.push(
 			CommandInfo::new(
 				strings::commands::open_file_history(
@@ -421,6 +423,7 @@ impl Component for StatusTreeComponent {
 			)
 			.order(order::RARE_ACTION),
 		);
+
 		out.push(
 			CommandInfo::new(
 				strings::commands::edit_item(&self.key_config),

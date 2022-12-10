@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * lag issue when showing files tab ([#1451](https://github.com/extrawurst/gitui/issues/1451))
 * fix key binding shown in bottom bar for `stash_open` ([#1454](https://github.com/extrawurst/gitui/issues/1454))
 * `--bugreport` does not require param ([#1466](https://github.com/extrawurst/gitui/issues/1466))
+* `edit`-file command shown on commits msg ([#1461](https://github.com/extrawurst/gitui/issues/1461))
 
 ## [0.22.1] - 2022-11-22
 
