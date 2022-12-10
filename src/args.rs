@@ -2,8 +2,8 @@ use crate::bug_report;
 use anyhow::{anyhow, Result};
 use asyncgit::sync::RepoPath;
 use clap::{
-	crate_authors, crate_description, crate_name, crate_version,
-	value_parser, Arg, Command as ClapApp,
+	crate_authors, crate_description, crate_name, crate_version, Arg,
+	Command as ClapApp,
 };
 use simplelog::{Config, LevelFilter, WriteLogger};
 use std::{
@@ -22,11 +22,12 @@ pub fn process_cmdline() -> Result<CliArgs> {
 	let app = app();
 
 	let arg_matches = app.get_matches();
-	if arg_matches.contains_id("bugreport") {
+
+	if arg_matches.get_flag("bugreport") {
 		bug_report::generate_bugreport();
 		std::process::exit(0);
 	}
-	if arg_matches.contains_id("logging") {
+	if arg_matches.get_flag("logging") {
 		setup_logging()?;
 	}
 
@@ -98,14 +99,13 @@ fn app() -> ClapApp {
 			Arg::new("poll")
 				.help("Poll folder for changes instead of using file system events. This can be useful if you run into issues with maximum # of file descriptors")
 				.long("polling")
-				.num_args(0)
-				.value_parser(value_parser!(bool)),
+				.action(clap::ArgAction::SetTrue),
 		)
 		.arg(
 			Arg::new("bugreport")
 				.help("Generate a bug report")
 				.long("bugreport")
-				.num_args(0),
+				.action(clap::ArgAction::SetTrue),
 		)
 		.arg(
 			Arg::new("directory")
