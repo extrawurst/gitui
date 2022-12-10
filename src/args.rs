@@ -104,7 +104,8 @@ fn app() -> ClapApp {
 		.arg(
 			Arg::new("bugreport")
 				.help("Generate a bug report")
-				.long("bugreport"),
+				.long("bugreport")
+				.num_args(0),
 		)
 		.arg(
 			Arg::new("directory")
