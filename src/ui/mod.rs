@@ -87,8 +87,18 @@ pub fn centered_rect(
 
 /// makes sure Rect `r` at least stays as big as min and not bigger than max
 pub fn rect_inside(min: Size, max: Size, r: Rect) -> Rect {
-	let new_width = r.width.clamp(min.width, max.width);
-	let new_height = r.height.clamp(min.height, max.height);
+	let new_width = if min.width > max.width {
+		max.width
+	} else {
+		r.width.clamp(min.width, max.width)
+	};
+
+	let new_height = if min.height > max.height {
+		max.width
+	} else {
+		r.height.clamp(min.height, max.height)
+	};
+
 	let diff_width = new_width.saturating_sub(r.width);
 	let diff_height = new_height.saturating_sub(r.height);
 
@@ -140,5 +150,42 @@ pub fn common_nav(
 		Some(MoveSelection::End)
 	} else {
 		None
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::{rect_inside, Size};
+	use pretty_assertions::assert_eq;
+	use tui::layout::Rect;
+
+	#[test]
+	fn test_small_rect_in_rect() {
+		let rect = rect_inside(
+			Size {
+				width: 2,
+				height: 2,
+			},
+			Size {
+				width: 1,
+				height: 1,
+			},
+			Rect {
+				x: 0,
+				y: 0,
+				width: 10,
+				height: 10,
+			},
+		);
+
+		assert_eq!(
+			rect,
+			Rect {
+				x: 0,
+				y: 0,
+				width: 1,
+				height: 1
+			}
+		);
 	}
 }
