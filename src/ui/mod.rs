@@ -94,7 +94,7 @@ pub fn rect_inside(min: Size, max: Size, r: Rect) -> Rect {
 	};
 
 	let new_height = if min.height > max.height {
-		max.width
+		max.height
 	} else {
 		r.height.clamp(min.height, max.height)
 	};
@@ -185,6 +185,36 @@ mod test {
 				y: 0,
 				width: 1,
 				height: 1
+			}
+		);
+	}
+
+	#[test]
+	fn test_small_rect_in_rect2() {
+		let rect = rect_inside(
+			Size {
+				width: 1,
+				height: 3,
+			},
+			Size {
+				width: 1,
+				height: 2,
+			},
+			Rect {
+				x: 0,
+				y: 0,
+				width: 10,
+				height: 10,
+			},
+		);
+
+		assert_eq!(
+			rect,
+			Rect {
+				x: 0,
+				y: 0,
+				width: 1,
+				height: 2
 			}
 		);
 	}
