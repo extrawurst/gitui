@@ -682,7 +682,7 @@ impl DrawableComponent for DiffComponent {
 		if self.focused() {
 			self.scroll.draw(f, r, &self.theme);
 
-			if self.scrolled_right != 0 {
+			if self.max_scroll_right() > 0 {
 				draw_scrollbar(
 					f,
 					r,
