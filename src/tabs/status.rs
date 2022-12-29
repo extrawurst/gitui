@@ -805,19 +805,7 @@ impl Component for Status {
 			));
 		}
 
-		{
-			out.push(CommandInfo::new(
-				strings::commands::edit_item(&self.key_config),
-				if focus_on_diff {
-					true
-				} else {
-					self.can_focus_diff()
-				},
-				self.visible || force_all,
-			));
-
-			self.commands_nav(out, force_all);
-		}
+		self.commands_nav(out, force_all);
 
 		visibility_blocking(self)
 	}
@@ -836,19 +824,7 @@ impl Component for Status {
 			}
 
 			if let Event::Key(k) = ev {
-				return if key_match(k, self.key_config.keys.edit_file)
-					&& (self.can_focus_diff()
-						|| self.is_focus_on_diff())
-				{
-					if let Some((path, _)) = self.selected_path() {
-						self.queue.push(
-							InternalEvent::OpenExternalEditor(Some(
-								path,
-							)),
-						);
-					}
-					Ok(EventState::Consumed)
-				} else if key_match(
+				return if key_match(
 					k,
 					self.key_config.keys.open_commit,
 				) && self.can_commit()
