@@ -128,9 +128,9 @@ impl Stashing {
 			Spans::from(vec![
 				bracket_open,
 				if self.options.keep_index {
-					option_on.clone()
+					option_on
 				} else {
-					option_off.clone()
+					option_off
 				},
 				bracket_close,
 				Span::raw(Cow::from(" keep index")),
