@@ -48,8 +48,8 @@ fn sort_file_list(files: &mut [TreeFile]) {
 
 // applies topologically order on paths sorting
 fn path_cmp(a: &Path, b: &Path) -> Ordering {
-	let mut comp_a = a.components().into_iter().peekable();
-	let mut comp_b = b.components().into_iter().peekable();
+	let mut comp_a = a.components().peekable();
+	let mut comp_b = b.components().peekable();
 
 	loop {
 		let a = comp_a.next();
