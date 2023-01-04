@@ -1,12 +1,14 @@
 use super::{
 	utils::scroll_vertical::VerticalScroll, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+	EventState, InspectCommitOpen,
 };
 use crate::{
 	components::ScrollType,
-	keys::SharedKeyConfig,
-	queue::{Action, InternalEvent, NeedsUpdate, Queue},
+	keys::{key_match, SharedKeyConfig},
+	queue::{
+		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
+	},
 	strings, try_or_popup,
 	ui::{self, Size},
 };
@@ -42,6 +44,7 @@ pub struct BranchListComponent {
 	repo: RepoPathRef,
 	branches: Vec<BranchInfo>,
 	local: bool,
+	has_remotes: bool,
 	visible: bool,
 	selection: u16,
 	scroll: VerticalScroll,
@@ -200,7 +203,7 @@ impl Component for BranchListComponent {
 
 			out.push(CommandInfo::new(
 				strings::commands::fetch_remotes(&self.key_config),
-				true,
+				self.has_remotes,
 				!self.local,
 			));
 		}
@@ -209,61 +212,62 @@ impl Component for BranchListComponent {
 
 	//TODO: cleanup
 	#[allow(clippy::cognitive_complexity)]
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if !self.visible {
 			return Ok(EventState::NotConsumed);
 		}
 
 		if let Event::Key(e) = ev {
-			if e == self.key_config.keys.exit_popup {
+			if key_match(e, self.key_config.keys.exit_popup) {
 				self.hide();
-			} else if e == self.key_config.keys.move_down {
+			} else if key_match(e, self.key_config.keys.move_down) {
 				return self
 					.move_selection(ScrollType::Up)
 					.map(Into::into);
-			} else if e == self.key_config.keys.move_up {
+			} else if key_match(e, self.key_config.keys.move_up) {
 				return self
 					.move_selection(ScrollType::Down)
 					.map(Into::into);
-			} else if e == self.key_config.keys.page_down {
+			} else if key_match(e, self.key_config.keys.page_down) {
 				return self
 					.move_selection(ScrollType::PageDown)
 					.map(Into::into);
-			} else if e == self.key_config.keys.page_up {
+			} else if key_match(e, self.key_config.keys.page_up) {
 				return self
 					.move_selection(ScrollType::PageUp)
 					.map(Into::into);
-			} else if e == self.key_config.keys.home {
+			} else if key_match(e, self.key_config.keys.home) {
 				return self
 					.move_selection(ScrollType::Home)
 					.map(Into::into);
-			} else if e == self.key_config.keys.end {
+			} else if key_match(e, self.key_config.keys.end) {
 				return self
 					.move_selection(ScrollType::End)
 					.map(Into::into);
-			} else if e == self.key_config.keys.tab_toggle {
+			} else if key_match(e, self.key_config.keys.tab_toggle) {
 				self.local = !self.local;
+				self.check_remotes();
 				self.update_branches()?;
-			} else if e == self.key_config.keys.enter {
+			} else if key_match(e, self.key_config.keys.enter) {
 				try_or_popup!(
 					self,
 					"switch branch error:",
 					self.switch_to_selected_branch()
 				);
-			} else if e == self.key_config.keys.create_branch
+			} else if key_match(e, self.key_config.keys.create_branch)
 				&& self.local
 			{
 				self.queue.push(InternalEvent::CreateBranch);
-			} else if e == self.key_config.keys.rename_branch
+			} else if key_match(e, self.key_config.keys.rename_branch)
 				&& self.valid_selection()
 			{
 				self.rename_branch();
-			} else if e == self.key_config.keys.delete_branch
+			} else if key_match(e, self.key_config.keys.delete_branch)
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
 				self.delete_branch();
-			} else if e == self.key_config.keys.merge_branch
+			} else if key_match(e, self.key_config.keys.merge_branch)
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
@@ -272,7 +276,7 @@ impl Component for BranchListComponent {
 					"merge branch error:",
 					self.merge_branch()
 				);
-			} else if e == self.key_config.keys.rebase_branch
+			} else if key_match(e, self.key_config.keys.rebase_branch)
 				&& !self.selection_is_cur_branch()
 				&& self.valid_selection()
 			{
@@ -281,25 +285,31 @@ impl Component for BranchListComponent {
 					"rebase error:",
 					self.rebase_branch()
 				);
-			} else if e == self.key_config.keys.move_right
+			} else if key_match(e, self.key_config.keys.move_right)
 				&& self.valid_selection()
 			{
-				self.hide();
-				if let Some(b) = self.get_selected() {
-					self.queue
-						.push(InternalEvent::InspectCommit(b, None));
-				}
-			} else if e == self.key_config.keys.compare_commits
-				&& self.valid_selection()
+				self.inspect_head_of_branch();
+			} else if key_match(
+				e,
+				self.key_config.keys.compare_commits,
+			) && self.valid_selection()
 			{
 				self.hide();
-				if let Some(b) = self.get_selected() {
-					self.queue
-						.push(InternalEvent::CompareCommits(b, None));
+				if let Some(commit_id) = self.get_selected() {
+					self.queue.push(InternalEvent::OpenPopup(
+						StackablePopupOpen::CompareCommits(
+							InspectCommitOpen::new(commit_id),
+						),
+					));
 				}
-			} else if e == self.key_config.keys.pull && !self.local {
+			} else if key_match(e, self.key_config.keys.pull)
+				&& !self.local && self.has_remotes
+			{
 				self.queue.push(InternalEvent::FetchRemotes);
-			} else if e == self.key_config.keys.cmd_bar_toggle {
+			} else if key_match(
+				e,
+				self.key_config.keys.cmd_bar_toggle,
+			) {
 				//do not consume if its the more key
 				return Ok(EventState::NotConsumed);
 			}
@@ -333,6 +343,7 @@ impl BranchListComponent {
 		Self {
 			branches: Vec::new(),
 			local: true,
+			has_remotes: false,
 			visible: false,
 			selection: 0,
 			scroll: VerticalScroll::new(),
@@ -352,9 +363,19 @@ impl BranchListComponent {
 		Ok(())
 	}
 
+	fn check_remotes(&mut self) {
+		if !self.local && self.visible {
+			self.has_remotes =
+				get_branches_info(&self.repo.borrow(), false)
+					.map(|branches| !branches.is_empty())
+					.unwrap_or(false);
+		}
+	}
+
 	/// fetch list of branches
 	pub fn update_branches(&mut self) -> Result<()> {
 		if self.is_visible() {
+			self.check_remotes();
 			self.branches =
 				get_branches_info(&self.repo.borrow(), self.local)?;
 			//remove remote branch called `HEAD`
@@ -417,6 +438,17 @@ impl BranchListComponent {
 		Ok(())
 	}
 
+	fn inspect_head_of_branch(&mut self) {
+		if let Some(commit_id) = self.get_selected() {
+			self.hide();
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::InspectCommit(
+					InspectCommitOpen::new(commit_id),
+				),
+			));
+		}
+	}
+
 	const fn get_branch_type(&self) -> BranchType {
 		if self.local {
 			BranchType::Local
@@ -431,7 +463,7 @@ impl BranchListComponent {
 
 		if sync::repo_state(&self.repo.borrow())? != RepoState::Clean
 		{
-			self.queue.push(InternalEvent::TabSwitch);
+			self.queue.push(InternalEvent::TabSwitchStatus);
 		}
 
 		Ok(())
@@ -509,9 +541,9 @@ impl BranchListComponent {
 		const HEAD_SYMBOL: char = '*';
 		const EMPTY_SYMBOL: char = ' ';
 		const THREE_DOTS: &str = "...";
+		const THREE_DOTS_LENGTH: usize = THREE_DOTS.len(); // "..."
 		const COMMIT_HASH_LENGTH: usize = 8;
 		const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
-		const THREE_DOTS_LENGTH: usize = THREE_DOTS.len(); // "..."
 
 		let branch_name_length: usize =
 			width_available as usize * 40 / 100;
@@ -577,7 +609,7 @@ impl BranchListComponent {
 			};
 
 			let span_prefix = Span::styled(
-				format!("{}{} ", is_head_str, upstream_tracking_str),
+				format!("{is_head_str}{upstream_tracking_str} "),
 				theme.commit_author(selected),
 			);
 			let span_hash = Span::styled(
@@ -592,11 +624,7 @@ impl BranchListComponent {
 				theme.text(true, selected),
 			);
 			let span_name = Span::styled(
-				format!(
-					"{:w$} ",
-					branch_name,
-					w = branch_name_length
-				),
+				format!("{branch_name:branch_name_length$} "),
 				theme.branch(selected, is_head),
 			);
 

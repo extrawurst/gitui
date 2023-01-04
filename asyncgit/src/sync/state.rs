@@ -4,7 +4,7 @@ use git2::RepositoryState;
 use scopetime::scope_time;
 
 ///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum RepoState {
 	///
 	Clean,
@@ -12,6 +12,8 @@ pub enum RepoState {
 	Merge,
 	///
 	Rebase,
+	///
+	Revert,
 	///
 	Other,
 }
@@ -21,6 +23,7 @@ impl From<RepositoryState> for RepoState {
 		match state {
 			RepositoryState::Clean => Self::Clean,
 			RepositoryState::Merge => Self::Merge,
+			RepositoryState::Revert => Self::Revert,
 			RepositoryState::RebaseMerge => Self::Rebase,
 			_ => {
 				log::warn!("state not supported yet: {:?}", state);
@@ -37,8 +40,6 @@ pub fn repo_state(repo_path: &RepoPath) -> Result<RepoState> {
 	let repo = repo(repo_path)?;
 
 	let state = repo.state();
-
-	// dbg!(&state);
 
 	Ok(state.into())
 }

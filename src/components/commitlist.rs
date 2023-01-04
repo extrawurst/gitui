@@ -4,7 +4,8 @@ use crate::{
 		utils::string_width_align, CommandBlocking, CommandInfo,
 		Component, DrawableComponent, EventState, ScrollType,
 	},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue},
 	strings::{self, symbol},
 	ui::style::{SharedTheme, Theme},
 	ui::{calc_scroll_top, draw_scrollbar},
@@ -13,8 +14,10 @@ use anyhow::Result;
 use asyncgit::sync::{checkout_commit, CommitId, RepoPathRef, Tags};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
+use itertools::Itertools;
 use std::{
-	borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
+	borrow::Cow, cell::Cell, cmp, collections::BTreeMap,
+	convert::TryFrom, time::Instant,
 };
 use tui::{
 	backend::Backend,
@@ -31,15 +34,16 @@ pub struct CommitList {
 	repo: RepoPathRef,
 	title: Box<str>,
 	selection: usize,
-	branch: Option<String>,
 	count_total: usize,
 	items: ItemBatch,
-	marked: Vec<CommitId>,
+	marked: Vec<(usize, CommitId)>,
 	scroll_state: (Instant, f32),
 	tags: Option<Tags>,
+	branches: BTreeMap<CommitId, Vec<String>>,
 	current_size: Cell<(u16, u16)>,
 	scroll_top: Cell<usize>,
 	theme: SharedTheme,
+	queue: Queue,
 	key_config: SharedKeyConfig,
 }
 
@@ -49,6 +53,7 @@ impl CommitList {
 		repo: RepoPathRef,
 		title: &str,
 		theme: SharedTheme,
+		queue: Queue,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
@@ -56,13 +61,14 @@ impl CommitList {
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
 			selection: 0,
-			branch: None,
 			count_total: 0,
 			scroll_state: (Instant::now(), 0_f32),
 			tags: None,
+			branches: BTreeMap::default(),
 			current_size: Cell::new((0, 0)),
 			scroll_top: Cell::new(0),
 			theme,
+			queue,
 			key_config,
 			title: title.into(),
 		}
@@ -71,11 +77,6 @@ impl CommitList {
 	///
 	pub fn items(&mut self) -> &mut ItemBatch {
 		&mut self.items
-	}
-
-	///
-	pub fn set_branch(&mut self, name: Option<String>) {
-		self.branch = name;
 	}
 
 	///
@@ -136,15 +137,64 @@ impl CommitList {
 	}
 
 	///
-	pub fn marked(&self) -> &[CommitId] {
+	pub fn marked(&self) -> &[(usize, CommitId)] {
 		&self.marked
 	}
 
-	pub fn copy_entry_hash(&self) -> Result<()> {
-		if let Some(e) = self.items.iter().nth(
-			self.selection.saturating_sub(self.items.index_offset()),
-		) {
-			crate::clipboard::copy_string(&e.hash_short)?;
+	///
+	pub fn clear_marked(&mut self) {
+		self.marked.clear();
+	}
+
+	///
+	pub fn marked_commits(&self) -> Vec<CommitId> {
+		let (_, commits): (Vec<_>, Vec<CommitId>) =
+			self.marked.iter().copied().unzip();
+
+		commits
+	}
+
+	pub fn copy_commit_hash(&self) -> Result<()> {
+		let marked = self.marked.as_slice();
+		let yank: Option<Cow<str>> = match marked {
+			[] => self
+				.items
+				.iter()
+				.nth(
+					self.selection
+						.saturating_sub(self.items.index_offset()),
+				)
+				.map(|e| Cow::Borrowed(e.hash_short.as_ref())),
+			[(_idx, commit)] => {
+				Some(commit.get_short_string().into())
+			}
+			[first, .., last] => {
+				let marked_consecutive =
+					marked.windows(2).all(|w| w[0].0 + 1 == w[1].0);
+
+				let yank = if marked_consecutive {
+					format!(
+						"{}^..{}",
+						first.1.get_short_string(),
+						last.1.get_short_string()
+					)
+				} else {
+					marked
+						.iter()
+						.map(|(_idx, commit)| {
+							commit.get_short_string()
+						})
+						.join(" ")
+				};
+				Some(yank.into())
+			}
+		};
+
+		if let Some(yank) = yank {
+			crate::clipboard::copy_string(&yank)?;
+			self.queue.push(InternalEvent::ShowInfoMsg(
+				strings::copy_success(&yank),
+			));
 		}
 		Ok(())
 	}
@@ -188,10 +238,17 @@ impl CommitList {
 	fn mark(&mut self) {
 		if let Some(e) = self.selected_entry() {
 			let id = e.id;
+			let selected = self
+				.selection
+				.saturating_sub(self.items.index_offset());
 			if self.is_marked(&id).unwrap_or_default() {
-				self.marked.retain(|marked| marked != &id);
+				self.marked.retain(|marked| marked.1 != id);
 			} else {
-				self.marked.push(id);
+				self.marked.push((selected, id));
+
+				self.marked.sort_unstable_by(|first, second| {
+					first.0.cmp(&second.0)
+				});
 			}
 		}
 	}
@@ -224,15 +281,18 @@ impl CommitList {
 		if self.marked.is_empty() {
 			None
 		} else {
-			let found = self.marked.iter().any(|entry| entry == id);
+			let found =
+				self.marked.iter().any(|entry| entry.1 == *id);
 			Some(found)
 		}
 	}
 
+	#[allow(clippy::too_many_arguments)]
 	fn get_entry_to_add<'a>(
 		e: &'a LogEntry,
 		selected: bool,
 		tags: Option<String>,
+		branches: Option<String>,
 		theme: &Theme,
 		width: usize,
 		now: DateTime<Local>,
@@ -276,7 +336,7 @@ impl CommitList {
 		txt.push(splitter.clone());
 
 		let author_width =
-			(width.saturating_sub(19) / 3).max(3).min(20);
+			(width.saturating_sub(19) / 3).clamp(3, 20);
 		let author = string_width_align(&e.author, author_width);
 
 		// commit author
@@ -288,19 +348,28 @@ impl CommitList {
 		txt.push(splitter.clone());
 
 		// commit tags
-		txt.push(Span::styled(
-			Cow::from(tags.map_or_else(
-				|| String::from(""),
-				|tags| format!(" {}", tags),
-			)),
-			theme.tags(selected),
-		));
+		if let Some(tags) = tags {
+			txt.push(splitter.clone());
+			txt.push(Span::styled(tags, theme.tags(selected)));
+		}
+
+		if let Some(branches) = branches {
+			txt.push(splitter.clone());
+			txt.push(Span::styled(
+				branches,
+				theme.branch(selected, true),
+			));
+		}
 
 		txt.push(splitter);
 
+		let message_width = width.saturating_sub(
+			txt.iter().map(|span| span.content.len()).sum(),
+		);
+
 		// commit msg
 		txt.push(Span::styled(
-			Cow::from(&*e.msg),
+			format!("{:message_width$}", &e.msg),
 			theme.text(true, selected),
 		));
 
@@ -323,11 +392,21 @@ impl CommitList {
 			.take(height)
 			.enumerate()
 		{
-			let tags = self
-				.tags
-				.as_ref()
-				.and_then(|t| t.get(&e.id))
-				.map(|tags| tags.join(" "));
+			let tags =
+				self.tags.as_ref().and_then(|t| t.get(&e.id)).map(
+					|tags| {
+						tags.iter()
+							.map(|t| format!("<{}>", t.name))
+							.join(" ")
+					},
+				);
+
+			let branches = self.branches.get(&e.id).map(|names| {
+				names
+					.iter()
+					.map(|name| format!("{{{name}}}"))
+					.join(" ")
+			});
 
 			let marked = if any_marked {
 				self.is_marked(&e.id)
@@ -339,6 +418,7 @@ impl CommitList {
 				e,
 				idx + self.scroll_top.get() == selection,
 				tags,
+				branches,
 				&self.theme,
 				width,
 				now,
@@ -366,6 +446,17 @@ impl CommitList {
 		}
 		Ok(())
 	}
+
+	pub fn set_branches(&mut self, branches: Vec<BranchInfo>) {
+		self.branches.clear();
+
+		for b in branches {
+			self.branches
+				.entry(b.top_commit)
+				.or_default()
+				.push(b.name);
+		}
+	}
 }
 
 impl DrawableComponent for CommitList {
@@ -389,15 +480,11 @@ impl DrawableComponent for CommitList {
 			selection,
 		));
 
-		let branch_post_fix =
-			self.branch.as_ref().map(|b| format!("- {{{}}}", b));
-
 		let title = format!(
-			"{} {}/{} {}",
+			"{} {}/{}",
 			self.title,
 			self.count_total.saturating_sub(self.selection),
 			self.count_total,
-			branch_post_fix.as_deref().unwrap_or(""),
 		);
 
 		f.render_widget(
@@ -433,35 +520,43 @@ impl DrawableComponent for CommitList {
 }
 
 impl Component for CommitList {
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if let Event::Key(k) = ev {
-			let selection_changed = if k
-				== self.key_config.keys.move_up
-			{
-				self.move_selection(ScrollType::Up)?
-			} else if k == self.key_config.keys.move_down {
-				self.move_selection(ScrollType::Down)?
-			} else if k == self.key_config.keys.shift_up
-				|| k == self.key_config.keys.home
-			{
-				self.move_selection(ScrollType::Home)?
-			} else if k == self.key_config.keys.shift_down
-				|| k == self.key_config.keys.end
-			{
-				self.move_selection(ScrollType::End)?
-			} else if k == self.key_config.keys.page_up {
-				self.move_selection(ScrollType::PageUp)?
-			} else if k == self.key_config.keys.page_down {
-				self.move_selection(ScrollType::PageDown)?
-			} else if k == self.key_config.keys.log_mark_commit {
-				self.mark();
-				true
-			} else if k == self.key_config.keys.log_checkout_commit {
-				self.checkout()?;
-				true
-			} else {
-				false
-			};
+			let selection_changed =
+				if key_match(k, self.key_config.keys.move_up) {
+					self.move_selection(ScrollType::Up)?
+				} else if key_match(k, self.key_config.keys.move_down)
+				{
+					self.move_selection(ScrollType::Down)?
+				} else if key_match(k, self.key_config.keys.shift_up)
+					|| key_match(k, self.key_config.keys.home)
+				{
+					self.move_selection(ScrollType::Home)?
+				} else if key_match(
+					k,
+					self.key_config.keys.shift_down,
+				) || key_match(k, self.key_config.keys.end)
+				{
+					self.move_selection(ScrollType::End)?
+				} else if key_match(k, self.key_config.keys.page_up) {
+					self.move_selection(ScrollType::PageUp)?
+				} else if key_match(k, self.key_config.keys.page_down)
+				{
+					self.move_selection(ScrollType::PageDown)?
+				} else if key_match(
+					k,
+					self.key_config.keys.log_mark_commit,
+				) {
+					self.mark();
+					true
+				} else if k
+					== self.key_config.keys.log_checkout_commit
+				{
+					self.checkout()?;
+					true
+				} else {
+					false
+				};
 			return Ok(selection_changed.into());
 		}
 

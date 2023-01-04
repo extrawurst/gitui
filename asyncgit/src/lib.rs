@@ -24,6 +24,7 @@
 
 pub mod asyncjob;
 mod blame;
+mod branches;
 pub mod cached;
 mod commit_files;
 mod diff;
@@ -39,9 +40,11 @@ mod revlog;
 mod status;
 pub mod sync;
 mod tags;
+mod treefiles;
 
 pub use crate::{
 	blame::{AsyncBlame, BlameParams},
+	branches::AsyncBranchesJob,
 	commit_files::{AsyncCommitFiles, CommitFilesParams},
 	diff::{AsyncDiff, DiffParams, DiffType},
 	error::{Error, Result},
@@ -55,9 +58,11 @@ pub use crate::{
 	status::{AsyncStatus, StatusParams},
 	sync::{
 		diff::{DiffLine, DiffLineType, FileDiff},
+		remotes::push::PushType,
 		status::{StatusItem, StatusItemType},
 	},
 	tags::AsyncTags,
+	treefiles::AsyncTreeFilesJob,
 };
 pub use git2::message_prettify;
 use std::{
@@ -66,7 +71,7 @@ use std::{
 };
 
 /// this type is used to communicate events back through the channel
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum AsyncGitNotification {
 	/// this indicates that no new state was fetched but that a async process finished
 	FinishUnchanged,
@@ -76,6 +81,8 @@ pub enum AsyncGitNotification {
 	Diff,
 	///
 	Log,
+	///
+	FileLog,
 	///
 	CommitFiles,
 	///
@@ -92,6 +99,10 @@ pub enum AsyncGitNotification {
 	RemoteTags,
 	///
 	Fetch,
+	///
+	Branches,
+	///
+	TreeFiles,
 }
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait

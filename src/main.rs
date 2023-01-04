@@ -14,7 +14,14 @@
 #![deny(clippy::match_like_matches_macro)]
 #![deny(clippy::needless_update)]
 #![allow(clippy::module_name_repetitions)]
-#![allow(clippy::multiple_crate_versions)]
+#![allow(
+	clippy::multiple_crate_versions,
+	clippy::bool_to_int_with_if,
+	clippy::module_name_repetitions
+)]
+// high number of false positives on nightly (as of Oct 2022 with 1.66.0-nightly)
+#![allow(clippy::missing_const_for_fn)]
+
 //TODO:
 // #![deny(clippy::expect_used)]
 
@@ -27,6 +34,8 @@ mod components;
 mod input;
 mod keys;
 mod notify_mutex;
+mod options;
+mod popup_stack;
 mod profiler;
 mod queue;
 mod spinner;
@@ -35,10 +44,15 @@ mod strings;
 mod tabs;
 mod ui;
 mod version;
+mod watcher;
 
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
-use asyncgit::{sync::RepoPath, AsyncGitNotification};
+use app::QuitState;
+use asyncgit::{
+	sync::{utils::repo_work_dir, RepoPath},
+	AsyncGitNotification,
+};
 use backtrace::Backtrace;
 use crossbeam_channel::{tick, unbounded, Receiver, Select};
 use crossterm::{
@@ -65,32 +79,32 @@ use tui::{
 	Terminal,
 };
 use ui::style::Theme;
+use watcher::RepoWatcher;
 
-static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
 
 ///
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum QueueEvent {
-	Tick,
+	Notify,
 	SpinnerUpdate,
 	AsyncEvent(AsyncNotification),
 	InputEvent(InputEvent),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SyntaxHighlightProgress {
 	Progress,
 	Done,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AsyncAppNotification {
 	///
 	SyntaxHighlighting(SyntaxHighlightProgress),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AsyncNotification {
 	///
 	App(AsyncAppNotification),
@@ -99,6 +113,8 @@ pub enum AsyncNotification {
 }
 
 fn main() -> Result<()> {
+	let app_start = Instant::now();
+
 	let cliargs = process_cmdline()?;
 
 	let _profiler = Profiler::new();
@@ -106,15 +122,14 @@ fn main() -> Result<()> {
 	asyncgit::register_tracing_logging();
 
 	if !valid_path(&cliargs.repo_path) {
-		eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
-		return Ok(());
+		bail!("invalid path\nplease run gitui inside of a non-bare git repository");
 	}
 
 	let key_config = KeyConfig::init()
-		.map_err(|e| eprintln!("KeyConfig loading error: {}", e))
+		.map_err(|e| eprintln!("KeyConfig loading error: {e}"))
 		.unwrap_or_default();
-	let theme = Theme::init(cliargs.theme)
-		.map_err(|e| eprintln!("Theme loading error: {}", e))
+	let theme = Theme::init(&cliargs.theme)
+		.map_err(|e| eprintln!("Theme loading error: {e}"))
 		.unwrap_or_default();
 
 	setup_terminal()?;
@@ -125,46 +140,83 @@ fn main() -> Result<()> {
 	set_panic_handlers()?;
 
 	let mut terminal = start_terminal(io::stdout())?;
+	let mut repo_path = cliargs.repo_path;
+	let input = Input::new();
 
+	loop {
+		let quit_state = run_app(
+			app_start,
+			repo_path.clone(),
+			theme,
+			key_config.clone(),
+			&input,
+			cliargs.poll_watcher,
+			&mut terminal,
+		)?;
+
+		match quit_state {
+			QuitState::OpenSubmodule(p) => {
+				repo_path = p;
+			}
+			_ => break,
+		}
+	}
+
+	Ok(())
+}
+
+fn run_app(
+	app_start: Instant,
+	repo: RepoPath,
+	theme: Theme,
+	key_config: KeyConfig,
+	input: &Input,
+	poll_watcher: bool,
+	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
 
-	let input = Input::new();
-
 	let rx_input = input.receiver();
-	let ticker = tick(TICK_INTERVAL);
+	let watcher = RepoWatcher::new(
+		repo_work_dir(&repo)?.as_str(),
+		poll_watcher,
+	);
+	let rx_watcher = watcher.receiver();
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
 	let mut app = App::new(
-		RefCell::new(cliargs.repo_path),
+		RefCell::new(repo),
 		&tx_git,
 		&tx_app,
-		input,
+		input.clone(),
 		theme,
 		key_config,
-	);
+	)?;
 
 	let mut spinner = Spinner::default();
 	let mut first_update = true;
 
+	log::trace!("app start: {} ms", app_start.elapsed().as_millis());
+
 	loop {
 		let event = if first_update {
 			first_update = false;
-			QueueEvent::Tick
+			QueueEvent::Notify
 		} else {
 			select_event(
 				&rx_input,
 				&rx_git,
 				&rx_app,
-				&ticker,
+				&rx_watcher,
 				&spinner_ticker,
 			)?
 		};
 
 		{
-			if let QueueEvent::SpinnerUpdate = event {
+			if matches!(event, QueueEvent::SpinnerUpdate) {
 				spinner.update();
-				spinner.draw(&mut terminal)?;
+				spinner.draw(terminal)?;
 				continue;
 			}
 
@@ -172,14 +224,16 @@ fn main() -> Result<()> {
 
 			match event {
 				QueueEvent::InputEvent(ev) => {
-					if let InputEvent::State(InputState::Polling) = ev
-					{
+					if matches!(
+						ev,
+						InputEvent::State(InputState::Polling)
+					) {
 						//Note: external ed closed, we need to re-hide cursor
 						terminal.hide_cursor()?;
 					}
 					app.event(ev)?;
 				}
-				QueueEvent::Tick => app.update()?,
+				QueueEvent::Notify => app.update()?,
 				QueueEvent::AsyncEvent(ev) => {
 					if !matches!(
 						ev,
@@ -193,10 +247,10 @@ fn main() -> Result<()> {
 				QueueEvent::SpinnerUpdate => unreachable!(),
 			}
 
-			draw(&mut terminal, &app)?;
+			draw(terminal, &app)?;
 
 			spinner.set_state(app.any_work_pending());
-			spinner.draw(&mut terminal)?;
+			spinner.draw(terminal)?;
 
 			if app.is_quit() {
 				break;
@@ -204,7 +258,7 @@ fn main() -> Result<()> {
 		}
 	}
 
-	Ok(())
+	Ok(app.quit_state())
 }
 
 fn setup_terminal() -> Result<()> {
@@ -218,13 +272,13 @@ fn shutdown_terminal() {
 		io::stdout().execute(LeaveAlternateScreen).map(|_f| ());
 
 	if let Err(e) = leave_screen {
-		eprintln!("leave_screen failed:\n{}", e);
+		eprintln!("leave_screen failed:\n{e}");
 	}
 
 	let leave_raw_mode = disable_raw_mode();
 
 	if let Err(e) = leave_raw_mode {
-		eprintln!("leave_raw_mode failed:\n{}", e);
+		eprintln!("leave_raw_mode failed:\n{e}");
 	}
 }
 
@@ -253,7 +307,7 @@ fn select_event(
 	rx_input: &Receiver<InputEvent>,
 	rx_git: &Receiver<AsyncGitNotification>,
 	rx_app: &Receiver<AsyncAppNotification>,
-	rx_ticker: &Receiver<Instant>,
+	rx_notify: &Receiver<()>,
 	rx_spinner: &Receiver<Instant>,
 ) -> Result<QueueEvent> {
 	let mut sel = Select::new();
@@ -261,7 +315,7 @@ fn select_event(
 	sel.recv(rx_input);
 	sel.recv(rx_git);
 	sel.recv(rx_app);
-	sel.recv(rx_ticker);
+	sel.recv(rx_notify);
 	sel.recv(rx_spinner);
 
 	let oper = sel.select();
@@ -275,7 +329,7 @@ fn select_event(
 		2 => oper.recv(rx_app).map(|e| {
 			QueueEvent::AsyncEvent(AsyncNotification::App(e))
 		}),
-		3 => oper.recv(rx_ticker).map(|_| QueueEvent::Tick),
+		3 => oper.recv(rx_notify).map(|_| QueueEvent::Notify),
 		4 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
 		_ => bail!("unknown select source"),
 	}?;
@@ -294,13 +348,19 @@ fn start_terminal<W: Write>(
 	Ok(terminal)
 }
 
+// do log::error! and eprintln! in one line, pass sting, error and backtrace
+macro_rules! log_eprintln {
+	($string:expr, $e:expr, $bt:expr) => {
+		log::error!($string, $e, $bt);
+		eprintln!($string, $e, $bt);
+	};
+}
+
 fn set_panic_handlers() -> Result<()> {
 	// regular panic handler
 	panic::set_hook(Box::new(|e| {
 		let backtrace = Backtrace::new();
-		//TODO: create macro to do both in one
-		log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
-		eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+		log_eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
 		shutdown_terminal();
 	}));
 
@@ -308,9 +368,7 @@ fn set_panic_handlers() -> Result<()> {
 	rayon_core::ThreadPoolBuilder::new()
 		.panic_handler(|e| {
 			let backtrace = Backtrace::new();
-			//TODO: create macro to do both in one
-			log::error!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
-			eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
+			log_eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
 			shutdown_terminal();
 			process::abort();
 		})

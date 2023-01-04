@@ -12,6 +12,7 @@ mod diff;
 mod externaleditor;
 mod fetch;
 mod file_find_popup;
+mod file_revlog;
 mod help;
 mod inspect_commit;
 mod msg;
@@ -25,6 +26,7 @@ mod revision_files;
 mod revision_files_popup;
 mod stashmsg;
 mod status_tree;
+mod submodules;
 mod syntax_text;
 mod tag_commit;
 mod taglist;
@@ -32,7 +34,7 @@ mod textinput;
 mod utils;
 
 pub use self::status_tree::StatusTreeComponent;
-pub use blame_file::BlameFileComponent;
+pub use blame_file::{BlameFileComponent, BlameFileOpen};
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
@@ -45,20 +47,20 @@ pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
 pub use fetch::FetchComponent;
 pub use file_find_popup::FileFindPopup;
+pub use file_revlog::{FileRevOpen, FileRevlogComponent};
 pub use help::HelpComponent;
-pub use inspect_commit::InspectCommitComponent;
+pub use inspect_commit::{InspectCommitComponent, InspectCommitOpen};
 pub use msg::MsgComponent;
-pub use options_popup::{
-	AppOption, OptionsPopupComponent, SharedOptions,
-};
+pub use options_popup::{AppOption, OptionsPopupComponent};
 pub use pull::PullComponent;
 pub use push::PushComponent;
 pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ConfirmComponent;
 pub use revision_files::RevisionFilesComponent;
-pub use revision_files_popup::RevisionFilesPopup;
+pub use revision_files_popup::{FileTreeOpen, RevisionFilesPopup};
 pub use stashmsg::StashMsgComponent;
+pub use submodules::SubmodulesListComponent;
 pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;
 pub use taglist::TagListComponent;
@@ -137,14 +139,14 @@ macro_rules! draw_popups {
 #[macro_export]
 macro_rules! setup_popups {
     ($self:ident, [$($element:ident),+]) => {
-        crate::any_popup_visible!($self, [$($element),+]);
-        crate::draw_popups!($self, [ $($element),+ ]);
+        $crate::any_popup_visible!($self, [$($element),+]);
+        $crate::draw_popups!($self, [ $($element),+ ]);
     };
 }
 
 /// returns `true` if event was consumed
 pub fn event_pump(
-	ev: Event,
+	ev: &Event,
 	components: &mut [&mut dyn Component],
 ) -> Result<EventState> {
 	for c in components {
@@ -190,7 +192,7 @@ pub enum Direction {
 }
 
 ///
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum CommandBlocking {
 	Blocking,
 	PassingOn,
@@ -218,7 +220,7 @@ pub trait DrawableComponent {
 }
 
 ///
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum EventState {
 	Consumed,
 	NotConsumed,
@@ -250,7 +252,7 @@ pub trait Component {
 	) -> CommandBlocking;
 
 	///
-	fn event(&mut self, ev: Event) -> Result<EventState>;
+	fn event(&mut self, ev: &Event) -> Result<EventState>;
 
 	///
 	fn focused(&self) -> bool {

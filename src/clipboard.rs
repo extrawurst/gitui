@@ -1,16 +1,23 @@
 use anyhow::{anyhow, Result};
-#[cfg(target_family = "unix")]
-#[cfg(not(target_os = "macos"))]
-use std::ffi::OsStr;
 use std::io::Write;
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use which::which;
 
-fn execute_copy_command(command: Command, text: &str) -> Result<()> {
-	let mut command = command;
+fn exec_copy_with_args(
+	command: &str,
+	args: &[&str],
+	text: &str,
+) -> Result<()> {
+	let binary = which(command)
+		.ok()
+		.unwrap_or_else(|| PathBuf::from(command));
 
-	let mut process = command
+	let mut process = Command::new(binary)
+		.args(args)
 		.stdin(Stdio::piped())
 		.stdout(Stdio::null())
+		.stderr(Stdio::piped())
 		.spawn()
 		.map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
 
@@ -21,54 +28,51 @@ fn execute_copy_command(command: Command, text: &str) -> Result<()> {
 		.write_all(text.as_bytes())
 		.map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
 
-	process
-		.wait()
+	let out = process
+		.wait_with_output()
 		.map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
+
+	if out.status.success() {
+		Ok(())
+	} else {
+		let msg = if out.stderr.is_empty() {
+			format!("{}", out.status).into()
+		} else {
+			String::from_utf8_lossy(&out.stderr)
+		};
+		Err(anyhow!("`{command:?}`: {msg}"))
+	}
+}
+
+fn exec_copy(command: &str, text: &str) -> Result<()> {
+	exec_copy_with_args(command, &[], text)
+}
+
+#[cfg(all(target_family = "unix", not(target_os = "macos")))]
+pub fn copy_string(text: &str) -> Result<()> {
+	if std::env::var("WAYLAND_DISPLAY").is_ok() {
+		return exec_copy("wl-copy", text);
+	}
+
+	if exec_copy_with_args(
+		"xclip",
+		&["-selection", "clipboard"],
+		text,
+	)
+	.is_err()
+	{
+		return exec_copy_with_args("xsel", &["--clipboard"], text);
+	}
 
 	Ok(())
 }
 
-#[cfg(all(target_family = "unix", not(target_os = "macos")))]
-fn gen_command(
-	path: impl AsRef<OsStr>,
-	xclip_syntax: bool,
-) -> Command {
-	let mut c = Command::new(path);
-	if xclip_syntax {
-		c.arg("-selection");
-		c.arg("clipboard");
-	} else {
-		c.arg("--clipboard");
-	}
-	c
-}
-
-#[cfg(all(target_family = "unix", not(target_os = "macos")))]
-pub fn copy_string(string: &str) -> Result<()> {
-	use std::path::PathBuf;
-	use which::which;
-	let (path, xclip_syntax) = which("xclip").ok().map_or_else(
-		|| {
-			(
-				which("xsel")
-					.ok()
-					.unwrap_or_else(|| PathBuf::from("xsel")),
-				false,
-			)
-		},
-		|path| (path, true),
-	);
-
-	let cmd = gen_command(path, xclip_syntax);
-	execute_copy_command(cmd, string)
-}
-
 #[cfg(target_os = "macos")]
-pub fn copy_string(string: &str) -> Result<()> {
-	execute_copy_command(Command::new("pbcopy"), string)
+pub fn copy_string(text: &str) -> Result<()> {
+	exec_copy("pbcopy", text)
 }
 
 #[cfg(windows)]
-pub fn copy_string(string: &str) -> Result<()> {
-	execute_copy_command(Command::new("clip"), string)
+pub fn copy_string(text: &str) -> Result<()> {
+	exec_copy("clip", text)
 }

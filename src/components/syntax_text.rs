@@ -132,8 +132,7 @@ impl SyntaxTextComponent {
 					self.current_file = Some((
 						path,
 						Either::Right(format!(
-							"error loading file: {}",
-							e
+							"error loading file: {e}"
 						)),
 					));
 				}
@@ -267,7 +266,7 @@ impl Component for SyntaxTextComponent {
 
 	fn event(
 		&mut self,
-		event: crossterm::event::Event,
+		event: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if let Event::Key(key) = event {
 			if let Some(nav) = common_nav(key, &self.key_config) {

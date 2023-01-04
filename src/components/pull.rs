@@ -118,7 +118,7 @@ impl PullComponent {
 				self.pending = false;
 				self.hide();
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("fetch failed:\n{}", error),
+					format!("fetch failed:\n{error}"),
 				));
 			}
 		}
@@ -263,7 +263,7 @@ impl Component for PullComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(_) = ev {
 				if self.input_cred.is_visible() {

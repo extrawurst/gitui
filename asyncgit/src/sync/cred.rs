@@ -4,10 +4,10 @@ use super::{
 	remotes::get_default_remote_in_repo, repository::repo, RepoPath,
 };
 use crate::error::{Error, Result};
-use git2::{Config, CredentialHelper};
+use git2::CredentialHelper;
 
 /// basic Authentication Credentials
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct BasicAuthCredential {
 	///
 	pub username: Option<String>,
@@ -32,9 +32,11 @@ impl BasicAuthCredential {
 /// know if username and password are needed for this url
 pub fn need_username_password(repo_path: &RepoPath) -> Result<bool> {
 	let repo = repo(repo_path)?;
-	let url = repo
-		.find_remote(&get_default_remote_in_repo(&repo)?)?
-		.url()
+	let remote =
+		repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
+	let url = remote
+		.pushurl()
+		.or_else(|| remote.url())
 		.ok_or(Error::UnknownRemote)?
 		.to_owned();
 	let is_http = url.starts_with("http");
@@ -53,9 +55,14 @@ pub fn extract_username_password(
 		.to_owned();
 	let mut helper = CredentialHelper::new(&url);
 
-	if let Ok(config) = Config::open_default() {
+	//TODO: look at Cred::credential_helper,
+	//if the username is in the url we need to set it here,
+	//I dont think `config` will pick it up
+
+	if let Ok(config) = repo.config() {
 		helper.config(&config);
 	}
+
 	Ok(match helper.execute() {
 		Some((username, password)) => {
 			BasicAuthCredential::new(Some(username), Some(password))
@@ -66,18 +73,19 @@ pub fn extract_username_password(
 
 /// extract credentials from url
 pub fn extract_cred_from_url(url: &str) -> BasicAuthCredential {
-	if let Ok(url) = url::Url::parse(url) {
-		BasicAuthCredential::new(
-			if url.username() == "" {
-				None
-			} else {
-				Some(url.username().to_owned())
-			},
-			url.password().map(std::borrow::ToOwned::to_owned),
-		)
-	} else {
-		BasicAuthCredential::new(None, None)
-	}
+	url::Url::parse(url).map_or_else(
+		|_| BasicAuthCredential::new(None, None),
+		|url| {
+			BasicAuthCredential::new(
+				if url.username() == "" {
+					None
+				} else {
+					Some(url.username().to_owned())
+				},
+				url.password().map(std::borrow::ToOwned::to_owned),
+			)
+		},
+	)
 }
 
 #[cfg(test)]
@@ -164,8 +172,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
 			.unwrap();
 
@@ -180,10 +186,27 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "git@github.com:user/repo")
 			.unwrap();
+
+		assert_eq!(need_username_password(repo_path).unwrap(), false);
+	}
+
+	#[test]
+	#[serial]
+	fn test_dont_need_username_password_if_pushurl_ssh() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
+			.unwrap();
+		repo.remote_set_pushurl(
+			DEFAULT_REMOTE_NAME,
+			Some("git@github.com:user/repo"),
+		)
+		.unwrap();
 
 		assert_eq!(need_username_password(repo_path).unwrap(), false);
 	}
@@ -198,9 +221,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
-
 		need_username_password(repo_path).unwrap();
 	}
 
@@ -212,8 +232,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(
 			DEFAULT_REMOTE_NAME,
 			"http://user:pass@github.com",
@@ -237,8 +255,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		//TODO:
-		// env::set_current_dir(repo_path).unwrap();
 		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
 			.unwrap();
 
@@ -257,9 +273,6 @@ mod tests {
 		let root = repo.path().parent().unwrap();
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
-
-		//TODO: not needed anymore?
-		// env::set_current_dir(repo_path).unwrap();
 
 		extract_username_password(repo_path).unwrap();
 	}

@@ -54,6 +54,11 @@ impl FileTree {
 	}
 
 	///
+	pub const fn selection(&self) -> Option<usize> {
+		self.selection
+	}
+
+	///
 	pub fn collapse_but_root(&mut self) {
 		if !self.is_empty() {
 			self.items.collapse(0, true);

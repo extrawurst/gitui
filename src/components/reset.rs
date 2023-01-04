@@ -3,7 +3,7 @@ use crate::{
 		popup_paragraph, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, Queue},
 	strings, ui,
 };
@@ -70,12 +70,12 @@ impl Component for ConfirmComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
-				if e == self.key_config.keys.exit_popup {
+				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide();
-				} else if e == self.key_config.keys.enter {
+				} else if key_match(e, self.key_config.keys.enter) {
 					self.confirm();
 				}
 
@@ -184,6 +184,10 @@ impl ConfirmComponent {
                         tag_name,
                     ),
                 ),
+				Action::DeleteRemoteTag(_tag_name,remote) => (
+                    strings::confirm_title_delete_tag_remote(),
+                    strings::confirm_msg_delete_tag_remote(remote),
+                ),
                 Action::ForcePush(branch, _force) => (
                     strings::confirm_title_force_push(
                         &self.key_config,
@@ -199,11 +203,15 @@ impl ConfirmComponent {
                 ),
                 Action::AbortMerge => (
                     strings::confirm_title_abortmerge(),
-                    strings::confirm_msg_abortmerge(),
+                    strings::confirm_msg_revertchanges(),
                 ),
 				Action::AbortRebase => (
                     strings::confirm_title_abortrebase(),
                     strings::confirm_msg_abortrebase(),
+                ),
+				Action::AbortRevert => (
+                    strings::confirm_title_abortrevert(),
+                    strings::confirm_msg_revertchanges(),
                 ),
             };
 		}

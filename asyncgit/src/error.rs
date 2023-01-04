@@ -1,6 +1,9 @@
 #![allow(renamed_and_removed_lints, clippy::unknown_clippy_lints)]
 
-use std::{num::TryFromIntError, string::FromUtf8Error};
+use std::{
+	num::TryFromIntError, path::StripPrefixError,
+	string::FromUtf8Error,
+};
 use thiserror::Error;
 
 ///
@@ -51,6 +54,10 @@ pub enum Error {
 	Git(#[from] git2::Error),
 
 	///
+	#[error("strip prefix error: {0}")]
+	StripPrefix(#[from] StripPrefixError),
+
+	///
 	#[error("utf8 error:{0}")]
 	Utf8Conversion(#[from] FromUtf8Error),
 
@@ -61,6 +68,14 @@ pub enum Error {
 	///
 	#[error("EasyCast error:{0}")]
 	EasyCast(#[from] easy_cast::Error),
+
+	///
+	#[error("shellexpand error:{0}")]
+	Shell(#[from] shellexpand::LookupError<std::env::VarError>),
+
+	///
+	#[error("path string error")]
+	PathString,
 }
 
 ///
@@ -68,12 +83,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
 	fn from(error: std::sync::PoisonError<T>) -> Self {
-		Self::Generic(format!("poison error: {}", error))
+		Self::Generic(format!("poison error: {error}"))
 	}
 }
 
 impl<T> From<crossbeam_channel::SendError<T>> for Error {
 	fn from(error: crossbeam_channel::SendError<T>) -> Self {
-		Self::Generic(format!("send error: {}", error))
+		Self::Generic(format!("send error: {error}"))
 	}
 }

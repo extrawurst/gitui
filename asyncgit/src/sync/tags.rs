@@ -1,10 +1,37 @@
 use super::{get_commits_info, CommitId, RepoPath};
-use crate::{error::Result, sync::repository::repo};
+use crate::{
+	error::Result,
+	sync::{repository::repo, utils::bytes2string},
+};
 use scopetime::scope_time;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::{
+	collections::{BTreeMap, HashMap, HashSet},
+	ops::Not,
+};
+
+///
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub struct Tag {
+	/// tag name
+	pub name: String,
+	/// tag annotation
+	pub annotation: Option<String>,
+}
+
+impl Tag {
+	///
+	#[allow(clippy::missing_const_for_fn)]
+	// clippy doesn't realise allocating a String is not const
+	pub fn new(name: &str) -> Self {
+		Self {
+			name: name.into(),
+			annotation: None,
+		}
+	}
+}
 
 /// all tags pointing to a single commit
-pub type CommitTags = Vec<String>;
+pub type CommitTags = Vec<Tag>;
 /// hashmap of tag target commit hash to tag names
 pub type Tags = BTreeMap<CommitId, CommitTags>;
 
@@ -20,6 +47,8 @@ pub struct TagWithMetadata {
 	pub message: String,
 	///
 	pub commit_id: CommitId,
+	///
+	pub annotation: Option<String>,
 }
 
 static MAX_MESSAGE_WIDTH: usize = 100;
@@ -29,7 +58,7 @@ pub fn get_tags(repo_path: &RepoPath) -> Result<Tags> {
 	scope_time!("get_tags");
 
 	let mut res = Tags::new();
-	let mut adder = |key, value: String| {
+	let mut adder = |key, value: Tag| {
 		if let Some(key) = res.get_mut(&key) {
 			key.push(value);
 		} else {
@@ -44,17 +73,39 @@ pub fn get_tags(repo_path: &RepoPath) -> Result<Tags> {
 			// skip the `refs/tags/` part
 			String::from_utf8(name[10..name.len()].into())
 		{
-			//NOTE: find_tag (git_tag_lookup) only works on annotated tags
-			// lightweight tags `id` already points to the target commit
+			//NOTE: find_tag (using underlying git_tag_lookup) only
+			// works on annotated tags lightweight tags `id` already
+			// points to the target commit
 			// see https://github.com/libgit2/libgit2/issues/5586
-			if let Ok(commit) = repo
+			let commit = repo
 				.find_tag(id)
 				.and_then(|tag| tag.target())
 				.and_then(|target| target.peel_to_commit())
-			{
-				adder(CommitId::new(commit.id()), name);
-			} else if repo.find_commit(id).is_ok() {
-				adder(CommitId::new(id), name);
+				.map_or_else(
+					|_| {
+						if repo.find_commit(id).is_ok() {
+							Some(CommitId::new(id))
+						} else {
+							None
+						}
+					},
+					|commit| Some(CommitId::new(commit.id())),
+				);
+
+			let annotation = repo
+				.find_tag(id)
+				.ok()
+				.as_ref()
+				.and_then(git2::Tag::message_bytes)
+				.and_then(|msg| {
+					msg.is_empty()
+						.not()
+						.then(|| bytes2string(msg).ok())
+						.flatten()
+				});
+
+			if let Some(commit) = commit {
+				adder(commit, Tag { name, annotation });
 			}
 
 			return true;
@@ -73,20 +124,26 @@ pub fn get_tags_with_metadata(
 
 	let tags_grouped_by_commit_id = get_tags(repo_path)?;
 
-	let tags_with_commit_id: Vec<(&str, &CommitId)> =
+	let tags_with_commit_id: Vec<(&str, Option<&str>, &CommitId)> =
 		tags_grouped_by_commit_id
 			.iter()
 			.flat_map(|(commit_id, tags)| {
 				tags.iter()
-					.map(|tag| (tag.as_ref(), commit_id))
-					.collect::<Vec<(&str, &CommitId)>>()
+					.map(|tag| {
+						(
+							tag.name.as_ref(),
+							tag.annotation.as_deref(),
+							commit_id,
+						)
+					})
+					.collect::<Vec<_>>()
 			})
 			.collect();
 
 	let unique_commit_ids: HashSet<_> = tags_with_commit_id
 		.iter()
 		.copied()
-		.map(|(_, &commit_id)| commit_id)
+		.map(|(_, _, &commit_id)| commit_id)
 		.collect();
 	let mut commit_ids = Vec::with_capacity(unique_commit_ids.len());
 	commit_ids.extend(unique_commit_ids);
@@ -100,7 +157,7 @@ pub fn get_tags_with_metadata(
 
 	let mut tags: Vec<TagWithMetadata> = tags_with_commit_id
 		.into_iter()
-		.filter_map(|(tag, commit_id)| {
+		.filter_map(|(tag, annotation, commit_id)| {
 			unique_commit_infos.get(commit_id).map(|commit_info| {
 				TagWithMetadata {
 					name: String::from(tag),
@@ -108,6 +165,7 @@ pub fn get_tags_with_metadata(
 					time: commit_info.time,
 					message: commit_info.message.clone(),
 					commit_id: *commit_id,
+					annotation: annotation.map(String::from),
 				}
 			})
 		})
@@ -167,7 +225,10 @@ mod tests {
 		repo.tag("b", &target, &sig, "", false).unwrap();
 
 		assert_eq!(
-			get_tags(repo_path).unwrap()[&CommitId::new(head_id)],
+			get_tags(repo_path).unwrap()[&CommitId::new(head_id)]
+				.iter()
+				.map(|t| &t.name)
+				.collect::<Vec<_>>(),
 			vec!["a", "b"]
 		);
 

@@ -11,7 +11,7 @@ use std::{
 };
 
 /// `tree_files` returns a list of `FileTree`
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TreeFile {
 	/// path of this file
 	pub path: PathBuf,
@@ -42,14 +42,14 @@ pub fn tree_files(
 	Ok(files)
 }
 
-fn sort_file_list(files: &mut Vec<TreeFile>) {
+fn sort_file_list(files: &mut [TreeFile]) {
 	files.sort_by(|a, b| path_cmp(&a.path, &b.path));
 }
 
 // applies topologically order on paths sorting
 fn path_cmp(a: &Path, b: &Path) -> Ordering {
-	let mut comp_a = a.components().into_iter().peekable();
-	let mut comp_b = b.components().into_iter().peekable();
+	let mut comp_a = a.components().peekable();
+	let mut comp_b = b.components().peekable();
 
 	loop {
 		let a = comp_a.next();
@@ -163,7 +163,7 @@ mod tests {
 				filemode: 0,
 				id: Oid::zero(),
 			})
-			.collect();
+			.collect::<Vec<_>>();
 
 		sort_file_list(&mut list);
 
@@ -188,7 +188,7 @@ mod tests {
 				filemode: 0,
 				id: Oid::zero(),
 			})
-			.collect();
+			.collect::<Vec<_>>();
 
 		sort_file_list(&mut list);
 
@@ -212,7 +212,7 @@ mod tests {
 				filemode: 0,
 				id: Oid::zero(),
 			})
-			.collect();
+			.collect::<Vec<_>>();
 
 		sort_file_list(&mut list);
 

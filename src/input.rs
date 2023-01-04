@@ -21,13 +21,14 @@ pub enum InputState {
 }
 
 ///
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum InputEvent {
 	Input(Event),
 	State(InputState),
 }
 
 ///
+#[derive(Clone)]
 pub struct Input {
 	desired_state: Arc<NotifyableMutex<bool>>,
 	current_state: Arc<AtomicBool>,

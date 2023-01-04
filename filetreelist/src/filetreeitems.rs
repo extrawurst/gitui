@@ -145,6 +145,8 @@ impl FileTreeItems {
 				let item_path =
 					Path::new(item.info().full_path_str());
 
+				//TODO: fix once FP in clippy is fixed
+				#[allow(clippy::needless_borrow)]
 				if item_path.starts_with(&path) {
 					item.hide();
 				} else {
@@ -368,7 +370,7 @@ impl FileTreeItems {
 	}
 
 	fn unindent(
-		items: &mut Vec<FileTreeItem>,
+		items: &mut [FileTreeItem],
 		prefix: &str,
 		start: usize,
 	) {

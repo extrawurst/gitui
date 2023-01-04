@@ -36,6 +36,7 @@ where
 		}
 	}
 
+	#[allow(clippy::missing_const_for_fn)]
 	fn block(mut self, block: Block<'b>) -> Self {
 		self.block = Some(block);
 		self

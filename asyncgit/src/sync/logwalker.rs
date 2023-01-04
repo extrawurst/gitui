@@ -1,5 +1,6 @@
 use super::CommitId;
-use crate::error::Result;
+use crate::sync::RepoPath;
+use crate::{error::Result, sync::commit_files::get_commit_diff};
 use git2::{Commit, Oid, Repository};
 use std::{
 	cmp::Ordering,
@@ -35,6 +36,30 @@ pub type LogWalkerFilter = Arc<
 >;
 
 ///
+pub fn diff_contains_file(
+	repo_path: RepoPath,
+	file_path: String,
+) -> LogWalkerFilter {
+	Arc::new(Box::new(
+		move |repo: &Repository,
+		      commit_id: &CommitId|
+		      -> Result<bool> {
+			let diff = get_commit_diff(
+				&repo_path,
+				repo,
+				*commit_id,
+				Some(file_path.clone()),
+				None,
+			)?;
+
+			let contains_file = diff.deltas().len() > 0;
+
+			Ok(contains_file)
+		},
+	))
+}
+
+///
 pub struct LogWalker<'a> {
 	commits: BinaryHeap<TimeOrderedCommit<'a>>,
 	visited: HashSet<Oid>,
@@ -61,6 +86,7 @@ impl<'a> LogWalker<'a> {
 	}
 
 	///
+	#[must_use]
 	pub fn filter(self, filter: Option<LogWalkerFilter>) -> Self {
 		Self { filter, ..self }
 	}
@@ -110,8 +136,8 @@ mod tests {
 	use crate::error::Result;
 	use crate::sync::RepoPath;
 	use crate::sync::{
-		commit, commit_files::get_commit_diff, get_commits_info,
-		stage_add_file, tests::repo_init_empty,
+		commit, get_commits_info, stage_add_file,
+		tests::repo_init_empty,
 	};
 	use pretty_assertions::assert_eq;
 	use std::{fs::File, io::Write, path::Path};
@@ -124,10 +150,10 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		commit(repo_path, "commit1").unwrap();
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
@@ -136,7 +162,7 @@ mod tests {
 		walk.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 1);
-		assert_eq!(items[0], oid2.into());
+		assert_eq!(items[0], oid2);
 
 		Ok(())
 	}
@@ -149,10 +175,10 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		commit(repo_path, "commit1").unwrap();
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
@@ -164,7 +190,7 @@ mod tests {
 		dbg!(&info);
 
 		assert_eq!(items.len(), 2);
-		assert_eq!(items[0], oid2.into());
+		assert_eq!(items[0], oid2);
 
 		let mut items = Vec::new();
 		walk.read(&mut items).unwrap();
@@ -183,70 +209,44 @@ mod tests {
 		let repo_path: RepoPath =
 			root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(&repo_path, file_path).unwrap();
 
 		let _first_commit_id = commit(&repo_path, "commit1").unwrap();
 
-		File::create(&root.join(second_file_path))?
-			.write_all(b"a")?;
+		File::create(root.join(second_file_path))?.write_all(b"a")?;
 		stage_add_file(&repo_path, second_file_path).unwrap();
 
 		let second_commit_id = commit(&repo_path, "commit2").unwrap();
 
-		File::create(&root.join(file_path))?.write_all(b"b")?;
+		File::create(root.join(file_path))?.write_all(b"b")?;
 		stage_add_file(&repo_path, file_path).unwrap();
 
 		let _third_commit_id = commit(&repo_path, "commit3").unwrap();
 
 		let repo_path_clone = repo_path.clone();
-		let diff_contains_baz = move |repo: &Repository,
-		                              commit_id: &CommitId|
-		      -> Result<bool> {
-			let diff = get_commit_diff(
-				&repo_path_clone,
-				&repo,
-				*commit_id,
-				Some("baz".into()),
-			)?;
-
-			let contains_file = diff.deltas().len() > 0;
-
-			Ok(contains_file)
-		};
+		let diff_contains_baz =
+			diff_contains_file(repo_path_clone, "baz".into());
 
 		let mut items = Vec::new();
 		let mut walker = LogWalker::new(&repo, 100)?
-			.filter(Some(Arc::new(Box::new(diff_contains_baz))));
+			.filter(Some(diff_contains_baz));
 		walker.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 1);
-		assert_eq!(items[0], second_commit_id.into());
+		assert_eq!(items[0], second_commit_id);
 
 		let mut items = Vec::new();
 		walker.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 0);
 
-		let repo_path_clone = repo_path.clone();
-		let diff_contains_bar = move |repo: &Repository,
-		                              commit_id: &CommitId|
-		      -> Result<bool> {
-			let diff = get_commit_diff(
-				&repo_path_clone,
-				&repo,
-				*commit_id,
-				Some("bar".into()),
-			)?;
-
-			let contains_file = diff.deltas().len() > 0;
-
-			Ok(contains_file)
-		};
+		let diff_contains_bar =
+			diff_contains_file(repo_path, "bar".into());
 
 		let mut items = Vec::new();
 		let mut walker = LogWalker::new(&repo, 100)?
-			.filter(Some(Arc::new(Box::new(diff_contains_bar))));
+			.filter(Some(diff_contains_bar));
 		walker.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 0);

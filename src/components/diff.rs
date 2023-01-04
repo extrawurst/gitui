@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	string_utils::tabs_to_spaces,
 	strings, try_or_popup,
@@ -198,7 +198,7 @@ impl DiffComponent {
 
 	fn move_selection(&mut self, move_type: ScrollType) {
 		if let Some(diff) = &self.diff {
-			let max = diff.lines.saturating_sub(1) as usize;
+			let max = diff.lines.saturating_sub(1);
 
 			let new_start = match move_type {
 				ScrollType::Down => {
@@ -229,7 +229,7 @@ impl DiffComponent {
 
 	fn update_selection(&mut self, new_start: usize) {
 		if let Some(diff) = &self.diff {
-			let max = diff.lines.saturating_sub(1) as usize;
+			let max = diff.lines.saturating_sub(1);
 			let new_start = cmp::min(max, new_start);
 			self.selection = Selection::Single(new_start);
 			self.selected_hunk =
@@ -304,7 +304,7 @@ impl DiffComponent {
 			if diff.hunks.is_empty() {
 				let is_positive = diff.size_delta >= 0;
 				let delta_byte_size =
-					ByteSize::b(diff.size_delta.abs() as u64);
+					ByteSize::b(diff.size_delta.unsigned_abs());
 				let sign = if is_positive { "+" } else { "-" };
 				res.extend(vec![Spans::from(vec![
 					Span::raw(Cow::from("size: ")),
@@ -326,8 +326,7 @@ impl DiffComponent {
 					Span::raw(Cow::from(" (")),
 					Span::styled(
 						Cow::from(format!(
-							"{}{:}",
-							sign, delta_byte_size
+							"{sign}{delta_byte_size:}"
 						)),
 						self.theme.diff_line(
 							if is_positive {
@@ -377,7 +376,7 @@ impl DiffComponent {
 											.selection
 											.contains(line_cursor),
 									hunk_selected,
-									i == hunk_len as usize - 1,
+									i == hunk_len - 1,
 									&self.theme,
 								));
 								lines_added += 1;
@@ -635,15 +634,15 @@ impl DrawableComponent for DiffComponent {
 				Block::default()
 					.title(Span::styled(
 						title.as_str(),
-						self.theme.title(self.focused),
+						self.theme.title(self.focused()),
 					))
 					.borders(Borders::ALL)
-					.border_style(self.theme.block(self.focused)),
+					.border_style(self.theme.block(self.focused())),
 			),
 			r,
 		);
 
-		if self.focused {
+		if self.focused() {
 			self.scroll.draw(f, r, &self.theme);
 		}
 
@@ -660,14 +659,14 @@ impl Component for DiffComponent {
 		out.push(CommandInfo::new(
 			strings::commands::scroll(&self.key_config),
 			self.can_scroll(),
-			self.focused,
+			self.focused(),
 		));
 
 		out.push(
 			CommandInfo::new(
 				strings::commands::diff_home_end(&self.key_config),
 				self.can_scroll(),
-				self.focused,
+				self.focused(),
 			)
 			.hidden(),
 		);
@@ -676,17 +675,17 @@ impl Component for DiffComponent {
 			out.push(CommandInfo::new(
 				strings::commands::diff_hunk_remove(&self.key_config),
 				self.selected_hunk.is_some(),
-				self.focused && self.is_stage(),
+				self.focused() && self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_hunk_add(&self.key_config),
 				self.selected_hunk.is_some(),
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_hunk_revert(&self.key_config),
 				self.selected_hunk.is_some(),
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_lines_revert(
@@ -694,13 +693,13 @@ impl Component for DiffComponent {
 				),
 				//TODO: only if any modifications are selected
 				true,
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_lines_stage(&self.key_config),
 				//TODO: only if any modifications are selected
 				true,
-				self.focused && !self.is_stage(),
+				self.focused() && !self.is_stage(),
 			));
 			out.push(CommandInfo::new(
 				strings::commands::diff_lines_unstage(
@@ -708,49 +707,57 @@ impl Component for DiffComponent {
 				),
 				//TODO: only if any modifications are selected
 				true,
-				self.focused && self.is_stage(),
+				self.focused() && self.is_stage(),
 			));
 		}
 
 		out.push(CommandInfo::new(
 			strings::commands::copy(&self.key_config),
 			true,
-			self.focused,
+			self.focused(),
 		));
 
 		CommandBlocking::PassingOn
 	}
 
 	#[allow(clippy::cognitive_complexity)]
-	fn event(&mut self, ev: Event) -> Result<EventState> {
-		if self.focused {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
+		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.keys.move_down {
+				return if key_match(e, self.key_config.keys.move_down)
+				{
 					self.move_selection(ScrollType::Down);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.shift_down {
+				} else if key_match(
+					e,
+					self.key_config.keys.shift_down,
+				) {
 					self.modify_selection(Direction::Down);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.shift_up {
+				} else if key_match(e, self.key_config.keys.shift_up)
+				{
 					self.modify_selection(Direction::Up);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.end {
+				} else if key_match(e, self.key_config.keys.end) {
 					self.move_selection(ScrollType::End);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.home {
+				} else if key_match(e, self.key_config.keys.home) {
 					self.move_selection(ScrollType::Home);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.move_up {
+				} else if key_match(e, self.key_config.keys.move_up) {
 					self.move_selection(ScrollType::Up);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.page_up {
+				} else if key_match(e, self.key_config.keys.page_up) {
 					self.move_selection(ScrollType::PageUp);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.page_down {
+				} else if key_match(e, self.key_config.keys.page_down)
+				{
 					self.move_selection(ScrollType::PageDown);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.stage_unstage_item
-					&& !self.is_immutable
+				} else if key_match(
+					e,
+					self.key_config.keys.stage_unstage_item,
+				) && !self.is_immutable
 				{
 					try_or_popup!(
 						self,
@@ -759,8 +766,10 @@ impl Component for DiffComponent {
 					);
 
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.status_reset_item
-					&& !self.is_immutable
+				} else if key_match(
+					e,
+					self.key_config.keys.status_reset_item,
+				) && !self.is_immutable
 					&& !self.is_stage()
 				{
 					if let Some(diff) = &self.diff {
@@ -771,13 +780,17 @@ impl Component for DiffComponent {
 						}
 					}
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.diff_stage_lines
-					&& !self.is_immutable
+				} else if key_match(
+					e,
+					self.key_config.keys.diff_stage_lines,
+				) && !self.is_immutable
 				{
 					self.stage_lines();
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.diff_reset_lines
-					&& !self.is_immutable
+				} else if key_match(
+					e,
+					self.key_config.keys.diff_reset_lines,
+				) && !self.is_immutable
 					&& !self.is_stage()
 				{
 					if let Some(diff) = &self.diff {
@@ -787,7 +800,7 @@ impl Component for DiffComponent {
 						}
 					}
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.copy {
+				} else if key_match(e, self.key_config.keys.copy) {
 					self.copy_selection();
 					Ok(EventState::Consumed)
 				} else {

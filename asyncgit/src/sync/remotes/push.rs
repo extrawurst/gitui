@@ -2,8 +2,11 @@ use crate::{
 	error::{Error, Result},
 	progress::ProgressPercent,
 	sync::{
-		branch::branch_set_upstream, cred::BasicAuthCredential,
-		remotes::Callbacks, repository::repo, CommitId, RepoPath,
+		branch::branch_set_upstream,
+		cred::BasicAuthCredential,
+		remotes::{proxy_auto, Callbacks},
+		repository::repo,
+		CommitId, RepoPath,
 	},
 };
 use crossbeam_channel::Sender;
@@ -19,7 +22,7 @@ pub trait AsyncProgress: Clone + Send + Sync {
 }
 
 ///
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProgressNotification {
 	///
 	UpdateTips {
@@ -88,11 +91,50 @@ impl AsyncProgress for ProgressNotification {
 	}
 }
 
-#[allow(clippy::redundant_pub_crate)]
-pub(crate) fn push(
+///
+#[derive(Copy, Clone, Debug)]
+pub enum PushType {
+	///
+	Branch,
+	///
+	Tag,
+}
+
+impl Default for PushType {
+	fn default() -> Self {
+		Self::Branch
+	}
+}
+
+#[cfg(test)]
+pub fn push_branch(
 	repo_path: &RepoPath,
 	remote: &str,
 	branch: &str,
+	force: bool,
+	delete: bool,
+	basic_credential: Option<BasicAuthCredential>,
+	progress_sender: Option<Sender<ProgressNotification>>,
+) -> Result<()> {
+	push_raw(
+		repo_path,
+		remote,
+		branch,
+		PushType::Branch,
+		force,
+		delete,
+		basic_credential,
+		progress_sender,
+	)
+}
+
+//TODO: clenaup
+#[allow(clippy::too_many_arguments)]
+pub fn push_raw(
+	repo_path: &RepoPath,
+	remote: &str,
+	branch: &str,
+	ref_type: PushType,
 	force: bool,
 	delete: bool,
 	basic_credential: Option<BasicAuthCredential>,
@@ -104,6 +146,7 @@ pub(crate) fn push(
 	let mut remote = repo.find_remote(remote)?;
 
 	let mut options = PushOptions::new();
+	options.proxy_options(proxy_auto());
 
 	let callbacks = Callbacks::new(progress_sender, basic_credential);
 	options.remote_callbacks(callbacks.callbacks());
@@ -115,16 +158,20 @@ pub(crate) fn push(
 		(true, false) => "+",
 		(false, false) => "",
 	};
+	let ref_type = match ref_type {
+		PushType::Branch => "heads",
+		PushType::Tag => "tags",
+	};
+
 	let branch_name =
-		format!("{}refs/heads/{}", branch_modifier, branch);
+		format!("{branch_modifier}refs/{ref_type}/{branch}");
 	remote.push(&[branch_name.as_str()], Some(&mut options))?;
 
 	if let Some((reference, msg)) =
 		callbacks.get_stats()?.push_rejected_msg
 	{
 		return Err(Error::Generic(format!(
-			"push to '{}' rejected: {}",
-			reference, msg
+			"push to '{reference}' rejected: {msg}"
 		)));
 	}
 
@@ -182,7 +229,7 @@ mod tests {
 		)
 		.unwrap();
 
-		push(
+		push_branch(
 			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
@@ -208,7 +255,7 @@ mod tests {
 		// Attempt a normal push,
 		// should fail as branches diverged
 		assert_eq!(
-			push(
+			push_branch(
 				&tmp_other_repo_dir.path().to_str().unwrap().into(),
 				"origin",
 				"master",
@@ -224,7 +271,7 @@ mod tests {
 		// Attempt force push,
 		// should work as it forces the push through
 		assert_eq!(
-			push(
+			push_branch(
 				&tmp_other_repo_dir.path().to_str().unwrap().into(),
 				"origin",
 				"master",
@@ -294,7 +341,7 @@ mod tests {
 		let commits = get_commit_ids(&repo, 1);
 		assert!(commits.contains(&repo_1_commit));
 
-		push(
+		push_branch(
 			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
@@ -337,7 +384,7 @@ mod tests {
 		// Attempt a normal push,
 		// should fail as branches diverged
 		assert_eq!(
-			push(
+			push_branch(
 				&tmp_other_repo_dir.path().to_str().unwrap().into(),
 				"origin",
 				"master",
@@ -358,7 +405,7 @@ mod tests {
 		// Attempt force push,
 		// should work as it forces the push through
 
-		push(
+		push_branch(
 			&tmp_other_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
@@ -405,7 +452,7 @@ mod tests {
 		let commits = get_commit_ids(&repo, 1);
 		assert!(commits.contains(&commit_1));
 
-		push(
+		push_branch(
 			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"master",
@@ -424,7 +471,7 @@ mod tests {
 		.unwrap();
 
 		// Push the local branch
-		push(
+		push_branch(
 			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"origin",
 			"test_branch",
@@ -440,17 +487,15 @@ mod tests {
 			upstream_repo
 				.branches(None)
 				.unwrap()
-				.map(|i| i.unwrap())
+				.map(std::result::Result::unwrap)
 				.map(|(i, _)| i.name().unwrap().unwrap().to_string())
-				.filter(|i| i == "test_branch")
-				.next()
-				.is_some(),
+				.any(|i| &i == "test_branch"),
 			true
 		);
 
 		// Delete the remote branch
 		assert_eq!(
-			push(
+			push_branch(
 				&tmp_repo_dir.path().to_str().unwrap().into(),
 				"origin",
 				"test_branch",
@@ -468,11 +513,9 @@ mod tests {
 			upstream_repo
 				.branches(None)
 				.unwrap()
-				.map(|i| i.unwrap())
+				.map(std::result::Result::unwrap)
 				.map(|(i, _)| i.name().unwrap().unwrap().to_string())
-				.filter(|i| i == "test_branch")
-				.next()
-				.is_some(),
+				.any(|i| &i == "test_branch"),
 			false
 		);
 	}

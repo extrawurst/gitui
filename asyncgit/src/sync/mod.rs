@@ -7,7 +7,8 @@ pub mod blame;
 pub mod branch;
 mod commit;
 mod commit_details;
-mod commit_files;
+pub mod commit_files;
+mod commit_revert;
 mod commits_info;
 mod config;
 pub mod cred;
@@ -26,6 +27,7 @@ mod staging;
 mod stash;
 mod state;
 pub mod status;
+mod submodules;
 mod tags;
 mod tree;
 pub mod utils;
@@ -40,11 +42,12 @@ pub use branch::{
 	merge_rebase::merge_upstream_rebase, rename::rename_branch,
 	validate_branch_name, BranchCompare, BranchInfo,
 };
-pub use commit::{amend, commit, tag};
+pub use commit::{amend, commit, tag_commit};
 pub use commit_details::{
 	get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };
 pub use commit_files::get_commit_files;
+pub use commit_revert::{commit_revert, revert_commit, revert_head};
 pub use commits_info::{
 	get_commit_info, get_commits_info, CommitId, CommitInfo,
 };
@@ -59,11 +62,11 @@ pub use hooks::{
 };
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
-pub use logwalker::{LogWalker, LogWalkerFilter};
+pub use logwalker::{diff_contains_file, LogWalker, LogWalkerFilter};
 pub use merge::{
-	abort_merge, abort_pending_rebase, continue_pending_rebase,
-	merge_branch, merge_commit, merge_msg, mergehead_ids,
-	rebase_progress,
+	abort_pending_rebase, abort_pending_state,
+	continue_pending_rebase, merge_branch, merge_commit, merge_msg,
+	mergehead_ids, rebase_progress,
 };
 pub use rebase::rebase_branch;
 pub use remotes::{
@@ -78,8 +81,13 @@ pub use stash::{
 	get_stashes, stash_apply, stash_drop, stash_pop, stash_save,
 };
 pub use state::{repo_state, RepoState};
+pub use status::is_workdir_clean;
+pub use submodules::{
+	get_submodules, submodule_parent_info, update_submodule,
+	SubmoduleInfo, SubmoduleParentInfo, SubmoduleStatus,
+};
 pub use tags::{
-	delete_tag, get_tags, get_tags_with_metadata, CommitTags,
+	delete_tag, get_tags, get_tags_with_metadata, CommitTags, Tag,
 	TagWithMetadata, Tags,
 };
 pub use tree::{tree_file_content, tree_files, TreeFile};
@@ -118,10 +126,10 @@ mod tests {
 			let temp_dir = TempDir::new().unwrap();
 			let path = temp_dir.path();
 
-			set_search_path(ConfigLevel::System, &path).unwrap();
-			set_search_path(ConfigLevel::Global, &path).unwrap();
-			set_search_path(ConfigLevel::XDG, &path).unwrap();
-			set_search_path(ConfigLevel::ProgramData, &path).unwrap();
+			set_search_path(ConfigLevel::System, path).unwrap();
+			set_search_path(ConfigLevel::Global, path).unwrap();
+			set_search_path(ConfigLevel::XDG, path).unwrap();
+			set_search_path(ConfigLevel::ProgramData, path).unwrap();
 		});
 	}
 
@@ -203,6 +211,8 @@ mod tests {
 
 	///
 	pub fn repo_init_empty() -> Result<(TempDir, Repository)> {
+		init_log();
+
 		sandbox_config_files();
 
 		let td = TempDir::new()?;
@@ -217,6 +227,8 @@ mod tests {
 
 	///
 	pub fn repo_init() -> Result<(TempDir, Repository)> {
+		init_log();
+
 		sandbox_config_files();
 
 		let td = TempDir::new()?;
@@ -260,8 +272,18 @@ mod tests {
 		Ok((td, repo))
 	}
 
-	/// Same as repo_init, but the repo is a bare repo (--bare)
+	// init log
+	fn init_log() {
+		let _ = env_logger::builder()
+			.is_test(true)
+			.filter_level(log::LevelFilter::Trace)
+			.try_init();
+	}
+
+	/// Same as `repo_init`, but the repo is a bare repo (--bare)
 	pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
+		init_log();
+
 		let tmp_repo_dir = TempDir::new()?;
 		let bare_repo = Repository::init_bare(tmp_repo_dir.path())?;
 		Ok((tmp_repo_dir, bare_repo))
@@ -282,7 +304,7 @@ mod tests {
 	///
 	pub fn debug_cmd_print(path: &RepoPath, cmd: &str) {
 		let cmd = debug_cmd(path, cmd);
-		eprintln!("\n----\n{}", cmd);
+		eprintln!("\n----\n{cmd}");
 	}
 
 	/// helper to fetch commmit details using log walker
@@ -302,7 +324,7 @@ mod tests {
 	fn debug_cmd(path: &RepoPath, cmd: &str) -> String {
 		let output = if cfg!(target_os = "windows") {
 			Command::new("cmd")
-				.args(&["/C", cmd])
+				.args(["/C", cmd])
 				.current_dir(path.gitpath())
 				.output()
 				.unwrap()
@@ -322,12 +344,12 @@ mod tests {
 			if stdout.is_empty() {
 				String::new()
 			} else {
-				format!("out:\n{}", stdout)
+				format!("out:\n{stdout}")
 			},
 			if stderr.is_empty() {
 				String::new()
 			} else {
-				format!("err:\n{}", stderr)
+				format!("err:\n{stderr}")
 			}
 		)
 	}

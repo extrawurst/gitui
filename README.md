@@ -32,17 +32,18 @@
 5. [Limitations](#limitations)
 6. [Installation](#installation)
 7. [Build](#build)
-8. [Diagnostics](#diagnostics)
-9. [Color Theme](#theme)
-10. [Key Bindings](#bindings)
-11. [Sponsoring](#sponsoring)
-12. [Inspiration](#inspiration)
+8. [FAQs](#faqs)
+9. [Diagnostics](#diagnostics)
+10. [Color Theme](#theme)
+11. [Key Bindings](#bindings)
+12. [Sponsoring](#sponsoring)
+13. [Inspiration](#inspiration)
 
 ## 1. <a name="features"></a> Features <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - Fast and intuitive **keyboard only** control
 - Context based help (**no need to memorize** tons of hot-keys)
-- Inspect, commit, and amend changes (incl. hooks: _commit-msg_/_post-commit_)
+- Inspect, commit, and amend changes (incl. hooks: _pre-commit_,_commit-msg_,_post-commit_)
 - Stage, unstage, revert and reset files, hunks and lines
 - Stashing (save, pop, apply, drop, and inspect)
 - Push/Fetch to/from remote
@@ -50,6 +51,7 @@
 - Browse commit log, diff committed changes
 - Scalable terminal UI layout
 - Async git API for fluid control
+- Submodule support
 
 ## 2. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -74,16 +76,15 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 These are the high level goals before calling out `1.0`:
 
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
-* file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
-* notify-based change detection ([#1](https://github.com/extrawurst/gitui/issues/1))
 * interactive rebase ([#32](https://github.com/extrawurst/gitui/issues/32))
-* popup history and back button ([#846](https://github.com/extrawurst/gitui/issues/846))
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
-- no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
+- no sparse repo support (see [#1226](https://github.com/extrawurst/gitui/issues/1226))
 - no support for GPG signing (see [#97](https://github.com/extrawurst/gitui/issues/97))
+- no git-lfs support (see [#1089](https://github.com/extrawurst/gitui/discussions/1089))
+- *credential.helper* for https needs to be **explicitly** configured (see [#800](https://github.com/extrawurst/gitui/issues/800))
 
 Currently, this tool does not fully substitute the _git shell_, however both tools work well in tandem.
 
@@ -123,6 +124,18 @@ sudo emerge dev-vcs/gitui::dm9pZCAq
 brew install gitui
 ```
 
+### [MacPorts (macOS)](https://ports.macports.org/port/gitui/details/)
+
+```sh
+port install gitui
+```
+
+### [Winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/StephanDilly/gitui) (Windows)
+
+```
+winget install gitui
+```
+
 ### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)
 
 ```
@@ -146,6 +159,12 @@ NixOS
 nix-env -iA nixos.gitui
 ```
 
+### [Termux](https://github.com/termux/termux-packages/tree/master/packages/gitui) (Android)
+
+```
+pkg install gitui
+```
+
 ## Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
@@ -160,7 +179,7 @@ Binaries available for:
 
 ### Requirements
 
-- Minumum supported `rust`/`cargo` version: `1.50`
+- Minimum supported `rust`/`cargo` version: `1.60`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
 
 ### Cargo Install
@@ -174,7 +193,11 @@ works if `libgit2` builded with `-DENABLE_TRACE=ON`
 
 this feature enabled by default, to disable: `cargo install --no-default-features`
 
-## 8. <a name="diagnostics"></a> Diagnostics <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 8. <a name="faqs"></a> FAQs <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+see [FAQs page](./FAQ.md)
+
+## 9. <a name="diagnostics"></a> Diagnostics <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 To run with logging enabled run `gitui -l`.
 
@@ -185,7 +208,7 @@ This will log to:
 - Linux: `$HOME/.cache/gitui/gitui.log`
 - Windows: `%LOCALAPPDATA%/gitui/gitui.log`
 
-## 9. <a name="theme"></a> Color Theme <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 10. <a name="theme"></a> Color Theme <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 ![](assets/light-theme.png)
 
@@ -193,16 +216,19 @@ This will log to:
 
 However, you can customize everything to your liking: See [Themes](THEMES.md).
 
-## 10. <a name="bindings"></a> Key Bindings <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 11. <a name="bindings"></a> Key Bindings <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to set them to `vim`-like bindings.
 
-## 11. <a name="sponsoring"></a> Sponsoring <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 12. <a name="sponsoring"></a> Sponsoring <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 [![github](https://img.shields.io/badge/-GitHub%20Sponsors-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/extrawurst)
-[![buy-me-a-coffee](https://img.shields.io/badge/-Buy%20Me%20a%20Coffee-ffdd00?logo=Buy%20Me%20A%20Coffee&logoColor=000000)](https://www.buymeacoffee.com/extrawurst)
 
-## 12. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
+<a href="https://liberapay.com/extrawurst/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
+
+<a href='https://ko-fi.com/B0B6GMW1T' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi4.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
+## 13. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - [lazygit](https://github.com/jesseduffield/lazygit)
 - [tig](https://github.com/jonas/tig)

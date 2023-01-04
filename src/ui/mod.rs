@@ -14,7 +14,7 @@ pub use stateful_paragraph::{
 pub use syntax_text::{AsyncSyntaxJob, SyntaxText};
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
-use crate::keys::SharedKeyConfig;
+use crate::keys::{key_match, SharedKeyConfig};
 
 /// return the scroll position (line) necessary to have the `selection` in view if it is not already
 pub const fn calc_scroll_top(
@@ -87,8 +87,18 @@ pub fn centered_rect(
 
 /// makes sure Rect `r` at least stays as big as min and not bigger than max
 pub fn rect_inside(min: Size, max: Size, r: Rect) -> Rect {
-	let new_width = r.width.max(min.width).min(max.width);
-	let new_height = r.height.max(min.height).min(max.height);
+	let new_width = if min.width > max.width {
+		max.width
+	} else {
+		r.width.clamp(min.width, max.width)
+	};
+
+	let new_height = if min.height > max.height {
+		max.height
+	} else {
+		r.height.clamp(min.height, max.height)
+	};
+
 	let diff_width = new_width.saturating_sub(r.width);
 	let diff_height = new_height.saturating_sub(r.height);
 
@@ -115,30 +125,97 @@ pub fn centered_rect_absolute(
 
 ///
 pub fn common_nav(
-	key: crossterm::event::KeyEvent,
+	key: &crossterm::event::KeyEvent,
 	key_config: &SharedKeyConfig,
 ) -> Option<MoveSelection> {
-	if key == key_config.keys.move_down {
+	if key_match(key, key_config.keys.move_down) {
 		Some(MoveSelection::Down)
-	} else if key == key_config.keys.move_up {
+	} else if key_match(key, key_config.keys.move_up) {
 		Some(MoveSelection::Up)
-	} else if key == key_config.keys.page_up {
+	} else if key_match(key, key_config.keys.page_up) {
 		Some(MoveSelection::PageUp)
-	} else if key == key_config.keys.page_down {
+	} else if key_match(key, key_config.keys.page_down) {
 		Some(MoveSelection::PageDown)
-	} else if key == key_config.keys.move_right {
+	} else if key_match(key, key_config.keys.move_right) {
 		Some(MoveSelection::Right)
-	} else if key == key_config.keys.move_left {
+	} else if key_match(key, key_config.keys.move_left) {
 		Some(MoveSelection::Left)
-	} else if key == key_config.keys.home
-		|| key == key_config.keys.shift_up
+	} else if key_match(key, key_config.keys.home)
+		|| key_match(key, key_config.keys.shift_up)
 	{
 		Some(MoveSelection::Top)
-	} else if key == key_config.keys.end
-		|| key == key_config.keys.shift_down
+	} else if key_match(key, key_config.keys.end)
+		|| key_match(key, key_config.keys.shift_down)
 	{
 		Some(MoveSelection::End)
 	} else {
 		None
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::{rect_inside, Size};
+	use pretty_assertions::assert_eq;
+	use tui::layout::Rect;
+
+	#[test]
+	fn test_small_rect_in_rect() {
+		let rect = rect_inside(
+			Size {
+				width: 2,
+				height: 2,
+			},
+			Size {
+				width: 1,
+				height: 1,
+			},
+			Rect {
+				x: 0,
+				y: 0,
+				width: 10,
+				height: 10,
+			},
+		);
+
+		assert_eq!(
+			rect,
+			Rect {
+				x: 0,
+				y: 0,
+				width: 1,
+				height: 1
+			}
+		);
+	}
+
+	#[test]
+	fn test_small_rect_in_rect2() {
+		let rect = rect_inside(
+			Size {
+				width: 1,
+				height: 3,
+			},
+			Size {
+				width: 1,
+				height: 2,
+			},
+			Rect {
+				x: 0,
+				y: 0,
+				width: 10,
+				height: 10,
+			},
+		);
+
+		assert_eq!(
+			rect,
+			Rect {
+				x: 0,
+				y: 0,
+				width: 1,
+				height: 2
+			}
+		);
 	}
 }

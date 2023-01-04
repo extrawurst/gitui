@@ -6,13 +6,13 @@ use crate::{
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
 		EventState, ScrollType,
 	},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	strings::{self, order},
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::sync::{
-	self, CommitDetails, CommitId, CommitMessage, RepoPathRef,
+	self, CommitDetails, CommitId, CommitMessage, RepoPathRef, Tag,
 };
 use crossterm::event::Event;
 use std::clone::Clone;
@@ -31,7 +31,7 @@ use super::style::Detail;
 pub struct DetailsComponent {
 	repo: RepoPathRef,
 	data: Option<CommitDetails>,
-	tags: Vec<String>,
+	tags: Vec<Tag>,
 	theme: SharedTheme,
 	focused: bool,
 	current_width: Cell<u16>,
@@ -224,7 +224,7 @@ impl DetailsComponent {
 					itertools::Itertools::intersperse(
 						self.tags.iter().map(|tag| {
 							Span::styled(
-								Cow::from(tag),
+								Cow::from(&tag.name),
 								self.theme.text(true, false),
 							)
 						}),
@@ -357,24 +357,31 @@ impl Component for DetailsComponent {
 		CommandBlocking::PassingOn
 	}
 
-	fn event(&mut self, event: Event) -> Result<EventState> {
+	fn event(&mut self, event: &Event) -> Result<EventState> {
 		if self.focused {
 			if let Event::Key(e) = event {
-				return Ok(if e == self.key_config.keys.move_up {
-					self.move_scroll_top(ScrollType::Up).into()
-				} else if e == self.key_config.keys.move_down {
-					self.move_scroll_top(ScrollType::Down).into()
-				} else if e == self.key_config.keys.home
-					|| e == self.key_config.keys.shift_up
-				{
-					self.move_scroll_top(ScrollType::Home).into()
-				} else if e == self.key_config.keys.end
-					|| e == self.key_config.keys.shift_down
-				{
-					self.move_scroll_top(ScrollType::End).into()
-				} else {
-					EventState::NotConsumed
-				});
+				return Ok(
+					if key_match(e, self.key_config.keys.move_up) {
+						self.move_scroll_top(ScrollType::Up).into()
+					} else if key_match(
+						e,
+						self.key_config.keys.move_down,
+					) {
+						self.move_scroll_top(ScrollType::Down).into()
+					} else if key_match(e, self.key_config.keys.home)
+						|| key_match(e, self.key_config.keys.shift_up)
+					{
+						self.move_scroll_top(ScrollType::Home).into()
+					} else if key_match(e, self.key_config.keys.end)
+						|| key_match(
+							e,
+							self.key_config.keys.shift_down,
+						) {
+						self.move_scroll_top(ScrollType::End).into()
+					} else {
+						EventState::NotConsumed
+					},
+				);
 			}
 		}
 

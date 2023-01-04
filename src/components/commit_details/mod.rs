@@ -7,7 +7,10 @@ use super::{
 	Component, DrawableComponent, EventState, StatusTreeComponent,
 };
 use crate::{
-	accessors, keys::SharedKeyConfig, queue::Queue, strings,
+	accessors,
+	keys::{key_match, SharedKeyConfig},
+	queue::Queue,
+	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -89,7 +92,7 @@ impl CommitDetailsComponent {
 	pub fn set_commits(
 		&mut self,
 		params: Option<CommitFilesParams>,
-		tags: Option<CommitTags>,
+		tags: &Option<CommitTags>,
 	) -> Result<()> {
 		if params.is_none() {
 			self.single_details.set_commit(None, None);
@@ -99,11 +102,14 @@ impl CommitDetailsComponent {
 		self.commit = params;
 
 		if let Some(id) = params {
+			self.file_tree.set_commit(Some(id.id));
+
 			if let Some(other) = id.other {
 				self.compare_details
 					.set_commits(Some((id.id, other)));
 			} else {
-				self.single_details.set_commit(Some(id.id), tags);
+				self.single_details
+					.set_commit(Some(id.id), tags.clone());
 			}
 
 			if let Some((fetched_id, res)) =
@@ -160,6 +166,10 @@ impl DrawableComponent for CommitDetailsComponent {
 		f: &mut Frame<B>,
 		rect: Rect,
 	) -> Result<()> {
+		if !self.visible {
+			return Ok(());
+		}
+
 		let constraints = if self.is_compare() {
 			[Constraint::Length(10), Constraint::Min(0)]
 		} else {
@@ -211,23 +221,31 @@ impl Component for CommitDetailsComponent {
 		CommandBlocking::PassingOn
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if event_pump(ev, self.components_mut().as_mut_slice())?
 			.is_consumed()
 		{
+			if !self.file_tree.is_visible() {
+				self.hide();
+			}
+
 			return Ok(EventState::Consumed);
 		}
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.keys.focus_below
-					&& self.details_focused()
+				return if key_match(
+					e,
+					self.key_config.keys.focus_below,
+				) && self.details_focused()
 				{
 					self.set_details_focus(false);
 					self.file_tree.focus(true);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.focus_above
-					&& self.file_tree.focused()
+				} else if key_match(
+					e,
+					self.key_config.keys.focus_above,
+				) && self.file_tree.focused()
 					&& !self.is_compare()
 				{
 					self.file_tree.focus(false);
@@ -250,6 +268,7 @@ impl Component for CommitDetailsComponent {
 	}
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
+		self.file_tree.show()?;
 		Ok(())
 	}
 

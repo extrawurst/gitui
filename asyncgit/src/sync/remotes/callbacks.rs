@@ -91,6 +91,14 @@ impl Callbacks {
 			},
 		);
 
+		callbacks.sideband_progress(move |data| {
+			log::debug!(
+				"sideband transfer: '{}'",
+				String::from_utf8_lossy(data).trim()
+			);
+			true
+		});
+
 		callbacks
 	}
 
@@ -194,16 +202,15 @@ impl Callbacks {
 		}
 
 		match &self.basic_credential {
-			_ if allowed_types.is_ssh_key() => {
-				match username_from_url {
-					Some(username) => {
-						Cred::ssh_key_from_agent(username)
-					}
-					None => Err(GitError::from_str(
-						" Couldn't extract username from url.",
-					)),
-				}
-			}
+			_ if allowed_types.is_ssh_key() => username_from_url
+				.map_or_else(
+					|| {
+						Err(GitError::from_str(
+							" Couldn't extract username from url.",
+						))
+					},
+					Cred::ssh_key_from_agent,
+				),
 			Some(BasicAuthCredential {
 				username: Some(user),
 				password: Some(pwd),

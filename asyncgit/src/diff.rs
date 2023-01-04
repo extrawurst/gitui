@@ -14,7 +14,7 @@ use std::{
 };
 
 ///
-#[derive(Debug, Hash, Clone, PartialEq)]
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub enum DiffType {
 	/// diff two commits
 	Commits((CommitId, CommitId)),
@@ -27,7 +27,7 @@ pub enum DiffType {
 }
 
 ///
-#[derive(Debug, Hash, Clone, PartialEq)]
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub struct DiffParams {
 	/// path to the file to diff
 	pub path: String,
@@ -175,11 +175,13 @@ impl AsyncDiff {
 				repo_path,
 				id,
 				params.path.clone(),
+				Some(params.options),
 			)?,
 			DiffType::Commits(ids) => sync::diff::get_diff_commits(
 				repo_path,
 				ids,
 				params.path.clone(),
+				Some(params.options),
 			)?,
 		};
 

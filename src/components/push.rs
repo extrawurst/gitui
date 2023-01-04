@@ -3,7 +3,7 @@ use crate::{
 		cred::CredComponent, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
 	strings,
 	ui::{self, style::SharedTheme},
@@ -17,8 +17,8 @@ use asyncgit::{
 		},
 		get_branch_remote, get_default_remote, RepoPathRef,
 	},
-	AsyncGitNotification, AsyncPush, PushRequest, RemoteProgress,
-	RemoteProgressState,
+	AsyncGitNotification, AsyncPush, PushRequest, PushType,
+	RemoteProgress, RemoteProgressState,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -57,6 +57,7 @@ pub struct PushComponent {
 	progress: Option<RemoteProgress>,
 	pending: bool,
 	branch: String,
+	push_type: PushType,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -79,6 +80,7 @@ impl PushComponent {
 			pending: false,
 			visible: false,
 			branch: String::new(),
+			push_type: PushType::Branch,
 			git_push: AsyncPush::new(repo.borrow().clone(), sender),
 			progress: None,
 			input_cred: CredComponent::new(
@@ -94,10 +96,12 @@ impl PushComponent {
 	pub fn push(
 		&mut self,
 		branch: String,
+		push_type: PushType,
 		force: bool,
 		delete: bool,
 	) -> Result<()> {
 		self.branch = branch;
+		self.push_type = push_type;
 		self.modifier = match (force, delete) {
 			(true, true) => PushComponentModifier::ForceDelete,
 			(false, true) => PushComponentModifier::Delete,
@@ -149,6 +153,7 @@ impl PushComponent {
 		self.git_push.request(PushRequest {
 			remote,
 			branch: self.branch.clone(),
+			push_type: self.push_type,
 			force,
 			delete: self.modifier.delete(),
 			basic_credential: cred,
@@ -176,7 +181,7 @@ impl PushComponent {
 		if !self.pending {
 			if let Some(err) = self.git_push.last_result()? {
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("push failed:\n{}", err),
+					format!("push failed:\n{err}"),
 				));
 			}
 			self.hide();
@@ -292,7 +297,7 @@ impl Component for PushComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
 				if self.input_cred.is_visible() {
@@ -307,8 +312,10 @@ impl Component for PushComponent {
 						)?;
 						self.input_cred.hide();
 					}
-				} else if e == self.key_config.keys.exit_popup
-					&& !self.pending
+				} else if key_match(
+					e,
+					self.key_config.keys.exit_popup,
+				) && !self.pending
 				{
 					self.hide();
 				}

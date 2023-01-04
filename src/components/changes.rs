@@ -1,11 +1,12 @@
 use super::{
 	status_tree::StatusTreeComponent,
 	utils::filetree::{FileTreeItem, FileTreeItemKind},
-	CommandBlocking, DrawableComponent, SharedOptions,
+	CommandBlocking, DrawableComponent,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -61,6 +62,7 @@ impl ChangesComponent {
 
 	///
 	pub fn set_items(&mut self, list: &[StatusItem]) -> Result<()> {
+		self.files.show()?;
 		self.files.update(list)?;
 		Ok(())
 	}
@@ -103,30 +105,35 @@ impl ChangesComponent {
 							path,
 						)?,
 					};
+				} else {
+					let config =
+						self.options.borrow().status_show_untracked();
 
-					if self.is_empty() {
-						self.queue
-							.push(InternalEvent::StatusLastFileMoved);
-					}
-
-					return Ok(true);
+					//TODO: check if we can handle the one file case with it aswell
+					sync::stage_add_all(
+						&self.repo.borrow(),
+						tree_item.info.full_path.as_str(),
+						config,
+					)?;
 				}
 
-				let config =
-					self.options.borrow().status_show_untracked;
-
-				//TODO: check if we can handle the one file case with it aswell
-				sync::stage_add_all(
+				//TODO: this might be slow in big repos,
+				// in theory we should be able to ask the tree structure
+				// if we are currently on a leaf or a lonely branch that
+				// would mean that after staging the workdir becomes empty
+				if sync::is_workdir_clean(
 					&self.repo.borrow(),
-					tree_item.info.full_path.as_str(),
-					config,
-				)?;
-
-				return Ok(true);
+					self.options.borrow().status_show_untracked(),
+				)? {
+					self.queue
+						.push(InternalEvent::StatusLastFileMoved);
+				}
+			} else {
+				// this is a staged entry, so lets unstage it
+				let path = tree_item.info.full_path.as_str();
+				sync::reset_stage(&self.repo.borrow(), path)?;
 			}
 
-			let path = tree_item.info.full_path.as_str();
-			sync::reset_stage(&self.repo.borrow(), path)?;
 			return Ok(true);
 		}
 
@@ -134,7 +141,7 @@ impl ChangesComponent {
 	}
 
 	fn index_add_all(&mut self) -> Result<()> {
-		let config = self.options.borrow().status_show_untracked;
+		let config = self.options.borrow().status_show_untracked();
 
 		sync::stage_add_all(&self.repo.borrow(), "*", config)?;
 
@@ -250,15 +257,17 @@ impl Component for ChangesComponent {
 		CommandBlocking::PassingOn
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.files.event(ev)?.is_consumed() {
 			return Ok(EventState::Consumed);
 		}
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if e == self.key_config.keys.stage_unstage_item
-				{
+				return if key_match(
+					e,
+					self.key_config.keys.stage_unstage_item,
+				) {
 					try_or_popup!(
 						self,
 						"staging error:",
@@ -269,8 +278,10 @@ impl Component for ChangesComponent {
 						NeedsUpdate::ALL,
 					));
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.status_stage_all
-					&& !self.is_empty()
+				} else if key_match(
+					e,
+					self.key_config.keys.status_stage_all,
+				) && !self.is_empty()
 				{
 					if self.is_working_dir {
 						try_or_popup!(
@@ -284,12 +295,16 @@ impl Component for ChangesComponent {
 					self.queue
 						.push(InternalEvent::StatusLastFileMoved);
 					Ok(EventState::Consumed)
-				} else if e == self.key_config.keys.status_reset_item
-					&& self.is_working_dir
+				} else if key_match(
+					e,
+					self.key_config.keys.status_reset_item,
+				) && self.is_working_dir
 				{
 					Ok(self.dispatch_reset_workdir().into())
-				} else if e == self.key_config.keys.status_ignore_file
-					&& self.is_working_dir
+				} else if key_match(
+					e,
+					self.key_config.keys.status_ignore_file,
+				) && self.is_working_dir
 					&& !self.is_empty()
 				{
 					Ok(self.add_to_ignore().into())
@@ -305,7 +320,21 @@ impl Component for ChangesComponent {
 	fn focused(&self) -> bool {
 		self.files.focused()
 	}
+
 	fn focus(&mut self, focus: bool) {
 		self.files.focus(focus);
+	}
+
+	fn is_visible(&self) -> bool {
+		self.files.is_visible()
+	}
+
+	fn hide(&mut self) {
+		self.files.hide();
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.files.show()?;
+		Ok(())
 	}
 }

@@ -2,19 +2,20 @@ use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitDetailsComponent, CommitList, Component,
-		DrawableComponent, EventState,
+		DrawableComponent, EventState, FileTreeOpen,
+		InspectCommitOpen,
 	},
-	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
-	strings,
+	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
+	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
-	cached,
+	asyncjob::AsyncSingleJob,
 	sync::{self, CommitId, RepoPathRef},
-	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
-	FetchStatus,
+	AsyncBranchesJob, AsyncGitNotification, AsyncLog, AsyncTags,
+	CommitFilesParams, FetchStatus,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -35,9 +36,9 @@ pub struct Revlog {
 	list: CommitList,
 	git_log: AsyncLog,
 	git_tags: AsyncTags,
+	git_branches: AsyncSingleJob<AsyncBranchesJob>,
 	queue: Queue,
 	visible: bool,
-	branch_name: cached::BranchName,
 	key_config: SharedKeyConfig,
 }
 
@@ -64,6 +65,7 @@ impl Revlog {
 				repo.clone(),
 				&strings::log_title(&key_config),
 				theme,
+				queue.clone(),
 				key_config.clone(),
 			),
 			git_log: AsyncLog::new(
@@ -72,8 +74,8 @@ impl Revlog {
 				None,
 			),
 			git_tags: AsyncTags::new(repo.borrow().clone(), sender),
+			git_branches: AsyncSingleJob::new(sender.clone()),
 			visible: false,
-			branch_name: cached::BranchName::new(repo.clone()),
 			key_config,
 		}
 	}
@@ -82,6 +84,7 @@ impl Revlog {
 	pub fn any_work_pending(&self) -> bool {
 		self.git_log.is_pending()
 			|| self.git_tags.is_pending()
+			|| self.git_branches.is_pending()
 			|| self.commit_details.any_work_pending()
 	}
 
@@ -103,17 +106,13 @@ impl Revlog {
 
 			self.git_tags.request(Duration::from_secs(3), false)?;
 
-			self.list.set_branch(
-				self.branch_name.lookup().map(Some).unwrap_or(None),
-			);
-
 			if self.commit_details.is_visible() {
 				let commit = self.selected_commit();
 				let tags = self.selected_commit_tags(&commit);
 
 				self.commit_details.set_commits(
 					commit.map(CommitFilesParams::from),
-					tags,
+					&tags,
 				)?;
 			}
 		}
@@ -134,6 +133,17 @@ impl Revlog {
 					if let Some(tags) = self.git_tags.last()? {
 						self.list.set_tags(tags);
 						self.update()?;
+					}
+				}
+				AsyncGitNotification::Branches => {
+					if let Some(branches) =
+						self.git_branches.take_last()
+					{
+						if let Some(Ok(branches)) = branches.result()
+						{
+							self.list.set_branches(branches);
+							self.update()?;
+						}
 					}
 				}
 				_ => (),
@@ -164,11 +174,6 @@ impl Revlog {
 		self.list.selected_entry().map(|e| e.id)
 	}
 
-	fn copy_commit_hash(&self) -> Result<()> {
-		self.list.copy_entry_hash()?;
-		Ok(())
-	}
-
 	fn selected_commit_tags(
 		&self,
 		commit: &Option<CommitId>,
@@ -189,6 +194,26 @@ impl Revlog {
 			Ok(())
 		} else {
 			anyhow::bail!("Could not select commit in revlog. It might not be loaded yet or it might be on a different branch.");
+		}
+	}
+
+	fn revert_commit(&self) -> Result<()> {
+		if let Some(c) = self.selected_commit() {
+			sync::revert_commit(&self.repo.borrow(), c)?;
+			self.queue.push(InternalEvent::TabSwitchStatus);
+		}
+
+		Ok(())
+	}
+
+	fn inspect_commit(&self) {
+		if let Some(commit_id) = self.selected_commit() {
+			let tags = self.selected_commit_tags(&Some(commit_id));
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::InspectCommit(
+					InspectCommitOpen::new_with_tags(commit_id, tags),
+				),
+			));
 		}
 	}
 }
@@ -222,7 +247,9 @@ impl DrawableComponent for Revlog {
 }
 
 impl Component for Revlog {
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	//TODO: cleanup
+	#[allow(clippy::too_many_lines)]
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
 			let event_used = self.list.event(ev)?;
 
@@ -230,17 +257,24 @@ impl Component for Revlog {
 				self.update()?;
 				return Ok(EventState::Consumed);
 			} else if let Event::Key(k) = ev {
-				if k == self.key_config.keys.enter {
+				if key_match(k, self.key_config.keys.enter) {
 					self.commit_details.toggle_visible()?;
 					self.update()?;
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.copy {
-					self.copy_commit_hash()?;
+				} else if key_match(k, self.key_config.keys.copy) {
+					try_or_popup!(
+						self,
+						strings::POPUP_FAIL_COPY,
+						self.list.copy_commit_hash()
+					);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.push {
+				} else if key_match(k, self.key_config.keys.push) {
 					self.queue.push(InternalEvent::PushTags);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.log_tag_commit {
+				} else if key_match(
+					k,
+					self.key_config.keys.log_tag_commit,
+				) {
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -249,60 +283,77 @@ impl Component for Revlog {
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.keys.focus_right
-					&& self.commit_details.is_visible()
+				} else if key_match(
+					k,
+					self.key_config.keys.focus_right,
+				) && self.commit_details.is_visible()
 				{
+					self.inspect_commit();
+					return Ok(EventState::Consumed);
+				} else if key_match(
+					k,
+					self.key_config.keys.select_branch,
+				) {
+					self.queue.push(InternalEvent::SelectBranch);
+					return Ok(EventState::Consumed);
+				} else if key_match(
+					k,
+					self.key_config.keys.status_reset_item,
+				) {
+					try_or_popup!(
+						self,
+						"revert error:",
+						self.revert_commit()
+					);
+
+					return Ok(EventState::Consumed);
+				} else if key_match(
+					k,
+					self.key_config.keys.open_file_tree,
+				) {
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
 							self.queue.push(
-								InternalEvent::InspectCommit(
-									id,
-									self.selected_commit_tags(&Some(
-										id,
-									)),
+								InternalEvent::OpenPopup(
+									StackablePopupOpen::FileTree(
+										FileTreeOpen::new(id),
+									),
 								),
 							);
 							Ok(EventState::Consumed)
 						},
 					);
-				} else if k == self.key_config.keys.select_branch {
-					self.queue.push(InternalEvent::SelectBranch);
-					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.open_file_tree {
-					return self.selected_commit().map_or(
-						Ok(EventState::NotConsumed),
-						|id| {
-							self.queue.push(
-								InternalEvent::OpenFileTree(id),
-							);
-							Ok(EventState::Consumed)
-						},
-					);
-				} else if k == self.key_config.keys.tags {
+				} else if key_match(k, self.key_config.keys.tags) {
 					self.queue.push(InternalEvent::Tags);
 					return Ok(EventState::Consumed);
-				} else if k == self.key_config.keys.compare_commits
-					&& self.list.marked_count() > 0
+				} else if key_match(
+					k,
+					self.key_config.keys.compare_commits,
+				) && self.list.marked_count() > 0
 				{
 					if self.list.marked_count() == 1 {
 						// compare against head
-						self.queue.push(
-							InternalEvent::CompareCommits(
-								self.list.marked()[0],
-								None,
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::CompareCommits(
+								InspectCommitOpen::new(
+									self.list.marked()[0].1,
+								),
 							),
-						);
+						));
 						return Ok(EventState::Consumed);
 					} else if self.list.marked_count() == 2 {
 						//compare two marked commits
 						let marked = self.list.marked();
-						self.queue.push(
-							InternalEvent::CompareCommits(
-								marked[0],
-								Some(marked[1]),
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::CompareCommits(
+								InspectCommitOpen {
+									commit_id: marked[0].1,
+									compare_id: Some(marked[1].1),
+									tags: None,
+								},
 							),
-						);
+						));
 						return Ok(EventState::Consumed);
 					}
 				}
@@ -386,6 +437,12 @@ impl Component for Revlog {
 			self.visible || force_all,
 		));
 
+		out.push(CommandInfo::new(
+			strings::commands::revert_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
 		visibility_blocking(self)
 	}
 
@@ -401,6 +458,12 @@ impl Component for Revlog {
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
 		self.list.clear();
+
+		self.git_branches.spawn(AsyncBranchesJob::new(
+			self.repo.borrow().clone(),
+			true,
+		));
+
 		self.update()?;
 
 		Ok(())

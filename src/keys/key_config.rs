@@ -1,14 +1,17 @@
 use anyhow::Result;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyModifiers};
 use std::{path::PathBuf, rc::Rc};
 
 use crate::{args::get_app_config_path, strings::symbol};
 
-use super::{key_list::KeysList, symbols::KeySymbols};
+use super::{
+	key_list::{GituiKeyEvent, KeysList},
+	symbols::KeySymbols,
+};
 
 pub type SharedKeyConfig = Rc<KeyConfig>;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct KeyConfig {
 	pub keys: KeysList,
 	symbols: KeySymbols,
@@ -52,7 +55,7 @@ impl KeyConfig {
 		}
 	}
 
-	pub fn get_hint(&self, ev: KeyEvent) -> String {
+	pub fn get_hint(&self, ev: GituiKeyEvent) -> String {
 		match ev.code {
 			KeyCode::Down
 			| KeyCode::Up
@@ -93,6 +96,7 @@ impl KeyConfig {
 			KeyCode::Null => {
 				self.get_modifier_hint(ev.modifiers).into()
 			}
+			_ => String::new(),
 		}
 	}
 
@@ -109,15 +113,15 @@ impl KeyConfig {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+	use crossterm::event::{KeyCode, KeyModifiers};
 
 	#[test]
 	fn test_get_hint() {
 		let config = KeyConfig::default();
-		let h = config.get_hint(KeyEvent {
-			code: KeyCode::Char('c'),
-			modifiers: KeyModifiers::CONTROL,
-		});
+		let h = config.get_hint(GituiKeyEvent::new(
+			KeyCode::Char('c'),
+			KeyModifiers::CONTROL,
+		));
 		assert_eq!(h, "^c");
 	}
 }

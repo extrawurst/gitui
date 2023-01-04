@@ -2,6 +2,7 @@
 .PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
 ARGS=-l
+# ARGS=-l -d ~/code/extern/pbrt-v4
 # ARGS=-l -d ~/code/git-bare-test.git -w ~/code/git-bare-test
 
 profile:
@@ -26,8 +27,8 @@ release-mac: build-release
 release-win: build-release
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
-	cargo install cargo-wix
-	cargo wix --no-build --nocapture --output ./release/gitui.msi
+	cargo install cargo-wix --version 0.3.3
+	cargo wix -p gitui --no-build --nocapture --output ./release/gitui.msi
 	ls -l ./release/gitui.msi 
 
 release-linux-musl: build-linux-musl-release
@@ -44,6 +45,27 @@ build-linux-musl-release:
 test-linux-musl:
 	cargo test --workspace --target=x86_64-unknown-linux-musl
 
+release-linux-arm: build-linux-arm-release
+	mkdir -p release
+
+	aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/gitui
+	arm-linux-gnueabihf-strip target/armv7-unknown-linux-gnueabihf/release/gitui
+	arm-linux-gnueabihf-strip target/arm-unknown-linux-gnueabihf/release/gitui
+
+	tar -C ./target/aarch64-unknown-linux-gnu/release/ -czvf ./release/gitui-linux-aarch64.tar.gz ./gitui
+	tar -C ./target/armv7-unknown-linux-gnueabihf/release/ -czvf ./release/gitui-linux-armv7.tar.gz ./gitui
+	tar -C ./target/arm-unknown-linux-gnueabihf/release/ -czvf ./release/gitui-linux-arm.tar.gz ./gitui
+
+build-linux-arm-debug:
+	cargo build --target=aarch64-unknown-linux-gnu
+	cargo build --target=armv7-unknown-linux-gnueabihf
+	cargo build --target=arm-unknown-linux-gnueabihf
+
+build-linux-arm-release:
+	cargo build --release --target=aarch64-unknown-linux-gnu
+	cargo build --release --target=armv7-unknown-linux-gnueabihf
+	cargo build --release --target=arm-unknown-linux-gnueabihf
+
 test:
 	cargo test --workspace
 
@@ -51,19 +73,24 @@ fmt:
 	cargo fmt -- --check
 
 clippy:
-	touch src/main.rs
-	cargo clean -p gitui -p asyncgit -p scopetime -p filetreelist
 	cargo clippy --workspace --all-features
 
 clippy-nightly:
-	touch src/main.rs
-	cargo clean -p gitui -p asyncgit -p scopetime -p filetreelist
 	cargo +nightly clippy --workspace --all-features
 
-check: fmt clippy test
+check: fmt clippy test deny
+
+deny:
+	cargo deny check
 
 install:
 	cargo install --path "." --offline
 
 install-timing:
 	cargo install --features=timing --path "." --offline
+
+licenses:
+	cargo bundle-licenses --format toml --output THIRDPARTY.toml
+
+clean:
+	cargo clean

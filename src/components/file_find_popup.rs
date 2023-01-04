@@ -3,7 +3,7 @@ use super::{
 	DrawableComponent, EventState, ScrollType, TextInputComponent,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
 	string_utils::trim_length_left,
 	strings,
@@ -88,14 +88,25 @@ impl FileFindPopup {
 			let matcher =
 				fuzzy_matcher::skim::SkimMatcherV2::default();
 
-			self.files_filtered.extend(
-				self.files.iter().enumerate().filter_map(|a| {
+			let mut files = self
+				.files
+				.iter()
+				.enumerate()
+				.filter_map(|a| {
 					a.1.path.to_str().and_then(|path| {
-						matcher
-							.fuzzy_indices(path, q)
-							.map(|(_, indicies)| (a.0, indicies))
+						matcher.fuzzy_indices(path, q).map(
+							|(score, indices)| (score, a.0, indices),
+						)
 					})
-				}),
+				})
+				.collect::<Vec<(_, _, _)>>();
+
+			files.sort_by(|(score1, _, _), (score2, _, _)| {
+				score2.cmp(score1)
+			});
+
+			self.files_filtered.extend(
+				files.into_iter().map(|entry| (entry.1, entry.2)),
 			);
 		}
 
@@ -188,8 +199,7 @@ impl DrawableComponent for FileFindPopup {
 					.borders(Borders::all())
 					.style(self.theme.title(true))
 					.title(Span::styled(
-						//TODO: strings
-						"Fuzzy find",
+						strings::POPUP_TITLE_FUZZY_FIND,
 						self.theme.title(true),
 					)),
 				area,
@@ -294,17 +304,23 @@ impl Component for FileFindPopup {
 
 	fn event(
 		&mut self,
-		event: crossterm::event::Event,
+		event: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if self.is_visible() {
-			if let Event::Key(key) = &event {
-				if *key == self.key_config.keys.exit_popup
-					|| *key == self.key_config.keys.enter
+			if let Event::Key(key) = event {
+				if key_match(key, self.key_config.keys.exit_popup)
+					|| key_match(key, self.key_config.keys.enter)
 				{
 					self.hide();
-				} else if *key == self.key_config.keys.popup_down {
+				} else if key_match(
+					key,
+					self.key_config.keys.popup_down,
+				) {
 					self.move_selection(ScrollType::Down);
-				} else if *key == self.key_config.keys.popup_up {
+				} else if key_match(
+					key,
+					self.key_config.keys.popup_up,
+				) {
 					self.move_selection(ScrollType::Up);
 				}
 			}

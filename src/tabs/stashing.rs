@@ -5,7 +5,7 @@ use crate::{
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
 		EventState, StatusTreeComponent,
 	},
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
 	strings,
 	ui::style::SharedTheme,
@@ -128,9 +128,9 @@ impl Stashing {
 			Spans::from(vec![
 				bracket_open,
 				if self.options.keep_index {
-					option_on.clone()
+					option_on
 				} else {
-					option_off.clone()
+					option_off
 				},
 				bracket_close,
 				Span::raw(Cow::from(" keep index")),
@@ -213,7 +213,7 @@ impl Component for Stashing {
 
 	fn event(
 		&mut self,
-		ev: crossterm::event::Event,
+		ev: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if self.visible {
 			if event_pump(ev, self.components_mut().as_mut_slice())?
@@ -223,24 +223,28 @@ impl Component for Stashing {
 			}
 
 			if let Event::Key(k) = ev {
-				return if k == self.key_config.keys.stashing_save
-					&& !self.index.is_empty()
+				return if key_match(
+					k,
+					self.key_config.keys.stashing_save,
+				) && !self.index.is_empty()
 				{
 					self.queue.push(InternalEvent::PopupStashing(
 						self.options,
 					));
 
 					Ok(EventState::Consumed)
-				} else if k
-					== self.key_config.keys.stashing_toggle_index
-				{
+				} else if key_match(
+					k,
+					self.key_config.keys.stashing_toggle_index,
+				) {
 					self.options.keep_index =
 						!self.options.keep_index;
 					self.update()?;
 					Ok(EventState::Consumed)
-				} else if k
-					== self.key_config.keys.stashing_toggle_untracked
-				{
+				} else if key_match(
+					k,
+					self.key_config.keys.stashing_toggle_untracked,
+				) {
 					self.options.stash_untracked =
 						!self.options.stash_untracked;
 					self.update()?;
@@ -269,6 +273,7 @@ impl Component for Stashing {
 		self.options.stash_untracked =
 			!config_untracked_files.include_none();
 
+		self.index.show()?;
 		self.visible = true;
 		self.update()?;
 		Ok(())

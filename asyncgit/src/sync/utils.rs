@@ -16,7 +16,7 @@ use std::{
 };
 
 ///
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Head {
 	///
 	pub name: String,
@@ -187,6 +187,17 @@ pub(crate) fn repo_write_file(
 	Ok(())
 }
 
+///
+pub fn read_file(path: &Path) -> Result<String> {
+	use std::io::Read;
+
+	let mut file = File::open(path)?;
+	let mut buffer = Vec::new();
+	file.read_to_end(&mut buffer)?;
+
+	Ok(String::from_utf8(buffer)?)
+}
+
 #[cfg(test)]
 pub(crate) fn repo_read_file(
 	repo: &Repository,
@@ -245,12 +256,12 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"test file1 content")
 			.unwrap();
 
-		File::create(&root.join(Path::new("file2.txt")))
+		File::create(root.join(Path::new("file2.txt")))
 			.unwrap()
 			.write_all(b"test file2 content")
 			.unwrap();
@@ -273,12 +284,12 @@ mod tests {
 			get_status(repo_path, s, None).unwrap().len()
 		};
 
-		fs::create_dir_all(&root.join("a/d"))?;
-		File::create(&root.join(Path::new("a/d/f1.txt")))?
+		fs::create_dir_all(root.join("a/d"))?;
+		File::create(root.join(Path::new("a/d/f1.txt")))?
 			.write_all(b"foo")?;
-		File::create(&root.join(Path::new("a/d/f2.txt")))?
+		File::create(root.join(Path::new("a/d/f2.txt")))?
 			.write_all(b"foo")?;
-		File::create(&root.join(Path::new("a/f3.txt")))?
+		File::create(root.join(Path::new("a/f3.txt")))?
 			.write_all(b"foo")?;
 
 		assert_eq!(status_count(StatusType::WorkingDir), 3);
@@ -335,12 +346,12 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		fs::create_dir_all(&root.join("a/d"))?;
-		File::create(&root.join(Path::new("a/d/f1.txt")))?
+		fs::create_dir_all(root.join("a/d"))?;
+		File::create(root.join(Path::new("a/d/f1.txt")))?
 			.write_all(b"foo")?;
-		File::create(&root.join(Path::new("a/d/f2.txt")))?
+		File::create(root.join(Path::new("a/d/f2.txt")))?
 			.write_all(b"foo")?;
-		File::create(&root.join(Path::new("f3.txt")))?
+		File::create(root.join(Path::new("f3.txt")))?
 			.write_all(b"foo")?;
 
 		assert_eq!(get_statuses(repo_path), (3, 0));

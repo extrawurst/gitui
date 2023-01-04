@@ -10,6 +10,12 @@ use unicode_truncate::UnicodeTruncateStr;
 )]
 pub struct CommitId(Oid);
 
+impl Default for CommitId {
+	fn default() -> Self {
+		Self(Oid::zero())
+	}
+}
+
 impl CommitId {
 	/// create new `CommitId`
 	pub const fn new(id: Oid) -> Self {
@@ -27,8 +33,6 @@ impl CommitId {
 	}
 }
 
-//TODO: remove once clippy fixed: https://github.com/rust-lang/rust-clippy/issues/6983
-#[allow(clippy::wrong_self_convention)]
 impl ToString for CommitId {
 	fn to_string(&self) -> String {
 		self.0.to_string()
@@ -153,15 +157,14 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		let c1 = commit(repo_path, "commit1").unwrap();
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		let c2 = commit(repo_path, "commit2").unwrap();
 
-		let res =
-			get_commits_info(repo_path, &vec![c2, c1], 50).unwrap();
+		let res = get_commits_info(repo_path, &[c2, c1], 50).unwrap();
 
 		assert_eq!(res.len(), 2);
 		assert_eq!(res[0].message.as_str(), "commit2");
@@ -179,11 +182,11 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		let c1 = commit(repo_path, "subject\nbody").unwrap();
 
-		let res = get_commits_info(repo_path, &vec![c1], 50).unwrap();
+		let res = get_commits_info(repo_path, &[c1], 50).unwrap();
 
 		assert_eq!(res.len(), 1);
 		assert_eq!(res[0].message.as_str(), "subject");
@@ -199,7 +202,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 
 		let msg = invalidstring::invalid_utf8("test msg");
@@ -207,7 +210,7 @@ mod tests {
 
 		let res = get_commits_info(
 			repo_path,
-			&vec![get_head_repo(&repo).unwrap().into()],
+			&[get_head_repo(&repo).unwrap()],
 			50,
 		)
 		.unwrap();

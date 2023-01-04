@@ -1,20 +1,27 @@
 use super::{
-	utils::scroll_vertical::VerticalScroll, CommandBlocking,
-	CommandInfo, Component, DrawableComponent, EventState,
-	SyntaxTextComponent,
+	utils::scroll_vertical::VerticalScroll, BlameFileOpen,
+	CommandBlocking, CommandInfo, Component, DrawableComponent,
+	EventState, FileRevOpen, SyntaxTextComponent,
 };
 use crate::{
-	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order, symbol},
 	ui::{self, common_nav, style::SharedTheme},
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::Result;
-use asyncgit::sync::{self, CommitId, RepoPathRef, TreeFile};
+use asyncgit::{
+	asyncjob::AsyncSingleJob,
+	sync::{
+		get_commit_info, CommitId, CommitInfo, RepoPathRef, TreeFile,
+	},
+	AsyncGitNotification, AsyncTreeFilesJob,
+};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
+use std::{borrow::Cow, fmt::Write};
 use std::{
 	collections::BTreeSet,
 	convert::From,
@@ -27,6 +34,8 @@ use tui::{
 	widgets::{Block, Borders},
 	Frame,
 };
+use unicode_truncate::UnicodeTruncateStr;
+use unicode_width::UnicodeWidthStr;
 
 enum Focus {
 	Tree,
@@ -38,11 +47,13 @@ pub struct RevisionFilesComponent {
 	queue: Queue,
 	theme: SharedTheme,
 	//TODO: store TreeFiles in `tree`
-	files: Vec<TreeFile>,
+	files: Option<Vec<TreeFile>>,
+	async_treefiles: AsyncSingleJob<AsyncTreeFilesJob>,
 	current_file: SyntaxTextComponent,
 	tree: FileTree,
 	scroll: VerticalScroll,
-	revision: Option<CommitId>,
+	visible: bool,
+	revision: Option<CommitInfo>,
 	focus: Focus,
 	key_config: SharedKeyConfig,
 }
@@ -53,6 +64,7 @@ impl RevisionFilesComponent {
 		repo: RepoPathRef,
 		queue: &Queue,
 		sender: &Sender<AsyncAppNotification>,
+		sender_git: Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
@@ -66,52 +78,108 @@ impl RevisionFilesComponent {
 				key_config.clone(),
 				theme.clone(),
 			),
+			async_treefiles: AsyncSingleJob::new(sender_git),
 			theme,
-			files: Vec::new(),
+			files: None,
 			revision: None,
 			focus: Focus::Tree,
 			key_config,
 			repo,
+			visible: false,
 		}
 	}
 
 	///
 	pub fn set_commit(&mut self, commit: CommitId) -> Result<()> {
+		self.show()?;
+
 		let same_id =
-			self.revision.map(|c| c == commit).unwrap_or_default();
+			self.revision.as_ref().map_or(false, |c| c.id == commit);
+
 		if !same_id {
-			self.files =
-				sync::tree_files(&self.repo.borrow(), commit)?;
-			let filenames: Vec<&Path> =
-				self.files.iter().map(|f| f.path.as_path()).collect();
-			self.tree = FileTree::new(&filenames, &BTreeSet::new())?;
-			self.tree.collapse_but_root();
-			self.revision = Some(commit);
+			self.files = None;
+
+			self.request_files(commit);
+
+			self.revision =
+				Some(get_commit_info(&self.repo.borrow(), &commit)?);
 		}
 
 		Ok(())
 	}
 
 	///
-	pub fn update(&mut self, ev: AsyncNotification) {
+	pub const fn revision(&self) -> Option<&CommitInfo> {
+		self.revision.as_ref()
+	}
+
+	///
+	pub const fn selection(&self) -> Option<usize> {
+		self.tree.selection()
+	}
+
+	///
+	pub fn update(&mut self, ev: AsyncNotification) -> Result<()> {
 		self.current_file.update(ev);
+
+		if matches!(
+			ev,
+			AsyncNotification::Git(AsyncGitNotification::TreeFiles)
+		) {
+			self.refresh_files()?;
+		}
+
+		Ok(())
+	}
+
+	fn refresh_files(&mut self) -> Result<(), anyhow::Error> {
+		if let Some(last) = self.async_treefiles.take_last() {
+			if let Some(result) = last.result() {
+				if self
+					.revision
+					.as_ref()
+					.map(|commit| commit.id == result.commit)
+					.unwrap_or_default()
+				{
+					if let Ok(last) = result.result {
+						let filenames: Vec<&Path> = last
+							.iter()
+							.map(|f| f.path.as_path())
+							.collect();
+						self.tree = FileTree::new(
+							&filenames,
+							&BTreeSet::new(),
+						)?;
+						self.tree.collapse_but_root();
+
+						self.files = Some(last);
+					}
+				} else if let Some(rev) = &self.revision {
+					self.request_files(rev.id);
+				}
+			}
+		}
+
+		Ok(())
 	}
 
 	///
 	pub fn any_work_pending(&self) -> bool {
 		self.current_file.any_work_pending()
+			|| self.async_treefiles.is_pending()
 	}
 
 	fn tree_item_to_span<'a>(
 		item: &'a FileTreeItem,
 		theme: &SharedTheme,
+		width: usize,
 		selected: bool,
 	) -> Span<'a> {
 		let path = item.info().path_str();
 		let indent = item.info().indent();
 
 		let indent_str = if indent == 0 {
-			String::from("")
+			String::new()
 		} else {
 			format!("{:w$}", " ", w = (indent as usize) * 2)
 		};
@@ -127,25 +195,46 @@ impl RevisionFilesComponent {
 			symbol::EMPTY_STR
 		};
 
-		let path = format!("{}{}{}", indent_str, path_arrow, path);
+		let available_width =
+			width.saturating_sub(indent_str.len() + path_arrow.len());
+
+		let path = format!(
+			"{indent_str}{path_arrow}{path:available_width$}"
+		);
+
 		Span::styled(path, theme.file_tree_item(is_path, selected))
 	}
 
 	fn blame(&self) -> bool {
-		self.tree.selected_file().map_or(false, |file| {
-			self.queue.push(InternalEvent::BlameFile(
-				file.full_path_str()
-					.strip_prefix("./")
-					.unwrap_or_default()
-					.to_string(),
+		self.selected_file_path().map_or(false, |path| {
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::BlameFile(BlameFileOpen {
+					file_path: path,
+					commit_id: self.revision.as_ref().map(|c| c.id),
+					selection: None,
+				}),
 			));
+
+			true
+		})
+	}
+
+	fn file_history(&self) -> bool {
+		self.selected_file_path().map_or(false, |path| {
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::FileRevlog(FileRevOpen::new(
+					path,
+				)),
+			));
+
 			true
 		})
 	}
 
 	fn open_finder(&self) {
-		self.queue
-			.push(InternalEvent::OpenFileFinder(self.files.clone()));
+		self.queue.push(InternalEvent::OpenFileFinder(
+			self.files.clone().unwrap_or_default(),
+		));
 	}
 
 	pub fn find_file(&mut self, file: &Option<PathBuf>) {
@@ -157,33 +246,44 @@ impl RevisionFilesComponent {
 		}
 	}
 
-	fn selected_file(&self) -> Option<String> {
+	fn selected_file_path_with_prefix(&self) -> Option<String> {
 		self.tree
 			.selected_file()
 			.map(|file| file.full_path_str().to_string())
 	}
 
+	fn selected_file_path(&self) -> Option<String> {
+		self.tree.selected_file().map(|file| {
+			file.full_path_str()
+				.strip_prefix("./")
+				.unwrap_or_default()
+				.to_string()
+		})
+	}
+
 	fn selection_changed(&mut self) {
 		//TODO: retrieve TreeFile from tree datastructure
-		if let Some(file) = self.selected_file() {
-			log::info!("selected: {:?}", file);
-			let path = Path::new(&file);
-			if let Some(item) =
-				self.files.iter().find(|f| f.path == path)
-			{
-				if let Ok(path) = path.strip_prefix("./") {
-					return self.current_file.load_file(
-						path.to_string_lossy().to_string(),
-						item,
-					);
+		if let Some(file) = self.selected_file_path_with_prefix() {
+			if let Some(files) = &self.files {
+				let path = Path::new(&file);
+				if let Some(item) =
+					files.iter().find(|f| f.path == path)
+				{
+					if let Ok(path) = path.strip_prefix("./") {
+						return self.current_file.load_file(
+							path.to_string_lossy().to_string(),
+							item,
+						);
+					}
 				}
+				self.current_file.clear();
 			}
-			self.current_file.clear();
 		}
 	}
 
 	fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
 		let tree_height = usize::from(area.height.saturating_sub(2));
+		let tree_width = usize::from(area.width);
 
 		self.tree.visual_selection().map_or_else(
 			|| {
@@ -202,33 +302,86 @@ impl RevisionFilesComponent {
 			.tree
 			.iterate(self.scroll.get_top(), tree_height)
 			.map(|(item, selected)| {
-				Self::tree_item_to_span(item, &self.theme, selected)
+				Self::tree_item_to_span(
+					item,
+					&self.theme,
+					tree_width,
+					selected,
+				)
 			});
 
 		let is_tree_focused = matches!(self.focus, Focus::Tree);
 
-		let title = format!(
-			"Files at [{}]",
-			self.revision
-				.map(|c| c.get_short_string())
-				.unwrap_or_default(),
-		);
-		ui::draw_list_block(
-			f,
-			area,
-			Block::default()
-				.title(Span::styled(
-					title,
-					self.theme.title(is_tree_focused),
-				))
-				.borders(Borders::ALL)
-				.border_style(self.theme.block(is_tree_focused)),
-			items,
-		);
+		let title = self.title_within(tree_width);
+		let block = Block::default()
+			.title(Span::styled(
+				title,
+				self.theme.title(is_tree_focused),
+			))
+			.borders(Borders::ALL)
+			.border_style(self.theme.block(is_tree_focused));
+
+		if self.files.is_some() {
+			ui::draw_list_block(f, area, block, items);
+		} else {
+			ui::draw_list_block(
+				f,
+				area,
+				block,
+				vec![Span::styled(
+					Cow::from(strings::loading_text(
+						&self.key_config,
+					)),
+					self.theme.text(false, false),
+				)]
+				.into_iter(),
+			);
+		}
 
 		if is_tree_focused {
 			self.scroll.draw(f, area, &self.theme);
 		}
+	}
+
+	fn title_within(&self, tree_width: usize) -> String {
+		let mut title = String::from("Files at");
+		let message = self.revision.as_ref().and_then(|c| {
+			let _ = write!(title, " {{{}}}", c.id.get_short_string());
+
+			c.message.lines().next()
+		});
+
+		if let Some(message) = message {
+			const ELLIPSIS: char = '\u{2026}'; // …
+
+			let available = tree_width
+				.saturating_sub(title.width())
+				.saturating_sub(
+					2 /* frame end corners */ + 1 /* space */ + 2, /* square brackets */
+				);
+
+			if message.width() <= available {
+				let _ = write!(title, " [{message}]");
+			} else if available > 1 {
+				let _ = write!(
+					title,
+					" [{}{}]",
+					message.unicode_truncate(available - 1).0,
+					ELLIPSIS
+				);
+			} else {
+				title.push(ELLIPSIS);
+			}
+		}
+
+		title
+	}
+
+	fn request_files(&mut self, commit: CommitId) {
+		self.async_treefiles.spawn(AsyncTreeFilesJob::new(
+			self.repo.borrow().clone(),
+			commit,
+		));
 	}
 }
 
@@ -264,6 +417,10 @@ impl Component for RevisionFilesComponent {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
+		if !self.is_visible() && !force_all {
+			return CommandBlocking::PassingOn;
+		}
+
 		let is_tree_focused = matches!(self.focus, Focus::Tree);
 
 		if is_tree_focused || force_all {
@@ -280,6 +437,16 @@ impl Component for RevisionFilesComponent {
 				self.tree.selected_file().is_some(),
 				true,
 			));
+			out.push(
+				CommandInfo::new(
+					strings::commands::open_file_history(
+						&self.key_config,
+					),
+					self.tree.selected_file().is_some(),
+					true,
+				)
+				.order(order::RARE_ACTION),
+			);
 			tree_nav_cmds(&self.tree, &self.key_config, out);
 		} else {
 			self.current_file.commands(out, force_all);
@@ -290,8 +457,12 @@ impl Component for RevisionFilesComponent {
 
 	fn event(
 		&mut self,
-		event: crossterm::event::Event,
+		event: &crossterm::event::Event,
 	) -> Result<EventState> {
+		if !self.is_visible() {
+			return Ok(EventState::NotConsumed);
+		}
+
 		if let Event::Key(key) = event {
 			let is_tree_focused = matches!(self.focus, Focus::Tree);
 			if is_tree_focused
@@ -299,35 +470,46 @@ impl Component for RevisionFilesComponent {
 			{
 				self.selection_changed();
 				return Ok(EventState::Consumed);
-			} else if key == self.key_config.keys.blame {
+			} else if key_match(key, self.key_config.keys.blame) {
 				if self.blame() {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.keys.move_right {
+			} else if key_match(
+				key,
+				self.key_config.keys.file_history,
+			) {
+				if self.file_history() {
+					self.hide();
+					return Ok(EventState::Consumed);
+				}
+			} else if key_match(key, self.key_config.keys.move_right)
+			{
 				if is_tree_focused {
 					self.focus = Focus::File;
 					self.current_file.focus(true);
 					self.focus(true);
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.keys.move_left {
+			} else if key_match(key, self.key_config.keys.move_left) {
 				if !is_tree_focused {
 					self.focus = Focus::Tree;
 					self.current_file.focus(false);
 					self.focus(false);
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.keys.file_find {
+			} else if key_match(key, self.key_config.keys.file_find) {
 				if is_tree_focused {
 					self.open_finder();
 					return Ok(EventState::Consumed);
 				}
-			} else if key == self.key_config.keys.edit_file {
-				if let Some(file) = self.selected_file() {
+			} else if key_match(key, self.key_config.keys.edit_file) {
+				if let Some(file) =
+					self.selected_file_path_with_prefix()
+				{
 					//Note: switch to status tab so its clear we are
 					// not altering a file inside a revision here
-					self.queue.push(InternalEvent::TabSwitch);
+					self.queue.push(InternalEvent::TabSwitchStatus);
 					self.queue.push(
 						InternalEvent::OpenExternalEditor(Some(file)),
 					);
@@ -339,6 +521,20 @@ impl Component for RevisionFilesComponent {
 		}
 
 		Ok(EventState::NotConsumed)
+	}
+
+	fn hide(&mut self) {
+		self.visible = false;
+	}
+
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+		self.refresh_files()?;
+		Ok(())
 	}
 }
 
@@ -362,14 +558,15 @@ fn tree_nav_cmds(
 fn tree_nav(
 	tree: &mut FileTree,
 	key_config: &SharedKeyConfig,
-	key: crossterm::event::KeyEvent,
+	key: &crossterm::event::KeyEvent,
 ) -> bool {
 	if let Some(common_nav) = common_nav(key, key_config) {
 		tree.move_selection(common_nav)
-	} else if key == key_config.keys.tree_collapse_recursive {
+	} else if key_match(key, key_config.keys.tree_collapse_recursive)
+	{
 		tree.collapse_recursive();
 		true
-	} else if key == key_config.keys.tree_expand_recursive {
+	} else if key_match(key, key_config.keys.tree_expand_recursive) {
 		tree.expand_recursive();
 		true
 	} else {

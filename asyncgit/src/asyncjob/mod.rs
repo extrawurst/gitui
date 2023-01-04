@@ -96,11 +96,7 @@ impl<J: 'static + AsyncJob> AsyncSingleJob<J> {
 
 	/// take out last finished job
 	pub fn take_last(&self) -> Option<J> {
-		if let Ok(mut last) = self.last.lock() {
-			last.take()
-		} else {
-			None
-		}
+		self.last.lock().map_or(None, |mut last| last.take())
 	}
 
 	/// spawns `task` if nothing is running currently,
@@ -164,11 +160,7 @@ impl<J: 'static + AsyncJob> AsyncSingleJob<J> {
 	}
 
 	fn take_next(&self) -> Option<J> {
-		if let Ok(mut next) = self.next.lock() {
-			next.take()
-		} else {
-			None
-		}
+		self.next.lock().map_or(None, |mut next| next.take())
 	}
 }
 
@@ -215,7 +207,7 @@ mod test {
 			let res =
 				self.v.fetch_add(self.value_to_add, Ordering::SeqCst);
 
-			println!("[job] value: {}", res);
+			println!("[job] value: {res}");
 
 			Ok(())
 		}
@@ -244,8 +236,8 @@ mod test {
 		}
 
 		println!("recv");
-		let _foo = receiver.recv().unwrap();
-		let _foo = receiver.recv().unwrap();
+		receiver.recv().unwrap();
+		receiver.recv().unwrap();
 		assert!(receiver.is_empty());
 
 		assert_eq!(
@@ -290,7 +282,7 @@ mod test {
 		wait_for_job(&job);
 
 		println!("recv");
-		let _foo = receiver.recv().unwrap();
+		receiver.recv().unwrap();
 		println!("received");
 
 		assert_eq!(

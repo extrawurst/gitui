@@ -352,7 +352,7 @@ impl StatusTree {
 			*collapsed = true;
 		}
 
-		let path = format!("{}/", path);
+		let path = format!("{path}/");
 
 		for i in index + 1..self.tree.len() {
 			let item = &mut self.tree[i];
@@ -373,7 +373,7 @@ impl StatusTree {
 			*collapsed = false;
 		}
 
-		let path = format!("{}/", path);
+		let path = format!("{path}/");
 
 		self.update_visibility(
 			Some(path.as_str()),

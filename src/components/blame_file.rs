@@ -1,11 +1,13 @@
 use super::{
 	utils, visibility_blocking, CommandBlocking, CommandInfo,
-	Component, DrawableComponent, EventState,
+	Component, DrawableComponent, EventState, FileRevOpen,
+	InspectCommitOpen,
 };
 use crate::{
 	components::{utils::string_width_align, ScrollType},
-	keys::SharedKeyConfig,
-	queue::{InternalEvent, Queue},
+	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
+	string_utils::tabs_to_spaces,
 	strings,
 	ui::{self, style::SharedTheme},
 };
@@ -26,41 +28,31 @@ use tui::{
 	Frame,
 };
 
+static NO_COMMIT_ID: &str = "0000000";
+static NO_AUTHOR: &str = "<no author>";
+static MIN_AUTHOR_WIDTH: usize = 3;
+static MAX_AUTHOR_WIDTH: usize = 20;
+
+#[derive(Clone, Debug)]
+pub struct BlameFileOpen {
+	pub file_path: String,
+	pub commit_id: Option<CommitId>,
+	pub selection: Option<usize>,
+}
+
 pub struct BlameFileComponent {
 	title: String,
 	theme: SharedTheme,
 	queue: Queue,
 	async_blame: AsyncBlame,
 	visible: bool,
-	file_path: Option<String>,
+	open_request: Option<BlameFileOpen>,
+	params: Option<BlameParams>,
 	file_blame: Option<FileBlame>,
 	table_state: std::cell::Cell<TableState>,
 	key_config: SharedKeyConfig,
 	current_height: std::cell::Cell<usize>,
 }
-
-static NO_COMMIT_ID: &str = "0000000";
-static NO_AUTHOR: &str = "<no author>";
-static MIN_AUTHOR_WIDTH: usize = 3;
-static MAX_AUTHOR_WIDTH: usize = 20;
-
-fn get_author_width(width: usize) -> usize {
-	(width.saturating_sub(19) / 3)
-		.clamp(MIN_AUTHOR_WIDTH, MAX_AUTHOR_WIDTH)
-}
-
-const fn number_of_digits(number: usize) -> usize {
-	let mut rest = number;
-	let mut result = 0;
-
-	while rest > 0 {
-		rest /= 10;
-		result += 1;
-	}
-
-	result
-}
-
 impl DrawableComponent for BlameFileComponent {
 	fn draw<B: Backend>(
 		&self,
@@ -174,6 +166,16 @@ impl Component for BlameFileComponent {
 				)
 				.order(1),
 			);
+			out.push(
+				CommandInfo::new(
+					strings::commands::open_file_history(
+						&self.key_config,
+					),
+					true,
+					self.file_blame.is_some(),
+				)
+				.order(1),
+			);
 		}
 
 		visibility_blocking(self)
@@ -181,42 +183,72 @@ impl Component for BlameFileComponent {
 
 	fn event(
 		&mut self,
-		event: crossterm::event::Event,
+		event: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if self.is_visible() {
 			if let Event::Key(key) = event {
-				if key == self.key_config.keys.exit_popup {
-					self.hide();
-				} else if key == self.key_config.keys.move_up {
+				if key_match(key, self.key_config.keys.exit_popup) {
+					self.hide_stacked(false);
+				} else if key_match(key, self.key_config.keys.move_up)
+				{
 					self.move_selection(ScrollType::Up);
-				} else if key == self.key_config.keys.move_down {
+				} else if key_match(
+					key,
+					self.key_config.keys.move_down,
+				) {
 					self.move_selection(ScrollType::Down);
-				} else if key == self.key_config.keys.shift_up
-					|| key == self.key_config.keys.home
-				{
+				} else if key_match(
+					key,
+					self.key_config.keys.shift_up,
+				) || key_match(
+					key,
+					self.key_config.keys.home,
+				) {
 					self.move_selection(ScrollType::Home);
-				} else if key == self.key_config.keys.shift_down
-					|| key == self.key_config.keys.end
-				{
+				} else if key_match(
+					key,
+					self.key_config.keys.shift_down,
+				) || key_match(
+					key,
+					self.key_config.keys.end,
+				) {
 					self.move_selection(ScrollType::End);
-				} else if key == self.key_config.keys.page_down {
+				} else if key_match(
+					key,
+					self.key_config.keys.page_down,
+				) {
 					self.move_selection(ScrollType::PageDown);
-				} else if key == self.key_config.keys.page_up {
+				} else if key_match(key, self.key_config.keys.page_up)
+				{
 					self.move_selection(ScrollType::PageUp);
-				} else if key == self.key_config.keys.focus_right {
-					self.hide();
-
-					return self.selected_commit().map_or(
-						Ok(EventState::NotConsumed),
-						|id| {
-							self.queue.push(
-								InternalEvent::InspectCommit(
-									id, None,
-								),
-							);
-							Ok(EventState::Consumed)
-						},
-					);
+				} else if key_match(
+					key,
+					self.key_config.keys.focus_right,
+				) {
+					if let Some(commit_id) = self.selected_commit() {
+						self.hide_stacked(true);
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::InspectCommit(
+								InspectCommitOpen::new(commit_id),
+							),
+						));
+					}
+				} else if key_match(
+					key,
+					self.key_config.keys.file_history,
+				) {
+					if let Some(filepath) = self
+						.params
+						.as_ref()
+						.map(|p| p.file_path.clone())
+					{
+						self.hide_stacked(true);
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::FileRevlog(
+								FileRevOpen::new(filepath),
+							),
+						));
+					}
 				}
 
 				return Ok(EventState::Consumed);
@@ -228,10 +260,6 @@ impl Component for BlameFileComponent {
 
 	fn is_visible(&self) -> bool {
 		self.visible
-	}
-
-	fn hide(&mut self) {
-		self.visible = false;
 	}
 
 	fn show(&mut self) -> Result<()> {
@@ -260,20 +288,42 @@ impl BlameFileComponent {
 			),
 			queue: queue.clone(),
 			visible: false,
-			file_path: None,
+			params: None,
 			file_blame: None,
+			open_request: None,
 			table_state: std::cell::Cell::new(TableState::default()),
 			key_config,
 			current_height: std::cell::Cell::new(0),
 		}
 	}
 
+	fn hide_stacked(&mut self, stack: bool) {
+		self.visible = false;
+		if stack {
+			if let Some(request) = self.open_request.clone() {
+				self.queue.push(InternalEvent::PopupStackPush(
+					StackablePopupOpen::BlameFile(BlameFileOpen {
+						file_path: request.file_path,
+						commit_id: request.commit_id,
+						selection: self.get_selection(),
+					}),
+				));
+			}
+		} else {
+			self.queue.push(InternalEvent::PopupStackPop);
+		}
+	}
+
 	///
-	pub fn open(&mut self, file_path: &str) -> Result<()> {
-		self.file_path = Some(file_path.into());
+	pub fn open(&mut self, open: BlameFileOpen) -> Result<()> {
+		self.open_request = Some(open.clone());
+		self.params = Some(BlameParams {
+			file_path: open.file_path,
+			commit_id: open.commit_id,
+		});
 		self.file_blame = None;
 		self.table_state.get_mut().select(Some(0));
-		self.show()?;
+		self.visible = true;
 
 		self.update()?;
 
@@ -299,24 +349,21 @@ impl BlameFileComponent {
 
 	fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			if let Some(file_path) = &self.file_path {
-				let blame_params = BlameParams {
-					file_path: file_path.into(),
-				};
-
+			if let Some(params) = &self.params {
 				if let Some((
 					previous_blame_params,
 					last_file_blame,
 				)) = self.async_blame.last()?
 				{
-					if previous_blame_params == blame_params {
+					if previous_blame_params == *params {
 						self.file_blame = Some(last_file_blame);
+						self.set_open_selection();
 
 						return Ok(());
 					}
 				}
 
-				self.async_blame.request(blame_params)?;
+				self.async_blame.request(params.clone())?;
 			}
 		}
 
@@ -327,27 +374,27 @@ impl BlameFileComponent {
 	fn get_title(&self) -> String {
 		match (
 			self.any_work_pending(),
-			self.file_path.as_ref(),
+			self.params.as_ref(),
 			self.file_blame.as_ref(),
 		) {
-			(true, Some(file_path), _) => {
+			(true, Some(params), _) => {
 				format!(
 					"{} -- {} -- <calculating.. (who is to blame?)>",
-					self.title, file_path
+					self.title, params.file_path
 				)
 			}
-			(false, Some(file_path), Some(file_blame)) => {
+			(false, Some(params), Some(file_blame)) => {
 				format!(
 					"{} -- {} -- {}",
 					self.title,
-					file_path,
+					params.file_path,
 					file_blame.commit_id.get_short_string()
 				)
 			}
-			(false, Some(file_path), None) => {
+			(false, Some(params), None) => {
 				format!(
 					"{} -- {} -- <no blame available>",
-					self.title, file_path
+					self.title, params.file_path
 				)
 			}
 			_ => format!("{} -- <no blame available>", self.title),
@@ -407,15 +454,12 @@ impl BlameFileComponent {
 		let line_number_width = self.get_line_number_width();
 		cells.push(
 			Cell::from(format!(
-				"{:>line_number_width$}{}",
-				line_number,
-				VERTICAL,
-				line_number_width = line_number_width,
+				"{line_number:>line_number_width$}{VERTICAL}",
 			))
 			.style(self.theme.text(true, false)),
 		);
 		cells.push(
-			Cell::from(String::from(line))
+			Cell::from(tabs_to_spaces(String::from(line)))
 				.style(self.theme.text(true, false)),
 		);
 
@@ -436,15 +480,10 @@ impl BlameFileComponent {
 			|| NO_AUTHOR.into(),
 			|hunk| string_width_align(&hunk.author, author_width),
 		);
-		let author = format!(
-			"{:author_width$}",
-			truncated_author,
-			author_width = MAX_AUTHOR_WIDTH
-		);
-		let time = blame_hunk.map_or_else(
-			|| "".into(),
-			|hunk| utils::time_to_string(hunk.time, true),
-		);
+		let author = format!("{truncated_author:MAX_AUTHOR_WIDTH$}");
+		let time = blame_hunk.map_or_else(String::new, |hunk| {
+			utils::time_to_string(hunk.time, true)
+		});
 
 		let is_blamed_commit = self
 			.file_blame
@@ -508,6 +547,28 @@ impl BlameFileComponent {
 		needs_update
 	}
 
+	fn set_open_selection(&mut self) {
+		if let Some(selection) =
+			self.open_request.as_ref().and_then(|req| req.selection)
+		{
+			let mut table_state = self.table_state.take();
+			table_state.select(Some(selection));
+			self.table_state.set(table_state);
+		}
+	}
+
+	fn get_selection(&self) -> Option<usize> {
+		self.file_blame.as_ref().and_then(|_| {
+			let table_state = self.table_state.take();
+
+			let selection = table_state.selected();
+
+			self.table_state.set(table_state);
+
+			selection
+		})
+	}
+
 	fn selected_commit(&self) -> Option<CommitId> {
 		self.file_blame.as_ref().and_then(|file_blame| {
 			let table_state = self.table_state.take();
@@ -525,4 +586,21 @@ impl BlameFileComponent {
 			commit_id
 		})
 	}
+}
+
+fn get_author_width(width: usize) -> usize {
+	(width.saturating_sub(19) / 3)
+		.clamp(MIN_AUTHOR_WIDTH, MAX_AUTHOR_WIDTH)
+}
+
+const fn number_of_digits(number: usize) -> usize {
+	let mut rest = number;
+	let mut result = 0;
+
+	while rest > 0 {
+		rest /= 10;
+		result += 1;
+	}
+
+	result
 }

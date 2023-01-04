@@ -4,7 +4,7 @@ use super::{
 	EventState,
 };
 use crate::{
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
 	ui::style::SharedTheme,
@@ -55,14 +55,14 @@ impl Component for RenameBranchComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.is_visible() {
 			if self.input.event(ev)?.is_consumed() {
 				return Ok(EventState::Consumed);
 			}
 
 			if let Event::Key(e) = ev {
-				if e == self.key_config.keys.enter {
+				if key_match(e, self.key_config.keys.enter) {
 					self.rename_branch();
 				}
 
@@ -144,7 +144,7 @@ impl RenameBranchComponent {
 				Err(e) => {
 					log::error!("create branch: {}", e,);
 					self.queue.push(InternalEvent::ShowErrorMsg(
-						format!("rename branch error:\n{}", e,),
+						format!("rename branch error:\n{e}",),
 					));
 				}
 			}

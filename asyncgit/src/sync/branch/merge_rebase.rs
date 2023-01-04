@@ -38,7 +38,7 @@ mod test {
 	use super::*;
 	use crate::sync::{
 		branch_compare_upstream, get_commits_info,
-		remotes::{fetch, push::push},
+		remotes::{fetch, push::push_branch},
 		tests::{
 			debug_cmd_print, get_commit_ids, repo_clone,
 			repo_init_bare, write_commit_file, write_commit_file_at,
@@ -81,7 +81,7 @@ mod test {
 
 		assert_eq!(clone1.head_detached().unwrap(), false);
 
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"master",
@@ -111,7 +111,7 @@ mod test {
 
 		assert_eq!(clone2.head_detached().unwrap(), false);
 
-		push(
+		push_branch(
 			&clone2_dir.into(),
 			"origin",
 			"master",
@@ -193,7 +193,7 @@ mod test {
 			Time::new(0, 0),
 		);
 
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"master",
@@ -219,7 +219,7 @@ mod test {
 			Time::new(1, 0),
 		);
 
-		push(
+		push_branch(
 			&clone2_dir.into(),
 			"origin",
 			"master",
@@ -287,7 +287,7 @@ mod test {
 		let _commit1 =
 			write_commit_file(&clone1, "test.txt", "test", "commit1");
 
-		push(
+		push_branch(
 			&clone1_dir.into(),
 			"origin",
 			"master",
@@ -312,7 +312,7 @@ mod test {
 			"commit2",
 		);
 
-		push(
+		push_branch(
 			&clone2_dir.into(),
 			"origin",
 			"master",

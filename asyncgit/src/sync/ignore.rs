@@ -77,7 +77,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"test")?;
+		File::create(root.join(file_path))?.write_all(b"test")?;
 
 		assert_eq!(root.join(ignore_file_path).exists(), false);
 		add_to_ignore(repo_path, file_path.to_str().unwrap())?;
@@ -105,14 +105,14 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"test")?;
-		File::create(&root.join(ignore_file_path))?
+		File::create(root.join(file_path))?.write_all(b"test")?;
+		File::create(root.join(ignore_file_path))?
 			.write_all(b"foo\n")?;
 
 		add_to_ignore(repo_path, file_path.to_str().unwrap())?;
 
 		let mut lines =
-			read_lines(&root.join(ignore_file_path)).unwrap();
+			read_lines(root.join(ignore_file_path)).unwrap();
 		assert_eq!(&lines.nth(1).unwrap().unwrap(), "foo.txt");
 
 		Ok(())
@@ -127,14 +127,14 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"test")?;
-		File::create(&root.join(ignore_file_path))?
+		File::create(root.join(file_path))?.write_all(b"test")?;
+		File::create(root.join(ignore_file_path))?
 			.write_all(b"foo")?;
 
 		add_to_ignore(repo_path, file_path.to_str().unwrap())?;
 
 		let mut lines =
-			read_lines(&root.join(ignore_file_path)).unwrap();
+			read_lines(root.join(ignore_file_path)).unwrap();
 		assert_eq!(&lines.nth(1).unwrap().unwrap(), "foo.txt");
 
 		Ok(())
@@ -153,7 +153,7 @@ mod tests {
 		let res = add_to_ignore(repo_path, ".gitignore");
 		assert!(res.is_err());
 
-		let lines = read_lines(&root.join(ignore_file_path)).unwrap();
+		let lines = read_lines(root.join(ignore_file_path)).unwrap();
 		assert_eq!(lines.count(), 1);
 	}
 }

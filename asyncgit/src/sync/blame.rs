@@ -5,6 +5,7 @@ use crate::{
 	error::{Error, Result},
 	sync::{get_commits_info, repository::repo},
 };
+use git2::BlameOptions;
 use scopetime::scope_time;
 use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
@@ -43,7 +44,7 @@ pub struct FileBlame {
 fn fixup_windows_path(path: &str) -> String {
 	#[cfg(windows)]
 	{
-		path.replace("\\", "/")
+		path.replace('\\', "/")
 	}
 
 	#[cfg(not(windows))]
@@ -56,12 +57,17 @@ fn fixup_windows_path(path: &str) -> String {
 pub fn blame_file(
 	repo_path: &RepoPath,
 	file_path: &str,
+	commit_id: Option<CommitId>,
 ) -> Result<FileBlame> {
 	scope_time!("blame_file");
 
 	let repo = repo(repo_path)?;
 
-	let commit_id = utils::get_head_repo(&repo)?;
+	let commit_id = if let Some(commit_id) = commit_id {
+		commit_id
+	} else {
+		utils::get_head_repo(&repo)?
+	};
 
 	let spec = format!(
 		"{}:{}",
@@ -76,7 +82,11 @@ pub fn blame_file(
 		return Err(Error::NoBlameOnBinaryFile);
 	}
 
-	let blame = repo.blame_file(Path::new(file_path), None)?;
+	let mut opts = BlameOptions::new();
+	opts.newest_commit(commit_id.into());
+
+	let blame =
+		repo.blame_file(Path::new(file_path), Some(&mut opts))?;
 
 	let reader = BufReader::new(blob.content());
 
@@ -121,12 +131,12 @@ pub fn blame_file(
 
 					return (
 						Some(hunk),
-						line.unwrap_or_else(|_| "".into()),
+						line.unwrap_or_else(|_| String::new()),
 					);
 				}
 			}
 
-			(None, line.unwrap_or_else(|_| "".into()))
+			(None, line.unwrap_or_else(|_| String::new()))
 		})
 		.collect();
 
@@ -160,15 +170,14 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		assert!(matches!(blame_file(&repo_path, "foo"), Err(_)));
+		assert!(matches!(blame_file(repo_path, "foo", None), Err(_)));
 
-		File::create(&root.join(file_path))?
-			.write_all(b"line 1\n")?;
+		File::create(root.join(file_path))?.write_all(b"line 1\n")?;
 
 		stage_add_file(repo_path, file_path)?;
 		commit(repo_path, "first commit")?;
 
-		let blame = blame_file(&repo_path, "foo")?;
+		let blame = blame_file(repo_path, "foo", None)?;
 
 		assert!(matches!(
 			blame.lines.as_slice(),
@@ -185,14 +194,14 @@ mod tests {
 
 		let mut file = OpenOptions::new()
 			.append(true)
-			.open(&root.join(file_path))?;
+			.open(root.join(file_path))?;
 
 		file.write(b"line 2\n")?;
 
 		stage_add_file(repo_path, file_path)?;
 		commit(repo_path, "second commit")?;
 
-		let blame = blame_file(&repo_path, "foo")?;
+		let blame = blame_file(repo_path, "foo", None)?;
 
 		assert!(matches!(
 			blame.lines.as_slice(),
@@ -219,14 +228,14 @@ mod tests {
 
 		file.write(b"line 3\n")?;
 
-		let blame = blame_file(&repo_path, "foo")?;
+		let blame = blame_file(repo_path, "foo", None)?;
 
 		assert_eq!(blame.lines.len(), 2);
 
 		stage_add_file(repo_path, file_path)?;
 		commit(repo_path, "third commit")?;
 
-		let blame = blame_file(&repo_path, "foo")?;
+		let blame = blame_file(repo_path, "foo", None)?;
 
 		assert_eq!(blame.lines.len(), 3);
 
@@ -241,9 +250,9 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		std::fs::create_dir(&root.join("bar")).unwrap();
+		std::fs::create_dir(root.join("bar")).unwrap();
 
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"line 1\n")
 			.unwrap();
@@ -251,6 +260,6 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 		commit(repo_path, "first commit").unwrap();
 
-		assert!(blame_file(&repo_path, "bar\\foo").is_ok());
+		assert!(blame_file(repo_path, "bar\\foo", None).is_ok());
 	}
 }

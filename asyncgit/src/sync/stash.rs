@@ -170,7 +170,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join("foo.txt"))?
+		File::create(root.join("foo.txt"))?
 			.write_all(b"test\nfoo")?;
 
 		assert_eq!(get_statuses(repo_path), (1, 0));
@@ -189,7 +189,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join("foo.txt"))?
+		File::create(root.join("foo.txt"))?
 			.write_all(b"test\nfoo")?;
 
 		stash_save(repo_path, Some("foo"), true, false)?;
@@ -213,7 +213,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join("foo.txt"))?
+		File::create(root.join("foo.txt"))?
 			.write_all(b"test\nfoo")?;
 
 		assert!(
@@ -231,11 +231,11 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path1))?.write_all(b"test")?;
+		File::create(root.join(file_path1))?.write_all(b"test")?;
 		stage_add_file(repo_path, file_path1)?;
 		commit(repo_path, "c1")?;
 
-		File::create(&root.join(file_path1))?
+		File::create(root.join(file_path1))?
 			.write_all(b"modified")?;
 
 		//NOTE: apparently `libgit2` works differently to git stash in

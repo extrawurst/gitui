@@ -5,6 +5,7 @@ use tui::{backend::Backend, layout::Rect, Frame};
 use asyncgit::sync::cred::BasicAuthCredential;
 
 use crate::components::{EventState, InputType, TextInputComponent};
+use crate::keys::key_match;
 use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -102,10 +103,10 @@ impl Component for CredComponent {
 		visibility_blocking(self)
 	}
 
-	fn event(&mut self, ev: Event) -> Result<EventState> {
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
 			if let Event::Key(e) = ev {
-				if e == self.key_config.keys.exit_popup {
+				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
@@ -113,7 +114,7 @@ impl Component for CredComponent {
 					|| self.input_password.event(ev)?.is_consumed()
 				{
 					return Ok(EventState::Consumed);
-				} else if e == self.key_config.keys.enter {
+				} else if key_match(e, self.key_config.keys.enter) {
 					if self.input_username.is_visible() {
 						self.cred = BasicAuthCredential::new(
 							Some(

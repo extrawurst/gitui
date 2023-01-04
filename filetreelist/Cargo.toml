@@ -1,13 +1,13 @@
 [package]
 name = "filetreelist"
-version = "0.4.0"
-authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
-edition = "2018"
+version = "0.5.0"
+authors = ["extrawurst <mail@rusticorn.com>"]
+edition = "2021"
 description = "filetree abstraction based on a sorted path list, supports key based navigation events, folding, scrolling and more"
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
-license-file = "LICENSE.md"
+license = "MIT"
 categories = ["command-line-utilities"]
 keywords = ["gui", "cli", "terminal", "ui", "tui"]
 
@@ -16,4 +16,4 @@ scopetime = { path = "../scopetime", version = "0.1" }
 thiserror = "1.0"
 
 [dev-dependencies]
-pretty_assertions = "1.0"
+pretty_assertions = "1.3"
