@@ -11,7 +11,9 @@ use crate::{
 	ui::{calc_scroll_top, draw_scrollbar},
 };
 use anyhow::Result;
-use asyncgit::sync::{checkout_commit, CommitId, RepoPathRef, Tags};
+use asyncgit::sync::{
+	checkout_commit, BranchInfo, CommitId, RepoPathRef, Tags,
+};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -549,9 +551,10 @@ impl Component for CommitList {
 				) {
 					self.mark();
 					true
-				} else if k
-					== self.key_config.keys.log_checkout_commit
-				{
+				} else if key_match(
+					k,
+					self.key_config.keys.log_checkout_commit,
+				) {
 					self.checkout()?;
 					true
 				} else {
