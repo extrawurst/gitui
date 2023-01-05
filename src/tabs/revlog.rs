@@ -420,6 +420,12 @@ impl Component for Revlog {
 		));
 
 		out.push(CommandInfo::new(
+			strings::commands::log_checkout_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
+		out.push(CommandInfo::new(
 			strings::commands::open_tags_popup(&self.key_config),
 			true,
 			self.visible || force_all,
