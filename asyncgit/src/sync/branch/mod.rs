@@ -696,6 +696,34 @@ mod tests_checkout {
 }
 
 #[cfg(test)]
+mod tests_checkout_commit {
+	use super::*;
+	use crate::sync::logwalker::LogWalker;
+	use crate::sync::tests::{repo_init, write_commit_file};
+	use crate::sync::RepoPath;
+
+	#[test]
+	fn test_smoke() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		write_commit_file(&repo, "test_1.txt", "test", "commit1");
+		write_commit_file(&repo, "test_2.txt", "test", "commit2");
+
+		let mut items = Vec::new();
+		let mut walk = LogWalker::new(&repo, 2).unwrap();
+		walk.read(&mut items).unwrap();
+
+		checkout_commit(repo_path, items[0]).unwrap();
+
+		log::debug!("{:?}", items);
+		assert!(repo.head_detached().unwrap());
+	}
+}
+
+#[cfg(test)]
 mod test_delete_branch {
 	use super::*;
 	use crate::sync::tests::repo_init;
