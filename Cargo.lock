@@ -554,7 +554,6 @@ name = "filetreelist"
 version = "0.5.0"
 dependencies = [
  "pretty_assertions",
- "scopetime",
  "thiserror",
 ]
 
