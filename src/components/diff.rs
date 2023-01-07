@@ -111,7 +111,7 @@ pub struct DiffComponent {
 	current_size: Cell<(u16, u16)>,
 	focused: bool,
 	current: Current,
-	scroll: VerticalScroll,
+	vertical_scroll: VerticalScroll,
 	horizontal_scroll: HorizontalScroll,
 	queue: Queue,
 	theme: SharedTheme,
@@ -138,7 +138,7 @@ impl DiffComponent {
 			longest_line: 0,
 			current_size: Cell::new((0, 0)),
 			selection: Selection::Single(0),
-			scroll: VerticalScroll::new(),
+			vertical_scroll: VerticalScroll::new(),
 			horizontal_scroll: HorizontalScroll::new(),
 			theme,
 			key_config,
@@ -162,7 +162,7 @@ impl DiffComponent {
 		self.current = Current::default();
 		self.diff = None;
 		self.longest_line = 0;
-		self.scroll.reset();
+		self.vertical_scroll.reset();
 		self.horizontal_scroll.reset();
 		self.selection = Selection::Single(0);
 		self.selected_hunk = None;
@@ -210,7 +210,7 @@ impl DiffComponent {
 				});
 
 			if reset_selection {
-				self.scroll.reset();
+				self.vertical_scroll.reset();
 				self.selection = Selection::Single(0);
 				self.update_selection(0);
 			} else {
@@ -372,7 +372,7 @@ impl DiffComponent {
 					Span::raw(Cow::from(")")),
 				])]);
 			} else {
-				let min = self.scroll.get_top();
+				let min = self.vertical_scroll.get_top();
 				let max = min + height as usize;
 
 				let mut line_cursor = 0_usize;
@@ -648,7 +648,7 @@ impl DrawableComponent for DiffComponent {
 		let current_width = self.current_size.get().0;
 		let current_height = self.current_size.get().1;
 
-		self.scroll.update(
+		self.vertical_scroll.update(
 			self.selection.get_end(),
 			self.lines_count(),
 			usize::from(current_height),
@@ -688,7 +688,7 @@ impl DrawableComponent for DiffComponent {
 		);
 
 		if self.focused() {
-			self.scroll.draw(f, r, &self.theme);
+			self.vertical_scroll.draw(f, r, &self.theme);
 
 			if self.max_scroll_right() > 0 {
 				self.horizontal_scroll.draw(f, r, &self.theme);
