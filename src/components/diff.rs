@@ -1,6 +1,7 @@
 use super::{
+	utils::scroll_horizontal::HorizontalScroll,
 	utils::scroll_vertical::VerticalScroll, CommandBlocking,
-	Direction, DrawableComponent, ScrollType,
+	Direction, DrawableComponent, HorizontalScrollType, ScrollType,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
@@ -9,7 +10,7 @@ use crate::{
 	string_utils::tabs_to_spaces,
 	string_utils::trim_offset,
 	strings, try_or_popup,
-	ui::{draw_scrollbar, style::SharedTheme, Orientation},
+	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -111,11 +112,11 @@ pub struct DiffComponent {
 	focused: bool,
 	current: Current,
 	scroll: VerticalScroll,
+	horizontal_scroll: HorizontalScroll,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	is_immutable: bool,
-	scrolled_right: usize,
 }
 
 impl DiffComponent {
@@ -138,11 +139,11 @@ impl DiffComponent {
 			current_size: Cell::new((0, 0)),
 			selection: Selection::Single(0),
 			scroll: VerticalScroll::new(),
+			horizontal_scroll: HorizontalScroll::new(),
 			theme,
 			key_config,
 			is_immutable,
 			repo,
-			scrolled_right: 0,
 		}
 	}
 	///
@@ -162,10 +163,10 @@ impl DiffComponent {
 		self.diff = None;
 		self.longest_line = 0;
 		self.scroll.reset();
+		self.horizontal_scroll.reset();
 		self.selection = Selection::Single(0);
 		self.selected_hunk = None;
 		self.pending = pending;
-		self.scrolled_right = 0;
 	}
 	///
 	pub fn update(
@@ -409,7 +410,8 @@ impl DiffComponent {
 									hunk_selected,
 									i == hunk_len - 1,
 									&self.theme,
-									self.scrolled_right,
+									self.horizontal_scroll
+										.get_right(),
 								));
 								lines_added += 1;
 							}
@@ -643,12 +645,18 @@ impl DrawableComponent for DiffComponent {
 			r.height.saturating_sub(2),
 		));
 
+		let current_width = self.current_size.get().0;
 		let current_height = self.current_size.get().1;
 
 		self.scroll.update(
 			self.selection.get_end(),
 			self.lines_count(),
 			usize::from(current_height),
+		);
+
+		self.horizontal_scroll.update_no_selection(
+			self.longest_line,
+			current_width.into(),
 		);
 
 		let title = format!(
@@ -683,14 +691,7 @@ impl DrawableComponent for DiffComponent {
 			self.scroll.draw(f, r, &self.theme);
 
 			if self.max_scroll_right() > 0 {
-				draw_scrollbar(
-					f,
-					r,
-					&self.theme,
-					self.max_scroll_right(),
-					self.scrolled_right,
-					Orientation::Horizontal,
-				);
+				self.horizontal_scroll.draw(f, r, &self.theme);
 			}
 		}
 
@@ -806,15 +807,13 @@ impl Component for DiffComponent {
 					e,
 					self.key_config.keys.move_right,
 				) {
-					if self.scrolled_right < self.max_scroll_right() {
-						self.scrolled_right += 1;
-					}
+					self.horizontal_scroll
+						.move_right(HorizontalScrollType::Right);
 					Ok(EventState::Consumed)
 				} else if key_match(e, self.key_config.keys.move_left)
 				{
-					if self.scrolled_right > 0 {
-						self.scrolled_right -= 1;
-					}
+					self.horizontal_scroll
+						.move_right(HorizontalScrollType::Left);
 					Ok(EventState::Consumed)
 				} else if key_match(
 					e,
