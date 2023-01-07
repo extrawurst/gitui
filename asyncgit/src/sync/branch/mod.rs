@@ -718,8 +718,11 @@ mod tests_checkout_commit {
 
 		checkout_commit(repo_path, items[0]).unwrap();
 
-		log::debug!("{:?}", items);
 		assert!(repo.head_detached().unwrap());
+		assert_eq!(
+			repo.head().unwrap().target().unwrap(),
+			items[0].get_oid()
+		);
 	}
 }
 
