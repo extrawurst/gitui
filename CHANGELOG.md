@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * changes in commit message inside external editor [[@bc-universe]](https://github.com/bc-universe) ([#1420](https://github.com/extrawurst/gitui/issues/1420))
+* allow detaching HEAD and checking out specific commit from log view ([#1499](https://github.com/extrawurst/gitui/pull/1499))
 
 ### Fixes
 * commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
@@ -164,7 +165,6 @@ The way this works got changed and simplified ([See docs](https://github.com/ext
 - pull will also download tags ([#1013](https://github.com/extrawurst/gitui/pull/1013))
 - allow editing file from filetree ([#989](https://github.com/extrawurst/gitui/pull/989))
 - support bare repos (new `workdir` argument) ([#1026](https://github.com/extrawurst/gitui/pull/1026))
-- allow detaching HEAD and checking out specific commit from log view ([#1055](https://github.com/extrawurst/gitui/pull/1055))
 
 ### Fixed
 - honor options (for untracked files) in `stage_all` command ([#933](https://github.com/extrawurst/gitui/issues/933))
