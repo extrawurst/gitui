@@ -5,6 +5,7 @@ use unicode_width::UnicodeWidthStr;
 pub mod emoji;
 pub mod filetree;
 pub mod logitems;
+pub mod scroll_horizontal;
 pub mod scroll_vertical;
 pub mod statustree;
 

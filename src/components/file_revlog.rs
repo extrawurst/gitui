@@ -11,7 +11,7 @@ use crate::{
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
-	ui::{draw_scrollbar, style::SharedTheme},
+	ui::{draw_scrollbar, style::SharedTheme, Orientation},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -412,6 +412,7 @@ impl FileRevlogComponent {
 			&self.theme,
 			self.count_total,
 			table_state.selected().unwrap_or(0),
+			Orientation::Vertical,
 		);
 
 		self.table_state.set(table_state);
@@ -445,7 +446,7 @@ impl DrawableComponent for FileRevlogComponent {
 	) -> Result<()> {
 		if self.visible {
 			let percentages = if self.diff.focused() {
-				(30, 70)
+				(0, 100)
 			} else {
 				(50, 50)
 			};
@@ -485,20 +486,17 @@ impl Component for FileRevlogComponent {
 
 			if let Event::Key(key) = event {
 				if key_match(key, self.key_config.keys.exit_popup) {
-					self.hide_stacked(false);
+					if self.diff.focused() {
+						self.diff.focus(false);
+					} else {
+						self.hide_stacked(false);
+					}
 				} else if key_match(
 					key,
 					self.key_config.keys.focus_right,
 				) && self.can_focus_diff()
 				{
 					self.diff.focus(true);
-				} else if key_match(
-					key,
-					self.key_config.keys.focus_left,
-				) {
-					if self.diff.focused() {
-						self.diff.focus(false);
-					}
 				} else if key_match(key, self.key_config.keys.enter) {
 					if let Some(commit_id) = self.selected_commit() {
 						self.hide_stacked(true);

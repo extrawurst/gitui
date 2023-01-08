@@ -90,6 +90,7 @@ Bugfix followup release - check `0.22.0` notes for more infos!
 * switch focus to index after staging last file ([#1169](https://github.com/extrawurst/gitui/pull/1169))
 * fix stashlist multi marking not updated after dropping ([#1207](https://github.com/extrawurst/gitui/pull/1207))
 * exact matches have a higher priority and are placed to the top of the list when fuzzily finding files ([#1183](https://github.com/extrawurst/gitui/pull/1183))
+* support horizontal scrolling in diff view ([#1017](https://github.com/extrawurst/gitui/issues/1017))
 
 ### Changed
 * minimum supported rust version bumped to 1.60 ([#1279](https://github.com/extrawurst/gitui/pull/1279))
