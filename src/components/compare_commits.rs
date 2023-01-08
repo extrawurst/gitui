@@ -44,7 +44,7 @@ impl DrawableComponent for CompareCommitsComponent {
 	) -> Result<()> {
 		if self.is_visible() {
 			let percentages = if self.diff.focused() {
-				(30, 70)
+				(0, 100)
 			} else {
 				(50, 50)
 			};
@@ -121,7 +121,12 @@ impl Component for CompareCommitsComponent {
 
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.exit_popup) {
-					self.hide_stacked(false);
+					if self.diff.focused() {
+						self.details.focus(true);
+						self.diff.focus(false);
+					} else {
+						self.hide_stacked(false);
+					}
 				} else if key_match(
 					e,
 					self.key_config.keys.focus_right,
@@ -129,13 +134,6 @@ impl Component for CompareCommitsComponent {
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if key_match(
-					e,
-					self.key_config.keys.focus_left,
-				) && self.diff.focused()
-				{
-					self.details.focus(true);
-					self.diff.focus(false);
 				} else if key_match(
 					e,
 					self.key_config.keys.focus_left,
