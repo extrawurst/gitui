@@ -31,7 +31,7 @@ pub struct AsyncLog {
 	current: Arc<Mutex<Vec<CommitId>>>,
 	current_head: Arc<Mutex<Option<CommitId>>>,
 	sender: Sender<AsyncGitNotification>,
-	job: AsyncSingleJob<AsyncLogJob>,
+	job: AsyncSingleJob<AsyncFileLogJob>,
 	background: Arc<AtomicBool>,
 	filter: Option<LogWalkerFilter>,
 	repo: RepoPath,
@@ -205,7 +205,7 @@ impl AsyncLog {
 
 	///
 	pub fn request(&mut self) -> Result<()> {
-		self.job.spawn(AsyncLogJob::new(
+		self.job.spawn(AsyncFileLogJob::new(
 			self.repo.clone(),
 			self.filter.clone(),
 		));
@@ -220,11 +220,11 @@ enum JobState {
 
 ///
 #[derive(Clone, Default)]
-pub struct AsyncLogJob {
+pub struct AsyncFileLogJob {
 	state: Arc<Mutex<Option<JobState>>>,
 }
 
-impl AsyncLogJob {
+impl AsyncFileLogJob {
 	///
 	pub fn new(
 		repo: RepoPath,
@@ -252,7 +252,7 @@ impl AsyncLogJob {
 	}
 }
 
-impl AsyncJob for AsyncLogJob {
+impl AsyncJob for AsyncFileLogJob {
 	type Notification = AsyncGitNotification;
 	type Progress = ();
 
