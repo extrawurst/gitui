@@ -1,4 +1,5 @@
 use crate::{
+	asyncjob::{AsyncJob, AsyncSingleJob, RunParams},
 	error::Result,
 	sync::{repo, CommitId, LogWalker, LogWalkerFilter, RepoPath},
 	AsyncGitNotification,
@@ -30,7 +31,7 @@ pub struct AsyncLog {
 	current: Arc<Mutex<Vec<CommitId>>>,
 	current_head: Arc<Mutex<Option<CommitId>>>,
 	sender: Sender<AsyncGitNotification>,
-	pending: Arc<AtomicBool>,
+	job: AsyncSingleJob<AsyncLogJob>,
 	background: Arc<AtomicBool>,
 	filter: Option<LogWalkerFilter>,
 	repo: RepoPath,
@@ -52,7 +53,7 @@ impl AsyncLog {
 			current: Arc::new(Mutex::new(Vec::new())),
 			current_head: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
-			pending: Arc::new(AtomicBool::new(false)),
+			job: AsyncSingleJob::new(sender.clone()),
 			background: Arc::new(AtomicBool::new(false)),
 			filter,
 		}
@@ -87,7 +88,7 @@ impl AsyncLog {
 
 	///
 	pub fn is_pending(&self) -> bool {
-		self.pending.load(Ordering::Relaxed)
+		self.job.is_pending()
 	}
 
 	///
@@ -126,12 +127,9 @@ impl AsyncLog {
 
 		let arc_current = Arc::clone(&self.current);
 		let sender = self.sender.clone();
-		let arc_pending = Arc::clone(&self.pending);
 		let arc_background = Arc::clone(&self.background);
 		let filter = self.filter.clone();
 		let repo_path = self.repo.clone();
-
-		self.pending.store(true, Ordering::Relaxed);
 
 		if let Ok(head) = repo(&self.repo)?.head() {
 			*self.current_head.lock()? =
@@ -149,8 +147,6 @@ impl AsyncLog {
 				filter,
 			)
 			.expect("failed to fetch");
-
-			arc_pending.store(false, Ordering::Relaxed);
 
 			Self::notify(&sender);
 		});
@@ -205,5 +201,21 @@ impl AsyncLog {
 		sender
 			.send(AsyncGitNotification::Log)
 			.expect("error sending");
+	}
+}
+
+///
+#[derive(Clone, Default)]
+pub struct AsyncLogJob {}
+
+impl AsyncJob for AsyncLogJob {
+	type Notification = AsyncGitNotification;
+	type Progress = ();
+
+	fn run(
+		&mut self,
+		_params: RunParams<Self::Notification, Self::Progress>,
+	) -> Result<Self::Notification> {
+		Ok(AsyncGitNotification::FinishUnchanged)
 	}
 }
