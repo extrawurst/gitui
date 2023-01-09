@@ -202,11 +202,55 @@ impl AsyncLog {
 			.send(AsyncGitNotification::Log)
 			.expect("error sending");
 	}
+
+	///
+	pub fn request(&mut self) -> Result<()> {
+		self.job.spawn(AsyncLogJob::new(
+			self.repo.clone(),
+			self.filter.clone(),
+		));
+
+		Ok(())
+	}
+}
+
+enum JobState {
+	Request(RepoPath, Option<LogWalkerFilter>),
 }
 
 ///
 #[derive(Clone, Default)]
-pub struct AsyncLogJob {}
+pub struct AsyncLogJob {
+	state: Arc<Mutex<Option<JobState>>>,
+}
+
+impl AsyncLogJob {
+	///
+	pub fn new(
+		repo: RepoPath,
+		filter: Option<LogWalkerFilter>,
+	) -> Self {
+		Self {
+			state: Arc::new(Mutex::new(Some(JobState::Request(
+				repo, filter,
+			)))),
+		}
+	}
+
+	///
+	#[allow(dead_code)]
+	pub fn result(&self) -> Option<Result<()>> {
+		if let Ok(mut state) = self.state.lock() {
+			if let Some(state) = state.take() {
+				return match state {
+					JobState::Request(_, _) => None,
+				};
+			}
+		}
+
+		None
+	}
+}
 
 impl AsyncJob for AsyncLogJob {
 	type Notification = AsyncGitNotification;
