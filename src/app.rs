@@ -851,14 +851,6 @@ impl App {
 					.push(branch, push_type, force, delete)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
-			InternalEvent::FetchAll => {
-				if let Err(error) = self.fetch_popup.fetch() {
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						error.to_string(),
-					));
-				}
-				flags.insert(NeedsUpdate::ALL);
-			}
 			InternalEvent::Pull(branch) => {
 				if let Err(error) = self.pull_popup.fetch(branch) {
 					self.queue.push(InternalEvent::ShowErrorMsg(

@@ -596,7 +596,7 @@ impl Status {
 
 	fn fetch(&self) {
 		if self.can_pull() {
-			self.queue.push(InternalEvent::FetchAll);
+			self.queue.push(InternalEvent::FetchRemotes);
 		}
 	}
 
