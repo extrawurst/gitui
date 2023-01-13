@@ -1456,6 +1456,17 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+
+	pub fn status_fetch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Fetch [{}]",
+				key_config.get_hint(key_config.keys.fetch),
+			),
+			"fetch",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn status_pull(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(

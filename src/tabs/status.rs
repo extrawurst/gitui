@@ -594,6 +594,12 @@ impl Status {
 		}
 	}
 
+	fn fetch(&self) {
+		if self.can_pull() {
+			self.queue.push(InternalEvent::FetchRemotes);
+		}
+	}
+
 	fn pull(&self) {
 		if let Some(branch) = self.git_branch_name.last() {
 			self.queue.push(InternalEvent::Pull(branch));
@@ -761,6 +767,12 @@ impl Component for Status {
 				true,
 				self.can_push() && !focus_on_diff,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::status_fetch(&self.key_config),
+				self.can_pull(),
+				!focus_on_diff,
+			));
 			out.push(CommandInfo::new(
 				strings::commands::status_pull(&self.key_config),
 				self.can_pull(),
@@ -882,6 +894,12 @@ impl Component for Status {
 					&& !self.is_focus_on_diff()
 				{
 					self.push(false);
+					Ok(EventState::Consumed)
+				} else if key_match(k, self.key_config.keys.fetch)
+					&& !self.is_focus_on_diff()
+					&& self.can_pull()
+				{
+					self.fetch();
 					Ok(EventState::Consumed)
 				} else if key_match(k, self.key_config.keys.pull)
 					&& !self.is_focus_on_diff()
