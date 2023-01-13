@@ -851,10 +851,8 @@ impl App {
 					.push(branch, push_type, force, delete)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
-			InternalEvent::Fetch(branch) => {
-				if let Err(error) = self.fetch_popup.fetch()
-				// .fetch(branch)
-				{
+			InternalEvent::FetchAll => {
+				if let Err(error) = self.fetch_popup.fetch() {
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						error.to_string(),
 					));
