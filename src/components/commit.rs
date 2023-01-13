@@ -330,7 +330,7 @@ impl CommitComponent {
 		Ok(())
 	}
 	fn toggle_verify(&mut self) {
-		self.verify = !self.verify
+		self.verify = !self.verify;
 	}
 }
 
