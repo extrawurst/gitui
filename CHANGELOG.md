@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * changes in commit message inside external editor [[@bc-universe]](https://github.com/bc-universe) ([#1420](https://github.com/extrawurst/gitui/issues/1420))
+* add no-verify option on commits to not run hooks [[@dam5h]](https://github.com/dam5h) ([#1374](https://github.com/extrawurst/gitui/issues/1374))
 
 ### Fixes
 * commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
