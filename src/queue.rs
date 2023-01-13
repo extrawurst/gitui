@@ -105,8 +105,6 @@ pub enum InternalEvent {
 	///
 	Push(String, PushType, bool, bool),
 	///
-	Fetch(String),
-	///
 	Pull(String),
 	///
 	PushTags,

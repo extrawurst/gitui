@@ -595,8 +595,8 @@ impl Status {
 	}
 
 	fn fetch(&self) {
-		if let Some(branch) = self.git_branch_name.last() {
-			self.queue.push(InternalEvent::Fetch(branch));
+		if self.can_pull() {
+			self.queue.push(InternalEvent::FetchRemotes);
 		}
 	}
 
