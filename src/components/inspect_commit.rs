@@ -270,7 +270,7 @@ impl InspectCommitComponent {
 				if let Some(f) = self.details.files().selection_file()
 				{
 					let diff_params = DiffParams {
-						path: f.path.clone(),
+						path: f.full_path_str().to_string(),
 						diff_type: DiffType::Commit(
 							request.commit_id,
 						),
@@ -281,7 +281,11 @@ impl InspectCommitComponent {
 						self.git_diff.last()?
 					{
 						if params == diff_params {
-							self.diff.update(f.path, false, last);
+							self.diff.update(
+								f.full_path_str().to_string(),
+								false,
+								last,
+							);
 							return Ok(());
 						}
 					}
@@ -311,7 +315,7 @@ impl InspectCommitComponent {
 	}
 
 	fn can_focus_diff(&self) -> bool {
-		self.details.files().selection_file().is_some()
+		self.details.files().selection_file_ref().is_some()
 	}
 
 	fn hide_stacked(&mut self, stack: bool) {

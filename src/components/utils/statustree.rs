@@ -1,11 +1,8 @@
-use super::filetree::{
-	FileTreeItem, FileTreeItemKind, FileTreeItems, PathCollapsed,
-};
+use super::filetree::{FileTreeItems, Item};
 use anyhow::Result;
 use asyncgit::StatusItem;
-use std::{cmp, collections::BTreeSet};
-
-//TODO: use new `filetreelist` crate
+use filetreelist::FileTreeItem;
+use std::{cmp, collections::BTreeSet, path::Path};
 
 ///
 #[derive(Default)]
@@ -45,8 +42,9 @@ impl StatusTree {
 	pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
 		let last_collapsed = self.all_collapsed();
 
-		let last_selection =
-			self.selected_item().map(|e| e.info.full_path);
+		let last_selection = self
+			.selected_item()
+			.map(|e| e.info().full_path_str().to_string());
 		let last_selection_index = self.selection.unwrap_or(0);
 
 		self.tree = FileTreeItems::new(list, &last_collapsed)?;
@@ -90,17 +88,15 @@ impl StatusTree {
 			vec_available_selections.push(index);
 
 			while idx_temp < tree_items.len().saturating_sub(2)
-				&& tree_items[idx_temp].info.indent
-					< tree_items[idx_temp + 1].info.indent
+				&& tree_items[idx_temp].info().indent()
+					< tree_items[idx_temp + 1].info().indent()
 			{
 				// fold up the folder/file
 				idx_temp += 1;
 				should_skip_over += 1;
 
 				// don't fold files up
-				if let FileTreeItemKind::File(_) =
-					&tree_items[idx_temp].kind
-				{
+				if !tree_items[idx_temp].is_path() {
 					should_skip_over -= 1;
 					break;
 				}
@@ -155,8 +151,12 @@ impl StatusTree {
 	}
 
 	///
-	pub fn selected_item(&self) -> Option<FileTreeItem> {
-		self.selection.map(|i| self.tree[i].clone())
+	pub fn selected_item(&self) -> Option<&Item> {
+		self.selection.map(|i| &self.tree[i])
+	}
+
+	pub fn selected_tree_item(&self) -> Option<&FileTreeItem> {
+		self.selection.map(|i| self.tree.index_tree_item(i))
 	}
 
 	///
@@ -164,17 +164,14 @@ impl StatusTree {
 		self.tree.items().is_empty()
 	}
 
-	fn all_collapsed(&self) -> BTreeSet<&String> {
+	fn all_collapsed(&self) -> BTreeSet<&str> {
 		let mut res = BTreeSet::new();
 
 		for i in self.tree.items() {
-			if let FileTreeItemKind::Path(PathCollapsed(collapsed)) =
-				i.kind
-			{
-				if collapsed {
-					res.insert(&i.info.full_path);
-				}
+			if !i.is_path_collapsed() {
+				continue;
 			}
+			res.insert(i.info().full_path_str());
 		}
 
 		res
@@ -190,7 +187,7 @@ impl StatusTree {
 		}
 
 		if let Ok(i) = self.tree.items().binary_search_by(|e| {
-			e.info.full_path.as_str().cmp(last_selection)
+			e.info().full_path_str().cmp(last_selection)
 		}) {
 			return Some(i);
 		}
@@ -284,31 +281,25 @@ impl StatusTree {
 	}
 
 	fn is_visible_index(&self, idx: usize) -> bool {
-		self.tree[idx].info.visible
+		self.tree[idx].info().is_visible()
 	}
 
 	fn selection_right(
 		&mut self,
 		current_selection: usize,
 	) -> SelectionChange {
-		let item_kind = self.tree[current_selection].kind.clone();
-		let item_path =
-			self.tree[current_selection].info.full_path.clone();
+		let item = &self.tree[current_selection];
+		let item_path = self.tree[current_selection]
+			.info()
+			.full_path_str()
+			.to_string();
 
-		match item_kind {
-			FileTreeItemKind::Path(PathCollapsed(collapsed))
-				if collapsed =>
-			{
+		if item.is_path() {
+			if item.is_path_collapsed() {
 				self.expand(&item_path, current_selection);
 				return SelectionChange::new(current_selection, true);
 			}
-			FileTreeItemKind::Path(PathCollapsed(collapsed))
-				if !collapsed =>
-			{
-				return self
-					.selection_updown(current_selection, false);
-			}
-			_ => (),
+			return self.selection_updown(current_selection, false);
 		}
 
 		SelectionChange::new(current_selection, false)
@@ -318,14 +309,10 @@ impl StatusTree {
 		&mut self,
 		current_selection: usize,
 	) -> SelectionChange {
-		let item_kind = self.tree[current_selection].kind.clone();
-		let item_path =
-			self.tree[current_selection].info.full_path.clone();
+		let item = self.tree[current_selection].clone();
+		let item_path = item.info().full_path();
 
-		if matches!(item_kind, FileTreeItemKind::File(_))
-			|| matches!(item_kind,FileTreeItemKind::Path(PathCollapsed(collapsed))
-        if collapsed)
-		{
+		if !item.is_path() || item.is_path_collapsed() {
 			let mut cur_parent =
 				self.tree.find_parent_index(current_selection);
 			while !self.available_selections.contains(&cur_parent)
@@ -334,31 +321,27 @@ impl StatusTree {
 				cur_parent = self.tree.find_parent_index(cur_parent);
 			}
 			SelectionChange::new(cur_parent, false)
-		} else if matches!(item_kind,  FileTreeItemKind::Path(PathCollapsed(collapsed))
-        if !collapsed)
-		{
-			self.collapse(&item_path, current_selection);
+		} else if !item.is_path_collapsed() {
+			self.collapse(item_path, current_selection);
 			SelectionChange::new(current_selection, true)
 		} else {
 			SelectionChange::new(current_selection, false)
 		}
 	}
 
-	fn collapse(&mut self, path: &str, index: usize) {
-		if let FileTreeItemKind::Path(PathCollapsed(
-			ref mut collapsed,
-		)) = self.tree[index].kind
-		{
-			*collapsed = true;
+	fn collapse(&mut self, path: &Path, index: usize) {
+		if self.tree[index].is_path() {
+			self.tree[index].collapse_path();
 		}
 
-		let path = format!("{path}/");
+		let up = path.to_str().expect("Invalid unicode in path");
+		let path = format!("{up}/");
 
 		for i in index + 1..self.tree.len() {
 			let item = &mut self.tree[i];
-			let item_path = &item.info.full_path;
+			let item_path = item.info().full_path();
 			if item_path.starts_with(&path) {
-				item.info.visible = false;
+				item.set_visible(false);
 			} else {
 				return;
 			}
@@ -366,11 +349,8 @@ impl StatusTree {
 	}
 
 	fn expand(&mut self, path: &str, current_index: usize) {
-		if let FileTreeItemKind::Path(PathCollapsed(
-			ref mut collapsed,
-		)) = self.tree[current_index].kind
-		{
-			*collapsed = false;
+		if self.tree[current_index].is_path_collapsed() {
+			self.tree[current_index].expand_path();
 		}
 
 		let path = format!("{path}/");
@@ -393,10 +373,11 @@ impl StatusTree {
 
 		for i in start_idx..self.tree.len() {
 			if let Some(ref collapsed_path) = inner_collapsed {
-				let p: &String = &self.tree[i].info.full_path;
+				let p =
+					self.tree[i].info().full_path_str().to_string();
 				if p.starts_with(collapsed_path) {
 					if set_defaults {
-						self.tree[i].info.visible = false;
+						self.tree[i].set_visible(false);
 					}
 					// we are still in a collapsed inner path
 					continue;
@@ -404,23 +385,22 @@ impl StatusTree {
 				inner_collapsed = None;
 			}
 
-			let item_kind = self.tree[i].kind.clone();
-			let item_path = &self.tree[i].info.full_path;
+			let item = &self.tree[i];
+			let item_path = self.tree[i].info().full_path_str();
 
-			if matches!(item_kind, FileTreeItemKind::Path(PathCollapsed(collapsed)) if collapsed)
-			{
+			if item.is_path_collapsed() {
 				// we encountered an inner path that is still collapsed
-				inner_collapsed = Some(format!("{}/", &item_path));
+				inner_collapsed = Some(format!("{item_path}/"));
 			}
 
 			if prefix
 				.map_or(true, |prefix| item_path.starts_with(prefix))
 			{
-				self.tree[i].info.visible = true;
+				self.tree[i].set_visible(true);
 			} else {
 				// if we do not set defaults we can early out
 				if set_defaults {
-					self.tree[i].info.visible = false;
+					self.tree[i].set_visible(false);
 				} else {
 					return;
 				}
@@ -448,7 +428,7 @@ mod tests {
 		tree.tree
 			.items()
 			.iter()
-			.map(|e| e.info.visible)
+			.map(|e| e.info().is_visible())
 			.collect::<Vec<_>>()
 	}
 
@@ -497,7 +477,7 @@ mod tests {
 		let mut res = StatusTree::default();
 		res.update(&string_vec_to_status(&["a/b", "c"])).unwrap();
 
-		res.collapse("a/b", 0);
+		res.collapse(Path::new("a/b"), 0);
 
 		res.selection = Some(2);
 
@@ -525,7 +505,7 @@ mod tests {
 		]))
 		.unwrap();
 
-		res.collapse("a", 0);
+		res.collapse(Path::new("a"), 0);
 
 		assert_eq!(
 			res.all_collapsed().iter().collect::<Vec<_>>(),
@@ -579,7 +559,7 @@ mod tests {
 		let mut res = StatusTree::default();
 		res.update(&items).unwrap();
 
-		res.collapse(&String::from("a/b"), 1);
+		res.collapse(Path::new("a/b"), 1);
 
 		let visibles = get_visibles(&res);
 
@@ -624,8 +604,8 @@ mod tests {
 		let mut res = StatusTree::default();
 		res.update(&items).unwrap();
 
-		res.collapse(&String::from("b"), 1);
-		res.collapse(&String::from("a"), 0);
+		res.collapse(Path::new("b"), 1);
+		res.collapse(Path::new("a"), 0);
 
 		assert_eq!(
 			get_visibles(&res),
@@ -667,7 +647,7 @@ mod tests {
 		let mut res = StatusTree::default();
 		res.update(&items).unwrap();
 
-		res.collapse(&String::from("a"), 0);
+		res.collapse(Path::new("a"), 0);
 
 		let visibles = get_visibles(&res);
 
@@ -697,7 +677,7 @@ mod tests {
 		let mut res = StatusTree::default();
 		res.update(&items).unwrap();
 
-		res.collapse(&String::from("a/b"), 1);
+		res.collapse(Path::new("a/b"), 1);
 
 		let visibles = get_visibles(&res);
 
@@ -711,7 +691,7 @@ mod tests {
 			]
 		);
 
-		res.collapse(&String::from("a"), 0);
+		res.collapse(Path::new("a"), 0);
 
 		let visibles = get_visibles(&res);
 
@@ -754,7 +734,7 @@ mod tests {
 
 		let mut res = StatusTree::default();
 		res.update(&items).unwrap();
-		res.collapse(&String::from("a/b"), 1);
+		res.collapse(Path::new("a/b"), 1);
 		res.selection = Some(1);
 
 		assert!(res.move_selection(MoveSelection::Down));

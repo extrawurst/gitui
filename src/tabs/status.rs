@@ -4,7 +4,6 @@ use crate::{
 		command_pump, event_pump, visibility_blocking,
 		ChangesComponent, CommandBlocking, CommandInfo, Component,
 		DiffComponent, DrawableComponent, EventState,
-		FileTreeItemKind,
 	},
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
@@ -386,9 +385,12 @@ impl Status {
 			DiffTarget::WorkingDir => (&self.index_wd, false),
 		};
 
-		if let Some(item) = idx.selection() {
-			if let FileTreeItemKind::File(i) = item.kind {
-				return Some((i.path, is_stage));
+		if let Some(item) = idx.selection_ref() {
+			if !item.kind().is_path() {
+				return Some((
+					item.info().full_path_str().to_string(),
+					is_stage,
+				));
 			}
 		}
 		None

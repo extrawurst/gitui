@@ -1,6 +1,6 @@
 use super::{
 	utils::{
-		filetree::{FileTreeItem, FileTreeItemKind},
+		filetree::Item,
 		statustree::{MoveSelection, StatusTree},
 	},
 	BlameFileOpen, CommandBlocking, DrawableComponent, FileRevOpen,
@@ -16,10 +16,9 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{hash, sync::CommitId, StatusItem, StatusItemType};
 use crossterm::event::Event;
+use filetreelist::{FileTreeItem, TreeItemInfo};
 use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
 use tui::{backend::Backend, layout::Rect, text::Span, Frame};
-
-//TODO: use new `filetreelist` crate
 
 ///
 #[allow(clippy::struct_excessive_bools)]
@@ -81,19 +80,26 @@ impl StatusTreeComponent {
 	}
 
 	///
-	pub fn selection(&self) -> Option<FileTreeItem> {
-		self.tree.selected_item()
+	pub fn selection(&self) -> Option<&FileTreeItem> {
+		self.tree.selected_tree_item()
 	}
 
-	///
-	pub fn selection_file(&self) -> Option<StatusItem> {
+	pub fn selection_file(&self) -> Option<TreeItemInfo> {
+		self.selection_file_ref().map(Clone::clone)
+	}
+
+	pub fn selection_file_ref(&self) -> Option<&TreeItemInfo> {
 		self.tree.selected_item().and_then(|f| {
-			if let FileTreeItemKind::File(f) = f.kind {
-				Some(f)
-			} else {
+			if f.is_path() {
 				None
+			} else {
+				Some(f.info())
 			}
 		})
+	}
+
+	pub fn selection_status(&self) -> Option<StatusItem> {
+		self.tree.selected_item().and_then(Item::status)
 	}
 
 	///
@@ -124,13 +130,10 @@ impl StatusTreeComponent {
 	}
 
 	///
-	pub fn is_file_seleted(&self) -> bool {
-		self.tree.selected_item().map_or(false, |item| {
-			match item.kind {
-				FileTreeItemKind::File(_) => true,
-				FileTreeItemKind::Path(..) => false,
-			}
-		})
+	pub fn is_file_selected(&self) -> bool {
+		self.tree
+			.selected_item()
+			.map_or(false, |item| !item.is_path())
 	}
 
 	fn move_selection(&mut self, dir: MoveSelection) -> bool {
@@ -158,13 +161,13 @@ impl StatusTreeComponent {
 
 	fn item_to_text<'b>(
 		string: &str,
-		indent: usize,
-		visible: bool,
-		file_item_kind: &FileTreeItemKind,
+		draw_text_info: &TextDrawInfo,
 		width: u16,
 		selected: bool,
 		theme: &'b SharedTheme,
 	) -> Option<Span<'b>> {
+		let indent = draw_text_info.indent as usize;
+		let visible = draw_text_info.visible;
 		let indent_str = if indent == 0 {
 			String::new()
 		} else {
@@ -175,8 +178,32 @@ impl StatusTreeComponent {
 			return None;
 		}
 
-		match file_item_kind {
-			FileTreeItemKind::File(status_item) => {
+		draw_text_info.status_item.as_ref().map_or_else(
+			|| {
+				let collapse_char = if draw_text_info.path_collapsed {
+					'▸'
+				} else {
+					'▾'
+				};
+
+				let txt = if selected {
+					format!(
+						"  {}{}{:w$}",
+						indent_str,
+						collapse_char,
+						string,
+						w = width as usize
+					)
+				} else {
+					format!("  {indent_str}{collapse_char}{string}",)
+				};
+
+				Some(Span::styled(
+					Cow::from(txt),
+					theme.text(true, selected),
+				))
+			},
+			|status_item| {
 				let status_char =
 					Self::item_status_char(status_item.status);
 				let file = Path::new(&status_item.path)
@@ -200,30 +227,8 @@ impl StatusTreeComponent {
 					Cow::from(txt),
 					theme.item(status_item.status, selected),
 				))
-			}
-
-			FileTreeItemKind::Path(path_collapsed) => {
-				let collapse_char =
-					if path_collapsed.0 { '▸' } else { '▾' };
-
-				let txt = if selected {
-					format!(
-						"  {}{}{:w$}",
-						indent_str,
-						collapse_char,
-						string,
-						w = width as usize
-					)
-				} else {
-					format!("  {indent_str}{collapse_char}{string}",)
-				};
-
-				Some(Span::styled(
-					Cow::from(txt),
-					theme.text(true, selected),
-				))
-			}
-		}
+			},
+		)
 	}
 
 	/// Returns a Vec<TextDrawInfo> which is used to draw the `FileTreeComponent` correctly,
@@ -246,39 +251,32 @@ impl StatusTreeComponent {
 			let index_above_select =
 				index < self.tree.selection.unwrap_or(0);
 
-			if !item.info.visible && index_above_select {
+			if !item.is_visible() && index_above_select {
 				selection_offset_visible += 1;
 			}
 
 			vec_draw_text_info.push(TextDrawInfo {
-				name: item.info.path.clone(),
-				indent: item.info.indent,
-				visible: item.info.visible,
-				item_kind: &item.kind,
+				name: item.info().path_str().to_string(),
+				indent: item.info().indent(),
+				visible: item.info().is_visible(),
+				status_item: item.status(),
+				path_collapsed: item.is_path_collapsed(),
 			});
 
 			let mut idx_temp = index;
 
 			while idx_temp < tree_items.len().saturating_sub(2)
-				&& tree_items[idx_temp].info.indent
-					< tree_items[idx_temp + 1].info.indent
+				&& tree_items[idx_temp].info().indent()
+					< tree_items[idx_temp + 1].info().indent()
 			{
 				// fold up the folder/file
 				idx_temp += 1;
 				should_skip_over += 1;
 
 				// don't fold files up
-				if let FileTreeItemKind::File(_) =
-					&tree_items[idx_temp].kind
-				{
-					should_skip_over -= 1;
-					break;
-				}
 				// don't fold up if more than one folder in folder
-				else if self
-					.tree
-					.tree
-					.multiple_items_at_path(idx_temp)
+				if !tree_items[idx_temp].is_path()
+					|| self.tree.tree.multiple_items_at_path(idx_temp)
 				{
 					should_skip_over -= 1;
 					break;
@@ -290,7 +288,7 @@ impl StatusTreeComponent {
 				let vec_draw_text_info_len = vec_draw_text_info.len();
 				vec_draw_text_info[vec_draw_text_info_len - 1]
 					.name += &(String::from("/")
-					+ &tree_items[idx_temp].info.path);
+					+ tree_items[idx_temp].info().path_str());
 				if index_above_select {
 					selection_offset += 1;
 				}
@@ -305,11 +303,12 @@ impl StatusTreeComponent {
 }
 
 /// Used for drawing the `FileTreeComponent`
-struct TextDrawInfo<'a> {
+struct TextDrawInfo {
 	name: String,
 	indent: u8,
 	visible: bool,
-	item_kind: &'a FileTreeItemKind,
+	status_item: Option<StatusItem>,
+	path_collapsed: bool,
 }
 
 impl DrawableComponent for StatusTreeComponent {
@@ -362,9 +361,7 @@ impl DrawableComponent for StatusTreeComponent {
 				.filter_map(|(index, draw_text_info)| {
 					Self::item_to_text(
 						&draw_text_info.name,
-						draw_text_info.indent as usize,
-						draw_text_info.visible,
-						draw_text_info.item_kind,
+						draw_text_info,
 						r.width,
 						self.show_selection && select == index,
 						&self.theme,
@@ -404,7 +401,7 @@ impl Component for StatusTreeComponent {
 		out.push(
 			CommandInfo::new(
 				strings::commands::blame_file(&self.key_config),
-				self.selection_file().is_some(),
+				self.selection_file_ref().is_some(),
 				self.focused || force_all,
 			)
 			.order(order::RARE_ACTION),
@@ -415,7 +412,7 @@ impl Component for StatusTreeComponent {
 				strings::commands::open_file_history(
 					&self.key_config,
 				),
-				self.selection_file().is_some(),
+				self.selection_file_ref().is_some(),
 				self.focused || force_all,
 			)
 			.order(order::RARE_ACTION),
@@ -424,7 +421,7 @@ impl Component for StatusTreeComponent {
 		out.push(
 			CommandInfo::new(
 				strings::commands::edit_item(&self.key_config),
-				self.selection_file().is_some(),
+				self.selection_file_ref().is_some(),
 				self.focused || force_all,
 			)
 			.order(order::RARE_ACTION),
@@ -443,7 +440,9 @@ impl Component for StatusTreeComponent {
 							queue.push(InternalEvent::OpenPopup(
 								StackablePopupOpen::BlameFile(
 									BlameFileOpen {
-										file_path: status_item.path,
+										file_path: status_item
+											.full_path_str()
+											.to_string(),
 										commit_id: self.revision,
 										selection: None,
 									},
@@ -462,7 +461,9 @@ impl Component for StatusTreeComponent {
 							queue.push(InternalEvent::OpenPopup(
 								StackablePopupOpen::FileRevlog(
 									FileRevOpen::new(
-										status_item.path,
+										status_item
+											.full_path_str()
+											.to_string(),
 									),
 								),
 							));
@@ -475,7 +476,11 @@ impl Component for StatusTreeComponent {
 						if let Some(queue) = &self.queue {
 							queue.push(
 								InternalEvent::OpenExternalEditor(
-									Some(status_item.path),
+									Some(
+										status_item
+											.full_path_str()
+											.to_string(),
+									),
 								),
 							);
 						}
