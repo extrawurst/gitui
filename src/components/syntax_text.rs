@@ -271,10 +271,11 @@ impl Component for SyntaxTextComponent {
 	) -> Result<EventState> {
 		if let Event::Key(key) = event {
 			if let Some(nav) = common_nav(key, &self.key_config) {
-				return Ok(self
-					.scroll(nav)
-					.then(|| EventState::Consumed)
-					.unwrap_or(EventState::NotConsumed));
+				return Ok(if self.scroll(nav) {
+					EventState::Consumed
+				} else {
+					EventState::NotConsumed
+				});
 			}
 		}
 
