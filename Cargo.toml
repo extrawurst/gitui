@@ -4,7 +4,7 @@ version = "0.22.1"
 authors = ["extrawurst <mail@rusticorn.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2021"
-rust-version = "1.60"
+rust-version = "1.64"
 exclude = [".github/*", ".vscode/*", "assets/*"]
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
@@ -40,7 +40,7 @@ log = "0.4"
 notify = "5.0"
 notify-debouncer-mini = "0.2" 
 once_cell = "1"
-rayon-core = "1.9"
+rayon-core = "1.10"
 ron = "0.8"
 scopeguard = "1.1"
 scopetime = { path = "./scopetime", version = "0.1" }
@@ -52,7 +52,7 @@ tui = { version = "0.19", default-features = false, features = ['crossterm', 'se
 unicode-segmentation = "1.10"
 unicode-truncate = "0.2"
 unicode-width = "0.1"
-which = "4.3"
+which = "4.4"
 
 # pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]

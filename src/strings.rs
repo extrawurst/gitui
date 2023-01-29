@@ -883,6 +883,22 @@ pub mod commands {
 		)
 		.hide_help()
 	}
+	pub fn toggle_verify(
+		key_config: &SharedKeyConfig,
+		current_verify: bool,
+	) -> CommandText {
+		let verb = if current_verify { "disable" } else { "enable" };
+		CommandText::new(
+			format!(
+				"{} hooks [{}]",
+				verb,
+				key_config.get_hint(key_config.keys.toggle_verify),
+			),
+			"toggle running on commit hooks (available in commit popup)",
+			CMD_GROUP_COMMIT_POPUP,
+		)
+	}
+
 	pub fn commit_amend(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
@@ -1450,6 +1466,17 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.force_push),
 			),
 			"force push to origin",
+			CMD_GROUP_GENERAL,
+		)
+	}
+
+	pub fn status_fetch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Fetch [{}]",
+				key_config.get_hint(key_config.keys.fetch),
+			),
+			"fetch",
 			CMD_GROUP_GENERAL,
 		)
 	}

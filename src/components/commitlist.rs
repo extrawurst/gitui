@@ -8,7 +8,7 @@ use crate::{
 	queue::{InternalEvent, Queue},
 	strings::{self, symbol},
 	ui::style::{SharedTheme, Theme},
-	ui::{calc_scroll_top, draw_scrollbar},
+	ui::{calc_scroll_top, draw_scrollbar, Orientation},
 };
 use anyhow::Result;
 use asyncgit::sync::{
@@ -515,6 +515,7 @@ impl DrawableComponent for CommitList {
 			&self.theme,
 			self.count_total,
 			self.selection,
+			Orientation::Vertical,
 		);
 
 		Ok(())

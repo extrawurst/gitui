@@ -71,7 +71,7 @@ impl DrawableComponent for InspectCommitComponent {
 	) -> Result<()> {
 		if self.is_visible() {
 			let percentages = if self.diff.focused() {
-				(30, 70)
+				(0, 100)
 			} else {
 				(50, 50)
 			};
@@ -126,7 +126,7 @@ impl Component for InspectCommitComponent {
 			));
 
 			out.push(CommandInfo::new(
-				strings::commands::diff_focus_left(&self.key_config),
+				strings::commands::close_popup(&self.key_config),
 				true,
 				self.diff.focused() || force_all,
 			));
@@ -157,7 +157,12 @@ impl Component for InspectCommitComponent {
 
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.exit_popup) {
-					self.hide_stacked(false);
+					if self.diff.focused() {
+						self.details.focus(true);
+						self.diff.focus(false);
+					} else {
+						self.hide_stacked(false);
+					}
 				} else if key_match(
 					e,
 					self.key_config.keys.focus_right,
@@ -165,13 +170,6 @@ impl Component for InspectCommitComponent {
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if key_match(
-					e,
-					self.key_config.keys.focus_left,
-				) && self.diff.focused()
-				{
-					self.details.focus(true);
-					self.diff.focus(false);
 				} else if key_match(
 					e,
 					self.key_config.keys.focus_left,

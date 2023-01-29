@@ -105,8 +105,8 @@ impl DrawableComponent for Status {
 			.constraints(
 				if self.focus == Focus::Diff {
 					[
-						Constraint::Percentage(30),
-						Constraint::Percentage(70),
+						Constraint::Percentage(0),
+						Constraint::Percentage(100),
 					]
 				} else {
 					[
@@ -594,6 +594,12 @@ impl Status {
 		}
 	}
 
+	fn fetch(&self) {
+		if self.can_pull() {
+			self.queue.push(InternalEvent::FetchRemotes);
+		}
+	}
+
 	fn pull(&self) {
 		if let Some(branch) = self.git_branch_name.last() {
 			self.queue.push(InternalEvent::Pull(branch));
@@ -674,7 +680,7 @@ impl Status {
 		let focus_on_diff = self.is_focus_on_diff();
 		out.push(
 			CommandInfo::new(
-				strings::commands::diff_focus_left(&self.key_config),
+				strings::commands::close_popup(&self.key_config),
 				true,
 				(self.visible && focus_on_diff) || force_all,
 			)
@@ -761,6 +767,12 @@ impl Component for Status {
 				true,
 				self.can_push() && !focus_on_diff,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::status_fetch(&self.key_config),
+				self.can_pull(),
+				!focus_on_diff,
+			));
 			out.push(CommandInfo::new(
 				strings::commands::status_pull(&self.key_config),
 				self.can_pull(),
@@ -846,7 +858,7 @@ impl Component for Status {
 					self.switch_focus(Focus::Diff).map(Into::into)
 				} else if key_match(
 					k,
-					self.key_config.keys.focus_left,
+					self.key_config.keys.exit_popup,
 				) {
 					self.switch_focus(match self.diff_target {
 						DiffTarget::Stage => Focus::Stage,
@@ -882,6 +894,12 @@ impl Component for Status {
 					&& !self.is_focus_on_diff()
 				{
 					self.push(false);
+					Ok(EventState::Consumed)
+				} else if key_match(k, self.key_config.keys.fetch)
+					&& !self.is_focus_on_diff()
+					&& self.can_pull()
+				{
+					self.fetch();
 					Ok(EventState::Consumed)
 				} else if key_match(k, self.key_config.keys.pull)
 					&& !self.is_focus_on_diff()

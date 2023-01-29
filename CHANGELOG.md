@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * changes in commit message inside external editor [[@bc-universe]](https://github.com/bc-universe) ([#1420](https://github.com/extrawurst/gitui/issues/1420))
 * allow detaching HEAD and checking out specific commit from log view ([#1499](https://github.com/extrawurst/gitui/pull/1499))
+* add no-verify option on commits to not run hooks [[@dam5h]](https://github.com/dam5h) ([#1374](https://github.com/extrawurst/gitui/issues/1374))
+* allow `fetch` on status tab [[@alensiljak]](https://github.com/alensiljak) ([#1471](https://github.com/extrawurst/gitui/issues/1471))
 
 ### Fixes
 * commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
@@ -20,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `edit`-file command shown on commits msg ([#1461](https://github.com/extrawurst/gitui/issues/1461))
 * crash on branches popup in small terminal ([#1470](https://github.com/extrawurst/gitui/issues/1470))
 * `edit` command duplication ([#1489](https://github.com/extrawurst/gitui/issues/1489))
+
+### Changed
+* minimum supported rust version bumped to 1.64 (thank you `clap`)
 
 ## [0.22.1] - 2022-11-22
 
@@ -91,6 +96,7 @@ Bugfix followup release - check `0.22.0` notes for more infos!
 * switch focus to index after staging last file ([#1169](https://github.com/extrawurst/gitui/pull/1169))
 * fix stashlist multi marking not updated after dropping ([#1207](https://github.com/extrawurst/gitui/pull/1207))
 * exact matches have a higher priority and are placed to the top of the list when fuzzily finding files ([#1183](https://github.com/extrawurst/gitui/pull/1183))
+* support horizontal scrolling in diff view ([#1017](https://github.com/extrawurst/gitui/issues/1017))
 
 ### Changed
 * minimum supported rust version bumped to 1.60 ([#1279](https://github.com/extrawurst/gitui/pull/1279))
