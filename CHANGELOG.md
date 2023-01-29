@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * crash on branches popup in small terminal ([#1470](https://github.com/extrawurst/gitui/issues/1470))
 * `edit` command duplication ([#1489](https://github.com/extrawurst/gitui/issues/1489))
 
+### Changed
+* minimum supported rust version bumped to 1.64 (thank you `clap`)
+
 ## [0.22.1] - 2022-11-22
 
 Bugfix followup release - check `0.22.0` notes for more infos!
