@@ -205,8 +205,9 @@ impl Default for KeysList {
 impl KeysList {
 	pub fn init(file: PathBuf) -> Self {
 		if file.exists() {
-			let file =
-				KeysListFile::read_file(file).unwrap_or_default();
+			let file = KeysListFile::read_file(file)
+				.map_err(|e| log::error!("key binding error: {e}",))
+				.unwrap_or_default();
 			file.get_list()
 		} else {
 			Self::default()
