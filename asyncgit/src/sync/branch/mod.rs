@@ -698,7 +698,6 @@ mod tests_checkout {
 #[cfg(test)]
 mod tests_checkout_commit {
 	use super::*;
-	use crate::sync::logwalker::LogWalker;
 	use crate::sync::tests::{repo_init, write_commit_file};
 	use crate::sync::RepoPath;
 
@@ -709,19 +708,16 @@ mod tests_checkout_commit {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		write_commit_file(&repo, "test_1.txt", "test", "commit1");
+		let commit =
+			write_commit_file(&repo, "test_1.txt", "test", "commit1");
 		write_commit_file(&repo, "test_2.txt", "test", "commit2");
 
-		let mut items = Vec::new();
-		let mut walk = LogWalker::new(&repo, 2).unwrap();
-		walk.read(&mut items).unwrap();
-
-		checkout_commit(repo_path, items[0]).unwrap();
+		checkout_commit(repo_path, commit).unwrap();
 
 		assert!(repo.head_detached().unwrap());
 		assert_eq!(
 			repo.head().unwrap().target().unwrap(),
-			items[0].get_oid()
+			commit.get_oid()
 		);
 	}
 }
