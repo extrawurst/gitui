@@ -7,6 +7,7 @@ use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
 	strings::{self, symbol},
+	try_or_popup,
 	ui::style::{SharedTheme, Theme},
 	ui::{calc_scroll_top, draw_scrollbar, Orientation},
 };
@@ -440,13 +441,16 @@ impl CommitList {
 		self.selection = position;
 	}
 
-	pub fn checkout(&mut self) -> Result<()> {
+	pub fn checkout(&mut self) {
 		if let Some(commit_hash) =
 			self.selected_entry().map(|entry| entry.id)
 		{
-			checkout_commit(&self.repo.borrow(), commit_hash)?;
+			try_or_popup!(
+				self,
+				"failed to checkout commit:",
+				checkout_commit(&self.repo.borrow(), commit_hash)
+			);
 		}
-		Ok(())
 	}
 
 	pub fn set_branches(&mut self, branches: Vec<BranchInfo>) {
@@ -556,7 +560,7 @@ impl Component for CommitList {
 					k,
 					self.key_config.keys.log_checkout_commit,
 				) {
-					self.checkout()?;
+					self.checkout();
 					true
 				} else {
 					false
