@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * crash on branches popup in small terminal ([#1470](https://github.com/extrawurst/gitui/issues/1470))
 * `edit` command duplication ([#1489](https://github.com/extrawurst/gitui/issues/1489))
 * syntax errors in `key_bindings.ron` will be logged ([#1491](https://github.com/extrawurst/gitui/issues/1491))
+* commit hooks report "command not found" on Windows with wsl2 installed ([#1528](https://github.com/extrawurst/gitui/issues/1528))
 
 ### Changed
 * minimum supported rust version bumped to 1.64 (thank you `clap`)

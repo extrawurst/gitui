@@ -66,11 +66,15 @@ impl HookPaths {
 	/// see <https://git-scm.com/docs/githooks>
 	pub fn run_hook(&self, args: &[&str]) -> Result<HookResult> {
 		let arg_str = format!("{:?} {}", self.hook, args.join(" "));
-		let bash_args = vec!["-c".to_string(), arg_str];
+		// Use -l to avoid "command not found" on Windows.
+		let bash_args =
+			vec!["-l".to_string(), "-c".to_string(), arg_str];
 
 		log::trace!("run hook '{:?}' in '{:?}'", self.hook, self.pwd);
 
-		let output = Command::new("bash")
+		let git_bash = find_bash_executable()
+			.unwrap_or_else(|| PathBuf::from("bash"));
+		let output = Command::new(git_bash)
 			.args(bash_args)
 			.current_dir(&self.pwd)
 			// This call forces Command to handle the Path environment correctly on windows,
@@ -184,6 +188,29 @@ const fn is_executable(_: &Path) -> bool {
 	true
 }
 
+// Find bash.exe, and avoid finding wsl's bash.exe on Windows.
+// None for non-Windows.
+fn find_bash_executable() -> Option<PathBuf> {
+	if cfg!(windows) {
+		Command::new("where.exe")
+			.arg("git")
+			.output()
+			.ok()
+			.map(|out| {
+				PathBuf::from(Into::<String>::into(
+					String::from_utf8_lossy(&out.stdout),
+				))
+			})
+			.as_deref()
+			.and_then(Path::parent)
+			.and_then(Path::parent)
+			.map(|p| p.join("usr/bin/bash.exe"))
+			.filter(|p| p.exists())
+	} else {
+		None
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -255,6 +282,29 @@ exit 0
 		assert_eq!(res, HookResult::Ok);
 
 		assert_eq!(msg, String::from("test"));
+	}
+
+	#[test]
+	fn test_hooks_commit_msg_with_shell_command_ok() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		let hook = br#"#!/bin/sh
+COMMIT_MSG="$(cat "$1")"
+printf "$COMMIT_MSG" | sed 's/sth/shell_command/g' >"$1"
+exit 0
+        "#;
+
+		create_hook(repo_path, HOOK_COMMIT_MSG, hook);
+
+		let mut msg = String::from("test_sth");
+		let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
+
+		assert_eq!(res, HookResult::Ok);
+
+		assert_eq!(msg, String::from("test_shell_command"));
 	}
 
 	#[test]
