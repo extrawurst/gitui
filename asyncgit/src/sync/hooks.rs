@@ -292,7 +292,8 @@ exit 0
 			&root.as_os_str().to_str().unwrap().into();
 
 		let hook = br#"#!/bin/sh
-sed -i 's/sth/shell_command/g' "$1"
+COMMIT_MSG="$(cat "$1")"
+printf "$COMMIT_MSG" | sed 's/sth/shell_command/g' >"$1"
 exit 0
         "#;
 
