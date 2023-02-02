@@ -285,6 +285,28 @@ exit 0
 	}
 
 	#[test]
+	fn test_hooks_commit_msg_with_shell_command_ok() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		let hook = br#"#!/bin/sh
+sed -i 's/sth/shell_command/g' "$1"
+exit 0
+        "#;
+
+		create_hook(repo_path, HOOK_COMMIT_MSG, hook);
+
+		let mut msg = String::from("test_sth");
+		let res = hooks_commit_msg(repo_path, &mut msg).unwrap();
+
+		assert_eq!(res, HookResult::Ok);
+
+		assert_eq!(msg, String::from("test_shell_command"));
+	}
+
+	#[test]
 	fn test_pre_commit_sh() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
