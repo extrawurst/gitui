@@ -66,11 +66,15 @@ impl HookPaths {
 	/// see <https://git-scm.com/docs/githooks>
 	pub fn run_hook(&self, args: &[&str]) -> Result<HookResult> {
 		let arg_str = format!("{:?} {}", self.hook, args.join(" "));
-		let bash_args = vec!["-c".to_string(), arg_str];
+		// Use -l to avoid "command not found" on Windows.
+		let bash_args =
+			vec!["-l".to_string(), "-c".to_string(), arg_str];
 
 		log::trace!("run hook '{:?}' in '{:?}'", self.hook, self.pwd);
 
-		let output = Command::new("bash")
+		let git_bash = find_bash_executable()
+			.unwrap_or_else(|| PathBuf::from("bash"));
+		let output = Command::new(git_bash)
 			.args(bash_args)
 			.current_dir(&self.pwd)
 			// This call forces Command to handle the Path environment correctly on windows,
@@ -182,6 +186,29 @@ fn is_executable(path: &Path) -> bool {
 /// to be executable (which is not far from the truth for windows platform.)
 const fn is_executable(_: &Path) -> bool {
 	true
+}
+
+// Find bash.exe, and avoid finding wsl's bash.exe on Windows.
+// None for non-Windows.
+fn find_bash_executable() -> Option<PathBuf> {
+	if cfg!(windows) {
+		Command::new("where.exe")
+			.arg("git")
+			.output()
+			.ok()
+			.map(|out| {
+				PathBuf::from(Into::<String>::into(
+					String::from_utf8_lossy(&out.stdout),
+				))
+			})
+			.as_deref()
+			.and_then(Path::parent)
+			.and_then(Path::parent)
+			.map(|p| p.join("usr/bin/bash.exe"))
+			.filter(|p| p.exists())
+	} else {
+		None
+	}
 }
 
 #[cfg(test)]
