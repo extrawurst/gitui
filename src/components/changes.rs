@@ -1,7 +1,6 @@
 use super::{
-	status_tree::StatusTreeComponent,
-	utils::filetree::{FileTreeItem, FileTreeItemKind},
-	CommandBlocking, DrawableComponent,
+	status_tree::StatusTreeComponent, CommandBlocking,
+	DrawableComponent,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
@@ -17,6 +16,7 @@ use asyncgit::{
 	StatusItem, StatusItemType,
 };
 use crossterm::event::Event;
+use filetreelist::FileTreeItem;
 use std::path::Path;
 use tui::{backend::Backend, layout::Rect, Frame};
 
@@ -68,8 +68,12 @@ impl ChangesComponent {
 	}
 
 	///
-	pub fn selection(&self) -> Option<FileTreeItem> {
+	pub fn selection_ref(&self) -> Option<&FileTreeItem> {
 		self.files.selection()
+	}
+
+	pub fn selection_status(&self) -> Option<StatusItem> {
+		self.files.selection_status()
 	}
 
 	///
@@ -85,16 +89,28 @@ impl ChangesComponent {
 
 	///
 	pub fn is_file_seleted(&self) -> bool {
-		self.files.is_file_seleted()
+		self.files.is_file_selected()
 	}
 
+	/// Returns true when there was a selection.
 	fn index_add_remove(&mut self) -> Result<bool> {
-		if let Some(tree_item) = self.selection() {
+		if let Some(tree_item) = self.selection_ref() {
 			if self.is_working_dir {
-				if let FileTreeItemKind::File(i) = tree_item.kind {
-					let path = Path::new(i.path.as_str());
-					match i.status {
-						StatusItemType::Deleted => {
+				if tree_item.kind().is_path() {
+					let config =
+						self.options.borrow().status_show_untracked();
+
+					//TODO: check if we can handle the one file case with it aswell
+					sync::stage_add_all(
+						&self.repo.borrow(),
+						tree_item.info().full_path_str(),
+						config,
+					)?;
+				} else {
+					let path =
+						Path::new(tree_item.info().full_path_str());
+					match self.selection_status().map(|s| s.status) {
+						Some(StatusItemType::Deleted) => {
 							sync::stage_addremoved(
 								&self.repo.borrow(),
 								path,
@@ -105,16 +121,6 @@ impl ChangesComponent {
 							path,
 						)?,
 					};
-				} else {
-					let config =
-						self.options.borrow().status_show_untracked();
-
-					//TODO: check if we can handle the one file case with it aswell
-					sync::stage_add_all(
-						&self.repo.borrow(),
-						tree_item.info.full_path.as_str(),
-						config,
-					)?;
 				}
 
 				//TODO: this might be slow in big repos,
@@ -130,7 +136,7 @@ impl ChangesComponent {
 				}
 			} else {
 				// this is a staged entry, so lets unstage it
-				let path = tree_item.info.full_path.as_str();
+				let path = tree_item.info().full_path_str();
 				sync::reset_stage(&self.repo.borrow(), path)?;
 			}
 
@@ -159,12 +165,14 @@ impl ChangesComponent {
 	}
 
 	fn dispatch_reset_workdir(&mut self) -> bool {
-		if let Some(tree_item) = self.selection() {
-			let is_folder =
-				matches!(tree_item.kind, FileTreeItemKind::Path(_));
+		if let Some(tree_item) = self.selection_ref() {
+			let is_folder = tree_item.kind().is_path();
 			self.queue.push(InternalEvent::ConfirmAction(
 				Action::Reset(ResetItem {
-					path: tree_item.info.full_path,
+					path: tree_item
+						.info()
+						.full_path_str()
+						.to_string(),
 					is_folder,
 				}),
 			));
@@ -175,15 +183,16 @@ impl ChangesComponent {
 	}
 
 	fn add_to_ignore(&mut self) -> bool {
-		if let Some(tree_item) = self.selection() {
+		if let Some(tree_item) = self.selection_ref() {
 			if let Err(e) = sync::add_to_ignore(
 				&self.repo.borrow(),
-				&tree_item.info.full_path,
+				tree_item.info().full_path_str(),
 			) {
 				self.queue.push(InternalEvent::ShowErrorMsg(
 					format!(
 						"ignore error:\n{}\nfile:\n{:?}",
-						e, tree_item.info.full_path
+						e,
+						tree_item.info().full_path()
 					),
 				));
 			} else {
@@ -218,7 +227,7 @@ impl Component for ChangesComponent {
 	) -> CommandBlocking {
 		self.files.commands(out, force_all);
 
-		let some_selection = self.selection().is_some();
+		let some_selection = self.selection_ref().is_some();
 
 		if self.is_working_dir {
 			out.push(CommandInfo::new(

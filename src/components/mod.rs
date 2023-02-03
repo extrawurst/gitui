@@ -65,7 +65,6 @@ pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;
 pub use taglist::TagListComponent;
 pub use textinput::{InputType, TextInputComponent};
-pub use utils::filetree::FileTreeItemKind;
 
 use crate::ui::style::Theme;
 use anyhow::Result;
