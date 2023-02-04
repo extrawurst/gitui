@@ -126,6 +126,8 @@ pub enum InternalEvent {
 	ViewSubmodules,
 	///
 	OpenRepo { path: PathBuf },
+	///
+	OpenResetPopup(CommitId),
 }
 
 /// single threaded simple queue for components to communicate with each other
