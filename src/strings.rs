@@ -1255,6 +1255,17 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn reset_type(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Change Type  [{}{}]",
+				key_config.get_hint(key_config.keys.move_up),
+				key_config.get_hint(key_config.keys.move_down)
+			),
+			"change reset type",
+			CMD_GROUP_LOG,
+		)
+	}
 	pub fn tag_commit_confirm_msg(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

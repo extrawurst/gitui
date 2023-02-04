@@ -1,16 +1,18 @@
-#![allow(dead_code)]
-
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState,
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
-	strings,
+	queue::Queue,
+	strings, try_or_popup,
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::sync::{CommitId, RepoPath, RepoPathRef, ResetType};
+use asyncgit::{
+	cached,
+	sync::{CommitId, RepoPath, RepoPathRef, ResetType},
+};
 use crossterm::event::Event;
 use tui::{
 	backend::Backend,
@@ -20,18 +22,29 @@ use tui::{
 	Frame,
 };
 
-const fn type_to_string(kind: ResetType) -> &'static str {
+const fn type_to_string(
+	kind: ResetType,
+) -> (&'static str, &'static str) {
+	const RESET_TYPE_DESC_SOFT: &str =
+		"  🟢 Keep all changes. Stage differences";
+	const RESET_TYPE_DESC_MIXED: &str =
+		" 🟡 Keep all changes. Unstage differences";
+	const RESET_TYPE_DESC_HARD: &str =
+		"  🔴 Discard all local changes";
+
 	match kind {
-		ResetType::Soft => "🟢 Soft",
-		ResetType::Mixed => "🟡 Mixed",
-		ResetType::Hard => "🔴 Hard",
+		ResetType::Soft => ("Soft", RESET_TYPE_DESC_SOFT),
+		ResetType::Mixed => ("Mixed", RESET_TYPE_DESC_MIXED),
+		ResetType::Hard => ("Hard", RESET_TYPE_DESC_HARD),
 	}
 }
 
 pub struct ResetPopupComponent {
+	queue: Queue,
 	repo: RepoPath,
 	commit: Option<CommitId>,
 	kind: ResetType,
+	git_branch_name: cached::BranchName,
 	visible: bool,
 	key_config: SharedKeyConfig,
 	theme: SharedTheme,
@@ -40,14 +53,17 @@ pub struct ResetPopupComponent {
 impl ResetPopupComponent {
 	///
 	pub fn new(
+		queue: &Queue,
 		repo: &RepoPathRef,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			queue: queue.clone(),
 			repo: repo.borrow().clone(),
 			commit: None,
 			kind: ResetType::Soft,
+			git_branch_name: cached::BranchName::new(repo.clone()),
 			visible: false,
 			key_config,
 			theme,
@@ -62,7 +78,10 @@ impl ResetPopupComponent {
 				String::from("Branch: "),
 				self.theme.text(true, false),
 			),
-			Span::styled("master", self.theme.branch(false, true)),
+			Span::styled(
+				self.git_branch_name.last().unwrap_or_default(),
+				self.theme.branch(false, true),
+			),
 		]));
 
 		txt.push(Spans::from(vec![
@@ -78,15 +97,15 @@ impl ResetPopupComponent {
 			),
 		]));
 
+		let (kind_name, kind_desc) = type_to_string(self.kind);
+
 		txt.push(Spans::from(vec![
 			Span::styled(
 				String::from("How: "),
 				self.theme.text(true, false),
 			),
-			Span::styled(
-				type_to_string(self.kind),
-				self.theme.text(true, true),
-			),
+			Span::styled(kind_name, self.theme.text(true, true)),
+			Span::styled(kind_desc, self.theme.text(true, false)),
 		]));
 
 		txt
@@ -101,14 +120,40 @@ impl ResetPopupComponent {
 		Ok(())
 	}
 
-	fn reset(&mut self) -> Result<()> {
+	///
+	#[allow(clippy::unnecessary_wraps)]
+	pub fn update(&mut self) -> Result<()> {
+		self.git_branch_name.lookup().map(Some).unwrap_or(None);
+
+		Ok(())
+	}
+
+	fn reset(&mut self) {
 		if let Some(id) = self.commit {
-			asyncgit::sync::reset_repo(&self.repo, id, self.kind)?;
+			try_or_popup!(
+				self,
+				"reset:",
+				asyncgit::sync::reset_repo(&self.repo, id, self.kind)
+			);
 		}
 
 		self.hide();
+	}
 
-		Ok(())
+	fn change_kind(&mut self, incr: bool) {
+		self.kind = if incr {
+			match self.kind {
+				ResetType::Soft => ResetType::Mixed,
+				ResetType::Mixed => ResetType::Hard,
+				ResetType::Hard => ResetType::Soft,
+			}
+		} else {
+			match self.kind {
+				ResetType::Soft => ResetType::Hard,
+				ResetType::Mixed => ResetType::Soft,
+				ResetType::Hard => ResetType::Mixed,
+			}
+		};
 	}
 }
 
@@ -161,9 +206,19 @@ impl Component for ResetPopupComponent {
 				)
 				.order(1),
 			);
+
 			out.push(
 				CommandInfo::new(
 					strings::commands::reset_commit(&self.key_config),
+					true,
+					true,
+				)
+				.order(1),
+			);
+
+			out.push(
+				CommandInfo::new(
+					strings::commands::reset_type(&self.key_config),
 					true,
 					true,
 				)
@@ -182,8 +237,16 @@ impl Component for ResetPopupComponent {
 			if let Event::Key(key) = &event {
 				if key_match(key, self.key_config.keys.exit_popup) {
 					self.hide();
+				} else if key_match(
+					key,
+					self.key_config.keys.move_down,
+				) {
+					self.change_kind(true);
+				} else if key_match(key, self.key_config.keys.move_up)
+				{
+					self.change_kind(false);
 				} else if key_match(key, self.key_config.keys.enter) {
-					self.reset()?;
+					self.reset();
 				}
 			}
 

@@ -16,10 +16,12 @@ macro_rules! try_or_popup {
 	($self:ident, $msg:expr, $e:expr) => {
 		if let Err(err) = $e {
 			::log::error!("{} {}", $msg, err);
-			$self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"{}\n{}",
-				$msg, err
-			)));
+			$self.queue.push(
+				$crate::queue::InternalEvent::ShowErrorMsg(format!(
+					"{}\n{}",
+					$msg, err
+				)),
+			);
 		}
 	};
 }

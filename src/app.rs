@@ -206,6 +206,7 @@ impl App {
 				key_config.clone(),
 			),
 			reset_popup: ResetPopupComponent::new(
+				&queue,
 				&repo,
 				theme.clone(),
 				key_config.clone(),
@@ -490,6 +491,7 @@ impl App {
 		self.files_tab.update()?;
 		self.stashing_tab.update()?;
 		self.stashlist_tab.update()?;
+		self.reset_popup.update()?;
 
 		self.update_commands();
 
