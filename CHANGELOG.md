@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * changes in commit message inside external editor [[@bc-universe]](https://github.com/bc-universe) ([#1420](https://github.com/extrawurst/gitui/issues/1420))
+* allow detaching HEAD and checking out specific commit from log view ([#1499](https://github.com/extrawurst/gitui/pull/1499))
 * add no-verify option on commits to not run hooks [[@dam5h]](https://github.com/dam5h) ([#1374](https://github.com/extrawurst/gitui/issues/1374))
 * allow `fetch` on status tab [[@alensiljak]](https://github.com/alensiljak) ([#1471](https://github.com/extrawurst/gitui/issues/1471))
 

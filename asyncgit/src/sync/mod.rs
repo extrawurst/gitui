@@ -34,9 +34,10 @@ pub mod utils;
 
 pub use blame::{blame_file, BlameHunk, FileBlame};
 pub use branch::{
-	branch_compare_upstream, checkout_branch, config_is_pull_rebase,
-	create_branch, delete_branch, get_branch_remote,
-	get_branches_info, merge_commit::merge_upstream_commit,
+	branch_compare_upstream, checkout_branch, checkout_commit,
+	config_is_pull_rebase, create_branch, delete_branch,
+	get_branch_remote, get_branches_info,
+	merge_commit::merge_upstream_commit,
 	merge_ff::branch_merge_upstream_fastforward,
 	merge_rebase::merge_upstream_rebase, rename::rename_branch,
 	validate_branch_name, BranchCompare, BranchInfo,

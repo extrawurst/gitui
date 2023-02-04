@@ -62,6 +62,7 @@ impl Revlog {
 				key_config.clone(),
 			),
 			list: CommitList::new(
+				repo.clone(),
 				&strings::log_title(&key_config),
 				theme,
 				queue.clone(),
@@ -414,6 +415,12 @@ impl Component for Revlog {
 
 		out.push(CommandInfo::new(
 			strings::commands::log_tag_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::log_checkout_commit(&self.key_config),
 			self.selected_commit().is_some(),
 			self.visible || force_all,
 		));

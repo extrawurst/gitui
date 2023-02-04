@@ -1195,6 +1195,19 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn log_checkout_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Checkout [{}]",
+				key_config
+					.get_hint(key_config.keys.log_checkout_commit),
+			),
+			"checkout commit",
+			CMD_GROUP_LOG,
+		)
+	}
 	pub fn inspect_file_tree(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

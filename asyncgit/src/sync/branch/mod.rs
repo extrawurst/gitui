@@ -301,6 +301,36 @@ pub fn checkout_branch(
 	}
 }
 
+/// Detach HEAD to point to a commit then checkout HEAD, does not work if there are uncommitted changes
+pub fn checkout_commit(
+	repo_path: &RepoPath,
+	commit_hash: CommitId,
+) -> Result<()> {
+	scope_time!("checkout_commit");
+
+	let repo = repo(repo_path)?;
+	let cur_ref = repo.head()?;
+	let statuses = repo.statuses(Some(
+		git2::StatusOptions::new().include_ignored(false),
+	))?;
+
+	if statuses.is_empty() {
+		repo.set_head_detached(commit_hash.into())?;
+
+		if let Err(e) = repo.checkout_head(Some(
+			git2::build::CheckoutBuilder::new().force(),
+		)) {
+			repo.set_head(
+				bytes2string(cur_ref.name_bytes())?.as_str(),
+			)?;
+			return Err(Error::Git(e));
+		}
+		Ok(())
+	} else {
+		Err(Error::UncommittedChanges)
+	}
+}
+
 ///
 pub fn checkout_remote_branch(
 	repo_path: &RepoPath,
@@ -662,6 +692,33 @@ mod tests_checkout {
 			checkout_branch(repo_path, "refs/heads/master").is_ok()
 		);
 		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+	}
+}
+
+#[cfg(test)]
+mod tests_checkout_commit {
+	use super::*;
+	use crate::sync::tests::{repo_init, write_commit_file};
+	use crate::sync::RepoPath;
+
+	#[test]
+	fn test_smoke() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		let commit =
+			write_commit_file(&repo, "test_1.txt", "test", "commit1");
+		write_commit_file(&repo, "test_2.txt", "test", "commit2");
+
+		checkout_commit(repo_path, commit).unwrap();
+
+		assert!(repo.head_detached().unwrap());
+		assert_eq!(
+			repo.head().unwrap().target().unwrap(),
+			commit.get_oid()
+		);
 	}
 }
 

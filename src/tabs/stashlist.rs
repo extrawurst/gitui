@@ -32,6 +32,7 @@ impl StashList {
 		Self {
 			visible: false,
 			list: CommitList::new(
+				repo.clone(),
 				&strings::stashlist_title(&key_config),
 				theme,
 				queue.clone(),
