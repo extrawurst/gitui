@@ -10,7 +10,7 @@ use crate::{
 		FileRevlogComponent, HelpComponent, InspectCommitComponent,
 		MsgComponent, OptionsPopupComponent, PullComponent,
 		PushComponent, PushTagsComponent, RenameBranchComponent,
-		RevisionFilesPopup, StashMsgComponent,
+		ResetPopupComponent, RevisionFilesPopup, StashMsgComponent,
 		SubmodulesListComponent, TagCommitComponent,
 		TagListComponent,
 	},
@@ -84,6 +84,7 @@ pub struct App {
 	options_popup: OptionsPopupComponent,
 	submodule_popup: SubmodulesListComponent,
 	tags_popup: TagListComponent,
+	reset_popup: ResetPopupComponent,
 	cmdbar: RefCell<CommandBar>,
 	tab: usize,
 	revlog: Revlog,
@@ -201,6 +202,12 @@ impl App {
 				&repo,
 				&queue,
 				sender,
+				theme.clone(),
+				key_config.clone(),
+			),
+			reset_popup: ResetPopupComponent::new(
+				&queue,
+				&repo,
 				theme.clone(),
 				key_config.clone(),
 			),
@@ -484,6 +491,7 @@ impl App {
 		self.files_tab.update()?;
 		self.stashing_tab.update()?;
 		self.stashlist_tab.update()?;
+		self.reset_popup.update()?;
 
 		self.update_commands();
 
@@ -590,6 +598,7 @@ impl App {
 			revision_files_popup,
 			submodule_popup,
 			tags_popup,
+			reset_popup,
 			options_popup,
 			help,
 			revlog,
@@ -615,6 +624,7 @@ impl App {
 			select_branch_popup,
 			submodule_popup,
 			tags_popup,
+			reset_popup,
 			create_branch_popup,
 			rename_branch_popup,
 			revision_files_popup,
@@ -925,6 +935,9 @@ impl App {
 				//TODO: validate this is a valid repo first, so we can show proper error otherwise
 				self.do_quit =
 					QuitState::OpenSubmodule(submodule_repo_path);
+			}
+			InternalEvent::OpenResetPopup(id) => {
+				self.reset_popup.open(id)?;
 			}
 		};
 
