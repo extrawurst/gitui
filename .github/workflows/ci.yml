@@ -191,7 +191,7 @@ jobs:
         cargo deny check bans
 
   udeps:
-    name: Lints
+    name: udeps
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
