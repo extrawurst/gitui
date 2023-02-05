@@ -190,6 +190,10 @@ jobs:
       run: |
         cargo deny check bans
 
+    - name: cargo-udeps
+      run: |
+        cargo +nightly udeps --all-targets
+
   sec:
     name: Security audit
     runs-on: ubuntu-latest
