@@ -178,6 +178,11 @@ jobs:
         cargo install cargo-sort --force
         cargo sort -c -w
 
+    - name: cargo-udeps install
+      run: cargo install --locked cargo-udeps
+    - name: cargo-udeps
+      run: cargo +nightly udeps --all-targets
+
     - name: cargo-deny install
       run: |
         cargo install --locked cargo-deny
@@ -189,10 +194,6 @@ jobs:
     - name: cargo-deny bans
       run: |
         cargo deny check bans
-
-    - name: cargo-udeps
-      run: |
-        cargo +nightly udeps --all-targets
 
   sec:
     name: Security audit
