@@ -178,11 +178,6 @@ jobs:
         cargo install cargo-sort --force
         cargo sort -c -w
 
-    - name: cargo-udeps install
-      run: cargo install --locked cargo-udeps
-    - name: cargo-udeps
-      run: cargo +nightly udeps --all-targets
-
     - name: cargo-deny install
       run: |
         cargo install --locked cargo-deny
@@ -194,6 +189,23 @@ jobs:
     - name: cargo-deny bans
       run: |
         cargo deny check bans
+
+  udeps:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+        
+    - name: cargo-udeps
+      run: |
+        cargo install --locked cargo-udeps
+        cargo +nightly udeps --all-targets
+
 
   sec:
     name: Security audit
