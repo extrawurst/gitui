@@ -179,7 +179,7 @@ Binaries available for:
 
 ### Requirements
 
-- Minimum supported `rust`/`cargo` version: `1.60`
+- Minimum supported `rust`/`cargo` version: `1.64`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
 
 ### Cargo Install

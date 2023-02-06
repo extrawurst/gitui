@@ -1,6 +1,6 @@
-use super::{utils::get_head_repo, RepoPath};
+use super::{utils::get_head_repo, CommitId, RepoPath};
 use crate::{error::Result, sync::repository::repo};
-use git2::{build::CheckoutBuilder, ObjectType};
+use git2::{build::CheckoutBuilder, ObjectType, ResetType};
 use scopetime::scope_time;
 
 ///
@@ -35,6 +35,23 @@ pub fn reset_workdir(repo_path: &RepoPath, path: &str) -> Result<()> {
 		.path(path);
 
 	repo.checkout_index(None, Some(&mut checkout_opts))?;
+	Ok(())
+}
+
+///
+pub fn reset_repo(
+	repo_path: &RepoPath,
+	commit: CommitId,
+	kind: ResetType,
+) -> Result<()> {
+	scope_time!("reset_repo");
+
+	let repo = repo(repo_path)?;
+
+	let c = repo.find_commit(commit.into())?;
+
+	repo.reset(c.as_object(), kind, None)?;
+
 	Ok(())
 }
 

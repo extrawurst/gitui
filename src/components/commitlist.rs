@@ -7,11 +7,14 @@ use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
 	strings::{self, symbol},
+	try_or_popup,
 	ui::style::{SharedTheme, Theme},
 	ui::{calc_scroll_top, draw_scrollbar, Orientation},
 };
 use anyhow::Result;
-use asyncgit::sync::{BranchInfo, CommitId, Tags};
+use asyncgit::sync::{
+	checkout_commit, BranchInfo, CommitId, RepoPathRef, Tags,
+};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
 use itertools::Itertools;
@@ -31,6 +34,7 @@ const ELEMENTS_PER_LINE: usize = 9;
 
 ///
 pub struct CommitList {
+	repo: RepoPathRef,
 	title: Box<str>,
 	selection: usize,
 	count_total: usize,
@@ -49,12 +53,14 @@ pub struct CommitList {
 impl CommitList {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		title: &str,
 		theme: SharedTheme,
 		queue: Queue,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
+			repo,
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
 			selection: 0,
@@ -435,6 +441,18 @@ impl CommitList {
 		self.selection = position;
 	}
 
+	pub fn checkout(&mut self) {
+		if let Some(commit_hash) =
+			self.selected_entry().map(|entry| entry.id)
+		{
+			try_or_popup!(
+				self,
+				"failed to checkout commit:",
+				checkout_commit(&self.repo.borrow(), commit_hash)
+			);
+		}
+	}
+
 	pub fn set_branches(&mut self, branches: Vec<BranchInfo>) {
 		self.branches.clear();
 
@@ -537,6 +555,12 @@ impl Component for CommitList {
 					self.key_config.keys.log_mark_commit,
 				) {
 					self.mark();
+					true
+				} else if key_match(
+					k,
+					self.key_config.keys.log_checkout_commit,
+				) {
+					self.checkout();
 					true
 				} else {
 					false

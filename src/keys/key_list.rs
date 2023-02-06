@@ -87,6 +87,8 @@ pub struct KeysList {
 	pub cmd_bar_toggle: GituiKeyEvent,
 	pub log_tag_commit: GituiKeyEvent,
 	pub log_mark_commit: GituiKeyEvent,
+	pub log_checkout_commit: GituiKeyEvent,
+	pub log_reset_comit: GituiKeyEvent,
 	pub commit_amend: GituiKeyEvent,
 	pub toggle_verify: GituiKeyEvent,
 	pub copy: GituiKeyEvent,
@@ -171,6 +173,8 @@ impl Default for KeysList {
 			cmd_bar_toggle: GituiKeyEvent::new(KeyCode::Char('.'),  KeyModifiers::empty()),
 			log_tag_commit: GituiKeyEvent::new(KeyCode::Char('t'),  KeyModifiers::empty()),
 			log_mark_commit: GituiKeyEvent::new(KeyCode::Char(' '),  KeyModifiers::empty()),
+			log_checkout_commit: GituiKeyEvent { code: KeyCode::Char('S'), modifiers: KeyModifiers::SHIFT },
+			log_reset_comit: GituiKeyEvent { code: KeyCode::Char('R'), modifiers: KeyModifiers::SHIFT },
 			commit_amend: GituiKeyEvent::new(KeyCode::Char('a'),  KeyModifiers::CONTROL),
 			toggle_verify: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::CONTROL),
 			copy: GituiKeyEvent::new(KeyCode::Char('y'),  KeyModifiers::empty()),
@@ -205,8 +209,9 @@ impl Default for KeysList {
 impl KeysList {
 	pub fn init(file: PathBuf) -> Self {
 		if file.exists() {
-			let file =
-				KeysListFile::read_file(file).unwrap_or_default();
+			let file = KeysListFile::read_file(file)
+				.map_err(|e| log::error!("key binding error: {e}",))
+				.unwrap_or_default();
 			file.get_list()
 		} else {
 			Self::default()
