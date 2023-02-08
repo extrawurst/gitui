@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -93,12 +91,9 @@ impl Component for WorkTreesTab {
 			return Ok(EventState::Consumed);
 		} else if let Event::Key(e) = ev {
 			if key_match(e, self.key_config.keys.select_worktree) {
-				self.queue.push(InternalEvent::OpenRepo {
-					path: PathBuf::from(format!(
-						"../{}",
-						&self.selected_worktree().name
-					)),
-				});
+				self.queue.push(InternalEvent::OpenWorktree(
+					self.selected_worktree().name.clone(),
+				));
 				return Ok(EventState::Consumed);
 			};
 		}

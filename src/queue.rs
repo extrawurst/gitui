@@ -127,6 +127,8 @@ pub enum InternalEvent {
 	///
 	OpenRepo { path: PathBuf },
 	///
+	OpenWorktree(String),
+	///
 	OpenResetPopup(CommitId),
 }
 

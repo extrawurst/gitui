@@ -31,7 +31,10 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use asyncgit::{
-	sync::{self, utils::repo_work_dir, RepoPath, RepoPathRef},
+	sync::{
+		self, find_worktree, utils::repo_work_dir, RepoPath,
+		RepoPathRef,
+	},
 	AsyncGitNotification, PushType,
 };
 use crossbeam_channel::Sender;
@@ -954,6 +957,10 @@ impl App {
 				//TODO: validate this is a valid repo first, so we can show proper error otherwise
 				self.do_quit =
 					QuitState::OpenSubmodule(submodule_repo_path);
+			}
+			InternalEvent::OpenWorktree(name) => {
+				let wt = find_worktree(&self.repo.borrow(), &name)?;
+				self.do_quit = QuitState::OpenSubmodule(wt);
 			}
 			InternalEvent::OpenResetPopup(id) => {
 				self.reset_popup.open(id)?;

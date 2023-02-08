@@ -24,7 +24,6 @@ use super::{
 
 pub struct WorkTreesComponent {
 	title: Box<str>,
-	visible: bool,
 	theme: SharedTheme,
 	worktrees: Vec<WorkTree>,
 	current_size: Cell<(u16, u16)>,
@@ -44,7 +43,6 @@ impl WorkTreesComponent {
 	) -> Self {
 		Self {
 			title: title.into(),
-			visible: false,
 			theme,
 			worktrees: Vec::new(),
 			current_size: Cell::new((0, 0)),
@@ -65,10 +63,6 @@ impl WorkTreesComponent {
 		Ok(())
 	}
 
-	fn is_visible(&self) -> bool {
-		self.visible
-	}
-
 	fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
 		let mut txt: Vec<Spans> = Vec::with_capacity(height);
 		for (idx, e) in self
@@ -78,26 +72,15 @@ impl WorkTreesComponent {
 			.take(height)
 			.enumerate()
 		{
-			txt.push(Spans::from(vec![
-				Span::styled(
-					string_width_align(&e.name.clone(), 20),
-					self.theme.text(
-						true,
-						idx == self
-							.selection
-							.saturating_sub(self.scroll_top.get()),
-					),
+			txt.push(Spans::from(vec![Span::styled(
+				string_width_align(&e.name.clone(), width),
+				self.theme.text(
+					true,
+					idx == self
+						.selection
+						.saturating_sub(self.scroll_top.get()),
 				),
-				Span::styled(
-					string_width_align(&e.branch.clone(), width),
-					self.theme.text(
-						true,
-						idx == self
-							.selection
-							.saturating_sub(self.scroll_top.get()),
-					),
-				),
-			]));
+			)]));
 		}
 		txt
 	}
@@ -184,8 +167,6 @@ impl DrawableComponent for WorkTreesComponent {
 		f: &mut Frame<B>,
 		area: Rect,
 	) -> Result<()> {
-		log::trace!("shut clippy up: {}", self.is_visible());
-
 		let current_size = (
 			area.width.saturating_sub(2),
 			area.height.saturating_sub(2),
