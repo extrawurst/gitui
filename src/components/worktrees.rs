@@ -102,6 +102,8 @@ impl WorkTreesComponent {
 	}
 
 	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
+		self.update_scroll_speed();
+
 		//#[allow(clippy::cast_possible_truncation)]
 		let speed_int =
 			usize::try_from(self.scroll_state.1 as i64)?.max(1);
@@ -144,6 +146,30 @@ impl WorkTreesComponent {
 		self.count_total = total;
 		self.selection =
 			cmp::min(self.selection, self.selection_max());
+	}
+
+	fn update_scroll_speed(&mut self) {
+		const REPEATED_SCROLL_THRESHOLD_MILLIS: u128 = 300;
+		const SCROLL_SPEED_START: f32 = 0.1_f32;
+		const SCROLL_SPEED_MAX: f32 = 10_f32;
+		const SCROLL_SPEED_MULTIPLIER: f32 = 1.05_f32;
+
+		let now = Instant::now();
+
+		let since_last_scroll =
+			now.duration_since(self.scroll_state.0);
+
+		self.scroll_state.0 = now;
+
+		let speed = if since_last_scroll.as_millis()
+			< REPEATED_SCROLL_THRESHOLD_MILLIS
+		{
+			self.scroll_state.1 * SCROLL_SPEED_MULTIPLIER
+		} else {
+			SCROLL_SPEED_START
+		};
+
+		self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
 	}
 }
 
