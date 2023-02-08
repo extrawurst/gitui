@@ -72,23 +72,29 @@ impl WorkTreesComponent {
 		self.visible
 	}
 
-	fn relative_selection(&self) -> usize {
-		// TODO: Do Stuff
-		self.selection.saturating_sub(0)
-	}
-
 	fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
 		let mut txt: Vec<Spans> = Vec::with_capacity(height);
-		for (idx, e) in self.worktrees.iter().take(height).enumerate()
+		for (idx, e) in self
+			.worktrees
+			.iter()
+			.skip(self.scroll_top.get())
+			.take(height)
+			.enumerate()
 		{
 			txt.push(Spans::from(vec![
 				Span::styled(
 					string_width_align(&e.name.clone(), 20),
-					self.theme.text(true, idx == self.selection),
+					self.theme.text(
+						true,
+						idx == self.selection - self.scroll_top.get(),
+					),
 				),
 				Span::styled(
 					string_width_align(&e.branch.clone(), width),
-					self.theme.text(true, idx == self.selection),
+					self.theme.text(
+						true,
+						idx == self.selection - self.scroll_top.get(),
+					),
 				),
 			]));
 		}
@@ -157,13 +163,15 @@ impl DrawableComponent for WorkTreesComponent {
 		self.current_size.set(current_size);
 
 		let height_in_lines = self.current_size.get().1 as usize;
-		let selection = self.relative_selection();
 
+		log::trace!("height_in_lines: {height_in_lines}");
 		self.scroll_top.set(calc_scroll_top(
 			self.scroll_top.get(),
 			height_in_lines,
-			selection,
+			self.selection,
 		));
+
+		log::trace!("scroll_top: {}", self.scroll_top.get());
 
 		// Not sure if the count is really nessesary
 		let title = format!(
