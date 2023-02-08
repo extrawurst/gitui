@@ -148,6 +148,10 @@ impl WorkTreesComponent {
 			cmp::min(self.selection, self.selection_max());
 	}
 
+	pub fn selected_worktree(&self) -> Option<&WorkTree> {
+		self.worktrees.get(self.selection)
+	}
+
 	fn update_scroll_speed(&mut self) {
 		const REPEATED_SCROLL_THRESHOLD_MILLIS: u128 = 300;
 		const SCROLL_SPEED_START: f32 = 0.1_f32;
@@ -190,14 +194,11 @@ impl DrawableComponent for WorkTreesComponent {
 
 		let height_in_lines = self.current_size.get().1 as usize;
 
-		log::trace!("height_in_lines: {height_in_lines}");
 		self.scroll_top.set(calc_scroll_top(
 			self.scroll_top.get(),
 			height_in_lines,
 			self.selection,
 		));
-
-		log::trace!("scroll_top: {}", self.scroll_top.get());
 
 		// Not sure if the count is really nessesary
 		let title = format!(

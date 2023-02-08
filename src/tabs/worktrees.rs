@@ -1,40 +1,48 @@
+use std::path::PathBuf;
+
 use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
 		DrawableComponent, EventState, WorkTreesComponent,
-	}, ui::style::SharedTheme, keys::SharedKeyConfig,
+	},
+	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue},
+	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::sync::{RepoPathRef, worktrees};
-
+use asyncgit::sync::{worktrees, RepoPathRef, WorkTree};
+use crossterm::event::Event;
 
 pub struct WorkTreesTab {
 	repo: RepoPathRef,
 	visible: bool,
-    worktrees: WorkTreesComponent,
-    key_config: SharedKeyConfig,
+	worktrees: WorkTreesComponent,
+	key_config: SharedKeyConfig,
+	queue: Queue,
 }
 
 impl WorkTreesTab {
 	///
 	pub fn new(
 		repo: RepoPathRef,
-	    theme: SharedTheme,
-        key_config: SharedKeyConfig,
+		theme: SharedTheme,
+		key_config: SharedKeyConfig,
+		queue: &Queue,
 	) -> Self {
 		Self {
 			visible: false,
-            worktrees: WorkTreesComponent::new(
-                "Hello Worktrees",
-                repo.clone(),
-                theme,
-                key_config.clone(),
-            ),
+			worktrees: WorkTreesComponent::new(
+				"Hello Worktrees",
+				repo.clone(),
+				theme,
+				key_config.clone(),
+			),
 			repo,
-            key_config,
+			key_config,
+			queue: queue.clone(),
 		}
 	}
-	
+
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
 			if let Ok(worktrees) = worktrees(&self.repo.borrow()) {
@@ -43,6 +51,10 @@ impl WorkTreesTab {
 		}
 
 		Ok(())
+	}
+
+	pub fn selected_worktree(&self) -> &WorkTree {
+		self.worktrees.selected_worktree().unwrap()
 	}
 }
 
@@ -53,10 +65,10 @@ impl DrawableComponent for WorkTreesTab {
 		rect: tui::layout::Rect,
 	) -> Result<()> {
 		if self.is_visible() {
-            // TODO: Do stuff
+			// TODO: Do stuff
 			//self.files.draw(f, rect)?;
-            self.worktrees.draw(f, rect)?;
-            log::trace!("trying to draw worktrees");
+			self.worktrees.draw(f, rect)?;
+			log::trace!("trying to draw worktrees");
 		}
 		Ok(())
 	}
@@ -75,19 +87,31 @@ impl Component for WorkTreesTab {
 		&mut self,
 		ev: &crossterm::event::Event,
 	) -> Result<EventState> {
-        if !self.visible {
-		    return Ok(EventState::NotConsumed);
-        }
-        log::trace!("TODO: delete me {:?}", self.key_config.keys.tab_status);
-        log::trace!("TODO: delete me {:?}", ev);
-        let event_used = self.worktrees.event(ev)?;
+		if !self.visible {
+			return Ok(EventState::NotConsumed);
+		}
+		log::trace!(
+			"TODO: delete me {:?}",
+			self.key_config.keys.tab_status
+		);
+		let event_used = self.worktrees.event(ev)?;
 
-        if event_used.is_consumed() {
-            self.update()?;
-            return Ok(EventState::Consumed);
-        }
+		if event_used.is_consumed() {
+			self.update()?;
+			return Ok(EventState::Consumed);
+		} else if let Event::Key(e) = ev {
+			if key_match(e, self.key_config.keys.select_worktree) {
+				self.queue.push(InternalEvent::OpenRepo {
+					path: PathBuf::from(format!(
+						"../{}",
+						&self.selected_worktree().name
+					)),
+				});
+				return Ok(EventState::Consumed);
+			};
+		}
 
-        Ok(EventState::NotConsumed)
+		Ok(EventState::NotConsumed)
 	}
 
 	fn is_visible(&self) -> bool {

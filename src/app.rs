@@ -23,7 +23,9 @@ use crate::{
 	},
 	setup_popups,
 	strings::{self, ellipsis_trim_start, order},
-	tabs::{FilesTab, Revlog, StashList, Stashing, Status, WorkTreesTab},
+	tabs::{
+		FilesTab, Revlog, StashList, Stashing, Status, WorkTreesTab,
+	},
 	ui::style::{SharedTheme, Theme},
 	AsyncAppNotification, AsyncNotification,
 };
@@ -92,7 +94,7 @@ pub struct App {
 	stashing_tab: Stashing,
 	stashlist_tab: StashList,
 	files_tab: FilesTab,
-    worktrees_tab: WorkTreesTab,
+	worktrees_tab: WorkTreesTab,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -123,7 +125,7 @@ impl App {
 		let repo_path_text =
 			repo_work_dir(&repo.borrow()).unwrap_or_default();
 
-        log::trace!("repo path: {}", repo_path_text);
+		log::trace!("repo path: {}", repo_path_text);
 		let queue = Queue::new();
 		let theme = Rc::new(theme);
 		let key_config = Rc::new(key_config);
@@ -321,11 +323,12 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
-            worktrees_tab: WorkTreesTab::new(
-                repo.clone(),
-                theme.clone(),
-                key_config.clone(),
-            ),
+			worktrees_tab: WorkTreesTab::new(
+				repo.clone(),
+				theme.clone(),
+				key_config.clone(),
+				&queue,
+			),
 			tab: 0,
 			queue,
 			theme,
@@ -382,7 +385,7 @@ impl App {
 				2 => self.files_tab.draw(f, chunks_main[1])?,
 				3 => self.stashing_tab.draw(f, chunks_main[1])?,
 				4 => self.stashlist_tab.draw(f, chunks_main[1])?,
-                5 => self.worktrees_tab.draw(f, chunks_main[1])?,
+				5 => self.worktrees_tab.draw(f, chunks_main[1])?,
 				_ => bail!("unknown tab"),
 			};
 		}
@@ -618,7 +621,7 @@ impl App {
 			files_tab,
 			stashing_tab,
 			stashlist_tab,
-            worktrees_tab
+			worktrees_tab
 		]
 	);
 
@@ -682,7 +685,7 @@ impl App {
 			&mut self.files_tab,
 			&mut self.stashing_tab,
 			&mut self.stashlist_tab,
-            &mut self.worktrees_tab,
+			&mut self.worktrees_tab,
 		]
 	}
 
@@ -709,7 +712,6 @@ impl App {
 		} else if key_match(k, self.key_config.keys.tab_stashes) {
 			self.set_tab(4)?;
 		} else if key_match(k, self.key_config.keys.tab_worktrees) {
-            log::trace!("Trying to set tab");
 			self.set_tab(5)?;
 		}
 

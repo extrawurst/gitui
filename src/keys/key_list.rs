@@ -41,7 +41,7 @@ pub struct KeysList {
 	pub tab_files: GituiKeyEvent,
 	pub tab_stashing: GituiKeyEvent,
 	pub tab_stashes: GituiKeyEvent,
-    pub tab_worktrees: GituiKeyEvent,
+	pub tab_worktrees: GituiKeyEvent,
 	pub tab_toggle: GituiKeyEvent,
 	pub tab_toggle_reverse: GituiKeyEvent,
 	pub toggle_workarea: GituiKeyEvent,
@@ -117,6 +117,7 @@ pub struct KeysList {
 	pub view_submodule_parent: GituiKeyEvent,
 	pub update_submodule: GituiKeyEvent,
 	pub commit_history_next: GituiKeyEvent,
+	pub select_worktree: GituiKeyEvent,
 }
 
 #[rustfmt::skip]
@@ -204,6 +205,7 @@ impl Default for KeysList {
 			view_submodule_parent: GituiKeyEvent::new(KeyCode::Char('p'),  KeyModifiers::empty()),
 			update_submodule: GituiKeyEvent::new(KeyCode::Char('u'),  KeyModifiers::empty()),
 			commit_history_next: GituiKeyEvent::new(KeyCode::Char('n'),  KeyModifiers::CONTROL),
+			select_worktree: GituiKeyEvent::new(KeyCode::Enter,  KeyModifiers::empty()),
 		}
 	}
 }

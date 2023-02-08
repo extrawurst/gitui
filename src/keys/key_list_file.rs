@@ -12,7 +12,7 @@ pub struct KeysListFile {
 	pub tab_files: Option<GituiKeyEvent>,
 	pub tab_stashing: Option<GituiKeyEvent>,
 	pub tab_stashes: Option<GituiKeyEvent>,
-    pub tab_worktrees: Option<GituiKeyEvent>,
+	pub tab_worktrees: Option<GituiKeyEvent>,
 	pub tab_toggle: Option<GituiKeyEvent>,
 	pub tab_toggle_reverse: Option<GituiKeyEvent>,
 	pub toggle_workarea: Option<GituiKeyEvent>,
@@ -88,6 +88,7 @@ pub struct KeysListFile {
 	pub view_submodule_parent: Option<GituiKeyEvent>,
 	pub update_dubmodule: Option<GituiKeyEvent>,
 	pub commit_history_next: Option<GituiKeyEvent>,
+	pub select_worktree: Option<GituiKeyEvent>,
 }
 
 impl KeysListFile {
@@ -184,6 +185,7 @@ impl KeysListFile {
 			view_submodule_parent: self.view_submodule_parent.unwrap_or(default.view_submodule_parent),
 			update_submodule: self.update_dubmodule.unwrap_or(default.update_submodule),
 			commit_history_next: self.commit_history_next.unwrap_or(default.commit_history_next),
+			select_worktree: self.select_worktree.unwrap_or(default.select_worktree),
 		}
 	}
 }
