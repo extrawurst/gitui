@@ -1,5 +1,5 @@
 use anyhow::Result;
-use asyncgit::sync::{RepoPathRef, WorkTree};
+use asyncgit::sync::WorkTree;
 use crossterm::event::Event;
 use std::{cell::Cell, cmp, time::Instant};
 use tui::{
@@ -24,7 +24,6 @@ use super::{
 
 pub struct WorkTreesComponent {
 	title: Box<str>,
-	repo: RepoPathRef,
 	visible: bool,
 	theme: SharedTheme,
 	worktrees: Vec<WorkTree>,
@@ -40,13 +39,11 @@ impl WorkTreesComponent {
 	///
 	pub fn new(
 		title: &str,
-		repo: RepoPathRef,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
 			title: title.into(),
-			repo,
 			visible: false,
 			theme,
 			worktrees: Vec::new(),
@@ -86,14 +83,18 @@ impl WorkTreesComponent {
 					string_width_align(&e.name.clone(), 20),
 					self.theme.text(
 						true,
-						idx == self.selection - self.scroll_top.get(),
+						idx == self
+							.selection
+							.saturating_sub(self.scroll_top.get()),
 					),
 				),
 				Span::styled(
 					string_width_align(&e.branch.clone(), width),
 					self.theme.text(
 						true,
-						idx == self.selection - self.scroll_top.get(),
+						idx == self
+							.selection
+							.saturating_sub(self.scroll_top.get()),
 					),
 				),
 			]));
@@ -183,7 +184,6 @@ impl DrawableComponent for WorkTreesComponent {
 		f: &mut Frame<B>,
 		area: Rect,
 	) -> Result<()> {
-		log::trace!("delete me later {:?}", self.repo);
 		log::trace!("shut clippy up: {}", self.is_visible());
 
 		let current_size = (

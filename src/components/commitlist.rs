@@ -203,7 +203,6 @@ impl CommitList {
 	}
 
 	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
-		log::trace!("relative sel: {}", self.relative_selection());
 		self.update_scroll_speed();
 
 		#[allow(clippy::cast_possible_truncation)]

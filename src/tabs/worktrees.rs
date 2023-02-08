@@ -33,7 +33,6 @@ impl WorkTreesTab {
 			visible: false,
 			worktrees: WorkTreesComponent::new(
 				"Hello Worktrees",
-				repo.clone(),
 				theme,
 				key_config.clone(),
 			),
@@ -65,10 +64,7 @@ impl DrawableComponent for WorkTreesTab {
 		rect: tui::layout::Rect,
 	) -> Result<()> {
 		if self.is_visible() {
-			// TODO: Do stuff
-			//self.files.draw(f, rect)?;
 			self.worktrees.draw(f, rect)?;
-			log::trace!("trying to draw worktrees");
 		}
 		Ok(())
 	}
@@ -90,10 +86,6 @@ impl Component for WorkTreesTab {
 		if !self.visible {
 			return Ok(EventState::NotConsumed);
 		}
-		log::trace!(
-			"TODO: delete me {:?}",
-			self.key_config.keys.tab_status
-		);
 		let event_used = self.worktrees.event(ev)?;
 
 		if event_used.is_consumed() {
