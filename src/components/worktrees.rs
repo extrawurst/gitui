@@ -1,85 +1,104 @@
 use anyhow::Result;
 use asyncgit::sync::{RepoPathRef, WorkTree};
 use crossterm::event::Event;
-use tui::{backend::Backend, Frame, layout::{Rect, Alignment}, text::{Span, Spans}, widgets::{Paragraph, Block, Borders}};
-use std::{cell::Cell, time::Instant, cmp};
+use std::{cell::Cell, cmp, time::Instant};
+use tui::{
+	backend::Backend,
+	layout::{Alignment, Rect},
+	text::{Span, Spans},
+	widgets::{Block, Borders, Paragraph},
+	Frame,
+};
 
-use crate::{ui::{style::SharedTheme, calc_scroll_top, draw_scrollbar}, strings, keys::{SharedKeyConfig, key_match}, components::{ScrollType, utils::string_width_align}};
+use crate::{
+	components::{utils::string_width_align, ScrollType},
+	keys::{key_match, SharedKeyConfig},
+	strings,
+	ui::{calc_scroll_top, draw_scrollbar, style::SharedTheme},
+};
 
-use super::{DrawableComponent, Component, EventState, CommandInfo, CommandBlocking};
-
+use super::{
+	CommandBlocking, CommandInfo, Component, DrawableComponent,
+	EventState,
+};
 
 pub struct WorkTreesComponent {
 	title: Box<str>,
 	repo: RepoPathRef,
 	visible: bool,
-    theme: SharedTheme,
-    worktrees: Vec<WorkTree>,
+	theme: SharedTheme,
+	worktrees: Vec<WorkTree>,
 	current_size: Cell<(u16, u16)>,
 	scroll_top: Cell<usize>,
 	selection: usize,
 	count_total: usize,
-    key_config: SharedKeyConfig,
+	key_config: SharedKeyConfig,
 	scroll_state: (Instant, f32),
 }
 
 impl WorkTreesComponent {
 	///
 	pub fn new(
-        title: &str,
+		title: &str,
 		repo: RepoPathRef,
-        theme: SharedTheme,
-        key_config: SharedKeyConfig,
+		theme: SharedTheme,
+		key_config: SharedKeyConfig,
 	) -> Self {
 		Self {
 			title: title.into(),
 			repo,
 			visible: false,
-            theme,
-            worktrees: Vec::new(),
+			theme,
+			worktrees: Vec::new(),
 			current_size: Cell::new((0, 0)),
 			scroll_top: Cell::new(0),
 			selection: 0,
 			count_total: 0,
-            key_config,
+			key_config,
 			scroll_state: (Instant::now(), 0_f32),
 		}
 	}
 
-    pub fn set_worktrees(&mut self, worktrees: Vec<WorkTree>) -> Result<()> {
-        self.worktrees = worktrees;
-        self.set_count_total(self.worktrees.len());
-        Ok(())
-    }
+	pub fn set_worktrees(
+		&mut self,
+		worktrees: Vec<WorkTree>,
+	) -> Result<()> {
+		self.worktrees = worktrees;
+		self.set_count_total(self.worktrees.len());
+		Ok(())
+	}
 
 	fn is_visible(&self) -> bool {
 		self.visible
 	}
 
 	fn relative_selection(&self) -> usize {
-        // TODO: Do Stuff
+		// TODO: Do Stuff
 		self.selection.saturating_sub(0)
 	}
 
 	fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
 		let mut txt: Vec<Spans> = Vec::with_capacity(height);
-        for (idx, e) in self.worktrees.iter().take(height).enumerate() {
-            txt.push(Spans::from(vec![
-                Span::styled(
-                    string_width_align(&e.name.clone(), 20),
-                    self.theme.text(true, idx == self.selection)),
-                Span::styled(
-                    string_width_align(&e.branch.clone(), width),
-                    self.theme.text(true, idx == self.selection)),
-            ]));
-        }
-        txt
-    }
+		for (idx, e) in self.worktrees.iter().take(height).enumerate()
+		{
+			txt.push(Spans::from(vec![
+				Span::styled(
+					string_width_align(&e.name.clone(), 20),
+					self.theme.text(true, idx == self.selection),
+				),
+				Span::styled(
+					string_width_align(&e.branch.clone(), width),
+					self.theme.text(true, idx == self.selection),
+				),
+			]));
+		}
+		txt
+	}
 
 	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
-
 		//#[allow(clippy::cast_possible_truncation)]
-		let speed_int = usize::try_from(self.scroll_state.1 as i64)?.max(1);
+		let speed_int =
+			usize::try_from(self.scroll_state.1 as i64)?.max(1);
 
 		let page_offset =
 			usize::from(self.current_size.get().1).saturating_sub(1);
@@ -120,7 +139,6 @@ impl WorkTreesComponent {
 		self.selection =
 			cmp::min(self.selection, self.selection_max());
 	}
-
 }
 
 impl DrawableComponent for WorkTreesComponent {
@@ -129,8 +147,8 @@ impl DrawableComponent for WorkTreesComponent {
 		f: &mut Frame<B>,
 		area: Rect,
 	) -> Result<()> {
-        log::trace!("delete me later {:?}", self.repo);
-        log::trace!("shut clippy up: {}", self.is_visible());
+		log::trace!("delete me later {:?}", self.repo);
+		log::trace!("shut clippy up: {}", self.is_visible());
 
 		let current_size = (
 			area.width.saturating_sub(2),
@@ -147,10 +165,11 @@ impl DrawableComponent for WorkTreesComponent {
 			selection,
 		));
 
+		// Not sure if the count is really nessesary
 		let title = format!(
 			"{} {}/{}",
 			self.title,
-			self.count_total.saturating_sub(self.selection),
+			self.selection.saturating_add(1),
 			self.count_total,
 		);
 
@@ -188,7 +207,7 @@ impl DrawableComponent for WorkTreesComponent {
 
 impl Component for WorkTreesComponent {
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
-        if let Event::Key(k) = ev {
+		if let Event::Key(k) = ev {
 			let selection_changed =
 				if key_match(k, self.key_config.keys.move_up) {
 					self.move_selection(ScrollType::Up)?
@@ -213,11 +232,11 @@ impl Component for WorkTreesComponent {
 				} else {
 					false
 				};
-            return Ok(selection_changed.into())
-        }
+			return Ok(selection_changed.into());
+		}
 
-        Ok(EventState::NotConsumed)
-    }
+		Ok(EventState::NotConsumed)
+	}
 
 	fn commands(
 		&self,
@@ -226,7 +245,7 @@ impl Component for WorkTreesComponent {
 	) -> CommandBlocking {
 		out.push(CommandInfo::new(
 			strings::commands::scroll(&self.key_config),
-            true,
+			true,
 			true,
 		));
 		CommandBlocking::PassingOn
