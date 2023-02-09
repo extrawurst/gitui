@@ -52,6 +52,8 @@ pub fn create_worktree(
 
 	let repo_obj = repo(repo_path)?;
 
+	// WARNING: creates the folder for the worktree in current directory instead of the path
+	// provided to gitui
 	repo_obj.worktree(name, &Path::new(&name), None)?;
 
 	Ok(())

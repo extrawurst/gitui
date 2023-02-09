@@ -357,6 +357,18 @@ pub fn rename_branch_popup_msg(
 	"new branch name".to_string()
 }
 
+pub fn create_worktree_popup_title(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	"Worktree".to_string()
+}
+
+pub fn create_worktree_popup_msg(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	"type worktree name".to_string()
+}
+
 pub fn copy_success(s: &str) -> String {
 	format!("{POPUP_SUCCESS_COPY} \"{s}\"")
 }
@@ -432,6 +444,7 @@ pub mod commands {
 	static CMD_GROUP_STASHES: &str = "-- Stashes --";
 	static CMD_GROUP_LOG: &str = "-- Log --";
 	static CMD_GROUP_BRANCHES: &str = "-- Branches --";
+	static CMD_GROUP_WORKTREES: &str = "-- Worktrees --";
 
 	pub fn toggle_tabs(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
@@ -1541,5 +1554,32 @@ pub mod commands {
 			"fetch/prune",
 			CMD_GROUP_BRANCHES,
 		)
+	}
+
+	pub fn open_worktree_create_popup(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Create [{}]",
+				key_config.get_hint(key_config.keys.create_worktree),
+			),
+			"open create worktree popup",
+			// TODO: create worktree command group
+			CMD_GROUP_WORKTREES,
+		)
+	}
+	pub fn create_worktree_confirm_msg(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Create Worktree [{}]",
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"create worktree",
+			CMD_GROUP_WORKTREES,
+		)
+		.hide_help()
 	}
 }

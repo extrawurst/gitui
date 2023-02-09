@@ -40,6 +40,14 @@ impl Component for CreateWorktreeComponent {
 	) -> CommandBlocking {
 		if self.is_visible() || force_all {
 			self.input.commands(out, force_all);
+
+			out.push(CommandInfo::new(
+				strings::commands::create_worktree_confirm_msg(
+					&self.key_config,
+				),
+				true,
+				true,
+			));
 		}
 
 		visibility_blocking(self)
@@ -88,8 +96,8 @@ impl CreateWorktreeComponent {
 			input: TextInputComponent::new(
 				theme.clone(),
 				key_config.clone(),
-				&strings::create_branch_popup_title(&key_config),
-				&strings::create_branch_popup_msg(&key_config),
+				&strings::create_worktree_popup_title(&key_config),
+				&strings::create_worktree_popup_msg(&key_config),
 				true,
 			),
 			key_config,

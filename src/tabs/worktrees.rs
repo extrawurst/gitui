@@ -5,6 +5,7 @@ use crate::{
 	},
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
+	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
@@ -74,6 +75,15 @@ impl Component for WorkTreesTab {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
+		if self.is_visible() || force_all {
+			out.push(CommandInfo::new(
+				strings::commands::open_worktree_create_popup(
+					&self.key_config,
+				),
+				true,
+				true,
+			));
+		}
 		visibility_blocking(self)
 	}
 
@@ -95,8 +105,10 @@ impl Component for WorkTreesTab {
 					self.selected_worktree().name.clone(),
 				));
 				return Ok(EventState::Consumed);
-			} else if key_match(e, self.key_config.keys.create_branch)
-			{
+			} else if key_match(
+				e,
+				self.key_config.keys.create_worktree,
+			) {
 				self.queue.push(InternalEvent::CreateWorktree);
 				log::trace!("create worktree");
 			}
