@@ -97,6 +97,8 @@ pub enum InternalEvent {
 	///
 	CreateBranch,
 	///
+	CreateWorktree,
+	///
 	RenameBranch(String, String),
 	///
 	SelectBranch,

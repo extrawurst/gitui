@@ -95,7 +95,11 @@ impl Component for WorkTreesTab {
 					self.selected_worktree().name.clone(),
 				));
 				return Ok(EventState::Consumed);
-			};
+			} else if key_match(e, self.key_config.keys.create_branch)
+			{
+				self.queue.push(InternalEvent::CreateWorktree);
+				log::trace!("create worktree");
+			}
 		}
 
 		Ok(EventState::NotConsumed)

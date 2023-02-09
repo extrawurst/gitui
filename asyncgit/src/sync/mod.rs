@@ -97,7 +97,9 @@ pub use utils::{
 	stage_add_file, stage_addremoved, Head,
 };
 
-pub use worktree::{find_worktree, worktrees, WorkTree};
+pub use worktree::{
+	create_worktree, find_worktree, worktrees, WorkTree,
+};
 pub use git2::ResetType;
 
 #[cfg(test)]

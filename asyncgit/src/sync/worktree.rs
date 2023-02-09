@@ -1,6 +1,7 @@
 use crate::error::Result;
 use crate::sync::repository::repo;
 use scopetime::scope_time;
+use std::path::Path;
 
 use super::RepoPath;
 
@@ -12,8 +13,6 @@ pub struct WorkTree {
 	// pub branch: String,
 }
 
-// TODO: Optimize performance
-// Maybe optimize somewhere else
 /// Get all worktrees
 pub fn worktrees(repo_path: &RepoPath) -> Result<Vec<WorkTree>> {
 	scope_time!("worktrees");
@@ -30,7 +29,7 @@ pub fn worktrees(repo_path: &RepoPath) -> Result<Vec<WorkTree>> {
 		.collect())
 }
 
-/// Find a worktree
+/// Find a worktree path
 pub fn find_worktree(
 	repo_path: &RepoPath,
 	name: &str,
@@ -42,4 +41,18 @@ pub fn find_worktree(
 	Ok(RepoPath::Path(
 		repo_obj.find_worktree(name)?.path().to_path_buf(),
 	))
+}
+
+/// create worktree
+pub fn create_worktree(
+	repo_path: &RepoPath,
+	name: &str,
+) -> Result<()> {
+	scope_time!("create_worktree");
+
+	let repo_obj = repo(repo_path)?;
+
+	repo_obj.worktree(name, &Path::new(&name), None)?;
+
+	Ok(())
 }

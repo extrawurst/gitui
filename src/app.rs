@@ -5,7 +5,8 @@ use crate::{
 		event_pump, AppOption, BlameFileComponent,
 		BranchListComponent, CommandBlocking, CommandInfo,
 		CommitComponent, CompareCommitsComponent, Component,
-		ConfirmComponent, CreateBranchComponent, DrawableComponent,
+		ConfirmComponent, CreateBranchComponent,
+		CreateWorktreeComponent, DrawableComponent,
 		ExternalEditorComponent, FetchComponent, FileFindPopup,
 		FileRevlogComponent, HelpComponent, InspectCommitComponent,
 		MsgComponent, OptionsPopupComponent, PullComponent,
@@ -84,6 +85,7 @@ pub struct App {
 	fetch_popup: FetchComponent,
 	tag_commit_popup: TagCommitComponent,
 	create_branch_popup: CreateBranchComponent,
+	create_worktree_popup: CreateWorktreeComponent,
 	rename_branch_popup: RenameBranchComponent,
 	select_branch_popup: BranchListComponent,
 	options_popup: OptionsPopupComponent,
@@ -241,6 +243,11 @@ impl App {
 			create_branch_popup: CreateBranchComponent::new(
 				repo.clone(),
 				queue.clone(),
+				theme.clone(),
+				key_config.clone(),
+			),
+			create_worktree_popup: CreateWorktreeComponent::new(
+				repo.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),
@@ -611,6 +618,7 @@ impl App {
 			fetch_popup,
 			tag_commit_popup,
 			create_branch_popup,
+			create_worktree_popup,
 			rename_branch_popup,
 			select_branch_popup,
 			revision_files_popup,
@@ -645,6 +653,7 @@ impl App {
 			tags_popup,
 			reset_popup,
 			create_branch_popup,
+			create_worktree_popup,
 			rename_branch_popup,
 			revision_files_popup,
 			find_file_popup,
@@ -847,6 +856,9 @@ impl App {
 
 			InternalEvent::CreateBranch => {
 				self.create_branch_popup.open()?;
+			}
+			InternalEvent::CreateWorktree => {
+				self.create_worktree_popup.open()?;
 			}
 			InternalEvent::RenameBranch(branch_ref, cur_name) => {
 				self.rename_branch_popup

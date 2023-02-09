@@ -18,8 +18,8 @@ use crate::{
 };
 
 use super::{
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+	textinput::TextInputComponent, CommandBlocking, CommandInfo,
+	Component, DrawableComponent, EventState,
 };
 
 pub struct WorkTreesComponent {
@@ -32,6 +32,7 @@ pub struct WorkTreesComponent {
 	count_total: usize,
 	key_config: SharedKeyConfig,
 	scroll_state: (Instant, f32),
+	input: TextInputComponent,
 }
 
 impl WorkTreesComponent {
@@ -43,14 +44,21 @@ impl WorkTreesComponent {
 	) -> Self {
 		Self {
 			title: title.into(),
-			theme,
+			theme: theme.clone(),
 			worktrees: Vec::new(),
 			current_size: Cell::new((0, 0)),
 			scroll_top: Cell::new(0),
 			selection: 0,
 			count_total: 0,
-			key_config,
+			key_config: key_config.clone(),
 			scroll_state: (Instant::now(), 0_f32),
+			input: TextInputComponent::new(
+				theme,
+				key_config,
+				&strings::tag_popup_name_title(),
+				&strings::tag_popup_name_msg(),
+				true,
+			),
 		}
 	}
 
@@ -72,6 +80,7 @@ impl WorkTreesComponent {
 			.take(height)
 			.enumerate()
 		{
+			// TODO: highlight current worktree
 			txt.push(Spans::from(vec![Span::styled(
 				string_width_align(&e.name.clone(), width),
 				self.theme.text(
@@ -245,6 +254,10 @@ impl Component for WorkTreesComponent {
 				} else if key_match(k, self.key_config.keys.page_down)
 				{
 					self.move_selection(ScrollType::PageDown)?
+				} else if key_match(k, self.key_config.keys.edit_file)
+				{
+					self.show()?;
+					true
 				} else {
 					false
 				};
@@ -265,5 +278,13 @@ impl Component for WorkTreesComponent {
 			true,
 		));
 		CommandBlocking::PassingOn
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.input.set_title(strings::tag_popup_name_title());
+		self.input.set_default_msg(strings::tag_popup_name_msg());
+		self.input.show()?;
+
+		Ok(())
 	}
 }
