@@ -971,8 +971,18 @@ impl App {
 					QuitState::OpenSubmodule(submodule_repo_path);
 			}
 			InternalEvent::OpenWorktree(name) => {
-				let wt = find_worktree(&self.repo.borrow(), &name)?;
-				self.do_quit = QuitState::OpenSubmodule(wt);
+				let wt = find_worktree(&self.repo.borrow(), &name);
+
+				match wt {
+					Ok(wt) => {
+						self.do_quit = QuitState::OpenSubmodule(wt);
+					}
+					Err(e) => {
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							e.to_string(),
+						));
+					}
+				}
 			}
 			InternalEvent::OpenResetPopup(id) => {
 				self.reset_popup.open(id)?;

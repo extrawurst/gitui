@@ -38,22 +38,24 @@ pub fn find_worktree(
 
 	let repo_obj = repo(repo_path)?;
 
-	Ok(RepoPath::Path(
-		repo_obj.find_worktree(name)?.path().to_path_buf(),
-	))
+	let wt = repo_obj.find_worktree(name)?;
+	wt.validate()?;
+
+	Ok(RepoPath::Path(wt.path().to_path_buf()))
 }
 
 /// create worktree
+/// NOTE: creates the folder for the worktree in current directory instead of the path
+/// of the repo
 pub fn create_worktree(
 	repo_path: &RepoPath,
 	name: &str,
 ) -> Result<()> {
 	scope_time!("create_worktree");
 
+	log::trace!("creating worktree in {:?}", repo_path);
 	let repo_obj = repo(repo_path)?;
 
-	// WARNING: creates the folder for the worktree in current directory instead of the path
-	// provided to gitui
 	repo_obj.worktree(name, &Path::new(&name), None)?;
 
 	Ok(())
