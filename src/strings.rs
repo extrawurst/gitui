@@ -36,7 +36,6 @@ pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
-	pub const CROSSMARK: &str = "\u{2717}"; //✗
 	pub const LOCK: &str = "\u{1F512}"; //🔒
 	pub const SPACE: &str = "\u{02FD}"; //˽
 	pub const EMPTY_SPACE: &str = " ";

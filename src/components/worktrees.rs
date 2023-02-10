@@ -89,16 +89,6 @@ impl WorkTreesComponent {
 			self.theme.worktree(wt.is_valid, selected),
 		));
 		txt.push(Span::styled(
-			string_width_align(
-				match wt.is_valid {
-					true => symbol::CHECKMARK,
-					false => symbol::CROSSMARK,
-				},
-				2,
-			),
-			self.theme.worktree(wt.is_valid, selected),
-		));
-		txt.push(Span::styled(
 			string_width_align(&wt.name.clone(), width),
 			self.theme.worktree(wt.is_valid, selected),
 		));
