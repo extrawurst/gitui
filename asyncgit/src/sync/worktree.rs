@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 
 use super::RepoPath;
 
-/// This should kinda represent a worktree
+/// Represents a worktree
+#[derive(Debug)]
 pub struct WorkTree {
 	/// Worktree name (wich is also the folder i think)
 	pub name: String,
@@ -31,19 +32,31 @@ pub fn worktrees(repo_path: &RepoPath) -> Result<Vec<WorkTree>> {
 	Ok(repo_obj
 		.worktrees()?
 		.iter()
+		.filter_map(|s| {
+			if s.is_none() {
+				log::error!("Error getting worktree: {:?}", s);
+			};
+			s
+		})
 		.map(|s| {
-			let wt = repo_obj.find_worktree(s.unwrap()).unwrap();
-			WorkTree {
-				name: s.unwrap().to_string(),
+			let wt = repo_obj.find_worktree(s)?;
+			Ok(WorkTree {
+				name: s.to_string(),
 				// branch: worktree_branch(s.unwrap(), &repo_obj).unwrap(),
 				is_valid: wt.validate().is_ok(),
 				path: wt.path().to_path_buf(),
-				is_locked: match wt.is_locked().unwrap() {
+				is_locked: match wt.is_locked()? {
 					WorktreeLockStatus::Unlocked => false,
 					WorktreeLockStatus::Locked(_) => true,
 				},
-				is_prunable: wt.is_prunable(None).unwrap(),
+				is_prunable: wt.is_prunable(None)?,
+			})
+		})
+		.filter_map(|s: Result<WorkTree>| {
+			if s.is_err() {
+				log::error!("Error getting worktree: {:?}", s);
 			}
+			s.ok()
 		})
 		.collect())
 }
