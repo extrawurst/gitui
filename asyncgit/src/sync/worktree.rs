@@ -80,4 +80,18 @@ pub fn create_worktree(
 	Ok(())
 }
 
-// TODO: implement prune worktree
+/// Prune a worktree
+pub fn prune_worktree(
+	repo_path: &RepoPath,
+	name: &str,
+) -> Result<()> {
+	scope_time!("prune_worktree");
+
+	let repo_obj = repo(repo_path)?;
+
+	let wt = repo_obj.find_worktree(name)?;
+	wt.is_prunable(None)?;
+	wt.prune(None)?;
+
+	Ok(())
+}

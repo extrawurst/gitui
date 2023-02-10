@@ -83,6 +83,11 @@ impl Component for WorkTreesTab {
 				true,
 				true,
 			));
+			out.push(CommandInfo::new(
+				strings::commands::prune_worktree(&self.key_config),
+				true,
+				true,
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -110,7 +115,13 @@ impl Component for WorkTreesTab {
 				self.key_config.keys.create_worktree,
 			) {
 				self.queue.push(InternalEvent::CreateWorktree);
-				log::trace!("create worktree");
+			} else if key_match(
+				e,
+				self.key_config.keys.prune_worktree,
+			) {
+				self.queue.push(InternalEvent::PruneWorktree(
+					self.selected_worktree().name.clone(),
+				));
 			}
 		}
 

@@ -1566,10 +1566,10 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.create_worktree),
 			),
 			"open create worktree popup",
-			// TODO: create worktree command group
 			CMD_GROUP_WORKTREES,
 		)
 	}
+
 	pub fn create_worktree_confirm_msg(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -1582,5 +1582,18 @@ pub mod commands {
 			CMD_GROUP_WORKTREES,
 		)
 		.hide_help()
+	}
+
+	pub fn prune_worktree(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Prune [{}]",
+				key_config.get_hint(key_config.keys.prune_worktree),
+			),
+			"prune worktree",
+			CMD_GROUP_WORKTREES,
+		)
 	}
 }

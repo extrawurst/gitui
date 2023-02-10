@@ -33,8 +33,8 @@ use crate::{
 use anyhow::{bail, Result};
 use asyncgit::{
 	sync::{
-		self, find_worktree, utils::repo_work_dir, RepoPath,
-		RepoPathRef,
+		self, find_worktree, prune_worktree, utils::repo_work_dir,
+		RepoPath, RepoPathRef,
 	},
 	AsyncGitNotification, PushType,
 };
@@ -982,6 +982,15 @@ impl App {
 							e.to_string(),
 						));
 					}
+				}
+			}
+			InternalEvent::PruneWorktree(name) => {
+				if let Err(e) =
+					prune_worktree(&self.repo.borrow(), &name)
+				{
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						e.to_string(),
+					));
 				}
 			}
 			InternalEvent::OpenResetPopup(id) => {
