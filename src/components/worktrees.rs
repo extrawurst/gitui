@@ -13,7 +13,7 @@ use tui::{
 use crate::{
 	components::{utils::string_width_align, ScrollType},
 	keys::{key_match, SharedKeyConfig},
-	strings,
+	strings::{self, symbol},
 	ui::{calc_scroll_top, draw_scrollbar, style::SharedTheme},
 };
 
@@ -71,6 +71,30 @@ impl WorkTreesComponent {
 		Ok(())
 	}
 
+	fn get_entry_to_add(
+		&self,
+		wt: &WorkTree,
+		selected: bool,
+		width: usize,
+	) -> Spans {
+		let mut txt = Vec::new();
+		txt.push(Span::styled(
+			string_width_align(
+				match wt.is_valid {
+					true => symbol::CHECKMARK,
+					false => symbol::CROSSMARK,
+				},
+				2,
+			),
+			self.theme.worktree(wt.is_valid, selected),
+		));
+		txt.push(Span::styled(
+			string_width_align(&wt.name.clone(), width),
+			self.theme.worktree(wt.is_valid, selected),
+		));
+		Spans(txt)
+	}
+
 	fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
 		let mut txt: Vec<Spans> = Vec::with_capacity(height);
 		for (idx, e) in self
@@ -80,16 +104,15 @@ impl WorkTreesComponent {
 			.take(height)
 			.enumerate()
 		{
-			// TODO: highlight current worktree
-			txt.push(Spans::from(vec![Span::styled(
-				string_width_align(&e.name.clone(), width),
-				self.theme.text(
-					true,
+			txt.push(
+				self.get_entry_to_add(
+					e,
 					idx == self
 						.selection
 						.saturating_sub(self.scroll_top.get()),
+					width,
 				),
-			)]));
+			);
 		}
 		txt
 	}

@@ -1,7 +1,8 @@
 use crate::error::Result;
 use crate::sync::repository::repo;
+use git2::WorktreeLockStatus;
 use scopetime::scope_time;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::RepoPath;
 
@@ -11,6 +12,14 @@ pub struct WorkTree {
 	pub name: String,
 	// Worktree branch name
 	// pub branch: String,
+	/// Is the worktree valid
+	pub is_valid: bool,
+	/// Worktree path
+	pub path: PathBuf,
+	/// Is worktree locked
+	pub is_locked: bool,
+	/// Can worktree be pruned
+	pub is_prunable: bool,
 }
 
 /// Get all worktrees
@@ -22,9 +31,19 @@ pub fn worktrees(repo_path: &RepoPath) -> Result<Vec<WorkTree>> {
 	Ok(repo_obj
 		.worktrees()?
 		.iter()
-		.map(|s| WorkTree {
-			name: s.unwrap().to_string(),
-			// branch: worktree_branch(s.unwrap(), &repo_obj).unwrap(),
+		.map(|s| {
+			let wt = repo_obj.find_worktree(s.unwrap()).unwrap();
+			WorkTree {
+				name: s.unwrap().to_string(),
+				// branch: worktree_branch(s.unwrap(), &repo_obj).unwrap(),
+				is_valid: wt.validate().is_ok(),
+				path: wt.path().to_path_buf(),
+				is_locked: match wt.is_locked().unwrap() {
+					WorktreeLockStatus::Unlocked => false,
+					WorktreeLockStatus::Locked(_) => true,
+				},
+				is_prunable: wt.is_prunable(None).unwrap(),
+			}
 		})
 		.collect())
 }
@@ -60,3 +79,5 @@ pub fn create_worktree(
 
 	Ok(())
 }
+
+// TODO: implement prune worktree
