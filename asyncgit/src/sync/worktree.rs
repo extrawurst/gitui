@@ -52,7 +52,8 @@ pub fn worktrees(repo_path: &RepoPath) -> Result<Vec<WorkTree>> {
 					WorktreeLockStatus::Locked(_) => true,
 				},
 				is_prunable: wt.is_prunable(None)?,
-				is_current: wt.path() == repo_path.gitpath(),
+				is_current: wt.path().canonicalize()?
+					== repo_path.gitpath().canonicalize()?,
 			})
 		})
 		.filter_map(|s: Result<WorkTree>| {
@@ -89,6 +90,7 @@ pub fn create_worktree(
 	let repo_obj = repo(repo_path)?;
 	let path_str = repo_path.gitpath().to_str().unwrap();
 
+	// WARNING:
 	// if we are in a worktree assume we want to create a worktree in the parent directory
 	// This is not always accurate but it should work in most cases
 	let real_path = match repo_obj.is_worktree() {
