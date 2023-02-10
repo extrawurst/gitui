@@ -4,7 +4,7 @@ use crate::{
 		DrawableComponent, EventState, WorkTreesComponent,
 	},
 	keys::{key_match, SharedKeyConfig},
-	queue::{InternalEvent, Queue},
+	queue::{Action, InternalEvent, Queue},
 	strings,
 	ui::style::SharedTheme,
 };
@@ -89,6 +89,13 @@ impl Component for WorkTreesTab {
 				true,
 			));
 			out.push(CommandInfo::new(
+				strings::commands::force_prune_worktree(
+					&self.key_config,
+				),
+				true,
+				true,
+			));
+			out.push(CommandInfo::new(
 				strings::commands::toggle_worktree_lock(
 					&self.key_config,
 				),
@@ -128,6 +135,15 @@ impl Component for WorkTreesTab {
 			) {
 				self.queue.push(InternalEvent::PruneWorktree(
 					self.selected_worktree().name.clone(),
+				));
+			} else if key_match(
+				e,
+				self.key_config.keys.force_prune_worktree,
+			) {
+				self.queue.push(InternalEvent::ConfirmAction(
+					Action::ForcePruneWorktree(
+						self.selected_worktree().name.clone(),
+					),
 				));
 			} else if key_match(
 				e,

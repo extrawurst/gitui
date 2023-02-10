@@ -986,7 +986,7 @@ impl App {
 			}
 			InternalEvent::PruneWorktree(name) => {
 				if let Err(e) =
-					prune_worktree(&self.repo.borrow(), &name)
+					prune_worktree(&self.repo.borrow(), &name, false)
 				{
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						e.to_string(),
@@ -1127,6 +1127,15 @@ impl App {
 			Action::AbortRebase => {
 				self.status_tab.abort_rebase();
 				flags.insert(NeedsUpdate::ALL);
+			}
+			Action::ForcePruneWorktree(name) => {
+				if let Err(e) =
+					prune_worktree(&self.repo.borrow(), &name, true)
+				{
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						e.to_string(),
+					));
+				}
 			}
 		};
 

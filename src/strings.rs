@@ -184,6 +184,13 @@ pub fn confirm_title_abortmerge() -> String {
 pub fn confirm_title_abortrevert() -> String {
 	"Abort revert?".to_string()
 }
+pub fn confirm_title_force_prune_worktree(name: &str) -> String {
+	format!("Force prune worktree `{name}`?")
+}
+pub fn confirm_msg_force_prune_worktree() -> String {
+	"This will delete all uncommitted changes. Are you sure?"
+		.to_string()
+}
 pub fn confirm_msg_revertchanges() -> String {
 	"This will revert all uncommitted changes. Are you sure?"
 		.to_string()
@@ -1593,6 +1600,19 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.prune_worktree),
 			),
 			"prune worktree",
+			CMD_GROUP_WORKTREES,
+		)
+	}
+	pub fn force_prune_worktree(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Force Prune [{}]",
+				key_config
+					.get_hint(key_config.keys.force_prune_worktree),
+			),
+			"force prune worktree",
 			CMD_GROUP_WORKTREES,
 		)
 	}

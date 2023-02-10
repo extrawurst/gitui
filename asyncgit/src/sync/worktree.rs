@@ -1,6 +1,6 @@
 use crate::error::Result;
 use crate::sync::repository::repo;
-use git2::WorktreeLockStatus;
+use git2::{WorktreeLockStatus, WorktreePruneOptions};
 use scopetime::scope_time;
 use std::path::{Path, PathBuf};
 
@@ -84,6 +84,7 @@ pub fn create_worktree(
 pub fn prune_worktree(
 	repo_path: &RepoPath,
 	name: &str,
+	force: bool,
 ) -> Result<()> {
 	scope_time!("prune_worktree");
 
@@ -91,7 +92,13 @@ pub fn prune_worktree(
 
 	let wt = repo_obj.find_worktree(name)?;
 	wt.is_prunable(None)?;
-	wt.prune(None)?;
+
+	wt.prune(Some(
+		WorktreePruneOptions::new()
+			.valid(force)
+			.locked(force)
+			.working_tree(force),
+	))?;
 
 	Ok(())
 }

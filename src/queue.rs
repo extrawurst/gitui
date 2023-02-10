@@ -52,6 +52,7 @@ pub enum Action {
 	AbortMerge,
 	AbortRebase,
 	AbortRevert,
+	ForcePruneWorktree(String),
 }
 
 #[derive(Debug)]
