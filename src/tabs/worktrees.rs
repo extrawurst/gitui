@@ -43,9 +43,15 @@ impl WorkTreesTab {
 
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			if let Ok(worktrees) = worktrees(&self.repo.borrow()) {
-				self.worktrees.set_worktrees(worktrees)?;
-			}
+			self.update_worktrees()?;
+		}
+
+		Ok(())
+	}
+
+	pub fn update_worktrees(&mut self) -> Result<()> {
+		if let Ok(worktrees) = worktrees(&self.repo.borrow()) {
+			self.worktrees.set_worktrees(worktrees)?;
 		}
 
 		Ok(())

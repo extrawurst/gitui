@@ -776,6 +776,9 @@ impl App {
 		if flags.contains(NeedsUpdate::BRANCHES) {
 			self.select_branch_popup.update_branches()?;
 		}
+		if flags.contains(NeedsUpdate::WORKTREES) {
+			self.worktrees_tab.update_worktrees()?;
+		}
 
 		Ok(())
 	}
@@ -993,6 +996,7 @@ impl App {
 						e.to_string(),
 					));
 				}
+				self.worktrees_tab.update()?;
 			}
 			InternalEvent::ToggleWorktreeLock(name) => {
 				if let Err(e) =
@@ -1002,6 +1006,7 @@ impl App {
 						e.to_string(),
 					));
 				}
+				self.worktrees_tab.update()?;
 			}
 			InternalEvent::OpenResetPopup(id) => {
 				self.reset_popup.open(id)?;
@@ -1137,6 +1142,7 @@ impl App {
 						e.to_string(),
 					));
 				}
+				self.worktrees_tab.update()?;
 			}
 		};
 

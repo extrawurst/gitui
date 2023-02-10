@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
 	ui::style::SharedTheme,
 };
@@ -128,11 +128,12 @@ impl CreateWorktreeComponent {
 
 		match res {
 			Ok(_) => {
-				// TODO: Update worktree list
+				self.queue.push(InternalEvent::Update(
+					NeedsUpdate::WORKTREES,
+				));
 				log::trace!("Worktree created");
 			}
 			Err(e) => {
-				// TODO: Emit proper error message
 				log::trace!("Worktree creation failed: {}", e);
 				self.queue.push(InternalEvent::ShowErrorMsg(
 					format!("create worktree error:\n{e}",),

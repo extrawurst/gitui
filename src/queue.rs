@@ -25,6 +25,8 @@ bitflags! {
 		const COMMANDS = 0b100;
 		/// branches have changed
 		const BRANCHES = 0b1000;
+		/// worktrees have changed
+		const WORKTREES = 0b10000;
 	}
 }
 
