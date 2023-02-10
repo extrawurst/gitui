@@ -63,19 +63,25 @@ pub fn find_worktree(
 	Ok(RepoPath::Path(wt.path().to_path_buf()))
 }
 
-/// create worktree
-/// NOTE: creates the folder for the worktree in current directory instead of the path
-/// of the repo
+/// Create worktree
 pub fn create_worktree(
 	repo_path: &RepoPath,
 	name: &str,
 ) -> Result<()> {
 	scope_time!("create_worktree");
 
-	log::trace!("creating worktree in {:?}", repo_path);
 	let repo_obj = repo(repo_path)?;
+	let path_str = repo_path.gitpath().to_str().unwrap();
 
-	repo_obj.worktree(name, &Path::new(&name), None)?;
+	// if we are in a worktree assume we want to create a worktree in the parent directory
+	// This is not always accurate but it should work in most cases
+	let real_path = match repo_obj.is_worktree() {
+		true => format!("{}/../{}", path_str, &name),
+		false => format!("{}{}", path_str, &name),
+	};
+
+	log::trace!("creating worktree in {:?}", real_path);
+	repo_obj.worktree(name, &Path::new(&real_path), None)?;
 
 	Ok(())
 }
@@ -113,6 +119,8 @@ pub fn toggle_worktree_lock(
 	let repo_obj = repo(repo_path)?;
 
 	let wt = repo_obj.find_worktree(name)?;
+
+	// fails to create is branch already exists
 	wt.validate()?;
 
 	match wt.is_locked().unwrap() {
