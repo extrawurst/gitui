@@ -37,6 +37,7 @@ pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
 	pub const CROSSMARK: &str = "\u{2717}"; //✗
+	pub const LOCK: &str = "\u{1F512}"; //🔒
 	pub const SPACE: &str = "\u{02FD}"; //˽
 	pub const EMPTY_SPACE: &str = " ";
 	pub const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
@@ -1593,6 +1594,19 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.prune_worktree),
 			),
 			"prune worktree",
+			CMD_GROUP_WORKTREES,
+		)
+	}
+	pub fn toggle_worktree_lock(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Lock/Unlock [{}]",
+				key_config
+					.get_hint(key_config.keys.toggle_worktree_lock),
+			),
+			"toggle worktree lock",
 			CMD_GROUP_WORKTREES,
 		)
 	}

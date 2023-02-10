@@ -95,3 +95,23 @@ pub fn prune_worktree(
 
 	Ok(())
 }
+
+/// Toggle lock on a worktree
+pub fn toggle_worktree_lock(
+	repo_path: &RepoPath,
+	name: &str,
+) -> Result<()> {
+	scope_time!("toggle_lock_worktree");
+
+	let repo_obj = repo(repo_path)?;
+
+	let wt = repo_obj.find_worktree(name)?;
+	wt.validate()?;
+
+	match wt.is_locked().unwrap() {
+		WorktreeLockStatus::Unlocked => wt.lock(None)?,
+		WorktreeLockStatus::Locked(_) => wt.unlock()?,
+	}
+
+	Ok(())
+}

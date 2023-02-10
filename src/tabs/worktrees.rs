@@ -88,6 +88,13 @@ impl Component for WorkTreesTab {
 				true,
 				true,
 			));
+			out.push(CommandInfo::new(
+				strings::commands::toggle_worktree_lock(
+					&self.key_config,
+				),
+				true,
+				true,
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -120,6 +127,13 @@ impl Component for WorkTreesTab {
 				self.key_config.keys.prune_worktree,
 			) {
 				self.queue.push(InternalEvent::PruneWorktree(
+					self.selected_worktree().name.clone(),
+				));
+			} else if key_match(
+				e,
+				self.key_config.keys.toggle_worktree_lock,
+			) {
+				self.queue.push(InternalEvent::ToggleWorktreeLock(
 					self.selected_worktree().name.clone(),
 				));
 			}

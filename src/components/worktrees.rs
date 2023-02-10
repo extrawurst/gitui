@@ -80,6 +80,16 @@ impl WorkTreesComponent {
 		let mut txt = Vec::new();
 		txt.push(Span::styled(
 			string_width_align(
+				match wt.is_locked {
+					true => symbol::LOCK,
+					false => "",
+				},
+				2,
+			),
+			self.theme.worktree(wt.is_valid, selected),
+		));
+		txt.push(Span::styled(
+			string_width_align(
 				match wt.is_valid {
 					true => symbol::CHECKMARK,
 					false => symbol::CROSSMARK,

@@ -98,8 +98,8 @@ pub use utils::{
 };
 
 pub use worktree::{
-	create_worktree, find_worktree, prune_worktree, worktrees,
-	WorkTree,
+	create_worktree, find_worktree, prune_worktree,
+	toggle_worktree_lock, worktrees, WorkTree,
 };
 pub use git2::ResetType;
 

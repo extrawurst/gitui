@@ -101,6 +101,8 @@ pub enum InternalEvent {
 	///
 	PruneWorktree(String),
 	///
+	ToggleWorktreeLock(String),
+	///
 	RenameBranch(String, String),
 	///
 	SelectBranch,
