@@ -21,6 +21,8 @@ pub struct WorkTree {
 	pub is_locked: bool,
 	/// Can worktree be pruned
 	pub is_prunable: bool,
+	/// Is worktree the current worktree
+	pub is_current: bool,
 }
 
 /// Get all worktrees
@@ -50,6 +52,7 @@ pub fn worktrees(repo_path: &RepoPath) -> Result<Vec<WorkTree>> {
 					WorktreeLockStatus::Locked(_) => true,
 				},
 				is_prunable: wt.is_prunable(None)?,
+				is_current: wt.path() == repo_path.gitpath(),
 			})
 		})
 		.filter_map(|s: Result<WorkTree>| {
