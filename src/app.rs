@@ -248,6 +248,7 @@ impl App {
 			),
 			create_worktree_popup: CreateWorktreeComponent::new(
 				repo.clone(),
+				queue.clone(),
 				theme.clone(),
 				key_config.clone(),
 			),

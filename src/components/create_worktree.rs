@@ -5,6 +5,7 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue},
 	strings,
 	ui::style::SharedTheme,
 };
@@ -15,6 +16,7 @@ use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct CreateWorktreeComponent {
 	repo: RepoPathRef,
+	queue: Queue,
 	input: TextInputComponent,
 	key_config: SharedKeyConfig,
 }
@@ -89,6 +91,7 @@ impl CreateWorktreeComponent {
 	///
 	pub fn new(
 		repo: RepoPathRef,
+		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
@@ -100,6 +103,7 @@ impl CreateWorktreeComponent {
 				&strings::create_worktree_popup_msg(&key_config),
 				true,
 			),
+			queue,
 			key_config,
 			repo,
 		}
@@ -124,25 +128,16 @@ impl CreateWorktreeComponent {
 
 		match res {
 			Ok(_) => {
+				// TODO: Update worktree list
 				log::trace!("Worktree created");
 			}
 			Err(e) => {
+				// TODO: Emit proper error message
 				log::trace!("Worktree creation failed: {}", e);
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("create worktree error:\n{e}",),
+				));
 			}
 		}
-		// match res {
-		// 	Ok(_) => {
-		// 		self.queue.push(InternalEvent::Update(
-		// 			NeedsUpdate::ALL | NeedsUpdate::BRANCHES,
-		// 		));
-		// 	}
-		// 	Err(e) => {
-		// 		log::error!("create branch: {}", e,);
-		// 		self.queue.push(InternalEvent::ShowErrorMsg(
-		// 			format!("create branch error:\n{e}",),
-		// 		));
-		// 	}
-		// }
-		//
 	}
 }
