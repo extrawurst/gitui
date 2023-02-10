@@ -31,7 +31,7 @@ impl WorkTreesTab {
 		Self {
 			visible: false,
 			worktrees: WorkTreesComponent::new(
-				"Hello Worktrees",
+				"Worktree",
 				theme,
 				key_config.clone(),
 			),

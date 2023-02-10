@@ -14,7 +14,6 @@ use std::{
 	io::Write,
 	path::{Path, PathBuf},
 };
-
 ///
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Head {
@@ -49,9 +48,11 @@ pub fn repo_dir(repo_path: &RepoPath) -> Result<PathBuf> {
 pub fn repo_work_dir(repo_path: &RepoPath) -> Result<String> {
 	let repo = repo(repo_path)?;
 
-    // TODO: Is this safe?
-    // Allow Bare repositories
-    if repo.is_bare() { return Ok(repo_path.gitpath().to_str().unwrap().to_string()) };
+	// TODO: Is this safe?
+	// Allow Bare repositories
+	if repo.is_bare() {
+		return Ok(repo_path.gitpath().to_str().unwrap().to_string());
+	};
 
 	work_dir(&repo)?.to_str().map_or_else(
 		|| Err(Error::Generic("invalid workdir".to_string())),
