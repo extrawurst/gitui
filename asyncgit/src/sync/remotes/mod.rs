@@ -85,6 +85,14 @@ pub(crate) fn get_default_remote_in_repo(
 	Err(Error::NoDefaultRemoteFound)
 }
 
+/// returns true based on result of `get_default_remote_in_repo` being anything but `NoDefaultRemoteFound`
+pub fn has_default_remote(repo: &Repository) -> bool {
+	!matches!(
+		get_default_remote_in_repo(repo),
+		Err(Error::NoDefaultRemoteFound)
+	)
+}
+
 ///
 fn fetch_from_remote(
 	repo_path: &RepoPath,

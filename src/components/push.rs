@@ -109,6 +109,8 @@ impl PushComponent {
 			(false, false) => PushComponentModifier::None,
 		};
 
+		//TODO: check if branch is tracked on a remote or if we find a default remote if not go into a remote selection popup
+
 		self.show()?;
 
 		if need_username_password(&self.repo.borrow())? {
