@@ -852,7 +852,7 @@ impl Component for Status {
 						.map(Into::into)
 				} else if key_match(
 					k,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) && self.can_focus_diff()
 				{
 					self.switch_focus(Focus::Diff).map(Into::into)

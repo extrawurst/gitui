@@ -285,7 +285,7 @@ impl Component for Revlog {
 					);
 				} else if key_match(
 					k,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) && self.commit_details.is_visible()
 				{
 					self.inspect_commit();

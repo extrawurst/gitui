@@ -493,7 +493,7 @@ impl Component for FileRevlogComponent {
 					}
 				} else if key_match(
 					key,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) && self.can_focus_diff()
 				{
 					self.diff.focus(true);
