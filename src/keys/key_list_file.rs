@@ -12,6 +12,7 @@ pub struct KeysListFile {
 	pub tab_files: Option<GituiKeyEvent>,
 	pub tab_stashing: Option<GituiKeyEvent>,
 	pub tab_stashes: Option<GituiKeyEvent>,
+	pub tab_worktrees: Option<GituiKeyEvent>,
 	pub tab_toggle: Option<GituiKeyEvent>,
 	pub tab_toggle_reverse: Option<GituiKeyEvent>,
 	pub toggle_workarea: Option<GituiKeyEvent>,
@@ -60,6 +61,10 @@ pub struct KeysListFile {
 	pub toggle_verify: Option<GituiKeyEvent>,
 	pub copy: Option<GituiKeyEvent>,
 	pub create_branch: Option<GituiKeyEvent>,
+	pub create_worktree: Option<GituiKeyEvent>,
+	pub prune_worktree: Option<GituiKeyEvent>,
+	pub force_prune_worktree: Option<GituiKeyEvent>,
+	pub toggle_worktree_lock: Option<GituiKeyEvent>,
 	pub rename_branch: Option<GituiKeyEvent>,
 	pub select_branch: Option<GituiKeyEvent>,
 	pub delete_branch: Option<GituiKeyEvent>,
@@ -83,6 +88,7 @@ pub struct KeysListFile {
 	pub view_submodule_parent: Option<GituiKeyEvent>,
 	pub update_dubmodule: Option<GituiKeyEvent>,
 	pub commit_history_next: Option<GituiKeyEvent>,
+	pub select_worktree: Option<GituiKeyEvent>,
 }
 
 impl KeysListFile {
@@ -103,6 +109,7 @@ impl KeysListFile {
 			tab_files: self.tab_files.unwrap_or(default.tab_files),
 			tab_stashing: self.tab_stashing.unwrap_or(default.tab_stashing),
 			tab_stashes: self.tab_stashes.unwrap_or(default.tab_stashes),
+			tab_worktrees: self.tab_worktrees.unwrap_or(default.tab_worktrees),
 			tab_toggle: self.tab_toggle.unwrap_or(default.tab_toggle),
 			tab_toggle_reverse: self.tab_toggle_reverse.unwrap_or(default.tab_toggle_reverse),
 			toggle_workarea: self.toggle_workarea.unwrap_or(default.toggle_workarea),
@@ -151,6 +158,10 @@ impl KeysListFile {
 			toggle_verify: self.toggle_verify.unwrap_or(default.toggle_verify),
 			copy: self.copy.unwrap_or(default.copy),
 			create_branch: self.create_branch.unwrap_or(default.create_branch),
+			create_worktree: self.create_worktree.unwrap_or(default.create_worktree),
+			prune_worktree: self.prune_worktree.unwrap_or(default.prune_worktree),
+			force_prune_worktree: self.force_prune_worktree.unwrap_or(default.force_prune_worktree),
+			toggle_worktree_lock: self.toggle_worktree_lock.unwrap_or(default.toggle_worktree_lock),
 			rename_branch: self.rename_branch.unwrap_or(default.rename_branch),
 			select_branch: self.select_branch.unwrap_or(default.select_branch),
 			delete_branch: self.delete_branch.unwrap_or(default.delete_branch),
@@ -174,6 +185,7 @@ impl KeysListFile {
 			view_submodule_parent: self.view_submodule_parent.unwrap_or(default.view_submodule_parent),
 			update_submodule: self.update_dubmodule.unwrap_or(default.update_submodule),
 			commit_history_next: self.commit_history_next.unwrap_or(default.commit_history_next),
+			select_worktree: self.select_worktree.unwrap_or(default.select_worktree),
 		}
 	}
 }

@@ -5,7 +5,8 @@ use crate::{
 		event_pump, AppOption, BlameFileComponent,
 		BranchListComponent, CommandBlocking, CommandInfo,
 		CommitComponent, CompareCommitsComponent, Component,
-		ConfirmComponent, CreateBranchComponent, DrawableComponent,
+		ConfirmComponent, CreateBranchComponent,
+		CreateWorktreeComponent, DrawableComponent,
 		ExternalEditorComponent, FetchComponent, FileFindPopup,
 		FileRevlogComponent, HelpComponent, InspectCommitComponent,
 		MsgComponent, OptionsPopupComponent, PullComponent,
@@ -23,13 +24,18 @@ use crate::{
 	},
 	setup_popups,
 	strings::{self, ellipsis_trim_start, order},
-	tabs::{FilesTab, Revlog, StashList, Stashing, Status},
+	tabs::{
+		FilesTab, Revlog, StashList, Stashing, Status, WorkTreesTab,
+	},
 	ui::style::{SharedTheme, Theme},
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::{bail, Result};
 use asyncgit::{
-	sync::{self, utils::repo_work_dir, RepoPath, RepoPathRef},
+	sync::{
+		self, find_worktree, prune_worktree, toggle_worktree_lock,
+		utils::repo_work_dir, RepoPath, RepoPathRef,
+	},
 	AsyncGitNotification, PushType,
 };
 use crossbeam_channel::Sender;
@@ -79,6 +85,7 @@ pub struct App {
 	fetch_popup: FetchComponent,
 	tag_commit_popup: TagCommitComponent,
 	create_branch_popup: CreateBranchComponent,
+	create_worktree_popup: CreateWorktreeComponent,
 	rename_branch_popup: RenameBranchComponent,
 	select_branch_popup: BranchListComponent,
 	options_popup: OptionsPopupComponent,
@@ -92,6 +99,7 @@ pub struct App {
 	stashing_tab: Stashing,
 	stashlist_tab: StashList,
 	files_tab: FilesTab,
+	worktrees_tab: WorkTreesTab,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -122,6 +130,7 @@ impl App {
 		let repo_path_text =
 			repo_work_dir(&repo.borrow()).unwrap_or_default();
 
+		log::trace!("repo path: {}", repo_path_text);
 		let queue = Queue::new();
 		let theme = Rc::new(theme);
 		let key_config = Rc::new(key_config);
@@ -237,6 +246,12 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
+			create_worktree_popup: CreateWorktreeComponent::new(
+				repo.clone(),
+				queue.clone(),
+				theme.clone(),
+				key_config.clone(),
+			),
 			rename_branch_popup: RenameBranchComponent::new(
 				repo.clone(),
 				queue.clone(),
@@ -319,6 +334,12 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
+			worktrees_tab: WorkTreesTab::new(
+				repo.clone(),
+				theme.clone(),
+				key_config.clone(),
+				&queue,
+			),
 			tab: 0,
 			queue,
 			theme,
@@ -375,6 +396,7 @@ impl App {
 				2 => self.files_tab.draw(f, chunks_main[1])?,
 				3 => self.stashing_tab.draw(f, chunks_main[1])?,
 				4 => self.stashlist_tab.draw(f, chunks_main[1])?,
+				5 => self.worktrees_tab.draw(f, chunks_main[1])?,
 				_ => bail!("unknown tab"),
 			};
 		}
@@ -427,6 +449,9 @@ impl App {
 				) || key_match(
 					k,
 					self.key_config.keys.tab_stashes,
+				) || key_match(
+					k,
+					self.key_config.keys.tab_worktrees,
 				) {
 					self.switch_tab(k)?;
 					NeedsUpdate::COMMANDS
@@ -491,6 +516,7 @@ impl App {
 		self.files_tab.update()?;
 		self.stashing_tab.update()?;
 		self.stashlist_tab.update()?;
+        self.worktrees_tab.update()?;
 		self.reset_popup.update()?;
 
 		self.update_commands();
@@ -593,6 +619,7 @@ impl App {
 			fetch_popup,
 			tag_commit_popup,
 			create_branch_popup,
+			create_worktree_popup,
 			rename_branch_popup,
 			select_branch_popup,
 			revision_files_popup,
@@ -605,7 +632,8 @@ impl App {
 			status_tab,
 			files_tab,
 			stashing_tab,
-			stashlist_tab
+			stashlist_tab,
+			worktrees_tab
 		]
 	);
 
@@ -626,6 +654,7 @@ impl App {
 			tags_popup,
 			reset_popup,
 			create_branch_popup,
+			create_worktree_popup,
 			rename_branch_popup,
 			revision_files_popup,
 			find_file_popup,
@@ -669,6 +698,7 @@ impl App {
 			&mut self.files_tab,
 			&mut self.stashing_tab,
 			&mut self.stashlist_tab,
+			&mut self.worktrees_tab,
 		]
 	}
 
@@ -694,6 +724,8 @@ impl App {
 			self.set_tab(3)?;
 		} else if key_match(k, self.key_config.keys.tab_stashes) {
 			self.set_tab(4)?;
+		} else if key_match(k, self.key_config.keys.tab_worktrees) {
+			self.set_tab(5)?;
 		}
 
 		Ok(())
@@ -743,6 +775,9 @@ impl App {
 		}
 		if flags.contains(NeedsUpdate::BRANCHES) {
 			self.select_branch_popup.update_branches()?;
+		}
+		if flags.contains(NeedsUpdate::WORKTREES) {
+			self.worktrees_tab.update_worktrees()?;
 		}
 
 		Ok(())
@@ -825,6 +860,9 @@ impl App {
 
 			InternalEvent::CreateBranch => {
 				self.create_branch_popup.open()?;
+			}
+			InternalEvent::CreateWorktree => {
+				self.create_worktree_popup.open()?;
 			}
 			InternalEvent::RenameBranch(branch_ref, cur_name) => {
 				self.rename_branch_popup
@@ -935,6 +973,40 @@ impl App {
 				//TODO: validate this is a valid repo first, so we can show proper error otherwise
 				self.do_quit =
 					QuitState::OpenSubmodule(submodule_repo_path);
+			}
+			InternalEvent::OpenWorktree(name) => {
+				let wt = find_worktree(&self.repo.borrow(), &name);
+
+				match wt {
+					Ok(wt) => {
+						self.do_quit = QuitState::OpenSubmodule(wt);
+					}
+					Err(e) => {
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							e.to_string(),
+						));
+					}
+				}
+			}
+			InternalEvent::PruneWorktree(name) => {
+				if let Err(e) =
+					prune_worktree(&self.repo.borrow(), &name, false)
+				{
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						e.to_string(),
+					));
+				}
+				self.worktrees_tab.update()?;
+			}
+			InternalEvent::ToggleWorktreeLock(name) => {
+				if let Err(e) =
+					toggle_worktree_lock(&self.repo.borrow(), &name)
+				{
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						e.to_string(),
+					));
+				}
+				self.worktrees_tab.update()?;
 			}
 			InternalEvent::OpenResetPopup(id) => {
 				self.reset_popup.open(id)?;
@@ -1062,6 +1134,16 @@ impl App {
 				self.status_tab.abort_rebase();
 				flags.insert(NeedsUpdate::ALL);
 			}
+			Action::ForcePruneWorktree(name) => {
+				if let Err(e) =
+					prune_worktree(&self.repo.borrow(), &name, true)
+				{
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						e.to_string(),
+					));
+				}
+				self.worktrees_tab.update()?;
+			}
 		};
 
 		Ok(())
@@ -1144,6 +1226,7 @@ impl App {
 			Span::raw(strings::tab_files(&self.key_config)),
 			Span::raw(strings::tab_stashing(&self.key_config)),
 			Span::raw(strings::tab_stashes(&self.key_config)),
+			Span::raw(strings::tab_worktrees(&self.key_config)),
 		];
 		let divider = strings::tab_divider(&self.key_config);
 

@@ -41,6 +41,7 @@ pub struct KeysList {
 	pub tab_files: GituiKeyEvent,
 	pub tab_stashing: GituiKeyEvent,
 	pub tab_stashes: GituiKeyEvent,
+	pub tab_worktrees: GituiKeyEvent,
 	pub tab_toggle: GituiKeyEvent,
 	pub tab_toggle_reverse: GituiKeyEvent,
 	pub toggle_workarea: GituiKeyEvent,
@@ -89,6 +90,10 @@ pub struct KeysList {
 	pub toggle_verify: GituiKeyEvent,
 	pub copy: GituiKeyEvent,
 	pub create_branch: GituiKeyEvent,
+	pub create_worktree: GituiKeyEvent,
+	pub prune_worktree: GituiKeyEvent,
+	pub force_prune_worktree: GituiKeyEvent,
+	pub toggle_worktree_lock: GituiKeyEvent,
 	pub rename_branch: GituiKeyEvent,
 	pub select_branch: GituiKeyEvent,
 	pub delete_branch: GituiKeyEvent,
@@ -112,6 +117,7 @@ pub struct KeysList {
 	pub view_submodule_parent: GituiKeyEvent,
 	pub update_submodule: GituiKeyEvent,
 	pub commit_history_next: GituiKeyEvent,
+	pub select_worktree: GituiKeyEvent,
 }
 
 #[rustfmt::skip]
@@ -123,6 +129,7 @@ impl Default for KeysList {
 			tab_files: GituiKeyEvent::new(KeyCode::Char('3'),  KeyModifiers::empty()),
 			tab_stashing: GituiKeyEvent::new(KeyCode::Char('4'),  KeyModifiers::empty()),
 			tab_stashes: GituiKeyEvent::new(KeyCode::Char('5'),  KeyModifiers::empty()),
+			tab_worktrees: GituiKeyEvent::new(KeyCode::Char('6'),  KeyModifiers::empty()),
 			tab_toggle: GituiKeyEvent::new(KeyCode::Tab,  KeyModifiers::empty()),
 			tab_toggle_reverse: GituiKeyEvent::new(KeyCode::BackTab,  KeyModifiers::SHIFT),
 			toggle_workarea: GituiKeyEvent::new(KeyCode::Char('w'),  KeyModifiers::empty()),
@@ -171,6 +178,10 @@ impl Default for KeysList {
 			toggle_verify: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::CONTROL),
 			copy: GituiKeyEvent::new(KeyCode::Char('y'),  KeyModifiers::empty()),
 			create_branch: GituiKeyEvent::new(KeyCode::Char('c'),  KeyModifiers::empty()),
+			create_worktree: GituiKeyEvent::new(KeyCode::Char('c'),  KeyModifiers::empty()),
+			prune_worktree: GituiKeyEvent::new(KeyCode::Char('d'),  KeyModifiers::empty()),
+			force_prune_worktree: GituiKeyEvent::new(KeyCode::Char('D'),  KeyModifiers::SHIFT),
+			toggle_worktree_lock: GituiKeyEvent::new(KeyCode::Char(' '),  KeyModifiers::empty()),
 			rename_branch: GituiKeyEvent::new(KeyCode::Char('r'),  KeyModifiers::empty()),
 			select_branch: GituiKeyEvent::new(KeyCode::Char('b'),  KeyModifiers::empty()),
 			delete_branch: GituiKeyEvent::new(KeyCode::Char('D'),  KeyModifiers::SHIFT),
@@ -194,6 +205,7 @@ impl Default for KeysList {
 			view_submodule_parent: GituiKeyEvent::new(KeyCode::Char('p'),  KeyModifiers::empty()),
 			update_submodule: GituiKeyEvent::new(KeyCode::Char('u'),  KeyModifiers::empty()),
 			commit_history_next: GituiKeyEvent::new(KeyCode::Char('n'),  KeyModifiers::CONTROL),
+			select_worktree: GituiKeyEvent::new(KeyCode::Enter,  KeyModifiers::empty()),
 		}
 	}
 }

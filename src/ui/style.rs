@@ -108,6 +108,16 @@ impl Theme {
 		}
 	}
 
+	pub fn worktree(&self, valid: bool, selected: bool) -> Style {
+		let style = if valid {
+			Style::default().fg(Color::Green)
+		} else {
+			Style::default().fg(Color::Red)
+		};
+
+		self.apply_select(style, selected)
+	}
+
 	pub fn item(&self, typ: StatusItemType, selected: bool) -> Style {
 		let style = match typ {
 			StatusItemType::New => {

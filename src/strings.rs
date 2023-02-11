@@ -36,6 +36,7 @@ pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
+	pub const LOCK: &str = "\u{1F512}"; //🔒
 	pub const SPACE: &str = "\u{02FD}"; //˽
 	pub const EMPTY_SPACE: &str = " ";
 	pub const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
@@ -84,6 +85,12 @@ pub fn tab_stashes(key_config: &SharedKeyConfig) -> String {
 	format!(
 		"Stashes [{}]",
 		key_config.get_hint(key_config.keys.tab_stashes)
+	)
+}
+pub fn tab_worktrees(key_config: &SharedKeyConfig) -> String {
+	format!(
+		"Worktrees [{}]",
+		key_config.get_hint(key_config.keys.tab_worktrees)
 	)
 }
 pub fn tab_divider(_key_config: &SharedKeyConfig) -> String {
@@ -176,6 +183,13 @@ pub fn confirm_title_abortmerge() -> String {
 }
 pub fn confirm_title_abortrevert() -> String {
 	"Abort revert?".to_string()
+}
+pub fn confirm_title_force_prune_worktree(name: &str) -> String {
+	format!("Force prune worktree `{name}`?")
+}
+pub fn confirm_msg_force_prune_worktree() -> String {
+	"This will delete all uncommitted changes. Are you sure?"
+		.to_string()
 }
 pub fn confirm_msg_revertchanges() -> String {
 	"This will revert all uncommitted changes. Are you sure?"
@@ -351,6 +365,18 @@ pub fn rename_branch_popup_msg(
 	"new branch name".to_string()
 }
 
+pub fn create_worktree_popup_title(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	"Worktree".to_string()
+}
+
+pub fn create_worktree_popup_msg(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	"type worktree name".to_string()
+}
+
 pub fn copy_success(s: &str) -> String {
 	format!("{POPUP_SUCCESS_COPY} \"{s}\"")
 }
@@ -426,6 +452,7 @@ pub mod commands {
 	static CMD_GROUP_STASHES: &str = "-- Stashes --";
 	static CMD_GROUP_LOG: &str = "-- Log --";
 	static CMD_GROUP_BRANCHES: &str = "-- Branches --";
+	static CMD_GROUP_WORKTREES: &str = "-- Worktrees --";
 
 	pub fn toggle_tabs(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
@@ -1534,6 +1561,72 @@ pub mod commands {
 			),
 			"fetch/prune",
 			CMD_GROUP_BRANCHES,
+		)
+	}
+
+	pub fn open_worktree_create_popup(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Create [{}]",
+				key_config.get_hint(key_config.keys.create_worktree),
+			),
+			"open create worktree popup",
+			CMD_GROUP_WORKTREES,
+		)
+	}
+
+	pub fn create_worktree_confirm_msg(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Create Worktree [{}]",
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"create worktree",
+			CMD_GROUP_WORKTREES,
+		)
+		.hide_help()
+	}
+
+	pub fn prune_worktree(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Prune [{}]",
+				key_config.get_hint(key_config.keys.prune_worktree),
+			),
+			"prune worktree",
+			CMD_GROUP_WORKTREES,
+		)
+	}
+	pub fn force_prune_worktree(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Force Prune [{}]",
+				key_config
+					.get_hint(key_config.keys.force_prune_worktree),
+			),
+			"force prune worktree",
+			CMD_GROUP_WORKTREES,
+		)
+	}
+	pub fn toggle_worktree_lock(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Lock/Unlock [{}]",
+				key_config
+					.get_hint(key_config.keys.toggle_worktree_lock),
+			),
+			"toggle worktree lock",
+			CMD_GROUP_WORKTREES,
 		)
 	}
 }

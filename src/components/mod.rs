@@ -7,6 +7,7 @@ mod commit_details;
 mod commitlist;
 mod compare_commits;
 mod create_branch;
+mod create_worktree;
 mod cred;
 mod diff;
 mod externaleditor;
@@ -33,6 +34,7 @@ mod tag_commit;
 mod taglist;
 mod textinput;
 mod utils;
+mod worktrees;
 
 pub use self::status_tree::StatusTreeComponent;
 pub use blame_file::{BlameFileComponent, BlameFileOpen};
@@ -44,6 +46,7 @@ pub use commit_details::CommitDetailsComponent;
 pub use commitlist::CommitList;
 pub use compare_commits::CompareCommitsComponent;
 pub use create_branch::CreateBranchComponent;
+pub use create_worktree::CreateWorktreeComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
 pub use fetch::FetchComponent;
@@ -68,6 +71,7 @@ pub use tag_commit::TagCommitComponent;
 pub use taglist::TagListComponent;
 pub use textinput::{InputType, TextInputComponent};
 pub use utils::filetree::FileTreeItemKind;
+pub use worktrees::WorkTreesComponent;
 
 use crate::ui::style::Theme;
 use anyhow::Result;
@@ -177,7 +181,7 @@ pub fn command_pump(
 	}
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum ScrollType {
 	Up,
 	Down,

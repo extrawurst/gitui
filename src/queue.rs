@@ -25,6 +25,8 @@ bitflags! {
 		const COMMANDS = 0b100;
 		/// branches have changed
 		const BRANCHES = 0b1000;
+		/// worktrees have changed
+		const WORKTREES = 0b10000;
 	}
 }
 
@@ -52,6 +54,7 @@ pub enum Action {
 	AbortMerge,
 	AbortRebase,
 	AbortRevert,
+	ForcePruneWorktree(String),
 }
 
 #[derive(Debug)]
@@ -97,6 +100,12 @@ pub enum InternalEvent {
 	///
 	CreateBranch,
 	///
+	CreateWorktree,
+	///
+	PruneWorktree(String),
+	///
+	ToggleWorktreeLock(String),
+	///
 	RenameBranch(String, String),
 	///
 	SelectBranch,
@@ -126,6 +135,8 @@ pub enum InternalEvent {
 	ViewSubmodules,
 	///
 	OpenRepo { path: PathBuf },
+	///
+	OpenWorktree(String),
 	///
 	OpenResetPopup(CommitId),
 }

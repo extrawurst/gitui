@@ -213,6 +213,10 @@ impl ConfirmComponent {
                     strings::confirm_title_abortrevert(),
                     strings::confirm_msg_revertchanges(),
                 ),
+                Action::ForcePruneWorktree(name) => (
+                    strings::confirm_title_force_prune_worktree(name),
+                    strings::confirm_msg_force_prune_worktree(),
+                ),
             };
 		}
 
