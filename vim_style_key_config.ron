@@ -13,17 +13,13 @@
 // find `KeysList` type in src/keys/key_list.rs for all possible keys.
 // every key not overwritten via the config file will use the default specified there
 (
-    focus_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
-    focus_left: Some(( code: Char('h'), modifiers: ( bits: 0,),)),
-    focus_above: Some(( code: Char('k'), modifiers: ( bits: 0,),)),
-    focus_below: Some(( code: Char('j'), modifiers: ( bits: 0,),)),
-
     open_help: Some(( code: F(1), modifiers: ( bits: 0,),)),
 
     move_left: Some(( code: Char('h'), modifiers: ( bits: 0,),)),
     move_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
     move_up: Some(( code: Char('k'), modifiers: ( bits: 0,),)),
     move_down: Some(( code: Char('j'), modifiers: ( bits: 0,),)),
+    
     popup_up: Some(( code: Char('p'), modifiers: ( bits: 2,),)),
     popup_down: Some(( code: Char('n'), modifiers: ( bits: 2,),)),
     page_up: Some(( code: Char('b'), modifiers: ( bits: 2,),)),

@@ -7,11 +7,6 @@ However popular demand lead to fully customizability of the key bindings.
 Create a `key_bindings.ron` file like this:
 ```
 (
-    focus_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
-    focus_left: Some(( code: Char('h'), modifiers: ( bits: 0,),)),
-    focus_above: Some(( code: Char('k'), modifiers: ( bits: 0,),)),
-    focus_below: Some(( code: Char('j'), modifiers: ( bits: 0,),)),
-    
     move_left: Some(( code: Char('h'), modifiers: ( bits: 0,),)),
     move_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
     move_up: Some(( code: Char('k'), modifiers: ( bits: 0,),)),

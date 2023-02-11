@@ -224,7 +224,7 @@ impl Component for BlameFileComponent {
 					self.move_selection(ScrollType::PageUp);
 				} else if key_match(
 					key,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) {
 					if let Some(commit_id) = self.selected_commit() {
 						self.hide_stacked(true);

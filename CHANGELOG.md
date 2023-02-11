@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![reset](assets/reset_in_log.gif)
 
+### Breaking Change
+* `focus_XYZ` key bindings are merged into the `move_XYZ` set, so only one way to bind arrow-like keys from now on ([#1539](https://github.com/extrawurst/gitui/issues/1539))
+
 ### Added
 * list changes in commit message inside external editor [[@bc-universe]](https://github.com/bc-universe) ([#1420](https://github.com/extrawurst/gitui/issues/1420))
 * allow detaching HEAD and checking out specific commit from log view [[@fralcow]](https://github.com/fralcow) ([#1499](https://github.com/extrawurst/gitui/pull/1499))

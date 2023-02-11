@@ -517,8 +517,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Scroll [{}{}]",
-				key_config.get_hint(key_config.keys.focus_above),
-				key_config.get_hint(key_config.keys.focus_below)
+				key_config.get_hint(key_config.keys.move_up),
+				key_config.get_hint(key_config.keys.move_down)
 			),
 			"scroll up or down in focused view",
 			CMD_GROUP_GENERAL,
@@ -990,7 +990,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Back [{}]",
-				key_config.get_hint(key_config.keys.focus_left),
+				key_config.get_hint(key_config.keys.move_left),
 			),
 			"view and select changed files",
 			CMD_GROUP_GENERAL,
@@ -1002,7 +1002,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Diff [{}]",
-				key_config.get_hint(key_config.keys.focus_right),
+				key_config.get_hint(key_config.keys.move_right),
 			),
 			"inspect file diff",
 			CMD_GROUP_GENERAL,
@@ -1154,7 +1154,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Inspect [{}]",
-				key_config.get_hint(key_config.keys.focus_right),
+				key_config.get_hint(key_config.keys.move_right),
 			),
 			"inspect selected commit in detail",
 			CMD_GROUP_GENERAL,

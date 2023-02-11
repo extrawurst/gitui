@@ -234,18 +234,14 @@ impl Component for CommitDetailsComponent {
 
 		if self.focused() {
 			if let Event::Key(e) = ev {
-				return if key_match(
-					e,
-					self.key_config.keys.focus_below,
-				) && self.details_focused()
+				return if key_match(e, self.key_config.keys.move_down)
+					&& self.details_focused()
 				{
 					self.set_details_focus(false);
 					self.file_tree.focus(true);
 					Ok(EventState::Consumed)
-				} else if key_match(
-					e,
-					self.key_config.keys.focus_above,
-				) && self.file_tree.focused()
+				} else if key_match(e, self.key_config.keys.move_up)
+					&& self.file_tree.focused()
 					&& !self.is_compare()
 				{
 					self.file_tree.focus(false);
