@@ -7,6 +7,7 @@ use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order, symbol},
+	try_or_popup,
 	ui::{self, common_nav, style::SharedTheme},
 	AsyncAppNotification, AsyncNotification,
 };
@@ -447,6 +448,14 @@ impl Component for RevisionFilesComponent {
 				)
 				.order(order::RARE_ACTION),
 			);
+			out.push(
+				CommandInfo::new(
+					strings::commands::copy_path(&self.key_config),
+					self.tree.selected_file().is_some(),
+					true,
+				)
+				.order(order::RARE_ACTION),
+			);
 			tree_nav_cmds(&self.tree, &self.key_config, out);
 		} else {
 			self.current_file.commands(out, force_all);
@@ -515,6 +524,15 @@ impl Component for RevisionFilesComponent {
 					);
 					return Ok(EventState::Consumed);
 				}
+			} else if key_match(key, self.key_config.keys.copy) {
+				if let Some(file) = self.selected_file_path() {
+					try_or_popup!(
+						self,
+						strings::POPUP_FAIL_COPY,
+						crate::clipboard::copy_string(&file)
+					);
+				}
+				return Ok(EventState::Consumed);
 			} else if !is_tree_focused {
 				return self.current_file.event(event);
 			}

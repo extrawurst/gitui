@@ -302,6 +302,21 @@ impl StatusTreeComponent {
 			selection_offset_visible,
 		)
 	}
+
+	// Copy the real path of selected file to clickboard
+	fn copy_file_path(&self) {
+		if let Some(item) = self.selection() {
+			if crate::clipboard::copy_string(&item.info.full_path)
+				.is_err()
+			{
+				if let Some(queue) = &self.queue {
+					queue.push(InternalEvent::ShowErrorMsg(
+						strings::POPUP_FAIL_COPY.to_string(),
+					));
+				}
+			}
+		}
+	}
 }
 
 /// Used for drawing the `FileTreeComponent`
@@ -430,6 +445,15 @@ impl Component for StatusTreeComponent {
 			.order(order::RARE_ACTION),
 		);
 
+		out.push(
+			CommandInfo::new(
+				strings::commands::copy_path(&self.key_config),
+				self.selection_file().is_some(),
+				self.focused || force_all,
+			)
+			.order(order::RARE_ACTION),
+		);
+
 		CommandBlocking::PassingOn
 	}
 
@@ -480,6 +504,9 @@ impl Component for StatusTreeComponent {
 							);
 						}
 					}
+					Ok(EventState::Consumed)
+				} else if key_match(e, self.key_config.keys.copy) {
+					self.copy_file_path();
 					Ok(EventState::Consumed)
 				} else if key_match(e, self.key_config.keys.move_down)
 				{

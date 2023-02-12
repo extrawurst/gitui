@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * add no-verify option on commits to not run hooks [[@dam5h]](https://github.com/dam5h) ([#1374](https://github.com/extrawurst/gitui/issues/1374))
 * allow `fetch` on status tab [[@alensiljak]](https://github.com/alensiljak) ([#1471](https://github.com/extrawurst/gitui/issues/1471))
 * allow reset (soft,mixed,hard) from commit log ([#1500](https://github.com/extrawurst/gitui/issues/1500))
+* allow `copy` file path on revision files and status tree [[@yanganto]](https://github.com/yanganto)  ([#1516](https://github.com/extrawurst/gitui/pull/1516))
 
 ### Fixes
 * commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
