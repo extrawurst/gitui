@@ -448,6 +448,14 @@ impl Component for RevisionFilesComponent {
 				)
 				.order(order::RARE_ACTION),
 			);
+			out.push(
+				CommandInfo::new(
+					strings::commands::copy_path(&self.key_config),
+					self.tree.selected_file().is_some(),
+					true,
+				)
+				.order(order::RARE_ACTION),
+			);
 			tree_nav_cmds(&self.tree, &self.key_config, out);
 		} else {
 			self.current_file.commands(out, force_all);
