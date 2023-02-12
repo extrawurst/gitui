@@ -37,7 +37,6 @@ fuzzy-matcher = "0.3"
 gh-emoji = { version = "1.0", optional = true }
 itertools = "0.10"
 
-
 log = "0.4"
 notify = "5.1"
 notify-debouncer-mini = "0.2" 
