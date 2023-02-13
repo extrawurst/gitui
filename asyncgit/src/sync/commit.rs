@@ -1,4 +1,5 @@
 use super::{CommitId, RepoPath};
+use crate::sync::sign::{SignBuilder, SignError};
 use crate::{
 	error::Result,
 	sync::{repository::repo, utils::get_head_repo},
@@ -65,7 +66,7 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 	scope_time!("commit");
 
 	let repo = repo(repo_path)?;
-
+	let config = repo.config()?;
 	let signature = signature_allow_undefined_name(&repo)?;
 	let mut index = repo.index()?;
 	let tree_id = index.write_tree()?;
@@ -79,8 +80,36 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 
 	let parents = parents.iter().collect::<Vec<_>>();
 
-	Ok(repo
-		.commit(
+	let commit_id = if config
+		.get_bool("commit.gpgsign")
+		.unwrap_or(false)
+	{
+		use crate::sync::sign::Sign;
+
+		let buffer = repo.commit_create_buffer(
+			&signature,
+			&signature,
+			msg,
+			&tree,
+			parents.as_slice(),
+		)?;
+
+		let commit = std::str::from_utf8(&buffer).map_err(|_e| {
+			SignError::Shellout("utf8 conversion error".to_string())
+		})?;
+
+		let sign = SignBuilder::from_gitconfig(&repo, &config)?;
+		let signed_commit = sign.sign(commit)?;
+		let commit_id =
+			repo.commit_signed(commit, &signed_commit, None)?;
+
+		// manually advance to the new commit ID
+		// repo.commit does that on its own, repo.commit_signed does not
+		repo.head()?.set_target(commit_id, msg)?;
+
+		commit_id
+	} else {
+		repo.commit(
 			Some("HEAD"),
 			&signature,
 			&signature,
@@ -88,7 +117,9 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 			&tree,
 			parents.as_slice(),
 		)?
-		.into())
+	};
+
+	Ok(commit_id.into())
 }
 
 /// Tag a commit.

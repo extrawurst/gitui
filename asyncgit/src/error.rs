@@ -84,6 +84,13 @@ pub enum Error {
 	///
 	#[error("git hook error: {0}")]
 	Hooks(#[from] git2_hooks::HooksError),
+
+	#[error("sign builder error: {0}")]
+	SignBuilder(#[from] crate::sync::sign::SignBuilderError),
+
+	///
+	#[error("sign error: {0}")]
+	Sign(#[from] crate::sync::sign::SignError),
 }
 
 ///
