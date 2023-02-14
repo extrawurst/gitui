@@ -786,6 +786,7 @@ dependencies = [
  "serde",
  "simplelog",
  "syntect",
+ "tempfile",
  "textwrap",
  "tui",
  "unicode-segmentation",

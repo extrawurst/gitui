@@ -210,3 +210,37 @@ impl KeysList {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use pretty_assertions::assert_eq;
+	use std::io::Write;
+	use tempfile::NamedTempFile;
+
+	#[test]
+	fn test_smoke() {
+		let mut file = NamedTempFile::new().unwrap();
+
+		writeln!(
+			file,
+			r"
+(
+	move_down: Some(( code: Char('j'), modifiers: ( bits: 2,),)),
+)
+"
+		)
+		.unwrap();
+
+		let keys = KeysList::init(file.path().to_path_buf());
+
+		assert_eq!(keys.move_right, KeysList::default().move_right);
+		assert_eq!(
+			keys.move_down,
+			GituiKeyEvent::new(
+				KeyCode::Char('j'),
+				KeyModifiers::CONTROL
+			)
+		);
+	}
+}
