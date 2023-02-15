@@ -214,6 +214,9 @@ impl KeysList {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use pretty_assertions::assert_eq;
+	use std::io::Write;
+	use tempfile::NamedTempFile;
 
 	#[test]
 	fn test_apply_vim_style_example() {
@@ -224,14 +227,6 @@ mod tests {
 			.expect("vim style config format incorrect");
 		keys_list.apply(patch);
 	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use pretty_assertions::assert_eq;
-	use std::io::Write;
-	use tempfile::NamedTempFile;
 
 	#[test]
 	fn test_smoke() {
