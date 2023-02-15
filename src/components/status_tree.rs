@@ -226,7 +226,7 @@ impl StatusTreeComponent {
 		}
 	}
 
-	/// Returns a Vec<TextDrawInfo> which is used to draw the `FileTreeComponent` correctly,
+	/// Returns a `Vec<TextDrawInfo>` which is used to draw the `FileTreeComponent` correctly,
 	/// allowing folders to be folded up if they are alone in their directory
 	fn build_vec_text_draw_info_for_drawing(
 		&self,
