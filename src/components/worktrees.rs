@@ -257,6 +257,7 @@ impl DrawableComponent for WorkTreesComponent {
 			&self.theme,
 			self.count_total,
 			self.selection,
+			crate::ui::Orientation::Vertical,
 		);
 
 		Ok(())
