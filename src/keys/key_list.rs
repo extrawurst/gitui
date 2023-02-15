@@ -1,8 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-
-use super::key_list_file::KeysListFile;
+use std::{fs::File, path::PathBuf};
+use struct_patch::traits::Patch as PatchTrait;
+use struct_patch::Patch;
 
 #[derive(Debug, PartialOrd, Clone, Copy, Serialize, Deserialize)]
 pub struct GituiKeyEvent {
@@ -34,7 +34,8 @@ impl From<&GituiKeyEvent> for KeyEvent {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Patch)]
+#[patch_derive(Deserialize)]
 pub struct KeysList {
 	pub tab_status: GituiKeyEvent,
 	pub tab_log: GituiKeyEvent,
@@ -200,14 +201,13 @@ impl Default for KeysList {
 
 impl KeysList {
 	pub fn init(file: PathBuf) -> Self {
-		if file.exists() {
-			let file = KeysListFile::read_file(file)
-				.map_err(|e| log::error!("key binding error: {e}",))
-				.unwrap_or_default();
-			file.get_list()
-		} else {
-			Self::default()
+		let mut keys_list = Self::default();
+		if let Ok(f) = File::open(file) {
+			if let Ok(patch) = ron::de::from_reader(f) {
+				keys_list.apply(patch);
+			}
 		}
+		keys_list
 	}
 }
 
@@ -217,6 +217,16 @@ mod tests {
 	use pretty_assertions::assert_eq;
 	use std::io::Write;
 	use tempfile::NamedTempFile;
+
+	#[test]
+	fn test_apply_vim_style_example() {
+		let mut keys_list = KeysList::default();
+		let f = File::open("vim_style_key_config.ron")
+			.expect("vim style config should exist");
+		let patch = ron::de::from_reader(f)
+			.expect("vim style config format incorrect");
+		keys_list.apply(patch);
+	}
 
 	#[test]
 	fn test_smoke() {
