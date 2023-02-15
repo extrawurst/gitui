@@ -66,7 +66,10 @@ impl RepoWatcher {
 				}
 
 				if !ev.is_empty() {
-					sender.send(()).expect("send error");
+					sender.send(()).map_err(|_| {
+						log::debug!("notify send error");
+						RecvError
+					})?;
 				}
 			}
 		}
