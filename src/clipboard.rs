@@ -8,6 +8,7 @@ fn exec_copy_with_args(
 	command: &str,
 	args: &[&str],
 	text: &str,
+	pipe_stderr: bool,
 ) -> Result<()> {
 	let binary = which(command)
 		.ok()
@@ -17,7 +18,11 @@ fn exec_copy_with_args(
 		.args(args)
 		.stdin(Stdio::piped())
 		.stdout(Stdio::null())
-		.stderr(Stdio::piped())
+		.stderr(if pipe_stderr {
+			Stdio::piped()
+		} else {
+			Stdio::null()
+		})
 		.spawn()
 		.map_err(|e| anyhow!("`{:?}`: {}", command, e))?;
 
@@ -45,7 +50,7 @@ fn exec_copy_with_args(
 }
 
 fn exec_copy(command: &str, text: &str) -> Result<()> {
-	exec_copy_with_args(command, &[], text)
+	exec_copy_with_args(command, &[], text, true)
 }
 
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
@@ -58,10 +63,16 @@ pub fn copy_string(text: &str) -> Result<()> {
 		"xclip",
 		&["-selection", "clipboard"],
 		text,
+		false,
 	)
 	.is_err()
 	{
-		return exec_copy_with_args("xsel", &["--clipboard"], text);
+		return exec_copy_with_args(
+			"xsel",
+			&["--clipboard"],
+			text,
+			true,
+		);
 	}
 
 	Ok(())
