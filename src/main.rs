@@ -7,12 +7,14 @@
 	unused_assignments
 )]
 #![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
-#![deny(clippy::filetype_is_file)]
-#![deny(clippy::cargo)]
-#![deny(clippy::unwrap_used)]
-#![deny(clippy::panic)]
-#![deny(clippy::match_like_matches_macro)]
-#![deny(clippy::needless_update)]
+#![deny(
+	clippy::unwrap_used,
+	clippy::filetype_is_file,
+	clippy::cargo,
+	clippy::unwrap_used,
+	clippy::panic,
+	clippy::match_like_matches_macro
+)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(
 	clippy::multiple_crate_versions,
