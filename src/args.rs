@@ -129,6 +129,8 @@ fn setup_logging() -> Result<()> {
 	let mut path = get_app_cache_path()?;
 	path.push("gitui.log");
 
+	println!("Logging enabled. log written to: {path:?}");
+
 	let _ = WriteLogger::init(
 		LevelFilter::Trace,
 		Config::default(),
