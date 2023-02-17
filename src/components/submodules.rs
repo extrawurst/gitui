@@ -88,7 +88,7 @@ impl DrawableComponent for SubmodulesListComponent {
 			let chunks = Layout::default()
 				.direction(Direction::Horizontal)
 				.constraints(
-					[Constraint::Min(40), Constraint::Length(40)]
+					[Constraint::Min(40), Constraint::Length(60)]
 						.as_ref(),
 				)
 				.split(chunks_vertical[0]);
@@ -127,7 +127,7 @@ impl Component for SubmodulesListComponent {
 
 			out.push(CommandInfo::new(
 				strings::commands::open_submodule(&self.key_config),
-				self.is_valid_selection(),
+				self.can_open_submodule(),
 				true,
 			));
 
@@ -182,9 +182,11 @@ impl Component for SubmodulesListComponent {
 					.map(Into::into);
 			} else if key_match(e, self.key_config.keys.enter) {
 				if let Some(submodule) = self.selected_entry() {
-					self.queue.push(InternalEvent::OpenRepo {
-						path: submodule.path.clone(),
-					});
+					if submodule.status.is_in_wd() {
+						self.queue.push(InternalEvent::OpenRepo {
+							path: submodule.path.clone(),
+						});
+					}
 				}
 			} else if key_match(
 				e,
@@ -295,6 +297,12 @@ impl SubmodulesListComponent {
 
 	fn is_valid_selection(&self) -> bool {
 		self.selected_entry().is_some()
+	}
+
+	fn can_open_submodule(&self) -> bool {
+		self.selected_entry()
+			.map(|s| s.status.is_in_wd())
+			.unwrap_or_default()
 	}
 
 	//TODO: dedup this almost identical with BranchListComponent

@@ -8,9 +8,7 @@ use notify_debouncer_mini::{
 	new_debouncer, new_debouncer_opt, DebouncedEvent,
 };
 use scopetime::scope_time;
-use std::{
-	path::Path, sync::mpsc::RecvError, thread, time::Duration,
-};
+use std::{path::Path, thread, time::Duration};
 
 pub struct RepoWatcher {
 	receiver: crossbeam_channel::Receiver<()>,
@@ -54,7 +52,7 @@ impl RepoWatcher {
 			Result<Vec<DebouncedEvent>, Vec<Error>>,
 		>,
 		sender: &Sender<()>,
-	) -> Result<(), RecvError> {
+	) -> Result<()> {
 		loop {
 			let ev = receiver.recv()?;
 
@@ -66,7 +64,7 @@ impl RepoWatcher {
 				}
 
 				if !ev.is_empty() {
-					sender.send(()).expect("send error");
+					sender.send(())?;
 				}
 			}
 		}
