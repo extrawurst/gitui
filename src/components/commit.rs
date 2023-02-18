@@ -355,7 +355,15 @@ impl CommitComponent {
 			if repo_state != RepoState::Clean && reword.is_some() {
 				bail!("cannot reword while repo is not in a clean state");
 			} else if let Some(reword_id) = reword {
-				self.process_template();
+				self.input.set_text(
+					sync::get_commit_details(
+						&self.repo.borrow(),
+						reword_id,
+					)?
+					.message
+					.unwrap_or_default()
+					.combine(),
+				);
 				self.input.set_title(strings::commit_reword_title());
 				Mode::Reword(reword_id)
 			} else {
@@ -380,7 +388,19 @@ impl CommitComponent {
 					}
 
 					_ => {
-						self.process_template();
+						self.commit_template = get_config_string(
+							&self.repo.borrow(),
+							"commit.template",
+						)
+						.ok()
+						.flatten()
+						.and_then(|path| read_to_string(path).ok());
+
+						if self.is_empty() {
+							if let Some(s) = &self.commit_template {
+								self.input.set_text(s.clone());
+							}
+						}
 						self.input.set_title(strings::commit_title());
 						Mode::Normal
 					}
@@ -391,20 +411,6 @@ impl CommitComponent {
 		self.input.show()?;
 
 		Ok(())
-	}
-
-	fn process_template(&mut self) {
-		self.commit_template =
-			get_config_string(&self.repo.borrow(), "commit.template")
-				.ok()
-				.flatten()
-				.and_then(|path| read_to_string(path).ok());
-
-		if self.is_empty() {
-			if let Some(s) = &self.commit_template {
-				self.input.set_text(s.clone());
-			}
-		}
 	}
 }
 
