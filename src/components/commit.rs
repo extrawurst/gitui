@@ -291,7 +291,11 @@ impl CommitComponent {
 				sync::commit_revert(&self.repo.borrow(), msg)?
 			}
 			Mode::Reword(id) => {
-				sync::reword(&self.repo.borrow(), *id, msg)?
+				let commit =
+					sync::reword(&self.repo.borrow(), *id, msg)?;
+				self.queue.push(InternalEvent::TabSwitchStatus);
+
+				commit
 			}
 		};
 		Ok(())
