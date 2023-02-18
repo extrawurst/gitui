@@ -351,42 +351,41 @@ impl CommitComponent {
 
 		let repo_state = sync::repo_state(&self.repo.borrow())?;
 
-		if repo_state != RepoState::Clean && reword.is_some() {
-			bail!("cannot reword while repo is not in a clean state");
-		} else if let Some(reword_id) = reword {
-			self.process_template();
+		self.mode =
+			if repo_state != RepoState::Clean && reword.is_some() {
+				bail!("cannot reword while repo is not in a clean state");
+			} else if let Some(reword_id) = reword {
+				self.process_template();
+				self.input.set_title(strings::commit_reword_title());
+				Mode::Reword(reword_id)
+			} else {
+				match repo_state {
+					RepoState::Merge => {
+						let ids =
+							sync::mergehead_ids(&self.repo.borrow())?;
+						self.input
+							.set_title(strings::commit_title_merge());
+						self.input.set_text(sync::merge_msg(
+							&self.repo.borrow(),
+						)?);
+						Mode::Merge(ids)
+					}
+					RepoState::Revert => {
+						self.input
+							.set_title(strings::commit_title_revert());
+						self.input.set_text(sync::merge_msg(
+							&self.repo.borrow(),
+						)?);
+						Mode::Revert
+					}
 
-			self.input.set_title("reword".into());
-
-			self.mode = Mode::Reword(reword_id);
-		} else {
-			self.mode = match repo_state {
-				RepoState::Merge => {
-					let ids =
-						sync::mergehead_ids(&self.repo.borrow())?;
-					self.input
-						.set_title(strings::commit_title_merge());
-					self.input.set_text(sync::merge_msg(
-						&self.repo.borrow(),
-					)?);
-					Mode::Merge(ids)
-				}
-				RepoState::Revert => {
-					self.input
-						.set_title(strings::commit_title_revert());
-					self.input.set_text(sync::merge_msg(
-						&self.repo.borrow(),
-					)?);
-					Mode::Revert
-				}
-
-				_ => {
-					self.process_template();
-					self.input.set_title(strings::commit_title());
-					Mode::Normal
+					_ => {
+						self.process_template();
+						self.input.set_title(strings::commit_title());
+						Mode::Normal
+					}
 				}
 			};
-		}
 
 		self.commit_msg_history_idx = 0;
 		self.input.show()?;

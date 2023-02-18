@@ -104,6 +104,9 @@ pub fn msg_title_info(_key_config: &SharedKeyConfig) -> String {
 pub fn commit_title() -> String {
 	"Commit".to_string()
 }
+pub fn commit_reword_title() -> String {
+	"Reword Commit".to_string()
+}
 
 pub fn commit_title_merge() -> String {
 	"Commit (Merge)".to_string()
