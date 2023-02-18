@@ -1258,6 +1258,18 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn log_reword_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Reword [{}]",
+				key_config.get_hint(key_config.keys.log_reword_comit),
+			),
+			"reword commit message",
+			CMD_GROUP_LOG,
+		)
+	}
 	pub fn reset_commit(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
