@@ -10,7 +10,7 @@ use crate::{
 	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
-use anyhow::Result;
+use anyhow::{bail, Ok, Result};
 use asyncgit::{
 	cached, message_prettify,
 	sync::{
@@ -42,6 +42,7 @@ enum Mode {
 	Amend(CommitId),
 	Merge(Vec<CommitId>),
 	Revert,
+	Reword(CommitId),
 }
 
 pub struct CommitComponent {
@@ -289,6 +290,13 @@ impl CommitComponent {
 			Mode::Revert => {
 				sync::commit_revert(&self.repo.borrow(), msg)?
 			}
+			Mode::Reword(id) => {
+				let commit =
+					sync::reword(&self.repo.borrow(), *id, msg)?;
+				self.queue.push(InternalEvent::TabSwitchStatus);
+
+				commit
+			}
 		};
 		Ok(())
 	}
@@ -331,6 +339,78 @@ impl CommitComponent {
 	}
 	fn toggle_verify(&mut self) {
 		self.verify = !self.verify;
+	}
+
+	pub fn open(&mut self, reword: Option<CommitId>) -> Result<()> {
+		//only clear text if it was not a normal commit dlg before, so to preserve old commit msg that was edited
+		if !matches!(self.mode, Mode::Normal) {
+			self.input.clear();
+		}
+
+		self.mode = Mode::Normal;
+
+		let repo_state = sync::repo_state(&self.repo.borrow())?;
+
+		self.mode =
+			if repo_state != RepoState::Clean && reword.is_some() {
+				bail!("cannot reword while repo is not in a clean state");
+			} else if let Some(reword_id) = reword {
+				self.input.set_text(
+					sync::get_commit_details(
+						&self.repo.borrow(),
+						reword_id,
+					)?
+					.message
+					.unwrap_or_default()
+					.combine(),
+				);
+				self.input.set_title(strings::commit_reword_title());
+				Mode::Reword(reword_id)
+			} else {
+				match repo_state {
+					RepoState::Merge => {
+						let ids =
+							sync::mergehead_ids(&self.repo.borrow())?;
+						self.input
+							.set_title(strings::commit_title_merge());
+						self.input.set_text(sync::merge_msg(
+							&self.repo.borrow(),
+						)?);
+						Mode::Merge(ids)
+					}
+					RepoState::Revert => {
+						self.input
+							.set_title(strings::commit_title_revert());
+						self.input.set_text(sync::merge_msg(
+							&self.repo.borrow(),
+						)?);
+						Mode::Revert
+					}
+
+					_ => {
+						self.commit_template = get_config_string(
+							&self.repo.borrow(),
+							"commit.template",
+						)
+						.ok()
+						.flatten()
+						.and_then(|path| read_to_string(path).ok());
+
+						if self.is_empty() {
+							if let Some(s) = &self.commit_template {
+								self.input.set_text(s.clone());
+							}
+						}
+						self.input.set_title(strings::commit_title());
+						Mode::Normal
+					}
+				}
+			};
+
+		self.commit_msg_history_idx = 0;
+		self.input.show()?;
+
+		Ok(())
 	}
 }
 
@@ -466,53 +546,7 @@ impl Component for CommitComponent {
 	}
 
 	fn show(&mut self) -> Result<()> {
-		//only clear text if it was not a normal commit dlg before, so to preserve old commit msg that was edited
-		if !matches!(self.mode, Mode::Normal) {
-			self.input.clear();
-		}
-
-		self.mode = Mode::Normal;
-
-		let repo_state = sync::repo_state(&self.repo.borrow())?;
-
-		self.mode = match repo_state {
-			RepoState::Merge => {
-				let ids = sync::mergehead_ids(&self.repo.borrow())?;
-				self.input.set_title(strings::commit_title_merge());
-				self.input
-					.set_text(sync::merge_msg(&self.repo.borrow())?);
-				Mode::Merge(ids)
-			}
-			RepoState::Revert => {
-				self.input.set_title(strings::commit_title_revert());
-				self.input
-					.set_text(sync::merge_msg(&self.repo.borrow())?);
-				Mode::Revert
-			}
-
-			_ => {
-				self.commit_template = get_config_string(
-					&self.repo.borrow(),
-					"commit.template",
-				)
-				.ok()
-				.flatten()
-				.and_then(|path| read_to_string(path).ok());
-
-				if self.is_empty() {
-					if let Some(s) = &self.commit_template {
-						self.input.set_text(s.clone());
-					}
-				}
-
-				self.input.set_title(strings::commit_title());
-				Mode::Normal
-			}
-		};
-
-		self.commit_msg_history_idx = 0;
-		self.input.show()?;
-
+		self.open(None)?;
 		Ok(())
 	}
 }

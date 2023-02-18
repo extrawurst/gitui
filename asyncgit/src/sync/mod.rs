@@ -23,6 +23,7 @@ mod rebase;
 pub mod remotes;
 mod repository;
 mod reset;
+mod reword;
 mod staging;
 mod stash;
 mod state;
@@ -76,6 +77,7 @@ pub use remotes::{
 pub(crate) use repository::repo;
 pub use repository::{RepoPath, RepoPathRef};
 pub use reset::{reset_repo, reset_stage, reset_workdir};
+pub use reword::reword;
 pub use staging::{discard_lines, stage_lines};
 pub use stash::{
 	get_stashes, stash_apply, stash_drop, stash_pop, stash_save,

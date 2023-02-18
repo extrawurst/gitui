@@ -342,6 +342,19 @@ impl Component for Revlog {
 					);
 				} else if key_match(
 					k,
+					self.key_config.keys.log_reword_comit,
+				) {
+					return self.selected_commit().map_or(
+						Ok(EventState::NotConsumed),
+						|id| {
+							self.queue.push(
+								InternalEvent::RewordCommit(id),
+							);
+							Ok(EventState::Consumed)
+						},
+					);
+				} else if key_match(
+					k,
 					self.key_config.keys.compare_commits,
 				) && self.list.marked_count() > 0
 				{
@@ -464,6 +477,11 @@ impl Component for Revlog {
 
 		out.push(CommandInfo::new(
 			strings::commands::log_reset_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+		out.push(CommandInfo::new(
+			strings::commands::log_reword_commit(&self.key_config),
 			self.selected_commit().is_some(),
 			self.visible || force_all,
 		));

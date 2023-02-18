@@ -76,6 +76,14 @@ pub enum Error {
 	///
 	#[error("path string error")]
 	PathString,
+
+	///
+	#[error("no parent of commit found")]
+	NoParent,
+
+	///
+	#[error("not on a branch")]
+	NoBranch,
 }
 
 ///

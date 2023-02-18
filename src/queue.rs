@@ -128,6 +128,8 @@ pub enum InternalEvent {
 	OpenRepo { path: PathBuf },
 	///
 	OpenResetPopup(CommitId),
+	///
+	RewordCommit(CommitId),
 }
 
 /// single threaded simple queue for components to communicate with each other

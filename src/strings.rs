@@ -104,6 +104,9 @@ pub fn msg_title_info(_key_config: &SharedKeyConfig) -> String {
 pub fn commit_title() -> String {
 	"Commit".to_string()
 }
+pub fn commit_reword_title() -> String {
+	"Reword Commit".to_string()
+}
 
 pub fn commit_title_merge() -> String {
 	"Commit (Merge)".to_string()
@@ -1252,6 +1255,18 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.log_reset_comit),
 			),
 			"reset to commit",
+			CMD_GROUP_LOG,
+		)
+	}
+	pub fn log_reword_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Reword [{}]",
+				key_config.get_hint(key_config.keys.log_reword_comit),
+			),
+			"reword commit message",
 			CMD_GROUP_LOG,
 		)
 	}
