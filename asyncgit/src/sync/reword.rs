@@ -13,12 +13,12 @@ pub fn reword(
 	repo_path: &RepoPath,
 	commit: CommitId,
 	message: &str,
-) -> Result<()> {
+) -> Result<CommitId> {
 	let repo = repo(repo_path)?;
 	let cur_branch_ref = get_head_refname(&repo)?;
 
 	match reword_internal(&repo, commit.get_oid(), message) {
-		Ok(()) => Ok(()),
+		Ok(id) => Ok(id.into()),
 		// Something went wrong, checkout the previous branch then error
 		Err(e) => {
 			if let Ok(mut rebase) = repo.open_rebase(None) {
@@ -58,7 +58,7 @@ fn reword_internal(
 	repo: &Repository,
 	commit: Oid,
 	message: &str,
-) -> Result<()> {
+) -> Result<Oid> {
 	let sig = signature_allow_undefined_name(repo)?;
 
 	let parent_commit_oid = repo
@@ -96,6 +96,7 @@ fn reword_internal(
 			return Err(Error::NoParent);
 		}
 		target = rebase.commit(None, &sig, Some(message))?;
+		let reworded_commit = target;
 
 		// Set target to top commit, don't know when the rebase will end
 		// so have to loop till end
@@ -114,7 +115,7 @@ fn reword_internal(
 		// Reset the head back to the branch then checkout head
 		repo.set_head(&cur_branch_ref)?;
 		repo.checkout_head(None)?;
-		return Ok(());
+		return Ok(reworded_commit);
 	}
 	// Repo is not on a branch, possibly detached head
 	Err(Error::NoBranch)
@@ -123,10 +124,14 @@ fn reword_internal(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::sync::tests::{repo_init_empty, write_commit_file};
+	use crate::sync::{
+		get_commit_info,
+		tests::{repo_init_empty, write_commit_file},
+	};
+	use pretty_assertions::assert_eq;
 
 	#[test]
-	fn test_reword() -> Result<()> {
+	fn test_reword() {
 		let (_td, repo) = repo_init_empty().unwrap();
 		let root = repo.path().parent().unwrap();
 
@@ -145,7 +150,9 @@ mod tests {
 
 		assert_eq!(message, "commit2");
 
-		reword(repo_path, oid2.into(), "NewCommitMessage").unwrap();
+		let reworded =
+			reword(repo_path, oid2.into(), "NewCommitMessage")
+				.unwrap();
 
 		// Need to get the branch again as top oid has changed
 		let branch =
@@ -155,6 +162,9 @@ mod tests {
 		let message_new = commit_ref_new.message().unwrap();
 		assert_eq!(message_new, "NewCommitMessage");
 
-		Ok(())
+		assert_eq!(
+			message_new,
+			get_commit_info(repo_path, &reworded).unwrap().message
+		);
 	}
 }
