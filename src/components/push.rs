@@ -4,7 +4,7 @@ use crate::{
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
 	keys::{key_match, SharedKeyConfig},
-	queue::{InternalEvent, Queue},
+	queue::{InternalEvent, PushDetails, Queue},
 	strings,
 	ui::{self, style::SharedTheme},
 };
@@ -15,10 +15,10 @@ use asyncgit::{
 			extract_username_password, need_username_password,
 			BasicAuthCredential,
 		},
-		get_branch_remote, get_default_remote, RepoPathRef,
+		RepoPathRef,
 	},
-	AsyncGitNotification, AsyncPush, PushRequest, PushType,
-	RemoteProgress, RemoteProgressState,
+	AsyncGitNotification, AsyncPush, PushRequest, RemoteProgress,
+	RemoteProgressState,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -52,12 +52,11 @@ impl PushComponentModifier {
 pub struct PushComponent {
 	repo: RepoPathRef,
 	modifier: PushComponentModifier,
+	details: Option<PushDetails>,
 	visible: bool,
 	git_push: AsyncPush,
 	progress: Option<RemoteProgress>,
 	pending: bool,
-	branch: String,
-	push_type: PushType,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -79,8 +78,7 @@ impl PushComponent {
 			modifier: PushComponentModifier::None,
 			pending: false,
 			visible: false,
-			branch: String::new(),
-			push_type: PushType::Branch,
+			details: None,
 			git_push: AsyncPush::new(repo.borrow().clone(), sender),
 			progress: None,
 			input_cred: CredComponent::new(
@@ -93,16 +91,9 @@ impl PushComponent {
 	}
 
 	///
-	pub fn push(
-		&mut self,
-		branch: String,
-		push_type: PushType,
-		force: bool,
-		delete: bool,
-	) -> Result<()> {
-		self.branch = branch;
-		self.push_type = push_type;
-		self.modifier = match (force, delete) {
+	pub fn push(&mut self, details: PushDetails) -> Result<()> {
+		self.details = Some(details.clone());
+		self.modifier = match (details.force, details.delete) {
 			(true, true) => PushComponentModifier::ForceDelete,
 			(false, true) => PushComponentModifier::Delete,
 			(true, false) => PushComponentModifier::Force,
@@ -113,19 +104,23 @@ impl PushComponent {
 
 		self.show()?;
 
-		if need_username_password(&self.repo.borrow())? {
-			let cred = extract_username_password(&self.repo.borrow())
-				.unwrap_or_else(|_| {
-					BasicAuthCredential::new(None, None)
-				});
+		if need_username_password(
+			&self.repo.borrow(),
+			&details.remote,
+		)? {
+			let cred = extract_username_password(
+				&self.repo.borrow(),
+				&details.remote,
+			)
+			.unwrap_or_else(|_| BasicAuthCredential::new(None, None));
 			if cred.is_complete() {
-				self.push_to_remote(Some(cred), force)
+				self.push_to_remote(Some(cred), details.force)
 			} else {
 				self.input_cred.set_cred(cred);
 				self.input_cred.show()
 			}
 		} else {
-			self.push_to_remote(None, force)
+			self.push_to_remote(None, details.force)
 		}
 	}
 
@@ -134,32 +129,35 @@ impl PushComponent {
 		cred: Option<BasicAuthCredential>,
 		force: bool,
 	) -> Result<()> {
-		let remote = if let Ok(Some(remote)) =
-			get_branch_remote(&self.repo.borrow(), &self.branch)
-		{
-			log::info!("push: branch '{}' has upstream for remote '{}' - using that",self.branch,remote);
-			remote
-		} else {
-			log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
-			let remote = get_default_remote(&self.repo.borrow())?;
-			log::info!(
-				"push: branch '{}' to remote '{}'",
-				self.branch,
-				remote
-			);
-			remote
-		};
+		if let Some(details) = &self.details {
+			// let remote = if let Ok(Some(remote)) = get_branch_remote(
+			// 	&self.repo.borrow(),
+			// 	&details.branch,
+			// ) {
+			// 	log::info!("push: branch '{}' has upstream for remote '{}' - using that",details.branch,remote);
+			// 	remote
+			// } else {
+			// 	log::info!("push: branch '{}' has no upstream - looking up default remote",details.branch);
+			// 	let remote = get_default_remote(&self.repo.borrow())?;
+			// 	log::info!(
+			// 		"push: branch '{}' to remote '{}'",
+			// 		details.branch,
+			// 		remote
+			// 	);
+			// 	remote
+			// };
 
-		self.pending = true;
-		self.progress = None;
-		self.git_push.request(PushRequest {
-			remote,
-			branch: self.branch.clone(),
-			push_type: self.push_type,
-			force,
-			delete: self.modifier.delete(),
-			basic_credential: cred,
-		})?;
+			self.pending = true;
+			self.progress = None;
+			self.git_push.request(PushRequest {
+				remote: details.remote.clone(),
+				branch: details.branch.clone(),
+				push_type: details.push_type,
+				force,
+				delete: self.modifier.delete(),
+				basic_credential: cred,
+			})?;
+		}
 		Ok(())
 	}
 
@@ -333,6 +331,7 @@ impl Component for PushComponent {
 
 	fn hide(&mut self) {
 		self.visible = false;
+		self.details = None;
 	}
 
 	fn show(&mut self) -> Result<()> {

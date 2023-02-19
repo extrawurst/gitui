@@ -8,18 +8,23 @@ use crate::{
 	},
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
-	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
+	queue::{
+		Action, InternalEvent, NeedsUpdate, PushDetails, Queue,
+		ResetItem,
+	},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use asyncgit::{
 	asyncjob::AsyncSingleJob,
 	cached,
 	sync::{
 		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
 	},
-	sync::{BranchCompare, CommitId},
+	sync::{
+		get_single_remote, has_single_remote, BranchCompare, CommitId,
+	},
 	AsyncBranchesJob, AsyncDiff, AsyncGitNotification, AsyncStatus,
 	DiffParams, DiffType, PushType, StatusItem, StatusParams,
 };
@@ -584,10 +589,13 @@ impl Status {
 					));
 				} else {
 					self.queue.push(InternalEvent::Push(
-						branch,
-						PushType::Branch,
-						force,
-						false,
+						PushDetails::new(
+							branch,
+							String::new(),
+							PushType::Branch,
+							force,
+							false,
+						),
 					));
 				}
 			}
@@ -988,4 +996,24 @@ impl Component for Status {
 
 		Ok(())
 	}
+}
+
+pub fn default_remote(
+	repo: &RepoPath,
+	options: &SharedOptions,
+	queue: &Queue,
+) -> Result<Option<String>> {
+	if let Some(default_remote) = options.borrow().default_remote() {
+		return Ok(Some(default_remote));
+	}
+
+	if has_single_remote(repo)? {
+		return Ok(Some(get_single_remote(repo)?));
+	}
+
+	queue.push(InternalEvent::ShowErrorMsg(String::from(
+		"no default remote found, please configure",
+	)));
+
+	Ok(None)
 }

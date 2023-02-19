@@ -71,7 +71,7 @@ pub use merge::{
 };
 pub use rebase::rebase_branch;
 pub use remotes::{
-	get_default_remote, get_remotes, has_default_remote,
+	get_remotes, get_single_remote, has_single_remote,
 	push::AsyncProgress, tags::PushTagsProgress,
 };
 pub(crate) use repository::repo;

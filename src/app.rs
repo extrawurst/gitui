@@ -19,7 +19,8 @@ use crate::{
 	options::{Options, SharedOptions},
 	popup_stack::PopupStack,
 	queue::{
-		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
+		Action, InternalEvent, NeedsUpdate, PushDetails, Queue,
+		StackablePopupOpen,
 	},
 	setup_popups,
 	strings::{self, ellipsis_trim_start, order},
@@ -859,9 +860,8 @@ impl App {
 				self.file_to_open = path;
 				flags.insert(NeedsUpdate::COMMANDS);
 			}
-			InternalEvent::Push(branch, push_type, force, delete) => {
-				self.push_popup
-					.push(branch, push_type, force, delete)?;
+			InternalEvent::Push(details) => {
+				self.push_popup.push(details)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
 			InternalEvent::Pull(branch) => {
@@ -1005,12 +1005,14 @@ impl App {
 					))
 						},
 						|name| {
-							InternalEvent::Push(
+							InternalEvent::Push(PushDetails::new(
 								name.to_string(),
+								//TODO:
+								String::new(),
 								PushType::Branch,
 								false,
 								true,
-							)
+							))
 						},
 					),
 				);
@@ -1025,32 +1027,39 @@ impl App {
 						error.to_string(),
 					));
 				} else {
-					let remote = sync::get_default_remote(
-						&self.repo.borrow(),
-					)?;
+					//TODO:
+					let remote =
+						sync::get_single_remote(&self.repo.borrow())?;
 
 					self.queue.push(InternalEvent::ConfirmAction(
-						Action::DeleteRemoteTag(tag_name, remote),
+						Action::DeleteRemoteTag { tag_name, remote },
 					));
 
 					flags.insert(NeedsUpdate::ALL);
 					self.tags_popup.update_tags()?;
 				}
 			}
-			Action::DeleteRemoteTag(tag_name, _remote) => {
+			Action::DeleteRemoteTag { tag_name, remote } => {
 				self.queue.push(InternalEvent::Push(
-					tag_name,
-					PushType::Tag,
-					false,
-					true,
+					PushDetails::new(
+						tag_name,
+						remote,
+						PushType::Tag,
+						false,
+						true,
+					),
 				));
 			}
 			Action::ForcePush(branch, force) => {
 				self.queue.push(InternalEvent::Push(
-					branch,
-					PushType::Branch,
-					force,
-					false,
+					PushDetails::new(
+						branch,
+						//TODO:
+						String::new(),
+						PushType::Branch,
+						force,
+						false,
+					),
 				));
 			}
 			Action::PullMerge { rebase, .. } => {

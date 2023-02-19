@@ -143,7 +143,8 @@ pub fn push_raw(
 	scope_time!("push");
 
 	let repo = repo(repo_path)?;
-	let mut remote = repo.find_remote(remote)?;
+	let remote_name = remote;
+	let mut remote = repo.find_remote(remote_name)?;
 
 	let mut options = PushOptions::new();
 	options.proxy_options(proxy_auto());
@@ -176,7 +177,7 @@ pub fn push_raw(
 	}
 
 	if !delete {
-		branch_set_upstream(&repo, branch)?;
+		branch_set_upstream(&repo, branch, remote_name)?;
 	}
 
 	Ok(())

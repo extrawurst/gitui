@@ -5,10 +5,7 @@ pub mod merge_ff;
 pub mod merge_rebase;
 pub mod rename;
 
-use super::{
-	remotes::get_default_remote_in_repo, utils::bytes2string,
-	RepoPath,
-};
+use super::{utils::bytes2string, RepoPath};
 use crate::{
 	error::{Error, Result},
 	sync::{repository::repo, utils::get_head_repo, CommitId},
@@ -198,6 +195,7 @@ pub struct BranchCompare {
 pub(crate) fn branch_set_upstream(
 	repo: &Repository,
 	branch_name: &str,
+	remote: &str,
 ) -> Result<()> {
 	scope_time!("branch_set_upstream");
 
@@ -205,7 +203,6 @@ pub(crate) fn branch_set_upstream(
 		repo.find_branch(branch_name, BranchType::Local)?;
 
 	if branch.upstream().is_err() {
-		let remote = get_default_remote_in_repo(repo)?;
 		let upstream_name = format!("{remote}/{branch_name}");
 		branch.set_upstream(Some(upstream_name.as_str()))?;
 	}

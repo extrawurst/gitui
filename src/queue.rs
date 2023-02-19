@@ -46,7 +46,7 @@ pub enum Action {
 	DeleteLocalBranch(String),
 	DeleteRemoteBranch(String),
 	DeleteTag(String),
-	DeleteRemoteTag(String, String),
+	DeleteRemoteTag { tag_name: String, remote: String },
 	ForcePush(String, bool),
 	PullMerge { incoming: usize, rebase: bool },
 	AbortMerge,
@@ -66,6 +66,33 @@ pub enum StackablePopupOpen {
 	InspectCommit(InspectCommitOpen),
 	///
 	CompareCommits(InspectCommitOpen),
+}
+
+#[derive(Clone)]
+pub struct PushDetails {
+	pub branch: String,
+	pub remote: String,
+	pub push_type: PushType,
+	pub force: bool,
+	pub delete: bool,
+}
+
+impl PushDetails {
+	pub fn new(
+		branch: String,
+		remote: String,
+		push_type: PushType,
+		force: bool,
+		delete: bool,
+	) -> Self {
+		Self {
+			branch,
+			remote,
+			push_type,
+			force,
+			delete,
+		}
+	}
 }
 
 ///
@@ -103,7 +130,7 @@ pub enum InternalEvent {
 	///
 	OpenExternalEditor(Option<String>),
 	///
-	Push(String, PushType, bool, bool),
+	Push(PushDetails),
 	///
 	Pull(String),
 	///

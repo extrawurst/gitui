@@ -1,8 +1,6 @@
 //! credentials git helper
 
-use super::{
-	remotes::get_default_remote_in_repo, repository::repo, RepoPath,
-};
+use super::{repository::repo, RepoPath};
 use crate::error::{Error, Result};
 use git2::CredentialHelper;
 
@@ -30,10 +28,12 @@ impl BasicAuthCredential {
 }
 
 /// know if username and password are needed for this url
-pub fn need_username_password(repo_path: &RepoPath) -> Result<bool> {
+pub fn need_username_password(
+	repo_path: &RepoPath,
+	remote: &str,
+) -> Result<bool> {
 	let repo = repo(repo_path)?;
-	let remote =
-		repo.find_remote(&get_default_remote_in_repo(&repo)?)?;
+	let remote = repo.find_remote(remote)?;
 	let url = remote
 		.pushurl()
 		.or_else(|| remote.url())
@@ -46,10 +46,11 @@ pub fn need_username_password(repo_path: &RepoPath) -> Result<bool> {
 /// extract username and password
 pub fn extract_username_password(
 	repo_path: &RepoPath,
+	remote: &str,
 ) -> Result<BasicAuthCredential> {
 	let repo = repo(repo_path)?;
 	let url = repo
-		.find_remote(&get_default_remote_in_repo(&repo)?)?
+		.find_remote(remote)?
 		.url()
 		.ok_or(Error::UnknownRemote)?
 		.to_owned();
@@ -175,7 +176,10 @@ mod tests {
 		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
 			.unwrap();
 
-		assert_eq!(need_username_password(repo_path).unwrap(), true);
+		assert_eq!(
+			need_username_password(repo_path, "origin").unwrap(),
+			true
+		);
 	}
 
 	#[test]
@@ -189,7 +193,10 @@ mod tests {
 		repo.remote(DEFAULT_REMOTE_NAME, "git@github.com:user/repo")
 			.unwrap();
 
-		assert_eq!(need_username_password(repo_path).unwrap(), false);
+		assert_eq!(
+			need_username_password(repo_path, "origin").unwrap(),
+			false
+		);
 	}
 
 	#[test]
@@ -208,7 +215,10 @@ mod tests {
 		)
 		.unwrap();
 
-		assert_eq!(need_username_password(repo_path).unwrap(), false);
+		assert_eq!(
+			need_username_password(repo_path, "origin").unwrap(),
+			false
+		);
 	}
 
 	#[test]
@@ -221,7 +231,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		need_username_password(repo_path).unwrap();
+		need_username_password(repo_path, "origin").unwrap();
 	}
 
 	#[test]
@@ -239,7 +249,7 @@ mod tests {
 		.unwrap();
 
 		assert_eq!(
-			extract_username_password(repo_path).unwrap(),
+			extract_username_password(repo_path, "origin").unwrap(),
 			BasicAuthCredential::new(
 				Some("user".to_owned()),
 				Some("pass".to_owned())
@@ -259,7 +269,7 @@ mod tests {
 			.unwrap();
 
 		assert_eq!(
-			extract_username_password(repo_path).unwrap(),
+			extract_username_password(repo_path, "origin").unwrap(),
 			BasicAuthCredential::new(Some("user".to_owned()), None)
 		);
 	}
@@ -274,6 +284,6 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		extract_username_password(repo_path).unwrap();
+		extract_username_password(repo_path, "origin").unwrap();
 	}
 }

@@ -22,6 +22,7 @@ struct OptionsData {
 	pub diff: DiffOptions,
 	pub status_show_untracked: Option<ShowUntrackedFilesConfig>,
 	pub commit_msgs: Vec<String>,
+	pub default_remote: Option<String>,
 }
 
 const COMMIT_MSG_HISTRY_LENGTH: usize = 20;
@@ -123,6 +124,10 @@ impl Options {
 
 			Some(self.data.commit_msgs[index].to_string())
 		}
+	}
+
+	pub fn default_remote(&self) -> Option<String> {
+		self.data.default_remote.clone()
 	}
 
 	fn save(&self) {
