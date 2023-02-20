@@ -74,7 +74,8 @@ pub struct SignBuilder;
 impl SignBuilder {
 	/// Get a [`Sign`] from the given repository configuration to sign commit data
 	///
-	/// ```
+	///
+	/// ```no_run
 	/// use asyncgit::sync::sign::SignBuilder;
 	/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 	///
