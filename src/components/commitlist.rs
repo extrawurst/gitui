@@ -88,9 +88,9 @@ impl CommitList {
 	}
 
 	///
-	pub fn current_size(&self) -> (u16, u16) {
-		self.current_size.get()
-	}
+	//pub fn current_size(&self) -> (u16, u16) {
+	//	self.current_size.get()
+	//}
 
 	///
 	pub fn set_count_total(&mut self, total: usize) {

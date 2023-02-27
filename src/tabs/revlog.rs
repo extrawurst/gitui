@@ -28,6 +28,7 @@ use tui::{
 };
 
 const SLICE_SIZE: usize = 1200;
+static MAX_MESSAGE_WIDTH: usize = 100;
 
 ///
 pub struct Revlog {
@@ -160,7 +161,7 @@ impl Revlog {
 		let commits = sync::get_commits_info(
 			&self.repo.borrow(),
 			&self.git_log.get_slice(want_min, SLICE_SIZE)?,
-			self.list.current_size().0.into(),
+			MAX_MESSAGE_WIDTH,
 		);
 
 		if let Ok(commits) = commits {
