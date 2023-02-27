@@ -21,6 +21,8 @@
 #![allow(clippy::missing_errors_doc)]
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
+//TODO: consider cleaning some up and allow specific places
+#![allow(clippy::significant_drop_tightening)]
 
 pub mod asyncjob;
 mod blame;

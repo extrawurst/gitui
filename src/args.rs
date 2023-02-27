@@ -131,11 +131,11 @@ fn setup_logging() -> Result<()> {
 
 	println!("Logging enabled. log written to: {path:?}");
 
-	let _ = WriteLogger::init(
+	WriteLogger::init(
 		LevelFilter::Trace,
 		Config::default(),
 		File::create(path)?,
-	);
+	)?;
 
 	Ok(())
 }

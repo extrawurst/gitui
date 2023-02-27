@@ -282,7 +282,11 @@ impl RevisionFilesComponent {
 		}
 	}
 
-	fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
+	fn draw_tree<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		area: Rect,
+	) -> Result<()> {
 		let tree_height = usize::from(area.height.saturating_sub(2));
 		let tree_width = usize::from(area.width);
 
@@ -313,7 +317,7 @@ impl RevisionFilesComponent {
 
 		let is_tree_focused = matches!(self.focus, Focus::Tree);
 
-		let title = self.title_within(tree_width);
+		let title = self.title_within(tree_width)?;
 		let block = Block::default()
 			.title(Span::styled(
 				title,
@@ -342,12 +346,15 @@ impl RevisionFilesComponent {
 		if is_tree_focused {
 			self.scroll.draw(f, area, &self.theme);
 		}
+
+		Ok(())
 	}
 
-	fn title_within(&self, tree_width: usize) -> String {
+	fn title_within(&self, tree_width: usize) -> Result<String> {
 		let mut title = String::from("Files at");
 		let message = self.revision.as_ref().and_then(|c| {
-			let _ = write!(title, " {{{}}}", c.id.get_short_string());
+			let _ignore =
+				write!(title, " {{{}}}", c.id.get_short_string());
 
 			c.message.lines().next()
 		});
@@ -362,20 +369,20 @@ impl RevisionFilesComponent {
 				);
 
 			if message.width() <= available {
-				let _ = write!(title, " [{message}]");
+				write!(title, " [{message}]")?;
 			} else if available > 1 {
-				let _ = write!(
+				write!(
 					title,
 					" [{}{}]",
 					message.unicode_truncate(available - 1).0,
 					ELLIPSIS
-				);
+				)?;
 			} else {
 				title.push(ELLIPSIS);
 			}
 		}
 
-		title
+		Ok(title)
 	}
 
 	fn request_files(&mut self, commit: CommitId) {
@@ -404,7 +411,7 @@ impl DrawableComponent for RevisionFilesComponent {
 				)
 				.split(area);
 
-			self.draw_tree(f, chunks[0]);
+			self.draw_tree(f, chunks[0])?;
 
 			self.current_file.draw(f, chunks[1])?;
 		}
