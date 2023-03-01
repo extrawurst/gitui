@@ -47,7 +47,6 @@ scopeguard = "1.1"
 scopetime = { path = "./scopetime", version = "0.1" }
 serde = "1.0"
 simplelog = { version = "0.12", default-features = false }
-struct-patch = "0.2.0"
 syntect = { version = "5.0", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "html"] }
 textwrap = "0.16"
 tui = { version = "0.19", default-features = false, features = ['crossterm', 'serde'] }
