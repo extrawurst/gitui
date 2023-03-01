@@ -63,6 +63,9 @@ jobs:
     - name: Build Release
       run: make build-release
 
+    - name: Test Install
+      run: cargo install --path "."
+
     - name: Binary Size (unix)
       if: matrix.os != 'windows-latest'
       run: |
@@ -119,6 +122,8 @@ jobs:
     - name: Test
       run: |
         make test-linux-musl
+    - name: Test Install
+      run: cargo install --path "."
 
   build-linux-arm:
     runs-on: ubuntu-latest
