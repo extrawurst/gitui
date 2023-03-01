@@ -29,7 +29,7 @@ bytesize = { version = "1.2", default-features = false }
 chrono = { version = "0.4", default-features = false, features = [ "clock" ] }
 clap = { version = "4.1", features = [ "env", "cargo" ] }
 crossbeam-channel = "0.5"
-crossterm = { version = "0.25", features = [ "serde" ] }
+crossterm = { version = "0.26", features = [ "serde" ] }
 dirs-next = "2.0"
 easy-cast = "0.5"
 filetreelist = { path = "./filetreelist", version = "0.5" }
