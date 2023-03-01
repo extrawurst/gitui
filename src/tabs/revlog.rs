@@ -160,7 +160,10 @@ impl Revlog {
 		let commits = sync::get_commits_info(
 			&self.repo.borrow(),
 			&self.git_log.get_slice(want_min, SLICE_SIZE)?,
-			self.list.current_size().0.into(),
+			self.list
+				.current_size()
+				.map_or(100u16, |size| size.0)
+				.into(),
 		);
 
 		if let Ok(commits) = commits {

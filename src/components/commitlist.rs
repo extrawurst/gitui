@@ -43,7 +43,7 @@ pub struct CommitList {
 	scroll_state: (Instant, f32),
 	tags: Option<Tags>,
 	branches: BTreeMap<CommitId, Vec<String>>,
-	current_size: Cell<(u16, u16)>,
+	current_size: Cell<Option<(u16, u16)>>,
 	scroll_top: Cell<usize>,
 	theme: SharedTheme,
 	queue: Queue,
@@ -68,7 +68,7 @@ impl CommitList {
 			scroll_state: (Instant::now(), 0_f32),
 			tags: None,
 			branches: BTreeMap::default(),
-			current_size: Cell::new((0, 0)),
+			current_size: Cell::new(None),
 			scroll_top: Cell::new(0),
 			theme,
 			queue,
@@ -87,8 +87,8 @@ impl CommitList {
 		self.selection
 	}
 
-	///
-	pub fn current_size(&self) -> (u16, u16) {
+	/// will return view size or None before the first render
+	pub fn current_size(&self) -> Option<(u16, u16)> {
 		self.current_size.get()
 	}
 
@@ -208,8 +208,10 @@ impl CommitList {
 		#[allow(clippy::cast_possible_truncation)]
 		let speed_int = usize::try_from(self.scroll_state.1 as i64)?.max(1);
 
-		let page_offset =
-			usize::from(self.current_size.get().1).saturating_sub(1);
+		let page_offset = usize::from(
+			self.current_size.get().unwrap_or_default().1,
+		)
+		.saturating_sub(1);
 
 		let new_selection = match scroll {
 			ScrollType::Up => {
@@ -475,9 +477,9 @@ impl DrawableComponent for CommitList {
 			area.width.saturating_sub(2),
 			area.height.saturating_sub(2),
 		);
-		self.current_size.set(current_size);
+		self.current_size.set(Some(current_size));
 
-		let height_in_lines = self.current_size.get().1 as usize;
+		let height_in_lines = current_size.1 as usize;
 		let selection = self.relative_selection();
 
 		self.scroll_top.set(calc_scroll_top(
