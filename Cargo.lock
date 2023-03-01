@@ -1731,31 +1731,24 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "struct-patch"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a40c3718360af439b4119c3110bac97336af63b6da95069fca7f5c93fa41d10"
+checksum = "2c1e8ad17ab04dd10155d34ac61857564e91199c3a728bf5b5ba77f22d63ae16"
 dependencies = [
  "struct-patch-derive",
- "struct-patch-trait",
 ]
 
 [[package]]
 name = "struct-patch-derive"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f586d0641263362666059ec7dc0c037f1a9f9da1b87f660e64a74ea4c88ab583"
+checksum = "f87d08e6ac09f0a13ad8a642bb16e07fceb84601447e792c8cf67bda27f60930"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "struct-patch-trait"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaeaa9346335d361de71460a808a85436bb39dbaa69b82c8be2ad9d3f21ea24a"
 
 [[package]]
 name = "symbolic-common"
