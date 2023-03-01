@@ -122,6 +122,8 @@ jobs:
     - name: Test
       run: |
         make test-linux-musl
+    - name: Test Install
+      run: cargo install --path "."
 
   build-linux-arm:
     runs-on: ubuntu-latest
