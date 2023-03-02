@@ -11,7 +11,8 @@ use std::{
 	time::Duration,
 };
 
-static POLL_DURATION: Duration = Duration::from_millis(1000);
+static FAST_POLL_DURATION: Duration = Duration::from_millis(100);
+static SLOW_POLL_DURATION: Duration = Duration::from_millis(1000);
 
 ///
 #[derive(Clone, Copy, Debug)]
@@ -103,6 +104,7 @@ impl Input {
 		arc_current: &Arc<AtomicBool>,
 		tx: &Sender<InputEvent>,
 	) -> Result<()> {
+		let mut poll_duration = SLOW_POLL_DURATION;
 		loop {
 			if arc_desired.get() {
 				if !arc_current.load(Ordering::Relaxed) {
@@ -112,8 +114,11 @@ impl Input {
 				}
 				arc_current.store(true, Ordering::Relaxed);
 
-				if let Some(e) = Self::poll(POLL_DURATION)? {
+				if let Some(e) = Self::poll(poll_duration)? {
 					tx.send(InputEvent::Input(e))?;
+					poll_duration = FAST_POLL_DURATION;
+				} else {
+					poll_duration = SLOW_POLL_DURATION;
 				}
 			} else {
 				if arc_current.load(Ordering::Relaxed) {
