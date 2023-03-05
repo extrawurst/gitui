@@ -49,14 +49,10 @@ fn exec_copy_with_args(
 	}
 }
 
-fn exec_copy(command: &str, text: &str) -> Result<()> {
-	exec_copy_with_args(command, &[], text, true)
-}
-
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
 pub fn copy_string(text: &str) -> Result<()> {
 	if std::env::var("WAYLAND_DISPLAY").is_ok() {
-		return exec_copy("wl-copy", text);
+		return exec_copy_with_args("wl-copy", &[], text, false);
 	}
 
 	if exec_copy_with_args(
@@ -76,6 +72,11 @@ pub fn copy_string(text: &str) -> Result<()> {
 	}
 
 	Ok(())
+}
+
+#[cfg(any(target_os = "macos", windows))]
+fn exec_copy(command: &str, text: &str) -> Result<()> {
+	exec_copy_with_args(command, &[], text, true)
 }
 
 #[cfg(target_os = "macos")]
