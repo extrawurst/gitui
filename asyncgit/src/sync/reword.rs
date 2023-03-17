@@ -3,7 +3,7 @@ use git2::{Oid, RebaseOptions, Repository};
 use super::{
 	commit::signature_allow_undefined_name,
 	repo,
-	utils::{bytes2string, get_head_refname},
+	utils::{bytes2string, get_head_refname, get_head_repo},
 	CommitId, RepoPath,
 };
 use crate::error::{Error, Result};
@@ -15,6 +15,32 @@ pub fn reword(
 	message: &str,
 ) -> Result<CommitId> {
 	let repo = repo(repo_path)?;
+	let config = repo.config()?;
+
+	if config.get_bool("commit.gpgsign").unwrap_or(false) {
+		// HACK: we undo the last commit and create a new one
+		use crate::sync::utils::undo_last_commit;
+
+		let head = get_head_repo(&repo)?;
+		if head == commit {
+			// Check if there are any staged changes
+			let parent = repo.find_commit(head.into())?;
+			let tree = parent.tree()?;
+			if repo
+				.diff_tree_to_index(Some(&tree), None, None)?
+				.deltas()
+				.len() == 0
+			{
+				undo_last_commit(repo_path)?;
+				return super::commit(repo_path, message);
+			}
+
+			return Err(Error::SignRewordLastCommitStaged);
+		}
+
+		return Err(Error::SignRewordNonLastCommit);
+	}
+
 	let cur_branch_ref = get_head_refname(&repo)?;
 
 	match reword_internal(&repo, commit.get_oid(), message) {
