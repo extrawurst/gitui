@@ -91,6 +91,10 @@ pub enum Error {
 	///
 	#[error("sign error: {0}")]
 	Sign(#[from] crate::sync::sign::SignError),
+
+	///
+	#[error("amend error: config commit.gpgsign=true detected.\ngpg signing is not supported for amending non-last commits")]
+	SignAmendNonLastCommit,
 }
 
 ///

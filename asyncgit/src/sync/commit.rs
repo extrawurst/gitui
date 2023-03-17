@@ -1,7 +1,7 @@
 use super::{CommitId, RepoPath};
 use crate::sync::sign::{SignBuilder, SignError};
 use crate::{
-	error::Result,
+	error::{Error, Result},
 	sync::{repository::repo, utils::get_head_repo},
 };
 use git2::{ErrorCode, ObjectType, Repository, Signature};
@@ -16,11 +16,26 @@ pub fn amend(
 	scope_time!("amend");
 
 	let repo = repo(repo_path)?;
+	let config = repo.config()?;
+
 	let commit = repo.find_commit(id.into())?;
 
 	let mut index = repo.index()?;
 	let tree_id = index.write_tree()?;
 	let tree = repo.find_tree(tree_id)?;
+
+	if config.get_bool("commit.gpgsign").unwrap_or(false) {
+		// HACK: we undo the last commit and create a new one
+		use crate::sync::utils::undo_last_commit;
+
+		let head = get_head_repo(&repo)?;
+		if head == commit.id().into() {
+			undo_last_commit(repo_path)?;
+			return self::commit(repo_path, msg);
+		}
+
+		return Err(Error::SignAmendNonLastCommit);
+	}
 
 	let new_id = commit.amend(
 		Some("HEAD"),
