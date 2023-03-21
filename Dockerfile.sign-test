@@ -1,0 +1,4 @@
+FROM rust:slim
+ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+RUN apt-get update && apt-get install --yes python
+COPY . .
