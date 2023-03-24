@@ -384,7 +384,7 @@ impl TagListComponent {
 		Ok(())
 	}
 
-	pub fn update_missing_remote_tags(&mut self) {
+	fn update_missing_remote_tags(&mut self, remote: String) {
 		if self.has_remotes {
 			self.async_remote_tags.spawn(AsyncRemoteTagsJob::new(
 				self.repo.borrow().clone(),
