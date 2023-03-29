@@ -118,6 +118,12 @@ sudo emerge --sync dm9pZCAq
 sudo emerge dev-vcs/gitui::dm9pZCAq
 ```
 
+### [openSUSE](https://software.opensuse.org/package/gitui) (Tumbleweed)
+
+```sh
+sudo zypper install gitui
+```
+
 ### Homebrew (macOS)
 
 ```sh
