@@ -1269,11 +1269,10 @@ dependencies = [
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.82"
+version = "0.9.84"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a95792af3c4e0153c3914df2261bedd30a98476f94dc892b67dfe1d89d433a04"
+checksum = "3a20eace9dc2d82904039cb76dcf50fb1a0bba071cfd1629720b5d6f1ddba0fa"
 dependencies = [
- "autocfg",
  "cc",
  "libc",
  "openssl-src",
