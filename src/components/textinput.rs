@@ -23,6 +23,8 @@ use tui::{
 	Frame,
 };
 
+use super::utils::scroll_vertical::VerticalScroll;
+
 #[derive(PartialEq, Eq)]
 pub enum InputType {
 	Singleline,
@@ -43,6 +45,9 @@ pub struct TextInputComponent {
 	input_type: InputType,
 	current_area: Cell<Rect>,
 	embed: bool,
+	scroll: VerticalScroll,
+	current_height: Cell<u16>,
+	scroll_start: Cell<u16>,
 }
 
 impl TextInputComponent {
@@ -66,6 +71,9 @@ impl TextInputComponent {
 			input_type: InputType::Multiline,
 			current_area: Cell::new(Rect::default()),
 			embed: false,
+			scroll: VerticalScroll::new(),
+			current_height: Cell::new(0),
+			scroll_start: Cell::new(0),
 		}
 	}
 
@@ -226,6 +234,7 @@ impl TextInputComponent {
 		let style = self.theme.text(true, false);
 
 		let mut txt = Text::default();
+
 		// The portion of the text before the cursor is added
 		// if the cursor is not at the first character.
 		if self.cursor_position > 0 {
@@ -249,10 +258,17 @@ impl TextInputComponent {
 				self.get_msg(self.cursor_position..pos)
 			});
 
+		let space_highlight = format!(
+			"{}{}",
+			symbol::ZERO_WIDTH_SPACE,
+			symbol::WHITESPACE
+		);
 		let cursor_highlighting = {
 			let mut h = HashMap::with_capacity(2);
 			h.insert("\n", "\u{21b5}\n\r");
-			h.insert(" ", symbol::WHITESPACE);
+			// TODO: ZeroWidthSpace to avoid wrapping text because of the cursor?
+			// Why is it not working?
+			h.insert(" ", "\u{200b}\u{00B7}"); // TODO: HERE?
 			h
 		};
 
@@ -293,6 +309,24 @@ impl TextInputComponent {
 		}
 
 		txt
+	}
+
+	fn get_selection(&self, width: usize) -> usize {
+		let wrapped_msg = textwrap::wrap(&self.msg, width);
+
+		let mut curr_line = 0;
+		let mut distance = 0;
+		for line in &wrapped_msg {
+			log::trace!("line: {line}");
+			distance += line.len();
+
+			if distance >= self.cursor_position {
+				return curr_line;
+			}
+
+			curr_line += 1;
+		}
+		curr_line
 	}
 
 	fn get_msg(&self, range: Range<usize>) -> String {
@@ -352,15 +386,6 @@ impl DrawableComponent for TextInputComponent {
 		rect: Rect,
 	) -> Result<()> {
 		if self.visible {
-			let txt = if self.msg.is_empty() {
-				Text::styled(
-					self.default_msg.as_str(),
-					self.theme.text(false, false),
-				)
-			} else {
-				self.get_draw_text()
-			};
-
 			let area = if self.embed {
 				rect
 			} else {
@@ -378,17 +403,58 @@ impl DrawableComponent for TextInputComponent {
 				}
 			};
 
+			// Account for top and bottom side
+			let height_in_lines = (area.height - 2) as usize;
+			self.current_height.set(height_in_lines.try_into()?);
+
+			let real_width = (area.width - 2) as usize;
+			let selection = self.get_selection(real_width);
+
+			self.scroll.update(
+				selection,
+				textwrap::wrap(&self.msg, real_width).len(),
+				height_in_lines,
+			);
+
+			let txt = if self.msg.is_empty() {
+				Text::styled(
+					self.default_msg.as_str(),
+					self.theme.text(false, false),
+				)
+			} else {
+				self.get_draw_text()
+			};
+
+			let content = popup_paragraph(
+				self.title.as_str(),
+				txt,
+				&self.theme,
+				true,
+				!self.embed,
+			);
+
+			if selection
+				> self.scroll_start.get() as usize + height_in_lines
+			{
+				self.scroll_start.set(self.scroll_start.get() + 1);
+			}
+
+			if selection < self.scroll_start.get() as usize {
+				self.scroll_start.set(self.scroll_start.get() - 1);
+			}
+
 			f.render_widget(Clear, area);
 			f.render_widget(
-				popup_paragraph(
-					self.title.as_str(),
-					txt,
-					&self.theme,
-					true,
-					!self.embed,
-				),
+				content.clone().scroll((self.scroll_start.get(), 0)),
 				area,
 			);
+
+			let mut r = rect;
+			r.width += 1;
+			r.height += 2;
+			r.y = r.y.saturating_sub(1);
+
+			self.scroll.draw(f, area, &self.theme);
 
 			if self.show_char_count {
 				self.draw_char_count(f, area);
