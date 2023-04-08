@@ -13,7 +13,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::sync::{
-	checkout_commit, BranchInfo, CommitId, RepoPathRef, Tags,
+	checkout_commit, BranchDetails, BranchInfo, CommitId,
+	RepoPathRef, Tags,
 };
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
@@ -430,13 +431,40 @@ impl CommitList {
 			let remote_branches = self
 				.remote_branches
 				.get(&e.id)
-				.map(|remote_branches| {
-					remote_branches
+				.and_then(|remote_branches| {
+					let filtered_branches: Vec<_> = remote_branches
 						.iter()
+						.filter(|remote_branch| {
+							self.local_branches
+								.get(&e.id)
+								.map_or(true, |local_branch| {
+									local_branch.iter().any(
+										|local_branch| {
+											let has_corresponding_local_branch = match &local_branch.details {
+												BranchDetails::Local(details) =>
+													details
+														.upstream
+														.as_ref()
+														.map_or(false, |upstream| upstream.reference == remote_branch.reference),
+												BranchDetails::Remote(_) =>
+														false,
+											};
+
+											!has_corresponding_local_branch
+										},
+									)
+								})
+						})
 						.map(|remote_branch| {
 							format!("[{0}]", remote_branch.name)
 						})
-						.join(" ")
+						.collect();
+
+					if filtered_branches.is_empty() {
+						None
+					} else {
+						Some(filtered_branches.join(" "))
+					}
 				});
 
 			let marked = if any_marked {
