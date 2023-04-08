@@ -48,7 +48,7 @@ pub(crate) fn get_branch_name_repo(
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct LocalBranch {
 	///
 	pub is_head: bool,
@@ -59,14 +59,14 @@ pub struct LocalBranch {
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RemoteBranch {
 	///
 	pub has_tracking: bool,
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum BranchDetails {
 	///
 	Local(LocalBranch),
@@ -75,7 +75,7 @@ pub enum BranchDetails {
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BranchInfo {
 	///
 	pub name: String,

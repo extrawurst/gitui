@@ -42,7 +42,8 @@ pub struct CommitList {
 	marked: Vec<(usize, CommitId)>,
 	scroll_state: (Instant, f32),
 	tags: Option<Tags>,
-	branches: BTreeMap<CommitId, Vec<String>>,
+	local_branches: BTreeMap<CommitId, Vec<BranchInfo>>,
+	remote_branches: BTreeMap<CommitId, Vec<BranchInfo>>,
 	current_size: Cell<Option<(u16, u16)>>,
 	scroll_top: Cell<usize>,
 	theme: SharedTheme,
@@ -67,7 +68,8 @@ impl CommitList {
 			count_total: 0,
 			scroll_state: (Instant::now(), 0_f32),
 			tags: None,
-			branches: BTreeMap::default(),
+			local_branches: BTreeMap::default(),
+			remote_branches: BTreeMap::default(),
 			current_size: Cell::new(None),
 			scroll_top: Cell::new(0),
 			theme,
@@ -297,7 +299,8 @@ impl CommitList {
 		e: &'a LogEntry,
 		selected: bool,
 		tags: Option<String>,
-		branches: Option<String>,
+		local_branches: Option<String>,
+		remote_branches: Option<String>,
 		theme: &Theme,
 		width: usize,
 		now: DateTime<Local>,
@@ -358,10 +361,18 @@ impl CommitList {
 			txt.push(Span::styled(tags, theme.tags(selected)));
 		}
 
-		if let Some(branches) = branches {
+		if let Some(local_branches) = local_branches {
 			txt.push(splitter.clone());
 			txt.push(Span::styled(
-				branches,
+				local_branches,
+				theme.branch(selected, true),
+			));
+		}
+
+		if let Some(remote_branches) = remote_branches {
+			txt.push(splitter.clone());
+			txt.push(Span::styled(
+				remote_branches,
 				theme.branch(selected, true),
 			));
 		}
@@ -406,12 +417,27 @@ impl CommitList {
 					},
 				);
 
-			let branches = self.branches.get(&e.id).map(|names| {
-				names
-					.iter()
-					.map(|name| format!("{{{name}}}"))
-					.join(" ")
-			});
+			let local_branches =
+				self.local_branches.get(&e.id).map(|local_branch| {
+					local_branch
+						.iter()
+						.map(|local_branch| {
+							format!("{{{0}}}", local_branch.name)
+						})
+						.join(" ")
+				});
+
+			let remote_branches = self
+				.remote_branches
+				.get(&e.id)
+				.map(|remote_branches| {
+					remote_branches
+						.iter()
+						.map(|remote_branch| {
+							format!("[{0}]", remote_branch.name)
+						})
+						.join(" ")
+				});
 
 			let marked = if any_marked {
 				self.is_marked(&e.id)
@@ -423,7 +449,8 @@ impl CommitList {
 				e,
 				idx + self.scroll_top.get() == selection,
 				tags,
-				branches,
+				local_branches,
+				remote_branches,
 				&self.theme,
 				width,
 				now,
@@ -455,14 +482,31 @@ impl CommitList {
 		}
 	}
 
-	pub fn set_branches(&mut self, branches: Vec<BranchInfo>) {
-		self.branches.clear();
+	pub fn set_local_branches(
+		&mut self,
+		local_branches: Vec<BranchInfo>,
+	) {
+		self.local_branches.clear();
 
-		for b in branches {
-			self.branches
-				.entry(b.top_commit)
+		for local_branch in local_branches {
+			self.local_branches
+				.entry(local_branch.top_commit)
 				.or_default()
-				.push(b.name);
+				.push(local_branch);
+		}
+	}
+
+	pub fn set_remote_branches(
+		&mut self,
+		remote_branches: Vec<BranchInfo>,
+	) {
+		self.remote_branches.clear();
+
+		for remote_branch in remote_branches {
+			self.remote_branches
+				.entry(remote_branch.top_commit)
+				.or_default()
+				.push(remote_branch);
 		}
 	}
 }
