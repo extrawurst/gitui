@@ -55,7 +55,16 @@ pub struct LocalBranch {
 	///
 	pub has_upstream: bool,
 	///
+	pub upstream: Option<UpstreamBranch>,
+	///
 	pub remote: Option<String>,
+}
+
+///
+#[derive(Clone, Debug)]
+pub struct UpstreamBranch {
+	///
+	pub reference: String,
 }
 
 ///
@@ -154,10 +163,18 @@ pub fn get_branches_info(
 
 			let name_bytes = branch.name_bytes()?;
 
+			let upstream_branch =
+				upstream.ok().and_then(|upstream| {
+					bytes2string(upstream.get().name_bytes())
+						.ok()
+						.map(|reference| UpstreamBranch { reference })
+				});
+
 			let details = if local {
 				BranchDetails::Local(LocalBranch {
 					is_head: branch.is_head(),
-					has_upstream: upstream.is_ok(),
+					has_upstream: upstream_branch.is_some(),
+					upstream: upstream_branch,
 					remote,
 				})
 			} else {
