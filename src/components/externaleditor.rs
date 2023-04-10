@@ -122,8 +122,10 @@ impl ExternalEditorComponent {
 			if exec_result.is_err() {
 				let cmd_string =
 					format!("/C {} {}", command, path.display());
-				let exec_result2 =
-					Command::new("cmd").arg(cmd_string).status();
+				let exec_result2 = Command::new("cmd")
+					.current_dir(work_dir)
+					.arg(cmd_string)
+					.status();
 
 				match exec_result2 {
 					// failed to start (unlikely as cmd would have to be missing)
