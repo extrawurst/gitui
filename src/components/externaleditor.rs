@@ -112,11 +112,41 @@ impl ExternalEditorComponent {
 
 		args.push(path.as_os_str());
 
-		Command::new(command.clone())
-			.current_dir(work_dir)
+		let exec_result = Command::new(command.clone())
+			.current_dir(work_dir.clone())
 			.args(args)
-			.status()
-			.map_err(|e| anyhow!("\"{}\": {}", command, e))?;
+			.status();
+
+		if cfg!(windows) {
+			// if command failed to run on windows retry as a batch file (.bat, .cmd,...)
+			if exec_result.is_err() {
+				let cmd_string =
+					format!("/C {} {}", command, path.display());
+				let exec_result2 =
+					Command::new("cmd").arg(cmd_string).status();
+
+				match exec_result2 {
+					// failed to start (unlikely as cmd would have to be missing)
+					Err(e) => bail!("\"{}\": {}", command, e),
+
+					// ran, did it complete OK?
+					Ok(stat) => {
+						// no result is treated as arbitrary failure code of 99
+						let code = stat.code().unwrap_or(99);
+						if code != 0 {
+							bail!(
+								"\"{}\": cmd.exe returned {}",
+								command,
+								code
+							)
+						}
+					}
+				};
+			}
+		} else {
+			exec_result
+				.map_err(|e| anyhow!("\"{}\": {}", command, e))?;
+		}
 
 		Ok(())
 	}
