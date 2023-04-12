@@ -251,7 +251,7 @@ impl TextInputComponent {
 
 		let cursor_highlighting = {
 			let mut h = HashMap::with_capacity(2);
-			h.insert("\n", "\u{21b5}\n\r");
+			h.insert("\n", "\u{21b5}\r\n\n");
 			h.insert(" ", symbol::WHITESPACE);
 			h
 		};
