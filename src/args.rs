@@ -145,7 +145,7 @@ fn get_app_cache_path() -> Result<PathBuf> {
 		env::var("XDG_CACHE_HOME")
 			.ok()
 			.map(PathBuf::from)
-			.or_else(|| dirs_next::cache_dir())
+			.or_else(dirs_next::cache_dir)
 	} else {
 		dirs_next::cache_dir()
 	}
@@ -159,15 +159,13 @@ fn get_app_cache_path() -> Result<PathBuf> {
 pub fn get_app_config_path() -> Result<PathBuf> {
 	let mut path = if cfg!(target_os = "macos") {
 		dirs_next::home_dir().map(|h| h.join(".config"))
+	} else if cfg!(windows) {
+		env::var("XDG_CONFIG_HOME")
+			.ok()
+			.map(PathBuf::from)
+			.or_else(dirs_next::config_dir)
 	} else {
-		if cfg!(windows) {
-			env::var("XDG_CONFIG_HOME")
-				.ok()
-				.map(PathBuf::from)
-				.or_else(|| dirs_next::config_dir())
-		} else {
-			dirs_next::config_dir()
-		}
+		dirs_next::config_dir()
 	}
 	.ok_or_else(|| anyhow!("failed to find os config dir."))?;
 
