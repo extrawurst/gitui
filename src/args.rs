@@ -145,9 +145,9 @@ fn get_app_cache_path() -> Result<PathBuf> {
 		env::var("XDG_CACHE_HOME")
 			.ok()
 			.map(PathBuf::from)
-			.or_else(|| dirs_next::config_dir())
+			.or_else(|| dirs_next::cache_dir())
 	} else {
-		dirs_next::config_dir()
+		dirs_next::cache_dir()
 	}
 	.ok_or_else(|| anyhow!("failed to find os cache dir."))?;
 
