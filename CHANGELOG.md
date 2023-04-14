@@ -29,7 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Change
 * `focus_XYZ` key bindings are merged into the `move_XYZ` set, so only one way to bind arrow-like keys from now on ([#1539](https://github.com/extrawurst/gitui/issues/1539))
-* The format of `theme.ron` has changed
+* Do you use a custom theme?
+
+  The way themes work got changed and simplified ([see docs](https://github.com/extrawurst/gitui/blob/master/THEMES.md) for more info):
+
+  * The format of `theme.ron` has changed: you only specify the colors etc. that should differ from their default value
+  * Future additions of colors etc. will not break existing themes anymore
 
 ### Added
 * allow reset (soft,mixed,hard) from commit log ([#1500](https://github.com/extrawurst/gitui/issues/1500))
