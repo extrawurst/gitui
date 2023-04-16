@@ -100,8 +100,11 @@ pub use utils::{
 
 pub use git2::ResetType;
 
-#[cfg(test)]
-mod tests {
+#[cfg(feature = "test_utils")]
+/// test utilities - exported now
+/// see https://github.com/rust-lang/cargo/issues/8379
+///
+pub mod tests {
 	use super::{
 		commit,
 		repository::repo,
