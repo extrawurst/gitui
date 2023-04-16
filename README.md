@@ -177,9 +177,25 @@ pkg install gitui
 
 Binaries available for:
 
-- Linux
-- macOS
-- Windows
+### Linux
+
+- gitui-linux-musl.tar.gz (linux on x86_64)
+- gitui-linux-aarch64.tar.gz (linux on 64 bit arm)
+- gitui-linux-arm.tar.gz
+- gitui-linux-armv7.tar.gz
+
+All contain a single binary file
+
+### macOS
+
+- gitui-mac.tar.gz (intel Mac, uses Rosetta on Apple silicon, single binary)
+
+
+### Windows
+
+- gitui-win.tar.gz (single 64bit binary)
+- gitui.msi (64bit Installer package)
+
 
 ## 7. <a name="build"></a> Build <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
