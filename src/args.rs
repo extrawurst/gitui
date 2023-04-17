@@ -15,6 +15,7 @@ use std::{
 pub struct CliArgs {
 	pub theme: PathBuf,
 	pub repo_path: RepoPath,
+	pub notify_watcher: bool,
 	pub poll_watcher: bool,
 }
 
@@ -54,11 +55,14 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		get_app_config_path()?.join("theme.ron")
 	};
 
+	let notify_watcher: bool =
+		*arg_matches.get_one("watcher").unwrap_or(&false);
 	let arg_poll: bool =
 		*arg_matches.get_one("poll").unwrap_or(&false);
 
 	Ok(CliArgs {
 		theme,
+		notify_watcher,
 		poll_watcher: arg_poll,
 		repo_path,
 	})
@@ -94,6 +98,12 @@ fn app() -> ClapApp {
 				.short('l')
 				.long("logging")
 				.num_args(0),
+		)
+		.arg(
+			Arg::new("watcher")
+				.help("Use notify-based file system watcher instead of tick-based update. This is more performant, but can cause issues in larger repositories")
+				.long("watcher")
+				.action(clap::ArgAction::SetTrue),
 		)
 		.arg(
 			Arg::new("poll")

@@ -56,7 +56,7 @@ use asyncgit::{
 	AsyncGitNotification,
 };
 use backtrace::Backtrace;
-use crossbeam_channel::{tick, unbounded, Receiver, Select};
+use crossbeam_channel::{never, tick, unbounded, Receiver, Select};
 use crossterm::{
 	terminal::{
 		disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
@@ -83,11 +83,13 @@ use tui::{
 use ui::style::Theme;
 use watcher::RepoWatcher;
 
+static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
 
 ///
 #[derive(Clone)]
 pub enum QueueEvent {
+	Tick,
 	Notify,
 	SpinnerUpdate,
 	AsyncEvent(AsyncNotification),
@@ -112,6 +114,13 @@ pub enum AsyncNotification {
 	App(AsyncAppNotification),
 	///
 	Git(AsyncGitNotification),
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum Updater {
+	Ticker,
+	PollWatcher,
+	NotifyWatcher,
 }
 
 fn main() -> Result<()> {
@@ -145,6 +154,13 @@ fn main() -> Result<()> {
 	let mut repo_path = cliargs.repo_path;
 	let input = Input::new();
 
+	let updater = match (cliargs.notify_watcher, cliargs.poll_watcher)
+	{
+		(true, true) => Updater::PollWatcher,
+		(true, false) => Updater::NotifyWatcher,
+		_ => Updater::Ticker,
+	};
+
 	loop {
 		let quit_state = run_app(
 			app_start,
@@ -152,7 +168,7 @@ fn main() -> Result<()> {
 			theme,
 			key_config.clone(),
 			&input,
-			cliargs.poll_watcher,
+			updater,
 			&mut terminal,
 		)?;
 
@@ -173,18 +189,27 @@ fn run_app(
 	theme: Theme,
 	key_config: KeyConfig,
 	input: &Input,
-	poll_watcher: bool,
+	updater: Updater,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 ) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
 
 	let rx_input = input.receiver();
-	let watcher = RepoWatcher::new(
-		repo_work_dir(&repo)?.as_str(),
-		poll_watcher,
-	);
-	let rx_watcher = watcher.receiver();
+
+	let (rx_ticker, rx_watcher) = match updater {
+		Updater::NotifyWatcher | Updater::PollWatcher => {
+			let poll_watcher = updater == Updater::PollWatcher;
+			let repo_watcher = RepoWatcher::new(
+				repo_work_dir(&repo)?.as_str(),
+				poll_watcher,
+			);
+
+			(never(), repo_watcher.receiver())
+		}
+		Updater::Ticker => (tick(TICK_INTERVAL), never()),
+	};
+
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
 	let mut app = App::new(
@@ -210,6 +235,7 @@ fn run_app(
 				&rx_input,
 				&rx_git,
 				&rx_app,
+				&rx_ticker,
 				&rx_watcher,
 				&spinner_ticker,
 			)?
@@ -235,7 +261,9 @@ fn run_app(
 					}
 					app.event(ev)?;
 				}
-				QueueEvent::Notify => app.update()?,
+				QueueEvent::Tick | QueueEvent::Notify => {
+					app.update()?;
+				}
 				QueueEvent::AsyncEvent(ev) => {
 					if !matches!(
 						ev,
@@ -309,6 +337,7 @@ fn select_event(
 	rx_input: &Receiver<InputEvent>,
 	rx_git: &Receiver<AsyncGitNotification>,
 	rx_app: &Receiver<AsyncAppNotification>,
+	rx_ticker: &Receiver<Instant>,
 	rx_notify: &Receiver<()>,
 	rx_spinner: &Receiver<Instant>,
 ) -> Result<QueueEvent> {
@@ -317,6 +346,7 @@ fn select_event(
 	sel.recv(rx_input);
 	sel.recv(rx_git);
 	sel.recv(rx_app);
+	sel.recv(rx_ticker);
 	sel.recv(rx_notify);
 	sel.recv(rx_spinner);
 
@@ -331,8 +361,9 @@ fn select_event(
 		2 => oper.recv(rx_app).map(|e| {
 			QueueEvent::AsyncEvent(AsyncNotification::App(e))
 		}),
-		3 => oper.recv(rx_notify).map(|_| QueueEvent::Notify),
-		4 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
+		3 => oper.recv(rx_ticker).map(|_| QueueEvent::Notify),
+		4 => oper.recv(rx_notify).map(|_| QueueEvent::Notify),
+		5 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
 		_ => bail!("unknown select source"),
 	}?;
 
