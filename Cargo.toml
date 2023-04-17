@@ -56,16 +56,15 @@ unicode-truncate = "0.2"
 unicode-width = "0.1"
 which = "4.4"
 
-
 # pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]
 pprof = { version = "0.11", features = ["flamegraph"], optional = true }
 
 [dev-dependencies]
+asyncgit = { path = "asyncgit", features = ["test_utils"] }
 pretty_assertions = "1.3"
-tempfile = "3.4"
-asyncgit = {path = "asyncgit", features = ["test_utils"]}
 serial_test = "2.0.0"
+tempfile = "3.4"
 
 [badges]
 maintenance = { status = "actively-developed" }
