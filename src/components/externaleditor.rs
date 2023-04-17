@@ -240,16 +240,16 @@ impl Component for ExternalEditorComponent {
 }
 #[cfg(test)]
 mod tests {
-
 	use crate::components::ExternalEditorComponent;
 	use anyhow::Result;
 	use asyncgit::sync::tests::repo_init;
+	#[cfg(windows)]
 	use asyncgit::sync::utils::read_file;
 	use asyncgit::sync::RepoPath;
 	use serial_test::serial;
 	use std::env;
 	use std::fs::File;
-	use std::io::*;
+	use std::io::Write;
 	use tempfile::TempDir;
 
 	fn write_temp_file(

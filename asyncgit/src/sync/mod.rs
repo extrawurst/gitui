@@ -102,9 +102,16 @@ pub use git2::ResetType;
 
 #[cfg(feature = "test_utils")]
 /// test utilities - exported now
-/// see https://github.com/rust-lang/cargo/issues/8379
-///
+// see https://github.com/rust-lang/cargo/issues/8379
 pub mod tests {
+	// these are now not under 'test' so they get clippied with 'all-features'
+	// we dont care about tests that panic
+	#![allow(clippy::unwrap_used, clippy::missing_panics_doc)]
+	// minor niggles
+	#![allow(clippy::nursery)]
+	// this clippy is confused by the name 'read'
+	// should probably be changed to read_into
+	#![allow(clippy::read_zero_byte_vec)]
 	use super::{
 		commit,
 		repository::repo,
