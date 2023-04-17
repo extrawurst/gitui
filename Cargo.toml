@@ -97,6 +97,3 @@ codegen-units = 1
 [profile.dev.package."tui"]
 opt-level = 3
 
-#[patch.crates-io]
-#num_cpus = { git = 'https://github.com/seanmonstar/num_cpus.git' }
-#notify = { git = 'https://github.com/notify-rs/notify.git' }
