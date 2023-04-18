@@ -450,6 +450,16 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+	pub fn find_branch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Find [{}]",
+				key_config.get_hint(key_config.keys.branch_find)
+			),
+			"find branch in list",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn toggle_tabs_direct(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -690,6 +700,17 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.exit_popup),
 			),
 			"close overlay (e.g commit, help)",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn scroll_popup(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Scroll [{}{}]",
+				key_config.get_hint(key_config.keys.popup_down),
+				key_config.get_hint(key_config.keys.popup_up),
+			),
+			"scroll up or down in popup",
 			CMD_GROUP_GENERAL,
 		)
 	}

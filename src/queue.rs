@@ -113,7 +113,11 @@ pub enum InternalEvent {
 	///
 	OpenFileFinder(Vec<TreeFile>),
 	///
+	OpenBranchFinder(Vec<String>),
+	///
 	FileFinderChanged(Option<PathBuf>),
+	///
+	BranchFinderChanged(Option<usize>),
 	///
 	FetchRemotes,
 	///

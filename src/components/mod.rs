@@ -1,4 +1,5 @@
 mod blame_file;
+mod branch_find_popup;
 mod branchlist;
 mod changes;
 mod command;
@@ -36,6 +37,7 @@ mod utils;
 
 pub use self::status_tree::StatusTreeComponent;
 pub use blame_file::{BlameFileComponent, BlameFileOpen};
+pub use branch_find_popup::BranchFindPopup;
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};

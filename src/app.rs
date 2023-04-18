@@ -2,7 +2,7 @@ use crate::{
 	accessors,
 	cmdbar::CommandBar,
 	components::{
-		event_pump, AppOption, BlameFileComponent,
+		event_pump, AppOption, BlameFileComponent, BranchFindPopup,
 		BranchListComponent, CommandBlocking, CommandInfo,
 		CommitComponent, CompareCommitsComponent, Component,
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
@@ -73,6 +73,7 @@ pub struct App {
 	external_editor_popup: ExternalEditorComponent,
 	revision_files_popup: RevisionFilesPopup,
 	find_file_popup: FileFindPopup,
+	branch_find_popup: BranchFindPopup,
 	push_popup: PushComponent,
 	push_tags_popup: PushTagsComponent,
 	pull_popup: PullComponent,
@@ -269,6 +270,11 @@ impl App {
 				key_config.clone(),
 			),
 			find_file_popup: FileFindPopup::new(
+				&queue,
+				theme.clone(),
+				key_config.clone(),
+			),
+			branch_find_popup: BranchFindPopup::new(
 				&queue,
 				theme.clone(),
 				key_config.clone(),
@@ -578,6 +584,7 @@ impl App {
 		self,
 		[
 			find_file_popup,
+			branch_find_popup,
 			msg,
 			reset,
 			commit,
@@ -629,6 +636,7 @@ impl App {
 			rename_branch_popup,
 			revision_files_popup,
 			find_file_popup,
+			branch_find_popup,
 			push_popup,
 			push_tags_popup,
 			pull_popup,
@@ -892,6 +900,11 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
+			InternalEvent::OpenBranchFinder(branches) => {
+				self.branch_find_popup.open(branches)?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
 			InternalEvent::OptionSwitched(o) => {
 				match o {
 					AppOption::StatusShowUntracked => {
@@ -909,6 +922,11 @@ impl App {
 			InternalEvent::FileFinderChanged(file) => {
 				self.files_tab.file_finder_update(&file);
 				self.revision_files_popup.file_finder_update(&file);
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::BranchFinderChanged(idx) => {
+				self.select_branch_popup.branch_finder_update(idx)?;
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
