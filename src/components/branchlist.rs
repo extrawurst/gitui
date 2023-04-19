@@ -282,7 +282,7 @@ impl Component for BranchListComponent {
 						),
 					));
 				}
-			} else if key_match(e, self.key_config.keys.pull)
+			} else if key_match(e, self.key_config.keys.fetch)
 				&& !self.local && self.has_remotes
 			{
 				self.queue.push(InternalEvent::FetchRemotes);

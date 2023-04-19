@@ -192,7 +192,7 @@ impl Default for KeysList {
 			abort_merge: GituiKeyEvent::new(KeyCode::Char('A'),  KeyModifiers::SHIFT),
 			open_file_tree: GituiKeyEvent::new(KeyCode::Char('F'),  KeyModifiers::SHIFT),
 			file_find: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::empty()),
-			branch_find: GituiKeyEvent::new(KeyCode::Char('F'),  KeyModifiers::SHIFT),
+			branch_find: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::empty()),
 			stage_unstage_item: GituiKeyEvent::new(KeyCode::Enter,  KeyModifiers::empty()),
 			tag_annotate: GituiKeyEvent::new(KeyCode::Char('a'),  KeyModifiers::CONTROL),
 			view_submodules: GituiKeyEvent::new(KeyCode::Char('S'),  KeyModifiers::SHIFT),

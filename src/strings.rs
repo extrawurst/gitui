@@ -1576,7 +1576,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Fetch [{}]",
-				key_config.get_hint(key_config.keys.pull),
+				key_config.get_hint(key_config.keys.fetch),
 			),
 			"fetch/prune",
 			CMD_GROUP_BRANCHES,
