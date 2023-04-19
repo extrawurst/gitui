@@ -283,17 +283,16 @@ impl Component for FileFindPopup {
 		force_all: bool,
 	) -> CommandBlocking {
 		if self.is_visible() || force_all {
-			out.push(
-				CommandInfo::new(
-					strings::commands::close_popup(&self.key_config),
-					true,
-					true,
-				)
-				.order(1),
-			);
+			out.push(CommandInfo::new(
+				strings::commands::scroll_popup(&self.key_config),
+				true,
+				true,
+			));
 
 			out.push(CommandInfo::new(
-				strings::commands::scroll(&self.key_config),
+				strings::commands::close_fuzzy_finder(
+					&self.key_config,
+				),
 				true,
 				true,
 			));

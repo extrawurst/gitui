@@ -693,6 +693,19 @@ pub mod commands {
 			CMD_GROUP_DIFF,
 		)
 	}
+	pub fn close_fuzzy_finder(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Close [{}{}]",
+				key_config.get_hint(key_config.keys.exit_popup),
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"close fuzzy finder",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn close_popup(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
