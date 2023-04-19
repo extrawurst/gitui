@@ -1,6 +1,6 @@
 use crate::string_utils::trim_offset;
 use easy_cast::Cast;
-use tui::text::StyledGrapheme;
+use ratatui::text::StyledGrapheme;
 use unicode_width::UnicodeWidthStr;
 
 const NBSP: &str = "\u{00a0}";

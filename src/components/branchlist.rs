@@ -26,8 +26,7 @@ use asyncgit::{
 	AsyncGitNotification,
 };
 use crossterm::event::Event;
-use std::{cell::Cell, convert::TryInto};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
@@ -36,6 +35,7 @@ use tui::{
 	widgets::{Block, BorderType, Borders, Clear, Paragraph, Tabs},
 	Frame,
 };
+use std::{cell::Cell, convert::TryInto};
 use ui::style::SharedTheme;
 use unicode_truncate::UnicodeTruncateStr;
 

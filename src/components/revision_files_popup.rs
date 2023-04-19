@@ -19,7 +19,9 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{backend::Backend, layout::Rect, widgets::Clear, Frame};
+use ratatui::{
+	backend::Backend, layout::Rect, widgets::Clear, Frame,
+};
 
 #[derive(Clone, Debug)]
 pub struct FileTreeOpen {

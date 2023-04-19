@@ -16,8 +16,7 @@ use asyncgit::sync::{
 	SubmoduleParentInfo,
 };
 use crossterm::event::Event;
-use std::{cell::Cell, convert::TryInto};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
@@ -26,6 +25,7 @@ use tui::{
 	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
 };
+use std::{cell::Cell, convert::TryInto};
 use ui::style::SharedTheme;
 use unicode_truncate::UnicodeTruncateStr;
 
@@ -67,7 +67,7 @@ impl DrawableComponent for SubmodulesListComponent {
 			f.render_widget(
 				Block::default()
 					.title(strings::POPUP_TITLE_SUBMODULES)
-					.border_type(tui::widgets::BorderType::Thick)
+					.border_type(ratatui::widgets::BorderType::Thick)
 					.borders(Borders::ALL),
 				area,
 			);

@@ -14,7 +14,7 @@ use asyncgit::{
 	sync::{CommitId, RepoPath, RepoPathRef, ResetType},
 };
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Span, Spans},

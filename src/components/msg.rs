@@ -7,14 +7,14 @@ use crate::{
 	strings, ui,
 };
 use crossterm::event::Event;
-use std::convert::TryFrom;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	text::Span,
 	widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
 	Frame,
 };
+use std::convert::TryFrom;
 use ui::style::SharedTheme;
 pub struct MsgComponent {
 	title: String,

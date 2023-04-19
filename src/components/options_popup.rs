@@ -13,7 +13,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::ShowUntrackedFilesConfig;
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	style::{Modifier, Style},

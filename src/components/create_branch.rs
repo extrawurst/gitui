@@ -13,7 +13,7 @@ use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use easy_cast::Cast;
-use tui::{
+use ratatui::{
 	backend::Backend, layout::Rect, widgets::Paragraph, Frame,
 };
 

@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
-use tui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{backend::Backend, layout::Rect, Frame};
 
 pub struct RenameBranchComponent {
 	repo: RepoPathRef,

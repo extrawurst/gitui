@@ -19,16 +19,16 @@ use asyncgit::sync::{
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
 use itertools::Itertools;
-use std::{
-	borrow::Cow, cell::Cell, cmp, collections::BTreeMap,
-	convert::TryFrom, time::Instant,
-};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Span, Spans},
 	widgets::{Block, Borders, Paragraph},
 	Frame,
+};
+use std::{
+	borrow::Cow, cell::Cell, cmp, collections::BTreeMap,
+	convert::TryFrom, time::Instant,
 };
 
 const ELEMENTS_PER_LINE: usize = 9;

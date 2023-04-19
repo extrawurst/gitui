@@ -14,7 +14,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::{self, CommitDetails, CommitId, RepoPathRef};
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	text::{Span, Spans, Text},

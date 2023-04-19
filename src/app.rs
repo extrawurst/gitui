@@ -34,12 +34,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
-use std::{
-	cell::{Cell, RefCell},
-	path::Path,
-	rc::Rc,
-};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
@@ -47,6 +42,11 @@ use tui::{
 	text::{Span, Spans},
 	widgets::{Block, Borders, Paragraph, Tabs},
 	Frame,
+};
+use std::{
+	cell::{Cell, RefCell},
+	path::Path,
+	rc::Rc,
 };
 use unicode_width::UnicodeWidthStr;
 

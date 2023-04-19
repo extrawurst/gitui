@@ -72,14 +72,14 @@ pub use utils::filetree::FileTreeItemKind;
 use crate::ui::style::Theme;
 use anyhow::Result;
 use crossterm::event::Event;
-use std::convert::From;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Span, Text},
 	widgets::{Block, BorderType, Borders, Paragraph, Wrap},
 	Frame,
 };
+use std::convert::From;
 
 /// creates accessors for a list of components
 ///

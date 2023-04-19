@@ -6,13 +6,13 @@ pub mod style;
 mod syntax_text;
 
 use filetreelist::MoveSelection;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 pub use scrollbar::{draw_scrollbar, Orientation};
 pub use scrolllist::{draw_list, draw_list_block};
 pub use stateful_paragraph::{
 	ParagraphState, ScrollPos, StatefulParagraph,
 };
 pub use syntax_text::{AsyncSyntaxJob, SyntaxText};
-use tui::layout::{Constraint, Direction, Layout, Rect};
 
 use crate::keys::{key_match, SharedKeyConfig};
 
@@ -157,7 +157,7 @@ pub fn common_nav(
 mod test {
 	use super::{rect_inside, Size};
 	use pretty_assertions::assert_eq;
-	use tui::layout::Rect;
+	use ratatui::layout::Rect;
 
 	#[test]
 	fn test_small_rect_in_rect() {

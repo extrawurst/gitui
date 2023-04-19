@@ -1,6 +1,5 @@
 use super::style::SharedTheme;
-use std::iter::Iterator;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	buffer::Buffer,
 	layout::Rect,
@@ -9,6 +8,7 @@ use tui::{
 	widgets::{Block, Borders, List, ListItem, Widget},
 	Frame,
 };
+use std::iter::Iterator;
 
 ///
 struct ScrollableList<'b, L, S>

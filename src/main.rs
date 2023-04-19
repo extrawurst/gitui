@@ -67,6 +67,10 @@ use crossterm::{
 use input::{Input, InputEvent, InputState};
 use keys::KeyConfig;
 use profiler::Profiler;
+use ratatui::{
+	backend::{Backend, CrosstermBackend},
+	Terminal,
+};
 use scopeguard::defer;
 use scopetime::scope_time;
 use spinner::Spinner;
@@ -75,10 +79,6 @@ use std::{
 	io::{self, Write},
 	panic, process,
 	time::{Duration, Instant},
-};
-use tui::{
-	backend::{Backend, CrosstermBackend},
-	Terminal,
 };
 use ui::style::Theme;
 use watcher::RepoWatcher;

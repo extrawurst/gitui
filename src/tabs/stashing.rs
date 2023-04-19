@@ -17,12 +17,12 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::borrow::Cow;
-use tui::{
+use ratatui::{
 	layout::{Alignment, Constraint, Direction, Layout},
 	text::{Span, Spans},
 	widgets::{Block, Borders, Paragraph},
 };
+use std::borrow::Cow;
 
 #[derive(Default, Clone, Copy, Debug)]
 pub struct StashingOptions {
@@ -140,10 +140,10 @@ impl Stashing {
 }
 
 impl DrawableComponent for Stashing {
-	fn draw<B: tui::backend::Backend>(
+	fn draw<B: ratatui::backend::Backend>(
 		&self,
-		f: &mut tui::Frame<B>,
-		rect: tui::layout::Rect,
+		f: &mut ratatui::Frame<B>,
+		rect: ratatui::layout::Rect,
 	) -> Result<()> {
 		let chunks = Layout::default()
 			.direction(Direction::Horizontal)

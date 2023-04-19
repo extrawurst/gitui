@@ -1,5 +1,6 @@
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
+use ratatui::style::{Color, Modifier, Style};
 use ron::{
 	de::from_bytes,
 	ser::{to_string_pretty, PrettyConfig},
@@ -11,7 +12,6 @@ use std::{
 	path::PathBuf,
 	rc::Rc,
 };
-use tui::style::{Color, Modifier, Style};
 
 pub type SharedTheme = Rc<Theme>;
 

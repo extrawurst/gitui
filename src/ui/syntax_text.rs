@@ -3,6 +3,7 @@ use asyncgit::{
 	ProgressPercent,
 };
 use once_cell::sync::Lazy;
+use ratatui::text::{Span, Spans};
 use scopetime::scope_time;
 use std::{
 	ffi::OsStr,
@@ -18,7 +19,6 @@ use syntect::{
 	},
 	parsing::{ParseState, ScopeStack, SyntaxSet},
 };
-use tui::text::{Span, Spans};
 
 use crate::{AsyncAppNotification, SyntaxHighlightProgress};
 
@@ -162,7 +162,7 @@ impl SyntaxText {
 	}
 }
 
-impl<'a> From<&'a SyntaxText> for tui::text::Text<'a> {
+impl<'a> From<&'a SyntaxText> for ratatui::text::Text<'a> {
 	fn from(v: &'a SyntaxText) -> Self {
 		let mut result_lines: Vec<Spans> =
 			Vec::with_capacity(v.lines.len());
@@ -189,22 +189,23 @@ impl<'a> From<&'a SyntaxText> for tui::text::Text<'a> {
 	}
 }
 
-fn syntact_style_to_tui(style: &Style) -> tui::style::Style {
-	let mut res =
-		tui::style::Style::default().fg(tui::style::Color::Rgb(
+fn syntact_style_to_tui(style: &Style) -> ratatui::style::Style {
+	let mut res = ratatui::style::Style::default().fg(
+		ratatui::style::Color::Rgb(
 			style.foreground.r,
 			style.foreground.g,
 			style.foreground.b,
-		));
+		),
+	);
 
 	if style.font_style.contains(FontStyle::BOLD) {
-		res = res.add_modifier(tui::style::Modifier::BOLD);
+		res = res.add_modifier(ratatui::style::Modifier::BOLD);
 	}
 	if style.font_style.contains(FontStyle::ITALIC) {
-		res = res.add_modifier(tui::style::Modifier::ITALIC);
+		res = res.add_modifier(ratatui::style::Modifier::ITALIC);
 	}
 	if style.font_style.contains(FontStyle::UNDERLINE) {
-		res = res.add_modifier(tui::style::Modifier::UNDERLINED);
+		res = res.add_modifier(ratatui::style::Modifier::UNDERLINED);
 	}
 
 	res

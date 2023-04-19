@@ -22,18 +22,18 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
-use std::{borrow::Cow, fmt::Write};
-use std::{
-	collections::BTreeSet,
-	convert::From,
-	path::{Path, PathBuf},
-};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	text::Span,
 	widgets::{Block, Borders},
 	Frame,
+};
+use std::{borrow::Cow, fmt::Write};
+use std::{
+	collections::BTreeSet,
+	convert::From,
+	path::{Path, PathBuf},
 };
 use unicode_truncate::UnicodeTruncateStr;
 use unicode_width::UnicodeWidthStr;
