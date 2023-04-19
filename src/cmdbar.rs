@@ -2,14 +2,14 @@ use crate::{
 	components::CommandInfo, keys::SharedKeyConfig, strings,
 	ui::style::SharedTheme,
 };
-use std::borrow::Cow;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Span, Spans},
 	widgets::Paragraph,
 	Frame,
 };
+use std::borrow::Cow;
 use unicode_width::UnicodeWidthStr;
 
 enum DrawListEntry {

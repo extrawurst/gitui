@@ -26,12 +26,12 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
-use std::convert::Into;
-use tui::{
+use ratatui::{
 	layout::{Alignment, Constraint, Direction, Layout},
 	style::{Color, Style},
 	widgets::{Block, BorderType, Borders, Paragraph},
 };
+use std::convert::Into;
 
 /// what part of the screen is focused
 #[derive(PartialEq)]
@@ -82,10 +82,10 @@ pub struct Status {
 }
 
 impl DrawableComponent for Status {
-	fn draw<B: tui::backend::Backend>(
+	fn draw<B: ratatui::backend::Backend>(
 		&self,
-		f: &mut tui::Frame<B>,
-		rect: tui::layout::Rect,
+		f: &mut ratatui::Frame<B>,
+		rect: ratatui::layout::Rect,
 	) -> Result<()> {
 		let repo_unclean = self.repo_state_unclean();
 		let rects = if repo_unclean {
@@ -97,7 +97,7 @@ impl DrawableComponent for Status {
 				)
 				.split(rect)
 		} else {
-			vec![rect]
+			std::rc::Rc::new([rect])
 		};
 
 		let chunks = Layout::default()
@@ -215,10 +215,10 @@ impl Status {
 		}
 	}
 
-	fn draw_branch_state<B: tui::backend::Backend>(
+	fn draw_branch_state<B: ratatui::backend::Backend>(
 		&self,
-		f: &mut tui::Frame<B>,
-		chunks: &[tui::layout::Rect],
+		f: &mut ratatui::Frame<B>,
+		chunks: &[ratatui::layout::Rect],
 	) {
 		if let Some(branch_name) = self.git_branch_name.last() {
 			let ahead_behind = self
@@ -296,10 +296,10 @@ impl Status {
 		}
 	}
 
-	fn draw_repo_state<B: tui::backend::Backend>(
+	fn draw_repo_state<B: ratatui::backend::Backend>(
 		&self,
-		f: &mut tui::Frame<B>,
-		r: tui::layout::Rect,
+		f: &mut ratatui::Frame<B>,
+		r: ratatui::layout::Rect,
 	) {
 		if self.git_state != RepoState::Clean {
 			let txt = Self::repo_state_text(

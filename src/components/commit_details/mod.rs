@@ -22,7 +22,7 @@ use compare_details::CompareDetailsComponent;
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use details::DetailsComponent;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	Frame,

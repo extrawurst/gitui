@@ -81,10 +81,10 @@ impl FilesTab {
 }
 
 impl DrawableComponent for FilesTab {
-	fn draw<B: tui::backend::Backend>(
+	fn draw<B: ratatui::backend::Backend>(
 		&self,
-		f: &mut tui::Frame<B>,
-		rect: tui::layout::Rect,
+		f: &mut ratatui::Frame<B>,
+		rect: ratatui::layout::Rect,
 	) -> Result<()> {
 		if self.is_visible() {
 			self.files.draw(f, rect)?;

@@ -20,8 +20,7 @@ use asyncgit::{
 };
 use bytesize::ByteSize;
 use crossterm::event::Event;
-use std::{borrow::Cow, cell::Cell, cmp, path::Path};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	symbols,
@@ -29,6 +28,7 @@ use tui::{
 	widgets::{Block, Borders, Paragraph},
 	Frame,
 };
+use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 
 #[derive(Default)]
 struct Current {

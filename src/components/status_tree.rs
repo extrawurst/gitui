@@ -16,8 +16,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{hash, sync::CommitId, StatusItem, StatusItemType};
 use crossterm::event::Event;
+use ratatui::{backend::Backend, layout::Rect, text::Span, Frame};
 use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
-use tui::{backend::Backend, layout::Rect, text::Span, Frame};
 
 //TODO: use new `filetreelist` crate
 
@@ -599,8 +599,9 @@ mod tests {
 		//5    c1
 
 		// Set up test terminal
-		let test_backend = tui::backend::TestBackend::new(100, 100);
-		let mut terminal = tui::Terminal::new(test_backend)
+		let test_backend =
+			ratatui::backend::TestBackend::new(100, 100);
+		let mut terminal = ratatui::Terminal::new(test_backend)
 			.expect("Unable to set up terminal");
 		let mut frame = terminal.get_frame();
 
@@ -640,8 +641,9 @@ mod tests {
 		//5   d2
 
 		// Set up test terminal
-		let test_backend = tui::backend::TestBackend::new(100, 100);
-		let mut terminal = tui::Terminal::new(test_backend)
+		let test_backend =
+			ratatui::backend::TestBackend::new(100, 100);
+		let mut terminal = ratatui::Terminal::new(test_backend)
 			.expect("Unable to set up terminal");
 		let mut frame = terminal.get_frame();
 

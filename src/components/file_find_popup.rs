@@ -13,14 +13,14 @@ use anyhow::Result;
 use asyncgit::sync::TreeFile;
 use crossterm::event::Event;
 use fuzzy_matcher::FuzzyMatcher;
-use std::borrow::Cow;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Margin, Rect},
 	text::{Span, Spans},
 	widgets::{Block, Borders, Clear},
 	Frame,
 };
+use std::borrow::Cow;
 
 pub struct FileFindPopup {
 	queue: Queue,

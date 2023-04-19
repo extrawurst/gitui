@@ -1,6 +1,6 @@
 use crate::{strings, ui::style::SharedTheme};
+use ratatui::text::Span;
 use std::borrow::Cow;
-use tui::text::Span;
 
 pub enum Detail {
 	Author,

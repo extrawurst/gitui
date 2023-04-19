@@ -19,13 +19,13 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::time::Duration;
-use sync::CommitTags;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	Frame,
 };
+use std::time::Duration;
+use sync::CommitTags;
 
 const SLICE_SIZE: usize = 1200;
 

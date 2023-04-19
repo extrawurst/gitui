@@ -21,15 +21,15 @@ use asyncgit::{
 };
 use crossterm::event::Event;
 use easy_cast::Cast;
-use std::{
-	fs::{read_to_string, File},
-	io::{Read, Write},
-};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	widgets::Paragraph,
 	Frame,
+};
+use std::{
+	fs::{read_to_string, File},
+	io::{Read, Write},
 };
 
 enum CommitResult {

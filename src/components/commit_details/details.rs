@@ -15,16 +15,16 @@ use asyncgit::sync::{
 	self, CommitDetails, CommitId, CommitMessage, RepoPathRef, Tag,
 };
 use crossterm::event::Event;
-use std::clone::Clone;
-use std::{borrow::Cow, cell::Cell};
-use sync::CommitTags;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	style::{Modifier, Style},
 	text::{Span, Spans, Text},
 	Frame,
 };
+use std::clone::Clone;
+use std::{borrow::Cow, cell::Cell};
+use sync::CommitTags;
 
 use super::style::Detail;
 

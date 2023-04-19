@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use tui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
 	components::ScrollType,

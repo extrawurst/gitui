@@ -17,8 +17,8 @@ use asyncgit::{
 	StatusItem, StatusItemType,
 };
 use crossterm::event::Event;
+use ratatui::{backend::Backend, layout::Rect, Frame};
 use std::path::Path;
-use tui::{backend::Backend, layout::Rect, Frame};
 
 ///
 pub struct ChangesComponent {
