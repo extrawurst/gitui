@@ -10,7 +10,6 @@ use crate::{
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::sync::TreeFile;
 use crossterm::event::Event;
 use fuzzy_matcher::FuzzyMatcher;
 use ratatui::{
@@ -22,20 +21,20 @@ use ratatui::{
 };
 use std::borrow::Cow;
 
-pub struct FileFindPopup {
+pub struct BranchFindPopup {
 	queue: Queue,
 	visible: bool,
 	find_text: TextInputComponent,
 	query: Option<String>,
 	theme: SharedTheme,
-	files: Vec<TreeFile>,
+	branches: Vec<String>,
 	selection: usize,
 	selected_index: Option<usize>,
-	files_filtered: Vec<(usize, Vec<usize>)>,
+	branches_filtered: Vec<(usize, Vec<usize>)>,
 	key_config: SharedKeyConfig,
 }
 
-impl FileFindPopup {
+impl BranchFindPopup {
 	///
 	pub fn new(
 		queue: &Queue,
@@ -57,8 +56,8 @@ impl FileFindPopup {
 			query: None,
 			find_text,
 			theme,
-			files: Vec::new(),
-			files_filtered: Vec::new(),
+			branches: Vec::new(),
+			branches_filtered: Vec::new(),
 			selected_index: None,
 			key_config,
 			selection: 0,
@@ -82,31 +81,29 @@ impl FileFindPopup {
 	fn set_query(&mut self, query: Option<String>) {
 		self.query = query;
 
-		self.files_filtered.clear();
+		self.branches_filtered.clear();
 
 		if let Some(q) = &self.query {
 			let matcher =
 				fuzzy_matcher::skim::SkimMatcherV2::default();
 
-			let mut files = self
-				.files
+			let mut branches = self
+				.branches
 				.iter()
 				.enumerate()
 				.filter_map(|a| {
-					a.1.path.to_str().and_then(|path| {
-						matcher.fuzzy_indices(path, q).map(
-							|(score, indices)| (score, a.0, indices),
-						)
-					})
+					matcher
+						.fuzzy_indices(a.1, q)
+						.map(|(score, indices)| (score, a.0, indices))
 				})
 				.collect::<Vec<(_, _, _)>>();
 
-			files.sort_by(|(score1, _, _), (score2, _, _)| {
+			branches.sort_by(|(score1, _, _), (score2, _, _)| {
 				score2.cmp(score1)
 			});
 
-			self.files_filtered.extend(
-				files.into_iter().map(|entry| (entry.1, entry.2)),
+			self.branches_filtered.extend(
+				branches.into_iter().map(|entry| (entry.1, entry.2)),
 			);
 		}
 
@@ -116,27 +113,23 @@ impl FileFindPopup {
 
 	fn refresh_selection(&mut self) {
 		let selection =
-			self.files_filtered.get(self.selection).map(|a| a.0);
+			self.branches_filtered.get(self.selection).map(|a| a.0);
 
 		if self.selected_index != selection {
 			self.selected_index = selection;
 
-			let file = self
-				.selected_index
-				.and_then(|index| self.files.get(index))
-				.map(|f| f.path.clone());
-
-			self.queue.push(InternalEvent::FileFinderChanged(file));
+			let idx = self.selected_index;
+			self.queue.push(InternalEvent::BranchFinderChanged(idx));
 		}
 	}
 
-	pub fn open(&mut self, files: &[TreeFile]) -> Result<()> {
+	pub fn open(&mut self, branches: Vec<String>) -> Result<()> {
 		self.show()?;
 		self.find_text.show()?;
 		self.find_text.set_text(String::new());
 		self.query = None;
-		if self.files != *files {
-			self.files = files.to_owned();
+		if self.branches != branches {
+			self.branches = branches;
 		}
 		self.update_query();
 
@@ -151,7 +144,7 @@ impl FileFindPopup {
 		};
 
 		let new_selection = new_selection
-			.clamp(0, self.files_filtered.len().saturating_sub(1));
+			.clamp(0, self.branches_filtered.len().saturating_sub(1));
 
 		if new_selection != self.selection {
 			self.selection = new_selection;
@@ -163,7 +156,7 @@ impl FileFindPopup {
 	}
 }
 
-impl DrawableComponent for FileFindPopup {
+impl DrawableComponent for BranchFindPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -172,7 +165,7 @@ impl DrawableComponent for FileFindPopup {
 		if self.is_visible() {
 			const MAX_SIZE: (u16, u16) = (50, 20);
 
-			let any_hits = !self.files_filtered.is_empty();
+			let any_hits = !self.branches_filtered.is_empty();
 
 			let area = ui::centered_rect_absolute(
 				MAX_SIZE.0, MAX_SIZE.1, area,
@@ -223,13 +216,13 @@ impl DrawableComponent for FileFindPopup {
 
 			if any_hits {
 				let title =
-					format!("Hits: {}", self.files_filtered.len());
+					format!("Hits: {}", self.branches_filtered.len());
 
 				let height = usize::from(chunks[1].height);
 				let width = usize::from(chunks[1].width);
 
 				let items = self
-					.files_filtered
+					.branches_filtered
 					.iter()
 					.take(height)
 					.map(|(idx, indicies)| {
@@ -237,10 +230,7 @@ impl DrawableComponent for FileFindPopup {
 							.selected_index
 							.map_or(false, |index| index == *idx);
 						let full_text = trim_length_left(
-							self.files[*idx]
-								.path
-								.to_str()
-								.unwrap_or_default(),
+							&self.branches[*idx],
 							width,
 						);
 						Spans::from(
@@ -276,7 +266,7 @@ impl DrawableComponent for FileFindPopup {
 	}
 }
 
-impl Component for FileFindPopup {
+impl Component for BranchFindPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

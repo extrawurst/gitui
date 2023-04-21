@@ -450,6 +450,16 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+	pub fn find_branch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Find [{}]",
+				key_config.get_hint(key_config.keys.branch_find)
+			),
+			"find branch in list",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn toggle_tabs_direct(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -683,6 +693,19 @@ pub mod commands {
 			CMD_GROUP_DIFF,
 		)
 	}
+	pub fn close_fuzzy_finder(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Close [{}{}]",
+				key_config.get_hint(key_config.keys.exit_popup),
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"close fuzzy finder",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn close_popup(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
@@ -690,6 +713,17 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.exit_popup),
 			),
 			"close overlay (e.g commit, help)",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn scroll_popup(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Scroll [{}{}]",
+				key_config.get_hint(key_config.keys.popup_down),
+				key_config.get_hint(key_config.keys.popup_up),
+			),
+			"scroll up or down in popup",
 			CMD_GROUP_GENERAL,
 		)
 	}
@@ -1555,7 +1589,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Fetch [{}]",
-				key_config.get_hint(key_config.keys.pull),
+				key_config.get_hint(key_config.keys.fetch),
 			),
 			"fetch/prune",
 			CMD_GROUP_BRANCHES,
