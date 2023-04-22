@@ -288,7 +288,7 @@ pub mod tests {
 
 	// init log
 	fn init_log() {
-		let _ = env_logger::builder()
+		let _b = env_logger::builder()
 			.is_test(true)
 			.filter_level(log::LevelFilter::Trace)
 			.try_init();
