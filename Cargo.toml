@@ -91,5 +91,5 @@ codegen-units = 1
 # make debug build as fast as release 
 # usage of utf8 encoding inside tui 
 # makes their debug profile slow
-[profile.dev.package."tui"]
+[profile.dev.package."ratatui"]
 opt-level = 3
