@@ -2,14 +2,15 @@ use crate::{
 	accessors,
 	cmdbar::CommandBar,
 	components::{
-		event_pump, AppOption, BlameFileComponent, BranchFindPopup,
+		event_pump, AppOption, BlameFileComponent,
 		BranchListComponent, CommandBlocking, CommandInfo,
 		CommitComponent, CompareCommitsComponent, Component,
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, FetchComponent, FileFindPopup,
-		FileRevlogComponent, HelpComponent, InspectCommitComponent,
-		MsgComponent, OptionsPopupComponent, PullComponent,
-		PushComponent, PushTagsComponent, RenameBranchComponent,
+		FileRevlogComponent, FuzzyFindPopup, FuzzyFinderTarget,
+		HelpComponent, InspectCommitComponent, MsgComponent,
+		OptionsPopupComponent, PullComponent, PushComponent,
+		PushTagsComponent, RenameBranchComponent,
 		ResetPopupComponent, RevisionFilesPopup, StashMsgComponent,
 		SubmodulesListComponent, TagCommitComponent,
 		TagListComponent,
@@ -73,7 +74,7 @@ pub struct App {
 	external_editor_popup: ExternalEditorComponent,
 	revision_files_popup: RevisionFilesPopup,
 	find_file_popup: FileFindPopup,
-	branch_find_popup: BranchFindPopup,
+	fuzzy_find_popup: FuzzyFindPopup,
 	push_popup: PushComponent,
 	push_tags_popup: PushTagsComponent,
 	pull_popup: PullComponent,
@@ -274,7 +275,7 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
-			branch_find_popup: BranchFindPopup::new(
+			fuzzy_find_popup: FuzzyFindPopup::new(
 				&queue,
 				theme.clone(),
 				key_config.clone(),
@@ -584,7 +585,7 @@ impl App {
 		self,
 		[
 			find_file_popup,
-			branch_find_popup,
+			fuzzy_find_popup,
 			msg,
 			reset,
 			commit,
@@ -636,7 +637,7 @@ impl App {
 			rename_branch_popup,
 			revision_files_popup,
 			find_file_popup,
-			branch_find_popup,
+			fuzzy_find_popup,
 			push_popup,
 			push_tags_popup,
 			pull_popup,
@@ -900,8 +901,8 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
-			InternalEvent::OpenBranchFinder(branches) => {
-				self.branch_find_popup.open(branches)?;
+			InternalEvent::OpenFuzzyFinder(contents, target) => {
+				self.fuzzy_find_popup.open(contents, target)?;
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
@@ -925,8 +926,13 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
-			InternalEvent::BranchFinderChanged(idx) => {
-				self.select_branch_popup.branch_finder_update(idx)?;
+			InternalEvent::FuzzyFinderChanged(idx, target) => {
+				match target {
+					FuzzyFinderTarget::Branches => self
+						.select_branch_popup
+						.branch_finder_update(idx)?,
+				}
+
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}

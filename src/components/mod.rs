@@ -1,5 +1,4 @@
 mod blame_file;
-mod branch_find_popup;
 mod branchlist;
 mod changes;
 mod command;
@@ -14,6 +13,7 @@ mod externaleditor;
 mod fetch;
 mod file_find_popup;
 mod file_revlog;
+mod fuzzy_find_popup;
 mod help;
 mod inspect_commit;
 mod msg;
@@ -37,7 +37,6 @@ mod utils;
 
 pub use self::status_tree::StatusTreeComponent;
 pub use blame_file::{BlameFileComponent, BlameFileOpen};
-pub use branch_find_popup::BranchFindPopup;
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
@@ -51,6 +50,7 @@ pub use externaleditor::ExternalEditorComponent;
 pub use fetch::FetchComponent;
 pub use file_find_popup::FileFindPopup;
 pub use file_revlog::{FileRevOpen, FileRevlogComponent};
+pub use fuzzy_find_popup::FuzzyFindPopup;
 pub use help::HelpComponent;
 pub use inspect_commit::{InspectCommitComponent, InspectCommitOpen};
 pub use msg::MsgComponent;
@@ -234,6 +234,11 @@ pub trait DrawableComponent {
 pub enum EventState {
 	Consumed,
 	NotConsumed,
+}
+
+#[derive(Copy, Clone)]
+pub enum FuzzyFinderTarget {
+	Branches,
 }
 
 impl EventState {

@@ -1,7 +1,7 @@
 use crate::{
 	components::{
 		AppOption, BlameFileOpen, FileRevOpen, FileTreeOpen,
-		InspectCommitOpen,
+		FuzzyFinderTarget, InspectCommitOpen,
 	},
 	tabs::StashingOptions,
 };
@@ -113,11 +113,11 @@ pub enum InternalEvent {
 	///
 	OpenFileFinder(Vec<TreeFile>),
 	///
-	OpenBranchFinder(Vec<String>),
+	OpenFuzzyFinder(Vec<String>, FuzzyFinderTarget),
 	///
 	FileFinderChanged(Option<PathBuf>),
 	///
-	BranchFinderChanged(Option<usize>),
+	FuzzyFinderChanged(usize, FuzzyFinderTarget),
 	///
 	FetchRemotes,
 	///
