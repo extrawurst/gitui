@@ -125,7 +125,9 @@ impl FuzzyFindPopup {
 				if let Some(target) = self.target {
 					self.queue.push(
 						InternalEvent::FuzzyFinderChanged(
-							idx, target,
+							idx,
+							self.contents[idx].clone(),
+							target,
 						),
 					);
 				}

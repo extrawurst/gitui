@@ -11,7 +11,6 @@ mod cred;
 mod diff;
 mod externaleditor;
 mod fetch;
-mod file_find_popup;
 mod file_revlog;
 mod fuzzy_find_popup;
 mod help;
@@ -48,7 +47,6 @@ pub use create_branch::CreateBranchComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
 pub use fetch::FetchComponent;
-pub use file_find_popup::FileFindPopup;
 pub use file_revlog::{FileRevOpen, FileRevlogComponent};
 pub use fuzzy_find_popup::FuzzyFindPopup;
 pub use help::HelpComponent;
@@ -239,6 +237,7 @@ pub enum EventState {
 #[derive(Copy, Clone)]
 pub enum FuzzyFinderTarget {
 	Branches,
+	Files,
 }
 
 impl EventState {

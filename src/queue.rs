@@ -6,7 +6,7 @@ use crate::{
 	tabs::StashingOptions,
 };
 use asyncgit::{
-	sync::{diff::DiffLinePosition, CommitId, TreeFile},
+	sync::{diff::DiffLinePosition, CommitId},
 	PushType,
 };
 use bitflags::bitflags;
@@ -111,13 +111,9 @@ pub enum InternalEvent {
 	///
 	OptionSwitched(AppOption),
 	///
-	OpenFileFinder(Vec<TreeFile>),
-	///
 	OpenFuzzyFinder(Vec<String>, FuzzyFinderTarget),
 	///
-	FileFinderChanged(Option<PathBuf>),
-	///
-	FuzzyFinderChanged(usize, FuzzyFinderTarget),
+	FuzzyFinderChanged(usize, String, FuzzyFinderTarget),
 	///
 	FetchRemotes,
 	///
