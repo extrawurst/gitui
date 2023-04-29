@@ -119,7 +119,6 @@ pub enum AsyncNotification {
 #[derive(Clone, Copy, PartialEq)]
 enum Updater {
 	Ticker,
-	PollWatcher,
 	NotifyWatcher,
 }
 
@@ -154,11 +153,10 @@ fn main() -> Result<()> {
 	let mut repo_path = cliargs.repo_path;
 	let input = Input::new();
 
-	let updater = match (cliargs.notify_watcher, cliargs.poll_watcher)
-	{
-		(true, true) => Updater::PollWatcher,
-		(true, false) => Updater::NotifyWatcher,
-		_ => Updater::Ticker,
+	let updater = if cliargs.notify_watcher {
+		Updater::NotifyWatcher
+	} else {
+		Updater::Ticker
 	};
 
 	loop {
@@ -198,12 +196,9 @@ fn run_app(
 	let rx_input = input.receiver();
 
 	let (rx_ticker, rx_watcher) = match updater {
-		Updater::NotifyWatcher | Updater::PollWatcher => {
-			let poll_watcher = updater == Updater::PollWatcher;
-			let repo_watcher = RepoWatcher::new(
-				repo_work_dir(&repo)?.as_str(),
-				poll_watcher,
-			);
+		Updater::NotifyWatcher => {
+			let repo_watcher =
+				RepoWatcher::new(repo_work_dir(&repo)?.as_str());
 
 			(never(), repo_watcher.receiver())
 		}

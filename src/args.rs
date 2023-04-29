@@ -16,7 +16,6 @@ pub struct CliArgs {
 	pub theme: PathBuf,
 	pub repo_path: RepoPath,
 	pub notify_watcher: bool,
-	pub poll_watcher: bool,
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
@@ -57,14 +56,11 @@ pub fn process_cmdline() -> Result<CliArgs> {
 
 	let notify_watcher: bool =
 		*arg_matches.get_one("watcher").unwrap_or(&false);
-	let arg_poll: bool =
-		*arg_matches.get_one("poll").unwrap_or(&false);
 
 	Ok(CliArgs {
 		theme,
-		notify_watcher,
-		poll_watcher: arg_poll,
 		repo_path,
+		notify_watcher,
 	})
 }
 
@@ -103,12 +99,6 @@ fn app() -> ClapApp {
 			Arg::new("watcher")
 				.help("Use notify-based file system watcher instead of tick-based update. This is more performant, but can cause issues on some platforms. See https://github.com/extrawurst/gitui/blob/master/FAQ.md#watcher for details.")
 				.long("watcher")
-				.action(clap::ArgAction::SetTrue),
-		)
-		.arg(
-			Arg::new("poll")
-				.help("Poll folder for changes instead of using file system events. This can be useful if you run into issues with maximum # of file descriptors")
-				.long("polling")
 				.action(clap::ArgAction::SetTrue),
 		)
 		.arg(
