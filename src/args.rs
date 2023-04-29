@@ -101,7 +101,7 @@ fn app() -> ClapApp {
 		)
 		.arg(
 			Arg::new("watcher")
-				.help("Use notify-based file system watcher instead of tick-based update. This is more performant, but can cause issues in larger repositories")
+				.help("Use notify-based file system watcher instead of tick-based update. This is more performant, but can cause issues on some platforms. See https://github.com/extrawurst/gitui/blob/master/FAQ.md#watcher for details.")
 				.long("watcher")
 				.action(clap::ArgAction::SetTrue),
 		)
