@@ -319,5 +319,6 @@ mod tests {
 
 		assert_eq!(theme.selection_fg, Theme::default().selection_fg);
 		assert_eq!(theme.selection_bg, Color::White);
+		assert_ne!(theme.selection_bg, Theme::default().selection_bg);
 	}
 }
