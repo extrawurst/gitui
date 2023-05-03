@@ -23,7 +23,7 @@
 // #![deny(clippy::expect_used)]
 //TODO: consider cleaning some up and allow specific places
 #![allow(clippy::significant_drop_tightening)]
-
+#![allow(clippy::multiple_crate_versions)]
 pub mod asyncjob;
 mod blame;
 mod branches;
