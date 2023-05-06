@@ -180,6 +180,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			compare_commits_popup: CompareCommitsComponent::new(
 				&repo,
@@ -187,6 +188,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			external_editor_popup: ExternalEditorComponent::new(
 				theme.clone(),
