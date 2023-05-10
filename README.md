@@ -204,6 +204,12 @@ All contain a single binary file
 - Minimum supported `rust`/`cargo` version: `1.64`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
 
+- To build openssl dependency (see https://docs.rs/openssl/latest/openssl/)
+  - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/) 
+  - a c compiler (msvc, gcc or clang, cargo will find it)
+
+- To run the complete test suite python is required (and it must be invokable as `python`)
+
 ### Cargo Install
 
 The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui`. If you are not familiar with rust and cargo: [Getting Started with Rust](https://doc.rust-lang.org/book/ch01-00-getting-started.html)
