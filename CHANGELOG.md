@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![fuzzy-branch](assets/fuzzy-find-branch.gif)
 
+### Changed
+* minimum supported rust version bumped to 1.65 (thank you `time`)
+
 ### Breaking Change
 * `focus_XYZ` key bindings are merged into the `move_XYZ` set, so only one way to bind arrow-like keys from now on ([#1539](https://github.com/extrawurst/gitui/issues/1539))
 
