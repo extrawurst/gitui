@@ -1,7 +1,7 @@
 use crate::notify_mutex::NotifyableMutex;
 use anyhow::Result;
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use crossterm::event::{self, Event};
+use crossterm::event::{self, Event, Event::Key, KeyEventKind};
 use std::{
 	sync::{
 		atomic::{AtomicBool, Ordering},
@@ -113,6 +113,12 @@ impl Input {
 				arc_current.store(true, Ordering::Relaxed);
 
 				if let Some(e) = Self::poll(POLL_DURATION)? {
+					// windows send key release too, only process key press
+					if let Key(key) = e {
+						if key.kind != KeyEventKind::Press {
+							continue;
+						}
+					}
 					tx.send(InputEvent::Input(e))?;
 				}
 			} else {
