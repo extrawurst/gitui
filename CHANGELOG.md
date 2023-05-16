@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * show remote branches in log [[@cruessler](https://github.com/cruessler)] ([#1501](https://github.com/extrawurst/gitui/issues/1501))
 
 ### Fixes
+* fixed side effect of crossterm 0.26 on windows that caused double input of all keys [[@pm100]](https://github/pm100) ([#1686](https://github.com/extrawurst/gitui/pull/1686))
 * commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
 * improve help documentation for amend cmd ([#1448](https://github.com/extrawurst/gitui/issues/1448))
 * lag issue when showing files tab ([#1451](https://github.com/extrawurst/gitui/issues/1451))
