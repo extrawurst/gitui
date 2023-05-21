@@ -239,31 +239,35 @@ impl CommitComponent {
 		&mut self,
 		msg: String,
 	) -> Result<CommitResult> {
-		if !self.verify {
-			self.do_commit(&msg)?;
-			self.verify = true;
-			return Ok(CommitResult::ComitDone);
-		}
-		if let HookResult::NotOk(e) =
-			sync::hooks_pre_commit(&self.repo.borrow())?
-		{
-			log::error!("pre-commit hook error: {}", e);
-			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"pre-commit hook error:\n{e}"
-			)));
-			return Ok(CommitResult::Aborted);
+		// on exit verify should always be on
+		let verify = self.verify;
+		self.verify = true;
+
+		if verify {
+			// run pre commit hook - can reject commit
+			if let HookResult::NotOk(e) =
+				sync::hooks_pre_commit(&self.repo.borrow())?
+			{
+				log::error!("pre-commit hook error: {}", e);
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("pre-commit hook error:\n{e}"),
+				));
+				return Ok(CommitResult::Aborted);
+			}
 		}
 		let mut msg = message_prettify(msg, Some(b'#'))?;
-		if let HookResult::NotOk(e) =
-			sync::hooks_commit_msg(&self.repo.borrow(), &mut msg)?
-		{
-			log::error!("commit-msg hook error: {}", e);
-			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"commit-msg hook error:\n{e}"
-			)));
-			return Ok(CommitResult::Aborted);
+		if verify {
+			// run commit message check hook - can reject commit
+			if let HookResult::NotOk(e) =
+				sync::hooks_commit_msg(&self.repo.borrow(), &mut msg)?
+			{
+				log::error!("commit-msg hook error: {}", e);
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("commit-msg hook error:\n{e}"),
+				));
+				return Ok(CommitResult::Aborted);
+			}
 		}
-
 		self.do_commit(&msg)?;
 
 		if let HookResult::NotOk(e) =
