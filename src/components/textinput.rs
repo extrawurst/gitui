@@ -31,11 +31,13 @@ pub enum InputType {
 }
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
+#[allow(clippy::struct_excessive_bools)]
 pub struct TextInputComponent {
 	title: String,
 	default_msg: String,
 	msg: String,
 	visible: bool,
+	disabled: bool,
 	show_char_count: bool,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -57,6 +59,7 @@ impl TextInputComponent {
 		Self {
 			msg: String::new(),
 			visible: false,
+			disabled: false,
 			theme,
 			key_config,
 			show_char_count,
@@ -220,6 +223,16 @@ impl TextInputComponent {
 	///
 	pub fn set_default_msg(&mut self, v: String) {
 		self.default_msg = v;
+	}
+
+	///
+	pub fn disable(&mut self) {
+		self.disabled = true;
+	}
+
+	///
+	pub fn enable(&mut self) {
+		self.disabled = false;
 	}
 
 	fn get_draw_text(&self) -> Text {
@@ -419,7 +432,7 @@ impl Component for TextInputComponent {
 	}
 
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
-		if self.visible {
+		if self.visible && !self.disabled {
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide();

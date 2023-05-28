@@ -6,7 +6,7 @@ use super::{
 use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
-	strings,
+	strings::{self},
 	tabs::StashingOptions,
 	ui::style::SharedTheme,
 };
@@ -65,6 +65,12 @@ impl Component for StashMsgComponent {
 
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.enter) {
+					self.input.disable();
+					self.input.set_title(
+						strings::stash_popup_stashing(
+							&self.key_config,
+						),
+					);
 					self.git_stash.stash_save(
 						if self.input.get_text().is_empty() {
 							None
@@ -138,6 +144,7 @@ impl StashMsgComponent {
 	///
 	pub fn update_git(&mut self, ev: AsyncGitNotification) {
 		if self.is_visible() && ev == AsyncGitNotification::Stash {
+			self.input.enable();
 			self.input.clear();
 			self.hide();
 
