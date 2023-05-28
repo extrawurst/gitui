@@ -25,7 +25,7 @@ mod repository;
 mod reset;
 mod reword;
 mod staging;
-mod stash;
+pub mod stash;
 mod state;
 pub mod status;
 mod submodules;

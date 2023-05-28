@@ -11,14 +11,15 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::sync::{self, RepoPathRef};
+use asyncgit::{sync::RepoPathRef, AsyncGitNotification, AsyncStash};
+use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use ratatui::{backend::Backend, layout::Rect, Frame};
 
 pub struct StashMsgComponent {
-	repo: RepoPathRef,
 	options: StashingOptions,
 	input: TextInputComponent,
+	git_stash: AsyncStash,
 	queue: Queue,
 	key_config: SharedKeyConfig,
 }
@@ -64,8 +65,7 @@ impl Component for StashMsgComponent {
 
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.enter) {
-					let result = sync::stash_save(
-						&self.repo.borrow(),
+					self.git_stash.stash_save(
 						if self.input.get_text().is_empty() {
 							None
 						} else {
@@ -73,31 +73,7 @@ impl Component for StashMsgComponent {
 						},
 						self.options.stash_untracked,
 						self.options.keep_index,
-					);
-					match result {
-						Ok(_) => {
-							self.input.clear();
-							self.hide();
-
-							self.queue.push(InternalEvent::Update(
-								NeedsUpdate::ALL,
-							));
-						}
-						Err(e) => {
-							self.hide();
-							log::error!(
-								"e: {} (options: {:?})",
-								e,
-								self.options
-							);
-							self.queue.push(
-                                InternalEvent::ShowErrorMsg(format!(
-                                    "stash error:\n{}\noptions:\n{:?}",
-                                    e, self.options
-                                )),
-                            );
-						}
-					}
+					)?;
 				}
 
 				// stop key event propagation
@@ -125,8 +101,9 @@ impl Component for StashMsgComponent {
 impl StashMsgComponent {
 	///
 	pub fn new(
-		repo: RepoPathRef,
+		repo: &RepoPathRef,
 		queue: Queue,
+		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
@@ -141,12 +118,30 @@ impl StashMsgComponent {
 				true,
 			),
 			key_config,
-			repo,
+			git_stash: AsyncStash::new(
+				repo.borrow().clone(),
+				sender.clone(),
+			),
 		}
 	}
 
 	///
 	pub fn options(&mut self, options: StashingOptions) {
 		self.options = options;
+	}
+
+	///
+	pub fn anything_pending(&self) -> bool {
+		self.git_stash.is_pending()
+	}
+
+	///
+	pub fn update_git(&mut self, ev: AsyncGitNotification) {
+		if self.is_visible() && ev == AsyncGitNotification::Stash {
+			self.input.clear();
+			self.hide();
+
+			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
+		}
 	}
 }

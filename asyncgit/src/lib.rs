@@ -39,6 +39,7 @@ mod push_tags;
 pub mod remote_progress;
 pub mod remote_tags;
 mod revlog;
+mod stash;
 mod status;
 pub mod sync;
 mod tags;
@@ -57,6 +58,7 @@ pub use crate::{
 	push_tags::{AsyncPushTags, PushTagsRequest},
 	remote_progress::{RemoteProgress, RemoteProgressState},
 	revlog::{AsyncLog, FetchStatus},
+	stash::AsyncStash,
 	status::{AsyncStatus, StatusParams},
 	sync::{
 		diff::{DiffLine, DiffLineType, FileDiff},
@@ -77,6 +79,8 @@ use std::{
 pub enum AsyncGitNotification {
 	/// this indicates that no new state was fetched but that a async process finished
 	FinishUnchanged,
+	///
+	Stash,
 	///
 	Status,
 	///

@@ -1,3 +1,5 @@
+//! sync git api for stash
+
 use super::{CommitId, RepoPath};
 use crate::{
 	error::{Error, Result},

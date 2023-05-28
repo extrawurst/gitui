@@ -169,8 +169,9 @@ impl App {
 				key_config.clone(),
 			),
 			stashmsg_popup: StashMsgComponent::new(
-				repo.clone(),
+				&repo,
 				queue.clone(),
+				sender,
 				theme.clone(),
 				key_config.clone(),
 			),
@@ -514,6 +515,7 @@ impl App {
 		if let AsyncNotification::Git(ev) = ev {
 			self.status_tab.update_git(ev)?;
 			self.stashing_tab.update_git(ev)?;
+			self.stashmsg_popup.update_git(ev);
 			self.revlog.update_git(ev)?;
 			self.blame_file_popup.update_git(ev)?;
 			self.file_revlog_popup.update_git(ev)?;
@@ -553,6 +555,7 @@ impl App {
 		self.status_tab.anything_pending()
 			|| self.revlog.any_work_pending()
 			|| self.stashing_tab.anything_pending()
+			|| self.stashmsg_popup.anything_pending()
 			|| self.files_tab.anything_pending()
 			|| self.blame_file_popup.any_work_pending()
 			|| self.file_revlog_popup.any_work_pending()
