@@ -201,8 +201,14 @@ All contain a single binary file
 
 ### Requirements
 
-- Minimum supported `rust`/`cargo` version: `1.64`
+- Minimum supported `rust`/`cargo` version: `1.65`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
+
+- To build openssl dependency (see https://docs.rs/openssl/latest/openssl/)
+  - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/) 
+  - a c compiler (msvc, gcc or clang, cargo will find it)
+
+- To run the complete test suite python is required (and it must be invokable as `python`)
 
 ### Cargo Install
 
