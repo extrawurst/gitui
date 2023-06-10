@@ -13,7 +13,7 @@ use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use easy_cast::Cast;
-use tui::{
+use ratatui::{
 	backend::Backend, layout::Rect, widgets::Paragraph, Frame,
 };
 
@@ -142,7 +142,7 @@ impl CreateBranchComponent {
 			Err(e) => {
 				log::error!("create branch: {}", e,);
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("create branch error:\n{}", e,),
+					format!("create branch error:\n{e}",),
 				));
 			}
 		}

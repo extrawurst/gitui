@@ -18,7 +18,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	widgets::Clear,
@@ -44,7 +44,7 @@ impl DrawableComponent for CompareCommitsComponent {
 	) -> Result<()> {
 		if self.is_visible() {
 			let percentages = if self.diff.focused() {
-				(30, 70)
+				(0, 100)
 			} else {
 				(50, 50)
 			};
@@ -121,25 +121,21 @@ impl Component for CompareCommitsComponent {
 
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.exit_popup) {
-					self.hide_stacked(false);
+					if self.diff.focused() {
+						self.details.focus(true);
+						self.diff.focus(false);
+					} else {
+						self.hide_stacked(false);
+					}
 				} else if key_match(
 					e,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) && self.can_focus_diff()
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if key_match(
-					e,
-					self.key_config.keys.focus_left,
-				) && self.diff.focused()
+				} else if key_match(e, self.key_config.keys.move_left)
 				{
-					self.details.focus(true);
-					self.diff.focus(false);
-				} else if key_match(
-					e,
-					self.key_config.keys.focus_left,
-				) {
 					self.hide_stacked(false);
 				}
 

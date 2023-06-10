@@ -22,7 +22,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	text::Span,
@@ -123,7 +123,7 @@ impl PushTagsComponent {
 		if !self.pending {
 			if let Some(err) = self.git_push.last_result()? {
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("push tags failed:\n{}", err),
+					format!("push tags failed:\n{err}"),
 				));
 			}
 			self.hide();

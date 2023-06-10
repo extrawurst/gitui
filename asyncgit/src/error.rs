@@ -76,6 +76,14 @@ pub enum Error {
 	///
 	#[error("path string error")]
 	PathString,
+
+	///
+	#[error("no parent of commit found")]
+	NoParent,
+
+	///
+	#[error("not on a branch")]
+	NoBranch,
 }
 
 ///
@@ -83,12 +91,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
 	fn from(error: std::sync::PoisonError<T>) -> Self {
-		Self::Generic(format!("poison error: {}", error))
+		Self::Generic(format!("poison error: {error}"))
 	}
 }
 
 impl<T> From<crossbeam_channel::SendError<T>> for Error {
 	fn from(error: crossbeam_channel::SendError<T>) -> Self {
-		Self::Generic(format!("send error: {}", error))
+		Self::Generic(format!("send error: {error}"))
 	}
 }

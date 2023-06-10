@@ -14,10 +14,10 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::{hash, StatusItem, StatusItemType};
+use asyncgit::{hash, sync::CommitId, StatusItem, StatusItemType};
 use crossterm::event::Event;
+use ratatui::{backend::Backend, layout::Rect, text::Span, Frame};
 use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
-use tui::{backend::Backend, layout::Rect, text::Span, Frame};
 
 //TODO: use new `filetreelist` crate
 
@@ -35,6 +35,7 @@ pub struct StatusTreeComponent {
 	key_config: SharedKeyConfig,
 	scroll_top: Cell<usize>,
 	visible: bool,
+	revision: Option<CommitId>,
 }
 
 impl StatusTreeComponent {
@@ -58,12 +59,18 @@ impl StatusTreeComponent {
 			scroll_top: Cell::new(0),
 			pending: true,
 			visible: false,
+			revision: None,
 		}
+	}
+
+	pub fn set_commit(&mut self, revision: Option<CommitId>) {
+		self.revision = revision;
 	}
 
 	///
 	pub fn update(&mut self, list: &[StatusItem]) -> Result<()> {
 		self.pending = false;
+
 		let new_hash = hash(list);
 		if self.current_hash != new_hash {
 			self.tree.update(list)?;
@@ -161,7 +168,7 @@ impl StatusTreeComponent {
 		let indent_str = if indent == 0 {
 			String::new()
 		} else {
-			format!("{:w$}", " ", w = (indent as usize) * 2)
+			format!("{:w$}", " ", w = indent * 2)
 		};
 
 		if !visible {
@@ -186,7 +193,7 @@ impl StatusTreeComponent {
 						w = width as usize
 					)
 				} else {
-					format!("{} {}{}", status_char, indent_str, file)
+					format!("{status_char} {indent_str}{file}")
 				};
 
 				Some(Span::styled(
@@ -208,10 +215,7 @@ impl StatusTreeComponent {
 						w = width as usize
 					)
 				} else {
-					format!(
-						"  {}{}{}",
-						indent_str, collapse_char, string,
-					)
+					format!("  {indent_str}{collapse_char}{string}",)
 				};
 
 				Some(Span::styled(
@@ -222,7 +226,7 @@ impl StatusTreeComponent {
 		}
 	}
 
-	/// Returns a Vec<TextDrawInfo> which is used to draw the `FileTreeComponent` correctly,
+	/// Returns a `Vec<TextDrawInfo>` which is used to draw the `FileTreeComponent` correctly,
 	/// allowing folders to be folded up if they are alone in their directory
 	fn build_vec_text_draw_info_for_drawing(
 		&self,
@@ -298,6 +302,21 @@ impl StatusTreeComponent {
 			selection_offset_visible,
 		)
 	}
+
+	// Copy the real path of selected file to clickboard
+	fn copy_file_path(&self) {
+		if let Some(item) = self.selection() {
+			if crate::clipboard::copy_string(&item.info.full_path)
+				.is_err()
+			{
+				if let Some(queue) = &self.queue {
+					queue.push(InternalEvent::ShowErrorMsg(
+						strings::POPUP_FAIL_COPY.to_string(),
+					));
+				}
+			}
+		}
+	}
 }
 
 /// Used for drawing the `FileTreeComponent`
@@ -367,6 +386,7 @@ impl DrawableComponent for StatusTreeComponent {
 					)
 				})
 				.skip(self.scroll_top.get());
+
 			ui::draw_list(
 				f,
 				r,
@@ -395,6 +415,7 @@ impl Component for StatusTreeComponent {
 			)
 			.order(order::NAV),
 		);
+
 		out.push(
 			CommandInfo::new(
 				strings::commands::blame_file(&self.key_config),
@@ -403,11 +424,30 @@ impl Component for StatusTreeComponent {
 			)
 			.order(order::RARE_ACTION),
 		);
+
 		out.push(
 			CommandInfo::new(
 				strings::commands::open_file_history(
 					&self.key_config,
 				),
+				self.selection_file().is_some(),
+				self.focused || force_all,
+			)
+			.order(order::RARE_ACTION),
+		);
+
+		out.push(
+			CommandInfo::new(
+				strings::commands::edit_item(&self.key_config),
+				self.selection_file().is_some(),
+				self.focused || force_all,
+			)
+			.order(order::RARE_ACTION),
+		);
+
+		out.push(
+			CommandInfo::new(
+				strings::commands::copy_path(&self.key_config),
 				self.selection_file().is_some(),
 				self.focused || force_all,
 			)
@@ -428,7 +468,7 @@ impl Component for StatusTreeComponent {
 								StackablePopupOpen::BlameFile(
 									BlameFileOpen {
 										file_path: status_item.path,
-										commit_id: None,
+										commit_id: self.revision,
 										selection: None,
 									},
 								),
@@ -452,6 +492,21 @@ impl Component for StatusTreeComponent {
 							));
 						}
 					}
+					Ok(EventState::Consumed)
+				} else if key_match(e, self.key_config.keys.edit_file)
+				{
+					if let Some(status_item) = self.selection_file() {
+						if let Some(queue) = &self.queue {
+							queue.push(
+								InternalEvent::OpenExternalEditor(
+									Some(status_item.path),
+								),
+							);
+						}
+					}
+					Ok(EventState::Consumed)
+				} else if key_match(e, self.key_config.keys.copy) {
+					self.copy_file_path();
 					Ok(EventState::Consumed)
 				} else if key_match(e, self.key_config.keys.move_down)
 				{
@@ -544,8 +599,9 @@ mod tests {
 		//5    c1
 
 		// Set up test terminal
-		let test_backend = tui::backend::TestBackend::new(100, 100);
-		let mut terminal = tui::Terminal::new(test_backend)
+		let test_backend =
+			ratatui::backend::TestBackend::new(100, 100);
+		let mut terminal = ratatui::Terminal::new(test_backend)
 			.expect("Unable to set up terminal");
 		let mut frame = terminal.get_frame();
 
@@ -585,8 +641,9 @@ mod tests {
 		//5   d2
 
 		// Set up test terminal
-		let test_backend = tui::backend::TestBackend::new(100, 100);
-		let mut terminal = tui::Terminal::new(test_backend)
+		let test_backend =
+			ratatui::backend::TestBackend::new(100, 100);
+		let mut terminal = ratatui::Terminal::new(test_backend)
 			.expect("Unable to set up terminal");
 		let mut frame = terminal.get_frame();
 

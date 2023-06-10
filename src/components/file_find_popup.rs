@@ -13,14 +13,14 @@ use anyhow::Result;
 use asyncgit::sync::TreeFile;
 use crossterm::event::Event;
 use fuzzy_matcher::FuzzyMatcher;
-use std::borrow::Cow;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Margin, Rect},
 	text::{Span, Spans},
 	widgets::{Block, Borders, Clear},
 	Frame,
 };
+use std::borrow::Cow;
 
 pub struct FileFindPopup {
 	queue: Queue,
@@ -283,17 +283,16 @@ impl Component for FileFindPopup {
 		force_all: bool,
 	) -> CommandBlocking {
 		if self.is_visible() || force_all {
-			out.push(
-				CommandInfo::new(
-					strings::commands::close_popup(&self.key_config),
-					true,
-					true,
-				)
-				.order(1),
-			);
+			out.push(CommandInfo::new(
+				strings::commands::scroll_popup(&self.key_config),
+				true,
+				true,
+			));
 
 			out.push(CommandInfo::new(
-				strings::commands::scroll(&self.key_config),
+				strings::commands::close_fuzzy_finder(
+					&self.key_config,
+				),
 				true,
 				true,
 			));

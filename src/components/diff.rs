@@ -1,12 +1,14 @@
 use super::{
+	utils::scroll_horizontal::HorizontalScroll,
 	utils::scroll_vertical::VerticalScroll, CommandBlocking,
-	Direction, DrawableComponent, ScrollType,
+	Direction, DrawableComponent, HorizontalScrollType, ScrollType,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	string_utils::tabs_to_spaces,
+	string_utils::trim_offset,
 	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
@@ -18,8 +20,7 @@ use asyncgit::{
 };
 use bytesize::ByteSize;
 use crossterm::event::Event;
-use std::{borrow::Cow, cell::Cell, cmp, path::Path};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	symbols,
@@ -27,6 +28,7 @@ use tui::{
 	widgets::{Block, Borders, Paragraph},
 	Frame,
 };
+use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 
 #[derive(Default)]
 struct Current {
@@ -102,13 +104,15 @@ impl Selection {
 pub struct DiffComponent {
 	repo: RepoPathRef,
 	diff: Option<FileDiff>,
+	longest_line: usize,
 	pending: bool,
 	selection: Selection,
 	selected_hunk: Option<usize>,
 	current_size: Cell<(u16, u16)>,
 	focused: bool,
 	current: Current,
-	scroll: VerticalScroll,
+	vertical_scroll: VerticalScroll,
+	horizontal_scroll: HorizontalScroll,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -131,9 +135,11 @@ impl DiffComponent {
 			pending: false,
 			selected_hunk: None,
 			diff: None,
+			longest_line: 0,
 			current_size: Cell::new((0, 0)),
 			selection: Selection::Single(0),
-			scroll: VerticalScroll::new(),
+			vertical_scroll: VerticalScroll::new(),
+			horizontal_scroll: HorizontalScroll::new(),
 			theme,
 			key_config,
 			is_immutable,
@@ -155,7 +161,9 @@ impl DiffComponent {
 	pub fn clear(&mut self, pending: bool) {
 		self.current = Current::default();
 		self.diff = None;
-		self.scroll.reset();
+		self.longest_line = 0;
+		self.vertical_scroll.reset();
+		self.horizontal_scroll.reset();
 		self.selection = Selection::Single(0);
 		self.selected_hunk = None;
 		self.pending = pending;
@@ -182,8 +190,27 @@ impl DiffComponent {
 
 			self.diff = Some(diff);
 
+			self.longest_line = self
+				.diff
+				.iter()
+				.flat_map(|diff| diff.hunks.iter())
+				.flat_map(|hunk| hunk.lines.iter())
+				.map(|line| {
+					let converted_content = tabs_to_spaces(
+						line.content.as_ref().to_string(),
+					);
+
+					converted_content.len()
+				})
+				.max()
+				.map_or(0, |len| {
+					// Each hunk uses a 1-character wide vertical bar to its left to indicate
+					// selection.
+					len + 1
+				});
+
 			if reset_selection {
-				self.scroll.reset();
+				self.vertical_scroll.reset();
 				self.selection = Selection::Single(0);
 				self.update_selection(0);
 			} else {
@@ -198,7 +225,7 @@ impl DiffComponent {
 
 	fn move_selection(&mut self, move_type: ScrollType) {
 		if let Some(diff) = &self.diff {
-			let max = diff.lines.saturating_sub(1) as usize;
+			let max = diff.lines.saturating_sub(1);
 
 			let new_start = match move_type {
 				ScrollType::Down => {
@@ -229,7 +256,7 @@ impl DiffComponent {
 
 	fn update_selection(&mut self, new_start: usize) {
 		if let Some(diff) = &self.diff {
-			let max = diff.lines.saturating_sub(1) as usize;
+			let max = diff.lines.saturating_sub(1);
 			let new_start = cmp::min(max, new_start);
 			self.selection = Selection::Single(new_start);
 			self.selected_hunk =
@@ -239,6 +266,11 @@ impl DiffComponent {
 
 	fn lines_count(&self) -> usize {
 		self.diff.as_ref().map_or(0, |diff| diff.lines)
+	}
+
+	fn max_scroll_right(&self) -> usize {
+		self.longest_line
+			.saturating_sub(self.current_size.get().0.into())
 	}
 
 	fn modify_selection(&mut self, direction: Direction) {
@@ -303,9 +335,8 @@ impl DiffComponent {
 		if let Some(diff) = &self.diff {
 			if diff.hunks.is_empty() {
 				let is_positive = diff.size_delta >= 0;
-				let delta_byte_size = ByteSize::b(
-					diff.size_delta.unsigned_abs() as u64,
-				);
+				let delta_byte_size =
+					ByteSize::b(diff.size_delta.unsigned_abs());
 				let sign = if is_positive { "+" } else { "-" };
 				res.extend(vec![Spans::from(vec![
 					Span::raw(Cow::from("size: ")),
@@ -327,8 +358,7 @@ impl DiffComponent {
 					Span::raw(Cow::from(" (")),
 					Span::styled(
 						Cow::from(format!(
-							"{}{:}",
-							sign, delta_byte_size
+							"{sign}{delta_byte_size:}"
 						)),
 						self.theme.diff_line(
 							if is_positive {
@@ -342,7 +372,7 @@ impl DiffComponent {
 					Span::raw(Cow::from(")")),
 				])]);
 			} else {
-				let min = self.scroll.get_top();
+				let min = self.vertical_scroll.get_top();
 				let max = min + height as usize;
 
 				let mut line_cursor = 0_usize;
@@ -378,8 +408,10 @@ impl DiffComponent {
 											.selection
 											.contains(line_cursor),
 									hunk_selected,
-									i == hunk_len as usize - 1,
+									i == hunk_len - 1,
 									&self.theme,
+									self.horizontal_scroll
+										.get_right(),
 								));
 								lines_added += 1;
 							}
@@ -402,6 +434,7 @@ impl DiffComponent {
 		selected_hunk: bool,
 		end_of_hunk: bool,
 		theme: &SharedTheme,
+		scrolled_right: usize,
 	) -> Spans<'a> {
 		let style = theme.diff_hunk_marker(selected_hunk);
 
@@ -420,18 +453,22 @@ impl DiffComponent {
 			}
 		};
 
+		let content =
+			tabs_to_spaces(line.content.as_ref().to_string());
+		let content = trim_offset(&content, scrolled_right);
+
 		let filled = if selected {
 			// selected line
-			format!("{:w$}\n", line.content, w = width as usize)
+			format!("{content:w$}\n", w = width as usize)
 		} else {
 			// weird eof missing eol line
-			format!("{}\n", line.content)
+			format!("{content}\n")
 		};
 
 		Spans::from(vec![
 			left_side_of_line,
 			Span::styled(
-				Cow::from(tabs_to_spaces(filled)),
+				Cow::from(filled),
 				theme.diff_line(line.line_type, selected),
 			),
 		])
@@ -608,12 +645,18 @@ impl DrawableComponent for DiffComponent {
 			r.height.saturating_sub(2),
 		));
 
+		let current_width = self.current_size.get().0;
 		let current_height = self.current_size.get().1;
 
-		self.scroll.update(
+		self.vertical_scroll.update(
 			self.selection.get_end(),
 			self.lines_count(),
 			usize::from(current_height),
+		);
+
+		self.horizontal_scroll.update_no_selection(
+			self.longest_line,
+			current_width.into(),
 		);
 
 		let title = format!(
@@ -645,7 +688,11 @@ impl DrawableComponent for DiffComponent {
 		);
 
 		if self.focused() {
-			self.scroll.draw(f, r, &self.theme);
+			self.vertical_scroll.draw(f, r, &self.theme);
+
+			if self.max_scroll_right() > 0 {
+				self.horizontal_scroll.draw(f, r, &self.theme);
+			}
 		}
 
 		Ok(())
@@ -755,6 +802,18 @@ impl Component for DiffComponent {
 				} else if key_match(e, self.key_config.keys.page_down)
 				{
 					self.move_selection(ScrollType::PageDown);
+					Ok(EventState::Consumed)
+				} else if key_match(
+					e,
+					self.key_config.keys.move_right,
+				) {
+					self.horizontal_scroll
+						.move_right(HorizontalScrollType::Right);
+					Ok(EventState::Consumed)
+				} else if key_match(e, self.key_config.keys.move_left)
+				{
+					self.horizontal_scroll
+						.move_right(HorizontalScrollType::Left);
 					Ok(EventState::Consumed)
 				} else if key_match(
 					e,

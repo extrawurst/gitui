@@ -1,5 +1,6 @@
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
+use ratatui::style::{Color, Modifier, Style};
 use ron::{
 	de::from_bytes,
 	ser::{to_string_pretty, PrettyConfig},
@@ -11,47 +12,32 @@ use std::{
 	path::PathBuf,
 	rc::Rc,
 };
-use tui::style::{Color, Modifier, Style};
 
 pub type SharedTheme = Rc<Theme>;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Theme {
 	selected_tab: Color,
-	#[serde(with = "Color")]
 	command_fg: Color,
-	#[serde(with = "Color")]
 	selection_bg: Color,
-	#[serde(with = "Color")]
+	selection_fg: Color,
 	cmdbar_bg: Color,
-	#[serde(with = "Color")]
 	cmdbar_extra_lines_bg: Color,
-	#[serde(with = "Color")]
 	disabled_fg: Color,
-	#[serde(with = "Color")]
 	diff_line_add: Color,
-	#[serde(with = "Color")]
 	diff_line_delete: Color,
-	#[serde(with = "Color")]
 	diff_file_added: Color,
-	#[serde(with = "Color")]
 	diff_file_removed: Color,
-	#[serde(with = "Color")]
 	diff_file_moved: Color,
-	#[serde(with = "Color")]
 	diff_file_modified: Color,
-	#[serde(with = "Color")]
 	commit_hash: Color,
-	#[serde(with = "Color")]
 	commit_time: Color,
-	#[serde(with = "Color")]
 	commit_author: Color,
-	#[serde(with = "Color")]
 	danger_fg: Color,
-	#[serde(with = "Color")]
 	push_gauge_bg: Color,
-	#[serde(with = "Color")]
 	push_gauge_fg: Color,
+	tag_fg: Color,
+	branch_fg: Color,
 }
 
 impl Theme {
@@ -80,14 +66,11 @@ impl Theme {
 			Style::default().add_modifier(Modifier::BOLD)
 		} else {
 			Style::default()
-		};
+		}
+		.fg(self.branch_fg);
 
 		if selected {
-			branch.patch(
-				Style::default()
-					.fg(self.command_fg)
-					.bg(self.selection_bg),
-			)
+			branch.patch(Style::default().bg(self.selection_bg))
 		} else {
 			branch
 		}
@@ -105,7 +88,7 @@ impl Theme {
 
 	pub fn tags(&self, selected: bool) -> Style {
 		Style::default()
-			.fg(self.selected_tab)
+			.fg(self.tag_fg)
 			.add_modifier(Modifier::BOLD)
 			.bg(if selected {
 				self.selection_bg
@@ -164,7 +147,7 @@ impl Theme {
 
 	fn apply_select(&self, style: Style, selected: bool) -> Style {
 		if selected {
-			style.bg(self.selection_bg)
+			style.bg(self.selection_bg).fg(self.selection_fg)
 		} else {
 			style
 		}
@@ -325,6 +308,7 @@ impl Default for Theme {
 			selected_tab: Color::Reset,
 			command_fg: Color::White,
 			selection_bg: Color::Blue,
+			selection_fg: Color::White,
 			cmdbar_bg: Color::Blue,
 			cmdbar_extra_lines_bg: Color::Blue,
 			disabled_fg: Color::DarkGray,
@@ -340,6 +324,8 @@ impl Default for Theme {
 			danger_fg: Color::Red,
 			push_gauge_bg: Color::Blue,
 			push_gauge_fg: Color::Reset,
+			tag_fg: Color::LightMagenta,
+			branch_fg: Color::LightYellow,
 		}
 	}
 }

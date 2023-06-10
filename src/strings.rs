@@ -1,4 +1,8 @@
+use std::borrow::Cow;
+
 use asyncgit::sync::CommitId;
+use unicode_truncate::UnicodeTruncateStr;
+use unicode_width::UnicodeWidthStr;
 
 use crate::keys::SharedKeyConfig;
 
@@ -26,6 +30,9 @@ pub static PUSH_TAGS_STATES_DONE: &str = "done";
 pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
 pub static POPUP_TITLE_FUZZY_FIND: &str = "Fuzzy Finder";
 
+pub static POPUP_FAIL_COPY: &str = "Failed to copy text";
+pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
+
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
@@ -34,6 +41,7 @@ pub mod symbol {
 	pub const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
 	pub const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 	pub const EMPTY_STR: &str = "";
+	pub const ELLIPSIS: char = '\u{2026}'; // …
 }
 
 pub fn title_branches() -> String {
@@ -96,6 +104,9 @@ pub fn msg_title_info(_key_config: &SharedKeyConfig) -> String {
 pub fn commit_title() -> String {
 	"Commit".to_string()
 }
+pub fn commit_reword_title() -> String {
+	"Reword Commit".to_string()
+}
 
 pub fn commit_title_merge() -> String {
 	"Commit (Merge)".to_string()
@@ -110,7 +121,7 @@ pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {
 	"type commit message..".to_string()
 }
 pub fn commit_first_line_warning(count: usize) -> String {
-	format!("[subject length: {}]", count)
+	format!("[subject length: {count}]")
 }
 pub const fn branch_name_invalid() -> &'static str {
 	"[invalid name]"
@@ -157,9 +168,9 @@ pub fn confirm_msg_merge(
 	rebase: bool,
 ) -> String {
 	if rebase {
-		format!("Rebase onto {} incoming commits?", incoming)
+		format!("Rebase onto {incoming} incoming commits?")
 	} else {
-		format!("Merge of {} incoming commits?", incoming)
+		format!("Merge of {incoming} incoming commits?")
 	}
 }
 
@@ -185,8 +196,7 @@ pub fn confirm_msg_reset() -> String {
 }
 pub fn confirm_msg_reset_lines(lines: usize) -> String {
 	format!(
-		"are you sure you want to discard {} selected lines?",
-		lines
+		"are you sure you want to discard {lines} selected lines?"
 	)
 }
 pub fn confirm_msg_stashdrop(
@@ -225,7 +235,7 @@ pub fn confirm_msg_delete_branch(
 	_key_config: &SharedKeyConfig,
 	branch_ref: &str,
 ) -> String {
-	format!("Confirm deleting branch: '{}' ?", branch_ref)
+	format!("Confirm deleting branch: '{branch_ref}' ?")
 }
 pub fn confirm_title_delete_remote_branch(
 	_key_config: &SharedKeyConfig,
@@ -236,7 +246,7 @@ pub fn confirm_msg_delete_remote_branch(
 	_key_config: &SharedKeyConfig,
 	branch_ref: &str,
 ) -> String {
-	format!("Confirm deleting remote branch: '{}' ?", branch_ref)
+	format!("Confirm deleting remote branch: '{branch_ref}' ?")
 }
 pub fn confirm_title_delete_tag(
 	_key_config: &SharedKeyConfig,
@@ -247,13 +257,13 @@ pub fn confirm_msg_delete_tag(
 	_key_config: &SharedKeyConfig,
 	tag_name: &str,
 ) -> String {
-	format!("Confirm deleting Tag: '{}' ?", tag_name)
+	format!("Confirm deleting Tag: '{tag_name}' ?")
 }
 pub fn confirm_title_delete_tag_remote() -> String {
 	"Delete Tag (remote)".to_string()
 }
 pub fn confirm_msg_delete_tag_remote(remote_name: &str) -> String {
-	format!("Confirm deleting tag on remote '{}'?", remote_name)
+	format!("Confirm deleting tag on remote '{remote_name}'?")
 }
 pub fn confirm_title_force_push(
 	_key_config: &SharedKeyConfig,
@@ -265,8 +275,7 @@ pub fn confirm_msg_force_push(
 	branch_ref: &str,
 ) -> String {
 	format!(
-        "Confirm force push to branch '{}' ?  This may rewrite history.",
-        branch_ref
+        "Confirm force push to branch '{branch_ref}' ?  This may rewrite history."
     )
 }
 pub fn log_title(_key_config: &SharedKeyConfig) -> String {
@@ -277,10 +286,7 @@ pub fn file_log_title(
 	selected: usize,
 	revisions: usize,
 ) -> String {
-	format!(
-		"Revisions of '{}' ({}/{})",
-		file_path, selected, revisions
-	)
+	format!("Revisions of '{file_path}' ({selected}/{revisions})")
 }
 pub fn find_commit_title(_key_config: &SharedKeyConfig) -> String {
     "Find Commit".to_string()
@@ -298,7 +304,7 @@ pub fn tag_popup_name_msg() -> String {
 	"type tag name".to_string()
 }
 pub fn tag_popup_annotation_title(name: &str) -> String {
-	format!("Tag Annotation ({})", name)
+	format!("Tag Annotation ({name})")
 }
 pub fn tag_popup_annotation_msg() -> String {
 	"type tag annotation".to_string()
@@ -354,6 +360,25 @@ pub fn rename_branch_popup_msg(
 	"new branch name".to_string()
 }
 
+pub fn copy_success(s: &str) -> String {
+	format!("{POPUP_SUCCESS_COPY} \"{s}\"")
+}
+
+pub fn ellipsis_trim_start(s: &str, width: usize) -> Cow<str> {
+	if s.width() <= width {
+		Cow::Borrowed(s)
+	} else {
+		Cow::Owned(format!(
+			"[{}]{}",
+			symbol::ELLIPSIS,
+			s.unicode_truncate_start(
+				width.saturating_sub(3 /* front indicator */)
+			)
+			.0
+		))
+	}
+}
+
 pub mod commit {
 	use crate::keys::SharedKeyConfig;
 
@@ -384,7 +409,7 @@ pub mod commit {
 		old: bool,
 		hash: &str,
 	) -> String {
-		format!("{}: {}", if old { "Old" } else { "New" }, hash)
+		format!("{}: {hash}", if old { "Old" } else { "New" })
 	}
 	pub fn details_message_title(
 		_key_config: &SharedKeyConfig,
@@ -405,7 +430,7 @@ pub mod commands {
 	static CMD_GROUP_GENERAL: &str = "-- General --";
 	static CMD_GROUP_DIFF: &str = "-- Diff --";
 	static CMD_GROUP_CHANGES: &str = "-- Changes --";
-	static CMD_GROUP_COMMIT: &str = "-- Commit --";
+	static CMD_GROUP_COMMIT_POPUP: &str = "-- Commit Popup --";
 	static CMD_GROUP_STASHING: &str = "-- Stashing --";
 	static CMD_GROUP_STASHES: &str = "-- Stashes --";
 	static CMD_GROUP_LOG: &str = "-- Log --";
@@ -428,6 +453,16 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.file_find)
 			),
 			"find file in tree",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn find_branch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Find [{}]",
+				key_config.get_hint(key_config.keys.branch_find)
+			),
+			"find branch in list",
 			CMD_GROUP_GENERAL,
 		)
 	}
@@ -501,8 +536,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Scroll [{}{}]",
-				key_config.get_hint(key_config.keys.focus_above),
-				key_config.get_hint(key_config.keys.focus_below)
+				key_config.get_hint(key_config.keys.move_up),
+				key_config.get_hint(key_config.keys.move_down)
 			),
 			"scroll up or down in focused view",
 			CMD_GROUP_GENERAL,
@@ -539,6 +574,16 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.copy),
 			),
 			"copy selected commit hash to clipboard",
+			CMD_GROUP_LOG,
+		)
+	}
+	pub fn copy_path(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Copy Path [{}]",
+				key_config.get_hint(key_config.keys.copy),
+			),
+			"copy selected file path to clipboard",
 			CMD_GROUP_LOG,
 		)
 	}
@@ -667,6 +712,19 @@ pub mod commands {
 			CMD_GROUP_DIFF,
 		)
 	}
+	pub fn close_fuzzy_finder(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Close [{}{}]",
+				key_config.get_hint(key_config.keys.exit_popup),
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"close fuzzy finder",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn close_popup(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
@@ -674,6 +732,17 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.exit_popup),
 			),
 			"close overlay (e.g commit, help)",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn scroll_popup(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Scroll [{}{}]",
+				key_config.get_hint(key_config.keys.popup_down),
+				key_config.get_hint(key_config.keys.popup_up),
+			),
+			"scroll up or down in popup",
 			CMD_GROUP_GENERAL,
 		)
 	}
@@ -840,7 +909,7 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.open_commit),
 			),
 			"open commit popup (available in non-empty stage)",
-			CMD_GROUP_COMMIT,
+			CMD_GROUP_GENERAL,
 		)
 	}
 	pub fn commit_open_editor(
@@ -853,7 +922,20 @@ pub mod commands {
 					.get_hint(key_config.keys.open_commit_editor),
 			),
 			"open commit editor (available in commit popup)",
-			CMD_GROUP_COMMIT,
+			CMD_GROUP_COMMIT_POPUP,
+		)
+	}
+	pub fn commit_next_msg_from_history(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Previous Msg [{}]",
+				key_config
+					.get_hint(key_config.keys.commit_history_next),
+			),
+			"use previous commit message from history",
+			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
 	pub fn commit_enter(key_config: &SharedKeyConfig) -> CommandText {
@@ -863,10 +945,26 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.enter),
 			),
 			"commit (available when commit message is non-empty)",
-			CMD_GROUP_COMMIT,
+			CMD_GROUP_COMMIT_POPUP,
 		)
 		.hide_help()
 	}
+	pub fn toggle_verify(
+		key_config: &SharedKeyConfig,
+		current_verify: bool,
+	) -> CommandText {
+		let verb = if current_verify { "disable" } else { "enable" };
+		CommandText::new(
+			format!(
+				"{} hooks [{}]",
+				verb,
+				key_config.get_hint(key_config.keys.toggle_verify),
+			),
+			"toggle running on commit hooks (available in commit popup)",
+			CMD_GROUP_COMMIT_POPUP,
+		)
+	}
+
 	pub fn commit_amend(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
@@ -874,7 +972,7 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.commit_amend),
 			),
 			"amend last commit (available in commit popup)",
-			CMD_GROUP_COMMIT,
+			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
 	pub fn edit_item(key_config: &SharedKeyConfig) -> CommandText {
@@ -958,7 +1056,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Back [{}]",
-				key_config.get_hint(key_config.keys.focus_left),
+				key_config.get_hint(key_config.keys.move_left),
 			),
 			"view and select changed files",
 			CMD_GROUP_GENERAL,
@@ -970,7 +1068,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Diff [{}]",
-				key_config.get_hint(key_config.keys.focus_right),
+				key_config.get_hint(key_config.keys.move_right),
 			),
 			"inspect file diff",
 			CMD_GROUP_GENERAL,
@@ -1071,7 +1169,7 @@ pub mod commands {
 				if marked == 0 {
 					String::default()
 				} else {
-					format!(" {}", marked)
+					format!(" {marked}")
 				},
 				key_config.get_hint(key_config.keys.stash_drop),
 			),
@@ -1097,7 +1195,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Inspect [{}]",
-				key_config.get_hint(key_config.keys.focus_right),
+				key_config.get_hint(key_config.keys.stash_open),
 			),
 			"open stash commit details (allows to diff files)",
 			CMD_GROUP_STASHES,
@@ -1122,7 +1220,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Inspect [{}]",
-				key_config.get_hint(key_config.keys.focus_right),
+				key_config.get_hint(key_config.keys.move_right),
 			),
 			"inspect selected commit in detail",
 			CMD_GROUP_GENERAL,
@@ -1163,6 +1261,19 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn log_checkout_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Checkout [{}]",
+				key_config
+					.get_hint(key_config.keys.log_checkout_commit),
+			),
+			"checkout commit",
+			CMD_GROUP_LOG,
+		)
+	}
 	pub fn inspect_file_tree(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -1185,6 +1296,51 @@ pub mod commands {
 					.get_hint(key_config.keys.status_reset_item),
 			),
 			"revert commit",
+			CMD_GROUP_LOG,
+		)
+	}
+	pub fn log_reset_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Reset [{}]",
+				key_config.get_hint(key_config.keys.log_reset_comit),
+			),
+			"reset to commit",
+			CMD_GROUP_LOG,
+		)
+	}
+	pub fn log_reword_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Reword [{}]",
+				key_config.get_hint(key_config.keys.log_reword_comit),
+			),
+			"reword commit message",
+			CMD_GROUP_LOG,
+		)
+	}
+	pub fn reset_commit(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Confirm  [{}]",
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"confirm reset",
+			CMD_GROUP_LOG,
+		)
+	}
+	pub fn reset_type(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Change Type  [{}{}]",
+				key_config.get_hint(key_config.keys.move_up),
+				key_config.get_hint(key_config.keys.move_down)
+			),
+			"change reset type",
 			CMD_GROUP_LOG,
 		)
 	}
@@ -1424,6 +1580,17 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+
+	pub fn status_fetch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Fetch [{}]",
+				key_config.get_hint(key_config.keys.fetch),
+			),
+			"fetch",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn status_pull(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
@@ -1441,7 +1608,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Fetch [{}]",
-				key_config.get_hint(key_config.keys.pull),
+				key_config.get_hint(key_config.keys.fetch),
 			),
 			"fetch/prune",
 			CMD_GROUP_BRANCHES,

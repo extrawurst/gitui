@@ -1,7 +1,7 @@
 use super::{
 	command_pump, event_pump, visibility_blocking, CommandBlocking,
 	CommandInfo, CommitDetailsComponent, Component, DiffComponent,
-	DrawableComponent, EventState, FileTreeOpen,
+	DrawableComponent, EventState,
 };
 use crate::{
 	accessors,
@@ -17,7 +17,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	widgets::Clear,
@@ -71,7 +71,7 @@ impl DrawableComponent for InspectCommitComponent {
 	) -> Result<()> {
 		if self.is_visible() {
 			let percentages = if self.diff.focused() {
-				(30, 70)
+				(0, 100)
 			} else {
 				(50, 50)
 			};
@@ -126,7 +126,7 @@ impl Component for InspectCommitComponent {
 			));
 
 			out.push(CommandInfo::new(
-				strings::commands::diff_focus_left(&self.key_config),
+				strings::commands::close_popup(&self.key_config),
 				true,
 				self.diff.focused() || force_all,
 			));
@@ -157,41 +157,21 @@ impl Component for InspectCommitComponent {
 
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.exit_popup) {
-					self.hide_stacked(false);
+					if self.diff.focused() {
+						self.details.focus(true);
+						self.diff.focus(false);
+					} else {
+						self.hide_stacked(false);
+					}
 				} else if key_match(
 					e,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) && self.can_focus_diff()
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if key_match(
-					e,
-					self.key_config.keys.focus_left,
-				) && self.diff.focused()
+				} else if key_match(e, self.key_config.keys.move_left)
 				{
-					self.details.focus(true);
-					self.diff.focus(false);
-				} else if key_match(
-					e,
-					self.key_config.keys.open_file_tree,
-				) {
-					if let Some(commit) = self
-						.open_request
-						.as_ref()
-						.map(|open| open.commit_id)
-					{
-						self.hide_stacked(true);
-						self.queue.push(InternalEvent::OpenPopup(
-							StackablePopupOpen::FileTree(
-								FileTreeOpen::new(commit),
-							),
-						));
-					}
-				} else if key_match(
-					e,
-					self.key_config.keys.focus_left,
-				) {
 					self.hide_stacked(false);
 				}
 

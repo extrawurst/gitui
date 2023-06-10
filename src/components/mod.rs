@@ -1,4 +1,5 @@
 mod blame_file;
+mod branch_find_popup;
 mod branchlist;
 mod changes;
 mod command;
@@ -23,6 +24,7 @@ mod push;
 mod push_tags;
 mod rename_branch;
 mod reset;
+mod reset_popup;
 mod revision_files;
 mod revision_files_popup;
 mod stashmsg;
@@ -36,6 +38,7 @@ mod utils;
 
 pub use self::status_tree::StatusTreeComponent;
 pub use blame_file::{BlameFileComponent, BlameFileOpen};
+pub use branch_find_popup::BranchFindPopup;
 pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
@@ -53,14 +56,13 @@ pub use file_revlog::{FileRevOpen, FileRevlogComponent};
 pub use help::HelpComponent;
 pub use inspect_commit::{InspectCommitComponent, InspectCommitOpen};
 pub use msg::MsgComponent;
-pub use options_popup::{
-	AppOption, OptionsPopupComponent, SharedOptions,
-};
+pub use options_popup::{AppOption, OptionsPopupComponent};
 pub use pull::PullComponent;
 pub use push::PushComponent;
 pub use push_tags::PushTagsComponent;
 pub use rename_branch::RenameBranchComponent;
 pub use reset::ConfirmComponent;
+pub use reset_popup::ResetPopupComponent;
 pub use revision_files::RevisionFilesComponent;
 pub use revision_files_popup::{FileTreeOpen, RevisionFilesPopup};
 pub use stashmsg::StashMsgComponent;
@@ -75,14 +77,14 @@ pub use utils::filetree::FileTreeItemKind;
 use crate::ui::style::Theme;
 use anyhow::Result;
 use crossterm::event::Event;
-use std::convert::From;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Span, Text},
 	widgets::{Block, BorderType, Borders, Paragraph, Wrap},
 	Frame,
 };
+use std::convert::From;
 
 /// creates accessors for a list of components
 ///
@@ -188,6 +190,12 @@ pub enum ScrollType {
 	End,
 	PageUp,
 	PageDown,
+}
+
+#[derive(Copy, Clone)]
+pub enum HorizontalScrollType {
+	Left,
+	Right,
 }
 
 #[derive(Copy, Clone)]

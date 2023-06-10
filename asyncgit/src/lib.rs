@@ -21,9 +21,12 @@
 #![allow(clippy::missing_errors_doc)]
 //TODO: get this in someday since expect still leads us to crashes sometimes
 // #![deny(clippy::expect_used)]
+//TODO: consider cleaning some up and allow specific places
+#![allow(clippy::significant_drop_tightening)]
 
 pub mod asyncjob;
 mod blame;
+mod branches;
 pub mod cached;
 mod commit_files;
 mod diff;
@@ -39,9 +42,11 @@ mod revlog;
 mod status;
 pub mod sync;
 mod tags;
+mod treefiles;
 
 pub use crate::{
 	blame::{AsyncBlame, BlameParams},
+	branches::AsyncBranchesJob,
 	commit_files::{AsyncCommitFiles, CommitFilesParams},
 	diff::{AsyncDiff, DiffParams, DiffType},
 	error::{Error, Result},
@@ -59,6 +64,7 @@ pub use crate::{
 		status::{StatusItem, StatusItemType},
 	},
 	tags::AsyncTags,
+	treefiles::AsyncTreeFilesJob,
 };
 pub use git2::message_prettify;
 use std::{
@@ -95,6 +101,10 @@ pub enum AsyncGitNotification {
 	RemoteTags,
 	///
 	Fetch,
+	///
+	Branches,
+	///
+	TreeFiles,
 }
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait

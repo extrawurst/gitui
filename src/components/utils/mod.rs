@@ -5,6 +5,7 @@ use unicode_width::UnicodeWidthStr;
 pub mod emoji;
 pub mod filetree;
 pub mod logitems;
+pub mod scroll_horizontal;
 pub mod scroll_vertical;
 pub mod statustree;
 pub mod async_commit_filter;
@@ -13,13 +14,15 @@ pub mod async_commit_filter;
 /// It will show a popup in that case
 #[macro_export]
 macro_rules! try_or_popup {
-	($self:ident, $msg:literal, $e:expr) => {
+	($self:ident, $msg:expr, $e:expr) => {
 		if let Err(err) = $e {
 			::log::error!("{} {}", $msg, err);
-			$self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"{}\n{}",
-				$msg, err
-			)));
+			$self.queue.push(
+				$crate::queue::InternalEvent::ShowErrorMsg(format!(
+					"{}\n{}",
+					$msg, err
+				)),
+			);
 		}
 	};
 }
@@ -27,9 +30,11 @@ macro_rules! try_or_popup {
 /// helper func to convert unix time since epoch to formated time string in local timezone
 pub fn time_to_string(secs: i64, short: bool) -> String {
 	let time = DateTime::<Local>::from(DateTime::<Utc>::from_utc(
-		NaiveDateTime::from_timestamp(secs, 0),
+		NaiveDateTime::from_timestamp_opt(secs, 0)
+			.unwrap_or_default(),
 		Utc,
 	));
+
 	time.format(if short {
 		"%Y-%m-%d"
 	} else {
@@ -48,11 +53,11 @@ pub fn string_width_align(s: &str, width: usize) -> String {
 	if (len >= width_wo_postfix && len <= width)
 		|| (len <= width_wo_postfix)
 	{
-		format!("{:w$}", s, w = width)
+		format!("{s:width$}")
 	} else {
 		let mut s = s.to_string();
 		s.truncate(find_truncate_point(&s, width_wo_postfix));
-		format!("{}{}", s, POSTFIX)
+		format!("{s}{POSTFIX}")
 	}
 }
 

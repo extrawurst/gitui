@@ -1,12 +1,12 @@
 use easy_cast::Cast;
-use std::iter;
-use tui::{
+use ratatui::{
 	buffer::Buffer,
 	layout::{Alignment, Rect},
 	style::Style,
 	text::{StyledGrapheme, Text},
 	widgets::{Block, StatefulWidget, Widget, Wrap},
 };
+use std::iter;
 use unicode_width::UnicodeWidthStr;
 
 use super::reflow::{LineComposer, LineTruncator, WordWrapper};

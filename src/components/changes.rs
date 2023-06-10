@@ -1,11 +1,12 @@
 use super::{
 	status_tree::StatusTreeComponent,
 	utils::filetree::{FileTreeItem, FileTreeItemKind},
-	CommandBlocking, DrawableComponent, SharedOptions,
+	CommandBlocking, DrawableComponent,
 };
 use crate::{
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
@@ -16,8 +17,8 @@ use asyncgit::{
 	StatusItem, StatusItemType,
 };
 use crossterm::event::Event;
+use ratatui::{backend::Backend, layout::Rect, Frame};
 use std::path::Path;
-use tui::{backend::Backend, layout::Rect, Frame};
 
 ///
 pub struct ChangesComponent {
@@ -106,7 +107,7 @@ impl ChangesComponent {
 					};
 				} else {
 					let config =
-						self.options.borrow().status_show_untracked;
+						self.options.borrow().status_show_untracked();
 
 					//TODO: check if we can handle the one file case with it aswell
 					sync::stage_add_all(
@@ -122,7 +123,7 @@ impl ChangesComponent {
 				// would mean that after staging the workdir becomes empty
 				if sync::is_workdir_clean(
 					&self.repo.borrow(),
-					self.options.borrow().status_show_untracked,
+					self.options.borrow().status_show_untracked(),
 				)? {
 					self.queue
 						.push(InternalEvent::StatusLastFileMoved);
@@ -140,7 +141,7 @@ impl ChangesComponent {
 	}
 
 	fn index_add_all(&mut self) -> Result<()> {
-		let config = self.options.borrow().status_show_untracked;
+		let config = self.options.borrow().status_show_untracked();
 
 		sync::stage_add_all(&self.repo.borrow(), "*", config)?;
 
@@ -319,7 +320,21 @@ impl Component for ChangesComponent {
 	fn focused(&self) -> bool {
 		self.files.focused()
 	}
+
 	fn focus(&mut self, focus: bool) {
 		self.files.focus(focus);
+	}
+
+	fn is_visible(&self) -> bool {
+		self.files.is_visible()
+	}
+
+	fn hide(&mut self) {
+		self.files.hide();
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.files.show()?;
+		Ok(())
 	}
 }

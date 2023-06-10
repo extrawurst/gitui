@@ -18,8 +18,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::convert::TryInto;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Rect},
 	symbols::line::VERTICAL,
@@ -27,6 +26,7 @@ use tui::{
 	widgets::{Block, Borders, Cell, Clear, Row, Table, TableState},
 	Frame,
 };
+use std::convert::TryInto;
 
 static NO_COMMIT_ID: &str = "0000000";
 static NO_AUTHOR: &str = "<no author>";
@@ -123,6 +123,7 @@ impl DrawableComponent for BlameFileComponent {
 				//
 				// https://github.com/fdehau/tui-rs/issues/448
 				table_state.selected().unwrap_or(0),
+				ui::Orientation::Vertical,
 			);
 
 			self.table_state.set(table_state);
@@ -223,7 +224,7 @@ impl Component for BlameFileComponent {
 					self.move_selection(ScrollType::PageUp);
 				} else if key_match(
 					key,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) {
 					if let Some(commit_id) = self.selected_commit() {
 						self.hide_stacked(true);
@@ -454,10 +455,7 @@ impl BlameFileComponent {
 		let line_number_width = self.get_line_number_width();
 		cells.push(
 			Cell::from(format!(
-				"{:>line_number_width$}{}",
-				line_number,
-				VERTICAL,
-				line_number_width = line_number_width,
+				"{line_number:>line_number_width$}{VERTICAL}",
 			))
 			.style(self.theme.text(true, false)),
 		);
@@ -483,11 +481,7 @@ impl BlameFileComponent {
 			|| NO_AUTHOR.into(),
 			|hunk| string_width_align(&hunk.author, author_width),
 		);
-		let author = format!(
-			"{:author_width$}",
-			truncated_author,
-			author_width = MAX_AUTHOR_WIDTH
-		);
+		let author = format!("{truncated_author:MAX_AUTHOR_WIDTH$}");
 		let time = blame_hunk.map_or_else(String::new, |hunk| {
 			utils::time_to_string(hunk.time, true)
 		});

@@ -22,7 +22,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	text::Span,
@@ -181,7 +181,7 @@ impl PushComponent {
 		if !self.pending {
 			if let Some(err) = self.git_push.last_result()? {
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("push failed:\n{}", err),
+					format!("push failed:\n{err}"),
 				));
 			}
 			self.hide();

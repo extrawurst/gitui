@@ -1,10 +1,10 @@
 use std::cell::Cell;
 
-use tui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
 	components::ScrollType,
-	ui::{draw_scrollbar, style::SharedTheme},
+	ui::{draw_scrollbar, style::SharedTheme, Orientation},
 };
 
 pub struct VerticalScroll {
@@ -95,6 +95,7 @@ impl VerticalScroll {
 			theme,
 			self.max_top.get(),
 			self.top.get(),
+			Orientation::Vertical,
 		);
 	}
 }

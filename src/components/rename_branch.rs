@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
-use tui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{backend::Backend, layout::Rect, Frame};
 
 pub struct RenameBranchComponent {
 	repo: RepoPathRef,
@@ -144,7 +144,7 @@ impl RenameBranchComponent {
 				Err(e) => {
 					log::error!("create branch: {}", e,);
 					self.queue.push(InternalEvent::ShowErrorMsg(
-						format!("rename branch error:\n{}", e,),
+						format!("rename branch error:\n{e}",),
 					));
 				}
 			}

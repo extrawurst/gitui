@@ -150,10 +150,10 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		commit(repo_path, "commit1").unwrap();
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
@@ -162,7 +162,7 @@ mod tests {
 		walk.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 1);
-		assert_eq!(items[0], oid2.into());
+		assert_eq!(items[0], oid2);
 
 		Ok(())
 	}
@@ -175,10 +175,10 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		commit(repo_path, "commit1").unwrap();
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
@@ -190,7 +190,7 @@ mod tests {
 		dbg!(&info);
 
 		assert_eq!(items.len(), 2);
-		assert_eq!(items[0], oid2.into());
+		assert_eq!(items[0], oid2);
 
 		let mut items = Vec::new();
 		walk.read(&mut items).unwrap();
@@ -209,18 +209,17 @@ mod tests {
 		let repo_path: RepoPath =
 			root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(&repo_path, file_path).unwrap();
 
 		let _first_commit_id = commit(&repo_path, "commit1").unwrap();
 
-		File::create(&root.join(second_file_path))?
-			.write_all(b"a")?;
+		File::create(root.join(second_file_path))?.write_all(b"a")?;
 		stage_add_file(&repo_path, second_file_path).unwrap();
 
 		let second_commit_id = commit(&repo_path, "commit2").unwrap();
 
-		File::create(&root.join(file_path))?.write_all(b"b")?;
+		File::create(root.join(file_path))?.write_all(b"b")?;
 		stage_add_file(&repo_path, file_path).unwrap();
 
 		let _third_commit_id = commit(&repo_path, "commit3").unwrap();
@@ -235,7 +234,7 @@ mod tests {
 		walker.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 1);
-		assert_eq!(items[0], second_commit_id.into());
+		assert_eq!(items[0], second_commit_id);
 
 		let mut items = Vec::new();
 		walker.read(&mut items).unwrap();

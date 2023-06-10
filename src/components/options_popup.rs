@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState,
@@ -7,14 +5,15 @@ use super::{
 use crate::{
 	components::utils::string_width_align,
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{InternalEvent, Queue},
 	strings::{self},
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::sync::{diff::DiffOptions, ShowUntrackedFilesConfig};
+use asyncgit::sync::ShowUntrackedFilesConfig;
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	style::{Modifier, Style},
@@ -30,14 +29,6 @@ pub enum AppOption {
 	DiffContextLines,
 	DiffInterhunkLines,
 }
-
-#[derive(Default, Copy, Clone)]
-pub struct Options {
-	pub status_show_untracked: Option<ShowUntrackedFilesConfig>,
-	pub diff: DiffOptions,
-}
-
-pub type SharedOptions = Rc<RefCell<Options>>;
 
 pub struct OptionsPopupComponent {
 	selection: AppOption,
@@ -81,7 +72,7 @@ impl OptionsPopupComponent {
 			txt,
 			width,
 			"Show untracked",
-			match self.options.borrow().status_show_untracked {
+			match self.options.borrow().status_show_untracked() {
 				None => "Gitconfig",
 				Some(ShowUntrackedFilesConfig::No) => "No",
 				Some(ShowUntrackedFilesConfig::Normal) => "Normal",
@@ -91,26 +82,27 @@ impl OptionsPopupComponent {
 		);
 		Self::add_header(txt, "");
 
+		let diff = self.options.borrow().diff_options();
 		Self::add_header(txt, "Diff");
 		self.add_entry(
 			txt,
 			width,
 			"Ignore whitespaces",
-			&self.options.borrow().diff.ignore_whitespace.to_string(),
+			&diff.ignore_whitespace.to_string(),
 			self.is_select(AppOption::DiffIgnoreWhitespaces),
 		);
 		self.add_entry(
 			txt,
 			width,
 			"Context lines",
-			&self.options.borrow().diff.context.to_string(),
+			&diff.context.to_string(),
 			self.is_select(AppOption::DiffContextLines),
 		);
 		self.add_entry(
 			txt,
 			width,
 			"Inter hunk lines",
-			&self.options.borrow().diff.interhunk_lines.to_string(),
+			&diff.interhunk_lines.to_string(),
 			self.is_select(AppOption::DiffInterhunkLines),
 		);
 	}
@@ -142,7 +134,7 @@ impl OptionsPopupComponent {
 				self.theme.text(true, false),
 			),
 			Span::styled(
-				format!("{:^w$}", value, w = half),
+				format!("{value:^half$}"),
 				self.theme.text(true, selected),
 			),
 		]));
@@ -187,7 +179,7 @@ impl OptionsPopupComponent {
 			match self.selection {
 				AppOption::StatusShowUntracked => {
 					let untracked =
-						self.options.borrow().status_show_untracked;
+						self.options.borrow().status_show_untracked();
 
 					let untracked = match untracked {
 						None => {
@@ -202,34 +194,31 @@ impl OptionsPopupComponent {
 						Some(ShowUntrackedFilesConfig::No) => None,
 					};
 
-					self.options.borrow_mut().status_show_untracked =
-						untracked;
-				}
-				AppOption::DiffIgnoreWhitespaces => {
-					let old =
-						self.options.borrow().diff.ignore_whitespace;
 					self.options
 						.borrow_mut()
-						.diff
-						.ignore_whitespace = !old;
+						.set_status_show_untracked(untracked);
+				}
+				AppOption::DiffIgnoreWhitespaces => {
+					self.options
+						.borrow_mut()
+						.diff_toggle_whitespace();
 				}
 				AppOption::DiffContextLines => {
-					let old = self.options.borrow().diff.context;
-					self.options.borrow_mut().diff.context =
-						old.saturating_add(1);
+					self.options
+						.borrow_mut()
+						.diff_context_change(true);
 				}
 				AppOption::DiffInterhunkLines => {
-					let old =
-						self.options.borrow().diff.interhunk_lines;
-					self.options.borrow_mut().diff.interhunk_lines =
-						old.saturating_add(1);
+					self.options
+						.borrow_mut()
+						.diff_hunk_lines_change(true);
 				}
 			};
 		} else {
 			match self.selection {
 				AppOption::StatusShowUntracked => {
 					let untracked =
-						self.options.borrow().status_show_untracked;
+						self.options.borrow().status_show_untracked();
 
 					let untracked = match untracked {
 						None => Some(ShowUntrackedFilesConfig::No),
@@ -244,27 +233,24 @@ impl OptionsPopupComponent {
 						}
 					};
 
-					self.options.borrow_mut().status_show_untracked =
-						untracked;
-				}
-				AppOption::DiffIgnoreWhitespaces => {
-					let old =
-						self.options.borrow().diff.ignore_whitespace;
 					self.options
 						.borrow_mut()
-						.diff
-						.ignore_whitespace = !old;
+						.set_status_show_untracked(untracked);
+				}
+				AppOption::DiffIgnoreWhitespaces => {
+					self.options
+						.borrow_mut()
+						.diff_toggle_whitespace();
 				}
 				AppOption::DiffContextLines => {
-					let old = self.options.borrow().diff.context;
-					self.options.borrow_mut().diff.context =
-						old.saturating_sub(1);
+					self.options
+						.borrow_mut()
+						.diff_context_change(false);
 				}
 				AppOption::DiffInterhunkLines => {
-					let old =
-						self.options.borrow().diff.interhunk_lines;
-					self.options.borrow_mut().diff.interhunk_lines =
-						old.saturating_sub(1);
+					self.options
+						.borrow_mut()
+						.diff_hunk_lines_change(false);
 				}
 			};
 		}

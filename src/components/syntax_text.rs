@@ -22,14 +22,14 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::MoveSelection;
 use itertools::Either;
-use std::{cell::Cell, convert::From, path::Path};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	text::Text,
 	widgets::{Block, Borders, Wrap},
 	Frame,
 };
+use std::{cell::Cell, convert::From, path::Path};
 
 pub struct SyntaxTextComponent {
 	repo: RepoPathRef,
@@ -132,8 +132,7 @@ impl SyntaxTextComponent {
 					self.current_file = Some((
 						path,
 						Either::Right(format!(
-							"error loading file: {}",
-							e
+							"error loading file: {e}"
 						)),
 					));
 				}
@@ -239,6 +238,7 @@ impl DrawableComponent for SyntaxTextComponent {
 					state.height().saturating_sub(2),
 				)),
 				usize::from(state.scroll().y),
+				ui::Orientation::Vertical,
 			);
 		}
 
@@ -271,10 +271,11 @@ impl Component for SyntaxTextComponent {
 	) -> Result<EventState> {
 		if let Event::Key(key) = event {
 			if let Some(nav) = common_nav(key, &self.key_config) {
-				return Ok(self
-					.scroll(nav)
-					.then(|| EventState::Consumed)
-					.unwrap_or(EventState::NotConsumed));
+				return Ok(if self.scroll(nav) {
+					EventState::Consumed
+				} else {
+					EventState::NotConsumed
+				});
 			}
 		}
 

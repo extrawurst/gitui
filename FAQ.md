@@ -18,3 +18,8 @@ Note that in some cases adding the line `ssh-add -K ~/.ssh/id_ed25519`(or whatev
 
 If you want to use `vi`-style keys or customize your key bindings in any other fassion see the specific docs on that: [key config](./KEY_CONFIG.md)
 
+## 3. <a name="watcher"></a> Watching for changes <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+By default, `gitui` polls for changes in the working directory every 5 seconds. If you supply `--watcher` as an argument, it uses a `notify`-based approach instead. This is usually faster and was for some time the default update strategy. It turned out, however, that `notify`-based updates can cause issues on some platforms, so tick-based updates seemed like a safer default.
+
+See #1444 for details.

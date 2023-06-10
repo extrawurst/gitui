@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::{self, CommitId, RepoPathRef};
 use crossterm::event::Event;
-use tui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{backend::Backend, layout::Rect, Frame};
 
 enum Mode {
 	Name,
@@ -194,7 +194,7 @@ impl TagCommitComponent {
 
 					log::error!("e: {}", e,);
 					self.queue.push(InternalEvent::ShowErrorMsg(
-						format!("tag error:\n{}", e,),
+						format!("tag error:\n{e}",),
 					));
 				}
 			}

@@ -6,13 +6,13 @@ pub mod style;
 mod syntax_text;
 
 use filetreelist::MoveSelection;
-pub use scrollbar::draw_scrollbar;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+pub use scrollbar::{draw_scrollbar, Orientation};
 pub use scrolllist::{draw_list, draw_list_block};
 pub use stateful_paragraph::{
 	ParagraphState, ScrollPos, StatefulParagraph,
 };
 pub use syntax_text::{AsyncSyntaxJob, SyntaxText};
-use tui::layout::{Constraint, Direction, Layout, Rect};
 
 use crate::keys::{key_match, SharedKeyConfig};
 
@@ -87,8 +87,18 @@ pub fn centered_rect(
 
 /// makes sure Rect `r` at least stays as big as min and not bigger than max
 pub fn rect_inside(min: Size, max: Size, r: Rect) -> Rect {
-	let new_width = r.width.max(min.width).min(max.width);
-	let new_height = r.height.max(min.height).min(max.height);
+	let new_width = if min.width > max.width {
+		max.width
+	} else {
+		r.width.clamp(min.width, max.width)
+	};
+
+	let new_height = if min.height > max.height {
+		max.height
+	} else {
+		r.height.clamp(min.height, max.height)
+	};
+
 	let diff_width = new_width.saturating_sub(r.width);
 	let diff_height = new_height.saturating_sub(r.height);
 
@@ -140,5 +150,72 @@ pub fn common_nav(
 		Some(MoveSelection::End)
 	} else {
 		None
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::{rect_inside, Size};
+	use pretty_assertions::assert_eq;
+	use ratatui::layout::Rect;
+
+	#[test]
+	fn test_small_rect_in_rect() {
+		let rect = rect_inside(
+			Size {
+				width: 2,
+				height: 2,
+			},
+			Size {
+				width: 1,
+				height: 1,
+			},
+			Rect {
+				x: 0,
+				y: 0,
+				width: 10,
+				height: 10,
+			},
+		);
+
+		assert_eq!(
+			rect,
+			Rect {
+				x: 0,
+				y: 0,
+				width: 1,
+				height: 1
+			}
+		);
+	}
+
+	#[test]
+	fn test_small_rect_in_rect2() {
+		let rect = rect_inside(
+			Size {
+				width: 1,
+				height: 3,
+			},
+			Size {
+				width: 1,
+				height: 2,
+			},
+			Rect {
+				x: 0,
+				y: 0,
+				width: 10,
+				height: 10,
+			},
+		);
+
+		assert_eq!(
+			rect,
+			Rect {
+				x: 0,
+				y: 0,
+				width: 1,
+				height: 2
+			}
+		);
 	}
 }

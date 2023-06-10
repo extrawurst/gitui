@@ -23,7 +23,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	text::Span,
@@ -118,7 +118,7 @@ impl PullComponent {
 				self.pending = false;
 				self.hide();
 				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("fetch failed:\n{}", error),
+					format!("fetch failed:\n{error}"),
 				));
 			}
 		}

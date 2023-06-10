@@ -48,25 +48,34 @@ pub(crate) fn get_branch_name_repo(
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct LocalBranch {
 	///
 	pub is_head: bool,
 	///
 	pub has_upstream: bool,
 	///
+	pub upstream: Option<UpstreamBranch>,
+	///
 	pub remote: Option<String>,
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+pub struct UpstreamBranch {
+	///
+	pub reference: String,
+}
+
+///
+#[derive(Clone, Debug)]
 pub struct RemoteBranch {
 	///
 	pub has_tracking: bool,
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum BranchDetails {
 	///
 	Local(LocalBranch),
@@ -75,7 +84,7 @@ pub enum BranchDetails {
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BranchInfo {
 	///
 	pub name: String,
@@ -154,10 +163,18 @@ pub fn get_branches_info(
 
 			let name_bytes = branch.name_bytes()?;
 
+			let upstream_branch =
+				upstream.ok().and_then(|upstream| {
+					bytes2string(upstream.get().name_bytes())
+						.ok()
+						.map(|reference| UpstreamBranch { reference })
+				});
+
 			let details = if local {
 				BranchDetails::Local(LocalBranch {
 					is_head: branch.is_head(),
-					has_upstream: upstream.is_ok(),
+					has_upstream: upstream_branch.is_some(),
+					upstream: upstream_branch,
 					remote,
 				})
 			} else {
@@ -206,7 +223,7 @@ pub(crate) fn branch_set_upstream(
 
 	if branch.upstream().is_err() {
 		let remote = get_default_remote_in_repo(repo)?;
-		let upstream_name = format!("{}/{}", remote, branch_name);
+		let upstream_name = format!("{remote}/{branch_name}");
 		branch.set_upstream(Some(upstream_name.as_str()))?;
 	}
 
@@ -290,6 +307,36 @@ pub fn checkout_branch(
 			git2::build::CheckoutBuilder::new().force(),
 		)) {
 			// This is safe beacuse cur_ref was just found
+			repo.set_head(
+				bytes2string(cur_ref.name_bytes())?.as_str(),
+			)?;
+			return Err(Error::Git(e));
+		}
+		Ok(())
+	} else {
+		Err(Error::UncommittedChanges)
+	}
+}
+
+/// Detach HEAD to point to a commit then checkout HEAD, does not work if there are uncommitted changes
+pub fn checkout_commit(
+	repo_path: &RepoPath,
+	commit_hash: CommitId,
+) -> Result<()> {
+	scope_time!("checkout_commit");
+
+	let repo = repo(repo_path)?;
+	let cur_ref = repo.head()?;
+	let statuses = repo.statuses(Some(
+		git2::StatusOptions::new().include_ignored(false),
+	))?;
+
+	if statuses.is_empty() {
+		repo.set_head_detached(commit_hash.into())?;
+
+		if let Err(e) = repo.checkout_head(Some(
+			git2::build::CheckoutBuilder::new().force(),
+		)) {
 			repo.set_head(
 				bytes2string(cur_ref.name_bytes())?.as_str(),
 			)?;
@@ -662,6 +709,33 @@ mod tests_checkout {
 			checkout_branch(repo_path, "refs/heads/master").is_ok()
 		);
 		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+	}
+}
+
+#[cfg(test)]
+mod tests_checkout_commit {
+	use super::*;
+	use crate::sync::tests::{repo_init, write_commit_file};
+	use crate::sync::RepoPath;
+
+	#[test]
+	fn test_smoke() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		let commit =
+			write_commit_file(&repo, "test_1.txt", "test", "commit1");
+		write_commit_file(&repo, "test_2.txt", "test", "commit2");
+
+		checkout_commit(repo_path, commit).unwrap();
+
+		assert!(repo.head_detached().unwrap());
+		assert_eq!(
+			repo.head().unwrap().target().unwrap(),
+			commit.get_oid()
+		);
 	}
 }
 

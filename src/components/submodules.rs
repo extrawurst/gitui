@@ -16,8 +16,7 @@ use asyncgit::sync::{
 	SubmoduleParentInfo,
 };
 use crossterm::event::Event;
-use std::{cell::Cell, convert::TryInto};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
@@ -26,6 +25,7 @@ use tui::{
 	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
 };
+use std::{cell::Cell, convert::TryInto};
 use ui::style::SharedTheme;
 use unicode_truncate::UnicodeTruncateStr;
 
@@ -67,7 +67,7 @@ impl DrawableComponent for SubmodulesListComponent {
 			f.render_widget(
 				Block::default()
 					.title(strings::POPUP_TITLE_SUBMODULES)
-					.border_type(tui::widgets::BorderType::Thick)
+					.border_type(ratatui::widgets::BorderType::Thick)
 					.borders(Borders::ALL),
 				area,
 			);
@@ -88,7 +88,7 @@ impl DrawableComponent for SubmodulesListComponent {
 			let chunks = Layout::default()
 				.direction(Direction::Horizontal)
 				.constraints(
-					[Constraint::Min(40), Constraint::Length(40)]
+					[Constraint::Min(40), Constraint::Length(60)]
 						.as_ref(),
 				)
 				.split(chunks_vertical[0]);
@@ -127,7 +127,7 @@ impl Component for SubmodulesListComponent {
 
 			out.push(CommandInfo::new(
 				strings::commands::open_submodule(&self.key_config),
-				self.is_valid_selection(),
+				self.can_open_submodule(),
 				true,
 			));
 
@@ -182,9 +182,11 @@ impl Component for SubmodulesListComponent {
 					.map(Into::into);
 			} else if key_match(e, self.key_config.keys.enter) {
 				if let Some(submodule) = self.selected_entry() {
-					self.queue.push(InternalEvent::OpenRepo {
-						path: submodule.path.clone(),
-					});
+					if submodule.status.is_in_wd() {
+						self.queue.push(InternalEvent::OpenRepo {
+							path: submodule.path.clone(),
+						});
+					}
 				}
 			} else if key_match(
 				e,
@@ -297,6 +299,12 @@ impl SubmodulesListComponent {
 		self.selected_entry().is_some()
 	}
 
+	fn can_open_submodule(&self) -> bool {
+		self.selected_entry()
+			.map(|s| s.status.is_in_wd())
+			.unwrap_or_default()
+	}
+
 	//TODO: dedup this almost identical with BranchListComponent
 	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
 		let new_selection = match scroll {
@@ -387,7 +395,7 @@ impl SubmodulesListComponent {
 			);
 
 			let span_name = Span::styled(
-				format!("{:w$} ", module_path, w = name_length),
+				format!("{module_path:name_length$} "),
 				theme.text(true, selected),
 			);
 

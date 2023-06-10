@@ -15,21 +15,20 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	cached,
+	asyncjob::AsyncSingleJob,
 	sync::{self, CommitId, RepoPathRef},
-	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
-	FetchStatus,
+	AsyncBranchesJob, AsyncGitNotification, AsyncLog, AsyncTags,
+	CommitFilesParams, FetchStatus,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::convert::TryFrom;
-use std::time::Duration;
-use sync::CommitTags;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	Frame,
 };
+use std::time::Duration;
+use sync::CommitTags;
 
 const SLICE_SIZE: usize = 1200;
 
@@ -42,9 +41,10 @@ pub struct Revlog {
     async_filter: AsyncCommitFilterer,
 	git_log: AsyncLog,
 	git_tags: AsyncTags,
+	git_local_branches: AsyncSingleJob<AsyncBranchesJob>,
+	git_remote_branches: AsyncSingleJob<AsyncBranchesJob>,
 	queue: Queue,
 	visible: bool,
-	branch_name: cached::BranchName,
 	key_config: SharedKeyConfig,
     is_filtering: bool,
     filter_string: String,
@@ -72,8 +72,10 @@ impl Revlog {
 				key_config.clone(),
 			),
 			list: CommitList::new(
+				repo.clone(),
 				&strings::log_title(&key_config),
 				theme.clone(),
+				queue.clone(),
 				key_config.clone(),
 			),
             find_commit: FindCommitComponent::new(
@@ -89,8 +91,9 @@ impl Revlog {
             ),
 			git_log: log,
 			git_tags: tags,
+			git_local_branches: AsyncSingleJob::new(sender.clone()),
+			git_remote_branches: AsyncSingleJob::new(sender.clone()),
 			visible: false,
-			branch_name: cached::BranchName::new(repo.clone()),
 			key_config,
             is_filtering: false,
             filter_string: "".to_string(),
@@ -102,6 +105,8 @@ impl Revlog {
 		self.git_log.is_pending()
 			|| self.git_tags.is_pending()
             || self.async_filter.is_pending()
+			|| self.git_local_branches.is_pending()
+			|| self.git_remote_branches.is_pending()
 			|| self.commit_details.any_work_pending()
 	}
 
@@ -125,10 +130,6 @@ impl Revlog {
 			}
 
 			self.git_tags.request(Duration::from_secs(3), false)?;
-
-			self.list.set_branch(
-				self.branch_name.lookup().map(Some).unwrap_or(None),
-			);
 
 			if self.commit_details.is_visible() {
 				let commit = self.selected_commit();
@@ -159,6 +160,31 @@ impl Revlog {
 						self.update()?;
 					}
 				}
+				AsyncGitNotification::Branches => {
+					if let Some(local_branches) =
+						self.git_local_branches.take_last()
+					{
+						if let Some(Ok(local_branches)) =
+							local_branches.result()
+						{
+							self.list
+								.set_local_branches(local_branches);
+							self.update()?;
+						}
+					}
+
+					if let Some(remote_branches) =
+						self.git_remote_branches.take_last()
+					{
+						if let Some(Ok(remote_branches)) =
+							remote_branches.result()
+						{
+							self.list
+								.set_remote_branches(remote_branches);
+							self.update()?;
+						}
+					}
+				}
 				_ => (),
 			}
 		}
@@ -175,14 +201,20 @@ impl Revlog {
                 .get_filter_items(
                     want_min,
                     SLICE_SIZE,
-                    self.list.current_size().0.into(),
+                    self.list
+                        .current_size()
+                        .map_or(100u16, |size| size.0)
+                        .into(),
                 )
                 .map_err(|e| anyhow::anyhow!(e.to_string()))
         } else {
             sync::get_commits_info(
                 &self.repo.borrow(),
                 &self.git_log.get_slice(want_min, SLICE_SIZE)?,
-                self.list.current_size().0.into(),
+                self.list
+                    .current_size()
+                    .map_or(100u16, |size| size.0)
+                    .into(),
             )
             .map_err(|e| anyhow::anyhow!(e.to_string()))
         };
@@ -196,11 +228,6 @@ impl Revlog {
 
 	fn selected_commit(&self) -> Option<CommitId> {
 		self.list.selected_entry().map(|e| e.id)
-	}
-
-	fn copy_commit_hash(&self) -> Result<()> {
-		self.list.copy_entry_hash()?;
-		Ok(())
 	}
 
 	fn selected_commit_tags(
@@ -463,7 +490,11 @@ impl Component for Revlog {
 					self.update()?;
 					return Ok(EventState::Consumed);
 				} else if key_match(k, self.key_config.keys.copy) {
-					self.copy_commit_hash()?;
+					try_or_popup!(
+						self,
+						strings::POPUP_FAIL_COPY,
+						self.list.copy_commit_hash()
+					);
 					return Ok(EventState::Consumed);
 				} else if key_match(k, self.key_config.keys.push) {
 					self.queue.push(InternalEvent::PushTags);
@@ -482,7 +513,7 @@ impl Component for Revlog {
 					);
 				} else if key_match(
 					k,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) && self.commit_details.is_visible()
 				{
 					self.inspect_commit();
@@ -537,6 +568,32 @@ impl Component for Revlog {
 					return Ok(EventState::Consumed);
 				} else if key_match(
 					k,
+					self.key_config.keys.log_reset_comit,
+				) {
+					return self.selected_commit().map_or(
+						Ok(EventState::NotConsumed),
+						|id| {
+							self.queue.push(
+								InternalEvent::OpenResetPopup(id),
+							);
+							Ok(EventState::Consumed)
+						},
+					);
+				} else if key_match(
+					k,
+					self.key_config.keys.log_reword_comit,
+				) {
+					return self.selected_commit().map_or(
+						Ok(EventState::NotConsumed),
+						|id| {
+							self.queue.push(
+								InternalEvent::RewordCommit(id),
+							);
+							Ok(EventState::Consumed)
+						},
+					);
+				} else if key_match(
+					k,
 					self.key_config.keys.compare_commits,
 				) && self.list.marked_count() > 0
 				{
@@ -545,7 +602,7 @@ impl Component for Revlog {
 						self.queue.push(InternalEvent::OpenPopup(
 							StackablePopupOpen::CompareCommits(
 								InspectCommitOpen::new(
-									self.list.marked()[0],
+									self.list.marked()[0].1,
 								),
 							),
 						));
@@ -556,8 +613,8 @@ impl Component for Revlog {
 						self.queue.push(InternalEvent::OpenPopup(
 							StackablePopupOpen::CompareCommits(
 								InspectCommitOpen {
-									commit_id: marked[0],
-									compare_id: Some(marked[1]),
+									commit_id: marked[0].1,
+									compare_id: Some(marked[1].1),
 									tags: None,
 								},
 							),
@@ -634,6 +691,12 @@ impl Component for Revlog {
 		));
 
 		out.push(CommandInfo::new(
+			strings::commands::log_checkout_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
+		out.push(CommandInfo::new(
 			strings::commands::open_tags_popup(&self.key_config),
 			true,
 			self.visible || force_all,
@@ -657,6 +720,17 @@ impl Component for Revlog {
 			self.visible || force_all,
 		));
 
+		out.push(CommandInfo::new(
+			strings::commands::log_reset_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+		out.push(CommandInfo::new(
+			strings::commands::log_reword_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
 		visibility_blocking(self)
 	}
 
@@ -672,6 +746,17 @@ impl Component for Revlog {
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
 		self.list.clear();
+
+		self.git_local_branches.spawn(AsyncBranchesJob::new(
+			self.repo.borrow().clone(),
+			true,
+		));
+
+		self.git_remote_branches.spawn(AsyncBranchesJob::new(
+			self.repo.borrow().clone(),
+			false,
+		));
+
 		self.update()?;
 
 		Ok(())

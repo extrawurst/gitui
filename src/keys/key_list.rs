@@ -1,8 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-
-use super::key_list_file::KeysListFile;
+use std::{fs::File, path::PathBuf};
+use struct_patch::traits::Patch as PatchTrait;
+use struct_patch::Patch;
 
 #[derive(Debug, PartialOrd, Clone, Copy, Serialize, Deserialize)]
 pub struct GituiKeyEvent {
@@ -34,7 +34,8 @@ impl From<&GituiKeyEvent> for KeyEvent {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Patch)]
+#[patch_derive(Deserialize)]
 pub struct KeysList {
 	pub tab_status: GituiKeyEvent,
 	pub tab_log: GituiKeyEvent,
@@ -44,10 +45,6 @@ pub struct KeysList {
 	pub tab_toggle: GituiKeyEvent,
 	pub tab_toggle_reverse: GituiKeyEvent,
 	pub toggle_workarea: GituiKeyEvent,
-	pub focus_right: GituiKeyEvent,
-	pub focus_left: GituiKeyEvent,
-	pub focus_above: GituiKeyEvent,
-	pub focus_below: GituiKeyEvent,
 	pub exit: GituiKeyEvent,
 	pub quit: GituiKeyEvent,
 	pub exit_popup: GituiKeyEvent,
@@ -58,12 +55,12 @@ pub struct KeysList {
 	pub open_options: GituiKeyEvent,
 	pub move_left: GituiKeyEvent,
 	pub move_right: GituiKeyEvent,
+	pub move_up: GituiKeyEvent,
+	pub move_down: GituiKeyEvent,
 	pub tree_collapse_recursive: GituiKeyEvent,
 	pub tree_expand_recursive: GituiKeyEvent,
 	pub home: GituiKeyEvent,
 	pub end: GituiKeyEvent,
-	pub move_up: GituiKeyEvent,
-	pub move_down: GituiKeyEvent,
 	pub popup_up: GituiKeyEvent,
 	pub popup_down: GituiKeyEvent,
 	pub page_down: GituiKeyEvent,
@@ -88,7 +85,11 @@ pub struct KeysList {
 	pub cmd_bar_toggle: GituiKeyEvent,
 	pub log_tag_commit: GituiKeyEvent,
 	pub log_mark_commit: GituiKeyEvent,
+	pub log_checkout_commit: GituiKeyEvent,
+	pub log_reset_comit: GituiKeyEvent,
+	pub log_reword_comit: GituiKeyEvent,
 	pub commit_amend: GituiKeyEvent,
+	pub toggle_verify: GituiKeyEvent,
 	pub copy: GituiKeyEvent,
 	pub create_branch: GituiKeyEvent,
 	pub rename_branch: GituiKeyEvent,
@@ -103,7 +104,9 @@ pub struct KeysList {
 	pub push: GituiKeyEvent,
 	pub open_file_tree: GituiKeyEvent,
 	pub file_find: GituiKeyEvent,
+	pub branch_find: GituiKeyEvent,
 	pub force_push: GituiKeyEvent,
+	pub fetch: GituiKeyEvent,
 	pub pull: GituiKeyEvent,
 	pub abort_merge: GituiKeyEvent,
 	pub undo_commit: GituiKeyEvent,
@@ -112,6 +115,7 @@ pub struct KeysList {
 	pub view_submodules: GituiKeyEvent,
 	pub view_submodule_parent: GituiKeyEvent,
 	pub update_submodule: GituiKeyEvent,
+	pub commit_history_next: GituiKeyEvent,
 }
 
 #[rustfmt::skip]
@@ -126,10 +130,6 @@ impl Default for KeysList {
 			tab_toggle: GituiKeyEvent::new(KeyCode::Tab,  KeyModifiers::empty()),
 			tab_toggle_reverse: GituiKeyEvent::new(KeyCode::BackTab,  KeyModifiers::SHIFT),
 			toggle_workarea: GituiKeyEvent::new(KeyCode::Char('w'),  KeyModifiers::empty()),
-			focus_right: GituiKeyEvent::new(KeyCode::Right,  KeyModifiers::empty()),
-			focus_left: GituiKeyEvent::new(KeyCode::Left,  KeyModifiers::empty()),
-			focus_above: GituiKeyEvent::new(KeyCode::Up,  KeyModifiers::empty()),
-			focus_below: GituiKeyEvent::new(KeyCode::Down,  KeyModifiers::empty()),
 			exit: GituiKeyEvent::new(KeyCode::Char('c'),  KeyModifiers::CONTROL),
 			quit: GituiKeyEvent::new(KeyCode::Char('q'),  KeyModifiers::empty()),
 			exit_popup: GituiKeyEvent::new(KeyCode::Esc,  KeyModifiers::empty()),
@@ -170,7 +170,11 @@ impl Default for KeysList {
 			cmd_bar_toggle: GituiKeyEvent::new(KeyCode::Char('.'),  KeyModifiers::empty()),
 			log_tag_commit: GituiKeyEvent::new(KeyCode::Char('t'),  KeyModifiers::empty()),
 			log_mark_commit: GituiKeyEvent::new(KeyCode::Char(' '),  KeyModifiers::empty()),
+			log_checkout_commit: GituiKeyEvent { code: KeyCode::Char('S'), modifiers: KeyModifiers::SHIFT },
+			log_reset_comit: GituiKeyEvent { code: KeyCode::Char('R'), modifiers: KeyModifiers::SHIFT },
+			log_reword_comit: GituiKeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::empty() },
 			commit_amend: GituiKeyEvent::new(KeyCode::Char('a'),  KeyModifiers::CONTROL),
+			toggle_verify: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::CONTROL),
 			copy: GituiKeyEvent::new(KeyCode::Char('y'),  KeyModifiers::empty()),
 			create_branch: GituiKeyEvent::new(KeyCode::Char('c'),  KeyModifiers::empty()),
 			rename_branch: GituiKeyEvent::new(KeyCode::Char('r'),  KeyModifiers::empty()),
@@ -185,27 +189,74 @@ impl Default for KeysList {
 			push: GituiKeyEvent::new(KeyCode::Char('p'),  KeyModifiers::empty()),
 			force_push: GituiKeyEvent::new(KeyCode::Char('P'),  KeyModifiers::SHIFT),
 			undo_commit: GituiKeyEvent::new(KeyCode::Char('U'),  KeyModifiers::SHIFT),
+			fetch: GituiKeyEvent::new(KeyCode::Char('F'),  KeyModifiers::SHIFT),
 			pull: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::empty()),
 			abort_merge: GituiKeyEvent::new(KeyCode::Char('A'),  KeyModifiers::SHIFT),
 			open_file_tree: GituiKeyEvent::new(KeyCode::Char('F'),  KeyModifiers::SHIFT),
 			file_find: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::empty()),
+			branch_find: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::empty()),
 			stage_unstage_item: GituiKeyEvent::new(KeyCode::Enter,  KeyModifiers::empty()),
 			tag_annotate: GituiKeyEvent::new(KeyCode::Char('a'),  KeyModifiers::CONTROL),
 			view_submodules: GituiKeyEvent::new(KeyCode::Char('S'),  KeyModifiers::SHIFT),
 			view_submodule_parent: GituiKeyEvent::new(KeyCode::Char('p'),  KeyModifiers::empty()),
 			update_submodule: GituiKeyEvent::new(KeyCode::Char('u'),  KeyModifiers::empty()),
+			commit_history_next: GituiKeyEvent::new(KeyCode::Char('n'),  KeyModifiers::CONTROL),
 		}
 	}
 }
 
 impl KeysList {
 	pub fn init(file: PathBuf) -> Self {
-		if file.exists() {
-			let file =
-				KeysListFile::read_file(file).unwrap_or_default();
-			file.get_list()
-		} else {
-			Self::default()
+		let mut keys_list = Self::default();
+		if let Ok(f) = File::open(file) {
+			if let Ok(patch) = ron::de::from_reader(f) {
+				keys_list.apply(patch);
+			}
 		}
+		keys_list
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use pretty_assertions::assert_eq;
+	use std::io::Write;
+	use tempfile::NamedTempFile;
+
+	#[test]
+	fn test_apply_vim_style_example() {
+		let mut keys_list = KeysList::default();
+		let f = File::open("vim_style_key_config.ron")
+			.expect("vim style config should exist");
+		let patch = ron::de::from_reader(f)
+			.expect("vim style config format incorrect");
+		keys_list.apply(patch);
+	}
+
+	#[test]
+	fn test_smoke() {
+		let mut file = NamedTempFile::new().unwrap();
+
+		writeln!(
+			file,
+			r"
+(
+	move_down: Some(( code: Char('j'), modifiers: ( bits: 2,),)),
+)
+"
+		)
+		.unwrap();
+
+		let keys = KeysList::init(file.path().to_path_buf());
+
+		assert_eq!(keys.move_right, KeysList::default().move_right);
+		assert_eq!(
+			keys.move_down,
+			GituiKeyEvent::new(
+				KeyCode::Char('j'),
+				KeyModifiers::CONTROL
+			)
+		);
 	}
 }

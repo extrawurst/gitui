@@ -4,32 +4,34 @@ use crate::{
 		command_pump, event_pump, visibility_blocking,
 		ChangesComponent, CommandBlocking, CommandInfo, Component,
 		DiffComponent, DrawableComponent, EventState,
-		FileTreeItemKind, SharedOptions,
+		FileTreeItemKind,
 	},
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
+	asyncjob::AsyncSingleJob,
 	cached,
 	sync::{
 		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
 	},
 	sync::{BranchCompare, CommitId},
-	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
-	DiffType, PushType, StatusParams,
+	AsyncBranchesJob, AsyncDiff, AsyncGitNotification, AsyncStatus,
+	DiffParams, DiffType, PushType, StatusItem, StatusParams,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use itertools::Itertools;
-use std::convert::Into;
-use tui::{
+use ratatui::{
 	layout::{Alignment, Constraint, Direction, Layout},
 	style::{Color, Style},
 	widgets::{Block, BorderType, Borders, Paragraph},
 };
+use std::convert::Into;
 
 /// what part of the screen is focused
 #[derive(PartialEq)]
@@ -72,6 +74,7 @@ pub struct Status {
 	git_status_stage: AsyncStatus,
 	git_branch_state: Option<BranchCompare>,
 	git_branch_name: cached::BranchName,
+	git_branches: AsyncSingleJob<AsyncBranchesJob>,
 	queue: Queue,
 	git_action_executed: bool,
 	options: SharedOptions,
@@ -79,10 +82,10 @@ pub struct Status {
 }
 
 impl DrawableComponent for Status {
-	fn draw<B: tui::backend::Backend>(
+	fn draw<B: ratatui::backend::Backend>(
 		&self,
-		f: &mut tui::Frame<B>,
-		rect: tui::layout::Rect,
+		f: &mut ratatui::Frame<B>,
+		rect: ratatui::layout::Rect,
 	) -> Result<()> {
 		let repo_unclean = self.repo_state_unclean();
 		let rects = if repo_unclean {
@@ -94,7 +97,7 @@ impl DrawableComponent for Status {
 				)
 				.split(rect)
 		} else {
-			vec![rect]
+			std::rc::Rc::new([rect])
 		};
 
 		let chunks = Layout::default()
@@ -102,8 +105,8 @@ impl DrawableComponent for Status {
 			.constraints(
 				if self.focus == Focus::Diff {
 					[
-						Constraint::Percentage(30),
-						Constraint::Percentage(70),
+						Constraint::Percentage(0),
+						Constraint::Percentage(100),
 					]
 				} else {
 					[
@@ -202,6 +205,7 @@ impl Status {
 				repo_clone,
 				sender.clone(),
 			),
+			git_branches: AsyncSingleJob::new(sender.clone()),
 			git_action_executed: false,
 			git_branch_state: None,
 			git_branch_name: cached::BranchName::new(repo.clone()),
@@ -211,10 +215,10 @@ impl Status {
 		}
 	}
 
-	fn draw_branch_state<B: tui::backend::Backend>(
+	fn draw_branch_state<B: ratatui::backend::Backend>(
 		&self,
-		f: &mut tui::Frame<B>,
-		chunks: &[tui::layout::Rect],
+		f: &mut ratatui::Frame<B>,
+		chunks: &[ratatui::layout::Rect],
 	) {
 		if let Some(branch_name) = self.git_branch_name.last() {
 			let ahead_behind = self
@@ -228,8 +232,7 @@ impl Status {
 				});
 
 			let w = Paragraph::new(format!(
-				"{}{{{}}}",
-				ahead_behind, branch_name
+				"{ahead_behind}{{{branch_name}}}"
 			))
 			.alignment(Alignment::Right);
 
@@ -289,14 +292,14 @@ impl Status {
 						.unwrap_or_default(),
 				)
 			}
-			_ => format!("{:?}", state),
+			_ => format!("{state:?}"),
 		}
 	}
 
-	fn draw_repo_state<B: tui::backend::Backend>(
+	fn draw_repo_state<B: ratatui::backend::Backend>(
 		&self,
-		f: &mut tui::Frame<B>,
-		r: tui::layout::Rect,
+		f: &mut ratatui::Frame<B>,
+		r: ratatui::layout::Rect,
 	) {
 		if self.git_state != RepoState::Clean {
 			let txt = Self::repo_state_text(
@@ -396,7 +399,8 @@ impl Status {
 		self.git_branch_name.lookup().map(Some).unwrap_or(None);
 
 		if self.is_visible() {
-			let config = self.options.borrow().status_show_untracked;
+			let config =
+				self.options.borrow().status_show_untracked();
 
 			self.git_diff.refresh()?;
 			self.git_status_workdir.fetch(&StatusParams::new(
@@ -422,13 +426,22 @@ impl Status {
 		self.git_diff.is_pending()
 			|| self.git_status_stage.is_pending()
 			|| self.git_status_workdir.is_pending()
+			|| self.git_branches.is_pending()
 	}
 
 	fn check_remotes(&mut self) {
-		self.has_remotes =
-			sync::get_branches_info(&self.repo.borrow(), false)
-				.map(|branches| !branches.is_empty())
-				.unwrap_or(false);
+		self.has_remotes = false;
+
+		if let Some(result) = self.git_branches.take_last() {
+			if let Some(Ok(branches)) = result.result() {
+				self.has_remotes = !branches.is_empty();
+			}
+		} else {
+			self.git_branches.spawn(AsyncBranchesJob::new(
+				self.repo.borrow().clone(),
+				false,
+			));
+		}
 	}
 
 	///
@@ -439,6 +452,7 @@ impl Status {
 		match ev {
 			AsyncGitNotification::Diff => self.update_diff()?,
 			AsyncGitNotification::Status => self.update_status()?,
+			AsyncGitNotification::Branches => self.check_remotes(),
 			AsyncGitNotification::Push
 			| AsyncGitNotification::Pull
 			| AsyncGitNotification::CommitFiles => {
@@ -450,6 +464,10 @@ impl Status {
 		Ok(())
 	}
 
+	pub fn get_files_changes(&mut self) -> Result<Vec<StatusItem>> {
+		Ok(self.git_status_stage.last()?.items)
+	}
+
 	fn update_status(&mut self) -> Result<()> {
 		let stage_status = self.git_status_stage.last()?;
 		self.index.set_items(&stage_status.items)?;
@@ -458,7 +476,6 @@ impl Status {
 		self.index_wd.set_items(&workdir_status.items)?;
 
 		self.update_diff()?;
-		self.check_remotes();
 
 		if self.git_action_executed {
 			self.git_action_executed = false;
@@ -490,7 +507,7 @@ impl Status {
 			let diff_params = DiffParams {
 				path: path.clone(),
 				diff_type,
-				options: self.options.borrow().diff,
+				options: self.options.borrow().diff_options(),
 			};
 
 			if self.diff.current() == (path.clone(), is_stage) {
@@ -542,8 +559,7 @@ impl Status {
 			item.path.as_str(),
 		) {
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"reset failed:\n{}",
-				e
+				"reset failed:\n{e}"
 			)));
 
 			false
@@ -575,6 +591,12 @@ impl Status {
 					));
 				}
 			}
+		}
+	}
+
+	fn fetch(&self) {
+		if self.can_pull() {
+			self.queue.push(InternalEvent::FetchRemotes);
 		}
 	}
 
@@ -658,7 +680,7 @@ impl Status {
 		let focus_on_diff = self.is_focus_on_diff();
 		out.push(
 			CommandInfo::new(
-				strings::commands::diff_focus_left(&self.key_config),
+				strings::commands::close_popup(&self.key_config),
 				true,
 				(self.visible && focus_on_diff) || force_all,
 			)
@@ -745,6 +767,12 @@ impl Component for Status {
 				true,
 				self.can_push() && !focus_on_diff,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::status_fetch(&self.key_config),
+				self.can_pull(),
+				!focus_on_diff,
+			));
 			out.push(CommandInfo::new(
 				strings::commands::status_pull(&self.key_config),
 				self.can_pull(),
@@ -789,19 +817,7 @@ impl Component for Status {
 			));
 		}
 
-		{
-			out.push(CommandInfo::new(
-				strings::commands::edit_item(&self.key_config),
-				if focus_on_diff {
-					true
-				} else {
-					self.can_focus_diff()
-				},
-				self.visible || force_all,
-			));
-
-			self.commands_nav(out, force_all);
-		}
+		self.commands_nav(out, force_all);
 
 		visibility_blocking(self)
 	}
@@ -820,19 +836,7 @@ impl Component for Status {
 			}
 
 			if let Event::Key(k) = ev {
-				return if key_match(k, self.key_config.keys.edit_file)
-					&& (self.can_focus_diff()
-						|| self.is_focus_on_diff())
-				{
-					if let Some((path, _)) = self.selected_path() {
-						self.queue.push(
-							InternalEvent::OpenExternalEditor(Some(
-								path,
-							)),
-						);
-					}
-					Ok(EventState::Consumed)
-				} else if key_match(
+				return if key_match(
 					k,
 					self.key_config.keys.open_commit,
 				) && self.can_commit()
@@ -848,13 +852,13 @@ impl Component for Status {
 						.map(Into::into)
 				} else if key_match(
 					k,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) && self.can_focus_diff()
 				{
 					self.switch_focus(Focus::Diff).map(Into::into)
 				} else if key_match(
 					k,
-					self.key_config.keys.focus_left,
+					self.key_config.keys.exit_popup,
 				) {
 					self.switch_focus(match self.diff_target {
 						DiffTarget::Stage => Focus::Stage,
@@ -890,6 +894,12 @@ impl Component for Status {
 					&& !self.is_focus_on_diff()
 				{
 					self.push(false);
+					Ok(EventState::Consumed)
+				} else if key_match(k, self.key_config.keys.fetch)
+					&& !self.is_focus_on_diff()
+					&& self.can_pull()
+				{
+					self.fetch();
 					Ok(EventState::Consumed)
 				} else if key_match(k, self.key_config.keys.pull)
 					&& !self.is_focus_on_diff()
@@ -963,10 +973,16 @@ impl Component for Status {
 
 	fn hide(&mut self) {
 		self.visible = false;
+
+		self.index.hide();
+		self.index_wd.hide();
 	}
 
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
+		self.index.show()?;
+		self.index_wd.show()?;
+
 		self.check_remotes();
 		self.update()?;
 

@@ -60,7 +60,7 @@ impl CommitMessage {
 	///
 	pub fn combine(self) -> String {
 		if let Some(body) = self.body {
-			format!("{}\n{}", self.subject, body)
+			format!("{}\n{body}", self.subject)
 		} else {
 			self.subject
 		}
@@ -82,6 +82,8 @@ pub struct CommitDetails {
 
 impl CommitDetails {
 	///
+	#[allow(clippy::missing_const_for_fn)]
+	// clippy doesn't realise indexing a String is not const
 	pub fn short_hash(&self) -> &str {
 		&self.hash[0..7]
 	}
@@ -138,7 +140,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"a")?;
+		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
 
 		let msg = invalidstring::invalid_utf8("test msg");

@@ -115,7 +115,11 @@ pub enum InternalEvent {
 	///
 	OpenFileFinder(Vec<TreeFile>),
 	///
+	OpenBranchFinder(Vec<String>),
+	///
 	FileFinderChanged(Option<PathBuf>),
+	///
+	BranchFinderChanged(Option<usize>),
 	///
 	FetchRemotes,
 	///
@@ -128,6 +132,10 @@ pub enum InternalEvent {
 	ViewSubmodules,
 	///
 	OpenRepo { path: PathBuf },
+	///
+	OpenResetPopup(CommitId),
+	///
+	RewordCommit(CommitId),
 }
 
 /// single threaded simple queue for components to communicate with each other

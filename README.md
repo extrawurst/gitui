@@ -118,6 +118,12 @@ sudo emerge --sync dm9pZCAq
 sudo emerge dev-vcs/gitui::dm9pZCAq
 ```
 
+### [openSUSE](https://software.opensuse.org/package/gitui) (Tumbleweed)
+
+```sh
+sudo zypper install gitui
+```
+
 ### Homebrew (macOS)
 
 ```sh
@@ -128,6 +134,12 @@ brew install gitui
 
 ```sh
 port install gitui
+```
+
+### [Winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/StephanDilly/gitui) (Windows)
+
+```
+winget install gitui
 ```
 
 ### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)
@@ -165,16 +177,38 @@ pkg install gitui
 
 Binaries available for:
 
-- Linux
-- macOS
-- Windows
+### Linux
+
+- gitui-linux-musl.tar.gz (linux on x86_64)
+- gitui-linux-aarch64.tar.gz (linux on 64 bit arm)
+- gitui-linux-arm.tar.gz
+- gitui-linux-armv7.tar.gz
+
+All contain a single binary file
+
+### macOS
+
+- gitui-mac.tar.gz (intel Mac, uses Rosetta on Apple silicon, single binary)
+
+
+### Windows
+
+- gitui-win.tar.gz (single 64bit binary)
+- gitui.msi (64bit Installer package)
+
 
 ## 7. <a name="build"></a> Build <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 ### Requirements
 
-- Minimum supported `rust`/`cargo` version: `1.60`
+- Minimum supported `rust`/`cargo` version: `1.65`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
+
+- To build openssl dependency (see https://docs.rs/openssl/latest/openssl/)
+  - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/) 
+  - a c compiler (msvc, gcc or clang, cargo will find it)
+
+- To run the complete test suite python is required (and it must be invokable as `python`)
 
 ### Cargo Install
 
@@ -217,6 +251,10 @@ The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to se
 ## 12. <a name="sponsoring"></a> Sponsoring <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 [![github](https://img.shields.io/badge/-GitHub%20Sponsors-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/extrawurst)
+
+<a href="https://liberapay.com/extrawurst/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
+
+<a href='https://ko-fi.com/B0B6GMW1T' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi4.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
 ## 13. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
 

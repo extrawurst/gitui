@@ -1,29 +1,29 @@
 use anyhow::Result;
 use crossbeam_channel::{unbounded, Sender};
-use notify::{Error, RecommendedWatcher, RecursiveMode};
-use notify_debouncer_mini::{
-	new_debouncer, DebouncedEvent, Debouncer,
-};
-use std::{
-	path::Path, sync::mpsc::RecvError, thread, time::Duration,
-};
+use notify::{Error, RecommendedWatcher, RecursiveMode, Watcher};
+use notify_debouncer_mini::{new_debouncer, DebouncedEvent};
+use scopetime::scope_time;
+use std::{path::Path, thread, time::Duration};
 
 pub struct RepoWatcher {
 	receiver: crossbeam_channel::Receiver<()>,
-	#[allow(dead_code)]
-	debouncer: Debouncer<RecommendedWatcher>,
 }
 
 impl RepoWatcher {
-	pub fn new(workdir: &str) -> Result<Self> {
+	pub fn new(workdir: &str) -> Self {
+		log::trace!(
+			"recommended watcher: {:?}",
+			RecommendedWatcher::kind()
+		);
+
 		let (tx, rx) = std::sync::mpsc::channel();
 
-		let mut debouncer =
-			new_debouncer(Duration::from_secs(2), None, tx)?;
+		let workdir = workdir.to_string();
 
-		debouncer
-			.watcher()
-			.watch(Path::new(workdir), RecursiveMode::Recursive)?;
+		thread::spawn(move || {
+			let timeout = Duration::from_secs(2);
+			create_watcher(timeout, tx, &workdir);
+		});
 
 		let (out_tx, out_rx) = unbounded();
 
@@ -34,10 +34,7 @@ impl RepoWatcher {
 			}
 		});
 
-		Ok(Self {
-			debouncer,
-			receiver: out_rx,
-		})
+		Self { receiver: out_rx }
 	}
 
 	///
@@ -50,7 +47,7 @@ impl RepoWatcher {
 			Result<Vec<DebouncedEvent>, Vec<Error>>,
 		>,
 		sender: &Sender<()>,
-	) -> Result<(), RecvError> {
+	) -> Result<()> {
 		loop {
 			let ev = receiver.recv()?;
 
@@ -62,9 +59,28 @@ impl RepoWatcher {
 				}
 
 				if !ev.is_empty() {
-					sender.send(()).expect("send error");
+					sender.send(())?;
 				}
 			}
 		}
 	}
+}
+
+fn create_watcher(
+	timeout: Duration,
+	tx: std::sync::mpsc::Sender<
+		Result<Vec<DebouncedEvent>, Vec<Error>>,
+	>,
+	workdir: &str,
+) {
+	scope_time!("create_watcher");
+
+	let mut bouncer =
+		new_debouncer(timeout, None, tx).expect("Watch create error");
+	bouncer
+		.watcher()
+		.watch(Path::new(&workdir), RecursiveMode::Recursive)
+		.expect("Watch error");
+
+	std::mem::forget(bouncer);
 }

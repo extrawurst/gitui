@@ -13,6 +13,7 @@ use git2::{
 	Delta, Diff, DiffDelta, DiffFormat, DiffHunk, Patch, Repository,
 };
 use scopetime::scope_time;
+use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, fs, path::Path, rc::Rc};
 
 /// type of diff of a single line
@@ -127,7 +128,9 @@ pub struct FileDiff {
 }
 
 /// see <https://libgit2.org/libgit2/#HEAD/type/git_diff_options>
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(
+	Debug, Hash, Clone, Copy, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub struct DiffOptions {
 	/// see <https://libgit2.org/libgit2/#HEAD/type/git_diff_options>
 	pub ignore_whitespace: bool,
@@ -250,8 +253,8 @@ pub fn get_diff_commits(
 ///
 //TODO: refactor into helper type with the inline closures as dedicated functions
 #[allow(clippy::too_many_lines)]
-fn raw_diff_to_file_diff<'a>(
-	diff: &'a Diff,
+fn raw_diff_to_file_diff(
+	diff: &Diff,
 	work_dir: &Path,
 ) -> Result<FileDiff> {
 	let res = Rc::new(RefCell::new(FileDiff::default()));
@@ -436,8 +439,8 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 
-		fs::create_dir(&root.join("foo")).unwrap();
-		File::create(&root.join("foo/bar.txt"))
+		fs::create_dir(root.join("foo")).unwrap();
+		File::create(root.join("foo/bar.txt"))
 			.unwrap()
 			.write_all(b"test\nfoo")
 			.unwrap();
@@ -461,7 +464,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"test\nfoo")
 			.unwrap();
@@ -560,7 +563,7 @@ mod tests {
 		let sub_path = root.join("foo/");
 
 		fs::create_dir_all(&sub_path).unwrap();
-		File::create(&root.join(file_path))
+		File::create(root.join(file_path))
 			.unwrap()
 			.write_all(b"test")
 			.unwrap();
@@ -584,14 +587,13 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"\x00")?;
+		File::create(root.join(file_path))?.write_all(b"\x00")?;
 
 		stage_add_file(repo_path, file_path).unwrap();
 
 		commit(repo_path, "commit").unwrap();
 
-		File::create(&root.join(file_path))?
-			.write_all(b"\x00\x02")?;
+		File::create(root.join(file_path))?.write_all(b"\x00\x02")?;
 
 		let diff = get_diff(
 			repo_path,
@@ -616,8 +618,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?
-			.write_all(b"\x00\xc7")?;
+		File::create(root.join(file_path))?.write_all(b"\x00\xc7")?;
 
 		let diff = get_diff(
 			repo_path,
@@ -642,14 +643,13 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		File::create(&root.join(file_path))?.write_all(b"\x00")?;
+		File::create(root.join(file_path))?.write_all(b"\x00")?;
 
 		stage_add_file(repo_path, file_path).unwrap();
 
 		commit(repo_path, "").unwrap();
 
-		File::create(&root.join(file_path))?
-			.write_all(b"\x00\x02")?;
+		File::create(root.join(file_path))?.write_all(b"\x00\x02")?;
 
 		stage_add_file(repo_path, file_path).unwrap();
 

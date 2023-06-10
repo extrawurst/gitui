@@ -1,12 +1,18 @@
+//TODO: hopefully released in next rust (see https://github.com/rust-lang/rust-clippy/issues/9440)
+#![allow(clippy::use_self)]
+
 use crate::error::Result;
 use git2::Repository;
 use scopetime::scope_time;
+use serde::{Deserialize, Serialize};
 
 use super::{repository::repo, RepoPath};
 
 // see https://git-scm.com/docs/git-config#Documentation/git-config.txt-statusshowUntrackedFiles
 /// represents the `status.showUntrackedFiles` git config state
-#[derive(Hash, Copy, Clone, PartialEq, Eq)]
+#[derive(
+	Hash, Copy, Clone, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub enum ShowUntrackedFilesConfig {
 	///
 	No,
@@ -65,6 +71,7 @@ pub fn untracked_files_config(
 }
 
 /// get string from config
+
 pub fn get_config_string(
 	repo_path: &RepoPath,
 	key: &str,
@@ -85,10 +92,7 @@ pub fn get_config_string_repo(
 	// gets returned when but it actually works
 	let entry_res = cfg.get_entry(key);
 
-	let entry = match entry_res {
-		Ok(ent) => ent,
-		Err(_) => return Ok(None),
-	};
+	let Ok(entry) = entry_res else { return Ok(None) };
 
 	if entry.has_value() {
 		Ok(entry.value().map(std::string::ToString::to_string))

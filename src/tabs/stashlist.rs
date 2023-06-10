@@ -32,8 +32,10 @@ impl StashList {
 		Self {
 			visible: false,
 			list: CommitList::new(
+				repo.clone(),
 				&strings::stashlist_title(&key_config),
 				theme,
+				queue.clone(),
 				key_config.clone(),
 			),
 			queue: queue.clone(),
@@ -68,7 +70,7 @@ impl StashList {
 				}
 				Err(e) => {
 					self.queue.push(InternalEvent::ShowErrorMsg(
-						format!("stash apply error:\n{}", e,),
+						format!("stash apply error:\n{e}",),
 					));
 				}
 			}
@@ -78,7 +80,7 @@ impl StashList {
 	fn drop_stash(&mut self) {
 		if self.list.marked_count() > 0 {
 			self.queue.push(InternalEvent::ConfirmAction(
-				Action::StashDrop(self.list.marked().to_vec()),
+				Action::StashDrop(self.list.marked_commits()),
 			));
 		} else if let Some(e) = self.list.selected_entry() {
 			self.queue.push(InternalEvent::ConfirmAction(
@@ -146,10 +148,10 @@ impl StashList {
 }
 
 impl DrawableComponent for StashList {
-	fn draw<B: tui::backend::Backend>(
+	fn draw<B: ratatui::backend::Backend>(
 		&self,
-		f: &mut tui::Frame<B>,
-		rect: tui::layout::Rect,
+		f: &mut ratatui::Frame<B>,
+		rect: ratatui::layout::Rect,
 	) -> Result<()> {
 		self.list.draw(f, rect)?;
 

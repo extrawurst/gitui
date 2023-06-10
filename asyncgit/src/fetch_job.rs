@@ -36,20 +36,6 @@ impl AsyncFetchJob {
 			)))),
 		}
 	}
-
-	///
-	pub fn result(&self) -> Option<Result<()>> {
-		if let Ok(mut state) = self.state.lock() {
-			if let Some(state) = state.take() {
-				return match state {
-					JobState::Request(_) => None,
-					JobState::Response(result) => Some(result),
-				};
-			}
-		}
-
-		None
-	}
 }
 
 impl AsyncJob for AsyncFetchJob {

@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::Event;
-use tui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{backend::Backend, layout::Rect, Frame};
 
 pub struct FindCommitComponent {
     input: TextInputComponent,

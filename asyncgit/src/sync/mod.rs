@@ -23,6 +23,7 @@ mod rebase;
 pub mod remotes;
 mod repository;
 mod reset;
+mod reword;
 mod staging;
 mod stash;
 mod state;
@@ -34,12 +35,13 @@ pub mod utils;
 
 pub use blame::{blame_file, BlameHunk, FileBlame};
 pub use branch::{
-	branch_compare_upstream, checkout_branch, config_is_pull_rebase,
-	create_branch, delete_branch, get_branch_remote,
-	get_branches_info, merge_commit::merge_upstream_commit,
+	branch_compare_upstream, checkout_branch, checkout_commit,
+	config_is_pull_rebase, create_branch, delete_branch,
+	get_branch_remote, get_branches_info,
+	merge_commit::merge_upstream_commit,
 	merge_ff::branch_merge_upstream_fastforward,
 	merge_rebase::merge_upstream_rebase, rename::rename_branch,
-	validate_branch_name, BranchCompare, BranchInfo,
+	validate_branch_name, BranchCompare, BranchDetails, BranchInfo,
 };
 pub use commit::{amend, commit, tag_commit};
 pub use commit_details::{
@@ -74,7 +76,8 @@ pub use remotes::{
 };
 pub(crate) use repository::repo;
 pub use repository::{RepoPath, RepoPathRef};
-pub use reset::{reset_stage, reset_workdir};
+pub use reset::{reset_repo, reset_stage, reset_workdir};
+pub use reword::reword;
 pub use staging::{discard_lines, stage_lines};
 pub use stash::{
 	get_stashes, stash_apply, stash_drop, stash_pop, stash_save,
@@ -94,6 +97,8 @@ pub use utils::{
 	get_head, get_head_tuple, is_repo, repo_dir, stage_add_all,
 	stage_add_file, stage_addremoved, Head,
 };
+
+pub use git2::ResetType;
 
 #[cfg(test)]
 mod tests {
@@ -125,10 +130,10 @@ mod tests {
 			let temp_dir = TempDir::new().unwrap();
 			let path = temp_dir.path();
 
-			set_search_path(ConfigLevel::System, &path).unwrap();
-			set_search_path(ConfigLevel::Global, &path).unwrap();
-			set_search_path(ConfigLevel::XDG, &path).unwrap();
-			set_search_path(ConfigLevel::ProgramData, &path).unwrap();
+			set_search_path(ConfigLevel::System, path).unwrap();
+			set_search_path(ConfigLevel::Global, path).unwrap();
+			set_search_path(ConfigLevel::XDG, path).unwrap();
+			set_search_path(ConfigLevel::ProgramData, path).unwrap();
 		});
 	}
 
@@ -279,7 +284,7 @@ mod tests {
 			.try_init();
 	}
 
-	/// Same as repo_init, but the repo is a bare repo (--bare)
+	/// Same as `repo_init`, but the repo is a bare repo (--bare)
 	pub fn repo_init_bare() -> Result<(TempDir, Repository)> {
 		init_log();
 
@@ -303,7 +308,7 @@ mod tests {
 	///
 	pub fn debug_cmd_print(path: &RepoPath, cmd: &str) {
 		let cmd = debug_cmd(path, cmd);
-		eprintln!("\n----\n{}", cmd);
+		eprintln!("\n----\n{cmd}");
 	}
 
 	/// helper to fetch commmit details using log walker
@@ -323,7 +328,7 @@ mod tests {
 	fn debug_cmd(path: &RepoPath, cmd: &str) -> String {
 		let output = if cfg!(target_os = "windows") {
 			Command::new("cmd")
-				.args(&["/C", cmd])
+				.args(["/C", cmd])
 				.current_dir(path.gitpath())
 				.output()
 				.unwrap()
@@ -343,12 +348,12 @@ mod tests {
 			if stdout.is_empty() {
 				String::new()
 			} else {
-				format!("out:\n{}", stdout)
+				format!("out:\n{stdout}")
 			},
 			if stderr.is_empty() {
 				String::new()
 			} else {
-				format!("err:\n{}", stderr)
+				format!("err:\n{stderr}")
 			}
 		)
 	}

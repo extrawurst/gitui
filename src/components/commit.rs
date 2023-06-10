@@ -5,29 +5,31 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
-use anyhow::Result;
+use anyhow::{bail, Ok, Result};
 use asyncgit::{
 	cached, message_prettify,
 	sync::{
 		self, get_config_string, CommitId, HookResult, RepoPathRef,
 		RepoState,
 	},
+	StatusItem, StatusItemType,
 };
 use crossterm::event::Event;
 use easy_cast::Cast;
-use std::{
-	fs::{read_to_string, File},
-	io::{Read, Write},
-};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	widgets::Paragraph,
 	Frame,
+};
+use std::{
+	fs::{read_to_string, File},
+	io::{Read, Write},
 };
 
 enum CommitResult {
@@ -40,6 +42,7 @@ enum Mode {
 	Amend(CommitId),
 	Merge(Vec<CommitId>),
 	Revert,
+	Reword(CommitId),
 }
 
 pub struct CommitComponent {
@@ -51,6 +54,9 @@ pub struct CommitComponent {
 	git_branch_name: cached::BranchName,
 	commit_template: Option<String>,
 	theme: SharedTheme,
+	commit_msg_history_idx: usize,
+	options: SharedOptions,
+	verify: bool,
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
@@ -62,6 +68,7 @@ impl CommitComponent {
 		queue: Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			queue,
@@ -78,6 +85,9 @@ impl CommitComponent {
 			commit_template: None,
 			theme,
 			repo,
+			commit_msg_history_idx: 0,
+			options,
+			verify: true,
 		}
 	}
 
@@ -88,7 +98,7 @@ impl CommitComponent {
 
 	fn draw_branch_name<B: Backend>(&self, f: &mut Frame<B>) {
 		if let Some(name) = self.git_branch_name.last() {
-			let w = Paragraph::new(format!("{{{}}}", name))
+			let w = Paragraph::new(format!("{{{name}}}"))
 				.alignment(Alignment::Right);
 
 			let rect = {
@@ -133,7 +143,23 @@ impl CommitComponent {
 		}
 	}
 
-	pub fn show_editor(&mut self) -> Result<()> {
+	const fn item_status_char(
+		item_type: StatusItemType,
+	) -> &'static str {
+		match item_type {
+			StatusItemType::Modified => "modified",
+			StatusItemType::New => "new file",
+			StatusItemType::Deleted => "deleted",
+			StatusItemType::Renamed => "renamed",
+			StatusItemType::Typechange => " ",
+			StatusItemType::Conflicted => "conflicted",
+		}
+	}
+
+	pub fn show_editor(
+		&mut self,
+		changes: Vec<StatusItem>,
+	) -> Result<()> {
 		let file_path = sync::repo_dir(&self.repo.borrow())?
 			.join("COMMIT_EDITMSG");
 
@@ -147,6 +173,16 @@ impl CommitComponent {
 				strings::commit_editor_msg(&self.key_config)
 					.as_bytes(),
 			)?;
+
+			file.write_all(b"\n#\n# Changes to be commited:")?;
+
+			for change in changes {
+				let status_char =
+					Self::item_status_char(change.status);
+				let message =
+					format!("\n#\t{status_char}: {}", change.path);
+				file.write_all(message.as_bytes())?;
+			}
 		}
 
 		ExternalEditorComponent::open_file_in_editor(
@@ -186,6 +222,11 @@ impl CommitComponent {
 			self.commit_with_msg(msg)?,
 			CommitResult::ComitDone
 		) {
+			self.options
+				.borrow_mut()
+				.add_commit_msg(self.input.get_text());
+			self.commit_msg_history_idx = 0;
+
 			self.hide();
 			self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
 			self.input.clear();
@@ -198,52 +239,70 @@ impl CommitComponent {
 		&mut self,
 		msg: String,
 	) -> Result<CommitResult> {
-		if let HookResult::NotOk(e) =
-			sync::hooks_pre_commit(&self.repo.borrow())?
-		{
-			log::error!("pre-commit hook error: {}", e);
-			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"pre-commit hook error:\n{}",
-				e
-			)));
-			return Ok(CommitResult::Aborted);
+		// on exit verify should always be on
+		let verify = self.verify;
+		self.verify = true;
+
+		if verify {
+			// run pre commit hook - can reject commit
+			if let HookResult::NotOk(e) =
+				sync::hooks_pre_commit(&self.repo.borrow())?
+			{
+				log::error!("pre-commit hook error: {}", e);
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("pre-commit hook error:\n{e}"),
+				));
+				return Ok(CommitResult::Aborted);
+			}
 		}
 		let mut msg = message_prettify(msg, Some(b'#'))?;
-		if let HookResult::NotOk(e) =
-			sync::hooks_commit_msg(&self.repo.borrow(), &mut msg)?
-		{
-			log::error!("commit-msg hook error: {}", e);
-			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"commit-msg hook error:\n{}",
-				e
-			)));
-			return Ok(CommitResult::Aborted);
+		if verify {
+			// run commit message check hook - can reject commit
+			if let HookResult::NotOk(e) =
+				sync::hooks_commit_msg(&self.repo.borrow(), &mut msg)?
+			{
+				log::error!("commit-msg hook error: {}", e);
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("commit-msg hook error:\n{e}"),
+				));
+				return Ok(CommitResult::Aborted);
+			}
 		}
-
-		match &self.mode {
-			Mode::Normal => sync::commit(&self.repo.borrow(), &msg)?,
-			Mode::Amend(amend) => {
-				sync::amend(&self.repo.borrow(), *amend, &msg)?
-			}
-			Mode::Merge(ids) => {
-				sync::merge_commit(&self.repo.borrow(), &msg, ids)?
-			}
-			Mode::Revert => {
-				sync::commit_revert(&self.repo.borrow(), &msg)?
-			}
-		};
+		self.do_commit(&msg)?;
 
 		if let HookResult::NotOk(e) =
 			sync::hooks_post_commit(&self.repo.borrow())?
 		{
 			log::error!("post-commit hook error: {}", e);
 			self.queue.push(InternalEvent::ShowErrorMsg(format!(
-				"post-commit hook error:\n{}",
-				e
+				"post-commit hook error:\n{e}"
 			)));
 		}
 
 		Ok(CommitResult::ComitDone)
+	}
+
+	fn do_commit(&self, msg: &str) -> Result<()> {
+		match &self.mode {
+			Mode::Normal => sync::commit(&self.repo.borrow(), msg)?,
+			Mode::Amend(amend) => {
+				sync::amend(&self.repo.borrow(), *amend, msg)?
+			}
+			Mode::Merge(ids) => {
+				sync::merge_commit(&self.repo.borrow(), msg, ids)?
+			}
+			Mode::Revert => {
+				sync::commit_revert(&self.repo.borrow(), msg)?
+			}
+			Mode::Reword(id) => {
+				let commit =
+					sync::reword(&self.repo.borrow(), *id, msg)?;
+				self.queue.push(InternalEvent::TabSwitchStatus);
+
+				commit
+			}
+		};
+		Ok(())
 	}
 
 	fn can_commit(&self) -> bool {
@@ -282,6 +341,81 @@ impl CommitComponent {
 
 		Ok(())
 	}
+	fn toggle_verify(&mut self) {
+		self.verify = !self.verify;
+	}
+
+	pub fn open(&mut self, reword: Option<CommitId>) -> Result<()> {
+		//only clear text if it was not a normal commit dlg before, so to preserve old commit msg that was edited
+		if !matches!(self.mode, Mode::Normal) {
+			self.input.clear();
+		}
+
+		self.mode = Mode::Normal;
+
+		let repo_state = sync::repo_state(&self.repo.borrow())?;
+
+		self.mode =
+			if repo_state != RepoState::Clean && reword.is_some() {
+				bail!("cannot reword while repo is not in a clean state");
+			} else if let Some(reword_id) = reword {
+				self.input.set_text(
+					sync::get_commit_details(
+						&self.repo.borrow(),
+						reword_id,
+					)?
+					.message
+					.unwrap_or_default()
+					.combine(),
+				);
+				self.input.set_title(strings::commit_reword_title());
+				Mode::Reword(reword_id)
+			} else {
+				match repo_state {
+					RepoState::Merge => {
+						let ids =
+							sync::mergehead_ids(&self.repo.borrow())?;
+						self.input
+							.set_title(strings::commit_title_merge());
+						self.input.set_text(sync::merge_msg(
+							&self.repo.borrow(),
+						)?);
+						Mode::Merge(ids)
+					}
+					RepoState::Revert => {
+						self.input
+							.set_title(strings::commit_title_revert());
+						self.input.set_text(sync::merge_msg(
+							&self.repo.borrow(),
+						)?);
+						Mode::Revert
+					}
+
+					_ => {
+						self.commit_template = get_config_string(
+							&self.repo.borrow(),
+							"commit.template",
+						)
+						.ok()
+						.flatten()
+						.and_then(|path| read_to_string(path).ok());
+
+						if self.is_empty() {
+							if let Some(s) = &self.commit_template {
+								self.input.set_text(s.clone());
+							}
+						}
+						self.input.set_title(strings::commit_title());
+						Mode::Normal
+					}
+				}
+			};
+
+		self.commit_msg_history_idx = 0;
+		self.input.show()?;
+
+		Ok(())
+	}
 }
 
 impl DrawableComponent for CommitComponent {
@@ -316,6 +450,15 @@ impl Component for CommitComponent {
 			));
 
 			out.push(CommandInfo::new(
+				strings::commands::toggle_verify(
+					&self.key_config,
+					self.verify,
+				),
+				self.can_commit(),
+				true,
+			));
+
+			out.push(CommandInfo::new(
 				strings::commands::commit_amend(&self.key_config),
 				self.can_amend(),
 				true,
@@ -326,6 +469,14 @@ impl Component for CommitComponent {
 					&self.key_config,
 				),
 				true,
+				true,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::commit_next_msg_from_history(
+					&self.key_config,
+				),
+				self.options.borrow().has_commit_msg_history(),
 				true,
 			));
 		}
@@ -350,6 +501,12 @@ impl Component for CommitComponent {
 					);
 				} else if key_match(
 					e,
+					self.key_config.keys.toggle_verify,
+				) && self.can_commit()
+				{
+					self.toggle_verify();
+				} else if key_match(
+					e,
 					self.key_config.keys.commit_amend,
 				) && self.can_amend()
 				{
@@ -362,7 +519,18 @@ impl Component for CommitComponent {
 						InternalEvent::OpenExternalEditor(None),
 					);
 					self.hide();
-				} else {
+				} else if key_match(
+					e,
+					self.key_config.keys.commit_history_next,
+				) {
+					if let Some(msg) = self
+						.options
+						.borrow()
+						.commit_msg(self.commit_msg_history_idx)
+					{
+						self.input.set_text(msg);
+						self.commit_msg_history_idx += 1;
+					}
 				}
 				// stop key event propagation
 				return Ok(EventState::Consumed);
@@ -381,51 +549,7 @@ impl Component for CommitComponent {
 	}
 
 	fn show(&mut self) -> Result<()> {
-		//only clear text if it was not a normal commit dlg before, so to preserve old commit msg that was edited
-		if !matches!(self.mode, Mode::Normal) {
-			self.input.clear();
-		}
-
-		self.mode = Mode::Normal;
-
-		let repo_state = sync::repo_state(&self.repo.borrow())?;
-
-		self.mode = match repo_state {
-			RepoState::Merge => {
-				let ids = sync::mergehead_ids(&self.repo.borrow())?;
-				self.input.set_title(strings::commit_title_merge());
-				self.input
-					.set_text(sync::merge_msg(&self.repo.borrow())?);
-				Mode::Merge(ids)
-			}
-			RepoState::Revert => {
-				self.input.set_title(strings::commit_title_revert());
-				self.input
-					.set_text(sync::merge_msg(&self.repo.borrow())?);
-				Mode::Revert
-			}
-			_ => {
-				self.commit_template = get_config_string(
-					&self.repo.borrow(),
-					"commit.template",
-				)
-				.ok()
-				.flatten()
-				.and_then(|path| read_to_string(path).ok());
-
-				if self.is_empty() {
-					if let Some(s) = &self.commit_template {
-						self.input.set_text(s.clone());
-					}
-				}
-
-				self.input.set_title(strings::commit_title());
-				Mode::Normal
-			}
-		};
-
-		self.input.show()?;
-
+		self.open(None)?;
 		Ok(())
 	}
 }

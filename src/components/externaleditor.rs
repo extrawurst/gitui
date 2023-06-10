@@ -16,16 +16,16 @@ use crossterm::{
 	terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 	ExecutableCommand,
 };
-use scopeguard::defer;
-use std::ffi::OsStr;
-use std::{env, io, path::Path, process::Command};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	text::{Span, Spans},
 	widgets::{Block, BorderType, Borders, Clear, Paragraph},
 	Frame,
 };
+use scopeguard::defer;
+use std::ffi::OsStr;
+use std::{env, io, path::Path, process::Command};
 
 ///
 pub struct ExternalEditorComponent {

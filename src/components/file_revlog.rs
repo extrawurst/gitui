@@ -1,6 +1,7 @@
-use super::{utils::logitems::ItemBatch, SharedOptions};
+use super::utils::logitems::ItemBatch;
 use super::{visibility_blocking, BlameFileOpen, InspectCommitOpen};
 use crate::keys::key_match;
+use crate::options::SharedOptions;
 use crate::queue::StackablePopupOpen;
 use crate::{
 	components::{
@@ -10,7 +11,7 @@ use crate::{
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings,
-	ui::{draw_scrollbar, style::SharedTheme},
+	ui::{draw_scrollbar, style::SharedTheme, Orientation},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -23,7 +24,7 @@ use asyncgit::{
 use chrono::{DateTime, Local};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	text::{Span, Spans, Text},
@@ -191,7 +192,7 @@ impl FileRevlogComponent {
 					let diff_params = DiffParams {
 						path: open_request.file_path.clone(),
 						diff_type: DiffType::Commit(commit_id),
-						options: self.options.borrow().diff,
+						options: self.options.borrow().diff_options(),
 					};
 
 					if let Some((params, last)) =
@@ -225,16 +226,40 @@ impl FileRevlogComponent {
 		if let Some(git_log) = &mut self.git_log {
 			let table_state = self.table_state.take();
 
-			let start = table_state.selected().unwrap_or(0);
-
 			let commits = get_commits_info(
 				&self.repo_path.borrow(),
-				&git_log.get_slice(start, SLICE_SIZE)?,
-				self.current_width.get() as usize,
+				&git_log.get_slice(0, SLICE_SIZE)?,
+				self.current_width.get(),
 			);
 
 			if let Ok(commits) = commits {
-				self.items.set_items(start, commits);
+				// 2023-04-12
+				//
+				// There is an issue with how windowing works in `self.items` and
+				// `self.table_state`. Because of that issue, we currently have to pass
+				// `0` as the first argument to `set_items`. If we did not do that, the
+				// offset that is kept separately in `self.items` and `self.table_state`
+				// would get out of sync, resulting in the table showing the wrong rows.
+				//
+				// The offset determines the number of rows `render_stateful_widget`
+				// skips when rendering a table. When `set_items` is called, it clears
+				// its internal `Vec` of items and sets `index_offset` based on the
+				// parameter passed. Unfortunately, there is no way for us to pass this
+				// information, `index_offset`, to `render_stateful_widget`. Because of
+				// that, `render_stateful_widget` assumes that the rows provided by
+				// `Table` are 0-indexed while in reality they are
+				// `index_offset`-indexed.
+				//
+				// This fix makes the `FileRevlog` unable to show histories that have
+				// more than `SLICE_SIZE` items, but since it is broken for larger
+				// histories anyway, this seems acceptable for the time being.
+				//
+				// This issue can only properly be fixed upstream, in `tui-rs`. See
+				// [tui-issue].
+				//
+				// [gitui-issue]: https://github.com/extrawurst/gitui/issues/1560
+				// [tui-issue]: https://github.com/fdehau/tui-rs/issues/626
+				self.items.set_items(0, commits);
 			}
 
 			self.table_state.set(table_state);
@@ -411,6 +436,7 @@ impl FileRevlogComponent {
 			&self.theme,
 			self.count_total,
 			table_state.selected().unwrap_or(0),
+			Orientation::Vertical,
 		);
 
 		self.table_state.set(table_state);
@@ -444,7 +470,7 @@ impl DrawableComponent for FileRevlogComponent {
 	) -> Result<()> {
 		if self.visible {
 			let percentages = if self.diff.focused() {
-				(30, 70)
+				(0, 100)
 			} else {
 				(50, 50)
 			};
@@ -484,20 +510,17 @@ impl Component for FileRevlogComponent {
 
 			if let Event::Key(key) = event {
 				if key_match(key, self.key_config.keys.exit_popup) {
-					self.hide_stacked(false);
+					if self.diff.focused() {
+						self.diff.focus(false);
+					} else {
+						self.hide_stacked(false);
+					}
 				} else if key_match(
 					key,
-					self.key_config.keys.focus_right,
+					self.key_config.keys.move_right,
 				) && self.can_focus_diff()
 				{
 					self.diff.focus(true);
-				} else if key_match(
-					key,
-					self.key_config.keys.focus_left,
-				) {
-					if self.diff.focused() {
-						self.diff.focus(false);
-					}
 				} else if key_match(key, self.key_config.keys.enter) {
 					if let Some(commit_id) = self.selected_commit() {
 						self.hide_stacked(true);
