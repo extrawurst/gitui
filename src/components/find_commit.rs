@@ -3,7 +3,7 @@ use super::{
     Component, DrawableComponent, EventState,
 };
 use crate::{
-    keys::SharedKeyConfig,
+    keys::{SharedKeyConfig, key_match},
     queue::{InternalEvent, Queue},
     strings,
     ui::style::SharedTheme,
@@ -40,10 +40,10 @@ impl Component for FindCommitComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, ev: Event) -> Result<EventState> {
+    fn event(&mut self, ev: &Event) -> Result<EventState> {
         if self.is_visible() && self.focused() {
             if let Event::Key(e) = ev {
-                if e == self.key_config.exit_popup {
+                if key_match(e, self.key_config.keys.exit_popup) {
                     // Prevent text input closing
                     self.focus(false);
                     self.visible = false;
@@ -51,7 +51,7 @@ impl Component for FindCommitComponent {
                 }
             }
             if self.input.event(ev)?.is_consumed() {
-                self.queue.borrow_mut().push_back(
+                self.queue.push(
                     InternalEvent::FilterLog(
                         self.input.get_text().to_string(),
                     ),
@@ -103,7 +103,7 @@ impl FindCommitComponent {
             false,
         );
         input_component.show().expect("Will not error");
-        input_component.set_should_use_rect(true);
+        input_component.embed();
         Self {
             queue,
             input: input_component,

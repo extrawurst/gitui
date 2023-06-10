@@ -1,7 +1,7 @@
 use anyhow::{Error, Result};
 use asyncgit::{
-    sync::{self, CommitId, CommitInfo, Tags},
-    AsyncLog, AsyncNotification, AsyncTags, CWD,
+    sync::{self, CommitInfo, Tags, RepoPathRef},
+    AsyncLog, AsyncTags, AsyncGitNotification,
 };
 use bitflags::bitflags;
 use crossbeam_channel::{Sender, TryRecvError};
@@ -72,6 +72,7 @@ pub enum FilterStatus {
 }
 
 pub struct AsyncCommitFilterer {
+    repo: RepoPathRef,
     git_log: AsyncLog,
     git_tags: AsyncTags,
     filtered_commits: Arc<Mutex<Vec<CommitInfo>>>,
@@ -80,16 +81,18 @@ pub struct AsyncCommitFilterer {
     is_pending_local: RefCell<bool>,
     filter_thread_sender: Option<Sender<bool>>,
     filter_thread_mutex: Arc<Mutex<()>>,
-    sender: Sender<AsyncNotification>,
+    sender: Sender<AsyncGitNotification>,
 }
 
 impl AsyncCommitFilterer {
     pub fn new(
+		repo: RepoPathRef,
         git_log: AsyncLog,
         git_tags: AsyncTags,
-        sender: &Sender<AsyncNotification>,
+        sender: &Sender<AsyncGitNotification>,
     ) -> Self {
         Self {
+            repo,
             git_log,
             git_tags,
             filtered_commits: Arc::new(Mutex::new(Vec::new())),
@@ -122,9 +125,7 @@ impl AsyncCommitFilterer {
     #[allow(clippy::too_many_lines)]
     pub fn filter(
         mut vec_commit_info: Vec<CommitInfo>,
-        tags: &Option<
-            std::collections::BTreeMap<CommitId, Vec<String>>,
-        >,
+        tags: &Option<Tags>,
         filter_strings: &[Vec<(String, FilterBy)>],
     ) -> Vec<CommitInfo> {
         vec_commit_info
@@ -138,8 +139,8 @@ impl AsyncCommitFilterer {
                             {
                                  (filter
                                         .contains(FilterBy::TAGS)
-                                        &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag_string|{
-                                                !tag_string.contains(s)
+                                        &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag|{
+                                                !tag.name.contains(s)
                                             }).count() > 0)))
                                         || (filter
                                             .contains(FilterBy::SHA)
@@ -160,8 +161,8 @@ impl AsyncCommitFilterer {
                             } else {
                                 (filter
                                     .contains(FilterBy::TAGS)
-                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
-                                            tag_string.contains(s)
+                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag|{
+                                            tag.name.contains(s)
                                         }).count() > 0)))
                                     || (filter
                                         .contains(FilterBy::SHA)
@@ -185,8 +186,8 @@ impl AsyncCommitFilterer {
                             {
                                 (filter
                                     .contains(FilterBy::TAGS)
-                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag_string|{
-                                            !tag_string.to_lowercase().contains(&s.to_lowercase())
+                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(true, |commit_tags| commit_tags.iter().filter(|tag|{
+                                            !tag.name.to_lowercase().contains(&s.to_lowercase())
                                         }).count() > 0)))
                                     || (filter
                                         .contains(FilterBy::SHA)
@@ -216,8 +217,8 @@ impl AsyncCommitFilterer {
                             } else {
                                 (filter
                                     .contains(FilterBy::TAGS)
-                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag_string|{
-                                            tag_string.to_lowercase().contains(&s.to_lowercase())
+                                    &&  tags.as_ref().map_or(false, |t| t.get(&commit.id).map_or(false, |commit_tags| commit_tags.iter().filter(|tag|{
+                                            tag.name.to_lowercase().contains(&s.to_lowercase())
                                         }).count() > 0)))
                                     || (filter
                                         .contains(FilterBy::SHA)
@@ -306,6 +307,8 @@ impl AsyncCommitFilterer {
         let tags =
             Self::get_tags(&filter_strings, &mut self.git_tags)?;
 
+        let repo = self.repo.clone();
+
         rayon_core::spawn(move || {
             // Only 1 thread can filter at a time
             let _c = cur_thread_mutex.lock().expect("mutex poisoned");
@@ -327,7 +330,7 @@ impl AsyncCommitFilterer {
                         {
                             Ok(ids) => {
                                 match sync::get_commits_info(
-                                    CWD,
+                                    &repo.borrow(),
                                     &ids,
                                     usize::MAX,
                                 ) {
@@ -360,7 +363,7 @@ impl AsyncCommitFilterer {
                                         drop(fc);
                                         cur_index += SLICE_SIZE;
                                         async_app_sender
-                                    .send(AsyncNotification::Log)
+                                    .send(AsyncGitNotification::Log)
                                     .expect("error sending");
                                         thread::sleep(
                                             FILTER_SLEEP_DURATION,

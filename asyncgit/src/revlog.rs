@@ -1,38 +1,40 @@
 use crate::{
-    error::Result,
-    sync::{utils::repo, CommitId, LogWalker},
-    AsyncNotification, CWD,
+	error::Result,
+	sync::{repo, CommitId, LogWalker, LogWalkerFilter, RepoPath},
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
-use git2::Oid;
 use scopetime::scope_time;
 use std::{
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
-    },
-    thread,
-    time::Duration,
+	sync::{
+		atomic::{AtomicBool, Ordering},
+		Arc, Mutex,
+	},
+	thread,
+	time::Duration,
 };
 
 ///
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum FetchStatus {
-    /// previous fetch still running
-    Pending,
-    /// no change expected
-    NoChange,
-    /// new walk was started
-    Started,
+	/// previous fetch still running
+	Pending,
+	/// no change expected
+	NoChange,
+	/// new walk was started
+	Started,
 }
 
 ///
 #[derive(Clone)]
 pub struct AsyncLog {
-    current: Arc<Mutex<Vec<CommitId>>>,
-    sender: Sender<AsyncNotification>,
-    pending: Arc<AtomicBool>,
-    background: Arc<AtomicBool>,
+	current: Arc<Mutex<Vec<CommitId>>>,
+	current_head: Arc<Mutex<Option<CommitId>>>,
+	sender: Sender<AsyncGitNotification>,
+	pending: Arc<AtomicBool>,
+	background: Arc<AtomicBool>,
+	filter: Option<LogWalkerFilter>,
+	repo: RepoPath,
 }
 
 static LIMIT_COUNT: usize = 3000;
@@ -40,144 +42,169 @@ static SLEEP_FOREGROUND: Duration = Duration::from_millis(2);
 static SLEEP_BACKGROUND: Duration = Duration::from_millis(1000);
 
 impl AsyncLog {
-    ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
-        Self {
-            current: Arc::new(Mutex::new(Vec::new())),
-            sender: sender.clone(),
-            pending: Arc::new(AtomicBool::new(false)),
-            background: Arc::new(AtomicBool::new(false)),
-        }
-    }
+	///
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+		filter: Option<LogWalkerFilter>,
+	) -> Self {
+		Self {
+			repo,
+			current: Arc::new(Mutex::new(Vec::new())),
+			current_head: Arc::new(Mutex::new(None)),
+			sender: sender.clone(),
+			pending: Arc::new(AtomicBool::new(false)),
+			background: Arc::new(AtomicBool::new(false)),
+			filter,
+		}
+	}
 
-    ///
-    pub fn count(&mut self) -> Result<usize> {
-        Ok(self.current.lock()?.len())
-    }
+	///
+	pub fn count(&self) -> Result<usize> {
+		Ok(self.current.lock()?.len())
+	}
 
-    ///
-    pub fn get_slice(
-        &self,
-        start_index: usize,
-        amount: usize,
-    ) -> Result<Vec<CommitId>> {
-        let list = self.current.lock()?;
-        let list_len = list.len();
-        let min = start_index.min(list_len);
-        let max = min + amount;
-        let max = max.min(list_len);
-        Ok(list[min..max].to_vec())
-    }
+	///
+	pub fn get_slice(
+		&self,
+		start_index: usize,
+		amount: usize,
+	) -> Result<Vec<CommitId>> {
+		let list = self.current.lock()?;
+		let list_len = list.len();
+		let min = start_index.min(list_len);
+		let max = min + amount;
+		let max = max.min(list_len);
+		Ok(list[min..max].to_vec())
+	}
 
-    ///
-    pub fn is_pending(&self) -> bool {
-        self.pending.load(Ordering::Relaxed)
-    }
+	///
+	pub fn position(&self, id: CommitId) -> Result<Option<usize>> {
+		let list = self.current.lock()?;
+		let position = list.iter().position(|&x| x == id);
 
-    ///
-    pub fn set_background(&mut self) {
-        self.background.store(true, Ordering::Relaxed)
-    }
+		Ok(position)
+	}
 
-    ///
-    fn current_head(&self) -> Result<CommitId> {
-        Ok(self
-            .current
-            .lock()?
-            .first()
-            .map_or(Oid::zero().into(), |f| *f))
-    }
+	///
+	pub fn is_pending(&self) -> bool {
+		self.pending.load(Ordering::Relaxed)
+	}
 
-    ///
-    fn head_changed(&self) -> Result<bool> {
-        if let Ok(head) = repo(CWD)?.head() {
-            if let Some(head) = head.target() {
-                return Ok(head != self.current_head()?.into());
-            }
-        }
-        Ok(false)
-    }
+	///
+	pub fn set_background(&mut self) {
+		self.background.store(true, Ordering::Relaxed);
+	}
 
-    ///
-    pub fn fetch(&mut self) -> Result<FetchStatus> {
-        self.background.store(false, Ordering::Relaxed);
+	///
+	fn current_head(&self) -> Result<Option<CommitId>> {
+		Ok(*self.current_head.lock()?)
+	}
 
-        if self.is_pending() {
-            return Ok(FetchStatus::Pending);
-        }
+	///
+	fn head_changed(&self) -> Result<bool> {
+		if let Ok(head) = repo(&self.repo)?.head() {
+			return Ok(
+				head.target() != self.current_head()?.map(Into::into)
+			);
+		}
+		Ok(false)
+	}
 
-        if !self.head_changed()? {
-            return Ok(FetchStatus::NoChange);
-        }
+	///
+	pub fn fetch(&mut self) -> Result<FetchStatus> {
+		self.background.store(false, Ordering::Relaxed);
 
-        self.clear()?;
+		if self.is_pending() {
+			return Ok(FetchStatus::Pending);
+		}
 
-        let arc_current = Arc::clone(&self.current);
-        let sender = self.sender.clone();
-        let arc_pending = Arc::clone(&self.pending);
-        let arc_background = Arc::clone(&self.background);
+		if !self.head_changed()? {
+			return Ok(FetchStatus::NoChange);
+		}
 
-        self.pending.store(true, Ordering::Relaxed);
+		self.clear()?;
 
-        rayon_core::spawn(move || {
-            scope_time!("async::revlog");
+		let arc_current = Arc::clone(&self.current);
+		let sender = self.sender.clone();
+		let arc_pending = Arc::clone(&self.pending);
+		let arc_background = Arc::clone(&self.background);
+		let filter = self.filter.clone();
+		let repo_path = self.repo.clone();
 
-            Self::fetch_helper(
-                &arc_current,
-                &arc_background,
-                &sender,
-            )
-            .expect("failed to fetch");
+		self.pending.store(true, Ordering::Relaxed);
 
-            arc_pending.store(false, Ordering::Relaxed);
+		if let Ok(head) = repo(&self.repo)?.head() {
+			*self.current_head.lock()? =
+				head.target().map(CommitId::new);
+		}
 
-            Self::notify(&sender);
-        });
+		rayon_core::spawn(move || {
+			scope_time!("async::revlog");
 
-        Ok(FetchStatus::Started)
-    }
+			Self::fetch_helper(
+				&repo_path,
+				&arc_current,
+				&arc_background,
+				&sender,
+				filter,
+			)
+			.expect("failed to fetch");
 
-    fn fetch_helper(
-        arc_current: &Arc<Mutex<Vec<CommitId>>>,
-        arc_background: &Arc<AtomicBool>,
-        sender: &Sender<AsyncNotification>,
-    ) -> Result<()> {
-        let mut entries = Vec::with_capacity(LIMIT_COUNT);
-        let r = repo(CWD)?;
-        let mut walker = LogWalker::new(&r);
-        loop {
-            entries.clear();
-            let res_is_err =
-                walker.read(&mut entries, LIMIT_COUNT).is_err();
+			arc_pending.store(false, Ordering::Relaxed);
 
-            if !res_is_err {
-                let mut current = arc_current.lock()?;
-                current.extend(entries.iter());
-            }
+			Self::notify(&sender);
+		});
 
-            if res_is_err || entries.len() <= 1 {
-                break;
-            }
-            Self::notify(sender);
+		Ok(FetchStatus::Started)
+	}
 
-            let sleep_duration =
-                if arc_background.load(Ordering::Relaxed) {
-                    SLEEP_BACKGROUND
-                } else {
-                    SLEEP_FOREGROUND
-                };
-            thread::sleep(sleep_duration);
-        }
+	fn fetch_helper(
+		repo_path: &RepoPath,
+		arc_current: &Arc<Mutex<Vec<CommitId>>>,
+		arc_background: &Arc<AtomicBool>,
+		sender: &Sender<AsyncGitNotification>,
+		filter: Option<LogWalkerFilter>,
+	) -> Result<()> {
+		let mut entries = Vec::with_capacity(LIMIT_COUNT);
+		let r = repo(repo_path)?;
+		let mut walker =
+			LogWalker::new(&r, LIMIT_COUNT)?.filter(filter);
+		loop {
+			entries.clear();
+			let res_is_err = walker.read(&mut entries).is_err();
 
-        Ok(())
-    }
+			if !res_is_err {
+				let mut current = arc_current.lock()?;
+				current.extend(entries.iter());
+			}
 
-    fn clear(&mut self) -> Result<()> {
-        self.current.lock()?.clear();
-        Ok(())
-    }
+			if res_is_err || entries.len() <= 1 {
+				break;
+			}
+			Self::notify(sender);
 
-    fn notify(sender: &Sender<AsyncNotification>) {
-        sender.send(AsyncNotification::Log).expect("error sending");
-    }
+			let sleep_duration =
+				if arc_background.load(Ordering::Relaxed) {
+					SLEEP_BACKGROUND
+				} else {
+					SLEEP_FOREGROUND
+				};
+			thread::sleep(sleep_duration);
+		}
+
+		Ok(())
+	}
+
+	fn clear(&mut self) -> Result<()> {
+		self.current.lock()?.clear();
+		*self.current_head.lock()? = None;
+		Ok(())
+	}
+
+	fn notify(sender: &Sender<AsyncGitNotification>) {
+		sender
+			.send(AsyncGitNotification::Log)
+			.expect("error sending");
+	}
 }

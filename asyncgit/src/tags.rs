@@ -1,128 +1,172 @@
 use crate::{
-    error::Result,
-    hash,
-    sync::{self},
-    AsyncNotification, CWD,
+	asyncjob::{AsyncJob, AsyncSingleJob, RunParams},
+	error::Result,
+	hash,
+	sync::{self, RepoPath},
+	AsyncGitNotification,
 };
 use crossbeam_channel::Sender;
 use std::{
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc, Mutex,
-    },
-    time::{Duration, Instant},
+	sync::{Arc, Mutex},
+	time::{Duration, Instant},
 };
 use sync::Tags;
 
 ///
 #[derive(Default, Clone)]
-struct TagsResult {
-    hash: u64,
-    tags: Tags,
+pub struct TagsResult {
+	hash: u64,
+	tags: Tags,
 }
 
 ///
 #[derive(Clone)]
 pub struct AsyncTags {
-    last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
-    sender: Sender<AsyncNotification>,
-    pending: Arc<AtomicUsize>,
+	last: Option<(Instant, TagsResult)>,
+	sender: Sender<AsyncGitNotification>,
+	job: AsyncSingleJob<AsyncTagsJob>,
+	repo: RepoPath,
 }
 
 impl AsyncTags {
-    ///
-    pub fn new(sender: &Sender<AsyncNotification>) -> Self {
-        Self {
-            last: Arc::new(Mutex::new(None)),
-            sender: sender.clone(),
-            pending: Arc::new(AtomicUsize::new(0)),
-        }
-    }
+	///
+	pub fn new(
+		repo: RepoPath,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Self {
+		Self {
+			repo,
+			last: None,
+			sender: sender.clone(),
+			job: AsyncSingleJob::new(sender.clone()),
+		}
+	}
 
-    /// last fetched result
-    pub fn last(&mut self) -> Result<Option<Tags>> {
-        let last = self.last.lock()?;
+	/// last fetched result
+	pub fn last(&self) -> Result<Option<Tags>> {
+		Ok(self.last.as_ref().map(|result| result.1.tags.clone()))
+	}
 
-        Ok(last.clone().map(|last| last.1.tags))
-    }
+	///
+	pub fn is_pending(&self) -> bool {
+		self.job.is_pending()
+	}
 
-    ///
-    pub fn is_pending(&self) -> bool {
-        self.pending.load(Ordering::Relaxed) > 0
-    }
+	///
+	fn is_outdated(&self, dur: Duration) -> bool {
+		self.last
+			.as_ref()
+			.map_or(true, |(last_time, _)| last_time.elapsed() > dur)
+	}
 
-    fn is_outdated(&self, dur: Duration) -> Result<bool> {
-        let last = self.last.lock()?;
+	///
+	pub fn request(
+		&mut self,
+		dur: Duration,
+		force: bool,
+	) -> Result<()> {
+		log::trace!("request");
 
-        Ok(last
-            .as_ref()
-            .map_or(true, |(last_time, _)| last_time.elapsed() > dur))
-    }
+		if !force && self.job.is_pending() {
+			return Ok(());
+		}
 
-    ///
-    pub fn request(
-        &mut self,
-        dur: Duration,
-        force: bool,
-    ) -> Result<()> {
-        log::trace!("request");
+		let outdated = self.is_outdated(dur);
 
-        if !force && (self.is_pending() || !self.is_outdated(dur)?) {
-            return Ok(());
-        }
+		if !force && !outdated {
+			return Ok(());
+		}
 
-        let arc_last = Arc::clone(&self.last);
-        let sender = self.sender.clone();
-        let arc_pending = Arc::clone(&self.pending);
+		let repo = self.repo.clone();
 
-        self.pending.fetch_add(1, Ordering::Relaxed);
+		if outdated {
+			self.job.spawn(AsyncTagsJob::new(
+				self.last
+					.as_ref()
+					.map_or(0, |(_, result)| result.hash),
+				repo,
+			));
 
-        rayon_core::spawn(move || {
-            let notify =
-                Self::getter(&arc_last).expect("error getting tags");
+			if let Some(job) = self.job.take_last() {
+				if let Some(Ok(result)) = job.result() {
+					self.last = Some(result);
+				}
+			}
+		} else {
+			self.sender
+				.send(AsyncGitNotification::FinishUnchanged)?;
+		}
 
-            arc_pending.fetch_sub(1, Ordering::Relaxed);
+		Ok(())
+	}
+}
 
-            sender
-                .send(if notify {
-                    AsyncNotification::Tags
-                } else {
-                    AsyncNotification::FinishUnchanged
-                })
-                .expect("error sending notify");
-        });
+enum JobState {
+	Request(u64, RepoPath),
+	Response(Result<(Instant, TagsResult)>),
+}
 
-        Ok(())
-    }
+///
+#[derive(Clone, Default)]
+pub struct AsyncTagsJob {
+	state: Arc<Mutex<Option<JobState>>>,
+}
 
-    fn getter(
-        arc_last: &Arc<Mutex<Option<(Instant, TagsResult)>>>,
-    ) -> Result<bool> {
-        let tags = sync::get_tags(CWD)?;
+///
+impl AsyncTagsJob {
+	///
+	pub fn new(last_hash: u64, repo: RepoPath) -> Self {
+		Self {
+			state: Arc::new(Mutex::new(Some(JobState::Request(
+				last_hash, repo,
+			)))),
+		}
+	}
 
-        let hash = hash(&tags);
+	///
+	pub fn result(&self) -> Option<Result<(Instant, TagsResult)>> {
+		if let Ok(mut state) = self.state.lock() {
+			if let Some(state) = state.take() {
+				return match state {
+					JobState::Request(_, _) => None,
+					JobState::Response(result) => Some(result),
+				};
+			}
+		}
 
-        if Self::last_hash(arc_last)
-            .map(|last| last == hash)
-            .unwrap_or_default()
-        {
-            return Ok(false);
-        }
+		None
+	}
+}
 
-        {
-            let mut last = arc_last.lock()?;
-            let now = Instant::now();
-            *last = Some((now, TagsResult { hash, tags }));
-        }
+impl AsyncJob for AsyncTagsJob {
+	type Notification = AsyncGitNotification;
+	type Progress = ();
 
-        Ok(true)
-    }
+	fn run(
+		&mut self,
+		_params: RunParams<Self::Notification, Self::Progress>,
+	) -> Result<Self::Notification> {
+		let mut notification = AsyncGitNotification::FinishUnchanged;
+		if let Ok(mut state) = self.state.lock() {
+			*state = state.take().map(|state| match state {
+				JobState::Request(last_hash, repo) => {
+					let tags = sync::get_tags(&repo);
 
-    fn last_hash(
-        last: &Arc<Mutex<Option<(Instant, TagsResult)>>>,
-    ) -> Option<u64> {
-        last.lock()
-            .ok()
-            .and_then(|last| last.as_ref().map(|(_, last)| last.hash))
-    }
+					JobState::Response(tags.map(|tags| {
+						let hash = hash(&tags);
+						if last_hash != hash {
+							notification = AsyncGitNotification::Tags;
+						}
+
+						(Instant::now(), TagsResult { hash, tags })
+					}))
+				}
+				JobState::Response(result) => {
+					JobState::Response(result)
+				}
+			});
+		}
+
+		Ok(notification)
+	}
 }

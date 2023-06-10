@@ -19,30 +19,31 @@
 [s6]: https://img.shields.io/twitter/follow/extrawurst?label=follow&style=social
 [l6]: https://twitter.com/intent/follow?screen_name=extrawurst
 
-<h5 align="center">Blazing fast terminal client for git written in Rust</h1>
+<h5 align="center">GitUI provides you with the comfort of a git GUI but right in your terminal</h1>
 
 ![](demo.gif)
 
 ## <a name="table-of-contents"></a> Table of Contents
 
 1. [Features](#features)
-2. [Benchmarks](#bench)
-3. [Motivation](#motivation)
+2. [Motivation](#motivation)
+3. [Benchmarks](#bench)
 4. [Roadmap](#roadmap)
 5. [Limitations](#limitations)
 6. [Installation](#installation)
 7. [Build](#build)
-8. [Diagnostics](#diagnostics)
-9. [Color Theme](#theme)
-10. [Key Bindings](#bindings)
-11. [Sponsoring](#sponsoring)
-12. [Inspiration](#inspiration)
+8. [FAQs](#faqs)
+9. [Diagnostics](#diagnostics)
+10. [Color Theme](#theme)
+11. [Key Bindings](#bindings)
+12. [Sponsoring](#sponsoring)
+13. [Inspiration](#inspiration)
 
 ## 1. <a name="features"></a> Features <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - Fast and intuitive **keyboard only** control
 - Context based help (**no need to memorize** tons of hot-keys)
-- Inspect, commit, and amend changes (incl. hooks: _commit-msg_/_post-commit_)
+- Inspect, commit, and amend changes (incl. hooks: _pre-commit_,_commit-msg_,_post-commit_)
 - Stage, unstage, revert and reset files, hunks and lines
 - Stashing (save, pop, apply, drop, and inspect)
 - Push/Fetch to/from remote
@@ -50,8 +51,17 @@
 - Browse commit log, diff committed changes, search/filter commits
 - Scalable terminal UI layout
 - Async git API for fluid control
+- Submodule support
 
-## 2. <a name="bench"></a> Benchmarks <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 2. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+I do most of my git work in a terminal but I frequently found myself using git GUIs for some use-cases like: index, commit, diff, stash, blame and log.
+
+Unfortunately popular git GUIs all fail on giant repositories or become unresponsive and unusable. 
+
+GitUI provides you with the user experience and comfort of a git GUI but right in your terminal while being portable, fast, free and opensource.
+
+## 3. <a name="bench"></a> Benchmarks <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([slides](https://github.com/extrawurst/gitui-presentation)) I compared `lazygit`,`tig` and `gitui` by parsing the entire Linux git repository (which contains over 900k commits):
 
@@ -61,31 +71,24 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 | `lazygit` | 57 s       | 2.6         | 16          | Yes       | Sometimes |
 | `tig`     | 4 m 20 s   | 1.3         | **0.6** ✅   | Sometimes | **No** ✅  |
 
-## 3. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
-
-I do most of my git usage in a terminal but I frequently found myself using git UIs for some use cases like: index, commit, diff, stash and log.
-
-Over the last 2 years my go-to GUI tool for this was [fork](https://git-fork.com) because it was snappy, free, and not bloated. Unfortunately the _free_ part will [change soon](https://github.com/ForkIssues/TrackerWin/issues/571) and so I decided to build a fast and simple terminal tool to help with features I use the most.
-
 ## 4. <a name="roadmap"></a> Road(map) to 1.0 <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 These are the high level goals before calling out `1.0`:
 
 * log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
-* file history log ([#381](https://github.com/extrawurst/gitui/issues/381))
-* more tag support ([#483](https://github.com/extrawurst/gitui/issues/483))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
-* inspect file tree at specific revision ([#714](https://github.com/extrawurst/gitui/issues/714))
+* interactive rebase ([#32](https://github.com/extrawurst/gitui/issues/32))
 
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
-- no support for conflict resolution yet (see [#485](https://github.com/extrawurst/gitui/issues/485))
-- no support for [bare repositories](https://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server) (see [#100](https://github.com/extrawurst/gitui/issues/100))
-- no support for [core.hooksPath](https://git-scm.com/docs/githooks) config
+- no sparse repo support (see [#1226](https://github.com/extrawurst/gitui/issues/1226))
+- no support for GPG signing (see [#97](https://github.com/extrawurst/gitui/issues/97))
+- no git-lfs support (see [#1089](https://github.com/extrawurst/gitui/discussions/1089))
+- *credential.helper* for https needs to be **explicitly** configured (see [#800](https://github.com/extrawurst/gitui/issues/800))
 
 Currently, this tool does not fully substitute the _git shell_, however both tools work well in tandem.
 
-`gitui` currently lacks essential features in git like push, pull, and checkout. The priorities are the basics (add, commit), and on features that are making me mad when done on the _git shell_, like stashes and hunks. Eventually, I will be able to work on features that could lead to making `gitui` a one stop solution to get rid of the shell entirely - but for that I need help - this is just a spare time project right now.
+The priorities for `gitui` are on features that are making me mad when done on the _git shell_, like stashing, staging lines or hunks. Eventually, I will be able to work on making `gitui` a one stop solution - but for that I need help - this is just a spare time project for now.
 
 All support is welcomed! Sponsors as well! ❤️
 
@@ -121,6 +124,12 @@ sudo emerge dev-vcs/gitui::dm9pZCAq
 brew install gitui
 ```
 
+### [MacPorts (macOS)](https://ports.macports.org/port/gitui/details/)
+
+```sh
+port install gitui
+```
+
 ### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)
 
 ```
@@ -144,6 +153,12 @@ NixOS
 nix-env -iA nixos.gitui
 ```
 
+### [Termux](https://github.com/termux/termux-packages/tree/master/packages/gitui) (Android)
+
+```
+pkg install gitui
+```
+
 ## Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
@@ -158,14 +173,25 @@ Binaries available for:
 
 ### Requirements
 
-- Latest `rust` and `cargo`
+- Minimum supported `rust`/`cargo` version: `1.60`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
 
 ### Cargo Install
 
-The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui`
+The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui`. If you are not familiar with rust and cargo: [Getting Started with Rust](https://doc.rust-lang.org/book/ch01-00-getting-started.html)
+### Cargo Features
+#### trace-libgit
+enable `libgit2` tracing
 
-## 8. <a name="diagnostics"></a> Diagnostics <small><sup>[Top ▲](#table-of-contents)</sup></small>
+works if `libgit2` builded with `-DENABLE_TRACE=ON`
+
+this feature enabled by default, to disable: `cargo install --no-default-features`
+
+## 8. <a name="faqs"></a> FAQs <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+see [FAQs page](./FAQ.md)
+
+## 9. <a name="diagnostics"></a> Diagnostics <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 To run with logging enabled run `gitui -l`.
 
@@ -176,7 +202,7 @@ This will log to:
 - Linux: `$HOME/.cache/gitui/gitui.log`
 - Windows: `%LOCALAPPDATA%/gitui/gitui.log`
 
-## 9. <a name="theme"></a> Color Theme <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 10. <a name="theme"></a> Color Theme <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 ![](assets/light-theme.png)
 
@@ -184,16 +210,15 @@ This will log to:
 
 However, you can customize everything to your liking: See [Themes](THEMES.md).
 
-## 10. <a name="bindings"></a> Key Bindings <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 11. <a name="bindings"></a> Key Bindings <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to set them to `vim`-like bindings.
 
-## 11. <a name="sponsoring"></a> Sponsoring <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 12. <a name="sponsoring"></a> Sponsoring <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 [![github](https://img.shields.io/badge/-GitHub%20Sponsors-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/extrawurst)
-[![buy-me-a-coffee](https://img.shields.io/badge/-Buy%20Me%20a%20Coffee-ffdd00?logo=Buy%20Me%20A%20Coffee&logoColor=000000)](https://www.buymeacoffee.com/extrawurst)
 
-## 12. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 13. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - [lazygit](https://github.com/jesseduffield/lazygit)
 - [tig](https://github.com/jonas/tig)

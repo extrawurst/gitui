@@ -1,14 +1,14 @@
 [package]
 name = "invalidstring"
 version = "0.1.2"
-authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
-edition = "2018"
+authors = ["extrawurst <mail@rusticorn.com>"]
+edition = "2021"
 description = "just for testing invalid string data"
 homepage = "https://github.com/extrawurst/gitui"
 repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
 license = "MIT"
-categories = ["development-tools","development-tools::testing","encoding"]
+categories = ["development-tools", "development-tools::testing", "encoding"]
 keywords = ["string"]
 
 [dependencies]

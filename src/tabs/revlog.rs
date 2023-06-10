@@ -1,22 +1,24 @@
 use crate::{
-    components::{
+	components::{
         async_commit_filter::{
             AsyncCommitFilterer, FilterBy, FilterStatus,
         },
-        visibility_blocking, CommandBlocking, CommandInfo,
-        CommitDetailsComponent, CommitList, Component,
-        DrawableComponent, EventState, FindCommitComponent,
-    },
-    keys::SharedKeyConfig,
-    queue::{InternalEvent, Queue},
-    strings,
-    ui::style::SharedTheme,
+		visibility_blocking, CommandBlocking, CommandInfo,
+		CommitDetailsComponent, CommitList, Component,
+		DrawableComponent, EventState, FileTreeOpen,
+		InspectCommitOpen, FindCommitComponent,
+	},
+	keys::{key_match, SharedKeyConfig},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
+	strings, try_or_popup,
+	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
-    cached,
-    sync::{self, CommitId},
-    AsyncLog, AsyncNotification, AsyncTags, FetchStatus, CWD,
+	cached,
+	sync::{self, CommitId, RepoPathRef},
+	AsyncGitNotification, AsyncLog, AsyncTags, CommitFilesParams,
+	FetchStatus,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -24,83 +26,88 @@ use std::convert::TryFrom;
 use std::time::Duration;
 use sync::CommitTags;
 use tui::{
-    backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
-    Frame,
+	backend::Backend,
+	layout::{Constraint, Direction, Layout, Rect},
+	Frame,
 };
 
 const SLICE_SIZE: usize = 1200;
 
 ///
 pub struct Revlog {
-    commit_details: CommitDetailsComponent,
-    list: CommitList,
+	repo: RepoPathRef,
+	commit_details: CommitDetailsComponent,
+	list: CommitList,
     find_commit: FindCommitComponent,
     async_filter: AsyncCommitFilterer,
-    git_log: AsyncLog,
-    git_tags: AsyncTags,
-    queue: Queue,
-    visible: bool,
-    branch_name: cached::BranchName,
-    key_config: SharedKeyConfig,
+	git_log: AsyncLog,
+	git_tags: AsyncTags,
+	queue: Queue,
+	visible: bool,
+	branch_name: cached::BranchName,
+	key_config: SharedKeyConfig,
     is_filtering: bool,
     filter_string: String,
 }
 
 impl Revlog {
-    ///
-    pub fn new(
-        queue: &Queue,
-        sender: &Sender<AsyncNotification>,
-        theme: SharedTheme,
-        key_config: SharedKeyConfig,
-    ) -> Self {
-        let log = AsyncLog::new(sender);
-        let tags = AsyncTags::new(sender);
-        Self {
-            queue: queue.clone(),
-            commit_details: CommitDetailsComponent::new(
-                queue,
-                sender,
-                theme.clone(),
-                key_config.clone(),
-            ),
-            list: CommitList::new(
-                &strings::log_title(&key_config),
-                theme.clone(),
-                key_config.clone(),
-            ),
+	///
+	pub fn new(
+		repo: &RepoPathRef,
+		queue: &Queue,
+		sender: &Sender<AsyncGitNotification>,
+		theme: SharedTheme,
+		key_config: SharedKeyConfig,
+	) -> Self {
+        let log = AsyncLog::new(repo.borrow().clone(), sender, None);
+        let tags = AsyncTags::new(repo.borrow().clone(), sender);
+		Self {
+			repo: repo.clone(),
+			queue: queue.clone(),
+			commit_details: CommitDetailsComponent::new(
+				repo,
+				queue,
+				sender,
+				theme.clone(),
+				key_config.clone(),
+			),
+			list: CommitList::new(
+				&strings::log_title(&key_config),
+				theme.clone(),
+				key_config.clone(),
+			),
             find_commit: FindCommitComponent::new(
                 queue.clone(),
                 theme,
                 key_config.clone(),
             ),
             async_filter: AsyncCommitFilterer::new(
+                repo.clone(),
                 log.clone(),
                 tags.clone(),
                 sender,
             ),
-            git_log: log,
-            git_tags: tags,
-            visible: false,
-            branch_name: cached::BranchName::new(CWD),
-            key_config,
+			git_log: log,
+			git_tags: tags,
+			visible: false,
+			branch_name: cached::BranchName::new(repo.clone()),
+			key_config,
             is_filtering: false,
             filter_string: "".to_string(),
-        }
-    }
+		}
+	}
 
-    ///
-    pub fn any_work_pending(&self) -> bool {
-        self.git_log.is_pending()
-            || self.git_tags.is_pending()
+	///
+	pub fn any_work_pending(&self) -> bool {
+		self.git_log.is_pending()
+			|| self.git_tags.is_pending()
             || self.async_filter.is_pending()
-            || self.commit_details.any_work_pending()
-    }
+			|| self.commit_details.any_work_pending()
+	}
 
-    ///
-    pub fn update(&mut self) -> Result<()> {
-        if self.is_visible() {
+	///
+	pub fn update(&mut self) -> Result<()> {
+		if self.is_visible() {
             let log_changed = if self.is_filtering {
                 self.list.set_total_count(self.async_filter.count());
                 self.async_filter.fetch() == FilterStatus::Filtering
@@ -109,56 +116,59 @@ impl Revlog {
                 self.git_log.fetch()? == FetchStatus::Started
             };
 
-            let selection = self.list.selection();
-            let selection_max = self.list.selection_max();
-            if self.list.items().needs_data(selection, selection_max)
-                || log_changed
-            {
-                self.fetch_commits()?;
-            }
+			let selection = self.list.selection();
+			let selection_max = self.list.selection_max();
+			if self.list.items().needs_data(selection, selection_max)
+				|| log_changed
+			{
+				self.fetch_commits()?;
+			}
 
-            self.git_tags.request(Duration::from_secs(3), false)?;
+			self.git_tags.request(Duration::from_secs(3), false)?;
 
-            self.list.set_branch(
-                self.branch_name.lookup().map(Some).unwrap_or(None),
-            );
+			self.list.set_branch(
+				self.branch_name.lookup().map(Some).unwrap_or(None),
+			);
 
-            if self.commit_details.is_visible() {
-                let commit = self.selected_commit();
-                let tags = self.selected_commit_tags(&commit);
+			if self.commit_details.is_visible() {
+				let commit = self.selected_commit();
+				let tags = self.selected_commit_tags(&commit);
 
-                self.commit_details.set_commit(commit, tags)?;
-            }
-        }
+				self.commit_details.set_commits(
+					commit.map(CommitFilesParams::from),
+					&tags,
+				)?;
+			}
+		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    ///
-    pub fn update_git(
-        &mut self,
-        ev: AsyncNotification,
-    ) -> Result<()> {
-        if self.visible {
-            match ev {
-                AsyncNotification::CommitFiles
-                | AsyncNotification::Log => self.update()?,
-                AsyncNotification::Tags => {
-                    if let Some(tags) = self.git_tags.last()? {
-                        self.list.set_tags(tags);
-                        self.update()?;
-                    }
-                }
-                _ => (),
-            }
-        }
+	///
+	pub fn update_git(
+		&mut self,
+		ev: AsyncGitNotification,
+	) -> Result<()> {
+		if self.visible {
+			match ev {
+				AsyncGitNotification::CommitFiles
+				| AsyncGitNotification::Log => self.update()?,
+				AsyncGitNotification::Tags => {
+					if let Some(tags) = self.git_tags.last()? {
+						self.list.set_tags(tags);
+						self.update()?;
+					}
+				}
+				_ => (),
+			}
+		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    fn fetch_commits(&mut self) -> Result<()> {
-        let want_min =
-            self.list.selection().saturating_sub(SLICE_SIZE / 2);
+	fn fetch_commits(&mut self) -> Result<()> {
+		let want_min =
+			self.list.selection().saturating_sub(SLICE_SIZE / 2);
 
         let commits = if self.is_filtering {
             self.async_filter
@@ -170,39 +180,39 @@ impl Revlog {
                 .map_err(|e| anyhow::anyhow!(e.to_string()))
         } else {
             sync::get_commits_info(
-                CWD,
+                &self.repo.borrow(),
                 &self.git_log.get_slice(want_min, SLICE_SIZE)?,
                 self.list.current_size().0.into(),
             )
             .map_err(|e| anyhow::anyhow!(e.to_string()))
         };
 
-        if let Ok(commits) = commits {
-            self.list.items().set_items(want_min, commits);
-        }
+		if let Ok(commits) = commits {
+			self.list.items().set_items(want_min, commits);
+		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    fn selected_commit(&self) -> Option<CommitId> {
-        self.list.selected_entry().map(|e| e.id)
-    }
+	fn selected_commit(&self) -> Option<CommitId> {
+		self.list.selected_entry().map(|e| e.id)
+	}
 
-    fn copy_commit_hash(&self) -> Result<()> {
-        self.list.copy_entry_hash()?;
-        Ok(())
-    }
+	fn copy_commit_hash(&self) -> Result<()> {
+		self.list.copy_entry_hash()?;
+		Ok(())
+	}
 
-    fn selected_commit_tags(
-        &self,
-        commit: &Option<CommitId>,
-    ) -> Option<CommitTags> {
-        let tags = self.list.tags();
+	fn selected_commit_tags(
+		&self,
+		commit: &Option<CommitId>,
+	) -> Option<CommitTags> {
+		let tags = self.list.tags();
 
-        commit.and_then(|commit| {
-            tags.and_then(|tags| tags.get(&commit).cloned())
-        })
-    }
+		commit.and_then(|commit| {
+			tags.and_then(|tags| tags.get(&commit).cloned())
+		})
+	}
 
     /// Parses search string into individual sub-searches.
     /// Each sub-search is a tuple of (string-to-search, flags-where-to-search)
@@ -342,14 +352,46 @@ impl Revlog {
         }
         ending_brakcet_pos
     }
+
+	pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
+		let position = self.git_log.position(id)?;
+
+		if let Some(position) = position {
+			self.list.select_entry(position);
+
+			Ok(())
+		} else {
+			anyhow::bail!("Could not select commit in revlog. It might not be loaded yet or it might be on a different branch.");
+		}
+	}
+
+	fn revert_commit(&self) -> Result<()> {
+		if let Some(c) = self.selected_commit() {
+			sync::revert_commit(&self.repo.borrow(), c)?;
+			self.queue.push(InternalEvent::TabSwitchStatus);
+		}
+
+		Ok(())
+	}
+
+	fn inspect_commit(&self) {
+		if let Some(commit_id) = self.selected_commit() {
+			let tags = self.selected_commit_tags(&Some(commit_id));
+			self.queue.push(InternalEvent::OpenPopup(
+				StackablePopupOpen::InspectCommit(
+					InspectCommitOpen::new_with_tags(commit_id, tags),
+				),
+			));
+		}
+	}
 }
 
 impl DrawableComponent for Revlog {
-    fn draw<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        area: Rect,
-    ) -> Result<()> {
+	fn draw<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		area: Rect,
+	) -> Result<()> {
         if self.commit_details.is_visible() {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
@@ -397,140 +439,181 @@ impl DrawableComponent for Revlog {
             self.list.draw(f, area)?;
         }
 
-        Ok(())
-    }
+		Ok(())
+	}
 }
 
 impl Component for Revlog {
-    fn event(&mut self, ev: Event) -> Result<EventState> {
-        if self.visible {
+	//TODO: cleanup
+	#[allow(clippy::too_many_lines)]
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
+		if self.visible {
             let mut event_used = self.find_commit.event(ev)?;
             if !event_used.is_consumed() {
                 event_used = self.list.event(ev)?;
             }
 
-            if event_used.is_consumed() {
-                self.update()?;
-                return Ok(EventState::Consumed);
-            } else if let Event::Key(k) = ev {
-                if k == self.key_config.enter {
-                    self.commit_details.toggle_visible()?;
-                    self.update()?;
-                    return Ok(EventState::Consumed);
-                } else if k == self.key_config.copy {
-                    self.copy_commit_hash()?;
-                    return Ok(EventState::Consumed);
-                } else if k == self.key_config.push {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::PushTags);
-                    return Ok(EventState::Consumed);
-                } else if k == self.key_config.log_tag_commit {
-                    return self.selected_commit().map_or(
-                        Ok(EventState::NotConsumed),
-                        |id| {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::TagCommit(id),
-                            );
-                            Ok(EventState::Consumed)
-                        },
-                    );
-                } else if k == self.key_config.focus_right
-                    && self.commit_details.is_visible()
-                {
-                    return self.selected_commit().map_or(
-                        Ok(EventState::NotConsumed),
-                        |id| {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::InspectCommit(
-                                    id,
-                                    self.selected_commit_tags(&Some(
-                                        id,
-                                    )),
-                                ),
-                            );
-                            Ok(EventState::Consumed)
-                        },
-                    );
-                } else if k == self.key_config.select_branch {
-                    self.queue
-                        .borrow_mut()
-                        .push_back(InternalEvent::SelectBranch);
-                    return Ok(EventState::Consumed);
-                } else if k
-                    == self.key_config.show_find_commit_text_input
-                {
+
+			if event_used.is_consumed() {
+				self.update()?;
+				return Ok(EventState::Consumed);
+			} else if let Event::Key(k) = ev {
+				if key_match(k, self.key_config.keys.enter) {
+					self.commit_details.toggle_visible()?;
+					self.update()?;
+					return Ok(EventState::Consumed);
+				} else if key_match(k, self.key_config.keys.copy) {
+					self.copy_commit_hash()?;
+					return Ok(EventState::Consumed);
+				} else if key_match(k, self.key_config.keys.push) {
+					self.queue.push(InternalEvent::PushTags);
+					return Ok(EventState::Consumed);
+				} else if key_match(
+					k,
+					self.key_config.keys.log_tag_commit,
+				) {
+					return self.selected_commit().map_or(
+						Ok(EventState::NotConsumed),
+						|id| {
+							self.queue
+								.push(InternalEvent::TagCommit(id));
+							Ok(EventState::Consumed)
+						},
+					);
+				} else if key_match(
+					k,
+					self.key_config.keys.focus_right,
+				) && self.commit_details.is_visible()
+				{
+					self.inspect_commit();
+					return Ok(EventState::Consumed);
+				} else if key_match(
+					k,
+					self.key_config.keys.select_branch,
+				) {
+					self.queue.push(InternalEvent::SelectBranch);
+					return Ok(EventState::Consumed);
+                } else if key_match(
+                    k,
+                    self.key_config.keys.show_find_commit_text_input
+                ) {
                     self.find_commit.toggle_visible()?;
                     self.find_commit.focus(true);
                     return Ok(EventState::Consumed);
-                } else if k == self.key_config.exit_popup {
+                } else if key_match(k, self.key_config.keys.exit_popup) {
                     self.filter("")?;
                     self.find_commit.clear_input();
                     self.update()?;
-                } else if k == self.key_config.open_file_tree {
-                    return self.selected_commit().map_or(
-                        Ok(EventState::NotConsumed),
-                        |id| {
-                            self.queue.borrow_mut().push_back(
-                                InternalEvent::OpenFileTree(id),
-                            );
-                            Ok(EventState::Consumed)
-                        },
-                    );
-                }
-            }
-        }
+				} else if key_match(
+					k,
+					self.key_config.keys.status_reset_item,
+				) {
+					try_or_popup!(
+						self,
+						"revert error:",
+						self.revert_commit()
+					);
 
-        Ok(EventState::NotConsumed)
-    }
+					return Ok(EventState::Consumed);
+				} else if key_match(
+					k,
+					self.key_config.keys.open_file_tree,
+				) {
+					return self.selected_commit().map_or(
+						Ok(EventState::NotConsumed),
+						|id| {
+							self.queue.push(
+								InternalEvent::OpenPopup(
+									StackablePopupOpen::FileTree(
+										FileTreeOpen::new(id),
+									),
+								),
+							);
+							Ok(EventState::Consumed)
+						},
+					);
+				} else if key_match(k, self.key_config.keys.tags) {
+					self.queue.push(InternalEvent::Tags);
+					return Ok(EventState::Consumed);
+				} else if key_match(
+					k,
+					self.key_config.keys.compare_commits,
+				) && self.list.marked_count() > 0
+				{
+					if self.list.marked_count() == 1 {
+						// compare against head
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::CompareCommits(
+								InspectCommitOpen::new(
+									self.list.marked()[0],
+								),
+							),
+						));
+						return Ok(EventState::Consumed);
+					} else if self.list.marked_count() == 2 {
+						//compare two marked commits
+						let marked = self.list.marked();
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::CompareCommits(
+								InspectCommitOpen {
+									commit_id: marked[0],
+									compare_id: Some(marked[1]),
+									tags: None,
+								},
+							),
+						));
+						return Ok(EventState::Consumed);
+					}
+				}
+			}
+		}
 
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        force_all: bool,
-    ) -> CommandBlocking {
-        if self.visible || force_all {
-            self.list.commands(out, force_all);
-        }
+		Ok(EventState::NotConsumed)
+	}
 
-        out.push(CommandInfo::new(
-            strings::commands::log_details_toggle(&self.key_config),
-            true,
-            self.visible,
-        ));
+	fn commands(
+		&self,
+		out: &mut Vec<CommandInfo>,
+		force_all: bool,
+	) -> CommandBlocking {
+		if self.visible || force_all {
+			self.list.commands(out, force_all);
+		}
 
-        out.push(CommandInfo::new(
-            strings::commands::log_details_open(&self.key_config),
-            true,
-            (self.visible && self.commit_details.is_visible())
-                || force_all,
-        ));
+		out.push(CommandInfo::new(
+			strings::commands::log_details_toggle(&self.key_config),
+			true,
+			self.visible,
+		));
 
-        out.push(CommandInfo::new(
-            strings::commands::log_tag_commit(&self.key_config),
-            self.selected_commit().is_some(),
-            self.visible || force_all,
-        ));
+		out.push(CommandInfo::new(
+			strings::commands::commit_details_open(&self.key_config),
+			true,
+			(self.visible && self.commit_details.is_visible())
+				|| force_all,
+		));
 
-        out.push(CommandInfo::new(
-            strings::commands::open_branch_select_popup(
-                &self.key_config,
-            ),
-            true,
-            self.visible || force_all,
-        ));
+		out.push(CommandInfo::new(
+			strings::commands::open_branch_select_popup(
+				&self.key_config,
+			),
+			true,
+			self.visible || force_all,
+		));
 
-        out.push(CommandInfo::new(
-            strings::commands::copy_hash(&self.key_config),
-            self.selected_commit().is_some(),
-            self.visible || force_all,
-        ));
+		out.push(CommandInfo::new(
+			strings::commands::compare_with_head(&self.key_config),
+			self.list.marked_count() == 1,
+			(self.visible && self.list.marked_count() <= 1)
+				|| force_all,
+		));
 
-        out.push(CommandInfo::new(
-            strings::commands::push_tags(&self.key_config),
-            true,
-            self.visible || force_all,
-        ));
+		out.push(CommandInfo::new(
+			strings::commands::compare_commits(&self.key_config),
+			true,
+			(self.visible && self.list.marked_count() == 2)
+				|| force_all,
+		));
 
         out.push(CommandInfo::new(
             strings::commands::find_commit(&self.key_config),
@@ -538,31 +621,61 @@ impl Component for Revlog {
             self.visible || force_all,
         ));
 
-        out.push(CommandInfo::new(
-            strings::commands::inspect_file_tree(&self.key_config),
-            self.selected_commit().is_some(),
-            self.visible || force_all,
-        ));
+		out.push(CommandInfo::new(
+			strings::commands::copy_hash(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
 
-        visibility_blocking(self)
-    }
+		out.push(CommandInfo::new(
+			strings::commands::log_tag_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
 
-    fn is_visible(&self) -> bool {
-        self.visible
-    }
+		out.push(CommandInfo::new(
+			strings::commands::open_tags_popup(&self.key_config),
+			true,
+			self.visible || force_all,
+		));
 
-    fn hide(&mut self) {
-        self.visible = false;
-        self.git_log.set_background();
-    }
+		out.push(CommandInfo::new(
+			strings::commands::push_tags(&self.key_config),
+			true,
+			self.visible || force_all,
+		));
 
-    fn show(&mut self) -> Result<()> {
-        self.visible = true;
-        self.list.clear();
-        self.update()?;
+		out.push(CommandInfo::new(
+			strings::commands::inspect_file_tree(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
 
-        Ok(())
-    }
+		out.push(CommandInfo::new(
+			strings::commands::revert_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
+		visibility_blocking(self)
+	}
+
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
+
+	fn hide(&mut self) {
+		self.visible = false;
+		self.git_log.set_background();
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+		self.list.clear();
+		self.update()?;
+
+		Ok(())
+	}
 }
 
 #[cfg(test)]

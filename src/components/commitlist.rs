@@ -1,87 +1,90 @@
 use super::utils::logitems::{ItemBatch, LogEntry};
 use crate::{
-    components::{
-        utils::string_width_align, CommandBlocking, CommandInfo,
-        Component, DrawableComponent, EventState, ScrollType,
-    },
-    keys::SharedKeyConfig,
-    strings,
-    ui::calc_scroll_top,
-    ui::style::{SharedTheme, Theme},
+	components::{
+		utils::string_width_align, CommandBlocking, CommandInfo,
+		Component, DrawableComponent, EventState, ScrollType,
+	},
+	keys::{key_match, SharedKeyConfig},
+	strings::{self, symbol},
+	ui::style::{SharedTheme, Theme},
+	ui::{calc_scroll_top, draw_scrollbar},
 };
 use anyhow::Result;
-use asyncgit::sync::Tags;
+use asyncgit::sync::{CommitId, Tags};
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
+use itertools::Itertools;
 use std::{
-    borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
+	borrow::Cow, cell::Cell, cmp, convert::TryFrom, time::Instant,
 };
 use tui::{
-    backend::Backend,
-    layout::{Alignment, Rect},
-    text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph},
-    Frame,
+	backend::Backend,
+	layout::{Alignment, Rect},
+	text::{Span, Spans},
+	widgets::{Block, Borders, Paragraph},
+	Frame,
 };
 
-const ELEMENTS_PER_LINE: usize = 10;
+const ELEMENTS_PER_LINE: usize = 9;
 
 ///
 pub struct CommitList {
-    title: String,
-    selection: usize,
-    branch: Option<String>,
-    count_total: usize,
-    items: ItemBatch,
-    scroll_state: (Instant, f32),
-    tags: Option<Tags>,
-    current_size: Cell<(u16, u16)>,
-    scroll_top: Cell<usize>,
-    theme: SharedTheme,
-    key_config: SharedKeyConfig,
+	title: Box<str>,
+	selection: usize,
+	branch: Option<String>,
+	count_total: usize,
+	items: ItemBatch,
+	marked: Vec<CommitId>,
+	scroll_state: (Instant, f32),
+	tags: Option<Tags>,
+	current_size: Cell<(u16, u16)>,
+	scroll_top: Cell<usize>,
+	theme: SharedTheme,
+	key_config: SharedKeyConfig,
 }
 
 impl CommitList {
-    ///
-    pub fn new(
-        title: &str,
-        theme: SharedTheme,
-        key_config: SharedKeyConfig,
-    ) -> Self {
-        Self {
-            items: ItemBatch::default(),
-            selection: 0,
-            branch: None,
-            count_total: 0,
-            scroll_state: (Instant::now(), 0_f32),
-            tags: None,
-            current_size: Cell::new((0, 0)),
-            scroll_top: Cell::new(0),
-            theme,
-            key_config,
-            title: String::from(title),
-        }
-    }
+	///
+	pub fn new(
+		title: &str,
+		theme: SharedTheme,
+		key_config: SharedKeyConfig,
+	) -> Self {
+		Self {
+			items: ItemBatch::default(),
+			marked: Vec::with_capacity(2),
+			selection: 0,
+			branch: None,
+			count_total: 0,
+			scroll_state: (Instant::now(), 0_f32),
+			tags: None,
+			current_size: Cell::new((0, 0)),
+			scroll_top: Cell::new(0),
+			theme,
+			key_config,
+			title: title.into(),
+		}
+	}
 
-    ///
-    pub fn items(&mut self) -> &mut ItemBatch {
-        &mut self.items
-    }
+	///
+	pub fn items(&mut self) -> &mut ItemBatch {
+		&mut self.items
+	}
 
-    ///
-    pub fn set_branch(&mut self, name: Option<String>) {
-        self.branch = name;
-    }
+	///
+	pub fn set_branch(&mut self, name: Option<String>) {
+		self.branch = name;
+	}
 
-    ///
-    pub const fn selection(&self) -> usize {
-        self.selection
-    }
+	///
+	pub const fn selection(&self) -> usize {
+		self.selection
+	}
 
-    ///
-    pub fn current_size(&self) -> (u16, u16) {
-        self.current_size.get()
-    }
+	///
+	pub fn current_size(&self) -> (u16, u16) {
+		self.current_size.get()
+	}
 
     ///
     pub fn set_total_count(&mut self, count: usize) {
@@ -90,326 +93,425 @@ impl CommitList {
             cmp::min(self.selection, self.selection_max());
     }
 
-    ///
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn selection_max(&self) -> usize {
-        self.count_total.saturating_sub(1)
-    }
+	///
+	#[allow(clippy::missing_const_for_fn)]
+	pub fn selection_max(&self) -> usize {
+		self.count_total.saturating_sub(1)
+	}
 
-    ///
-    pub const fn tags(&self) -> Option<&Tags> {
-        self.tags.as_ref()
-    }
+	///
+	pub const fn tags(&self) -> Option<&Tags> {
+		self.tags.as_ref()
+	}
 
-    ///
-    pub fn clear(&mut self) {
-        self.items.clear();
-    }
+	///
+	pub fn clear(&mut self) {
+		self.items.clear();
+	}
 
-    ///
-    pub fn set_tags(&mut self, tags: Tags) {
-        self.tags = Some(tags);
-    }
+	///
+	pub fn set_tags(&mut self, tags: Tags) {
+		self.tags = Some(tags);
+	}
 
-    ///
-    pub fn selected_entry(&self) -> Option<&LogEntry> {
-        self.items.iter().nth(
-            self.selection.saturating_sub(self.items.index_offset()),
-        )
-    }
+	///
+	pub fn selected_entry(&self) -> Option<&LogEntry> {
+		self.items.iter().nth(
+			self.selection.saturating_sub(self.items.index_offset()),
+		)
+	}
 
-    pub fn copy_entry_hash(&self) -> Result<()> {
-        if let Some(e) = self.items.iter().nth(
-            self.selection.saturating_sub(self.items.index_offset()),
-        ) {
-            crate::clipboard::copy_string(&e.hash_short)?;
-        }
-        Ok(())
-    }
+	///
+	pub fn selected_entry_marked(&self) -> bool {
+		self.selected_entry()
+			.and_then(|e| self.is_marked(&e.id))
+			.unwrap_or_default()
+	}
 
-    fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
-        self.update_scroll_speed();
+	///
+	pub fn marked_count(&self) -> usize {
+		self.marked.len()
+	}
 
-        #[allow(clippy::cast_possible_truncation)]
-        let speed_int =
-            usize::try_from(self.scroll_state.1 as i64)?.max(1);
+	///
+	pub fn marked(&self) -> &[CommitId] {
+		&self.marked
+	}
 
-        let page_offset =
-            usize::from(self.current_size.get().1).saturating_sub(1);
+	///
+	pub fn clear_marked(&mut self) {
+		self.marked.clear();
+	}
 
-        let new_selection = match scroll {
-            ScrollType::Up => {
-                self.selection.saturating_sub(speed_int)
-            }
-            ScrollType::Down => {
-                self.selection.saturating_add(speed_int)
-            }
-            ScrollType::PageUp => {
-                self.selection.saturating_sub(page_offset)
-            }
-            ScrollType::PageDown => {
-                self.selection.saturating_add(page_offset)
-            }
-            ScrollType::Home => 0,
-            ScrollType::End => self.selection_max(),
-        };
+	pub fn copy_entry_hash(&self) -> Result<()> {
+		if let Some(e) = self.items.iter().nth(
+			self.selection.saturating_sub(self.items.index_offset()),
+		) {
+			crate::clipboard::copy_string(&e.hash_short)?;
+		}
+		Ok(())
+	}
 
-        let new_selection =
-            cmp::min(new_selection, self.selection_max());
+	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
+		self.update_scroll_speed();
 
-        let needs_update = new_selection != self.selection;
+		#[allow(clippy::cast_possible_truncation)]
+		let speed_int = usize::try_from(self.scroll_state.1 as i64)?.max(1);
 
-        self.selection = new_selection;
+		let page_offset =
+			usize::from(self.current_size.get().1).saturating_sub(1);
 
-        Ok(needs_update)
-    }
+		let new_selection = match scroll {
+			ScrollType::Up => {
+				self.selection.saturating_sub(speed_int)
+			}
+			ScrollType::Down => {
+				self.selection.saturating_add(speed_int)
+			}
+			ScrollType::PageUp => {
+				self.selection.saturating_sub(page_offset)
+			}
+			ScrollType::PageDown => {
+				self.selection.saturating_add(page_offset)
+			}
+			ScrollType::Home => 0,
+			ScrollType::End => self.selection_max(),
+		};
 
-    fn update_scroll_speed(&mut self) {
-        const REPEATED_SCROLL_THRESHOLD_MILLIS: u128 = 300;
-        const SCROLL_SPEED_START: f32 = 0.1_f32;
-        const SCROLL_SPEED_MAX: f32 = 10_f32;
-        const SCROLL_SPEED_MULTIPLIER: f32 = 1.05_f32;
+		let new_selection =
+			cmp::min(new_selection, self.selection_max());
 
-        let now = Instant::now();
+		let needs_update = new_selection != self.selection;
 
-        let since_last_scroll =
-            now.duration_since(self.scroll_state.0);
+		self.selection = new_selection;
 
-        self.scroll_state.0 = now;
+		Ok(needs_update)
+	}
 
-        let speed = if since_last_scroll.as_millis()
-            < REPEATED_SCROLL_THRESHOLD_MILLIS
-        {
-            self.scroll_state.1 * SCROLL_SPEED_MULTIPLIER
-        } else {
-            SCROLL_SPEED_START
-        };
+	fn mark(&mut self) {
+		if let Some(e) = self.selected_entry() {
+			let id = e.id;
+			if self.is_marked(&id).unwrap_or_default() {
+				self.marked.retain(|marked| marked != &id);
+			} else {
+				self.marked.push(id);
+			}
+		}
+	}
 
-        self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
-    }
+	fn update_scroll_speed(&mut self) {
+		const REPEATED_SCROLL_THRESHOLD_MILLIS: u128 = 300;
+		const SCROLL_SPEED_START: f32 = 0.1_f32;
+		const SCROLL_SPEED_MAX: f32 = 10_f32;
+		const SCROLL_SPEED_MULTIPLIER: f32 = 1.05_f32;
 
-    fn get_entry_to_add<'a>(
-        e: &'a LogEntry,
-        selected: bool,
-        tags: Option<String>,
-        theme: &Theme,
-        width: usize,
-        now: DateTime<Local>,
-    ) -> Spans<'a> {
-        let mut txt: Vec<Span> = Vec::new();
-        txt.reserve(ELEMENTS_PER_LINE);
+		let now = Instant::now();
 
-        let splitter_txt = Cow::from(" ");
-        let splitter =
-            Span::styled(splitter_txt, theme.text(true, selected));
+		let since_last_scroll =
+			now.duration_since(self.scroll_state.0);
 
-        // commit hash
-        txt.push(Span::styled(
-            Cow::from(e.hash_short.as_str()),
-            theme.commit_hash(selected),
-        ));
+		self.scroll_state.0 = now;
 
-        txt.push(splitter.clone());
+		let speed = if since_last_scroll.as_millis()
+			< REPEATED_SCROLL_THRESHOLD_MILLIS
+		{
+			self.scroll_state.1 * SCROLL_SPEED_MULTIPLIER
+		} else {
+			SCROLL_SPEED_START
+		};
 
-        // commit timestamp
-        txt.push(Span::styled(
-            Cow::from(e.time_to_string(now)),
-            theme.commit_time(selected),
-        ));
+		self.scroll_state.1 = speed.min(SCROLL_SPEED_MAX);
+	}
 
-        txt.push(splitter.clone());
+	fn is_marked(&self, id: &CommitId) -> Option<bool> {
+		if self.marked.is_empty() {
+			None
+		} else {
+			let found = self.marked.iter().any(|entry| entry == id);
+			Some(found)
+		}
+	}
 
-        let author_width =
-            (width.saturating_sub(19) / 3).max(3).min(20);
-        let author = string_width_align(&e.author, author_width);
+	fn get_entry_to_add<'a>(
+		e: &'a LogEntry,
+		selected: bool,
+		tags: Option<String>,
+		theme: &Theme,
+		width: usize,
+		now: DateTime<Local>,
+		marked: Option<bool>,
+	) -> Spans<'a> {
+		let mut txt: Vec<Span> = Vec::with_capacity(
+			ELEMENTS_PER_LINE + if marked.is_some() { 2 } else { 0 },
+		);
 
-        // commit author
-        txt.push(Span::styled::<String>(
-            author,
-            theme.commit_author(selected),
-        ));
+		let splitter_txt = Cow::from(symbol::EMPTY_SPACE);
+		let splitter =
+			Span::styled(splitter_txt, theme.text(true, selected));
 
-        txt.push(splitter.clone());
+		// marker
+		if let Some(marked) = marked {
+			txt.push(Span::styled(
+				Cow::from(if marked {
+					symbol::CHECKMARK
+				} else {
+					symbol::EMPTY_SPACE
+				}),
+				theme.log_marker(selected),
+			));
+			txt.push(splitter.clone());
+		}
 
-        // commit tags
-        txt.push(Span::styled(
-            Cow::from(if let Some(tags) = tags {
-                format!(" {}", tags)
-            } else {
-                String::from("")
-            }),
-            theme.tags(selected),
-        ));
+		// commit hash
+		txt.push(Span::styled(
+			Cow::from(&*e.hash_short),
+			theme.commit_hash(selected),
+		));
 
-        txt.push(splitter);
+		txt.push(splitter.clone());
 
-        // commit msg
-        txt.push(Span::styled(
-            Cow::from(e.msg.as_str()),
-            theme.text(true, selected),
-        ));
-        Spans::from(txt)
-    }
+		// commit timestamp
+		txt.push(Span::styled(
+			Cow::from(e.time_to_string(now)),
+			theme.commit_time(selected),
+		));
 
-    fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
-        let selection = self.relative_selection();
+		txt.push(splitter.clone());
 
-        let mut txt: Vec<Spans> = Vec::with_capacity(height);
+		let author_width =
+			(width.saturating_sub(19) / 3).max(3).min(20);
+		let author = string_width_align(&e.author, author_width);
 
-        let now = Local::now();
+		// commit author
+		txt.push(Span::styled::<String>(
+			author,
+			theme.commit_author(selected),
+		));
 
-        for (idx, e) in self
-            .items
-            .iter()
-            .skip(self.scroll_top.get())
-            .take(height)
-            .enumerate()
-        {
-            let tags = self
-                .tags
-                .as_ref()
-                .and_then(|t| t.get(&e.id))
-                .map(|tags| tags.join(" "));
-            txt.push(Self::get_entry_to_add(
-                e,
-                idx + self.scroll_top.get() == selection,
-                tags,
-                &self.theme,
-                width,
-                now,
-            ));
-        }
+		txt.push(splitter.clone());
 
-        txt
-    }
+		// commit tags
+		txt.push(Span::styled(
+			Cow::from(tags.map_or_else(String::new, |tags| {
+				format!(" {}", tags)
+			})),
+			theme.tags(selected),
+		));
 
-    #[allow(clippy::missing_const_for_fn)]
-    fn relative_selection(&self) -> usize {
-        self.selection.saturating_sub(self.items.index_offset())
-    }
+		txt.push(splitter);
+
+		let message_width = width.saturating_sub(
+			txt.iter().map(|span| span.content.len()).sum(),
+		);
+
+		// commit msg
+		txt.push(Span::styled(
+			format!("{:w$}", &e.msg, w = message_width),
+			theme.text(true, selected),
+		));
+
+		Spans::from(txt)
+	}
+
+	fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
+		let selection = self.relative_selection();
+
+		let mut txt: Vec<Spans> = Vec::with_capacity(height);
+
+		let now = Local::now();
+
+		let any_marked = !self.marked.is_empty();
+
+		for (idx, e) in self
+			.items
+			.iter()
+			.skip(self.scroll_top.get())
+			.take(height)
+			.enumerate()
+		{
+			let tags =
+				self.tags.as_ref().and_then(|t| t.get(&e.id)).map(
+					|tags| tags.iter().map(|t| &t.name).join(" "),
+				);
+
+			let marked = if any_marked {
+				self.is_marked(&e.id)
+			} else {
+				None
+			};
+
+			txt.push(Self::get_entry_to_add(
+				e,
+				idx + self.scroll_top.get() == selection,
+				tags,
+				&self.theme,
+				width,
+				now,
+				marked,
+			));
+		}
+
+		txt
+	}
+
+	#[allow(clippy::missing_const_for_fn)]
+	fn relative_selection(&self) -> usize {
+		self.selection.saturating_sub(self.items.index_offset())
+	}
+
+	pub fn select_entry(&mut self, position: usize) {
+		self.selection = position;
+	}
 }
 
 impl DrawableComponent for CommitList {
-    fn draw<B: Backend>(
-        &self,
-        f: &mut Frame<B>,
-        area: Rect,
-    ) -> Result<()> {
-        let current_size = (
-            area.width.saturating_sub(2),
-            area.height.saturating_sub(2),
-        );
-        self.current_size.set(current_size);
+	fn draw<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		area: Rect,
+	) -> Result<()> {
+		let current_size = (
+			area.width.saturating_sub(2),
+			area.height.saturating_sub(2),
+		);
+		self.current_size.set(current_size);
 
-        let height_in_lines = self.current_size.get().1 as usize;
-        let selection = self.relative_selection();
+		let height_in_lines = self.current_size.get().1 as usize;
+		let selection = self.relative_selection();
 
-        self.scroll_top.set(calc_scroll_top(
-            self.scroll_top.get(),
-            height_in_lines,
-            selection,
-        ));
+		self.scroll_top.set(calc_scroll_top(
+			self.scroll_top.get(),
+			height_in_lines,
+			selection,
+		));
 
-        let branch_post_fix =
-            self.branch.as_ref().map(|b| format!("- {{{}}}", b));
+		let branch_post_fix =
+			self.branch.as_ref().map(|b| format!("- {{{}}}", b));
 
-        let title = format!(
-            "{} {}/{} {}",
-            self.title,
-            self.count_total.saturating_sub(self.selection),
-            self.count_total,
-            branch_post_fix.as_deref().unwrap_or(""),
-        );
+		let title = format!(
+			"{} {}/{} {}",
+			self.title,
+			self.count_total.saturating_sub(self.selection),
+			self.count_total,
+			branch_post_fix.as_deref().unwrap_or(""),
+		);
 
-        f.render_widget(
-            Paragraph::new(
-                self.get_text(
-                    height_in_lines,
-                    current_size.0 as usize,
-                ),
-            )
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(Span::styled(
-                        title.as_str(),
-                        self.theme.title(true),
-                    ))
-                    .border_style(self.theme.block(true)),
-            )
-            .alignment(Alignment::Left),
-            area,
-        );
+		f.render_widget(
+			Paragraph::new(
+				self.get_text(
+					height_in_lines,
+					current_size.0 as usize,
+				),
+			)
+			.block(
+				Block::default()
+					.borders(Borders::ALL)
+					.title(Span::styled(
+						title.as_str(),
+						self.theme.title(true),
+					))
+					.border_style(self.theme.block(true)),
+			)
+			.alignment(Alignment::Left),
+			area,
+		);
 
-        Ok(())
-    }
+		draw_scrollbar(
+			f,
+			area,
+			&self.theme,
+			self.count_total,
+			self.selection,
+		);
+
+		Ok(())
+	}
 }
 
 impl Component for CommitList {
-    fn event(&mut self, ev: Event) -> Result<EventState> {
-        if let Event::Key(k) = ev {
-            let selection_changed = if k == self.key_config.move_up {
-                self.move_selection(ScrollType::Up)?
-            } else if k == self.key_config.move_down {
-                self.move_selection(ScrollType::Down)?
-            } else if k == self.key_config.shift_up
-                || k == self.key_config.home
-            {
-                self.move_selection(ScrollType::Home)?
-            } else if k == self.key_config.shift_down
-                || k == self.key_config.end
-            {
-                self.move_selection(ScrollType::End)?
-            } else if k == self.key_config.page_up {
-                self.move_selection(ScrollType::PageUp)?
-            } else if k == self.key_config.page_down {
-                self.move_selection(ScrollType::PageDown)?
-            } else {
-                false
-            };
-            return Ok(selection_changed.into());
-        }
+	fn event(&mut self, ev: &Event) -> Result<EventState> {
+		if let Event::Key(k) = ev {
+			let selection_changed =
+				if key_match(k, self.key_config.keys.move_up) {
+					self.move_selection(ScrollType::Up)?
+				} else if key_match(k, self.key_config.keys.move_down)
+				{
+					self.move_selection(ScrollType::Down)?
+				} else if key_match(k, self.key_config.keys.shift_up)
+					|| key_match(k, self.key_config.keys.home)
+				{
+					self.move_selection(ScrollType::Home)?
+				} else if key_match(
+					k,
+					self.key_config.keys.shift_down,
+				) || key_match(k, self.key_config.keys.end)
+				{
+					self.move_selection(ScrollType::End)?
+				} else if key_match(k, self.key_config.keys.page_up) {
+					self.move_selection(ScrollType::PageUp)?
+				} else if key_match(k, self.key_config.keys.page_down)
+				{
+					self.move_selection(ScrollType::PageDown)?
+				} else if key_match(
+					k,
+					self.key_config.keys.log_mark_commit,
+				) {
+					self.mark();
+					true
+				} else {
+					false
+				};
+			return Ok(selection_changed.into());
+		}
 
-        Ok(EventState::NotConsumed)
-    }
+		Ok(EventState::NotConsumed)
+	}
 
-    fn commands(
-        &self,
-        out: &mut Vec<CommandInfo>,
-        _force_all: bool,
-    ) -> CommandBlocking {
-        out.push(CommandInfo::new(
-            strings::commands::scroll(&self.key_config),
-            self.selected_entry().is_some(),
-            true,
-        ));
-        CommandBlocking::PassingOn
-    }
+	fn commands(
+		&self,
+		out: &mut Vec<CommandInfo>,
+		_force_all: bool,
+	) -> CommandBlocking {
+		out.push(CommandInfo::new(
+			strings::commands::scroll(&self.key_config),
+			self.selected_entry().is_some(),
+			true,
+		));
+		out.push(CommandInfo::new(
+			strings::commands::commit_list_mark(
+				&self.key_config,
+				self.selected_entry_marked(),
+			),
+			true,
+			true,
+		));
+		CommandBlocking::PassingOn
+	}
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+	use super::*;
 
-    #[test]
-    fn test_string_width_align() {
-        assert_eq!(string_width_align("123", 3), "123");
-        assert_eq!(string_width_align("123", 2), "..");
-        assert_eq!(string_width_align("123", 3), "123");
-        assert_eq!(string_width_align("12345", 6), "12345 ");
-        assert_eq!(string_width_align("1234556", 4), "12..");
-    }
+	#[test]
+	fn test_string_width_align() {
+		assert_eq!(string_width_align("123", 3), "123");
+		assert_eq!(string_width_align("123", 2), "..");
+		assert_eq!(string_width_align("123", 3), "123");
+		assert_eq!(string_width_align("12345", 6), "12345 ");
+		assert_eq!(string_width_align("1234556", 4), "12..");
+	}
 
-    #[test]
-    fn test_string_width_align_unicode() {
-        assert_eq!(string_width_align("äste", 3), "ä..");
-        assert_eq!(
-            string_width_align("wüsten äste", 10),
-            "wüsten ä.."
-        );
-        assert_eq!(
-            string_width_align("Jon Grythe Stødle", 19),
-            "Jon Grythe Stødle  "
-        );
-    }
+	#[test]
+	fn test_string_width_align_unicode() {
+		assert_eq!(string_width_align("äste", 3), "ä..");
+		assert_eq!(
+			string_width_align("wüsten äste", 10),
+			"wüsten ä.."
+		);
+		assert_eq!(
+			string_width_align("Jon Grythe Stødle", 19),
+			"Jon Grythe Stødle  "
+		);
+	}
 }

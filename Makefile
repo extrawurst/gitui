@@ -1,17 +1,25 @@
 
 .PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
+ARGS=-l
+# ARGS=-l -d ~/code/extern/pbrt-v4
+# ARGS=-l -d ~/code/git-bare-test.git -w ~/code/git-bare-test
+
 profile:
-	cargo run --features=timing,pprof -- -l
+	cargo run --features=timing,pprof -- ${ARGS}
+
+run-timing:
+	cargo run --features=timing --release -- ${ARGS}
 
 debug:
-	RUST_BACKTRACE=true cargo run --features=timing -- -l
+	RUST_BACKTRACE=true cargo run --features=timing -- ${ARGS}
 
 build-release:
 	cargo build --release
 
 release-mac: build-release
 	strip target/release/gitui
+	otool -L target/release/gitui
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-mac.tar.gz ./gitui
 	ls -lisah ./release/gitui-mac.tar.gz
@@ -19,8 +27,8 @@ release-mac: build-release
 release-win: build-release
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
-	cargo install cargo-wix
-	cargo wix --no-build --nocapture --output ./release/gitui.msi
+	cargo install cargo-wix --version 0.3.3
+	cargo wix -p gitui --no-build --nocapture --output ./release/gitui.msi
 	ls -l ./release/gitui.msi 
 
 release-linux-musl: build-linux-musl-release
@@ -44,23 +52,21 @@ fmt:
 	cargo fmt -- --check
 
 clippy:
-	touch src/main.rs
-	cargo clean -p gitui -p asyncgit -p scopetime
 	cargo clippy --workspace --all-features
 
 clippy-nightly:
-	touch src/main.rs
-	cargo clean -p gitui -p asyncgit -p scopetime
-	cargo +nightly clippy --all-features
+	cargo +nightly clippy --workspace --all-features
 
-clippy-pedantic:
-	cargo clean -p gitui -p asyncgit -p scopetime
-	cargo clippy --all-features -- -W clippy::pedantic
+check: fmt clippy test deny
 
-check: fmt clippy test
+deny:
+	cargo deny check
 
 install:
 	cargo install --path "." --offline
 
 install-timing:
 	cargo install --features=timing --path "." --offline
+
+licenses:
+	cargo bundle-licenses --format toml --output THIRDPARTY.toml
