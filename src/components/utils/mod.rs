@@ -1,6 +1,7 @@
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use unicode_width::UnicodeWidthStr;
 
+pub mod async_commit_filter;
 #[cfg(feature = "ghemoji")]
 pub mod emoji;
 pub mod filetree;
@@ -8,7 +9,6 @@ pub mod logitems;
 pub mod scroll_horizontal;
 pub mod scroll_vertical;
 pub mod statustree;
-pub mod async_commit_filter;
 
 /// macro to simplify running code that might return Err.
 /// It will show a popup in that case

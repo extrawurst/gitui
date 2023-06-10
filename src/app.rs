@@ -892,9 +892,9 @@ impl App {
 				self.push_tags_popup.push_tags()?;
 				flags.insert(NeedsUpdate::ALL);
 			}
-            InternalEvent::FilterLog(string_to_filter_by) => {
-                self.revlog.filter(&string_to_filter_by)?
-            }
+			InternalEvent::FilterLog(string_to_filter_by) => {
+				self.revlog.filter(&string_to_filter_by)?;
+			}
 			InternalEvent::StatusLastFileMoved => {
 				self.status_tab.last_file_moved()?;
 			}

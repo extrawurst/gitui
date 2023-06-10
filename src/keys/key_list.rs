@@ -50,7 +50,7 @@ pub struct KeysList {
 	pub exit_popup: GituiKeyEvent,
 	pub open_commit: GituiKeyEvent,
 	pub open_commit_editor: GituiKeyEvent,
-    pub show_find_commit_text_input: GituiKeyEvent,
+	pub show_find_commit_text_input: GituiKeyEvent,
 	pub open_help: GituiKeyEvent,
 	pub open_options: GituiKeyEvent,
 	pub move_left: GituiKeyEvent,

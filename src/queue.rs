@@ -108,8 +108,8 @@ pub enum InternalEvent {
 	Pull(String),
 	///
 	PushTags,
-    ///
-    FilterLog(String),
+	///
+	FilterLog(String),
 	///
 	OptionSwitched(AppOption),
 	///

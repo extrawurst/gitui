@@ -95,12 +95,12 @@ impl CommitList {
 		self.current_size.get()
 	}
 
-    ///
-    pub fn set_total_count(&mut self, count: usize) {
-        self.count_total = count;
-        self.selection =
-            cmp::min(self.selection, self.selection_max());
-    }
+	///
+	pub fn set_total_count(&mut self, count: usize) {
+		self.count_total = count;
+		self.selection =
+			cmp::min(self.selection, self.selection_max());
+	}
 
 	///
 	#[allow(clippy::missing_const_for_fn)]

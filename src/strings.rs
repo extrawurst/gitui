@@ -289,10 +289,10 @@ pub fn file_log_title(
 	format!("Revisions of '{file_path}' ({selected}/{revisions})")
 }
 pub fn find_commit_title(_key_config: &SharedKeyConfig) -> String {
-    "Find Commit".to_string()
+	"Find Commit".to_string()
 }
 pub fn find_commit_msg(_key_config: &SharedKeyConfig) -> String {
-    "Search Sha, Author and Message".to_string()
+	"Search Sha, Author and Message".to_string()
 }
 pub fn blame_title(_key_config: &SharedKeyConfig) -> String {
 	"Blame".to_string()
@@ -610,8 +610,8 @@ pub mod commands {
 		)
 	}
 
-    pub fn find_commit(key_config: &SharedKeyConfig) -> CommandText {
-        CommandText::new(
+	pub fn find_commit(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
             format!(
                 "Find Commit [{}]",
                 key_config
@@ -620,7 +620,7 @@ pub mod commands {
             "show find commit box to search by sha, author or message",
             CMD_GROUP_LOG,
         )
-    }
+	}
 
 	pub fn diff_home_end(
 		key_config: &SharedKeyConfig,
