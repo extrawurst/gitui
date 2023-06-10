@@ -60,12 +60,12 @@ impl TryFrom<char> for FilterBy {
 			'!' => Ok(Self::NOT),
 			'c' => Ok(Self::CASE_SENSITIVE),
 			't' => Ok(Self::TAGS),
-			_ => Err(anyhow::anyhow!(format!("Unknown flag: {}", v))),
+			_ => Err(anyhow::anyhow!("Unknown flag: {v}")),
 		}
 	}
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum FilterStatus {
 	Filtering,
 	Finished,
@@ -124,12 +124,12 @@ impl AsyncCommitFilterer {
 	/// vec [vec![A], vec![B, C, D], vec![E]]
 	#[allow(clippy::too_many_lines)]
 	pub fn filter(
-		mut vec_commit_info: Vec<CommitInfo>,
+		vec_commit_info: Vec<CommitInfo>,
 		tags: &Option<Tags>,
 		filter_strings: &[Vec<(String, FilterBy)>],
 	) -> Vec<CommitInfo> {
 		vec_commit_info
-			.drain(..)
+			.into_iter()
 			.filter(|commit| {
 				for to_and in filter_strings {
 					let mut is_and = true;
@@ -335,6 +335,7 @@ impl AsyncCommitFilterer {
 
 		let repo = self.repo.clone();
 
+		#[allow(clippy::significant_drop_tightening)]
 		rayon_core::spawn(move || {
 			// Only 1 thread can filter at a time
 			let _c = cur_thread_mutex.lock().expect("mutex poisoned");
@@ -446,6 +447,7 @@ impl AsyncCommitFilterer {
 		let max = min + amount;
 		let max = max.min(len);
 		let mut commits_requested = fc[min..max].to_vec();
+		drop(fc);
 		for c in &mut commits_requested {
 			c.message = c
 				.message

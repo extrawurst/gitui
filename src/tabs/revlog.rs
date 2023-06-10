@@ -96,7 +96,7 @@ impl Revlog {
 			visible: false,
 			key_config,
 			is_filtering: false,
-			filter_string: "".to_string(),
+			filter_string: String::new(),
 		}
 	}
 
@@ -350,8 +350,7 @@ impl Revlog {
 					for inside_bracket_item in second.split("||") {
 						// Append first, prepend third onto bracket element
 						v.push(format!(
-							"{}{}{}",
-							first, inside_bracket_item, third
+							"{first}{inside_bracket_item}{third}"
 						));
 					}
 					return v.join("||");
@@ -444,11 +443,10 @@ impl DrawableComponent for Revlog {
 					.split(chunks[0]);
 				self.list.draw(f, log_find_chunks[0])?;
 				self.find_commit.draw(f, log_find_chunks[1])?;
-				self.commit_details.draw(f, chunks[1])?;
 			} else {
 				self.list.draw(f, chunks[0])?;
-				self.commit_details.draw(f, chunks[1])?;
 			}
+			self.commit_details.draw(f, chunks[1])?;
 		} else if self.find_commit.is_visible() {
 			let log_find_chunks = Layout::default()
 				.direction(Direction::Vertical)
