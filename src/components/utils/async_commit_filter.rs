@@ -347,72 +347,48 @@ impl AsyncCommitFilterer {
 			let mut cur_index: usize = 0;
 			loop {
 				match rx.try_recv() {
-					Ok(_) | Err(TryRecvError::Disconnected) => {
-						break;
-					}
-					_ => {
-						// Get the git_log and start filtering through it
-						match async_log
-							.get_slice(cur_index, SLICE_SIZE)
-						{
-							Ok(ids) => {
-								match sync::get_commits_info(
-									&repo.borrow(),
-									&ids,
-									usize::MAX,
-								) {
-									Ok(v) => {
-										if v.is_empty()
-											&& !async_log.is_pending()
-										{
-											// Assume finished if log not pending and 0 recieved
-											filter_finished.store(
-												true,
-												Ordering::Relaxed,
-											);
-											break;
-										}
-
-										let mut filtered =
-											Self::filter(
-												v,
-												&tags,
-												&filter_strings,
-											);
-										filter_count.fetch_add(
-											filtered.len(),
-											Ordering::Relaxed,
-										);
-										let mut fc = filtered_commits
-											.lock()
-											.expect("mutex poisoned");
-										fc.append(&mut filtered);
-										drop(fc);
-										cur_index += SLICE_SIZE;
-										async_app_sender
-                                    .send(AsyncGitNotification::Log)
-                                    .expect("error sending");
-										thread::sleep(
-											FILTER_SLEEP_DURATION,
-										);
-									}
-									Err(_) => {
-										// Failed to get commit info
-										thread::sleep(
-                                    FILTER_SLEEP_DURATION_FAILED_LOCK,
-                                );
-									}
-								}
-							}
-							Err(_) => {
-								// Failed to get slice
-								thread::sleep(
-									FILTER_SLEEP_DURATION_FAILED_LOCK,
-								);
-							}
-						}
-					}
+					Ok(_) | Err(TryRecvError::Disconnected) => break,
+					_ => {}
 				}
+
+				// Get the git_log and start filtering through it
+				let Ok(ids) = async_log.get_slice(
+					cur_index,
+					SLICE_SIZE
+				) else {
+					thread::sleep(FILTER_SLEEP_DURATION_FAILED_LOCK);
+					continue;
+				};
+
+				let Ok(v) = sync::get_commits_info(
+					&repo.borrow(),
+					&ids,
+					usize::MAX,
+				) else {
+					thread::sleep(FILTER_SLEEP_DURATION_FAILED_LOCK);
+					continue;
+				};
+
+				if v.is_empty() && !async_log.is_pending() {
+					// Assume finished if log not pending and 0 recieved
+					filter_finished.store(true, Ordering::Relaxed);
+					break;
+				}
+
+				let mut filtered =
+					Self::filter(v, &tags, &filter_strings);
+				filter_count
+					.fetch_add(filtered.len(), Ordering::Relaxed);
+				let mut fc =
+					filtered_commits.lock().expect("mutex poisoned");
+				fc.append(&mut filtered);
+				drop(fc);
+				cur_index += SLICE_SIZE;
+				async_app_sender
+					.send(AsyncGitNotification::Log)
+					.expect("error sending");
+
+				thread::sleep(FILTER_SLEEP_DURATION);
 			}
 		});
 		Ok(())
