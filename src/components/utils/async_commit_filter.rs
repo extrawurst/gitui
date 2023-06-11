@@ -379,10 +379,12 @@ impl AsyncCommitFilterer {
 					Self::filter(v, &tags, &filter_strings);
 				filter_count
 					.fetch_add(filtered.len(), Ordering::Relaxed);
-				let mut fc =
-					filtered_commits.lock().expect("mutex poisoned");
-				fc.append(&mut filtered);
-				drop(fc);
+
+				filtered_commits
+					.lock()
+					.expect("mutex poisoned")
+					.append(&mut filtered);
+
 				cur_index += SLICE_SIZE;
 				async_app_sender
 					.send(AsyncGitNotification::Log)
@@ -414,16 +416,19 @@ impl AsyncCommitFilterer {
 		amount: usize,
 		message_length_limit: usize,
 	) -> Result<Vec<CommitInfo>> {
-		let fc = self
-			.filtered_commits
-			.lock()
-			.map_err(|_| Error::msg("mutex poisoned"))?;
-		let len = fc.len();
-		let min = start.min(len);
-		let max = min + amount;
-		let max = max.min(len);
-		let mut commits_requested = fc[min..max].to_vec();
-		drop(fc);
+		let mut commits_requested = {
+			let fc = self
+				.filtered_commits
+				.lock()
+				.map_err(|_| Error::msg("mutex poisoned"))?;
+			let len = fc.len();
+			let min = start.min(len);
+			let max = min + amount;
+			let max = max.min(len);
+
+			fc[min..max].to_vec()
+		};
+
 		for c in &mut commits_requested {
 			c.message = c
 				.message
