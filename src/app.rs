@@ -395,7 +395,7 @@ impl App {
 		log::trace!("event: {:?}", ev);
 
 		if let InputEvent::Input(ev) = ev {
-			if self.check_hard_exit(&ev) || self.check_quit(&ev) {
+			if self.check_hard_exit(&ev) {
 				return Ok(());
 			}
 
@@ -448,6 +448,9 @@ impl App {
 				) {
 					self.options_popup.show()?;
 					NeedsUpdate::ALL
+				} else if key_match(k, self.key_config.keys.quit) {
+					self.do_quit = QuitState::Close;
+					NeedsUpdate::empty()
 				} else {
 					NeedsUpdate::empty()
 				};
@@ -646,19 +649,6 @@ impl App {
 			msg
 		]
 	);
-
-	fn check_quit(&mut self, ev: &Event) -> bool {
-		if self.any_popup_visible() {
-			return false;
-		}
-		if let Event::Key(e) = ev {
-			if key_match(e, self.key_config.keys.quit) {
-				self.do_quit = QuitState::Close;
-				return true;
-			}
-		}
-		false
-	}
 
 	fn check_hard_exit(&mut self, ev: &Event) -> bool {
 		if let Event::Key(e) = ev {
