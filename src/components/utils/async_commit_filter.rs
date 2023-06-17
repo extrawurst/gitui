@@ -79,7 +79,7 @@ pub struct AsyncCommitFilterer {
 	filter_count: Arc<AtomicUsize>,
 	filter_finished: Arc<AtomicBool>,
 	is_pending_local: RefCell<bool>,
-	filter_thread_sender: Option<Sender<bool>>,
+	filter_thread_sender: Option<Sender<()>>,
 	filter_thread_mutex: Arc<Mutex<()>>,
 	sender: Sender<AsyncGitNotification>,
 }
@@ -402,7 +402,7 @@ impl AsyncCommitFilterer {
 		// Any error this gives can be safely ignored,
 		// it will send if reciever exists, otherwise does nothing
 		if let Some(sender) = &self.filter_thread_sender {
-			match sender.try_send(true) {
+			match sender.try_send(()) {
 				Ok(_) | Err(_) => {}
 			};
 		}
