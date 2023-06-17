@@ -629,6 +629,44 @@ impl DiffComponent {
 		Ok(())
 	}
 
+	fn calc_hunk_move_target(
+		&self,
+		direction: isize,
+	) -> Option<usize> {
+		let diff = self.diff.as_ref()?;
+		if diff.hunks.is_empty() {
+			return None;
+		}
+		let max = diff.hunks.len() - 1;
+		let target_index = self.selected_hunk.map_or(0, |i| {
+			let target = if direction >= 0 {
+				i.saturating_add(direction.unsigned_abs())
+			} else {
+				i.saturating_sub(direction.unsigned_abs())
+			};
+			std::cmp::min(max, target)
+		});
+		Some(target_index)
+	}
+
+	fn diff_hunk_move_up_down(&mut self, direction: isize) {
+		let Some(diff) = &self.diff else { return };
+		let target_index = self.calc_hunk_move_target(direction);
+		// return if selected_hunk not change
+		if self.selected_hunk == target_index {
+			return;
+		}
+		if let Some(target_index) = target_index {
+			let lines = diff
+				.hunks
+				.iter()
+				.take(target_index)
+				.fold(0, |sum, hunk| sum + hunk.lines.len());
+			self.selection = Selection::Single(lines);
+			self.selected_hunk = Some(target_index);
+		}
+	}
+
 	const fn is_stage(&self) -> bool {
 		self.current.is_stage
 	}
@@ -710,7 +748,16 @@ impl Component for DiffComponent {
 			self.can_scroll(),
 			self.focused(),
 		));
-
+		out.push(CommandInfo::new(
+			strings::commands::diff_hunk_next(&self.key_config),
+			self.calc_hunk_move_target(1) != self.selected_hunk,
+			self.focused(),
+		));
+		out.push(CommandInfo::new(
+			strings::commands::diff_hunk_prev(&self.key_config),
+			self.calc_hunk_move_target(-1) != self.selected_hunk,
+			self.focused(),
+		));
 		out.push(
 			CommandInfo::new(
 				strings::commands::diff_home_end(&self.key_config),
@@ -769,7 +816,7 @@ impl Component for DiffComponent {
 		CommandBlocking::PassingOn
 	}
 
-	#[allow(clippy::cognitive_complexity)]
+	#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.focused() {
 			if let Event::Key(e) = ev {
@@ -814,6 +861,18 @@ impl Component for DiffComponent {
 				{
 					self.horizontal_scroll
 						.move_right(HorizontalScrollType::Left);
+					Ok(EventState::Consumed)
+				} else if key_match(
+					e,
+					self.key_config.keys.diff_hunk_next,
+				) {
+					self.diff_hunk_move_up_down(1);
+					Ok(EventState::Consumed)
+				} else if key_match(
+					e,
+					self.key_config.keys.diff_hunk_prev,
+				) {
+					self.diff_hunk_move_up_down(-1);
 					Ok(EventState::Consumed)
 				} else if key_match(
 					e,
