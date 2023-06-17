@@ -651,19 +651,25 @@ impl DiffComponent {
 
 	fn diff_hunk_move_up_down(&mut self, direction: isize) {
 		let Some(diff) = &self.diff else { return };
-		let target_index = self.calc_hunk_move_target(direction);
+		let hunk_index = self.calc_hunk_move_target(direction);
 		// return if selected_hunk not change
-		if self.selected_hunk == target_index {
+		if self.selected_hunk == hunk_index {
 			return;
 		}
-		if let Some(target_index) = target_index {
-			let lines = diff
+		if let Some(hunk_index) = hunk_index {
+			let line_index = diff
 				.hunks
 				.iter()
-				.take(target_index)
+				.take(hunk_index)
 				.fold(0, |sum, hunk| sum + hunk.lines.len());
-			self.selection = Selection::Single(lines);
-			self.selected_hunk = Some(target_index);
+			let hunk = &diff.hunks[hunk_index];
+			self.selection = Selection::Single(line_index);
+			self.selected_hunk = Some(hunk_index);
+			self.vertical_scroll.move_area_to_visible(
+				self.current_size.get().1 as usize,
+				line_index,
+				line_index.saturating_add(hunk.lines.len()),
+			);
 		}
 	}
 

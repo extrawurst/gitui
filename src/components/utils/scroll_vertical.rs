@@ -51,6 +51,32 @@ impl VerticalScroll {
 		true
 	}
 
+	pub fn move_area_to_visible(
+		&self,
+		height: usize,
+		start: usize,
+		end: usize,
+	) {
+		let top = self.top.get();
+		let bottom = top + height;
+		let max_top = self.max_top.get();
+		// the top of some content is hidden
+		if start < top {
+			self.top.set(start);
+			return;
+		}
+		// the bottom of some content is hidden and there is visible space available
+		if end > bottom && start > top {
+			let avail_space = start.saturating_sub(top);
+			let diff = std::cmp::min(
+				avail_space,
+				end.saturating_sub(bottom),
+			);
+			let top = top.saturating_add(diff);
+			self.top.set(std::cmp::min(max_top, top));
+		}
+	}
+
 	pub fn update(
 		&self,
 		selection: usize,
