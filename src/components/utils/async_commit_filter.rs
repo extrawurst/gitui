@@ -18,8 +18,6 @@ use std::{
 use unicode_truncate::UnicodeTruncateStr;
 
 const FILTER_SLEEP_DURATION: Duration = Duration::from_millis(10);
-const FILTER_SLEEP_DURATION_FAILED_LOCK: Duration =
-	Duration::from_millis(500);
 const SLICE_SIZE: usize = 1200;
 
 bitflags! {
@@ -345,34 +343,36 @@ impl AsyncCommitFilterer {
 			filter_count.store(0, Ordering::Relaxed);
 			filtered_commits.lock().expect("mutex poisoned").clear();
 			let mut cur_index: usize = 0;
-			loop {
+			let result = loop {
 				match rx.try_recv() {
-					Ok(_) | Err(TryRecvError::Disconnected) => break,
+					Ok(_) | Err(TryRecvError::Disconnected) => {
+						break Ok(())
+					}
 					_ => {}
 				}
 
 				// Get the git_log and start filtering through it
-				let Ok(ids) = async_log.get_slice(
-					cur_index,
-					SLICE_SIZE
-				) else {
-					thread::sleep(FILTER_SLEEP_DURATION_FAILED_LOCK);
-					continue;
+				let ids = match async_log
+					.get_slice(cur_index, SLICE_SIZE)
+				{
+					Ok(ids) => ids,
+					// Only errors if the lock is poisoned
+					Err(err) => break Err(err),
 				};
 
-				let Ok(v) = sync::get_commits_info(
+				let v = match sync::get_commits_info(
 					&repo.borrow(),
 					&ids,
 					usize::MAX,
-				) else {
-					thread::sleep(FILTER_SLEEP_DURATION_FAILED_LOCK);
-					continue;
+				) {
+					Ok(v) => v,
+					// May error while querying the repo or commits
+					Err(err) => break Err(err),
 				};
 
+				// Assume finished if log not pending and 0 recieved
 				if v.is_empty() && !async_log.is_pending() {
-					// Assume finished if log not pending and 0 recieved
-					filter_finished.store(true, Ordering::Relaxed);
-					break;
+					break Ok(());
 				}
 
 				let mut filtered =
@@ -391,6 +391,12 @@ impl AsyncCommitFilterer {
 					.expect("error sending");
 
 				thread::sleep(FILTER_SLEEP_DURATION);
+			};
+
+			filter_finished.store(true, Ordering::Relaxed);
+
+			if let Err(e) = result {
+				log::error!("async job error: {}", e);
 			}
 		});
 		Ok(())
