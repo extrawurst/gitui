@@ -322,10 +322,8 @@ impl AsyncCommitFilterer {
 		self.filter_thread_sender = Some(tx);
 		let async_app_sender = self.sender.clone();
 
-		let prev_thread_mutex = Arc::clone(&self.filter_thread_mutex);
-		self.filter_thread_mutex = Arc::new(Mutex::new(()));
-
-		let cur_thread_mutex = Arc::clone(&self.filter_thread_mutex);
+		let filter_thread_mutex =
+			Arc::clone(&self.filter_thread_mutex);
 		self.is_pending_local.replace(true);
 
 		let tags =
@@ -336,9 +334,9 @@ impl AsyncCommitFilterer {
 		#[allow(clippy::significant_drop_tightening)]
 		rayon_core::spawn(move || {
 			// Only 1 thread can filter at a time
-			let _c = cur_thread_mutex.lock().expect("mutex poisoned");
-			let _p =
-				prev_thread_mutex.lock().expect("mutex poisoned");
+			let _c =
+				filter_thread_mutex.lock().expect("mutex poisoned");
+
 			filter_finished.store(false, Ordering::Relaxed);
 			filter_count.store(0, Ordering::Relaxed);
 			filtered_commits.lock().expect("mutex poisoned").clear();
