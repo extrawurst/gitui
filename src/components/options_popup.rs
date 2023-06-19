@@ -17,7 +17,7 @@ use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	style::{Modifier, Style},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
 };
@@ -57,15 +57,15 @@ impl OptionsPopupComponent {
 		}
 	}
 
-	fn get_text(&self, width: u16) -> Vec<Spans> {
-		let mut txt: Vec<Spans> = Vec::with_capacity(10);
+	fn get_text(&self, width: u16) -> Vec<Line> {
+		let mut txt: Vec<Line> = Vec::with_capacity(10);
 
 		self.add_status(&mut txt, width);
 
 		txt
 	}
 
-	fn add_status(&self, txt: &mut Vec<Spans>, width: u16) {
+	fn add_status(&self, txt: &mut Vec<Line>, width: u16) {
 		Self::add_header(txt, "Status");
 
 		self.add_entry(
@@ -111,8 +111,8 @@ impl OptionsPopupComponent {
 		self.selection == kind
 	}
 
-	fn add_header(txt: &mut Vec<Spans>, header: &'static str) {
-		txt.push(Spans::from(vec![Span::styled(
+	fn add_header(txt: &mut Vec<Line>, header: &'static str) {
+		txt.push(Line::from(vec![Span::styled(
 			header,
 			//TODO: use style
 			Style::default().add_modifier(Modifier::UNDERLINED),
@@ -121,14 +121,14 @@ impl OptionsPopupComponent {
 
 	fn add_entry(
 		&self,
-		txt: &mut Vec<Spans>,
+		txt: &mut Vec<Line>,
 		width: u16,
 		entry: &'static str,
 		value: &str,
 		selected: bool,
 	) {
 		let half = usize::from(width / 2);
-		txt.push(Spans::from(vec![
+		txt.push(Line::from(vec![
 			Span::styled(
 				string_width_align(entry, half),
 				self.theme.text(true, false),

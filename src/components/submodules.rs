@@ -21,7 +21,7 @@ use ratatui::{
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
-	text::{Span, Spans, Text},
+	text::{Line, Span, Text},
 	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
 };
@@ -399,7 +399,7 @@ impl SubmodulesListComponent {
 				theme.text(true, selected),
 			);
 
-			txt.push(Spans::from(vec![span_name, span_hash]));
+			txt.push(Line::from(vec![span_name, span_hash]));
 		}
 
 		Text::from(txt)
@@ -438,17 +438,17 @@ impl SubmodulesListComponent {
 				);
 
 				Text::from(vec![
-					Spans::from(vec![span_title_path]),
-					Spans::from(vec![span_path]),
-					Spans::from(vec![]),
-					Spans::from(vec![span_title_commit]),
-					Spans::from(vec![span_commit]),
-					Spans::from(vec![]),
-					Spans::from(vec![span_title_url]),
-					Spans::from(vec![span_url]),
-					Spans::from(vec![]),
-					Spans::from(vec![span_title_status]),
-					Spans::from(vec![span_status]),
+					Line::from(vec![span_title_path]),
+					Line::from(vec![span_path]),
+					Line::from(vec![]),
+					Line::from(vec![span_title_commit]),
+					Line::from(vec![span_commit]),
+					Line::from(vec![]),
+					Line::from(vec![span_title_url]),
+					Line::from(vec![span_url]),
+					Line::from(vec![]),
+					Line::from(vec![span_title_status]),
+					Line::from(vec![span_status]),
 				])
 			},
 		)
@@ -456,22 +456,22 @@ impl SubmodulesListComponent {
 
 	fn get_local_info_text(&self, theme: &SharedTheme) -> Text {
 		let mut spans = vec![
-			Spans::from(vec![Span::styled(
+			Line::from(vec![Span::styled(
 				"Current:",
 				theme.text(false, false),
 			)]),
-			Spans::from(vec![Span::styled(
+			Line::from(vec![Span::styled(
 				self.repo_path.to_string(),
 				theme.text(true, false),
 			)]),
-			Spans::from(vec![Span::styled(
+			Line::from(vec![Span::styled(
 				"Parent:",
 				theme.text(false, false),
 			)]),
 		];
 
 		if let Some(parent_info) = &self.submodule_parent {
-			spans.push(Spans::from(vec![Span::styled(
+			spans.push(Line::from(vec![Span::styled(
 				parent_info.parent_gitpath.to_string_lossy(),
 				theme.text(true, false),
 			)]));

@@ -15,7 +15,7 @@ use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Constraint, Direction, Layout, Rect},
 	style::{Modifier, Style},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, BorderType, Borders, Clear, Paragraph},
 	Frame,
 };
@@ -73,7 +73,7 @@ impl DrawableComponent for HelpComponent {
 			);
 
 			f.render_widget(
-				Paragraph::new(Spans::from(vec![Span::styled(
+				Paragraph::new(Line::from(vec![Span::styled(
 					Cow::from(format!("gitui {}", Version::new(),)),
 					Style::default(),
 				)]))
@@ -207,15 +207,15 @@ impl HelpComponent {
 		}
 	}
 
-	fn get_text(&self) -> Vec<Spans> {
-		let mut txt: Vec<Spans> = Vec::new();
+	fn get_text(&self) -> Vec<Line> {
+		let mut txt: Vec<Line> = Vec::new();
 
 		let mut processed = 0_u16;
 
 		for (key, group) in
 			&self.cmds.iter().group_by(|e| e.text.group)
 		{
-			txt.push(Spans::from(Span::styled(
+			txt.push(Line::from(Span::styled(
 				Cow::from(key.to_string()),
 				Style::default().add_modifier(Modifier::REVERSED),
 			)));
@@ -225,7 +225,7 @@ impl HelpComponent {
 
 				processed += 1;
 
-				txt.push(Spans::from(Span::styled(
+				txt.push(Line::from(Span::styled(
 					Cow::from(if is_selected {
 						format!(">{}", command_info.text.name)
 					} else {
@@ -235,7 +235,7 @@ impl HelpComponent {
 				)));
 
 				if is_selected {
-					txt.push(Spans::from(Span::styled(
+					txt.push(Line::from(Span::styled(
 						Cow::from(format!(
 							"  {}\n",
 							command_info.text.desc

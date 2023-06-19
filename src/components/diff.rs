@@ -24,7 +24,7 @@ use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	symbols,
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Paragraph},
 	Frame,
 };
@@ -330,15 +330,15 @@ impl DiffComponent {
 		None
 	}
 
-	fn get_text(&self, width: u16, height: u16) -> Vec<Spans> {
-		let mut res: Vec<Spans> = Vec::new();
+	fn get_text(&self, width: u16, height: u16) -> Vec<Line> {
+		let mut res: Vec<Line> = Vec::new();
 		if let Some(diff) = &self.diff {
 			if diff.hunks.is_empty() {
 				let is_positive = diff.size_delta >= 0;
 				let delta_byte_size =
 					ByteSize::b(diff.size_delta.unsigned_abs());
 				let sign = if is_positive { "+" } else { "-" };
-				res.extend(vec![Spans::from(vec![
+				res.extend(vec![Line::from(vec![
 					Span::raw(Cow::from("size: ")),
 					Span::styled(
 						Cow::from(format!(
@@ -435,7 +435,7 @@ impl DiffComponent {
 		end_of_hunk: bool,
 		theme: &SharedTheme,
 		scrolled_right: usize,
-	) -> Spans<'a> {
+	) -> Line<'a> {
 		let style = theme.diff_hunk_marker(selected_hunk);
 
 		let left_side_of_line = if end_of_hunk {
@@ -465,7 +465,7 @@ impl DiffComponent {
 			format!("{content}\n")
 		};
 
-		Spans::from(vec![
+		Line::from(vec![
 			left_side_of_line,
 			Span::styled(
 				Cow::from(filled),
@@ -666,7 +666,7 @@ impl DrawableComponent for DiffComponent {
 		);
 
 		let txt = if self.pending {
-			vec![Spans::from(vec![Span::styled(
+			vec![Line::from(vec![Span::styled(
 				Cow::from(strings::loading_text(&self.key_config)),
 				self.theme.text(false, false),
 			)])]

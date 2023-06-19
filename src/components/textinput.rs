@@ -17,7 +17,7 @@ use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	style::Modifier,
-	text::{Spans, Text},
+	text::{Line, Text},
 	widgets::{Clear, Paragraph},
 	Frame,
 };
@@ -237,7 +237,7 @@ impl TextInputComponent {
 				Text::styled(text_before_cursor, style),
 			);
 			if ends_in_nl {
-				txt.lines.push(Spans::default());
+				txt.lines.push(Line::default());
 			}
 		}
 
@@ -330,7 +330,7 @@ fn text_append<'a>(txt: Text<'a>, append: Text<'a>) -> Text<'a> {
 	let mut txt = txt;
 	if let Some(last_line) = txt.lines.last_mut() {
 		if let Some(first_line) = append.lines.first() {
-			last_line.0.extend(first_line.0.clone());
+			last_line.spans.extend(first_line.spans.clone());
 		}
 
 		if append.lines.len() > 1 {
@@ -564,9 +564,12 @@ mod tests {
 
 		let txt = comp.get_draw_text();
 
-		assert_eq!(txt.lines[0].0.len(), 1);
-		assert_eq!(get_text(&txt.lines[0].0[0]), Some("a"));
-		assert_eq!(get_style(&txt.lines[0].0[0]), Some(&underlined));
+		assert_eq!(txt.lines[0].spans.len(), 1);
+		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
+		assert_eq!(
+			get_style(&txt.lines[0].spans[0]),
+			Some(&underlined)
+		);
 	}
 
 	#[test]
@@ -590,18 +593,18 @@ mod tests {
 
 		let txt = comp.get_draw_text();
 
-		assert_eq!(txt.lines[0].0.len(), 2);
-		assert_eq!(get_text(&txt.lines[0].0[0]), Some("a"));
+		assert_eq!(txt.lines[0].spans.len(), 2);
+		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
 		assert_eq!(
-			get_style(&txt.lines[0].0[0]),
+			get_style(&txt.lines[0].spans[0]),
 			Some(&not_underlined)
 		);
 		assert_eq!(
-			get_text(&txt.lines[0].0[1]),
+			get_text(&txt.lines[0].spans[1]),
 			Some(symbol::WHITESPACE)
 		);
 		assert_eq!(
-			get_style(&txt.lines[0].0[1]),
+			get_style(&txt.lines[0].spans[1]),
 			Some(&underlined_whitespace)
 		);
 	}
@@ -627,13 +630,19 @@ mod tests {
 		let txt = comp.get_draw_text();
 
 		assert_eq!(txt.lines.len(), 2);
-		assert_eq!(txt.lines[0].0.len(), 2);
-		assert_eq!(txt.lines[1].0.len(), 2);
-		assert_eq!(get_text(&txt.lines[0].0[0]), Some("a"));
-		assert_eq!(get_text(&txt.lines[0].0[1]), Some("\u{21b5}"));
-		assert_eq!(get_style(&txt.lines[0].0[1]), Some(&underlined));
-		assert_eq!(get_text(&txt.lines[1].0[0]), Some(""));
-		assert_eq!(get_text(&txt.lines[1].0[1]), Some("b"));
+		assert_eq!(txt.lines[0].spans.len(), 2);
+		assert_eq!(txt.lines[1].spans.len(), 2);
+		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
+		assert_eq!(
+			get_text(&txt.lines[0].spans[1]),
+			Some("\u{21b5}")
+		);
+		assert_eq!(
+			get_style(&txt.lines[0].spans[1]),
+			Some(&underlined)
+		);
+		assert_eq!(get_text(&txt.lines[1].spans[0]), Some(""));
+		assert_eq!(get_text(&txt.lines[1].spans[1]), Some("b"));
 	}
 
 	#[test]
@@ -656,12 +665,15 @@ mod tests {
 		let txt = comp.get_draw_text();
 
 		assert_eq!(txt.lines.len(), 2);
-		assert_eq!(txt.lines[0].0.len(), 2);
-		assert_eq!(txt.lines[1].0.len(), 1);
-		assert_eq!(get_text(&txt.lines[0].0[0]), Some("a"));
-		assert_eq!(get_text(&txt.lines[0].0[1]), Some(""));
-		assert_eq!(get_style(&txt.lines[0].0[0]), Some(&underlined));
-		assert_eq!(get_text(&txt.lines[1].0[0]), Some("b"));
+		assert_eq!(txt.lines[0].spans.len(), 2);
+		assert_eq!(txt.lines[1].spans.len(), 1);
+		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
+		assert_eq!(get_text(&txt.lines[0].spans[1]), Some(""));
+		assert_eq!(
+			get_style(&txt.lines[0].spans[0]),
+			Some(&underlined)
+		);
+		assert_eq!(get_text(&txt.lines[1].spans[0]), Some("b"));
 	}
 
 	#[test]

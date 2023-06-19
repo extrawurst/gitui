@@ -3,7 +3,7 @@ use asyncgit::{
 	ProgressPercent,
 };
 use once_cell::sync::Lazy;
-use ratatui::text::{Span, Spans};
+use ratatui::text::{Line, Span};
 use scopetime::scope_time;
 use std::{
 	ffi::OsStr,
@@ -164,21 +164,21 @@ impl SyntaxText {
 
 impl<'a> From<&'a SyntaxText> for ratatui::text::Text<'a> {
 	fn from(v: &'a SyntaxText) -> Self {
-		let mut result_lines: Vec<Spans> =
+		let mut result_lines: Vec<Line> =
 			Vec::with_capacity(v.lines.len());
 
 		for (syntax_line, line_content) in
 			v.lines.iter().zip(v.text.lines())
 		{
-			let mut line_span =
-				Spans(Vec::with_capacity(syntax_line.items.len()));
+			let mut line_span: Line =
+				Vec::with_capacity(syntax_line.items.len()).into();
 
 			for (style, _, range) in &syntax_line.items {
 				let item_content = &line_content[range.clone()];
 				let item_style = syntact_style_to_tui(style);
 
 				line_span
-					.0
+					.spans
 					.push(Span::styled(item_content, item_style));
 			}
 

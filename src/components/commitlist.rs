@@ -22,7 +22,7 @@ use itertools::Itertools;
 use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Paragraph},
 	Frame,
 };
@@ -306,7 +306,7 @@ impl CommitList {
 		width: usize,
 		now: DateTime<Local>,
 		marked: Option<bool>,
-	) -> Spans<'a> {
+	) -> Line<'a> {
 		let mut txt: Vec<Span> = Vec::with_capacity(
 			ELEMENTS_PER_LINE + if marked.is_some() { 2 } else { 0 },
 		);
@@ -390,13 +390,13 @@ impl CommitList {
 			theme.text(true, selected),
 		));
 
-		Spans::from(txt)
+		Line::from(txt)
 	}
 
-	fn get_text(&self, height: usize, width: usize) -> Vec<Spans> {
+	fn get_text(&self, height: usize, width: usize) -> Vec<Line> {
 		let selection = self.relative_selection();
 
-		let mut txt: Vec<Spans> = Vec::with_capacity(height);
+		let mut txt: Vec<Line> = Vec::with_capacity(height);
 
 		let now = Local::now();
 

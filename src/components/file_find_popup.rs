@@ -16,7 +16,7 @@ use fuzzy_matcher::FuzzyMatcher;
 use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Margin, Rect},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Clear},
 	Frame,
 };
@@ -243,7 +243,7 @@ impl DrawableComponent for FileFindPopup {
 								.unwrap_or_default(),
 							width,
 						);
-						Spans::from(
+						Line::from(
 							full_text
 								.char_indices()
 								.map(|(c_idx, c)| {

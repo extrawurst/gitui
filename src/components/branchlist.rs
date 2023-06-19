@@ -31,7 +31,7 @@ use ratatui::{
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
-	text::{Span, Spans, Text},
+	text::{Line, Span, Text},
 	widgets::{Block, BorderType, Borders, Clear, Paragraph, Tabs},
 	Frame,
 };
@@ -661,7 +661,7 @@ impl BranchListComponent {
 				theme.branch(selected, is_head),
 			);
 
-			txt.push(Spans::from(vec![
+			txt.push(Line::from(vec![
 				span_prefix,
 				span_name,
 				span_hash,
@@ -702,7 +702,7 @@ impl BranchListComponent {
 		let tabs = [Span::raw("Local"), Span::raw("Remote")]
 			.iter()
 			.cloned()
-			.map(Spans::from)
+			.map(Line::from)
 			.collect();
 
 		f.render_widget(
