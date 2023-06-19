@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.23.0] - 2022-06-19
+
 **reset to commit**
 
 ![reset](assets/reset_in_log.gif)
@@ -18,9 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **fuzzy find branch**
 
 ![fuzzy-branch](assets/fuzzy-find-branch.gif)
-
-### Changed
-* minimum supported rust version bumped to 1.65 (thank you `time`)
 
 ### Breaking Change
 * `focus_XYZ` key bindings are merged into the `move_XYZ` set, so only one way to bind arrow-like keys from now on ([#1539](https://github.com/extrawurst/gitui/issues/1539))
@@ -57,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * add support for options handling in log and stashes views [[@kamillo](https://github.com/kamillo)] ([#1661](https://github.com/extrawurst/gitui/issues/1661))
 
 ### Changed
-* minimum supported rust version bumped to 1.64 (thank you `clap`)
+* minimum supported rust version bumped to 1.65 (thank you `time` crate)
 
 ## [0.22.1] - 2022-11-22
 
