@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * crashes on entering submodules ([#1510](https://github.com/extrawurst/gitui/issues/1510))
 * fix race issue: revlog messages sometimes appear empty ([#1473](https://github.com/extrawurst/gitui/issues/1473))
 * default to tick-based updates [[@cruessler](https://github.com/cruessler)] ([#1444](https://github.com/extrawurst/gitui/issues/1444))
+* add support for options handling in log and stashes views [[@kamillo](https://github.com/kamillo)] ([#1661](https://github.com/extrawurst/gitui/issues/1661))
 
 ### Changed
 * minimum supported rust version bumped to 1.64 (thank you `clap`)

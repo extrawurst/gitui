@@ -6,13 +6,14 @@ use super::{
 use crate::{
 	accessors,
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{self, diff::DiffOptions, CommitId, RepoPathRef},
+	sync::{self, CommitId, RepoPathRef},
 	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
 	DiffType,
 };
@@ -34,6 +35,7 @@ pub struct CompareCommitsComponent {
 	visible: bool,
 	key_config: SharedKeyConfig,
 	queue: Queue,
+	options: SharedOptions,
 }
 
 impl DrawableComponent for CompareCommitsComponent {
@@ -172,6 +174,7 @@ impl CompareCommitsComponent {
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			repo: repo.clone(),
@@ -194,6 +197,7 @@ impl CompareCommitsComponent {
 			visible: false,
 			key_config,
 			queue: queue.clone(),
+			options,
 		}
 	}
 
@@ -256,7 +260,7 @@ impl CompareCommitsComponent {
 					let diff_params = DiffParams {
 						path: f.path.clone(),
 						diff_type: DiffType::Commits(ids),
-						options: DiffOptions::default(),
+						options: self.options.borrow().diff_options(),
 					};
 
 					if let Some((params, last)) =
