@@ -1,6 +1,6 @@
 use crate::{
 	error::Result,
-	sync::{self, CommitId, RepoPath},
+	sync::{self, commit_files::OldNew, CommitId, RepoPath},
 	AsyncGitNotification, StatusItem,
 };
 use crossbeam_channel::Sender;
@@ -32,6 +32,15 @@ impl From<(CommitId, CommitId)> for CommitFilesParams {
 		Self {
 			id,
 			other: Some(other),
+		}
+	}
+}
+
+impl From<OldNew<CommitId>> for CommitFilesParams {
+	fn from(old_new: OldNew<CommitId>) -> Self {
+		Self {
+			id: old_new.new,
+			other: Some(old_new.old),
 		}
 	}
 }
