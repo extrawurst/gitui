@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::{
 	components::{
@@ -75,7 +75,7 @@ impl FilesTab {
 		Ok(())
 	}
 
-	pub fn file_finder_update(&mut self, file: &Option<PathBuf>) {
+	pub fn file_finder_update(&mut self, file: &Path) {
 		self.files.find_file(file);
 	}
 }

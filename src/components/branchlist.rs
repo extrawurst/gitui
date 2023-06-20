@@ -1,7 +1,7 @@
 use super::{
 	utils::scroll_vertical::VerticalScroll, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, InspectCommitOpen,
+	EventState, FuzzyFinderTarget, InspectCommitOpen,
 };
 use crate::{
 	components::ScrollType,
@@ -298,8 +298,10 @@ impl Component for BranchListComponent {
 					.iter()
 					.map(|b| b.name.clone())
 					.collect();
-				self.queue
-					.push(InternalEvent::OpenBranchFinder(branches));
+				self.queue.push(InternalEvent::OpenFuzzyFinder(
+					branches,
+					FuzzyFinderTarget::Branches,
+				));
 			}
 		}
 
@@ -386,13 +388,8 @@ impl BranchListComponent {
 		Ok(())
 	}
 
-	pub fn branch_finder_update(
-		&mut self,
-		idx: Option<usize>,
-	) -> Result<()> {
-		if let Some(idx) = idx {
-			self.set_selection(idx.try_into()?)?;
-		}
+	pub fn branch_finder_update(&mut self, idx: usize) -> Result<()> {
+		self.set_selection(idx.try_into()?)?;
 		Ok(())
 	}
 

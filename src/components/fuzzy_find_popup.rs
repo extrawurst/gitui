@@ -1,6 +1,7 @@
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, ScrollType, TextInputComponent,
+	DrawableComponent, EventState, FuzzyFinderTarget, ScrollType,
+	TextInputComponent,
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
@@ -21,20 +22,21 @@ use ratatui::{
 };
 use std::borrow::Cow;
 
-pub struct BranchFindPopup {
+pub struct FuzzyFindPopup {
 	queue: Queue,
 	visible: bool,
 	find_text: TextInputComponent,
 	query: Option<String>,
 	theme: SharedTheme,
-	branches: Vec<String>,
+	contents: Vec<String>,
 	selection: usize,
 	selected_index: Option<usize>,
-	branches_filtered: Vec<(usize, Vec<usize>)>,
+	filtered: Vec<(usize, Vec<usize>)>,
 	key_config: SharedKeyConfig,
+	target: Option<FuzzyFinderTarget>,
 }
 
-impl BranchFindPopup {
+impl FuzzyFindPopup {
 	///
 	pub fn new(
 		queue: &Queue,
@@ -56,11 +58,12 @@ impl BranchFindPopup {
 			query: None,
 			find_text,
 			theme,
-			branches: Vec::new(),
-			branches_filtered: Vec::new(),
+			contents: Vec::new(),
+			filtered: Vec::new(),
 			selected_index: None,
 			key_config,
 			selection: 0,
+			target: None,
 		}
 	}
 
@@ -81,14 +84,14 @@ impl BranchFindPopup {
 	fn set_query(&mut self, query: Option<String>) {
 		self.query = query;
 
-		self.branches_filtered.clear();
+		self.filtered.clear();
 
 		if let Some(q) = &self.query {
 			let matcher =
 				fuzzy_matcher::skim::SkimMatcherV2::default();
 
-			let mut branches = self
-				.branches
+			let mut contents = self
+				.contents
 				.iter()
 				.enumerate()
 				.filter_map(|a| {
@@ -98,12 +101,12 @@ impl BranchFindPopup {
 				})
 				.collect::<Vec<(_, _, _)>>();
 
-			branches.sort_by(|(score1, _, _), (score2, _, _)| {
+			contents.sort_by(|(score1, _, _), (score2, _, _)| {
 				score2.cmp(score1)
 			});
 
-			self.branches_filtered.extend(
-				branches.into_iter().map(|entry| (entry.1, entry.2)),
+			self.filtered.extend(
+				contents.into_iter().map(|entry| (entry.1, entry.2)),
 			);
 		}
 
@@ -113,23 +116,37 @@ impl BranchFindPopup {
 
 	fn refresh_selection(&mut self) {
 		let selection =
-			self.branches_filtered.get(self.selection).map(|a| a.0);
+			self.filtered.get(self.selection).map(|a| a.0);
 
 		if self.selected_index != selection {
 			self.selected_index = selection;
 
-			let idx = self.selected_index;
-			self.queue.push(InternalEvent::BranchFinderChanged(idx));
+			if let Some(idx) = self.selected_index {
+				if let Some(target) = self.target {
+					self.queue.push(
+						InternalEvent::FuzzyFinderChanged(
+							idx,
+							self.contents[idx].clone(),
+							target,
+						),
+					);
+				}
+			}
 		}
 	}
 
-	pub fn open(&mut self, branches: Vec<String>) -> Result<()> {
+	pub fn open(
+		&mut self,
+		contents: Vec<String>,
+		target: FuzzyFinderTarget,
+	) -> Result<()> {
 		self.show()?;
 		self.find_text.show()?;
 		self.find_text.set_text(String::new());
 		self.query = None;
-		if self.branches != branches {
-			self.branches = branches;
+		self.target = Some(target);
+		if self.contents != contents {
+			self.contents = contents;
 		}
 		self.update_query();
 
@@ -144,7 +161,7 @@ impl BranchFindPopup {
 		};
 
 		let new_selection = new_selection
-			.clamp(0, self.branches_filtered.len().saturating_sub(1));
+			.clamp(0, self.filtered.len().saturating_sub(1));
 
 		if new_selection != self.selection {
 			self.selection = new_selection;
@@ -156,7 +173,7 @@ impl BranchFindPopup {
 	}
 }
 
-impl DrawableComponent for BranchFindPopup {
+impl DrawableComponent for FuzzyFindPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -165,7 +182,7 @@ impl DrawableComponent for BranchFindPopup {
 		if self.is_visible() {
 			const MAX_SIZE: (u16, u16) = (50, 20);
 
-			let any_hits = !self.branches_filtered.is_empty();
+			let any_hits = !self.filtered.is_empty();
 
 			let area = ui::centered_rect_absolute(
 				MAX_SIZE.0, MAX_SIZE.1, area,
@@ -215,22 +232,18 @@ impl DrawableComponent for BranchFindPopup {
 			self.find_text.draw(f, chunks[0])?;
 
 			if any_hits {
-				let title =
-					format!("Hits: {}", self.branches_filtered.len());
+				let title = format!("Hits: {}", self.filtered.len());
 
 				let height = usize::from(chunks[1].height);
 				let width = usize::from(chunks[1].width);
 
-				let items = self
-					.branches_filtered
-					.iter()
-					.take(height)
-					.map(|(idx, indicies)| {
+				let items = self.filtered.iter().take(height).map(
+					|(idx, indicies)| {
 						let selected = self
 							.selected_index
 							.map_or(false, |index| index == *idx);
 						let full_text = trim_length_left(
-							&self.branches[*idx],
+							&self.contents[*idx],
 							width,
 						);
 						Line::from(
@@ -247,7 +260,8 @@ impl DrawableComponent for BranchFindPopup {
 								})
 								.collect::<Vec<_>>(),
 						)
-					});
+					},
+				);
 
 				ui::draw_list_block(
 					f,
@@ -266,7 +280,7 @@ impl DrawableComponent for BranchFindPopup {
 	}
 }
 
-impl Component for BranchFindPopup {
+impl Component for FuzzyFindPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
