@@ -17,7 +17,7 @@ use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
 };
@@ -70,10 +70,10 @@ impl ResetPopupComponent {
 		}
 	}
 
-	fn get_text(&self, _width: u16) -> Vec<Spans> {
-		let mut txt: Vec<Spans> = Vec::with_capacity(10);
+	fn get_text(&self, _width: u16) -> Vec<Line> {
+		let mut txt: Vec<Line> = Vec::with_capacity(10);
 
-		txt.push(Spans::from(vec![
+		txt.push(Line::from(vec![
 			Span::styled(
 				String::from("Branch: "),
 				self.theme.text(true, false),
@@ -84,7 +84,7 @@ impl ResetPopupComponent {
 			),
 		]));
 
-		txt.push(Spans::from(vec![
+		txt.push(Line::from(vec![
 			Span::styled(
 				String::from("Reset to: "),
 				self.theme.text(true, false),
@@ -99,7 +99,7 @@ impl ResetPopupComponent {
 
 		let (kind_name, kind_desc) = type_to_string(self.kind);
 
-		txt.push(Spans::from(vec![
+		txt.push(Line::from(vec![
 			Span::styled(
 				String::from("How: "),
 				self.theme.text(true, false),

@@ -19,7 +19,7 @@ use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	style::{Modifier, Style},
-	text::{Span, Spans, Text},
+	text::{Line, Span, Text},
 	Frame,
 };
 use std::clone::Clone;
@@ -133,7 +133,7 @@ impl DetailsComponent {
 		&self,
 		width: usize,
 		height: usize,
-	) -> Vec<Spans> {
+	) -> Vec<Line> {
 		let (wrapped_title, wrapped_message) =
 			Self::get_wrapped_lines(&self.data, width);
 
@@ -144,7 +144,7 @@ impl DetailsComponent {
 			.skip(self.scroll.get_top())
 			.take(height)
 			.map(|(i, line)| {
-				Spans::from(vec![Span::styled(
+				Line::from(vec![Span::styled(
 					line.clone(),
 					self.get_theme_for_line(i < wrapped_title.len()),
 				)])
@@ -153,10 +153,10 @@ impl DetailsComponent {
 	}
 
 	#[allow(unstable_name_collisions, clippy::too_many_lines)]
-	fn get_text_info(&self) -> Vec<Spans> {
+	fn get_text_info(&self) -> Vec<Line> {
 		self.data.as_ref().map_or_else(Vec::new, |data| {
 			let mut res = vec![
-				Spans::from(vec![
+				Line::from(vec![
 					style_detail(&self.theme, &Detail::Author),
 					Span::styled(
 						Cow::from(format!(
@@ -166,7 +166,7 @@ impl DetailsComponent {
 						self.theme.text(true, false),
 					),
 				]),
-				Spans::from(vec![
+				Line::from(vec![
 					style_detail(&self.theme, &Detail::Date),
 					Span::styled(
 						Cow::from(time_to_string(
@@ -180,7 +180,7 @@ impl DetailsComponent {
 
 			if let Some(ref committer) = data.committer {
 				res.extend(vec![
-					Spans::from(vec![
+					Line::from(vec![
 						style_detail(&self.theme, &Detail::Commiter),
 						Span::styled(
 							Cow::from(format!(
@@ -190,7 +190,7 @@ impl DetailsComponent {
 							self.theme.text(true, false),
 						),
 					]),
-					Spans::from(vec![
+					Line::from(vec![
 						style_detail(&self.theme, &Detail::Date),
 						Span::styled(
 							Cow::from(time_to_string(
@@ -203,7 +203,7 @@ impl DetailsComponent {
 				]);
 			}
 
-			res.push(Spans::from(vec![
+			res.push(Line::from(vec![
 				Span::styled(
 					Cow::from(strings::commit::details_sha()),
 					self.theme.text(false, false),
@@ -215,12 +215,12 @@ impl DetailsComponent {
 			]));
 
 			if !self.tags.is_empty() {
-				res.push(Spans::from(style_detail(
+				res.push(Line::from(style_detail(
 					&self.theme,
 					&Detail::Sha,
 				)));
 
-				res.push(Spans::from(
+				res.push(Line::from(
 					itertools::Itertools::intersperse(
 						self.tags.iter().map(|tag| {
 							Span::styled(

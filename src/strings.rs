@@ -603,6 +603,30 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn diff_hunk_next(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Next hunk [{}]",
+				key_config.get_hint(key_config.keys.diff_hunk_next),
+			),
+			"move cursor to next hunk",
+			CMD_GROUP_DIFF,
+		)
+	}
+	pub fn diff_hunk_prev(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Prev hunk [{}]",
+				key_config.get_hint(key_config.keys.diff_hunk_prev),
+			),
+			"move cursor to prev hunk",
+			CMD_GROUP_DIFF,
+		)
+	}
 	pub fn diff_home_end(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

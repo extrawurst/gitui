@@ -40,7 +40,7 @@ use ratatui::{
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Paragraph, Tabs},
 	Frame,
 };
@@ -180,6 +180,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			compare_commits_popup: CompareCommitsComponent::new(
 				&repo,
@@ -187,6 +188,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			external_editor_popup: ExternalEditorComponent::new(
 				theme.clone(),
@@ -1188,7 +1190,7 @@ impl App {
 		let table_area = r; // use entire area to allow drawing the horizontal separator line
 		let text_area = left_right[1];
 
-		let tabs = tab_labels.into_iter().map(Spans::from).collect();
+		let tabs = tab_labels.into_iter().map(Line::from).collect();
 
 		f.render_widget(
 			Tabs::new(tabs)
@@ -1205,7 +1207,7 @@ impl App {
 		);
 
 		f.render_widget(
-			Paragraph::new(Spans::from(vec![Span::styled(
+			Paragraph::new(Line::from(vec![Span::styled(
 				ellipsis_trim_start(
 					&self.repo_path_text,
 					text_area.width as usize,

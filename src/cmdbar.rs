@@ -5,7 +5,7 @@ use crate::{
 use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::Paragraph,
 	Frame,
 };
@@ -151,7 +151,7 @@ impl CommandBar {
 			.draw_list
 			.split(|c| matches!(c, DrawListEntry::LineBreak))
 			.map(|c_arr| {
-				Spans::from(
+				Line::from(
 					c_arr
 						.iter()
 						.map(|c| match c {
@@ -174,7 +174,7 @@ impl CommandBar {
 						.collect::<Vec<Span>>(),
 				)
 			})
-			.collect::<Vec<Spans>>();
+			.collect::<Vec<Line>>();
 
 		f.render_widget(
 			Paragraph::new(texts).alignment(Alignment::Left),
@@ -190,7 +190,7 @@ impl CommandBar {
 			);
 
 			f.render_widget(
-				Paragraph::new(Spans::from(vec![Span::raw(
+				Paragraph::new(Line::from(vec![Span::raw(
 					Cow::from(if self.expanded {
 						"less [.]"
 					} else {

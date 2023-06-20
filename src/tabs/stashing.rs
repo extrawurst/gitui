@@ -19,7 +19,7 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use ratatui::{
 	layout::{Alignment, Constraint, Direction, Layout},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Paragraph},
 };
 use std::borrow::Cow;
@@ -105,7 +105,7 @@ impl Stashing {
 		Ok(())
 	}
 
-	fn get_option_text(&self) -> Vec<Spans> {
+	fn get_option_text(&self) -> Vec<Line> {
 		let bracket_open = Span::raw(Cow::from("["));
 		let bracket_close = Span::raw(Cow::from("]"));
 		let option_on =
@@ -115,7 +115,7 @@ impl Stashing {
 			Span::styled(Cow::from("_"), self.theme.option(false));
 
 		vec![
-			Spans::from(vec![
+			Line::from(vec![
 				bracket_open.clone(),
 				if self.options.stash_untracked {
 					option_on.clone()
@@ -125,7 +125,7 @@ impl Stashing {
 				bracket_close.clone(),
 				Span::raw(Cow::from(" stash untracked")),
 			]),
-			Spans::from(vec![
+			Line::from(vec![
 				bracket_open,
 				if self.options.keep_index {
 					option_on

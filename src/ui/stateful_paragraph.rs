@@ -132,9 +132,8 @@ impl<'a> StatefulWidget for StatefulParagraph<'a> {
 		}
 
 		let style = self.style;
-		let mut styled = self.text.lines.iter().flat_map(|spans| {
-			spans
-				.0
+		let mut styled = self.text.lines.iter().flat_map(|line| {
+			line.spans
 				.iter()
 				.flat_map(|span| span.styled_graphemes(style))
 				// Required given the way composers work but might be refactored out if we change

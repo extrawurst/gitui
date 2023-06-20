@@ -19,7 +19,7 @@ use crossterm::{
 use ratatui::{
 	backend::Backend,
 	layout::Rect,
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, BorderType, Borders, Clear, Paragraph},
 	Frame,
 };
@@ -129,7 +129,7 @@ impl DrawableComponent for ExternalEditorComponent {
 		_rect: Rect,
 	) -> Result<()> {
 		if self.visible {
-			let txt = Spans::from(
+			let txt = Line::from(
 				strings::msg_opening_editor(&self.key_config)
 					.split('\n')
 					.map(|string| {
