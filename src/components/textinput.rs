@@ -22,6 +22,7 @@ use ratatui::{
 	Frame,
 };
 use std::{cell::Cell, collections::HashMap, ops::Range};
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(PartialEq, Eq)]
 pub enum InputType {
@@ -43,6 +44,7 @@ pub struct TextInputComponent {
 	input_type: InputType,
 	current_area: Cell<Rect>,
 	embed: bool,
+	char_count: usize,
 }
 
 impl TextInputComponent {
@@ -66,6 +68,7 @@ impl TextInputComponent {
 			input_type: InputType::Multiline,
 			current_area: Cell::new(Rect::default()),
 			embed: false,
+			char_count: 0,
 		}
 	}
 
@@ -80,6 +83,7 @@ impl TextInputComponent {
 	/// Clear the `msg`.
 	pub fn clear(&mut self) {
 		self.msg.clear();
+		self.update_count();
 		self.cursor_position = 0;
 	}
 
@@ -203,6 +207,7 @@ impl TextInputComponent {
 		if self.cursor_position > 0 {
 			self.decr_cursor();
 			self.msg.remove(self.cursor_position);
+			self.update_count();
 		}
 	}
 
@@ -210,6 +215,7 @@ impl TextInputComponent {
 	pub fn set_text(&mut self, msg: String) {
 		self.msg = msg;
 		self.cursor_position = 0;
+		self.update_count();
 	}
 
 	/// Set the `title`.
@@ -303,10 +309,12 @@ impl TextInputComponent {
 	}
 
 	fn draw_char_count<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-		let count = self.msg.len();
-		if count > 0 {
-			let w = Paragraph::new(format!("[{count} chars]"))
-				.alignment(Alignment::Right);
+		if self.char_count > 0 {
+			let w = Paragraph::new(format!(
+				"[{} chars]",
+				self.char_count
+			))
+			.alignment(Alignment::Right);
 
 			let mut rect = {
 				let mut rect = r;
@@ -322,6 +330,10 @@ impl TextInputComponent {
 
 			f.render_widget(w, rect);
 		}
+	}
+
+	fn update_count(&mut self) {
+		self.char_count = self.msg.graphemes(true).count();
 	}
 }
 
@@ -432,6 +444,7 @@ impl Component for TextInputComponent {
 				match e.code {
 					KeyCode::Char(c) if !is_ctrl => {
 						self.msg.insert(self.cursor_position, c);
+						self.update_count();
 						self.incr_cursor();
 						return Ok(EventState::Consumed);
 					}
@@ -441,6 +454,7 @@ impl Component for TextInputComponent {
 								self.cursor_position..pos,
 								"",
 							);
+							self.update_count();
 						}
 						return Ok(EventState::Consumed);
 					}
@@ -455,6 +469,7 @@ impl Component for TextInputComponent {
 								"",
 							);
 							self.cursor_position = pos;
+							self.update_count();
 						}
 						return Ok(EventState::Consumed);
 					}
@@ -475,6 +490,7 @@ impl Component for TextInputComponent {
 					KeyCode::Delete => {
 						if self.cursor_position < self.msg.len() {
 							self.msg.remove(self.cursor_position);
+							self.update_count();
 						}
 						return Ok(EventState::Consumed);
 					}
