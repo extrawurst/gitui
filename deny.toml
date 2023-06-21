@@ -22,6 +22,6 @@ version = "1.0.3"
 multiple-versions = "deny"
 skip-tree = [
     { name = "windows-sys" },
-    { name = "hermit-abi" },
-    { name = "syn" }
+    { name = "hermit-abi" }
+
 ]
