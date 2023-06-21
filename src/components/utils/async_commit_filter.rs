@@ -4,7 +4,7 @@ use asyncgit::{
 	AsyncGitNotification, AsyncLog, AsyncTags,
 };
 use bitflags::bitflags;
-use crossbeam_channel::{Sender, TryRecvError};
+use crossbeam_channel::Sender;
 use std::convert::TryFrom;
 use std::{
 	cell::RefCell,
@@ -77,7 +77,8 @@ pub struct AsyncCommitFilterer {
 	filter_count: Arc<AtomicUsize>,
 	filter_finished: Arc<AtomicBool>,
 	is_pending_local: RefCell<bool>,
-	filter_thread_sender: Option<Sender<()>>,
+	/// Tells the last filter thread to stop early when set to true.
+	filter_stop_signal: Arc<AtomicBool>,
 	filter_thread_mutex: Arc<Mutex<()>>,
 	sender: Sender<AsyncGitNotification>,
 }
@@ -98,7 +99,7 @@ impl AsyncCommitFilterer {
 			filter_finished: Arc::new(AtomicBool::new(false)),
 			filter_thread_mutex: Arc::new(Mutex::new(())),
 			is_pending_local: RefCell::new(false),
-			filter_thread_sender: None,
+			filter_stop_signal: Arc::new(AtomicBool::new(false)),
 			sender: sender.clone(),
 		}
 	}
@@ -317,9 +318,9 @@ impl AsyncCommitFilterer {
 		let async_log = self.git_log.clone();
 		let filter_finished = Arc::clone(&self.filter_finished);
 
-		let (tx, rx) = crossbeam_channel::unbounded();
+		self.filter_stop_signal = Arc::new(AtomicBool::new(false));
+		let filter_stop_signal = Arc::clone(&self.filter_stop_signal);
 
-		self.filter_thread_sender = Some(tx);
 		let async_app_sender = self.sender.clone();
 
 		let filter_thread_mutex =
@@ -342,11 +343,8 @@ impl AsyncCommitFilterer {
 			filtered_commits.lock().expect("mutex poisoned").clear();
 			let mut cur_index: usize = 0;
 			let result = loop {
-				match rx.try_recv() {
-					Ok(_) | Err(TryRecvError::Disconnected) => {
-						break Ok(())
-					}
-					_ => {}
+				if filter_stop_signal.load(Ordering::Relaxed) {
+					break Ok(());
 				}
 
 				// Get the git_log and start filtering through it
@@ -401,15 +399,8 @@ impl AsyncCommitFilterer {
 	}
 
 	/// Stop the filter if one was running, otherwise does nothing.
-	/// Is it possible to restart from this stage by calling restart
 	pub fn stop_filter(&self) {
-		// Any error this gives can be safely ignored,
-		// it will send if reciever exists, otherwise does nothing
-		if let Some(sender) = &self.filter_thread_sender {
-			match sender.try_send(()) {
-				Ok(_) | Err(_) => {}
-			};
-		}
+		self.filter_stop_signal.store(true, Ordering::Relaxed);
 		self.is_pending_local.replace(false);
 		self.filter_finished.store(true, Ordering::Relaxed);
 	}
