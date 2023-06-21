@@ -531,7 +531,6 @@ impl Component for CommitComponent {
 						self.input.set_text(msg);
 						self.commit_msg_history_idx += 1;
 					}
-				} else {
 				}
 				// stop key event propagation
 				return Ok(EventState::Consumed);

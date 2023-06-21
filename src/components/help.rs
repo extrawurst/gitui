@@ -135,7 +135,6 @@ impl Component for HelpComponent {
 					self.move_selection(true);
 				} else if key_match(e, self.key_config.keys.move_up) {
 					self.move_selection(false);
-				} else {
 				}
 			}
 
