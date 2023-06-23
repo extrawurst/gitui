@@ -237,31 +237,38 @@ impl DrawableComponent for FuzzyFindPopup {
 				let height = usize::from(chunks[1].height);
 				let width = usize::from(chunks[1].width);
 
-				let items = self.filtered.iter().take(height).map(
-					|(idx, indicies)| {
-						let selected = self
-							.selected_index
-							.map_or(false, |index| index == *idx);
-						let full_text = trim_length_left(
-							&self.contents[*idx],
-							width,
-						);
-						Line::from(
-							full_text
-								.char_indices()
-								.map(|(c_idx, c)| {
-									Span::styled(
-										Cow::from(c.to_string()),
-										self.theme.text(
-											selected,
-											indicies.contains(&c_idx),
-										),
-									)
-								})
-								.collect::<Vec<_>>(),
-						)
-					},
-				);
+				const HEIGHT_BLOCK_MARGINE: usize = 2;
+				let skip = self
+					.selection
+					.saturating_sub(height - HEIGHT_BLOCK_MARGINE);
+
+				let items =
+					self.filtered.iter().skip(skip).take(height).map(
+						|(idx, indicies)| {
+							let selected = self
+								.selected_index
+								.map_or(false, |index| index == *idx);
+							let full_text = trim_length_left(
+								&self.contents[*idx],
+								width,
+							);
+							Line::from(
+								full_text
+									.char_indices()
+									.map(|(c_idx, c)| {
+										Span::styled(
+											Cow::from(c.to_string()),
+											self.theme.text(
+												selected,
+												indicies
+													.contains(&c_idx),
+											),
+										)
+									})
+									.collect::<Vec<_>>(),
+							)
+						},
+					);
 
 				ui::draw_list_block(
 					f,
