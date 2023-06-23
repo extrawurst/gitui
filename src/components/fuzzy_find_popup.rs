@@ -233,7 +233,7 @@ impl DrawableComponent for FuzzyFindPopup {
 
 			if any_hits {
 				// Block has two lines up and down which need to be considered
-				const HEIGHT_BLOCK_MARGINE: usize = 2;
+				const HEIGHT_BLOCK_MARGIN: usize = 2;
 
 				let title = format!("Hits: {}", self.filtered.len());
 
@@ -242,7 +242,7 @@ impl DrawableComponent for FuzzyFindPopup {
 
 				let scroll_skip = self
 					.selection
-					.saturating_sub(height - HEIGHT_BLOCK_MARGINE);
+					.saturating_sub(height - HEIGHT_BLOCK_MARGIN);
 
 				let items = self
 					.filtered
