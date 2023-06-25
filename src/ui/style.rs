@@ -288,9 +288,15 @@ impl Theme {
 			theme = old_theme;
 
 			if theme.save_patch(theme_path).is_ok() {
-				log::info!("Converted old theme to new format.");
+				log::info!(
+					"Converted old theme to new format. ({:?})",
+					theme_path
+				);
 			} else {
-				log::warn!("Failed to save theme in new format.");
+				log::warn!(
+					"Failed to save theme in new format. ({:?})",
+					theme_path
+				);
 			}
 		}
 
