@@ -1,21 +1,15 @@
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
 use ratatui::style::{Color, Modifier, Style};
-use ron::{
-	de::from_bytes,
-	ser::{to_string_pretty, PrettyConfig},
-};
+use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::{Deserialize, Serialize};
-use std::{
-	fs::{self, File},
-	io::{Read, Write},
-	path::PathBuf,
-	rc::Rc,
-};
+use std::{fs::File, io::Write, path::PathBuf, rc::Rc};
+use struct_patch::Patch;
 
 pub type SharedTheme = Rc<Theme>;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Patch)]
+#[patch_derive(Serialize, Deserialize)]
 pub struct Theme {
 	selected_tab: Color,
 	command_fg: Color,
@@ -261,44 +255,46 @@ impl Theme {
 			.bg(self.push_gauge_bg)
 	}
 
-	// This will only be called when theme.ron doesn't already exists
-	fn save(&self, theme_file: &PathBuf) -> Result<()> {
-		let mut file = File::create(theme_file)?;
-		let data = to_string_pretty(self, PrettyConfig::default())?;
+	fn load_patch(theme_path: &PathBuf) -> Result<ThemePatch> {
+		let file = File::open(theme_path)?;
+
+		Ok(ron::de::from_reader(file)?)
+	}
+
+	fn load_old_theme(theme_path: &PathBuf) -> Result<Self> {
+		let old_file = File::open(theme_path)?;
+
+		Ok(ron::de::from_reader::<File, Self>(old_file)?)
+	}
+
+	// This is supposed to be called when theme.ron doesn't already exists.
+	fn save_patch(&self, theme_path: &PathBuf) -> Result<()> {
+		let mut file = File::create(theme_path)?;
+		let patch = self.into_patch_by_diff(Self::default());
+		let data = to_string_pretty(&patch, PrettyConfig::default())?;
+
 		file.write_all(data.as_bytes())?;
+
 		Ok(())
 	}
 
-	fn read_file(theme_file: PathBuf) -> Result<Self> {
-		let mut f = File::open(theme_file)?;
-		let mut buffer = Vec::new();
-		f.read_to_end(&mut buffer)?;
-		Ok(from_bytes(&buffer)?)
-	}
+	pub fn init(theme_path: &PathBuf) -> Self {
+		let mut theme = Self::default();
 
-	pub fn init(file: &PathBuf) -> Result<Self> {
-		if file.exists() {
-			match Self::read_file(file.clone()) {
-				Err(e) => {
-					let config_path = file.clone();
-					let config_path_old =
-						format!("{}.old", file.to_string_lossy());
-					fs::rename(
-						config_path.clone(),
-						config_path_old.clone(),
-					)?;
+		if let Ok(patch) = Self::load_patch(theme_path) {
+			theme.apply(patch);
+		} else if let Ok(old_theme) = Self::load_old_theme(theme_path)
+		{
+			theme = old_theme;
 
-					Self::default().save(file)?;
-
-					Err(anyhow::anyhow!("{}\n Old file was renamed to {:?}.\n Defaults loaded and saved as {:?}",
-                        e,config_path_old,config_path.to_string_lossy()))
-				}
-				Ok(res) => Ok(res),
+			if theme.save_patch(theme_path).is_ok() {
+				log::info!("Converted old theme to new format.");
+			} else {
+				log::warn!("Failed to save theme in new format.");
 			}
-		} else {
-			Self::default().save(file)?;
-			Ok(Self::default())
 		}
+
+		theme
 	}
 }
 
@@ -327,5 +323,34 @@ impl Default for Theme {
 			tag_fg: Color::LightMagenta,
 			branch_fg: Color::LightYellow,
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use pretty_assertions::assert_eq;
+	use std::io::Write;
+	use tempfile::NamedTempFile;
+
+	#[test]
+	fn test_smoke() {
+		let mut file = NamedTempFile::new().unwrap();
+
+		writeln!(
+			file,
+			r"
+(
+	selection_bg: Some(White),
+)
+"
+		)
+		.unwrap();
+
+		let theme = Theme::init(&file.path().to_path_buf());
+
+		assert_eq!(theme.selection_fg, Theme::default().selection_fg);
+		assert_eq!(theme.selection_bg, Color::White);
+		assert_ne!(theme.selection_bg, Theme::default().selection_bg);
 	}
 }

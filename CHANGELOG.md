@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Change
 * `focus_XYZ` key bindings are merged into the `move_XYZ` set, so only one way to bind arrow-like keys from now on ([#1539](https://github.com/extrawurst/gitui/issues/1539))
+* Do you use a custom theme?
+
+  The way themes work got changed and simplified ([see docs](https://github.com/extrawurst/gitui/blob/master/THEMES.md) for more info):
+
+  * The format of `theme.ron` has changed: you only specify the colors etc. that should differ from their default value
+  * Future additions of colors etc. will not break existing themes anymore
 
 ### Added
 * allow reset (soft,mixed,hard) from commit log ([#1500](https://github.com/extrawurst/gitui/issues/1500))
@@ -41,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * allow `copy` file path on revision files and status tree [[@yanganto]](https://github.com/yanganto)  ([#1516](https://github.com/extrawurst/gitui/pull/1516))
 * print message of where log will be written if `-l` is set ([#1472](https://github.com/extrawurst/gitui/pull/1472))
 * show remote branches in log [[@cruessler](https://github.com/cruessler)] ([#1501](https://github.com/extrawurst/gitui/issues/1501))
+* simplify theme overrides [[@cruessler](https://github.com/cruessler)] ([#1367](https://github.com/extrawurst/gitui/issues/1367))
 
 ### Fixes
 * fixed side effect of crossterm 0.26 on windows that caused double input of all keys [[@pm100]](https://github/pm100) ([#1686](https://github.com/extrawurst/gitui/pull/1686))
