@@ -1,13 +1,15 @@
+use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
 use ratatui::style::{Color, Modifier, Style};
+use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::{Deserialize, Serialize};
-use std::{fs::File, path::PathBuf, rc::Rc};
+use std::{fs::File, io::Write, path::PathBuf, rc::Rc};
 use struct_patch::Patch;
 
 pub type SharedTheme = Rc<Theme>;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Patch)]
-#[patch_derive(Deserialize)]
+#[patch_derive(Serialize, Deserialize)]
 pub struct Theme {
 	selected_tab: Color,
 	command_fg: Color,
@@ -253,12 +255,42 @@ impl Theme {
 			.bg(self.push_gauge_bg)
 	}
 
+	fn load_patch(theme_path: &PathBuf) -> Result<ThemePatch> {
+		let file = File::open(theme_path)?;
+
+		Ok(ron::de::from_reader(file)?)
+	}
+
+	fn load_old_theme(theme_path: &PathBuf) -> Result<Self> {
+		let old_file = File::open(theme_path)?;
+
+		Ok(ron::de::from_reader::<File, Self>(old_file)?)
+	}
+
+	// This is supposed to be called when theme.ron doesn't already exists.
+	fn save_patch(&self, theme_path: &PathBuf) -> Result<()> {
+		let mut file = File::create(theme_path)?;
+		let patch = self.into_patch_by_diff(Self::default());
+		let data = to_string_pretty(&patch, PrettyConfig::default())?;
+
+		file.write_all(data.as_bytes())?;
+
+		Ok(())
+	}
+
 	pub fn init(theme_path: &PathBuf) -> Self {
 		let mut theme = Self::default();
 
-		if let Ok(file) = File::open(theme_path) {
-			if let Ok(patch) = ron::de::from_reader(file) {
-				theme.apply(patch);
+		if let Ok(patch) = Self::load_patch(theme_path) {
+			theme.apply(patch);
+		} else if let Ok(old_theme) = Self::load_old_theme(theme_path)
+		{
+			theme = old_theme;
+
+			if theme.save_patch(theme_path).is_ok() {
+				log::info!("Converted old theme to new format.");
+			} else {
+				log::warn!("Failed to save theme in new format.");
 			}
 		}
 
