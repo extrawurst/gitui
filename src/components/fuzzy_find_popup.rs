@@ -240,9 +240,11 @@ impl DrawableComponent for FuzzyFindPopup {
 				let height = usize::from(chunks[1].height);
 				let width = usize::from(chunks[1].width);
 
-				let scroll_skip = self
-					.selection
-					.saturating_sub(height - HEIGHT_BLOCK_MARGIN);
+				let list_height =
+					height.saturating_sub(HEIGHT_BLOCK_MARGIN);
+
+				let scroll_skip =
+					self.selection.saturating_sub(list_height);
 
 				let items = self
 					.filtered
@@ -284,6 +286,18 @@ impl DrawableComponent for FuzzyFindPopup {
 						.borders(Borders::TOP),
 					items,
 				);
+
+				// Draw scrollbar when needed
+				if self.filtered.len() > list_height {
+					ui::draw_scrollbar(
+						f,
+						chunks[1],
+						&self.theme,
+						self.filtered.len(),
+						self.selection,
+						ui::Orientation::Vertical,
+					);
+				}
 			}
 		}
 		Ok(())
