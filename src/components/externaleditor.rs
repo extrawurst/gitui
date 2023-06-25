@@ -64,9 +64,12 @@ impl ExternalEditorComponent {
 			bail!("file not found: {:?}", path);
 		}
 
-		io::stdout().execute(LeaveAlternateScreen)?;
-		defer! {
-			io::stdout().execute(EnterAlternateScreen).expect("reset terminal");
+		// so that the output is not messed up when running tests
+		if cfg!(not(test)) {
+			io::stdout().execute(LeaveAlternateScreen)?;
+			defer! {
+				io::stdout().execute(EnterAlternateScreen).expect("reset terminal");
+			}
 		}
 
 		let environment_options = ["GIT_EDITOR", "VISUAL", "EDITOR"];
@@ -80,6 +83,7 @@ impl ExternalEditorComponent {
 			.or_else(|| env::var(environment_options[2]).ok())
 			.unwrap_or_else(|| String::from("vi"));
 
+		log::trace!("external editor:{}", editor);
 		// TODO: proper handling arguments containing whitespaces
 		// This does not do the right thing if the input is `editor --something "with spaces"`
 
@@ -112,11 +116,53 @@ impl ExternalEditorComponent {
 
 		args.push(path.as_os_str());
 
-		Command::new(command.clone())
-			.current_dir(work_dir)
-			.args(args)
-			.status()
-			.map_err(|e| anyhow!("\"{}\": {}", command, e))?;
+		let exec_result = Command::new(&command)
+			.current_dir(&work_dir)
+			.args(&args)
+			.status();
+
+		if cfg!(windows) {
+			// if command failed to run on windows retry as a batch file (.bat, .cmd,...)
+			if exec_result.is_err() {
+				/*  here args contains the arguments pulled from the configured editor string
+					"myeditor --color blue" ->
+						args[0] = "--color"
+						args[1] = "blue"
+
+					now insert before these
+						"/C"
+						"myeditor"
+				*/
+
+				args.insert(0, OsStr::new("/C"));
+				args.insert(1, OsStr::new(&command));
+				let exec_result2 = Command::new("cmd")
+					.current_dir(work_dir)
+					.args(args)
+					.status();
+
+				match exec_result2 {
+					// failed to start (unlikely as cmd would have to be missing)
+					Err(e) => bail!("\"{}\": {}", command, e),
+
+					// ran, did it complete OK?
+					Ok(stat) => {
+						// no result is treated as arbitrary failure code of 99
+						let code = stat.code().unwrap_or(99);
+						if code != 0 {
+							bail!(
+								"\"{}\": cmd.exe returned {}",
+								command,
+								code
+							)
+						}
+					}
+				};
+			}
+		} else {
+			exec_result
+				.map_err(|e| anyhow!("\"{}\": {}", command, e))?;
+		}
 
 		Ok(())
 	}
@@ -190,5 +236,182 @@ impl Component for ExternalEditorComponent {
 		self.visible = true;
 
 		Ok(())
+	}
+}
+#[cfg(test)]
+mod tests {
+	use crate::components::ExternalEditorComponent;
+	use anyhow::Result;
+	use asyncgit::sync::tests::repo_init;
+	#[cfg(windows)]
+	use asyncgit::sync::utils::read_file;
+	use asyncgit::sync::RepoPath;
+	use serial_test::serial;
+	use std::env;
+	use std::fs::File;
+	use std::io::Write;
+	use tempfile::TempDir;
+
+	fn write_temp_file(
+		td: &TempDir,
+		file: &str,
+		content: &str,
+	) -> Result<()> {
+		let binding = td.path().join(file);
+		let file_path = binding.to_str().unwrap();
+		let mut file = File::create(file_path)?;
+		file.write_all(content.as_bytes())?;
+		Ok(())
+	}
+	const TEST_FILE_NAME: &str = "test1.txt";
+	const TEST_FILE_DATA: &str = "test file data";
+
+	fn setup_repo() -> (TempDir, RepoPath) {
+		let (td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: RepoPath =
+			root.as_os_str().to_str().unwrap().into();
+
+		// create a dummy file to operate on
+		let txt = String::from(TEST_FILE_DATA);
+		write_temp_file(&td, TEST_FILE_NAME, &txt).unwrap();
+		(td, repo_path)
+	}
+
+	// these have to de serialzied because they set env variables to control which editor to use
+
+	#[test]
+	#[serial]
+	fn editor_missing() {
+		let (td, repo_path) = setup_repo();
+		let target_file_path = td.path().join(TEST_FILE_NAME);
+		env::set_var("GIT_EDITOR", "i_doubt_this_exists");
+		let foo = ExternalEditorComponent::open_file_in_editor(
+			&repo_path,
+			&target_file_path,
+		);
+		assert!(foo.is_err());
+	}
+
+	#[cfg(windows)]
+	mod win_test {
+		use super::*;
+		#[test]
+		#[serial]
+		fn editor_is_bat() {
+			let (td, repo_path) = setup_repo();
+			let target_file_path = td.path().join(TEST_FILE_NAME);
+			env::set_var("GIT_EDITOR", "testbat");
+			let bat = String::from("@echo off\ntype %1 >made.txt");
+			write_temp_file(&td, "testbat.bat", &bat).unwrap();
+
+			let runit = ExternalEditorComponent::open_file_in_editor(
+				&repo_path,
+				&target_file_path,
+			);
+			assert!(runit.is_ok());
+
+			let echo_file = td.path().join("made.txt");
+			let read_text = read_file(echo_file.as_path()).unwrap();
+
+			assert_eq!(
+				read_text.lines().next(),
+				Some(TEST_FILE_DATA)
+			);
+		}
+		#[test]
+		#[serial]
+		fn editor_is_bat_ext() {
+			let (td, repo_path) = setup_repo();
+			let target_file_path = td.path().join(TEST_FILE_NAME);
+
+			env::set_var("GIT_EDITOR", "testbat.bat");
+
+			let bat = String::from("@echo off\ntype %1 >made.txt");
+			write_temp_file(&td, "testbat.bat", &bat).unwrap();
+
+			let runit = ExternalEditorComponent::open_file_in_editor(
+				&repo_path,
+				&target_file_path,
+			);
+			assert!(runit.is_ok());
+
+			let echo_file = td.path().join("made.txt");
+			let read_text = read_file(echo_file.as_path()).unwrap();
+			assert_eq!(
+				read_text.lines().next(),
+				Some(TEST_FILE_DATA)
+			);
+		}
+		#[test]
+		#[serial]
+		fn editor_is_bat_noext_arg() {
+			let (td, repo_path) = setup_repo();
+			let target_file_path = td.path().join(TEST_FILE_NAME);
+
+			env::set_var("GIT_EDITOR", "testbat --foo");
+
+			let bat = String::from("@echo off\ntype %2 >made.txt");
+			write_temp_file(&td, "testbat.bat", &bat).unwrap();
+
+			let runit = ExternalEditorComponent::open_file_in_editor(
+				&repo_path,
+				&target_file_path,
+			);
+			assert!(runit.is_ok());
+
+			let echo_file = td.path().join("made.txt");
+			let read_text = read_file(echo_file.as_path()).unwrap();
+			assert_eq!(
+				read_text.lines().next(),
+				Some(TEST_FILE_DATA)
+			);
+		}
+		#[test]
+		#[serial]
+		fn editor_is_cmd() {
+			let (td, repo_path) = setup_repo();
+			let target_file_path = td.path().join(TEST_FILE_NAME);
+			env::set_var("GIT_EDITOR", "testcmd");
+			let bat = String::from("@echo off\ntype %1 >made.txt");
+			write_temp_file(&td, "testcmd.cmd", &bat).unwrap();
+
+			let runit = ExternalEditorComponent::open_file_in_editor(
+				&repo_path,
+				&target_file_path,
+			);
+			assert!(runit.is_ok());
+
+			let echo_file = td.path().join("made.txt");
+			let read_text = read_file(echo_file.as_path()).unwrap();
+
+			assert_eq!(
+				read_text.lines().next(),
+				Some(TEST_FILE_DATA)
+			);
+		}
+		#[test]
+		#[serial]
+		fn editor_is_cmd_arg() {
+			let (td, repo_path) = setup_repo();
+			let target_file_path = td.path().join(TEST_FILE_NAME);
+			env::set_var("GIT_EDITOR", "testcmd --bar");
+			let bat = String::from("@echo off\ntype %2 >made.txt");
+			write_temp_file(&td, "testcmd.cmd", &bat).unwrap();
+
+			let runit = ExternalEditorComponent::open_file_in_editor(
+				&repo_path,
+				&target_file_path,
+			);
+			assert!(runit.is_ok());
+
+			let echo_file = td.path().join("made.txt");
+			let read_text = read_file(echo_file.as_path()).unwrap();
+
+			assert_eq!(
+				read_text.lines().next(),
+				Some(TEST_FILE_DATA)
+			);
+		}
 	}
 }
