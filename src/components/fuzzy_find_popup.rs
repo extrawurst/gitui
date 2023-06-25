@@ -176,7 +176,7 @@ impl FuzzyFindPopup {
 	fn draw_matches_list<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
-		area: Rect,
+		mut area: Rect,
 	) {
 		{
 			// Block has two lines up and down which need to be considered
@@ -234,6 +234,10 @@ impl FuzzyFindPopup {
 
 			// Draw scrollbar when needed
 			if self.filtered.len() > list_height {
+				// Reset list area margin
+				area.width += 1;
+				area.height += 1;
+
 				ui::draw_scrollbar(
 					f,
 					area,
