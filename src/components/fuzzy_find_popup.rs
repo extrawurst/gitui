@@ -242,7 +242,7 @@ impl FuzzyFindPopup {
 					f,
 					area,
 					&self.theme,
-					self.filtered.len(),
+					self.filtered.len().saturating_sub(1),
 					self.selection,
 					ui::Orientation::Vertical,
 				);
