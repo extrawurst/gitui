@@ -145,6 +145,10 @@ impl StashList {
 
 		Ok(())
 	}
+
+	pub fn commit_finder_update(&mut self, idx: usize) {
+		self.list.select_entry(idx);
+	}
 }
 
 impl DrawableComponent for StashList {

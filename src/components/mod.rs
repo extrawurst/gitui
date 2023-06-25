@@ -238,6 +238,7 @@ pub enum EventState {
 pub enum FuzzyFinderTarget {
 	Branches,
 	Files,
+	Commits,
 }
 
 impl EventState {

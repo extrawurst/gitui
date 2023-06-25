@@ -926,6 +926,10 @@ impl App {
 							&PathBuf::from(content),
 						);
 					}
+					FuzzyFinderTarget::Commits => {
+						self.revlog.commit_finder_update(idx);
+						self.stashlist_tab.commit_finder_update(idx);
+					}
 				}
 
 				flags

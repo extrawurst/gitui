@@ -1,4 +1,7 @@
-use super::utils::logitems::{ItemBatch, LogEntry};
+use super::{
+	utils::logitems::{ItemBatch, LogEntry},
+	FuzzyFinderTarget,
+};
 use crate::{
 	components::{
 		utils::string_width_align, CommandBlocking, CommandInfo,
@@ -636,6 +639,21 @@ impl Component for CommitList {
 				) {
 					self.checkout();
 					true
+				} else if key_match(k, self.key_config.keys.file_find)
+				{
+					let mut commits: Vec<String> = Vec::new();
+					for e in self.items.iter() {
+						let hash = e.hash_short.to_string();
+						let author = e.author.to_string();
+						let msg = e.msg.to_string();
+						commits
+							.push(format!("{hash} {author} {msg}"));
+					}
+					self.queue.push(InternalEvent::OpenFuzzyFinder(
+						commits,
+						FuzzyFinderTarget::Commits,
+					));
+					false
 				} else {
 					false
 				};
@@ -660,6 +678,11 @@ impl Component for CommitList {
 				&self.key_config,
 				self.selected_entry_marked(),
 			),
+			true,
+			true,
+		));
+		out.push(CommandInfo::new(
+			strings::commands::find_commit(&self.key_config),
 			true,
 			true,
 		));
