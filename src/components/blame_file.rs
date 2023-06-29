@@ -3,6 +3,7 @@ use super::{
 	Component, DrawableComponent, EventState, FileRevOpen,
 	InspectCommitOpen,
 };
+use crate::components::utils::{get_author_width, MAX_AUTHOR_WIDTH};
 use crate::{
 	components::{utils::string_width_align, ScrollType},
 	keys::{key_match, SharedKeyConfig},
@@ -30,8 +31,6 @@ use std::convert::TryInto;
 
 static NO_COMMIT_ID: &str = "0000000";
 static NO_AUTHOR: &str = "<no author>";
-static MIN_AUTHOR_WIDTH: usize = 3;
-static MAX_AUTHOR_WIDTH: usize = 20;
 
 #[derive(Clone, Debug)]
 pub struct BlameFileOpen {
@@ -587,11 +586,6 @@ impl BlameFileComponent {
 			commit_id
 		})
 	}
-}
-
-fn get_author_width(width: usize) -> usize {
-	(width.saturating_sub(19) / 3)
-		.clamp(MIN_AUTHOR_WIDTH, MAX_AUTHOR_WIDTH)
 }
 
 const fn number_of_digits(number: usize) -> usize {
