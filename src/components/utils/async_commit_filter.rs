@@ -7,7 +7,6 @@ use bitflags::bitflags;
 use crossbeam_channel::Sender;
 use std::convert::TryFrom;
 use std::{
-	cell::RefCell,
 	sync::{
 		atomic::{AtomicBool, AtomicUsize, Ordering},
 		Arc, Mutex,
@@ -75,8 +74,8 @@ pub struct AsyncCommitFilterer {
 	git_tags: AsyncTags,
 	filtered_commits: Arc<Mutex<Vec<CommitInfo>>>,
 	filter_count: Arc<AtomicUsize>,
+	/// True if the filter thread is currently not running.
 	filter_finished: Arc<AtomicBool>,
-	is_pending_local: RefCell<bool>,
 	/// Tells the last filter thread to stop early when set to true.
 	filter_stop_signal: Arc<AtomicBool>,
 	filter_thread_mutex: Arc<Mutex<()>>,
@@ -96,22 +95,15 @@ impl AsyncCommitFilterer {
 			git_tags,
 			filtered_commits: Arc::new(Mutex::new(Vec::new())),
 			filter_count: Arc::new(AtomicUsize::new(0)),
-			filter_finished: Arc::new(AtomicBool::new(false)),
+			filter_finished: Arc::new(AtomicBool::new(true)),
 			filter_thread_mutex: Arc::new(Mutex::new(())),
-			is_pending_local: RefCell::new(false),
 			filter_stop_signal: Arc::new(AtomicBool::new(false)),
 			sender: sender.clone(),
 		}
 	}
 
 	pub fn is_pending(&self) -> bool {
-		let mut b = self.is_pending_local.borrow_mut();
-		if *b {
-			*b = self.fetch() == FilterStatus::Filtering;
-			*b
-		} else {
-			false
-		}
+		!self.filter_finished.load(Ordering::Relaxed)
 	}
 
 	/// `filter_strings` should be split by or them and, for example,
@@ -325,7 +317,6 @@ impl AsyncCommitFilterer {
 
 		let filter_thread_mutex =
 			Arc::clone(&self.filter_thread_mutex);
-		self.is_pending_local.replace(true);
 
 		let tags =
 			Self::get_tags(&filter_strings, &mut self.git_tags)?;
@@ -401,8 +392,6 @@ impl AsyncCommitFilterer {
 	/// Stop the filter if one was running, otherwise does nothing.
 	pub fn stop_filter(&self) {
 		self.filter_stop_signal.store(true, Ordering::Relaxed);
-		self.is_pending_local.replace(false);
-		self.filter_finished.store(true, Ordering::Relaxed);
 	}
 
 	pub fn get_filter_items(
