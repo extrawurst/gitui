@@ -1,8 +1,6 @@
 use crate::{
 	components::{
-		async_commit_filter::{
-			AsyncCommitFilterer, FilterBy, FilterStatus,
-		},
+		async_commit_filter::{AsyncCommitFilterer, FilterBy},
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitDetailsComponent, CommitList, Component,
 		DrawableComponent, EventState, FileTreeOpen,
@@ -114,11 +112,15 @@ impl Revlog {
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
 			let log_changed = if self.is_filtering {
+				false
+			} else {
+				self.git_log.fetch()? == FetchStatus::Started
+			};
+
+			if self.is_filtering {
 				self.list.set_total_count(self.async_filter.count());
-				self.async_filter.fetch() == FilterStatus::Filtering
 			} else {
 				self.list.set_total_count(self.git_log.count()?);
-				self.git_log.fetch()? == FetchStatus::Started
 			};
 
 			let selection = self.list.selection();
@@ -315,6 +317,7 @@ impl Revlog {
 					.map_err(|e| anyhow::anyhow!(e.to_string()))?;
 				self.is_filtering = true;
 			}
+			self.list.clear();
 			return self.update();
 		}
 		Ok(())

@@ -5,7 +5,7 @@ use asyncgit::{
 };
 use bitflags::bitflags;
 use crossbeam_channel::Sender;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, marker::PhantomData};
 use std::{
 	sync::{
 		atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -62,12 +62,6 @@ impl TryFrom<char> for FilterBy {
 	}
 }
 
-#[derive(PartialEq, Eq)]
-pub enum FilterStatus {
-	Filtering,
-	Finished,
-}
-
 pub struct AsyncCommitFilterer {
 	repo: RepoPathRef,
 	git_log: AsyncLog,
@@ -80,6 +74,9 @@ pub struct AsyncCommitFilterer {
 	filter_stop_signal: Arc<AtomicBool>,
 	filter_thread_mutex: Arc<Mutex<()>>,
 	sender: Sender<AsyncGitNotification>,
+
+	/// `start_filter` logic relies on it being non-reentrant.
+	_non_sync: PhantomData<std::cell::Cell<()>>,
 }
 
 impl AsyncCommitFilterer {
@@ -99,6 +96,7 @@ impl AsyncCommitFilterer {
 			filter_thread_mutex: Arc::new(Mutex::new(())),
 			filter_stop_signal: Arc::new(AtomicBool::new(false)),
 			sender: sender.clone(),
+			_non_sync: PhantomData,
 		}
 	}
 
@@ -305,7 +303,17 @@ impl AsyncCommitFilterer {
 	) -> Result<()> {
 		self.stop_filter();
 
+		// `stop_filter` blocks until the previous threads finish, and
+		// Self is !Sync, so two threads cannot be spawn at the same
+		// time.
+		//
+		// We rely on these assumptions to keep `filtered_commits`
+		// consistent.
+
 		let filtered_commits = Arc::clone(&self.filtered_commits);
+
+		filtered_commits.lock().expect("mutex poisoned").clear();
+
 		let filter_count = Arc::clone(&self.filter_count);
 		let async_log = self.git_log.clone();
 		let filter_finished = Arc::clone(&self.filter_finished);
@@ -331,7 +339,6 @@ impl AsyncCommitFilterer {
 
 			filter_finished.store(false, Ordering::Relaxed);
 			filter_count.store(0, Ordering::Relaxed);
-			filtered_commits.lock().expect("mutex poisoned").clear();
 			let mut cur_index: usize = 0;
 			let result = loop {
 				if filter_stop_signal.load(Ordering::Relaxed) {
@@ -389,9 +396,13 @@ impl AsyncCommitFilterer {
 		Ok(())
 	}
 
-	/// Stop the filter if one was running, otherwise does nothing.
+	/// Stop the filter thread if one was running, otherwise does nothing. This blocks until the
+	/// filter thread is finished.
 	pub fn stop_filter(&self) {
 		self.filter_stop_signal.store(true, Ordering::Relaxed);
+
+		// wait for the filter thread to finish
+		drop(self.filter_thread_mutex.lock());
 	}
 
 	pub fn get_filter_items(
@@ -425,13 +436,5 @@ impl AsyncCommitFilterer {
 
 	pub fn count(&self) -> usize {
 		self.filter_count.load(Ordering::Relaxed)
-	}
-
-	pub fn fetch(&self) -> FilterStatus {
-		if self.filter_finished.load(Ordering::Relaxed) {
-			FilterStatus::Finished
-		} else {
-			FilterStatus::Filtering
-		}
 	}
 }
