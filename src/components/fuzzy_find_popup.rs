@@ -1,6 +1,7 @@
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, ScrollType, TextInputComponent,
+	DrawableComponent, EventState, FuzzyFinderTarget, ScrollType,
+	TextInputComponent,
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
@@ -10,32 +11,32 @@ use crate::{
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
-use asyncgit::sync::TreeFile;
 use crossterm::event::Event;
 use fuzzy_matcher::FuzzyMatcher;
 use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Margin, Rect},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Clear},
 	Frame,
 };
 use std::borrow::Cow;
 
-pub struct FileFindPopup {
+pub struct FuzzyFindPopup {
 	queue: Queue,
 	visible: bool,
 	find_text: TextInputComponent,
 	query: Option<String>,
 	theme: SharedTheme,
-	files: Vec<TreeFile>,
+	contents: Vec<String>,
 	selection: usize,
 	selected_index: Option<usize>,
-	files_filtered: Vec<(usize, Vec<usize>)>,
+	filtered: Vec<(usize, Vec<usize>)>,
 	key_config: SharedKeyConfig,
+	target: Option<FuzzyFinderTarget>,
 }
 
-impl FileFindPopup {
+impl FuzzyFindPopup {
 	///
 	pub fn new(
 		queue: &Queue,
@@ -57,11 +58,12 @@ impl FileFindPopup {
 			query: None,
 			find_text,
 			theme,
-			files: Vec::new(),
-			files_filtered: Vec::new(),
+			contents: Vec::new(),
+			filtered: Vec::new(),
 			selected_index: None,
 			key_config,
 			selection: 0,
+			target: None,
 		}
 	}
 
@@ -82,31 +84,29 @@ impl FileFindPopup {
 	fn set_query(&mut self, query: Option<String>) {
 		self.query = query;
 
-		self.files_filtered.clear();
+		self.filtered.clear();
 
 		if let Some(q) = &self.query {
 			let matcher =
 				fuzzy_matcher::skim::SkimMatcherV2::default();
 
-			let mut files = self
-				.files
+			let mut contents = self
+				.contents
 				.iter()
 				.enumerate()
 				.filter_map(|a| {
-					a.1.path.to_str().and_then(|path| {
-						matcher.fuzzy_indices(path, q).map(
-							|(score, indices)| (score, a.0, indices),
-						)
-					})
+					matcher
+						.fuzzy_indices(a.1, q)
+						.map(|(score, indices)| (score, a.0, indices))
 				})
 				.collect::<Vec<(_, _, _)>>();
 
-			files.sort_by(|(score1, _, _), (score2, _, _)| {
+			contents.sort_by(|(score1, _, _), (score2, _, _)| {
 				score2.cmp(score1)
 			});
 
-			self.files_filtered.extend(
-				files.into_iter().map(|entry| (entry.1, entry.2)),
+			self.filtered.extend(
+				contents.into_iter().map(|entry| (entry.1, entry.2)),
 			);
 		}
 
@@ -116,27 +116,37 @@ impl FileFindPopup {
 
 	fn refresh_selection(&mut self) {
 		let selection =
-			self.files_filtered.get(self.selection).map(|a| a.0);
+			self.filtered.get(self.selection).map(|a| a.0);
 
 		if self.selected_index != selection {
 			self.selected_index = selection;
 
-			let file = self
-				.selected_index
-				.and_then(|index| self.files.get(index))
-				.map(|f| f.path.clone());
-
-			self.queue.push(InternalEvent::FileFinderChanged(file));
+			if let Some(idx) = self.selected_index {
+				if let Some(target) = self.target {
+					self.queue.push(
+						InternalEvent::FuzzyFinderChanged(
+							idx,
+							self.contents[idx].clone(),
+							target,
+						),
+					);
+				}
+			}
 		}
 	}
 
-	pub fn open(&mut self, files: &[TreeFile]) -> Result<()> {
+	pub fn open(
+		&mut self,
+		contents: Vec<String>,
+		target: FuzzyFinderTarget,
+	) -> Result<()> {
 		self.show()?;
 		self.find_text.show()?;
 		self.find_text.set_text(String::new());
 		self.query = None;
-		if self.files != *files {
-			self.files = files.to_owned();
+		self.target = Some(target);
+		if self.contents != contents {
+			self.contents = contents;
 		}
 		self.update_query();
 
@@ -151,7 +161,7 @@ impl FileFindPopup {
 		};
 
 		let new_selection = new_selection
-			.clamp(0, self.files_filtered.len().saturating_sub(1));
+			.clamp(0, self.filtered.len().saturating_sub(1));
 
 		if new_selection != self.selection {
 			self.selection = new_selection;
@@ -163,7 +173,7 @@ impl FileFindPopup {
 	}
 }
 
-impl DrawableComponent for FileFindPopup {
+impl DrawableComponent for FuzzyFindPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -172,7 +182,7 @@ impl DrawableComponent for FileFindPopup {
 		if self.is_visible() {
 			const MAX_SIZE: (u16, u16) = (50, 20);
 
-			let any_hits = !self.files_filtered.is_empty();
+			let any_hits = !self.filtered.is_empty();
 
 			let area = ui::centered_rect_absolute(
 				MAX_SIZE.0, MAX_SIZE.1, area,
@@ -222,28 +232,21 @@ impl DrawableComponent for FileFindPopup {
 			self.find_text.draw(f, chunks[0])?;
 
 			if any_hits {
-				let title =
-					format!("Hits: {}", self.files_filtered.len());
+				let title = format!("Hits: {}", self.filtered.len());
 
 				let height = usize::from(chunks[1].height);
 				let width = usize::from(chunks[1].width);
 
-				let items = self
-					.files_filtered
-					.iter()
-					.take(height)
-					.map(|(idx, indicies)| {
+				let items = self.filtered.iter().take(height).map(
+					|(idx, indicies)| {
 						let selected = self
 							.selected_index
 							.map_or(false, |index| index == *idx);
 						let full_text = trim_length_left(
-							self.files[*idx]
-								.path
-								.to_str()
-								.unwrap_or_default(),
+							&self.contents[*idx],
 							width,
 						);
-						Spans::from(
+						Line::from(
 							full_text
 								.char_indices()
 								.map(|(c_idx, c)| {
@@ -257,7 +260,8 @@ impl DrawableComponent for FileFindPopup {
 								})
 								.collect::<Vec<_>>(),
 						)
-					});
+					},
+				);
 
 				ui::draw_list_block(
 					f,
@@ -276,7 +280,7 @@ impl DrawableComponent for FileFindPopup {
 	}
 }
 
-impl Component for FileFindPopup {
+impl Component for FuzzyFindPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

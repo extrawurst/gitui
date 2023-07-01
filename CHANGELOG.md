@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Breaking Changes
+* Do you use a custom theme?
+
+  The way themes work got changed and simplified ([see docs](https://github.com/extrawurst/gitui/blob/master/THEMES.md) for more info):
+
+  * The format of `theme.ron` has changed: you only specify the colors etc. that should differ from their default value
+  * Future additions of colors etc. will not break existing themes anymore
+
+### Added
+* support 'n'/'p' key to move to the next/prev hunk in diff component [[@hamflx](https://github.com/hamflx)] ([#1523](https://github.com/extrawurst/gitui/issues/1523))
+* simplify theme overrides [[@cruessler](https://github.com/cruessler)] ([#1367](https://github.com/extrawurst/gitui/issues/1367))
+
+### Fixes
+* fix commit dialog char count for multibyte characters ([#1726](https://github.com/extrawurst/gitui/issues/1726))
+
+## [0.23.0] - 2022-06-19
+
 **reset to commit**
 
 ![reset](assets/reset_in_log.gif)
@@ -18,9 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **fuzzy find branch**
 
 ![fuzzy-branch](assets/fuzzy-find-branch.gif)
-
-### Changed
-* minimum supported rust version bumped to 1.65 (thank you `time`)
 
 ### Breaking Change
 * `focus_XYZ` key bindings are merged into the `move_XYZ` set, so only one way to bind arrow-like keys from now on ([#1539](https://github.com/extrawurst/gitui/issues/1539))
@@ -54,9 +68,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * crashes on entering submodules ([#1510](https://github.com/extrawurst/gitui/issues/1510))
 * fix race issue: revlog messages sometimes appear empty ([#1473](https://github.com/extrawurst/gitui/issues/1473))
 * default to tick-based updates [[@cruessler](https://github.com/cruessler)] ([#1444](https://github.com/extrawurst/gitui/issues/1444))
+* add support for options handling in log and stashes views [[@kamillo](https://github.com/kamillo)] ([#1661](https://github.com/extrawurst/gitui/issues/1661))
 
 ### Changed
-* minimum supported rust version bumped to 1.64 (thank you `clap`)
+* minimum supported rust version bumped to 1.65 (thank you `time` crate)
 
 ## [0.22.1] - 2022-11-22
 

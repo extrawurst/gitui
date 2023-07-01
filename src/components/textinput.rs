@@ -17,11 +17,12 @@ use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	style::Modifier,
-	text::{Spans, Text},
+	text::{Line, Text},
 	widgets::{Clear, Paragraph},
 	Frame,
 };
 use std::{cell::Cell, collections::HashMap, ops::Range};
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(PartialEq, Eq)]
 pub enum InputType {
@@ -43,6 +44,7 @@ pub struct TextInputComponent {
 	input_type: InputType,
 	current_area: Cell<Rect>,
 	embed: bool,
+	char_count: usize,
 }
 
 impl TextInputComponent {
@@ -66,6 +68,7 @@ impl TextInputComponent {
 			input_type: InputType::Multiline,
 			current_area: Cell::new(Rect::default()),
 			embed: false,
+			char_count: 0,
 		}
 	}
 
@@ -80,6 +83,7 @@ impl TextInputComponent {
 	/// Clear the `msg`.
 	pub fn clear(&mut self) {
 		self.msg.clear();
+		self.update_count();
 		self.cursor_position = 0;
 	}
 
@@ -203,6 +207,7 @@ impl TextInputComponent {
 		if self.cursor_position > 0 {
 			self.decr_cursor();
 			self.msg.remove(self.cursor_position);
+			self.update_count();
 		}
 	}
 
@@ -210,6 +215,7 @@ impl TextInputComponent {
 	pub fn set_text(&mut self, msg: String) {
 		self.msg = msg;
 		self.cursor_position = 0;
+		self.update_count();
 	}
 
 	/// Set the `title`.
@@ -237,7 +243,7 @@ impl TextInputComponent {
 				Text::styled(text_before_cursor, style),
 			);
 			if ends_in_nl {
-				txt.lines.push(Spans::default());
+				txt.lines.push(Line::default());
 			}
 		}
 
@@ -303,10 +309,12 @@ impl TextInputComponent {
 	}
 
 	fn draw_char_count<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-		let count = self.msg.len();
-		if count > 0 {
-			let w = Paragraph::new(format!("[{count} chars]"))
-				.alignment(Alignment::Right);
+		if self.char_count > 0 {
+			let w = Paragraph::new(format!(
+				"[{} chars]",
+				self.char_count
+			))
+			.alignment(Alignment::Right);
 
 			let mut rect = {
 				let mut rect = r;
@@ -323,6 +331,10 @@ impl TextInputComponent {
 			f.render_widget(w, rect);
 		}
 	}
+
+	fn update_count(&mut self) {
+		self.char_count = self.msg.graphemes(true).count();
+	}
 }
 
 // merges last line of `txt` with first of `append` so we do not generate unneeded newlines
@@ -330,7 +342,7 @@ fn text_append<'a>(txt: Text<'a>, append: Text<'a>) -> Text<'a> {
 	let mut txt = txt;
 	if let Some(last_line) = txt.lines.last_mut() {
 		if let Some(first_line) = append.lines.first() {
-			last_line.0.extend(first_line.0.clone());
+			last_line.spans.extend(first_line.spans.clone());
 		}
 
 		if append.lines.len() > 1 {
@@ -432,6 +444,7 @@ impl Component for TextInputComponent {
 				match e.code {
 					KeyCode::Char(c) if !is_ctrl => {
 						self.msg.insert(self.cursor_position, c);
+						self.update_count();
 						self.incr_cursor();
 						return Ok(EventState::Consumed);
 					}
@@ -441,6 +454,7 @@ impl Component for TextInputComponent {
 								self.cursor_position..pos,
 								"",
 							);
+							self.update_count();
 						}
 						return Ok(EventState::Consumed);
 					}
@@ -455,6 +469,7 @@ impl Component for TextInputComponent {
 								"",
 							);
 							self.cursor_position = pos;
+							self.update_count();
 						}
 						return Ok(EventState::Consumed);
 					}
@@ -475,6 +490,7 @@ impl Component for TextInputComponent {
 					KeyCode::Delete => {
 						if self.cursor_position < self.msg.len() {
 							self.msg.remove(self.cursor_position);
+							self.update_count();
 						}
 						return Ok(EventState::Consumed);
 					}
@@ -564,9 +580,12 @@ mod tests {
 
 		let txt = comp.get_draw_text();
 
-		assert_eq!(txt.lines[0].0.len(), 1);
-		assert_eq!(get_text(&txt.lines[0].0[0]), Some("a"));
-		assert_eq!(get_style(&txt.lines[0].0[0]), Some(&underlined));
+		assert_eq!(txt.lines[0].spans.len(), 1);
+		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
+		assert_eq!(
+			get_style(&txt.lines[0].spans[0]),
+			Some(&underlined)
+		);
 	}
 
 	#[test]
@@ -590,18 +609,18 @@ mod tests {
 
 		let txt = comp.get_draw_text();
 
-		assert_eq!(txt.lines[0].0.len(), 2);
-		assert_eq!(get_text(&txt.lines[0].0[0]), Some("a"));
+		assert_eq!(txt.lines[0].spans.len(), 2);
+		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
 		assert_eq!(
-			get_style(&txt.lines[0].0[0]),
+			get_style(&txt.lines[0].spans[0]),
 			Some(&not_underlined)
 		);
 		assert_eq!(
-			get_text(&txt.lines[0].0[1]),
+			get_text(&txt.lines[0].spans[1]),
 			Some(symbol::WHITESPACE)
 		);
 		assert_eq!(
-			get_style(&txt.lines[0].0[1]),
+			get_style(&txt.lines[0].spans[1]),
 			Some(&underlined_whitespace)
 		);
 	}
@@ -627,13 +646,19 @@ mod tests {
 		let txt = comp.get_draw_text();
 
 		assert_eq!(txt.lines.len(), 2);
-		assert_eq!(txt.lines[0].0.len(), 2);
-		assert_eq!(txt.lines[1].0.len(), 2);
-		assert_eq!(get_text(&txt.lines[0].0[0]), Some("a"));
-		assert_eq!(get_text(&txt.lines[0].0[1]), Some("\u{21b5}"));
-		assert_eq!(get_style(&txt.lines[0].0[1]), Some(&underlined));
-		assert_eq!(get_text(&txt.lines[1].0[0]), Some(""));
-		assert_eq!(get_text(&txt.lines[1].0[1]), Some("b"));
+		assert_eq!(txt.lines[0].spans.len(), 2);
+		assert_eq!(txt.lines[1].spans.len(), 2);
+		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
+		assert_eq!(
+			get_text(&txt.lines[0].spans[1]),
+			Some("\u{21b5}")
+		);
+		assert_eq!(
+			get_style(&txt.lines[0].spans[1]),
+			Some(&underlined)
+		);
+		assert_eq!(get_text(&txt.lines[1].spans[0]), Some(""));
+		assert_eq!(get_text(&txt.lines[1].spans[1]), Some("b"));
 	}
 
 	#[test]
@@ -656,12 +681,15 @@ mod tests {
 		let txt = comp.get_draw_text();
 
 		assert_eq!(txt.lines.len(), 2);
-		assert_eq!(txt.lines[0].0.len(), 2);
-		assert_eq!(txt.lines[1].0.len(), 1);
-		assert_eq!(get_text(&txt.lines[0].0[0]), Some("a"));
-		assert_eq!(get_text(&txt.lines[0].0[1]), Some(""));
-		assert_eq!(get_style(&txt.lines[0].0[0]), Some(&underlined));
-		assert_eq!(get_text(&txt.lines[1].0[0]), Some("b"));
+		assert_eq!(txt.lines[0].spans.len(), 2);
+		assert_eq!(txt.lines[1].spans.len(), 1);
+		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
+		assert_eq!(get_text(&txt.lines[0].spans[1]), Some(""));
+		assert_eq!(
+			get_style(&txt.lines[0].spans[0]),
+			Some(&underlined)
+		);
+		assert_eq!(get_text(&txt.lines[1].spans[0]), Some("b"));
 	}
 
 	#[test]

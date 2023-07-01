@@ -27,7 +27,7 @@ use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
-	text::{Span, Spans, Text},
+	text::{Line, Span, Text},
 	widgets::{Block, Borders, Cell, Clear, Row, Table, TableState},
 	Frame,
 };
@@ -314,7 +314,7 @@ impl FileRevlogComponent {
 		self.items
 			.iter()
 			.map(|entry| {
-				let spans = Spans::from(vec![
+				let spans = Line::from(vec![
 					Span::styled(
 						entry.hash_short.to_string(),
 						self.theme.commit_hash(false),
