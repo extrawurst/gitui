@@ -21,6 +21,7 @@ use ratatui::{
 	Frame,
 };
 use std::borrow::Cow;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub struct FuzzyFindPopup {
 	queue: Queue,
@@ -248,19 +249,22 @@ impl DrawableComponent for FuzzyFindPopup {
 								width,
 							);
 							let trim_length = self.contents[*idx]
-								.len() - full_text
-								.len();
+								.graphemes(true)
+								.count() - full_text
+								.graphemes(true)
+								.count();
 							Line::from(
 								full_text
-									.char_indices()
+									.graphemes(true)
+									.enumerate()
 									.map(|(c_idx, c)| {
 										Span::styled(
-										Cow::from(c.to_string()),
-										self.theme.text(
-											selected,
-											indicies.contains(&(c_idx + trim_length)),
-										),
-									)
+											Cow::from(c.to_string()),
+											self.theme.text(
+												selected,
+												indicies.contains(&(c_idx + trim_length)),
+											),
+										)
 									})
 									.collect::<Vec<_>>(),
 							)
