@@ -57,7 +57,7 @@ which = "4.4"
 
 # pprof is not available on windows
 [target.'cfg(not(windows))'.dependencies]
-pprof = { version = "0.11", features = ["flamegraph"], optional = true }
+pprof = { version = "0.12", features = ["flamegraph"], optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4"
