@@ -253,7 +253,7 @@ impl Revlog {
 	///
 	/// Currently parentheses in the `filter_by_str` are not supported.
 	/// They should be removed by `Self::pre_process_string`.
-	fn get_what_to_filter_by(
+	pub fn get_what_to_filter_by(
 		filter_by_str: &str,
 	) -> Vec<Vec<(String, FilterBy)>> {
 		let mut search_vec = Vec::new();
@@ -262,7 +262,7 @@ impl Revlog {
 			for split_sub in or.split("&&").map(str::trim) {
 				if !split_sub.starts_with(':') {
 					and_vec.push((
-						split_sub.to_string(),
+						split_sub.to_lowercase(),
 						FilterBy::everywhere(),
 					));
 					continue;
@@ -284,14 +284,17 @@ impl Revlog {
 					to_filter_by |= FilterBy::everywhere();
 				}
 
-				and_vec.push((
-					split_str
-						.next()
-						.unwrap_or("")
-						.trim_start()
-						.to_string(),
-					to_filter_by,
-				));
+				let mut s = split_str
+					.next()
+					.unwrap_or("")
+					.trim_start()
+					.to_string();
+
+				if !to_filter_by.contains(FilterBy::CASE_SENSITIVE) {
+					s = s.to_lowercase();
+				}
+
+				and_vec.push((s, to_filter_by));
 			}
 			search_vec.push(and_vec.clone());
 			and_vec.clear();
@@ -779,6 +782,11 @@ mod test {
 		);
 
 		assert_eq!(
+			Revlog::get_what_to_filter_by("Foo"),
+			vec![vec![("foo".to_owned(), FilterBy::everywhere())]]
+		);
+
+		assert_eq!(
 			Revlog::get_what_to_filter_by(":s foo"),
 			vec![vec![("foo".to_owned(), FilterBy::SHA)]]
 		);
@@ -789,6 +797,18 @@ mod test {
 				"foo".to_owned(),
 				FilterBy::SHA | FilterBy::MESSAGE
 			)]]
+		);
+
+		assert_eq!(
+			Revlog::get_what_to_filter_by(": Foo"),
+			vec![vec![("foo".to_owned(), FilterBy::everywhere())]]
+		);
+		assert_eq!(
+			Revlog::get_what_to_filter_by(":c Foo"),
+			vec![vec![(
+				"Foo".to_owned(),
+				FilterBy::everywhere() | FilterBy::CASE_SENSITIVE
+			)]],
 		);
 
 		assert_eq!(
@@ -857,6 +877,17 @@ mod test {
 					("bar".to_owned(), FilterBy::everywhere())
 				],
 				vec![("baz".to_owned(), FilterBy::MESSAGE)]
+			]
+		);
+
+		assert_eq!(
+			Revlog::get_what_to_filter_by("foo || :m bar && baz"),
+			vec![
+				vec![("foo".to_owned(), FilterBy::everywhere())],
+				vec![
+					("bar".to_owned(), FilterBy::MESSAGE),
+					("baz".to_owned(), FilterBy::everywhere())
+				]
 			]
 		);
 	}

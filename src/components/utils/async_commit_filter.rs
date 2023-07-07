@@ -5,7 +5,7 @@ use asyncgit::{
 };
 use bitflags::bitflags;
 use crossbeam_channel::Sender;
-use std::{convert::TryFrom, marker::PhantomData};
+use std::{borrow::Cow, convert::TryFrom, marker::PhantomData};
 use std::{
 	sync::{
 		atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -120,156 +120,75 @@ impl AsyncCommitFilterer {
 		vec_commit_info
 			.into_iter()
 			.filter(|commit| {
-				for to_and in filter_strings {
-					let mut is_and = true;
-					for (s, filter) in to_and {
-						if filter.contains(FilterBy::CASE_SENSITIVE) {
-							is_and =
-								if filter.contains(FilterBy::NOT) {
-									(filter.contains(FilterBy::TAGS)
-										&& tags.as_ref().map_or(
-											false,
-											|t| {
-												t.get(&commit.id)
-													.map_or(
-													true,
-													|commit_tags| {
-														commit_tags.iter().filter(|tag|{
-                                                !tag.name.contains(s)
-                                            }).count() > 0
-													},
-												)
-											},
-										)) || (filter
-										.contains(FilterBy::SHA)
-										&& !commit
-											.id
-											.to_string()
-											.contains(s)) || (filter
-										.contains(FilterBy::AUTHOR)
-										&& !commit.author.contains(s))
-										|| (filter.contains(
-											FilterBy::MESSAGE,
-										) && !commit
-											.message
-											.contains(s))
-								} else {
-									(filter.contains(FilterBy::TAGS)
-										&& tags.as_ref().map_or(
-											false,
-											|t| {
-												t.get(&commit.id)
-													.map_or(
-													false,
-													|commit_tags| {
-														commit_tags.iter().filter(|tag|{
-                                            tag.name.contains(s)
-                                        }).count() > 0
-													},
-												)
-											},
-										)) || (filter
-										.contains(FilterBy::SHA)
-										&& commit
-											.id
-											.to_string()
-											.contains(s)) || (filter
-										.contains(FilterBy::AUTHOR)
-										&& commit.author.contains(s))
-										|| (filter.contains(
-											FilterBy::MESSAGE,
-										) && commit
-											.message
-											.contains(s))
-								}
-						} else {
-							is_and = if filter.contains(FilterBy::NOT)
-							{
-								(filter.contains(FilterBy::TAGS)
-									&& tags.as_ref().map_or(
-										false,
-										|t| {
-											t.get(&commit.id).map_or(
-												true,
-												|commit_tags| {
-													commit_tags
-														.iter()
-														.filter(
-															|tag| {
-																!tag.name.to_lowercase().contains(&s.to_lowercase())
-															},
-														)
-														.count() > 0
-												},
-											)
-										},
-									)) || (filter.contains(FilterBy::SHA)
-									&& !commit
-										.id
-										.to_string()
-										.to_lowercase()
-										.contains(&s.to_lowercase()))
-									|| (filter
-										.contains(FilterBy::AUTHOR)
-										&& !commit
-											.author
-											.to_lowercase()
-											.contains(
-												&s.to_lowercase(),
-											)) || (filter
-									.contains(FilterBy::MESSAGE)
-									&& !commit
-										.message
-										.to_lowercase()
-										.contains(&s.to_lowercase()))
-							} else {
-								(filter.contains(FilterBy::TAGS)
-									&& tags.as_ref().map_or(
-										false,
-										|t| {
-											t.get(&commit.id).map_or(
-												false,
-												|commit_tags| {
-													commit_tags
-														.iter()
-														.filter(
-															|tag| {
-																tag.name.to_lowercase().contains(&s.to_lowercase())
-															},
-														)
-														.count() > 0
-												},
-											)
-										},
-									)) || (filter.contains(FilterBy::SHA)
-									&& commit
-										.id
-										.to_string()
-										.to_lowercase()
-										.contains(&s.to_lowercase()))
-									|| (filter
-										.contains(FilterBy::AUTHOR)
-										&& commit
-											.author
-											.to_lowercase()
-											.contains(
-												&s.to_lowercase(),
-											)) || (filter
-									.contains(FilterBy::MESSAGE)
-									&& commit
-										.message
-										.to_lowercase()
-										.contains(&s.to_lowercase()))
-							}
-						}
-					}
-					if is_and {
-						return true;
-					}
-				}
-				false
+				Self::filter_one(filter_strings, tags, commit)
 			})
 			.collect()
+	}
+
+	fn filter_one(
+		filter_strings: &[Vec<(String, FilterBy)>],
+		tags: &Option<Tags>,
+		commit: &CommitInfo,
+	) -> bool {
+		for to_and in filter_strings {
+			if Self::filter_and(to_and, tags, commit) {
+				return true;
+			}
+		}
+		false
+	}
+
+	fn filter_and(
+		to_and: &Vec<(String, FilterBy)>,
+		tags: &Option<Tags>,
+		commit: &CommitInfo,
+	) -> bool {
+		for (s, filter) in to_and {
+			let by_sha = filter.contains(FilterBy::SHA);
+			let by_aut = filter.contains(FilterBy::AUTHOR);
+			let by_mes = filter.contains(FilterBy::MESSAGE);
+			let by_tag = filter.contains(FilterBy::TAGS);
+
+			let id: String;
+			let author: Cow<str>;
+			let message: Cow<str>;
+			if filter.contains(FilterBy::CASE_SENSITIVE) {
+				id = commit.id.to_string();
+				author = Cow::Borrowed(&commit.author);
+				message = Cow::Borrowed(&commit.message);
+			} else {
+				id = commit.id.to_string().to_lowercase();
+				author = Cow::Owned(commit.author.to_lowercase());
+				message = Cow::Owned(commit.message.to_lowercase());
+			};
+
+			let is_match = {
+				let tag_contains = tags.as_ref().map_or(false, |t| {
+					t.get(&commit.id).map_or(false, |commit_tags| {
+						commit_tags
+							.iter()
+							.filter(|tag| tag.name.contains(s))
+							.count() > 0
+					})
+				});
+
+				(by_tag && tag_contains)
+					|| (by_sha && id.contains(s))
+					|| (by_aut && author.contains(s))
+					|| (by_mes && message.contains(s))
+			};
+
+			let is_match = if filter.contains(FilterBy::NOT) {
+				!is_match
+			} else {
+				is_match
+			};
+
+			if !is_match {
+				return false;
+			}
+		}
+		true
 	}
 
 	/// If the filtering string contain filtering by tags
@@ -436,5 +355,130 @@ impl AsyncCommitFilterer {
 
 	pub fn count(&self) -> usize {
 		self.filter_count.load(Ordering::Relaxed)
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use asyncgit::sync::{CommitId, CommitInfo};
+
+	use crate::tabs::Revlog;
+
+	use super::AsyncCommitFilterer;
+
+	fn commit(
+		time: i64,
+		message: &str,
+		author: &str,
+		id: &str,
+	) -> CommitInfo {
+		CommitInfo {
+			message: message.to_string(),
+			time,
+			author: author.to_string(),
+			id: CommitId::from_hex_str(id)
+				.expect("invalid commit id"),
+		}
+	}
+
+	fn filter(
+		commits: Vec<CommitInfo>,
+		filter: &str,
+	) -> Vec<CommitInfo> {
+		let filter_string = Revlog::get_what_to_filter_by(filter);
+		dbg!(&filter_string);
+		AsyncCommitFilterer::filter(commits, &None, &filter_string)
+	}
+
+	#[test]
+	fn test_filter() {
+		let commits = vec![
+			commit(0, "a", "b", "0"),
+			commit(1, "0", "0", "a"),
+			commit(2, "0", "A", "b"),
+			commit(3, "0", "0", "0"),
+		];
+
+		let filtered = |indices: &[usize]| {
+			indices
+				.iter()
+				.map(|i| commits[*i].clone())
+				.collect::<Vec<_>>()
+		};
+
+		assert_eq!(
+			filter(commits.clone(), "a"), //
+			filtered(&[0, 1, 2])
+		);
+		assert_eq!(
+			filter(commits.clone(), "A"), //
+			filtered(&[0, 1, 2])
+		);
+
+		assert_eq!(
+			filter(commits.clone(), ":m a"), //
+			filtered(&[0]),
+		);
+		assert_eq!(
+			filter(commits.clone(), ":s a"), //
+			filtered(&[1]),
+		);
+		assert_eq!(
+			filter(commits.clone(), ":a a"), //
+			filtered(&[2]),
+		);
+
+		assert_eq!(
+			filter(commits.clone(), ":! a"), //
+			filtered(&[3]),
+		);
+
+		assert_eq!(
+			filter(commits.clone(), ":!m a"), //
+			filtered(&[1, 2, 3]),
+		);
+		assert_eq!(
+			filter(commits.clone(), ":!s a"), //
+			filtered(&[0, 2, 3]),
+		);
+		assert_eq!(
+			filter(commits.clone(), ":!a a"), //
+			filtered(&[0, 1, 3]),
+		);
+
+		assert_eq!(
+			filter(commits.clone(), "a && b"), //
+			filtered(&[0, 2]),
+		);
+
+		assert_eq!(
+			filter(commits.clone(), ":m a && :a b"), //
+			filtered(&[0]),
+		);
+		assert_eq!(
+			filter(commits.clone(), "b && :!m a"), //
+			filtered(&[2]),
+		);
+		assert_eq!(
+			filter(commits.clone(), ":! b && a"), //
+			filtered(&[1]),
+		);
+		assert_eq!(
+			filter(commits.clone(), ":! b && :! a"), //
+			filtered(&[3]),
+		);
+
+		assert_eq!(
+			filter(commits.clone(), ":c a"), //
+			filtered(&[0, 1]),
+		);
+		assert_eq!(
+			filter(commits.clone(), ":c A"), //
+			filtered(&[2]),
+		);
+		assert_eq!(
+			filter(commits.clone(), ":!c a"), //
+			filtered(&[2, 3]),
+		);
 	}
 }

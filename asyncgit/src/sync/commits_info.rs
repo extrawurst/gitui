@@ -22,6 +22,17 @@ impl CommitId {
 		Self(id)
 	}
 
+	/// Parse a hex-formatted object id into an Oid structure.
+	///
+	/// # Errors
+	///
+	/// Returns an error if the string is empty, is longer than 40 hex
+	/// characters, or contains any non-hex characters.
+	pub fn from_hex_str(id: &str) -> Result<Self> {
+		let oid = Oid::from_str(id)?;
+		Ok(Self::new(oid))
+	}
+
 	///
 	pub(crate) const fn get_oid(self) -> Oid {
 		self.0
@@ -52,7 +63,7 @@ impl From<Oid> for CommitId {
 }
 
 ///
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitInfo {
 	///
 	pub message: String,
