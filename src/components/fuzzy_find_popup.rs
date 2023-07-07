@@ -21,6 +21,7 @@ use ratatui::{
 	Frame,
 };
 use std::borrow::Cow;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub struct FuzzyFindPopup {
 	queue: Queue,
@@ -204,15 +205,21 @@ impl FuzzyFindPopup {
 						.map_or(false, |index| index == *idx);
 					let full_text =
 						trim_length_left(&self.contents[*idx], width);
+					let trim_length =
+						self.contents[*idx].graphemes(true).count()
+							- full_text.graphemes(true).count();
 					Line::from(
 						full_text
-							.char_indices()
+							.graphemes(true)
+							.enumerate()
 							.map(|(c_idx, c)| {
 								Span::styled(
 									Cow::from(c.to_string()),
 									self.theme.text(
 										selected,
-										indicies.contains(&c_idx),
+										indicies.contains(
+											&(c_idx + trim_length),
+										),
 									),
 								)
 							})
