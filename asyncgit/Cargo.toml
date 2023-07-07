@@ -31,7 +31,7 @@ url = "2.4"
 [dev-dependencies]
 env_logger = "0.10"
 invalidstring = { path = "../invalidstring", version = "0.1" }
-pretty_assertions = "1.3"
+pretty_assertions = "1.4"
 serial_test = "1.0"
 tempfile = "3.4"
 
