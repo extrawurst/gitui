@@ -60,7 +60,7 @@ which = "4.4"
 pprof = { version = "0.11", features = ["flamegraph"], optional = true }
 
 [dev-dependencies]
-pretty_assertions = "1.3"
+pretty_assertions = "1.4"
 tempfile = "3.4"
 
 [badges]
