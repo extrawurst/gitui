@@ -172,6 +172,90 @@ impl FuzzyFindPopup {
 
 		false
 	}
+
+	#[inline]
+	fn draw_matches_list<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		mut area: Rect,
+	) {
+		{
+			// Block has two lines up and down which need to be considered
+			const HEIGHT_BLOCK_MARGIN: usize = 2;
+
+			let title = format!("Hits: {}", self.filtered.len());
+
+			let height = usize::from(area.height);
+			let width = usize::from(area.width);
+
+			let list_height =
+				height.saturating_sub(HEIGHT_BLOCK_MARGIN);
+
+			let scroll_skip =
+				self.selection.saturating_sub(list_height);
+
+			let items = self
+				.filtered
+				.iter()
+				.skip(scroll_skip)
+				.take(height)
+				.map(|(idx, indicies)| {
+					let selected = self
+						.selected_index
+						.map_or(false, |index| index == *idx);
+					let full_text =
+						trim_length_left(&self.contents[*idx], width);
+					let trim_length =
+						self.contents[*idx].graphemes(true).count()
+							- full_text.graphemes(true).count();
+					Line::from(
+						full_text
+							.graphemes(true)
+							.enumerate()
+							.map(|(c_idx, c)| {
+								Span::styled(
+									Cow::from(c.to_string()),
+									self.theme.text(
+										selected,
+										indicies.contains(
+											&(c_idx + trim_length),
+										),
+									),
+								)
+							})
+							.collect::<Vec<_>>(),
+					)
+				});
+
+			ui::draw_list_block(
+				f,
+				area,
+				Block::default()
+					.title(Span::styled(
+						title,
+						self.theme.title(true),
+					))
+					.borders(Borders::TOP),
+				items,
+			);
+
+			// Draw scrollbar when needed
+			if self.filtered.len() > list_height {
+				// Reset list area margin
+				area.width += 1;
+				area.height += 1;
+
+				ui::draw_scrollbar(
+					f,
+					area,
+					&self.theme,
+					self.filtered.len().saturating_sub(1),
+					self.selection,
+					ui::Orientation::Vertical,
+				);
+			}
+		}
+	}
 }
 
 impl DrawableComponent for FuzzyFindPopup {
@@ -233,55 +317,7 @@ impl DrawableComponent for FuzzyFindPopup {
 			self.find_text.draw(f, chunks[0])?;
 
 			if any_hits {
-				let title = format!("Hits: {}", self.filtered.len());
-
-				let height = usize::from(chunks[1].height);
-				let width = usize::from(chunks[1].width);
-
-				let items =
-					self.filtered.iter().take(height).map(
-						|(idx, indicies)| {
-							let selected = self
-								.selected_index
-								.map_or(false, |index| index == *idx);
-							let full_text = trim_length_left(
-								&self.contents[*idx],
-								width,
-							);
-							let trim_length = self.contents[*idx]
-								.graphemes(true)
-								.count() - full_text
-								.graphemes(true)
-								.count();
-							Line::from(
-								full_text
-									.graphemes(true)
-									.enumerate()
-									.map(|(c_idx, c)| {
-										Span::styled(
-											Cow::from(c.to_string()),
-											self.theme.text(
-												selected,
-												indicies.contains(&(c_idx + trim_length)),
-											),
-										)
-									})
-									.collect::<Vec<_>>(),
-							)
-						},
-					);
-
-				ui::draw_list_block(
-					f,
-					chunks[1],
-					Block::default()
-						.title(Span::styled(
-							title,
-							self.theme.title(true),
-						))
-						.borders(Borders::TOP),
-					items,
-				);
+				self.draw_matches_list(f, chunks[1]);
 			}
 		}
 		Ok(())
