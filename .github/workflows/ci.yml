@@ -208,7 +208,8 @@ jobs:
         
     - name: cargo-udeps
       run: |
-        cargo install --locked cargo-udeps
+        # cargo install --locked cargo-udeps
+        cargo install --git https://github.com/est31/cargo-udeps --locked
         cargo +nightly udeps --all-targets
 
 
