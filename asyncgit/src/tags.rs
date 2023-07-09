@@ -22,7 +22,7 @@ pub struct TagsResult {
 ///
 #[derive(Clone)]
 pub struct AsyncTags {
-	last: Option<(Instant, TagsResult)>,
+	last: Arc<Mutex<Option<(Instant, TagsResult)>>>,
 	sender: Sender<AsyncGitNotification>,
 	job: AsyncSingleJob<AsyncTagsJob>,
 	repo: RepoPath,
@@ -36,7 +36,7 @@ impl AsyncTags {
 	) -> Self {
 		Self {
 			repo,
-			last: None,
+			last: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
 			job: AsyncSingleJob::new(sender.clone()),
 		}
@@ -44,7 +44,11 @@ impl AsyncTags {
 
 	/// last fetched result
 	pub fn last(&self) -> Result<Option<Tags>> {
-		Ok(self.last.as_ref().map(|result| result.1.tags.clone()))
+		Ok(self
+			.last
+			.lock()?
+			.as_ref()
+			.map(|result| result.1.tags.clone()))
 	}
 
 	///
@@ -53,10 +57,12 @@ impl AsyncTags {
 	}
 
 	///
-	fn is_outdated(&self, dur: Duration) -> bool {
-		self.last
+	fn is_outdated(&self, dur: Duration) -> Result<bool> {
+		Ok(self
+			.last
+			.lock()?
 			.as_ref()
-			.map_or(true, |(last_time, _)| last_time.elapsed() > dur)
+			.map_or(true, |(last_time, _)| last_time.elapsed() > dur))
 	}
 
 	///
@@ -71,7 +77,7 @@ impl AsyncTags {
 			return Ok(());
 		}
 
-		let outdated = self.is_outdated(dur);
+		let outdated = self.is_outdated(dur)?;
 
 		if !force && !outdated {
 			return Ok(());
@@ -82,6 +88,7 @@ impl AsyncTags {
 		if outdated {
 			self.job.spawn(AsyncTagsJob::new(
 				self.last
+					.lock()?
 					.as_ref()
 					.map_or(0, |(_, result)| result.hash),
 				repo,
@@ -89,7 +96,7 @@ impl AsyncTags {
 
 			if let Some(job) = self.job.take_last() {
 				if let Some(Ok(result)) = job.result() {
-					self.last = Some(result);
+					*self.last.lock()? = Some(result);
 				}
 			}
 		} else {
