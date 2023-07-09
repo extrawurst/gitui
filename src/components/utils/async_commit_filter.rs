@@ -167,8 +167,7 @@ impl AsyncCommitFilterer {
 					t.get(&commit.id).map_or(false, |commit_tags| {
 						commit_tags
 							.iter()
-							.filter(|tag| tag.name.contains(s))
-							.count() > 0
+							.any(|tag| tag.name.contains(s))
 					})
 				});
 
@@ -360,7 +359,9 @@ impl AsyncCommitFilterer {
 
 #[cfg(test)]
 mod test {
-	use asyncgit::sync::{CommitId, CommitInfo};
+	use std::collections::BTreeMap;
+
+	use asyncgit::sync::{CommitId, CommitInfo, Tag, Tags};
 
 	use crate::tabs::Revlog;
 
@@ -393,10 +394,10 @@ mod test {
 	#[test]
 	fn test_filter() {
 		let commits = vec![
-			commit(0, "a", "b", "0"),
-			commit(1, "0", "0", "a"),
-			commit(2, "0", "A", "b"),
-			commit(3, "0", "0", "0"),
+			commit(0, "a", "b", "00"),
+			commit(1, "0", "0", "a1"),
+			commit(2, "0", "A", "b2"),
+			commit(3, "0", "0", "03"),
 		];
 
 		let filtered = |indices: &[usize]| {
@@ -479,6 +480,80 @@ mod test {
 		assert_eq!(
 			filter(commits.clone(), ":!c a"), //
 			filtered(&[2, 3]),
+		);
+	}
+
+	fn filter_with_tags(
+		commits: Vec<CommitInfo>,
+		tags: &Option<Tags>,
+		filter: &str,
+	) -> Vec<CommitInfo> {
+		let filter_string = Revlog::get_what_to_filter_by(filter);
+		dbg!(&filter_string);
+		AsyncCommitFilterer::filter(commits, tags, &filter_string)
+	}
+
+	#[test]
+	fn test_filter_with_tags() {
+		let commits = vec![
+			commit(0, "a", "b", "00"),
+			commit(1, "0", "0", "a1"),
+			commit(2, "0", "A", "b2"),
+			commit(3, "0", "0", "03"),
+		];
+
+		let filtered = |indices: &[usize]| {
+			indices
+				.iter()
+				.map(|i| commits[*i].clone())
+				.collect::<Vec<_>>()
+		};
+
+		let tags = {
+			let mut tags: BTreeMap<CommitId, Vec<Tag>> =
+				BTreeMap::new();
+			let mut tag = |index: usize, name: &str, annotation| {
+				tags.entry(commits[index].id).or_default().push(
+					Tag {
+						name: name.to_string(),
+						annotation,
+					},
+				);
+			};
+
+			tag(0, "v0", None);
+			tag(2, "v1", None);
+			tag(1, "ot", None);
+
+			tags
+		};
+		dbg!(&tags);
+		let tags = &Some(tags);
+
+		assert_eq!(
+			filter_with_tags(commits.clone(), tags, ":t v0"), //
+			filtered(&[0])
+		);
+		assert_eq!(
+			filter_with_tags(commits.clone(), tags, ":t v1"), //
+			filtered(&[2])
+		);
+		assert_eq!(
+			filter_with_tags(commits.clone(), tags, ":t v"), //
+			filtered(&[0, 2])
+		);
+		assert_eq!(
+			filter_with_tags(commits.clone(), tags, ":!t v"), //
+			filtered(&[1, 3])
+		);
+
+		assert_eq!(
+			filter_with_tags(commits.clone(), tags, ":t"), //
+			filtered(&[0, 1, 2])
+		);
+		assert_eq!(
+			filter_with_tags(commits.clone(), tags, ":!t"), //
+			filtered(&[3])
 		);
 	}
 }
