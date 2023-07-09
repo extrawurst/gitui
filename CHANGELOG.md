@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * support 'n'/'p' key to move to the next/prev hunk in diff component [[@hamflx](https://github.com/hamflx)] ([#1523](https://github.com/extrawurst/gitui/issues/1523))
 * simplify theme overrides [[@cruessler](https://github.com/cruessler)] ([#1367](https://github.com/extrawurst/gitui/issues/1367))
+* allow searching for commits in the revlog tab by sha, author, message or tag [[@WizardOhio24](https://github.com/WizardOhio24), [@willir](https://github.com/willir), [@Rodrigodd](https://github.com/Rodrigodd)] [#1753](https://github.com/extrawurst/gitui/issues/1753)
 
 ### Fixes
 * fix commit dialog char count for multibyte characters ([#1726](https://github.com/extrawurst/gitui/issues/1726))
