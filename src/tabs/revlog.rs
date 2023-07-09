@@ -251,8 +251,7 @@ impl Revlog {
 	///   1. from outer vec should be combined via 'disjunction' (or);
 	///   2. from inter vec should be combined via 'conjunction' (and).
 	///
-	/// Currently parentheses in the `filter_by_str` are not supported.
-	/// They should be removed by `Self::pre_process_string`.
+	/// Parentheses in the `filter_by_str` are not supported.
 	pub fn get_what_to_filter_by(
 		filter_by_str: &str,
 	) -> Vec<Vec<(String, FilterBy)>> {
@@ -305,16 +304,12 @@ impl Revlog {
 	pub fn filter(&mut self, filter_by: &str) -> Result<()> {
 		if filter_by != self.filter_string {
 			self.filter_string = filter_by.to_string();
-			let pre_processed_string =
-				Self::pre_process_string(filter_by.to_string());
-			let trimmed_string =
-				pre_processed_string.trim().to_string();
 			if filter_by.is_empty() {
 				self.async_filter.stop_filter();
 				self.is_filtering = false;
 			} else {
 				let filter_strings =
-					Self::get_what_to_filter_by(&trimmed_string);
+					Self::get_what_to_filter_by(filter_by);
 				self.async_filter
 					.start_filter(filter_strings)
 					.map_err(|e| anyhow::anyhow!(e.to_string()))?;
@@ -324,65 +319,6 @@ impl Revlog {
 			return self.update();
 		}
 		Ok(())
-	}
-
-	/// pre process string to remove any brackets
-	pub fn pre_process_string(mut s: String) -> String {
-		while s.contains("&&(") {
-			let before = s.clone();
-			s = Self::remove_out_brackets(&s);
-			if s == before {
-				break;
-			}
-		}
-		s
-	}
-
-	/// Remove the brakcets, replacing them with the unbracketed 'full' expression
-	pub fn remove_out_brackets(s: &str) -> String {
-		if let Some(first_bracket) = s.find("&&(") {
-			let (first, rest_of_string) =
-				s.split_at(first_bracket + 3);
-			if let Some(last_bracket) =
-				Self::get_ending_bracket(rest_of_string)
-			{
-				let mut v = vec![];
-				let (second, third) =
-					rest_of_string.split_at(last_bracket);
-				if let Some((first, third)) = first
-					.strip_suffix('(')
-					.zip(third.strip_prefix(')'))
-				{
-					for inside_bracket_item in second.split("||") {
-						// Append first, prepend third onto bracket element
-						v.push(format!(
-							"{first}{inside_bracket_item}{third}"
-						));
-					}
-					return v.join("||");
-				}
-			}
-		}
-		s.to_string()
-	}
-
-	/// Get outer matching brakets in a string
-	pub fn get_ending_bracket(s: &str) -> Option<usize> {
-		let mut brack_count = 0;
-		let mut ending_brakcet_pos = None;
-		for (i, c) in s.chars().enumerate() {
-			if c == '(' {
-				brack_count += 1;
-			} else if c == ')' {
-				if brack_count == 0 {
-					// Found
-					ending_brakcet_pos = Some(i);
-					break;
-				}
-				brack_count -= 1;
-			}
-		}
-		ending_brakcet_pos
 	}
 
 	pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
