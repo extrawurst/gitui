@@ -54,7 +54,7 @@ impl StashList {
 				100,
 			)?;
 
-			self.list.set_total_count(commits.len());
+			self.list.set_count_total(commits.len());
 			self.list.items().set_items(0, commits);
 		}
 

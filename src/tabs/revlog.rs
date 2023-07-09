@@ -118,9 +118,9 @@ impl Revlog {
 			};
 
 			if self.is_filtering {
-				self.list.set_total_count(self.async_filter.count());
+				self.list.set_count_total(self.async_filter.count());
 			} else {
-				self.list.set_total_count(self.git_log.count()?);
+				self.list.set_count_total(self.git_log.count()?);
 			};
 
 			let selection = self.list.selection();
