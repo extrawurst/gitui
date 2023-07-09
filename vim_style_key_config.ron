@@ -41,8 +41,8 @@
 
     stash_open: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
 
-    show_find_commit_text_input: ( code: Char('s'), modifiers: ( bits: 0,),),
-    focus_find_commit: ( code: Char('j'), modifiers: ( bits: 3,),),
+    show_find_commit_text_input: Some(( code: Char('s'), modifiers: ( bits: 0,),)),
+    focus_find_commit: Some(( code: Char('j'), modifiers: ( bits: 3,),)),
 
     abort_merge: Some(( code: Char('M'), modifiers: ( bits: 1,),)),
 )
