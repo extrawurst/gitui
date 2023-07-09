@@ -190,12 +190,10 @@ impl AsyncCommitFilterer {
 		true
 	}
 
-	/// If the filtering string contain filtering by tags
-	/// return them, else don't get the tags
-	fn get_tags(
+	/// Check if the filtering string contain filtering by tags.
+	fn contains_tag(
 		filter_strings: &[Vec<(String, FilterBy)>],
-		git_tags: &mut AsyncTags,
-	) -> Result<Option<Tags>> {
+	) -> bool {
 		let mut contains_tags = false;
 		for or in filter_strings {
 			for (_, filter_by) in or {
@@ -209,10 +207,7 @@ impl AsyncCommitFilterer {
 			}
 		}
 
-		if contains_tags {
-			return git_tags.last().map_err(|e| anyhow::anyhow!(e));
-		}
-		Ok(None)
+		contains_tags
 	}
 
 	pub fn start_filter(
@@ -244,8 +239,12 @@ impl AsyncCommitFilterer {
 		let filter_thread_mutex =
 			Arc::clone(&self.filter_thread_mutex);
 
-		let tags =
-			Self::get_tags(&filter_strings, &mut self.git_tags)?;
+		let tags = Self::contains_tag(&filter_strings)
+			.then(|| {
+				self.git_tags.last().map_err(|e| anyhow::anyhow!(e))
+			})
+			.transpose()?
+			.flatten();
 
 		let repo = self.repo.clone();
 
@@ -555,5 +554,21 @@ mod test {
 			filter_with_tags(commits.clone(), tags, ":!t"), //
 			filtered(&[3])
 		);
+	}
+
+	#[test]
+	fn test_contains_tag() {
+		assert!(AsyncCommitFilterer::contains_tag(
+			&Revlog::get_what_to_filter_by("")
+		));
+		assert!(AsyncCommitFilterer::contains_tag(
+			&Revlog::get_what_to_filter_by(":")
+		));
+		assert!(AsyncCommitFilterer::contains_tag(
+			&Revlog::get_what_to_filter_by(":t")
+		));
+		assert!(!AsyncCommitFilterer::contains_tag(
+			&Revlog::get_what_to_filter_by(":sma")
+		));
 	}
 }
