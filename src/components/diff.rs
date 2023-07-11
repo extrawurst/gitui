@@ -864,6 +864,7 @@ impl Component for DiffComponent {
 						.move_right(HorizontalScrollType::Right);
 					Ok(EventState::Consumed)
 				} else if key_match(e, self.key_config.keys.move_left)
+					&& self.horizontal_scroll.get_right() != 0
 				{
 					self.horizontal_scroll
 						.move_right(HorizontalScrollType::Left);
