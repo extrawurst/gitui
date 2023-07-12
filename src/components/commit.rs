@@ -285,7 +285,9 @@ impl CommitComponent {
 
 	fn do_commit(&self, msg: &str) -> Result<()> {
 		match &self.mode {
-			Mode::Normal => sync::commit(&self.repo.borrow(), msg)?,
+			Mode::Normal => {
+				sync::commit(&self.repo.borrow(), msg, false)?
+			}
 			Mode::Amend(amend) => {
 				sync::amend(&self.repo.borrow(), *amend, msg)?
 			}
@@ -302,7 +304,9 @@ impl CommitComponent {
 
 				commit
 			}
-			Mode::Signoff => sync::commit(&self.repo.borrow(), msg)?,
+			Mode::Signoff => {
+				sync::commit(&self.repo.borrow(), msg, true)?
+			}
 		};
 		Ok(())
 	}
@@ -553,7 +557,7 @@ impl Component for CommitComponent {
 					}
 				} else if key_match(
 					e,
-					self.key_config.keys.commit_signoff,
+					self.key_config.keys.toggle_signoff,
 				) {
 					self.toggle_signoff();
 				}

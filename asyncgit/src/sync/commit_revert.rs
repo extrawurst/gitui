@@ -43,7 +43,7 @@ pub fn commit_revert(
 ) -> Result<CommitId> {
 	scope_time!("commit_revert");
 
-	let id = crate::sync::commit(repo_path, msg)?;
+	let id = crate::sync::commit(repo_path, msg, false)?;
 
 	repo(repo_path)?.cleanup_state()?;
 

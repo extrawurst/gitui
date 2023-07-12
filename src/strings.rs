@@ -989,7 +989,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Sing-off [{}]",
-				key_config.get_hint(key_config.keys.commit_signoff),
+				key_config.get_hint(key_config.keys.toggle_signoff),
 			),
 			"sign-off commit (-s option)",
 			CMD_GROUP_COMMIT_POPUP,
