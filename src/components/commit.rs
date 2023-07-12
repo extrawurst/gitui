@@ -30,6 +30,8 @@ use ratatui::{
 use std::{
 	fs::{read_to_string, File},
 	io::{Read, Write},
+	path::PathBuf,
+	str::FromStr,
 };
 
 enum CommitResult {
@@ -364,61 +366,80 @@ impl CommitComponent {
 
 		let repo_state = sync::repo_state(&self.repo.borrow())?;
 
-		self.mode =
-			if repo_state != RepoState::Clean && reword.is_some() {
-				bail!("cannot reword while repo is not in a clean state");
-			} else if let Some(reword_id) = reword {
-				self.input.set_text(
-					sync::get_commit_details(
+		self.mode = if repo_state != RepoState::Clean
+			&& reword.is_some()
+		{
+			bail!("cannot reword while repo is not in a clean state");
+		} else if let Some(reword_id) = reword {
+			self.input.set_text(
+				sync::get_commit_details(
+					&self.repo.borrow(),
+					reword_id,
+				)?
+				.message
+				.unwrap_or_default()
+				.combine(),
+			);
+			self.input.set_title(strings::commit_reword_title());
+			Mode::Reword(reword_id)
+		} else {
+			match repo_state {
+				RepoState::Merge => {
+					let ids =
+						sync::mergehead_ids(&self.repo.borrow())?;
+					self.input
+						.set_title(strings::commit_title_merge());
+					self.input.set_text(sync::merge_msg(
 						&self.repo.borrow(),
-						reword_id,
-					)?
-					.message
-					.unwrap_or_default()
-					.combine(),
-				);
-				self.input.set_title(strings::commit_reword_title());
-				Mode::Reword(reword_id)
-			} else {
-				match repo_state {
-					RepoState::Merge => {
-						let ids =
-							sync::mergehead_ids(&self.repo.borrow())?;
-						self.input
-							.set_title(strings::commit_title_merge());
-						self.input.set_text(sync::merge_msg(
-							&self.repo.borrow(),
-						)?);
-						Mode::Merge(ids)
-					}
-					RepoState::Revert => {
-						self.input
-							.set_title(strings::commit_title_revert());
-						self.input.set_text(sync::merge_msg(
-							&self.repo.borrow(),
-						)?);
-						Mode::Revert
-					}
-
-					_ => {
-						self.commit_template = get_config_string(
-							&self.repo.borrow(),
-							"commit.template",
-						)
-						.ok()
-						.flatten()
-						.and_then(|path| read_to_string(path).ok());
-
-						if self.is_empty() {
-							if let Some(s) = &self.commit_template {
-								self.input.set_text(s.clone());
-							}
-						}
-						self.input.set_title(strings::commit_title());
-						Mode::Normal
-					}
+					)?);
+					Mode::Merge(ids)
 				}
-			};
+				RepoState::Revert => {
+					self.input
+						.set_title(strings::commit_title_revert());
+					self.input.set_text(sync::merge_msg(
+						&self.repo.borrow(),
+					)?);
+					Mode::Revert
+				}
+
+				_ => {
+					self.commit_template = get_config_string(
+						&self.repo.borrow(),
+						"commit.template",
+					)
+					.map_err(|e| {
+						log::error!("load git-config failed: {}", e);
+						e
+					})
+					.ok()
+					.flatten()
+					.and_then(|path| {
+						shellexpand::full(path.as_str())
+							.ok()
+							.and_then(|path| {
+								PathBuf::from_str(path.as_ref()).ok()
+							})
+					})
+					.and_then(|path| {
+						read_to_string(&path)
+							.map_err(|e| {
+								log::error!("read commit.template failed: {e} (path: '{:?}')",path);
+								e
+							})
+							.ok()
+					});
+
+					if self.is_empty() {
+						if let Some(s) = &self.commit_template {
+							self.input.set_text(s.clone());
+						}
+					}
+					self.input.set_title(strings::commit_title());
+					Mode::Normal
+				}
+			}
+		};
 
 		self.commit_msg_history_idx = 0;
 		self.input.show()?;
