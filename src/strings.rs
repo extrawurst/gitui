@@ -117,6 +117,9 @@ pub fn commit_title_revert() -> String {
 pub fn commit_title_amend() -> String {
 	"Commit (Amend)".to_string()
 }
+pub fn commit_title_signoff() -> String {
+	"Commit (Sign-off)".to_string()
+}
 pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {
 	"type commit message..".to_string()
 }
@@ -977,6 +980,18 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.commit_amend),
 			),
 			"amend last commit (available in commit popup)",
+			CMD_GROUP_COMMIT_POPUP,
+		)
+	}
+	pub fn commit_signoff(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Sing-off [{}]",
+				key_config.get_hint(key_config.keys.commit_signoff),
+			),
+			"sign-off commit (-s option)",
 			CMD_GROUP_COMMIT_POPUP,
 		)
 	}

@@ -43,6 +43,7 @@ enum Mode {
 	Merge(Vec<CommitId>),
 	Revert,
 	Reword(CommitId),
+	Signoff,
 }
 
 pub struct CommitComponent {
@@ -301,6 +302,7 @@ impl CommitComponent {
 
 				commit
 			}
+			Mode::Signoff => sync::commit(&self.repo.borrow(), msg)?,
 		};
 		Ok(())
 	}
@@ -340,6 +342,18 @@ impl CommitComponent {
 		}
 
 		Ok(())
+	}
+	fn toggle_signoff(&mut self) {
+		match self.mode {
+			Mode::Normal => {
+				self.mode = Mode::Signoff;
+				self.input.set_title(strings::commit_title_signoff());
+			}
+			_ => {
+				self.mode = Mode::Normal;
+				self.input.set_title(strings::commit_title());
+			}
+		}
 	}
 	fn toggle_verify(&mut self) {
 		self.verify = !self.verify;
@@ -465,6 +479,12 @@ impl Component for CommitComponent {
 			));
 
 			out.push(CommandInfo::new(
+				strings::commands::commit_signoff(&self.key_config),
+				true,
+				true,
+			));
+
+			out.push(CommandInfo::new(
 				strings::commands::commit_open_editor(
 					&self.key_config,
 				),
@@ -531,6 +551,11 @@ impl Component for CommitComponent {
 						self.input.set_text(msg);
 						self.commit_msg_history_idx += 1;
 					}
+				} else if key_match(
+					e,
+					self.key_config.keys.commit_signoff,
+				) {
+					self.toggle_signoff();
 				}
 				// stop key event propagation
 				return Ok(EventState::Consumed);
