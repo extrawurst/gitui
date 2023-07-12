@@ -755,6 +755,7 @@ dependencies = [
  "scopeguard",
  "scopetime",
  "serde",
+ "shellexpand",
  "simplelog",
  "struct-patch",
  "syntect",
