@@ -66,18 +66,15 @@ fn add_sign_off<'a>(
 ) -> &'a str {
 	match (signature.name(), signature.email()) {
 		(Some(name), Some(mail)) => {
-			msg.to_owned().push_str(&format!(
-				"Signed-off-by {} <{}>",
-				name, mail
-			));
+			msg.to_owned()
+				.push_str(&format!("Signed-off-by {name} <{mail}>"));
 			msg
 		}
 		_ => msg,
 	}
 }
 
-/// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
-pub fn commit(
+fn do_commit(
 	repo_path: &RepoPath,
 	msg: &str,
 	sign_off: bool,
@@ -100,7 +97,7 @@ pub fn commit(
 	let parents = parents.iter().collect::<Vec<_>>();
 
 	let msg = if sign_off {
-		add_sign_off(&msg, &signature)
+		add_sign_off(msg, &signature)
 	} else {
 		msg
 	};
@@ -110,11 +107,26 @@ pub fn commit(
 			Some("HEAD"),
 			&signature,
 			&signature,
-			&msg,
+			msg,
 			&tree,
 			parents.as_slice(),
 		)?
 		.into())
+}
+
+/// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
+pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
+	do_commit(repo_path, msg, false)
+}
+
+/// Do a commit including the sign-off option
+///
+/// Refer to [git documentation](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s)
+pub fn commit_with_singoff(
+	repo_path: &RepoPath,
+	msg: &str,
+) -> Result<CommitId> {
+	do_commit(repo_path, msg, true)
 }
 
 /// Tag a commit.
@@ -188,7 +200,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 1));
 
-		commit(repo_path, "commit msg", false).unwrap();
+		commit(repo_path, "commit msg").unwrap();
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 	}
@@ -214,7 +226,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 1));
 
-		commit(repo_path, "commit msg", false).unwrap();
+		commit(repo_path, "commit msg").unwrap();
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 	}
@@ -348,13 +360,13 @@ mod tests {
 
 		repo.config()?.remove("user.email")?;
 
-		let error = commit(repo_path, "commit msg", false);
+		let error = commit(repo_path, "commit msg");
 
 		assert!(matches!(error, Err(_)));
 
 		repo.config()?.set_str("user.email", "email")?;
 
-		let success = commit(repo_path, "commit msg", false);
+		let success = commit(repo_path, "commit msg");
 
 		assert!(matches!(success, Ok(_)));
 		assert_eq!(count_commits(&repo, 10), 1);
@@ -384,7 +396,7 @@ mod tests {
 
 		repo.config()?.remove("user.name")?;
 
-		let mut success = commit(repo_path, "commit msg", false);
+		let mut success = commit(repo_path, "commit msg");
 
 		assert!(matches!(success, Ok(_)));
 		assert_eq!(count_commits(&repo, 10), 1);

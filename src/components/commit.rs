@@ -285,9 +285,7 @@ impl CommitComponent {
 
 	fn do_commit(&self, msg: &str) -> Result<()> {
 		match &self.mode {
-			Mode::Normal => {
-				sync::commit(&self.repo.borrow(), msg, false)?
-			}
+			Mode::Normal => sync::commit(&self.repo.borrow(), msg)?,
 			Mode::Amend(amend) => {
 				sync::amend(&self.repo.borrow(), *amend, msg)?
 			}
@@ -305,7 +303,7 @@ impl CommitComponent {
 				commit
 			}
 			Mode::Signoff => {
-				sync::commit(&self.repo.borrow(), msg, true)?
+				sync::commit_with_singoff(&self.repo.borrow(), msg)?
 			}
 		};
 		Ok(())
@@ -348,15 +346,12 @@ impl CommitComponent {
 		Ok(())
 	}
 	fn toggle_signoff(&mut self) {
-		match self.mode {
-			Mode::Normal => {
-				self.mode = Mode::Signoff;
-				self.input.set_title(strings::commit_title_signoff());
-			}
-			_ => {
-				self.mode = Mode::Normal;
-				self.input.set_title(strings::commit_title());
-			}
+		if matches!(self.mode, Mode::Normal) {
+			self.mode = Mode::Signoff;
+			self.input.set_title(strings::commit_title_signoff());
+		} else {
+			self.mode = Mode::Normal;
+			self.input.set_title(strings::commit_title());
 		}
 	}
 	fn toggle_verify(&mut self) {
