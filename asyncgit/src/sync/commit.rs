@@ -60,17 +60,14 @@ pub(crate) fn signature_allow_undefined_name(
 	signature
 }
 
-fn add_sign_off<'a>(
-	msg: &'a str,
-	signature: &'a Signature,
-) -> &'a str {
+fn add_sign_off(msg: &str, signature: &Signature) -> String {
 	match (signature.name(), signature.email()) {
 		(Some(name), Some(mail)) => {
-			msg.to_owned()
-				.push_str(&format!("Signed-off-by {name} <{mail}>"));
+			let mut msg = msg.to_owned();
+			msg.push_str(&format!("\nSigned-off-by {name} <{mail}>"));
 			msg
 		}
-		_ => msg,
+		_ => msg.to_owned(),
 	}
 }
 
@@ -99,7 +96,7 @@ fn do_commit(
 	let msg = if sign_off {
 		add_sign_off(msg, &signature)
 	} else {
-		msg
+		msg.to_owned()
 	};
 
 	Ok(repo
@@ -107,7 +104,7 @@ fn do_commit(
 			Some("HEAD"),
 			&signature,
 			&signature,
-			msg,
+			&msg,
 			&tree,
 			parents.as_slice(),
 		)?
