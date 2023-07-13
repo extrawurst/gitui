@@ -168,8 +168,10 @@ mod tests {
 		LogWalker,
 	};
 	use commit::{amend, tag_commit};
-	use git2::Repository;
+	use git2::{Repository, Signature};
 	use std::{fs::File, io::Write, path::Path};
+
+	use super::add_sign_off;
 
 	fn count_commits(repo: &Repository, max: usize) -> usize {
 		let mut items = Vec::new();
@@ -418,5 +420,17 @@ mod tests {
 		assert_eq!(details.author.email, "email");
 
 		Ok(())
+	}
+
+	#[test]
+	fn test_add_sign_off_to_commit_msg() {
+		let in_msg = "test commit";
+		let signature =
+			Signature::now("MyName", "my@mail.com").unwrap();
+
+		let expected =
+			format!("{in_msg}\nSigned-off-by MyName <my@mail.com>");
+		let result = add_sign_off(in_msg, &signature);
+		assert_eq!(expected, result);
 	}
 }
