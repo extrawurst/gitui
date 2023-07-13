@@ -303,7 +303,7 @@ impl CommitComponent {
 				commit
 			}
 			Mode::Signoff => {
-				sync::commit_with_singoff(&self.repo.borrow(), msg)?
+				sync::commit_with_signoff(&self.repo.borrow(), msg)?
 			}
 		};
 		Ok(())

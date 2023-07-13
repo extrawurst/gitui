@@ -43,7 +43,7 @@ pub use branch::{
 	merge_rebase::merge_upstream_rebase, rename::rename_branch,
 	validate_branch_name, BranchCompare, BranchDetails, BranchInfo,
 };
-pub use commit::{amend, commit, commit_with_singoff, tag_commit};
+pub use commit::{amend, commit, commit_with_signoff, tag_commit};
 pub use commit_details::{
 	get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };

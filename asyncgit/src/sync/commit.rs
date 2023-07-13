@@ -122,7 +122,7 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 /// Do a commit including the sign-off option
 ///
 /// Refer to [git documentation](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s)
-pub fn commit_with_singoff(
+pub fn commit_with_signoff(
 	repo_path: &RepoPath,
 	msg: &str,
 ) -> Result<CommitId> {
