@@ -20,7 +20,7 @@ impl<'a> PartialEq for TimeOrderedCommit<'a> {
 
 impl<'a> PartialOrd for TimeOrderedCommit<'a> {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-		self.0.time().partial_cmp(&other.0.time())
+		Some(self.cmp(other))
 	}
 }
 

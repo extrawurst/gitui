@@ -120,7 +120,7 @@ impl PartialOrd for FileTreeItem {
 		&self,
 		other: &Self,
 	) -> Option<std::cmp::Ordering> {
-		self.info.full_path.partial_cmp(&other.info.full_path)
+		Some(self.cmp(other))
 	}
 }
 
