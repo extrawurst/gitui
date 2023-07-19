@@ -1,4 +1,5 @@
 use super::utils::logitems::{ItemBatch, LogEntry};
+use crate::components::utils::get_author_width;
 use crate::{
 	components::{
 		utils::string_width_align, CommandBlocking, CommandInfo,
@@ -344,8 +345,7 @@ impl CommitList {
 
 		txt.push(splitter.clone());
 
-		let author_width =
-			(width.saturating_sub(19) / 3).clamp(3, 20);
+		let author_width = get_author_width(width);
 		let author = string_width_align(&e.author, author_width);
 
 		// commit author

@@ -2,6 +2,9 @@ use super::{
 	utils, visibility_blocking, CommandBlocking, CommandInfo,
 	Component, DrawableComponent, EventState,
 };
+use crate::components::utils::{
+	get_author_width, string_width_align,
+};
 use crate::{
 	components::ScrollType,
 	keys::{key_match, SharedKeyConfig},
@@ -79,6 +82,8 @@ impl DrawableComponent for TagListComponent {
 						.fold(0, |acc, tag| acc.max(tag.name.len()))
 				});
 
+			let author_width = get_author_width(area.width.into());
+
 			let constraints = [
 				// symbol if tag is not yet on remote and can be pushed
 				Constraint::Length(1),
@@ -87,14 +92,14 @@ impl DrawableComponent for TagListComponent {
 				// commit date
 				Constraint::Length(10),
 				// author width
-				Constraint::Length(19),
+				Constraint::Length(author_width.try_into()?),
 				// attachement
 				Constraint::Length(1),
 				// commit id
 				Constraint::Percentage(100),
 			];
 
-			let rows = self.get_rows();
+			let rows = self.get_rows(area.width as usize);
 			let number_of_rows = rows.len();
 
 			let table = Table::new(rows)
@@ -443,14 +448,14 @@ impl TagListComponent {
 	}
 
 	///
-	fn get_rows(&self) -> Vec<Row> {
+	fn get_rows(&self, width: usize) -> Vec<Row> {
 		self.tags.as_ref().map_or_else(Vec::new, |tags| {
-			tags.iter().map(|tag| self.get_row(tag)).collect()
+			tags.iter().map(|tag| self.get_row(tag, width)).collect()
 		})
 	}
 
 	///
-	fn get_row(&self, tag: &TagWithMetadata) -> Row {
+	fn get_row(&self, tag: &TagWithMetadata, width: usize) -> Row {
 		const UPSTREAM_SYMBOL: &str = "\u{2191}";
 		const ATTACHEMENT_SYMBOL: &str = "@";
 		const EMPTY_SYMBOL: &str = " ";
@@ -476,6 +481,10 @@ impl TagListComponent {
 			EMPTY_SYMBOL
 		};
 
+		let author_width = get_author_width(width);
+		let author =
+			string_width_align(tag.author.as_ref(), author_width);
+
 		let cells: Vec<Cell> = vec![
 			Cell::from(has_remote_str)
 				.style(self.theme.commit_author(false)),
@@ -483,8 +492,7 @@ impl TagListComponent {
 				.style(self.theme.text(true, false)),
 			Cell::from(utils::time_to_string(tag.time, true))
 				.style(self.theme.commit_time(false)),
-			Cell::from(tag.author.clone())
-				.style(self.theme.commit_author(false)),
+			Cell::from(author).style(self.theme.commit_author(false)),
 			Cell::from(has_attachement_str)
 				.style(self.theme.text_danger()),
 			Cell::from(tag.message.clone())

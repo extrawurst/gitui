@@ -64,3 +64,11 @@ pub fn string_width_align(s: &str, width: usize) -> String {
 fn find_truncate_point(s: &str, chars: usize) -> usize {
 	s.chars().take(chars).map(char::len_utf8).sum()
 }
+
+pub static MIN_AUTHOR_WIDTH: usize = 3;
+pub static MAX_AUTHOR_WIDTH: usize = 20;
+
+pub fn get_author_width(width: usize) -> usize {
+	(width.saturating_sub(19) / 3)
+		.clamp(MIN_AUTHOR_WIDTH, MAX_AUTHOR_WIDTH)
+}
