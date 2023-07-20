@@ -93,21 +93,21 @@ impl DetailsComponent {
 			width,
 			title_buffer,
 		)
-		.unwrap()
+		.expect("insufficiant buffer size")
 		.wrap();
 		let wrapped_title = std::str::from_utf8(title_buffer)
-			.unwrap()
+			.expect("failed to create str from utf8")
 			.split('\n')
 			.map(|s| Cow::Borrowed(s.trim_null()))
 			.collect();
 
 		if let Some(ref body) = message.body {
 			let _ = bwrap::Wrapper::new(body, width, message_buffer)
-				.unwrap()
+				.expect("insufficiant buffer size")
 				.wrap();
 			let wrapped_message: Vec<Cow<'_, str>> =
 				std::str::from_utf8(message_buffer)
-					.unwrap()
+					.expect("failed to create str from utf8")
 					.split('\n')
 					.map(|s| Cow::Borrowed(s.trim_null()))
 					.collect();
@@ -147,10 +147,8 @@ impl DetailsComponent {
 				let title_len = message.subject.len();
 				let mut title_buffer =
 					vec![0; title_len + title_len / width + 1];
-				let message_len = match message.body {
-					Some(ref body) => body.len(),
-					None => 0usize,
-				};
+				let message_len =
+					message.body.as_ref().map_or(0usize, String::len);
 				let mut message_buffer =
 					vec![0; message_len + message_len / width + 1];
 				let (wrapped_title, wrapped_message) =
@@ -163,7 +161,7 @@ impl DetailsComponent {
 				return wrapped_title.len() + wrapped_message.len();
 			}
 		}
-		return 0usize;
+		0usize
 	}
 
 	fn get_theme_for_line(&self, bold: bool) -> Style {
@@ -354,20 +352,20 @@ impl DrawableComponent for DetailsComponent {
 
 		let can_scroll = usize::from(height) < number_of_lines;
 
-		let (title_len, message_len) = match self.data {
-			None => (0usize, 0usize),
-			Some(ref data) => match data.message {
-				None => (0usize, 0usize),
-				Some(ref message) => {
-					let title_len = message.subject.len();
-					let message_len = match message.body {
-						None => 0usize,
-						Some(ref body) => body.len(),
-					};
-					(title_len, message_len)
-				}
-			},
-		};
+		let (title_len, message_len) =
+			self.data.as_ref().map_or((0usize, 0usize), |data| {
+				data.message.as_ref().map_or(
+					(0usize, 0usize),
+					|message| {
+						let title_len = message.subject.len();
+						let message_len = message
+							.body
+							.as_ref()
+							.map_or(0usize, String::len);
+						(title_len, message_len)
+					},
+				)
+			});
 		let mut title_buffer =
 			vec![0u8; title_len + title_len / usize::from(width) + 1];
 		let mut message_buffer =
@@ -484,10 +482,7 @@ trait NullTrim {
 
 impl NullTrim for str {
 	fn trim_null(&self) -> &Self {
-		let end = match self.find('\0') {
-			None => self.len(),
-			Some(pos) => pos,
-		};
+		let end = self.find('\0').map_or(self.len(), |pos| pos);
 		&self[..end]
 	}
 }
