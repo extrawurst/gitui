@@ -82,15 +82,35 @@ impl DetailsComponent {
 		}
 	}
 
-	fn wrap_commit_details(
+	fn wrap_commit_details<'a>(
 		message: &CommitMessage,
 		width: usize,
-	) -> WrappedCommitMessage<'_> {
-		let wrapped_title = textwrap::wrap(&message.subject, width);
+		title_buffer: &'a mut [u8],
+		message_buffer: &'a mut [u8],
+	) -> WrappedCommitMessage<'a> {
+		let _ = bwrap::Wrapper::new(
+			&message.subject,
+			width,
+			title_buffer,
+		)
+		.unwrap()
+		.wrap();
+		let wrapped_title = std::str::from_utf8(title_buffer)
+			.unwrap()
+			.split('\n')
+			.map(|s| Cow::Borrowed(s.trim_null()))
+			.collect();
 
 		if let Some(ref body) = message.body {
+			let _ = bwrap::Wrapper::new(body, width, message_buffer)
+				.unwrap()
+				.wrap();
 			let wrapped_message: Vec<Cow<'_, str>> =
-				textwrap::wrap(body, width).into_iter().collect();
+				std::str::from_utf8(message_buffer)
+					.unwrap()
+					.split('\n')
+					.map(|s| Cow::Borrowed(s.trim_null()))
+					.collect();
 
 			(wrapped_title, wrapped_message)
 		} else {
@@ -98,13 +118,20 @@ impl DetailsComponent {
 		}
 	}
 
-	fn get_wrapped_lines(
+	fn get_wrapped_lines<'a>(
 		data: &Option<CommitDetails>,
 		width: usize,
-	) -> WrappedCommitMessage<'_> {
+		title_buffer: &'a mut [u8],
+		message_buffer: &'a mut [u8],
+	) -> WrappedCommitMessage<'a> {
 		if let Some(ref data) = data {
 			if let Some(ref message) = data.message {
-				return Self::wrap_commit_details(message, width);
+				return Self::wrap_commit_details(
+					message,
+					width,
+					title_buffer,
+					message_buffer,
+				);
 			}
 		}
 
@@ -115,10 +142,28 @@ impl DetailsComponent {
 		details: &Option<CommitDetails>,
 		width: usize,
 	) -> usize {
-		let (wrapped_title, wrapped_message) =
-			Self::get_wrapped_lines(details, width);
-
-		wrapped_title.len() + wrapped_message.len()
+		if let Some(ref data) = details {
+			if let Some(ref message) = data.message {
+				let title_len = message.subject.len();
+				let mut title_buffer =
+					vec![0; title_len + title_len / width + 1];
+				let message_len = match message.body {
+					Some(ref body) => body.len(),
+					None => 0usize,
+				};
+				let mut message_buffer =
+					vec![0; message_len + message_len / width + 1];
+				let (wrapped_title, wrapped_message) =
+					Self::wrap_commit_details(
+						message,
+						width,
+						&mut title_buffer,
+						&mut message_buffer,
+					);
+				return wrapped_title.len() + wrapped_message.len();
+			}
+		}
+		return 0usize;
 	}
 
 	fn get_theme_for_line(&self, bold: bool) -> Style {
@@ -129,13 +174,20 @@ impl DetailsComponent {
 		}
 	}
 
-	fn get_wrapped_text_message(
-		&self,
+	fn get_wrapped_text_message<'a>(
+		&'a self,
 		width: usize,
 		height: usize,
+		title_buffer: &'a mut [u8],
+		message_buffer: &'a mut [u8],
 	) -> Vec<Line> {
 		let (wrapped_title, wrapped_message) =
-			Self::get_wrapped_lines(&self.data, width);
+			Self::get_wrapped_lines(
+				&self.data,
+				width,
+				title_buffer,
+				message_buffer,
+			);
 
 		[&wrapped_title[..], &wrapped_message[..]]
 			.concat()
@@ -302,6 +354,27 @@ impl DrawableComponent for DetailsComponent {
 
 		let can_scroll = usize::from(height) < number_of_lines;
 
+		let (title_len, message_len) = match self.data {
+			None => (0usize, 0usize),
+			Some(ref data) => match data.message {
+				None => (0usize, 0usize),
+				Some(ref message) => {
+					let title_len = message.subject.len();
+					let message_len = match message.body {
+						None => 0usize,
+						Some(ref body) => body.len(),
+					};
+					(title_len, message_len)
+				}
+			},
+		};
+		let mut title_buffer =
+			vec![0u8; title_len + title_len / usize::from(width) + 1];
+		let mut message_buffer =
+			vec![
+				0u8;
+				message_len + message_len / usize::from(width) + 1
+			];
 		f.render_widget(
 			dialog_paragraph(
 				&format!(
@@ -318,6 +391,8 @@ impl DrawableComponent for DetailsComponent {
 				Text::from(self.get_wrapped_text_message(
 					width as usize,
 					height as usize,
+					&mut title_buffer,
+					&mut message_buffer,
 				)),
 				&self.theme,
 				self.focused,
@@ -403,16 +478,37 @@ impl Component for DetailsComponent {
 	}
 }
 
+trait NullTrim {
+	fn trim_null(&self) -> &Self;
+}
+
+impl NullTrim for str {
+	fn trim_null(&self) -> &Self {
+		let end = match self.find('\0') {
+			None => self.len(),
+			Some(pos) => pos,
+		};
+		&self[..end]
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
 
-	fn get_wrapped_lines(
+	fn get_wrapped_lines<'a>(
 		message: &CommitMessage,
 		width: usize,
-	) -> Vec<Cow<'_, str>> {
+		title_buffer: &'a mut [u8],
+		message_buffer: &'a mut [u8],
+	) -> Vec<Cow<'a, str>> {
 		let (wrapped_title, wrapped_message) =
-			DetailsComponent::wrap_commit_details(message, width);
+			DetailsComponent::wrap_commit_details(
+				message,
+				width,
+				title_buffer,
+				message_buffer,
+			);
 
 		[&wrapped_title[..], &wrapped_message[..]].concat()
 	}
@@ -420,13 +516,25 @@ mod tests {
 	#[test]
 	fn test_textwrap() {
 		let message = CommitMessage::from("Commit message");
+		let mut title_buffer = vec![0; 32];
+		let mut message_buffer = vec![0; 32];
 
 		assert_eq!(
-			get_wrapped_lines(&message, 7),
+			get_wrapped_lines(
+				&message,
+				7,
+				&mut title_buffer,
+				&mut message_buffer
+			),
 			vec!["Commit", "message"]
 		);
 		assert_eq!(
-			get_wrapped_lines(&message, 14),
+			get_wrapped_lines(
+				&message,
+				14,
+				&mut title_buffer,
+				&mut message_buffer
+			),
 			vec!["Commit message"]
 		);
 
@@ -434,11 +542,21 @@ mod tests {
 			CommitMessage::from("Commit message\n");
 
 		assert_eq!(
-			get_wrapped_lines(&message_with_newline, 7),
+			get_wrapped_lines(
+				&message_with_newline,
+				7,
+				&mut title_buffer,
+				&mut message_buffer
+			),
 			vec!["Commit", "message"]
 		);
 		assert_eq!(
-			get_wrapped_lines(&message_with_newline, 14),
+			get_wrapped_lines(
+				&message_with_newline,
+				14,
+				&mut title_buffer,
+				&mut message_buffer
+			),
 			vec!["Commit message"]
 		);
 
@@ -447,14 +565,24 @@ mod tests {
 		);
 
 		assert_eq!(
-			get_wrapped_lines(&message_with_body, 7),
+			get_wrapped_lines(
+				&message_with_body,
+				7,
+				&mut title_buffer,
+				&mut message_buffer
+			),
 			vec![
 				"Commit", "message", "First", "line", "Second",
 				"line"
 			]
 		);
 		assert_eq!(
-			get_wrapped_lines(&message_with_body, 14),
+			get_wrapped_lines(
+				&message_with_body,
+				14,
+				&mut title_buffer,
+				&mut message_buffer
+			),
 			vec!["Commit message", "First line", "Second line"]
 		);
 	}
