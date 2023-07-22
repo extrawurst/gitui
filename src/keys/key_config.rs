@@ -255,6 +255,7 @@ mod tests {
 		assert!(result.is_ok());
 	}
 
+	#[cfg(not(target_os = "windows"))]
 	fn create_symlink<
 		P: AsRef<std::path::Path>,
 		Q: AsRef<std::path::Path>,
@@ -263,5 +264,16 @@ mod tests {
 		link: Q,
 	) -> Result<(), std::io::Error> {
 		std::os::unix::fs::symlink(original, link)
+	}
+
+	#[cfg(target_os = "windows")]
+	fn create_symlink<
+		P: AsRef<std::path::Path>,
+		Q: AsRef<std::path::Path>,
+	>(
+		original: P,
+		link: Q,
+	) -> Result<(), std::io::Error> {
+		std::os::windows::fs::symlink_file(original, link)
 	}
 }
