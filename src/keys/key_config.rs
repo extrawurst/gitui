@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyModifiers};
-use std::{path::PathBuf, rc::Rc};
+use std::{fs::canonicalize, path::PathBuf, rc::Rc};
 
 use crate::{args::get_app_config_path, strings::symbol};
 
@@ -20,12 +20,16 @@ pub struct KeyConfig {
 impl KeyConfig {
 	fn get_config_file() -> Result<PathBuf> {
 		let app_home = get_app_config_path()?;
-		Ok(app_home.join("key_bindings.ron"))
+		let config_file = app_home.join("key_bindings.ron");
+		canonicalize(&config_file)
+			.map_or_else(|_| Ok(config_file), Ok)
 	}
 
 	fn get_symbols_file() -> Result<PathBuf> {
 		let app_home = get_app_config_path()?;
-		Ok(app_home.join("key_symbols.ron"))
+		let symbols_file = app_home.join("key_symbols.ron");
+		canonicalize(&symbols_file)
+			.map_or_else(|_| Ok(symbols_file), Ok)
 	}
 
 	pub fn init() -> Result<Self> {
