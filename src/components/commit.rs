@@ -448,12 +448,12 @@ impl CommitComponent {
 			CONFIG_KEY_USER_MAIL,
 		)?;
 
+		let mut msg = msg.to_owned();
 		if let (Some(user), Some(mail)) = (user, mail) {
-			let mut msg = msg.to_owned();
 			msg.push_str(&format!("\nSigned-off-by {user} <{mail}>"));
 		}
 
-		Ok(msg.to_string())
+		Ok(msg)
 	}
 }
 
