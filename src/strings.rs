@@ -117,9 +117,6 @@ pub fn commit_title_revert() -> String {
 pub fn commit_title_amend() -> String {
 	"Commit (Amend)".to_string()
 }
-pub fn commit_title_signoff() -> String {
-	"Commit (Sign-off)".to_string()
-}
 pub fn commit_msg(_key_config: &SharedKeyConfig) -> String {
 	"type commit message..".to_string()
 }

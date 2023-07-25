@@ -7,8 +7,7 @@ use crate::{
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
 	queue::{InternalEvent, NeedsUpdate, Queue},
-	strings::{self, commit_title_signoff},
-	try_or_popup,
+	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
 use anyhow::{bail, Ok, Result};
@@ -58,7 +57,6 @@ pub struct CommitComponent {
 	commit_msg_history_idx: usize,
 	options: SharedOptions,
 	verify: bool,
-	sign_off: bool,
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
@@ -90,7 +88,6 @@ impl CommitComponent {
 			commit_msg_history_idx: 0,
 			options,
 			verify: true,
-			sign_off: false,
 		}
 	}
 
@@ -261,10 +258,6 @@ impl CommitComponent {
 
 		let mut msg = message_prettify(msg, Some(b'#'))?;
 
-		if self.sign_off {
-			msg = self.add_sign_off(&msg)?;
-		}
-
 		if verify {
 			// run commit message check hook - can reject commit
 			if let HookResult::NotOk(e) =
@@ -350,12 +343,11 @@ impl CommitComponent {
 
 		Ok(())
 	}
-	fn toggle_signoff(&mut self) {
-		self.sign_off = !self.sign_off;
-		if self.sign_off {
-			self.input.set_title(commit_title_signoff());
-		} else {
-			self.input.set_title(strings::commit_title());
+	fn signoff_commit(&mut self) {
+		let msg = self.input.get_text();
+		let signed_msg = self.add_sign_off(msg);
+		if let std::result::Result::Ok(signed_msg) = signed_msg {
+			self.input.set_text(signed_msg);
 		}
 	}
 	fn toggle_verify(&mut self) {
@@ -450,7 +442,9 @@ impl CommitComponent {
 
 		let mut msg = msg.to_owned();
 		if let (Some(user), Some(mail)) = (user, mail) {
-			msg.push_str(&format!("\nSigned-off-by {user} <{mail}>"));
+			msg.push_str(&format!(
+				"\n\nSigned-off-by {user} <{mail}>"
+			));
 		}
 
 		Ok(msg)
@@ -580,7 +574,7 @@ impl Component for CommitComponent {
 					e,
 					self.key_config.keys.toggle_signoff,
 				) {
-					self.toggle_signoff();
+					self.signoff_commit();
 				}
 				// stop key event propagation
 				return Ok(EventState::Consumed);
