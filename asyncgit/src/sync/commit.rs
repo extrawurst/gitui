@@ -60,22 +60,8 @@ pub(crate) fn signature_allow_undefined_name(
 	signature
 }
 
-fn add_sign_off(msg: &str, signature: &Signature) -> String {
-	match (signature.name(), signature.email()) {
-		(Some(name), Some(mail)) => {
-			let mut msg = msg.to_owned();
-			msg.push_str(&format!("\nSigned-off-by {name} <{mail}>"));
-			msg
-		}
-		_ => msg.to_owned(),
-	}
-}
-
-fn do_commit(
-	repo_path: &RepoPath,
-	msg: &str,
-	sign_off: bool,
-) -> Result<CommitId> {
+/// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
+pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 	scope_time!("commit");
 
 	let repo = repo(repo_path)?;
@@ -93,37 +79,16 @@ fn do_commit(
 
 	let parents = parents.iter().collect::<Vec<_>>();
 
-	let msg = if sign_off {
-		add_sign_off(msg, &signature)
-	} else {
-		msg.to_owned()
-	};
-
 	Ok(repo
 		.commit(
 			Some("HEAD"),
 			&signature,
 			&signature,
-			&msg,
+			msg,
 			&tree,
 			parents.as_slice(),
 		)?
 		.into())
-}
-
-/// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
-pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
-	do_commit(repo_path, msg, false)
-}
-
-/// Do a commit including the sign-off option
-///
-/// Refer to [git documentation](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s)
-pub fn commit_with_signoff(
-	repo_path: &RepoPath,
-	msg: &str,
-) -> Result<CommitId> {
-	do_commit(repo_path, msg, true)
 }
 
 /// Tag a commit.
@@ -168,10 +133,8 @@ mod tests {
 		LogWalker,
 	};
 	use commit::{amend, tag_commit};
-	use git2::{Repository, Signature};
+	use git2::Repository;
 	use std::{fs::File, io::Write, path::Path};
-
-	use super::add_sign_off;
 
 	fn count_commits(repo: &Repository, max: usize) -> usize {
 		let mut items = Vec::new();
@@ -420,17 +383,5 @@ mod tests {
 		assert_eq!(details.author.email, "email");
 
 		Ok(())
-	}
-
-	#[test]
-	fn test_add_sign_off_to_commit_msg() {
-		let in_msg = "test commit";
-		let signature =
-			Signature::now("MyName", "my@mail.com").unwrap();
-
-		let expected =
-			format!("{in_msg}\nSigned-off-by MyName <my@mail.com>");
-		let result = add_sign_off(in_msg, &signature);
-		assert_eq!(expected, result);
 	}
 }
