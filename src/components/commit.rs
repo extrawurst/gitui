@@ -7,7 +7,8 @@ use crate::{
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
 	queue::{InternalEvent, NeedsUpdate, Queue},
-	strings, try_or_popup,
+	strings::{self, commit_title_signoff},
+	try_or_popup,
 	ui::style::SharedTheme,
 };
 use anyhow::{bail, Ok, Result};
@@ -43,7 +44,6 @@ enum Mode {
 	Merge(Vec<CommitId>),
 	Revert,
 	Reword(CommitId),
-	Signoff,
 }
 
 pub struct CommitComponent {
@@ -58,6 +58,7 @@ pub struct CommitComponent {
 	commit_msg_history_idx: usize,
 	options: SharedOptions,
 	verify: bool,
+	sign_off: bool,
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
@@ -89,6 +90,7 @@ impl CommitComponent {
 			commit_msg_history_idx: 0,
 			options,
 			verify: true,
+			sign_off: false,
 		}
 	}
 
@@ -256,7 +258,13 @@ impl CommitComponent {
 				return Ok(CommitResult::Aborted);
 			}
 		}
+
 		let mut msg = message_prettify(msg, Some(b'#'))?;
+
+		if self.sign_off {
+			msg = self.add_sign_off(&msg)?;
+		}
+
 		if verify {
 			// run commit message check hook - can reject commit
 			if let HookResult::NotOk(e) =
@@ -302,9 +310,6 @@ impl CommitComponent {
 
 				commit
 			}
-			Mode::Signoff => {
-				sync::commit_with_signoff(&self.repo.borrow(), msg)?
-			}
 		};
 		Ok(())
 	}
@@ -346,11 +351,10 @@ impl CommitComponent {
 		Ok(())
 	}
 	fn toggle_signoff(&mut self) {
-		if matches!(self.mode, Mode::Normal) {
-			self.mode = Mode::Signoff;
-			self.input.set_title(strings::commit_title_signoff());
+		self.sign_off = !self.sign_off;
+		if self.sign_off {
+			self.input.set_title(commit_title_signoff());
 		} else {
-			self.mode = Mode::Normal;
 			self.input.set_title(strings::commit_title());
 		}
 	}
@@ -428,6 +432,28 @@ impl CommitComponent {
 		self.input.show()?;
 
 		Ok(())
+	}
+
+	fn add_sign_off(&self, msg: &str) -> Result<String> {
+		const CONFIG_KEY_USER_NAME: &str = "user.name";
+		const CONFIG_KEY_USER_MAIL: &str = "user.email";
+
+		let user = get_config_string(
+			&self.repo.borrow(),
+			CONFIG_KEY_USER_NAME,
+		)?;
+
+		let mail = get_config_string(
+			&self.repo.borrow(),
+			CONFIG_KEY_USER_MAIL,
+		)?;
+
+		if let (Some(user), Some(mail)) = (user, mail) {
+			let mut msg = msg.to_owned();
+			msg.push_str(&format!("\nSigned-off-by {user} <{mail}>"));
+		}
+
+		Ok(msg.to_string())
 	}
 }
 
