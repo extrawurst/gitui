@@ -688,6 +688,14 @@ impl Status {
 		);
 		out.push(
 			CommandInfo::new(
+				strings::commands::diff_focus_left(&self.key_config),
+				true,
+				(self.visible && focus_on_diff) || force_all,
+			)
+			.order(strings::order::NAV),
+		);
+		out.push(
+			CommandInfo::new(
 				strings::commands::diff_focus_right(&self.key_config),
 				self.can_focus_diff(),
 				(self.visible && !focus_on_diff) || force_all,
@@ -859,7 +867,11 @@ impl Component for Status {
 				} else if key_match(
 					k,
 					self.key_config.keys.exit_popup,
-				) {
+				) || (key_match(
+					k,
+					self.key_config.keys.move_left,
+				) && self.is_focus_on_diff())
+				{
 					self.switch_focus(match self.diff_target {
 						DiffTarget::Stage => Focus::Stage,
 						DiffTarget::WorkingDir => Focus::WorkDir,

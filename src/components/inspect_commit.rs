@@ -158,7 +158,9 @@ impl Component for InspectCommitComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if key_match(e, self.key_config.keys.exit_popup) {
+				if key_match(e, self.key_config.keys.exit_popup)
+					|| key_match(e, self.key_config.keys.move_left)
+				{
 					if self.diff.focused() {
 						self.details.focus(true);
 						self.diff.focus(false);
@@ -172,9 +174,6 @@ impl Component for InspectCommitComponent {
 				{
 					self.details.focus(false);
 					self.diff.focus(true);
-				} else if key_match(e, self.key_config.keys.move_left)
-				{
-					self.hide_stacked(false);
 				}
 
 				return Ok(EventState::Consumed);
