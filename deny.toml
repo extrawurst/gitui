@@ -6,7 +6,8 @@ allow = [
     "BSD-2-Clause",
     "BSD-3-Clause",
     "CC0-1.0",
-    "ISC"
+    "ISC",
+    "MPL-2.0"
 ]
 copyleft = "warn"
 allow-osi-fsf-free = "neither"
