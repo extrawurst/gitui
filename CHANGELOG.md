@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixes
 * fix commit dialog char count for multibyte characters ([#1726](https://github.com/extrawurst/gitui/issues/1726))
 * fix wrong hit highlighting in fuzzy find popup [[@UUGTech](https://github.com/UUGTech)] ([#1731](https://github.com/extrawurst/gitui/pull/1731))
+* fix symlink support for configuration files [[@TheBlackSheep3](https://github.com/TheBlackSheep3)] ([#1751](https://github.com/extrawurst/gitui/issues/1751))
 
 ## [0.23.0] - 2022-06-19
 
