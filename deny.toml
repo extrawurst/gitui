@@ -21,6 +21,5 @@ version = "1.0.3"
 [bans]
 multiple-versions = "deny"
 skip-tree = [
-    { name = "windows-sys" },
-    { name = "hermit-abi" }
+    { name = "windows-sys" }
 ]
