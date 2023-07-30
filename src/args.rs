@@ -141,7 +141,7 @@ fn setup_logging() -> Result<()> {
 }
 
 fn get_app_cache_path() -> Result<PathBuf> {
-	let mut path = dirs_next::cache_dir()
+	let mut path = dirs::cache_dir()
 		.ok_or_else(|| anyhow!("failed to find os cache dir."))?;
 
 	path.push("gitui");
@@ -151,9 +151,9 @@ fn get_app_cache_path() -> Result<PathBuf> {
 
 pub fn get_app_config_path() -> Result<PathBuf> {
 	let mut path = if cfg!(target_os = "macos") {
-		dirs_next::home_dir().map(|h| h.join(".config"))
+		dirs::home_dir().map(|h| h.join(".config"))
 	} else {
-		dirs_next::config_dir()
+		dirs::config_dir()
 	}
 	.ok_or_else(|| anyhow!("failed to find os config dir."))?;
 
