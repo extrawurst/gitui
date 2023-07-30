@@ -255,7 +255,9 @@ impl CommitComponent {
 				return Ok(CommitResult::Aborted);
 			}
 		}
+
 		let mut msg = message_prettify(msg, Some(b'#'))?;
+
 		if verify {
 			// run commit message check hook - can reject commit
 			if let HookResult::NotOk(e) =
@@ -341,6 +343,13 @@ impl CommitComponent {
 
 		Ok(())
 	}
+	fn signoff_commit(&mut self) {
+		let msg = self.input.get_text();
+		let signed_msg = self.add_sign_off(msg);
+		if let std::result::Result::Ok(signed_msg) = signed_msg {
+			self.input.set_text(signed_msg);
+		}
+	}
 	fn toggle_verify(&mut self) {
 		self.verify = !self.verify;
 	}
@@ -416,6 +425,30 @@ impl CommitComponent {
 
 		Ok(())
 	}
+
+	fn add_sign_off(&self, msg: &str) -> Result<String> {
+		const CONFIG_KEY_USER_NAME: &str = "user.name";
+		const CONFIG_KEY_USER_MAIL: &str = "user.email";
+
+		let user = get_config_string(
+			&self.repo.borrow(),
+			CONFIG_KEY_USER_NAME,
+		)?;
+
+		let mail = get_config_string(
+			&self.repo.borrow(),
+			CONFIG_KEY_USER_MAIL,
+		)?;
+
+		let mut msg = msg.to_owned();
+		if let (Some(user), Some(mail)) = (user, mail) {
+			msg.push_str(&format!(
+				"\n\nSigned-off-by {user} <{mail}>"
+			));
+		}
+
+		Ok(msg)
+	}
 }
 
 impl DrawableComponent for CommitComponent {
@@ -461,6 +494,12 @@ impl Component for CommitComponent {
 			out.push(CommandInfo::new(
 				strings::commands::commit_amend(&self.key_config),
 				self.can_amend(),
+				true,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::commit_signoff(&self.key_config),
+				true,
 				true,
 			));
 
@@ -531,6 +570,11 @@ impl Component for CommitComponent {
 						self.input.set_text(msg);
 						self.commit_msg_history_idx += 1;
 					}
+				} else if key_match(
+					e,
+					self.key_config.keys.toggle_signoff,
+				) {
+					self.signoff_commit();
 				}
 				// stop key event propagation
 				return Ok(EventState::Consumed);
