@@ -84,10 +84,10 @@ deny:
 	cargo deny check
 
 install:
-	cargo install --path "." --offline
+	cargo install --path "." --offline --locked
 
 install-timing:
-	cargo install --features=timing --path "." --offline
+	cargo install --features=timing --path "." --offline --locked
 
 licenses:
 	cargo bundle-licenses --format toml --output THIRDPARTY.toml
