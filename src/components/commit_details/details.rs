@@ -86,11 +86,19 @@ impl DetailsComponent {
 		message: &CommitMessage,
 		width: usize,
 	) -> WrappedCommitMessage<'_> {
-		let wrapped_title = textwrap::wrap(&message.subject, width);
+		let wrapped_title = bwrap::wrap!(&message.subject, width)
+			.split('\n')
+			.map(String::from)
+			.map(Cow::from)
+			.collect();
 
 		if let Some(ref body) = message.body {
 			let wrapped_message: Vec<Cow<'_, str>> =
-				textwrap::wrap(body, width).into_iter().collect();
+				bwrap::wrap!(body, width)
+					.split('\n')
+					.map(String::from)
+					.map(Cow::from)
+					.collect();
 
 			(wrapped_title, wrapped_message)
 		} else {
