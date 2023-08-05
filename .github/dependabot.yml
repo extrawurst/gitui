@@ -5,7 +5,3 @@ updates:
   schedule:
     interval: daily
   open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: pprof
-    versions:
-    - 0.4.1

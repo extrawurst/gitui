@@ -980,6 +980,18 @@ pub mod commands {
 			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
+	pub fn commit_signoff(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Sing-off [{}]",
+				key_config.get_hint(key_config.keys.toggle_signoff),
+			),
+			"sign-off commit (-s option)",
+			CMD_GROUP_COMMIT_POPUP,
+		)
+	}
 	pub fn edit_item(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
