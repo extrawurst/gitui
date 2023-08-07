@@ -88,7 +88,7 @@ impl DetailsComponent {
 	) -> WrappedCommitMessage<'_> {
 		let width = width.max(1);
 		let wrapped_title = bwrap::wrap!(&message.subject, width)
-			.split('\n')
+			.lines()
 			.map(String::from)
 			.map(Cow::from)
 			.collect();
@@ -96,7 +96,7 @@ impl DetailsComponent {
 		if let Some(ref body) = message.body {
 			let wrapped_message: Vec<Cow<'_, str>> =
 				bwrap::wrap!(body, width)
-					.split('\n')
+					.lines()
 					.map(String::from)
 					.map(Cow::from)
 					.collect();
