@@ -86,7 +86,7 @@ impl DetailsComponent {
 		message: &CommitMessage,
 		width: usize,
 	) -> WrappedCommitMessage<'_> {
-		let width = if width < 1 { 1 } else { width };
+		let width = width.max(1);
 		let wrapped_title = bwrap::wrap!(&message.subject, width)
 			.split('\n')
 			.map(String::from)
