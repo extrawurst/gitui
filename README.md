@@ -173,6 +173,11 @@ nix-env -iA nixos.gitui
 pkg install gitui
 ```
 
+### conda
+```
+conda install gitui --channel conda-forge
+```
+
 ## Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
