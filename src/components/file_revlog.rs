@@ -415,7 +415,7 @@ impl FileRevlogComponent {
 		// yields the correct index in `self.items`, in this case 0.
 		let mut adjusted_table_state = TableState::default()
 			.with_selected(table_state.selected().map(|selected| {
-				selected.saturating_sub(table_state.offset())
+				selected.saturating_sub(self.items.index_offset())
 			}))
 			.with_offset(0);
 
