@@ -323,7 +323,11 @@ fn draw<B: Backend>(
 }
 
 fn valid_path(repo_path: &RepoPath) -> bool {
-	asyncgit::sync::is_repo(repo_path)
+	let error = asyncgit::sync::repo_open_error(repo_path);
+	if let Some(error) = &error {
+		eprintln!("repo open error: {error}");
+	}
+	error.is_none()
 }
 
 fn select_event(
