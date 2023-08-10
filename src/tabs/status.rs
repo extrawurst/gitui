@@ -195,6 +195,7 @@ impl Status {
 				theme,
 				key_config.clone(),
 				false,
+				options.clone(),
 			),
 			git_diff: AsyncDiff::new(repo_clone.clone(), sender),
 			git_status_workdir: AsyncStatus::new(

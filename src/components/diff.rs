@@ -6,6 +6,7 @@ use super::{
 use crate::{
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	string_utils::tabs_to_spaces,
 	string_utils::trim_offset,
@@ -117,6 +118,7 @@ pub struct DiffComponent {
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	is_immutable: bool,
+	options: SharedOptions,
 }
 
 impl DiffComponent {
@@ -127,6 +129,7 @@ impl DiffComponent {
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 		is_immutable: bool,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			focused: false,
@@ -144,6 +147,7 @@ impl DiffComponent {
 			key_config,
 			is_immutable,
 			repo,
+			options,
 		}
 	}
 	///
@@ -503,6 +507,7 @@ impl DiffComponent {
 					&self.repo.borrow(),
 					&self.current.path,
 					hash,
+					Some(self.options.borrow().diff_options()),
 				)?;
 				self.queue_update();
 			}
@@ -525,6 +530,7 @@ impl DiffComponent {
 						&self.repo.borrow(),
 						&self.current.path,
 						hash,
+						Some(self.options.borrow().diff_options()),
 					)?;
 				}
 
