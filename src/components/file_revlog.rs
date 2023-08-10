@@ -89,6 +89,7 @@ impl FileRevlogComponent {
 				theme,
 				key_config.clone(),
 				true,
+				options.clone(),
 			),
 			git_log: None,
 			git_diff: AsyncDiff::new(

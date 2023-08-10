@@ -20,13 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * simplify theme overrides [[@cruessler](https://github.com/cruessler)] ([#1367](https://github.com/extrawurst/gitui/issues/1367))
 * support for sign-off of commits [[@domtac](https://github.com/domtac)]([#1757](https://github.com/extrawurst/gitui/issues/1757))
 * switched from textwrap to bwrap for text wrapping [[@TheBlackSheep3](https://github.com/TheBlackSheep3/)] ([#1762](https://github.com/extrawurst/gitui/issues/1762))
+* more logging diagnostics when a repo cannot be opened
 * added to [anaconda](https://anaconda.org/conda-forge/gitui) [[@TheBlackSheep3](https://github.com/TheBlackSheep3/)] ([#1626](https://github.com/extrawurst/gitui/issues/1626))
 
 ### Fixes
 * fix commit dialog char count for multibyte characters ([#1726](https://github.com/extrawurst/gitui/issues/1726))
 * fix wrong hit highlighting in fuzzy find popup [[@UUGTech](https://github.com/UUGTech)] ([#1731](https://github.com/extrawurst/gitui/pull/1731))
 * fix symlink support for configuration files [[@TheBlackSheep3](https://github.com/TheBlackSheep3)] ([#1751](https://github.com/extrawurst/gitui/issues/1751))
-* expand `~` in `commit.template` ([#1745](https://github.com/extrawurst/gitui/pull/1745))
+* fix expansion of `~` in `commit.template` ([#1745](https://github.com/extrawurst/gitui/pull/1745))
+* fix hunk (un)staging/reset for # of context lines != 3 ([#1746](https://github.com/extrawurst/gitui/issues/1746))
 
 ## [0.23.0] - 2022-06-19
 

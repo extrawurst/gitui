@@ -991,7 +991,12 @@ impl App {
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetHunk(path, hash) => {
-				sync::reset_hunk(&self.repo.borrow(), &path, hash)?;
+				sync::reset_hunk(
+					&self.repo.borrow(),
+					&path,
+					hash,
+					Some(self.options.borrow().diff_options()),
+				)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetLines(path, lines) => {
