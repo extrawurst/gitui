@@ -237,7 +237,10 @@ impl FileRevlogComponent {
 		let commit_id = table_state.selected().and_then(|selected| {
 			self.items
 				.iter()
-				.nth(selected.saturating_sub(table_state.offset()))
+				.nth(
+					selected
+						.saturating_sub(self.items.index_offset()),
+				)
 				.as_ref()
 				.map(|entry| entry.id)
 		});
