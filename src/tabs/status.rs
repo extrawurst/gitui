@@ -10,7 +10,7 @@ use crate::{
 	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	strings, try_or_popup,
-	ui::style::SharedTheme,
+	ui::style::{SharedTheme, Theme},
 };
 use anyhow::Result;
 use asyncgit::{
@@ -313,9 +313,7 @@ impl Status {
 					Block::default()
 						.border_type(BorderType::Plain)
 						.borders(Borders::all())
-						.border_style(
-							Style::default().fg(Color::Yellow),
-						)
+						.border_style(Theme::attention_block())
 						.title(format!(
 							"Pending {:?}",
 							self.git_state

@@ -27,8 +27,12 @@ use ratatui::{
 	Frame,
 };
 use std::{
-	borrow::Cow, cell::Cell, cmp, collections::BTreeMap,
-	convert::TryFrom, time::Instant,
+	borrow::Cow,
+	cell::Cell,
+	cmp,
+	collections::{BTreeMap, HashSet},
+	convert::TryFrom,
+	time::Instant,
 };
 
 const ELEMENTS_PER_LINE: usize = 9;
@@ -78,11 +82,6 @@ impl CommitList {
 			key_config,
 			title: title.into(),
 		}
-	}
-
-	///
-	pub fn items(&mut self) -> &mut ItemBatch {
-		&mut self.items
 	}
 
 	///
@@ -206,6 +205,57 @@ impl CommitList {
 	}
 
 	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
+		let needs_update = if self.items.highlighting() {
+			self.move_selection_highlighting(scroll)?
+		} else {
+			self.move_selection_normal(scroll)?
+		};
+
+		Ok(needs_update)
+	}
+
+	fn move_selection_highlighting(
+		&mut self,
+		scroll: ScrollType,
+	) -> Result<bool> {
+		let old_selection = self.selection;
+
+		loop {
+			let new_selection = match scroll {
+				ScrollType::Up => self.selection.saturating_sub(1),
+				ScrollType::Down => self.selection.saturating_add(1),
+
+				//TODO: support this?
+				// ScrollType::Home => 0,
+				// ScrollType::End => self.selection_max(),
+				_ => return Ok(false),
+			};
+
+			let new_selection =
+				cmp::min(new_selection, self.selection_max());
+			let selection_changed = new_selection != self.selection;
+
+			if !selection_changed {
+				self.selection = old_selection;
+				return Ok(false);
+			}
+
+			self.selection = new_selection;
+
+			if self
+				.selected_entry()
+				.map(|entry| entry.highlighted)
+				.unwrap_or_default()
+			{
+				return Ok(true);
+			}
+		}
+	}
+
+	fn move_selection_normal(
+		&mut self,
+		scroll: ScrollType,
+	) -> Result<bool> {
 		self.update_scroll_speed();
 
 		#[allow(clippy::cast_possible_truncation)]
@@ -235,7 +285,6 @@ impl CommitList {
 
 		let new_selection =
 			cmp::min(new_selection, self.selection_max());
-
 		let needs_update = new_selection != self.selection;
 
 		self.selection = new_selection;
@@ -297,6 +346,7 @@ impl CommitList {
 
 	#[allow(clippy::too_many_arguments)]
 	fn get_entry_to_add<'a>(
+		&self,
 		e: &'a LogEntry,
 		selected: bool,
 		tags: Option<String>,
@@ -315,6 +365,9 @@ impl CommitList {
 		let splitter =
 			Span::styled(splitter_txt, theme.text(true, selected));
 
+		let normal = !self.items.highlighting()
+			|| (self.items.highlighting() && e.highlighted);
+
 		// marker
 		if let Some(marked) = marked {
 			txt.push(Span::styled(
@@ -328,18 +381,34 @@ impl CommitList {
 			txt.push(splitter.clone());
 		}
 
+		let style_hash = normal
+			.then(|| theme.commit_hash(selected))
+			.unwrap_or_else(|| theme.commit_unhighlighted());
+		let style_time = normal
+			.then(|| theme.commit_time(selected))
+			.unwrap_or_else(|| theme.commit_unhighlighted());
+		let style_author = normal
+			.then(|| theme.commit_author(selected))
+			.unwrap_or_else(|| theme.commit_unhighlighted());
+		let style_tags = normal
+			.then(|| theme.tags(selected))
+			.unwrap_or_else(|| theme.commit_unhighlighted());
+		let style_branches = normal
+			.then(|| theme.branch(selected, true))
+			.unwrap_or_else(|| theme.commit_unhighlighted());
+		let style_msg = normal
+			.then(|| theme.text(true, selected))
+			.unwrap_or_else(|| theme.commit_unhighlighted());
+
 		// commit hash
-		txt.push(Span::styled(
-			Cow::from(&*e.hash_short),
-			theme.commit_hash(selected),
-		));
+		txt.push(Span::styled(Cow::from(&*e.hash_short), style_hash));
 
 		txt.push(splitter.clone());
 
 		// commit timestamp
 		txt.push(Span::styled(
 			Cow::from(e.time_to_string(now)),
-			theme.commit_time(selected),
+			style_time,
 		));
 
 		txt.push(splitter.clone());
@@ -349,33 +418,23 @@ impl CommitList {
 		let author = string_width_align(&e.author, author_width);
 
 		// commit author
-		txt.push(Span::styled::<String>(
-			author,
-			theme.commit_author(selected),
-		));
+		txt.push(Span::styled::<String>(author, style_author));
 
 		txt.push(splitter.clone());
 
 		// commit tags
 		if let Some(tags) = tags {
 			txt.push(splitter.clone());
-			txt.push(Span::styled(tags, theme.tags(selected)));
+			txt.push(Span::styled(tags, style_tags));
 		}
 
 		if let Some(local_branches) = local_branches {
 			txt.push(splitter.clone());
-			txt.push(Span::styled(
-				local_branches,
-				theme.branch(selected, true),
-			));
+			txt.push(Span::styled(local_branches, style_branches));
 		}
-
 		if let Some(remote_branches) = remote_branches {
 			txt.push(splitter.clone());
-			txt.push(Span::styled(
-				remote_branches,
-				theme.branch(selected, true),
-			));
+			txt.push(Span::styled(remote_branches, style_branches));
 		}
 
 		txt.push(splitter);
@@ -387,7 +446,7 @@ impl CommitList {
 		// commit msg
 		txt.push(Span::styled(
 			format!("{:message_width$}", &e.msg),
-			theme.text(true, selected),
+			style_msg,
 		));
 
 		Line::from(txt)
@@ -428,57 +487,18 @@ impl CommitList {
 						.join(" ")
 				});
 
-			let remote_branches = self
-				.remote_branches
-				.get(&e.id)
-				.and_then(|remote_branches| {
-					let filtered_branches: Vec<_> = remote_branches
-						.iter()
-						.filter(|remote_branch| {
-							self.local_branches
-								.get(&e.id)
-								.map_or(true, |local_branch| {
-									local_branch.iter().any(
-										|local_branch| {
-											let has_corresponding_local_branch = match &local_branch.details {
-												BranchDetails::Local(details) =>
-													details
-														.upstream
-														.as_ref()
-														.map_or(false, |upstream| upstream.reference == remote_branch.reference),
-												BranchDetails::Remote(_) =>
-														false,
-											};
-
-											!has_corresponding_local_branch
-										},
-									)
-								})
-						})
-						.map(|remote_branch| {
-							format!("[{0}]", remote_branch.name)
-						})
-						.collect();
-
-					if filtered_branches.is_empty() {
-						None
-					} else {
-						Some(filtered_branches.join(" "))
-					}
-				});
-
 			let marked = if any_marked {
 				self.is_marked(&e.id)
 			} else {
 				None
 			};
 
-			txt.push(Self::get_entry_to_add(
+			txt.push(self.get_entry_to_add(
 				e,
 				idx + self.scroll_top.get() == selection,
 				tags,
 				local_branches,
-				remote_branches,
+				self.remote_branches_string(e),
 				&self.theme,
 				width,
 				now,
@@ -487,6 +507,51 @@ impl CommitList {
 		}
 
 		txt
+	}
+
+	fn remote_branches_string(&self, e: &LogEntry) -> Option<String> {
+		self.remote_branches.get(&e.id).and_then(|remote_branches| {
+			let filtered_branches: Vec<_> = remote_branches
+				.iter()
+				.filter(|remote_branch| {
+					self.local_branches.get(&e.id).map_or(
+						true,
+						|local_branch| {
+							local_branch.iter().any(|local_branch| {
+								let has_corresponding_local_branch =
+									match &local_branch.details {
+										BranchDetails::Local(
+											details,
+										) => details
+											.upstream
+											.as_ref()
+											.map_or(
+												false,
+												|upstream| {
+													upstream.reference == remote_branch.reference
+												},
+											),
+										BranchDetails::Remote(_) => {
+											false
+										}
+									};
+
+								!has_corresponding_local_branch
+							})
+						},
+					)
+				})
+				.map(|remote_branch| {
+					format!("[{0}]", remote_branch.name)
+				})
+				.collect();
+
+			if filtered_branches.is_empty() {
+				None
+			} else {
+				Some(filtered_branches.join(" "))
+			}
+		})
 	}
 
 	#[allow(clippy::missing_const_for_fn)]
@@ -536,6 +601,67 @@ impl CommitList {
 				.or_default()
 				.push(remote_branch);
 		}
+	}
+
+	///
+	pub fn set_items(
+		&mut self,
+		start_index: usize,
+		commits: Vec<asyncgit::sync::CommitInfo>,
+		highlighted: &Option<HashSet<CommitId>>,
+	) {
+		self.items.set_items(start_index, commits, highlighted);
+
+		if self.items.highlighting() {
+			self.select_next_highlight();
+		}
+	}
+
+	fn select_next_highlight(&mut self) {
+		let old_selection = self.selection;
+
+		let mut offset = 0;
+		loop {
+			let hit_upper_bound =
+				old_selection + offset > self.selection_max();
+			let hit_lower_bound = offset > old_selection;
+
+			if !hit_upper_bound {
+				self.selection = old_selection + offset;
+
+				if self
+					.selected_entry()
+					.map(|entry| entry.highlighted)
+					.unwrap_or_default()
+				{
+					break;
+				}
+			}
+
+			if !hit_lower_bound {
+				self.selection = old_selection - offset;
+
+				if self
+					.selected_entry()
+					.map(|entry| entry.highlighted)
+					.unwrap_or_default()
+				{
+					break;
+				}
+			}
+
+			if hit_lower_bound && hit_upper_bound {
+				self.selection = old_selection;
+				break;
+			}
+
+			offset += 1;
+		}
+	}
+
+	///
+	pub fn needs_data(&self, idx: usize, idx_max: usize) -> bool {
+		self.items.needs_data(idx, idx_max)
 	}
 }
 

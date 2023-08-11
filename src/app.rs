@@ -8,10 +8,10 @@ use crate::{
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, FetchComponent, FileRevlogComponent,
 		FuzzyFindPopup, FuzzyFinderTarget, HelpComponent,
-		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
-		PullComponent, PushComponent, PushTagsComponent,
-		RenameBranchComponent, ResetPopupComponent,
-		RevisionFilesPopup, StashMsgComponent,
+		InspectCommitComponent, LogSearchPopupComponent,
+		MsgComponent, OptionsPopupComponent, PullComponent,
+		PushComponent, PushTagsComponent, RenameBranchComponent,
+		ResetPopupComponent, RevisionFilesPopup, StashMsgComponent,
 		SubmodulesListComponent, TagCommitComponent,
 		TagListComponent,
 	},
@@ -74,6 +74,7 @@ pub struct App {
 	external_editor_popup: ExternalEditorComponent,
 	revision_files_popup: RevisionFilesPopup,
 	fuzzy_find_popup: FuzzyFindPopup,
+	log_search_popup: LogSearchPopupComponent,
 	push_popup: PushComponent,
 	push_tags_popup: PushTagsComponent,
 	pull_popup: PullComponent,
@@ -267,6 +268,11 @@ impl App {
 			),
 			submodule_popup: SubmodulesListComponent::new(
 				repo.clone(),
+				&queue,
+				theme.clone(),
+				key_config.clone(),
+			),
+			log_search_popup: LogSearchPopupComponent::new(
 				&queue,
 				theme.clone(),
 				key_config.clone(),
@@ -580,6 +586,7 @@ impl App {
 	accessors!(
 		self,
 		[
+			log_search_popup,
 			fuzzy_find_popup,
 			msg,
 			reset,
@@ -632,6 +639,7 @@ impl App {
 			rename_branch_popup,
 			revision_files_popup,
 			fuzzy_find_popup,
+			log_search_popup,
 			push_popup,
 			push_tags_popup,
 			pull_popup,
@@ -895,6 +903,11 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
+			InternalEvent::OpenLogSearchPopup => {
+				self.log_search_popup.open()?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
 			InternalEvent::OptionSwitched(o) => {
 				match o {
 					AppOption::StatusShowUntracked => {
@@ -960,6 +973,9 @@ impl App {
 			}
 			InternalEvent::OpenResetPopup(id) => {
 				self.reset_popup.open(id)?;
+			}
+			InternalEvent::CommitSearch(options) => {
+				self.revlog.search(options)?;
 			}
 		};
 

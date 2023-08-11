@@ -1,3 +1,5 @@
+use crate::strings::order;
+
 ///
 #[derive(Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub struct CommandText {
@@ -60,7 +62,7 @@ impl CommandInfo {
 			enabled,
 			quick_bar: true,
 			available,
-			order: 0,
+			order: order::AVERAGE,
 		}
 	}
 

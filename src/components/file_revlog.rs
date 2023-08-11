@@ -257,7 +257,7 @@ impl FileRevlogComponent {
 				//
 				// [gitui-issue]: https://github.com/extrawurst/gitui/issues/1560
 				// [tui-issue]: https://github.com/fdehau/tui-rs/issues/626
-				self.items.set_items(0, commits);
+				self.items.set_items(0, commits, &None);
 			}
 
 			self.table_state.set(table_state);
