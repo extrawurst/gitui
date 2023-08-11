@@ -335,47 +335,12 @@ impl DiffComponent {
 	}
 
 	fn get_text(&self, width: u16, height: u16) -> Vec<Line> {
-		let mut res: Vec<Line> = Vec::new();
 		if let Some(diff) = &self.diff {
-			if diff.hunks.is_empty() {
-				let is_positive = diff.size_delta >= 0;
-				let delta_byte_size =
-					ByteSize::b(diff.size_delta.unsigned_abs());
-				let sign = if is_positive { "+" } else { "-" };
-				res.extend(vec![Line::from(vec![
-					Span::raw(Cow::from("size: ")),
-					Span::styled(
-						Cow::from(format!(
-							"{}",
-							ByteSize::b(diff.sizes.0)
-						)),
-						self.theme.text(false, false),
-					),
-					Span::raw(Cow::from(" -> ")),
-					Span::styled(
-						Cow::from(format!(
-							"{}",
-							ByteSize::b(diff.sizes.1)
-						)),
-						self.theme.text(false, false),
-					),
-					Span::raw(Cow::from(" (")),
-					Span::styled(
-						Cow::from(format!(
-							"{sign}{delta_byte_size:}"
-						)),
-						self.theme.diff_line(
-							if is_positive {
-								DiffLineType::Add
-							} else {
-								DiffLineType::Delete
-							},
-							false,
-						),
-					),
-					Span::raw(Cow::from(")")),
-				])]);
+			return if diff.hunks.is_empty() {
+				self.get_text_binary(diff)
 			} else {
+				let mut res: Vec<Line> = Vec::new();
+
 				let min = self.vertical_scroll.get_top();
 				let max = min + height as usize;
 
@@ -426,9 +391,44 @@ impl DiffComponent {
 						line_cursor += hunk_len;
 					}
 				}
-			}
+
+				res
+			};
 		}
-		res
+
+		vec![]
+	}
+
+	fn get_text_binary(&self, diff: &FileDiff) -> Vec<Line> {
+		let is_positive = diff.size_delta >= 0;
+		let delta_byte_size =
+			ByteSize::b(diff.size_delta.unsigned_abs());
+		let sign = if is_positive { "+" } else { "-" };
+		vec![Line::from(vec![
+			Span::raw(Cow::from("size: ")),
+			Span::styled(
+				Cow::from(format!("{}", ByteSize::b(diff.sizes.0))),
+				self.theme.text(false, false),
+			),
+			Span::raw(Cow::from(" -> ")),
+			Span::styled(
+				Cow::from(format!("{}", ByteSize::b(diff.sizes.1))),
+				self.theme.text(false, false),
+			),
+			Span::raw(Cow::from(" (")),
+			Span::styled(
+				Cow::from(format!("{sign}{delta_byte_size:}")),
+				self.theme.diff_line(
+					if is_positive {
+						DiffLineType::Add
+					} else {
+						DiffLineType::Delete
+					},
+					false,
+				),
+			),
+			Span::raw(Cow::from(")")),
+		])]
 	}
 
 	fn get_line_to_add<'a>(
@@ -441,6 +441,9 @@ impl DiffComponent {
 		scrolled_right: usize,
 	) -> Line<'a> {
 		let style = theme.diff_hunk_marker(selected_hunk);
+
+		let is_content_line =
+			matches!(line.line_type, DiffLineType::None);
 
 		let left_side_of_line = if end_of_hunk {
 			Span::styled(Cow::from(symbols::line::BOTTOM_LEFT), style)
@@ -458,7 +461,11 @@ impl DiffComponent {
 		};
 
 		let content =
-			tabs_to_spaces(line.content.as_ref().to_string());
+			if !is_content_line && line.content.as_ref().is_empty() {
+				String::from(strings::symbol::LINE_BREAK)
+			} else {
+				tabs_to_spaces(line.content.as_ref().to_string())
+			};
 		let content = trim_offset(&content, scrolled_right);
 
 		let filled = if selected {

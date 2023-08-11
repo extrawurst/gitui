@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**visualize empty lines in diff better**
+
+![diff-empty-line](assets/diff-empty-line.png)
+
 ### Breaking Changes
 * Do you use a custom theme?
 
@@ -22,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * switched from textwrap to bwrap for text wrapping [[@TheBlackSheep3](https://github.com/TheBlackSheep3/)] ([#1762](https://github.com/extrawurst/gitui/issues/1762))
 * more logging diagnostics when a repo cannot be opened
 * added to [anaconda](https://anaconda.org/conda-forge/gitui) [[@TheBlackSheep3](https://github.com/TheBlackSheep3/)] ([#1626](https://github.com/extrawurst/gitui/issues/1626))
+* visualize empty line substituted with content in diff better ([#1359](https://github.com/extrawurst/gitui/issues/1359))
 
 ### Fixes
 * fix commit dialog char count for multibyte characters ([#1726](https://github.com/extrawurst/gitui/issues/1726))
