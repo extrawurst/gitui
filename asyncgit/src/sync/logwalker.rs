@@ -1,5 +1,4 @@
 use super::CommitId;
-use crate::sync::RepoPath;
 use crate::{error::Result, sync::commit_files::get_commit_diff};
 use git2::{Commit, Oid, Repository};
 use std::{
@@ -36,19 +35,16 @@ pub type LogWalkerFilter = Arc<
 >;
 
 ///
-pub fn diff_contains_file(
-	repo_path: RepoPath,
-	file_path: String,
-) -> LogWalkerFilter {
+pub fn diff_contains_file(file_path: String) -> LogWalkerFilter {
 	Arc::new(Box::new(
 		move |repo: &Repository,
 		      commit_id: &CommitId|
 		      -> Result<bool> {
 			let diff = get_commit_diff(
-				&repo_path,
 				repo,
 				*commit_id,
 				Some(file_path.clone()),
+				None,
 				None,
 			)?;
 
@@ -224,9 +220,7 @@ mod tests {
 
 		let _third_commit_id = commit(&repo_path, "commit3").unwrap();
 
-		let repo_path_clone = repo_path.clone();
-		let diff_contains_baz =
-			diff_contains_file(repo_path_clone, "baz".into());
+		let diff_contains_baz = diff_contains_file("baz".into());
 
 		let mut items = Vec::new();
 		let mut walker = LogWalker::new(&repo, 100)?
@@ -241,8 +235,7 @@ mod tests {
 
 		assert_eq!(items.len(), 0);
 
-		let diff_contains_bar =
-			diff_contains_file(repo_path, "bar".into());
+		let diff_contains_bar = diff_contains_file("bar".into());
 
 		let mut items = Vec::new();
 		let mut walker = LogWalker::new(&repo, 100)?

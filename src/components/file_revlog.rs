@@ -117,10 +117,7 @@ impl FileRevlogComponent {
 	pub fn open(&mut self, open_request: FileRevOpen) -> Result<()> {
 		self.open_request = Some(open_request.clone());
 
-		let filter = diff_contains_file(
-			self.repo_path.borrow().clone(),
-			open_request.file_path,
-		);
+		let filter = diff_contains_file(open_request.file_path);
 		self.git_log = Some(AsyncLog::new(
 			self.repo_path.borrow().clone(),
 			&self.sender,

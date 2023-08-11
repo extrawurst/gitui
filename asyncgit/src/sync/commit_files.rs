@@ -1,14 +1,14 @@
 //! Functions for getting infos about files in commits
 
-use super::{
-	diff::DiffOptions, stash::is_stash_commit, CommitId, RepoPath,
-};
+use super::{diff::DiffOptions, CommitId, RepoPath};
 use crate::{
-	error::Result, sync::repository::repo, StatusItem, StatusItemType,
+	error::Result,
+	sync::{get_stashes, repository::repo},
+	StatusItem, StatusItemType,
 };
 use git2::{Diff, Repository};
 use scopetime::scope_time;
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashSet};
 
 /// get all files that are part of a commit
 pub fn get_commit_files(
@@ -23,7 +23,13 @@ pub fn get_commit_files(
 	let diff = if let Some(other) = other {
 		get_compare_commits_diff(&repo, (id, other), None, None)?
 	} else {
-		get_commit_diff(repo_path, &repo, id, None, None)?
+		get_commit_diff(
+			&repo,
+			id,
+			None,
+			None,
+			Some(&get_stashes(repo_path)?.into_iter().collect()),
+		)?
 	};
 
 	let res = diff
@@ -91,12 +97,12 @@ pub fn get_compare_commits_diff(
 }
 
 /// get diff of a commit to its first parent
-pub fn get_commit_diff<'a>(
-	repo_path: &RepoPath,
+pub(crate) fn get_commit_diff<'a>(
 	repo: &'a Repository,
 	id: CommitId,
 	pathspec: Option<String>,
 	options: Option<DiffOptions>,
+	stashes: Option<&HashSet<CommitId>>,
 ) -> Result<Diff<'a>> {
 	// scope_time!("get_commit_diff");
 
@@ -128,14 +134,17 @@ pub fn get_commit_diff<'a>(
 		Some(&mut opts),
 	)?;
 
-	if is_stash_commit(repo_path, &id)? {
+	if stashes
+		.map(|stashes| stashes.contains(&id))
+		.unwrap_or_default()
+	{
 		if let Ok(untracked_commit) = commit.parent_id(2) {
 			let untracked_diff = get_commit_diff(
-				repo_path,
 				repo,
 				CommitId::new(untracked_commit),
 				pathspec,
 				options,
+				stashes,
 			)?;
 
 			diff.merge(&untracked_diff)?;
