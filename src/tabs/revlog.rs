@@ -19,13 +19,13 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::time::Duration;
-use sync::CommitTags;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	Frame,
 };
+use std::time::Duration;
+use sync::CommitTags;
 
 const SLICE_SIZE: usize = 1200;
 
@@ -36,7 +36,8 @@ pub struct Revlog {
 	list: CommitList,
 	git_log: AsyncLog,
 	git_tags: AsyncTags,
-	git_branches: AsyncSingleJob<AsyncBranchesJob>,
+	git_local_branches: AsyncSingleJob<AsyncBranchesJob>,
+	git_remote_branches: AsyncSingleJob<AsyncBranchesJob>,
 	queue: Queue,
 	visible: bool,
 	key_config: SharedKeyConfig,
@@ -74,7 +75,8 @@ impl Revlog {
 				None,
 			),
 			git_tags: AsyncTags::new(repo.borrow().clone(), sender),
-			git_branches: AsyncSingleJob::new(sender.clone()),
+			git_local_branches: AsyncSingleJob::new(sender.clone()),
+			git_remote_branches: AsyncSingleJob::new(sender.clone()),
 			visible: false,
 			key_config,
 		}
@@ -84,7 +86,8 @@ impl Revlog {
 	pub fn any_work_pending(&self) -> bool {
 		self.git_log.is_pending()
 			|| self.git_tags.is_pending()
-			|| self.git_branches.is_pending()
+			|| self.git_local_branches.is_pending()
+			|| self.git_remote_branches.is_pending()
 			|| self.commit_details.any_work_pending()
 	}
 
@@ -136,12 +139,26 @@ impl Revlog {
 					}
 				}
 				AsyncGitNotification::Branches => {
-					if let Some(branches) =
-						self.git_branches.take_last()
+					if let Some(local_branches) =
+						self.git_local_branches.take_last()
 					{
-						if let Some(Ok(branches)) = branches.result()
+						if let Some(Ok(local_branches)) =
+							local_branches.result()
 						{
-							self.list.set_branches(branches);
+							self.list
+								.set_local_branches(local_branches);
+							self.update()?;
+						}
+					}
+
+					if let Some(remote_branches) =
+						self.git_remote_branches.take_last()
+					{
+						if let Some(Ok(remote_branches)) =
+							remote_branches.result()
+						{
+							self.list
+								.set_remote_branches(remote_branches);
 							self.update()?;
 						}
 					}
@@ -505,9 +522,14 @@ impl Component for Revlog {
 		self.visible = true;
 		self.list.clear();
 
-		self.git_branches.spawn(AsyncBranchesJob::new(
+		self.git_local_branches.spawn(AsyncBranchesJob::new(
 			self.repo.borrow().clone(),
 			true,
+		));
+
+		self.git_remote_branches.spawn(AsyncBranchesJob::new(
+			self.repo.borrow().clone(),
+			false,
 		));
 
 		self.update()?;

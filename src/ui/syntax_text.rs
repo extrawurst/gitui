@@ -3,6 +3,7 @@ use asyncgit::{
 	ProgressPercent,
 };
 use once_cell::sync::Lazy;
+use ratatui::text::{Line, Span};
 use scopetime::scope_time;
 use std::{
 	ffi::OsStr,
@@ -18,7 +19,6 @@ use syntect::{
 	},
 	parsing::{ParseState, ScopeStack, SyntaxSet},
 };
-use tui::text::{Span, Spans};
 
 use crate::{AsyncAppNotification, SyntaxHighlightProgress};
 
@@ -162,23 +162,23 @@ impl SyntaxText {
 	}
 }
 
-impl<'a> From<&'a SyntaxText> for tui::text::Text<'a> {
+impl<'a> From<&'a SyntaxText> for ratatui::text::Text<'a> {
 	fn from(v: &'a SyntaxText) -> Self {
-		let mut result_lines: Vec<Spans> =
+		let mut result_lines: Vec<Line> =
 			Vec::with_capacity(v.lines.len());
 
 		for (syntax_line, line_content) in
 			v.lines.iter().zip(v.text.lines())
 		{
-			let mut line_span =
-				Spans(Vec::with_capacity(syntax_line.items.len()));
+			let mut line_span: Line =
+				Vec::with_capacity(syntax_line.items.len()).into();
 
 			for (style, _, range) in &syntax_line.items {
 				let item_content = &line_content[range.clone()];
 				let item_style = syntact_style_to_tui(style);
 
 				line_span
-					.0
+					.spans
 					.push(Span::styled(item_content, item_style));
 			}
 
@@ -189,22 +189,23 @@ impl<'a> From<&'a SyntaxText> for tui::text::Text<'a> {
 	}
 }
 
-fn syntact_style_to_tui(style: &Style) -> tui::style::Style {
-	let mut res =
-		tui::style::Style::default().fg(tui::style::Color::Rgb(
+fn syntact_style_to_tui(style: &Style) -> ratatui::style::Style {
+	let mut res = ratatui::style::Style::default().fg(
+		ratatui::style::Color::Rgb(
 			style.foreground.r,
 			style.foreground.g,
 			style.foreground.b,
-		));
+		),
+	);
 
 	if style.font_style.contains(FontStyle::BOLD) {
-		res = res.add_modifier(tui::style::Modifier::BOLD);
+		res = res.add_modifier(ratatui::style::Modifier::BOLD);
 	}
 	if style.font_style.contains(FontStyle::ITALIC) {
-		res = res.add_modifier(tui::style::Modifier::ITALIC);
+		res = res.add_modifier(ratatui::style::Modifier::ITALIC);
 	}
 	if style.font_style.contains(FontStyle::UNDERLINE) {
-		res = res.add_modifier(tui::style::Modifier::UNDERLINED);
+		res = res.add_modifier(ratatui::style::Modifier::UNDERLINED);
 	}
 
 	res

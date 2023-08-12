@@ -1,7 +1,6 @@
 use super::style::SharedTheme;
 use easy_cast::CastFloat;
-use std::convert::TryFrom;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	buffer::Buffer,
 	layout::{Margin, Rect},
@@ -13,6 +12,7 @@ use tui::{
 	widgets::Widget,
 	Frame,
 };
+use std::convert::TryFrom;
 
 pub enum Orientation {
 	Vertical,

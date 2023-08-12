@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [nightly, stable, '1.64']
+        rust: [nightly, stable, '1.65']
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 
@@ -64,7 +64,7 @@ jobs:
       run: make build-release
 
     - name: Test Install
-      run: cargo install --path "." --force
+      run: cargo install --path "." --force --locked
 
     - name: Binary Size (unix)
       if: matrix.os != 'windows-latest'
@@ -94,7 +94,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [nightly, stable, '1.64']
+        rust: [nightly, stable, '1.65']
     continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
     - uses: actions/checkout@master
@@ -123,14 +123,14 @@ jobs:
       run: |
         make test-linux-musl
     - name: Test Install
-      run: cargo install --path "." --force
+      run: cargo install --path "." --force --locked
 
   build-linux-arm:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        rust: [nightly, stable, '1.64']
+        rust: [nightly, stable, '1.65']
     continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
     - uses: actions/checkout@master
@@ -208,7 +208,8 @@ jobs:
         
     - name: cargo-udeps
       run: |
-        cargo install --locked cargo-udeps
+        # cargo install --locked cargo-udeps
+        cargo install --git https://github.com/est31/cargo-udeps --locked
         cargo +nightly udeps --all-targets
 
 

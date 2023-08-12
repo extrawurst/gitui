@@ -14,10 +14,10 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::{self, CommitDetails, CommitId, RepoPathRef};
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
-	text::{Span, Spans, Text},
+	text::{Line, Span, Text},
 	Frame,
 };
 
@@ -65,9 +65,9 @@ impl CompareDetailsComponent {
 	}
 
 	#[allow(unstable_name_collisions)]
-	fn get_commit_text(&self, data: &CommitDetails) -> Vec<Spans> {
+	fn get_commit_text(&self, data: &CommitDetails) -> Vec<Line> {
 		let mut res = vec![
-			Spans::from(vec![
+			Line::from(vec![
 				style_detail(&self.theme, &Detail::Author),
 				Span::styled(
 					Cow::from(format!(
@@ -77,7 +77,7 @@ impl CompareDetailsComponent {
 					self.theme.text(true, false),
 				),
 			]),
-			Spans::from(vec![
+			Line::from(vec![
 				style_detail(&self.theme, &Detail::Date),
 				Span::styled(
 					Cow::from(time_to_string(
@@ -89,7 +89,7 @@ impl CompareDetailsComponent {
 			]),
 		];
 
-		res.push(Spans::from(vec![
+		res.push(Line::from(vec![
 			style_detail(&self.theme, &Detail::Message),
 			Span::styled(
 				Cow::from(

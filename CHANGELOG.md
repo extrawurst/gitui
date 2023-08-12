@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**visualize empty lines in diff better**
+
+![diff-empty-line](assets/diff-empty-line.png)
+
+### Breaking Changes
+* Do you use a custom theme?
+
+  The way themes work got changed and simplified ([see docs](https://github.com/extrawurst/gitui/blob/master/THEMES.md) for more info):
+
+  * The format of `theme.ron` has changed: you only specify the colors etc. that should differ from their default value
+  * Future additions of colors etc. will not break existing themes anymore
+
+### Added
+* support 'n'/'p' key to move to the next/prev hunk in diff component [[@hamflx](https://github.com/hamflx)] ([#1523](https://github.com/extrawurst/gitui/issues/1523))
+* simplify theme overrides [[@cruessler](https://github.com/cruessler)] ([#1367](https://github.com/extrawurst/gitui/issues/1367))
+* support for sign-off of commits [[@domtac](https://github.com/domtac)]([#1757](https://github.com/extrawurst/gitui/issues/1757))
+* switched from textwrap to bwrap for text wrapping [[@TheBlackSheep3](https://github.com/TheBlackSheep3/)] ([#1762](https://github.com/extrawurst/gitui/issues/1762))
+* more logging diagnostics when a repo cannot be opened
+* added to [anaconda](https://anaconda.org/conda-forge/gitui) [[@TheBlackSheep3](https://github.com/TheBlackSheep3/)] ([#1626](https://github.com/extrawurst/gitui/issues/1626))
+* visualize empty line substituted with content in diff better ([#1359](https://github.com/extrawurst/gitui/issues/1359))
+
+### Fixes
+* fix commit dialog char count for multibyte characters ([#1726](https://github.com/extrawurst/gitui/issues/1726))
+* fix wrong hit highlighting in fuzzy find popup [[@UUGTech](https://github.com/UUGTech)] ([#1731](https://github.com/extrawurst/gitui/pull/1731))
+* fix symlink support for configuration files [[@TheBlackSheep3](https://github.com/TheBlackSheep3)] ([#1751](https://github.com/extrawurst/gitui/issues/1751))
+* fix expansion of `~` in `commit.template` ([#1745](https://github.com/extrawurst/gitui/pull/1745))
+* fix hunk (un)staging/reset for # of context lines != 3 ([#1746](https://github.com/extrawurst/gitui/issues/1746))
+
+## [0.23.0] - 2022-06-19
+
 **reset to commit**
 
 ![reset](assets/reset_in_log.gif)
@@ -15,20 +45,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![reword](assets/reword.gif)
 
+**fuzzy find branch**
+
+![fuzzy-branch](assets/fuzzy-find-branch.gif)
+
 ### Breaking Change
 * `focus_XYZ` key bindings are merged into the `move_XYZ` set, so only one way to bind arrow-like keys from now on ([#1539](https://github.com/extrawurst/gitui/issues/1539))
 
 ### Added
 * allow reset (soft,mixed,hard) from commit log ([#1500](https://github.com/extrawurst/gitui/issues/1500))
 * support **reword** of commit from log ([#829](https://github.com/extrawurst/gitui/pull/829))
+* fuzzy find branch [[@UUGTech](https://github.com/UUGTech)] ([#1350](https://github.com/extrawurst/gitui/issues/1350))
 * list changes in commit message inside external editor [[@bc-universe]](https://github.com/bc-universe) ([#1420](https://github.com/extrawurst/gitui/issues/1420))
 * allow detaching HEAD and checking out specific commit from log view [[@fralcow]](https://github.com/fralcow) ([#1499](https://github.com/extrawurst/gitui/pull/1499))
 * add no-verify option on commits to not run hooks [[@dam5h]](https://github.com/dam5h) ([#1374](https://github.com/extrawurst/gitui/issues/1374))
 * allow `fetch` on status tab [[@alensiljak]](https://github.com/alensiljak) ([#1471](https://github.com/extrawurst/gitui/issues/1471))
 * allow `copy` file path on revision files and status tree [[@yanganto]](https://github.com/yanganto)  ([#1516](https://github.com/extrawurst/gitui/pull/1516))
 * print message of where log will be written if `-l` is set ([#1472](https://github.com/extrawurst/gitui/pull/1472))
+* show remote branches in log [[@cruessler](https://github.com/cruessler)] ([#1501](https://github.com/extrawurst/gitui/issues/1501))
+* scrolling functionality to fuzzy-find [[@AmmarAbouZor](https://github.com/AmmarAbouZor)] ([#1732](https://github.com/extrawurst/gitui/issues/1732))
 
 ### Fixes
+* fixed side effect of crossterm 0.26 on windows that caused double input of all keys [[@pm100]](https://github/pm100) ([#1686](https://github.com/extrawurst/gitui/pull/1686))
 * commit msg history ordered the wrong way ([#1445](https://github.com/extrawurst/gitui/issues/1445))
 * improve help documentation for amend cmd ([#1448](https://github.com/extrawurst/gitui/issues/1448))
 * lag issue when showing files tab ([#1451](https://github.com/extrawurst/gitui/issues/1451))
@@ -38,12 +76,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * crash on branches popup in small terminal ([#1470](https://github.com/extrawurst/gitui/issues/1470))
 * `edit` command duplication ([#1489](https://github.com/extrawurst/gitui/issues/1489))
 * syntax errors in `key_bindings.ron` will be logged ([#1491](https://github.com/extrawurst/gitui/issues/1491))
+* Fix UI freeze when copying with xclip installed on Linux ([#1497](https://github.com/extrawurst/gitui/issues/1497))
+* Fix UI freeze when copying with wl-copy installed on Linux ([#1497](https://github.com/extrawurst/gitui/issues/1497))
 * commit hooks report "command not found" on Windows with wsl2 installed ([#1528](https://github.com/extrawurst/gitui/issues/1528))
 * crashes on entering submodules ([#1510](https://github.com/extrawurst/gitui/issues/1510))
 * fix race issue: revlog messages sometimes appear empty ([#1473](https://github.com/extrawurst/gitui/issues/1473))
+* default to tick-based updates [[@cruessler](https://github.com/cruessler)] ([#1444](https://github.com/extrawurst/gitui/issues/1444))
+* add support for options handling in log and stashes views [[@kamillo](https://github.com/kamillo)] ([#1661](https://github.com/extrawurst/gitui/issues/1661))
 
 ### Changed
-* minimum supported rust version bumped to 1.64 (thank you `clap`)
+* minimum supported rust version bumped to 1.65 (thank you `time` crate)
 
 ## [0.22.1] - 2022-11-22
 

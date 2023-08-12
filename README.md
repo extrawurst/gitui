@@ -1,7 +1,7 @@
 <h1 align="center">
 <img width="300px" src="assets/logo.png" />
 
-[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![DISC][s5]][l5] [![TWEET][s6]][l6]
+[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![DISC][s5]][l5] [![TWEET][s6]][l6] [![dep_status][s7]][l7]
 
 </h1>
 
@@ -18,6 +18,8 @@
 [l5]: https://discord.gg/7TGFfuq
 [s6]: https://img.shields.io/twitter/follow/extrawurst?label=follow&style=social
 [l6]: https://twitter.com/intent/follow?screen_name=extrawurst
+[s7]: https://deps.rs/repo/github/extrawurst/gitui/status.svg
+[l7]: https://deps.rs/repo/github/extrawurst/gitui
 
 <h5 align="center">GitUI provides you with the comfort of a git GUI but right in your terminal</h1>
 
@@ -75,7 +77,7 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 
 These are the high level goals before calling out `1.0`:
 
-* log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
+* log search (commit, author, sha) ([#1791](https://github.com/extrawurst/gitui/issues/1791))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
 * interactive rebase ([#32](https://github.com/extrawurst/gitui/issues/32))
 
@@ -116,6 +118,12 @@ Available in [dm9pZCAq overlay](https://github.com/gentoo-mirror/dm9pZCAq)
 sudo eselect repository enable dm9pZCAq
 sudo emerge --sync dm9pZCAq
 sudo emerge dev-vcs/gitui::dm9pZCAq
+```
+
+### [openSUSE](https://software.opensuse.org/package/gitui) (Tumbleweed)
+
+```sh
+sudo zypper install gitui
 ```
 
 ### Homebrew (macOS)
@@ -165,22 +173,49 @@ nix-env -iA nixos.gitui
 pkg install gitui
 ```
 
+### [Anaconda](https://anaconda.org/conda-forge/gitui)
+```
+conda install -c conda-forge gitui 
+```
+
 ## Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
 
 Binaries available for:
 
-- Linux
-- macOS
-- Windows
+### Linux
+
+- gitui-linux-musl.tar.gz (linux on x86_64)
+- gitui-linux-aarch64.tar.gz (linux on 64 bit arm)
+- gitui-linux-arm.tar.gz
+- gitui-linux-armv7.tar.gz
+
+All contain a single binary file
+
+### macOS
+
+- gitui-mac.tar.gz (intel Mac, uses Rosetta on Apple silicon, single binary)
+
+
+### Windows
+
+- gitui-win.tar.gz (single 64bit binary)
+- gitui.msi (64bit Installer package)
+
 
 ## 7. <a name="build"></a> Build <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 ### Requirements
 
-- Minimum supported `rust`/`cargo` version: `1.64`
+- Minimum supported `rust`/`cargo` version: `1.65`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
+
+- To build openssl dependency (see https://docs.rs/openssl/latest/openssl/)
+  - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/) 
+  - a c compiler (msvc, gcc or clang, cargo will find it)
+
+- To run the complete test suite python is required (and it must be invokable as `python`)
 
 ### Cargo Install
 

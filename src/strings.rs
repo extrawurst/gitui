@@ -38,6 +38,7 @@ pub mod symbol {
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
 	pub const SPACE: &str = "\u{02FD}"; //˽
 	pub const EMPTY_SPACE: &str = " ";
+	pub const LINE_BREAK: &str = "¶";
 	pub const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
 	pub const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 	pub const EMPTY_STR: &str = "";
@@ -450,6 +451,16 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+	pub fn find_branch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Find [{}]",
+				key_config.get_hint(key_config.keys.branch_find)
+			),
+			"find branch in list",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn toggle_tabs_direct(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -593,6 +604,30 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn diff_hunk_next(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Next hunk [{}]",
+				key_config.get_hint(key_config.keys.diff_hunk_next),
+			),
+			"move cursor to next hunk",
+			CMD_GROUP_DIFF,
+		)
+	}
+	pub fn diff_hunk_prev(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Prev hunk [{}]",
+				key_config.get_hint(key_config.keys.diff_hunk_prev),
+			),
+			"move cursor to prev hunk",
+			CMD_GROUP_DIFF,
+		)
+	}
 	pub fn diff_home_end(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -683,6 +718,19 @@ pub mod commands {
 			CMD_GROUP_DIFF,
 		)
 	}
+	pub fn close_fuzzy_finder(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Close [{}{}]",
+				key_config.get_hint(key_config.keys.exit_popup),
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"close fuzzy finder",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn close_popup(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
@@ -690,6 +738,17 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.exit_popup),
 			),
 			"close overlay (e.g commit, help)",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn scroll_popup(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Scroll [{}{}]",
+				key_config.get_hint(key_config.keys.popup_down),
+				key_config.get_hint(key_config.keys.popup_up),
+			),
+			"scroll up or down in popup",
 			CMD_GROUP_GENERAL,
 		)
 	}
@@ -919,6 +978,18 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.commit_amend),
 			),
 			"amend last commit (available in commit popup)",
+			CMD_GROUP_COMMIT_POPUP,
+		)
+	}
+	pub fn commit_signoff(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Sing-off [{}]",
+				key_config.get_hint(key_config.keys.toggle_signoff),
+			),
+			"sign-off commit (-s option)",
 			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
@@ -1555,7 +1626,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Fetch [{}]",
-				key_config.get_hint(key_config.keys.pull),
+				key_config.get_hint(key_config.keys.fetch),
 			),
 			"fetch/prune",
 			CMD_GROUP_BRANCHES,

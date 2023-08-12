@@ -6,6 +6,7 @@ use super::{
 use crate::{
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{Action, InternalEvent, NeedsUpdate, Queue, ResetItem},
 	string_utils::tabs_to_spaces,
 	string_utils::trim_offset,
@@ -20,15 +21,15 @@ use asyncgit::{
 };
 use bytesize::ByteSize;
 use crossterm::event::Event;
-use std::{borrow::Cow, cell::Cell, cmp, path::Path};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	symbols,
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Paragraph},
 	Frame,
 };
+use std::{borrow::Cow, cell::Cell, cmp, path::Path};
 
 #[derive(Default)]
 struct Current {
@@ -117,6 +118,7 @@ pub struct DiffComponent {
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	is_immutable: bool,
+	options: SharedOptions,
 }
 
 impl DiffComponent {
@@ -127,6 +129,7 @@ impl DiffComponent {
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 		is_immutable: bool,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			focused: false,
@@ -144,6 +147,7 @@ impl DiffComponent {
 			key_config,
 			is_immutable,
 			repo,
+			options,
 		}
 	}
 	///
@@ -330,48 +334,13 @@ impl DiffComponent {
 		None
 	}
 
-	fn get_text(&self, width: u16, height: u16) -> Vec<Spans> {
-		let mut res: Vec<Spans> = Vec::new();
+	fn get_text(&self, width: u16, height: u16) -> Vec<Line> {
 		if let Some(diff) = &self.diff {
-			if diff.hunks.is_empty() {
-				let is_positive = diff.size_delta >= 0;
-				let delta_byte_size =
-					ByteSize::b(diff.size_delta.unsigned_abs());
-				let sign = if is_positive { "+" } else { "-" };
-				res.extend(vec![Spans::from(vec![
-					Span::raw(Cow::from("size: ")),
-					Span::styled(
-						Cow::from(format!(
-							"{}",
-							ByteSize::b(diff.sizes.0)
-						)),
-						self.theme.text(false, false),
-					),
-					Span::raw(Cow::from(" -> ")),
-					Span::styled(
-						Cow::from(format!(
-							"{}",
-							ByteSize::b(diff.sizes.1)
-						)),
-						self.theme.text(false, false),
-					),
-					Span::raw(Cow::from(" (")),
-					Span::styled(
-						Cow::from(format!(
-							"{sign}{delta_byte_size:}"
-						)),
-						self.theme.diff_line(
-							if is_positive {
-								DiffLineType::Add
-							} else {
-								DiffLineType::Delete
-							},
-							false,
-						),
-					),
-					Span::raw(Cow::from(")")),
-				])]);
+			return if diff.hunks.is_empty() {
+				self.get_text_binary(diff)
 			} else {
+				let mut res: Vec<Line> = Vec::new();
+
 				let min = self.vertical_scroll.get_top();
 				let max = min + height as usize;
 
@@ -422,9 +391,44 @@ impl DiffComponent {
 						line_cursor += hunk_len;
 					}
 				}
-			}
+
+				res
+			};
 		}
-		res
+
+		vec![]
+	}
+
+	fn get_text_binary(&self, diff: &FileDiff) -> Vec<Line> {
+		let is_positive = diff.size_delta >= 0;
+		let delta_byte_size =
+			ByteSize::b(diff.size_delta.unsigned_abs());
+		let sign = if is_positive { "+" } else { "-" };
+		vec![Line::from(vec![
+			Span::raw(Cow::from("size: ")),
+			Span::styled(
+				Cow::from(format!("{}", ByteSize::b(diff.sizes.0))),
+				self.theme.text(false, false),
+			),
+			Span::raw(Cow::from(" -> ")),
+			Span::styled(
+				Cow::from(format!("{}", ByteSize::b(diff.sizes.1))),
+				self.theme.text(false, false),
+			),
+			Span::raw(Cow::from(" (")),
+			Span::styled(
+				Cow::from(format!("{sign}{delta_byte_size:}")),
+				self.theme.diff_line(
+					if is_positive {
+						DiffLineType::Add
+					} else {
+						DiffLineType::Delete
+					},
+					false,
+				),
+			),
+			Span::raw(Cow::from(")")),
+		])]
 	}
 
 	fn get_line_to_add<'a>(
@@ -435,8 +439,11 @@ impl DiffComponent {
 		end_of_hunk: bool,
 		theme: &SharedTheme,
 		scrolled_right: usize,
-	) -> Spans<'a> {
+	) -> Line<'a> {
 		let style = theme.diff_hunk_marker(selected_hunk);
+
+		let is_content_line =
+			matches!(line.line_type, DiffLineType::None);
 
 		let left_side_of_line = if end_of_hunk {
 			Span::styled(Cow::from(symbols::line::BOTTOM_LEFT), style)
@@ -454,7 +461,11 @@ impl DiffComponent {
 		};
 
 		let content =
-			tabs_to_spaces(line.content.as_ref().to_string());
+			if !is_content_line && line.content.as_ref().is_empty() {
+				String::from(strings::symbol::LINE_BREAK)
+			} else {
+				tabs_to_spaces(line.content.as_ref().to_string())
+			};
 		let content = trim_offset(&content, scrolled_right);
 
 		let filled = if selected {
@@ -465,7 +476,7 @@ impl DiffComponent {
 			format!("{content}\n")
 		};
 
-		Spans::from(vec![
+		Line::from(vec![
 			left_side_of_line,
 			Span::styled(
 				Cow::from(filled),
@@ -503,6 +514,7 @@ impl DiffComponent {
 					&self.repo.borrow(),
 					&self.current.path,
 					hash,
+					Some(self.options.borrow().diff_options()),
 				)?;
 				self.queue_update();
 			}
@@ -525,6 +537,7 @@ impl DiffComponent {
 						&self.repo.borrow(),
 						&self.current.path,
 						hash,
+						Some(self.options.borrow().diff_options()),
 					)?;
 				}
 
@@ -629,6 +642,50 @@ impl DiffComponent {
 		Ok(())
 	}
 
+	fn calc_hunk_move_target(
+		&self,
+		direction: isize,
+	) -> Option<usize> {
+		let diff = self.diff.as_ref()?;
+		if diff.hunks.is_empty() {
+			return None;
+		}
+		let max = diff.hunks.len() - 1;
+		let target_index = self.selected_hunk.map_or(0, |i| {
+			let target = if direction >= 0 {
+				i.saturating_add(direction.unsigned_abs())
+			} else {
+				i.saturating_sub(direction.unsigned_abs())
+			};
+			std::cmp::min(max, target)
+		});
+		Some(target_index)
+	}
+
+	fn diff_hunk_move_up_down(&mut self, direction: isize) {
+		let Some(diff) = &self.diff else { return };
+		let hunk_index = self.calc_hunk_move_target(direction);
+		// return if selected_hunk not change
+		if self.selected_hunk == hunk_index {
+			return;
+		}
+		if let Some(hunk_index) = hunk_index {
+			let line_index = diff
+				.hunks
+				.iter()
+				.take(hunk_index)
+				.fold(0, |sum, hunk| sum + hunk.lines.len());
+			let hunk = &diff.hunks[hunk_index];
+			self.selection = Selection::Single(line_index);
+			self.selected_hunk = Some(hunk_index);
+			self.vertical_scroll.move_area_to_visible(
+				self.current_size.get().1 as usize,
+				line_index,
+				line_index.saturating_add(hunk.lines.len()),
+			);
+		}
+	}
+
 	const fn is_stage(&self) -> bool {
 		self.current.is_stage
 	}
@@ -666,7 +723,7 @@ impl DrawableComponent for DiffComponent {
 		);
 
 		let txt = if self.pending {
-			vec![Spans::from(vec![Span::styled(
+			vec![Line::from(vec![Span::styled(
 				Cow::from(strings::loading_text(&self.key_config)),
 				self.theme.text(false, false),
 			)])]
@@ -710,7 +767,16 @@ impl Component for DiffComponent {
 			self.can_scroll(),
 			self.focused(),
 		));
-
+		out.push(CommandInfo::new(
+			strings::commands::diff_hunk_next(&self.key_config),
+			self.calc_hunk_move_target(1) != self.selected_hunk,
+			self.focused(),
+		));
+		out.push(CommandInfo::new(
+			strings::commands::diff_hunk_prev(&self.key_config),
+			self.calc_hunk_move_target(-1) != self.selected_hunk,
+			self.focused(),
+		));
 		out.push(
 			CommandInfo::new(
 				strings::commands::diff_home_end(&self.key_config),
@@ -769,7 +835,7 @@ impl Component for DiffComponent {
 		CommandBlocking::PassingOn
 	}
 
-	#[allow(clippy::cognitive_complexity)]
+	#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.focused() {
 			if let Event::Key(e) = ev {
@@ -814,6 +880,18 @@ impl Component for DiffComponent {
 				{
 					self.horizontal_scroll
 						.move_right(HorizontalScrollType::Left);
+					Ok(EventState::Consumed)
+				} else if key_match(
+					e,
+					self.key_config.keys.diff_hunk_next,
+				) {
+					self.diff_hunk_move_up_down(1);
+					Ok(EventState::Consumed)
+				} else if key_match(
+					e,
+					self.key_config.keys.diff_hunk_prev,
+				) {
+					self.diff_hunk_move_up_down(-1);
 					Ok(EventState::Consumed)
 				} else if key_match(
 					e,

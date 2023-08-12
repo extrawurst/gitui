@@ -25,8 +25,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use std::convert::TryInto;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Margin, Rect},
 	text::Span,
@@ -36,6 +35,7 @@ use tui::{
 	},
 	Frame,
 };
+use std::convert::TryInto;
 use ui::style::SharedTheme;
 
 ///

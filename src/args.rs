@@ -15,7 +15,7 @@ use std::{
 pub struct CliArgs {
 	pub theme: PathBuf,
 	pub repo_path: RepoPath,
-	pub poll_watcher: bool,
+	pub notify_watcher: bool,
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
@@ -54,13 +54,13 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		get_app_config_path()?.join("theme.ron")
 	};
 
-	let arg_poll: bool =
-		*arg_matches.get_one("poll").unwrap_or(&false);
+	let notify_watcher: bool =
+		*arg_matches.get_one("watcher").unwrap_or(&false);
 
 	Ok(CliArgs {
 		theme,
-		poll_watcher: arg_poll,
 		repo_path,
+		notify_watcher,
 	})
 }
 
@@ -96,9 +96,9 @@ fn app() -> ClapApp {
 				.num_args(0),
 		)
 		.arg(
-			Arg::new("poll")
-				.help("Poll folder for changes instead of using file system events. This can be useful if you run into issues with maximum # of file descriptors")
-				.long("polling")
+			Arg::new("watcher")
+				.help("Use notify-based file system watcher instead of tick-based update. This is more performant, but can cause issues on some platforms. See https://github.com/extrawurst/gitui/blob/master/FAQ.md#watcher for details.")
+				.long("watcher")
 				.action(clap::ArgAction::SetTrue),
 		)
 		.arg(
@@ -141,7 +141,7 @@ fn setup_logging() -> Result<()> {
 }
 
 fn get_app_cache_path() -> Result<PathBuf> {
-	let mut path = dirs_next::cache_dir()
+	let mut path = dirs::cache_dir()
 		.ok_or_else(|| anyhow!("failed to find os cache dir."))?;
 
 	path.push("gitui");
@@ -151,9 +151,9 @@ fn get_app_cache_path() -> Result<PathBuf> {
 
 pub fn get_app_config_path() -> Result<PathBuf> {
 	let mut path = if cfg!(target_os = "macos") {
-		dirs_next::home_dir().map(|h| h.join(".config"))
+		dirs::home_dir().map(|h| h.join(".config"))
 	} else {
-		dirs_next::config_dir()
+		dirs::config_dir()
 	}
 	.ok_or_else(|| anyhow!("failed to find os config dir."))?;
 

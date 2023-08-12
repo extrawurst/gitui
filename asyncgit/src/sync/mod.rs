@@ -41,7 +41,7 @@ pub use branch::{
 	merge_commit::merge_upstream_commit,
 	merge_ff::branch_merge_upstream_fastforward,
 	merge_rebase::merge_upstream_rebase, rename::rename_branch,
-	validate_branch_name, BranchCompare, BranchInfo,
+	validate_branch_name, BranchCompare, BranchDetails, BranchInfo,
 };
 pub use commit::{amend, commit, tag_commit};
 pub use commit_details::{
@@ -94,8 +94,8 @@ pub use tags::{
 };
 pub use tree::{tree_file_content, tree_files, TreeFile};
 pub use utils::{
-	get_head, get_head_tuple, is_repo, repo_dir, stage_add_all,
-	stage_add_file, stage_addremoved, Head,
+	get_head, get_head_tuple, repo_dir, repo_open_error,
+	stage_add_all, stage_add_file, stage_addremoved, Head,
 };
 
 pub use git2::ResetType;

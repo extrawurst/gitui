@@ -11,8 +11,8 @@ mod cred;
 mod diff;
 mod externaleditor;
 mod fetch;
-mod file_find_popup;
 mod file_revlog;
+mod fuzzy_find_popup;
 mod help;
 mod inspect_commit;
 mod msg;
@@ -47,8 +47,8 @@ pub use create_branch::CreateBranchComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
 pub use fetch::FetchComponent;
-pub use file_find_popup::FileFindPopup;
 pub use file_revlog::{FileRevOpen, FileRevlogComponent};
+pub use fuzzy_find_popup::FuzzyFindPopup;
 pub use help::HelpComponent;
 pub use inspect_commit::{InspectCommitComponent, InspectCommitOpen};
 pub use msg::MsgComponent;
@@ -72,14 +72,14 @@ pub use utils::filetree::FileTreeItemKind;
 use crate::ui::style::Theme;
 use anyhow::Result;
 use crossterm::event::Event;
-use std::convert::From;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Span, Text},
 	widgets::{Block, BorderType, Borders, Paragraph, Wrap},
 	Frame,
 };
+use std::convert::From;
 
 /// creates accessors for a list of components
 ///
@@ -232,6 +232,12 @@ pub trait DrawableComponent {
 pub enum EventState {
 	Consumed,
 	NotConsumed,
+}
+
+#[derive(Copy, Clone)]
+pub enum FuzzyFinderTarget {
+	Branches,
+	Files,
 }
 
 impl EventState {

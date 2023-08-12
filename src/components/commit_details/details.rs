@@ -15,16 +15,16 @@ use asyncgit::sync::{
 	self, CommitDetails, CommitId, CommitMessage, RepoPathRef, Tag,
 };
 use crossterm::event::Event;
-use std::clone::Clone;
-use std::{borrow::Cow, cell::Cell};
-use sync::CommitTags;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	style::{Modifier, Style},
-	text::{Span, Spans, Text},
+	text::{Line, Span, Text},
 	Frame,
 };
+use std::clone::Clone;
+use std::{borrow::Cow, cell::Cell};
+use sync::CommitTags;
 
 use super::style::Detail;
 
@@ -86,11 +86,20 @@ impl DetailsComponent {
 		message: &CommitMessage,
 		width: usize,
 	) -> WrappedCommitMessage<'_> {
-		let wrapped_title = textwrap::wrap(&message.subject, width);
+		let width = width.max(1);
+		let wrapped_title = bwrap::wrap!(&message.subject, width)
+			.lines()
+			.map(String::from)
+			.map(Cow::from)
+			.collect();
 
 		if let Some(ref body) = message.body {
 			let wrapped_message: Vec<Cow<'_, str>> =
-				textwrap::wrap(body, width).into_iter().collect();
+				bwrap::wrap!(body, width)
+					.lines()
+					.map(String::from)
+					.map(Cow::from)
+					.collect();
 
 			(wrapped_title, wrapped_message)
 		} else {
@@ -133,7 +142,7 @@ impl DetailsComponent {
 		&self,
 		width: usize,
 		height: usize,
-	) -> Vec<Spans> {
+	) -> Vec<Line> {
 		let (wrapped_title, wrapped_message) =
 			Self::get_wrapped_lines(&self.data, width);
 
@@ -144,7 +153,7 @@ impl DetailsComponent {
 			.skip(self.scroll.get_top())
 			.take(height)
 			.map(|(i, line)| {
-				Spans::from(vec![Span::styled(
+				Line::from(vec![Span::styled(
 					line.clone(),
 					self.get_theme_for_line(i < wrapped_title.len()),
 				)])
@@ -153,10 +162,10 @@ impl DetailsComponent {
 	}
 
 	#[allow(unstable_name_collisions, clippy::too_many_lines)]
-	fn get_text_info(&self) -> Vec<Spans> {
+	fn get_text_info(&self) -> Vec<Line> {
 		self.data.as_ref().map_or_else(Vec::new, |data| {
 			let mut res = vec![
-				Spans::from(vec![
+				Line::from(vec![
 					style_detail(&self.theme, &Detail::Author),
 					Span::styled(
 						Cow::from(format!(
@@ -166,7 +175,7 @@ impl DetailsComponent {
 						self.theme.text(true, false),
 					),
 				]),
-				Spans::from(vec![
+				Line::from(vec![
 					style_detail(&self.theme, &Detail::Date),
 					Span::styled(
 						Cow::from(time_to_string(
@@ -180,7 +189,7 @@ impl DetailsComponent {
 
 			if let Some(ref committer) = data.committer {
 				res.extend(vec![
-					Spans::from(vec![
+					Line::from(vec![
 						style_detail(&self.theme, &Detail::Commiter),
 						Span::styled(
 							Cow::from(format!(
@@ -190,7 +199,7 @@ impl DetailsComponent {
 							self.theme.text(true, false),
 						),
 					]),
-					Spans::from(vec![
+					Line::from(vec![
 						style_detail(&self.theme, &Detail::Date),
 						Span::styled(
 							Cow::from(time_to_string(
@@ -203,7 +212,7 @@ impl DetailsComponent {
 				]);
 			}
 
-			res.push(Spans::from(vec![
+			res.push(Line::from(vec![
 				Span::styled(
 					Cow::from(strings::commit::details_sha()),
 					self.theme.text(false, false),
@@ -215,12 +224,12 @@ impl DetailsComponent {
 			]));
 
 			if !self.tags.is_empty() {
-				res.push(Spans::from(style_detail(
+				res.push(Line::from(style_detail(
 					&self.theme,
 					&Detail::Sha,
 				)));
 
-				res.push(Spans::from(
+				res.push(Line::from(
 					itertools::Itertools::intersperse(
 						self.tags.iter().map(|tag| {
 							Span::styled(
@@ -429,6 +438,10 @@ mod tests {
 			get_wrapped_lines(&message, 14),
 			vec!["Commit message"]
 		);
+		assert_eq!(
+			get_wrapped_lines(&message, 0),
+			vec!["Commit", "message"]
+		);
 
 		let message_with_newline =
 			CommitMessage::from("Commit message\n");
@@ -440,6 +453,10 @@ mod tests {
 		assert_eq!(
 			get_wrapped_lines(&message_with_newline, 14),
 			vec!["Commit message"]
+		);
+		assert_eq!(
+			get_wrapped_lines(&message, 0),
+			vec!["Commit", "message"]
 		);
 
 		let message_with_body = CommitMessage::from(
@@ -456,6 +473,13 @@ mod tests {
 		assert_eq!(
 			get_wrapped_lines(&message_with_body, 14),
 			vec!["Commit message", "First line", "Second line"]
+		);
+		assert_eq!(
+			get_wrapped_lines(&message_with_body, 7),
+			vec![
+				"Commit", "message", "First", "line", "Second",
+				"line"
+			]
 		);
 	}
 }

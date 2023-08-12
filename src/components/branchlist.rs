@@ -1,7 +1,7 @@
 use super::{
 	utils::scroll_vertical::VerticalScroll, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, InspectCommitOpen,
+	EventState, FuzzyFinderTarget, InspectCommitOpen,
 };
 use crate::{
 	components::ScrollType,
@@ -25,17 +25,17 @@ use asyncgit::{
 	},
 	AsyncGitNotification,
 };
-use crossterm::event::Event;
-use std::{cell::Cell, convert::TryInto};
-use tui::{
+use crossterm::event::{Event, KeyEvent};
+use ratatui::{
 	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
-	text::{Span, Spans, Text},
+	text::{Line, Span, Text},
 	widgets::{Block, BorderType, Borders, Clear, Paragraph, Tabs},
 	Frame,
 };
+use std::{cell::Cell, convert::TryInto};
 use ui::style::SharedTheme;
 use unicode_truncate::UnicodeTruncateStr;
 
@@ -206,6 +206,12 @@ impl Component for BranchListComponent {
 				self.has_remotes,
 				!self.local,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::find_branch(&self.key_config),
+				true,
+				true,
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -218,37 +224,11 @@ impl Component for BranchListComponent {
 		}
 
 		if let Event::Key(e) = ev {
-			if key_match(e, self.key_config.keys.exit_popup) {
-				self.hide();
-			} else if key_match(e, self.key_config.keys.move_down) {
-				return self
-					.move_selection(ScrollType::Up)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.move_up) {
-				return self
-					.move_selection(ScrollType::Down)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.page_down) {
-				return self
-					.move_selection(ScrollType::PageDown)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.page_up) {
-				return self
-					.move_selection(ScrollType::PageUp)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.home) {
-				return self
-					.move_selection(ScrollType::Home)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.end) {
-				return self
-					.move_selection(ScrollType::End)
-					.map(Into::into);
-			} else if key_match(e, self.key_config.keys.tab_toggle) {
-				self.local = !self.local;
-				self.check_remotes();
-				self.update_branches()?;
-			} else if key_match(e, self.key_config.keys.enter) {
+			if self.move_event(e)?.is_consumed() {
+				return Ok(EventState::Consumed);
+			}
+
+			if key_match(e, self.key_config.keys.enter) {
 				try_or_popup!(
 					self,
 					"switch branch error:",
@@ -302,7 +282,7 @@ impl Component for BranchListComponent {
 						),
 					));
 				}
-			} else if key_match(e, self.key_config.keys.pull)
+			} else if key_match(e, self.key_config.keys.fetch)
 				&& !self.local && self.has_remotes
 			{
 				self.queue.push(InternalEvent::FetchRemotes);
@@ -312,6 +292,16 @@ impl Component for BranchListComponent {
 			) {
 				//do not consume if its the more key
 				return Ok(EventState::NotConsumed);
+			} else if key_match(e, self.key_config.keys.branch_find) {
+				let branches = self
+					.branches
+					.iter()
+					.map(|b| b.name.clone())
+					.collect();
+				self.queue.push(InternalEvent::OpenFuzzyFinder(
+					branches,
+					FuzzyFinderTarget::Branches,
+				));
 			}
 		}
 
@@ -355,11 +345,51 @@ impl BranchListComponent {
 		}
 	}
 
+	fn move_event(&mut self, e: &KeyEvent) -> Result<EventState> {
+		if key_match(e, self.key_config.keys.exit_popup) {
+			self.hide();
+		} else if key_match(e, self.key_config.keys.move_down) {
+			return self
+				.move_selection(ScrollType::Up)
+				.map(Into::into);
+		} else if key_match(e, self.key_config.keys.move_up) {
+			return self
+				.move_selection(ScrollType::Down)
+				.map(Into::into);
+		} else if key_match(e, self.key_config.keys.page_down) {
+			return self
+				.move_selection(ScrollType::PageDown)
+				.map(Into::into);
+		} else if key_match(e, self.key_config.keys.page_up) {
+			return self
+				.move_selection(ScrollType::PageUp)
+				.map(Into::into);
+		} else if key_match(e, self.key_config.keys.home) {
+			return self
+				.move_selection(ScrollType::Home)
+				.map(Into::into);
+		} else if key_match(e, self.key_config.keys.end) {
+			return self
+				.move_selection(ScrollType::End)
+				.map(Into::into);
+		} else if key_match(e, self.key_config.keys.tab_toggle) {
+			self.local = !self.local;
+			self.check_remotes();
+			self.update_branches()?;
+		}
+		Ok(EventState::NotConsumed)
+	}
+
 	///
 	pub fn open(&mut self) -> Result<()> {
 		self.show()?;
 		self.update_branches()?;
 
+		Ok(())
+	}
+
+	pub fn branch_finder_update(&mut self, idx: usize) -> Result<()> {
+		self.set_selection(idx.try_into()?)?;
 		Ok(())
 	}
 
@@ -628,7 +658,7 @@ impl BranchListComponent {
 				theme.branch(selected, is_head),
 			);
 
-			txt.push(Spans::from(vec![
+			txt.push(Line::from(vec![
 				span_prefix,
 				span_name,
 				span_hash,
@@ -669,7 +699,7 @@ impl BranchListComponent {
 		let tabs = [Span::raw("Local"), Span::raw("Remote")]
 			.iter()
 			.cloned()
-			.map(Spans::from)
+			.map(Line::from)
 			.collect();
 
 		f.render_widget(

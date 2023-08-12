@@ -16,16 +16,16 @@ use crossterm::{
 	terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 	ExecutableCommand,
 };
-use scopeguard::defer;
-use std::ffi::OsStr;
-use std::{env, io, path::Path, process::Command};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, BorderType, Borders, Clear, Paragraph},
 	Frame,
 };
+use scopeguard::defer;
+use std::ffi::OsStr;
+use std::{env, io, path::Path, process::Command};
 
 ///
 pub struct ExternalEditorComponent {
@@ -129,7 +129,7 @@ impl DrawableComponent for ExternalEditorComponent {
 		_rect: Rect,
 	) -> Result<()> {
 		if self.visible {
-			let txt = Spans::from(
+			let txt = Line::from(
 				strings::msg_opening_editor(&self.key_config)
 					.split('\n')
 					.map(|string| {

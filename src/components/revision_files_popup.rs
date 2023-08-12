@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use super::{
 	revision_files::RevisionFilesComponent, visibility_blocking,
@@ -19,7 +19,9 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{backend::Backend, layout::Rect, widgets::Clear, Frame};
+use ratatui::{
+	backend::Backend, layout::Rect, widgets::Clear, Frame,
+};
 
 #[derive(Clone, Debug)]
 pub struct FileTreeOpen {
@@ -89,7 +91,7 @@ impl RevisionFilesPopup {
 		self.files.any_work_pending()
 	}
 
-	pub fn file_finder_update(&mut self, file: &Option<PathBuf>) {
+	pub fn file_finder_update(&mut self, file: &Path) {
 		self.files.find_file(file);
 	}
 

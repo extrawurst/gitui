@@ -22,14 +22,14 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::MoveSelection;
 use itertools::Either;
-use std::{cell::Cell, convert::From, path::Path};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::Rect,
 	text::Text,
 	widgets::{Block, Borders, Wrap},
 	Frame,
 };
+use std::{cell::Cell, convert::From, path::Path};
 
 pub struct SyntaxTextComponent {
 	repo: RepoPathRef,

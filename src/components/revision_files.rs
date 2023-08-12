@@ -1,7 +1,7 @@
 use super::{
 	utils::scroll_vertical::VerticalScroll, BlameFileOpen,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, FileRevOpen, SyntaxTextComponent,
+	EventState, FileRevOpen, FuzzyFinderTarget, SyntaxTextComponent,
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
@@ -22,19 +22,15 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
-use std::{borrow::Cow, fmt::Write};
-use std::{
-	collections::BTreeSet,
-	convert::From,
-	path::{Path, PathBuf},
-};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	text::Span,
 	widgets::{Block, Borders},
 	Frame,
 };
+use std::{borrow::Cow, fmt::Write};
+use std::{collections::BTreeSet, convert::From, path::Path};
 use unicode_truncate::UnicodeTruncateStr;
 use unicode_width::UnicodeWidthStr;
 
@@ -233,17 +229,26 @@ impl RevisionFilesComponent {
 	}
 
 	fn open_finder(&self) {
-		self.queue.push(InternalEvent::OpenFileFinder(
-			self.files.clone().unwrap_or_default(),
-		));
+		if let Some(files) = self.files.clone() {
+			self.queue.push(InternalEvent::OpenFuzzyFinder(
+				files
+					.iter()
+					.map(|a| {
+						a.path
+							.to_str()
+							.unwrap_or_default()
+							.to_string()
+					})
+					.collect(),
+				FuzzyFinderTarget::Files,
+			));
+		}
 	}
 
-	pub fn find_file(&mut self, file: &Option<PathBuf>) {
-		if let Some(file) = file {
-			self.tree.collapse_but_root();
-			if self.tree.select_file(file) {
-				self.selection_changed();
-			}
+	pub fn find_file(&mut self, file: &Path) {
+		self.tree.collapse_but_root();
+		if self.tree.select_file(file) {
+			self.selection_changed();
 		}
 	}
 

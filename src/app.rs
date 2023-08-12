@@ -6,11 +6,12 @@ use crate::{
 		BranchListComponent, CommandBlocking, CommandInfo,
 		CommitComponent, CompareCommitsComponent, Component,
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
-		ExternalEditorComponent, FetchComponent, FileFindPopup,
-		FileRevlogComponent, HelpComponent, InspectCommitComponent,
-		MsgComponent, OptionsPopupComponent, PullComponent,
-		PushComponent, PushTagsComponent, RenameBranchComponent,
-		ResetPopupComponent, RevisionFilesPopup, StashMsgComponent,
+		ExternalEditorComponent, FetchComponent, FileRevlogComponent,
+		FuzzyFindPopup, FuzzyFinderTarget, HelpComponent,
+		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
+		PullComponent, PushComponent, PushTagsComponent,
+		RenameBranchComponent, ResetPopupComponent,
+		RevisionFilesPopup, StashMsgComponent,
 		SubmodulesListComponent, TagCommitComponent,
 		TagListComponent,
 	},
@@ -34,19 +35,19 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
-use std::{
-	cell::{Cell, RefCell},
-	path::Path,
-	rc::Rc,
-};
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
-	text::{Span, Spans},
+	text::{Line, Span},
 	widgets::{Block, Borders, Paragraph, Tabs},
 	Frame,
+};
+use std::{
+	cell::{Cell, RefCell},
+	path::{Path, PathBuf},
+	rc::Rc,
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -72,7 +73,7 @@ pub struct App {
 	compare_commits_popup: CompareCommitsComponent,
 	external_editor_popup: ExternalEditorComponent,
 	revision_files_popup: RevisionFilesPopup,
-	find_file_popup: FileFindPopup,
+	fuzzy_find_popup: FuzzyFindPopup,
 	push_popup: PushComponent,
 	push_tags_popup: PushTagsComponent,
 	pull_popup: PullComponent,
@@ -179,6 +180,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			compare_commits_popup: CompareCommitsComponent::new(
 				&repo,
@@ -186,6 +188,7 @@ impl App {
 				sender,
 				theme.clone(),
 				key_config.clone(),
+				options.clone(),
 			),
 			external_editor_popup: ExternalEditorComponent::new(
 				theme.clone(),
@@ -268,7 +271,7 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 			),
-			find_file_popup: FileFindPopup::new(
+			fuzzy_find_popup: FuzzyFindPopup::new(
 				&queue,
 				theme.clone(),
 				key_config.clone(),
@@ -577,7 +580,7 @@ impl App {
 	accessors!(
 		self,
 		[
-			find_file_popup,
+			fuzzy_find_popup,
 			msg,
 			reset,
 			commit,
@@ -628,7 +631,7 @@ impl App {
 			create_branch_popup,
 			rename_branch_popup,
 			revision_files_popup,
-			find_file_popup,
+			fuzzy_find_popup,
 			push_popup,
 			push_tags_popup,
 			pull_popup,
@@ -887,8 +890,8 @@ impl App {
 			InternalEvent::StatusLastFileMoved => {
 				self.status_tab.last_file_moved()?;
 			}
-			InternalEvent::OpenFileFinder(files) => {
-				self.find_file_popup.open(&files)?;
+			InternalEvent::OpenFuzzyFinder(contents, target) => {
+				self.fuzzy_find_popup.open(contents, target)?;
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
@@ -906,9 +909,25 @@ impl App {
 
 				flags.insert(NeedsUpdate::ALL);
 			}
-			InternalEvent::FileFinderChanged(file) => {
-				self.files_tab.file_finder_update(&file);
-				self.revision_files_popup.file_finder_update(&file);
+			InternalEvent::FuzzyFinderChanged(
+				idx,
+				content,
+				target,
+			) => {
+				match target {
+					FuzzyFinderTarget::Branches => self
+						.select_branch_popup
+						.branch_finder_update(idx)?,
+					FuzzyFinderTarget::Files => {
+						self.files_tab.file_finder_update(
+							&PathBuf::from(content.clone()),
+						);
+						self.revision_files_popup.file_finder_update(
+							&PathBuf::from(content),
+						);
+					}
+				}
+
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
@@ -972,7 +991,12 @@ impl App {
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetHunk(path, hash) => {
-				sync::reset_hunk(&self.repo.borrow(), &path, hash)?;
+				sync::reset_hunk(
+					&self.repo.borrow(),
+					&path,
+					hash,
+					Some(self.options.borrow().diff_options()),
+				)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetLines(path, lines) => {
@@ -1084,7 +1108,7 @@ impl App {
 
 		res.push(CommandInfo::new(
 			strings::commands::find_file(&self.key_config),
-			!self.find_file_popup.is_visible(),
+			!self.fuzzy_find_popup.is_visible(),
 			(!self.any_popup_visible()
 				&& self.files_tab.is_visible())
 				|| self.revision_files_popup.is_visible()
@@ -1171,7 +1195,7 @@ impl App {
 		let table_area = r; // use entire area to allow drawing the horizontal separator line
 		let text_area = left_right[1];
 
-		let tabs = tab_labels.into_iter().map(Spans::from).collect();
+		let tabs = tab_labels.into_iter().map(Line::from).collect();
 
 		f.render_widget(
 			Tabs::new(tabs)
@@ -1188,7 +1212,7 @@ impl App {
 		);
 
 		f.render_widget(
-			Paragraph::new(Spans::from(vec![Span::styled(
+			Paragraph::new(Line::from(vec![Span::styled(
 				ellipsis_trim_start(
 					&self.repo_path_text,
 					text_area.width as usize,

@@ -56,7 +56,7 @@ use asyncgit::{
 	AsyncGitNotification,
 };
 use backtrace::Backtrace;
-use crossbeam_channel::{tick, unbounded, Receiver, Select};
+use crossbeam_channel::{never, tick, unbounded, Receiver, Select};
 use crossterm::{
 	terminal::{
 		disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
@@ -67,6 +67,10 @@ use crossterm::{
 use input::{Input, InputEvent, InputState};
 use keys::KeyConfig;
 use profiler::Profiler;
+use ratatui::{
+	backend::{Backend, CrosstermBackend},
+	Terminal,
+};
 use scopeguard::defer;
 use scopetime::scope_time;
 use spinner::Spinner;
@@ -76,18 +80,16 @@ use std::{
 	panic, process,
 	time::{Duration, Instant},
 };
-use tui::{
-	backend::{Backend, CrosstermBackend},
-	Terminal,
-};
 use ui::style::Theme;
 use watcher::RepoWatcher;
 
+static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
 
 ///
 #[derive(Clone)]
 pub enum QueueEvent {
+	Tick,
 	Notify,
 	SpinnerUpdate,
 	AsyncEvent(AsyncNotification),
@@ -114,6 +116,12 @@ pub enum AsyncNotification {
 	Git(AsyncGitNotification),
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum Updater {
+	Ticker,
+	NotifyWatcher,
+}
+
 fn main() -> Result<()> {
 	let app_start = Instant::now();
 
@@ -130,9 +138,7 @@ fn main() -> Result<()> {
 	let key_config = KeyConfig::init()
 		.map_err(|e| eprintln!("KeyConfig loading error: {e}"))
 		.unwrap_or_default();
-	let theme = Theme::init(&cliargs.theme)
-		.map_err(|e| eprintln!("Theme loading error: {e}"))
-		.unwrap_or_default();
+	let theme = Theme::init(&cliargs.theme);
 
 	setup_terminal()?;
 	defer! {
@@ -145,6 +151,12 @@ fn main() -> Result<()> {
 	let mut repo_path = cliargs.repo_path;
 	let input = Input::new();
 
+	let updater = if cliargs.notify_watcher {
+		Updater::NotifyWatcher
+	} else {
+		Updater::Ticker
+	};
+
 	loop {
 		let quit_state = run_app(
 			app_start,
@@ -152,7 +164,7 @@ fn main() -> Result<()> {
 			theme,
 			key_config.clone(),
 			&input,
-			cliargs.poll_watcher,
+			updater,
 			&mut terminal,
 		)?;
 
@@ -173,18 +185,24 @@ fn run_app(
 	theme: Theme,
 	key_config: KeyConfig,
 	input: &Input,
-	poll_watcher: bool,
+	updater: Updater,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 ) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
 
 	let rx_input = input.receiver();
-	let watcher = RepoWatcher::new(
-		repo_work_dir(&repo)?.as_str(),
-		poll_watcher,
-	);
-	let rx_watcher = watcher.receiver();
+
+	let (rx_ticker, rx_watcher) = match updater {
+		Updater::NotifyWatcher => {
+			let repo_watcher =
+				RepoWatcher::new(repo_work_dir(&repo)?.as_str());
+
+			(never(), repo_watcher.receiver())
+		}
+		Updater::Ticker => (tick(TICK_INTERVAL), never()),
+	};
+
 	let spinner_ticker = tick(SPINNER_INTERVAL);
 
 	let mut app = App::new(
@@ -210,6 +228,7 @@ fn run_app(
 				&rx_input,
 				&rx_git,
 				&rx_app,
+				&rx_ticker,
 				&rx_watcher,
 				&spinner_ticker,
 			)?
@@ -235,7 +254,9 @@ fn run_app(
 					}
 					app.event(ev)?;
 				}
-				QueueEvent::Notify => app.update()?,
+				QueueEvent::Tick | QueueEvent::Notify => {
+					app.update()?;
+				}
 				QueueEvent::AsyncEvent(ev) => {
 					if !matches!(
 						ev,
@@ -302,13 +323,18 @@ fn draw<B: Backend>(
 }
 
 fn valid_path(repo_path: &RepoPath) -> bool {
-	asyncgit::sync::is_repo(repo_path)
+	let error = asyncgit::sync::repo_open_error(repo_path);
+	if let Some(error) = &error {
+		eprintln!("repo open error: {error}");
+	}
+	error.is_none()
 }
 
 fn select_event(
 	rx_input: &Receiver<InputEvent>,
 	rx_git: &Receiver<AsyncGitNotification>,
 	rx_app: &Receiver<AsyncAppNotification>,
+	rx_ticker: &Receiver<Instant>,
 	rx_notify: &Receiver<()>,
 	rx_spinner: &Receiver<Instant>,
 ) -> Result<QueueEvent> {
@@ -317,6 +343,7 @@ fn select_event(
 	sel.recv(rx_input);
 	sel.recv(rx_git);
 	sel.recv(rx_app);
+	sel.recv(rx_ticker);
 	sel.recv(rx_notify);
 	sel.recv(rx_spinner);
 
@@ -331,8 +358,9 @@ fn select_event(
 		2 => oper.recv(rx_app).map(|e| {
 			QueueEvent::AsyncEvent(AsyncNotification::App(e))
 		}),
-		3 => oper.recv(rx_notify).map(|_| QueueEvent::Notify),
-		4 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
+		3 => oper.recv(rx_ticker).map(|_| QueueEvent::Notify),
+		4 => oper.recv(rx_notify).map(|_| QueueEvent::Notify),
+		5 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
 		_ => bail!("unknown select source"),
 	}?;
 

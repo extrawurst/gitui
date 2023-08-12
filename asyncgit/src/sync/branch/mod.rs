@@ -48,25 +48,34 @@ pub(crate) fn get_branch_name_repo(
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct LocalBranch {
 	///
 	pub is_head: bool,
 	///
 	pub has_upstream: bool,
 	///
+	pub upstream: Option<UpstreamBranch>,
+	///
 	pub remote: Option<String>,
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+pub struct UpstreamBranch {
+	///
+	pub reference: String,
+}
+
+///
+#[derive(Clone, Debug)]
 pub struct RemoteBranch {
 	///
 	pub has_tracking: bool,
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum BranchDetails {
 	///
 	Local(LocalBranch),
@@ -75,7 +84,7 @@ pub enum BranchDetails {
 }
 
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BranchInfo {
 	///
 	pub name: String,
@@ -154,10 +163,18 @@ pub fn get_branches_info(
 
 			let name_bytes = branch.name_bytes()?;
 
+			let upstream_branch =
+				upstream.ok().and_then(|upstream| {
+					bytes2string(upstream.get().name_bytes())
+						.ok()
+						.map(|reference| UpstreamBranch { reference })
+				});
+
 			let details = if local {
 				BranchDetails::Local(LocalBranch {
 					is_head: branch.is_head(),
-					has_upstream: upstream.is_ok(),
+					has_upstream: upstream_branch.is_some(),
+					upstream: upstream_branch,
 					remote,
 				})
 			} else {

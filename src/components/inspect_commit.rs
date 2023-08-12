@@ -6,18 +6,19 @@ use super::{
 use crate::{
 	accessors,
 	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{diff::DiffOptions, CommitId, CommitTags, RepoPathRef},
+	sync::{CommitId, CommitTags, RepoPathRef},
 	AsyncDiff, AsyncGitNotification, DiffParams, DiffType,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
-use tui::{
+use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	widgets::Clear,
@@ -61,6 +62,7 @@ pub struct InspectCommitComponent {
 	git_diff: AsyncDiff,
 	visible: bool,
 	key_config: SharedKeyConfig,
+	options: SharedOptions,
 }
 
 impl DrawableComponent for InspectCommitComponent {
@@ -208,6 +210,7 @@ impl InspectCommitComponent {
 		sender: &Sender<AsyncGitNotification>,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		options: SharedOptions,
 	) -> Self {
 		Self {
 			queue: queue.clone(),
@@ -224,11 +227,13 @@ impl InspectCommitComponent {
 				theme,
 				key_config.clone(),
 				true,
+				options.clone(),
 			),
 			open_request: None,
 			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),
 			visible: false,
 			key_config,
+			options,
 		}
 	}
 
@@ -272,7 +277,7 @@ impl InspectCommitComponent {
 						diff_type: DiffType::Commit(
 							request.commit_id,
 						),
-						options: DiffOptions::default(),
+						options: self.options.borrow().diff_options(),
 					};
 
 					if let Some((params, last)) =

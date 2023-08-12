@@ -1,12 +1,12 @@
 use crate::{
 	components::{
 		AppOption, BlameFileOpen, FileRevOpen, FileTreeOpen,
-		InspectCommitOpen,
+		FuzzyFinderTarget, InspectCommitOpen,
 	},
 	tabs::StashingOptions,
 };
 use asyncgit::{
-	sync::{diff::DiffLinePosition, CommitId, TreeFile},
+	sync::{diff::DiffLinePosition, CommitId},
 	PushType,
 };
 use bitflags::bitflags;
@@ -111,9 +111,9 @@ pub enum InternalEvent {
 	///
 	OptionSwitched(AppOption),
 	///
-	OpenFileFinder(Vec<TreeFile>),
+	OpenFuzzyFinder(Vec<String>, FuzzyFinderTarget),
 	///
-	FileFinderChanged(Option<PathBuf>),
+	FuzzyFinderChanged(usize, String, FuzzyFinderTarget),
 	///
 	FetchRemotes,
 	///

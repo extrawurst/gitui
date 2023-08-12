@@ -9,10 +9,10 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::Event;
-use std::borrow::Cow;
-use tui::{
+use ratatui::{
 	backend::Backend, layout::Rect, text::Text, widgets::Clear, Frame,
 };
+use std::borrow::Cow;
 use ui::style::SharedTheme;
 
 ///

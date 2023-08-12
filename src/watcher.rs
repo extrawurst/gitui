@@ -1,12 +1,7 @@
 use anyhow::Result;
 use crossbeam_channel::{unbounded, Sender};
-use notify::{
-	Config, Error, PollWatcher, RecommendedWatcher, RecursiveMode,
-	Watcher,
-};
-use notify_debouncer_mini::{
-	new_debouncer, new_debouncer_opt, DebouncedEvent,
-};
+use notify::{Error, RecommendedWatcher, RecursiveMode, Watcher};
+use notify_debouncer_mini::{new_debouncer, DebouncedEvent};
 use scopetime::scope_time;
 use std::{path::Path, thread, time::Duration};
 
@@ -15,9 +10,9 @@ pub struct RepoWatcher {
 }
 
 impl RepoWatcher {
-	pub fn new(workdir: &str, poll: bool) -> Self {
+	pub fn new(workdir: &str) -> Self {
 		log::trace!(
-			"poll watcher: {poll} recommended: {:?}",
+			"recommended watcher: {:?}",
 			RecommendedWatcher::kind()
 		);
 
@@ -27,7 +22,7 @@ impl RepoWatcher {
 
 		thread::spawn(move || {
 			let timeout = Duration::from_secs(2);
-			create_watcher(poll, timeout, tx, &workdir);
+			create_watcher(timeout, tx, &workdir);
 		});
 
 		let (out_tx, out_rx) = unbounded();
@@ -72,7 +67,6 @@ impl RepoWatcher {
 }
 
 fn create_watcher(
-	poll: bool,
 	timeout: Duration,
 	tx: std::sync::mpsc::Sender<
 		Result<Vec<DebouncedEvent>, Vec<Error>>,
@@ -81,27 +75,12 @@ fn create_watcher(
 ) {
 	scope_time!("create_watcher");
 
-	if poll {
-		let config = Config::default()
-			.with_poll_interval(Duration::from_secs(2));
-		let mut bouncer = new_debouncer_opt::<_, PollWatcher>(
-			timeout, None, tx, config,
-		)
-		.expect("Watch create error");
-		bouncer
-			.watcher()
-			.watch(Path::new(&workdir), RecursiveMode::Recursive)
-			.expect("Watch error");
+	let mut bouncer =
+		new_debouncer(timeout, None, tx).expect("Watch create error");
+	bouncer
+		.watcher()
+		.watch(Path::new(&workdir), RecursiveMode::Recursive)
+		.expect("Watch error");
 
-		std::mem::forget(bouncer);
-	} else {
-		let mut bouncer = new_debouncer(timeout, None, tx)
-			.expect("Watch create error");
-		bouncer
-			.watcher()
-			.watch(Path::new(&workdir), RecursiveMode::Recursive)
-			.expect("Watch error");
-
-		std::mem::forget(bouncer);
-	};
+	std::mem::forget(bouncer);
 }
