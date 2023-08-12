@@ -162,7 +162,7 @@ impl AsyncPush {
 		let mut last_res = arc_result.lock()?;
 
 		*last_res = match res {
-			Ok(_) => None,
+			Ok(()) => None,
 			Err(e) => {
 				log::error!("push error: {}", e);
 				Some(e.to_string())

@@ -359,7 +359,7 @@ fn select_event(
 			QueueEvent::AsyncEvent(AsyncNotification::App(e))
 		}),
 		3 => oper.recv(rx_ticker).map(|_| QueueEvent::Notify),
-		4 => oper.recv(rx_notify).map(|_| QueueEvent::Notify),
+		4 => oper.recv(rx_notify).map(|()| QueueEvent::Notify),
 		5 => oper.recv(rx_spinner).map(|_| QueueEvent::SpinnerUpdate),
 		_ => bail!("unknown select source"),
 	}?;

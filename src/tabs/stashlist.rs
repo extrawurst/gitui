@@ -65,7 +65,7 @@ impl StashList {
 		if let Some(e) = self.list.selected_entry() {
 			match sync::stash_apply(&self.repo.borrow(), e.id, false)
 			{
-				Ok(_) => {
+				Ok(()) => {
 					self.queue.push(InternalEvent::TabSwitchStatus);
 				}
 				Err(e) => {
