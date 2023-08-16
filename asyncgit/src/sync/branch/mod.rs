@@ -298,10 +298,8 @@ pub fn checkout_branch(
 
 	let repo = repo(repo_path)?;
 
-	let branch_name = branch_ref
-		.split('/')
-		.last()
-		.ok_or_else(|| Error::PathString)?;
+	let branch_name =
+		branch_ref.split('/').last().ok_or(Error::PathString)?;
 
 	let branch = repo.find_branch(branch_name, BranchType::Local)?;
 	let target_treeish = branch.into_reference().peel_to_tree()?;
