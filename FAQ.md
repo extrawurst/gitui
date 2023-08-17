@@ -4,6 +4,7 @@
 
 1. ["Bad Credentials" Error](#credentials)
 2. [Custom key bindings](#keybindings)
+2. [Watcher](#watcher)
 
 ## 1. <a name="credentials"></a> "Bad Credentials" Error <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
