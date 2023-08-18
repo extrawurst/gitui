@@ -69,9 +69,11 @@ checksum = "96d30a06541fbafbc7f82ed10c06164cfbd2c401138f6addd8404629c4b16711"
 name = "asyncgit"
 version = "0.23.0"
 dependencies = [
+ "bitflags",
  "crossbeam-channel",
  "easy-cast",
  "env_logger",
+ "fuzzy-matcher",
  "git2",
  "invalidstring",
  "log",

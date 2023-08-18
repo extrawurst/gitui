@@ -6,7 +6,9 @@ use crate::{
 	tabs::StashingOptions,
 };
 use asyncgit::{
-	sync::{diff::DiffLinePosition, CommitId},
+	sync::{
+		diff::DiffLinePosition, CommitId, LogFilterSearchOptions,
+	},
 	PushType,
 };
 use bitflags::bitflags;
@@ -113,6 +115,8 @@ pub enum InternalEvent {
 	///
 	OpenFuzzyFinder(Vec<String>, FuzzyFinderTarget),
 	///
+	OpenLogSearchPopup,
+	///
 	FuzzyFinderChanged(usize, String, FuzzyFinderTarget),
 	///
 	FetchRemotes,
@@ -130,6 +134,8 @@ pub enum InternalEvent {
 	OpenResetPopup(CommitId),
 	///
 	RewordCommit(CommitId),
+	///
+	CommitSearch(LogFilterSearchOptions),
 }
 
 /// single threaded simple queue for components to communicate with each other

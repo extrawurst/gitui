@@ -63,7 +63,11 @@ pub use hooks::{
 };
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
-pub use logwalker::{diff_contains_file, LogWalker, LogWalkerFilter};
+pub use logwalker::{
+	diff_contains_file, filter_commit_by_search, LogFilterSearch,
+	LogFilterSearchOptions, LogWalker, LogWalkerFilter, SearchFields,
+	SearchOptions,
+};
 pub use merge::{
 	abort_pending_rebase, abort_pending_state,
 	continue_pending_rebase, merge_branch, merge_commit, merge_msg,

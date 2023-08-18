@@ -7,8 +7,10 @@ use unicode_width::UnicodeWidthStr;
 use crate::keys::SharedKeyConfig;
 
 pub mod order {
-	pub static NAV: i8 = 2;
-	pub static RARE_ACTION: i8 = 1;
+	pub const RARE_ACTION: i8 = 30;
+	pub const NAV: i8 = 20;
+	pub const AVERAGE: i8 = 10;
+	pub const PRIORITY: i8 = 1;
 }
 
 pub static PUSH_POPUP_MSG: &str = "Push";
@@ -29,6 +31,7 @@ pub static PUSH_TAGS_STATES_DONE: &str = "done";
 
 pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
 pub static POPUP_TITLE_FUZZY_FIND: &str = "Fuzzy Finder";
+pub static POPUP_TITLE_LOG_SEARCH: &str = "Search";
 
 pub static POPUP_FAIL_COPY: &str = "Failed to copy text";
 pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
@@ -589,6 +592,18 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.push),
 			),
 			"push tags to remote",
+			CMD_GROUP_LOG,
+		)
+	}
+	pub fn toggle_option(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Toggle Option [{}]",
+				key_config.get_hint(key_config.keys.log_mark_commit),
+			),
+			"toggle search option selected",
 			CMD_GROUP_LOG,
 		)
 	}
@@ -1341,6 +1356,19 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn log_close_search(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Exit Search [{}]",
+				key_config.get_hint(key_config.keys.exit_popup),
+			),
+			"leave search mode",
+			CMD_GROUP_LOG,
+		)
+	}
+
 	pub fn reset_commit(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(

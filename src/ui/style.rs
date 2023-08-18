@@ -212,6 +212,10 @@ impl Theme {
 		)
 	}
 
+	pub fn commit_unhighlighted(&self) -> Style {
+		Style::default().fg(self.disabled_fg)
+	}
+
 	pub fn log_marker(&self, selected: bool) -> Style {
 		let mut style = Style::default()
 			.fg(self.commit_author)
@@ -253,6 +257,10 @@ impl Theme {
 		Style::default()
 			.fg(self.push_gauge_fg)
 			.bg(self.push_gauge_bg)
+	}
+
+	pub fn attention_block() -> Style {
+		Style::default().fg(Color::Yellow)
 	}
 
 	fn load_patch(theme_path: &PathBuf) -> Result<ThemePatch> {

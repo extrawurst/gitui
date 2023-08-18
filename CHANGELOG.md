@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**search commits**
+
+![commit-search](assets/log-search.gif)
+
 **visualize empty lines in diff better**
 
 ![diff-empty-line](assets/diff-empty-line.png)
@@ -20,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * Future additions of colors etc. will not break existing themes anymore
 
 ### Added
+* search commits by files in diff or commit message ([#1791](https://github.com/extrawurst/gitui/issues/1791))
 * support 'n'/'p' key to move to the next/prev hunk in diff component [[@hamflx](https://github.com/hamflx)] ([#1523](https://github.com/extrawurst/gitui/issues/1523))
 * simplify theme overrides [[@cruessler](https://github.com/cruessler)] ([#1367](https://github.com/extrawurst/gitui/issues/1367))
 * support for sign-off of commits [[@domtac](https://github.com/domtac)]([#1757](https://github.com/extrawurst/gitui/issues/1757))
