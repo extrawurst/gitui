@@ -65,12 +65,12 @@ bitflags! {
 		const MESSAGE = 0b0000_0001;
 		///
 		const FILENAMES = 0b0000_0010;
+		///
+		const AUTHORS = 0b0000_0100;
 		//TODO:
 		// const COMMIT_HASHES = 0b0000_0100;
 		// ///
 		// const DATES = 0b0000_1000;
-		// ///
-		// const AUTHORS = 0b0001_0000;
 		// ///
 		// const DIFFS = 0b0010_0000;
 	}
