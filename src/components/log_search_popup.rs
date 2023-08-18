@@ -191,9 +191,17 @@ impl LogSearchPopupComponent {
 			}
 			Selection::MessageSearch => {
 				self.options.0.toggle(SearchFields::MESSAGE);
+
+				if !self.options.0.contains(SearchFields::MESSAGE) {
+					self.options.0.set(SearchFields::FILENAMES, true);
+				}
 			}
 			Selection::FilenameSearch => {
 				self.options.0.toggle(SearchFields::FILENAMES);
+
+				if !self.options.0.contains(SearchFields::FILENAMES) {
+					self.options.0.set(SearchFields::MESSAGE, true);
+				}
 			}
 		}
 	}
