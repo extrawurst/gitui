@@ -88,6 +88,7 @@ pub struct KeysList {
 	pub log_reset_comit: GituiKeyEvent,
 	pub log_reword_comit: GituiKeyEvent,
 	pub log_find: GituiKeyEvent,
+	pub log_jump_commit_sha: GituiKeyEvent,
 	pub commit_amend: GituiKeyEvent,
 	pub toggle_signoff: GituiKeyEvent,
 	pub toggle_verify: GituiKeyEvent,
@@ -176,6 +177,8 @@ impl Default for KeysList {
 			log_reset_comit: GituiKeyEvent { code: KeyCode::Char('R'), modifiers: KeyModifiers::SHIFT },
 			log_reword_comit: GituiKeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::empty() },
 			log_find: GituiKeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty() },
+            //TODO: SHA: Clear up the default shortcut key.
+			log_jump_commit_sha: GituiKeyEvent::new(KeyCode::Char(']'), KeyModifiers::empty()),
 			commit_amend: GituiKeyEvent::new(KeyCode::Char('a'),  KeyModifiers::CONTROL),
 			toggle_signoff: GituiKeyEvent::new(KeyCode::Char('s'),  KeyModifiers::CONTROL),
 			toggle_verify: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::CONTROL),

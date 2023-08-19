@@ -8,10 +8,11 @@ use crate::{
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, FetchComponent, FileRevlogComponent,
 		FuzzyFindPopup, FuzzyFinderTarget, HelpComponent,
-		InspectCommitComponent, LogSearchPopupComponent,
-		MsgComponent, OptionsPopupComponent, PullComponent,
-		PushComponent, PushTagsComponent, RenameBranchComponent,
-		ResetPopupComponent, RevisionFilesPopup, StashMsgComponent,
+		InspectCommitComponent, JumpCommitShaPopup,
+		LogSearchPopupComponent, MsgComponent, OptionsPopupComponent,
+		PullComponent, PushComponent, PushTagsComponent,
+		RenameBranchComponent, ResetPopupComponent,
+		RevisionFilesPopup, StashMsgComponent,
 		SubmodulesListComponent, TagCommitComponent,
 		TagListComponent,
 	},
@@ -75,6 +76,7 @@ pub struct App {
 	revision_files_popup: RevisionFilesPopup,
 	fuzzy_find_popup: FuzzyFindPopup,
 	log_search_popup: LogSearchPopupComponent,
+	jump_commit_sha_popup: JumpCommitShaPopup,
 	push_popup: PushComponent,
 	push_tags_popup: PushTagsComponent,
 	pull_popup: PullComponent,
@@ -273,6 +275,11 @@ impl App {
 				key_config.clone(),
 			),
 			log_search_popup: LogSearchPopupComponent::new(
+				&queue,
+				theme.clone(),
+				key_config.clone(),
+			),
+			jump_commit_sha_popup: JumpCommitShaPopup::new(
 				&queue,
 				theme.clone(),
 				key_config.clone(),
@@ -586,6 +593,7 @@ impl App {
 	accessors!(
 		self,
 		[
+			jump_commit_sha_popup,
 			log_search_popup,
 			fuzzy_find_popup,
 			msg,
@@ -639,6 +647,7 @@ impl App {
 			rename_branch_popup,
 			revision_files_popup,
 			fuzzy_find_popup,
+			jump_commit_sha_popup,
 			log_search_popup,
 			push_popup,
 			push_tags_popup,
@@ -908,6 +917,10 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
+			InternalEvent::OpenLogJumpCommitSha => {
+				self.jump_commit_sha_popup.open()?;
+			}
+
 			InternalEvent::OptionSwitched(o) => {
 				match o {
 					AppOption::StatusShowUntracked => {

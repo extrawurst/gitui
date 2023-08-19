@@ -550,6 +550,13 @@ impl Component for Revlog {
 					return Ok(EventState::Consumed);
 				} else if key_match(
 					k,
+					self.key_config.keys.log_jump_commit_sha,
+				) {
+					self.queue
+						.push(InternalEvent::OpenLogJumpCommitSha);
+					return Ok(EventState::Consumed);
+				} else if key_match(
+					k,
 					self.key_config.keys.compare_commits,
 				) && self.list.marked_count() > 0
 				{
