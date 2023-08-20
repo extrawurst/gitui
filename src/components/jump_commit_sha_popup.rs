@@ -1,10 +1,13 @@
 use crate::{
-	keys::SharedKeyConfig, queue::Queue, ui::style::SharedTheme,
+	keys::SharedKeyConfig,
+	queue::{InternalEvent, Queue},
+	ui::style::SharedTheme,
 };
+use anyhow::Result;
 
 use super::{
-	visibility_blocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, TextInputComponent,
 };
 
 pub struct JumpCommitShaPopup {
@@ -12,6 +15,7 @@ pub struct JumpCommitShaPopup {
 	visible: bool,
 	key_config: SharedKeyConfig,
 	theme: SharedTheme,
+	input: TextInputComponent,
 }
 
 impl JumpCommitShaPopup {
@@ -20,19 +24,31 @@ impl JumpCommitShaPopup {
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
 	) -> Self {
+		let input = TextInputComponent::new(
+			theme.clone(),
+			key_config.clone(),
+			"TODO SHA",
+			"TODO default MSG",
+			false,
+		);
+
 		Self {
 			queue: queue.clone(),
 			visible: false,
 			theme,
 			key_config,
+			input,
 		}
 	}
 
-	pub fn open(&mut self) -> anyhow::Result<()> {
+	pub fn open(&mut self) -> Result<()> {
 		let _ = self.queue;
 		let _ = self.visible;
 		let _ = self.key_config;
 		let _ = self.theme;
+		let _ = self.input;
+
+		let _ = InternalEvent::JumpToCommit(String::default());
 
 		Ok(())
 	}
@@ -43,7 +59,7 @@ impl DrawableComponent for JumpCommitShaPopup {
 		&self,
 		f: &mut ratatui::Frame<B>,
 		rect: ratatui::layout::Rect,
-	) -> anyhow::Result<()> {
+	) -> Result<()> {
 		Ok(())
 	}
 }
@@ -53,14 +69,28 @@ impl Component for JumpCommitShaPopup {
 		&self,
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
-	) -> super::CommandBlocking {
+	) -> CommandBlocking {
 		visibility_blocking(self)
 	}
 
 	fn event(
 		&mut self,
 		ev: &crossterm::event::Event,
-	) -> anyhow::Result<EventState> {
+	) -> Result<EventState> {
 		Ok(EventState::NotConsumed)
+	}
+
+	fn is_visible(&self) -> bool {
+		self.visible
+	}
+
+	fn hide(&mut self) {
+		self.visible = false;
+	}
+
+	fn show(&mut self) -> Result<()> {
+		self.visible = true;
+
+		Ok(())
 	}
 }

@@ -990,6 +990,10 @@ impl App {
 			InternalEvent::CommitSearch(options) => {
 				self.revlog.search(options)?;
 			}
+			InternalEvent::JumpToCommit(sha) => {
+				//TODO: AMMAR:
+				// self.revlog.jump_to_commit(sha)?;
+			}
 		};
 
 		Ok(flags)

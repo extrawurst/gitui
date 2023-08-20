@@ -138,6 +138,8 @@ pub enum InternalEvent {
 	CommitSearch(LogFilterSearchOptions),
 	///
 	OpenLogJumpCommitSha,
+	///
+	JumpToCommit(String),
 }
 
 /// single threaded simple queue for components to communicate with each other
