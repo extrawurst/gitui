@@ -67,14 +67,14 @@ impl JumpCommitShaPopup {
 
 	fn validate(&mut self) {
 		let path = self.repo.borrow();
-		match CommitId::from_sha(self.input.get_text(), &path) {
+		match CommitId::from_revision(self.input.get_text(), &path) {
 			Ok(commit_id) => {
 				self.commit_id = Some(commit_id);
 				self.error_msg.clear();
 			}
-			Err(err_msg) => {
+			Err(_) => {
 				self.commit_id = None;
-				self.error_msg = err_msg.to_string();
+				self.error_msg = strings::jump_to_commit_err();
 			}
 		}
 	}

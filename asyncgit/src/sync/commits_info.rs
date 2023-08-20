@@ -32,11 +32,14 @@ impl CommitId {
 		self.to_string().chars().take(7).collect()
 	}
 
-	///
-	pub fn from_sha(sha: &str, repo_path: &RepoPath) -> Result<Self> {
+	/// Tries to get the `CommitId` form the revision if exists in the given repository
+	pub fn from_revision(
+		revision: &str,
+		repo_path: &RepoPath,
+	) -> Result<Self> {
 		let repo = repo(repo_path)?;
 
-		let commit_obj = repo.revparse_single(sha)?;
+		let commit_obj = repo.revparse_single(revision)?;
 		Ok(commit_obj.id().into())
 	}
 }
