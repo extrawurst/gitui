@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
@@ -5,7 +7,7 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::sync::CommitId;
+use asyncgit::sync::{CommitId, RepoPath};
 use crossterm::event::Event;
 use easy_cast::Cast;
 use ratatui::{backend::Backend, widgets::Paragraph, Frame};
@@ -19,6 +21,7 @@ pub struct JumpCommitShaPopup {
 	queue: Queue,
 	visible: bool,
 	key_config: SharedKeyConfig,
+	repo: RefCell<RepoPath>,
 	theme: SharedTheme,
 	input: TextInputComponent,
 	commit_id: Option<CommitId>,
@@ -30,6 +33,7 @@ impl JumpCommitShaPopup {
 		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
+		repo: RefCell<RepoPath>,
 	) -> Self {
 		let input = TextInputComponent::new(
 			theme.clone(),
@@ -44,6 +48,7 @@ impl JumpCommitShaPopup {
 			visible: false,
 			theme,
 			key_config,
+			repo,
 			input,
 			commit_id: None,
 			error_msg: String::default(),
@@ -61,7 +66,8 @@ impl JumpCommitShaPopup {
 	}
 
 	fn validate(&mut self) {
-		match CommitId::from_long_sha(self.input.get_text()) {
+		let path = self.repo.borrow();
+		match CommitId::from_sha(self.input.get_text(), &path) {
 			Ok(commit_id) => {
 				self.commit_id = Some(commit_id);
 				self.error_msg.clear();

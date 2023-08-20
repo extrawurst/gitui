@@ -283,6 +283,7 @@ impl App {
 				&queue,
 				theme.clone(),
 				key_config.clone(),
+				repo.clone(),
 			),
 			fuzzy_find_popup: FuzzyFindPopup::new(
 				&queue,
