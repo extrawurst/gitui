@@ -5,7 +5,10 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
+use asyncgit::sync::CommitId;
 use crossterm::event::Event;
+use easy_cast::Cast;
+use ratatui::{backend::Backend, widgets::Paragraph, Frame};
 
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -18,6 +21,8 @@ pub struct JumpCommitShaPopup {
 	key_config: SharedKeyConfig,
 	theme: SharedTheme,
 	input: TextInputComponent,
+	commit_id: Option<CommitId>,
+	error_msg: String,
 }
 
 impl JumpCommitShaPopup {
@@ -40,6 +45,8 @@ impl JumpCommitShaPopup {
 			theme,
 			key_config,
 			input,
+			commit_id: None,
+			error_msg: String::default(),
 		}
 	}
 
@@ -47,24 +54,56 @@ impl JumpCommitShaPopup {
 		self.show()?;
 		self.input.show()?;
 		self.input.set_text(String::new());
+		self.commit_id = None;
+		self.error_msg.clear();
 
 		Ok(())
 	}
 
-	fn is_sha_valid(&self) -> bool {
-		//TODO: Validation should be scene for the users
-		let _ = self.theme;
-		true
+	fn validate(&mut self) {
+		match CommitId::from_long_sha(self.input.get_text()) {
+			Ok(commit_id) => {
+				self.commit_id = Some(commit_id);
+				self.error_msg.clear();
+			}
+			Err(err_msg) => {
+				self.commit_id = None;
+				self.error_msg = err_msg.to_string();
+			}
+		}
 	}
 
-	fn exectue_confirm(&mut self) {
+	fn is_sha_valid(&self) -> bool {
+		let _ = self.theme;
+
+		self.commit_id.is_some()
+	}
+
+	fn execute_confirm(&mut self) {
 		self.hide();
 
-		debug_assert!(self.is_sha_valid());
+		let commit_id = self.commit_id.expect("Commit id must have value here because it's already validated");
+		self.queue.push(InternalEvent::JumpToCommit(commit_id));
+	}
 
-		let sha = self.input.get_text().trim();
+	fn draw_error<B: Backend>(&self, f: &mut Frame<B>) {
+		if self.is_sha_valid() {
+			return;
+		}
 
-		self.queue.push(InternalEvent::JumpToCommit(sha.into()));
+		let msg_len: u16 = self.error_msg.len().cast();
+
+		let err_paragraph = Paragraph::new(self.error_msg.as_str())
+			.style(self.theme.text_danger());
+
+		let mut rect = self.input.get_area();
+		rect.y += rect.height.saturating_sub(1);
+		rect.height = 1;
+		let offset = rect.width.saturating_sub(msg_len + 1);
+		rect.width = rect.width.saturating_sub(offset + 1);
+		rect.x += offset;
+
+		f.render_widget(err_paragraph, rect);
 	}
 }
 
@@ -76,6 +115,7 @@ impl DrawableComponent for JumpCommitShaPopup {
 	) -> Result<()> {
 		if self.is_visible() {
 			self.input.draw(f, rect)?;
+			self.draw_error(f);
 		}
 
 		Ok(())
@@ -122,9 +162,11 @@ impl Component for JumpCommitShaPopup {
 			} else if key_match(key, self.key_config.keys.enter)
 				&& self.is_sha_valid()
 			{
-				self.exectue_confirm();
+				self.execute_confirm();
 			} else {
-				self.input.event(event)?;
+				if self.input.event(event)?.is_consumed() {
+					self.validate();
+				}
 			}
 		}
 

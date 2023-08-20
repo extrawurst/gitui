@@ -139,7 +139,7 @@ pub enum InternalEvent {
 	///
 	OpenLogJumpCommitSha,
 	///
-	JumpToCommit(String),
+	JumpToCommit(CommitId),
 }
 
 /// single threaded simple queue for components to communicate with each other

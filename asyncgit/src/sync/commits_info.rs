@@ -31,6 +31,21 @@ impl CommitId {
 	pub fn get_short_string(&self) -> String {
 		self.to_string().chars().take(7).collect()
 	}
+
+	//TODO: AMMAR: Documentation + Unit tests
+	///
+	pub fn from_long_sha(sha: &str) -> Result<Self> {
+		if sha.len() != 40 {
+			return Err(crate::Error::Generic(
+				"SHA length must be 40".into(),
+			));
+		}
+
+		match Oid::from_str(sha) {
+			Ok(id) => Ok(id.into()),
+			Err(err) => Err(err.into()),
+		}
+	}
 }
 
 impl ToString for CommitId {

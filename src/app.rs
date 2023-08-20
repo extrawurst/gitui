@@ -990,9 +990,9 @@ impl App {
 			InternalEvent::CommitSearch(options) => {
 				self.revlog.search(options)?;
 			}
-			InternalEvent::JumpToCommit(sha) => {
-				//TODO: AMMAR:
-				// self.revlog.jump_to_commit(sha)?;
+			InternalEvent::JumpToCommit(commit_id) => {
+				//TODO: AMMAR Show Error Msg instead of panic
+				self.revlog.select_commit(commit_id)?;
 			}
 		};
 
