@@ -1,9 +1,11 @@
 use crate::{
-	keys::SharedKeyConfig,
+	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
+	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
+use crossterm::event::Event;
 
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
@@ -27,8 +29,8 @@ impl JumpCommitShaPopup {
 		let input = TextInputComponent::new(
 			theme.clone(),
 			key_config.clone(),
-			"TODO SHA",
-			"TODO default MSG",
+			&strings::jump_to_commit_title(),
+			&strings::jump_to_commit_msg(),
 			false,
 		);
 
@@ -42,15 +44,27 @@ impl JumpCommitShaPopup {
 	}
 
 	pub fn open(&mut self) -> Result<()> {
-		let _ = self.queue;
-		let _ = self.visible;
-		let _ = self.key_config;
-		let _ = self.theme;
-		let _ = self.input;
-
-		let _ = InternalEvent::JumpToCommit(String::default());
+		self.show()?;
+		self.input.show()?;
+		self.input.set_text(String::new());
 
 		Ok(())
+	}
+
+	fn is_sha_valid(&self) -> bool {
+		//TODO: Validation should be scene for the users
+		let _ = self.theme;
+		true
+	}
+
+	fn exectue_confirm(&mut self) {
+		self.hide();
+
+		debug_assert!(self.is_sha_valid());
+
+		let sha = self.input.get_text().trim();
+
+		self.queue.push(InternalEvent::JumpToCommit(sha.into()));
 	}
 }
 
@@ -60,6 +74,10 @@ impl DrawableComponent for JumpCommitShaPopup {
 		f: &mut ratatui::Frame<B>,
 		rect: ratatui::layout::Rect,
 	) -> Result<()> {
+		if self.is_visible() {
+			self.input.draw(f, rect)?;
+		}
+
 		Ok(())
 	}
 }
@@ -70,14 +88,47 @@ impl Component for JumpCommitShaPopup {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
+		if self.is_visible() || force_all {
+			out.push(
+				CommandInfo::new(
+					strings::commands::close_popup(&self.key_config),
+					true,
+					true,
+				)
+				.order(1),
+			);
+
+			out.push(CommandInfo::new(
+				strings::commands::confirm_action(&self.key_config),
+				self.is_sha_valid(),
+				self.visible,
+			));
+		}
+
 		visibility_blocking(self)
 	}
 
 	fn event(
 		&mut self,
-		ev: &crossterm::event::Event,
+		event: &crossterm::event::Event,
 	) -> Result<EventState> {
-		Ok(EventState::NotConsumed)
+		if !self.is_visible() {
+			return Ok(EventState::NotConsumed);
+		}
+
+		if let Event::Key(key) = &event {
+			if key_match(key, self.key_config.keys.exit_popup) {
+				self.hide();
+			} else if key_match(key, self.key_config.keys.enter)
+				&& self.is_sha_valid()
+			{
+				self.exectue_confirm();
+			} else {
+				self.input.event(event)?;
+			}
+		}
+
+		Ok(EventState::Consumed)
 	}
 
 	fn is_visible(&self) -> bool {
