@@ -991,8 +991,13 @@ impl App {
 				self.revlog.search(options)?;
 			}
 			InternalEvent::JumpToCommit(commit_id) => {
-				//TODO: AMMAR Show Error Msg instead of panic
-				self.revlog.select_commit(commit_id)?;
+				if let Err(error) =
+					self.revlog.select_commit(commit_id)
+				{
+					self.queue.push(InternalEvent::ShowErrorMsg(
+						error.to_string(),
+					));
+				}
 			}
 		};
 
