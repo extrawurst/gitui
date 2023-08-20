@@ -79,8 +79,6 @@ impl JumpCommitShaPopup {
 	}
 
 	fn is_sha_valid(&self) -> bool {
-		let _ = self.theme;
-
 		self.commit_id.is_some()
 	}
 

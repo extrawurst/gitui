@@ -998,6 +998,8 @@ impl App {
 					self.queue.push(InternalEvent::ShowErrorMsg(
 						error.to_string(),
 					));
+				} else {
+					flags.insert(NeedsUpdate::ALL);
 				}
 			}
 		};
