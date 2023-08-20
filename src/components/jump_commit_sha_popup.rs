@@ -67,15 +67,14 @@ impl JumpCommitShaPopup {
 
 	fn validate(&mut self) {
 		let path = self.repo.borrow();
-		match CommitId::from_revision(self.input.get_text(), &path) {
-			Ok(commit_id) => {
-				self.commit_id = Some(commit_id);
-				self.error_msg.clear();
-			}
-			Err(_) => {
-				self.commit_id = None;
-				self.error_msg = strings::jump_to_commit_err();
-			}
+		if let Ok(commit_id) =
+			CommitId::from_revision(self.input.get_text(), &path)
+		{
+			self.commit_id = Some(commit_id);
+			self.error_msg.clear();
+		} else {
+			self.commit_id = None;
+			self.error_msg = strings::jump_to_commit_err();
 		}
 	}
 
@@ -169,10 +168,8 @@ impl Component for JumpCommitShaPopup {
 				&& self.is_sha_valid()
 			{
 				self.execute_confirm();
-			} else {
-				if self.input.event(event)?.is_consumed() {
-					self.validate();
-				}
+			} else if self.input.event(event)?.is_consumed() {
+				self.validate();
 			}
 		}
 
