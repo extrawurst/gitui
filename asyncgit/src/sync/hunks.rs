@@ -1,5 +1,5 @@
 use super::{
-	diff::{get_diff_raw, HunkHeader},
+	diff::{get_diff_raw, DiffOptions, HunkHeader},
 	RepoPath,
 };
 use crate::{
@@ -15,12 +15,13 @@ pub fn stage_hunk(
 	repo_path: &RepoPath,
 	file_path: &str,
 	hunk_hash: u64,
+	options: Option<DiffOptions>,
 ) -> Result<()> {
 	scope_time!("stage_hunk");
 
 	let repo = repo(repo_path)?;
 
-	let diff = get_diff_raw(&repo, file_path, false, false, None)?;
+	let diff = get_diff_raw(&repo, file_path, false, false, options)?;
 
 	let mut opt = ApplyOptions::new();
 	opt.hunk_callback(|hunk| {
@@ -40,12 +41,13 @@ pub fn reset_hunk(
 	repo_path: &RepoPath,
 	file_path: &str,
 	hunk_hash: u64,
+	options: Option<DiffOptions>,
 ) -> Result<()> {
 	scope_time!("reset_hunk");
 
 	let repo = repo(repo_path)?;
 
-	let diff = get_diff_raw(&repo, file_path, false, false, None)?;
+	let diff = get_diff_raw(&repo, file_path, false, false, options)?;
 
 	let hunk_index = find_hunk_index(&diff, hunk_hash);
 	if let Some(hunk_index) = hunk_index {
@@ -98,12 +100,13 @@ pub fn unstage_hunk(
 	repo_path: &RepoPath,
 	file_path: &str,
 	hunk_hash: u64,
+	options: Option<DiffOptions>,
 ) -> Result<bool> {
 	scope_time!("revert_hunk");
 
 	let repo = repo(repo_path)?;
 
-	let diff = get_diff_raw(&repo, file_path, true, false, None)?;
+	let diff = get_diff_raw(&repo, file_path, true, false, options)?;
 	let diff_count_positive = diff.deltas().len();
 
 	let hunk_index = find_hunk_index(&diff, hunk_hash);
@@ -112,7 +115,7 @@ pub fn unstage_hunk(
 		Ok,
 	)?;
 
-	let diff = get_diff_raw(&repo, file_path, true, true, None)?;
+	let diff = get_diff_raw(&repo, file_path, true, true, options)?;
 
 	if diff.deltas().len() != diff_count_positive {
 		return Err(Error::Generic(format!(
@@ -182,6 +185,7 @@ mod tests {
 			repo_path,
 			file_path.to_str().unwrap(),
 			diff.hunks[0].header_hash,
+			None,
 		)
 		.is_err());
 

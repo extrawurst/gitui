@@ -55,7 +55,7 @@ impl StashList {
 			)?;
 
 			self.list.set_count_total(commits.len());
-			self.list.items().set_items(0, commits);
+			self.list.set_items(0, commits, &None);
 		}
 
 		Ok(())
@@ -65,7 +65,7 @@ impl StashList {
 		if let Some(e) = self.list.selected_entry() {
 			match sync::stash_apply(&self.repo.borrow(), e.id, false)
 			{
-				Ok(_) => {
+				Ok(()) => {
 					self.queue.push(InternalEvent::TabSwitchStatus);
 				}
 				Err(e) => {

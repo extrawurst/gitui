@@ -30,6 +30,8 @@ use ratatui::{
 use std::{
 	fs::{read_to_string, File},
 	io::{Read, Write},
+	path::PathBuf,
+	str::FromStr,
 };
 
 enum CommitResult {
@@ -255,7 +257,9 @@ impl CommitComponent {
 				return Ok(CommitResult::Aborted);
 			}
 		}
+
 		let mut msg = message_prettify(msg, Some(b'#'))?;
+
 		if verify {
 			// run commit message check hook - can reject commit
 			if let HookResult::NotOk(e) =
@@ -341,6 +345,13 @@ impl CommitComponent {
 
 		Ok(())
 	}
+	fn signoff_commit(&mut self) {
+		let msg = self.input.get_text();
+		let signed_msg = self.add_sign_off(msg);
+		if let std::result::Result::Ok(signed_msg) = signed_msg {
+			self.input.set_text(signed_msg);
+		}
+	}
 	fn toggle_verify(&mut self) {
 		self.verify = !self.verify;
 	}
@@ -355,66 +366,109 @@ impl CommitComponent {
 
 		let repo_state = sync::repo_state(&self.repo.borrow())?;
 
-		self.mode =
-			if repo_state != RepoState::Clean && reword.is_some() {
-				bail!("cannot reword while repo is not in a clean state");
-			} else if let Some(reword_id) = reword {
-				self.input.set_text(
-					sync::get_commit_details(
+		self.mode = if repo_state != RepoState::Clean
+			&& reword.is_some()
+		{
+			bail!("cannot reword while repo is not in a clean state");
+		} else if let Some(reword_id) = reword {
+			self.input.set_text(
+				sync::get_commit_details(
+					&self.repo.borrow(),
+					reword_id,
+				)?
+				.message
+				.unwrap_or_default()
+				.combine(),
+			);
+			self.input.set_title(strings::commit_reword_title());
+			Mode::Reword(reword_id)
+		} else {
+			match repo_state {
+				RepoState::Merge => {
+					let ids =
+						sync::mergehead_ids(&self.repo.borrow())?;
+					self.input
+						.set_title(strings::commit_title_merge());
+					self.input.set_text(sync::merge_msg(
 						&self.repo.borrow(),
-						reword_id,
-					)?
-					.message
-					.unwrap_or_default()
-					.combine(),
-				);
-				self.input.set_title(strings::commit_reword_title());
-				Mode::Reword(reword_id)
-			} else {
-				match repo_state {
-					RepoState::Merge => {
-						let ids =
-							sync::mergehead_ids(&self.repo.borrow())?;
-						self.input
-							.set_title(strings::commit_title_merge());
-						self.input.set_text(sync::merge_msg(
-							&self.repo.borrow(),
-						)?);
-						Mode::Merge(ids)
-					}
-					RepoState::Revert => {
-						self.input
-							.set_title(strings::commit_title_revert());
-						self.input.set_text(sync::merge_msg(
-							&self.repo.borrow(),
-						)?);
-						Mode::Revert
-					}
-
-					_ => {
-						self.commit_template = get_config_string(
-							&self.repo.borrow(),
-							"commit.template",
-						)
-						.ok()
-						.flatten()
-						.and_then(|path| read_to_string(path).ok());
-
-						if self.is_empty() {
-							if let Some(s) = &self.commit_template {
-								self.input.set_text(s.clone());
-							}
-						}
-						self.input.set_title(strings::commit_title());
-						Mode::Normal
-					}
+					)?);
+					Mode::Merge(ids)
 				}
-			};
+				RepoState::Revert => {
+					self.input
+						.set_title(strings::commit_title_revert());
+					self.input.set_text(sync::merge_msg(
+						&self.repo.borrow(),
+					)?);
+					Mode::Revert
+				}
+
+				_ => {
+					self.commit_template = get_config_string(
+						&self.repo.borrow(),
+						"commit.template",
+					)
+					.map_err(|e| {
+						log::error!("load git-config failed: {}", e);
+						e
+					})
+					.ok()
+					.flatten()
+					.and_then(|path| {
+						shellexpand::full(path.as_str())
+							.ok()
+							.and_then(|path| {
+								PathBuf::from_str(path.as_ref()).ok()
+							})
+					})
+					.and_then(|path| {
+						read_to_string(&path)
+							.map_err(|e| {
+								log::error!("read commit.template failed: {e} (path: '{:?}')",path);
+								e
+							})
+							.ok()
+					});
+
+					if self.is_empty() {
+						if let Some(s) = &self.commit_template {
+							self.input.set_text(s.clone());
+						}
+					}
+					self.input.set_title(strings::commit_title());
+					Mode::Normal
+				}
+			}
+		};
 
 		self.commit_msg_history_idx = 0;
 		self.input.show()?;
 
 		Ok(())
+	}
+
+	fn add_sign_off(&self, msg: &str) -> Result<String> {
+		const CONFIG_KEY_USER_NAME: &str = "user.name";
+		const CONFIG_KEY_USER_MAIL: &str = "user.email";
+
+		let user = get_config_string(
+			&self.repo.borrow(),
+			CONFIG_KEY_USER_NAME,
+		)?;
+
+		let mail = get_config_string(
+			&self.repo.borrow(),
+			CONFIG_KEY_USER_MAIL,
+		)?;
+
+		let mut msg = msg.to_owned();
+		if let (Some(user), Some(mail)) = (user, mail) {
+			msg.push_str(&format!(
+				"\n\nSigned-off-by {user} <{mail}>"
+			));
+		}
+
+		Ok(msg)
 	}
 }
 
@@ -461,6 +515,12 @@ impl Component for CommitComponent {
 			out.push(CommandInfo::new(
 				strings::commands::commit_amend(&self.key_config),
 				self.can_amend(),
+				true,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::commit_signoff(&self.key_config),
+				true,
 				true,
 			));
 
@@ -531,6 +591,11 @@ impl Component for CommitComponent {
 						self.input.set_text(msg);
 						self.commit_msg_history_idx += 1;
 					}
+				} else if key_match(
+					e,
+					self.key_config.keys.toggle_signoff,
+				) {
+					self.signoff_commit();
 				}
 				// stop key event propagation
 				return Ok(EventState::Consumed);

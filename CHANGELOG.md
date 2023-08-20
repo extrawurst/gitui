@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**search commits**
+
+![commit-search](assets/log-search.gif)
+
+**visualize empty lines in diff better**
+
+![diff-empty-line](assets/diff-empty-line.png)
+
 ### Breaking Changes
 * Do you use a custom theme?
 
@@ -16,11 +24,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * Future additions of colors etc. will not break existing themes anymore
 
 ### Added
+* search commits by files in diff or commit message ([#1791](https://github.com/extrawurst/gitui/issues/1791))
 * support 'n'/'p' key to move to the next/prev hunk in diff component [[@hamflx](https://github.com/hamflx)] ([#1523](https://github.com/extrawurst/gitui/issues/1523))
 * simplify theme overrides [[@cruessler](https://github.com/cruessler)] ([#1367](https://github.com/extrawurst/gitui/issues/1367))
+* support for sign-off of commits [[@domtac](https://github.com/domtac)]([#1757](https://github.com/extrawurst/gitui/issues/1757))
+* switched from textwrap to bwrap for text wrapping [[@TheBlackSheep3](https://github.com/TheBlackSheep3/)] ([#1762](https://github.com/extrawurst/gitui/issues/1762))
+* more logging diagnostics when a repo cannot be opened
+* added to [anaconda](https://anaconda.org/conda-forge/gitui) [[@TheBlackSheep3](https://github.com/TheBlackSheep3/)] ([#1626](https://github.com/extrawurst/gitui/issues/1626))
+* visualize empty line substituted with content in diff better ([#1359](https://github.com/extrawurst/gitui/issues/1359))
+* checkout branch works with non-empty status report [[@lightsnowball](https://github.com/lightsnowball)]  ([#1399](https://github.com/extrawurst/gitui/issues/1399))
 
 ### Fixes
 * fix commit dialog char count for multibyte characters ([#1726](https://github.com/extrawurst/gitui/issues/1726))
+* fix wrong hit highlighting in fuzzy find popup [[@UUGTech](https://github.com/UUGTech)] ([#1731](https://github.com/extrawurst/gitui/pull/1731))
+* fix symlink support for configuration files [[@TheBlackSheep3](https://github.com/TheBlackSheep3)] ([#1751](https://github.com/extrawurst/gitui/issues/1751))
+* fix expansion of `~` in `commit.template` ([#1745](https://github.com/extrawurst/gitui/pull/1745))
+* fix hunk (un)staging/reset for # of context lines != 3 ([#1746](https://github.com/extrawurst/gitui/issues/1746))
+* fix delay when opening external editor ([#1506](https://github.com/extrawurst/gitui/issues/1506))
 
 ## [0.23.0] - 2022-06-19
 
@@ -50,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * allow `copy` file path on revision files and status tree [[@yanganto]](https://github.com/yanganto)  ([#1516](https://github.com/extrawurst/gitui/pull/1516))
 * print message of where log will be written if `-l` is set ([#1472](https://github.com/extrawurst/gitui/pull/1472))
 * show remote branches in log [[@cruessler](https://github.com/cruessler)] ([#1501](https://github.com/extrawurst/gitui/issues/1501))
+* scrolling functionality to fuzzy-find [[@AmmarAbouZor](https://github.com/AmmarAbouZor)] ([#1732](https://github.com/extrawurst/gitui/issues/1732))
 
 ### Fixes
 * fixed side effect of crossterm 0.26 on windows that caused double input of all keys [[@pm100]](https://github/pm100) ([#1686](https://github.com/extrawurst/gitui/pull/1686))

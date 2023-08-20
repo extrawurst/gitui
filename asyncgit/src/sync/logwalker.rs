@@ -1,7 +1,9 @@
+#![allow(dead_code)]
 use super::CommitId;
-use crate::sync::RepoPath;
 use crate::{error::Result, sync::commit_files::get_commit_diff};
-use git2::{Commit, Oid, Repository};
+use bitflags::bitflags;
+use fuzzy_matcher::FuzzyMatcher;
+use git2::{Commit, Diff, Oid, Repository};
 use std::{
 	cmp::Ordering,
 	collections::{BinaryHeap, HashSet},
@@ -20,7 +22,7 @@ impl<'a> PartialEq for TimeOrderedCommit<'a> {
 
 impl<'a> PartialOrd for TimeOrderedCommit<'a> {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-		self.0.time().partial_cmp(&other.0.time())
+		Some(self.cmp(other))
 	}
 }
 
@@ -36,25 +38,179 @@ pub type LogWalkerFilter = Arc<
 >;
 
 ///
-pub fn diff_contains_file(
-	repo_path: RepoPath,
-	file_path: String,
-) -> LogWalkerFilter {
+pub fn diff_contains_file(file_path: String) -> LogWalkerFilter {
 	Arc::new(Box::new(
 		move |repo: &Repository,
 		      commit_id: &CommitId|
 		      -> Result<bool> {
 			let diff = get_commit_diff(
-				&repo_path,
 				repo,
 				*commit_id,
 				Some(file_path.clone()),
+				None,
 				None,
 			)?;
 
 			let contains_file = diff.deltas().len() > 0;
 
 			Ok(contains_file)
+		},
+	))
+}
+
+bitflags! {
+	///
+	pub struct SearchFields: u32 {
+		///
+		const MESSAGE = 0b0000_0001;
+		///
+		const FILENAMES = 0b0000_0010;
+		//TODO:
+		// const COMMIT_HASHES = 0b0000_0100;
+		// ///
+		// const DATES = 0b0000_1000;
+		// ///
+		// const AUTHORS = 0b0001_0000;
+		// ///
+		// const DIFFS = 0b0010_0000;
+	}
+}
+
+impl Default for SearchFields {
+	fn default() -> Self {
+		Self::MESSAGE
+	}
+}
+
+bitflags! {
+	///
+	pub struct SearchOptions: u32 {
+		///
+		const CASE_SENSITIVE = 0b0000_0001;
+		///
+		const FUZZY_SEARCH = 0b0000_0010;
+	}
+}
+
+impl Default for SearchOptions {
+	fn default() -> Self {
+		Self::empty()
+	}
+}
+
+///
+#[derive(Default, Debug, Clone)]
+pub struct LogFilterSearchOptions {
+	///
+	pub search_pattern: String,
+	///
+	pub fields: SearchFields,
+	///
+	pub options: SearchOptions,
+}
+
+///
+#[derive(Default)]
+pub struct LogFilterSearch {
+	///
+	pub matcher: fuzzy_matcher::skim::SkimMatcherV2,
+	///
+	pub options: LogFilterSearchOptions,
+}
+
+impl LogFilterSearch {
+	///
+	pub fn new(options: LogFilterSearchOptions) -> Self {
+		let mut options = options;
+		if !options.options.contains(SearchOptions::CASE_SENSITIVE) {
+			options.search_pattern =
+				options.search_pattern.to_lowercase();
+		}
+		Self {
+			matcher: fuzzy_matcher::skim::SkimMatcherV2::default(),
+			options,
+		}
+	}
+
+	fn match_diff(&self, diff: &Diff<'_>) -> bool {
+		diff.deltas().any(|delta| {
+			if delta
+				.new_file()
+				.path()
+				.and_then(|file| file.as_os_str().to_str())
+				.map(|file| self.match_text(file))
+				.unwrap_or_default()
+			{
+				return true;
+			}
+
+			delta
+				.old_file()
+				.path()
+				.and_then(|file| file.as_os_str().to_str())
+				.map(|file| self.match_text(file))
+				.unwrap_or_default()
+		})
+	}
+
+	///
+	pub fn match_text(&self, text: &str) -> bool {
+		if self.options.options.contains(SearchOptions::FUZZY_SEARCH)
+		{
+			self.matcher
+				.fuzzy_match(
+					text,
+					self.options.search_pattern.as_str(),
+				)
+				.is_some()
+		} else if self
+			.options
+			.options
+			.contains(SearchOptions::CASE_SENSITIVE)
+		{
+			text.contains(self.options.search_pattern.as_str())
+		} else {
+			text.to_lowercase()
+				.contains(self.options.search_pattern.as_str())
+		}
+	}
+}
+
+///
+pub fn filter_commit_by_search(
+	filter: LogFilterSearch,
+) -> LogWalkerFilter {
+	Arc::new(Box::new(
+		move |repo: &Repository,
+		      commit_id: &CommitId|
+		      -> Result<bool> {
+			let commit = repo.find_commit((*commit_id).into())?;
+
+			let msg_match = filter
+				.options
+				.fields
+				.contains(SearchFields::MESSAGE)
+				.then(|| {
+					commit.message().map(|msg| filter.match_text(msg))
+				})
+				.flatten()
+				.unwrap_or_default();
+
+			let file_match = filter
+				.options
+				.fields
+				.contains(SearchFields::FILENAMES)
+				.then(|| {
+					get_commit_diff(
+						repo, *commit_id, None, None, None,
+					)
+					.ok()
+				})
+				.flatten()
+				.map(|diff| filter.match_diff(&diff))
+				.unwrap_or_default();
+
+			Ok(msg_match || file_match)
 		},
 	))
 }
@@ -134,6 +290,7 @@ impl<'a> LogWalker<'a> {
 mod tests {
 	use super::*;
 	use crate::error::Result;
+	use crate::sync::tests::write_commit_file;
 	use crate::sync::RepoPath;
 	use crate::sync::{
 		commit, get_commits_info, stage_add_file,
@@ -224,9 +381,7 @@ mod tests {
 
 		let _third_commit_id = commit(&repo_path, "commit3").unwrap();
 
-		let repo_path_clone = repo_path.clone();
-		let diff_contains_baz =
-			diff_contains_file(repo_path_clone, "baz".into());
+		let diff_contains_baz = diff_contains_file("baz".into());
 
 		let mut items = Vec::new();
 		let mut walker = LogWalker::new(&repo, 100)?
@@ -241,8 +396,7 @@ mod tests {
 
 		assert_eq!(items.len(), 0);
 
-		let diff_contains_bar =
-			diff_contains_file(repo_path, "bar".into());
+		let diff_contains_bar = diff_contains_file("bar".into());
 
 		let mut items = Vec::new();
 		let mut walker = LogWalker::new(&repo, 100)?
@@ -252,5 +406,52 @@ mod tests {
 		assert_eq!(items.len(), 0);
 
 		Ok(())
+	}
+
+	#[test]
+	fn test_logwalker_with_filter_search() {
+		let (_td, repo) = repo_init_empty().unwrap();
+
+		write_commit_file(&repo, "foo", "a", "commit1");
+		let second_commit_id = write_commit_file(
+			&repo,
+			"baz",
+			"a",
+			"my commit msg (#2)",
+		);
+		write_commit_file(&repo, "foo", "b", "commit3");
+
+		let log_filter = filter_commit_by_search(
+			LogFilterSearch::new(LogFilterSearchOptions {
+				fields: SearchFields::MESSAGE,
+				options: SearchOptions::FUZZY_SEARCH,
+				search_pattern: String::from("my msg"),
+			}),
+		);
+
+		let mut items = Vec::new();
+		let mut walker = LogWalker::new(&repo, 100)
+			.unwrap()
+			.filter(Some(log_filter));
+		walker.read(&mut items).unwrap();
+
+		assert_eq!(items.len(), 1);
+		assert_eq!(items[0], second_commit_id);
+
+		let log_filter = filter_commit_by_search(
+			LogFilterSearch::new(LogFilterSearchOptions {
+				fields: SearchFields::FILENAMES,
+				options: SearchOptions::FUZZY_SEARCH,
+				search_pattern: String::from("fo"),
+			}),
+		);
+
+		let mut items = Vec::new();
+		let mut walker = LogWalker::new(&repo, 100)
+			.unwrap()
+			.filter(Some(log_filter));
+		walker.read(&mut items).unwrap();
+
+		assert_eq!(items.len(), 2);
 	}
 }

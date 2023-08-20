@@ -11,7 +11,8 @@ use std::{
 	time::Duration,
 };
 
-static POLL_DURATION: Duration = Duration::from_millis(1000);
+static FAST_POLL_DURATION: Duration = Duration::from_millis(100);
+static SLOW_POLL_DURATION: Duration = Duration::from_millis(10000);
 
 ///
 #[derive(Clone, Copy, Debug)]
@@ -103,6 +104,7 @@ impl Input {
 		arc_current: &Arc<AtomicBool>,
 		tx: &Sender<InputEvent>,
 	) -> Result<()> {
+		let mut poll_duration = SLOW_POLL_DURATION;
 		loop {
 			if arc_desired.get() {
 				if !arc_current.load(Ordering::Relaxed) {
@@ -112,14 +114,21 @@ impl Input {
 				}
 				arc_current.store(true, Ordering::Relaxed);
 
-				if let Some(e) = Self::poll(POLL_DURATION)? {
+				if let Some(e) = Self::poll(poll_duration)? {
 					// windows send key release too, only process key press
 					if let Key(key) = e {
 						if key.kind != KeyEventKind::Press {
 							continue;
 						}
 					}
+
 					tx.send(InputEvent::Input(e))?;
+					//Note: right after an input event we might have a reason to stop
+					// polling (external editor opening) so lets do a quick poll until the next input
+					// this fixes https://github.com/extrawurst/gitui/issues/1506
+					poll_duration = FAST_POLL_DURATION;
+				} else {
+					poll_duration = SLOW_POLL_DURATION;
 				}
 			} else {
 				if arc_current.load(Ordering::Relaxed) {

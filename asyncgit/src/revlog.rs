@@ -11,7 +11,7 @@ use std::{
 		Arc, Mutex,
 	},
 	thread,
-	time::Duration,
+	time::{Duration, Instant},
 };
 
 ///
@@ -26,8 +26,15 @@ pub enum FetchStatus {
 }
 
 ///
+pub struct AsyncLogResult {
+	///
+	pub commits: Vec<CommitId>,
+	///
+	pub duration: Duration,
+}
+///
 pub struct AsyncLog {
-	current: Arc<Mutex<Vec<CommitId>>>,
+	current: Arc<Mutex<AsyncLogResult>>,
 	current_head: Arc<Mutex<Option<CommitId>>>,
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicBool>,
@@ -49,7 +56,10 @@ impl AsyncLog {
 	) -> Self {
 		Self {
 			repo,
-			current: Arc::new(Mutex::new(Vec::new())),
+			current: Arc::new(Mutex::new(AsyncLogResult {
+				commits: Vec::new(),
+				duration: Duration::default(),
+			})),
 			current_head: Arc::new(Mutex::new(None)),
 			sender: sender.clone(),
 			pending: Arc::new(AtomicBool::new(false)),
@@ -60,7 +70,7 @@ impl AsyncLog {
 
 	///
 	pub fn count(&self) -> Result<usize> {
-		Ok(self.current.lock()?.len())
+		Ok(self.current.lock()?.commits.len())
 	}
 
 	///
@@ -69,7 +79,7 @@ impl AsyncLog {
 		start_index: usize,
 		amount: usize,
 	) -> Result<Vec<CommitId>> {
-		let list = self.current.lock()?;
+		let list = &self.current.lock()?.commits;
 		let list_len = list.len();
 		let min = start_index.min(list_len);
 		let max = min + amount;
@@ -78,8 +88,19 @@ impl AsyncLog {
 	}
 
 	///
+	pub fn get_items(&self) -> Result<Vec<CommitId>> {
+		let list = &self.current.lock()?.commits;
+		Ok(list.clone())
+	}
+
+	///
+	pub fn get_last_duration(&self) -> Result<Duration> {
+		Ok(self.current.lock()?.duration)
+	}
+
+	///
 	pub fn position(&self, id: CommitId) -> Result<Option<usize>> {
-		let list = self.current.lock()?;
+		let list = &self.current.lock()?.commits;
 		let position = list.iter().position(|&x| x == id);
 
 		Ok(position)
@@ -160,11 +181,13 @@ impl AsyncLog {
 
 	fn fetch_helper(
 		repo_path: &RepoPath,
-		arc_current: &Arc<Mutex<Vec<CommitId>>>,
+		arc_current: &Arc<Mutex<AsyncLogResult>>,
 		arc_background: &Arc<AtomicBool>,
 		sender: &Sender<AsyncGitNotification>,
 		filter: Option<LogWalkerFilter>,
 	) -> Result<()> {
+		let start_time = Instant::now();
+
 		let mut entries = Vec::with_capacity(LIMIT_COUNT);
 		let r = repo(repo_path)?;
 		let mut walker =
@@ -175,7 +198,8 @@ impl AsyncLog {
 
 			if !res_is_err {
 				let mut current = arc_current.lock()?;
-				current.extend(entries.iter());
+				current.commits.extend(entries.iter());
+				current.duration = start_time.elapsed();
 			}
 
 			if res_is_err || entries.len() <= 1 {
@@ -196,7 +220,7 @@ impl AsyncLog {
 	}
 
 	fn clear(&mut self) -> Result<()> {
-		self.current.lock()?.clear();
+		self.current.lock()?.commits.clear();
 		*self.current_head.lock()? = None;
 		Ok(())
 	}

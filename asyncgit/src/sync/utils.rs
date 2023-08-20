@@ -25,13 +25,13 @@ pub struct Head {
 }
 
 ///
-pub fn is_repo(repo_path: &RepoPath) -> bool {
+pub fn repo_open_error(repo_path: &RepoPath) -> Option<String> {
 	Repository::open_ext(
 		repo_path.gitpath(),
 		RepositoryOpenFlags::empty(),
 		Vec::<&Path>::new(),
 	)
-	.is_ok()
+	.map_or_else(|e| Some(e.to_string()), |_| None)
 }
 
 ///

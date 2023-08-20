@@ -8,10 +8,10 @@ use crate::{
 		ConfirmComponent, CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, FetchComponent, FileRevlogComponent,
 		FuzzyFindPopup, FuzzyFinderTarget, HelpComponent,
-		InspectCommitComponent, MsgComponent, OptionsPopupComponent,
-		PullComponent, PushComponent, PushTagsComponent,
-		RenameBranchComponent, ResetPopupComponent,
-		RevisionFilesPopup, StashMsgComponent,
+		InspectCommitComponent, LogSearchPopupComponent,
+		MsgComponent, OptionsPopupComponent, PullComponent,
+		PushComponent, PushTagsComponent, RenameBranchComponent,
+		ResetPopupComponent, RevisionFilesPopup, StashMsgComponent,
 		SubmodulesListComponent, TagCommitComponent,
 		TagListComponent,
 	},
@@ -74,6 +74,7 @@ pub struct App {
 	external_editor_popup: ExternalEditorComponent,
 	revision_files_popup: RevisionFilesPopup,
 	fuzzy_find_popup: FuzzyFindPopup,
+	log_search_popup: LogSearchPopupComponent,
 	push_popup: PushComponent,
 	push_tags_popup: PushTagsComponent,
 	pull_popup: PullComponent,
@@ -267,6 +268,11 @@ impl App {
 			),
 			submodule_popup: SubmodulesListComponent::new(
 				repo.clone(),
+				&queue,
+				theme.clone(),
+				key_config.clone(),
+			),
+			log_search_popup: LogSearchPopupComponent::new(
 				&queue,
 				theme.clone(),
 				key_config.clone(),
@@ -580,6 +586,7 @@ impl App {
 	accessors!(
 		self,
 		[
+			log_search_popup,
 			fuzzy_find_popup,
 			msg,
 			reset,
@@ -632,6 +639,7 @@ impl App {
 			rename_branch_popup,
 			revision_files_popup,
 			fuzzy_find_popup,
+			log_search_popup,
 			push_popup,
 			push_tags_popup,
 			pull_popup,
@@ -895,6 +903,11 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
+			InternalEvent::OpenLogSearchPopup => {
+				self.log_search_popup.open()?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
 			InternalEvent::OptionSwitched(o) => {
 				match o {
 					AppOption::StatusShowUntracked => {
@@ -961,12 +974,14 @@ impl App {
 			InternalEvent::OpenResetPopup(id) => {
 				self.reset_popup.open(id)?;
 			}
+			InternalEvent::CommitSearch(options) => {
+				self.revlog.search(options)?;
+			}
 		};
 
 		Ok(flags)
 	}
 
-	#[allow(clippy::too_many_lines)]
 	fn process_confirmed_action(
 		&mut self,
 		action: Action,
@@ -974,9 +989,7 @@ impl App {
 	) -> Result<()> {
 		match action {
 			Action::Reset(r) => {
-				if self.status_tab.reset(&r) {
-					flags.insert(NeedsUpdate::ALL);
-				}
+				self.status_tab.reset(&r);
 			}
 			Action::StashDrop(_) | Action::StashPop(_) => {
 				if let Err(e) = self
@@ -987,12 +1000,14 @@ impl App {
 						e.to_string(),
 					));
 				}
-
-				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::ResetHunk(path, hash) => {
-				sync::reset_hunk(&self.repo.borrow(), &path, hash)?;
-				flags.insert(NeedsUpdate::ALL);
+				sync::reset_hunk(
+					&self.repo.borrow(),
+					&path,
+					hash,
+					Some(self.options.borrow().diff_options()),
+				)?;
 			}
 			Action::ResetLines(path, lines) => {
 				sync::discard_lines(
@@ -1000,7 +1015,6 @@ impl App {
 					&path,
 					&lines,
 				)?;
-				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::DeleteLocalBranch(branch_ref) => {
 				if let Err(e) = sync::delete_branch(
@@ -1011,50 +1025,14 @@ impl App {
 						e.to_string(),
 					));
 				}
-				flags.insert(NeedsUpdate::ALL);
+
 				self.select_branch_popup.update_branches()?;
 			}
 			Action::DeleteRemoteBranch(branch_ref) => {
-				self.queue.push(
-					//TODO: check if this is correct based on the fix in `c6abbaf`
-					branch_ref.rsplit('/').next().map_or_else(
-						|| {
-							InternalEvent::ShowErrorMsg(format!(
-						"Failed to find the branch name in {branch_ref}"
-					))
-						},
-						|name| {
-							InternalEvent::Push(
-								name.to_string(),
-								PushType::Branch,
-								false,
-								true,
-							)
-						},
-					),
-				);
-				flags.insert(NeedsUpdate::ALL);
-				self.select_branch_popup.update_branches()?;
+				self.delete_remote_branch(&branch_ref)?;
 			}
 			Action::DeleteTag(tag_name) => {
-				if let Err(error) =
-					sync::delete_tag(&self.repo.borrow(), &tag_name)
-				{
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						error.to_string(),
-					));
-				} else {
-					let remote = sync::get_default_remote(
-						&self.repo.borrow(),
-					)?;
-
-					self.queue.push(InternalEvent::ConfirmAction(
-						Action::DeleteRemoteTag(tag_name, remote),
-					));
-
-					flags.insert(NeedsUpdate::ALL);
-					self.tags_popup.update_tags()?;
-				}
+				self.delete_tag(tag_name)?;
 			}
 			Action::DeleteRemoteTag(tag_name, _remote) => {
 				self.queue.push(InternalEvent::Push(
@@ -1074,17 +1052,63 @@ impl App {
 			}
 			Action::PullMerge { rebase, .. } => {
 				self.pull_popup.try_conflict_free_merge(rebase);
-				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::AbortRevert | Action::AbortMerge => {
 				self.status_tab.revert_pending_state();
-				flags.insert(NeedsUpdate::ALL);
 			}
 			Action::AbortRebase => {
 				self.status_tab.abort_rebase();
-				flags.insert(NeedsUpdate::ALL);
 			}
 		};
+
+		flags.insert(NeedsUpdate::ALL);
+
+		Ok(())
+	}
+
+	fn delete_tag(&mut self, tag_name: String) -> Result<()> {
+		if let Err(error) =
+			sync::delete_tag(&self.repo.borrow(), &tag_name)
+		{
+			self.queue
+				.push(InternalEvent::ShowErrorMsg(error.to_string()));
+		} else {
+			let remote =
+				sync::get_default_remote(&self.repo.borrow())?;
+
+			self.queue.push(InternalEvent::ConfirmAction(
+				Action::DeleteRemoteTag(tag_name, remote),
+			));
+
+			self.tags_popup.update_tags()?;
+		};
+		Ok(())
+	}
+
+	fn delete_remote_branch(
+		&mut self,
+		branch_ref: &str,
+	) -> Result<()> {
+		self.queue.push(
+			//TODO: check if this is correct based on the fix in `c6abbaf`
+			branch_ref.rsplit('/').next().map_or_else(
+				|| {
+					InternalEvent::ShowErrorMsg(format!(
+						    "Failed to find the branch name in {branch_ref}"
+					    ))
+				},
+				|name| {
+					InternalEvent::Push(
+						name.to_string(),
+						PushType::Branch,
+						false,
+						true,
+					)
+				},
+			),
+		);
+
+		self.select_branch_popup.update_branches()?;
 
 		Ok(())
 	}

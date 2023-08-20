@@ -89,6 +89,7 @@ impl FileRevlogComponent {
 				theme,
 				key_config.clone(),
 				true,
+				options.clone(),
 			),
 			git_log: None,
 			git_diff: AsyncDiff::new(
@@ -116,10 +117,7 @@ impl FileRevlogComponent {
 	pub fn open(&mut self, open_request: FileRevOpen) -> Result<()> {
 		self.open_request = Some(open_request.clone());
 
-		let filter = diff_contains_file(
-			self.repo_path.borrow().clone(),
-			open_request.file_path,
-		);
+		let filter = diff_contains_file(open_request.file_path);
 		self.git_log = Some(AsyncLog::new(
 			self.repo_path.borrow().clone(),
 			&self.sender,
@@ -259,7 +257,7 @@ impl FileRevlogComponent {
 				//
 				// [gitui-issue]: https://github.com/extrawurst/gitui/issues/1560
 				// [tui-issue]: https://github.com/fdehau/tui-rs/issues/626
-				self.items.set_items(0, commits);
+				self.items.set_items(0, commits, &None);
 			}
 
 			self.table_state.set(table_state);

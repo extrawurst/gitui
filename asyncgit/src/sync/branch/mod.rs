@@ -285,37 +285,36 @@ pub fn branch_compare_upstream(
 	Ok(BranchCompare { ahead, behind })
 }
 
-/// Modify HEAD to point to a branch then checkout head, does not work if there are uncommitted changes
+/// Switch branch to given `branch_ref`.
+///
+/// Method will fail if there are conflicting changes between current and target branch. However,
+/// if files are not conflicting, they will remain in tree (e.g. tracked new file is not
+/// conflicting and therefore is kept in tree even after checkout).
 pub fn checkout_branch(
 	repo_path: &RepoPath,
 	branch_ref: &str,
 ) -> Result<()> {
 	scope_time!("checkout_branch");
 
-	// This defaults to a safe checkout, so don't delete anything that
-	// hasn't been committed or stashed, in this case it will Err
 	let repo = repo(repo_path)?;
-	let cur_ref = repo.head()?;
-	let statuses = repo.statuses(Some(
-		git2::StatusOptions::new().include_ignored(false),
-	))?;
 
-	if statuses.is_empty() {
-		repo.set_head(branch_ref)?;
+	let branch_name =
+		branch_ref.split('/').last().ok_or(Error::PathString)?;
 
-		if let Err(e) = repo.checkout_head(Some(
-			git2::build::CheckoutBuilder::new().force(),
-		)) {
-			// This is safe beacuse cur_ref was just found
-			repo.set_head(
-				bytes2string(cur_ref.name_bytes())?.as_str(),
-			)?;
-			return Err(Error::Git(e));
-		}
-		Ok(())
-	} else {
-		Err(Error::UncommittedChanges)
-	}
+	let branch = repo.find_branch(branch_name, BranchType::Local)?;
+	let target_treeish = branch.into_reference().peel_to_tree()?;
+	let target_treeish_object = target_treeish.as_object();
+
+	// modify state to match branch's state
+	repo.checkout_tree(
+		target_treeish_object,
+		Some(&mut git2::build::CheckoutBuilder::new()),
+	)?;
+
+	// modify HEAD to point to given branch
+	repo.set_head(branch_ref)?;
+
+	Ok(())
 }
 
 /// Detach HEAD to point to a commit then checkout HEAD, does not work if there are uncommitted changes
@@ -678,7 +677,8 @@ mod tests_branches {
 #[cfg(test)]
 mod tests_checkout {
 	use super::*;
-	use crate::sync::tests::repo_init;
+	use crate::sync::{stage_add_file, tests::repo_init};
+	use std::{fs::File, path::Path};
 
 	#[test]
 	fn test_smoke() {
@@ -708,6 +708,24 @@ mod tests_checkout {
 		assert!(
 			checkout_branch(repo_path, "refs/heads/master").is_ok()
 		);
+		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+	}
+
+	#[test]
+	fn test_staged_new_file() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		create_branch(repo_path, "test").unwrap();
+
+		let filename = "file.txt";
+		let file = root.join(filename);
+		File::create(&file).unwrap();
+
+		stage_add_file(&repo_path, &Path::new(filename)).unwrap();
+
 		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
 	}
 }

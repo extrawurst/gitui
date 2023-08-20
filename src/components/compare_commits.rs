@@ -191,6 +191,7 @@ impl CompareCommitsComponent {
 				theme,
 				key_config.clone(),
 				true,
+				options.clone(),
 			),
 			open_request: None,
 			git_diff: AsyncDiff::new(repo.borrow().clone(), sender),

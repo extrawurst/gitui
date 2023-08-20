@@ -6,7 +6,8 @@ allow = [
     "BSD-2-Clause",
     "BSD-3-Clause",
     "CC0-1.0",
-    "ISC"
+    "ISC",
+    "MPL-2.0"
 ]
 copyleft = "warn"
 allow-osi-fsf-free = "neither"
@@ -21,6 +22,5 @@ version = "1.0.3"
 [bans]
 multiple-versions = "deny"
 skip-tree = [
-    { name = "windows-sys" },
-    { name = "hermit-abi" }
+    { name = "windows-sys" }
 ]

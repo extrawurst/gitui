@@ -2,11 +2,17 @@ use std::sync::{Arc, Condvar, Mutex};
 
 /// combines a `Mutex` and `Condvar` to allow waiting for a change in the variable protected by the `Mutex`
 #[derive(Clone, Debug)]
-pub struct NotifyableMutex<T> {
+pub struct NotifyableMutex<T>
+where
+	T: Send + Sync,
+{
 	data: Arc<(Mutex<T>, Condvar)>,
 }
 
-impl<T> NotifyableMutex<T> {
+impl<T> NotifyableMutex<T>
+where
+	T: Send + Sync,
+{
 	///
 	pub fn new(start_value: T) -> Self {
 		Self {
@@ -23,6 +29,7 @@ impl<T> NotifyableMutex<T> {
 		while *data != condition {
 			data = self.data.1.wait(data).expect("wait err");
 		}
+		drop(data);
 	}
 
 	///

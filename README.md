@@ -1,7 +1,7 @@
 <h1 align="center">
 <img width="300px" src="assets/logo.png" />
 
-[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![DISC][s5]][l5] [![TWEET][s6]][l6]
+[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![DISC][s5]][l5] [![TWEET][s6]][l6] [![dep_status][s7]][l7]
 
 </h1>
 
@@ -18,6 +18,8 @@
 [l5]: https://discord.gg/7TGFfuq
 [s6]: https://img.shields.io/twitter/follow/extrawurst?label=follow&style=social
 [l6]: https://twitter.com/intent/follow?screen_name=extrawurst
+[s7]: https://deps.rs/repo/github/extrawurst/gitui/status.svg
+[l7]: https://deps.rs/repo/github/extrawurst/gitui
 
 <h5 align="center">GitUI provides you with the comfort of a git GUI but right in your terminal</h1>
 
@@ -75,7 +77,6 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 
 These are the high level goals before calling out `1.0`:
 
-* log search (commit, author, sha) ([#449](https://github.com/extrawurst/gitui/issues/449),[#429](https://github.com/extrawurst/gitui/issues/429))
 * visualize branching structure in log tab ([#81](https://github.com/extrawurst/gitui/issues/81))
 * interactive rebase ([#32](https://github.com/extrawurst/gitui/issues/32))
 
@@ -169,6 +170,11 @@ nix-env -iA nixos.gitui
 
 ```
 pkg install gitui
+```
+
+### [Anaconda](https://anaconda.org/conda-forge/gitui)
+```
+conda install -c conda-forge gitui 
 ```
 
 ## Release Binaries

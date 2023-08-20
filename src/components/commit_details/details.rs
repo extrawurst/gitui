@@ -86,11 +86,20 @@ impl DetailsComponent {
 		message: &CommitMessage,
 		width: usize,
 	) -> WrappedCommitMessage<'_> {
-		let wrapped_title = textwrap::wrap(&message.subject, width);
+		let width = width.max(1);
+		let wrapped_title = bwrap::wrap!(&message.subject, width)
+			.lines()
+			.map(String::from)
+			.map(Cow::from)
+			.collect();
 
 		if let Some(ref body) = message.body {
 			let wrapped_message: Vec<Cow<'_, str>> =
-				textwrap::wrap(body, width).into_iter().collect();
+				bwrap::wrap!(body, width)
+					.lines()
+					.map(String::from)
+					.map(Cow::from)
+					.collect();
 
 			(wrapped_title, wrapped_message)
 		} else {
@@ -429,6 +438,10 @@ mod tests {
 			get_wrapped_lines(&message, 14),
 			vec!["Commit message"]
 		);
+		assert_eq!(
+			get_wrapped_lines(&message, 0),
+			vec!["Commit", "message"]
+		);
 
 		let message_with_newline =
 			CommitMessage::from("Commit message\n");
@@ -440,6 +453,10 @@ mod tests {
 		assert_eq!(
 			get_wrapped_lines(&message_with_newline, 14),
 			vec!["Commit message"]
+		);
+		assert_eq!(
+			get_wrapped_lines(&message, 0),
+			vec!["Commit", "message"]
 		);
 
 		let message_with_body = CommitMessage::from(
@@ -456,6 +473,13 @@ mod tests {
 		assert_eq!(
 			get_wrapped_lines(&message_with_body, 14),
 			vec!["Commit message", "First line", "Second line"]
+		);
+		assert_eq!(
+			get_wrapped_lines(&message_with_body, 7),
+			vec![
+				"Commit", "message", "First", "line", "Second",
+				"line"
+			]
 		);
 	}
 }

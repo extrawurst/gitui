@@ -134,7 +134,7 @@ impl RenameBranchComponent {
 			);
 
 			match res {
-				Ok(_) => {
+				Ok(()) => {
 					self.queue.push(InternalEvent::Update(
 						NeedsUpdate::ALL,
 					));

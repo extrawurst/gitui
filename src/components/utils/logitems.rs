@@ -1,6 +1,6 @@
 use asyncgit::sync::{CommitId, CommitInfo};
 use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
-use std::slice::Iter;
+use std::{collections::HashSet, slice::Iter};
 
 #[cfg(feature = "ghemoji")]
 use super::emoji::emojifi_string;
@@ -18,6 +18,7 @@ pub struct LogEntry {
 	//TODO: use tinyvec here
 	pub hash_short: BoxStr,
 	pub id: CommitId,
+	pub highlighted: bool,
 }
 
 impl From<CommitInfo> for LogEntry {
@@ -49,6 +50,7 @@ impl From<CommitInfo> for LogEntry {
 			time,
 			hash_short,
 			id: c.id,
+			highlighted: false,
 		}
 	}
 }
@@ -76,6 +78,7 @@ impl LogEntry {
 pub struct ItemBatch {
 	index_offset: usize,
 	items: Vec<LogEntry>,
+	highlighting: bool,
 }
 
 impl ItemBatch {
@@ -86,6 +89,11 @@ impl ItemBatch {
 	///
 	pub const fn index_offset(&self) -> usize {
 		self.index_offset
+	}
+
+	///
+	pub const fn highlighting(&self) -> bool {
+		self.highlighting
 	}
 
 	/// shortcut to get an `Iter` of our internal items
@@ -103,9 +111,24 @@ impl ItemBatch {
 		&mut self,
 		start_index: usize,
 		commits: Vec<CommitInfo>,
+		highlighted: &Option<HashSet<CommitId>>,
 	) {
+		log::debug!("highlighted: {:?}", highlighted);
+
 		self.items.clear();
-		self.items.extend(commits.into_iter().map(LogEntry::from));
+		self.items.extend(commits.into_iter().map(|c| {
+			let id = c.id;
+			let mut entry = LogEntry::from(c);
+			if highlighted
+				.as_ref()
+				.map(|highlighted| highlighted.contains(&id))
+				.unwrap_or_default()
+			{
+				entry.highlighted = true;
+			}
+			entry
+		}));
+		self.highlighting = highlighted.is_some();
 		self.index_offset = start_index;
 	}
 
