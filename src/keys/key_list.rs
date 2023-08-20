@@ -177,8 +177,7 @@ impl Default for KeysList {
 			log_reset_comit: GituiKeyEvent { code: KeyCode::Char('R'), modifiers: KeyModifiers::SHIFT },
 			log_reword_comit: GituiKeyEvent { code: KeyCode::Char('r'), modifiers: KeyModifiers::empty() },
 			log_find: GituiKeyEvent { code: KeyCode::Char('f'), modifiers: KeyModifiers::empty() },
-            //TODO: SHA: Clear up the default shortcut key.
-			log_jump_commit_sha: GituiKeyEvent::new(KeyCode::Char(']'), KeyModifiers::empty()),
+			log_jump_commit_sha: GituiKeyEvent::new(KeyCode::Char('j'), KeyModifiers::CONTROL),
 			commit_amend: GituiKeyEvent::new(KeyCode::Char('a'),  KeyModifiers::CONTROL),
 			toggle_signoff: GituiKeyEvent::new(KeyCode::Char('s'),  KeyModifiers::CONTROL),
 			toggle_verify: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::CONTROL),

@@ -32,7 +32,7 @@ impl CommitId {
 		self.to_string().chars().take(7).collect()
 	}
 
-	/// Tries to get the `CommitId` form the revision if exists in the given repository
+	/// Tries to retrieve the `CommitId` form the revision if exists in the given repository
 	pub fn from_revision(
 		revision: &str,
 		repo_path: &RepoPath,
