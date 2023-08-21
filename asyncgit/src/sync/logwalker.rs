@@ -65,12 +65,12 @@ bitflags! {
 		const MESSAGE = 0b0000_0001;
 		///
 		const FILENAMES = 0b0000_0010;
+		///
+		const AUTHORS = 0b0000_0100;
 		//TODO:
 		// const COMMIT_HASHES = 0b0000_0100;
 		// ///
 		// const DATES = 0b0000_1000;
-		// ///
-		// const AUTHORS = 0b0001_0000;
 		// ///
 		// const DIFFS = 0b0010_0000;
 	}
@@ -210,7 +210,27 @@ pub fn filter_commit_by_search(
 				.map(|diff| filter.match_diff(&diff))
 				.unwrap_or_default();
 
-			Ok(msg_match || file_match)
+			let authors_match = filter
+				.options
+				.fields
+				.contains(SearchFields::AUTHORS)
+				.then(|| {
+					let name_match = commit
+						.author()
+						.name()
+						.map(|name| filter.match_text(name))
+						.unwrap_or_default();
+					let mail_match = commit
+						.author()
+						.email()
+						.map(|name| filter.match_text(name))
+						.unwrap_or_default();
+
+					name_match || mail_match
+				})
+				.unwrap_or_default();
+
+			Ok(msg_match || file_match || authors_match)
 		},
 	))
 }
