@@ -41,7 +41,7 @@ struct LogSearchResult {
 	duration: Duration,
 }
 
-//TODO: deserves its on component
+//TODO: deserves its own component
 enum LogSearch {
 	Off,
 	Searching(AsyncLog, LogFilterSearchOptions),
@@ -50,7 +50,7 @@ enum LogSearch {
 
 impl LogSearch {
 	fn set_background(&mut self) {
-		if let LogSearch::Searching(log, _) = self {
+		if let Self::Searching(log, _) = self {
 			log.set_background();
 		}
 	}
