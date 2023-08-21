@@ -62,7 +62,7 @@ pprof = { version = "0.12", features = ["flamegraph"], optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4"
-tempfile = "3.4"
+tempfile = "3.8"
 
 [badges]
 maintenance = { status = "actively-developed" }
