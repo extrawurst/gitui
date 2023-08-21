@@ -690,6 +690,11 @@ impl Component for Revlog {
 			self.selected_commit().is_some(),
 			self.visible || force_all,
 		));
+		out.push(CommandInfo::new(
+			strings::commands::log_find_commit(&self.key_config),
+			true,
+			self.visible || force_all,
+		));
 
 		visibility_blocking(self)
 	}
