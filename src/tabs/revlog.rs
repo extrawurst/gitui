@@ -48,6 +48,14 @@ enum LogSearch {
 	Results(LogSearchResult),
 }
 
+impl LogSearch {
+	fn set_background(&mut self) {
+		if let LogSearch::Searching(log, _) = self {
+			log.set_background();
+		}
+	}
+}
+
 ///
 pub struct Revlog {
 	repo: RepoPathRef,
@@ -706,10 +714,7 @@ impl Component for Revlog {
 	fn hide(&mut self) {
 		self.visible = false;
 		self.git_log.set_background();
-		//TODO:
-		// self.git_log_find
-		// 	.as_mut()
-		// 	.map(asyncgit::AsyncLog::set_background);
+		self.search.set_background();
 	}
 
 	fn show(&mut self) -> Result<()> {
