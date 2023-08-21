@@ -1,7 +1,7 @@
 <h1 align="center">
 <img width="300px" src="assets/logo.png" />
 
-[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![DISC][s5]][l5] [![TWEET][s6]][l6] [![dep_status][s7]][l7]
+[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![TWEET][s6]][l6] [![dep_status][s7]][l7]
 
 </h1>
 
@@ -14,8 +14,6 @@
 [l3]: https://github.com/rust-secure-code/safety-dance/
 [s4]: https://img.shields.io/badge/itch.io-ok-green
 [l4]: https://extrawurst.itch.io/gitui
-[s5]: https://img.shields.io/discord/723083834811220028.svg?logo=chat
-[l5]: https://discord.gg/7TGFfuq
 [s6]: https://img.shields.io/twitter/follow/extrawurst?label=follow&style=social
 [l6]: https://twitter.com/intent/follow?screen_name=extrawurst
 [s7]: https://deps.rs/repo/github/extrawurst/gitui/status.svg
@@ -45,13 +43,13 @@
 
 - Fast and intuitive **keyboard only** control
 - Context based help (**no need to memorize** tons of hot-keys)
-- Inspect, commit, and amend changes (incl. hooks: _pre-commit_,_commit-msg_,_post-commit_)
+- Inspect, commit, and amend changes (incl. hooks: *pre-commit*,*commit-msg*,*post-commit*)
 - Stage, unstage, revert and reset files, hunks and lines
 - Stashing (save, pop, apply, drop, and inspect)
-- Push/Fetch to/from remote
+- Push / Fetch to / from remote
 - Branch List (create, rename, delete, checkout, remotes)
-- Browse commit log, diff committed changes
-- Scalable terminal UI layout
+- Browse / **Search** commit log, diff committed changes
+- Responsive terminal UI
 - Async git API for fluid control
 - Submodule support
 
