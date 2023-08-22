@@ -22,6 +22,7 @@ use itertools::Itertools;
 use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
+	style::Style,
 	text::{Line, Span},
 	widgets::{Block, Borders, Paragraph},
 	Frame,
@@ -361,12 +362,18 @@ impl CommitList {
 			ELEMENTS_PER_LINE + if marked.is_some() { 2 } else { 0 },
 		);
 
-		let splitter_txt = Cow::from(symbol::EMPTY_SPACE);
-		let splitter =
-			Span::styled(splitter_txt, theme.text(true, selected));
-
 		let normal = !self.items.highlighting()
 			|| (self.items.highlighting() && e.highlighted);
+
+		let splitter_txt = Cow::from(symbol::EMPTY_SPACE);
+		let splitter = Span::styled(
+			splitter_txt,
+			if normal {
+				theme.text(true, selected)
+			} else {
+				Style::default()
+			},
+		);
 
 		// marker
 		if let Some(marked) = marked {
