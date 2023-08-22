@@ -29,6 +29,7 @@ enum Selection {
 	CaseOption,
 	MessageSearch,
 	FilenameSearch,
+	AuthorsSearch,
 }
 
 pub struct LogSearchPopupComponent {
@@ -111,6 +112,13 @@ impl LogSearchPopupComponent {
 				" "
 			};
 
+		let x_authors =
+			if self.options.0.contains(SearchFields::AUTHORS) {
+				"X"
+			} else {
+				" "
+			};
+
 		let x_opt_fuzzy =
 			if self.options.1.contains(SearchOptions::FUZZY_SEARCH) {
 				"X"
@@ -161,12 +169,18 @@ impl LogSearchPopupComponent {
 					false,
 				),
 			)]),
+			Line::from(vec![Span::styled(
+				format!("[{x_authors}] authors",),
+				self.theme.text(
+					matches!(
+						self.selection,
+						Selection::AuthorsSearch
+					),
+					false,
+				),
+			)]),
 			// Line::from(vec![Span::styled(
 			// 	"[ ] changes (soon)",
-			// 	theme,
-			// )]),
-			// Line::from(vec![Span::styled(
-			// 	"[ ] authors (soon)",
 			// 	theme,
 			// )]),
 			// Line::from(vec![Span::styled(
@@ -192,14 +206,21 @@ impl LogSearchPopupComponent {
 			Selection::MessageSearch => {
 				self.options.0.toggle(SearchFields::MESSAGE);
 
-				if !self.options.0.contains(SearchFields::MESSAGE) {
+				if self.options.0.is_empty() {
 					self.options.0.set(SearchFields::FILENAMES, true);
 				}
 			}
 			Selection::FilenameSearch => {
 				self.options.0.toggle(SearchFields::FILENAMES);
 
-				if !self.options.0.contains(SearchFields::FILENAMES) {
+				if self.options.0.is_empty() {
+					self.options.0.set(SearchFields::AUTHORS, true);
+				}
+			}
+			Selection::AuthorsSearch => {
+				self.options.0.toggle(SearchFields::AUTHORS);
+
+				if self.options.0.is_empty() {
 					self.options.0.set(SearchFields::MESSAGE, true);
 				}
 			}
@@ -210,11 +231,12 @@ impl LogSearchPopupComponent {
 		if arg {
 			//up
 			self.selection = match self.selection {
-				Selection::EnterText => Selection::FilenameSearch,
+				Selection::EnterText => Selection::AuthorsSearch,
 				Selection::FuzzyOption => Selection::EnterText,
 				Selection::CaseOption => Selection::FuzzyOption,
 				Selection::MessageSearch => Selection::CaseOption,
 				Selection::FilenameSearch => Selection::MessageSearch,
+				Selection::AuthorsSearch => Selection::FilenameSearch,
 			};
 		} else {
 			self.selection = match self.selection {
@@ -222,7 +244,8 @@ impl LogSearchPopupComponent {
 				Selection::FuzzyOption => Selection::CaseOption,
 				Selection::CaseOption => Selection::MessageSearch,
 				Selection::MessageSearch => Selection::FilenameSearch,
-				Selection::FilenameSearch => Selection::EnterText,
+				Selection::FilenameSearch => Selection::AuthorsSearch,
+				Selection::AuthorsSearch => Selection::EnterText,
 			};
 		}
 	}

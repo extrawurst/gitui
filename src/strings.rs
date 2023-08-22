@@ -1356,6 +1356,18 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn log_find_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Find [{}]",
+				key_config.get_hint(key_config.keys.file_find),
+			),
+			"start commit search",
+			CMD_GROUP_LOG,
+		)
+	}
 	pub fn log_close_search(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

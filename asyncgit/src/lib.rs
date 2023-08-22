@@ -8,23 +8,25 @@
 	unstable_name_collisions,
 	unused_assignments
 )]
-#![deny(unstable_name_collisions)]
 #![deny(clippy::all, clippy::perf, clippy::nursery, clippy::pedantic)]
-#![deny(clippy::filetype_is_file)]
-#![deny(clippy::cargo)]
-#![deny(clippy::unwrap_used)]
-#![deny(clippy::panic)]
-#![deny(clippy::match_like_matches_macro)]
-#![deny(clippy::needless_update)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::must_use_candidate)]
-#![allow(clippy::missing_errors_doc)]
-//TODO: get this in someday since expect still leads us to crashes sometimes
-// #![deny(clippy::expect_used)]
-//TODO: consider cleaning some up and allow specific places
+#![deny(
+	clippy::filetype_is_file,
+	clippy::cargo,
+	clippy::unwrap_used,
+	clippy::panic,
+	clippy::match_like_matches_macro,
+	clippy::needless_update
+	//TODO: get this in someday since expect still leads us to crashes sometimes
+	// clippy::expect_used
+)]
+#![allow(
+	clippy::module_name_repetitions,
+	clippy::must_use_candidate,
+	clippy::missing_errors_doc
+)]
+//TODO:
 #![allow(
 	clippy::significant_drop_tightening,
-	// TODO:
 	clippy::missing_panics_doc
 )]
 
