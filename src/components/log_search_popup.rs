@@ -380,13 +380,9 @@ impl Component for LogSearchPopupComponent {
 				) && self.option_selected()
 				{
 					self.toggle_option();
+				} else if !self.option_selected() {
+					self.find_text.event(event)?;
 				}
-			}
-
-			if !self.option_selected()
-				&& self.find_text.event(event)?.is_consumed()
-			{
-				return Ok(EventState::Consumed);
 			}
 
 			return Ok(EventState::Consumed);
