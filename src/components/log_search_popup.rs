@@ -57,6 +57,7 @@ impl LogSearchPopupComponent {
 			false,
 		);
 		find_text.embed();
+		find_text.enabled(true);
 
 		Self {
 			queue: queue.clone(),
@@ -248,6 +249,9 @@ impl LogSearchPopupComponent {
 				Selection::AuthorsSearch => Selection::EnterText,
 			};
 		}
+
+		self.find_text
+			.enabled(matches!(self.selection, Selection::EnterText));
 	}
 }
 
@@ -380,13 +384,9 @@ impl Component for LogSearchPopupComponent {
 				) && self.option_selected()
 				{
 					self.toggle_option();
+				} else if !self.option_selected() {
+					self.find_text.event(event)?;
 				}
-			}
-
-			if !self.option_selected()
-				&& self.find_text.event(event)?.is_consumed()
-			{
-				return Ok(EventState::Consumed);
 			}
 
 			return Ok(EventState::Consumed);
