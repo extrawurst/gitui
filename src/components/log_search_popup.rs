@@ -57,6 +57,7 @@ impl LogSearchPopupComponent {
 			false,
 		);
 		find_text.embed();
+		find_text.enabled(true);
 
 		Self {
 			queue: queue.clone(),
@@ -248,6 +249,9 @@ impl LogSearchPopupComponent {
 				Selection::AuthorsSearch => Selection::EnterText,
 			};
 		}
+
+		self.find_text
+			.enabled(matches!(self.selection, Selection::EnterText));
 	}
 }
 
