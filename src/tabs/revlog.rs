@@ -41,11 +41,19 @@ struct LogSearchResult {
 	duration: Duration,
 }
 
-//TODO: deserves its on component
+//TODO: deserves its own component
 enum LogSearch {
 	Off,
 	Searching(AsyncLog, LogFilterSearchOptions),
 	Results(LogSearchResult),
+}
+
+impl LogSearch {
+	fn set_background(&mut self) {
+		if let Self::Searching(log, _) = self {
+			log.set_background();
+		}
+	}
 }
 
 ///
@@ -697,6 +705,11 @@ impl Component for Revlog {
 			self.selected_commit().is_some(),
 			self.visible || force_all,
 		));
+		out.push(CommandInfo::new(
+			strings::commands::log_find_commit(&self.key_config),
+			true,
+			self.visible || force_all,
+		));
 
 		visibility_blocking(self)
 	}
@@ -708,10 +721,7 @@ impl Component for Revlog {
 	fn hide(&mut self) {
 		self.visible = false;
 		self.git_log.set_background();
-		//TODO:
-		// self.git_log_find
-		// 	.as_mut()
-		// 	.map(asyncgit::AsyncLog::set_background);
+		self.search.set_background();
 	}
 
 	fn show(&mut self) -> Result<()> {
