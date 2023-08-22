@@ -7,7 +7,7 @@ use super::{
 use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
-	strings::{self},
+	strings,
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
