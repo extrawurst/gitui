@@ -288,8 +288,8 @@ impl LogSearchPopupComponent {
 	fn validate_jump_commit(&mut self) {
 		let path = self.repo.borrow();
 		if let Ok(commit_id) = CommitId::from_revision(
-			self.find_text.get_text().trim(),
 			&path,
+			self.find_text.get_text().trim(),
 		) {
 			self.jump_commit_id = Some(commit_id);
 		} else {

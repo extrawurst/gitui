@@ -34,8 +34,8 @@ impl CommitId {
 
 	/// Tries to retrieve the `CommitId` form the revision if exists in the given repository
 	pub fn from_revision(
-		revision: &str,
 		repo_path: &RepoPath,
+		revision: &str,
 	) -> Result<Self> {
 		let repo = repo(repo_path)?;
 
