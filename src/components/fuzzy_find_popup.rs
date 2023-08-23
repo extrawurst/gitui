@@ -12,7 +12,7 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::Event;
-use fuzzy_matcher::FuzzyMatcher;
+use nucleo::{Matcher, Utf32Str};
 use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Direction, Layout, Margin, Rect},
@@ -35,6 +35,7 @@ pub struct FuzzyFindPopup {
 	filtered: Vec<(usize, Vec<usize>)>,
 	key_config: SharedKeyConfig,
 	target: Option<FuzzyFinderTarget>,
+	matcher: Matcher,
 }
 
 impl FuzzyFindPopup {
@@ -65,6 +66,7 @@ impl FuzzyFindPopup {
 			key_config,
 			selection: 0,
 			target: None,
+			matcher: Matcher::default(),
 		}
 	}
 
@@ -88,17 +90,38 @@ impl FuzzyFindPopup {
 		self.filtered.clear();
 
 		if let Some(q) = &self.query {
-			let matcher =
-				fuzzy_matcher::skim::SkimMatcherV2::default();
+			let mut line_content_buf = Vec::new();
+			let mut query_buf = Vec::new();
+			let query = Utf32Str::new(q, &mut query_buf);
+			let mut matched_indicies = Vec::new();
 
 			let mut contents = self
 				.contents
 				.iter()
 				.enumerate()
-				.filter_map(|a| {
-					matcher
-						.fuzzy_indices(a.1, q)
-						.map(|(score, indices)| (score, a.0, indices))
+				.filter_map(|(index, line_content)| {
+					matched_indicies.clear();
+					self.matcher
+						.fuzzy_indices(
+							Utf32Str::new(
+								line_content,
+								&mut line_content_buf,
+							),
+							query,
+							&mut matched_indicies,
+						)
+						.map(|score| {
+							(
+								score,
+								index,
+								matched_indicies
+									.iter()
+									.filter_map(|a| {
+										(*a).try_into().ok()
+									})
+									.collect(),
+							)
+						})
 				})
 				.collect::<Vec<(_, _, _)>>();
 
