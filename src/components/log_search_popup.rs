@@ -45,8 +45,8 @@ pub struct LogSearchPopupComponent {
 	find_text: TextInputComponent,
 	options: (SearchFields, SearchOptions),
 	theme: SharedTheme,
-	commit_id: Option<CommitId>,
-	search_commit_hash: bool,
+	jump_commit_id: Option<CommitId>,
+	jump_commit_mode: bool,
 }
 
 impl LogSearchPopupComponent {
@@ -79,8 +79,8 @@ impl LogSearchPopupComponent {
 			theme,
 			find_text,
 			selection: Selection::EnterText,
-			commit_id: None,
-			search_commit_hash: false,
+			jump_commit_id: None,
+			jump_commit_mode: false,
 		}
 	}
 
@@ -88,20 +88,20 @@ impl LogSearchPopupComponent {
 		self.show()?;
 		self.find_text.show()?;
 		self.find_text.set_text(String::new());
-		self.reset_search_commit_hash();
+		self.reset_jump_commit();
 
 		Ok(())
 	}
 
-	fn reset_search_commit_hash(&mut self) {
-		self.commit_id = None;
-		self.search_commit_hash = false;
+	fn reset_jump_commit(&mut self) {
+		self.jump_commit_id = None;
+		self.jump_commit_mode = false;
 	}
 
 	#[inline]
 	fn can_execute_search(&self) -> bool {
-		if self.search_commit_hash {
-			self.commit_id.is_some()
+		if self.jump_commit_mode {
+			self.jump_commit_id.is_some()
 		} else {
 			!self.find_text.get_text().trim().is_empty()
 		}
@@ -110,9 +110,10 @@ impl LogSearchPopupComponent {
 	fn execute_search(&mut self) {
 		self.hide();
 
-		if self.search_commit_hash {
-			let commit_id = self.commit_id.expect("Commit id must have value here because it's already validated");
-			self.queue.push(InternalEvent::JumpToCommit(commit_id));
+		if self.jump_commit_mode {
+			let jump_commit_id = self.jump_commit_id.expect("Commit id must have value here because it's already validated");
+			self.queue
+				.push(InternalEvent::JumpToCommit(jump_commit_id));
 		} else if !self.find_text.get_text().trim().is_empty() {
 			self.queue.push(InternalEvent::CommitSearch(
 				LogFilterSearchOptions {
@@ -128,7 +129,7 @@ impl LogSearchPopupComponent {
 	}
 
 	fn get_text_options(&self) -> Vec<Line> {
-		let x_message = if !self.search_commit_hash
+		let x_message = if !self.jump_commit_mode
 			&& self.options.0.contains(SearchFields::MESSAGE)
 		{
 			"X"
@@ -136,7 +137,7 @@ impl LogSearchPopupComponent {
 			" "
 		};
 
-		let x_files = if !self.search_commit_hash
+		let x_files = if !self.jump_commit_mode
 			&& self.options.0.contains(SearchFields::FILENAMES)
 		{
 			"X"
@@ -144,7 +145,7 @@ impl LogSearchPopupComponent {
 			" "
 		};
 
-		let x_authors = if !self.search_commit_hash
+		let x_authors = if !self.jump_commit_mode
 			&& self.options.0.contains(SearchFields::AUTHORS)
 		{
 			"X"
@@ -152,7 +153,7 @@ impl LogSearchPopupComponent {
 			" "
 		};
 
-		let x_opt_fuzzy = if !self.search_commit_hash
+		let x_opt_fuzzy = if !self.jump_commit_mode
 			&& self.options.1.contains(SearchOptions::FUZZY_SEARCH)
 		{
 			"X"
@@ -160,7 +161,7 @@ impl LogSearchPopupComponent {
 			" "
 		};
 
-		let x_opt_casesensitive = if !self.search_commit_hash
+		let x_opt_casesensitive = if !self.jump_commit_mode
 			&& self.options.1.contains(SearchOptions::CASE_SENSITIVE)
 		{
 			"X"
@@ -169,7 +170,7 @@ impl LogSearchPopupComponent {
 		};
 
 		let x_commit_hash =
-			if self.search_commit_hash { "X" } else { " " };
+			if self.jump_commit_mode { "X" } else { " " };
 
 		vec![
 			Line::from(vec![Span::styled(
@@ -243,11 +244,11 @@ impl LogSearchPopupComponent {
 			Selection::EnterText => (),
 			Selection::FuzzyOption => {
 				self.options.1.toggle(SearchOptions::FUZZY_SEARCH);
-				self.reset_search_commit_hash();
+				self.reset_jump_commit();
 			}
 			Selection::CaseOption => {
 				self.options.1.toggle(SearchOptions::CASE_SENSITIVE);
-				self.reset_search_commit_hash();
+				self.reset_jump_commit();
 			}
 			Selection::MessageSearch => {
 				self.options.0.toggle(SearchFields::MESSAGE);
@@ -255,7 +256,7 @@ impl LogSearchPopupComponent {
 				if self.options.0.is_empty() {
 					self.options.0.set(SearchFields::FILENAMES, true);
 				}
-				self.reset_search_commit_hash();
+				self.reset_jump_commit();
 			}
 			Selection::FilenameSearch => {
 				self.options.0.toggle(SearchFields::FILENAMES);
@@ -263,7 +264,7 @@ impl LogSearchPopupComponent {
 				if self.options.0.is_empty() {
 					self.options.0.set(SearchFields::AUTHORS, true);
 				}
-				self.reset_search_commit_hash();
+				self.reset_jump_commit();
 			}
 			Selection::AuthorsSearch => {
 				self.options.0.toggle(SearchFields::AUTHORS);
@@ -271,28 +272,28 @@ impl LogSearchPopupComponent {
 				if self.options.0.is_empty() {
 					self.options.0.set(SearchFields::MESSAGE, true);
 				}
-				self.reset_search_commit_hash();
+				self.reset_jump_commit();
 			}
 			Selection::CommitHash => {
-				self.search_commit_hash = !self.search_commit_hash;
-				if self.search_commit_hash {
-					self.validate_search_commit_hash();
+				self.jump_commit_mode = !self.jump_commit_mode;
+				if self.jump_commit_mode {
+					self.validate_jump_commit();
 				} else {
-					self.commit_id = None;
+					self.jump_commit_id = None;
 				}
 			}
 		}
 	}
 
-	fn validate_search_commit_hash(&mut self) {
+	fn validate_jump_commit(&mut self) {
 		let path = self.repo.borrow();
 		if let Ok(commit_id) = CommitId::from_revision(
 			self.find_text.get_text().trim(),
 			&path,
 		) {
-			self.commit_id = Some(commit_id);
+			self.jump_commit_id = Some(commit_id);
 		} else {
-			self.commit_id = None;
+			self.jump_commit_id = None;
 		}
 	}
 
@@ -456,9 +457,9 @@ impl Component for LogSearchPopupComponent {
 					self.toggle_option();
 				} else if !self.option_selected()
 					&& self.find_text.event(event)?.is_consumed()
-					&& self.search_commit_hash
+					&& self.jump_commit_mode
 				{
-					self.validate_search_commit_hash();
+					self.validate_jump_commit();
 				}
 			}
 
