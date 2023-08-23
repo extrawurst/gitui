@@ -67,9 +67,10 @@ impl JumpCommitShaPopup {
 
 	fn validate(&mut self) {
 		let path = self.repo.borrow();
-		if let Ok(commit_id) =
-			CommitId::from_revision(self.input.get_text(), &path)
-		{
+		if let Ok(commit_id) = CommitId::from_revision(
+			&path,
+			self.input.get_text().trim(),
+		) {
 			self.commit_id = Some(commit_id);
 			self.error_msg.clear();
 		} else {
