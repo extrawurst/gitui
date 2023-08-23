@@ -36,6 +36,8 @@ pub struct FuzzyFindPopup {
 	key_config: SharedKeyConfig,
 	target: Option<FuzzyFinderTarget>,
 	matcher: Matcher,
+	matcher_haystack_buf: Vec<char>,
+	matcher_needle_buf: Vec<char>,
 }
 
 impl FuzzyFindPopup {
@@ -67,6 +69,8 @@ impl FuzzyFindPopup {
 			selection: 0,
 			target: None,
 			matcher: Matcher::default(),
+			matcher_haystack_buf: Vec::new(),
+			matcher_needle_buf: Vec::new(),
 		}
 	}
 
@@ -90,9 +94,8 @@ impl FuzzyFindPopup {
 		self.filtered.clear();
 
 		if let Some(q) = &self.query {
-			let mut line_content_buf = Vec::new();
-			let mut query_buf = Vec::new();
-			let query = Utf32Str::new(q, &mut query_buf);
+			let query =
+				Utf32Str::new(q, &mut self.matcher_needle_buf);
 			let mut matched_indicies = Vec::new();
 
 			let mut contents = self
@@ -105,7 +108,7 @@ impl FuzzyFindPopup {
 						.fuzzy_indices(
 							Utf32Str::new(
 								line_content,
-								&mut line_content_buf,
+								&mut self.matcher_haystack_buf,
 							),
 							query,
 							&mut matched_indicies,
