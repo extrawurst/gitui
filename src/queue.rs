@@ -137,6 +137,8 @@ pub enum InternalEvent {
 	///
 	CommitSearch(LogFilterSearchOptions),
 	///
+	OpenLogJumpCommitSha,
+	///
 	JumpToCommit(CommitId),
 }
 

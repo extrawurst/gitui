@@ -362,6 +362,16 @@ pub fn copy_success(s: &str) -> String {
 	format!("{POPUP_SUCCESS_COPY} \"{s}\"")
 }
 
+pub fn jump_to_commit_title() -> String {
+	"Jump to commit".to_string()
+}
+pub fn jump_to_commit_msg() -> String {
+	"Commit Hash".to_string()
+}
+pub fn jump_to_commit_err() -> String {
+	"Hash is invalid".to_string()
+}
+
 pub fn ellipsis_trim_start(s: &str, width: usize) -> Cow<str> {
 	if s.width() <= width {
 		Cow::Borrowed(s)
