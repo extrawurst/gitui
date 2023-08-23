@@ -636,11 +636,7 @@ impl CommitList {
 			if !hit_upper_bound {
 				self.selection = old_selection + offset;
 
-				if self
-					.selected_entry()
-					.map(|entry| entry.highlighted)
-					.unwrap_or_default()
-				{
+				if self.selection_highlighted() {
 					break;
 				}
 			}
@@ -648,11 +644,7 @@ impl CommitList {
 			if !hit_lower_bound {
 				self.selection = old_selection - offset;
 
-				if self
-					.selected_entry()
-					.map(|entry| entry.highlighted)
-					.unwrap_or_default()
-				{
+				if self.selection_highlighted() {
 					break;
 				}
 			}
@@ -664,6 +656,12 @@ impl CommitList {
 
 			offset += 1;
 		}
+	}
+
+	fn selection_highlighted(&mut self) -> bool {
+		self.selected_entry()
+			.map(|entry| entry.highlighted)
+			.unwrap_or_default()
 	}
 
 	///
