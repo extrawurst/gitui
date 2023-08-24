@@ -377,11 +377,19 @@ impl LogSearchPopupComponent {
 		const SIZE: (u16, u16) = (60, 3);
 		let area = ui::centered_rect_absolute(SIZE.0, SIZE.1, area);
 
+		let mut block_style = self.theme.title(true);
+
+		if !self.is_valid()
+			&& !self.find_text.get_text().trim().is_empty()
+		{
+			block_style = block_style.patch(self.theme.text_danger());
+		}
+
 		f.render_widget(Clear, area);
 		f.render_widget(
 			Block::default()
 				.borders(Borders::all())
-				.style(self.theme.title(true))
+				.style(block_style)
 				.title(Span::styled(
 					strings::POPUP_TITLE_LOG_JUMP_COMMIT,
 					self.theme.title(true),
@@ -402,28 +410,6 @@ impl LogSearchPopupComponent {
 		Ok(())
 	}
 
-	// TODO: AMMAR: Remove this when validation visualization is done
-	//
-	// fn draw_error<B: Backend>(&self, f: &mut Frame<B>) {
-	// 	if self.is_sha_valid() {
-	// 		return;
-	// 	}
-	//
-	// 	let msg_len: u16 = self.error_msg.len().cast();
-	//
-	// 	let err_paragraph = Paragraph::new(self.error_msg.as_str())
-	// 		.style(self.theme.text_danger());
-	//
-	// 	let mut rect = self.input.get_area();
-	// 	rect.y += rect.height.saturating_sub(1);
-	// 	rect.height = 1;
-	// 	let offset = rect.width.saturating_sub(msg_len + 1);
-	// 	rect.width = rect.width.saturating_sub(offset + 1);
-	// 	rect.x += offset;
-	//
-	// 	f.render_widget(err_paragraph, rect);
-	// }
-	//
 	#[inline]
 	fn event_search_mode(
 		&mut self,
