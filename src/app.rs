@@ -275,6 +275,7 @@ impl App {
 				key_config.clone(),
 			),
 			log_search_popup: LogSearchPopupComponent::new(
+				repo.clone(),
 				&queue,
 				theme.clone(),
 				key_config.clone(),
@@ -914,12 +915,18 @@ impl App {
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
 			InternalEvent::OpenLogSearchPopup => {
-				self.log_search_popup.open()?;
+				self.log_search_popup.open_search_mode()?;
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
 			InternalEvent::OpenLogJumpCommitSha => {
-				self.jump_commit_sha_popup.open()?;
+				self.log_search_popup.open_jump_commit_mode()?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+				//TODO: AMMAR: REMOVE
+				if false {
+					self.jump_commit_sha_popup.open()?;
+				}
 			}
 
 			InternalEvent::OptionSwitched(o) => {
