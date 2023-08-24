@@ -400,6 +400,28 @@ impl LogSearchPopupComponent {
 
 		Ok(())
 	}
+
+	// TODO: AMMAR: Remove this when validation visualization is done
+	//
+	// fn draw_error<B: Backend>(&self, f: &mut Frame<B>) {
+	// 	if self.is_sha_valid() {
+	// 		return;
+	// 	}
+	//
+	// 	let msg_len: u16 = self.error_msg.len().cast();
+	//
+	// 	let err_paragraph = Paragraph::new(self.error_msg.as_str())
+	// 		.style(self.theme.text_danger());
+	//
+	// 	let mut rect = self.input.get_area();
+	// 	rect.y += rect.height.saturating_sub(1);
+	// 	rect.height = 1;
+	// 	let offset = rect.width.saturating_sub(msg_len + 1);
+	// 	rect.width = rect.width.saturating_sub(offset + 1);
+	// 	rect.x += offset;
+	//
+	// 	f.render_widget(err_paragraph, rect);
+	// }
 }
 
 impl DrawableComponent for LogSearchPopupComponent {
