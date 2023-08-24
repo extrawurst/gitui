@@ -91,6 +91,8 @@ impl LogSearchPopupComponent {
 	pub fn open_search_mode(&mut self) -> Result<()> {
 		self.mode = PopupMode::Search;
 		self.find_text.set_default_msg("search text".into());
+		self.find_text
+			.enabled(matches!(self.selection, Selection::EnterText));
 
 		self.open()
 	}
