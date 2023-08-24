@@ -439,7 +439,7 @@ impl LogSearchPopupComponent {
 			}
 		}
 
-		return Ok(EventState::Consumed);
+		Ok(EventState::Consumed)
 	}
 
 	#[inline]
@@ -466,7 +466,7 @@ impl LogSearchPopupComponent {
 			}
 		}
 
-		return Ok(EventState::Consumed);
+		Ok(EventState::Consumed)
 	}
 }
 
@@ -479,10 +479,10 @@ impl DrawableComponent for LogSearchPopupComponent {
 		if self.is_visible() {
 			match self.mode {
 				PopupMode::Search => {
-					self.draw_search_mode(f, area)?
+					self.draw_search_mode(f, area)?;
 				}
 				PopupMode::JumpToCommitHash => {
-					self.draw_jump_commit_mode(f, area)?
+					self.draw_jump_commit_mode(f, area)?;
 				}
 			}
 		}
