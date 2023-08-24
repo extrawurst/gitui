@@ -100,6 +100,7 @@ impl LogSearchPopupComponent {
 		self.jump_commit_id = None;
 		self.find_text.set_default_msg("commit sha".into());
 		self.find_text.enabled(false);
+		self.selection = Selection::EnterText;
 
 		self.open()
 	}
@@ -113,7 +114,7 @@ impl LogSearchPopupComponent {
 		Ok(())
 	}
 
-	fn execute_search(&mut self) {
+	fn execute_confirm(&mut self) {
 		self.hide();
 
 		if !self.is_valid() {
@@ -422,6 +423,63 @@ impl LogSearchPopupComponent {
 	//
 	// 	f.render_widget(err_paragraph, rect);
 	// }
+	//
+	#[inline]
+	fn event_search_mode(
+		&mut self,
+		event: &crossterm::event::Event,
+	) -> Result<EventState> {
+		if let Event::Key(key) = &event {
+			if key_match(key, self.key_config.keys.exit_popup) {
+				self.hide();
+			} else if key_match(key, self.key_config.keys.enter)
+				&& self.is_valid()
+			{
+				self.execute_confirm();
+			} else if key_match(key, self.key_config.keys.move_up) {
+				self.move_selection(true);
+			} else if key_match(key, self.key_config.keys.move_down) {
+				self.move_selection(false);
+			} else if key_match(
+				key,
+				self.key_config.keys.log_mark_commit,
+			) && self.option_selected()
+			{
+				self.toggle_option();
+			} else if !self.option_selected() {
+				self.find_text.event(event)?;
+			}
+		}
+
+		return Ok(EventState::Consumed);
+	}
+
+	#[inline]
+	fn event_jump_commit_mode(
+		&mut self,
+		event: &crossterm::event::Event,
+	) -> Result<EventState> {
+		if let Event::Key(key) = &event {
+			if key_match(key, self.key_config.keys.exit_popup) {
+				self.hide();
+			} else if key_match(key, self.key_config.keys.enter)
+				&& self.is_valid()
+			{
+				self.execute_confirm();
+			} else if self.find_text.event(event)?.is_consumed()
+				&& matches!(self.mode, PopupMode::JumpToCommitHash)
+			{
+				debug_assert!(!self.option_selected());
+
+				self.validate_commit_hash();
+				self.find_text.enabled(
+					!self.find_text.get_text().trim().is_empty(),
+				);
+			}
+		}
+
+		return Ok(EventState::Consumed);
+	}
 }
 
 impl DrawableComponent for LogSearchPopupComponent {
@@ -499,45 +557,16 @@ impl Component for LogSearchPopupComponent {
 		&mut self,
 		event: &crossterm::event::Event,
 	) -> Result<EventState> {
-		if self.is_visible() {
-			if let Event::Key(key) = &event {
-				if key_match(key, self.key_config.keys.exit_popup) {
-					self.hide();
-				} else if key_match(key, self.key_config.keys.enter)
-					&& !self.find_text.get_text().trim().is_empty()
-				{
-					self.execute_search();
-				} else if key_match(key, self.key_config.keys.move_up)
-				{
-					self.move_selection(true);
-				} else if key_match(
-					key,
-					self.key_config.keys.move_down,
-				) {
-					self.move_selection(false);
-				} else if key_match(
-					key,
-					self.key_config.keys.log_mark_commit,
-				) && self.option_selected()
-				{
-					self.toggle_option();
-				} else if !self.option_selected()
-					&& self.find_text.event(event)?.is_consumed()
-					&& matches!(
-						self.mode,
-						PopupMode::JumpToCommitHash
-					) {
-					self.validate_commit_hash();
-					self.find_text.enabled(
-						!self.find_text.get_text().trim().is_empty(),
-					);
-				}
-			}
-
-			return Ok(EventState::Consumed);
+		if !self.is_visible() {
+			return Ok(EventState::NotConsumed);
 		}
 
-		Ok(EventState::NotConsumed)
+		match self.mode {
+			PopupMode::Search => self.event_search_mode(event),
+			PopupMode::JumpToCommitHash => {
+				self.event_jump_commit_mode(event)
+			}
+		}
 	}
 
 	fn is_visible(&self) -> bool {
