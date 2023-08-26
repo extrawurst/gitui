@@ -1,7 +1,7 @@
 use crate::{
 	error::Result,
 	sync::{repo, CommitId, LogWalker, LogWalkerFilter, RepoPath},
-	AsyncGitNotification,
+	AsyncGitNotification, Error,
 };
 use crossbeam_channel::Sender;
 use scopetime::scope_time;
@@ -40,6 +40,7 @@ pub struct AsyncLog {
 	pending: Arc<AtomicBool>,
 	background: Arc<AtomicBool>,
 	filter: Option<LogWalkerFilter>,
+	partial_extract: AtomicBool,
 	repo: RepoPath,
 }
 
@@ -65,6 +66,7 @@ impl AsyncLog {
 			pending: Arc::new(AtomicBool::new(false)),
 			background: Arc::new(AtomicBool::new(false)),
 			filter,
+			partial_extract: AtomicBool::new(false),
 		}
 	}
 
@@ -89,12 +91,17 @@ impl AsyncLog {
 
 	///
 	pub fn get_items(&self) -> Result<Vec<CommitId>> {
+		if self.partial_extract.load(Ordering::Relaxed) {
+			return Err(Error::Generic(String::from("Faulty usage of AsyncLog: Cannot partially extract items and rely on get_items slice to still work!")));
+		}
+
 		let list = &self.current.lock()?.commits;
 		Ok(list.clone())
 	}
 
 	///
 	pub fn extract_items(&self) -> Result<Vec<CommitId>> {
+		self.partial_extract.store(true, Ordering::Relaxed);
 		let list = &mut self.current.lock()?.commits;
 		let result = list.clone();
 		list.clear();
@@ -224,6 +231,7 @@ impl AsyncLog {
 	fn clear(&mut self) -> Result<()> {
 		self.current.lock()?.commits.clear();
 		*self.current_head.lock()? = None;
+		self.partial_extract.store(false, Ordering::Relaxed);
 		Ok(())
 	}
 
