@@ -162,7 +162,7 @@ impl CommitList {
 
 	pub fn copy_commit_hash(&self) -> Result<()> {
 		let marked = self.marked.as_slice();
-		let yank: Option<Cow<str>> = match marked {
+		let yank: Option<String> = match marked {
 			[] => self
 				.items
 				.iter()
@@ -170,10 +170,8 @@ impl CommitList {
 					self.selection
 						.saturating_sub(self.items.index_offset()),
 				)
-				.map(|e| Cow::Borrowed(e.hash_short.as_ref())),
-			[(_idx, commit)] => {
-				Some(commit.get_short_string().into())
-			}
+				.map(|e| e.id.to_string()),
+			[(_idx, commit)] => Some(commit.to_string()),
 			[first, .., last] => {
 				let marked_consecutive =
 					marked.windows(2).all(|w| w[0].0 + 1 == w[1].0);
@@ -181,18 +179,16 @@ impl CommitList {
 				let yank = if marked_consecutive {
 					format!(
 						"{}^..{}",
-						first.1.get_short_string(),
-						last.1.get_short_string()
+						first.1.to_string(),
+						last.1.to_string()
 					)
 				} else {
 					marked
 						.iter()
-						.map(|(_idx, commit)| {
-							commit.get_short_string()
-						})
+						.map(|(_idx, commit)| commit.to_string())
 						.join(" ")
 				};
-				Some(yank.into())
+				Some(yank)
 			}
 		};
 
@@ -636,11 +632,7 @@ impl CommitList {
 			if !hit_upper_bound {
 				self.selection = old_selection + offset;
 
-				if self
-					.selected_entry()
-					.map(|entry| entry.highlighted)
-					.unwrap_or_default()
-				{
+				if self.selection_highlighted() {
 					break;
 				}
 			}
@@ -648,11 +640,7 @@ impl CommitList {
 			if !hit_lower_bound {
 				self.selection = old_selection - offset;
 
-				if self
-					.selected_entry()
-					.map(|entry| entry.highlighted)
-					.unwrap_or_default()
-				{
+				if self.selection_highlighted() {
 					break;
 				}
 			}
@@ -664,6 +652,12 @@ impl CommitList {
 
 			offset += 1;
 		}
+	}
+
+	fn selection_highlighted(&mut self) -> bool {
+		self.selected_entry()
+			.map(|entry| entry.highlighted)
+			.unwrap_or_default()
 	}
 
 	///

@@ -424,9 +424,10 @@ impl LogSearchPopupComponent {
 				&& self.is_valid()
 			{
 				self.execute_confirm();
-			} else if key_match(key, self.key_config.keys.move_up) {
+			} else if key_match(key, self.key_config.keys.popup_up) {
 				self.move_selection(true);
-			} else if key_match(key, self.key_config.keys.move_down) {
+			} else if key_match(key, self.key_config.keys.popup_down)
+			{
 				self.move_selection(false);
 			} else if key_match(
 				key,
@@ -510,7 +511,7 @@ impl Component for LogSearchPopupComponent {
 			if matches!(self.mode, PopupMode::Search) {
 				out.push(
 					CommandInfo::new(
-						strings::commands::navigate_tree(
+						strings::commands::scroll_popup(
 							&self.key_config,
 						),
 						true,
@@ -518,7 +519,6 @@ impl Component for LogSearchPopupComponent {
 					)
 					.order(1),
 				);
-
 				out.push(
 					CommandInfo::new(
 						strings::commands::toggle_option(

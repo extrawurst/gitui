@@ -115,6 +115,9 @@ impl Component for BranchListComponent {
 				out.clear();
 			}
 
+			let selection_is_cur_branch =
+				self.selection_is_cur_branch();
+
 			out.push(CommandInfo::new(
 				strings::commands::scroll(&self.key_config),
 				true,
@@ -139,7 +142,7 @@ impl Component for BranchListComponent {
 				strings::commands::compare_with_head(
 					&self.key_config,
 				),
-				!self.selection_is_cur_branch(),
+				!selection_is_cur_branch,
 				true,
 			));
 
@@ -156,8 +159,7 @@ impl Component for BranchListComponent {
 				strings::commands::select_branch_popup(
 					&self.key_config,
 				),
-				!self.selection_is_cur_branch()
-					&& self.valid_selection(),
+				!selection_is_cur_branch && self.valid_selection(),
 				true,
 			));
 
@@ -173,7 +175,7 @@ impl Component for BranchListComponent {
 				strings::commands::delete_branch_popup(
 					&self.key_config,
 				),
-				!self.selection_is_cur_branch(),
+				!selection_is_cur_branch,
 				true,
 			));
 
@@ -181,7 +183,7 @@ impl Component for BranchListComponent {
 				strings::commands::merge_branch_popup(
 					&self.key_config,
 				),
-				!self.selection_is_cur_branch(),
+				!selection_is_cur_branch,
 				true,
 			));
 
@@ -189,7 +191,7 @@ impl Component for BranchListComponent {
 				strings::commands::branch_popup_rebase(
 					&self.key_config,
 				),
-				!self.selection_is_cur_branch(),
+				!selection_is_cur_branch,
 				true,
 			));
 
@@ -228,6 +230,9 @@ impl Component for BranchListComponent {
 				return Ok(EventState::Consumed);
 			}
 
+			let selection_is_cur_branch =
+				self.selection_is_cur_branch();
+
 			if key_match(e, self.key_config.keys.enter) {
 				try_or_popup!(
 					self,
@@ -243,12 +248,12 @@ impl Component for BranchListComponent {
 			{
 				self.rename_branch();
 			} else if key_match(e, self.key_config.keys.delete_branch)
-				&& !self.selection_is_cur_branch()
+				&& !selection_is_cur_branch
 				&& self.valid_selection()
 			{
 				self.delete_branch();
 			} else if key_match(e, self.key_config.keys.merge_branch)
-				&& !self.selection_is_cur_branch()
+				&& !selection_is_cur_branch
 				&& self.valid_selection()
 			{
 				try_or_popup!(
@@ -257,7 +262,7 @@ impl Component for BranchListComponent {
 					self.merge_branch()
 				);
 			} else if key_match(e, self.key_config.keys.rebase_branch)
-				&& !self.selection_is_cur_branch()
+				&& !selection_is_cur_branch
 				&& self.valid_selection()
 			{
 				try_or_popup!(
