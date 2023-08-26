@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState, TextInputComponent,
@@ -12,7 +10,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::sync::{
-	CommitId, LogFilterSearchOptions, RepoPath, SearchFields,
+	CommitId, LogFilterSearchOptions, RepoPathRef, SearchFields,
 	SearchOptions,
 };
 use crossterm::event::Event;
@@ -41,7 +39,7 @@ enum PopupMode {
 }
 
 pub struct LogSearchPopupComponent {
-	repo: RefCell<RepoPath>,
+	repo: RepoPathRef,
 	queue: Queue,
 	visible: bool,
 	mode: PopupMode,
@@ -56,7 +54,7 @@ pub struct LogSearchPopupComponent {
 impl LogSearchPopupComponent {
 	///
 	pub fn new(
-		repo: RefCell<RepoPath>,
+		repo: RepoPathRef,
 		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
