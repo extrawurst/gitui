@@ -89,22 +89,6 @@ impl CommitList {
 	}
 
 	///
-	const fn selection(&self) -> usize {
-		self.selection
-	}
-
-	/// will return view size or None before the first render
-	fn current_size(&self) -> Option<(u16, u16)> {
-		self.current_size.get()
-	}
-
-	///
-	#[allow(clippy::missing_const_for_fn)]
-	fn selection_max(&self) -> usize {
-		self.commits.len().saturating_sub(1)
-	}
-
-	///
 	pub const fn tags(&self) -> Option<&Tags> {
 		self.tags.as_ref()
 	}
@@ -124,13 +108,6 @@ impl CommitList {
 		self.items.iter().nth(
 			self.selection.saturating_sub(self.items.index_offset()),
 		)
-	}
-
-	///
-	fn selected_entry_marked(&self) -> bool {
-		self.selected_entry()
-			.and_then(|e| self.is_marked(&e.id))
-			.unwrap_or_default()
 	}
 
 	///
@@ -196,6 +173,110 @@ impl CommitList {
 			));
 		}
 		Ok(())
+	}
+
+	///
+	pub fn checkout(&mut self) {
+		if let Some(commit_hash) =
+			self.selected_entry().map(|entry| entry.id)
+		{
+			try_or_popup!(
+				self,
+				"failed to checkout commit:",
+				checkout_commit(&self.repo.borrow(), commit_hash)
+			);
+		}
+	}
+
+	///
+	pub fn set_local_branches(
+		&mut self,
+		local_branches: Vec<BranchInfo>,
+	) {
+		self.local_branches.clear();
+
+		for local_branch in local_branches {
+			self.local_branches
+				.entry(local_branch.top_commit)
+				.or_default()
+				.push(local_branch);
+		}
+	}
+
+	///
+	pub fn set_remote_branches(
+		&mut self,
+		remote_branches: Vec<BranchInfo>,
+	) {
+		self.remote_branches.clear();
+
+		for remote_branch in remote_branches {
+			self.remote_branches
+				.entry(remote_branch.top_commit)
+				.or_default()
+				.push(remote_branch);
+		}
+	}
+
+	///
+	pub fn set_commits(&mut self, commits: Vec<CommitId>) {
+		self.commits = commits;
+		self.fetch_commits();
+	}
+
+	///
+	pub fn refresh_extend_data(&mut self, commits: Vec<CommitId>) {
+		let new_commits = !commits.is_empty();
+		self.commits.extend(commits);
+
+		let selection = self.selection();
+		let selection_max = self.selection_max();
+
+		if self.needs_data(selection, selection_max) || new_commits {
+			self.fetch_commits();
+		}
+	}
+
+	///
+	pub fn set_highlighting(
+		&mut self,
+		highlighting: Option<HashSet<CommitId>>,
+	) {
+		self.highlights = highlighting;
+		self.select_next_highlight();
+		self.fetch_commits();
+	}
+
+	///
+	pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
+		let position = self.commits.iter().position(|&x| x == id);
+
+		if let Some(position) = position {
+			self.selection = position;
+			Ok(())
+		} else {
+			anyhow::bail!("Could not select commit. It might not be loaded yet or it might be on a different branch.");
+		}
+	}
+
+	const fn selection(&self) -> usize {
+		self.selection
+	}
+
+	/// will return view size or None before the first render
+	fn current_size(&self) -> Option<(u16, u16)> {
+		self.current_size.get()
+	}
+
+	#[allow(clippy::missing_const_for_fn)]
+	fn selection_max(&self) -> usize {
+		self.commits.len().saturating_sub(1)
+	}
+
+	fn selected_entry_marked(&self) -> bool {
+		self.selected_entry()
+			.and_then(|e| self.is_marked(&e.id))
+			.unwrap_or_default()
 	}
 
 	fn move_selection(&mut self, scroll: ScrollType) -> Result<bool> {
@@ -555,55 +636,6 @@ impl CommitList {
 		self.selection.saturating_sub(self.items.index_offset())
 	}
 
-	///
-	pub fn checkout(&mut self) {
-		if let Some(commit_hash) =
-			self.selected_entry().map(|entry| entry.id)
-		{
-			try_or_popup!(
-				self,
-				"failed to checkout commit:",
-				checkout_commit(&self.repo.borrow(), commit_hash)
-			);
-		}
-	}
-
-	///
-	pub fn set_local_branches(
-		&mut self,
-		local_branches: Vec<BranchInfo>,
-	) {
-		self.local_branches.clear();
-
-		for local_branch in local_branches {
-			self.local_branches
-				.entry(local_branch.top_commit)
-				.or_default()
-				.push(local_branch);
-		}
-	}
-
-	///
-	pub fn set_remote_branches(
-		&mut self,
-		remote_branches: Vec<BranchInfo>,
-	) {
-		self.remote_branches.clear();
-
-		for remote_branch in remote_branches {
-			self.remote_branches
-				.entry(remote_branch.top_commit)
-				.or_default()
-				.push(remote_branch);
-		}
-	}
-
-	///
-	pub fn set_commits(&mut self, commits: Vec<CommitId>) {
-		self.commits = commits;
-		self.fetch_commits();
-	}
-
 	fn select_next_highlight(&mut self) {
 		if self.highlights.is_none() {
 			return;
@@ -651,22 +683,8 @@ impl CommitList {
 			.unwrap_or_default()
 	}
 
-	///
 	fn needs_data(&self, idx: usize, idx_max: usize) -> bool {
 		self.items.needs_data(idx, idx_max)
-	}
-
-	///
-	pub fn refresh_extend_data(&mut self, commits: Vec<CommitId>) {
-		let new_commits = !commits.is_empty();
-		self.commits.extend(commits);
-
-		let selection = self.selection();
-		let selection_max = self.selection_max();
-
-		if self.needs_data(selection, selection_max) || new_commits {
-			self.fetch_commits();
-		}
 	}
 
 	fn fetch_commits(&mut self) {
@@ -688,31 +706,9 @@ impl CommitList {
 			self.items.set_items(
 				want_min,
 				commits,
-				//TODO: optimize via sharable data
+				//TODO: optimize via sharable data (BTreeMap that preserves order and lookup)
 				&self.highlights.clone(),
 			);
-		}
-	}
-
-	///
-	pub fn set_highlighting(
-		&mut self,
-		highlighting: Option<HashSet<CommitId>>,
-	) {
-		self.highlights = highlighting;
-		self.select_next_highlight();
-		self.fetch_commits();
-	}
-
-	///
-	pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
-		let position = self.commits.iter().position(|&x| x == id);
-
-		if let Some(position) = position {
-			self.selection = position;
-			Ok(())
-		} else {
-			anyhow::bail!("Could not select commit. It might not be loaded yet or it might be on a different branch.");
 		}
 	}
 }
