@@ -136,10 +136,6 @@ pub enum InternalEvent {
 	RewordCommit(CommitId),
 	///
 	CommitSearch(LogFilterSearchOptions),
-	///
-	OpenLogJumpCommitSha,
-	///
-	JumpToCommit(CommitId),
 }
 
 /// single threaded simple queue for components to communicate with each other

@@ -139,8 +139,9 @@ impl LogSearchPopupComponent {
 			PopupMode::JumpToCommitHash => {
 				let commit_id = self.jump_commit_id
                     .expect("Commit id must have value here because it's already validated");
-				self.queue
-					.push(InternalEvent::JumpToCommit(commit_id));
+				self.queue.push(InternalEvent::SelectCommitInRevlog(
+					commit_id,
+				));
 			}
 		}
 	}
@@ -426,6 +427,11 @@ impl LogSearchPopupComponent {
 				self.execute_confirm();
 			} else if key_match(key, self.key_config.keys.popup_up) {
 				self.move_selection(true);
+			} else if key_match(
+				key,
+				self.key_config.keys.log_jump_commit_sha,
+			) {
+				self.open_jump_commit_mode()?;
 			} else if key_match(key, self.key_config.keys.popup_down)
 			{
 				self.move_selection(false);
@@ -522,6 +528,16 @@ impl Component for LogSearchPopupComponent {
 				out.push(
 					CommandInfo::new(
 						strings::commands::toggle_option(
+							&self.key_config,
+						),
+						self.option_selected(),
+						true,
+					)
+					.order(1),
+				);
+				out.push(
+					CommandInfo::new(
+						strings::commands::find_commit_sha(
 							&self.key_config,
 						),
 						self.option_selected(),

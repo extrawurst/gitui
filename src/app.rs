@@ -909,12 +909,6 @@ impl App {
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
-			InternalEvent::OpenLogJumpCommitSha => {
-				self.log_search_popup.open_jump_commit_mode()?;
-				flags
-					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
-			}
-
 			InternalEvent::OptionSwitched(o) => {
 				match o {
 					AppOption::StatusShowUntracked => {
@@ -983,17 +977,6 @@ impl App {
 			}
 			InternalEvent::CommitSearch(options) => {
 				self.revlog.search(options)?;
-			}
-			InternalEvent::JumpToCommit(commit_id) => {
-				if let Err(error) =
-					self.revlog.select_commit(commit_id)
-				{
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						error.to_string(),
-					));
-				} else {
-					flags.insert(NeedsUpdate::ALL);
-				}
 			}
 		};
 

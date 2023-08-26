@@ -1673,4 +1673,18 @@ pub mod commands {
 			CMD_GROUP_BRANCHES,
 		)
 	}
+
+	pub fn find_commit_sha(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Commit Sha [{}]",
+				key_config
+					.get_hint(key_config.keys.log_jump_commit_sha),
+			),
+			"find commit from sha",
+			CMD_GROUP_GENERAL,
+		)
+	}
 }
