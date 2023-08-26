@@ -37,6 +37,8 @@ impl CommitId {
 		repo_path: &RepoPath,
 		revision: &str,
 	) -> Result<Self> {
+		scope_time!("CommitId::from_revision");
+
 		let repo = repo(repo_path)?;
 
 		let commit_obj = repo.revparse_single(revision)?;
