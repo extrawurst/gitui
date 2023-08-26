@@ -75,8 +75,10 @@ impl LogSearchPopupComponent {
 
 	pub fn open(&mut self) -> Result<()> {
 		self.show()?;
+		self.selection = Selection::EnterText;
 		self.find_text.show()?;
 		self.find_text.set_text(String::new());
+		self.find_text.enabled(true);
 
 		Ok(())
 	}
