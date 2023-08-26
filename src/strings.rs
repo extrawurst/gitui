@@ -32,7 +32,6 @@ pub static PUSH_TAGS_STATES_DONE: &str = "done";
 pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
 pub static POPUP_TITLE_FUZZY_FIND: &str = "Fuzzy Finder";
 pub static POPUP_TITLE_LOG_SEARCH: &str = "Search";
-pub static POPUP_TITLE_LOG_JUMP_COMMIT: &str = "Jump to Commit";
 
 pub static POPUP_FAIL_COPY: &str = "Failed to copy text";
 pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
@@ -1680,11 +1679,10 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Commit Sha [{}]",
-				key_config
-					.get_hint(key_config.keys.log_jump_commit_sha),
+				key_config.get_hint(key_config.keys.find_commit_sha),
 			),
 			"find commit from sha",
-			CMD_GROUP_GENERAL,
+			CMD_GROUP_LOG,
 		)
 	}
 }

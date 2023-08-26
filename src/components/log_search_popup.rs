@@ -394,7 +394,7 @@ impl LogSearchPopupComponent {
 				.borders(Borders::all())
 				.style(block_style)
 				.title(Span::styled(
-					strings::POPUP_TITLE_LOG_JUMP_COMMIT,
+					strings::POPUP_TITLE_LOG_SEARCH,
 					self.theme.title(true),
 				)),
 			area,
@@ -429,7 +429,7 @@ impl LogSearchPopupComponent {
 				self.move_selection(true);
 			} else if key_match(
 				key,
-				self.key_config.keys.log_jump_commit_sha,
+				self.key_config.keys.find_commit_sha,
 			) {
 				self.open_jump_commit_mode()?;
 			} else if key_match(key, self.key_config.keys.popup_down)
