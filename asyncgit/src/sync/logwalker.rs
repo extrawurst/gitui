@@ -262,6 +262,11 @@ impl<'a> LogWalker<'a> {
 	}
 
 	///
+	pub fn visited(&self) -> usize {
+		self.visited.len()
+	}
+
+	///
 	#[must_use]
 	pub fn filter(self, filter: Option<LogWalkerFilter>) -> Self {
 		Self { filter, ..self }

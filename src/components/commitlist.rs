@@ -127,7 +127,7 @@ impl CommitList {
 	}
 
 	///
-	pub fn selected_entry_marked(&self) -> bool {
+	fn selected_entry_marked(&self) -> bool {
 		self.selected_entry()
 			.and_then(|e| self.is_marked(&e.id))
 			.unwrap_or_default()
@@ -156,6 +156,7 @@ impl CommitList {
 		commits
 	}
 
+	///
 	pub fn copy_commit_hash(&self) -> Result<()> {
 		let marked = self.marked.as_slice();
 		let yank: Option<String> = match marked {
@@ -235,11 +236,7 @@ impl CommitList {
 
 			self.selection = new_selection;
 
-			if self
-				.selected_entry()
-				.map(|entry| entry.highlighted)
-				.unwrap_or_default()
-			{
+			if self.selection_highlighted() {
 				return Ok(true);
 			}
 		}
@@ -558,10 +555,7 @@ impl CommitList {
 		self.selection.saturating_sub(self.items.index_offset())
 	}
 
-	pub fn select_entry(&mut self, position: usize) {
-		self.selection = position;
-	}
-
+	///
 	pub fn checkout(&mut self) {
 		if let Some(commit_hash) =
 			self.selected_entry().map(|entry| entry.id)
@@ -574,6 +568,7 @@ impl CommitList {
 		}
 	}
 
+	///
 	pub fn set_local_branches(
 		&mut self,
 		local_branches: Vec<BranchInfo>,
@@ -588,6 +583,7 @@ impl CommitList {
 		}
 	}
 
+	///
 	pub fn set_remote_branches(
 		&mut self,
 		remote_branches: Vec<BranchInfo>,
@@ -706,6 +702,18 @@ impl CommitList {
 		self.highlights = highlighting;
 		self.select_next_highlight();
 		self.fetch_commits();
+	}
+
+	///
+	pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
+		let position = self.commits.iter().position(|&x| x == id);
+
+		if let Some(position) = position {
+			self.selection = position;
+			Ok(())
+		} else {
+			anyhow::bail!("Could not select commit. It might not be loaded yet or it might be on a different branch.");
+		}
 	}
 }
 

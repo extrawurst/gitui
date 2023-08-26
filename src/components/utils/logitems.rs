@@ -113,8 +113,6 @@ impl ItemBatch {
 		commits: Vec<CommitInfo>,
 		highlighted: &Option<HashSet<CommitId>>,
 	) {
-		log::debug!("highlighted: {:?}", highlighted);
-
 		self.items.clear();
 		self.items.extend(commits.into_iter().map(|c| {
 			let id = c.id;

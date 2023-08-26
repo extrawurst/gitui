@@ -34,7 +34,7 @@ use std::{collections::HashSet, rc::Rc, time::Duration};
 use sync::CommitTags;
 
 struct LogSearchResult {
-	commits: Vec<CommitId>,
+	commits: usize,
 	options: LogFilterSearchOptions,
 	duration: Duration,
 }
@@ -134,11 +134,7 @@ impl Revlog {
 				self.list.clear();
 			}
 
-			if self.update_search_state()? {
-				if let Some(search) = self.search_result_set() {
-					self.list.set_highlighting(Some(search));
-				}
-			}
+			self.update_search_state()?;
 
 			self.list
 				.refresh_extend_data(self.git_log.extract_items()?);
@@ -221,16 +217,9 @@ impl Revlog {
 		})
 	}
 
+	///
 	pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
-		let position = self.git_log.position(id)?;
-
-		if let Some(position) = position {
-			self.list.select_entry(position);
-
-			Ok(())
-		} else {
-			anyhow::bail!("Could not select commit in revlog. It might not be loaded yet or it might be on a different branch.");
-		}
+		self.list.select_commit(id)
 	}
 
 	fn revert_commit(&self) -> Result<()> {
@@ -273,7 +262,7 @@ impl Revlog {
 				Some(filter),
 			);
 
-			async_find.fetch()?;
+			assert_eq!(async_find.fetch()?, FetchStatus::Started);
 
 			self.search = LogSearch::Searching(async_find, options);
 
@@ -283,20 +272,6 @@ impl Revlog {
 		Ok(())
 	}
 
-	fn search_result_set(&self) -> Option<HashSet<CommitId>> {
-		if let LogSearch::Results(results) = &self.search {
-			Some(
-				results
-					.commits
-					.iter()
-					.map(CommitId::clone)
-					.collect::<HashSet<_>>(),
-			)
-		} else {
-			None
-		}
-	}
-
 	fn update_search_state(&mut self) -> Result<bool> {
 		let changes = match &self.search {
 			LogSearch::Off | LogSearch::Results(_) => false,
@@ -304,11 +279,17 @@ impl Revlog {
 				if search.is_pending() {
 					false
 				} else {
-					let results = search.get_items()?;
+					let results = search.extract_items()?;
+					let commits = results.len();
 					let duration = search.get_last_duration()?;
+
+					self.list.set_highlighting(Some(
+						results.into_iter().collect::<HashSet<_>>(),
+					));
+
 					self.search =
 						LogSearch::Results(LogSearchResult {
-							commits: results,
+							commits,
 							options: options.clone(),
 							duration,
 						});
@@ -336,7 +317,7 @@ impl Revlog {
 				format!(
 					"'{}' (hits: {}) (duration: {:?})",
 					results.options.search_pattern.clone(),
-					results.commits.len(),
+					results.commits,
 					results.duration,
 				)
 			}
