@@ -328,9 +328,7 @@ impl Component for LogSearchPopupComponent {
 
 			out.push(
 				CommandInfo::new(
-					strings::commands::navigate_tree(
-						&self.key_config,
-					),
+					strings::commands::scroll_popup(&self.key_config),
 					true,
 					true,
 				)
@@ -370,12 +368,14 @@ impl Component for LogSearchPopupComponent {
 					&& !self.find_text.get_text().trim().is_empty()
 				{
 					self.execute_search();
-				} else if key_match(key, self.key_config.keys.move_up)
-				{
+				} else if key_match(
+					key,
+					self.key_config.keys.popup_up,
+				) {
 					self.move_selection(true);
 				} else if key_match(
 					key,
-					self.key_config.keys.move_down,
+					self.key_config.keys.popup_down,
 				) {
 					self.move_selection(false);
 				} else if key_match(
