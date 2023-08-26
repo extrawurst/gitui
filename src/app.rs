@@ -905,7 +905,7 @@ impl App {
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
 			InternalEvent::OpenLogSearchPopup => {
-				self.log_search_popup.open_search_mode()?;
+				self.log_search_popup.open()?;
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}

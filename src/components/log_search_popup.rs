@@ -86,32 +86,36 @@ impl LogSearchPopupComponent {
 		}
 	}
 
-	pub fn open_search_mode(&mut self) -> Result<()> {
-		self.mode = PopupMode::Search;
-		self.find_text.set_default_msg("search text".into());
-		self.find_text
-			.enabled(matches!(self.selection, Selection::EnterText));
-
-		self.open()
-	}
-
-	pub fn open_jump_commit_mode(&mut self) -> Result<()> {
-		self.mode = PopupMode::JumpToCommitHash;
-		self.jump_commit_id = None;
-		self.find_text.set_default_msg("commit sha".into());
-		self.find_text.enabled(false);
-		self.selection = Selection::EnterText;
-
-		self.open()
-	}
-
-	#[inline]
-	fn open(&mut self) -> Result<()> {
+	pub fn open(&mut self) -> Result<()> {
 		self.show()?;
 		self.find_text.show()?;
 		self.find_text.set_text(String::new());
 
+		self.set_mode(PopupMode::Search);
+
 		Ok(())
+	}
+
+	fn set_mode(&mut self, mode: PopupMode) {
+		self.find_text.set_text(String::new());
+
+		match mode {
+			PopupMode::Search => {
+				self.mode = PopupMode::Search;
+				self.find_text.set_default_msg("search text".into());
+				self.find_text.enabled(matches!(
+					self.selection,
+					Selection::EnterText
+				));
+			}
+			PopupMode::JumpToCommitHash => {
+				self.mode = PopupMode::JumpToCommitHash;
+				self.jump_commit_id = None;
+				self.find_text.set_default_msg("commit sha".into());
+				self.find_text.enabled(false);
+				self.selection = Selection::EnterText;
+			}
+		}
 	}
 
 	fn execute_confirm(&mut self) {
@@ -429,7 +433,7 @@ impl LogSearchPopupComponent {
 				key,
 				self.key_config.keys.find_commit_sha,
 			) {
-				self.open_jump_commit_mode()?;
+				self.set_mode(PopupMode::JumpToCommitHash);
 			} else if key_match(key, self.key_config.keys.popup_down)
 			{
 				self.move_selection(false);
@@ -454,16 +458,12 @@ impl LogSearchPopupComponent {
 	) -> Result<EventState> {
 		if let Event::Key(key) = &event {
 			if key_match(key, self.key_config.keys.exit_popup) {
-				self.hide();
+				self.set_mode(PopupMode::Search);
 			} else if key_match(key, self.key_config.keys.enter)
 				&& self.is_valid()
 			{
 				self.execute_confirm();
-			} else if self.find_text.event(event)?.is_consumed()
-				&& matches!(self.mode, PopupMode::JumpToCommitHash)
-			{
-				debug_assert!(!self.option_selected());
-
+			} else if self.find_text.event(event)?.is_consumed() {
 				self.validate_commit_hash();
 				self.find_text.enabled(
 					!self.find_text.get_text().trim().is_empty(),
@@ -538,7 +538,7 @@ impl Component for LogSearchPopupComponent {
 						strings::commands::find_commit_sha(
 							&self.key_config,
 						),
-						self.option_selected(),
+						true,
 						true,
 					)
 					.order(1),
