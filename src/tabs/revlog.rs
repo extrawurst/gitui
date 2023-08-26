@@ -136,12 +136,12 @@ impl Revlog {
 
 			if self.update_search_state()? {
 				if let Some(search) = self.search_result_set() {
-					self.list.set_highlighting(Some(search))?;
+					self.list.set_highlighting(Some(search));
 				}
 			}
 
 			self.list
-				.refresh_extend_data(self.git_log.extract_items()?)?;
+				.refresh_extend_data(self.git_log.extract_items()?);
 
 			self.git_tags.request(Duration::from_secs(3), false)?;
 
@@ -277,7 +277,7 @@ impl Revlog {
 
 			self.search = LogSearch::Searching(async_find, options);
 
-			self.list.set_highlighting(None)?;
+			self.list.set_highlighting(None);
 		}
 
 		Ok(())
@@ -429,7 +429,7 @@ impl Component for Revlog {
 				) {
 					if self.can_leave_search() {
 						self.search = LogSearch::Off;
-						self.list.set_highlighting(None)?;
+						self.list.set_highlighting(None);
 						return Ok(EventState::Consumed);
 					}
 				} else if key_match(k, self.key_config.keys.copy) {

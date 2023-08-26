@@ -603,14 +603,9 @@ impl CommitList {
 	}
 
 	///
-	pub fn set_commits(
-		&mut self,
-		commits: Vec<CommitId>,
-	) -> Result<()> {
+	pub fn set_commits(&mut self, commits: Vec<CommitId>) {
 		self.commits = commits;
-		self.fetch_commits()?;
-
-		Ok(())
+		self.fetch_commits();
 	}
 
 	fn select_next_highlight(&mut self) {
@@ -666,31 +661,22 @@ impl CommitList {
 	}
 
 	///
-	pub fn refresh_extend_data(
-		&mut self,
-		commits: Vec<CommitId>,
-	) -> Result<()> {
-		log::info!("refresh_extend_data: {}", commits.len());
-
+	pub fn refresh_extend_data(&mut self, commits: Vec<CommitId>) {
 		let new_commits = !commits.is_empty();
-		self.commits.extend(commits.into_iter());
+		self.commits.extend(commits);
 
 		let selection = self.selection();
 		let selection_max = self.selection_max();
 
 		if self.needs_data(selection, selection_max) || new_commits {
-			self.fetch_commits()?;
+			self.fetch_commits();
 		}
-
-		Ok(())
 	}
 
-	fn fetch_commits(&mut self) -> Result<()> {
+	fn fetch_commits(&mut self) {
 		let want_min =
 			self.selection().saturating_sub(SLICE_SIZE / 2);
 		let commits = self.commits.len();
-
-		log::info!("fetch_commits: {want_min}/{commits}");
 
 		let want_min = want_min.min(commits);
 		let slice_end =
@@ -710,19 +696,16 @@ impl CommitList {
 				&self.highlights.clone(),
 			);
 		}
-
-		Ok(())
 	}
 
 	///
 	pub fn set_highlighting(
 		&mut self,
 		highlighting: Option<HashSet<CommitId>>,
-	) -> Result<()> {
+	) {
 		self.highlights = highlighting;
 		self.select_next_highlight();
-		self.fetch_commits()?;
-		Ok(())
+		self.fetch_commits();
 	}
 }
 
