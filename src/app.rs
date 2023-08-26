@@ -2,10 +2,10 @@ use crate::{
 	accessors,
 	cmdbar::CommandBar,
 	components::{
-		event_pump, AppOption, BlameFileComponent,
-		BranchListComponent, CommandBlocking, CommandInfo,
-		CommitComponent, CompareCommitsComponent, Component,
-		ConfirmComponent, CreateBranchComponent, DrawableComponent,
+		command_pump, event_pump, AppOption, BlameFileComponent,
+		BranchListComponent, CommandInfo, CommitComponent,
+		CompareCommitsComponent, Component, ConfirmComponent,
+		CreateBranchComponent, DrawableComponent,
 		ExternalEditorComponent, FetchComponent, FileRevlogComponent,
 		FuzzyFindPopup, FuzzyFinderTarget, HelpComponent,
 		InspectCommitComponent, LogSearchPopupComponent,
@@ -1116,14 +1116,7 @@ impl App {
 	fn commands(&self, force_all: bool) -> Vec<CommandInfo> {
 		let mut res = Vec::new();
 
-		for c in self.components() {
-			if c.commands(&mut res, force_all)
-				!= CommandBlocking::PassingOn
-				&& !force_all
-			{
-				break;
-			}
-		}
+		command_pump(&mut res, force_all, &self.components());
 
 		res.push(CommandInfo::new(
 			strings::commands::find_file(&self.key_config),
