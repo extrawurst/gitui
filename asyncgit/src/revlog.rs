@@ -94,6 +94,14 @@ impl AsyncLog {
 	}
 
 	///
+	pub fn extract_items(&self) -> Result<Vec<CommitId>> {
+		let list = &mut self.current.lock()?.commits;
+		let result = list.clone();
+		list.clear();
+		Ok(result)
+	}
+
+	///
 	pub fn get_last_duration(&self) -> Result<Duration> {
 		Ok(self.current.lock()?.duration)
 	}

@@ -13,7 +13,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::sync::{
-	checkout_commit, BranchDetails, BranchInfo, CommitId,
+	self, checkout_commit, BranchDetails, BranchInfo, CommitId,
 	RepoPathRef, Tags,
 };
 use chrono::{DateTime, Local};
@@ -37,14 +37,16 @@ use std::{
 };
 
 const ELEMENTS_PER_LINE: usize = 9;
+const SLICE_SIZE: usize = 1200;
 
 ///
 pub struct CommitList {
 	repo: RepoPathRef,
 	title: Box<str>,
 	selection: usize,
-	count_total: usize,
 	items: ItemBatch,
+	highlights: Option<HashSet<CommitId>>,
+	commits: Vec<CommitId>,
 	marked: Vec<(usize, CommitId)>,
 	scroll_state: (Instant, f32),
 	tags: Option<Tags>,
@@ -71,7 +73,8 @@ impl CommitList {
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
 			selection: 0,
-			count_total: 0,
+			commits: Vec::new(),
+			highlights: None,
 			scroll_state: (Instant::now(), 0_f32),
 			tags: None,
 			local_branches: BTreeMap::default(),
@@ -86,26 +89,19 @@ impl CommitList {
 	}
 
 	///
-	pub const fn selection(&self) -> usize {
+	const fn selection(&self) -> usize {
 		self.selection
 	}
 
 	/// will return view size or None before the first render
-	pub fn current_size(&self) -> Option<(u16, u16)> {
+	fn current_size(&self) -> Option<(u16, u16)> {
 		self.current_size.get()
 	}
 
 	///
-	pub fn set_count_total(&mut self, total: usize) {
-		self.count_total = total;
-		self.selection =
-			cmp::min(self.selection, self.selection_max());
-	}
-
-	///
 	#[allow(clippy::missing_const_for_fn)]
-	pub fn selection_max(&self) -> usize {
-		self.count_total.saturating_sub(1)
+	fn selection_max(&self) -> usize {
+		self.commits.len().saturating_sub(1)
 	}
 
 	///
@@ -607,20 +603,21 @@ impl CommitList {
 	}
 
 	///
-	pub fn set_items(
+	pub fn set_commits(
 		&mut self,
-		start_index: usize,
-		commits: Vec<asyncgit::sync::CommitInfo>,
-		highlighted: &Option<HashSet<CommitId>>,
-	) {
-		self.items.set_items(start_index, commits, highlighted);
+		commits: Vec<CommitId>,
+	) -> Result<()> {
+		self.commits = commits;
+		self.fetch_commits()?;
 
-		if self.items.highlighting() {
-			self.select_next_highlight();
-		}
+		Ok(())
 	}
 
 	fn select_next_highlight(&mut self) {
+		if self.highlights.is_none() {
+			return;
+		}
+
 		let old_selection = self.selection;
 
 		let mut offset = 0;
@@ -655,14 +652,77 @@ impl CommitList {
 	}
 
 	fn selection_highlighted(&mut self) -> bool {
-		self.selected_entry()
-			.map(|entry| entry.highlighted)
+		let commit = self.commits[self.selection];
+
+		self.highlights
+			.as_ref()
+			.map(|highlights| highlights.contains(&commit))
 			.unwrap_or_default()
 	}
 
 	///
-	pub fn needs_data(&self, idx: usize, idx_max: usize) -> bool {
+	fn needs_data(&self, idx: usize, idx_max: usize) -> bool {
 		self.items.needs_data(idx, idx_max)
+	}
+
+	///
+	pub fn refresh_extend_data(
+		&mut self,
+		commits: Vec<CommitId>,
+	) -> Result<()> {
+		log::info!("refresh_extend_data: {}", commits.len());
+
+		let new_commits = !commits.is_empty();
+		self.commits.extend(commits.into_iter());
+
+		let selection = self.selection();
+		let selection_max = self.selection_max();
+
+		if self.needs_data(selection, selection_max) || new_commits {
+			self.fetch_commits()?;
+		}
+
+		Ok(())
+	}
+
+	fn fetch_commits(&mut self) -> Result<()> {
+		let want_min =
+			self.selection().saturating_sub(SLICE_SIZE / 2);
+		let commits = self.commits.len();
+
+		log::info!("fetch_commits: {want_min}/{commits}");
+
+		let want_min = want_min.min(commits);
+		let slice_end =
+			want_min.saturating_add(SLICE_SIZE).min(commits);
+
+		let commits = sync::get_commits_info(
+			&self.repo.borrow(),
+			&self.commits[want_min..slice_end],
+			self.current_size().map_or(100u16, |size| size.0).into(),
+		);
+
+		if let Ok(commits) = commits {
+			self.items.set_items(
+				want_min,
+				commits,
+				//TODO: optimize via sharable data
+				&self.highlights.clone(),
+			);
+		}
+
+		Ok(())
+	}
+
+	///
+	pub fn set_highlighting(
+		&mut self,
+		highlighting: Option<HashSet<CommitId>>,
+	) -> Result<()> {
+		self.highlights = highlighting;
+		self.select_next_highlight();
+		self.fetch_commits()?;
+		Ok(())
 	}
 }
 
@@ -690,8 +750,8 @@ impl DrawableComponent for CommitList {
 		let title = format!(
 			"{} {}/{}",
 			self.title,
-			self.count_total.saturating_sub(self.selection),
-			self.count_total,
+			self.commits.len().saturating_sub(self.selection),
+			self.commits.len(),
 		);
 
 		f.render_widget(
@@ -718,7 +778,7 @@ impl DrawableComponent for CommitList {
 			f,
 			area,
 			&self.theme,
-			self.count_total,
+			self.commits.len(),
 			self.selection,
 			Orientation::Vertical,
 		);

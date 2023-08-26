@@ -33,8 +33,6 @@ use ratatui::{
 use std::{collections::HashSet, rc::Rc, time::Duration};
 use sync::CommitTags;
 
-const SLICE_SIZE: usize = 1200;
-
 struct LogSearchResult {
 	commits: Vec<CommitId>,
 	options: LogFilterSearchOptions,
@@ -132,21 +130,18 @@ impl Revlog {
 	///
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			let log_changed =
-				self.git_log.fetch()? == FetchStatus::Started;
-
-			let search_changed = self.update_search_state()?;
-			let log_changed = log_changed || search_changed;
-
-			self.list.set_count_total(self.git_log.count()?);
-
-			let selection = self.list.selection();
-			let selection_max = self.list.selection_max();
-			if self.list.needs_data(selection, selection_max)
-				|| log_changed
-			{
-				self.fetch_commits()?;
+			if self.git_log.fetch()? == FetchStatus::Started {
+				self.list.clear();
 			}
+
+			if self.update_search_state()? {
+				if let Some(search) = self.search_result_set() {
+					self.list.set_highlighting(Some(search))?;
+				}
+			}
+
+			self.list
+				.refresh_extend_data(self.git_log.extract_items()?)?;
 
 			self.git_tags.request(Duration::from_secs(3), false)?;
 
@@ -206,27 +201,6 @@ impl Revlog {
 				}
 				_ => (),
 			}
-		}
-
-		Ok(())
-	}
-
-	fn fetch_commits(&mut self) -> Result<()> {
-		let want_min =
-			self.list.selection().saturating_sub(SLICE_SIZE / 2);
-
-		let commits = sync::get_commits_info(
-			&self.repo.borrow(),
-			&self.git_log.get_slice(want_min, SLICE_SIZE)?,
-			self.list
-				.current_size()
-				.map_or(100u16, |size| size.0)
-				.into(),
-		);
-
-		if let Ok(commits) = commits {
-			let highlighted = self.search_result_set();
-			self.list.set_items(want_min, commits, &highlighted);
 		}
 
 		Ok(())
@@ -303,7 +277,7 @@ impl Revlog {
 
 			self.search = LogSearch::Searching(async_find, options);
 
-			self.fetch_commits()?;
+			self.list.set_highlighting(None)?;
 		}
 
 		Ok(())
@@ -350,7 +324,6 @@ impl Revlog {
 		!matches!(self.search, LogSearch::Off)
 	}
 
-	//TODO: draw time a search took
 	fn draw_search<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
 		let text = match &self.search {
 			LogSearch::Searching(_, options) => {
@@ -456,7 +429,7 @@ impl Component for Revlog {
 				) {
 					if self.can_leave_search() {
 						self.search = LogSearch::Off;
-						self.fetch_commits()?;
+						self.list.set_highlighting(None)?;
 						return Ok(EventState::Consumed);
 					}
 				} else if key_match(k, self.key_config.keys.copy) {
