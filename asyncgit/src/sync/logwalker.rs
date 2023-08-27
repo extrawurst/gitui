@@ -32,6 +32,7 @@ impl<'a> Ord for TimeOrderedCommit<'a> {
 	}
 }
 
+//TODO: since its used in more than just the log walker now, we should rename and put in its own file
 ///
 pub type LogWalkerFilter = Arc<
 	Box<dyn Fn(&Repository, &CommitId) -> Result<bool> + Send + Sync>,

@@ -81,6 +81,10 @@ impl AsyncLog {
 		start_index: usize,
 		amount: usize,
 	) -> Result<Vec<CommitId>> {
+		if self.partial_extract.load(Ordering::Relaxed) {
+			return Err(Error::Generic(String::from("Faulty usage of AsyncLog: Cannot partially extract items and rely on get_items slice to still work!")));
+		}
+
 		let list = &self.current.lock()?.commits;
 		let list_len = list.len();
 		let min = start_index.min(list_len);

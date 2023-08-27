@@ -18,8 +18,9 @@ use asyncgit::{
 		self, filter_commit_by_search, CommitId, LogFilterSearch,
 		LogFilterSearchOptions, RepoPathRef,
 	},
-	AsyncBranchesJob, AsyncGitNotification, AsyncLog, AsyncTags,
-	CommitFilesParams, FetchStatus,
+	AsyncBranchesJob, AsyncCommitFilterJob, AsyncGitNotification,
+	AsyncLog, AsyncTags, CommitFilesParams, FetchStatus,
+	ProgressPercent,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -42,16 +43,12 @@ struct LogSearchResult {
 //TODO: deserves its own component
 enum LogSearch {
 	Off,
-	Searching(AsyncLog, LogFilterSearchOptions),
+	Searching(
+		AsyncSingleJob<AsyncCommitFilterJob>,
+		LogFilterSearchOptions,
+		Option<ProgressPercent>,
+	),
 	Results(LogSearchResult),
-}
-
-impl LogSearch {
-	fn set_background(&mut self) {
-		if let Self::Searching(log, _) = self {
-			log.set_background();
-		}
-	}
 }
 
 ///
@@ -124,7 +121,7 @@ impl Revlog {
 	}
 
 	const fn is_search_pending(&self) -> bool {
-		matches!(self.search, LogSearch::Searching(_, _))
+		matches!(self.search, LogSearch::Searching(_, _, _))
 	}
 
 	///
@@ -133,8 +130,6 @@ impl Revlog {
 			if self.git_log.fetch()? == FetchStatus::Started {
 				self.list.clear();
 			}
-
-			self.update_search_state()?;
 
 			self.list
 				.refresh_extend_data(self.git_log.extract_items()?);
@@ -164,6 +159,9 @@ impl Revlog {
 			match ev {
 				AsyncGitNotification::CommitFiles
 				| AsyncGitNotification::Log => self.update()?,
+				AsyncGitNotification::CommitFilter => {
+					self.update_search_state();
+				}
 				AsyncGitNotification::Tags => {
 					if let Some(tags) = self.git_tags.last()? {
 						self.list.set_tags(tags);
@@ -242,10 +240,11 @@ impl Revlog {
 		}
 	}
 
-	pub fn search(
-		&mut self,
-		options: LogFilterSearchOptions,
-	) -> Result<()> {
+	pub fn search(&mut self, options: LogFilterSearchOptions) {
+		if !self.can_start_search() {
+			return;
+		}
+
 		if matches!(
 			self.search,
 			LogSearch::Off | LogSearch::Results(_)
@@ -256,47 +255,60 @@ impl Revlog {
 				LogFilterSearch::new(options.clone()),
 			);
 
-			let mut async_find = AsyncLog::new(
+			let mut job = AsyncSingleJob::new(self.sender.clone());
+			job.spawn(AsyncCommitFilterJob::new(
 				self.repo.borrow().clone(),
-				&self.sender,
-				Some(filter),
-			);
+				self.list.copy_items(),
+				filter,
+			));
 
-			assert_eq!(async_find.fetch()?, FetchStatus::Started);
-
-			self.search = LogSearch::Searching(async_find, options);
+			self.search = LogSearch::Searching(job, options, None);
 
 			self.list.set_highlighting(None);
 		}
-
-		Ok(())
 	}
 
-	fn update_search_state(&mut self) -> Result<bool> {
-		let changes = match &self.search {
-			LogSearch::Off | LogSearch::Results(_) => false,
-			LogSearch::Searching(search, options) => {
+	fn update_search_state(&mut self) {
+		match &mut self.search {
+			LogSearch::Off | LogSearch::Results(_) => (),
+			LogSearch::Searching(search, options, progress) => {
 				if search.is_pending() {
-					false
-				} else {
-					let results = search.extract_items()?;
-					let duration = search.get_last_duration()?;
+					//update progress
+					*progress = search.progress();
+				} else if let Some(search) = search
+					.take_last()
+					.and_then(|search| search.result())
+				{
+					match search {
+						Ok(search) => {
+							self.list.set_highlighting(Some(
+								Rc::new(
+									search
+										.result
+										.into_iter()
+										.collect::<IndexSet<_>>(),
+								),
+							));
 
-					self.list.set_highlighting(Some(Rc::new(
-						results.into_iter().collect::<IndexSet<_>>(),
-					)));
+							self.search =
+								LogSearch::Results(LogSearchResult {
+									options: options.clone(),
+									duration: search.duration,
+								});
+						}
+						Err(err) => {
+							self.queue.push(
+								InternalEvent::ShowErrorMsg(format!(
+									"search error: {err}",
+								)),
+							);
 
-					self.search =
-						LogSearch::Results(LogSearchResult {
-							options: options.clone(),
-							duration,
-						});
-					true
+							self.search = LogSearch::Off;
+						}
+					}
 				}
 			}
-		};
-
-		Ok(changes)
+		}
 	}
 
 	fn is_in_search_mode(&self) -> bool {
@@ -305,9 +317,14 @@ impl Revlog {
 
 	fn draw_search<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
 		let (text, title) = match &self.search {
-			LogSearch::Searching(_, options) => (
+			LogSearch::Searching(_, options, progress) => (
 				format!("'{}'", options.search_pattern.clone()),
-				String::from("(pending results...)"),
+				format!(
+					"({}%)",
+					progress
+						.map(|progress| progress.progress)
+						.unwrap_or_default()
+				),
 			),
 			LogSearch::Results(results) => {
 				let info = self.list.highlighted_selection_info();
@@ -350,6 +367,10 @@ impl Revlog {
 
 	fn can_leave_search(&self) -> bool {
 		self.is_in_search_mode() && !self.is_search_pending()
+	}
+
+	fn can_start_search(&self) -> bool {
+		!self.git_log.is_pending()
 	}
 }
 
@@ -514,6 +535,7 @@ impl Component for Revlog {
 						},
 					);
 				} else if key_match(k, self.key_config.keys.log_find)
+					&& self.can_start_search()
 				{
 					self.queue
 						.push(InternalEvent::OpenLogSearchPopup);
@@ -662,7 +684,7 @@ impl Component for Revlog {
 		));
 		out.push(CommandInfo::new(
 			strings::commands::log_find_commit(&self.key_config),
-			true,
+			self.can_start_search(),
 			self.visible || force_all,
 		));
 
@@ -676,7 +698,6 @@ impl Component for Revlog {
 	fn hide(&mut self) {
 		self.visible = false;
 		self.git_log.set_background();
-		self.search.set_background();
 	}
 
 	fn show(&mut self) -> Result<()> {
