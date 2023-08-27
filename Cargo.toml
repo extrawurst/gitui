@@ -51,10 +51,6 @@ unicode-truncate = "0.2"
 unicode-width = "0.1"
 which = "4.4"
 
-# pprof is not available on windows
-[target.'cfg(not(windows))'.dependencies]
-pprof = { version = "0.12", features = ["flamegraph"], optional = true }
-
 [dev-dependencies]
 pretty_assertions = "1.4"
 tempfile = "3.4"

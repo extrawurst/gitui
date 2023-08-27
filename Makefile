@@ -1,12 +1,12 @@
 
 .PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
-ARGS=-l
-# ARGS=-l -d ~/code/extern/linux
+# ARGS=-l
+ARGS=-l -d ~/code/extern/linux
 # ARGS=-l -d ~/code/git-bare-test.git -w ~/code/git-bare-test
 
 profile:
-	cargo run --features=timing,pprof -- ${ARGS}
+	sudo CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --features timing -- ${ARGS}
 
 run-timing:
 	cargo run --features=timing --release -- ${ARGS}
