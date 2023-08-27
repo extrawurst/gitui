@@ -8,6 +8,7 @@ pub mod branch;
 mod commit;
 mod commit_details;
 pub mod commit_files;
+mod commit_filter;
 mod commit_revert;
 mod commits_info;
 mod config;
@@ -48,6 +49,11 @@ pub use commit_details::{
 	get_commit_details, CommitDetails, CommitMessage, CommitSignature,
 };
 pub use commit_files::get_commit_files;
+pub use commit_filter::{
+	diff_contains_file, filter_commit_by_search, LogFilterSearch,
+	LogFilterSearchOptions, SearchFields, SearchOptions,
+	SharedCommitFilterFn,
+};
 pub use commit_revert::{commit_revert, revert_commit, revert_head};
 pub use commits_info::{
 	get_commit_info, get_commits_info, CommitId, CommitInfo,
@@ -63,11 +69,7 @@ pub use hooks::{
 };
 pub use hunks::{reset_hunk, stage_hunk, unstage_hunk};
 pub use ignore::add_to_ignore;
-pub use logwalker::{
-	diff_contains_file, filter_commit_by_search, LogFilterSearch,
-	LogFilterSearchOptions, LogWalker, LogWalkerFilter, SearchFields,
-	SearchOptions,
-};
+pub use logwalker::LogWalker;
 pub use merge::{
 	abort_pending_rebase, abort_pending_state,
 	continue_pending_rebase, merge_branch, merge_commit, merge_msg,

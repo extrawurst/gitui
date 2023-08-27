@@ -1,7 +1,7 @@
 use crate::{
 	asyncjob::{AsyncJob, RunParams},
 	error::Result,
-	sync::{self, CommitId, LogWalkerFilter, RepoPath},
+	sync::{self, CommitId, RepoPath, SharedCommitFilterFn},
 	AsyncGitNotification, ProgressPercent,
 };
 use std::{
@@ -29,7 +29,7 @@ enum JobState {
 #[derive(Clone)]
 pub struct AsyncCommitFilterJob {
 	state: Arc<Mutex<Option<JobState>>>,
-	filter: LogWalkerFilter,
+	filter: SharedCommitFilterFn,
 }
 
 ///
@@ -38,7 +38,7 @@ impl AsyncCommitFilterJob {
 	pub fn new(
 		repo_path: RepoPath,
 		commits: Vec<CommitId>,
-		filter: LogWalkerFilter,
+		filter: SharedCommitFilterFn,
 	) -> Self {
 		Self {
 			state: Arc::new(Mutex::new(Some(JobState::Request {
