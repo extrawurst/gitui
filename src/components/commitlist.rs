@@ -98,6 +98,11 @@ impl CommitList {
 	}
 
 	///
+	pub fn copy_items(&self) -> Vec<CommitId> {
+		self.commits.clone()
+	}
+
+	///
 	pub fn set_tags(&mut self, tags: Tags) {
 		self.tags = Some(tags);
 	}

@@ -976,7 +976,7 @@ impl App {
 				self.reset_popup.open(id)?;
 			}
 			InternalEvent::CommitSearch(options) => {
-				self.revlog.search(options)?;
+				self.revlog.search(options);
 			}
 		};
 
