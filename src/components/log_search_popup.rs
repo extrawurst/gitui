@@ -92,12 +92,12 @@ impl LogSearchPopupComponent {
 		self.find_text.show()?;
 		self.find_text.set_text(String::new());
 
-		self.set_mode(PopupMode::Search);
+		self.set_mode(&PopupMode::Search);
 
 		Ok(())
 	}
 
-	fn set_mode(&mut self, mode: PopupMode) {
+	fn set_mode(&mut self, mode: &PopupMode) {
 		self.find_text.set_text(String::new());
 
 		match mode {
@@ -456,7 +456,7 @@ impl LogSearchPopupComponent {
 				key,
 				self.key_config.keys.find_commit_sha,
 			) {
-				self.set_mode(PopupMode::JumpCommitSha);
+				self.set_mode(&PopupMode::JumpCommitSha);
 			} else if key_match(key, self.key_config.keys.popup_down)
 			{
 				self.move_selection(false);
@@ -481,7 +481,7 @@ impl LogSearchPopupComponent {
 	) -> Result<EventState> {
 		if let Event::Key(key) = &event {
 			if key_match(key, self.key_config.keys.exit_popup) {
-				self.set_mode(PopupMode::Search);
+				self.set_mode(&PopupMode::Search);
 			} else if key_match(key, self.key_config.keys.enter)
 				&& self.is_valid()
 			{
