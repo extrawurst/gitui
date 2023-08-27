@@ -5,14 +5,16 @@ use super::{
 use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
-	strings::{self},
+	strings::{self, POPUP_COMMIT_SHA_INVALID},
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::sync::{
-	LogFilterSearchOptions, SearchFields, SearchOptions,
+	CommitId, LogFilterSearchOptions, RepoPathRef, SearchFields,
+	SearchOptions,
 };
 use crossterm::event::Event;
+use easy_cast::Cast;
 use ratatui::{
 	backend::Backend,
 	layout::{
@@ -32,19 +34,28 @@ enum Selection {
 	AuthorsSearch,
 }
 
+enum PopupMode {
+	Search,
+	JumpCommitSha,
+}
+
 pub struct LogSearchPopupComponent {
+	repo: RepoPathRef,
 	queue: Queue,
 	visible: bool,
+	mode: PopupMode,
 	selection: Selection,
 	key_config: SharedKeyConfig,
 	find_text: TextInputComponent,
 	options: (SearchFields, SearchOptions),
 	theme: SharedTheme,
+	jump_commit_id: Option<CommitId>,
 }
 
 impl LogSearchPopupComponent {
 	///
 	pub fn new(
+		repo: RepoPathRef,
 		queue: &Queue,
 		theme: SharedTheme,
 		key_config: SharedKeyConfig,
@@ -60,8 +71,10 @@ impl LogSearchPopupComponent {
 		find_text.enabled(true);
 
 		Self {
+			repo,
 			queue: queue.clone(),
 			visible: false,
+			mode: PopupMode::Search,
 			key_config,
 			options: (
 				SearchFields::default(),
@@ -70,6 +83,7 @@ impl LogSearchPopupComponent {
 			theme,
 			find_text,
 			selection: Selection::EnterText,
+			jump_commit_id: None,
 		}
 	}
 
@@ -80,23 +94,81 @@ impl LogSearchPopupComponent {
 		self.find_text.set_text(String::new());
 		self.find_text.enabled(true);
 
+		self.set_mode(&PopupMode::Search);
+
 		Ok(())
 	}
 
-	fn execute_search(&mut self) {
+	fn set_mode(&mut self, mode: &PopupMode) {
+		self.find_text.set_text(String::new());
+
+		match mode {
+			PopupMode::Search => {
+				self.mode = PopupMode::Search;
+				self.find_text.set_default_msg("search text".into());
+				self.find_text.enabled(matches!(
+					self.selection,
+					Selection::EnterText
+				));
+			}
+			PopupMode::JumpCommitSha => {
+				self.mode = PopupMode::JumpCommitSha;
+				self.jump_commit_id = None;
+				self.find_text.set_default_msg("commit sha".into());
+				self.find_text.enabled(false);
+				self.selection = Selection::EnterText;
+			}
+		}
+	}
+
+	fn execute_confirm(&mut self) {
 		self.hide();
 
-		if !self.find_text.get_text().trim().is_empty() {
-			self.queue.push(InternalEvent::CommitSearch(
-				LogFilterSearchOptions {
-					fields: self.options.0,
-					options: self.options.1,
-					search_pattern: self
-						.find_text
-						.get_text()
-						.to_string(),
-				},
-			));
+		if !self.is_valid() {
+			return;
+		}
+
+		match self.mode {
+			PopupMode::Search => {
+				self.queue.push(InternalEvent::CommitSearch(
+					LogFilterSearchOptions {
+						fields: self.options.0,
+						options: self.options.1,
+						search_pattern: self
+							.find_text
+							.get_text()
+							.to_string(),
+					},
+				));
+			}
+			PopupMode::JumpCommitSha => {
+				let commit_id = self.jump_commit_id
+                    .expect("Commit id must have value here because it's already validated");
+				self.queue.push(InternalEvent::SelectCommitInRevlog(
+					commit_id,
+				));
+			}
+		}
+	}
+
+	fn is_valid(&self) -> bool {
+		match self.mode {
+			PopupMode::Search => {
+				!self.find_text.get_text().trim().is_empty()
+			}
+			PopupMode::JumpCommitSha => self.jump_commit_id.is_some(),
+		}
+	}
+
+	fn validate_commit_sha(&mut self) {
+		let path = self.repo.borrow();
+		if let Ok(commit_id) = CommitId::from_revision(
+			&path,
+			self.find_text.get_text().trim(),
+		) {
+			self.jump_commit_id = Some(commit_id);
+		} else {
+			self.jump_commit_id = None;
 		}
 	}
 
@@ -255,6 +327,177 @@ impl LogSearchPopupComponent {
 		self.find_text
 			.enabled(matches!(self.selection, Selection::EnterText));
 	}
+
+	fn draw_search_mode<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		area: Rect,
+	) -> Result<()> {
+		const SIZE: (u16, u16) = (60, 10);
+		let area = ui::centered_rect_absolute(SIZE.0, SIZE.1, area);
+
+		f.render_widget(Clear, area);
+		f.render_widget(
+			Block::default()
+				.borders(Borders::all())
+				.style(self.theme.title(true))
+				.title(Span::styled(
+					strings::POPUP_TITLE_LOG_SEARCH,
+					self.theme.title(true),
+				)),
+			area,
+		);
+
+		let chunks = Layout::default()
+			.direction(Direction::Vertical)
+			.constraints(
+				[Constraint::Length(1), Constraint::Percentage(100)]
+					.as_ref(),
+			)
+			.split(area.inner(&Margin {
+				horizontal: 1,
+				vertical: 1,
+			}));
+
+		self.find_text.draw(f, chunks[0])?;
+
+		f.render_widget(
+			Paragraph::new(self.get_text_options())
+				.block(
+					Block::default()
+						.borders(Borders::TOP)
+						.border_style(self.theme.block(true)),
+				)
+				.alignment(Alignment::Left),
+			chunks[1],
+		);
+
+		Ok(())
+	}
+
+	fn draw_commit_sha_mode<B: Backend>(
+		&self,
+		f: &mut Frame<B>,
+		area: Rect,
+	) -> Result<()> {
+		const SIZE: (u16, u16) = (60, 3);
+		let area = ui::centered_rect_absolute(SIZE.0, SIZE.1, area);
+
+		let mut block_style = self.theme.title(true);
+
+		let show_invalid = !self.is_valid()
+			&& !self.find_text.get_text().trim().is_empty();
+
+		if show_invalid {
+			block_style = block_style.patch(self.theme.text_danger());
+		}
+
+		f.render_widget(Clear, area);
+		f.render_widget(
+			Block::default()
+				.borders(Borders::all())
+				.style(block_style)
+				.title(Span::styled(
+					strings::POPUP_TITLE_LOG_SEARCH,
+					self.theme.title(true),
+				)),
+			area,
+		);
+
+		let chunks = Layout::default()
+			.direction(Direction::Vertical)
+			.constraints([Constraint::Length(1)].as_ref())
+			.split(area.inner(&Margin {
+				horizontal: 1,
+				vertical: 1,
+			}));
+
+		self.find_text.draw(f, chunks[0])?;
+
+		if show_invalid {
+			self.draw_invalid_sha(f);
+		}
+
+		Ok(())
+	}
+
+	fn draw_invalid_sha<B: Backend>(&self, f: &mut Frame<B>) {
+		let msg_length: u16 = POPUP_COMMIT_SHA_INVALID.len().cast();
+		let w = Paragraph::new(POPUP_COMMIT_SHA_INVALID)
+			.style(self.theme.text_danger());
+
+		let rect = {
+			let mut rect = self.find_text.get_area();
+			rect.y += rect.height;
+			rect.height = 1;
+			let offset = rect.width.saturating_sub(msg_length);
+			rect.width = rect.width.saturating_sub(offset);
+			rect.x += offset;
+
+			rect
+		};
+
+		f.render_widget(w, rect);
+	}
+
+	#[inline]
+	fn event_search_mode(
+		&mut self,
+		event: &crossterm::event::Event,
+	) -> Result<EventState> {
+		if let Event::Key(key) = &event {
+			if key_match(key, self.key_config.keys.exit_popup) {
+				self.hide();
+			} else if key_match(key, self.key_config.keys.enter)
+				&& self.is_valid()
+			{
+				self.execute_confirm();
+			} else if key_match(key, self.key_config.keys.popup_up) {
+				self.move_selection(true);
+			} else if key_match(
+				key,
+				self.key_config.keys.find_commit_sha,
+			) {
+				self.set_mode(&PopupMode::JumpCommitSha);
+			} else if key_match(key, self.key_config.keys.popup_down)
+			{
+				self.move_selection(false);
+			} else if key_match(
+				key,
+				self.key_config.keys.log_mark_commit,
+			) && self.option_selected()
+			{
+				self.toggle_option();
+			} else if !self.option_selected() {
+				self.find_text.event(event)?;
+			}
+		}
+
+		Ok(EventState::Consumed)
+	}
+
+	#[inline]
+	fn event_commit_sha_mode(
+		&mut self,
+		event: &crossterm::event::Event,
+	) -> Result<EventState> {
+		if let Event::Key(key) = &event {
+			if key_match(key, self.key_config.keys.exit_popup) {
+				self.set_mode(&PopupMode::Search);
+			} else if key_match(key, self.key_config.keys.enter)
+				&& self.is_valid()
+			{
+				self.execute_confirm();
+			} else if self.find_text.event(event)?.is_consumed() {
+				self.validate_commit_sha();
+				self.find_text.enabled(
+					!self.find_text.get_text().trim().is_empty(),
+				);
+			}
+		}
+
+		Ok(EventState::Consumed)
+	}
 }
 
 impl DrawableComponent for LogSearchPopupComponent {
@@ -264,48 +507,14 @@ impl DrawableComponent for LogSearchPopupComponent {
 		area: Rect,
 	) -> Result<()> {
 		if self.is_visible() {
-			const SIZE: (u16, u16) = (60, 10);
-			let area =
-				ui::centered_rect_absolute(SIZE.0, SIZE.1, area);
-
-			f.render_widget(Clear, area);
-			f.render_widget(
-				Block::default()
-					.borders(Borders::all())
-					.style(self.theme.title(true))
-					.title(Span::styled(
-						strings::POPUP_TITLE_LOG_SEARCH,
-						self.theme.title(true),
-					)),
-				area,
-			);
-
-			let chunks = Layout::default()
-				.direction(Direction::Vertical)
-				.constraints(
-					[
-						Constraint::Length(1),
-						Constraint::Percentage(100),
-					]
-					.as_ref(),
-				)
-				.split(area.inner(&Margin {
-					horizontal: 1,
-					vertical: 1,
-				}));
-
-			self.find_text.draw(f, chunks[0])?;
-
-			f.render_widget(
-				Paragraph::new(self.get_text_options())
-					.block(
-						Block::default()
-							.borders(Borders::TOP)
-							.border_style(self.theme.block(true)),
-					)
-					.alignment(Alignment::Left),
-				chunks[1],
-			);
+			match self.mode {
+				PopupMode::Search => {
+					self.draw_search_mode(f, area)?;
+				}
+				PopupMode::JumpCommitSha => {
+					self.draw_commit_sha_mode(f, area)?;
+				}
+			}
 		}
 
 		Ok(())
@@ -328,29 +537,42 @@ impl Component for LogSearchPopupComponent {
 				.order(1),
 			);
 
-			out.push(
-				CommandInfo::new(
-					strings::commands::scroll_popup(&self.key_config),
-					true,
-					true,
-				)
-				.order(1),
-			);
-
-			out.push(
-				CommandInfo::new(
-					strings::commands::toggle_option(
-						&self.key_config,
-					),
-					self.option_selected(),
-					true,
-				)
-				.order(1),
-			);
+			if matches!(self.mode, PopupMode::Search) {
+				out.push(
+					CommandInfo::new(
+						strings::commands::scroll_popup(
+							&self.key_config,
+						),
+						true,
+						true,
+					)
+					.order(1),
+				);
+				out.push(
+					CommandInfo::new(
+						strings::commands::toggle_option(
+							&self.key_config,
+						),
+						self.option_selected(),
+						true,
+					)
+					.order(1),
+				);
+				out.push(
+					CommandInfo::new(
+						strings::commands::find_commit_sha(
+							&self.key_config,
+						),
+						true,
+						true,
+					)
+					.order(1),
+				);
+			}
 
 			out.push(CommandInfo::new(
 				strings::commands::confirm_action(&self.key_config),
-				!self.find_text.get_text().trim().is_empty(),
+				self.is_valid(),
 				self.visible,
 			));
 		}
@@ -362,39 +584,16 @@ impl Component for LogSearchPopupComponent {
 		&mut self,
 		event: &crossterm::event::Event,
 	) -> Result<EventState> {
-		if self.is_visible() {
-			if let Event::Key(key) = &event {
-				if key_match(key, self.key_config.keys.exit_popup) {
-					self.hide();
-				} else if key_match(key, self.key_config.keys.enter)
-					&& !self.find_text.get_text().trim().is_empty()
-				{
-					self.execute_search();
-				} else if key_match(
-					key,
-					self.key_config.keys.popup_up,
-				) {
-					self.move_selection(true);
-				} else if key_match(
-					key,
-					self.key_config.keys.popup_down,
-				) {
-					self.move_selection(false);
-				} else if key_match(
-					key,
-					self.key_config.keys.log_mark_commit,
-				) && self.option_selected()
-				{
-					self.toggle_option();
-				} else if !self.option_selected() {
-					self.find_text.event(event)?;
-				}
-			}
-
-			return Ok(EventState::Consumed);
+		if !self.is_visible() {
+			return Ok(EventState::NotConsumed);
 		}
 
-		Ok(EventState::NotConsumed)
+		match self.mode {
+			PopupMode::Search => self.event_search_mode(event),
+			PopupMode::JumpCommitSha => {
+				self.event_commit_sha_mode(event)
+			}
+		}
 	}
 
 	fn is_visible(&self) -> bool {

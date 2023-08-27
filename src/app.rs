@@ -273,6 +273,7 @@ impl App {
 				key_config.clone(),
 			),
 			log_search_popup: LogSearchPopupComponent::new(
+				repo.clone(),
 				&queue,
 				theme.clone(),
 				key_config.clone(),
