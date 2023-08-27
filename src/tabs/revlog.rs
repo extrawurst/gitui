@@ -273,6 +273,7 @@ impl Revlog {
 			LogSearch::Off | LogSearch::Results(_) => (),
 			LogSearch::Searching(search, options, progress) => {
 				if search.is_pending() {
+					//update progress
 					*progress = search.progress();
 				} else if let Some(search) = search
 					.take_last()
@@ -295,11 +296,15 @@ impl Revlog {
 									duration: search.duration,
 								});
 						}
-						Err(err) => self.queue.push(
-							InternalEvent::ShowErrorMsg(format!(
-								"search error: {err}",
-							)),
-						),
+						Err(err) => {
+							self.queue.push(
+								InternalEvent::ShowErrorMsg(format!(
+									"search error: {err}",
+								)),
+							);
+
+							self.search = LogSearch::Off;
+						}
 					}
 				}
 			}
