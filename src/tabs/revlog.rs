@@ -331,7 +331,7 @@ impl Revlog {
 							format!(
 								"{} ({}/{})",
 								strings::POPUP_TITLE_LOG_SEARCH,
-								info.0,
+								(info.0 + 1).min(info.1),
 								info.1
 							),
 							self.theme.title(true),

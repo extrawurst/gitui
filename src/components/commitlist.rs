@@ -41,6 +41,7 @@ pub struct CommitList {
 	repo: RepoPathRef,
 	title: Box<str>,
 	selection: usize,
+	highlighted_selection: Option<usize>,
 	items: ItemBatch,
 	highlights: Option<Rc<IndexSet<CommitId>>>,
 	commits: Vec<CommitId>,
@@ -70,6 +71,7 @@ impl CommitList {
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
 			selection: 0,
+			highlighted_selection: None,
 			commits: Vec::new(),
 			highlights: None,
 			scroll_state: (Instant::now(), 0_f32),
@@ -241,6 +243,7 @@ impl CommitList {
 	) {
 		self.highlights = highlighting;
 		self.select_next_highlight();
+		self.set_highlighted_selection_index();
 		self.fetch_commits();
 	}
 
@@ -250,6 +253,7 @@ impl CommitList {
 
 		if let Some(position) = position {
 			self.selection = position;
+			self.set_highlighted_selection_index();
 			Ok(())
 		} else {
 			anyhow::bail!("Could not select commit. It might not be loaded yet or it might be on a different branch.");
@@ -258,19 +262,21 @@ impl CommitList {
 
 	///
 	pub fn highlighted_selection_info(&self) -> (usize, usize) {
-		if let Some(highlights) = &self.highlights {
-			let pos = highlights
-				.iter()
-				.position(|entry| {
+		let amount = self
+			.highlights
+			.as_ref()
+			.map(|highlights| highlights.len())
+			.unwrap_or_default();
+		(self.highlighted_selection.unwrap_or_default(), amount)
+	}
+
+	fn set_highlighted_selection_index(&mut self) {
+		self.highlighted_selection =
+			self.highlights.as_ref().and_then(|highlights| {
+				highlights.iter().position(|entry| {
 					entry == &self.commits[self.selection]
 				})
-				.map(|pos| pos.saturating_add(1))
-				.unwrap_or_default();
-
-			(pos, highlights.len())
-		} else {
-			(0, 0)
-		}
+			});
 	}
 
 	const fn selection(&self) -> usize {
@@ -332,6 +338,7 @@ impl CommitList {
 			self.selection = new_selection;
 
 			if self.selection_highlighted() {
+				self.set_highlighted_selection_index();
 				return Ok(true);
 			}
 		}
