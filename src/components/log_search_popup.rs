@@ -35,7 +35,7 @@ enum Selection {
 
 enum PopupMode {
 	Search,
-	JumpToCommitHash,
+	JumpCommitSha,
 }
 
 pub struct LogSearchPopupComponent {
@@ -108,8 +108,8 @@ impl LogSearchPopupComponent {
 					Selection::EnterText
 				));
 			}
-			PopupMode::JumpToCommitHash => {
-				self.mode = PopupMode::JumpToCommitHash;
+			PopupMode::JumpCommitSha => {
+				self.mode = PopupMode::JumpCommitSha;
 				self.jump_commit_id = None;
 				self.find_text.set_default_msg("commit sha".into());
 				self.find_text.enabled(false);
@@ -138,7 +138,7 @@ impl LogSearchPopupComponent {
 					},
 				));
 			}
-			PopupMode::JumpToCommitHash => {
+			PopupMode::JumpCommitSha => {
 				let commit_id = self.jump_commit_id
                     .expect("Commit id must have value here because it's already validated");
 				self.queue.push(InternalEvent::SelectCommitInRevlog(
@@ -153,13 +153,11 @@ impl LogSearchPopupComponent {
 			PopupMode::Search => {
 				!self.find_text.get_text().trim().is_empty()
 			}
-			PopupMode::JumpToCommitHash => {
-				self.jump_commit_id.is_some()
-			}
+			PopupMode::JumpCommitSha => self.jump_commit_id.is_some(),
 		}
 	}
 
-	fn validate_commit_hash(&mut self) {
+	fn validate_commit_sha(&mut self) {
 		let path = self.repo.borrow();
 		if let Ok(commit_id) = CommitId::from_revision(
 			&path,
@@ -374,7 +372,7 @@ impl LogSearchPopupComponent {
 		Ok(())
 	}
 
-	fn draw_jump_commit_mode<B: Backend>(
+	fn draw_commit_sha_mode<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
 		area: Rect,
@@ -433,7 +431,7 @@ impl LogSearchPopupComponent {
 				key,
 				self.key_config.keys.find_commit_sha,
 			) {
-				self.set_mode(PopupMode::JumpToCommitHash);
+				self.set_mode(PopupMode::JumpCommitSha);
 			} else if key_match(key, self.key_config.keys.popup_down)
 			{
 				self.move_selection(false);
@@ -452,7 +450,7 @@ impl LogSearchPopupComponent {
 	}
 
 	#[inline]
-	fn event_jump_commit_mode(
+	fn event_commit_sha_mode(
 		&mut self,
 		event: &crossterm::event::Event,
 	) -> Result<EventState> {
@@ -464,7 +462,7 @@ impl LogSearchPopupComponent {
 			{
 				self.execute_confirm();
 			} else if self.find_text.event(event)?.is_consumed() {
-				self.validate_commit_hash();
+				self.validate_commit_sha();
 				self.find_text.enabled(
 					!self.find_text.get_text().trim().is_empty(),
 				);
@@ -486,8 +484,8 @@ impl DrawableComponent for LogSearchPopupComponent {
 				PopupMode::Search => {
 					self.draw_search_mode(f, area)?;
 				}
-				PopupMode::JumpToCommitHash => {
-					self.draw_jump_commit_mode(f, area)?;
+				PopupMode::JumpCommitSha => {
+					self.draw_commit_sha_mode(f, area)?;
 				}
 			}
 		}
@@ -565,8 +563,8 @@ impl Component for LogSearchPopupComponent {
 
 		match self.mode {
 			PopupMode::Search => self.event_search_mode(event),
-			PopupMode::JumpToCommitHash => {
-				self.event_jump_commit_mode(event)
+			PopupMode::JumpCommitSha => {
+				self.event_commit_sha_mode(event)
 			}
 		}
 	}
