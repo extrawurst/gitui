@@ -18,6 +18,7 @@ use asyncgit::sync::{
 };
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
+use indexmap::IndexSet;
 use itertools::Itertools;
 use ratatui::{
 	backend::Backend,
@@ -28,12 +29,8 @@ use ratatui::{
 	Frame,
 };
 use std::{
-	borrow::Cow,
-	cell::Cell,
-	cmp,
-	collections::{BTreeMap, HashSet},
-	convert::TryFrom,
-	time::Instant,
+	borrow::Cow, cell::Cell, cmp, collections::BTreeMap,
+	convert::TryFrom, rc::Rc, time::Instant,
 };
 
 const ELEMENTS_PER_LINE: usize = 9;
@@ -44,8 +41,9 @@ pub struct CommitList {
 	repo: RepoPathRef,
 	title: Box<str>,
 	selection: usize,
+	highlighted_selection: Option<usize>,
 	items: ItemBatch,
-	highlights: Option<HashSet<CommitId>>,
+	highlights: Option<Rc<IndexSet<CommitId>>>,
 	commits: Vec<CommitId>,
 	marked: Vec<(usize, CommitId)>,
 	scroll_state: (Instant, f32),
@@ -73,6 +71,7 @@ impl CommitList {
 			items: ItemBatch::default(),
 			marked: Vec::with_capacity(2),
 			selection: 0,
+			highlighted_selection: None,
 			commits: Vec::new(),
 			highlights: None,
 			scroll_state: (Instant::now(), 0_f32),
@@ -240,10 +239,11 @@ impl CommitList {
 	///
 	pub fn set_highlighting(
 		&mut self,
-		highlighting: Option<HashSet<CommitId>>,
+		highlighting: Option<Rc<IndexSet<CommitId>>>,
 	) {
 		self.highlights = highlighting;
 		self.select_next_highlight();
+		self.set_highlighted_selection_index();
 		self.fetch_commits();
 	}
 
@@ -253,10 +253,30 @@ impl CommitList {
 
 		if let Some(position) = position {
 			self.selection = position;
+			self.set_highlighted_selection_index();
 			Ok(())
 		} else {
 			anyhow::bail!("Could not select commit. It might not be loaded yet or it might be on a different branch.");
 		}
+	}
+
+	///
+	pub fn highlighted_selection_info(&self) -> (usize, usize) {
+		let amount = self
+			.highlights
+			.as_ref()
+			.map(|highlights| highlights.len())
+			.unwrap_or_default();
+		(self.highlighted_selection.unwrap_or_default(), amount)
+	}
+
+	fn set_highlighted_selection_index(&mut self) {
+		self.highlighted_selection =
+			self.highlights.as_ref().and_then(|highlights| {
+				highlights.iter().position(|entry| {
+					entry == &self.commits[self.selection]
+				})
+			});
 	}
 
 	const fn selection(&self) -> usize {
@@ -318,6 +338,7 @@ impl CommitList {
 			self.selection = new_selection;
 
 			if self.selection_highlighted() {
+				self.set_highlighted_selection_index();
 				return Ok(true);
 			}
 		}
@@ -703,12 +724,7 @@ impl CommitList {
 		);
 
 		if let Ok(commits) = commits {
-			self.items.set_items(
-				want_min,
-				commits,
-				//TODO: optimize via sharable data (BTreeMap that preserves order and lookup)
-				&self.highlights.clone(),
-			);
+			self.items.set_items(want_min, commits, &self.highlights);
 		}
 	}
 }

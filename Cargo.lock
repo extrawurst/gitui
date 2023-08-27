@@ -744,6 +744,7 @@ dependencies = [
  "filetreelist",
  "fuzzy-matcher",
  "gh-emoji",
+ "indexmap",
  "itertools",
  "log",
  "notify",
