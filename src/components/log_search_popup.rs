@@ -5,7 +5,7 @@ use super::{
 use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
-	strings::{self},
+	strings::{self, POPUP_COMMIT_SHA_INVALID},
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
@@ -14,6 +14,7 @@ use asyncgit::sync::{
 	SearchOptions,
 };
 use crossterm::event::Event;
+use easy_cast::Cast;
 use ratatui::{
 	backend::Backend,
 	layout::{
@@ -382,9 +383,10 @@ impl LogSearchPopupComponent {
 
 		let mut block_style = self.theme.title(true);
 
-		if !self.is_valid()
-			&& !self.find_text.get_text().trim().is_empty()
-		{
+		let show_invalid = !self.is_valid()
+			&& !self.find_text.get_text().trim().is_empty();
+
+		if show_invalid {
 			block_style = block_style.patch(self.theme.text_danger());
 		}
 
@@ -410,7 +412,30 @@ impl LogSearchPopupComponent {
 
 		self.find_text.draw(f, chunks[0])?;
 
+		if show_invalid {
+			self.draw_invalid_sha(f);
+		}
+
 		Ok(())
+	}
+
+	fn draw_invalid_sha<B: Backend>(&self, f: &mut Frame<B>) {
+		let msg_length: u16 = POPUP_COMMIT_SHA_INVALID.len().cast();
+		let w = Paragraph::new(POPUP_COMMIT_SHA_INVALID)
+			.style(self.theme.text_danger());
+
+		let rect = {
+			let mut rect = self.find_text.get_area();
+			rect.y += rect.height;
+			rect.height = 1;
+			let offset = rect.width.saturating_sub(msg_length);
+			rect.width = rect.width.saturating_sub(offset);
+			rect.x += offset;
+
+			rect
+		};
+
+		f.render_widget(w, rect);
 	}
 
 	#[inline]

@@ -35,6 +35,7 @@ pub static POPUP_TITLE_LOG_SEARCH: &str = "Search";
 
 pub static POPUP_FAIL_COPY: &str = "Failed to copy text";
 pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
+pub static POPUP_COMMIT_SHA_INVALID: &str = "Invalid commit sha";
 
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
