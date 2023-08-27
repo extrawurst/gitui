@@ -1,6 +1,8 @@
 use crate::{
 	error::Result,
-	sync::{repo, CommitId, LogWalker, LogWalkerFilter, RepoPath},
+	sync::{
+		repo, CommitId, LogWalker, RepoPath, SharedCommitFilterFn,
+	},
 	AsyncGitNotification, Error,
 };
 use crossbeam_channel::Sender;
@@ -39,7 +41,7 @@ pub struct AsyncLog {
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicBool>,
 	background: Arc<AtomicBool>,
-	filter: Option<LogWalkerFilter>,
+	filter: Option<SharedCommitFilterFn>,
 	partial_extract: AtomicBool,
 	repo: RepoPath,
 }
@@ -53,7 +55,7 @@ impl AsyncLog {
 	pub fn new(
 		repo: RepoPath,
 		sender: &Sender<AsyncGitNotification>,
-		filter: Option<LogWalkerFilter>,
+		filter: Option<SharedCommitFilterFn>,
 	) -> Self {
 		Self {
 			repo,
@@ -195,7 +197,7 @@ impl AsyncLog {
 		arc_current: &Arc<Mutex<AsyncLogResult>>,
 		arc_background: &Arc<AtomicBool>,
 		sender: &Sender<AsyncGitNotification>,
-		filter: Option<LogWalkerFilter>,
+		filter: Option<SharedCommitFilterFn>,
 	) -> Result<()> {
 		let start_time = Instant::now();
 
