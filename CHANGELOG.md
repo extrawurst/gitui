@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [0.24.0] - 2022-08-27
+## [0.24.0] - 2023-08-27
 
 **search commits**
 
@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * Copy full Commit Hash by default [[@AmmarAbouZor](https://github.com/AmmarAbouZor)] ([#1836](https://github.com/extrawurst/gitui/issues/1836))
 
-## [0.23.0] - 2022-06-19
+## [0.23.0] - 2023-06-19
 
 **reset to commit**
 
