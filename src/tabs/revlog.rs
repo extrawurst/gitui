@@ -304,24 +304,29 @@ impl Revlog {
 	}
 
 	fn draw_search<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
-		let text = match &self.search {
-			LogSearch::Searching(_, options) => {
-				format!(
-					"'{}' (pending results...)",
-					options.search_pattern.clone()
-				)
-			}
+		let (text, title) = match &self.search {
+			LogSearch::Searching(_, options) => (
+				format!("'{}'", options.search_pattern.clone()),
+				String::from("(pending results...)"),
+			),
 			LogSearch::Results(results) => {
-				format!(
-					"'{}' (duration: {:?})",
-					results.options.search_pattern.clone(),
-					results.duration,
+				let info = self.list.highlighted_selection_info();
+
+				(
+					format!(
+						"'{}' (duration: {:?})",
+						results.options.search_pattern.clone(),
+						results.duration,
+					),
+					format!(
+						"({}/{})",
+						(info.0 + 1).min(info.1),
+						info.1
+					),
 				)
 			}
-			LogSearch::Off => String::new(),
+			LogSearch::Off => (String::new(), String::new()),
 		};
-
-		let info = self.list.highlighted_selection_info();
 
 		f.render_widget(
 			Paragraph::new(text)
@@ -329,10 +334,9 @@ impl Revlog {
 					Block::default()
 						.title(Span::styled(
 							format!(
-								"{} ({}/{})",
+								"{} {}",
 								strings::POPUP_TITLE_LOG_SEARCH,
-								(info.0 + 1).min(info.1),
-								info.1
+								title
 							),
 							self.theme.title(true),
 						))
