@@ -18,6 +18,7 @@ use asyncgit::sync::{
 };
 use chrono::{DateTime, Local};
 use crossterm::event::Event;
+use indexmap::IndexSet;
 use itertools::Itertools;
 use ratatui::{
 	backend::Backend,
@@ -28,12 +29,8 @@ use ratatui::{
 	Frame,
 };
 use std::{
-	borrow::Cow,
-	cell::Cell,
-	cmp,
-	collections::{BTreeMap, HashSet},
-	convert::TryFrom,
-	time::Instant,
+	borrow::Cow, cell::Cell, cmp, collections::BTreeMap,
+	convert::TryFrom, rc::Rc, time::Instant,
 };
 
 const ELEMENTS_PER_LINE: usize = 9;
@@ -45,7 +42,7 @@ pub struct CommitList {
 	title: Box<str>,
 	selection: usize,
 	items: ItemBatch,
-	highlights: Option<HashSet<CommitId>>,
+	highlights: Option<Rc<IndexSet<CommitId>>>,
 	commits: Vec<CommitId>,
 	marked: Vec<(usize, CommitId)>,
 	scroll_state: (Instant, f32),
@@ -240,7 +237,7 @@ impl CommitList {
 	///
 	pub fn set_highlighting(
 		&mut self,
-		highlighting: Option<HashSet<CommitId>>,
+		highlighting: Option<Rc<IndexSet<CommitId>>>,
 	) {
 		self.highlights = highlighting;
 		self.select_next_highlight();
@@ -256,6 +253,23 @@ impl CommitList {
 			Ok(())
 		} else {
 			anyhow::bail!("Could not select commit. It might not be loaded yet or it might be on a different branch.");
+		}
+	}
+
+	///
+	pub fn highlighted_selection_info(&self) -> (usize, usize) {
+		if let Some(highlights) = &self.highlights {
+			let pos = highlights
+				.iter()
+				.position(|entry| {
+					entry == &self.commits[self.selection]
+				})
+				.map(|pos| pos.saturating_add(1))
+				.unwrap_or_default();
+
+			(pos, highlights.len())
+		} else {
+			(0, 0)
 		}
 	}
 
@@ -703,12 +717,7 @@ impl CommitList {
 		);
 
 		if let Ok(commits) = commits {
-			self.items.set_items(
-				want_min,
-				commits,
-				//TODO: optimize via sharable data (BTreeMap that preserves order and lookup)
-				&self.highlights.clone(),
-			);
+			self.items.set_items(want_min, commits, &self.highlights);
 		}
 	}
 }

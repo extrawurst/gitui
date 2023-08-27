@@ -23,6 +23,7 @@ use asyncgit::{
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use indexmap::IndexSet;
 use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -30,11 +31,10 @@ use ratatui::{
 	widgets::{Block, Borders, Paragraph},
 	Frame,
 };
-use std::{collections::HashSet, rc::Rc, time::Duration};
+use std::{rc::Rc, time::Duration};
 use sync::CommitTags;
 
 struct LogSearchResult {
-	commits: usize,
 	options: LogFilterSearchOptions,
 	duration: Duration,
 }
@@ -280,16 +280,14 @@ impl Revlog {
 					false
 				} else {
 					let results = search.extract_items()?;
-					let commits = results.len();
 					let duration = search.get_last_duration()?;
 
-					self.list.set_highlighting(Some(
-						results.into_iter().collect::<HashSet<_>>(),
-					));
+					self.list.set_highlighting(Some(Rc::new(
+						results.into_iter().collect::<IndexSet<_>>(),
+					)));
 
 					self.search =
 						LogSearch::Results(LogSearchResult {
-							commits,
 							options: options.clone(),
 							duration,
 						});
@@ -315,21 +313,27 @@ impl Revlog {
 			}
 			LogSearch::Results(results) => {
 				format!(
-					"'{}' (hits: {}) (duration: {:?})",
+					"'{}' (duration: {:?})",
 					results.options.search_pattern.clone(),
-					results.commits,
 					results.duration,
 				)
 			}
 			LogSearch::Off => String::new(),
 		};
 
+		let info = self.list.highlighted_selection_info();
+
 		f.render_widget(
 			Paragraph::new(text)
 				.block(
 					Block::default()
 						.title(Span::styled(
-							strings::POPUP_TITLE_LOG_SEARCH,
+							format!(
+								"{} ({}/{})",
+								strings::POPUP_TITLE_LOG_SEARCH,
+								info.0,
+								info.1
+							),
 							self.theme.title(true),
 						))
 						.borders(Borders::ALL)

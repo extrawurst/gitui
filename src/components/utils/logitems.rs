@@ -1,6 +1,7 @@
 use asyncgit::sync::{CommitId, CommitInfo};
 use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
-use std::{collections::HashSet, slice::Iter};
+use indexmap::IndexSet;
+use std::{rc::Rc, slice::Iter};
 
 #[cfg(feature = "ghemoji")]
 use super::emoji::emojifi_string;
@@ -111,7 +112,7 @@ impl ItemBatch {
 		&mut self,
 		start_index: usize,
 		commits: Vec<CommitInfo>,
-		highlighted: &Option<HashSet<CommitId>>,
+		highlighted: &Option<Rc<IndexSet<CommitId>>>,
 	) {
 		self.items.clear();
 		self.items.extend(commits.into_iter().map(|c| {
