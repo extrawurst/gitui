@@ -22,7 +22,7 @@ enum JobState {
 		commits: Vec<CommitId>,
 		repo_path: RepoPath,
 	},
-	Response(CommitFilterResult),
+	Response(Result<CommitFilterResult>),
 }
 
 ///
@@ -50,7 +50,7 @@ impl AsyncCommitFilterJob {
 	}
 
 	///
-	pub fn result(&self) -> Option<CommitFilterResult> {
+	pub fn result(&self) -> Option<Result<CommitFilterResult>> {
 		if let Ok(mut state) = self.state.lock() {
 			if let Some(state) = state.take() {
 				return match state {
@@ -61,6 +61,70 @@ impl AsyncCommitFilterJob {
 		}
 
 		None
+	}
+
+	fn run_request(
+		&self,
+		repo_path: RepoPath,
+		commits: Vec<CommitId>,
+		params: RunParams<AsyncGitNotification, ProgressPercent>,
+	) -> JobState {
+		let response = sync::repo(&repo_path)
+			.and_then(|repo| {
+				self.filter_commits(repo, commits, params)
+			})
+			.map(|(start, result)| CommitFilterResult {
+				result,
+				duration: start.elapsed(),
+			});
+
+		JobState::Response(response)
+	}
+
+	fn filter_commits(
+		&self,
+		repo: git2::Repository,
+		commits: Vec<CommitId>,
+		params: RunParams<AsyncGitNotification, ProgressPercent>,
+	) -> Result<(Instant, Vec<CommitId>)> {
+		let total_amount = commits.len();
+		let start = Instant::now();
+
+		let mut progress = ProgressPercent::new(0, total_amount);
+
+		let result = commits
+			.into_iter()
+			.enumerate()
+			.filter_map(|(idx, c)| {
+				let new_progress =
+					ProgressPercent::new(idx, total_amount);
+
+				if new_progress != progress {
+					Self::update_progress(&params, new_progress);
+					progress = new_progress;
+				}
+
+				(*self.filter)(&repo, &c)
+					.ok()
+					.and_then(|res| res.then_some(c))
+			})
+			.collect::<Vec<_>>();
+
+		Ok((start, result))
+	}
+
+	fn update_progress(
+		params: &RunParams<AsyncGitNotification, ProgressPercent>,
+		new_progress: ProgressPercent,
+	) {
+		if let Err(e) = params.set_progress(new_progress) {
+			log::error!("progress error: {e}");
+		}
+		if let Err(e) =
+			params.send(AsyncGitNotification::CommitFilter)
+		{
+			log::error!("send error: {e}");
+		}
 	}
 }
 
@@ -75,59 +139,7 @@ impl AsyncJob for AsyncCommitFilterJob {
 		if let Ok(mut state) = self.state.lock() {
 			*state = state.take().map(|state| match state {
 				JobState::Request { commits, repo_path } => {
-					sync::repo(&repo_path).map_or_else(
-						|_err| {
-							JobState::Response(CommitFilterResult {
-								result: Vec::new(),
-								duration: Duration::default(),
-							})
-						},
-						|repo| {
-							let total_amount = commits.len();
-							let start = Instant::now();
-
-							let mut progress =
-								ProgressPercent::new(0, total_amount);
-
-							let result = commits
-								.into_iter()
-								.enumerate()
-								.filter_map(|(idx, c)| {
-									let new_progress =
-										ProgressPercent::new(
-											idx,
-											total_amount,
-										);
-
-									if new_progress != progress {
-										if let Err(e) = params
-											.set_progress(
-												new_progress,
-											) {
-											log::error!(
-												"progress error: {e}"
-											);
-										}
-										if let Err(e) = params.send(AsyncGitNotification::CommitFilter){
-											log::error!("send error: {e}");
-										}
-										progress = new_progress;
-									}
-
-									(*self.filter)(&repo, &c)
-										.ok()
-										.and_then(|res| {
-											res.then_some(c)
-										})
-								})
-								.collect::<Vec<_>>();
-
-							JobState::Response(CommitFilterResult {
-								result,
-								duration: start.elapsed(),
-							})
-						},
-					)
+					self.run_request(repo_path, commits, params)
 				}
 				JobState::Response(result) => {
 					JobState::Response(result)

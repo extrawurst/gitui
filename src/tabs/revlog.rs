@@ -278,18 +278,29 @@ impl Revlog {
 					.take_last()
 					.and_then(|search| search.result())
 				{
-					self.list.set_highlighting(Some(Rc::new(
-						search
-							.result
-							.into_iter()
-							.collect::<IndexSet<_>>(),
-					)));
+					match search {
+						Ok(search) => {
+							self.list.set_highlighting(Some(
+								Rc::new(
+									search
+										.result
+										.into_iter()
+										.collect::<IndexSet<_>>(),
+								),
+							));
 
-					self.search =
-						LogSearch::Results(LogSearchResult {
-							options: options.clone(),
-							duration: search.duration,
-						});
+							self.search =
+								LogSearch::Results(LogSearchResult {
+									options: options.clone(),
+									duration: search.duration,
+								});
+						}
+						Err(err) => self.queue.push(
+							InternalEvent::ShowErrorMsg(format!(
+								"search error: {err}",
+							)),
+						),
+					}
 				}
 			}
 		}
