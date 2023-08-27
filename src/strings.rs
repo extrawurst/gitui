@@ -1679,7 +1679,7 @@ pub mod commands {
 	) -> CommandText {
 		CommandText::new(
 			format!(
-				"Commit Sha [{}]",
+				"Search Hash [{}]",
 				key_config.get_hint(key_config.keys.find_commit_sha),
 			),
 			"find commit from sha",
