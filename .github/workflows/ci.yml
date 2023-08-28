@@ -30,7 +30,6 @@ jobs:
         cache-name: ci
       with:
         key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}
-        prefix-key: "test"
 
     - name: MacOS Workaround
       if: matrix.os == 'macos-latest'
@@ -99,7 +98,6 @@ jobs:
         target: x86_64-unknown-linux-musl
       with:
         key: ${{ env.target }}-${{ env.cache-name }}-${{ matrix.rust }}
-        prefix-key: "test"
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
@@ -148,7 +146,6 @@ jobs:
         target: linux-arm
       with:
         key: ${{ env.cache-name }}-${{ env.cache-name }}-${{ matrix.rust }}
-        prefix-key: "test"
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
