@@ -22,7 +22,7 @@ jobs:
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Restore cargo cache
       uses: actions/cache@v2
@@ -97,7 +97,7 @@ jobs:
         rust: [nightly, stable, '1.65']
     continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v3
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
@@ -133,7 +133,7 @@ jobs:
         rust: [nightly, stable, '1.65']
     continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v3
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
@@ -168,7 +168,7 @@ jobs:
     name: Lints
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v3
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
@@ -199,7 +199,7 @@ jobs:
     name: udeps
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v3
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
@@ -217,7 +217,7 @@ jobs:
     name: Security audit
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions-rs/audit-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -226,7 +226,7 @@ jobs:
     name: Changelog Test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v3
     - name: Extract release notes
       id: extract_release_notes
       uses: ffurrer2/extract-release-notes@v1
