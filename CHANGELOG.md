@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixes
+* fix performance problem in big repo with a lot of incoming commits ([#1845](https://github.com/extrawurst/gitui/issues/1845))
+
 ## [0.24.0] - 2023-08-27
 
 **search commits**
