@@ -448,6 +448,10 @@ impl Status {
 		&mut self,
 		ev: AsyncGitNotification,
 	) -> Result<()> {
+		if !self.is_visible() {
+			return Ok(());
+		}
+
 		match ev {
 			AsyncGitNotification::Diff => self.update_diff()?,
 			AsyncGitNotification::Status => self.update_status()?,

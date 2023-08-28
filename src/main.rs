@@ -38,7 +38,6 @@ mod keys;
 mod notify_mutex;
 mod options;
 mod popup_stack;
-mod profiler;
 mod queue;
 mod spinner;
 mod string_utils;
@@ -66,7 +65,6 @@ use crossterm::{
 };
 use input::{Input, InputEvent, InputState};
 use keys::KeyConfig;
-use profiler::Profiler;
 use ratatui::{
 	backend::{Backend, CrosstermBackend},
 	Terminal,
@@ -126,8 +124,6 @@ fn main() -> Result<()> {
 	let app_start = Instant::now();
 
 	let cliargs = process_cmdline()?;
-
-	let _profiler = Profiler::new();
 
 	asyncgit::register_tracing_logging();
 
