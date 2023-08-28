@@ -41,12 +41,9 @@ jobs:
       run: cargo clean -p serde_derive -p thiserror
 
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust }}
-        default: true
-        override: true
-        profile: minimal
         components: clippy
 
     - name: Build Debug
@@ -99,12 +96,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust }}
-        profile: minimal
-        default: true
-        override: true
         target: x86_64-unknown-linux-musl
 
     - name: Setup MUSL
@@ -135,12 +129,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust }}
-        profile: minimal
-        default: true
-        override: true
     - name: Setup ARM toolchain
       run: |
         rustup target add aarch64-unknown-linux-gnu
@@ -170,10 +161,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
-        override: true
         components: rustfmt
 
     - run: cargo fmt -- --check
@@ -201,10 +191,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: nightly
-        override: true
         
     - name: cargo-udeps
       run: |
