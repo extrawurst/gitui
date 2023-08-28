@@ -1,8 +1,8 @@
 
 .PHONY: debug build-release release-linux-musl test clippy clippy-pedantic install install-debug
 
-# ARGS=-l
-ARGS=-l -d ~/code/extern/linux
+ARGS=-l
+# ARGS=-l -d ~/code/extern/linux
 # ARGS=-l -d ~/code/git-bare-test.git -w ~/code/git-bare-test
 
 profile:
@@ -29,7 +29,7 @@ release-win: build-release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
 	cargo install cargo-wix --version 0.3.3
 	cargo wix -p gitui --no-build --nocapture --output ./release/gitui.msi
-	ls -l ./release/gitui.msi 
+	ls -l ./release/gitui.msi
 
 release-linux-musl: build-linux-musl-release
 	strip target/x86_64-unknown-linux-musl/release/gitui
