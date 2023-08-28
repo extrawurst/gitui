@@ -99,7 +99,7 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust }}
-        target: x86_64-unknown-linux-musl
+        targets: x86_64-unknown-linux-musl
 
     - name: Setup MUSL
       run: |
