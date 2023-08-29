@@ -33,6 +33,7 @@ pub fn diff_contains_file(file_path: String) -> SharedCommitFilterFn {
 
 bitflags! {
 	///
+	#[derive(Debug, Clone, Copy)]
 	pub struct SearchFields: u32 {
 		///
 		const MESSAGE_SUMMARY = 1 << 0;
@@ -59,6 +60,7 @@ impl Default for SearchFields {
 
 bitflags! {
 	///
+	#[derive(Debug, Clone, Copy)]
 	pub struct SearchOptions: u32 {
 		///
 		const CASE_SENSITIVE = 1 << 0;

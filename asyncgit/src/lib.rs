@@ -27,7 +27,8 @@
 //TODO:
 #![allow(
 	clippy::significant_drop_tightening,
-	clippy::missing_panics_doc
+	clippy::missing_panics_doc,
+	clippy::multiple_crate_versions
 )]
 
 pub mod asyncjob;
