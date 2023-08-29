@@ -95,9 +95,8 @@ jobs:
       uses: Swatinem/rust-cache@v2
       env:
         cache-name: ci
-        target: x86_64-unknown-linux-musl
       with:
-        key: ${{ env.target }}-${{ env.cache-name }}-${{ matrix.rust }}
+        key: ubuntu-latest-${{ env.cache-name }}-${{ matrix.rust }}
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
@@ -142,9 +141,8 @@ jobs:
       uses: Swatinem/rust-cache@v2
       env:
         cache-name: ci
-        target: linux-arm
       with:
-        key: ${{ env.cache-name }}-${{ env.cache-name }}-${{ matrix.rust }}
+        key: ubuntu-latest-${{ env.cache-name }}-${{ matrix.rust }}
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
