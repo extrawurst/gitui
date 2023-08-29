@@ -311,12 +311,12 @@ pub fn checkout_branch(
 		Some(&mut git2::build::CheckoutBuilder::new()),
 	)?;
 
-	let branch_ref = branch_ref
-		.name()
-		.expect("branch without reference impossible");
+	let branch_ref = branch_ref.name().ok_or_else(|| {
+		Error::Generic(String::from("branch ref not found"))
+	});
 
 	// modify HEAD to point to given branch
-	repo.set_head(branch_ref)?;
+	repo.set_head(branch_ref?)?;
 
 	Ok(())
 }
@@ -691,12 +691,8 @@ mod tests_checkout {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		assert!(
-			checkout_branch(repo_path, "refs/heads/master").is_ok()
-		);
-		assert!(
-			checkout_branch(repo_path, "refs/heads/foobar").is_err()
-		);
+		assert!(checkout_branch(repo_path, "master").is_ok());
+		assert!(checkout_branch(repo_path, "foobar").is_err());
 	}
 
 	#[test]
@@ -708,11 +704,9 @@ mod tests_checkout {
 
 		create_branch(repo_path, "test").unwrap();
 
-		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
-		assert!(
-			checkout_branch(repo_path, "refs/heads/master").is_ok()
-		);
-		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+		assert!(checkout_branch(repo_path, "test").is_ok());
+		assert!(checkout_branch(repo_path, "master").is_ok());
+		assert!(checkout_branch(repo_path, "test").is_ok());
 	}
 
 	#[test]
@@ -741,7 +735,7 @@ mod tests_checkout {
 
 		stage_add_file(&repo_path, &Path::new(filename)).unwrap();
 
-		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+		assert!(checkout_branch(repo_path, "test").is_ok());
 	}
 }
 
@@ -787,7 +781,7 @@ mod test_delete_branch {
 		create_branch(repo_path, "branch1").unwrap();
 		create_branch(repo_path, "branch2").unwrap();
 
-		checkout_branch(repo_path, "refs/heads/branch1").unwrap();
+		checkout_branch(repo_path, "branch1").unwrap();
 
 		assert_eq!(
 			repo.branches(None)

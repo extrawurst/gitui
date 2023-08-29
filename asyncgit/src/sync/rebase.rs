@@ -242,12 +242,12 @@ mod test_conflict_free_rebase {
 
 		assert_eq!(parent_ids(&repo, c2), vec![c1]);
 
-		checkout_branch(repo_path, "refs/heads/master").unwrap();
+		checkout_branch(repo_path, "master").unwrap();
 
 		let c3 =
 			write_commit_file(&repo, "test3.txt", "test", "commit3");
 
-		checkout_branch(repo_path, "refs/heads/foo").unwrap();
+		checkout_branch(repo_path, "foo").unwrap();
 
 		let r = test_rebase_branch_repo(repo_path, "master");
 
@@ -267,11 +267,11 @@ mod test_conflict_free_rebase {
 
 		write_commit_file(&repo, "test.txt", "test2", "commit2");
 
-		checkout_branch(repo_path, "refs/heads/master").unwrap();
+		checkout_branch(repo_path, "master").unwrap();
 
 		write_commit_file(&repo, "test.txt", "test3", "commit3");
 
-		checkout_branch(repo_path, "refs/heads/foo").unwrap();
+		checkout_branch(repo_path, "foo").unwrap();
 
 		let res =
 			rebase_branch(repo_path, "master", BranchType::Local);
@@ -310,11 +310,11 @@ mod test_rebase {
 		let c =
 			write_commit_file(&repo, "test.txt", "test2", "commit2");
 
-		checkout_branch(repo_path, "refs/heads/master").unwrap();
+		checkout_branch(repo_path, "master").unwrap();
 
 		write_commit_file(&repo, "test.txt", "test3", "commit3");
 
-		checkout_branch(repo_path, "refs/heads/foo").unwrap();
+		checkout_branch(repo_path, "foo").unwrap();
 
 		assert!(get_rebase_progress(&repo).is_err());
 
