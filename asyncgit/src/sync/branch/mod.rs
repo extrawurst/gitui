@@ -285,7 +285,7 @@ pub fn branch_compare_upstream(
 	Ok(BranchCompare { ahead, behind })
 }
 
-/// Switch branch to given `branch_ref`.
+/// Switch branch to given `branch_name`.
 ///
 /// Method will fail if there are conflicting changes between current and target branch. However,
 /// if files are not conflicting, they will remain in tree (e.g. tracked new file is not
