@@ -29,8 +29,7 @@ jobs:
       env:
         cache-name: ci
       with:
-        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}
-        shared-key: "shared"
+        shared-key: ${{ matrix.os }}-${{ env.cache-name }}-${{ matrix.rust }}
 
     - name: MacOS Workaround
       if: matrix.os == 'macos-latest'
@@ -97,8 +96,7 @@ jobs:
       env:
         cache-name: ci
       with:
-        key: ubuntu-latest-${{ env.cache-name }}-${{ matrix.rust }}
-        shared-key: "shared"
+        shared-key: ubuntu-latest-${{ env.cache-name }}-${{ matrix.rust }}
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
@@ -144,8 +142,7 @@ jobs:
       env:
         cache-name: ci
       with:
-        key: ubuntu-latest-${{ env.cache-name }}-${{ matrix.rust }}
-        shared-key: "shared"
+        shared-key: ubuntu-latest-${{ env.cache-name }}-${{ matrix.rust }}
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable

@@ -25,8 +25,7 @@ jobs:
       env:
         cache-name: ci
       with:
-        key: ${{ matrix.os }}-${{ env.cache-name }}-stable
-        shared-key: "shared"
+        shared-key: ${{ matrix.os }}-${{ env.cache-name }}-stable
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
