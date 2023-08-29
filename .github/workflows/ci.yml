@@ -182,7 +182,7 @@ jobs:
       env:
         cache-name: ci
       with:
-        shared-key: ubuntu-latest-${{ env.cache-name }}-stable
+        key: ubuntu-latest-${{ env.cache-name }}-stable
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
@@ -220,7 +220,7 @@ jobs:
       env:
         cache-name: ci
       with:
-        shared-key: ubuntu-latest-${{ env.cache-name }}-nightly
+        key: ubuntu-latest-${{ env.cache-name }}-nightly
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
