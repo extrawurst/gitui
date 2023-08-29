@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixes
 * fix performance problem in big repo with a lot of incoming commits ([#1845](https://github.com/extrawurst/gitui/issues/1845))
+* fix error switching to a branch with '/' in the name ([#1851](https://github.com/extrawurst/gitui/issues/1851))
 
 ## [0.24.0] - 2023-08-27
 

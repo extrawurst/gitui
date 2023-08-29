@@ -285,24 +285,24 @@ pub fn branch_compare_upstream(
 	Ok(BranchCompare { ahead, behind })
 }
 
-/// Switch branch to given `branch_ref`.
+/// Switch branch to given `branch_name`.
 ///
 /// Method will fail if there are conflicting changes between current and target branch. However,
 /// if files are not conflicting, they will remain in tree (e.g. tracked new file is not
 /// conflicting and therefore is kept in tree even after checkout).
 pub fn checkout_branch(
 	repo_path: &RepoPath,
-	branch_ref: &str,
+	branch_name: &str,
 ) -> Result<()> {
 	scope_time!("checkout_branch");
 
 	let repo = repo(repo_path)?;
 
-	let branch_name =
-		branch_ref.split('/').last().ok_or(Error::PathString)?;
-
 	let branch = repo.find_branch(branch_name, BranchType::Local)?;
-	let target_treeish = branch.into_reference().peel_to_tree()?;
+
+	let branch_ref = branch.into_reference();
+
+	let target_treeish = branch_ref.peel_to_tree()?;
 	let target_treeish_object = target_treeish.as_object();
 
 	// modify state to match branch's state
@@ -311,8 +311,12 @@ pub fn checkout_branch(
 		Some(&mut git2::build::CheckoutBuilder::new()),
 	)?;
 
+	let branch_ref = branch_ref.name().ok_or_else(|| {
+		Error::Generic(String::from("branch ref not found"))
+	});
+
 	// modify HEAD to point to given branch
-	repo.set_head(branch_ref)?;
+	repo.set_head(branch_ref?)?;
 
 	Ok(())
 }
@@ -687,12 +691,8 @@ mod tests_checkout {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		assert!(
-			checkout_branch(repo_path, "refs/heads/master").is_ok()
-		);
-		assert!(
-			checkout_branch(repo_path, "refs/heads/foobar").is_err()
-		);
+		assert!(checkout_branch(repo_path, "master").is_ok());
+		assert!(checkout_branch(repo_path, "foobar").is_err());
 	}
 
 	#[test]
@@ -704,11 +704,20 @@ mod tests_checkout {
 
 		create_branch(repo_path, "test").unwrap();
 
-		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
-		assert!(
-			checkout_branch(repo_path, "refs/heads/master").is_ok()
-		);
-		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+		assert!(checkout_branch(repo_path, "test").is_ok());
+		assert!(checkout_branch(repo_path, "master").is_ok());
+		assert!(checkout_branch(repo_path, "test").is_ok());
+	}
+
+	#[test]
+	fn test_branch_with_slash_in_name() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		create_branch(repo_path, "foo/bar").unwrap();
+		checkout_branch(repo_path, "foo/bar").unwrap();
 	}
 
 	#[test]
@@ -726,7 +735,7 @@ mod tests_checkout {
 
 		stage_add_file(&repo_path, &Path::new(filename)).unwrap();
 
-		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+		assert!(checkout_branch(repo_path, "test").is_ok());
 	}
 }
 
@@ -772,7 +781,7 @@ mod test_delete_branch {
 		create_branch(repo_path, "branch1").unwrap();
 		create_branch(repo_path, "branch2").unwrap();
 
-		checkout_branch(repo_path, "refs/heads/branch1").unwrap();
+		checkout_branch(repo_path, "branch1").unwrap();
 
 		assert_eq!(
 			repo.branches(None)
