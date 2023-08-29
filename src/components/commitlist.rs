@@ -719,17 +719,33 @@ impl CommitList {
 		let commits = self.commits.len();
 
 		let want_min = want_min.min(commits);
-		let slice_end =
-			want_min.saturating_add(SLICE_SIZE).min(commits);
 
-		let commits = sync::get_commits_info(
-			&self.repo.borrow(),
-			&self.commits[want_min..slice_end],
-			self.current_size().map_or(100u16, |size| size.0).into(),
-		);
+		if !self
+			.items
+			.index_offset_raw()
+			.map(|index| want_min == index)
+			.unwrap_or_default()
+		{
+			let slice_end =
+				want_min.saturating_add(SLICE_SIZE).min(commits);
 
-		if let Ok(commits) = commits {
-			self.items.set_items(want_min, commits, &self.highlights);
+			log::info!("fetch_commits: {want_min}-{slice_end}",);
+
+			let commits = sync::get_commits_info(
+				&self.repo.borrow(),
+				&self.commits[want_min..slice_end],
+				self.current_size()
+					.map_or(100u16, |size| size.0)
+					.into(),
+			);
+
+			if let Ok(commits) = commits {
+				self.items.set_items(
+					want_min,
+					commits,
+					&self.highlights,
+				);
+			}
 		}
 	}
 }
