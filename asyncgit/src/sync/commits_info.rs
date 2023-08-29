@@ -31,6 +31,19 @@ impl CommitId {
 	pub fn get_short_string(&self) -> String {
 		self.to_string().chars().take(7).collect()
 	}
+
+	/// Tries to retrieve the `CommitId` form the revision if exists in the given repository
+	pub fn from_revision(
+		repo_path: &RepoPath,
+		revision: &str,
+	) -> Result<Self> {
+		scope_time!("CommitId::from_revision");
+
+		let repo = repo(repo_path)?;
+
+		let commit_obj = repo.revparse_single(revision)?;
+		Ok(commit_obj.id().into())
+	}
 }
 
 impl ToString for CommitId {
@@ -144,7 +157,7 @@ mod tests {
 		error::Result,
 		sync::{
 			commit, stage_add_file, tests::repo_init_empty,
-			utils::get_head_repo, RepoPath,
+			utils::get_head_repo, CommitId, RepoPath,
 		},
 	};
 	use std::{fs::File, io::Write, path::Path};
@@ -218,6 +231,34 @@ mod tests {
 		assert_eq!(res.len(), 1);
 		dbg!(&res[0].message);
 		assert_eq!(res[0].message.starts_with("test msg"), true);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_get_commit_from_revision() -> Result<()> {
+		let (_td, repo) = repo_init_empty().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		let foo_file = Path::new("foo");
+		File::create(root.join(foo_file))?.write_all(b"a")?;
+		stage_add_file(repo_path, foo_file).unwrap();
+		let c1 = commit(repo_path, "subject: foo\nbody").unwrap();
+		let c1_rev = c1.get_short_string();
+
+		assert_eq!(
+			CommitId::from_revision(repo_path, c1_rev.as_str())
+				.unwrap(),
+			c1
+		);
+
+		const FOREIGN_HASH: &str =
+			"d6d7d55cb6e4ba7301d6a11a657aab4211e5777e";
+		assert!(
+			CommitId::from_revision(repo_path, FOREIGN_HASH).is_err()
+		);
 
 		Ok(())
 	}

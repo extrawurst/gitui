@@ -48,14 +48,7 @@ impl StashList {
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
 			let stashes = sync::get_stashes(&self.repo.borrow())?;
-			let commits = sync::get_commits_info(
-				&self.repo.borrow(),
-				stashes.as_slice(),
-				100,
-			)?;
-
-			self.list.set_count_total(commits.len());
-			self.list.set_items(0, commits, &None);
+			self.list.set_commits(stashes);
 		}
 
 		Ok(())

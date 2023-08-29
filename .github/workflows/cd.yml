@@ -109,7 +109,7 @@ jobs:
     #     download-url: https://github.com/extrawurst/gitui/releases/download/${{ steps.get_version.outputs.version }}/gitui-mac.tar.gz
 
     - name: Bump homebrew-core formula
-      uses: mislav/bump-homebrew-formula-action@v1
+      uses: mislav/bump-homebrew-formula-action@v2
       if: "matrix.os == 'macos-latest' && !contains(github.ref, '-')" # skip prereleases
       env:
         COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}

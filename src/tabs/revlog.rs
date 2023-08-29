@@ -18,11 +18,13 @@ use asyncgit::{
 		self, filter_commit_by_search, CommitId, LogFilterSearch,
 		LogFilterSearchOptions, RepoPathRef,
 	},
-	AsyncBranchesJob, AsyncGitNotification, AsyncLog, AsyncTags,
-	CommitFilesParams, FetchStatus,
+	AsyncBranchesJob, AsyncCommitFilterJob, AsyncGitNotification,
+	AsyncLog, AsyncTags, CommitFilesParams, FetchStatus,
+	ProgressPercent,
 };
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
+use indexmap::IndexSet;
 use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -30,13 +32,10 @@ use ratatui::{
 	widgets::{Block, Borders, Paragraph},
 	Frame,
 };
-use std::{collections::HashSet, rc::Rc, time::Duration};
+use std::{rc::Rc, time::Duration};
 use sync::CommitTags;
 
-const SLICE_SIZE: usize = 1200;
-
 struct LogSearchResult {
-	commits: Vec<CommitId>,
 	options: LogFilterSearchOptions,
 	duration: Duration,
 }
@@ -44,16 +43,12 @@ struct LogSearchResult {
 //TODO: deserves its own component
 enum LogSearch {
 	Off,
-	Searching(AsyncLog, LogFilterSearchOptions),
+	Searching(
+		AsyncSingleJob<AsyncCommitFilterJob>,
+		LogFilterSearchOptions,
+		Option<ProgressPercent>,
+	),
 	Results(LogSearchResult),
-}
-
-impl LogSearch {
-	fn set_background(&mut self) {
-		if let Self::Searching(log, _) = self {
-			log.set_background();
-		}
-	}
 }
 
 ///
@@ -126,27 +121,18 @@ impl Revlog {
 	}
 
 	const fn is_search_pending(&self) -> bool {
-		matches!(self.search, LogSearch::Searching(_, _))
+		matches!(self.search, LogSearch::Searching(_, _, _))
 	}
 
 	///
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			let log_changed =
-				self.git_log.fetch()? == FetchStatus::Started;
-
-			let search_changed = self.update_search_state()?;
-			let log_changed = log_changed || search_changed;
-
-			self.list.set_count_total(self.git_log.count()?);
-
-			let selection = self.list.selection();
-			let selection_max = self.list.selection_max();
-			if self.list.needs_data(selection, selection_max)
-				|| log_changed
-			{
-				self.fetch_commits()?;
+			if self.git_log.fetch()? == FetchStatus::Started {
+				self.list.clear();
 			}
+
+			self.list
+				.refresh_extend_data(self.git_log.extract_items()?);
 
 			self.git_tags.request(Duration::from_secs(3), false)?;
 
@@ -173,6 +159,9 @@ impl Revlog {
 			match ev {
 				AsyncGitNotification::CommitFiles
 				| AsyncGitNotification::Log => self.update()?,
+				AsyncGitNotification::CommitFilter => {
+					self.update_search_state();
+				}
 				AsyncGitNotification::Tags => {
 					if let Some(tags) = self.git_tags.last()? {
 						self.list.set_tags(tags);
@@ -211,27 +200,6 @@ impl Revlog {
 		Ok(())
 	}
 
-	fn fetch_commits(&mut self) -> Result<()> {
-		let want_min =
-			self.list.selection().saturating_sub(SLICE_SIZE / 2);
-
-		let commits = sync::get_commits_info(
-			&self.repo.borrow(),
-			&self.git_log.get_slice(want_min, SLICE_SIZE)?,
-			self.list
-				.current_size()
-				.map_or(100u16, |size| size.0)
-				.into(),
-		);
-
-		if let Ok(commits) = commits {
-			let highlighted = self.search_result_set();
-			self.list.set_items(want_min, commits, &highlighted);
-		}
-
-		Ok(())
-	}
-
 	fn selected_commit(&self) -> Option<CommitId> {
 		self.list.selected_entry().map(|e| e.id)
 	}
@@ -247,16 +215,9 @@ impl Revlog {
 		})
 	}
 
+	///
 	pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
-		let position = self.git_log.position(id)?;
-
-		if let Some(position) = position {
-			self.list.select_entry(position);
-
-			Ok(())
-		} else {
-			anyhow::bail!("Could not select commit in revlog. It might not be loaded yet or it might be on a different branch.");
-		}
+		self.list.select_commit(id)
 	}
 
 	fn revert_commit(&self) -> Result<()> {
@@ -279,10 +240,11 @@ impl Revlog {
 		}
 	}
 
-	pub fn search(
-		&mut self,
-		options: LogFilterSearchOptions,
-	) -> Result<()> {
+	pub fn search(&mut self, options: LogFilterSearchOptions) {
+		if !self.can_start_search() {
+			return;
+		}
+
 		if matches!(
 			self.search,
 			LogSearch::Off | LogSearch::Results(_)
@@ -293,81 +255,94 @@ impl Revlog {
 				LogFilterSearch::new(options.clone()),
 			);
 
-			let mut async_find = AsyncLog::new(
+			let mut job = AsyncSingleJob::new(self.sender.clone());
+			job.spawn(AsyncCommitFilterJob::new(
 				self.repo.borrow().clone(),
-				&self.sender,
-				Some(filter),
-			);
+				self.list.copy_items(),
+				filter,
+			));
 
-			async_find.fetch()?;
+			self.search = LogSearch::Searching(job, options, None);
 
-			self.search = LogSearch::Searching(async_find, options);
-
-			self.fetch_commits()?;
-		}
-
-		Ok(())
-	}
-
-	fn search_result_set(&self) -> Option<HashSet<CommitId>> {
-		if let LogSearch::Results(results) = &self.search {
-			Some(
-				results
-					.commits
-					.iter()
-					.map(CommitId::clone)
-					.collect::<HashSet<_>>(),
-			)
-		} else {
-			None
+			self.list.set_highlighting(None);
 		}
 	}
 
-	fn update_search_state(&mut self) -> Result<bool> {
-		let changes = match &self.search {
-			LogSearch::Off | LogSearch::Results(_) => false,
-			LogSearch::Searching(search, options) => {
+	fn update_search_state(&mut self) {
+		match &mut self.search {
+			LogSearch::Off | LogSearch::Results(_) => (),
+			LogSearch::Searching(search, options, progress) => {
 				if search.is_pending() {
-					false
-				} else {
-					let results = search.get_items()?;
-					let duration = search.get_last_duration()?;
-					self.search =
-						LogSearch::Results(LogSearchResult {
-							commits: results,
-							options: options.clone(),
-							duration,
-						});
-					true
+					//update progress
+					*progress = search.progress();
+				} else if let Some(search) = search
+					.take_last()
+					.and_then(|search| search.result())
+				{
+					match search {
+						Ok(search) => {
+							self.list.set_highlighting(Some(
+								Rc::new(
+									search
+										.result
+										.into_iter()
+										.collect::<IndexSet<_>>(),
+								),
+							));
+
+							self.search =
+								LogSearch::Results(LogSearchResult {
+									options: options.clone(),
+									duration: search.duration,
+								});
+						}
+						Err(err) => {
+							self.queue.push(
+								InternalEvent::ShowErrorMsg(format!(
+									"search error: {err}",
+								)),
+							);
+
+							self.search = LogSearch::Off;
+						}
+					}
 				}
 			}
-		};
-
-		Ok(changes)
+		}
 	}
 
 	fn is_in_search_mode(&self) -> bool {
 		!matches!(self.search, LogSearch::Off)
 	}
 
-	//TODO: draw time a search took
 	fn draw_search<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
-		let text = match &self.search {
-			LogSearch::Searching(_, options) => {
+		let (text, title) = match &self.search {
+			LogSearch::Searching(_, options, progress) => (
+				format!("'{}'", options.search_pattern.clone()),
 				format!(
-					"'{}' (pending results...)",
-					options.search_pattern.clone()
-				)
-			}
+					"({}%)",
+					progress
+						.map(|progress| progress.progress)
+						.unwrap_or_default()
+				),
+			),
 			LogSearch::Results(results) => {
-				format!(
-					"'{}' (hits: {}) (duration: {:?})",
-					results.options.search_pattern.clone(),
-					results.commits.len(),
-					results.duration,
+				let info = self.list.highlighted_selection_info();
+
+				(
+					format!(
+						"'{}' (duration: {:?})",
+						results.options.search_pattern.clone(),
+						results.duration,
+					),
+					format!(
+						"({}/{})",
+						(info.0 + 1).min(info.1),
+						info.1
+					),
 				)
 			}
-			LogSearch::Off => String::new(),
+			LogSearch::Off => (String::new(), String::new()),
 		};
 
 		f.render_widget(
@@ -375,7 +350,11 @@ impl Revlog {
 				.block(
 					Block::default()
 						.title(Span::styled(
-							strings::POPUP_TITLE_LOG_SEARCH,
+							format!(
+								"{} {}",
+								strings::POPUP_TITLE_LOG_SEARCH,
+								title
+							),
 							self.theme.title(true),
 						))
 						.borders(Borders::ALL)
@@ -388,6 +367,10 @@ impl Revlog {
 
 	fn can_leave_search(&self) -> bool {
 		self.is_in_search_mode() && !self.is_search_pending()
+	}
+
+	fn can_start_search(&self) -> bool {
+		!self.git_log.is_pending()
 	}
 }
 
@@ -456,7 +439,7 @@ impl Component for Revlog {
 				) {
 					if self.can_leave_search() {
 						self.search = LogSearch::Off;
-						self.fetch_commits()?;
+						self.list.set_highlighting(None);
 						return Ok(EventState::Consumed);
 					}
 				} else if key_match(k, self.key_config.keys.copy) {
@@ -552,6 +535,7 @@ impl Component for Revlog {
 						},
 					);
 				} else if key_match(k, self.key_config.keys.log_find)
+					&& self.can_start_search()
 				{
 					self.queue
 						.push(InternalEvent::OpenLogSearchPopup);
@@ -700,7 +684,7 @@ impl Component for Revlog {
 		));
 		out.push(CommandInfo::new(
 			strings::commands::log_find_commit(&self.key_config),
-			true,
+			self.can_start_search(),
 			self.visible || force_all,
 		));
 
@@ -714,7 +698,6 @@ impl Component for Revlog {
 	fn hide(&mut self) {
 		self.visible = false;
 		self.git_log.set_background();
-		self.search.set_background();
 	}
 
 	fn show(&mut self) -> Result<()> {

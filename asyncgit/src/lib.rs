@@ -38,6 +38,7 @@ mod commit_files;
 mod diff;
 mod error;
 mod fetch_job;
+mod filter_commits;
 mod progress;
 mod pull;
 mod push;
@@ -57,6 +58,7 @@ pub use crate::{
 	diff::{AsyncDiff, DiffParams, DiffType},
 	error::{Error, Result},
 	fetch_job::AsyncFetchJob,
+	filter_commits::{AsyncCommitFilterJob, CommitFilterResult},
 	progress::ProgressPercent,
 	pull::{AsyncPull, FetchRequest},
 	push::{AsyncPush, PushRequest},
@@ -111,6 +113,8 @@ pub enum AsyncGitNotification {
 	Branches,
 	///
 	TreeFiles,
+	///
+	CommitFilter,
 }
 
 /// helper function to calculate the hash of an arbitrary type that implements the `Hash` trait
