@@ -292,17 +292,17 @@ pub fn branch_compare_upstream(
 /// conflicting and therefore is kept in tree even after checkout).
 pub fn checkout_branch(
 	repo_path: &RepoPath,
-	branch_ref: &str,
+	branch_name: &str,
 ) -> Result<()> {
 	scope_time!("checkout_branch");
 
 	let repo = repo(repo_path)?;
 
-	let branch_name =
-		branch_ref.split('/').last().ok_or(Error::PathString)?;
-
 	let branch = repo.find_branch(branch_name, BranchType::Local)?;
-	let target_treeish = branch.into_reference().peel_to_tree()?;
+
+	let branch_ref = branch.into_reference();
+
+	let target_treeish = branch_ref.peel_to_tree()?;
 	let target_treeish_object = target_treeish.as_object();
 
 	// modify state to match branch's state
@@ -310,6 +310,10 @@ pub fn checkout_branch(
 		target_treeish_object,
 		Some(&mut git2::build::CheckoutBuilder::new()),
 	)?;
+
+	let branch_ref = branch_ref
+		.name()
+		.expect("branch without reference impossible");
 
 	// modify HEAD to point to given branch
 	repo.set_head(branch_ref)?;
@@ -709,6 +713,17 @@ mod tests_checkout {
 			checkout_branch(repo_path, "refs/heads/master").is_ok()
 		);
 		assert!(checkout_branch(repo_path, "refs/heads/test").is_ok());
+	}
+
+	#[test]
+	fn test_branch_with_slash_in_name() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		create_branch(repo_path, "foo/bar").unwrap();
+		checkout_branch(repo_path, "foo/bar").unwrap();
 	}
 
 	#[test]

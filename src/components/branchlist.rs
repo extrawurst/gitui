@@ -683,7 +683,7 @@ impl BranchListComponent {
 		if self.local {
 			checkout_branch(
 				&self.repo.borrow(),
-				&self.branches[self.selection as usize].reference,
+				&self.branches[self.selection as usize].name,
 			)?;
 			self.hide();
 		} else {
