@@ -20,6 +20,13 @@ jobs:
       id: get_version
       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
 
+    - name: Restore cargo cache
+      uses: Swatinem/rust-cache@v2
+      env:
+        cache-name: ci
+      with:
+        key: ${{ matrix.os }}-${{ env.cache-name }}-stable
+
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
