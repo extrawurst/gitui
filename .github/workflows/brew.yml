@@ -3,6 +3,10 @@ name: brew update
 on:
   # only manually
   workflow_dispatch:
+    inputs:
+      tag-name:
+        required: true
+        description: 'release tag'
 
 jobs:
   update_brew:
@@ -16,3 +20,4 @@ jobs:
         formula-name: gitui
         # https://github.com/mislav/bump-homebrew-formula-action/issues/58
         formula-path: Formula/g/gitui.rb
+        tag-name: ${{ github.event.inputs.tag-name }}
