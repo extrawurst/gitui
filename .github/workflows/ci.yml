@@ -233,13 +233,12 @@ jobs:
         cargo install --git https://github.com/est31/cargo-udeps --locked
         cargo +nightly udeps --all-targets
 
-
   sec:
     name: Security audit
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: rustsec/audit-check@v1.4.1
+    - uses: rustsec/audit-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -253,7 +252,7 @@ jobs:
       uses: ffurrer2/extract-release-notes@v1
       with:
         release_notes_file: ./release-notes.txt
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3
       with:
         name: release-notes.txt
         path: ./release-notes.txt
