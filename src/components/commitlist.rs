@@ -225,7 +225,7 @@ impl CommitList {
 	///
 	pub fn set_commits(&mut self, commits: Vec<CommitId>) {
 		self.commits = commits;
-		self.fetch_commits();
+		self.fetch_commits(false);
 	}
 
 	///
@@ -237,7 +237,7 @@ impl CommitList {
 		let selection_max = self.selection_max();
 
 		if self.needs_data(selection, selection_max) || new_commits {
-			self.fetch_commits();
+			self.fetch_commits(false);
 		}
 	}
 
@@ -246,10 +246,20 @@ impl CommitList {
 		&mut self,
 		highlighting: Option<Rc<IndexSet<CommitId>>>,
 	) {
-		self.highlights = highlighting;
+		//note: set highlights to none if there is no highlight
+		self.highlights = if highlighting
+			.as_ref()
+			.map(|set| set.is_empty())
+			.unwrap_or_default()
+		{
+			None
+		} else {
+			highlighting
+		};
+
 		self.select_next_highlight();
 		self.set_highlighted_selection_index();
-		self.fetch_commits();
+		self.fetch_commits(true);
 	}
 
 	///
@@ -713,7 +723,7 @@ impl CommitList {
 		self.items.needs_data(idx, idx_max)
 	}
 
-	fn fetch_commits(&mut self) {
+	fn fetch_commits(&mut self, force: bool) {
 		let want_min =
 			self.selection().saturating_sub(SLICE_SIZE / 2);
 		let commits = self.commits.len();
@@ -725,6 +735,7 @@ impl CommitList {
 			.index_offset_raw()
 			.map(|index| want_min == index)
 			.unwrap_or_default()
+			|| force
 		{
 			let slice_end =
 				want_min.saturating_add(SLICE_SIZE).min(commits);
