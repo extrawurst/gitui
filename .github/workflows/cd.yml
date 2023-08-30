@@ -14,18 +14,23 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Get version
       id: get_version
       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
 
+    - name: Restore cargo cache
+      uses: Swatinem/rust-cache@v2
+      env:
+        cache-name: ci
+      with:
+        shared-key: ${{ matrix.os }}-${{ env.cache-name }}-stable
+
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
-        profile: minimal
-        override: true
         components: clippy
 
     - name: Build
