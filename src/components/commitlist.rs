@@ -95,6 +95,7 @@ impl CommitList {
 	///
 	pub fn clear(&mut self) {
 		self.items.clear();
+		self.commits.clear();
 	}
 
 	///
@@ -739,8 +740,6 @@ impl CommitList {
 		{
 			let slice_end =
 				want_min.saturating_add(SLICE_SIZE).min(commits);
-
-			log::info!("fetch_commits: {want_min}-{slice_end}",);
 
 			let commits = sync::get_commits_info(
 				&self.repo.borrow(),

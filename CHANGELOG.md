@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixes
+* fix commit log not updating after branch switch ([#1862](https://github.com/extrawurst/gitui/issues/1862))
+
 ## [0.24.1] - 2023-08-30
 
 ### Fixes
