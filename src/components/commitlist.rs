@@ -225,9 +225,11 @@ impl CommitList {
 
 	///
 	pub fn set_commits(&mut self, commits: Vec<CommitId>) {
-		self.items.clear();
-		self.commits = commits;
-		self.fetch_commits(false);
+		if commits != self.commits {
+			self.items.clear();
+			self.commits = commits;
+			self.fetch_commits(false);
+		}
 	}
 
 	///
@@ -735,7 +737,15 @@ impl CommitList {
 		if !self
 			.items
 			.index_offset_raw()
-			.map(|index| want_min == index)
+			.map(|index| {
+				want_min == index
+					&& self
+						.items
+						.iter()
+						.next()
+						.map(|item| item.id == self.commits[index])
+						.unwrap_or_default()
+			})
 			.unwrap_or_default()
 			|| force
 		{
