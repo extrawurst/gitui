@@ -7,12 +7,17 @@ use crossbeam_channel::Sender;
 use std::sync::{Arc, Mutex, RwLock};
 
 /// Passed to `AsyncJob::run` allowing sending intermediate progress notifications
-pub struct RunParams<T: Copy + Send, P: Clone + Send + Sync> {
+pub struct RunParams<
+	T: Copy + Send,
+	P: Clone + Send + Sync + PartialEq,
+> {
 	sender: Sender<T>,
 	progress: Arc<RwLock<P>>,
 }
 
-impl<T: Copy + Send, P: Clone + Send + Sync> RunParams<T, P> {
+impl<T: Copy + Send, P: Clone + Send + Sync + PartialEq>
+	RunParams<T, P>
+{
 	/// send an intermediate update notification.
 	/// do not confuse this with the return value of `run`.
 	/// `send` should only be used about progress notifications
@@ -24,9 +29,13 @@ impl<T: Copy + Send, P: Clone + Send + Sync> RunParams<T, P> {
 	}
 
 	/// set the current progress
-	pub fn set_progress(&self, p: P) -> Result<()> {
-		*(self.progress.write()?) = p;
-		Ok(())
+	pub fn set_progress(&self, p: P) -> Result<bool> {
+		Ok(if *self.progress.read()? == p {
+			false
+		} else {
+			*(self.progress.write()?) = p;
+			true
+		})
 	}
 }
 
@@ -35,7 +44,7 @@ pub trait AsyncJob: Send + Sync + Clone {
 	/// defines what notification type is used to communicate outside
 	type Notification: Copy + Send;
 	/// type of progress
-	type Progress: Clone + Default + Send + Sync;
+	type Progress: Clone + Default + Send + Sync + PartialEq;
 
 	/// can run a synchronous time intensive task.
 	/// the returned notification is used to tell interested parties
