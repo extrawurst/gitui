@@ -698,15 +698,15 @@ impl App {
 
 	fn switch_tab(&mut self, k: &KeyEvent) -> Result<()> {
 		if key_match(k, self.key_config.keys.tab_status) {
-			self.switch_to_tab(AppTabs::Status)?;
+			self.switch_to_tab(&AppTabs::Status)?;
 		} else if key_match(k, self.key_config.keys.tab_log) {
-			self.switch_to_tab(AppTabs::Log)?;
+			self.switch_to_tab(&AppTabs::Log)?;
 		} else if key_match(k, self.key_config.keys.tab_files) {
-			self.switch_to_tab(AppTabs::Files)?;
+			self.switch_to_tab(&AppTabs::Files)?;
 		} else if key_match(k, self.key_config.keys.tab_stashing) {
-			self.switch_to_tab(AppTabs::Stashing)?;
+			self.switch_to_tab(&AppTabs::Stashing)?;
 		} else if key_match(k, self.key_config.keys.tab_stashes) {
-			self.switch_to_tab(AppTabs::Stashlist)?;
+			self.switch_to_tab(&AppTabs::Stashlist)?;
 		}
 
 		Ok(())
@@ -728,7 +728,7 @@ impl App {
 		Ok(())
 	}
 
-	fn switch_to_tab(&mut self, tab: AppTabs) -> Result<()> {
+	fn switch_to_tab(&mut self, tab: &AppTabs) -> Result<()> {
 		match tab {
 			AppTabs::Status => self.set_tab(0)?,
 			AppTabs::Log => self.set_tab(1)?,
@@ -868,7 +868,7 @@ impl App {
 			}
 			InternalEvent::TabSwitchStatus => self.set_tab(0)?,
 			InternalEvent::TabSwitch(tab) => {
-				self.switch_to_tab(tab)?;
+				self.switch_to_tab(&tab)?;
 				flags.insert(NeedsUpdate::ALL);
 			}
 			InternalEvent::SelectCommitInRevlog(id) => {
