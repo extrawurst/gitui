@@ -225,6 +225,7 @@ impl CommitList {
 
 	///
 	pub fn set_commits(&mut self, commits: Vec<CommitId>) {
+		self.items.clear();
 		self.commits = commits;
 		self.fetch_commits(false);
 	}

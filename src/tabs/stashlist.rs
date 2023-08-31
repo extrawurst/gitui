@@ -136,6 +136,8 @@ impl StashList {
 		self.list.clear_marked();
 		self.update()?;
 
+		self.queue.push(InternalEvent::TabSwitchStatus);
+
 		Ok(())
 	}
 }
