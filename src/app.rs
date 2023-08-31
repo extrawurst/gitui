@@ -20,7 +20,8 @@ use crate::{
 	options::{Options, SharedOptions},
 	popup_stack::PopupStack,
 	queue::{
-		Action, InternalEvent, NeedsUpdate, Queue, StackablePopupOpen,
+		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,
+		StackablePopupOpen,
 	},
 	setup_popups,
 	strings::{self, ellipsis_trim_start, order},
@@ -697,15 +698,15 @@ impl App {
 
 	fn switch_tab(&mut self, k: &KeyEvent) -> Result<()> {
 		if key_match(k, self.key_config.keys.tab_status) {
-			self.set_tab(0)?;
+			self.switch_to_tab(&AppTabs::Status)?;
 		} else if key_match(k, self.key_config.keys.tab_log) {
-			self.set_tab(1)?;
+			self.switch_to_tab(&AppTabs::Log)?;
 		} else if key_match(k, self.key_config.keys.tab_files) {
-			self.set_tab(2)?;
+			self.switch_to_tab(&AppTabs::Files)?;
 		} else if key_match(k, self.key_config.keys.tab_stashing) {
-			self.set_tab(3)?;
+			self.switch_to_tab(&AppTabs::Stashing)?;
 		} else if key_match(k, self.key_config.keys.tab_stashes) {
-			self.set_tab(4)?;
+			self.switch_to_tab(&AppTabs::Stashlist)?;
 		}
 
 		Ok(())
@@ -724,6 +725,17 @@ impl App {
 		self.tab = tab;
 		self.options.borrow_mut().set_current_tab(tab);
 
+		Ok(())
+	}
+
+	fn switch_to_tab(&mut self, tab: &AppTabs) -> Result<()> {
+		match tab {
+			AppTabs::Status => self.set_tab(0)?,
+			AppTabs::Log => self.set_tab(1)?,
+			AppTabs::Files => self.set_tab(2)?,
+			AppTabs::Stashing => self.set_tab(3)?,
+			AppTabs::Stashlist => self.set_tab(4)?,
+		}
 		Ok(())
 	}
 
@@ -855,6 +867,10 @@ impl App {
 				self.tags_popup.open()?;
 			}
 			InternalEvent::TabSwitchStatus => self.set_tab(0)?,
+			InternalEvent::TabSwitch(tab) => {
+				self.switch_to_tab(&tab)?;
+				flags.insert(NeedsUpdate::ALL);
+			}
 			InternalEvent::SelectCommitInRevlog(id) => {
 				if let Err(error) = self.revlog.select_commit(id) {
 					self.queue.push(InternalEvent::ShowErrorMsg(

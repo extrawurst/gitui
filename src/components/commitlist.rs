@@ -225,8 +225,11 @@ impl CommitList {
 
 	///
 	pub fn set_commits(&mut self, commits: Vec<CommitId>) {
-		self.commits = commits;
-		self.fetch_commits(false);
+		if commits != self.commits {
+			self.items.clear();
+			self.commits = commits;
+			self.fetch_commits(false);
+		}
 	}
 
 	///
@@ -724,6 +727,19 @@ impl CommitList {
 		self.items.needs_data(idx, idx_max)
 	}
 
+	// checks if first entry in items is the same commit as we expect
+	fn is_list_in_sync(&self) -> bool {
+		self.items
+			.index_offset_raw()
+			.and_then(|index| {
+				self.items
+					.iter()
+					.next()
+					.map(|item| item.id == self.commits[index])
+			})
+			.unwrap_or_default()
+	}
+
 	fn fetch_commits(&mut self, force: bool) {
 		let want_min =
 			self.selection().saturating_sub(SLICE_SIZE / 2);
@@ -731,13 +747,13 @@ impl CommitList {
 
 		let want_min = want_min.min(commits);
 
-		if !self
+		let index_in_sync = self
 			.items
 			.index_offset_raw()
 			.map(|index| want_min == index)
-			.unwrap_or_default()
-			|| force
-		{
+			.unwrap_or_default();
+
+		if !index_in_sync || !self.is_list_in_sync() || force {
 			let slice_end =
 				want_min.saturating_add(SLICE_SIZE).min(commits);
 
