@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
-	queue::{InternalEvent, NeedsUpdate, Queue},
+	queue::{AppTabs, InternalEvent, Queue},
 	strings,
 	tabs::StashingOptions,
 	ui::style::SharedTheme,
@@ -79,9 +79,11 @@ impl Component for StashMsgComponent {
 							self.input.clear();
 							self.hide();
 
-							self.queue.push(InternalEvent::Update(
-								NeedsUpdate::ALL,
-							));
+							self.queue.push(
+								InternalEvent::TabSwitch(
+									AppTabs::Stashlist,
+								),
+							);
 						}
 						Err(e) => {
 							self.hide();

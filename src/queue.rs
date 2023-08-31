@@ -70,6 +70,14 @@ pub enum StackablePopupOpen {
 	CompareCommits(InspectCommitOpen),
 }
 
+pub enum AppTabs {
+	Status,
+	Log,
+	Files,
+	Stashing,
+	Stashlist,
+}
+
 ///
 pub enum InternalEvent {
 	///
@@ -90,6 +98,8 @@ pub enum InternalEvent {
 	PopupStashing(StashingOptions),
 	///
 	TabSwitchStatus,
+	///
+	TabSwitch(AppTabs),
 	///
 	SelectCommitInRevlog(CommitId),
 	///
