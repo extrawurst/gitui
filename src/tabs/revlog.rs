@@ -702,7 +702,6 @@ impl Component for Revlog {
 
 	fn show(&mut self) -> Result<()> {
 		self.visible = true;
-		self.list.clear();
 
 		self.git_local_branches.spawn(AsyncBranchesJob::new(
 			self.repo.borrow().clone(),
