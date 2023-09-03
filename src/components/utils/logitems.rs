@@ -1,6 +1,7 @@
 use asyncgit::sync::{CommitId, CommitInfo};
 use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
-use std::{collections::HashSet, slice::Iter};
+use indexmap::IndexSet;
+use std::{rc::Rc, slice::Iter};
 
 #[cfg(feature = "ghemoji")]
 use super::emoji::emojifi_string;
@@ -76,18 +77,23 @@ impl LogEntry {
 ///
 #[derive(Default)]
 pub struct ItemBatch {
-	index_offset: usize,
+	index_offset: Option<usize>,
 	items: Vec<LogEntry>,
 	highlighting: bool,
 }
 
 impl ItemBatch {
 	fn last_idx(&self) -> usize {
-		self.index_offset + self.items.len()
+		self.index_offset() + self.items.len()
 	}
 
 	///
-	pub const fn index_offset(&self) -> usize {
+	pub fn index_offset(&self) -> usize {
+		self.index_offset.unwrap_or_default()
+	}
+
+	///
+	pub const fn index_offset_raw(&self) -> Option<usize> {
 		self.index_offset
 	}
 
@@ -104,6 +110,7 @@ impl ItemBatch {
 	/// clear curent list of items
 	pub fn clear(&mut self) {
 		self.items.clear();
+		self.index_offset = None;
 	}
 
 	/// insert new batch of items
@@ -111,25 +118,27 @@ impl ItemBatch {
 		&mut self,
 		start_index: usize,
 		commits: Vec<CommitInfo>,
-		highlighted: &Option<HashSet<CommitId>>,
+		highlighted: &Option<Rc<IndexSet<CommitId>>>,
 	) {
-		log::debug!("highlighted: {:?}", highlighted);
+		self.clear();
 
-		self.items.clear();
-		self.items.extend(commits.into_iter().map(|c| {
-			let id = c.id;
-			let mut entry = LogEntry::from(c);
-			if highlighted
-				.as_ref()
-				.map(|highlighted| highlighted.contains(&id))
-				.unwrap_or_default()
-			{
-				entry.highlighted = true;
-			}
-			entry
-		}));
-		self.highlighting = highlighted.is_some();
-		self.index_offset = start_index;
+		if !commits.is_empty() {
+			self.items.extend(commits.into_iter().map(|c| {
+				let id = c.id;
+				let mut entry = LogEntry::from(c);
+				if highlighted
+					.as_ref()
+					.map(|highlighted| highlighted.contains(&id))
+					.unwrap_or_default()
+				{
+					entry.highlighted = true;
+				}
+				entry
+			}));
+
+			self.index_offset = Some(start_index);
+			self.highlighting = highlighted.is_some();
+		}
 	}
 
 	/// returns `true` if we should fetch updated list of items
@@ -140,7 +149,7 @@ impl ItemBatch {
 			.saturating_add(SLICE_OFFSET_RELOAD_THRESHOLD)
 			.min(idx_max);
 
-		let needs_data_top = want_min < self.index_offset;
+		let needs_data_top = want_min < self.index_offset();
 		let needs_data_bottom = want_max >= self.last_idx();
 		needs_data_bottom || needs_data_top
 	}

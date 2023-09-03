@@ -22,7 +22,7 @@ pub const fn calc_scroll_top(
 	height_in_lines: usize,
 	selection: usize,
 ) -> usize {
-	if current_top + height_in_lines <= selection {
+	if current_top.saturating_add(height_in_lines) <= selection {
 		selection.saturating_sub(height_in_lines) + 1
 	} else if current_top > selection {
 		selection

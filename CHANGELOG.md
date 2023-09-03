@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.24.2] - 2023-09-03
+
+### Fixes
+* fix commit log not updating after branch switch ([#1862](https://github.com/extrawurst/gitui/issues/1862))
+* fix stashlist not updating after pop/drop ([#1864](https://github.com/extrawurst/gitui/issues/1864))
+* fix commit log corruption when tabbing in/out while parsing log ([#1866](https://github.com/extrawurst/gitui/issues/1866))
+
+## [0.24.1] - 2023-08-30
+
+### Fixes
+* fix performance problem in big repo with a lot of incoming commits ([#1845](https://github.com/extrawurst/gitui/issues/1845))
+* fix error switching to a branch with '/' in the name ([#1851](https://github.com/extrawurst/gitui/issues/1851))
+
+## [0.24.0] - 2023-08-27
+
 **search commits**
 
 ![commit-search](assets/log-search.gif)
@@ -24,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * Future additions of colors etc. will not break existing themes anymore
 
 ### Added
-* search commits by files in diff or commit message ([#1791](https://github.com/extrawurst/gitui/issues/1791))
+* search commits by message, author or files in diff ([#1791](https://github.com/extrawurst/gitui/issues/1791))
 * support 'n'/'p' key to move to the next/prev hunk in diff component [[@hamflx](https://github.com/hamflx)] ([#1523](https://github.com/extrawurst/gitui/issues/1523))
 * simplify theme overrides [[@cruessler](https://github.com/cruessler)] ([#1367](https://github.com/extrawurst/gitui/issues/1367))
 * support for sign-off of commits [[@domtac](https://github.com/domtac)]([#1757](https://github.com/extrawurst/gitui/issues/1757))
@@ -33,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * added to [anaconda](https://anaconda.org/conda-forge/gitui) [[@TheBlackSheep3](https://github.com/TheBlackSheep3/)] ([#1626](https://github.com/extrawurst/gitui/issues/1626))
 * visualize empty line substituted with content in diff better ([#1359](https://github.com/extrawurst/gitui/issues/1359))
 * checkout branch works with non-empty status report [[@lightsnowball](https://github.com/lightsnowball)]  ([#1399](https://github.com/extrawurst/gitui/issues/1399))
+* jump to commit by SHA [[@AmmarAbouZor](https://github.com/AmmarAbouZor)] ([#1818](https://github.com/extrawurst/gitui/pull/1818))
 
 ### Fixes
 * fix commit dialog char count for multibyte characters ([#1726](https://github.com/extrawurst/gitui/issues/1726))
@@ -43,7 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * fix delay when opening external editor ([#1506](https://github.com/extrawurst/gitui/issues/1506))
 * fix ordering of commits in diff view [[@Joshix-1](https://github.com/Joshix-1)]([#1747](https://github.com/extrawurst/gitui/issues/1747))
 
-## [0.23.0] - 2022-06-19
+### Changed
+* Copy full Commit Hash by default [[@AmmarAbouZor](https://github.com/AmmarAbouZor)] ([#1836](https://github.com/extrawurst/gitui/issues/1836))
+
+## [0.23.0] - 2023-06-19
 
 **reset to commit**
 

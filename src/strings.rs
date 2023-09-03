@@ -35,6 +35,7 @@ pub static POPUP_TITLE_LOG_SEARCH: &str = "Search";
 
 pub static POPUP_FAIL_COPY: &str = "Failed to copy text";
 pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
+pub static POPUP_COMMIT_SHA_INVALID: &str = "Invalid commit sha";
 
 pub mod symbol {
 	pub const WHITESPACE: &str = "\u{00B7}"; //·
@@ -1356,6 +1357,18 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn log_find_commit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Find [{}]",
+				key_config.get_hint(key_config.keys.file_find),
+			),
+			"start commit search",
+			CMD_GROUP_LOG,
+		)
+	}
 	pub fn log_close_search(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
@@ -1658,6 +1671,19 @@ pub mod commands {
 			),
 			"fetch/prune",
 			CMD_GROUP_BRANCHES,
+		)
+	}
+
+	pub fn find_commit_sha(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Search Hash [{}]",
+				key_config.get_hint(key_config.keys.find_commit_sha),
+			),
+			"find commit from sha",
+			CMD_GROUP_LOG,
 		)
 	}
 }

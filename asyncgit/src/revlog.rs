@@ -1,7 +1,9 @@
 use crate::{
 	error::Result,
-	sync::{repo, CommitId, LogWalker, LogWalkerFilter, RepoPath},
-	AsyncGitNotification,
+	sync::{
+		repo, CommitId, LogWalker, RepoPath, SharedCommitFilterFn,
+	},
+	AsyncGitNotification, Error,
 };
 use crossbeam_channel::Sender;
 use scopetime::scope_time;
@@ -15,7 +17,7 @@ use std::{
 };
 
 ///
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum FetchStatus {
 	/// previous fetch still running
 	Pending,
@@ -39,7 +41,8 @@ pub struct AsyncLog {
 	sender: Sender<AsyncGitNotification>,
 	pending: Arc<AtomicBool>,
 	background: Arc<AtomicBool>,
-	filter: Option<LogWalkerFilter>,
+	filter: Option<SharedCommitFilterFn>,
+	partial_extract: AtomicBool,
 	repo: RepoPath,
 }
 
@@ -52,7 +55,7 @@ impl AsyncLog {
 	pub fn new(
 		repo: RepoPath,
 		sender: &Sender<AsyncGitNotification>,
-		filter: Option<LogWalkerFilter>,
+		filter: Option<SharedCommitFilterFn>,
 	) -> Self {
 		Self {
 			repo,
@@ -65,6 +68,7 @@ impl AsyncLog {
 			pending: Arc::new(AtomicBool::new(false)),
 			background: Arc::new(AtomicBool::new(false)),
 			filter,
+			partial_extract: AtomicBool::new(false),
 		}
 	}
 
@@ -79,6 +83,10 @@ impl AsyncLog {
 		start_index: usize,
 		amount: usize,
 	) -> Result<Vec<CommitId>> {
+		if self.partial_extract.load(Ordering::Relaxed) {
+			return Err(Error::Generic(String::from("Faulty usage of AsyncLog: Cannot partially extract items and rely on get_items slice to still work!")));
+		}
+
 		let list = &self.current.lock()?.commits;
 		let list_len = list.len();
 		let min = start_index.min(list_len);
@@ -89,21 +97,26 @@ impl AsyncLog {
 
 	///
 	pub fn get_items(&self) -> Result<Vec<CommitId>> {
+		if self.partial_extract.load(Ordering::Relaxed) {
+			return Err(Error::Generic(String::from("Faulty usage of AsyncLog: Cannot partially extract items and rely on get_items slice to still work!")));
+		}
+
 		let list = &self.current.lock()?.commits;
 		Ok(list.clone())
 	}
 
 	///
-	pub fn get_last_duration(&self) -> Result<Duration> {
-		Ok(self.current.lock()?.duration)
+	pub fn extract_items(&self) -> Result<Vec<CommitId>> {
+		self.partial_extract.store(true, Ordering::Relaxed);
+		let list = &mut self.current.lock()?.commits;
+		let result = list.clone();
+		list.clear();
+		Ok(result)
 	}
 
 	///
-	pub fn position(&self, id: CommitId) -> Result<Option<usize>> {
-		let list = &self.current.lock()?.commits;
-		let position = list.iter().position(|&x| x == id);
-
-		Ok(position)
+	pub fn get_last_duration(&self) -> Result<Duration> {
+		Ok(self.current.lock()?.duration)
 	}
 
 	///
@@ -143,6 +156,8 @@ impl AsyncLog {
 			return Ok(FetchStatus::NoChange);
 		}
 
+		self.pending.store(true, Ordering::Relaxed);
+
 		self.clear()?;
 
 		let arc_current = Arc::clone(&self.current);
@@ -151,8 +166,6 @@ impl AsyncLog {
 		let arc_background = Arc::clone(&self.background);
 		let filter = self.filter.clone();
 		let repo_path = self.repo.clone();
-
-		self.pending.store(true, Ordering::Relaxed);
 
 		if let Ok(head) = repo(&self.repo)?.head() {
 			*self.current_head.lock()? =
@@ -184,7 +197,7 @@ impl AsyncLog {
 		arc_current: &Arc<Mutex<AsyncLogResult>>,
 		arc_background: &Arc<AtomicBool>,
 		sender: &Sender<AsyncGitNotification>,
-		filter: Option<LogWalkerFilter>,
+		filter: Option<SharedCommitFilterFn>,
 	) -> Result<()> {
 		let start_time = Instant::now();
 
@@ -192,17 +205,16 @@ impl AsyncLog {
 		let r = repo(repo_path)?;
 		let mut walker =
 			LogWalker::new(&r, LIMIT_COUNT)?.filter(filter);
+
 		loop {
 			entries.clear();
-			let res_is_err = walker.read(&mut entries).is_err();
+			let read = walker.read(&mut entries)?;
 
-			if !res_is_err {
-				let mut current = arc_current.lock()?;
-				current.commits.extend(entries.iter());
-				current.duration = start_time.elapsed();
-			}
+			let mut current = arc_current.lock()?;
+			current.commits.extend(entries.iter());
+			current.duration = start_time.elapsed();
 
-			if res_is_err || entries.len() <= 1 {
+			if read == 0 {
 				break;
 			}
 			Self::notify(sender);
@@ -213,8 +225,11 @@ impl AsyncLog {
 				} else {
 					SLEEP_FOREGROUND
 				};
+
 			thread::sleep(sleep_duration);
 		}
+
+		log::trace!("revlog visited: {}", walker.visited());
 
 		Ok(())
 	}
@@ -222,6 +237,7 @@ impl AsyncLog {
 	fn clear(&mut self) -> Result<()> {
 		self.current.lock()?.commits.clear();
 		*self.current_head.lock()? = None;
+		self.partial_extract.store(false, Ordering::Relaxed);
 		Ok(())
 	}
 

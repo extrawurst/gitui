@@ -37,6 +37,7 @@ pub struct TextInputComponent {
 	default_msg: String,
 	msg: String,
 	visible: bool,
+	selected: Option<bool>,
 	show_char_count: bool,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
@@ -64,6 +65,7 @@ impl TextInputComponent {
 			show_char_count,
 			title: title.to_string(),
 			default_msg: default_msg.to_string(),
+			selected: None,
 			cursor_position: 0,
 			input_type: InputType::Multiline,
 			current_area: Cell::new(Rect::default()),
@@ -100,6 +102,11 @@ impl TextInputComponent {
 	/// embed into parent draw area
 	pub fn embed(&mut self) {
 		self.embed = true;
+	}
+
+	///
+	pub fn enabled(&mut self, enable: bool) {
+		self.selected = Some(enable);
 	}
 
 	/// Move the cursor right one char.
@@ -229,7 +236,8 @@ impl TextInputComponent {
 	}
 
 	fn get_draw_text(&self) -> Text {
-		let style = self.theme.text(true, false);
+		let style =
+			self.theme.text(self.selected.unwrap_or(true), false);
 
 		let mut txt = Text::default();
 		// The portion of the text before the cursor is added
@@ -367,7 +375,10 @@ impl DrawableComponent for TextInputComponent {
 			let txt = if self.msg.is_empty() {
 				Text::styled(
 					self.default_msg.as_str(),
-					self.theme.text(false, false),
+					self.theme.text(
+						self.selected.unwrap_or_default(),
+						false,
+					),
 				)
 			} else {
 				self.get_draw_text()

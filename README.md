@@ -1,7 +1,7 @@
 <h1 align="center">
 <img width="300px" src="assets/logo.png" />
 
-[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![DISC][s5]][l5] [![TWEET][s6]][l6] [![dep_status][s7]][l7]
+[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![TWEET][s6]][l6] [![dep_status][s7]][l7]
 
 </h1>
 
@@ -14,8 +14,6 @@
 [l3]: https://github.com/rust-secure-code/safety-dance/
 [s4]: https://img.shields.io/badge/itch.io-ok-green
 [l4]: https://extrawurst.itch.io/gitui
-[s5]: https://img.shields.io/discord/723083834811220028.svg?logo=chat
-[l5]: https://discord.gg/7TGFfuq
 [s6]: https://img.shields.io/twitter/follow/extrawurst?label=follow&style=social
 [l6]: https://twitter.com/intent/follow?screen_name=extrawurst
 [s7]: https://deps.rs/repo/github/extrawurst/gitui/status.svg
@@ -45,13 +43,13 @@
 
 - Fast and intuitive **keyboard only** control
 - Context based help (**no need to memorize** tons of hot-keys)
-- Inspect, commit, and amend changes (incl. hooks: _pre-commit_,_commit-msg_,_post-commit_)
+- Inspect, commit, and amend changes (incl. hooks: *pre-commit*,*commit-msg*,*post-commit*)
 - Stage, unstage, revert and reset files, hunks and lines
 - Stashing (save, pop, apply, drop, and inspect)
-- Push/Fetch to/from remote
+- Push / Fetch to / from remote
 - Branch List (create, rename, delete, checkout, remotes)
-- Browse commit log, diff committed changes
-- Scalable terminal UI layout
+- Browse / **Search** commit log, diff committed changes
+- Responsive terminal UI
 - Async git API for fluid control
 - Submodule support
 
@@ -95,22 +93,25 @@ All support is welcomed! Sponsors as well! ❤️
 
 ## 6. <a name="installation"></a> Installation <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
+<a href="https://repology.org/project/gitui/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/gitui.svg" alt="Packaging status" align="right">
+</a>
+
 For the time being this product is in alpha and is not considered production ready. However, for personal use it is reasonably stable and is being used while developing itself.
 
-### [Arch Linux](https://archlinux.org/packages/community/x86_64/gitui/)
+#### [Arch Linux](https://archlinux.org/packages/community/x86_64/gitui/)
 
 ```sh
 pacman -S gitui
 ```
 
-### Fedora
+#### Fedora
 
 ```sh
 sudo dnf install gitui
 ```
 
-### Gentoo
-
+#### Gentoo
 Available in [dm9pZCAq overlay](https://github.com/gentoo-mirror/dm9pZCAq)
 
 ```sh
@@ -119,43 +120,43 @@ sudo emerge --sync dm9pZCAq
 sudo emerge dev-vcs/gitui::dm9pZCAq
 ```
 
-### [openSUSE](https://software.opensuse.org/package/gitui) (Tumbleweed)
+#### [openSUSE](https://software.opensuse.org/package/gitui) (Tumbleweed)
 
 ```sh
 sudo zypper install gitui
 ```
 
-### Homebrew (macOS)
+#### Homebrew (macOS)
 
 ```sh
 brew install gitui
 ```
 
-### [MacPorts (macOS)](https://ports.macports.org/port/gitui/details/)
+#### [MacPorts (macOS)](https://ports.macports.org/port/gitui/details/)
 
 ```sh
 port install gitui
 ```
 
-### [Winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/StephanDilly/gitui) (Windows)
+#### [Winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/StephanDilly/gitui) (Windows)
 
 ```
 winget install gitui
 ```
 
-### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)
+#### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)
 
 ```
 scoop install gitui
 ```
 
-### [Chocolatey](https://chocolatey.org/packages/gitui) (Windows)
+#### [Chocolatey](https://chocolatey.org/packages/gitui) (Windows)
 
 ```
 choco install gitui
 ```
 
-### [Nix](https://search.nixos.org/packages?channel=unstable&show=gitui&from=0&size=50&sort=relevance&query=gitui) (Nix/NixOS)
+#### [Nix](https://search.nixos.org/packages?channel=unstable&show=gitui&from=0&size=50&sort=relevance&query=gitui) (Nix/NixOS)
 
 Nixpkg
 ```
@@ -166,13 +167,13 @@ NixOS
 nix-env -iA nixos.gitui
 ```
 
-### [Termux](https://github.com/termux/termux-packages/tree/master/packages/gitui) (Android)
+#### [Termux](https://github.com/termux/termux-packages/tree/master/packages/gitui) (Android)
 
 ```
 pkg install gitui
 ```
 
-### [Anaconda](https://anaconda.org/conda-forge/gitui)
+#### [Anaconda](https://anaconda.org/conda-forge/gitui)
 ```
 conda install -c conda-forge gitui 
 ```

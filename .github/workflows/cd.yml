@@ -14,18 +14,23 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Get version
       id: get_version
       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
 
+    - name: Restore cargo cache
+      uses: Swatinem/rust-cache@v2
+      env:
+        cache-name: ci
+      with:
+        shared-key: ${{ matrix.os }}-${{ env.cache-name }}-stable
+
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
-        profile: minimal
-        override: true
         components: clippy
 
     - name: Build
@@ -87,6 +92,8 @@ jobs:
       uses: ffurrer2/extract-release-notes@v1
     - name: Release
       uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         body: ${{ steps.release_notes.outputs.release_notes }}
         prerelease: ${{ contains(github.ref, '-') }}
@@ -95,23 +102,12 @@ jobs:
           ./release/*.zip
           ./release/*.msi
 
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # - name: Bump personal tap formula
-    #   uses: mislav/bump-homebrew-formula-action@v1
-    #   if: "matrix.os == 'macos-latest' && !contains(github.ref, '-')" # skip prereleases
-    #   env:
-    #     COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
-    #   with:
-    #     formula-name: gitui
-    #     homebrew-tap: extrawurst/tap
-    #     download-url: https://github.com/extrawurst/gitui/releases/download/${{ steps.get_version.outputs.version }}/gitui-mac.tar.gz
-
     - name: Bump homebrew-core formula
-      uses: mislav/bump-homebrew-formula-action@v1
+      uses: mislav/bump-homebrew-formula-action@v2
       if: "matrix.os == 'macos-latest' && !contains(github.ref, '-')" # skip prereleases
       env:
         COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
       with:
         formula-name: gitui
+        # https://github.com/mislav/bump-homebrew-formula-action/issues/58
+        formula-path: Formula/g/gitui.rb
