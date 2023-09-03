@@ -88,19 +88,14 @@ impl AsyncCommitFilterJob {
 		let total_amount = commits.len();
 		let start = Instant::now();
 
-		let mut progress = ProgressPercent::new(0, total_amount);
-
 		let result = commits
 			.into_iter()
 			.enumerate()
 			.filter_map(|(idx, c)| {
-				let new_progress =
-					ProgressPercent::new(idx, total_amount);
-
-				if new_progress != progress {
-					Self::update_progress(params, new_progress);
-					progress = new_progress;
-				}
+				Self::update_progress(
+					params,
+					ProgressPercent::new(idx, total_amount),
+				);
 
 				(*self.filter)(repo, &c)
 					.ok()
@@ -115,12 +110,16 @@ impl AsyncCommitFilterJob {
 		params: &RunParams<AsyncGitNotification, ProgressPercent>,
 		new_progress: ProgressPercent,
 	) {
-		if let Err(e) = params.set_progress(new_progress) {
-			log::error!("progress error: {e}");
-		} else if let Err(e) =
-			params.send(AsyncGitNotification::CommitFilter)
-		{
-			log::error!("send error: {e}");
+		match params.set_progress(new_progress) {
+			Err(e) => log::error!("progress error: {e}"),
+			Ok(result) if result => {
+				if let Err(e) =
+					params.send(AsyncGitNotification::CommitFilter)
+				{
+					log::error!("send error: {e}");
+				}
+			}
+			_ => (),
 		}
 	}
 }
