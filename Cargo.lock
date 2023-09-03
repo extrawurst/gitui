@@ -61,7 +61,6 @@ dependencies = [
  "log",
  "openssl-sys",
  "pretty_assertions",
- "rayon",
  "rayon-core",
  "scopetime",
  "serde",
@@ -1257,16 +1256,6 @@ dependencies = [
  "serde",
  "unicode-segmentation",
  "unicode-width",
-]
-
-[[package]]
-name = "rayon"
-version = "1.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d2df5196e37bcc87abebc0053e20787d73847bb33134a69841207dd0a47f03b"
-dependencies = [
- "either",
- "rayon-core",
 ]
 
 [[package]]

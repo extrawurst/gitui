@@ -11,9 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * fix commit log not updating after branch switch ([#1862](https://github.com/extrawurst/gitui/issues/1862))
 * fix stashlist not updating after pop/drop ([#1864](https://github.com/extrawurst/gitui/issues/1864))
 
-### Changed
-* log search consumes all cores now and got even faster
-
 ## [0.24.1] - 2023-08-30
 
 ### Fixes

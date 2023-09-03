@@ -1,8 +1,3 @@
-use rayon::{
-	prelude::ParallelIterator,
-	slice::{ParallelSlice, ParallelSliceMut},
-};
-
 use crate::{
 	asyncjob::{AsyncJob, RunParams},
 	error::Result,
@@ -10,7 +5,7 @@ use crate::{
 	AsyncGitNotification, ProgressPercent,
 };
 use std::{
-	sync::{atomic::AtomicUsize, Arc, Mutex},
+	sync::{Arc, Mutex},
 	time::{Duration, Instant},
 };
 
@@ -74,62 +69,44 @@ impl AsyncCommitFilterJob {
 		commits: Vec<CommitId>,
 		params: &RunParams<AsyncGitNotification, ProgressPercent>,
 	) -> JobState {
-		let (start, result) =
-			self.filter_commits(repo_path, commits, params);
+		let response = sync::repo(repo_path)
+			.map(|repo| self.filter_commits(&repo, commits, params))
+			.map(|(start, result)| CommitFilterResult {
+				result,
+				duration: start.elapsed(),
+			});
 
-		//TODO: still need this to be a result?
-		JobState::Response(Ok(CommitFilterResult {
-			result,
-			duration: start.elapsed(),
-		}))
+		JobState::Response(response)
 	}
 
 	fn filter_commits(
 		&self,
-		repo_path: &RepoPath,
+		repo: &git2::Repository,
 		commits: Vec<CommitId>,
 		params: &RunParams<AsyncGitNotification, ProgressPercent>,
 	) -> (Instant, Vec<CommitId>) {
 		let total_amount = commits.len();
 		let start = Instant::now();
 
-		let idx = AtomicUsize::new(0);
-		let mut result = commits
+		let mut progress = ProgressPercent::new(0, total_amount);
+
+		let result = commits
 			.into_iter()
 			.enumerate()
-			.collect::<Vec<(usize, CommitId)>>()
-			.par_chunks(1000)
-			.filter_map(|c| {
-				//TODO: error log repo open errors
-				sync::repo(repo_path).ok().map(|repo| {
-					c.iter()
-						.filter_map(|(e, c)| {
-							let idx = idx.fetch_add(
-								1,
-								std::sync::atomic::Ordering::Relaxed,
-							);
+			.filter_map(|(idx, c)| {
+				let new_progress =
+					ProgressPercent::new(idx, total_amount);
 
-							Self::update_progress(
-								params,
-								ProgressPercent::new(
-									idx,
-									total_amount,
-								),
-							);
+				if new_progress != progress {
+					Self::update_progress(params, new_progress);
+					progress = new_progress;
+				}
 
-							(*self.filter)(&repo, c).ok().and_then(
-								|res| res.then_some((*e, *c)),
-							)
-						})
-						.collect::<Vec<_>>()
-				})
+				(*self.filter)(repo, &c)
+					.ok()
+					.and_then(|res| res.then_some(c))
 			})
-			.flatten()
 			.collect::<Vec<_>>();
-
-		result.par_sort_by(|a, b| a.0.cmp(&b.0));
-
-		let result = result.into_iter().map(|c| c.1).collect();
 
 		(start, result)
 	}
@@ -138,16 +115,12 @@ impl AsyncCommitFilterJob {
 		params: &RunParams<AsyncGitNotification, ProgressPercent>,
 		new_progress: ProgressPercent,
 	) {
-		match params.set_progress(new_progress) {
-			Err(e) => log::error!("progress error: {e}"),
-			Ok(result) if result => {
-				if let Err(e) =
-					params.send(AsyncGitNotification::CommitFilter)
-				{
-					log::error!("send error: {e}");
-				}
-			}
-			_ => (),
+		if let Err(e) = params.set_progress(new_progress) {
+			log::error!("progress error: {e}");
+		} else if let Err(e) =
+			params.send(AsyncGitNotification::CommitFilter)
+		{
+			log::error!("send error: {e}");
 		}
 	}
 }
