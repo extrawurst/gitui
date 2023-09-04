@@ -74,14 +74,14 @@ impl AsyncCommitFilterJob {
 		commits: Vec<CommitId>,
 		params: &RunParams<AsyncGitNotification, ProgressPercent>,
 	) -> JobState {
-		let (start, result) =
-			self.filter_commits(repo_path, commits, params);
+		let result = self
+			.filter_commits(repo_path, commits, params)
+			.map(|(start, result)| CommitFilterResult {
+				result,
+				duration: start.elapsed(),
+			});
 
-		//TODO: still need this to be a result?
-		JobState::Response(Ok(CommitFilterResult {
-			result,
-			duration: start.elapsed(),
-		}))
+		JobState::Response(result)
 	}
 
 	fn filter_commits(
@@ -89,49 +89,58 @@ impl AsyncCommitFilterJob {
 		repo_path: &RepoPath,
 		commits: Vec<CommitId>,
 		params: &RunParams<AsyncGitNotification, ProgressPercent>,
-	) -> (Instant, Vec<CommitId>) {
+	) -> Result<(Instant, Vec<CommitId>)> {
 		let total_amount = commits.len();
 		let start = Instant::now();
 
+		//note: for some reason >4 threads degrades search performance
+		let pool =
+			rayon::ThreadPoolBuilder::new().num_threads(4).build()?;
+
 		let idx = AtomicUsize::new(0);
-		let mut result = commits
-			.into_iter()
-			.enumerate()
-			.collect::<Vec<(usize, CommitId)>>()
-			.par_chunks(1000)
-			.filter_map(|c| {
-				//TODO: error log repo open errors
-				sync::repo(repo_path).ok().map(|repo| {
-					c.iter()
-						.filter_map(|(e, c)| {
-							let idx = idx.fetch_add(
+
+		let mut result = pool.install(|| {
+			commits
+				.into_iter()
+				.enumerate()
+				.collect::<Vec<(usize, CommitId)>>()
+				.par_chunks(1000)
+				.filter_map(|c| {
+					//TODO: error log repo open errors
+					sync::repo(repo_path).ok().map(|repo| {
+						c.iter()
+							.filter_map(|(e, c)| {
+								let idx = idx.fetch_add(
 								1,
 								std::sync::atomic::Ordering::Relaxed,
 							);
 
-							Self::update_progress(
-								params,
-								ProgressPercent::new(
-									idx,
-									total_amount,
-								),
-							);
+								Self::update_progress(
+									params,
+									ProgressPercent::new(
+										idx,
+										total_amount,
+									),
+								);
 
-							(*self.filter)(&repo, c).ok().and_then(
-								|res| res.then_some((*e, *c)),
-							)
-						})
-						.collect::<Vec<_>>()
+								(*self.filter)(&repo, c)
+									.ok()
+									.and_then(|res| {
+										res.then_some((*e, *c))
+									})
+							})
+							.collect::<Vec<_>>()
+					})
 				})
-			})
-			.flatten()
-			.collect::<Vec<_>>();
+				.flatten()
+				.collect::<Vec<_>>()
+		});
 
 		result.par_sort_by(|a, b| a.0.cmp(&b.0));
 
 		let result = result.into_iter().map(|c| c.1).collect();
 
-		(start, result)
+		Ok((start, result))
 	}
 
 	fn update_progress(

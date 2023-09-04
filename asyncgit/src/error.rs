@@ -84,6 +84,10 @@ pub enum Error {
 	///
 	#[error("not on a branch")]
 	NoBranch,
+
+	///
+	#[error("rayon error: {0}")]
+	ThreadPool(#[from] rayon_core::ThreadPoolBuildError),
 }
 
 ///
