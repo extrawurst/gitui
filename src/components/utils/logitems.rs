@@ -31,10 +31,12 @@ impl From<CommitInfo> for LogEntry {
 			if date.is_none() {
 				log::error!("error reading commit date: {hash_short} - timestamp: {}",c.time);
 			}
-			DateTime::<Local>::from(DateTime::<Utc>::from_utc(
-				date.unwrap_or_default(),
-				Utc,
-			))
+			DateTime::<Local>::from(
+				DateTime::<Utc>::from_naive_utc_and_offset(
+					date.unwrap_or_default(),
+					Utc,
+				),
+			)
 		};
 
 		let author = c.author;

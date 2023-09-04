@@ -28,11 +28,13 @@ macro_rules! try_or_popup {
 
 /// helper func to convert unix time since epoch to formated time string in local timezone
 pub fn time_to_string(secs: i64, short: bool) -> String {
-	let time = DateTime::<Local>::from(DateTime::<Utc>::from_utc(
-		NaiveDateTime::from_timestamp_opt(secs, 0)
-			.unwrap_or_default(),
-		Utc,
-	));
+	let time = DateTime::<Local>::from(
+		DateTime::<Utc>::from_naive_utc_and_offset(
+			NaiveDateTime::from_timestamp_opt(secs, 0)
+				.unwrap_or_default(),
+			Utc,
+		),
+	);
 
 	time.format(if short {
 		"%Y-%m-%d"
