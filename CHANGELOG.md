@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * parallelise log search - performance gain ~100% ([#1869](https://github.com/extrawurst/gitui/issues/1869))
+* search message body/summary separately ([#1875](https://github.com/extrawurst/gitui/issues/1875))
+
 
 ## [0.24.2] - 2023-09-03
 

@@ -29,7 +29,8 @@ enum Selection {
 	EnterText,
 	FuzzyOption,
 	CaseOption,
-	MessageSearch,
+	SummarySearch,
+	MessageBodySearch,
 	FilenameSearch,
 	AuthorsSearch,
 }
@@ -173,8 +174,16 @@ impl LogSearchPopupComponent {
 	}
 
 	fn get_text_options(&self) -> Vec<Line> {
-		let x_message =
-			if self.options.0.contains(SearchFields::MESSAGE) {
+		let x_summary =
+			if self.options.0.contains(SearchFields::MESSAGE_SUMMARY)
+			{
+				"X"
+			} else {
+				" "
+			};
+
+		let x_body =
+			if self.options.0.contains(SearchFields::MESSAGE_BODY) {
 				"X"
 			} else {
 				" "
@@ -225,11 +234,21 @@ impl LogSearchPopupComponent {
 				),
 			)]),
 			Line::from(vec![Span::styled(
-				format!("[{x_message}] messages",),
+				format!("[{x_summary}] summary",),
 				self.theme.text(
 					matches!(
 						self.selection,
-						Selection::MessageSearch
+						Selection::SummarySearch
+					),
+					false,
+				),
+			)]),
+			Line::from(vec![Span::styled(
+				format!("[{x_body}] message body",),
+				self.theme.text(
+					matches!(
+						self.selection,
+						Selection::MessageBodySearch
 					),
 					false,
 				),
@@ -254,14 +273,6 @@ impl LogSearchPopupComponent {
 					false,
 				),
 			)]),
-			// Line::from(vec![Span::styled(
-			// 	"[ ] changes (soon)",
-			// 	theme,
-			// )]),
-			// Line::from(vec![Span::styled(
-			// 	"[ ] hashes (soon)",
-			// 	theme,
-			// )]),
 		]
 	}
 
@@ -278,8 +289,17 @@ impl LogSearchPopupComponent {
 			Selection::CaseOption => {
 				self.options.1.toggle(SearchOptions::CASE_SENSITIVE);
 			}
-			Selection::MessageSearch => {
-				self.options.0.toggle(SearchFields::MESSAGE);
+			Selection::SummarySearch => {
+				self.options.0.toggle(SearchFields::MESSAGE_SUMMARY);
+
+				if self.options.0.is_empty() {
+					self.options
+						.0
+						.set(SearchFields::MESSAGE_BODY, true);
+				}
+			}
+			Selection::MessageBodySearch => {
+				self.options.0.toggle(SearchFields::MESSAGE_BODY);
 
 				if self.options.0.is_empty() {
 					self.options.0.set(SearchFields::FILENAMES, true);
@@ -296,7 +316,9 @@ impl LogSearchPopupComponent {
 				self.options.0.toggle(SearchFields::AUTHORS);
 
 				if self.options.0.is_empty() {
-					self.options.0.set(SearchFields::MESSAGE, true);
+					self.options
+						.0
+						.set(SearchFields::MESSAGE_SUMMARY, true);
 				}
 			}
 		}
@@ -309,16 +331,26 @@ impl LogSearchPopupComponent {
 				Selection::EnterText => Selection::AuthorsSearch,
 				Selection::FuzzyOption => Selection::EnterText,
 				Selection::CaseOption => Selection::FuzzyOption,
-				Selection::MessageSearch => Selection::CaseOption,
-				Selection::FilenameSearch => Selection::MessageSearch,
+				Selection::SummarySearch => Selection::CaseOption,
+				Selection::MessageBodySearch => {
+					Selection::SummarySearch
+				}
+				Selection::FilenameSearch => {
+					Selection::MessageBodySearch
+				}
 				Selection::AuthorsSearch => Selection::FilenameSearch,
 			};
 		} else {
 			self.selection = match self.selection {
 				Selection::EnterText => Selection::FuzzyOption,
 				Selection::FuzzyOption => Selection::CaseOption,
-				Selection::CaseOption => Selection::MessageSearch,
-				Selection::MessageSearch => Selection::FilenameSearch,
+				Selection::CaseOption => Selection::SummarySearch,
+				Selection::SummarySearch => {
+					Selection::MessageBodySearch
+				}
+				Selection::MessageBodySearch => {
+					Selection::FilenameSearch
+				}
 				Selection::FilenameSearch => Selection::AuthorsSearch,
 				Selection::AuthorsSearch => Selection::EnterText,
 			};
