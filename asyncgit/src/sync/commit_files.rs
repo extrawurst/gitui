@@ -85,7 +85,6 @@ pub fn get_compare_commits_diff(
 	if let Some(p) = &pathspec {
 		opts.pathspec(p.clone());
 	}
-	opts.show_binary(true);
 
 	let diff = repo.diff_tree_to_tree(
 		Some(&trees.0),
