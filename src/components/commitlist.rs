@@ -44,7 +44,7 @@ pub struct CommitList {
 	highlighted_selection: Option<usize>,
 	items: ItemBatch,
 	highlights: Option<Rc<IndexSet<CommitId>>>,
-	commits: Vec<CommitId>,
+	commits: IndexSet<CommitId>,
 	marked: Vec<(usize, CommitId)>,
 	scroll_state: (Instant, f32),
 	tags: Option<Tags>,
@@ -72,7 +72,7 @@ impl CommitList {
 			marked: Vec::with_capacity(2),
 			selection: 0,
 			highlighted_selection: None,
-			commits: Vec::new(),
+			commits: IndexSet::new(),
 			highlights: None,
 			scroll_state: (Instant::now(), 0_f32),
 			tags: None,
@@ -100,7 +100,7 @@ impl CommitList {
 
 	///
 	pub fn copy_items(&self) -> Vec<CommitId> {
-		self.commits.clone()
+		self.commits.iter().copied().collect_vec()
 	}
 
 	///
@@ -224,7 +224,7 @@ impl CommitList {
 	}
 
 	///
-	pub fn set_commits(&mut self, commits: Vec<CommitId>) {
+	pub fn set_commits(&mut self, commits: IndexSet<CommitId>) {
 		if commits != self.commits {
 			self.items.clear();
 			self.commits = commits;
@@ -268,10 +268,10 @@ impl CommitList {
 
 	///
 	pub fn select_commit(&mut self, id: CommitId) -> Result<()> {
-		let position = self.commits.iter().position(|&x| x == id);
+		let index = self.commits.get_index_of(&id);
 
-		if let Some(position) = position {
-			self.selection = position;
+		if let Some(index) = index {
+			self.selection = index;
 			self.set_highlighted_selection_index();
 			Ok(())
 		} else {
@@ -332,35 +332,39 @@ impl CommitList {
 		&mut self,
 		scroll: ScrollType,
 	) -> Result<bool> {
-		let old_selection = self.selection;
+		let (current_index, selection_max) =
+			self.highlighted_selection_info();
 
-		loop {
-			let new_selection = match scroll {
-				ScrollType::Up => self.selection.saturating_sub(1),
-				ScrollType::Down => self.selection.saturating_add(1),
+		let new_index = match scroll {
+			ScrollType::Up => current_index.saturating_sub(1),
+			ScrollType::Down => current_index.saturating_add(1),
 
-				//TODO: support this?
-				// ScrollType::Home => 0,
-				// ScrollType::End => self.selection_max(),
-				_ => return Ok(false),
-			};
+			//TODO: support this?
+			// ScrollType::Home => 0,
+			// ScrollType::End => self.selection_max(),
+			_ => return Ok(false),
+		};
 
-			let new_selection =
-				cmp::min(new_selection, self.selection_max());
-			let selection_changed = new_selection != self.selection;
+		let new_index =
+			cmp::min(new_index, selection_max.saturating_sub(1));
 
-			if !selection_changed {
-				self.selection = old_selection;
-				return Ok(false);
-			}
+		let index_changed = new_index != current_index;
 
-			self.selection = new_selection;
-
-			if self.selection_highlighted() {
-				self.set_highlighted_selection_index();
-				return Ok(true);
-			}
+		if !index_changed {
+			return Ok(false);
 		}
+
+		let new_selected_commit =
+			self.highlights.as_ref().and_then(|highlights| {
+				highlights.iter().nth(new_index).copied()
+			});
+
+		if let Some(c) = new_selected_commit {
+			self.select_commit(c)?;
+			return Ok(true);
+		}
+
+		Ok(false)
 	}
 
 	fn move_selection_normal(
@@ -754,12 +758,15 @@ impl CommitList {
 			.unwrap_or_default();
 
 		if !index_in_sync || !self.is_list_in_sync() || force {
-			let slice_end =
-				want_min.saturating_add(SLICE_SIZE).min(commits);
-
 			let commits = sync::get_commits_info(
 				&self.repo.borrow(),
-				&self.commits[want_min..slice_end],
+				self.commits
+					.iter()
+					.skip(want_min)
+					.take(SLICE_SIZE)
+					.copied()
+					.collect_vec()
+					.as_slice(),
 				self.current_size()
 					.map_or(100u16, |size| size.0)
 					.into(),
