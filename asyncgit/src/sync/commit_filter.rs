@@ -1,9 +1,14 @@
-use super::{commit_files::get_commit_diff, CommitId};
-use crate::error::Result;
+use super::{
+	commit_files::{commit_contains_file, get_commit_diff},
+	CommitId,
+};
+use crate::{
+	error::Result, sync::commit_files::commit_detect_file_rename,
+};
 use bitflags::bitflags;
 use fuzzy_matcher::FuzzyMatcher;
 use git2::{Diff, Repository};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 ///
 pub type SharedCommitFilterFn = Arc<
@@ -11,22 +16,52 @@ pub type SharedCommitFilterFn = Arc<
 >;
 
 ///
-pub fn diff_contains_file(file_path: String) -> SharedCommitFilterFn {
+pub fn diff_contains_file(
+	file_path: Arc<RwLock<String>>,
+) -> SharedCommitFilterFn {
 	Arc::new(Box::new(
 		move |repo: &Repository,
 		      commit_id: &CommitId|
 		      -> Result<bool> {
-			let diff = get_commit_diff(
+			let current_file_path = file_path.read()?.to_string();
+
+			if let Some(delta) = commit_contains_file(
 				repo,
 				*commit_id,
-				Some(file_path.clone()),
-				None,
-				None,
-			)?;
+				current_file_path.as_str(),
+			)? {
+				//note: only do rename test in case file looks like being added in this commit
 
-			let contains_file = diff.deltas().len() > 0;
+				// log::info!(
+				// 	"edit: [{}] ({:?}) - {}",
+				// 	commit_id.get_short_string(),
+				// 	delta,
+				// 	&current_file_path
+				// );
 
-			Ok(contains_file)
+				if matches!(delta, git2::Delta::Added) {
+					let rename = commit_detect_file_rename(
+						repo,
+						*commit_id,
+						current_file_path.as_str(),
+					)?;
+
+					if let Some(old_name) = rename {
+						// log::info!(
+						// 	"rename: [{}] {:?} <- {:?}",
+						// 	commit_id.get_short_string(),
+						// 	current_file_path,
+						// 	old_name,
+						// );
+
+						(*file_path.write()?) = old_name;
+					}
+				}
+
+				return Ok(true);
+			}
+
+			Ok(false)
 		},
 	))
 }

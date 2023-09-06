@@ -143,6 +143,13 @@ mod tests {
 		});
 	}
 
+	pub fn rename_file(repo: &Repository, old: &str, new: &str) {
+		let dir = repo.workdir().unwrap();
+		let old = dir.join(old);
+		let new = dir.join(new);
+		std::fs::rename(old, new).unwrap();
+	}
+
 	/// write, stage and commit a file
 	pub fn write_commit_file(
 		repo: &Repository,

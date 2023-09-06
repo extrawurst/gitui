@@ -113,16 +113,17 @@ mod tests {
 	use super::*;
 	use crate::error::Result;
 	use crate::sync::commit_filter::{SearchFields, SearchOptions};
-	use crate::sync::tests::write_commit_file;
+	use crate::sync::tests::{rename_file, write_commit_file};
 	use crate::sync::{
 		commit, get_commits_info, stage_add_file,
 		tests::repo_init_empty,
 	};
 	use crate::sync::{
-		diff_contains_file, filter_commit_by_search, LogFilterSearch,
-		LogFilterSearchOptions, RepoPath,
+		diff_contains_file, filter_commit_by_search, stage_add_all,
+		LogFilterSearch, LogFilterSearchOptions, RepoPath,
 	};
 	use pretty_assertions::assert_eq;
+	use std::sync::{Arc, RwLock};
 	use std::{fs::File, io::Write, path::Path};
 
 	#[test]
@@ -207,7 +208,8 @@ mod tests {
 
 		let _third_commit_id = commit(&repo_path, "commit3").unwrap();
 
-		let diff_contains_baz = diff_contains_file("baz".into());
+		let file_path = Arc::new(RwLock::new(String::from("baz")));
+		let diff_contains_baz = diff_contains_file(file_path);
 
 		let mut items = Vec::new();
 		let mut walker = LogWalker::new(&repo, 100)?
@@ -222,7 +224,8 @@ mod tests {
 
 		assert_eq!(items.len(), 0);
 
-		let diff_contains_bar = diff_contains_file("bar".into());
+		let file_path = Arc::new(RwLock::new(String::from("bar")));
+		let diff_contains_bar = diff_contains_file(file_path);
 
 		let mut items = Vec::new();
 		let mut walker = LogWalker::new(&repo, 100)?
@@ -279,5 +282,38 @@ mod tests {
 		walker.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 2);
+	}
+
+	#[test]
+	fn test_logwalker_with_filter_rename() {
+		let (td, repo) = repo_init_empty().unwrap();
+		let repo_path: RepoPath = td.path().into();
+
+		write_commit_file(&repo, "foo.txt", "foobar", "c1");
+		rename_file(&repo, "foo.txt", "bar.txt");
+		stage_add_all(
+			&repo_path,
+			"*",
+			Some(crate::sync::ShowUntrackedFilesConfig::All),
+		)
+		.unwrap();
+		let rename_commit = commit(&repo_path, "c2").unwrap();
+
+		write_commit_file(&repo, "bar.txt", "new content", "c3");
+
+		let file_path =
+			Arc::new(RwLock::new(String::from("bar.txt")));
+		let log_filter = diff_contains_file(file_path.clone());
+
+		let mut items = Vec::new();
+		let mut walker = LogWalker::new(&repo, 100)
+			.unwrap()
+			.filter(Some(log_filter));
+		walker.read(&mut items).unwrap();
+
+		assert_eq!(items.len(), 3);
+		assert_eq!(items[1], rename_commit);
+
+		assert_eq!(file_path.read().unwrap().as_str(), "foo.txt");
 	}
 }
