@@ -211,18 +211,24 @@ impl FileRevlogComponent {
 		Ok(())
 	}
 
-	fn fetch_commits(&mut self) -> Result<()> {
+	fn fetch_commits(
+		&mut self,
+		new_offset: usize,
+		new_max_offset: usize,
+	) -> Result<()> {
 		if let Some(git_log) = &mut self.git_log {
-			let offset = self.table_state.get_mut().offset();
+			let amount = new_max_offset
+				.saturating_sub(new_offset)
+				.max(SLICE_SIZE);
 
 			let commits = get_commits_info(
 				&self.repo_path.borrow(),
-				&git_log.get_slice(offset, SLICE_SIZE)?,
+				&git_log.get_slice(new_offset, amount)?,
 				self.current_width.get(),
 			);
 
 			if let Ok(commits) = commits {
-				self.items.set_items(offset, commits, &None);
+				self.items.set_items(new_offset, commits, &None);
 			}
 
 			self.count_total = git_log.count()?;
@@ -360,12 +366,11 @@ impl FileRevlogComponent {
 			self.table_state.get_mut().selected().unwrap_or(0);
 		let height_in_items = self.current_height.get() / 2;
 		let new_offset = selection.saturating_sub(height_in_items);
+		let new_max_offset =
+			selection.saturating_add(height_in_items);
 
-		if self.items.needs_data(
-			new_offset,
-			selection.saturating_add(height_in_items),
-		) {
-			self.fetch_commits()?;
+		if self.items.needs_data(new_offset, new_max_offset) {
+			self.fetch_commits(new_offset, new_max_offset)?;
 		}
 
 		Ok(())
