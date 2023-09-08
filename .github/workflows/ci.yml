@@ -36,7 +36,7 @@ jobs:
       run: cargo clean -p serde_derive -p thiserror
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.rust }}
         components: clippy
@@ -99,7 +99,7 @@ jobs:
         key: ubuntu-latest-${{ env.cache-name }}-${{ matrix.rust }}
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.rust }}
         targets: x86_64-unknown-linux-musl
@@ -145,7 +145,7 @@ jobs:
         key: ubuntu-latest-${{ env.cache-name }}-${{ matrix.rust }}
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.rust }}
     - name: Setup ARM toolchain
@@ -187,7 +187,6 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: stable
         components: rustfmt
 
     - run: cargo fmt -- --check
@@ -223,9 +222,7 @@ jobs:
         key: ubuntu-latest-${{ env.cache-name }}-nightly
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: nightly
+      uses: dtolnay/rust-toolchain@nightly
         
     - name: cargo-udeps
       run: |

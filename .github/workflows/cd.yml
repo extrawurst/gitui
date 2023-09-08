@@ -30,7 +30,6 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: stable
         components: clippy
 
     - name: Build
