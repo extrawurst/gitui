@@ -354,8 +354,14 @@ impl FileRevlogComponent {
 	}
 
 	fn set_selection(&mut self, selection: usize) {
-		let height_in_items = self.current_height.get() / 2;
-		let new_offset = selection.saturating_sub(height_in_items);
+		let height_in_items =
+			(self.current_height.get().saturating_sub(2)) / 2;
+
+		let offset = *self.table_state.get_mut().offset_mut();
+		let min_offset = selection
+			.saturating_sub(height_in_items.saturating_sub(1));
+
+		let new_offset = offset.clamp(min_offset, selection);
 
 		*self.table_state.get_mut().offset_mut() = new_offset;
 		self.table_state.get_mut().select(Some(selection));
@@ -364,13 +370,14 @@ impl FileRevlogComponent {
 	fn fetch_commits_if_needed(&mut self) -> Result<()> {
 		let selection =
 			self.table_state.get_mut().selected().unwrap_or(0);
-		let height_in_items = self.current_height.get() / 2;
-		let new_offset = selection.saturating_sub(height_in_items);
+		let offset = *self.table_state.get_mut().offset_mut();
+		let height_in_items =
+			(self.current_height.get().saturating_sub(2)) / 2;
 		let new_max_offset =
 			selection.saturating_add(height_in_items);
 
-		if self.items.needs_data(new_offset, new_max_offset) {
-			self.fetch_commits(new_offset, new_max_offset)?;
+		if self.items.needs_data(offset, new_max_offset) {
+			self.fetch_commits(offset, new_max_offset)?;
 		}
 
 		Ok(())
@@ -425,7 +432,11 @@ impl FileRevlogComponent {
 			.with_selected(table_state.selected().map(|selected| {
 				selected.saturating_sub(self.items.index_offset())
 			}))
-			.with_offset(0);
+			.with_offset(
+				table_state
+					.offset()
+					.saturating_sub(self.items.index_offset()),
+			);
 
 		f.render_widget(Clear, area);
 		f.render_stateful_widget(
