@@ -18,7 +18,7 @@ jobs:
 
     - name: Get version
       id: get_version
-      run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
+      run: echo "version=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
 
     - name: Restore cargo cache
       uses: Swatinem/rust-cache@v2
@@ -83,7 +83,7 @@ jobs:
       if: matrix.os == 'macos-latest'
       id: shasum
       run: |
-        echo ::set-output name=sha::"$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')"
+        echo sha="$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
 
     - name: Extract release notes
       if: matrix.os == 'ubuntu-latest'
