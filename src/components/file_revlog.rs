@@ -19,7 +19,6 @@ use asyncgit::{
 		diff_contains_file, get_commits_info, CommitId, RepoPathRef,
 	},
 	AsyncDiff, AsyncGitNotification, AsyncLog, DiffParams, DiffType,
-	FetchStatus,
 };
 use chrono::{DateTime, Local};
 use crossbeam_channel::Sender;
@@ -123,7 +122,10 @@ impl FileRevlogComponent {
 			&self.sender,
 			Some(filter),
 		));
-		self.table_state.get_mut().select(Some(0));
+
+		self.items.clear();
+		self.set_selection(open_request.selection.unwrap_or(0));
+
 		self.show()?;
 
 		self.diff.focus(false);
@@ -146,20 +148,9 @@ impl FileRevlogComponent {
 	///
 	pub fn update(&mut self) -> Result<()> {
 		if let Some(ref mut git_log) = self.git_log {
-			let log_changed =
-				git_log.fetch()? == FetchStatus::Started;
+			git_log.fetch()?;
 
-			let table_state = self.table_state.take();
-			let start = table_state.selected().unwrap_or(0);
-			self.table_state.set(table_state);
-
-			if self.items.needs_data(start, git_log.count()?)
-				|| log_changed
-			{
-				self.fetch_commits()?;
-				self.set_open_selection();
-			}
-
+			self.fetch_commits_if_needed()?;
 			self.update_diff()?;
 		}
 
@@ -220,47 +211,26 @@ impl FileRevlogComponent {
 		Ok(())
 	}
 
-	fn fetch_commits(&mut self) -> Result<()> {
+	fn fetch_commits(
+		&mut self,
+		new_offset: usize,
+		new_max_offset: usize,
+	) -> Result<()> {
 		if let Some(git_log) = &mut self.git_log {
-			let table_state = self.table_state.take();
+			let amount = new_max_offset
+				.saturating_sub(new_offset)
+				.max(SLICE_SIZE);
 
 			let commits = get_commits_info(
 				&self.repo_path.borrow(),
-				&git_log.get_slice(0, SLICE_SIZE)?,
+				&git_log.get_slice(new_offset, amount)?,
 				self.current_width.get(),
 			);
 
 			if let Ok(commits) = commits {
-				// 2023-04-12
-				//
-				// There is an issue with how windowing works in `self.items` and
-				// `self.table_state`. Because of that issue, we currently have to pass
-				// `0` as the first argument to `set_items`. If we did not do that, the
-				// offset that is kept separately in `self.items` and `self.table_state`
-				// would get out of sync, resulting in the table showing the wrong rows.
-				//
-				// The offset determines the number of rows `render_stateful_widget`
-				// skips when rendering a table. When `set_items` is called, it clears
-				// its internal `Vec` of items and sets `index_offset` based on the
-				// parameter passed. Unfortunately, there is no way for us to pass this
-				// information, `index_offset`, to `render_stateful_widget`. Because of
-				// that, `render_stateful_widget` assumes that the rows provided by
-				// `Table` are 0-indexed while in reality they are
-				// `index_offset`-indexed.
-				//
-				// This fix makes the `FileRevlog` unable to show histories that have
-				// more than `SLICE_SIZE` items, but since it is broken for larger
-				// histories anyway, this seems acceptable for the time being.
-				//
-				// This issue can only properly be fixed upstream, in `tui-rs`. See
-				// [tui-issue].
-				//
-				// [gitui-issue]: https://github.com/extrawurst/gitui/issues/1560
-				// [tui-issue]: https://github.com/fdehau/tui-rs/issues/626
-				self.items.set_items(0, commits, &None);
+				self.items.set_items(new_offset, commits, &None);
 			}
 
-			self.table_state.set(table_state);
 			self.count_total = git_log.count()?;
 		}
 
@@ -273,7 +243,10 @@ impl FileRevlogComponent {
 		let commit_id = table_state.selected().and_then(|selected| {
 			self.items
 				.iter()
-				.nth(selected)
+				.nth(
+					selected
+						.saturating_sub(self.items.index_offset()),
+				)
 				.as_ref()
 				.map(|entry| entry.id)
 		});
@@ -345,10 +318,12 @@ impl FileRevlogComponent {
 		})
 	}
 
-	fn move_selection(&mut self, scroll_type: ScrollType) -> bool {
-		let mut table_state = self.table_state.take();
-
-		let old_selection = table_state.selected().unwrap_or(0);
+	fn move_selection(
+		&mut self,
+		scroll_type: ScrollType,
+	) -> Result<()> {
+		let old_selection =
+			self.table_state.get_mut().selected().unwrap_or(0);
 		let max_selection = self.get_max_selection();
 		let height_in_items = self.current_height.get() / 2;
 
@@ -372,20 +347,40 @@ impl FileRevlogComponent {
 			self.queue.push(InternalEvent::Update(NeedsUpdate::DIFF));
 		}
 
-		table_state.select(Some(new_selection));
-		self.table_state.set(table_state);
+		self.set_selection(new_selection);
+		self.fetch_commits_if_needed()?;
 
-		needs_update
+		Ok(())
 	}
 
-	fn set_open_selection(&mut self) {
-		if let Some(selection) =
-			self.open_request.as_ref().and_then(|req| req.selection)
-		{
-			let mut table_state = self.table_state.take();
-			table_state.select(Some(selection));
-			self.table_state.set(table_state);
+	fn set_selection(&mut self, selection: usize) {
+		let height_in_items =
+			(self.current_height.get().saturating_sub(2)) / 2;
+
+		let offset = *self.table_state.get_mut().offset_mut();
+		let min_offset = selection
+			.saturating_sub(height_in_items.saturating_sub(1));
+
+		let new_offset = offset.clamp(min_offset, selection);
+
+		*self.table_state.get_mut().offset_mut() = new_offset;
+		self.table_state.get_mut().select(Some(selection));
+	}
+
+	fn fetch_commits_if_needed(&mut self) -> Result<()> {
+		let selection =
+			self.table_state.get_mut().selected().unwrap_or(0);
+		let offset = *self.table_state.get_mut().offset_mut();
+		let height_in_items =
+			(self.current_height.get().saturating_sub(2)) / 2;
+		let new_max_offset =
+			selection.saturating_add(height_in_items);
+
+		if self.items.needs_data(offset, new_max_offset) {
+			self.fetch_commits(offset, new_max_offset)?;
 		}
+
+		Ok(())
 	}
 
 	fn get_selection(&self) -> Option<usize> {
@@ -423,10 +418,32 @@ impl FileRevlogComponent {
 					.border_style(self.theme.block(true)),
 			);
 
-		let mut table_state = self.table_state.take();
+		let table_state = self.table_state.take();
+		// We have to adjust the table state for drawing to account for the fact
+		// that `self.items` not necessarily starts at index 0.
+		//
+		// When a user scrolls down, items outside of the current view are removed
+		// when new data is fetched. Let’s have a look at an example: if the item at
+		// index 50 is the first item in the current view and `self.items` has been
+		// freshly fetched, the current offset is 50 and `self.items[0]` is the item
+		// at index 50. Subtracting the current offset from the selected index
+		// yields the correct index in `self.items`, in this case 0.
+		let mut adjusted_table_state = TableState::default()
+			.with_selected(table_state.selected().map(|selected| {
+				selected.saturating_sub(self.items.index_offset())
+			}))
+			.with_offset(
+				table_state
+					.offset()
+					.saturating_sub(self.items.index_offset()),
+			);
 
 		f.render_widget(Clear, area);
-		f.render_stateful_widget(table, area, &mut table_state);
+		f.render_stateful_widget(
+			table,
+			area,
+			&mut adjusted_table_state,
+		);
 
 		draw_scrollbar(
 			f,
@@ -545,12 +562,12 @@ impl Component for FileRevlogComponent {
 					}
 				} else if key_match(key, self.key_config.keys.move_up)
 				{
-					self.move_selection(ScrollType::Up);
+					self.move_selection(ScrollType::Up)?;
 				} else if key_match(
 					key,
 					self.key_config.keys.move_down,
 				) {
-					self.move_selection(ScrollType::Down);
+					self.move_selection(ScrollType::Down)?;
 				} else if key_match(
 					key,
 					self.key_config.keys.shift_up,
@@ -558,7 +575,7 @@ impl Component for FileRevlogComponent {
 					key,
 					self.key_config.keys.home,
 				) {
-					self.move_selection(ScrollType::Home);
+					self.move_selection(ScrollType::Home)?;
 				} else if key_match(
 					key,
 					self.key_config.keys.shift_down,
@@ -566,15 +583,15 @@ impl Component for FileRevlogComponent {
 					key,
 					self.key_config.keys.end,
 				) {
-					self.move_selection(ScrollType::End);
+					self.move_selection(ScrollType::End)?;
 				} else if key_match(key, self.key_config.keys.page_up)
 				{
-					self.move_selection(ScrollType::PageUp);
+					self.move_selection(ScrollType::PageUp)?;
 				} else if key_match(
 					key,
 					self.key_config.keys.page_down,
 				) {
-					self.move_selection(ScrollType::PageDown);
+					self.move_selection(ScrollType::PageDown)?;
 				}
 			}
 
