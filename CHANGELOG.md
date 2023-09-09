@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.24.3] - 2023-09-09
+
 ### Fixes
 * log: major lag when going beyond last search hit ([#1876](https://github.com/extrawurst/gitui/issues/1876))
 
