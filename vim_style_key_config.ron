@@ -24,6 +24,8 @@
     popup_down: Some(( code: Char('n'), modifiers: ( bits: 2,),)),
     page_up: Some(( code: Char('b'), modifiers: ( bits: 2,),)),
     page_down: Some(( code: Char('f'), modifiers: ( bits: 2,),)),
+    page_up: Some(( code: Char('u'), modifiers: ( bits: 2,),)),
+    page_down: Some(( code: Char('d'), modifiers: ( bits: 2,),)),
     home: Some(( code: Char('g'), modifiers: ( bits: 0,),)),
     end: Some(( code: Char('G'), modifiers: ( bits: 1,),)),
     shift_up: Some(( code: Char('K'), modifiers: ( bits: 1,),)),
