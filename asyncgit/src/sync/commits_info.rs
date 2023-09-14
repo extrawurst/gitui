@@ -1,6 +1,6 @@
 use super::RepoPath;
 use crate::{error::Result, sync::repository::repo};
-use git2::{Commit, Error, Oid};
+use git2::{Commit, Error, Oid, Repository};
 use scopetime::scope_time;
 use unicode_truncate::UnicodeTruncateStr;
 
@@ -65,7 +65,7 @@ impl From<Oid> for CommitId {
 }
 
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CommitInfo {
 	///
 	pub message: String,
@@ -121,6 +121,14 @@ pub fn get_commit_info(
 
 	let repo = repo(repo_path)?;
 
+	get_commit_info_repo(&repo, commit_id)
+}
+
+///
+pub(crate) fn get_commit_info_repo(
+	repo: &Repository,
+	commit_id: &CommitId,
+) -> Result<CommitInfo> {
 	let commit = repo.find_commit((*commit_id).into())?;
 	let author = commit.author();
 

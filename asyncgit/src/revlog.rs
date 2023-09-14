@@ -8,6 +8,7 @@ use crate::{
 use crossbeam_channel::Sender;
 use scopetime::scope_time;
 use std::{
+	cell::RefCell,
 	sync::{
 		atomic::{AtomicBool, Ordering},
 		Arc, Mutex,
@@ -201,17 +202,17 @@ impl AsyncLog {
 	) -> Result<()> {
 		let start_time = Instant::now();
 
-		let mut entries = Vec::with_capacity(LIMIT_COUNT);
+		let entries = RefCell::new(Vec::with_capacity(LIMIT_COUNT));
 		let r = repo(repo_path)?;
 		let mut walker =
-			LogWalker::new(&r, LIMIT_COUNT)?.filter(filter);
+			LogWalker::new(&r, Some(LIMIT_COUNT))?.filter(filter);
 
 		loop {
-			entries.clear();
-			let read = walker.read(&mut entries)?;
+			entries.borrow_mut().clear();
+			let read = walker.read(Some(&entries))?;
 
 			let mut current = arc_current.lock()?;
-			current.commits.extend(entries.iter());
+			current.commits.extend(entries.borrow().iter());
 			current.duration = start_time.elapsed();
 
 			if read == 0 {

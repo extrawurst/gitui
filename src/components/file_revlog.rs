@@ -1,6 +1,4 @@
-use std::sync::{Arc, RwLock};
-
-use super::utils::logitems::ItemBatch;
+use super::utils::logitems::LogEntry;
 use super::{visibility_blocking, BlameFileOpen, InspectCommitOpen};
 use crate::keys::key_match;
 use crate::options::SharedOptions;
@@ -16,12 +14,12 @@ use crate::{
 	ui::{draw_scrollbar, style::SharedTheme, Orientation},
 };
 use anyhow::Result;
+use asyncgit::asyncjob::AsyncSingleJob;
 use asyncgit::{
-	sync::{
-		diff_contains_file, get_commits_info, CommitId, RepoPathRef,
-	},
-	AsyncDiff, AsyncGitNotification, AsyncLog, DiffParams, DiffType,
+	sync::{CommitId, RepoPathRef},
+	AsyncDiff, AsyncGitNotification, DiffParams, DiffType,
 };
+use asyncgit::{AsyncFileHistoryJob, FileHistoryEntry};
 use chrono::{DateTime, Local};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
@@ -32,8 +30,6 @@ use ratatui::{
 	widgets::{Block, Borders, Cell, Clear, Row, Table, TableState},
 	Frame,
 };
-
-const SLICE_SIZE: usize = 1200;
 
 #[derive(Clone, Debug)]
 pub struct FileRevOpen {
@@ -52,7 +48,7 @@ impl FileRevOpen {
 
 ///
 pub struct FileRevlogComponent {
-	git_log: Option<AsyncLog>,
+	git_history: Option<AsyncSingleJob<AsyncFileHistoryJob>>,
 	git_diff: AsyncDiff,
 	theme: SharedTheme,
 	queue: Queue,
@@ -62,7 +58,7 @@ pub struct FileRevlogComponent {
 	repo_path: RepoPathRef,
 	open_request: Option<FileRevOpen>,
 	table_state: std::cell::Cell<TableState>,
-	items: ItemBatch,
+	items: Vec<FileHistoryEntry>,
 	count_total: usize,
 	key_config: SharedKeyConfig,
 	options: SharedOptions,
@@ -92,16 +88,16 @@ impl FileRevlogComponent {
 				true,
 				options.clone(),
 			),
-			git_log: None,
 			git_diff: AsyncDiff::new(
 				repo_path.borrow().clone(),
 				sender,
 			),
+			git_history: None,
 			visible: false,
 			repo_path: repo_path.clone(),
 			open_request: None,
 			table_state: std::cell::Cell::new(TableState::default()),
-			items: ItemBatch::default(),
+			items: Vec::new(),
 			count_total: 0,
 			key_config,
 			current_width: std::cell::Cell::new(0),
@@ -116,17 +112,17 @@ impl FileRevlogComponent {
 
 	///
 	pub fn open(&mut self, open_request: FileRevOpen) -> Result<()> {
+		self.items.clear();
 		self.open_request = Some(open_request.clone());
 
-		let file_name = Arc::new(RwLock::new(open_request.file_path));
-		let filter = diff_contains_file(file_name);
-		self.git_log = Some(AsyncLog::new(
+		let mut job = AsyncSingleJob::new(self.sender.clone());
+		job.spawn(AsyncFileHistoryJob::new(
 			self.repo_path.borrow().clone(),
-			&self.sender,
-			Some(filter),
+			open_request.file_path,
 		));
 
-		self.items.clear();
+		self.git_history = Some(job);
+
 		self.set_selection(open_request.selection.unwrap_or(0));
 
 		self.show()?;
@@ -143,19 +139,15 @@ impl FileRevlogComponent {
 	pub fn any_work_pending(&self) -> bool {
 		self.git_diff.is_pending()
 			|| self
-				.git_log
+				.git_history
 				.as_ref()
-				.map_or(false, AsyncLog::is_pending)
+				.map_or(false, AsyncSingleJob::is_pending)
 	}
 
 	///
+	//TODO: needed?
 	pub fn update(&mut self) -> Result<()> {
-		if let Some(ref mut git_log) = self.git_log {
-			git_log.fetch()?;
-
-			self.fetch_commits_if_needed()?;
-			self.update_diff()?;
-		}
+		self.update_list()?;
 
 		Ok(())
 	}
@@ -167,8 +159,9 @@ impl FileRevlogComponent {
 	) -> Result<()> {
 		if self.visible {
 			match event {
-				AsyncGitNotification::CommitFiles
-				| AsyncGitNotification::Log => self.update()?,
+				AsyncGitNotification::FileHistory => {
+					self.update_list()?
+				}
 				AsyncGitNotification::Diff => self.update_diff()?,
 				_ => (),
 			}
@@ -214,27 +207,40 @@ impl FileRevlogComponent {
 		Ok(())
 	}
 
-	fn fetch_commits(
-		&mut self,
-		new_offset: usize,
-		new_max_offset: usize,
-	) -> Result<()> {
-		if let Some(git_log) = &mut self.git_log {
-			let amount = new_max_offset
-				.saturating_sub(new_offset)
-				.max(SLICE_SIZE);
+	pub fn update_list(&mut self) -> Result<()> {
+		let is_pending = self
+			.git_history
+			.as_ref()
+			.map(|git| git.is_pending())
+			.unwrap_or_default();
 
-			let commits = get_commits_info(
-				&self.repo_path.borrow(),
-				&git_log.get_slice(new_offset, amount)?,
-				self.current_width.get(),
-			);
+		if is_pending {
+			if let Some(progress) = self
+				.git_history
+				.as_ref()
+				.and_then(|job| job.progress())
+			{
+				let result = progress.extract_results()?;
 
-			if let Ok(commits) = commits {
-				self.items.set_items(new_offset, commits, &None);
+				log::info!(
+					"file history update in progress: {}",
+					result.len()
+				);
+
+				self.items.extend(result.into_iter());
 			}
+		}
 
-			self.count_total = git_log.count()?;
+		if let Some(job) =
+			self.git_history.as_ref().and_then(|job| job.take_last())
+		{
+			let result = job.extract_results()?;
+
+			log::info!("file history finished: {}", result.len());
+
+			self.items.extend(result.into_iter());
+
+			self.git_history = None;
 		}
 
 		Ok(())
@@ -246,12 +252,9 @@ impl FileRevlogComponent {
 		let commit_id = table_state.selected().and_then(|selected| {
 			self.items
 				.iter()
-				.nth(
-					selected
-						.saturating_sub(self.items.index_offset()),
-				)
+				.nth(selected)
 				.as_ref()
-				.map(|entry| entry.id)
+				.map(|entry| entry.commit)
 		});
 
 		self.table_state.set(table_state);
@@ -270,7 +273,7 @@ impl FileRevlogComponent {
 			self.table_state.set(table);
 			res
 		};
-		let revisions = self.get_max_selection();
+		let revisions = self.items.len();
 
 		self.open_request.as_ref().map_or(
 			"<no history available>".into(),
@@ -290,23 +293,31 @@ impl FileRevlogComponent {
 			.map(|entry| {
 				let spans = Line::from(vec![
 					Span::styled(
-						entry.hash_short.to_string(),
+						entry.commit.get_short_string(),
 						self.theme.commit_hash(false),
 					),
 					Span::raw(" "),
 					Span::styled(
-						entry.time_to_string(now),
+						LogEntry::time_as_string(
+							LogEntry::timestamp_to_datetime(
+								entry.info.time,
+							)
+							.unwrap_or_default(),
+							now,
+						),
 						self.theme.commit_time(false),
 					),
 					Span::raw(" "),
 					Span::styled(
-						entry.author.to_string(),
+						entry.info.author.clone(),
 						self.theme.commit_author(false),
 					),
 				]);
 
 				let mut text = Text::from(spans);
-				text.extend(Text::raw(entry.msg.to_string()));
+				text.extend(Text::raw(
+					entry.info.message.to_string(),
+				));
 
 				let cells = vec![Cell::from(""), Cell::from(text)];
 
@@ -315,19 +326,13 @@ impl FileRevlogComponent {
 			.collect()
 	}
 
-	fn get_max_selection(&self) -> usize {
-		self.git_log.as_ref().map_or(0, |log| {
-			log.count().unwrap_or(0).saturating_sub(1)
-		})
-	}
-
 	fn move_selection(
 		&mut self,
 		scroll_type: ScrollType,
 	) -> Result<()> {
 		let old_selection =
 			self.table_state.get_mut().selected().unwrap_or(0);
-		let max_selection = self.get_max_selection();
+		let max_selection = self.items.len();
 		let height_in_items = self.current_height.get() / 2;
 
 		let new_selection = match scroll_type {
@@ -351,7 +356,6 @@ impl FileRevlogComponent {
 		}
 
 		self.set_selection(new_selection);
-		self.fetch_commits_if_needed()?;
 
 		Ok(())
 	}
@@ -368,22 +372,6 @@ impl FileRevlogComponent {
 
 		*self.table_state.get_mut().offset_mut() = new_offset;
 		self.table_state.get_mut().select(Some(selection));
-	}
-
-	fn fetch_commits_if_needed(&mut self) -> Result<()> {
-		let selection =
-			self.table_state.get_mut().selected().unwrap_or(0);
-		let offset = *self.table_state.get_mut().offset_mut();
-		let height_in_items =
-			(self.current_height.get().saturating_sub(2)) / 2;
-		let new_max_offset =
-			selection.saturating_add(height_in_items);
-
-		if self.items.needs_data(offset, new_max_offset) {
-			self.fetch_commits(offset, new_max_offset)?;
-		}
-
-		Ok(())
 	}
 
 	fn get_selection(&self) -> Option<usize> {
@@ -432,14 +420,10 @@ impl FileRevlogComponent {
 		// at index 50. Subtracting the current offset from the selected index
 		// yields the correct index in `self.items`, in this case 0.
 		let mut adjusted_table_state = TableState::default()
-			.with_selected(table_state.selected().map(|selected| {
-				selected.saturating_sub(self.items.index_offset())
-			}))
-			.with_offset(
-				table_state
-					.offset()
-					.saturating_sub(self.items.index_offset()),
-			);
+			.with_selected(
+				table_state.selected().map(|selected| selected),
+			)
+			.with_offset(table_state.offset());
 
 		f.render_widget(Clear, area);
 		f.render_stateful_widget(

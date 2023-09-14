@@ -50,11 +50,11 @@ pub use commit_details::{
 };
 pub use commit_files::get_commit_files;
 pub use commit_filter::{
-	diff_contains_file, filter_commit_by_search, LogFilterSearch,
-	LogFilterSearchOptions, SearchFields, SearchOptions,
-	SharedCommitFilterFn,
+	filter_commit_by_search, LogFilterSearch, LogFilterSearchOptions,
+	SearchFields, SearchOptions, SharedCommitFilterFn,
 };
 pub use commit_revert::{commit_revert, revert_commit, revert_head};
+pub(crate) use commits_info::get_commit_info_repo;
 pub use commits_info::{
 	get_commit_info, get_commits_info, CommitId, CommitInfo,
 };
@@ -118,7 +118,7 @@ mod tests {
 	};
 	use crate::error::Result;
 	use git2::Repository;
-	use std::{path::Path, process::Command};
+	use std::{cell::RefCell, path::Path, process::Command};
 	use tempfile::TempDir;
 
 	/// Calling `set_search_path` with an empty directory makes sure that there
@@ -329,13 +329,13 @@ mod tests {
 		r: &Repository,
 		max_count: usize,
 	) -> Vec<CommitId> {
-		let mut commit_ids = Vec::<CommitId>::new();
-		LogWalker::new(r, max_count)
+		let commit_ids = RefCell::new(Vec::<CommitId>::new());
+		LogWalker::new(r, Some(max_count))
 			.unwrap()
-			.read(&mut commit_ids)
+			.read(Some(&commit_ids))
 			.unwrap();
 
-		commit_ids
+		commit_ids.take()
 	}
 
 	fn debug_cmd(path: &RepoPath, cmd: &str) -> String {

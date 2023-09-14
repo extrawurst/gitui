@@ -3,6 +3,7 @@ use super::{CommitId, SharedCommitFilterFn};
 use crate::error::Result;
 use git2::{Commit, Oid, Repository};
 use std::{
+	cell::RefCell,
 	cmp::Ordering,
 	collections::{BinaryHeap, HashSet},
 };
@@ -33,14 +34,17 @@ impl<'a> Ord for TimeOrderedCommit<'a> {
 pub struct LogWalker<'a> {
 	commits: BinaryHeap<TimeOrderedCommit<'a>>,
 	visited: HashSet<Oid>,
-	limit: usize,
+	limit: Option<usize>,
 	repo: &'a Repository,
 	filter: Option<SharedCommitFilterFn>,
 }
 
 impl<'a> LogWalker<'a> {
 	///
-	pub fn new(repo: &'a Repository, limit: usize) -> Result<Self> {
+	pub fn new(
+		repo: &'a Repository,
+		limit: Option<usize>,
+	) -> Result<Self> {
 		let c = repo.head()?.peel_to_commit()?;
 
 		let mut commits = BinaryHeap::with_capacity(10);
@@ -70,7 +74,10 @@ impl<'a> LogWalker<'a> {
 	}
 
 	///
-	pub fn read(&mut self, out: &mut Vec<CommitId>) -> Result<usize> {
+	pub fn read(
+		&mut self,
+		out: Option<&RefCell<Vec<CommitId>>>,
+	) -> Result<usize> {
 		let mut count = 0_usize;
 
 		while let Some(c) = self.commits.pop() {
@@ -87,11 +94,17 @@ impl<'a> LogWalker<'a> {
 				};
 
 			if commit_should_be_included {
-				out.push(id);
+				if let Some(out) = out {
+					out.borrow_mut().push(id);
+				}
 			}
 
 			count += 1;
-			if count == self.limit {
+			if self
+				.limit
+				.map(|limit| limit == count)
+				.unwrap_or_default()
+			{
 				break;
 			}
 		}
@@ -112,6 +125,9 @@ impl<'a> LogWalker<'a> {
 mod tests {
 	use super::*;
 	use crate::error::Result;
+	use crate::sync::commit_files::{
+		commit_contains_file, commit_detect_file_rename,
+	};
 	use crate::sync::commit_filter::{SearchFields, SearchOptions};
 	use crate::sync::tests::{rename_file, write_commit_file};
 	use crate::sync::{
@@ -119,12 +135,46 @@ mod tests {
 		tests::repo_init_empty,
 	};
 	use crate::sync::{
-		diff_contains_file, filter_commit_by_search, stage_add_all,
-		LogFilterSearch, LogFilterSearchOptions, RepoPath,
+		filter_commit_by_search, stage_add_all, LogFilterSearch,
+		LogFilterSearchOptions, RepoPath,
 	};
 	use pretty_assertions::assert_eq;
 	use std::sync::{Arc, RwLock};
 	use std::{fs::File, io::Write, path::Path};
+
+	fn diff_contains_file(
+		file_path: Arc<RwLock<String>>,
+	) -> SharedCommitFilterFn {
+		Arc::new(Box::new(
+			move |repo: &Repository,
+			      commit_id: &CommitId|
+			      -> Result<bool> {
+				let current_file_path = file_path.read()?.to_string();
+
+				if let Some(delta) = commit_contains_file(
+					repo,
+					*commit_id,
+					current_file_path.as_str(),
+				)? {
+					if matches!(delta, git2::Delta::Added) {
+						let rename = commit_detect_file_rename(
+							repo,
+							*commit_id,
+							current_file_path.as_str(),
+						)?;
+
+						if let Some(old_name) = rename {
+							(*file_path.write()?) = old_name;
+						}
+					}
+
+					return Ok(true);
+				}
+
+				Ok(false)
+			},
+		))
+	}
 
 	#[test]
 	fn test_limit() -> Result<()> {
@@ -141,9 +191,10 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
-		let mut items = Vec::new();
-		let mut walk = LogWalker::new(&repo, 1)?;
-		walk.read(&mut items).unwrap();
+		let items = RefCell::new(Vec::new());
+		let mut walk = LogWalker::new(&repo, Some(1))?;
+		walk.read(Some(&items)).unwrap();
+		let items = items.take();
 
 		assert_eq!(items.len(), 1);
 		assert_eq!(items[0], oid2);
@@ -166,9 +217,10 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
-		let mut items = Vec::new();
-		let mut walk = LogWalker::new(&repo, 100)?;
-		walk.read(&mut items).unwrap();
+		let items = RefCell::new(Vec::new());
+		let mut walk = LogWalker::new(&repo, Some(100))?;
+		walk.read(Some(&items)).unwrap();
+		let items = items.take();
 
 		let info = get_commits_info(repo_path, &items, 50).unwrap();
 		dbg!(&info);
@@ -176,8 +228,9 @@ mod tests {
 		assert_eq!(items.len(), 2);
 		assert_eq!(items[0], oid2);
 
-		let mut items = Vec::new();
-		walk.read(&mut items).unwrap();
+		let items = RefCell::new(Vec::new());
+		walk.read(Some(&items)).unwrap();
+		let items = items.take();
 
 		assert_eq!(items.len(), 0);
 
@@ -211,26 +264,29 @@ mod tests {
 		let file_path = Arc::new(RwLock::new(String::from("baz")));
 		let diff_contains_baz = diff_contains_file(file_path);
 
-		let mut items = Vec::new();
-		let mut walker = LogWalker::new(&repo, 100)?
+		let items = RefCell::new(Vec::new());
+		let mut walker = LogWalker::new(&repo, Some(100))?
 			.filter(Some(diff_contains_baz));
-		walker.read(&mut items).unwrap();
+		walker.read(Some(&items)).unwrap();
+		let items = items.take();
 
 		assert_eq!(items.len(), 1);
 		assert_eq!(items[0], second_commit_id);
 
-		let mut items = Vec::new();
-		walker.read(&mut items).unwrap();
+		let items = RefCell::new(Vec::new());
+		walker.read(Some(&items)).unwrap();
+		let items = items.take();
 
 		assert_eq!(items.len(), 0);
 
 		let file_path = Arc::new(RwLock::new(String::from("bar")));
 		let diff_contains_bar = diff_contains_file(file_path);
 
-		let mut items = Vec::new();
-		let mut walker = LogWalker::new(&repo, 100)?
+		let items = RefCell::new(Vec::new());
+		let mut walker = LogWalker::new(&repo, Some(100))?
 			.filter(Some(diff_contains_bar));
-		walker.read(&mut items).unwrap();
+		walker.read(Some(&items)).unwrap();
+		let items = items.take();
 
 		assert_eq!(items.len(), 0);
 
@@ -258,11 +314,12 @@ mod tests {
 			}),
 		);
 
-		let mut items = Vec::new();
-		let mut walker = LogWalker::new(&repo, 100)
+		let items = RefCell::new(Vec::new());
+		let mut walker = LogWalker::new(&repo, Some(100))
 			.unwrap()
 			.filter(Some(log_filter));
-		walker.read(&mut items).unwrap();
+		walker.read(Some(&items)).unwrap();
+		let items = items.take();
 
 		assert_eq!(items.len(), 1);
 		assert_eq!(items[0], second_commit_id);
@@ -275,13 +332,13 @@ mod tests {
 			}),
 		);
 
-		let mut items = Vec::new();
-		let mut walker = LogWalker::new(&repo, 100)
+		let items = RefCell::new(Vec::new());
+		let mut walker = LogWalker::new(&repo, Some(100))
 			.unwrap()
 			.filter(Some(log_filter));
-		walker.read(&mut items).unwrap();
+		walker.read(Some(&items)).unwrap();
 
-		assert_eq!(items.len(), 2);
+		assert_eq!(items.take().len(), 2);
 	}
 
 	#[test]
@@ -305,11 +362,12 @@ mod tests {
 			Arc::new(RwLock::new(String::from("bar.txt")));
 		let log_filter = diff_contains_file(file_path.clone());
 
-		let mut items = Vec::new();
-		let mut walker = LogWalker::new(&repo, 100)
+		let items = RefCell::new(Vec::new());
+		let mut walker = LogWalker::new(&repo, Some(100))
 			.unwrap()
 			.filter(Some(log_filter));
-		walker.read(&mut items).unwrap();
+		walker.read(Some(&items)).unwrap();
+		let items = items.take();
 
 		assert_eq!(items.len(), 3);
 		assert_eq!(items[1], rename_commit);
