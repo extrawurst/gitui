@@ -93,25 +93,30 @@ All support is welcomed! Sponsors as well! ❤️
 
 ## 6. <a name="installation"></a> Installation <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
+GitUI is in beta and may contain bugs and missing features. However, for personal use it is reasonably stable and is being used while developing itself.
+
 <a href="https://repology.org/project/gitui/versions">
     <img src="https://repology.org/badge/vertical-allrepos/gitui.svg" alt="Packaging status" align="right">
 </a>
 
-For the time being this product is in alpha and is not considered production ready. However, for personal use it is reasonably stable and is being used while developing itself.
+### Various Package Managers
 
-#### [Arch Linux](https://archlinux.org/packages/community/x86_64/gitui/)
+<details>
+  <summary>Install Instructions</summary>
+
+##### [Arch Linux](https://archlinux.org/packages/community/x86_64/gitui/)
 
 ```sh
 pacman -S gitui
 ```
 
-#### Fedora
+##### Fedora
 
 ```sh
 sudo dnf install gitui
 ```
 
-#### Gentoo
+##### Gentoo
 Available in [dm9pZCAq overlay](https://github.com/gentoo-mirror/dm9pZCAq)
 
 ```sh
@@ -120,43 +125,43 @@ sudo emerge --sync dm9pZCAq
 sudo emerge dev-vcs/gitui::dm9pZCAq
 ```
 
-#### [openSUSE](https://software.opensuse.org/package/gitui) (Tumbleweed)
+##### [openSUSE](https://software.opensuse.org/package/gitui) (Tumbleweed)
 
 ```sh
 sudo zypper install gitui
 ```
 
-#### Homebrew (macOS)
+##### Homebrew (macOS)
 
 ```sh
 brew install gitui
 ```
 
-#### [MacPorts (macOS)](https://ports.macports.org/port/gitui/details/)
+##### [MacPorts (macOS)](https://ports.macports.org/port/gitui/details/)
 
 ```sh
 port install gitui
 ```
 
-#### [Winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/StephanDilly/gitui) (Windows)
+##### [Winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/StephanDilly/gitui) (Windows)
 
 ```
 winget install gitui
 ```
 
-#### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)
+##### [Scoop](https://github.com/ScoopInstaller/Main/blob/master/bucket/gitui.json) (Windows)
 
 ```
 scoop install gitui
 ```
 
-#### [Chocolatey](https://chocolatey.org/packages/gitui) (Windows)
+##### [Chocolatey](https://chocolatey.org/packages/gitui) (Windows)
 
 ```
 choco install gitui
 ```
 
-#### [Nix](https://search.nixos.org/packages?channel=unstable&show=gitui&from=0&size=50&sort=relevance&query=gitui) (Nix/NixOS)
+##### [Nix](https://search.nixos.org/packages?channel=unstable&show=gitui&from=0&size=50&sort=relevance&query=gitui) (Nix/NixOS)
 
 Nixpkg
 ```
@@ -167,18 +172,20 @@ NixOS
 nix-env -iA nixos.gitui
 ```
 
-#### [Termux](https://github.com/termux/termux-packages/tree/master/packages/gitui) (Android)
+##### [Termux](https://github.com/termux/termux-packages/tree/master/packages/gitui) (Android)
 
 ```
 pkg install gitui
 ```
 
-#### [Anaconda](https://anaconda.org/conda-forge/gitui)
+##### [Anaconda](https://anaconda.org/conda-forge/gitui)
 ```
 conda install -c conda-forge gitui 
 ```
 
-## Release Binaries
+</details>
+
+### Release Binaries
 
 [Available for download in releases](https://github.com/extrawurst/gitui/releases)
 
