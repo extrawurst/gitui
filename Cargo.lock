@@ -672,9 +672,9 @@ dependencies = [
 
 [[package]]
 name = "gh-emoji"
-version = "1.0.7"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30ad64b43d48c1745c0059e5ba223816eb599eec8956c668fc0a31f6b9cd799e"
+checksum = "eb8adf61df288369c9d1c6bb142f61db30c18619a71f64915d64e916f23c8c37"
 dependencies = [
  "phf",
  "regex",
