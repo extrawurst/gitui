@@ -1002,7 +1002,7 @@ pub mod commands {
 	) -> CommandText {
 		CommandText::new(
 			format!(
-				"Sing-off [{}]",
+				"Sign-off [{}]",
 				key_config.get_hint(key_config.keys.toggle_signoff),
 			),
 			"sign-off commit (-s option)",
