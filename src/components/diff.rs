@@ -462,7 +462,7 @@ impl DiffComponent {
 
 		let content =
 			if !is_content_line && line.content.as_ref().is_empty() {
-				String::from(strings::symbol::LINE_BREAK)
+				theme.line_break()
 			} else {
 				tabs_to_spaces(line.content.as_ref().to_string())
 			};
