@@ -1,3 +1,4 @@
+use crate::strings;
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
 use ratatui::style::{Color, Modifier, Style};
@@ -32,6 +33,7 @@ pub struct Theme {
 	push_gauge_fg: Color,
 	tag_fg: Color,
 	branch_fg: Color,
+	line_break_visible: bool,
 }
 
 impl Theme {
@@ -263,6 +265,14 @@ impl Theme {
 		Style::default().fg(Color::Yellow)
 	}
 
+	pub fn line_break(&self) -> String {
+		if self.line_break_visible {
+			String::from(strings::symbol::LINE_BREAK)
+		} else {
+			String::from(strings::symbol::NO_LINE_BREAK)
+		}
+	}
+
 	fn load_patch(theme_path: &PathBuf) -> Result<ThemePatch> {
 		let file = File::open(theme_path)?;
 
@@ -336,6 +346,7 @@ impl Default for Theme {
 			push_gauge_fg: Color::Reset,
 			tag_fg: Color::LightMagenta,
 			branch_fg: Color::LightYellow,
+			line_break_visible: true,
 		}
 	}
 }
