@@ -31,7 +31,11 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use asyncgit::{
-	sync::{self, utils::repo_work_dir, RepoPath, RepoPathRef},
+	sync::{
+		self,
+		utils::{repo_work_dir, undo_last_commit},
+		RepoPath, RepoPathRef,
+	},
 	AsyncGitNotification, PushType,
 };
 use crossbeam_channel::Sender;
@@ -1075,6 +1079,9 @@ impl App {
 			}
 			Action::AbortRebase => {
 				self.status_tab.abort_rebase();
+			}
+			Action::UndoCommit => {
+				let _ = undo_last_commit(&self.repo.borrow());
 			}
 		};
 
