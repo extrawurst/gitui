@@ -54,7 +54,7 @@ pub enum Action {
 	AbortMerge,
 	AbortRebase,
 	AbortRevert,
-    UndoCommit,
+	UndoCommit,
 }
 
 #[derive(Debug)]

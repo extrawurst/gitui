@@ -610,11 +610,8 @@ impl Status {
 	}
 
 	fn undo_last_commit(&self) {
-        self.queue.push(
-            InternalEvent::ConfirmAction(
-                Action::UndoCommit,
-            ),
-        );
+		self.queue
+			.push(InternalEvent::ConfirmAction(Action::UndoCommit));
 	}
 
 	fn branch_compare(&mut self) {

@@ -146,7 +146,7 @@ pub fn confirm_title_reset() -> String {
 	"Reset".to_string()
 }
 pub fn confirm_title_undo_commit() -> String {
-    "Undo commit".to_string()
+	"Undo commit".to_string()
 }
 pub fn confirm_title_stashdrop(
 	_key_config: &SharedKeyConfig,
@@ -207,7 +207,7 @@ pub fn confirm_msg_reset_lines(lines: usize) -> String {
 	)
 }
 pub fn confirm_msg_undo_commit() -> String {
-    "confirm undo last commit?".to_string()
+	"confirm undo last commit?".to_string()
 }
 pub fn confirm_msg_stashdrop(
 	_key_config: &SharedKeyConfig,
