@@ -44,7 +44,7 @@ scopetime = { path = "./scopetime", version = "0.1" }
 serde = "1.0"
 shellexpand = "3.1"
 simplelog = { version = "0.12", default-features = false }
-struct-patch = "0.2"
+struct-patch = "0.4"
 syntect = { version = "5.0", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "html"] }
 unicode-segmentation = "1.10"
 unicode-truncate = "0.2"
