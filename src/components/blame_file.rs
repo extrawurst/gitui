@@ -10,27 +10,72 @@ use crate::{
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	string_utils::tabs_to_spaces,
 	strings,
-	ui::{self, style::SharedTheme},
+	ui::{self, style::SharedTheme, AsyncSyntaxJob, SyntaxText},
+	AsyncAppNotification, AsyncNotification, SyntaxHighlightProgress,
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{BlameHunk, CommitId, FileBlame},
+	asyncjob::AsyncSingleJob,
+	sync::{BlameHunk, CommitId, FileBlame, RepoPathRef},
 	AsyncBlame, AsyncGitNotification, BlameParams,
 };
+use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
 	layout::{Constraint, Rect},
 	symbols::line::VERTICAL,
-	text::Span,
+	text::{Span, Text},
 	widgets::{Block, Borders, Cell, Clear, Row, Table, TableState},
 	Frame,
 };
+use std::{convert::TryInto, path::Path};
 
 static NO_COMMIT_ID: &str = "0000000";
 static NO_AUTHOR: &str = "<no author>";
 static MIN_AUTHOR_WIDTH: usize = 3;
 static MAX_AUTHOR_WIDTH: usize = 20;
+
+struct SyntaxFileBlame {
+	pub file_blame: FileBlame,
+	pub styled_text: Option<SyntaxText>,
+}
+
+impl SyntaxFileBlame {
+	fn path(&self) -> &str {
+		&self.file_blame.path
+	}
+
+	fn commit_id(&self) -> &CommitId {
+		&self.file_blame.commit_id
+	}
+
+	fn lines(&self) -> &Vec<(Option<BlameHunk>, String)> {
+		&self.file_blame.lines
+	}
+}
+
+enum BlameProcess {
+	GettingBlame(AsyncBlame),
+	SyntaxHighlighting {
+		unstyled_file_blame: SyntaxFileBlame,
+		job: AsyncSingleJob<AsyncSyntaxJob>,
+	},
+	Result(SyntaxFileBlame),
+}
+
+impl BlameProcess {
+	fn result(&self) -> Option<&SyntaxFileBlame> {
+		match self {
+			Self::GettingBlame(_) => None,
+			Self::SyntaxHighlighting {
+				unstyled_file_blame,
+				..
+			} => Some(unstyled_file_blame),
+			Self::Result(ref file_blame) => Some(file_blame),
+		}
+	}
+}
 
 #[derive(Clone, Debug)]
 pub struct BlameFileOpen {
@@ -43,14 +88,16 @@ pub struct BlameFileComponent {
 	title: String,
 	theme: SharedTheme,
 	queue: Queue,
-	async_blame: AsyncBlame,
 	visible: bool,
 	open_request: Option<BlameFileOpen>,
 	params: Option<BlameParams>,
-	file_blame: Option<FileBlame>,
 	table_state: std::cell::Cell<TableState>,
 	key_config: SharedKeyConfig,
 	current_height: std::cell::Cell<usize>,
+	blame: BlameProcess,
+	app_sender: Sender<AsyncAppNotification>,
+	git_sender: Sender<AsyncGitNotification>,
+	repo: RepoPathRef,
 }
 impl DrawableComponent for BlameFileComponent {
 	fn draw<B: Backend>(
@@ -80,6 +127,18 @@ impl DrawableComponent for BlameFileComponent {
 			];
 
 			let number_of_rows = rows.len();
+			let syntax_highlight_progress = match self.blame {
+				BlameProcess::SyntaxHighlighting {
+					ref job, ..
+				} => job
+					.progress()
+					.map(|p| format!(" ({}%)", p.progress))
+					.unwrap_or_default(),
+				BlameProcess::GettingBlame(_)
+				| BlameProcess::Result(_) => String::new(),
+			};
+			let title_with_highlight_progress =
+				format!("{title}{syntax_highlight_progress}");
 
 			let table = Table::new(rows)
 				.widths(&constraints)
@@ -89,7 +148,7 @@ impl DrawableComponent for BlameFileComponent {
 					Block::default()
 						.borders(Borders::ALL)
 						.title(Span::styled(
-							title,
+							title_with_highlight_progress,
 							self.theme.title(true),
 						))
 						.border_style(self.theme.block(true)),
@@ -139,6 +198,7 @@ impl Component for BlameFileComponent {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
+		let file_blame = self.blame.result();
 		if self.is_visible() || force_all {
 			out.push(
 				CommandInfo::new(
@@ -152,7 +212,7 @@ impl Component for BlameFileComponent {
 				CommandInfo::new(
 					strings::commands::scroll(&self.key_config),
 					true,
-					self.file_blame.is_some(),
+					file_blame.is_some(),
 				)
 				.order(1),
 			);
@@ -162,7 +222,7 @@ impl Component for BlameFileComponent {
 						&self.key_config,
 					),
 					true,
-					self.file_blame.is_some(),
+					file_blame.is_some(),
 				)
 				.order(1),
 			);
@@ -172,7 +232,7 @@ impl Component for BlameFileComponent {
 						&self.key_config,
 					),
 					true,
-					self.file_blame.is_some(),
+					file_blame.is_some(),
 				)
 				.order(1),
 			);
@@ -275,18 +335,20 @@ impl BlameFileComponent {
 		Self {
 			title: String::from(title),
 			theme: env.theme.clone(),
-			async_blame: AsyncBlame::new(
-				env.repo.borrow().clone(),
-				&env.sender_git,
-			),
 			queue: env.queue.clone(),
 			visible: false,
 			params: None,
-			file_blame: None,
 			open_request: None,
 			table_state: std::cell::Cell::new(TableState::default()),
 			key_config: env.key_config.clone(),
 			current_height: std::cell::Cell::new(0),
+			app_sender: env.sender_app.clone(),
+			git_sender: env.sender_git.clone(),
+			blame: BlameProcess::GettingBlame(AsyncBlame::new(
+				env.repo.borrow().clone(),
+				&env.sender_git,
+			)),
+			repo: env.repo.clone(),
 		}
 	}
 
@@ -314,10 +376,12 @@ impl BlameFileComponent {
 			file_path: open.file_path,
 			commit_id: open.commit_id,
 		});
-		self.file_blame = None;
+		self.blame = BlameProcess::GettingBlame(AsyncBlame::new(
+			self.repo.borrow().clone(),
+			&self.git_sender,
+		));
 		self.table_state.get_mut().select(Some(0));
 		self.visible = true;
-
 		self.update()?;
 
 		Ok(())
@@ -325,11 +389,22 @@ impl BlameFileComponent {
 
 	///
 	pub fn any_work_pending(&self) -> bool {
-		self.async_blame.is_pending()
+		!matches!(self.blame, BlameProcess::Result(_))
 	}
 
-	///
-	pub fn update_git(
+	pub fn update_async(
+		&mut self,
+		ev: AsyncNotification,
+	) -> Result<()> {
+		if let AsyncNotification::Git(ev) = ev {
+			return self.update_git(ev);
+		}
+
+		self.update_syntax(ev);
+		Ok(())
+	}
+
+	fn update_git(
 		&mut self,
 		event: AsyncGitNotification,
 	) -> Result<()> {
@@ -342,25 +417,79 @@ impl BlameFileComponent {
 
 	fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			if let Some(params) = &self.params {
-				if let Some((
-					previous_blame_params,
-					last_file_blame,
-				)) = self.async_blame.last()?
-				{
-					if previous_blame_params == *params {
-						self.file_blame = Some(last_file_blame);
-						self.set_open_selection();
+			match self.blame {
+				BlameProcess::Result(_)
+				| BlameProcess::SyntaxHighlighting { .. } => {}
+				BlameProcess::GettingBlame(ref mut async_blame) => {
+					if let Some(params) = &self.params {
+						if let Some((
+							previous_blame_params,
+							last_file_blame,
+						)) = async_blame.last()?
+						{
+							if previous_blame_params == *params {
+								self.blame = BlameProcess::SyntaxHighlighting {
+                                    unstyled_file_blame: SyntaxFileBlame {
+										file_blame: last_file_blame,
+										styled_text: None,
+									},
+                                    job: AsyncSingleJob::new(
+                                        self.app_sender.clone(),
+                                    )
+                                };
+								self.set_open_selection();
+								self.highlight_blame_lines();
 
-						return Ok(());
+								return Ok(());
+							}
+						}
+
+						async_blame.request(params.clone())?;
 					}
 				}
-
-				self.async_blame.request(params.clone())?;
 			}
 		}
 
 		Ok(())
+	}
+
+	fn update_syntax(&mut self, ev: AsyncNotification) {
+		let BlameProcess::SyntaxHighlighting {
+			ref unstyled_file_blame,
+			ref job,
+		} = self.blame
+		else {
+			return;
+		};
+
+		if let AsyncNotification::App(
+			AsyncAppNotification::SyntaxHighlighting(progress),
+		) = ev
+		{
+			match progress {
+				SyntaxHighlightProgress::Done => {
+					if let Some(job) = job.take_last() {
+						if let Some(syntax) = job.result() {
+							if syntax.path()
+								== Path::new(
+									unstyled_file_blame.path(),
+								) {
+								self.blame = BlameProcess::Result(
+									SyntaxFileBlame {
+										file_blame:
+											unstyled_file_blame
+												.file_blame
+												.clone(),
+										styled_text: Some(syntax),
+									},
+								);
+							}
+						}
+					}
+				}
+				SyntaxHighlightProgress::Progress => {}
+			}
+		}
 	}
 
 	///
@@ -368,7 +497,7 @@ impl BlameFileComponent {
 		match (
 			self.any_work_pending(),
 			self.params.as_ref(),
-			self.file_blame.as_ref(),
+			self.blame.result(),
 		) {
 			(true, Some(params), _) => {
 				format!(
@@ -381,7 +510,7 @@ impl BlameFileComponent {
 					"{} -- {} -- {}",
 					self.title,
 					params.file_path,
-					file_blame.commit_id.get_short_string()
+					file_blame.commit_id().get_short_string()
 				)
 			}
 			(false, Some(params), None) => {
@@ -396,11 +525,16 @@ impl BlameFileComponent {
 
 	///
 	fn get_rows(&self, width: usize) -> Vec<Row> {
-		self.file_blame
-			.as_ref()
-			.map_or_else(Vec::new, |file_blame| {
+		let file_blame = self.blame.result();
+
+		file_blame
+			.map(|file_blame| {
+				let styled_text: Option<Text<'_>> = file_blame
+					.styled_text
+					.as_ref()
+					.map(std::convert::Into::into);
 				file_blame
-					.lines
+					.lines()
 					.iter()
 					.enumerate()
 					.map(|(i, (blame_hunk, line))| {
@@ -409,26 +543,55 @@ impl BlameFileComponent {
 							i,
 							(blame_hunk.as_ref(), line.as_ref()),
 							file_blame,
+							&styled_text,
 						)
 					})
 					.collect()
 			})
+			.unwrap_or_default()
 	}
 
-	fn get_line_blame(
-		&self,
+	fn highlight_blame_lines(&mut self) {
+		let BlameProcess::SyntaxHighlighting {
+			ref unstyled_file_blame,
+			ref mut job,
+		} = self.blame
+		else {
+			return;
+		};
+
+		let Some(params) = &self.params else {
+			return;
+		};
+
+		let raw_lines = unstyled_file_blame
+			.lines()
+			.iter()
+			.map(|l| l.1.clone())
+			.collect::<Vec<_>>();
+		let text = tabs_to_spaces(raw_lines.join("\n"));
+
+		job.spawn(AsyncSyntaxJob::new(
+			text,
+			params.file_path.clone(),
+		));
+	}
+
+	fn get_line_blame<'a>(
+		&'a self,
 		width: usize,
 		line_number: usize,
 		hunk_and_line: (Option<&BlameHunk>, &str),
-		file_blame: &FileBlame,
-	) -> Row {
+		file_blame: &'a SyntaxFileBlame,
+		styled_text: &Option<Text<'a>>,
+	) -> Row<'a> {
 		let (hunk_for_line, line) = hunk_and_line;
 
 		let show_metadata = if line_number == 0 {
 			true
 		} else {
 			let hunk_for_previous_line =
-				&file_blame.lines[line_number - 1];
+				&file_blame.lines()[line_number - 1];
 
 			match (hunk_for_previous_line, hunk_for_line) {
 				((Some(previous), _), Some(current)) => {
@@ -445,16 +608,26 @@ impl BlameFileComponent {
 		};
 
 		let line_number_width = self.get_line_number_width();
+
+		let text_cell = styled_text.as_ref().map_or_else(
+			|| {
+				Cell::from(tabs_to_spaces(String::from(line)))
+					.style(self.theme.text(true, false))
+			},
+			|styled_text| {
+				let styled_text =
+					styled_text.lines[line_number].clone();
+				Cell::from(styled_text)
+			},
+		);
+
 		cells.push(
 			Cell::from(format!(
 				"{line_number:>line_number_width$}{VERTICAL}",
 			))
 			.style(self.theme.text(true, false)),
 		);
-		cells.push(
-			Cell::from(tabs_to_spaces(String::from(line)))
-				.style(self.theme.text(true, false)),
-		);
+		cells.push(text_cell);
 
 		Row::new(cells)
 	}
@@ -478,12 +651,11 @@ impl BlameFileComponent {
 			utils::time_to_string(hunk.time, true)
 		});
 
-		let is_blamed_commit = self
-			.file_blame
-			.as_ref()
+		let file_blame = self.blame.result();
+		let is_blamed_commit = file_blame
 			.and_then(|file_blame| {
 				blame_hunk.map(|hunk| {
-					file_blame.commit_id == hunk.commit_id
+					file_blame.commit_id() == &hunk.commit_id
 				})
 			})
 			.unwrap_or(false);
@@ -498,9 +670,9 @@ impl BlameFileComponent {
 	}
 
 	fn get_max_line_number(&self) -> usize {
-		self.file_blame
-			.as_ref()
-			.map_or(0, |file_blame| file_blame.lines.len() - 1)
+		self.blame
+			.result()
+			.map_or(0, |file_blame| file_blame.lines().len() - 1)
 	}
 
 	fn get_line_number_width(&self) -> usize {
@@ -551,7 +723,7 @@ impl BlameFileComponent {
 	}
 
 	fn get_selection(&self) -> Option<usize> {
-		self.file_blame.as_ref().and_then(|_| {
+		self.blame.result().as_ref().and_then(|_| {
 			let table_state = self.table_state.take();
 
 			let selection = table_state.selected();
@@ -563,12 +735,12 @@ impl BlameFileComponent {
 	}
 
 	fn selected_commit(&self) -> Option<CommitId> {
-		self.file_blame.as_ref().and_then(|file_blame| {
+		self.blame.result().as_ref().and_then(|file_blame| {
 			let table_state = self.table_state.take();
 
 			let commit_id =
 				table_state.selected().and_then(|selected| {
-					file_blame.lines[selected]
+					file_blame.lines()[selected]
 						.0
 						.as_ref()
 						.map(|hunk| hunk.commit_id)

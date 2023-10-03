@@ -399,7 +399,6 @@ impl App {
 			self.status_tab.update_git(ev)?;
 			self.stashing_tab.update_git(ev)?;
 			self.revlog.update_git(ev)?;
-			self.blame_file_popup.update_git(ev)?;
 			self.file_revlog_popup.update_git(ev)?;
 			self.inspect_commit_popup.update_git(ev)?;
 			self.compare_commits_popup.update_git(ev)?;
@@ -411,6 +410,7 @@ impl App {
 		}
 
 		self.files_tab.update_async(ev)?;
+		self.blame_file_popup.update_async(ev)?;
 		self.revision_files_popup.update(ev)?;
 		self.tags_popup.update(ev);
 
