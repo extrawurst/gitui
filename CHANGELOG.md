@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+* do not allow tag when `tag.gpgsign` enabled
+
 ## [0.24.3] - 2023-09-09
 
 ### Fixes
