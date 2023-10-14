@@ -18,6 +18,7 @@ pub struct CliArgs {
 #[derive(Debug, Clone)]
 pub enum StartMode {
 	BlameFile { path_in_workdir: PathBuf },
+	Log { path_in_workdir: Option<PathBuf> },
 	Stash,
 }
 
@@ -115,6 +116,8 @@ enum Command {
 	Stash,
 	/// Show blame view for a file
 	Blame { file: PathBuf },
+	/// Show history log (optionally for a file)
+	Log { file: Option<PathBuf> },
 }
 
 fn setup_logging() -> Result<()> {
@@ -160,49 +163,58 @@ fn parse_start_mode(
 ) -> Result<StartMode> {
 	match cmd {
 		Command::Stash => Ok(StartMode::Stash),
-		Command::Blame { file } => {
-			let path = &file;
-
-			let workdir =
-				PathBuf::try_from(repo_work_dir(repo_path)?)?
-					.canonicalize()?;
-
-			let make_error = |e: Option<std::io::Error>| {
-				let display_path = if path.is_absolute() {
-					path.display().to_string()
-				} else {
-					let dot = PathBuf::from(".");
-					dot.canonicalize()
-						.unwrap_or(dot)
-						.join(path)
-						.display()
-						.to_string()
-				};
-				let e =
-					e.map(|e| format!("{e}: ")).unwrap_or_default();
-				anyhow::anyhow!(
-					"{e}\"{}\" is not in the working directory (\"{}\")",
-					display_path,
-					workdir.display(),
-				)
-			};
-
-			let mut work_dir_comp = workdir.components();
-			let path_in_workdir: PathBuf = path
-				.canonicalize()
-				.map_err(|e| make_error(Some(e)))?
-				.components()
-				.skip_while(|f_comp| {
-					Some(f_comp) == work_dir_comp.next().as_ref()
-				})
-				.collect();
-
-			if work_dir_comp.next().is_some() {
-				// workdir components not exhausted
-				// this means the file is not in the work dir
-				return Err(make_error(None));
-			}
-			Ok(StartMode::BlameFile { path_in_workdir })
-		}
+		Command::Blame { file } => Ok(StartMode::BlameFile {
+			path_in_workdir: find_file_in_workdir(file, repo_path)?,
+		}),
+		Command::Log { file } => Ok(StartMode::Log {
+			path_in_workdir: file
+				.map(|f| find_file_in_workdir(f, repo_path))
+				.transpose()?,
+		}),
 	}
+}
+
+fn find_file_in_workdir(
+	file: PathBuf,
+	repo_path: &RepoPath,
+) -> Result<PathBuf, anyhow::Error> {
+	let path = &file;
+	let workdir = PathBuf::try_from(repo_work_dir(repo_path)?)?
+		.canonicalize()?;
+
+	let make_error = |e: Option<std::io::Error>| {
+		let display_path = if path.is_absolute() {
+			path.display().to_string()
+		} else {
+			let dot = PathBuf::from(".");
+			dot.canonicalize()
+				.unwrap_or(dot)
+				.join(path)
+				.display()
+				.to_string()
+		};
+		let e = e.map(|e| format!("{e}: ")).unwrap_or_default();
+		anyhow::anyhow!(
+			"{e}\"{}\" is not in the working directory (\"{}\")",
+			display_path,
+			workdir.display(),
+		)
+	};
+
+	let mut work_dir_comp = workdir.components();
+	let path_in_workdir: PathBuf = path
+		.canonicalize()
+		.map_err(|e| make_error(Some(e)))?
+		.components()
+		.skip_while(|f_comp| {
+			Some(f_comp) == work_dir_comp.next().as_ref()
+		})
+		.collect();
+
+	if work_dir_comp.next().is_some() {
+		// workdir components not exhausted
+		// this means the file is not in the work dir
+		return Err(make_error(None));
+	}
+	Ok(path_in_workdir)
 }
