@@ -1,17 +1,19 @@
 use crate::{
 	accessors,
+	args::StartMode,
 	cmdbar::CommandBar,
 	components::{
 		command_pump, event_pump, AppOption, BlameFileComponent,
-		BranchListComponent, CommandInfo, CommitComponent,
-		CompareCommitsComponent, Component, ConfirmComponent,
-		CreateBranchComponent, DrawableComponent,
-		ExternalEditorComponent, FetchComponent, FileRevlogComponent,
-		FuzzyFindPopup, FuzzyFinderTarget, HelpComponent,
-		InspectCommitComponent, LogSearchPopupComponent,
-		MsgComponent, OptionsPopupComponent, PullComponent,
-		PushComponent, PushTagsComponent, RenameBranchComponent,
-		ResetPopupComponent, RevisionFilesPopup, StashMsgComponent,
+		BlameFileOpen, BranchListComponent, CommandInfo,
+		CommitComponent, CompareCommitsComponent, Component,
+		ConfirmComponent, CreateBranchComponent, DrawableComponent,
+		ExternalEditorComponent, FetchComponent, FileRevOpen,
+		FileRevlogComponent, FuzzyFindPopup, FuzzyFinderTarget,
+		HelpComponent, InspectCommitComponent,
+		LogSearchPopupComponent, MsgComponent, OptionsPopupComponent,
+		PullComponent, PushComponent, PushTagsComponent,
+		RenameBranchComponent, ResetPopupComponent,
+		RevisionFilesPopup, StashMsgComponent,
 		SubmodulesListComponent, TagCommitComponent,
 		TagListComponent,
 	},
@@ -119,6 +121,7 @@ impl App {
 		input: Input,
 		theme: Theme,
 		key_config: KeyConfig,
+		start_mode: &Option<StartMode>,
 	) -> Result<Self> {
 		log::trace!("open repo at: {:?}", &repo);
 
@@ -130,7 +133,39 @@ impl App {
 		let key_config = Rc::new(key_config);
 		let options = Options::new(repo.clone());
 
-		let tab = options.borrow().current_tab();
+		let tab_override = match start_mode {
+			None => None,
+			Some(StartMode::Stash) => Some(4),
+			Some(StartMode::BlameFile { path_in_workdir }) => {
+				queue.push(InternalEvent::OpenPopup(
+					StackablePopupOpen::BlameFile(BlameFileOpen {
+						file_path: path_in_workdir
+							.display()
+							.to_string(),
+						commit_id: None,
+						selection: None,
+					}),
+				));
+				None
+			}
+			Some(StartMode::Log {
+				path_in_workdir: Some(file),
+			}) => {
+				queue.push(InternalEvent::OpenPopup(
+					StackablePopupOpen::FileRevlog(FileRevOpen {
+						file_path: file.display().to_string(),
+						selection: None,
+					}),
+				));
+				None
+			}
+			Some(StartMode::Log {
+				path_in_workdir: None,
+			}) => Some(1),
+		};
+
+		let tab = tab_override
+			.unwrap_or_else(|| options.borrow().current_tab());
 
 		let mut app = Self {
 			input,
@@ -505,6 +540,7 @@ impl App {
 		self.reset_popup.update()?;
 
 		self.update_commands();
+		self.process_internal_events()?;
 
 		Ok(())
 	}
