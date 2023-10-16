@@ -12,7 +12,7 @@ categories = ["concurrency", "asynchronous"]
 keywords = ["git"]
 
 [dependencies]
-bitflags = "1"
+bitflags = "2"
 crossbeam-channel = "0.5"
 easy-cast = "0.5"
 fuzzy-matcher = "0.3"
