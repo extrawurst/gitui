@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+* `theme.ron` now supports customizing line break symbol ([#1894](https://github.com/extrawurst/gitui/issues/1894))
+
 ## [0.24.3] - 2023-09-09
 
 ### Fixes
