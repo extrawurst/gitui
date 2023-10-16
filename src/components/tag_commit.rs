@@ -169,7 +169,7 @@ impl TagCommitComponent {
 		}
 	}
 
-	pub fn tag(&mut self) -> anyhow::Result<()> {
+	pub fn tag(&mut self) -> Result<()> {
 		let gpgsign =
 			get_config_string(&self.repo.borrow(), "tag.gpgsign")
 				.ok()
