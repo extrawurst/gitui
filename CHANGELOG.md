@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Changed
-* do not allow tag when `tag.gpgsign` enabled ([#1915](https://github.com/extrawurst/gitui/pull/1915))
+* do not allow tag when `tag.gpgsign` enabled [[@TeFiLeDo](https://github.com/TeFiLeDo)] ([#1915](https://github.com/extrawurst/gitui/pull/1915))
 
 ## [0.24.3] - 2023-09-09
 
