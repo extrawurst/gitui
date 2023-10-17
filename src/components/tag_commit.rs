@@ -6,11 +6,13 @@ use super::{
 use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
-	strings,
+	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::sync::{self, CommitId, RepoPathRef};
+use asyncgit::sync::{
+	self, get_config_string, CommitId, RepoPathRef,
+};
 use crossterm::event::Event;
 use ratatui::{backend::Backend, layout::Rect, Frame};
 
@@ -77,7 +79,7 @@ impl Component for TagCommitComponent {
 				if key_match(e, self.key_config.keys.enter)
 					&& self.is_valid_tag()
 				{
-					self.tag();
+					try_or_popup!(self, "tag error:", self.tag());
 				} else if key_match(
 					e,
 					self.key_config.keys.tag_annotate,
@@ -167,8 +169,15 @@ impl TagCommitComponent {
 		}
 	}
 
-	///
-	pub fn tag(&mut self) {
+	pub fn tag(&mut self) -> Result<()> {
+		let gpgsign =
+			get_config_string(&self.repo.borrow(), "tag.gpgsign")
+				.ok()
+				.flatten()
+				.and_then(|val| val.parse::<bool>().ok())
+				.unwrap_or_default();
+		anyhow::ensure!(!gpgsign, "config tag.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to tag without signing.");
+
 		let (tag_name, tag_annotation) = self.tag_info();
 
 		if let Some(commit_id) = self.commit_id {
@@ -199,5 +208,7 @@ impl TagCommitComponent {
 				}
 			}
 		}
+
+		Ok(())
 	}
 }
