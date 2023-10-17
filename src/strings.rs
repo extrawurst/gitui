@@ -145,6 +145,9 @@ pub fn stash_popup_msg(_key_config: &SharedKeyConfig) -> String {
 pub fn confirm_title_reset() -> String {
 	"Reset".to_string()
 }
+pub fn confirm_title_undo_commit() -> String {
+	"Undo commit".to_string()
+}
 pub fn confirm_title_stashdrop(
 	_key_config: &SharedKeyConfig,
 	multiple: bool,
@@ -202,6 +205,9 @@ pub fn confirm_msg_reset_lines(lines: usize) -> String {
 	format!(
 		"are you sure you want to discard {lines} selected lines?"
 	)
+}
+pub fn confirm_msg_undo_commit() -> String {
+	"confirm undo last commit?".to_string()
 }
 pub fn confirm_msg_stashdrop(
 	_key_config: &SharedKeyConfig,

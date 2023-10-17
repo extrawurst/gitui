@@ -610,11 +610,8 @@ impl Status {
 	}
 
 	fn undo_last_commit(&self) {
-		try_or_popup!(
-			self,
-			"undo commit failed:",
-			sync::utils::undo_last_commit(&self.repo.borrow())
-		);
+		self.queue
+			.push(InternalEvent::ConfirmAction(Action::UndoCommit));
 	}
 
 	fn branch_compare(&mut self) {
