@@ -26,6 +26,7 @@ use crate::{
 	setup_popups,
 	strings::{self, ellipsis_trim_start, order},
 	tabs::{FilesTab, Revlog, StashList, Stashing, Status},
+	try_or_popup,
 	ui::style::{SharedTheme, Theme},
 	AsyncAppNotification, AsyncNotification,
 };
@@ -1081,7 +1082,11 @@ impl App {
 				self.status_tab.abort_rebase();
 			}
 			Action::UndoCommit => {
-				let _ = undo_last_commit(&self.repo.borrow());
+				try_or_popup!(
+					self,
+					"undo commit failed:",
+					undo_last_commit(&self.repo.borrow())
+				);
 			}
 		};
 

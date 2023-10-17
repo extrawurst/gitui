@@ -215,7 +215,7 @@ impl ConfirmComponent {
                 ),
                 Action::UndoCommit => (
                     strings::confirm_title_undo_commit(),
-                    strings:: confirm_msg_undo_commit(),
+                    strings::confirm_msg_undo_commit(),
                 ),
             };
 		}
