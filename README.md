@@ -125,7 +125,7 @@ sudo emerge --sync dm9pZCAq
 sudo emerge dev-vcs/gitui::dm9pZCAq
 ```
 
-##### [openSUSE](https://software.opensuse.org/package/gitui) (Tumbleweed)
+##### [openSUSE](https://software.opensuse.org/package/gitui)
 
 ```sh
 sudo zypper install gitui
