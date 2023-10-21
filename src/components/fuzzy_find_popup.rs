@@ -1,7 +1,7 @@
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, FuzzyFinderTarget, ScrollType,
-	TextInputComponent,
+	DrawableComponent, EventState, FuzzyFinderTarget, InputType,
+	ScrollType, TextInputComponent,
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
@@ -23,10 +23,10 @@ use ratatui::{
 use std::borrow::Cow;
 use unicode_segmentation::UnicodeSegmentation;
 
-pub struct FuzzyFindPopup {
+pub struct FuzzyFindPopup<'a> {
 	queue: Queue,
 	visible: bool,
-	find_text: TextInputComponent,
+	find_text: TextInputComponent<'a>,
 	query: Option<String>,
 	theme: SharedTheme,
 	contents: Vec<String>,
@@ -37,7 +37,7 @@ pub struct FuzzyFindPopup {
 	target: Option<FuzzyFinderTarget>,
 }
 
-impl FuzzyFindPopup {
+impl<'a> FuzzyFindPopup<'a> {
 	///
 	pub fn new(
 		queue: &Queue,
@@ -50,7 +50,8 @@ impl FuzzyFindPopup {
 			"",
 			"start typing..",
 			false,
-		);
+		)
+		.with_input_type(InputType::Singleline);
 		find_text.embed();
 
 		Self {
@@ -74,7 +75,7 @@ impl FuzzyFindPopup {
 		} else if self
 			.query
 			.as_ref()
-			.map_or(true, |q| q != self.find_text.get_text())
+			.map_or(true, |q| q != self.find_text.get_text().as_str())
 		{
 			self.set_query(Some(
 				self.find_text.get_text().to_string(),
@@ -258,7 +259,7 @@ impl FuzzyFindPopup {
 	}
 }
 
-impl DrawableComponent for FuzzyFindPopup {
+impl<'a> DrawableComponent for FuzzyFindPopup<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -324,7 +325,7 @@ impl DrawableComponent for FuzzyFindPopup {
 	}
 }
 
-impl Component for FuzzyFindPopup {
+impl<'a> Component for FuzzyFindPopup<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

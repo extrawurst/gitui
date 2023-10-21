@@ -38,7 +38,7 @@ pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
 pub static POPUP_COMMIT_SHA_INVALID: &str = "Invalid commit sha";
 
 pub mod symbol {
-	pub const WHITESPACE: &str = "\u{00B7}"; //·
+	//	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
 	pub const SPACE: &str = "\u{02FD}"; //˽
 	pub const EMPTY_SPACE: &str = " ";

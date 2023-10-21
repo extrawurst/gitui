@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::keys::key_match;
 use crate::strings::symbol;
 use crate::ui::Size;
@@ -13,42 +14,183 @@ use crate::{
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
+use ratatui::style::{Color, Style};
+use ratatui::widgets::{Block, Borders};
 use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	style::Modifier,
-	text::{Line, Text},
+	text::Text,
 	widgets::{Clear, Paragraph},
 	Frame,
 };
+use std::cell::RefCell;
+use std::convert::From;
 use std::{cell::Cell, collections::HashMap, ops::Range};
-use unicode_segmentation::UnicodeSegmentation;
-
+use std::{path::PathBuf, rc::Rc};
+use tui_textarea::{CursorMove, Input, Key, Scrolling, TextArea};
 #[derive(PartialEq, Eq)]
 pub enum InputType {
 	Singleline,
 	Multiline,
 	Password,
 }
+/*
+	completely rewritten using tui-textarea as it provides a ton of useful features
+	- multiline edit
+	- scroll vertically and horizontally
+	- tab expansion
+	- configurable masking
+	- copy paste
+	- ...
+
+Notes to extrawurst
+
+I tried to confine the changes to just this file as much as possible. Things that leaked out: -
+
+==== ticks ======
+TTA manages its text via &str rather than String. IE it expects the caller to own the text,
+this introduces lifetimes into the TTA signature.
+
+so all users of it now have
+	 find_text: TextInputComponent<'a>,
+rather then
+	 find_text: TextInputComponent,
+
+this in turn causes that struct to be ticked too, I call this a tick infestation. There is nothing to be done about it
+(I tried real hard, unless you know a way).
+
+	pub struct LogSearchPopupComponent<'a> {
+	...
+	impl<'a> DrawableComponent for LogSearchPopupComponent<'a>
+
+	etc.
+
+personally I think rustc should elide this, but it does not.
+
+=== multiline vs singleline ===
+
+since TTA support full multiline editing the choice of single line vs multiline matters
+setting Singleline mode suppresses new line creation.
+
+So I have set singleline mode on all callers that need it
+
+
+=== crate upgrades ====
+
+main one is crossterm bump to 0.27
+this in turn pulls in other things , like bitflags v2 which messes with .ron files
+
+=== key input ===
+
+first. All keys work as before. You said 'dont break any key meanings'
+
+I really would have liked to change the way components do key handling when using textinput. At present they all do
+a variant of this
+			// see if textinput wants it
+			if self.input.event(ev)?.is_consumed() {
+				return Ok(EventState::Consumed);
+			}
+			// no -see if it has special meaning to this component
+			if let Event::Key(e) = ev {
+				if key_match(e, self.key_config.keys.enter)
+					&& self.is_valid_tag()
+				{
+
+ie pass the key to textinput then if it doesnt eat the key see if has special meaning for the component.
+
+The problem with that is the textinput does not know the calling context so it doesnt know what keys have special meaning at the moment.
+For example TTA uses ^f to mean word forward. But in the commit UI it means 'force'. However in other UIs it has no meaning. textinput
+does not know whether or not it should accept ^f. I would have reversed the order: ie done
+
+			// do we want the key?
+			if let Event::Key(e) = ev {
+				if key_match(e, self.key_config.keys.enter)
+					&& self.is_valid_tag()
+				{
+					....
+			// if not consumed here as 'special' pass to textinput
+			if self.input.event(ev)?.is_consumed() {
+				return Ok(EventState::Consumed);
+			}
+
+but that would have been a lot of change. So instead textinput ignores all keys that might be special for any UI. So , for example,
+^f never works now. (But ctrl-left works)
+
+New line is shift-enter, ctrl-enter or ^m. These are all common new line editor commands (discord, emacs,...)
+
+There is no key mapping done in the TTA interface code. It looks at the key config to know which keys to ignore.
+So for example if I remap 'commit force' to ^d (just do it), textinput will ignore ^d (and ^f will start working again).
+But the key codes used by the editor itself are not read from the key config. I can certainly do that, I would add new set
+of key names 'editor_up','editor_down' etc. Cannot use the current names as then are only used for navigation not input,
+for example vim_keys uses 'k' to mean 'up'. Thats still useful but it would not make any sense to use 'k' as 'up' in textinput
+
+Do you want key mapping? I can add later (since its a feature that doesnt exist in gitui today)
+
+== help ==
+
+There is no help for the editor window. The only thing a user really needs to know is the newline key stroke,
+but there are 10-15 ctrl key codes. I could add then to the general help popup, or make a special one for textinput
+
+here is complete list FYI
+
+the ones wrapped in () are the ones ignored as 'special'
+
+Ctrl+H, Backspace	Delete one character before cursor
+Ctrl+D, Delete	Delete one character next to cursor
+Ctrl+M, shif+Enter, ctrl+enter	Insert newline
+Ctrl+K	Delete from cursor until the end of line
+Ctrl+J	Delete from cursor until the head of line
+Ctrl+W, Alt+H, Alt+Backspace	Delete one word before cursor
+Alt+D, Alt+Delete	Delete one word next to cursor
+Ctrl+U	Undo
+Ctrl+R	Redo
+Ctrl+Y	Paste yanked text
+(Ctrl+F), →	Move cursor forward by one character
+Ctrl+B, ←	Move cursor backward by one character
+Ctrl+P, ↑	Move cursor up by one line
+(Ctrl+N), ↓	Move cursor down by one line
+Alt+F, Ctrl+→	Move cursor forward by word
+Atl+B, Ctrl+←	Move cursor backward by word
+Alt+], Alt+P, Ctrl+↑	Move cursor up by paragraph
+Alt+[, Alt+N, Ctrl+↓	Move cursor down by paragraph
+(Ctrl+E), End, Ctrl+Alt+F, Ctrl+Alt+→	Move cursor to the end of line
+(Ctrl+A), Home, Ctrl+Alt+B, Ctrl+Alt+←	Move cursor to the head of line
+Alt+<, Ctrl+Alt+P, Ctrl+Alt+↑	Move cursor to top of lines
+Alt+>, Ctrl+Alt+N, Ctrl+Alt+↓	Move cursor to bottom of lines
+Ctrl+V, PageDown	Scroll down by page
+Alt+V, PageUp	Scroll up by page
+
+== minor changes ==
+
+get_text now returns a String rather that a &str. So in a few place I had to change to add 'as_str' to the call.
+
+removed the tests for the multiline handling here because its now completely different
+and TTA has tests for its own multi line handling
+
+the word left and right test has been changed becuase the emoji handling in the
+gitui code did not match what any other editors did with emojis (or chinese characters)
+see explanation in the tests below
+
+*/
 
 /// primarily a subcomponet for user input of text (used in `CommitComponent`)
-pub struct TextInputComponent {
+
+pub struct TextInputComponent<'a> {
 	title: String,
 	default_msg: String,
-	msg: String,
-	visible: bool,
 	selected: Option<bool>,
+	msg: String,
 	show_char_count: bool,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
-	cursor_position: usize,
 	input_type: InputType,
 	current_area: Cell<Rect>,
 	embed: bool,
-	char_count: usize,
+	textarea: Option<TextArea<'a>>,
 }
 
-impl TextInputComponent {
+impl<'a> TextInputComponent<'a> {
 	///
 	pub fn new(
 		theme: SharedTheme,
@@ -58,19 +200,17 @@ impl TextInputComponent {
 		show_char_count: bool,
 	) -> Self {
 		Self {
-			msg: String::new(),
-			visible: false,
+			msg: String::from(""),
 			theme,
 			key_config,
 			show_char_count,
 			title: title.to_string(),
 			default_msg: default_msg.to_string(),
 			selected: None,
-			cursor_position: 0,
 			input_type: InputType::Multiline,
 			current_area: Cell::new(Rect::default()),
 			embed: false,
-			char_count: 0,
+			textarea: None,
 		}
 	}
 
@@ -84,14 +224,20 @@ impl TextInputComponent {
 
 	/// Clear the `msg`.
 	pub fn clear(&mut self) {
-		self.msg.clear();
-		self.update_count();
-		self.cursor_position = 0;
+		self.msg = String::from("");
+		if self.is_visible() {
+			self.create_and_show();
+		}
 	}
 
 	/// Get the `msg`.
-	pub fn get_text(&self) -> &str {
-		self.msg.as_str()
+	pub fn get_text(&self) -> String {
+		let text = if let Some(ta) = &self.textarea {
+			ta.lines().join("\n")
+		} else {
+			String::from("")
+		};
+		text
 	}
 
 	/// screen area (last time we got drawn)
@@ -109,120 +255,49 @@ impl TextInputComponent {
 		self.selected = Some(enable);
 	}
 
-	/// Move the cursor right one char.
-	fn incr_cursor(&mut self) {
-		if let Some(pos) = self.next_char_position() {
-			self.cursor_position = pos;
-		}
-	}
+	//	create the textarea and then load it with the text
+	//	from self.msg
+	//  the recreate is done because some things can only be loaded at
+	//  creation time.
 
-	/// Move the cursor left one char.
-	fn decr_cursor(&mut self) {
-		let mut index = self.cursor_position.saturating_sub(1);
-		while index > 0 && !self.msg.is_char_boundary(index) {
-			index -= 1;
-		}
-		self.cursor_position = index;
-	}
-
-	/// Get the position of the next char, or, if the cursor points
-	/// to the last char, the `msg.len()`.
-	/// Returns None when the cursor is already at `msg.len()`.
-	fn next_char_position(&self) -> Option<usize> {
-		if self.cursor_position >= self.msg.len() {
-			return None;
-		}
-		let mut index = self.cursor_position.saturating_add(1);
-		while index < self.msg.len()
-			&& !self.msg.is_char_boundary(index)
-		{
-			index += 1;
-		}
-		Some(index)
-	}
-
-	/// Helper for `next/previous_word_position`.
-	fn at_alphanumeric(&self, i: usize) -> bool {
-		self.msg[i..]
-			.chars()
-			.next()
-			.map_or(false, char::is_alphanumeric)
-	}
-
-	/// Get the position of the first character of the next word, or, if there
-	/// isn't a next word, the `msg.len()`.
-	/// Returns None when the cursor is already at `msg.len()`.
-	///
-	/// A Word is continuous sequence of alphanumeric characters.
-	fn next_word_position(&self) -> Option<usize> {
-		if self.cursor_position >= self.msg.len() {
-			return None;
-		}
-
-		let mut was_in_word =
-			self.at_alphanumeric(self.cursor_position);
-
-		let mut index = self.cursor_position.saturating_add(1);
-		while index < self.msg.len() {
-			if !self.msg.is_char_boundary(index) {
-				index += 1;
-				continue;
+	fn create_and_show(&mut self) {
+		let lines: Vec<String> =
+			self.msg.split("\n").map(|s| s.to_string()).collect();
+		self.textarea = Some({
+			let style =
+				self.theme.text(self.selected.unwrap_or(true), false);
+			let mut text_area = TextArea::new(lines);
+			if self.input_type == InputType::Password {
+				text_area.set_mask_char('*');
 			}
-
-			let is_in_word = self.at_alphanumeric(index);
-			if !was_in_word && is_in_word {
-				break;
-			}
-			was_in_word = is_in_word;
-			index += 1;
-		}
-		Some(index)
-	}
-
-	/// Get the position of the first character of the previous word, or, if there
-	/// isn't a previous word, returns `0`.
-	/// Returns None when the cursor is already at `0`.
-	///
-	/// A Word is continuous sequence of alphanumeric characters.
-	fn previous_word_position(&self) -> Option<usize> {
-		if self.cursor_position == 0 {
-			return None;
-		}
-
-		let mut was_in_word = false;
-
-		let mut last_pos = self.cursor_position;
-		let mut index = self.cursor_position;
-		while index > 0 {
-			index -= 1;
-			if !self.msg.is_char_boundary(index) {
-				continue;
-			}
-
-			let is_in_word = self.at_alphanumeric(index);
-			if was_in_word && !is_in_word {
-				return Some(last_pos);
-			}
-
-			last_pos = index;
-			was_in_word = is_in_word;
-		}
-		Some(0)
-	}
-
-	fn backspace(&mut self) {
-		if self.cursor_position > 0 {
-			self.decr_cursor();
-			self.msg.remove(self.cursor_position);
-			self.update_count();
-		}
+			text_area
+				.set_cursor_line_style(self.theme.text(true, false));
+			text_area.set_placeholder_text(self.default_msg.clone());
+			text_area.set_placeholder_style(style);
+			text_area.set_style(style);
+			if !self.embed {
+				text_area.set_block(
+					Block::default()
+						.borders(Borders::ALL)
+						.border_style(
+							ratatui::style::Style::default()
+								.add_modifier(
+									ratatui::style::Modifier::BOLD,
+								),
+						)
+						.title(self.title.clone()),
+				);
+			};
+			text_area
+		});
 	}
 
 	/// Set the `msg`.
 	pub fn set_text(&mut self, msg: String) {
 		self.msg = msg;
-		self.cursor_position = 0;
-		self.update_count();
+		if self.is_visible() {
+			self.create_and_show();
+		}
 	}
 
 	/// Set the `title`.
@@ -233,96 +308,16 @@ impl TextInputComponent {
 	///
 	pub fn set_default_msg(&mut self, v: String) {
 		self.default_msg = v;
-	}
-
-	fn get_draw_text(&self) -> Text {
-		let style =
-			self.theme.text(self.selected.unwrap_or(true), false);
-
-		let mut txt = Text::default();
-		// The portion of the text before the cursor is added
-		// if the cursor is not at the first character.
-		if self.cursor_position > 0 {
-			let text_before_cursor =
-				self.get_msg(0..self.cursor_position);
-			let ends_in_nl = text_before_cursor.ends_with('\n');
-			txt = text_append(
-				txt,
-				Text::styled(text_before_cursor, style),
-			);
-			if ends_in_nl {
-				txt.lines.push(Line::default());
-			}
-		}
-
-		let cursor_str = self
-			.next_char_position()
-			// if the cursor is at the end of the msg
-			// a whitespace is used to underline
-			.map_or(" ".to_owned(), |pos| {
-				self.get_msg(self.cursor_position..pos)
-			});
-
-		let cursor_highlighting = {
-			let mut h = HashMap::with_capacity(2);
-			h.insert("\n", "\u{21b5}\r\n\n");
-			h.insert(" ", symbol::WHITESPACE);
-			h
-		};
-
-		if let Some(substitute) =
-			cursor_highlighting.get(cursor_str.as_str())
-		{
-			txt = text_append(
-				txt,
-				Text::styled(
-					substitute.to_owned(),
-					self.theme
-						.text(false, false)
-						.add_modifier(Modifier::UNDERLINED),
-				),
-			);
-		} else {
-			txt = text_append(
-				txt,
-				Text::styled(
-					cursor_str,
-					style.add_modifier(Modifier::UNDERLINED),
-				),
-			);
-		}
-
-		// The final portion of the text is added if there are
-		// still remaining characters.
-		if let Some(pos) = self.next_char_position() {
-			if pos < self.msg.len() {
-				txt = text_append(
-					txt,
-					Text::styled(
-						self.get_msg(pos..self.msg.len()),
-						style,
-					),
-				);
-			}
-		}
-
-		txt
-	}
-
-	fn get_msg(&self, range: Range<usize>) -> String {
-		match self.input_type {
-			InputType::Password => range.map(|_| "*").join(""),
-			_ => self.msg[range].to_owned(),
+		if self.is_visible() {
+			self.create_and_show();
 		}
 	}
 
 	fn draw_char_count<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-		if self.char_count > 0 {
-			let w = Paragraph::new(format!(
-				"[{} chars]",
-				self.char_count
-			))
-			.alignment(Alignment::Right);
+		let count = self.get_text().len();
+		if count > 0 {
+			let w = Paragraph::new(format!("[{count} chars]"))
+				.alignment(Alignment::Right);
 
 			let mut rect = {
 				let mut rect = r;
@@ -339,51 +334,17 @@ impl TextInputComponent {
 			f.render_widget(w, rect);
 		}
 	}
-
-	fn update_count(&mut self) {
-		self.char_count = self.msg.graphemes(true).count();
-	}
 }
 
-// merges last line of `txt` with first of `append` so we do not generate unneeded newlines
-fn text_append<'a>(txt: Text<'a>, append: Text<'a>) -> Text<'a> {
-	let mut txt = txt;
-	if let Some(last_line) = txt.lines.last_mut() {
-		if let Some(first_line) = append.lines.first() {
-			last_line.spans.extend(first_line.spans.clone());
-		}
-
-		if append.lines.len() > 1 {
-			for line in 1..append.lines.len() {
-				let spans = append.lines[line].clone();
-				txt.lines.push(spans);
-			}
-		}
-	} else {
-		txt = append;
-	}
-	txt
-}
-
-impl DrawableComponent for TextInputComponent {
+impl<'a> DrawableComponent for TextInputComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
 		rect: Rect,
 	) -> Result<()> {
-		if self.visible {
-			let txt = if self.msg.is_empty() {
-				Text::styled(
-					self.default_msg.as_str(),
-					self.theme.text(
-						self.selected.unwrap_or_default(),
-						false,
-					),
-				)
-			} else {
-				self.get_draw_text()
-			};
-
+		// this should always be true since draw should only be being called
+		// is control is visible
+		if let Some(ta) = &self.textarea {
 			let area = if self.embed {
 				rect
 			} else {
@@ -402,16 +363,8 @@ impl DrawableComponent for TextInputComponent {
 			};
 
 			f.render_widget(Clear, area);
-			f.render_widget(
-				popup_paragraph(
-					self.title.as_str(),
-					txt,
-					&self.theme,
-					true,
-					!self.embed,
-				),
-				area,
-			);
+
+			f.render_widget(ta.widget(), area);
 
 			if self.show_char_count {
 				self.draw_char_count(f, area);
@@ -419,12 +372,11 @@ impl DrawableComponent for TextInputComponent {
 
 			self.current_area.set(area);
 		}
-
 		Ok(())
 	}
 }
 
-impl Component for TextInputComponent {
+impl<'a> Component for TextInputComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -434,7 +386,7 @@ impl Component for TextInputComponent {
 			CommandInfo::new(
 				strings::commands::close_popup(&self.key_config),
 				true,
-				self.visible,
+				self.is_visible(),
 			)
 			.order(1),
 		);
@@ -442,107 +394,377 @@ impl Component for TextInputComponent {
 	}
 
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
-		if self.visible {
+		if let Some(ta) = &mut self.textarea {
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
 
-				let is_ctrl =
-					e.modifiers.contains(KeyModifiers::CONTROL);
+				// So here all 'known' special keys for any textinput call are filtered out
 
-				match e.code {
-					KeyCode::Char(c) if !is_ctrl => {
-						self.msg.insert(self.cursor_position, c);
-						self.update_count();
-						self.incr_cursor();
-						return Ok(EventState::Consumed);
+				if key_match(e, self.key_config.keys.enter)
+					|| key_match(
+						e,
+						self.key_config.keys.toggle_verify,
+					) || key_match(
+					e,
+					self.key_config.keys.commit_amend,
+				) || key_match(
+					e,
+					self.key_config.keys.open_commit_editor,
+				) || key_match(
+					e,
+					self.key_config.keys.commit_history_next,
+				) {
+					return Ok(EventState::NotConsumed);
+				}
+				let input = Input::from(ev.clone());
+
+				/*
+				here we do key handling rather than passing it to textareas input function
+				- so that we know which keys were handled and which were not
+				- to get fine control over what each key press does
+				- allow for key mapping based off key config....
+				  but in fact the original textinput ignored all key bindings, up,down,right,....
+				  so they are also ignored here
+
+				*/
+				match input {
+					Input {
+						key: Key::Char('m'),
+						ctrl: true,
+						alt: false,
 					}
-					KeyCode::Delete if is_ctrl => {
-						if let Some(pos) = self.next_word_position() {
-							self.msg.replace_range(
-								self.cursor_position..pos,
-								"",
-							);
-							self.update_count();
+					| Input {
+						key: Key::Char('\n' | '\r'),
+						ctrl: false,
+						alt: false,
+					}
+					/*  do not expect to see this one 
+					 but it can be remapped
+					 ctrl-Enter and shift-enter get here
+					 */
+					| Input {
+						key: Key::Enter, ..
+					} => {
+						// prevent new lines in case of non multiline
+						// password is assumed single line too
+						if self.input_type == InputType::Multiline{
+							ta.insert_newline();
+						} else {
+							return Ok(EventState::NotConsumed);
 						}
-						return Ok(EventState::Consumed);
 					}
-					KeyCode::Backspace | KeyCode::Char('w')
-						if is_ctrl =>
-					{
-						if let Some(pos) =
-							self.previous_word_position()
-						{
-							self.msg.replace_range(
-								pos..self.cursor_position,
-								"",
-							);
-							self.cursor_position = pos;
-							self.update_count();
-						}
-						return Ok(EventState::Consumed);
+					Input {
+						key: Key::Char(c),
+						ctrl: false,
+						alt: false,
+					} => ta.insert_char(c),
+
+					Input {
+						key: Key::Tab,
+						ctrl: false,
+						alt: false,
+					} => {
+						ta.insert_tab();
+						()
 					}
-					KeyCode::Left if is_ctrl => {
-						if let Some(pos) =
-							self.previous_word_position()
-						{
-							self.cursor_position = pos;
-						}
-						return Ok(EventState::Consumed);
+					Input {
+						key: Key::Char('h'),
+						ctrl: true,
+						alt: false,
 					}
-					KeyCode::Right if is_ctrl => {
-						if let Some(pos) = self.next_word_position() {
-							self.cursor_position = pos;
-						}
-						return Ok(EventState::Consumed);
+					| Input {
+						key: Key::Backspace,
+						ctrl: false,
+						alt: false,
+					} => {
+						ta.delete_char();
+						()
 					}
-					KeyCode::Delete => {
-						if self.cursor_position < self.msg.len() {
-							self.msg.remove(self.cursor_position);
-							self.update_count();
-						}
-						return Ok(EventState::Consumed);
+					Input {
+						key: Key::Char('d'),
+						ctrl: true,
+						alt: false,
 					}
-					KeyCode::Backspace => {
-						self.backspace();
-						return Ok(EventState::Consumed);
+					| Input {
+						key: Key::Delete,
+						ctrl: false,
+						alt: false,
+					} => {
+						ta.delete_next_char();
+						()
 					}
-					KeyCode::Left => {
-						self.decr_cursor();
-						return Ok(EventState::Consumed);
+					Input {
+						key: Key::Char('k'),
+						ctrl: true,
+						alt: false,
+					} => {
+						ta.delete_line_by_end();
+						()
 					}
-					KeyCode::Right => {
-						self.incr_cursor();
-						return Ok(EventState::Consumed);
+					Input {
+						key: Key::Char('j'),
+						ctrl: true,
+						alt: false,
+					} => {
+						ta.delete_line_by_head();
+						()
 					}
-					KeyCode::Home => {
-						self.cursor_position = 0;
-						return Ok(EventState::Consumed);
+					Input {
+						key: Key::Char('w'),
+						ctrl: true,
+						alt: false,
 					}
-					KeyCode::End => {
-						self.cursor_position = self.msg.len();
-						return Ok(EventState::Consumed);
+					| Input {
+						key: Key::Char('h'),
+						ctrl: false,
+						alt: true,
 					}
-					_ => (),
+					| Input {
+						key: Key::Backspace,
+						ctrl: false,
+						alt: true,
+					} => {
+						ta.delete_word();
+						()
+					}
+					Input {
+						key: Key::Delete,
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::Char('d'),
+						ctrl: false,
+						alt: true,
+					} => {
+						ta.delete_next_word();
+						()
+					}
+					Input {
+						key: Key::Char('n'),
+						ctrl: true,
+						alt: false,
+					}
+					| Input {
+						key: Key::Down,
+						ctrl: false,
+						alt: false,
+					} => ta.move_cursor(CursorMove::Down),
+
+					Input {
+						key: Key::Char('p'),
+						ctrl: true,
+						alt: false,
+					}
+					| Input {
+						key: Key::Up,
+						ctrl: false,
+						alt: false,
+					} => ta.move_cursor(CursorMove::Up),
+					Input {
+						key: Key::Char('f'),
+						ctrl: true,
+						alt: false,
+					} |
+					 Input {
+						key: Key::Right,
+						ctrl: false,
+						alt: false,
+					} => ta.move_cursor(CursorMove::Forward),
+					Input {
+						key: Key::Char('b'),
+						ctrl: true,
+						alt: false,
+					}
+					| Input {
+						key: Key::Left,
+						ctrl: false,
+						alt: false,
+					} => {
+						ta.move_cursor(CursorMove::Back);
+					}
+					// normally picked up earlier as 'amend'
+					 Input {
+					 	key: Key::Char('a'),
+					 	ctrl: true,
+					 	alt: false,
+					 }
+					 |
+					Input { key: Key::Home, .. }
+					| Input {
+						key: Key::Left | Key::Char('b'),
+						ctrl: true,
+						alt: true,
+					} => {
+						ta.move_cursor(CursorMove::Head);
+					}
+					// normally picked up earlier as 'invoke editor'
+					Input {
+					 	key: Key::Char('e'),
+					 	ctrl: true,
+					 	alt: false,
+					 }
+					 | Input { key: Key::End, .. }
+					| Input {
+						key: Key::Right | Key::Char('f'),
+						ctrl: true,
+						alt: true,
+					} => {
+						ta.move_cursor(CursorMove::End);
+					}
+					Input {
+						key: Key::Char('<'),
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::Up | Key::Char('p'),
+						ctrl: true,
+						alt: true,
+					} => {
+						ta.move_cursor(CursorMove::Top);
+					}
+					Input {
+						key: Key::Char('>'),
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::Down | Key::Char('n'),
+						ctrl: true,
+						alt: true,
+					} => ta.move_cursor(CursorMove::Bottom),
+					Input {
+						key: Key::Char('f'),
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::Right,
+						ctrl: true,
+						alt: false,
+					} => ta.move_cursor(CursorMove::WordForward),
+
+					Input {
+						key: Key::Char('b'),
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::Left,
+						ctrl: true,
+						alt: false,
+					} => ta.move_cursor(CursorMove::WordBack),
+
+					Input {
+						key: Key::Char(']'),
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::Char('n'),
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::Down,
+						ctrl: true,
+						alt: false,
+					} => ta.move_cursor(CursorMove::ParagraphForward),
+
+					Input {
+						key: Key::Char('['),
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::Char('p'),
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::Up,
+						ctrl: true,
+						alt: false,
+					} => ta.move_cursor(CursorMove::ParagraphBack),
+
+					Input {
+						key: Key::Char('u'),
+						ctrl: true,
+						alt: false,
+					} => {
+						ta.undo();
+						()
+					}
+					Input {
+						key: Key::Char('r'),
+						ctrl: true,
+						alt: false,
+					} => {
+						ta.redo();
+						()
+					}
+					Input {
+						key: Key::Char('y'),
+						ctrl: true,
+						alt: false,
+					} => {
+						ta.paste();
+						()
+					}
+					Input {
+						key: Key::Char('v'),
+						ctrl: true,
+						alt: false,
+					}
+					| Input {
+						key: Key::PageDown, ..
+					} => ta.scroll(Scrolling::PageDown),
+
+					Input {
+						key: Key::Char('v'),
+						ctrl: false,
+						alt: true,
+					}
+					| Input {
+						key: Key::PageUp, ..
+					} => ta.scroll(Scrolling::PageUp),
+
+					Input {
+						key: Key::MouseScrollDown,
+						..
+					} => ta.scroll((1, 0)),
+
+					Input {
+						key: Key::MouseScrollUp,
+						..
+					} => ta.scroll((-1, 0)),
+
+					_ => return Ok(EventState::NotConsumed),
 				};
 			}
+			return Ok(EventState::Consumed);
 		}
 		Ok(EventState::NotConsumed)
 	}
-
+	/*
+	  visible maps to textarea Option
+	  None = > not visible
+	  Some => visible
+	*/
 	fn is_visible(&self) -> bool {
-		self.visible
+		self.textarea.is_some()
 	}
 
 	fn hide(&mut self) {
-		self.visible = false;
+		self.textarea = None;
 	}
 
 	fn show(&mut self) -> Result<()> {
-		self.visible = true;
-
+		self.create_and_show();
 		Ok(())
 	}
 }
@@ -561,16 +783,18 @@ mod tests {
 			"",
 			false,
 		);
-
+		comp.create_and_show();
 		comp.set_text(String::from("a\nb"));
+		assert!(comp.is_visible());
+		if let Some(ta) = &mut comp.textarea {
+			assert_eq!(ta.cursor(), (0, 0));
 
-		assert_eq!(comp.cursor_position, 0);
+			ta.move_cursor(CursorMove::Forward);
+			assert_eq!(ta.cursor(), (0, 1));
 
-		comp.incr_cursor();
-		assert_eq!(comp.cursor_position, 1);
-
-		comp.decr_cursor();
-		assert_eq!(comp.cursor_position, 0);
+			ta.move_cursor(CursorMove::Back);
+			assert_eq!(ta.cursor(), (0, 0));
+		}
 	}
 
 	#[test]
@@ -582,25 +806,18 @@ mod tests {
 			"",
 			false,
 		);
-		let theme = SharedTheme::default();
-		let underlined = theme
-			.text(true, false)
-			.add_modifier(Modifier::UNDERLINED);
-
+		comp.create_and_show();
 		comp.set_text(String::from("a"));
-
-		let txt = comp.get_draw_text();
-
-		assert_eq!(txt.lines[0].spans.len(), 1);
-		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
-		assert_eq!(
-			get_style(&txt.lines[0].spans[0]),
-			Some(&underlined)
-		);
+		assert!(comp.is_visible());
+		if let Some(ta) = &mut comp.textarea {
+			let txt = ta.lines();
+			assert_eq!(txt[0].len(), 1);
+			assert_eq!(txt[0].as_bytes()[0], 'a' as u8);
+		}
 	}
 
 	#[test]
-	fn test_cursor_second_position() {
+	fn test_multiline() {
 		let mut comp = TextInputComponent::new(
 			SharedTheme::default(),
 			SharedKeyConfig::default(),
@@ -608,99 +825,15 @@ mod tests {
 			"",
 			false,
 		);
-		let theme = SharedTheme::default();
-		let underlined_whitespace = theme
-			.text(false, false)
-			.add_modifier(Modifier::UNDERLINED);
-
-		let not_underlined = Style::default();
-
-		comp.set_text(String::from("a"));
-		comp.incr_cursor();
-
-		let txt = comp.get_draw_text();
-
-		assert_eq!(txt.lines[0].spans.len(), 2);
-		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
-		assert_eq!(
-			get_style(&txt.lines[0].spans[0]),
-			Some(&not_underlined)
-		);
-		assert_eq!(
-			get_text(&txt.lines[0].spans[1]),
-			Some(symbol::WHITESPACE)
-		);
-		assert_eq!(
-			get_style(&txt.lines[0].spans[1]),
-			Some(&underlined_whitespace)
-		);
-	}
-
-	#[test]
-	fn test_visualize_newline() {
-		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
-			"",
-			"",
-			false,
-		);
-
-		let theme = SharedTheme::default();
-		let underlined = theme
-			.text(false, false)
-			.add_modifier(Modifier::UNDERLINED);
-
-		comp.set_text(String::from("a\nb"));
-		comp.incr_cursor();
-
-		let txt = comp.get_draw_text();
-
-		assert_eq!(txt.lines.len(), 2);
-		assert_eq!(txt.lines[0].spans.len(), 2);
-		assert_eq!(txt.lines[1].spans.len(), 2);
-		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
-		assert_eq!(
-			get_text(&txt.lines[0].spans[1]),
-			Some("\u{21b5}")
-		);
-		assert_eq!(
-			get_style(&txt.lines[0].spans[1]),
-			Some(&underlined)
-		);
-		assert_eq!(get_text(&txt.lines[1].spans[0]), Some(""));
-		assert_eq!(get_text(&txt.lines[1].spans[1]), Some("b"));
-	}
-
-	#[test]
-	fn test_invisible_newline() {
-		let mut comp = TextInputComponent::new(
-			SharedTheme::default(),
-			SharedKeyConfig::default(),
-			"",
-			"",
-			false,
-		);
-
-		let theme = SharedTheme::default();
-		let underlined = theme
-			.text(true, false)
-			.add_modifier(Modifier::UNDERLINED);
-
-		comp.set_text(String::from("a\nb"));
-
-		let txt = comp.get_draw_text();
-
-		assert_eq!(txt.lines.len(), 2);
-		assert_eq!(txt.lines[0].spans.len(), 2);
-		assert_eq!(txt.lines[1].spans.len(), 1);
-		assert_eq!(get_text(&txt.lines[0].spans[0]), Some("a"));
-		assert_eq!(get_text(&txt.lines[0].spans[1]), Some(""));
-		assert_eq!(
-			get_style(&txt.lines[0].spans[0]),
-			Some(&underlined)
-		);
-		assert_eq!(get_text(&txt.lines[1].spans[0]), Some("b"));
+		comp.create_and_show();
+		comp.set_text(String::from("a\nb\nc"));
+		assert!(comp.is_visible());
+		if let Some(ta) = &mut comp.textarea {
+			let txt = ta.lines();
+			assert_eq!(txt[0], "a");
+			assert_eq!(txt[1], "b");
+			assert_eq!(txt[2], "c");
+		}
 	}
 
 	#[test]
@@ -712,20 +845,29 @@ mod tests {
 			"",
 			false,
 		);
-
+		comp.create_and_show();
 		comp.set_text(String::from("aa b;c"));
-		// from word start
-		comp.cursor_position = 0;
-		assert_eq!(comp.next_word_position(), Some(3));
-		// from inside start
-		comp.cursor_position = 4;
-		assert_eq!(comp.next_word_position(), Some(5));
-		// to string end
-		comp.cursor_position = 5;
-		assert_eq!(comp.next_word_position(), Some(6));
-		// from string end
-		comp.cursor_position = 6;
-		assert_eq!(comp.next_word_position(), None);
+		assert!(comp.is_visible());
+		if let Some(ta) = &mut comp.textarea {
+			// from word start
+			ta.move_cursor(CursorMove::Head);
+			ta.move_cursor(CursorMove::WordForward);
+			assert_eq!(ta.cursor(), (0, 3));
+			// from inside start
+			ta.move_cursor(CursorMove::Forward);
+			ta.move_cursor(CursorMove::WordForward);
+			assert_eq!(ta.cursor(), (0, 5));
+			// to string end
+			ta.move_cursor(CursorMove::Forward);
+			ta.move_cursor(CursorMove::WordForward);
+			assert_eq!(ta.cursor(), (0, 6));
+
+			// from string end
+			ta.move_cursor(CursorMove::Forward);
+			let save_cursor = ta.cursor();
+			ta.move_cursor(CursorMove::WordForward);
+			assert_eq!(ta.cursor(), save_cursor);
+		}
 	}
 
 	#[test]
@@ -737,23 +879,31 @@ mod tests {
 			"",
 			false,
 		);
-
+		comp.create_and_show();
 		comp.set_text(String::from(" a bb;c"));
-		// from string end
-		comp.cursor_position = 7;
-		assert_eq!(comp.previous_word_position(), Some(6));
-		// from inside word
-		comp.cursor_position = 4;
-		assert_eq!(comp.previous_word_position(), Some(3));
-		// from word start
-		comp.cursor_position = 3;
-		assert_eq!(comp.previous_word_position(), Some(1));
-		// to string start
-		comp.cursor_position = 1;
-		assert_eq!(comp.previous_word_position(), Some(0));
-		// from string start
-		comp.cursor_position = 0;
-		assert_eq!(comp.previous_word_position(), None);
+		assert!(comp.is_visible());
+
+		if let Some(ta) = &mut comp.textarea {
+			// from string end
+			ta.move_cursor(CursorMove::End);
+			ta.move_cursor(CursorMove::WordBack);
+			assert_eq!(ta.cursor(), (0, 6));
+			// from inside word
+			ta.move_cursor(CursorMove::Back);
+			ta.move_cursor(CursorMove::WordBack);
+			assert_eq!(ta.cursor(), (0, 3));
+			// from word start
+			ta.move_cursor(CursorMove::WordBack);
+			assert_eq!(ta.cursor(), (0, 1));
+			// to string start
+			ta.move_cursor(CursorMove::WordBack);
+			assert_eq!(ta.cursor(), (0, 0));
+			// from string start
+			let save_cursor = ta.cursor();
+			ta.move_cursor(CursorMove::WordBack);
+
+			assert_eq!(ta.cursor(), save_cursor);
+		}
 	}
 
 	#[test]
@@ -765,39 +915,46 @@ mod tests {
 			"",
 			false,
 		);
+		// should emojis be word boundaries or not?
+		// various editors (vs code, vim) do not agree with the
+		// behavhior of the original textinput here.
+		//
+		// tui-textarea agrees with them.
+		// So these tests are changed to match that behavior
+		// FYI: this line is "a à ❤ab🤯 a"
 
 		//              "01245       89A        EFG"
 		let text = dbg!("a à \u{2764}ab\u{1F92F} a");
-
+		comp.create_and_show();
 		comp.set_text(String::from(text));
+		assert!(comp.is_visible());
 
-		comp.cursor_position = 0;
-		assert_eq!(comp.next_word_position(), Some(2));
-		comp.cursor_position = 2;
-		assert_eq!(comp.next_word_position(), Some(8));
-		comp.cursor_position = 8;
-		assert_eq!(comp.next_word_position(), Some(15));
-		comp.cursor_position = 15;
-		assert_eq!(comp.next_word_position(), Some(16));
-		comp.cursor_position = 16;
-		assert_eq!(comp.next_word_position(), None);
+		if let Some(ta) = &mut comp.textarea {
+			ta.move_cursor(CursorMove::Head);
+			ta.move_cursor(CursorMove::WordForward);
+			assert_eq!(ta.cursor(), (0, 2));
+			ta.move_cursor(CursorMove::WordForward);
+			assert_eq!(ta.cursor(), (0, 4));
+			ta.move_cursor(CursorMove::WordForward);
+			assert_eq!(ta.cursor(), (0, 9));
+			ta.move_cursor(CursorMove::WordForward);
+			assert_eq!(ta.cursor(), (0, 10));
+			let save_cursor = ta.cursor();
+			ta.move_cursor(CursorMove::WordForward);
+			assert_eq!(ta.cursor(), save_cursor);
 
-		assert_eq!(comp.previous_word_position(), Some(15));
-		comp.cursor_position = 15;
-		assert_eq!(comp.previous_word_position(), Some(8));
-		comp.cursor_position = 8;
-		assert_eq!(comp.previous_word_position(), Some(2));
-		comp.cursor_position = 2;
-		assert_eq!(comp.previous_word_position(), Some(0));
-		comp.cursor_position = 0;
-		assert_eq!(comp.previous_word_position(), None);
-	}
-
-	fn get_text<'a>(t: &'a Span) -> Option<&'a str> {
-		Some(&t.content)
-	}
-
-	fn get_style<'a>(t: &'a Span) -> Option<&'a Style> {
-		Some(&t.style)
+			ta.move_cursor(CursorMove::End);
+			ta.move_cursor(CursorMove::WordBack);
+			assert_eq!(ta.cursor(), (0, 9));
+			ta.move_cursor(CursorMove::WordBack);
+			assert_eq!(ta.cursor(), (0, 4));
+			ta.move_cursor(CursorMove::WordBack);
+			assert_eq!(ta.cursor(), (0, 2));
+			ta.move_cursor(CursorMove::WordBack);
+			assert_eq!(ta.cursor(), (0, 0));
+			let save_cursor = ta.cursor();
+			ta.move_cursor(CursorMove::WordBack);
+			assert_eq!(ta.cursor(), save_cursor);
+		}
 	}
 }

@@ -40,20 +40,20 @@ enum PopupMode {
 	JumpCommitSha,
 }
 
-pub struct LogSearchPopupComponent {
+pub struct LogSearchPopupComponent<'a> {
 	repo: RepoPathRef,
 	queue: Queue,
 	visible: bool,
 	mode: PopupMode,
 	selection: Selection,
 	key_config: SharedKeyConfig,
-	find_text: TextInputComponent,
+	find_text: TextInputComponent<'a>,
 	options: (SearchFields, SearchOptions),
 	theme: SharedTheme,
 	jump_commit_id: Option<CommitId>,
 }
 
-impl LogSearchPopupComponent {
+impl<'a> LogSearchPopupComponent<'a> {
 	///
 	pub fn new(
 		repo: RepoPathRef,
@@ -67,7 +67,8 @@ impl LogSearchPopupComponent {
 			"",
 			"search text",
 			false,
-		);
+		)
+		.with_input_type(super::InputType::Singleline);
 		find_text.embed();
 		find_text.enabled(true);
 
@@ -532,7 +533,7 @@ impl LogSearchPopupComponent {
 	}
 }
 
-impl DrawableComponent for LogSearchPopupComponent {
+impl<'a> DrawableComponent for LogSearchPopupComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -553,7 +554,7 @@ impl DrawableComponent for LogSearchPopupComponent {
 	}
 }
 
-impl Component for LogSearchPopupComponent {
+impl<'a> Component for LogSearchPopupComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

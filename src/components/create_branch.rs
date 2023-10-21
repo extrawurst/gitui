@@ -1,7 +1,7 @@
 use super::{
 	textinput::TextInputComponent, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+	EventState, InputType,
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
@@ -17,15 +17,15 @@ use ratatui::{
 	backend::Backend, layout::Rect, widgets::Paragraph, Frame,
 };
 
-pub struct CreateBranchComponent {
+pub struct CreateBranchComponent<'a> {
 	repo: RepoPathRef,
-	input: TextInputComponent,
+	input: TextInputComponent<'a>,
 	queue: Queue,
 	key_config: SharedKeyConfig,
 	theme: SharedTheme,
 }
 
-impl DrawableComponent for CreateBranchComponent {
+impl<'a> DrawableComponent for CreateBranchComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -40,7 +40,7 @@ impl DrawableComponent for CreateBranchComponent {
 	}
 }
 
-impl Component for CreateBranchComponent {
+impl<'a> Component for CreateBranchComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -93,7 +93,7 @@ impl Component for CreateBranchComponent {
 	}
 }
 
-impl CreateBranchComponent {
+impl<'a> CreateBranchComponent<'a> {
 	///
 	pub fn new(
 		repo: RepoPathRef,
@@ -109,7 +109,8 @@ impl CreateBranchComponent {
 				&strings::create_branch_popup_title(&key_config),
 				&strings::create_branch_popup_msg(&key_config),
 				true,
-			),
+			)
+			.with_input_type(InputType::Singleline),
 			theme,
 			key_config,
 			repo,
@@ -127,7 +128,7 @@ impl CreateBranchComponent {
 	pub fn create_branch(&mut self) {
 		let res = sync::create_branch(
 			&self.repo.borrow(),
-			self.input.get_text(),
+			self.input.get_text().as_str(),
 		);
 
 		self.input.clear();
@@ -149,7 +150,8 @@ impl CreateBranchComponent {
 	}
 
 	fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
-		let current_text = self.input.get_text();
+		let binding = self.input.get_text();
+		let current_text = binding.as_str();
 
 		if !current_text.is_empty() {
 			let valid = sync::validate_branch_name(current_text)

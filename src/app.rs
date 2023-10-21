@@ -65,29 +65,29 @@ pub enum QuitState {
 }
 
 /// the main app type
-pub struct App {
+pub struct App<'a> {
 	repo: RepoPathRef,
 	do_quit: QuitState,
 	help: HelpComponent,
 	msg: MsgComponent,
 	reset: ConfirmComponent,
-	commit: CommitComponent,
+	commit: CommitComponent<'a>,
 	blame_file_popup: BlameFileComponent,
 	file_revlog_popup: FileRevlogComponent,
-	stashmsg_popup: StashMsgComponent,
+	stashmsg_popup: StashMsgComponent<'a>,
 	inspect_commit_popup: InspectCommitComponent,
 	compare_commits_popup: CompareCommitsComponent,
 	external_editor_popup: ExternalEditorComponent,
 	revision_files_popup: RevisionFilesPopup,
-	fuzzy_find_popup: FuzzyFindPopup,
-	log_search_popup: LogSearchPopupComponent,
-	push_popup: PushComponent,
-	push_tags_popup: PushTagsComponent,
-	pull_popup: PullComponent,
-	fetch_popup: FetchComponent,
-	tag_commit_popup: TagCommitComponent,
-	create_branch_popup: CreateBranchComponent,
-	rename_branch_popup: RenameBranchComponent,
+	fuzzy_find_popup: FuzzyFindPopup<'a>,
+	log_search_popup: LogSearchPopupComponent<'a>,
+	push_popup: PushComponent<'a>,
+	push_tags_popup: PushTagsComponent<'a>,
+	pull_popup: PullComponent<'a>,
+	fetch_popup: FetchComponent<'a>,
+	tag_commit_popup: TagCommitComponent<'a>,
+	create_branch_popup: CreateBranchComponent<'a>,
+	rename_branch_popup: RenameBranchComponent<'a>,
 	select_branch_popup: BranchListComponent,
 	options_popup: OptionsPopupComponent,
 	submodule_popup: SubmodulesListComponent,
@@ -114,7 +114,7 @@ pub struct App {
 }
 
 // public interface
-impl App {
+impl<'a> App<'a> {
 	///
 	#[allow(clippy::too_many_lines)]
 	pub fn new(
@@ -589,7 +589,7 @@ impl App {
 }
 
 // private impls
-impl App {
+impl<'a> App<'a> {
 	accessors!(
 		self,
 		[

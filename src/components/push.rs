@@ -49,7 +49,7 @@ impl PushComponentModifier {
 }
 
 ///
-pub struct PushComponent {
+pub struct PushComponent<'a> {
 	repo: RepoPathRef,
 	modifier: PushComponentModifier,
 	visible: bool,
@@ -61,10 +61,10 @@ pub struct PushComponent {
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
-	input_cred: CredComponent,
+	input_cred: CredComponent<'a>,
 }
 
-impl PushComponent {
+impl<'a> PushComponent<'a> {
 	///
 	pub fn new(
 		repo: &RepoPathRef,
@@ -232,7 +232,7 @@ impl PushComponent {
 	}
 }
 
-impl DrawableComponent for PushComponent {
+impl<'a> DrawableComponent for PushComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -273,7 +273,7 @@ impl DrawableComponent for PushComponent {
 	}
 }
 
-impl Component for PushComponent {
+impl<'a> Component for PushComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

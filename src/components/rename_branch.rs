@@ -1,7 +1,7 @@
 use super::{
 	textinput::TextInputComponent, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+	EventState, InputType,
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
@@ -14,15 +14,15 @@ use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use ratatui::{backend::Backend, layout::Rect, Frame};
 
-pub struct RenameBranchComponent {
+pub struct RenameBranchComponent<'a> {
 	repo: RepoPathRef,
-	input: TextInputComponent,
+	input: TextInputComponent<'a>,
 	branch_ref: Option<String>,
 	queue: Queue,
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for RenameBranchComponent {
+impl<'a> DrawableComponent for RenameBranchComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -34,7 +34,7 @@ impl DrawableComponent for RenameBranchComponent {
 	}
 }
 
-impl Component for RenameBranchComponent {
+impl<'a> Component for RenameBranchComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -87,7 +87,7 @@ impl Component for RenameBranchComponent {
 	}
 }
 
-impl RenameBranchComponent {
+impl<'a> RenameBranchComponent<'a> {
 	///
 	pub fn new(
 		repo: RepoPathRef,
@@ -104,7 +104,8 @@ impl RenameBranchComponent {
 				&strings::rename_branch_popup_title(&key_config),
 				&strings::rename_branch_popup_msg(&key_config),
 				true,
-			),
+			)
+			.with_input_type(InputType::Singleline),
 			branch_ref: None,
 			key_config,
 		}
@@ -130,7 +131,7 @@ impl RenameBranchComponent {
 			let res = sync::rename_branch(
 				&self.repo.borrow(),
 				br,
-				self.input.get_text(),
+				self.input.get_text().as_str(),
 			);
 
 			match res {

@@ -32,7 +32,7 @@ use ratatui::{
 };
 
 ///
-pub struct PullComponent {
+pub struct PullComponent<'a> {
 	repo: RepoPathRef,
 	visible: bool,
 	git_fetch: AsyncPull,
@@ -42,10 +42,10 @@ pub struct PullComponent {
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
-	input_cred: CredComponent,
+	input_cred: CredComponent<'a>,
 }
 
-impl PullComponent {
+impl<'a> PullComponent<'a> {
 	///
 	pub fn new(
 		repo: &RepoPathRef,
@@ -202,7 +202,7 @@ impl PullComponent {
 	}
 }
 
-impl DrawableComponent for PullComponent {
+impl<'a> DrawableComponent for PullComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -239,7 +239,7 @@ impl DrawableComponent for PullComponent {
 	}
 }
 
-impl Component for PullComponent {
+impl<'a> Component for PullComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

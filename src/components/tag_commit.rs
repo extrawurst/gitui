@@ -6,13 +6,11 @@ use super::{
 use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
-	strings, try_or_popup,
+	strings,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::sync::{
-	self, get_config_string, CommitId, RepoPathRef,
-};
+use asyncgit::sync::{self, CommitId, RepoPathRef};
 use crossterm::event::Event;
 use ratatui::{backend::Backend, layout::Rect, Frame};
 
@@ -21,16 +19,16 @@ enum Mode {
 	Annotation { tag_name: String },
 }
 
-pub struct TagCommitComponent {
+pub struct TagCommitComponent<'a> {
 	repo: RepoPathRef,
 	mode: Mode,
-	input: TextInputComponent,
+	input: TextInputComponent<'a>,
 	commit_id: Option<CommitId>,
 	queue: Queue,
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for TagCommitComponent {
+impl<'a> DrawableComponent for TagCommitComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -42,7 +40,7 @@ impl DrawableComponent for TagCommitComponent {
 	}
 }
 
-impl Component for TagCommitComponent {
+impl<'a> Component for TagCommitComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -79,7 +77,7 @@ impl Component for TagCommitComponent {
 				if key_match(e, self.key_config.keys.enter)
 					&& self.is_valid_tag()
 				{
-					try_or_popup!(self, "tag error:", self.tag());
+					self.tag();
 				} else if key_match(
 					e,
 					self.key_config.keys.tag_annotate,
@@ -124,7 +122,7 @@ impl Component for TagCommitComponent {
 	}
 }
 
-impl TagCommitComponent {
+impl<'a> TagCommitComponent<'a> {
 	///
 	pub fn new(
 		repo: RepoPathRef,
@@ -140,7 +138,8 @@ impl TagCommitComponent {
 				&strings::tag_popup_name_title(),
 				&strings::tag_popup_name_msg(),
 				true,
-			),
+			)
+			.with_input_type(super::InputType::Singleline),
 			commit_id: None,
 			key_config,
 			repo,
@@ -169,15 +168,8 @@ impl TagCommitComponent {
 		}
 	}
 
-	pub fn tag(&mut self) -> Result<()> {
-		let gpgsign =
-			get_config_string(&self.repo.borrow(), "tag.gpgsign")
-				.ok()
-				.flatten()
-				.and_then(|val| val.parse::<bool>().ok())
-				.unwrap_or_default();
-		anyhow::ensure!(!gpgsign, "config tag.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to tag without signing.");
-
+	///
+	pub fn tag(&mut self) {
 		let (tag_name, tag_annotation) = self.tag_info();
 
 		if let Some(commit_id) = self.commit_id {
@@ -208,7 +200,5 @@ impl TagCommitComponent {
 				}
 			}
 		}
-
-		Ok(())
 	}
 }

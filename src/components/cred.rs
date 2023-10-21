@@ -17,15 +17,15 @@ use crate::{
 };
 
 ///
-pub struct CredComponent {
+pub struct CredComponent<'a> {
 	visible: bool,
 	key_config: SharedKeyConfig,
-	input_username: TextInputComponent,
-	input_password: TextInputComponent,
+	input_username: TextInputComponent<'a>,
+	input_password: TextInputComponent<'a>,
 	cred: BasicAuthCredential,
 }
 
-impl CredComponent {
+impl<'a> CredComponent<'a> {
 	///
 	pub fn new(
 		theme: SharedTheme,
@@ -63,7 +63,7 @@ impl CredComponent {
 	}
 }
 
-impl DrawableComponent for CredComponent {
+impl<'a> DrawableComponent for CredComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -77,7 +77,7 @@ impl DrawableComponent for CredComponent {
 	}
 }
 
-impl Component for CredComponent {
+impl<'a> Component for CredComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

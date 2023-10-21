@@ -31,7 +31,7 @@ use ratatui::{
 };
 
 ///
-pub struct FetchComponent {
+pub struct FetchComponent<'a> {
 	repo: RepoPathRef,
 	visible: bool,
 	async_fetch: AsyncSingleJob<AsyncFetchJob>,
@@ -40,10 +40,10 @@ pub struct FetchComponent {
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
-	input_cred: CredComponent,
+	input_cred: CredComponent<'a>,
 }
 
-impl FetchComponent {
+impl<'a> FetchComponent<'a> {
 	///
 	pub fn new(
 		repo: RepoPathRef,
@@ -124,7 +124,7 @@ impl FetchComponent {
 	}
 }
 
-impl DrawableComponent for FetchComponent {
+impl<'a> DrawableComponent for FetchComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -159,7 +159,7 @@ impl DrawableComponent for FetchComponent {
 	}
 }
 
-impl Component for FetchComponent {
+impl<'a> Component for FetchComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

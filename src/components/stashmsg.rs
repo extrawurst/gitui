@@ -15,15 +15,15 @@ use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use ratatui::{backend::Backend, layout::Rect, Frame};
 
-pub struct StashMsgComponent {
+pub struct StashMsgComponent<'a> {
 	repo: RepoPathRef,
 	options: StashingOptions,
-	input: TextInputComponent,
+	input: TextInputComponent<'a>,
 	queue: Queue,
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for StashMsgComponent {
+impl<'a> DrawableComponent for StashMsgComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -35,7 +35,7 @@ impl DrawableComponent for StashMsgComponent {
 	}
 }
 
-impl Component for StashMsgComponent {
+impl<'a> Component for StashMsgComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -61,15 +61,15 @@ impl Component for StashMsgComponent {
 			if self.input.event(ev)?.is_consumed() {
 				return Ok(EventState::Consumed);
 			}
-
+			let input_text = self.input.get_text();
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.enter) {
 					let result = sync::stash_save(
 						&self.repo.borrow(),
-						if self.input.get_text().is_empty() {
+						if input_text.is_empty() {
 							None
 						} else {
-							Some(self.input.get_text())
+							Some(input_text.as_str())
 						},
 						self.options.stash_untracked,
 						self.options.keep_index,
@@ -124,7 +124,7 @@ impl Component for StashMsgComponent {
 	}
 }
 
-impl StashMsgComponent {
+impl<'a> StashMsgComponent<'a> {
 	///
 	pub fn new(
 		repo: RepoPathRef,
@@ -141,7 +141,8 @@ impl StashMsgComponent {
 				&strings::stash_popup_title(&key_config),
 				&strings::stash_popup_msg(&key_config),
 				true,
-			),
+			)
+			.with_input_type(super::InputType::Singleline),
 			key_config,
 			repo,
 		}

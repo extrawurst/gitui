@@ -1,7 +1,7 @@
 use super::{
 	textinput::TextInputComponent, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, ExternalEditorComponent,
+	EventState, ExternalEditorComponent, InputType,
 };
 use crate::{
 	keys::{key_match, SharedKeyConfig},
@@ -47,9 +47,9 @@ enum Mode {
 	Reword(CommitId),
 }
 
-pub struct CommitComponent {
+pub struct CommitComponent<'a> {
 	repo: RepoPathRef,
-	input: TextInputComponent,
+	input: TextInputComponent<'a>,
 	mode: Mode,
 	queue: Queue,
 	key_config: SharedKeyConfig,
@@ -63,7 +63,7 @@ pub struct CommitComponent {
 
 const FIRST_LINE_LIMIT: usize = 50;
 
-impl CommitComponent {
+impl<'a> CommitComponent<'a> {
 	///
 	pub fn new(
 		repo: RepoPathRef,
@@ -81,7 +81,8 @@ impl CommitComponent {
 				"",
 				&strings::commit_msg(&key_config),
 				true,
-			),
+			)
+			.with_input_type(InputType::Singleline),
 			key_config,
 			git_branch_name: cached::BranchName::new(repo.clone()),
 			commit_template: None,
@@ -226,7 +227,7 @@ impl CommitComponent {
 		) {
 			self.options
 				.borrow_mut()
-				.add_commit_msg(self.input.get_text());
+				.add_commit_msg(self.input.get_text().as_str());
 			self.commit_msg_history_idx = 0;
 
 			self.hide();
@@ -347,7 +348,7 @@ impl CommitComponent {
 	}
 	fn signoff_commit(&mut self) {
 		let msg = self.input.get_text();
-		let signed_msg = self.add_sign_off(msg);
+		let signed_msg = self.add_sign_off(msg.as_str());
 		if let std::result::Result::Ok(signed_msg) = signed_msg {
 			self.input.set_text(signed_msg);
 		}
@@ -472,7 +473,7 @@ impl CommitComponent {
 	}
 }
 
-impl DrawableComponent for CommitComponent {
+impl<'a> DrawableComponent for CommitComponent<'a> {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -488,7 +489,7 @@ impl DrawableComponent for CommitComponent {
 	}
 }
 
-impl Component for CommitComponent {
+impl<'a> Component for CommitComponent<'a> {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
