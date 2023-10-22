@@ -46,7 +46,7 @@ shellexpand = "3.1"
 simplelog = { version = "0.12", default-features = false }
 struct-patch = "0.2"
 syntect = { version = "5.0", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "html"] }
-tui-textarea = {version ="0.2.3", default-features = false, features = ["ratatui-crossterm"]}
+tui-textarea = { version = "0.2.3", default-features = false, features = ["ratatui-crossterm"] }
 unicode-segmentation = "1.10"
 unicode-truncate = "0.2"
 unicode-width = "0.1"
