@@ -136,10 +136,7 @@ impl<'a> LogSearchPopupComponent<'a> {
 					LogFilterSearchOptions {
 						fields: self.options.0,
 						options: self.options.1,
-						search_pattern: self
-							.find_text
-							.get_text()
-							.to_string(),
+						search_pattern: self.find_text.get_text(),
 					},
 				));
 			}

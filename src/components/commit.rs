@@ -219,7 +219,7 @@ impl<'a> CommitComponent<'a> {
 			anyhow::bail!("config commit.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
 		}
 
-		let msg = self.input.get_text().to_string();
+		let msg = self.input.get_text();
 
 		if matches!(
 			self.commit_with_msg(msg)?,

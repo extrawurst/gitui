@@ -1,4 +1,5 @@
 #![allow(unused_imports)]
+
 use crate::keys::key_match;
 use crate::strings::symbol;
 use crate::ui::Size;
@@ -200,7 +201,7 @@ impl<'a> TextInputComponent<'a> {
 		show_char_count: bool,
 	) -> Self {
 		Self {
-			msg: String::from(""),
+			msg: String::new(),
 			theme,
 			key_config,
 			show_char_count,
@@ -224,7 +225,7 @@ impl<'a> TextInputComponent<'a> {
 
 	/// Clear the `msg`.
 	pub fn clear(&mut self) {
-		self.msg = String::from("");
+		self.msg = String::new();
 		if self.is_visible() {
 			self.create_and_show();
 		}
@@ -232,12 +233,9 @@ impl<'a> TextInputComponent<'a> {
 
 	/// Get the `msg`.
 	pub fn get_text(&self) -> String {
-		let text = if let Some(ta) = &self.textarea {
-			ta.lines().join("\n")
-		} else {
-			String::from("")
-		};
-		text
+		self.textarea
+			.as_ref()
+			.map_or_else(String::new, |ta| ta.lines().join("\n"))
 	}
 
 	/// screen area (last time we got drawn)
@@ -262,7 +260,7 @@ impl<'a> TextInputComponent<'a> {
 
 	fn create_and_show(&mut self) {
 		let lines: Vec<String> =
-			self.msg.split("\n").map(|s| s.to_string()).collect();
+			self.msg.split('\n').map(ToString::to_string).collect();
 		self.textarea = Some({
 			let style =
 				self.theme.text(self.selected.unwrap_or(true), false);
@@ -393,6 +391,11 @@ impl<'a> Component for TextInputComponent<'a> {
 		visibility_blocking(self)
 	}
 
+	// the fixes this clippy wants make the code much harder to follow
+	#[allow(clippy::unnested_or_patterns)]
+	// it just has to be this big
+	#[allow(clippy::too_many_lines)]
+
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if let Some(ta) = &mut self.textarea {
 			if let Event::Key(e) = ev {
@@ -401,7 +404,7 @@ impl<'a> Component for TextInputComponent<'a> {
 					return Ok(EventState::Consumed);
 				}
 
-				// So here all 'known' special keys for any textinput call are filtered out
+				// here all 'known' special keys for any textinput call are filtered out
 
 				if key_match(e, self.key_config.keys.enter)
 					|| key_match(
@@ -430,7 +433,10 @@ impl<'a> Component for TextInputComponent<'a> {
 				  so they are also ignored here
 
 				*/
-				match input {
+
+				// was the text buffer changed?
+				// not used yet but maybe useful later
+				let _modified = match input {
 					Input {
 						key: Key::Char('m'),
 						ctrl: true,
@@ -452,15 +458,19 @@ impl<'a> Component for TextInputComponent<'a> {
 						// password is assumed single line too
 						if self.input_type == InputType::Multiline{
 							ta.insert_newline();
+							true
 						} else {
 							return Ok(EventState::NotConsumed);
 						}
-					}
+					},
 					Input {
 						key: Key::Char(c),
 						ctrl: false,
 						alt: false,
-					} => ta.insert_char(c),
+					} => {
+						ta.insert_char(c);
+						true
+					},
 
 					Input {
 						key: Key::Tab,
@@ -468,8 +478,8 @@ impl<'a> Component for TextInputComponent<'a> {
 						alt: false,
 					} => {
 						ta.insert_tab();
-						()
-					}
+						true
+					},
 					Input {
 						key: Key::Char('h'),
 						ctrl: true,
@@ -480,9 +490,8 @@ impl<'a> Component for TextInputComponent<'a> {
 						ctrl: false,
 						alt: false,
 					} => {
-						ta.delete_char();
-						()
-					}
+						ta.delete_char()
+					},
 					Input {
 						key: Key::Char('d'),
 						ctrl: true,
@@ -493,25 +502,22 @@ impl<'a> Component for TextInputComponent<'a> {
 						ctrl: false,
 						alt: false,
 					} => {
-						ta.delete_next_char();
-						()
-					}
+						ta.delete_next_char()
+					},
 					Input {
 						key: Key::Char('k'),
 						ctrl: true,
 						alt: false,
 					} => {
-						ta.delete_line_by_end();
-						()
-					}
+						ta.delete_line_by_end()
+					},
 					Input {
 						key: Key::Char('j'),
 						ctrl: true,
 						alt: false,
 					} => {
-						ta.delete_line_by_head();
-						()
-					}
+						ta.delete_line_by_head()
+					},
 					Input {
 						key: Key::Char('w'),
 						ctrl: true,
@@ -527,9 +533,8 @@ impl<'a> Component for TextInputComponent<'a> {
 						ctrl: false,
 						alt: true,
 					} => {
-						ta.delete_word();
-						()
-					}
+						ta.delete_word()
+					},
 					Input {
 						key: Key::Delete,
 						ctrl: false,
@@ -540,9 +545,8 @@ impl<'a> Component for TextInputComponent<'a> {
 						ctrl: false,
 						alt: true,
 					} => {
-						ta.delete_next_word();
-						()
-					}
+						ta.delete_next_word()
+					},
 					Input {
 						key: Key::Char('n'),
 						ctrl: true,
@@ -552,8 +556,9 @@ impl<'a> Component for TextInputComponent<'a> {
 						key: Key::Down,
 						ctrl: false,
 						alt: false,
-					} => ta.move_cursor(CursorMove::Down),
-
+					} => {ta.move_cursor(CursorMove::Down);
+						false
+					},
 					Input {
 						key: Key::Char('p'),
 						ctrl: true,
@@ -563,7 +568,10 @@ impl<'a> Component for TextInputComponent<'a> {
 						key: Key::Up,
 						ctrl: false,
 						alt: false,
-					} => ta.move_cursor(CursorMove::Up),
+					} => {
+						ta.move_cursor(CursorMove::Up);
+						false
+					},
 					Input {
 						key: Key::Char('f'),
 						ctrl: true,
@@ -573,7 +581,10 @@ impl<'a> Component for TextInputComponent<'a> {
 						key: Key::Right,
 						ctrl: false,
 						alt: false,
-					} => ta.move_cursor(CursorMove::Forward),
+					} => {
+						ta.move_cursor(CursorMove::Forward);
+						false
+					},
 					Input {
 						key: Key::Char('b'),
 						ctrl: true,
@@ -585,36 +596,38 @@ impl<'a> Component for TextInputComponent<'a> {
 						alt: false,
 					} => {
 						ta.move_cursor(CursorMove::Back);
-					}
+						false
+					},
 					// normally picked up earlier as 'amend'
-					 Input {
+					Input {
 					 	key: Key::Char('a'),
 					 	ctrl: true,
 					 	alt: false,
-					 }
-					 |
-					Input { key: Key::Home, .. }
+					}
+					| Input { key: Key::Home, .. }
 					| Input {
 						key: Key::Left | Key::Char('b'),
 						ctrl: true,
 						alt: true,
 					} => {
 						ta.move_cursor(CursorMove::Head);
-					}
+						false
+					},
 					// normally picked up earlier as 'invoke editor'
 					Input {
 					 	key: Key::Char('e'),
 					 	ctrl: true,
 					 	alt: false,
-					 }
-					 | Input { key: Key::End, .. }
+					}
+					| Input { key: Key::End, .. }
 					| Input {
 						key: Key::Right | Key::Char('f'),
 						ctrl: true,
 						alt: true,
 					} => {
 						ta.move_cursor(CursorMove::End);
-					}
+						false
+					},
 					Input {
 						key: Key::Char('<'),
 						ctrl: false,
@@ -626,7 +639,8 @@ impl<'a> Component for TextInputComponent<'a> {
 						alt: true,
 					} => {
 						ta.move_cursor(CursorMove::Top);
-					}
+						false
+					},
 					Input {
 						key: Key::Char('>'),
 						ctrl: false,
@@ -636,7 +650,10 @@ impl<'a> Component for TextInputComponent<'a> {
 						key: Key::Down | Key::Char('n'),
 						ctrl: true,
 						alt: true,
-					} => ta.move_cursor(CursorMove::Bottom),
+					} => {
+						ta.move_cursor(CursorMove::Bottom);
+						false
+					},
 					Input {
 						key: Key::Char('f'),
 						ctrl: false,
@@ -646,7 +663,10 @@ impl<'a> Component for TextInputComponent<'a> {
 						key: Key::Right,
 						ctrl: true,
 						alt: false,
-					} => ta.move_cursor(CursorMove::WordForward),
+					} => {
+						ta.move_cursor(CursorMove::WordForward);
+						false
+					},
 
 					Input {
 						key: Key::Char('b'),
@@ -657,7 +677,10 @@ impl<'a> Component for TextInputComponent<'a> {
 						key: Key::Left,
 						ctrl: true,
 						alt: false,
-					} => ta.move_cursor(CursorMove::WordBack),
+					} => {
+						ta.move_cursor(CursorMove::WordBack);
+						false
+					},
 
 					Input {
 						key: Key::Char(']'),
@@ -673,8 +696,10 @@ impl<'a> Component for TextInputComponent<'a> {
 						key: Key::Down,
 						ctrl: true,
 						alt: false,
-					} => ta.move_cursor(CursorMove::ParagraphForward),
-
+					} => {
+						ta.move_cursor(CursorMove::ParagraphForward);
+						false
+					},
 					Input {
 						key: Key::Char('['),
 						ctrl: false,
@@ -689,32 +714,31 @@ impl<'a> Component for TextInputComponent<'a> {
 						key: Key::Up,
 						ctrl: true,
 						alt: false,
-					} => ta.move_cursor(CursorMove::ParagraphBack),
-
+					} => {
+						ta.move_cursor(CursorMove::ParagraphBack);
+						false
+					},
 					Input {
 						key: Key::Char('u'),
 						ctrl: true,
 						alt: false,
 					} => {
-						ta.undo();
-						()
-					}
+						ta.undo()
+					},
 					Input {
 						key: Key::Char('r'),
 						ctrl: true,
 						alt: false,
 					} => {
-						ta.redo();
-						()
-					}
+						ta.redo()
+					},
 					Input {
 						key: Key::Char('y'),
 						ctrl: true,
 						alt: false,
 					} => {
-						ta.paste();
-						()
-					}
+						ta.paste()
+					},
 					Input {
 						key: Key::Char('v'),
 						ctrl: true,
@@ -722,7 +746,10 @@ impl<'a> Component for TextInputComponent<'a> {
 					}
 					| Input {
 						key: Key::PageDown, ..
-					} => ta.scroll(Scrolling::PageDown),
+					} => {
+						ta.scroll(Scrolling::PageDown);
+						false
+					},
 
 					Input {
 						key: Key::Char('v'),
@@ -731,18 +758,10 @@ impl<'a> Component for TextInputComponent<'a> {
 					}
 					| Input {
 						key: Key::PageUp, ..
-					} => ta.scroll(Scrolling::PageUp),
-
-					Input {
-						key: Key::MouseScrollDown,
-						..
-					} => ta.scroll((1, 0)),
-
-					Input {
-						key: Key::MouseScrollUp,
-						..
-					} => ta.scroll((-1, 0)),
-
+					} => {
+						ta.scroll(Scrolling::PageUp);
+						false
+					},
 					_ => return Ok(EventState::NotConsumed),
 				};
 			}

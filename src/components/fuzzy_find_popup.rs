@@ -77,9 +77,7 @@ impl<'a> FuzzyFindPopup<'a> {
 			.as_ref()
 			.map_or(true, |q| q != self.find_text.get_text().as_str())
 		{
-			self.set_query(Some(
-				self.find_text.get_text().to_string(),
-			));
+			self.set_query(Some(self.find_text.get_text()));
 		}
 	}
 

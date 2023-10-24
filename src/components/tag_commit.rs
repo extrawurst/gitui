@@ -83,8 +83,7 @@ impl<'a> Component for TagCommitComponent<'a> {
 					self.key_config.keys.tag_annotate,
 				) && self.is_valid_tag()
 				{
-					let tag_name: String =
-						self.input.get_text().into();
+					let tag_name: String = self.input.get_text();
 
 					self.input.clear();
 					self.input.set_title(
@@ -161,9 +160,9 @@ impl<'a> TagCommitComponent<'a> {
 
 	fn tag_info(&self) -> (String, Option<String>) {
 		match &self.mode {
-			Mode::Name => (self.input.get_text().into(), None),
+			Mode::Name => (self.input.get_text(), None),
 			Mode::Annotation { tag_name } => {
-				(tag_name.clone(), Some(self.input.get_text().into()))
+				(tag_name.clone(), Some(self.input.get_text()))
 			}
 		}
 	}
