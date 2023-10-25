@@ -32,8 +32,6 @@ pub struct ChangesComponent {
 
 impl ChangesComponent {
 	///
-	//TODO: fix
-	#[allow(clippy::too_many_arguments)]
 	pub fn new(
 		env: &Environment,
 		title: &str,

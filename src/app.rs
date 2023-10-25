@@ -125,15 +125,15 @@ pub struct Environment {
 
 /// The need to construct a "whatever" environment only arises in testing right now
 #[cfg(test)]
-impl Default for Environment {
-	fn default() -> Self {
+impl Environment {
+	pub fn test_env() -> Self {
 		use crossbeam_channel::unbounded;
 		Self {
 			queue: Queue::new(),
 			theme: Default::default(),
 			key_config: Default::default(),
 			repo: RefCell::new(RepoPath::Path(Default::default())),
-			options: Default::default(),
+			options: Rc::new(RefCell::new(Options::test_env())),
 			sender_git: unbounded().0,
 			sender_app: unbounded().0,
 		}

@@ -4,6 +4,7 @@ use super::{
 	EventState, ExternalEditorComponent,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
 	queue::{InternalEvent, NeedsUpdate, Queue},
@@ -65,7 +66,7 @@ const FIRST_LINE_LIMIT: usize = 50;
 
 impl CommitComponent {
 	///
-	pub fn new(env: &crate::app::Environment) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			queue: env.queue.clone(),
 			mode: Mode::Normal,

@@ -555,7 +555,7 @@ mod tests {
 	#[test]
 	fn test_smoke() {
 		let mut comp = TextInputComponent::new(
-			&Environment::default(),
+			&Environment::test_env(),
 			"",
 			"",
 			false,
@@ -575,7 +575,7 @@ mod tests {
 	#[test]
 	fn text_cursor_initial_position() {
 		let mut comp = TextInputComponent::new(
-			&Environment::default(),
+			&Environment::test_env(),
 			"",
 			"",
 			false,
@@ -600,7 +600,7 @@ mod tests {
 	#[test]
 	fn test_cursor_second_position() {
 		let mut comp = TextInputComponent::new(
-			&Environment::default(),
+			&Environment::test_env(),
 			"",
 			"",
 			false,
@@ -636,7 +636,7 @@ mod tests {
 	#[test]
 	fn test_visualize_newline() {
 		let mut comp = TextInputComponent::new(
-			&Environment::default(),
+			&Environment::test_env(),
 			"",
 			"",
 			false,
@@ -671,7 +671,7 @@ mod tests {
 	#[test]
 	fn test_invisible_newline() {
 		let mut comp = TextInputComponent::new(
-			&Environment::default(),
+			&Environment::test_env(),
 			"",
 			"",
 			false,
@@ -701,7 +701,7 @@ mod tests {
 	#[test]
 	fn test_next_word_position() {
 		let mut comp = TextInputComponent::new(
-			&Environment::default(),
+			&Environment::test_env(),
 			"",
 			"",
 			false,
@@ -725,7 +725,7 @@ mod tests {
 	#[test]
 	fn test_previous_word_position() {
 		let mut comp = TextInputComponent::new(
-			&Environment::default(),
+			&Environment::test_env(),
 			"",
 			"",
 			false,
@@ -752,7 +752,7 @@ mod tests {
 	#[test]
 	fn test_next_word_multibyte() {
 		let mut comp = TextInputComponent::new(
-			&Environment::default(),
+			&Environment::test_env(),
 			"",
 			"",
 			false,
