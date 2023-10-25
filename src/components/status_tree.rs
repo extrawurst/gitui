@@ -590,7 +590,7 @@ mod tests {
 
 		// set up file tree
 		let mut ftc = StatusTreeComponent::new(
-			&Default::default(),
+			&Environment::test_env(),
 			"title",
 			true,
 		);
@@ -630,7 +630,7 @@ mod tests {
 
 		// set up file tree
 		let mut ftc = StatusTreeComponent::new(
-			&Default::default(),
+			&Environment::test_env(),
 			"title",
 			true,
 		);

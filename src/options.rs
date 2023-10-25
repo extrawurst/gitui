@@ -33,8 +33,8 @@ pub struct Options {
 }
 
 #[cfg(test)]
-impl Default for Options {
-	fn default() -> Self {
+impl Options {
+	pub fn test_env() -> Self {
 		use asyncgit::sync::RepoPath;
 		Self {
 			repo: RefCell::new(RepoPath::Path(Default::default())),
