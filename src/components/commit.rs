@@ -82,7 +82,7 @@ impl<'a> CommitComponent<'a> {
 				&strings::commit_msg(&key_config),
 				true,
 			)
-			.with_input_type(InputType::Singleline),
+			.with_input_type(InputType::Multiline),
 			key_config,
 			git_branch_name: cached::BranchName::new(repo.clone()),
 			commit_template: None,
