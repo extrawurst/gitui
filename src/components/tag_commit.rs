@@ -6,11 +6,13 @@ use super::{
 use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
-	strings,
+	strings, try_or_popup,
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::sync::{self, CommitId, RepoPathRef};
+use asyncgit::sync::{
+	self, get_config_string, CommitId, RepoPathRef,
+};
 use crossterm::event::Event;
 use ratatui::{backend::Backend, layout::Rect, Frame};
 
@@ -77,13 +79,14 @@ impl<'a> Component for TagCommitComponent<'a> {
 				if key_match(e, self.key_config.keys.enter)
 					&& self.is_valid_tag()
 				{
-					self.tag();
+					try_or_popup!(self, "tag error:", self.tag());
 				} else if key_match(
 					e,
 					self.key_config.keys.tag_annotate,
 				) && self.is_valid_tag()
 				{
-					let tag_name: String = self.input.get_text();
+					let tag_name: String =
+						self.input.get_text().into();
 
 					self.input.clear();
 					self.input.set_title(
@@ -137,8 +140,7 @@ impl<'a> TagCommitComponent<'a> {
 				&strings::tag_popup_name_title(),
 				&strings::tag_popup_name_msg(),
 				true,
-			)
-			.with_input_type(super::InputType::Singleline),
+			),
 			commit_id: None,
 			key_config,
 			repo,
@@ -160,15 +162,22 @@ impl<'a> TagCommitComponent<'a> {
 
 	fn tag_info(&self) -> (String, Option<String>) {
 		match &self.mode {
-			Mode::Name => (self.input.get_text(), None),
+			Mode::Name => (self.input.get_text().into(), None),
 			Mode::Annotation { tag_name } => {
-				(tag_name.clone(), Some(self.input.get_text()))
+				(tag_name.clone(), Some(self.input.get_text().into()))
 			}
 		}
 	}
 
-	///
-	pub fn tag(&mut self) {
+	pub fn tag(&mut self) -> Result<()> {
+		let gpgsign =
+			get_config_string(&self.repo.borrow(), "tag.gpgsign")
+				.ok()
+				.flatten()
+				.and_then(|val| val.parse::<bool>().ok())
+				.unwrap_or_default();
+		anyhow::ensure!(!gpgsign, "config tag.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to tag without signing.");
+
 		let (tag_name, tag_annotation) = self.tag_info();
 
 		if let Some(commit_id) = self.commit_id {
@@ -199,5 +208,7 @@ impl<'a> TagCommitComponent<'a> {
 				}
 			}
 		}
+
+		Ok(())
 	}
 }
