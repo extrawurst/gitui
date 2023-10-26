@@ -162,9 +162,12 @@ Alt+>, Ctrl+Alt+N, Ctrl+Alt+↓	Move cursor to bottom of lines
 Ctrl+V, PageDown	Scroll down by page
 Alt+V, PageUp	Scroll up by page
 
-== minor changes ==
+== get_text changes ==
 
 get_text now returns a String rather that a &str. So in a few place I had to change to add 'as_str' to the call.
+and remove to to_string() call in other places
+
+== tests ==
 
 removed the tests for the multiline handling here because its now completely different
 and TTA has tests for its own multi line handling
