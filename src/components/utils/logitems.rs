@@ -157,6 +157,17 @@ impl ItemBatch {
 	}
 }
 
+impl<'a> IntoIterator for &'a ItemBatch {
+	type IntoIter = std::slice::Iter<
+		'a,
+		crate::components::utils::logitems::LogEntry,
+	>;
+	type Item = &'a crate::components::utils::logitems::LogEntry;
+	fn into_iter(self) -> Self::IntoIter {
+		self.iter()
+	}
+}
+
 #[cfg(test)]
 #[cfg(feature = "ghemoji")]
 mod tests {
