@@ -30,7 +30,7 @@ easy-cast = "0.5"
 filetreelist = { path = "./filetreelist", version = "0.5" }
 fuzzy-matcher = "0.3"
 gh-emoji = { version = "1.0", optional = true }
-indexmap = "1.9"
+indexmap = "2.1"
 itertools = "0.12"
 log = "0.4"
 notify = "5.1"
