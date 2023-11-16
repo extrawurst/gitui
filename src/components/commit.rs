@@ -61,7 +61,8 @@ pub struct CommitComponent {
 	verify: bool,
 }
 
-const FIRST_LINE_LIMIT: usize = 50;
+const MESSAGE_WARNING_LIMIT: usize = 50;
+const MESSAGE_ERROR_LIMIT: usize = 72;
 
 impl CommitComponent {
 	///
@@ -123,11 +124,17 @@ impl CommitComponent {
 			.map(str::len)
 			.unwrap_or_default();
 
-		if first_line > FIRST_LINE_LIMIT {
+		if first_line > MESSAGE_WARNING_LIMIT {
 			let msg = strings::commit_first_line_warning(first_line);
 			let msg_length: u16 = msg.len().cast();
-			let w =
-				Paragraph::new(msg).style(self.theme.text_danger());
+			let w = {
+				let theme = if first_line > MESSAGE_ERROR_LIMIT {
+					self.theme.text_danger()
+				} else {
+					self.theme.text_warning()
+				};
+				Paragraph::new(msg).style(theme)
+			};
 
 			let rect = {
 				let mut rect = self.input.get_area();

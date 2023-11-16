@@ -28,6 +28,7 @@ pub struct Theme {
 	commit_time: Color,
 	commit_author: Color,
 	danger_fg: Color,
+	warning_fg: Color,
 	push_gauge_bg: Color,
 	push_gauge_fg: Color,
 	tag_fg: Color,
@@ -193,6 +194,10 @@ impl Theme {
 		Style::default().fg(self.danger_fg)
 	}
 
+	pub fn text_warning(&self) -> Style {
+		Style::default().fg(self.warning_fg)
+	}
+
 	pub fn line_break(&self) -> String {
 		self.line_break.clone()
 	}
@@ -337,6 +342,7 @@ impl Default for Theme {
 			commit_time: Color::LightCyan,
 			commit_author: Color::Green,
 			danger_fg: Color::Red,
+			warning_fg: Color::Yellow,
 			push_gauge_bg: Color::Blue,
 			push_gauge_fg: Color::Reset,
 			tag_fg: Color::LightMagenta,
