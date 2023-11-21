@@ -104,7 +104,7 @@ GitUI is in beta and may contain bugs and missing features. However, for persona
 <details>
   <summary>Install Instructions</summary>
 
-##### [Arch Linux](https://archlinux.org/packages/community/x86_64/gitui/)
+##### [Arch Linux](https://archlinux.org/packages/extra/x86_64/gitui/)
 
 ```sh
 pacman -S gitui
