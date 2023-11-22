@@ -14,7 +14,7 @@ use asyncgit::sync::{
 	self, get_config_string, CommitId, RepoPathRef,
 };
 use crossterm::event::Event;
-use ratatui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{layout::Rect, Frame};
 
 enum Mode {
 	Name,
@@ -31,11 +31,7 @@ pub struct TagCommitComponent {
 }
 
 impl DrawableComponent for TagCommitComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		self.input.draw(f, rect)?;
 
 		Ok(())

@@ -17,7 +17,7 @@ use asyncgit::{
 	StatusItem, StatusItemType,
 };
 use crossterm::event::Event;
-use ratatui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{layout::Rect, Frame};
 use std::path::Path;
 
 ///
@@ -187,11 +187,7 @@ impl ChangesComponent {
 }
 
 impl DrawableComponent for ChangesComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		r: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, r: Rect) -> Result<()> {
 		self.files.draw(f, r)?;
 
 		Ok(())

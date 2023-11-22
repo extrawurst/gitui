@@ -23,7 +23,6 @@ use asyncgit::{
 use crossterm::event::Event;
 use easy_cast::Cast;
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Rect},
 	widgets::Paragraph,
 	Frame,
@@ -94,7 +93,7 @@ impl CommitComponent {
 		self.git_branch_name.lookup().ok();
 	}
 
-	fn draw_branch_name<B: Backend>(&self, f: &mut Frame<B>) {
+	fn draw_branch_name(&self, f: &mut Frame) {
 		if let Some(name) = self.git_branch_name.last() {
 			let w = Paragraph::new(format!("{{{name}}}"))
 				.alignment(Alignment::Right);
@@ -110,7 +109,7 @@ impl CommitComponent {
 		}
 	}
 
-	fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
+	fn draw_warnings(&self, f: &mut Frame) {
 		let first_line = self
 			.input
 			.get_text()
@@ -487,11 +486,7 @@ impl CommitComponent {
 }
 
 impl DrawableComponent for CommitComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.is_visible() {
 			self.input.draw(f, rect)?;
 			self.draw_branch_name(f);

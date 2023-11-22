@@ -17,7 +17,6 @@ use asyncgit::sync::{
 use crossterm::event::Event;
 use easy_cast::Cast;
 use ratatui::{
-	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
@@ -351,9 +350,9 @@ impl LogSearchPopupComponent {
 			.enabled(matches!(self.selection, Selection::EnterText));
 	}
 
-	fn draw_search_mode<B: Backend>(
+	fn draw_search_mode(
 		&self,
-		f: &mut Frame<B>,
+		f: &mut Frame,
 		area: Rect,
 	) -> Result<()> {
 		const SIZE: (u16, u16) = (60, 10);
@@ -398,9 +397,9 @@ impl LogSearchPopupComponent {
 		Ok(())
 	}
 
-	fn draw_commit_sha_mode<B: Backend>(
+	fn draw_commit_sha_mode(
 		&self,
-		f: &mut Frame<B>,
+		f: &mut Frame,
 		area: Rect,
 	) -> Result<()> {
 		const SIZE: (u16, u16) = (60, 3);
@@ -444,7 +443,7 @@ impl LogSearchPopupComponent {
 		Ok(())
 	}
 
-	fn draw_invalid_sha<B: Backend>(&self, f: &mut Frame<B>) {
+	fn draw_invalid_sha(&self, f: &mut Frame) {
 		let msg_length: u16 = POPUP_COMMIT_SHA_INVALID.len().cast();
 		let w = Paragraph::new(POPUP_COMMIT_SHA_INVALID)
 			.style(self.theme.text_danger());
@@ -524,11 +523,7 @@ impl LogSearchPopupComponent {
 }
 
 impl DrawableComponent for LogSearchPopupComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible() {
 			match self.mode {
 				PopupMode::Search => {

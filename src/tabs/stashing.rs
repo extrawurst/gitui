@@ -134,9 +134,9 @@ impl Stashing {
 }
 
 impl DrawableComponent for Stashing {
-	fn draw<B: ratatui::backend::Backend>(
+	fn draw(
 		&self,
-		f: &mut ratatui::Frame<B>,
+		f: &mut ratatui::Frame,
 		rect: ratatui::layout::Rect,
 	) -> Result<()> {
 		let chunks = Layout::default()

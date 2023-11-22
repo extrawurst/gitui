@@ -19,7 +19,6 @@ use asyncgit::{
 };
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{Constraint, Rect},
 	symbols::line::VERTICAL,
 	text::Span,
@@ -54,11 +53,7 @@ pub struct BlameFileComponent {
 	current_height: std::cell::Cell<usize>,
 }
 impl DrawableComponent for BlameFileComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible() {
 			let title = self.get_title();
 
@@ -82,8 +77,7 @@ impl DrawableComponent for BlameFileComponent {
 
 			let number_of_rows = rows.len();
 
-			let table = Table::new(rows)
-				.widths(&constraints)
+			let table = Table::new(rows, &constraints)
 				.column_spacing(1)
 				.highlight_style(self.theme.text(true, true))
 				.block(

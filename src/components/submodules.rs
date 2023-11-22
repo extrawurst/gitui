@@ -18,7 +18,6 @@ use asyncgit::sync::{
 };
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
@@ -46,11 +45,7 @@ pub struct SubmodulesListComponent {
 }
 
 impl DrawableComponent for SubmodulesListComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.is_visible() {
 			const PERCENT_SIZE: Size = Size::new(80, 80);
 			const MIN_SIZE: Size = Size::new(60, 30);
@@ -476,11 +471,7 @@ impl SubmodulesListComponent {
 		Text::from(spans)
 	}
 
-	fn draw_list<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		r: Rect,
-	) -> Result<()> {
+	fn draw_list(&self, f: &mut Frame, r: Rect) -> Result<()> {
 		let height_in_lines = r.height as usize;
 		self.current_height.set(height_in_lines.try_into()?);
 
@@ -510,7 +501,7 @@ impl SubmodulesListComponent {
 		Ok(())
 	}
 
-	fn draw_info<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+	fn draw_info(&self, f: &mut Frame, r: Rect) {
 		f.render_widget(
 			Paragraph::new(self.get_info_text(&self.theme))
 				.alignment(Alignment::Left),
@@ -518,7 +509,7 @@ impl SubmodulesListComponent {
 		);
 	}
 
-	fn draw_local_info<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+	fn draw_local_info(&self, f: &mut Frame, r: Rect) {
 		f.render_widget(
 			Paragraph::new(self.get_local_info_text(&self.theme))
 				.block(Block::default().borders(Borders::TOP))

@@ -15,7 +15,6 @@ use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use itertools::Itertools;
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Rect},
 	style::Modifier,
 	text::{Line, Text},
@@ -316,7 +315,7 @@ impl TextInputComponent {
 		}
 	}
 
-	fn draw_char_count<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+	fn draw_char_count(&self, f: &mut Frame, r: Rect) {
 		if self.char_count > 0 {
 			let w = Paragraph::new(format!(
 				"[{} chars]",
@@ -366,11 +365,7 @@ fn text_append<'a>(txt: Text<'a>, append: Text<'a>) -> Text<'a> {
 }
 
 impl DrawableComponent for TextInputComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.visible {
 			let txt = if self.msg.is_empty() {
 				Text::styled(

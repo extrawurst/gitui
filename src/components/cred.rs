@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crossterm::event::Event;
-use ratatui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{layout::Rect, Frame};
 
 use asyncgit::sync::cred::BasicAuthCredential;
 
@@ -60,11 +60,7 @@ impl CredComponent {
 }
 
 impl DrawableComponent for CredComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.visible {
 			self.input_username.draw(f, rect)?;
 			self.input_password.draw(f, rect)?;

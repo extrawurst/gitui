@@ -28,7 +28,6 @@ use asyncgit::{
 };
 use crossterm::event::{Event, KeyEvent};
 use ratatui::{
-	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
@@ -56,11 +55,7 @@ pub struct BranchListComponent {
 }
 
 impl DrawableComponent for BranchListComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.is_visible() {
 			const PERCENT_SIZE: Size = Size::new(80, 50);
 			const MIN_SIZE: Size = Size::new(60, 20);
@@ -696,12 +691,8 @@ impl BranchListComponent {
 		Ok(())
 	}
 
-	fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-		let tabs = [Span::raw("Local"), Span::raw("Remote")]
-			.iter()
-			.cloned()
-			.map(Line::from)
-			.collect();
+	fn draw_tabs(&self, f: &mut Frame, r: Rect) {
+		let tabs = ["Local", "Remote"].map(Line::from);
 
 		f.render_widget(
 			Tabs::new(tabs)
@@ -718,11 +709,7 @@ impl BranchListComponent {
 		);
 	}
 
-	fn draw_list<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		r: Rect,
-	) -> Result<()> {
+	fn draw_list(&self, f: &mut Frame, r: Rect) -> Result<()> {
 		let height_in_lines = r.height as usize;
 		self.current_height.set(height_in_lines.try_into()?);
 

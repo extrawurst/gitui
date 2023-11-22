@@ -21,7 +21,6 @@ use compare_details::CompareDetailsComponent;
 use crossterm::event::Event;
 use details::DetailsComponent;
 use ratatui::{
-	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	Frame,
 };
@@ -140,11 +139,7 @@ impl CommitDetailsComponent {
 }
 
 impl DrawableComponent for CommitDetailsComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if !self.visible {
 			return Ok(());
 		}

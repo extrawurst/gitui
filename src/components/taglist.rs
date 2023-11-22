@@ -27,7 +27,6 @@ use asyncgit::{
 
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{Constraint, Margin, Rect},
 	text::Span,
 	widgets::{
@@ -56,11 +55,7 @@ pub struct TagListComponent {
 }
 
 impl DrawableComponent for TagListComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.visible {
 			const PERCENT_SIZE: Size = Size::new(80, 50);
 			const MIN_SIZE: Size = Size::new(60, 20);
@@ -98,8 +93,7 @@ impl DrawableComponent for TagListComponent {
 			let rows = self.get_rows();
 			let number_of_rows = rows.len();
 
-			let table = Table::new(rows)
-				.widths(&constraints)
+			let table = Table::new(rows, constraints)
 				.column_spacing(1)
 				.highlight_style(self.theme.text(true, true))
 				.block(

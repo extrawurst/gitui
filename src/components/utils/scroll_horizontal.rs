@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use ratatui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{layout::Rect, Frame};
 
 use crate::{
 	components::HorizontalScrollType,
@@ -84,12 +84,7 @@ impl HorizontalScroll {
 		self.update(self.get_right(), column_count, visual_width)
 	}
 
-	pub fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		r: Rect,
-		theme: &SharedTheme,
-	) {
+	pub fn draw(&self, f: &mut Frame, r: Rect, theme: &SharedTheme) {
 		draw_scrollbar(
 			f,
 			r,
