@@ -41,7 +41,7 @@ pub(crate) fn get_branch_name_repo(
 		}
 	})?;
 
-	Ok(bytes2string(head_ref.shorthand_bytes())?)
+	bytes2string(head_ref.shorthand_bytes())
 }
 
 ///
