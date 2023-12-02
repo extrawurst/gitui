@@ -341,6 +341,30 @@ exit 1
 	}
 
 	#[test]
+	fn test_env_containing_path() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		let hook = b"#!/bin/sh
+export
+exit 1
+        ";
+
+		create_hook(repo_path, HOOK_PRE_COMMIT, hook);
+		let res = hooks_pre_commit(repo_path).unwrap();
+
+		let HookResult::NotOk(out) = res else {
+			unreachable!()
+		};
+
+		assert!(out
+			.lines()
+			.any(|line| line.starts_with("export PATH")));
+	}
+
+	#[test]
 	fn test_pre_commit_fail_hookspath() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
