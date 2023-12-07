@@ -69,7 +69,7 @@ trace-libgit = ["asyncgit/trace-libgit"]
 vendor-openssl = ["asyncgit/vendor-openssl"]
 
 [workspace]
-members = ["asyncgit", "filetreelist", "scopetime"]
+members = ["asyncgit", "filetreelist", "git2-hooks", "git2-testing", "scopetime"]
 
 [profile.release]
 lto = true

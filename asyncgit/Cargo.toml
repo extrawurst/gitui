@@ -17,6 +17,7 @@ crossbeam-channel = "0.5"
 easy-cast = "0.5"
 fuzzy-matcher = "0.3"
 git2 = "0.17"
+git2-hooks = { path = "../git2-hooks", version = "0.1" }
 log = "0.4"
 # git2 = { path = "../../extern/git2-rs", features = ["vendored-openssl"]}
 # git2 = { git="https://github.com/extrawurst/git2-rs.git", rev="fc13dcc", features = ["vendored-openssl"]}
@@ -26,7 +27,6 @@ rayon = "1.8"
 rayon-core = "1.11"
 scopetime = { path = "../scopetime", version = "0.1" }
 serde = { version = "1.0", features = ["derive"] }
-shellexpand = "3.1"
 thiserror = "1.0"
 unicode-truncate = "0.2.0"
 url = "2.5"

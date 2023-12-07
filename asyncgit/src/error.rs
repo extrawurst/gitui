@@ -70,14 +70,6 @@ pub enum Error {
 	EasyCast(#[from] easy_cast::Error),
 
 	///
-	#[error("shellexpand error:{0}")]
-	Shell(#[from] shellexpand::LookupError<std::env::VarError>),
-
-	///
-	#[error("path string error")]
-	PathString,
-
-	///
 	#[error("no parent of commit found")]
 	NoParent,
 
@@ -88,6 +80,10 @@ pub enum Error {
 	///
 	#[error("rayon error: {0}")]
 	ThreadPool(#[from] rayon_core::ThreadPoolBuildError),
+
+	///
+	#[error("git hook error: {0}")]
+	Hooks(#[from] git2_hooks::HooksError),
 }
 
 ///
