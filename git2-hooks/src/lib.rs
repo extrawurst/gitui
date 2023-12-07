@@ -444,37 +444,6 @@ exit 1
 		assert_eq!(msg, String::from("msg\n"));
 	}
 
-	// 	#[test]
-	// 	fn test_hooks_commit_msg_reject_in_subfolder() {
-	// 		let (_td, repo) = repo_init();
-	// 		let root = repo.path().parent().unwrap();
-
-	// 		let hook = b"#!/bin/sh
-	// echo 'msg' > $1
-	// echo 'rejected'
-	// exit 1
-	//         ";
-
-	// 		create_hook(&repo, HOOK_COMMIT_MSG, hook);
-
-	// 		let subfolder = root.join("foo/");
-	// 		fs::create_dir_all(&subfolder).unwrap();
-
-	// 		let mut msg = String::from("test");
-	// 		let res = hooks_commit_msg(
-	// 			&subfolder.to_str().unwrap().into(),
-	// 			&mut msg,
-	// 		)
-	// 		.unwrap();
-
-	// 		assert_eq!(
-	// 			res,
-	// 			HookResult::NotOk(String::from("rejected\n"))
-	// 		);
-
-	// 		assert_eq!(msg, String::from("msg\n"));
-	// 	}
-
 	#[test]
 	fn test_commit_msg_no_block_but_alter() {
 		let (_td, repo) = repo_init();
