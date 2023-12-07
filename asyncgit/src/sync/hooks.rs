@@ -21,9 +21,7 @@ pub fn hooks_commit_msg(
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_pre_commit>
 ///
-pub fn hooks_pre_commit(
-	repo_path: &RepoPath,
-) -> Result<git2_hooks::HookResult> {
+pub fn hooks_pre_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	scope_time!("hooks_pre_commit");
 
 	let repo = repo(repo_path)?;
@@ -32,9 +30,7 @@ pub fn hooks_pre_commit(
 }
 
 ///
-pub fn hooks_post_commit(
-	repo_path: &RepoPath,
-) -> Result<git2_hooks::HookResult> {
+pub fn hooks_post_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	scope_time!("hooks_post_commit");
 
 	let repo = repo(repo_path)?;

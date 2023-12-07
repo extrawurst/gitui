@@ -1,10 +1,8 @@
-#![allow(renamed_and_removed_lints, clippy::unknown_clippy_lints)]
-
 use thiserror::Error;
 
 ///
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum HooksError {
 	///
 	#[error("`{0}`")]
 	Generic(String),
@@ -27,4 +25,4 @@ pub enum Error {
 }
 
 ///
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, HooksError>;

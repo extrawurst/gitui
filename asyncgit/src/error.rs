@@ -83,7 +83,7 @@ pub enum Error {
 
 	///
 	#[error("git hook error: {0}")]
-	Hooks(#[from] git2_hooks::Error),
+	Hooks(#[from] git2_hooks::HooksError),
 }
 
 ///

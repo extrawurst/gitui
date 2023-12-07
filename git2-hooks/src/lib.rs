@@ -8,7 +8,8 @@ use std::{
 	str::FromStr,
 };
 
-pub use error::{Error, Result};
+pub use error::HooksError;
+use error::Result;
 use git2::Repository;
 
 pub const HOOK_POST_COMMIT: &str = "post-commit";
@@ -44,11 +45,13 @@ impl HookPaths {
 		let hook = hooks_path.join(hook);
 
 		let hook = shellexpand::full(
-			hook.as_os_str().to_str().ok_or(Error::PathToString)?,
+			hook.as_os_str()
+				.to_str()
+				.ok_or(HooksError::PathToString)?,
 		)?;
 
 		let hook = PathBuf::from_str(hook.as_ref())
-			.map_err(|_| Error::PathToString)?;
+			.map_err(|_| HooksError::PathToString)?;
 
 		Ok(Self {
 			git: git_dir,
