@@ -1,3 +1,8 @@
+//! git2-rs addon supporting git hooks
+//!
+//! most basic hook is: [`hooks_pre_commit`]. see also other `hooks_*` functions
+//!
+//! [`create_hook`] is useful to create git hooks from code (unittest make heavy usage of it)
 mod error;
 mod hookspath;
 
@@ -17,7 +22,8 @@ use git2::Repository;
 pub const HOOK_POST_COMMIT: &str = "post-commit";
 pub const HOOK_PRE_COMMIT: &str = "pre-commit";
 pub const HOOK_COMMIT_MSG: &str = "commit-msg";
-pub const HOOK_COMMIT_MSG_TEMP_FILE: &str = "COMMIT_EDITMSG";
+
+const HOOK_COMMIT_MSG_TEMP_FILE: &str = "COMMIT_EDITMSG";
 
 ///
 #[derive(Debug, PartialEq, Eq)]
@@ -28,7 +34,7 @@ pub enum HookResult {
 	NotOk { stdout: String, stderr: String },
 }
 
-/// helper method to create git hooks
+/// helper method to create git hooks programmatically (heavy used in unittests)
 pub fn create_hook(
 	r: &Repository,
 	hook: &str,
@@ -88,7 +94,6 @@ pub fn hooks_commit_msg(
 }
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_pre_commit>
-///
 pub fn hooks_pre_commit(repo: &Repository) -> Result<HookResult> {
 	let hook = HookPaths::new(repo, HOOK_PRE_COMMIT)?;
 
@@ -98,7 +103,8 @@ pub fn hooks_pre_commit(repo: &Repository) -> Result<HookResult> {
 		Ok(HookResult::Ok)
 	}
 }
-///
+
+/// this hook is documented here <https://git-scm.com/docs/githooks#_post_commit>
 pub fn hooks_post_commit(repo: &Repository) -> Result<HookResult> {
 	let hook = HookPaths::new(repo, HOOK_POST_COMMIT)?;
 
