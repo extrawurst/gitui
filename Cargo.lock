@@ -105,6 +105,7 @@ dependencies = [
  "env_logger",
  "fuzzy-matcher",
  "git2",
+ "git2-hooks",
  "invalidstring",
  "log",
  "openssl-sys",
@@ -114,7 +115,6 @@ dependencies = [
  "scopetime",
  "serde",
  "serial_test",
- "shellexpand",
  "tempfile",
  "thiserror",
  "unicode-truncate",
@@ -710,6 +710,29 @@ dependencies = [
  "openssl-probe",
  "openssl-sys",
  "url",
+]
+
+[[package]]
+name = "git2-hooks"
+version = "0.1.0"
+dependencies = [
+ "git2",
+ "git2-testing",
+ "log",
+ "pretty_assertions",
+ "shellexpand",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "git2-testing"
+version = "0.1.0"
+dependencies = [
+ "env_logger",
+ "git2",
+ "log",
+ "tempfile",
 ]
 
 [[package]]
