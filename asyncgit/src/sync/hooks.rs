@@ -46,7 +46,6 @@ pub fn hooks_post_commit(
 mod tests {
 	use super::*;
 	use crate::sync::tests::repo_init;
-	use std::path::Path;
 
 	#[test]
 	fn test_post_commit_hook_reject_in_subfolder() {
@@ -103,8 +102,8 @@ mod tests {
 		let res = hooks_pre_commit(repo_path).unwrap();
 		if let HookResult::NotOk(res) = res {
 			assert_eq!(
-				Path::new(res.trim_end()),
-				Path::new(&workdir)
+				std::path::Path::new(res.trim_end()),
+				std::path::Path::new(&workdir)
 			);
 		} else {
 			assert!(false);
