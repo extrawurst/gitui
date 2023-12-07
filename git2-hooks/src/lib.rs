@@ -17,6 +17,15 @@ pub const HOOK_PRE_COMMIT: &str = "pre-commit";
 pub const HOOK_COMMIT_MSG: &str = "commit-msg";
 pub const HOOK_COMMIT_MSG_TEMP_FILE: &str = "COMMIT_EDITMSG";
 
+///
+#[derive(Debug, PartialEq, Eq)]
+pub enum HookResult {
+	/// Everything went fine
+	Ok,
+	/// Hook returned error
+	NotOk { stdout: String, stderr: String },
+}
+
 struct HookPaths {
 	git: PathBuf,
 	hook: PathBuf,
@@ -91,11 +100,12 @@ impl HookPaths {
 		if output.status.success() {
 			Ok(HookResult::Ok)
 		} else {
-			let err = String::from_utf8_lossy(&output.stderr);
-			let out = String::from_utf8_lossy(&output.stdout);
-			let formatted = format!("{out}{err}");
+			let stderr =
+				String::from_utf8_lossy(&output.stderr).to_string();
+			let stdout =
+				String::from_utf8_lossy(&output.stdout).to_string();
 
-			Ok(HookResult::NotOk(formatted))
+			Ok(HookResult::NotOk { stdout, stderr })
 		}
 	}
 }
@@ -179,15 +189,6 @@ pub fn hooks_post_commit(repo: &Repository) -> Result<HookResult> {
 	} else {
 		Ok(HookResult::Ok)
 	}
-}
-
-///
-#[derive(Debug, PartialEq, Eq)]
-pub enum HookResult {
-	/// Everything went fine
-	Ok,
-	/// Hook returned error
-	NotOk(String),
 }
 
 #[cfg(not(windows))]
@@ -313,7 +314,7 @@ exit 0
 		let (_td, repo) = repo_init();
 
 		let hook = b"#!/bin/sh
-echo 'rejected'        
+echo 'rejected'
 exit 1
         ";
 
@@ -334,11 +335,11 @@ exit 1
 		create_hook(&repo, HOOK_PRE_COMMIT, hook);
 		let res = hooks_pre_commit(&repo).unwrap();
 
-		let HookResult::NotOk(out) = res else {
+		let HookResult::NotOk { stdout, .. } = res else {
 			unreachable!()
 		};
 
-		assert!(out
+		assert!(stdout
 			.lines()
 			.any(|line| line.starts_with("export PATH")));
 	}
@@ -349,11 +350,12 @@ exit 1
 		let hooks = TempDir::new().unwrap();
 
 		let hook = b"#!/bin/sh
-echo 'rejected'        
+echo 'rejected'
 exit 1
         ";
 
 		create_hook_in_path(&hooks.path().join("pre-commit"), hook);
+
 		repo.config()
 			.unwrap()
 			.set_str(
@@ -361,10 +363,15 @@ exit 1
 				hooks.path().as_os_str().to_str().unwrap(),
 			)
 			.unwrap();
+
 		let res = hooks_pre_commit(&repo).unwrap();
+
 		assert_eq!(
 			res,
-			HookResult::NotOk(String::from("rejected\n"))
+			HookResult::NotOk {
+				stdout: String::from("rejected\n"),
+				stderr: String::new()
+			}
 		);
 	}
 
@@ -373,7 +380,7 @@ exit 1
 		let (_td, repo) = repo_init_bare();
 
 		let hook = b"#!/bin/sh
-echo 'rejected'        
+echo 'rejected'
 exit 1
         ";
 
@@ -441,7 +448,10 @@ exit 1
 
 		assert_eq!(
 			res,
-			HookResult::NotOk(String::from("rejected\n"))
+			HookResult::NotOk {
+				stdout: String::from("rejected\n"),
+				stderr: String::new()
+			}
 		);
 
 		assert_eq!(msg, String::from("msg\n"));

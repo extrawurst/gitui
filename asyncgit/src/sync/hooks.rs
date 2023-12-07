@@ -2,7 +2,25 @@ use super::{repository::repo, RepoPath};
 use crate::error::Result;
 use scopetime::scope_time;
 
-pub use git2_hooks::HookResult;
+///
+#[derive(Debug, PartialEq, Eq)]
+pub enum HookResult {
+	/// Everything went fine
+	Ok,
+	/// Hook returned error
+	NotOk(String),
+}
+
+impl From<git2_hooks::HookResult> for HookResult {
+	fn from(v: git2_hooks::HookResult) -> Self {
+		match v {
+			git2_hooks::HookResult::Ok => Self::Ok,
+			git2_hooks::HookResult::NotOk { stdout, stderr } => {
+				Self::NotOk(format!("{stdout}{stderr}"))
+			}
+		}
+	}
+}
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_commit_msg>
 /// we use the same convention as other git clients to create a temp file containing
@@ -16,7 +34,7 @@ pub fn hooks_commit_msg(
 
 	let repo = repo(repo_path)?;
 
-	Ok(git2_hooks::hooks_commit_msg(&repo, msg)?)
+	Ok(git2_hooks::hooks_commit_msg(&repo, msg)?.into())
 }
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_pre_commit>
@@ -26,7 +44,7 @@ pub fn hooks_pre_commit(repo_path: &RepoPath) -> Result<HookResult> {
 
 	let repo = repo(repo_path)?;
 
-	Ok(git2_hooks::hooks_pre_commit(&repo)?)
+	Ok(git2_hooks::hooks_pre_commit(&repo)?.into())
 }
 
 ///
@@ -35,7 +53,7 @@ pub fn hooks_post_commit(repo_path: &RepoPath) -> Result<HookResult> {
 
 	let repo = repo(repo_path)?;
 
-	Ok(git2_hooks::hooks_post_commit(&repo)?)
+	Ok(git2_hooks::hooks_post_commit(&repo)?.into())
 }
 
 #[cfg(test)]
