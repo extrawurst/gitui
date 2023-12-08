@@ -14,10 +14,13 @@ pub enum HookResult {
 impl From<git2_hooks::HookResult> for HookResult {
 	fn from(v: git2_hooks::HookResult) -> Self {
 		match v {
-			git2_hooks::HookResult::Ok => Self::Ok,
-			git2_hooks::HookResult::NotOk { stdout, stderr } => {
-				Self::NotOk(format!("{stdout}{stderr}"))
-			}
+			git2_hooks::HookResult::Ok { .. }
+			| git2_hooks::HookResult::NoHookFound => Self::Ok,
+			git2_hooks::HookResult::RunNotSuccessful {
+				stdout,
+				stderr,
+				..
+			} => Self::NotOk(format!("{stdout}{stderr}")),
 		}
 	}
 }
@@ -34,7 +37,7 @@ pub fn hooks_commit_msg(
 
 	let repo = repo(repo_path)?;
 
-	Ok(git2_hooks::hooks_commit_msg(&repo, msg)?.into())
+	Ok(git2_hooks::hooks_commit_msg(&repo, None, msg)?.into())
 }
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_pre_commit>
@@ -44,7 +47,7 @@ pub fn hooks_pre_commit(repo_path: &RepoPath) -> Result<HookResult> {
 
 	let repo = repo(repo_path)?;
 
-	Ok(git2_hooks::hooks_pre_commit(&repo)?.into())
+	Ok(git2_hooks::hooks_pre_commit(&repo, None)?.into())
 }
 
 ///
@@ -53,7 +56,7 @@ pub fn hooks_post_commit(repo_path: &RepoPath) -> Result<HookResult> {
 
 	let repo = repo(repo_path)?;
 
-	Ok(git2_hooks::hooks_post_commit(&repo)?.into())
+	Ok(git2_hooks::hooks_post_commit(&repo, None)?.into())
 }
 
 #[cfg(test)]

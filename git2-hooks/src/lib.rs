@@ -1,6 +1,11 @@
 //! git2-rs addon supporting git hooks
 //!
-//! most basic hook is: [`hooks_pre_commit`]. see also other `hooks_*` functions
+//! we look for hooks in the following locations:
+//!  * whatever `config.hooksPath` points to
+//!  * `.git/hooks/`
+//!  * whatever list of paths provided as `other_paths` (in order)
+//!
+//! most basic hook is: [`hooks_pre_commit`]. see also other `hooks_*` functions.
 //!
 //! [`create_hook`] is useful to create git hooks from code (unittest make heavy usage of it)
 mod error;
@@ -28,10 +33,36 @@ const HOOK_COMMIT_MSG_TEMP_FILE: &str = "COMMIT_EDITMSG";
 ///
 #[derive(Debug, PartialEq, Eq)]
 pub enum HookResult {
-	/// Everything went fine
-	Ok,
-	/// Hook returned error
-	NotOk { stdout: String, stderr: String },
+	/// No hook found
+	NoHookFound,
+	/// Hook executed with non error return code
+	Ok {
+		/// path of the hook that was run
+		hook: PathBuf,
+	},
+	/// Hook executed and returned an error code
+	RunNotSuccessful {
+		/// exit code as reported back from process calling the hook
+		code: Option<i32>,
+		/// stderr output emitted by hook
+		stdout: String,
+		/// stderr output emitted by hook
+		stderr: String,
+		/// path of the hook that was run
+		hook: PathBuf,
+	},
+}
+
+impl HookResult {
+	/// helper to check if result is ok
+	pub fn is_ok(&self) -> bool {
+		matches!(self, HookResult::Ok { .. })
+	}
+
+	/// helper to check if result was run and not rejected
+	pub fn is_not_successful(&self) -> bool {
+		matches!(self, HookResult::RunNotSuccessful { .. })
+	}
 }
 
 /// helper method to create git hooks programmatically (heavy used in unittests)
@@ -40,7 +71,7 @@ pub fn create_hook(
 	hook: &str,
 	hook_script: &[u8],
 ) -> PathBuf {
-	let hook = HookPaths::new(r, hook).unwrap();
+	let hook = HookPaths::new(r, None, hook).unwrap();
 
 	let path = hook.hook.clone();
 
@@ -52,7 +83,7 @@ pub fn create_hook(
 fn create_hook_in_path(path: &Path, hook_script: &[u8]) {
 	File::create(path).unwrap().write_all(hook_script).unwrap();
 
-	#[cfg(not(windows))]
+	#[cfg(unix)]
 	{
 		Command::new("chmod")
 			.arg("+x")
@@ -69,50 +100,56 @@ fn create_hook_in_path(path: &Path, hook_script: &[u8]) {
 /// parameter to the hook script.
 pub fn hooks_commit_msg(
 	repo: &Repository,
+	other_paths: Option<&[&str]>,
 	msg: &mut String,
 ) -> Result<HookResult> {
-	let hooks_path = HookPaths::new(repo, HOOK_COMMIT_MSG)?;
+	let hook = HookPaths::new(repo, other_paths, HOOK_COMMIT_MSG)?;
 
-	if hooks_path.is_executable() {
-		let temp_file =
-			hooks_path.git.join(HOOK_COMMIT_MSG_TEMP_FILE);
-		File::create(&temp_file)?.write_all(msg.as_bytes())?;
-
-		let res = hooks_path.run_hook(&[temp_file
-			.as_os_str()
-			.to_string_lossy()
-			.as_ref()])?;
-
-		// load possibly altered msg
-		msg.clear();
-		File::open(temp_file)?.read_to_string(msg)?;
-
-		Ok(res)
-	} else {
-		Ok(HookResult::Ok)
+	if !hook.found() {
+		return Ok(HookResult::NoHookFound);
 	}
+
+	let temp_file = hook.git.join(HOOK_COMMIT_MSG_TEMP_FILE);
+	File::create(&temp_file)?.write_all(msg.as_bytes())?;
+
+	let res = hook.run_hook(&[temp_file
+		.as_os_str()
+		.to_string_lossy()
+		.as_ref()])?;
+
+	// load possibly altered msg
+	msg.clear();
+	File::open(temp_file)?.read_to_string(msg)?;
+
+	Ok(res)
 }
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_pre_commit>
-pub fn hooks_pre_commit(repo: &Repository) -> Result<HookResult> {
-	let hook = HookPaths::new(repo, HOOK_PRE_COMMIT)?;
+pub fn hooks_pre_commit(
+	repo: &Repository,
+	other_paths: Option<&[&str]>,
+) -> Result<HookResult> {
+	let hook = HookPaths::new(repo, other_paths, HOOK_PRE_COMMIT)?;
 
-	if hook.is_executable() {
-		Ok(hook.run_hook(&[])?)
-	} else {
-		Ok(HookResult::Ok)
+	if !hook.found() {
+		return Ok(HookResult::NoHookFound);
 	}
+
+	hook.run_hook(&[])
 }
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_post_commit>
-pub fn hooks_post_commit(repo: &Repository) -> Result<HookResult> {
-	let hook = HookPaths::new(repo, HOOK_POST_COMMIT)?;
+pub fn hooks_post_commit(
+	repo: &Repository,
+	other_paths: Option<&[&str]>,
+) -> Result<HookResult> {
+	let hook = HookPaths::new(repo, other_paths, HOOK_POST_COMMIT)?;
 
-	if hook.is_executable() {
-		Ok(hook.run_hook(&[])?)
-	} else {
-		Ok(HookResult::Ok)
+	if !hook.found() {
+		return Ok(HookResult::NoHookFound);
 	}
+
+	hook.run_hook(&[])
 }
 
 #[cfg(test)]
@@ -127,13 +164,19 @@ mod tests {
 		let (_td, repo) = repo_init();
 
 		let mut msg = String::from("test");
-		let res = hooks_commit_msg(&repo, &mut msg).unwrap();
+		let res = hooks_commit_msg(&repo, None, &mut msg).unwrap();
 
-		assert_eq!(res, HookResult::Ok);
+		assert_eq!(res, HookResult::NoHookFound);
 
-		let res = hooks_post_commit(&repo).unwrap();
+		let hook = b"#!/bin/sh
+exit 0
+        ";
 
-		assert_eq!(res, HookResult::Ok);
+		create_hook(&repo, HOOK_POST_COMMIT, hook);
+
+		let res = hooks_post_commit(&repo, None).unwrap();
+
+		assert!(res.is_ok());
 	}
 
 	#[test]
@@ -147,9 +190,9 @@ exit 0
 		create_hook(&repo, HOOK_COMMIT_MSG, hook);
 
 		let mut msg = String::from("test");
-		let res = hooks_commit_msg(&repo, &mut msg).unwrap();
+		let res = hooks_commit_msg(&repo, None, &mut msg).unwrap();
 
-		assert_eq!(res, HookResult::Ok);
+		assert!(res.is_ok());
 
 		assert_eq!(msg, String::from("test"));
 	}
@@ -167,9 +210,9 @@ exit 0
 		create_hook(&repo, HOOK_COMMIT_MSG, hook);
 
 		let mut msg = String::from("test_sth");
-		let res = hooks_commit_msg(&repo, &mut msg).unwrap();
+		let res = hooks_commit_msg(&repo, None, &mut msg).unwrap();
 
-		assert_eq!(res, HookResult::Ok);
+		assert!(res.is_ok());
 
 		assert_eq!(msg, String::from("test_shell_command"));
 	}
@@ -183,8 +226,71 @@ exit 0
         ";
 
 		create_hook(&repo, HOOK_PRE_COMMIT, hook);
-		let res = hooks_pre_commit(&repo).unwrap();
-		assert_eq!(res, HookResult::Ok);
+		let res = hooks_pre_commit(&repo, None).unwrap();
+		assert!(res.is_ok());
+	}
+
+	#[test]
+	fn test_no_hook_found() {
+		let (_td, repo) = repo_init();
+
+		let res = hooks_pre_commit(&repo, None).unwrap();
+		assert_eq!(res, HookResult::NoHookFound);
+	}
+
+	#[test]
+	fn test_other_path() {
+		let (td, repo) = repo_init();
+
+		let hook = b"#!/bin/sh
+exit 0
+        ";
+
+		let custom_hooks_path = td.path().join(".myhooks");
+
+		std::fs::create_dir(dbg!(&custom_hooks_path)).unwrap();
+		create_hook_in_path(
+			dbg!(custom_hooks_path.join(HOOK_PRE_COMMIT).as_path()),
+			hook,
+		);
+
+		let res =
+			hooks_pre_commit(&repo, Some(&["../.myhooks"])).unwrap();
+
+		assert!(res.is_ok());
+	}
+
+	#[test]
+	fn test_other_path_precendence() {
+		let (td, repo) = repo_init();
+
+		{
+			let hook = b"#!/bin/sh
+exit 0
+        ";
+
+			create_hook(&repo, HOOK_PRE_COMMIT, hook);
+		}
+
+		{
+			let reject_hook = b"#!/bin/sh
+exit 1
+        ";
+
+			let custom_hooks_path = td.path().join(".myhooks");
+			std::fs::create_dir(dbg!(&custom_hooks_path)).unwrap();
+			create_hook_in_path(
+				dbg!(custom_hooks_path
+					.join(HOOK_PRE_COMMIT)
+					.as_path()),
+				reject_hook,
+			);
+		}
+
+		let res =
+			hooks_pre_commit(&repo, Some(&["../.myhooks"])).unwrap();
+
+		assert!(res.is_ok());
 	}
 
 	#[test]
@@ -197,8 +303,8 @@ exit 1
         ";
 
 		create_hook(&repo, HOOK_PRE_COMMIT, hook);
-		let res = hooks_pre_commit(&repo).unwrap();
-		assert!(res != HookResult::Ok);
+		let res = hooks_pre_commit(&repo, None).unwrap();
+		assert!(res.is_not_successful());
 	}
 
 	#[test]
@@ -211,9 +317,9 @@ exit 1
         ";
 
 		create_hook(&repo, HOOK_PRE_COMMIT, hook);
-		let res = hooks_pre_commit(&repo).unwrap();
+		let res = hooks_pre_commit(&repo, None).unwrap();
 
-		let HookResult::NotOk { stdout, .. } = res else {
+		let HookResult::RunNotSuccessful { stdout, .. } = res else {
 			unreachable!()
 		};
 
@@ -242,15 +348,15 @@ exit 1
 			)
 			.unwrap();
 
-		let res = hooks_pre_commit(&repo).unwrap();
+		let res = hooks_pre_commit(&repo, None).unwrap();
 
-		assert_eq!(
-			res,
-			HookResult::NotOk {
-				stdout: String::from("rejected\n"),
-				stderr: String::new()
-			}
-		);
+		let HookResult::RunNotSuccessful { code, stdout, .. } = res
+		else {
+			unreachable!()
+		};
+
+		assert_eq!(code.unwrap(), 1);
+		assert_eq!(&stdout, "rejected\n");
 	}
 
 	#[test]
@@ -263,8 +369,8 @@ exit 1
         ";
 
 		create_hook(&repo, HOOK_PRE_COMMIT, hook);
-		let res = hooks_pre_commit(&repo).unwrap();
-		assert!(res != HookResult::Ok);
+		let res = hooks_pre_commit(&repo, None).unwrap();
+		assert!(res.is_not_successful());
 	}
 
 	#[test]
@@ -284,8 +390,8 @@ sys.exit(0)
         ";
 
 		create_hook(&repo, HOOK_PRE_COMMIT, hook);
-		let res = hooks_pre_commit(&repo).unwrap();
-		assert_eq!(res, HookResult::Ok);
+		let res = hooks_pre_commit(&repo, None).unwrap();
+		assert!(res.is_ok());
 	}
 
 	#[test]
@@ -305,8 +411,8 @@ sys.exit(1)
         ";
 
 		create_hook(&repo, HOOK_PRE_COMMIT, hook);
-		let res = hooks_pre_commit(&repo).unwrap();
-		assert!(res != HookResult::Ok);
+		let res = hooks_pre_commit(&repo, None).unwrap();
+		assert!(res.is_not_successful());
 	}
 
 	#[test]
@@ -322,15 +428,15 @@ exit 1
 		create_hook(&repo, HOOK_COMMIT_MSG, hook);
 
 		let mut msg = String::from("test");
-		let res = hooks_commit_msg(&repo, &mut msg).unwrap();
+		let res = hooks_commit_msg(&repo, None, &mut msg).unwrap();
 
-		assert_eq!(
-			res,
-			HookResult::NotOk {
-				stdout: String::from("rejected\n"),
-				stderr: String::new()
-			}
-		);
+		let HookResult::RunNotSuccessful { code, stdout, .. } = res
+		else {
+			unreachable!()
+		};
+
+		assert_eq!(code.unwrap(), 1);
+		assert_eq!(&stdout, "rejected\n");
 
 		assert_eq!(msg, String::from("msg\n"));
 	}
@@ -347,9 +453,9 @@ exit 0
 		create_hook(&repo, HOOK_COMMIT_MSG, hook);
 
 		let mut msg = String::from("test");
-		let res = hooks_commit_msg(&repo, &mut msg).unwrap();
+		let res = hooks_commit_msg(&repo, None, &mut msg).unwrap();
 
-		assert_eq!(res, HookResult::Ok);
+		assert!(res.is_ok());
 		assert_eq!(msg, String::from("msg\n"));
 	}
 
@@ -358,7 +464,8 @@ exit 0
 		let (_td, repo) = repo_init_bare();
 		let git_root = repo.path().to_path_buf();
 
-		let hook = HookPaths::new(&repo, HOOK_POST_COMMIT).unwrap();
+		let hook =
+			HookPaths::new(&repo, None, HOOK_POST_COMMIT).unwrap();
 
 		assert_eq!(hook.pwd, git_root);
 	}
@@ -368,7 +475,8 @@ exit 0
 		let (_td, repo) = repo_init();
 		let git_root = repo.path().to_path_buf();
 
-		let hook = HookPaths::new(&repo, HOOK_POST_COMMIT).unwrap();
+		let hook =
+			HookPaths::new(&repo, None, HOOK_POST_COMMIT).unwrap();
 
 		assert_eq!(hook.pwd, git_root.parent().unwrap());
 	}
