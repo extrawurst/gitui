@@ -12,56 +12,106 @@ pub struct HookPaths {
 	pub pwd: PathBuf,
 }
 
+const CONFIG_HOOKS_PATH: &str = "core.hooksPath";
+const DEFAULT_HOOKS_PATH: &str = "hooks";
+
 impl HookPaths {
-	pub fn new(repo: &Repository, hook: &str) -> Result<Self> {
+	/// `core.hooksPath` always takes precendence.
+	/// If its defined and there is no hook `hook` this is not considered
+	/// an error or a reason to search in other paths.
+	/// If the config is not set we go into search mode and
+	/// first check standard `.git/hooks` folder and any sub path provided in `other_paths`.
+	///
+	/// Note: we try to model as closely as possible what git shell is doing.
+	pub fn new(
+		repo: &Repository,
+		other_paths: Option<&[&str]>,
+		hook: &str,
+	) -> Result<Self> {
 		let pwd = repo
 			.workdir()
 			.unwrap_or_else(|| repo.path())
 			.to_path_buf();
 
 		let git_dir = repo.path().to_path_buf();
-		let hooks_path = repo
-			.config()
-			.and_then(|config| config.get_string("core.hooksPath"))
-			.map_or_else(
-				|e| {
-					log::error!("hookspath error: {}", e);
-					repo.path().to_path_buf().join("hooks/")
-				},
-				PathBuf::from,
-			);
 
-		let hook = hooks_path.join(hook);
+		if let Some(config_path) = Self::config_hook_path(repo)? {
+			let hooks_path = PathBuf::from(config_path);
 
-		let hook = shellexpand::full(
-			hook.as_os_str()
-				.to_str()
-				.ok_or(HooksError::PathToString)?,
-		)?;
+			let hook = hooks_path.join(hook);
 
-		let hook = PathBuf::from_str(hook.as_ref())
-			.map_err(|_| HooksError::PathToString)?;
+			let hook = shellexpand::full(
+				hook.as_os_str()
+					.to_str()
+					.ok_or(HooksError::PathToString)?,
+			)?;
+
+			let hook = PathBuf::from_str(hook.as_ref())
+				.map_err(|_| HooksError::PathToString)?;
+
+			return Ok(Self {
+				git: git_dir,
+				hook,
+				pwd,
+			});
+		}
 
 		Ok(Self {
 			git: git_dir,
-			hook,
+			hook: Self::find_hook(repo, other_paths, hook),
 			pwd,
 		})
 	}
 
-	pub fn is_executable(&self) -> bool {
+	fn config_hook_path(repo: &Repository) -> Result<Option<String>> {
+		Ok(repo.config()?.get_string(CONFIG_HOOKS_PATH).ok())
+	}
+
+	/// check default hook path first and then followed by `other_paths`.
+	/// if no hook is found we return the default hook path
+	fn find_hook(
+		repo: &Repository,
+		other_paths: Option<&[&str]>,
+		hook: &str,
+	) -> PathBuf {
+		let mut paths = vec![DEFAULT_HOOKS_PATH.to_string()];
+		if let Some(others) = other_paths {
+			paths.extend(
+				others
+					.iter()
+					.map(|p| p.trim_end_matches('/').to_string()),
+			);
+		}
+
+		for p in paths {
+			let p = repo.path().to_path_buf().join(p).join(hook);
+			if p.exists() {
+				return p;
+			}
+		}
+
+		repo.path()
+			.to_path_buf()
+			.join(DEFAULT_HOOKS_PATH)
+			.join(hook)
+	}
+
+	/// was a hook file found and is it executable
+	pub fn found(&self) -> bool {
 		self.hook.exists() && is_executable(&self.hook)
 	}
 
 	/// this function calls hook scripts based on conventions documented here
 	/// see <https://git-scm.com/docs/githooks>
 	pub fn run_hook(&self, args: &[&str]) -> Result<HookResult> {
-		let arg_str = format!("{:?} {}", self.hook, args.join(" "));
+		let hook = self.hook.clone();
+
+		let arg_str = format!("{:?} {}", hook, args.join(" "));
 		// Use -l to avoid "command not found" on Windows.
 		let bash_args =
 			vec!["-l".to_string(), "-c".to_string(), arg_str];
 
-		log::trace!("run hook '{:?}' in '{:?}'", self.hook, self.pwd);
+		log::trace!("run hook '{:?}' in '{:?}'", hook, self.pwd);
 
 		let git_bash = find_bash_executable()
 			.unwrap_or_else(|| PathBuf::from("bash"));
@@ -78,19 +128,24 @@ impl HookPaths {
 			.output()?;
 
 		if output.status.success() {
-			Ok(HookResult::Ok)
+			Ok(HookResult::Ok { hook })
 		} else {
 			let stderr =
 				String::from_utf8_lossy(&output.stderr).to_string();
 			let stdout =
 				String::from_utf8_lossy(&output.stdout).to_string();
 
-			Ok(HookResult::NotOk { stdout, stderr })
+			Ok(HookResult::RunNotSuccessful {
+				code: output.status.code(),
+				stdout,
+				stderr,
+				hook,
+			})
 		}
 	}
 }
 
-#[cfg(not(windows))]
+#[cfg(unix)]
 fn is_executable(path: &Path) -> bool {
 	use std::os::unix::fs::PermissionsExt;
 
