@@ -1,7 +1,7 @@
 [package]
-name = "gitui"
-version = "0.24.3"
-authors = ["extrawurst <mail@rusticorn.com>"]
+name = "gnostr-tui"
+version = "0.0.1"
+authors = ["gnostr <admin@gnostr.org>","extrawurst <mail@rusticorn.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2021"
 rust-version = "1.65"
@@ -11,7 +11,7 @@ repository = "https://github.com/extrawurst/gitui"
 readme = "README.md"
 license = "MIT"
 categories = ["command-line-utilities"]
-keywords = ["git", "gui", "cli", "terminal", "ui"]
+keywords = ["git", "gui", "cli", "terminal", "ui", "gnostr"]
 
 [dependencies]
 anyhow = "1.0"
@@ -76,8 +76,8 @@ lto = true
 opt-level = 'z'   # Optimize for size.
 codegen-units = 1
 
-# make debug build as fast as release 
-# usage of utf8 encoding inside tui 
+# make debug build as fast as release
+# usage of utf8 encoding inside tui
 # makes their debug profile slow
 [profile.dev.package."ratatui"]
 opt-level = 3

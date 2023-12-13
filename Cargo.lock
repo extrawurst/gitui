@@ -736,8 +736,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "gitui"
-version = "0.24.3"
+name = "gnostr-tui"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "asyncgit",
