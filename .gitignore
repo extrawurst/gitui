@@ -3,3 +3,5 @@
 .DS_Store
 /.idea/
 flamegraph.svg
+src/ui/bash_profile.log
+bash_profile.log
