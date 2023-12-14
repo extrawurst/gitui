@@ -19,23 +19,23 @@ build-release:
 	cargo build --release
 
 release-mac: build-release
-	strip target/release/gitui
-	otool -L target/release/gitui
+	strip target/release/gnostr-tui
+	otool -L target/release/gnostr-tui
 	mkdir -p release
-	tar -C ./target/release/ -czvf ./release/gitui-mac.tar.gz ./gitui
-	ls -lisah ./release/gitui-mac.tar.gz
+	tar -C ./target/release/ -czvf ./release/gnostr-tui-mac.tar.gz ./gnostr-tui
+	ls -lisah ./release/gnostr-tui-mac.tar.gz
 
 release-win: build-release
 	mkdir -p release
-	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
+	tar -C ./target/release/ -czvf ./release/gnostr-tui-win.tar.gz ./gnostr-tui.exe
 	cargo install cargo-wix --version 0.3.3
-	cargo wix -p gitui --no-build --nocapture --output ./release/gitui.msi
-	ls -l ./release/gitui.msi
+	cargo wix -p gnostr-tui --no-build --nocapture --output ./release/gnostr-tui.msi
+	ls -l ./release/gnostr-tui.msi
 
 release-linux-musl: build-linux-musl-release
-	strip target/x86_64-unknown-linux-musl/release/gitui
+	strip target/x86_64-unknown-linux-musl/release/gnostr-tui
 	mkdir -p release
-	tar -C ./target/x86_64-unknown-linux-musl/release/ -czvf ./release/gitui-linux-musl.tar.gz ./gitui
+	tar -C ./target/x86_64-unknown-linux-musl/release/ -czvf ./release/gnostr-tui-linux-musl.tar.gz ./gnostr-tui
 
 build-linux-musl-debug:
 	cargo build --target=x86_64-unknown-linux-musl
@@ -49,13 +49,13 @@ test-linux-musl:
 release-linux-arm: build-linux-arm-release
 	mkdir -p release
 
-	aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/gitui
-	arm-linux-gnueabihf-strip target/armv7-unknown-linux-gnueabihf/release/gitui
-	arm-linux-gnueabihf-strip target/arm-unknown-linux-gnueabihf/release/gitui
+	aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/gnostr-tui
+	arm-linux-gnueabihf-strip target/armv7-unknown-linux-gnueabihf/release/gnostr-tui
+	arm-linux-gnueabihf-strip target/arm-unknown-linux-gnueabihf/release/gnostr-tui
 
-	tar -C ./target/aarch64-unknown-linux-gnu/release/ -czvf ./release/gitui-linux-aarch64.tar.gz ./gitui
-	tar -C ./target/armv7-unknown-linux-gnueabihf/release/ -czvf ./release/gitui-linux-armv7.tar.gz ./gitui
-	tar -C ./target/arm-unknown-linux-gnueabihf/release/ -czvf ./release/gitui-linux-arm.tar.gz ./gitui
+	tar -C ./target/aarch64-unknown-linux-gnu/release/ -czvf ./release/gnostr-tui-linux-aarch64.tar.gz ./gnostr-tui
+	tar -C ./target/armv7-unknown-linux-gnueabihf/release/ -czvf ./release/gnostr-tui-linux-armv7.tar.gz ./gnostr-tui
+	tar -C ./target/arm-unknown-linux-gnueabihf/release/ -czvf ./release/gnostr-tui-linux-arm.tar.gz ./gnostr-tui
 
 build-linux-arm-debug:
 	cargo build --target=aarch64-unknown-linux-gnu
