@@ -322,8 +322,8 @@ impl Default for Theme {
 		Self {
 			selected_tab: Color::Reset,
 			command_fg: Color::White,
-			selection_bg: Color::Blue,
-			selection_fg: Color::White,
+			selection_bg: Color::Magenta,
+			selection_fg: Color::Reset,
 			cmdbar_bg: Color::Blue,
 			cmdbar_extra_lines_bg: Color::Blue,
 			disabled_fg: Color::DarkGray,
