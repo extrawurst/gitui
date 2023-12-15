@@ -1,5 +1,6 @@
 use super::{repository::repo, RepoPath};
 use crate::error::Result;
+pub use git2_hooks::PrepareCommitMsgSource;
 use scopetime::scope_time;
 
 ///
@@ -57,6 +58,22 @@ pub fn hooks_post_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	let repo = repo(repo_path)?;
 
 	Ok(git2_hooks::hooks_post_commit(&repo, None)?.into())
+}
+
+///
+pub fn hooks_prepare_commit_msg(
+	repo_path: &RepoPath,
+	source: PrepareCommitMsgSource,
+	msg: &mut String,
+) -> Result<HookResult> {
+	scope_time!("hooks_prepare_commit_msg");
+
+	let repo = repo(repo_path)?;
+
+	Ok(git2_hooks::hooks_prepare_commit_msg(
+		&repo, None, source, msg,
+	)?
+	.into())
 }
 
 #[cfg(test)]
