@@ -367,7 +367,7 @@ impl CommitComponent {
 			}
 
 			match git2_summarize::git_diff_summarize(
-				&api_key,
+				api_key,
 				&unified_diff,
 				FIRST_LINE_LIMIT,
 			) {

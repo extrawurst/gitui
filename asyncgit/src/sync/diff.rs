@@ -415,11 +415,9 @@ pub fn unified_stage_diff(repo_path: &RepoPath) -> Result<String> {
 			_ => "",
 		};
 
-		output.push_str(&format!(
-			"{}{}",
-			prefix,
-			bytes2string(line.content()).unwrap()
-		));
+		if let Ok(line) = bytes2string(line.content()) {
+			output.push_str(&format!("{prefix}{line}"));
+		}
 
 		true
 	})?;
