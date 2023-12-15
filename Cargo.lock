@@ -732,7 +732,6 @@ dependencies = [
  "git2",
  "log",
  "openai-api-rs",
- "thiserror",
 ]
 
 [[package]]

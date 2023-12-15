@@ -15,5 +15,4 @@ keywords = ["git"]
 [dependencies]
 git2 = ">=0.17"
 log = "0.4"
-thiserror = "1.0"
 openai-api-rs = "2.1"
