@@ -7,17 +7,23 @@ allow = [
     "BSD-3-Clause",
     "CC0-1.0",
     "ISC",
-    "MPL-2.0"
+    "MPL-2.0",
+    "OpenSSL"
 ]
 copyleft = "warn"
 allow-osi-fsf-free = "neither"
 default = "deny"
 confidence-threshold = 0.9
+exceptions = [
+    { name = "unicode-ident", allow = ["Unicode-DFS-2016"], version = "1.0.3" },
+]
 
-[[licenses.exceptions]]
-allow = ["Unicode-DFS-2016"]
-name = "unicode-ident"
-version = "1.0.3"
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [
+    { path = "LICENSE", hash = 0xbd0eed23 }
+]
 
 [bans]
 multiple-versions = "deny"
