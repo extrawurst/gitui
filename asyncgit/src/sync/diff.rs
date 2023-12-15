@@ -9,7 +9,7 @@ use crate::{
 	error::Error,
 	error::Result,
 	hash,
-	sync::{get_stashes, repository::repo},
+	sync::{get_stashes, repository::repo, utils::bytes2string},
 };
 use easy_cast::Conv;
 use git2::{
@@ -396,6 +396,35 @@ fn raw_diff_to_file_diff(
 	let res = Rc::try_unwrap(res)
 		.map_err(|_| Error::Generic("rc unwrap error".to_owned()))?;
 	Ok(res.into_inner())
+}
+
+///
+pub fn unified_stage_diff(repo_path: &RepoPath) -> Result<String> {
+	scope_time!("unified_stage_diff");
+
+	let repo = repo(repo_path)?;
+
+	let diff = get_diff_raw(&repo, "*", true, false, None)?;
+
+	let mut output = String::with_capacity(32);
+
+	diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+		let prefix = match line.origin_value() {
+			git2::DiffLineType::Addition => "+",
+			git2::DiffLineType::Deletion => "-",
+			_ => "",
+		};
+
+		output.push_str(&format!(
+			"{}{}",
+			prefix,
+			bytes2string(line.content()).unwrap()
+		));
+
+		true
+	})?;
+
+	Ok(output)
 }
 
 const fn is_newline(c: char) -> bool {

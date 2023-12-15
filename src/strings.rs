@@ -965,6 +965,19 @@ pub mod commands {
 			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
+	pub fn commit_msg_summarize(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Summarize [{}]",
+				key_config
+					.get_hint(key_config.keys.commit_msg_summarize),
+			),
+			"use openai chat-gpt to generate commit message",
+			CMD_GROUP_COMMIT_POPUP,
+		)
+	}
 	pub fn commit_enter(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(

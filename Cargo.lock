@@ -765,6 +765,7 @@ dependencies = [
  "filetreelist",
  "fuzzy-matcher",
  "gh-emoji",
+ "git2-summarize",
  "indexmap",
  "itertools",
  "log",

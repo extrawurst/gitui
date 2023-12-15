@@ -62,7 +62,7 @@ pub use config::{
 	get_config_string, untracked_files_config,
 	ShowUntrackedFilesConfig,
 };
-pub use diff::get_diff_commit;
+pub use diff::{get_diff_commit, unified_stage_diff};
 pub use git2::BranchType;
 pub use hooks::{
 	hooks_commit_msg, hooks_post_commit, hooks_pre_commit, HookResult,

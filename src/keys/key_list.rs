@@ -120,6 +120,7 @@ pub struct KeysList {
 	pub view_submodule_parent: GituiKeyEvent,
 	pub update_submodule: GituiKeyEvent,
 	pub commit_history_next: GituiKeyEvent,
+	pub commit_msg_summarize: GituiKeyEvent,
 }
 
 #[rustfmt::skip]
@@ -209,6 +210,7 @@ impl Default for KeysList {
 			view_submodule_parent: GituiKeyEvent::new(KeyCode::Char('p'),  KeyModifiers::empty()),
 			update_submodule: GituiKeyEvent::new(KeyCode::Char('u'),  KeyModifiers::empty()),
 			commit_history_next: GituiKeyEvent::new(KeyCode::Char('n'),  KeyModifiers::CONTROL),
+			commit_msg_summarize: GituiKeyEvent::new(KeyCode::Char('g'),  KeyModifiers::CONTROL),
 		}
 	}
 }
