@@ -27,6 +27,7 @@ use git2::Repository;
 pub const HOOK_POST_COMMIT: &str = "post-commit";
 pub const HOOK_PRE_COMMIT: &str = "pre-commit";
 pub const HOOK_COMMIT_MSG: &str = "commit-msg";
+pub const HOOK_PREPARE_COMMIT_MSG: &str = "prepare-commit-msg";
 
 const HOOK_COMMIT_MSG_TEMP_FILE: &str = "COMMIT_EDITMSG";
 
@@ -150,6 +151,65 @@ pub fn hooks_post_commit(
 	}
 
 	hook.run_hook(&[])
+}
+
+///
+pub enum PrepareCommitMsgSource {
+	Message,
+	Template,
+	Merge,
+	Squash,
+	Commit(git2::Oid),
+}
+
+/// this hook is documented here <https://git-scm.com/docs/githooks#_prepare_commit_msg>
+pub fn hooks_prepare_commit_msg(
+	repo: &Repository,
+	other_paths: Option<&[&str]>,
+	source: PrepareCommitMsgSource,
+	msg: &mut String,
+) -> Result<HookResult> {
+	let hook =
+		HookPaths::new(repo, other_paths, HOOK_PREPARE_COMMIT_MSG)?;
+
+	if !hook.found() {
+		return Ok(HookResult::NoHookFound);
+	}
+
+	let temp_file = hook.git.join(HOOK_COMMIT_MSG_TEMP_FILE);
+	File::create(&temp_file)?.write_all(msg.as_bytes())?;
+
+	let temp_file_path = temp_file.as_os_str().to_string_lossy();
+
+	let vec = vec![
+		temp_file_path.as_ref(),
+		match source {
+			PrepareCommitMsgSource::Message => "message",
+			PrepareCommitMsgSource::Template => "template",
+			PrepareCommitMsgSource::Merge => "merge",
+			PrepareCommitMsgSource::Squash => "squash",
+			PrepareCommitMsgSource::Commit(_) => "commit",
+		},
+	];
+	let mut args = vec;
+
+	let id = if let PrepareCommitMsgSource::Commit(id) = &source {
+		Some(id.to_string())
+	} else {
+		None
+	};
+
+	if let Some(id) = &id {
+		args.push(id);
+	}
+
+	let res = hook.run_hook(args.as_slice())?;
+
+	// load possibly altered msg
+	msg.clear();
+	File::open(temp_file)?.read_to_string(msg)?;
+
+	Ok(res)
 }
 
 #[cfg(test)]
@@ -479,5 +539,66 @@ exit 0
 			HookPaths::new(&repo, None, HOOK_POST_COMMIT).unwrap();
 
 		assert_eq!(hook.pwd, git_root.parent().unwrap());
+	}
+
+	#[test]
+	fn test_hooks_prep_commit_msg_success() {
+		let (_td, repo) = repo_init();
+
+		let hook = b"#!/bin/sh
+echo msg:$2 > $1
+exit 0
+        ";
+
+		create_hook(&repo, HOOK_PREPARE_COMMIT_MSG, hook);
+
+		let mut msg = String::from("test");
+		let res = hooks_prepare_commit_msg(
+			&repo,
+			None,
+			PrepareCommitMsgSource::Message,
+			&mut msg,
+		)
+		.unwrap();
+
+		assert!(matches!(res, HookResult::Ok { .. }));
+		assert_eq!(msg, String::from("msg:message\n"));
+	}
+
+	#[test]
+	fn test_hooks_prep_commit_msg_reject() {
+		let (_td, repo) = repo_init();
+
+		let hook = b"#!/bin/sh
+echo $2,$3 > $1
+echo 'rejected'
+exit 2
+        ";
+
+		create_hook(&repo, HOOK_PREPARE_COMMIT_MSG, hook);
+
+		let mut msg = String::from("test");
+		let res = hooks_prepare_commit_msg(
+			&repo,
+			None,
+			PrepareCommitMsgSource::Commit(git2::Oid::zero()),
+			&mut msg,
+		)
+		.unwrap();
+
+		let HookResult::RunNotSuccessful { code, stdout, .. } = res
+		else {
+			unreachable!()
+		};
+
+		assert_eq!(code.unwrap(), 2);
+		assert_eq!(&stdout, "rejected\n");
+
+		assert_eq!(
+			msg,
+			String::from(
+				"commit,0000000000000000000000000000000000000000\n"
+			)
+		);
 	}
 }
