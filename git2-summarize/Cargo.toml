@@ -1,0 +1,19 @@
+[package]
+name = "git2-summarize"
+version = "0.1.0"
+authors = ["extrawurst <mail@rusticorn.com>"]
+edition = "2021"
+description = "use openai gpt to summarize git2 diffs"
+homepage = "https://github.com/extrawurst/gitui"
+repository = "https://github.com/extrawurst/gitui"
+documentation = "https://docs.rs/git2-summarize/"
+readme = "README.md"
+license = "MIT"
+categories = ["development-tools"]
+keywords = ["git"]
+
+[dependencies]
+git2 = ">=0.17"
+log = "0.4"
+thiserror = "1.0"
+openai-api-rs = "2.1"
