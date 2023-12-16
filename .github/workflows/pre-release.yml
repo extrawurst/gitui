@@ -87,7 +87,7 @@ jobs:
       - run: python3 -m pip install virtualenv
 
       - run: V=1 make
-      - run: V=1 make cargo-build-gnostr-legit
+      - run: V=1 make cargo-install-gnostr-legit
       - run: V=1 make cargo-build-release
 
       - name: "Build release"
