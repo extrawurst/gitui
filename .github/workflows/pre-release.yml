@@ -88,7 +88,7 @@ jobs:
 
       - run: V=1 make
       - run: V=1 make cargo-install-gnostr-legit
-      - run: V=1 make cargo-build-release
+      - run: V=1 make cargo-b-release
 
       - name: "Build release"
         run: |
