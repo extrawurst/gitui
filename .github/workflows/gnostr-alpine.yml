@@ -44,11 +44,4 @@ jobs:
       ## notice: these are post checkout steps
       - run: apk update && apk add autoconf automake build-base openssl-dev libtool make
       - run: touch ~/GITHUB_TOKEN.txt
-      - run: rm CMakeCache.txt || echo && cmake .
       - run: make
-      - run: make help
-      - run: make libsecp256k1.a || rm -rf deps/secp256k1 && make libsecp256k1.a
-      - run: make gnostr || rm gnostr && make gnostr
-      - run: make gnostr-install
-      ## TODO: add ssh config to act sequence
-      - run: rm -rf .venv
