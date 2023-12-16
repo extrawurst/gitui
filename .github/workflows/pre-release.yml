@@ -81,7 +81,7 @@ jobs:
 
       - name: apt-get update || brew install virtualenv
         run: |
-          sudo apt-get update && sudo apt-get install virtualenv || brew install virtualenv
+          sudo apt-get update && sudo apt-get install virtualenv help2man || brew install virtualenv help2man
           touch ~/GITHUB_TOKEN.txt
 
       - run: python3 -m pip install virtualenv

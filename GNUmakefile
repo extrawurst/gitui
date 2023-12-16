@@ -95,6 +95,8 @@ export RUSTC
 RUSTUP:=$(shell which rustup)
 export RUSTUP
 
+HELP2MAN:=$(shell which help2man)
+export HELP2MAN
 -:
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?##/ {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 help:## 	help
@@ -123,6 +125,11 @@ install:cargo-install## 	install
 cargo-i:## 	cargo-i
 	[ -x "$(shell command -v $(RUSTC))" ] || $(MAKE) rustup-install-stable
 	[ -x "$(shell command -v $(CARGO))" ] && $(CARGO) install --path .
+
+.PHONY:man ## :)
+man:
+	mkdir -p man
+	[ -x "$(shell command -v $(HELP2MAN))" ] && $(HELP2MAN) ./target/release/gnostr-tui > man/gnostr-tui.1 || cat man/gnostr-tui.1
 
 -include Makefile
 -include cargo.mk
