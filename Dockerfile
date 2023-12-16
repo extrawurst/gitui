@@ -9,7 +9,7 @@ RUN apt-get install bash libssl-dev pkg-config python-is-python3 systemd -y
 RUN chmod +x /usr/bin/systemctl
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 WORKDIR /tmp
-RUN git clone --recurse-submodules -j2 --branch v0.0.2 --depth 1 https://github.com/gnostr-org/gnostr-tui.git
+RUN git clone --recurse-submodules -j2 --branch v0.0.3 --depth 1 https://github.com/gnostr-org/gnostr-tui.git
 WORKDIR /tmp/gnostr-tui
 #RUN . $HOME/.cargo/env && cargo build --release && cargo install --path .
 RUN install ./serve /usr/local/bin || true
