@@ -1,32 +1,23 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: 'bug'
-assignees: ''
-
+name: Bug Report
+about: Did something not work as expected?
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+# Bug Report
+## Your Environment
+| Software           | Version(s) |
+| ------------------ | ---------- |
+| hypercore-protocol |
+| Rustc              |
+| Operating System   |
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## Expected Behavior
+Tell us what should have happened.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## Current Behavior
+Tell us what happens instead of the expected behavior. If you are seeing an
+error, please include the full error message and stack trace.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
-**Context (please complete the following information):**
- - OS/Distro + Version: [e.g. `macOS 10.15.5`]
- - GitUI Version [e.g. `0.5`]
- - Rust version: [e.g `1.44`]
-
-**Additional context**
-Add any other context about the problem here.
+## Code Sample
+Please provide a code repository, gist, code snippet or sample files to
+reproduce the issue.
