@@ -92,7 +92,7 @@ jobs:
 
       - name: "Build release"
         run: |
-          mv targets/release gnostr-$RUNNER_OS-$RUNNER_ARCH
+          mv target/release gnostr-$RUNNER_OS-$RUNNER_ARCH
           shasum -a 256 gnostr-$RUNNER_OS-$RUNNER_ARCH > gnostr-$RUNNER_OS-$RUNNER_ARCH.sha256.txt
           ls -a
 
@@ -108,7 +108,7 @@ jobs:
           prerelease: true
           title: "Pre-Release Build"
           files: |
-            targets/release
+            target/release
 
       - name: Save deps
         id: cache-deps-save
