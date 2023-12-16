@@ -92,9 +92,8 @@ jobs:
 
       - name: "Build release"
         run: |
-          mv target/release gnostr-$RUNNER_OS-$RUNNER_ARCH
-          shasum -a 256 gnostr-$RUNNER_OS-$RUNNER_ARCH > gnostr-$RUNNER_OS-$RUNNER_ARCH.sha256.txt
-          ls -a
+          shasum -a 256 target/release//gnostr-tui > target/release/gnostr-tui.sha256.txt
+          mv target gnostr-tui-$RUNNER_OS-$RUNNER_ARCH
 
       - name: Save state
         run: echo "{name}={value}" >> $GITHUB_STATE
@@ -108,7 +107,8 @@ jobs:
           prerelease: true
           title: "Pre-Release Build"
           files: |
-            target/release
+            gnostr-tui-$RUNNER_OS-$RUNNER_ARCH/gnostr-tui
+            gnostr-tui-$RUNNER_OS-$RUNNER_ARCH/gnostr-tui.sha256.txt
 
       - name: Save deps
         id: cache-deps-save
