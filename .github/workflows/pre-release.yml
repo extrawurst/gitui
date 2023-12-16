@@ -87,13 +87,13 @@ jobs:
       - run: python3 -m pip install virtualenv
 
       - run: V=1 make
+      - run: V=1 make cargo-doc
       - run: V=1 make cargo-install-gnostr-legit
       - run: V=1 make cargo-b-release
 
       - name: "Build release"
         run: |
-          shasum -a 256 target/release//gnostr-tui > target/release/gnostr-tui.sha256.txt
-          mv target gnostr-tui-$RUNNER_OS-$RUNNER_ARCH
+          shasum -a 256 target/release/gnostr-tui > target/release/gnostr-tui.sha256.txt
 
       - name: Save state
         run: echo "{name}={value}" >> $GITHUB_STATE
@@ -107,8 +107,8 @@ jobs:
           prerelease: true
           title: "Pre-Release Build"
           files: |
-            gnostr-tui-$RUNNER_OS-$RUNNER_ARCH/gnostr-tui
-            gnostr-tui-$RUNNER_OS-$RUNNER_ARCH/gnostr-tui.sha256.txt
+            target/release/*
+            target/doc/*
 
       - name: Save deps
         id: cache-deps-save
