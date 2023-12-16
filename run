@@ -1,0 +1,1 @@
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gnostr-org/gnostr-tui/v0.0.3/gnostr-tui-docker)" -- run "cargo install --path . && $(which gnostr-tui)"
