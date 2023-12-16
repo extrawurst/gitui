@@ -35,5 +35,3 @@ docker-package-buildx:
 	@docker build . --tag ghcr.io/gnostr-org/gnostr-command:latest
 docker-package-pushx:
 	@$(DOCKER) push ghcr.io/gnostr-org/gnostr-command:latest
-docker-rust:
-	@$(DOCKER) run --rm --user "$(shell id -u)":"$(shell id -g)" -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp rust:1.74.0 cargo build --release --no-default-features --features async-std
