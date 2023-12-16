@@ -84,7 +84,6 @@ jobs:
           sudo apt-get update && sudo apt-get install virtualenv || brew install virtualenv
           touch ~/GITHUB_TOKEN.txt
 
-      - run: V=1 make detect
       - run: python3 -m pip install virtualenv
 
       - run: V=1 make
