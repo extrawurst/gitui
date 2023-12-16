@@ -1,0 +1,84 @@
+name: cargo-build-matrix
+
+# Controls when the action will run.
+on:
+  pull_request:
+    branches:
+      - '*'
+      - '*/*'
+      - '**'
+      - 'master'
+      - 'main'
+  push:
+    branches:
+      - '*'
+      - '*/*'
+      - '**'
+      - 'master'
+      - 'main'
+
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  ubuntu-build_and_test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: styfle/cancel-workflow-action@0.11.0
+        if: ${{ !env.ACT }}
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+          submodules: 'recursive'
+          set-safe-directory: 'true'
+
+      - name: Restore build/ext
+        id: cache-ext-restore
+        uses: actions/cache/restore@v3
+        if: ${{ !env.ACT }}
+        with:
+          path: |
+            ~/.cargo
+          key: ${{ runner.os }}-ext
+      - name: printenv
+        run: |
+          printenv
+          touch ~/GITHUB_TOKEN.txt
+
+      - name: install rustup
+        run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && source "$HOME/.cargo/env"
+
+      - name: sudo apt-get install -y make
+        run: |
+          printenv && sudo apt-get update && \
+          sudo apt-get install -y make
+
+      - name: cargo-c
+        run: |
+          make cargo-c
+
+      - name: cargo-b
+        run: |
+          make cargo-b
+
+      - name: cargo-b-release
+        run: |
+          make cargo-b-release
+
+      - name: Run tests
+        run: source "$HOME/.cargo/env" && cargo test --verbose
+
+      - name: Save build/ext
+        id: cache-ext-save
+        uses: actions/cache/save@v3
+        if: ${{ !env.ACT }}
+        with:
+          path: |
+            ~/.cargo
+          key: ${{ steps.cache-deps-restore.outputs.cache-primary-key }}
+
