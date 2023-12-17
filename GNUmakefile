@@ -111,6 +111,9 @@ rustup-install-nightly:## 	rustup-install-nightly
 	$(shell echo which rustup) || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain nightly --profile default || . "$(HOME)/.cargo/env" || true
 	$(shell echo which rustup) && rustup default nightly
 
+rustup-target-add:
+	rustup target add x86_64-unknown-linux-musl
+	rustup target add aarch64-unknown-linux-gnu
 
 cargo-b:## 	cargo-b
 	[ -x "$(shell command -v $(RUSTUP))" ] || $(MAKE) rustup-install-stable
