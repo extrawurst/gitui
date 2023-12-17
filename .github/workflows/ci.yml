@@ -49,13 +49,17 @@ jobs:
       run: |
         make rustup-install
 
-    - name: make cargo-b
+    - name: git submodule update --init --recursiv
       run: |
-        make cargo-b
+        git submodule update --init --recursive
 
     - name: make cargo-b
       run: |
         make cargo-b
+
+    - name: make cargo-b-release
+      run: |
+        make cargo-b-release
 
     - name: Run tests
       run: make test
@@ -76,17 +80,17 @@ jobs:
     - name: Binary Size (unix)
       if: matrix.os != 'windows-latest'
       run: |
-        ls -l ./target/release/gitui
+        ls -l ./target/release/gnostr-tui
 
     - name: Binary Size (win)
       if: matrix.os == 'windows-latest'
       run: |
-        ls -l ./target/release/gitui.exe
+        ls -l ./target/release/gnostr-tui.exe
 
     - name: Binary dependencies (mac)
       if: matrix.os == 'macos-latest'
       run: |
-        otool -L ./target/release/gitui
+        otool -L ./target/release/gnostr-tui
 
     - name: Build MSI (windows)
       if: matrix.os == 'windows-latest'
