@@ -141,10 +141,12 @@ jobs:
         sudo apt-get -qq install musl-tools
     - name: Build Debug
       run: |
+        TARGET_CC=x86_64-linux-musl-gcc cargo build           --target x86_64-unknown-linux-musl
         make build-linux-musl-debug
         ./target/x86_64-unknown-linux-musl/debug/gnostr-tui --version
     - name: Build Release
       run: |
+        TARGET_CC=x86_64-linux-musl-gcc cargo build --release --target x86_64-unknown-linux-musl
         make build-linux-musl-release
         ./target/x86_64-unknown-linux-musl/release/gnostr-tui --version
         ls -l ./target/x86_64-unknown-linux-musl/release/gnostr-tui
