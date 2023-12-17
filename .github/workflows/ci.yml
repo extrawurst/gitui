@@ -147,7 +147,7 @@ jobs:
       run: |
         make build-linux-musl-release
         ./target/x86_64-unknown-linux-musl/release/gnostr-tui --version
-        ls -l ./target/x86_64-unknown-linux-musl/release/gnostrt-tui
+        ls -l ./target/x86_64-unknown-linux-musl/release/gnostr-tui
     - name: Test
       run: |
         make test-linux-musl
