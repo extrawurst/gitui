@@ -28,6 +28,10 @@ jobs:
         submodules: 'recursive'
         set-safe-directory: 'true'
 
+    - name: git submodule update --init --recursiv
+      run: |
+        git submodule update --init --recursive
+
     - name: Restore cargo cache
       uses: Swatinem/rust-cache@v2
       env:
@@ -48,10 +52,6 @@ jobs:
     - name: make rustup-install
       run: |
         make rustup-install
-
-    - name: git submodule update --init --recursiv
-      run: |
-        git submodule update --init --recursive
 
     - name: make cargo-b
       run: |
@@ -159,6 +159,10 @@ jobs:
     continue-on-error: ${{ matrix.rust == 'nightly' }}
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: '10'
+        submodules: 'recursive'
+        set-safe-directory: 'true'
 
     - name: Restore cargo cache
       uses: Swatinem/rust-cache@v2
@@ -199,6 +203,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: '10'
+        submodules: 'recursive'
+        set-safe-directory: 'true'
 
     - name: Restore cargo cache
       uses: Swatinem/rust-cache@v2
