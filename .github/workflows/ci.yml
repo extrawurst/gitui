@@ -55,11 +55,11 @@ jobs:
 
     - name: make cargo-b
       run: |
-        make cargo-b
+        make cargo-b || cargo b
 
     - name: make cargo-b-release
       run: |
-        make cargo-b-release
+        make cargo-b-release || cargo b --release
 
     - name: Run tests
       run: make test
