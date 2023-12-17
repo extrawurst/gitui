@@ -1,7 +1,7 @@
 [package]
 name = "gnostr-tui"
 version = "0.0.4"
-authors = ["gnostr <admin@gnostr.org>","extrawurst <mail@rusticorn.com>"]
+authors = ["gnostr <admin@gnostr.org>", "extrawurst <mail@rusticorn.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2021"
 rust-version = "1.65"
@@ -69,7 +69,7 @@ trace-libgit = ["asyncgit/trace-libgit"]
 vendor-openssl = ["asyncgit/vendor-openssl"]
 
 [workspace]
-members = ["asyncgit", "filetreelist", "git2-hooks", "git2-testing", "scopetime", "legit"]
+members = ["asyncgit", "filetreelist", "git2-hooks", "git2-testing", "legit", "scopetime"]
 
 [profile.release]
 lto = true
