@@ -50,13 +50,13 @@ jobs:
         components: clippy
 
     - name: make rustup-install
-      run: |
       if: matrix.os != 'windows-latest'
+      run: |
         make rustup-install
 
     - name: make rustup-target-add
-      run: |
       if: matrix.os != 'windows-latest'
+      run: |
         make rustup-target-add
 
     - name: make cargo-b
