@@ -2,7 +2,7 @@ name: publish to ghcr.io
 ##REF:https://github.com/docker/login-action
 
 env:
-  GNOSTR_COMMAND: 'gnostr-command'
+  GNOSTR_COMMAND: 'gnostr-tui'
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
               username: ${{github.actor}}
               password: ${{secrets.GITHUB_TOKEN}}
 
-          - name: 'Build gnostr-command image'
+          - name: 'Build gnostr-tui image'
             run: |
-              docker build . --tag ghcr.io/gnostr-org/gnostr-command:latest
-              docker push ghcr.io/gnostr-org/gnostr-command:latest
+              docker build . --tag ghcr.io/gnostr-org/gnostr-tui:latest
+              docker push ghcr.io/gnostr-org/gnostr-tui:latest
