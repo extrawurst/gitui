@@ -1,6 +1,6 @@
 [package]
 name = "gnostr-tui"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["gnostr <admin@gnostr.org>","extrawurst <mail@rusticorn.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2021"
