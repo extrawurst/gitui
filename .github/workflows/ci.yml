@@ -244,6 +244,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: '10'
+        submodules: 'recursive'
+        set-safe-directory: 'true'
 
     - name: Restore cargo cache
       uses: Swatinem/rust-cache@v2
@@ -266,6 +270,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: '10'
+        submodules: 'recursive'
+        set-safe-directory: 'true'
+
     - uses: rustsec/audit-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -275,6 +284,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: '10'
+        submodules: 'recursive'
+        set-safe-directory: 'true'
+
     - name: Extract release notes
       id: extract_release_notes
       uses: ffurrer2/extract-release-notes@v1
