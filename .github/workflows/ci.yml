@@ -53,6 +53,10 @@ jobs:
       run: |
         make rustup-install
 
+    - name: make rustup-target-add
+      run: |
+        make rustup-target-add
+
     - name: make cargo-b
       run: |
         make cargo-b || cargo b
@@ -97,8 +101,8 @@ jobs:
       run: |
         cargo install cargo-wix --version 0.3.3
         cargo wix --version
-        cargo wix -p gitui --no-build --nocapture --output ./target/wix/gitui.msi
-        ls -l ./target/wix/gitui.msi
+        cargo wix -p gnostr-tui --no-build --nocapture --output ./target/wix/gnostr-tui.msi
+        ls -l ./target/wix/gnostr-tui.msi
 
   build-linux-musl:
     runs-on: ubuntu-latest
@@ -138,12 +142,12 @@ jobs:
     - name: Build Debug
       run: |
         make build-linux-musl-debug
-        ./target/x86_64-unknown-linux-musl/debug/gitui --version
+        ./target/x86_64-unknown-linux-musl/debug/gnostr-tui --version
     - name: Build Release
       run: |
         make build-linux-musl-release
-        ./target/x86_64-unknown-linux-musl/release/gitui --version
-        ls -l ./target/x86_64-unknown-linux-musl/release/gitui
+        ./target/x86_64-unknown-linux-musl/release/gnostr-tui --version
+        ls -l ./target/x86_64-unknown-linux-musl/release/gnostrt-tui
     - name: Test
       run: |
         make test-linux-musl
@@ -196,7 +200,7 @@ jobs:
     - name: Build Release
       run: |
         make build-linux-arm-release
-        ls -l ./target/aarch64-unknown-linux-gnu/release/gitui || ls -l ./target/armv7-unknown-linux-gnueabihf/release/gitui || ls -l ./target/arm-unknown-linux-gnueabihf/release/gitui
+        ls -l ./target/aarch64-unknown-linux-gnu/release/gnostr-tui || ls -l ./target/armv7-unknown-linux-gnueabihf/release/gnostr-tui || ls -l ./target/arm-unknown-linux-gnueabihf/release/gnostr-tui
 
   linting:
     name: Lints
