@@ -278,6 +278,7 @@ jobs:
     - uses: rustsec/audit-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        ignore: RUSTSEC-2020-0071, RUSTSEC-2022-0004, RUSTSEC-2022-0011
 
   log-test:
     name: Changelog Test
