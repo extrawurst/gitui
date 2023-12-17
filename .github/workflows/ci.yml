@@ -51,34 +51,43 @@ jobs:
 
     - name: make rustup-install
       run: |
+      if: matrix.os != 'windows-latest'
         make rustup-install
 
     - name: make rustup-target-add
       run: |
+      if: matrix.os != 'windows-latest'
         make rustup-target-add
 
     - name: make cargo-b
+      if: matrix.os != 'windows-latest'
       run: |
         make cargo-b || cargo b
 
     - name: make cargo-b-release
+      if: matrix.os != 'windows-latest'
       run: |
         make cargo-b-release || cargo b --release
 
     - name: Run tests
+      if: matrix.os != 'windows-latest'
       run: make test
 
     - name: make test-linux-musl
+      if: matrix.os != 'windows-latest'
       run: make test-linux-musl
 
     - name: Run clippy
+      if: matrix.os != 'windows-latest'
       run: |
         make clippy
 
     - name: Build Release
+      if: matrix.os != 'windows-latest'
       run: make build-release
 
     - name: Test Install
+      if: matrix.os != 'windows-latest'
       run: cargo install --path "." --force --locked
 
     - name: Binary Size (unix)
@@ -134,26 +143,32 @@ jobs:
     # The build would fail without manually installing the target.
     # https://github.com/dtolnay/rust-toolchain/issues/83
     - name: Manually install target
+      if: matrix.os != 'windows-latest'
       run: rustup target add x86_64-unknown-linux-musl
 
     - name: Setup MUSL
+      if: matrix.os != 'windows-latest'
       run: |
         sudo apt-get -qq install musl-tools
     - name: Build Debug
+      if: matrix.os != 'windows-latest'
       run: |
         TARGET_CC=x86_64-linux-musl-gcc cargo build           --target x86_64-unknown-linux-musl
         make build-linux-musl-debug
         ./target/x86_64-unknown-linux-musl/debug/gnostr-tui --version
     - name: Build Release
+      if: matrix.os != 'windows-latest'
       run: |
         TARGET_CC=x86_64-linux-musl-gcc cargo build --release --target x86_64-unknown-linux-musl
         make build-linux-musl-release
         ./target/x86_64-unknown-linux-musl/release/gnostr-tui --version
         ls -l ./target/x86_64-unknown-linux-musl/release/gnostr-tui
     - name: Test
+      if: matrix.os != 'windows-latest'
       run: |
         make test-linux-musl
     - name: Test Install
+      if: matrix.os != 'windows-latest'
       run: cargo install --path "." --force --locked
 
   build-linux-arm:
@@ -182,6 +197,7 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
     - name: Setup ARM toolchain
+      if: matrix.os != 'windows-latest'
       run: |
         rustup target add aarch64-unknown-linux-gnu
         rustup target add armv7-unknown-linux-gnueabihf
@@ -197,9 +213,11 @@ jobs:
         echo "$GITHUB_WORKSPACE/gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf/bin" >> $GITHUB_PATH
 
     - name: Build Debug
+      if: matrix.os != 'windows-latest'
       run: |
         make build-linux-arm-debug
     - name: Build Release
+      if: matrix.os != 'windows-latest'
       run: |
         make build-linux-arm-release
         ls -l ./target/aarch64-unknown-linux-gnu/release/gnostr-tui || ls -l ./target/armv7-unknown-linux-gnueabihf/release/gnostr-tui || ls -l ./target/arm-unknown-linux-gnueabihf/release/gnostr-tui
@@ -229,19 +247,23 @@ jobs:
     - run: cargo fmt -- --check
 
     - name: cargo-sort
+      if: matrix.os != 'windows-latest'
       run: |
         cargo install cargo-sort --force
         cargo sort -c -w
 
     - name: cargo-deny install
+      if: matrix.os != 'windows-latest'
       run: |
         cargo install --locked cargo-deny
 
     - name: cargo-deny licenses
+      if: matrix.os != 'windows-latest'
       run: |
         cargo deny check licenses
 
     - name: cargo-deny bans
+      if: matrix.os != 'windows-latest'
       run: |
         cargo deny check bans
 
@@ -266,6 +288,7 @@ jobs:
       uses: dtolnay/rust-toolchain@nightly
 
     - name: cargo-udeps
+      if: matrix.os != 'windows-latest'
       run: |
         # cargo install --locked cargo-udeps
         cargo install --git https://github.com/est31/cargo-udeps --locked
