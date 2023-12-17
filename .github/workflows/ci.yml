@@ -83,7 +83,6 @@ jobs:
         make clippy
 
     - name: Build Release
-      if: matrix.os != 'windows-latest'
       run: make build-release
 
     - name: Test Install
