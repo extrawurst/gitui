@@ -38,13 +38,13 @@ release-linux-musl: build-linux-musl-release
 	tar -C ./target/x86_64-unknown-linux-musl/release/ -czvf ./release/gnostr-tui-linux-musl.tar.gz ./gnostr-tui
 
 build-linux-musl-debug:
-	cargo build --target=x86_64-unknown-linux-musl
+	TARGET_CC=x86_64-linux-musl-gcc cargo build            --target x86_64-unknown-linux-musl
 
 build-linux-musl-release:
-	cargo build --release --target=x86_64-unknown-linux-musl
+	TARGET_CC=x86_64-linux-musl-gcc cargo build --release --target x86_64-unknown-linux-musl
 
 test-linux-musl:
-	cargo test --workspace --target=x86_64-unknown-linux-musl
+	TARGET_CC=x86_64-linux-musl-gcc cargo test --workspace --target x86_64-unknown-linux-musl
 
 release-linux-arm: build-linux-arm-release
 	mkdir -p release
