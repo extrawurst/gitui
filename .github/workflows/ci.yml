@@ -24,9 +24,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        fetch-depth: '0'
+        fetch-depth: '10'
         submodules: 'recursive'
         set-safe-directory: 'true'
+
     - name: Restore cargo cache
       uses: Swatinem/rust-cache@v2
       env:
@@ -44,12 +45,23 @@ jobs:
         toolchain: ${{ matrix.rust }}
         components: clippy
 
-    - name: Build Debug
+    - name: make rustup-install
       run: |
-        cargo build
+        make rustup-install
+
+    - name: make cargo-b
+      run: |
+        make cargo-b
+
+    - name: make cargo-b
+      run: |
+        make cargo-b
 
     - name: Run tests
       run: make test
+
+    - name: make test-linux-musl
+      run: make test-linux-musl
 
     - name: Run clippy
       run: |
