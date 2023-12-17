@@ -33,7 +33,7 @@ cargo-report:### 	cargo-report
 	$(CARGO) report future-incompatibilities --id 1
 
 cargo-doc:### 	cargo-doc
-	 $(CARGO) doc --no-deps #--open
+	 $(CARGO) doc #--no-deps #--open
 
 # vim: set noexpandtab:
 # vim: set setfiletype make
