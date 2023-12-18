@@ -1,0 +1,14 @@
+# We make separate GOAL variables for each algorithm, to make it easy to
+# switch each to the Legacy provider when needed.
+
+$RSA_KEM_GOAL=../../libdefault.a ../../libfips.a
+$EC_KEM_GOAL=../../libdefault.a
+
+SOURCE[$RSA_KEM_GOAL]=rsa_kem.c
+
+IF[{- !$disabled{ec} -}]
+  SOURCE[$EC_KEM_GOAL]=kem_util.c ec_kem.c
+  IF[{- !$disabled{ecx} -}]
+    SOURCE[$EC_KEM_GOAL]=ecx_kem.c
+  ENDIF
+ENDIF
