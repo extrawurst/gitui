@@ -199,6 +199,7 @@ jobs:
     - name: Setup ARM toolchain
       if: matrix.os != 'windows-latest'
       run: |
+        make rustup-target-add
         rustup target add aarch64-unknown-linux-gnu
         rustup target add armv7-unknown-linux-gnueabihf
         rustup target add arm-unknown-linux-gnueabihf
