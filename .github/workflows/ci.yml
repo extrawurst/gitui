@@ -98,7 +98,7 @@ jobs:
     - name: Binary Size (win)
       if: matrix.os == 'windows-latest'
       run: |
-        ls -l ./target/release/gnostr-tui.exe
+        ls -l ./target/release/gnostr-tui
 
     - name: Binary dependencies (mac)
       if: matrix.os == 'macos-latest'
