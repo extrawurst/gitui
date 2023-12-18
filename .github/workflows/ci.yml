@@ -98,20 +98,20 @@ jobs:
     - name: Binary Size (win)
       if: matrix.os == 'windows-latest'
       run: |
-        ls -l ./target/release/gnostr-tui
+        ls -l ./target/release
 
     - name: Binary dependencies (mac)
       if: matrix.os == 'macos-latest'
       run: |
         otool -L ./target/release/gnostr-tui
 
-    - name: Build MSI !(windows)
-      if: matrix.os != 'windows-latest'
+    - name: Build MSI (windows)
+      if: matrix.os == 'windows-latest'
       run: |
         cargo install cargo-wix --version 0.3.3
         cargo wix --version
         cargo wix -p gnostr-tui --no-build --nocapture --output ./target/wix/gnostr-tui.msi
-        ls -l ./target/wix/gnostr-tui.msi
+        ls -l ./target/wix
 
   build-linux-musl:
     runs-on: ubuntu-latest
