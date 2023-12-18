@@ -1,0 +1,45 @@
+name: publish to ghcr.io
+##REF:https://github.com/docker/login-action
+
+env:
+  GNOSTR_COMMAND: 'gnostr-tui'
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - v**
+    tags:
+      - v0.**
+      - v1.**
+      - v2.**
+      - v3.**
+      - v4.**
+    #branches-ignore:
+    #  - 'releases/**-alpha'
+    #tags-ignore:
+    #  - v999.**
+  workflow_dispatch:
+
+jobs:
+      push-store-image:
+        runs-on: ubuntu-latest
+        defaults:
+          run:
+            working-directory: '.'
+        steps:
+          - name: 'Checkout GitHub Action'
+            uses: actions/checkout@main
+
+          - name: 'Login to GitHub Container Registry'
+            uses: docker/login-action@v1
+            with:
+              registry: ghcr.io
+              username: ${{github.actor}}
+              password: ${{secrets.GITHUB_TOKEN}}
+
+          - name: 'Build gnostr-tui image'
+            run: |
+              docker build . --tag ghcr.io/gnostr-org/gnostr-tui:latest
+              docker push ghcr.io/gnostr-org/gnostr-tui:latest

@@ -1,0 +1,47 @@
+name: gnostr-alpine
+
+on:
+  pull_request:
+    branches:
+      - '*'
+      - '*/*'
+      - '**'
+      - 'master'
+      - 'main'
+  push:
+    branches:
+      - '*'
+      - '*/*'
+      - '**'
+      - 'master'
+      - 'main'
+
+env:
+  GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: [3.18]
+
+    container: rust:alpine${{ matrix.tag }}
+
+    steps:
+      ## notice: this is a pre checkout step
+      ## notice: additional operations can be done prior to checkout
+      - run: apk update && apk add bash cmake git python3 && python3 -m ensurepip
+      - run: printenv
+      - name: checkout@v3 fetch-depth submodules set-safe-dir true
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: '10'
+          submodules: 'true'
+          set-safe-directory: 'true'
+      ## notice: these are post checkout steps
+      - run: apk update && apk add autoconf automake build-base openssl-dev libtool make
+      - run: touch ~/GITHUB_TOKEN.txt
+      - run: make cargo-b-release

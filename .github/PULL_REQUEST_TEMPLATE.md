@@ -1,16 +1,21 @@
-<!---
-Thank you for contributing to GitUI! Please fill out the template below, and remove or add any
-information as you feel neccesary.
---->
+<!--
+Thanks for creating a Pull Request 😄 ! Before you submit, please read the following:
+- Read our CONTRIBUTING.md file before submitting a patch.
+- By making a contribution, you agree to our Developer Certificate of Origin.
+-->
 
-This Pull Request fixes/closes #{issue_num}.
+**Choose one:** is this a 🐛 bug fix, a 🙋 feature, or a 🔦 documentation change?
 
-It changes the following:
--
--
+<!-- Provide a general summary of the changes in the title above -->
 
-I followed the checklist:
-- [ ] I added unittests
-- [ ] I ran `make check` without errors
-- [ ] I tested the overall application
-- [ ] I added an appropriate item to the changelog
+## Checklist
+<!-- Remove items that do not apply. For completed items, change [ ] to [x]. -->
+- [ ] tests pass
+- [ ] tests and/or benchmarks are included
+- [ ] documentation is changed or added
+
+## Context
+<!-- Is this related to any GitHub issue(s)? -->
+
+## Semver Changes
+<!-- Which semantic version change would you recommend? -->

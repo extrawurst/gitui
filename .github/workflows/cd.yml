@@ -15,6 +15,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: '10'
+        submodules: 'recursive'
+        set-safe-directory: 'true'
 
     - name: Get version
       id: get_version
@@ -83,7 +87,7 @@ jobs:
       if: matrix.os == 'macos-latest'
       id: shasum
       run: |
-        echo sha="$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
+        echo sha="$(shasum -a 256 ./release/gnostr-tui-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
 
     - name: Extract release notes
       if: matrix.os == 'ubuntu-latest'
@@ -107,6 +111,6 @@ jobs:
       env:
         COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
       with:
-        formula-name: gitui
+        formula-name: gnostr-tui
         # https://github.com/mislav/bump-homebrew-formula-action/issues/58
-        formula-path: Formula/g/gitui.rb
+        formula-path: Formula/g/gnostr-tui.rb
