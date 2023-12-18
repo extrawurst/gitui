@@ -27,7 +27,7 @@ release-mac: build-release
 
 release-win: build-release
 	mkdir -p release
-	tar -C ./target/release/ -czvf ./release/gnostr-tui-win.tar.gz ./gnostr-tui.exe
+	tar -C ./target/release/ -czvf ./release/gnostr-tui-win.tar.gz ./gnostr-tui
 	cargo install cargo-wix --version 0.3.3
 	cargo wix -p gnostr-tui --no-build --nocapture --output ./release/gnostr-tui.msi
 	ls -l ./release/gnostr-tui.msi
