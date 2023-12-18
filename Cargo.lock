@@ -1094,7 +1094,7 @@ dependencies = [
 
 [[package]]
 name = "git2-hooks"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "git2",
  "git2-testing",

@@ -14,8 +14,8 @@ use anyhow::{bail, Ok, Result};
 use asyncgit::{
 	cached, message_prettify,
 	sync::{
-		self, get_config_string, CommitId, HookResult, RepoPathRef,
-		RepoState,
+		self, get_config_string, CommitId, HookResult,
+		PrepareCommitMsgSource, RepoPathRef, RepoState,
 	},
 	StatusItem, StatusItemType,
 };
@@ -366,7 +366,7 @@ impl CommitComponent {
 
 		let repo_state = sync::repo_state(&self.repo.borrow())?;
 
-		self.mode = if repo_state != RepoState::Clean
+		let (mode, msg_source) = if repo_state != RepoState::Clean
 			&& reword.is_some()
 		{
 			bail!("cannot reword while repo is not in a clean state");
@@ -381,7 +381,7 @@ impl CommitComponent {
 				.combine(),
 			);
 			self.input.set_title(strings::commit_reword_title());
-			Mode::Reword(reword_id)
+			(Mode::Reword(reword_id), PrepareCommitMsgSource::Message)
 		} else {
 			match repo_state {
 				RepoState::Merge => {
@@ -392,7 +392,7 @@ impl CommitComponent {
 					self.input.set_text(sync::merge_msg(
 						&self.repo.borrow(),
 					)?);
-					Mode::Merge(ids)
+					(Mode::Merge(ids), PrepareCommitMsgSource::Merge)
 				}
 				RepoState::Revert => {
 					self.input
@@ -400,7 +400,7 @@ impl CommitComponent {
 					self.input.set_text(sync::merge_msg(
 						&self.repo.borrow(),
 					)?);
-					Mode::Revert
+					(Mode::Revert, PrepareCommitMsgSource::Message)
 				}
 
 				_ => {
@@ -430,16 +430,34 @@ impl CommitComponent {
 							.ok()
 					});
 
-					if self.is_empty() {
+					let msg_source = if self.is_empty() {
 						if let Some(s) = &self.commit_template {
 							self.input.set_text(s.clone());
+							PrepareCommitMsgSource::Template
+						} else {
+							PrepareCommitMsgSource::Message
 						}
-					}
+					} else {
+						PrepareCommitMsgSource::Message
+					};
 					self.input.set_title(strings::commit_title());
-					Mode::Normal
+
+					(Mode::Normal, msg_source)
 				}
 			}
 		};
+
+		self.mode = mode;
+
+		let mut msg = self.input.get_text().to_string();
+		if let HookResult::NotOk(e) = sync::hooks_prepare_commit_msg(
+			&self.repo.borrow(),
+			msg_source,
+			&mut msg,
+		)? {
+			log::error!("prepare-commit-msg hook rejection: {e}",);
+		}
+		self.input.set_text(msg);
 
 		self.commit_msg_history_idx = 0;
 		self.input.show()?;
