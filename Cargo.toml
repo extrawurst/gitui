@@ -51,6 +51,11 @@ unicode-truncate = "0.2"
 unicode-width = "0.1"
 which = "4.4"
 
+[package.metadata.cargo-udeps.ignore]
+normal = ["cargo-audit"]
+#development = []
+#build = []
+
 [dev-dependencies]
 cargo-audit = { version = "0.18.3", features = ["binary-scanning"] }
 pretty_assertions = "1.4"
