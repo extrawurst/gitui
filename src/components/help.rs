@@ -74,7 +74,10 @@ impl DrawableComponent for HelpComponent {
 
 			f.render_widget(
 				Paragraph::new(Line::from(vec![Span::styled(
-					Cow::from(format!("gitui {}", Version::new(),)),
+					Cow::from(format!(
+						"gnostr-tui {}",
+						Version::new(),
+					)),
 					Style::default(),
 				)]))
 				.alignment(Alignment::Right),

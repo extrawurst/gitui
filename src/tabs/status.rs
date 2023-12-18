@@ -303,6 +303,7 @@ impl Status {
 		r: ratatui::layout::Rect,
 	) {
 		if self.git_state != RepoState::Clean {
+			//TODO: gnostr-legit alert!
 			let txt = Self::repo_state_text(
 				&self.repo.borrow(),
 				&self.git_state,
@@ -411,6 +412,7 @@ impl Status {
 				config,
 			))?;
 
+			//TODO: gnostr-legit aware RepoState::Clean
 			self.git_state = sync::repo_state(&self.repo.borrow())
 				.unwrap_or(RepoState::Clean);
 
