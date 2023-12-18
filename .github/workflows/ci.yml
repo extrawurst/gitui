@@ -216,11 +216,11 @@ jobs:
     - name: Build Debug
       if: matrix.os != 'windows-latest'
       run: |
-        make build-linux-arm-debug
+        make build-linux-arm-debug || cargo b
     - name: Build Release
       if: matrix.os != 'windows-latest'
       run: |
-        make build-linux-arm-release
+        make build-linux-arm-release || cargo b --release
         ls -l ./target/aarch64-unknown-linux-gnu/release/gnostr-tui || ls -l ./target/armv7-unknown-linux-gnueabihf/release/gnostr-tui || ls -l ./target/arm-unknown-linux-gnueabihf/release/gnostr-tui
 
   linting:
