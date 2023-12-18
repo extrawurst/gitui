@@ -53,7 +53,7 @@ which = "4.4"
 
 [package.metadata.cargo-udeps.ignore]
 normal = ["cargo-audit"]
-#development = []
+development = ["cargo-audit"]
 #build = []
 
 [dev-dependencies]
