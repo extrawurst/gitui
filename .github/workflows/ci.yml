@@ -105,8 +105,8 @@ jobs:
       run: |
         otool -L ./target/release/gnostr-tui
 
-    - name: Build MSI (windows)
-      if: matrix.os == 'windows-latest'
+    - name: Build MSI !(windows)
+      if: matrix.os != 'windows-latest'
       run: |
         cargo install cargo-wix --version 0.3.3
         cargo wix --version
