@@ -1,0 +1,4 @@
+[submodule "gnostr-legit"]
+	path = legit
+  url = https://github.com/gnostr-org/gnostr-legit.git
+  ignore = dirty
