@@ -25,5 +25,8 @@ cargo-report:### 	cargo-report
 cargo-doc:### 	cargo-doc
 	 $(CARGO) doc #--no-deps #--open
 
+cargo-nightly-udeps:### 	cargo-nightly-udeps
+	 $(CARGO) +nightly udeps
+
 # vim: set noexpandtab:
 # vim: set setfiletype make
