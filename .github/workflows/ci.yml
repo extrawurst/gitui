@@ -78,16 +78,16 @@ jobs:
       run: make test-linux-musl
 
     - name: Run clippy
-      if: matrix.os != 'windows-latest'
+      #if: matrix.os != 'windows-latest'
       run: |
         make clippy
 
     - name: Build Release
-      if: matrix.os != 'windows-latest'
+      #if: matrix.os != 'windows-latest'
       run: make build-release
 
     - name: Test Install
-      if: matrix.os != 'windows-latest'
+      #if: matrix.os != 'windows-latest'
       run: cargo install --path "." --force --locked
 
     - name: Binary Size (unix)
