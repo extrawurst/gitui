@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * do not allow tag when `tag.gpgsign` enabled [[@TeFiLeDo](https://github.com/TeFiLeDo)] ([#1915](https://github.com/extrawurst/gitui/pull/1915))
 
+### Fixes
+* stash window empty after file history popup closes ([#1986](https://github.com/extrawurst/gitui/issues/1986))
+
 ## [0.24.3] - 2023-09-09
 
 ### Fixes
