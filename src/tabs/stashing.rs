@@ -99,6 +99,7 @@ impl Stashing {
 	) -> Result<()> {
 		if self.is_visible() && ev == AsyncGitNotification::Status {
 			let status = self.git_status.last()?;
+			self.index.show()?;
 			self.index.update(&status.items)?;
 		}
 
