@@ -405,7 +405,7 @@ impl App {
 		log::trace!("event: {:?}", ev);
 
 		if let InputEvent::Input(ev) = ev {
-			if self.check_hard_exit(&ev) || self.check_quit(&ev) {
+			if self.check_quit(&ev) {
 				return Ok(());
 			}
 
@@ -663,16 +663,6 @@ impl App {
 		}
 		if let Event::Key(e) = ev {
 			if key_match(e, self.key_config.keys.quit) {
-				self.do_quit = QuitState::Close;
-				return true;
-			}
-		}
-		false
-	}
-
-	fn check_hard_exit(&mut self, ev: &Event) -> bool {
-		if let Event::Key(e) = ev {
-			if key_match(e, self.key_config.keys.exit) {
 				self.do_quit = QuitState::Close;
 				return true;
 			}

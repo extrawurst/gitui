@@ -1117,7 +1117,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Quit [{}]",
-				key_config.get_hint(key_config.keys.exit),
+				key_config.get_hint(key_config.keys.quit),
 			),
 			"quit gitui application",
 			CMD_GROUP_GENERAL,

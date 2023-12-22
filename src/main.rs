@@ -76,6 +76,10 @@ use std::{
 	cell::RefCell,
 	io::{self, Write},
 	panic, process,
+	sync::{
+		atomic::{AtomicBool, Ordering},
+		Arc,
+	},
 	time::{Duration, Instant},
 };
 use ui::style::Theme;
@@ -147,6 +151,20 @@ fn main() -> Result<()> {
 	let mut repo_path = cliargs.repo_path;
 	let input = Input::new();
 
+	let term = Arc::new(AtomicBool::new(false));
+	signal_hook::flag::register(
+		signal_hook::consts::SIGTERM,
+		Arc::clone(&term),
+	)?;
+	signal_hook::flag::register(
+		signal_hook::consts::SIGINT,
+		Arc::clone(&term),
+	)?;
+	signal_hook::flag::register(
+		signal_hook::consts::SIGQUIT,
+		Arc::clone(&term),
+	)?;
+
 	let updater = if cliargs.notify_watcher {
 		Updater::NotifyWatcher
 	} else {
@@ -162,6 +180,7 @@ fn main() -> Result<()> {
 			&input,
 			updater,
 			&mut terminal,
+			term.clone(),
 		)?;
 
 		match quit_state {
@@ -183,6 +202,7 @@ fn run_app(
 	input: &Input,
 	updater: Updater,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+	term: Arc<AtomicBool>,
 ) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
@@ -272,6 +292,11 @@ fn run_app(
 			spinner.draw(terminal)?;
 
 			if app.is_quit() {
+				break;
+			}
+
+			if term.load(Ordering::Relaxed) {
+				log::info!("signal received. exiting");
 				break;
 			}
 		}

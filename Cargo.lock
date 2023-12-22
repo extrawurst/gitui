@@ -769,6 +769,7 @@ dependencies = [
  "scopetime",
  "serde",
  "shellexpand",
+ "signal-hook",
  "simplelog",
  "struct-patch",
  "syntect",
