@@ -15,4 +15,4 @@ keywords = ["git"]
 env_logger = "0.10"
 git2 = ">=0.17"
 log = "0.4"
-tempfile = "3.4"
+tempfile = "3.9"

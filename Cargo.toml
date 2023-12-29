@@ -53,7 +53,7 @@ which = "4.4"
 
 [dev-dependencies]
 pretty_assertions = "1.4"
-tempfile = "3.4"
+tempfile = "3.9"
 
 [badges]
 maintenance = { status = "actively-developed" }

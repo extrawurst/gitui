@@ -21,4 +21,4 @@ thiserror = "1.0"
 [dev-dependencies]
 git2-testing = { path = "../git2-testing" }
 pretty_assertions = "1.4"
-tempfile = "3.4"
+tempfile = "3.9"
