@@ -10,7 +10,10 @@ use crate::{
 	AsyncGitNotification, ProgressPercent,
 };
 use std::{
-	sync::{atomic::AtomicUsize, Arc, Mutex},
+	sync::{
+		atomic::{AtomicBool, AtomicUsize, Ordering},
+		Arc, Mutex,
+	},
 	time::{Duration, Instant},
 };
 
@@ -35,6 +38,7 @@ enum JobState {
 pub struct AsyncCommitFilterJob {
 	state: Arc<Mutex<Option<JobState>>>,
 	filter: SharedCommitFilterFn,
+	cancellation_flag: Arc<AtomicBool>,
 }
 
 ///
@@ -44,6 +48,7 @@ impl AsyncCommitFilterJob {
 		repo_path: RepoPath,
 		commits: Vec<CommitId>,
 		filter: SharedCommitFilterFn,
+		cancellation_flag: Arc<AtomicBool>,
 	) -> Self {
 		Self {
 			state: Arc::new(Mutex::new(Some(JobState::Request {
@@ -51,6 +56,7 @@ impl AsyncCommitFilterJob {
 				commits,
 			}))),
 			filter,
+			cancellation_flag,
 		}
 	}
 
@@ -106,6 +112,10 @@ impl AsyncCommitFilterJob {
 				.collect::<Vec<(usize, CommitId)>>()
 				.par_chunks(1000)
 				.filter_map(|c| {
+					if self.cancellation_flag.load(Ordering::SeqCst) {
+						//cancel filter if cancellation_flag was set to true
+						return None;
+					}
 					//TODO: error log repo open errors
 					sync::repo(repo_path).ok().map(|repo| {
 						c.iter()

@@ -32,7 +32,14 @@ use ratatui::{
 	widgets::{Block, Borders, Paragraph},
 	Frame,
 };
-use std::{rc::Rc, time::Duration};
+use std::{
+	rc::Rc,
+	sync::{
+		atomic::{AtomicBool, Ordering},
+		Arc,
+	},
+	time::Duration,
+};
 use sync::CommitTags;
 
 struct LogSearchResult {
@@ -47,6 +54,7 @@ enum LogSearch {
 		AsyncSingleJob<AsyncCommitFilterJob>,
 		LogFilterSearchOptions,
 		Option<ProgressPercent>,
+		Arc<AtomicBool>,
 	),
 	Results(LogSearchResult),
 }
@@ -121,7 +129,7 @@ impl Revlog {
 	}
 
 	const fn is_search_pending(&self) -> bool {
-		matches!(self.search, LogSearch::Searching(_, _, _))
+		matches!(self.search, LogSearch::Searching(_, _, _, _))
 	}
 
 	///
@@ -255,23 +263,42 @@ impl Revlog {
 				LogFilterSearch::new(options.clone()),
 			);
 
+			let cancellation_flag = Arc::new(AtomicBool::new(false));
+
 			let mut job = AsyncSingleJob::new(self.sender.clone());
 			job.spawn(AsyncCommitFilterJob::new(
 				self.repo.borrow().clone(),
 				self.list.copy_items(),
 				filter,
+				Arc::clone(&cancellation_flag),
 			));
 
-			self.search = LogSearch::Searching(job, options, None);
+			self.search = LogSearch::Searching(
+				job,
+				options,
+				None,
+				Arc::clone(&cancellation_flag),
+			);
 
 			self.list.set_highlighting(None);
 		}
 	}
 
+	fn cancel_search(&mut self) -> bool {
+		if let LogSearch::Searching(_, _, _, cancellation_flag) =
+			&self.search
+		{
+			cancellation_flag.store(true, Ordering::SeqCst);
+			log::info!("cancelling commit search");
+			return true;
+		}
+		false
+	}
+
 	fn update_search_state(&mut self) {
 		match &mut self.search {
 			LogSearch::Off | LogSearch::Results(_) => (),
-			LogSearch::Searching(search, options, progress) => {
+			LogSearch::Searching(search, options, progress, _) => {
 				if search.is_pending() {
 					//update progress
 					*progress = search.progress();
@@ -317,7 +344,7 @@ impl Revlog {
 
 	fn draw_search<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
 		let (text, title) = match &self.search {
-			LogSearch::Searching(_, options, progress) => (
+			LogSearch::Searching(_, options, progress, _) => (
 				format!("'{}'", options.search_pattern.clone()),
 				format!(
 					"({}%)",
@@ -437,7 +464,10 @@ impl Component for Revlog {
 					k,
 					self.key_config.keys.exit_popup,
 				) {
-					if self.can_leave_search() {
+					if self.is_search_pending()
+						&& self.cancel_search() || self
+						.can_leave_search()
+					{
 						self.search = LogSearch::Off;
 						self.list.set_highlighting(None);
 						return Ok(EventState::Consumed);
