@@ -157,7 +157,7 @@ fn main() -> Result<()> {
 		let quit_state = run_app(
 			app_start,
 			repo_path.clone(),
-			theme,
+			theme.clone(),
 			key_config.clone(),
 			&input,
 			updater,

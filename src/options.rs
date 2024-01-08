@@ -145,7 +145,7 @@ impl Options {
 	fn save_failable(&self) -> Result<()> {
 		let dir = Self::options_file(&self.repo)?;
 
-		let mut file = File::create(&dir)?;
+		let mut file = File::create(dir)?;
 		let data =
 			to_string_pretty(&self.data, PrettyConfig::default())?;
 		file.write_all(data.as_bytes())?;

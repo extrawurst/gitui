@@ -17,7 +17,7 @@ Note that in some cases adding the line `ssh-add -K ~/.ssh/id_ed25519`(or whatev
 
 ## 2. <a name="keybindings"></a> Custom key bindings <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
-If you want to use `vi`-style keys or customize your key bindings in any other fassion see the specific docs on that: [key config](./KEY_CONFIG.md)
+If you want to use `vi`-style keys or customize your key bindings in any other fashion see the specific docs on that: [key config](./KEY_CONFIG.md)
 
 ## 3. <a name="watcher"></a> Watching for changes <small><sup>[Top ▲](#table-of-contents)</sup></small>
 

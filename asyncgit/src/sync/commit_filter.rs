@@ -35,11 +35,13 @@ bitflags! {
 	///
 	pub struct SearchFields: u32 {
 		///
-		const MESSAGE = 1 << 0;
+		const MESSAGE_SUMMARY = 1 << 0;
 		///
-		const FILENAMES = 1 << 1;
+		const MESSAGE_BODY = 1 << 1;
 		///
-		const AUTHORS = 1 << 2;
+		const FILENAMES = 1 << 2;
+		///
+		const AUTHORS = 1 << 3;
 		//TODO:
 		// const COMMIT_HASHES = 1 << 3;
 		// ///
@@ -51,7 +53,7 @@ bitflags! {
 
 impl Default for SearchFields {
 	fn default() -> Self {
-		Self::MESSAGE
+		Self::MESSAGE_SUMMARY
 	}
 }
 
@@ -159,12 +161,22 @@ pub fn filter_commit_by_search(
 		      -> Result<bool> {
 			let commit = repo.find_commit((*commit_id).into())?;
 
-			let msg_match = filter
+			let msg_summary_match = filter
 				.options
 				.fields
-				.contains(SearchFields::MESSAGE)
+				.contains(SearchFields::MESSAGE_SUMMARY)
 				.then(|| {
-					commit.message().map(|msg| filter.match_text(msg))
+					commit.summary().map(|msg| filter.match_text(msg))
+				})
+				.flatten()
+				.unwrap_or_default();
+
+			let msg_body_match = filter
+				.options
+				.fields
+				.contains(SearchFields::MESSAGE_BODY)
+				.then(|| {
+					commit.body().map(|msg| filter.match_text(msg))
 				})
 				.flatten()
 				.unwrap_or_default();
@@ -203,7 +215,9 @@ pub fn filter_commit_by_search(
 				})
 				.unwrap_or_default();
 
-			Ok(msg_match || file_match || authors_match)
+			Ok(msg_summary_match
+				|| msg_body_match
+				|| file_match || authors_match)
 		},
 	))
 }

@@ -42,7 +42,6 @@ pub mod symbol {
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
 	pub const SPACE: &str = "\u{02FD}"; //˽
 	pub const EMPTY_SPACE: &str = " ";
-	pub const LINE_BREAK: &str = "¶";
 	pub const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}"; //▸
 	pub const FOLDER_ICON_EXPANDED: &str = "\u{25be}"; //▾
 	pub const EMPTY_STR: &str = "";
@@ -132,9 +131,9 @@ pub const fn branch_name_invalid() -> &'static str {
 	"[invalid name]"
 }
 pub fn commit_editor_msg(_key_config: &SharedKeyConfig) -> String {
-	r##"
+	r"
 # Edit your commit message
-# Lines starting with '#' will be ignored"##
+# Lines starting with '#' will be ignored"
 		.to_string()
 }
 pub fn stash_popup_title(_key_config: &SharedKeyConfig) -> String {
@@ -145,6 +144,9 @@ pub fn stash_popup_msg(_key_config: &SharedKeyConfig) -> String {
 }
 pub fn confirm_title_reset() -> String {
 	"Reset".to_string()
+}
+pub fn confirm_title_undo_commit() -> String {
+	"Undo commit".to_string()
 }
 pub fn confirm_title_stashdrop(
 	_key_config: &SharedKeyConfig,
@@ -203,6 +205,9 @@ pub fn confirm_msg_reset_lines(lines: usize) -> String {
 	format!(
 		"are you sure you want to discard {lines} selected lines?"
 	)
+}
+pub fn confirm_msg_undo_commit() -> String {
+	"confirm undo last commit?".to_string()
 }
 pub fn confirm_msg_stashdrop(
 	_key_config: &SharedKeyConfig,
@@ -1002,7 +1007,7 @@ pub mod commands {
 	) -> CommandText {
 		CommandText::new(
 			format!(
-				"Sing-off [{}]",
+				"Sign-off [{}]",
 				key_config.get_hint(key_config.keys.toggle_signoff),
 			),
 			"sign-off commit (-s option)",

@@ -33,18 +33,15 @@ pub(crate) fn get_branch_name_repo(
 ) -> Result<String> {
 	scope_time!("get_branch_name_repo");
 
-	let iter = repo.branches(None)?;
-
-	for b in iter {
-		let b = b?;
-
-		if b.0.is_head() {
-			let name = b.0.name()?.unwrap_or("");
-			return Ok(name.into());
+	let head_ref = repo.head().map_err(|e| {
+		if e.code() == git2::ErrorCode::UnbornBranch {
+			Error::NoHead
+		} else {
+			e.into()
 		}
-	}
+	})?;
 
-	Err(Error::NoHead)
+	bytes2string(head_ref.shorthand_bytes())
 }
 
 ///

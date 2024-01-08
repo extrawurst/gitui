@@ -31,3 +31,21 @@ Notes:
 * using a color like `yellow` might appear in whatever your terminal/theme defines for `yellow`
 * valid colors can be found in tui-rs' [Color](https://docs.rs/tui/0.12.0/tui/style/enum.Color.html) struct. 
 * all customizable theme elements can be found in [`style.rs` in the `impl Default for Theme` block](https://github.com/extrawurst/gitui/blob/master/src/ui/style.rs#L305)
+
+## Customizing line breaks
+
+If you want to change how the line break is displayed in the diff, you can also specify `line_break` in your `theme.ron`:
+
+```
+(
+    line_break: Some("¶"),
+)
+```
+
+Note that if you want to turn it off, you should use a blank string:
+
+```
+(
+    line_break: Some(""),
+)
+```

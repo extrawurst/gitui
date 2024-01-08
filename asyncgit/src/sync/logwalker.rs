@@ -249,7 +249,7 @@ mod tests {
 
 		let log_filter = filter_commit_by_search(
 			LogFilterSearch::new(LogFilterSearchOptions {
-				fields: SearchFields::MESSAGE,
+				fields: SearchFields::MESSAGE_SUMMARY,
 				options: SearchOptions::FUZZY_SEARCH,
 				search_pattern: String::from("my msg"),
 			}),

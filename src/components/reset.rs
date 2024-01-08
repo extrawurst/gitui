@@ -213,6 +213,10 @@ impl ConfirmComponent {
                     strings::confirm_title_abortrevert(),
                     strings::confirm_msg_revertchanges(),
                 ),
+                Action::UndoCommit => (
+                    strings::confirm_title_undo_commit(),
+                    strings::confirm_msg_undo_commit(),
+                ),
             };
 		}
 

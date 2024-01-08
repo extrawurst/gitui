@@ -31,10 +31,12 @@ impl From<CommitInfo> for LogEntry {
 			if date.is_none() {
 				log::error!("error reading commit date: {hash_short} - timestamp: {}",c.time);
 			}
-			DateTime::<Local>::from(DateTime::<Utc>::from_utc(
-				date.unwrap_or_default(),
-				Utc,
-			))
+			DateTime::<Local>::from(
+				DateTime::<Utc>::from_naive_utc_and_offset(
+					date.unwrap_or_default(),
+					Utc,
+				),
+			)
 		};
 
 		let author = c.author;
@@ -152,6 +154,17 @@ impl ItemBatch {
 		let needs_data_top = want_min < self.index_offset();
 		let needs_data_bottom = want_max >= self.last_idx();
 		needs_data_bottom || needs_data_top
+	}
+}
+
+impl<'a> IntoIterator for &'a ItemBatch {
+	type IntoIter = std::slice::Iter<
+		'a,
+		crate::components::utils::logitems::LogEntry,
+	>;
+	type Item = &'a crate::components::utils::logitems::LogEntry;
+	fn into_iter(self) -> Self::IntoIter {
+		self.iter()
 	}
 }
 

@@ -8,7 +8,7 @@ use struct_patch::Patch;
 
 pub type SharedTheme = Rc<Theme>;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, Patch)]
+#[derive(Serialize, Deserialize, Debug, Clone, Patch)]
 #[patch_derive(Serialize, Deserialize)]
 pub struct Theme {
 	selected_tab: Color,
@@ -32,6 +32,7 @@ pub struct Theme {
 	push_gauge_fg: Color,
 	tag_fg: Color,
 	branch_fg: Color,
+	line_break: String,
 }
 
 impl Theme {
@@ -192,6 +193,10 @@ impl Theme {
 		Style::default().fg(self.danger_fg)
 	}
 
+	pub fn line_break(&self) -> String {
+		self.line_break.clone()
+	}
+
 	pub fn commandbar(&self, enabled: bool, line: usize) -> Style {
 		if enabled {
 			Style::default().fg(self.command_fg)
@@ -278,7 +283,7 @@ impl Theme {
 	// This is supposed to be called when theme.ron doesn't already exists.
 	fn save_patch(&self, theme_path: &PathBuf) -> Result<()> {
 		let mut file = File::create(theme_path)?;
-		let patch = self.into_patch_by_diff(Self::default());
+		let patch = self.clone().into_patch_by_diff(Self::default());
 		let data = to_string_pretty(&patch, PrettyConfig::default())?;
 
 		file.write_all(data.as_bytes())?;
@@ -336,6 +341,7 @@ impl Default for Theme {
 			push_gauge_fg: Color::Reset,
 			tag_fg: Color::LightMagenta,
 			branch_fg: Color::LightYellow,
+			line_break: "¶".to_string(),
 		}
 	}
 }

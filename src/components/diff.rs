@@ -462,7 +462,7 @@ impl DiffComponent {
 
 		let content =
 			if !is_content_line && line.content.as_ref().is_empty() {
-				String::from(strings::symbol::LINE_BREAK)
+				theme.line_break()
 			} else {
 				tabs_to_spaces(line.content.as_ref().to_string())
 			};
@@ -956,5 +956,77 @@ impl Component for DiffComponent {
 	}
 	fn focus(&mut self, focus: bool) {
 		self.focused = focus;
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::ui::style::Theme;
+	use std::io::Write;
+	use std::rc::Rc;
+	use tempfile::NamedTempFile;
+
+	#[test]
+	fn test_line_break() {
+		let diff_line = DiffLine {
+			content: "".into(),
+			line_type: DiffLineType::Add,
+			position: Default::default(),
+		};
+
+		{
+			let default_theme = Rc::new(Theme::default());
+
+			assert_eq!(
+				DiffComponent::get_line_to_add(
+					4,
+					&diff_line,
+					false,
+					false,
+					false,
+					&default_theme,
+					0
+				)
+				.spans
+				.last()
+				.unwrap(),
+				&Span::styled(
+					Cow::from("¶\n"),
+					default_theme
+						.diff_line(diff_line.line_type, false)
+				)
+			);
+		}
+
+		{
+			let mut file = NamedTempFile::new().unwrap();
+
+			writeln!(
+				file,
+				r#"
+(
+	line_break: Some("+")
+)
+"#
+			)
+			.unwrap();
+
+			let theme =
+				Rc::new(Theme::init(&file.path().to_path_buf()));
+
+			assert_eq!(
+				DiffComponent::get_line_to_add(
+					4, &diff_line, false, false, false, &theme, 0
+				)
+				.spans
+				.last()
+				.unwrap(),
+				&Span::styled(
+					Cow::from("+\n"),
+					theme.diff_line(diff_line.line_type, false)
+				)
+			);
+		}
 	}
 }
