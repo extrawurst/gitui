@@ -31,6 +31,7 @@ use crate::{
 	AsyncAppNotification, AsyncNotification,
 };
 use anyhow::{bail, Result};
+use asyncgit::ssh_key::private::PrivateKey;
 use asyncgit::{
 	sync::{
 		self,
@@ -124,6 +125,7 @@ impl App {
 		input: Input,
 		theme: Theme,
 		key_config: KeyConfig,
+		ssh_secret_key: Option<PrivateKey>,
 	) -> Result<Self> {
 		log::trace!("open repo at: {:?}", &repo);
 
@@ -150,6 +152,7 @@ impl App {
 				theme.clone(),
 				key_config.clone(),
 				options.clone(),
+				ssh_secret_key,
 			),
 			blame_file_popup: BlameFileComponent::new(
 				&repo,

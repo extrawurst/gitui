@@ -1,5 +1,6 @@
 use crate::bug_report;
 use anyhow::{anyhow, Result};
+use asyncgit::ssh_key::PrivateKey;
 use asyncgit::sync::RepoPath;
 use clap::{
 	crate_authors, crate_description, crate_name, crate_version, Arg,
@@ -8,7 +9,7 @@ use clap::{
 use simplelog::{Config, LevelFilter, WriteLogger};
 use std::{
 	env,
-	fs::{self, File},
+	fs::{self, read, File},
 	path::PathBuf,
 };
 
@@ -16,6 +17,7 @@ pub struct CliArgs {
 	pub theme: PathBuf,
 	pub repo_path: RepoPath,
 	pub notify_watcher: bool,
+	pub ssh_key: Option<PrivateKey>,
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
@@ -54,6 +56,35 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		get_app_config_path()?.join("theme.ron")
 	};
 
+	let default_ssh_path = "~/.ssh/id_rsa".to_string();
+	let arg_ssh_key_path = arg_matches
+		.get_one::<String>("ssh_key_path")
+		.unwrap_or(&default_ssh_path);
+
+	let ssh_key_abs_path = if let Some(ssh_key_path) =
+		arg_ssh_key_path.strip_prefix("~")
+	{
+		dirs::home_dir().map(|home| {
+			home.join(
+				ssh_key_path
+					.strip_prefix("/")
+					.unwrap_or(ssh_key_path),
+			)
+		})
+	} else {
+		Some(PathBuf::from(arg_ssh_key_path))
+	};
+
+	let mut ssh_key = ssh_key_abs_path
+		.and_then(|p| read(p).ok())
+		.and_then(|bytes| PrivateKey::from_openssh(bytes).ok());
+	if let Some(password) =
+		arg_matches.get_one::<String>("ssh_key_password")
+	{
+		ssh_key = ssh_key
+			.and_then(|key| key.decrypt(password.as_bytes()).ok())
+	}
+
 	let notify_watcher: bool =
 		*arg_matches.get_one("watcher").unwrap_or(&false);
 
@@ -61,6 +92,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		theme,
 		repo_path,
 		notify_watcher,
+		ssh_key,
 	})
 }
 
@@ -121,6 +153,21 @@ fn app() -> ClapApp {
 				.short('w')
 				.long("workdir")
 				.env("GIT_WORK_TREE")
+				.num_args(1),
+		)
+		.arg(
+			Arg::new("ssh_key_path")
+				.help("Set ssh secret key for sign commit")
+				.short('s')
+				.long("ssh-key-path")
+				.env("SSH_KEY_PATH")
+				.num_args(1),
+		)
+		.arg(
+			Arg::new("ssh_key_password")
+				.help("password for ssh secret key")
+				.long("ssh-key-password")
+				.env("SSH_KEY_PASSWORD")
 				.num_args(1),
 		)
 }

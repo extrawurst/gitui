@@ -144,7 +144,7 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 
 		let msg = invalidstring::invalid_utf8("test msg");
-		let id = commit(repo_path, msg.as_str()).unwrap();
+		let id = commit(repo_path, msg.as_str(), None).unwrap();
 
 		let res = get_commit_details(repo_path, id).unwrap();
 

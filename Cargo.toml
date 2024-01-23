@@ -59,7 +59,7 @@ tempfile = "3.4"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = ["ghemoji", "regex-fancy", "trace-libgit", "vendor-openssl"]
+default = ["asyncgit/common-lib", "ghemoji", "regex-fancy", "trace-libgit", "vendor-openssl"]
 ghemoji = ["gh-emoji"]
 # regex-* features are mutually exclusive.
 regex-fancy = ["syntect/regex-fancy"]

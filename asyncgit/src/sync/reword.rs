@@ -34,7 +34,7 @@ pub fn reword(
 /// Gets the current branch the user is on.
 /// Returns none if they are not on a branch
 /// and Err if there was a problem finding the branch
-fn get_current_branch(
+pub fn get_current_branch(
 	repo: &Repository,
 ) -> Result<Option<git2::Branch>> {
 	for b in repo.branches(None)? {

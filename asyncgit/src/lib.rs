@@ -75,6 +75,8 @@ pub use crate::{
 	treefiles::AsyncTreeFilesJob,
 };
 pub use git2::message_prettify;
+#[cfg(feature = "common-lib")]
+pub use ssh_key;
 use std::{
 	collections::hash_map::DefaultHasher,
 	hash::{Hash, Hasher},

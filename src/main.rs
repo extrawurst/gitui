@@ -50,6 +50,7 @@ mod watcher;
 use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
 use app::QuitState;
+use asyncgit::ssh_key::private::PrivateKey;
 use asyncgit::{
 	sync::{utils::repo_work_dir, RepoPath},
 	AsyncGitNotification,
@@ -162,6 +163,7 @@ fn main() -> Result<()> {
 			&input,
 			updater,
 			&mut terminal,
+			cliargs.ssh_key.clone(),
 		)?;
 
 		match quit_state {
@@ -183,6 +185,7 @@ fn run_app(
 	input: &Input,
 	updater: Updater,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+	ssh_secret_key: Option<PrivateKey>,
 ) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
@@ -208,6 +211,7 @@ fn run_app(
 		input.clone(),
 		theme,
 		key_config,
+		ssh_secret_key,
 	)?;
 
 	let mut spinner = Spinner::default();

@@ -599,7 +599,7 @@ mod tests {
 
 		stage_add_file(repo_path, file_path).unwrap();
 
-		commit(repo_path, "commit").unwrap();
+		commit(repo_path, "commit", None).unwrap();
 
 		File::create(root.join(file_path))?.write_all(b"\x00\x02")?;
 
@@ -655,13 +655,13 @@ mod tests {
 
 		stage_add_file(repo_path, file_path).unwrap();
 
-		commit(repo_path, "").unwrap();
+		commit(repo_path, "", None).unwrap();
 
 		File::create(root.join(file_path))?.write_all(b"\x00\x02")?;
 
 		stage_add_file(repo_path, file_path).unwrap();
 
-		let id = commit(repo_path, "").unwrap();
+		let id = commit(repo_path, "", None).unwrap();
 
 		let diff =
 			get_diff_commit(repo_path, id, String::new(), None)

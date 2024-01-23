@@ -180,7 +180,7 @@ mod tests {
 
 		stage_add_file(repo_path, file_path)?;
 
-		let id = commit(repo_path, "commit msg")?;
+		let id = commit(repo_path, "commit msg", None)?;
 
 		let diff = get_commit_files(repo_path, id, None)?;
 
@@ -222,7 +222,7 @@ mod tests {
 
 		File::create(root.join(file_path1))?.write_all(b"test")?;
 		stage_add_file(repo_path, file_path1)?;
-		commit(repo_path, "c1")?;
+		commit(repo_path, "c1", None)?;
 
 		File::create(root.join(file_path1))?
 			.write_all(b"modified")?;
