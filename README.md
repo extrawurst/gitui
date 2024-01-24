@@ -266,10 +266,6 @@ The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to se
 
 [![github](https://img.shields.io/badge/-GitHub%20Sponsors-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/extrawurst)
 
-<a href="https://liberapay.com/extrawurst/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
-
-<a href='https://ko-fi.com/B0B6GMW1T' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi4.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
-
 ## 13. <a name="inspiration"></a> Inspiration <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - [lazygit](https://github.com/jesseduffield/lazygit)
