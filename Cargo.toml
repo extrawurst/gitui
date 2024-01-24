@@ -75,6 +75,7 @@ members = ["asyncgit", "filetreelist", "git2-hooks", "git2-testing", "scopetime"
 lto = true
 opt-level = 'z'   # Optimize for size.
 codegen-units = 1
+strip = "debuginfo"
 
 # make debug build as fast as release 
 # usage of utf8 encoding inside tui 
