@@ -30,6 +30,7 @@ easy-cast = "0.5"
 filetreelist = { path = "./filetreelist", version = "0.5" }
 fuzzy-matcher = "0.3"
 gh-emoji = { version = "1.0", optional = true }
+git2-summarize = { path = "./git2-summarize", version = "0.1" }
 indexmap = "1.9"
 itertools = "0.12"
 log = "0.4"
@@ -69,7 +70,7 @@ trace-libgit = ["asyncgit/trace-libgit"]
 vendor-openssl = ["asyncgit/vendor-openssl"]
 
 [workspace]
-members = ["asyncgit", "filetreelist", "git2-hooks", "git2-testing", "scopetime"]
+members = ["asyncgit", "filetreelist", "git2-hooks", "git2-summarize", "git2-testing", "scopetime"]
 
 [profile.release]
 lto = true

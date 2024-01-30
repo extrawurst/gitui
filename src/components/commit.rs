@@ -59,6 +59,7 @@ pub struct CommitComponent {
 	commit_msg_history_idx: usize,
 	options: SharedOptions,
 	verify: bool,
+	open_ai_token: Option<String>,
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
@@ -90,6 +91,7 @@ impl CommitComponent {
 			commit_msg_history_idx: 0,
 			options,
 			verify: true,
+			open_ai_token: std::env::var("OPENAI_API_KEY").ok(),
 		}
 	}
 
@@ -352,6 +354,30 @@ impl CommitComponent {
 			self.input.set_text(signed_msg);
 		}
 	}
+
+	fn commit_summarize(&mut self) -> Result<()> {
+		use std::result::Result::Ok;
+
+		if let Some(api_key) = self.open_ai_token.as_ref() {
+			let mut unified_diff =
+				sync::unified_stage_diff(&self.repo.borrow())?;
+
+			while unified_diff.len() > 3500 {
+				unified_diff.pop();
+			}
+
+			match git2_summarize::git_diff_summarize(
+				api_key,
+				&unified_diff,
+				FIRST_LINE_LIMIT,
+			) {
+				Ok(msg) => self.input.set_text(msg),
+				Err(e) => bail!(e),
+			};
+		}
+
+		Ok(())
+	}
 	fn toggle_verify(&mut self) {
 		self.verify = !self.verify;
 	}
@@ -557,6 +583,14 @@ impl Component for CommitComponent {
 				self.options.borrow().has_commit_msg_history(),
 				true,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::commit_msg_summarize(
+					&self.key_config,
+				),
+				self.open_ai_token.is_some(),
+				true,
+			));
 		}
 
 		visibility_blocking(self)
@@ -614,6 +648,15 @@ impl Component for CommitComponent {
 					self.key_config.keys.toggle_signoff,
 				) {
 					self.signoff_commit();
+				} else if key_match(
+					e,
+					self.key_config.keys.commit_msg_summarize,
+				) {
+					try_or_popup!(
+						self,
+						"commit summary error:",
+						self.commit_summarize()
+					);
 				}
 				// stop key event propagation
 				return Ok(EventState::Consumed);

@@ -1,0 +1,49 @@
+diff --git a/git2-hooks/src/lib.rs b/git2-hooks/src/lib.rs
+index 0cf5ac8..042ac87 100644
+--- a/git2-hooks/src/lib.rs
++++ b/git2-hooks/src/lib.rs
+@@ -27,6 +27,7 @@ use git2::Repository;
+ pub const HOOK_POST_COMMIT: &str = "post-commit";
+ pub const HOOK_PRE_COMMIT: &str = "pre-commit";
+ pub const HOOK_COMMIT_MSG: &str = "commit-msg";
++pub const HOOK_PRE_PUSH: &str = "pre-push";
+ 
+ const HOOK_COMMIT_MSG_TEMP_FILE: &str = "COMMIT_EDITMSG";
+ 
+@@ -152,6 +153,36 @@ pub fn hooks_post_commit(
+ 	hook.run_hook(&[])
+ }
+ 
++/// see [`hooks_pre_push`]
++pub enum PrePushHookLocalRef<'a> {
++	Delete,
++	Ref {
++		local_ref: &'a str,
++		local_obj_name: &'a str,
++	},
++}
++
++/// see https://git-scm.com/docs/githooks#_pre_push
++///
++/// # Arguments
++///
++/// * `remote_obj_name` - pass `None` if foreign ref not yet exists
++pub fn hooks_pre_push(
++	repo: &Repository,
++	other_paths: Option<&[&str]>,
++	local_ref: PrePushHookLocalRef,
++	remote_ref: &str,
++	remote_obj_name: Option<&str>,
++) -> Result<HookResult> {
++	let hook = HookPaths::new(repo, other_paths, HOOK_PRE_PUSH)?;
++
++	if !hook.found() {
++		return Ok(HookResult::NoHookFound);
++	}
++
++	hook.run_hook(&[])
++}
++
+ #[cfg(test)]
+ mod tests {
+ 	use super::*;
