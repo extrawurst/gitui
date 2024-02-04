@@ -50,11 +50,11 @@ pub use commit_details::{
 };
 pub use commit_files::get_commit_files;
 pub use commit_filter::{
-	diff_contains_file, filter_commit_by_search, LogFilterSearch,
-	LogFilterSearchOptions, SearchFields, SearchOptions,
-	SharedCommitFilterFn,
+	filter_commit_by_search, LogFilterSearch, LogFilterSearchOptions,
+	SearchFields, SearchOptions, SharedCommitFilterFn,
 };
 pub use commit_revert::{commit_revert, revert_commit, revert_head};
+pub(crate) use commits_info::get_commit_info_repo;
 pub use commits_info::{
 	get_commit_info, get_commits_info, CommitId, CommitInfo,
 };
@@ -119,7 +119,7 @@ mod tests {
 	};
 	use crate::error::Result;
 	use git2::Repository;
-	use std::{path::Path, process::Command};
+	use std::{cell::RefCell, path::Path, process::Command};
 	use tempfile::TempDir;
 
 	/// Calling `set_search_path` with an empty directory makes sure that there
@@ -142,6 +142,13 @@ mod tests {
 			set_search_path(ConfigLevel::XDG, path).unwrap();
 			set_search_path(ConfigLevel::ProgramData, path).unwrap();
 		});
+	}
+
+	pub fn rename_file(repo: &Repository, old: &str, new: &str) {
+		let dir = repo.workdir().unwrap();
+		let old = dir.join(old);
+		let new = dir.join(new);
+		std::fs::rename(old, new).unwrap();
 	}
 
 	/// write, stage and commit a file
@@ -323,13 +330,13 @@ mod tests {
 		r: &Repository,
 		max_count: usize,
 	) -> Vec<CommitId> {
-		let mut commit_ids = Vec::<CommitId>::new();
-		LogWalker::new(r, max_count)
+		let commit_ids = RefCell::new(Vec::<CommitId>::new());
+		LogWalker::new(r, Some(max_count))
 			.unwrap()
-			.read(&mut commit_ids)
+			.read(Some(&commit_ids))
 			.unwrap();
 
-		commit_ids
+		commit_ids.take()
 	}
 
 	fn debug_cmd(path: &RepoPath, cmd: &str) -> String {
