@@ -16,7 +16,7 @@ bitflags = "1"
 crossbeam-channel = "0.5"
 easy-cast = "0.5"
 fuzzy-matcher = "0.3"
-git2 = "0.17"
+git2 = "0.18"
 git2-hooks = { path = "../git2-hooks", version = "0.3" }
 log = "0.4"
 # git2 = { path = "../../extern/git2-rs", features = ["vendored-openssl"]}
