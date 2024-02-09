@@ -22,7 +22,7 @@ bugreport = "0.5"
 bwrap = { version = "1.3.0", features = ["use_std"] }
 bytesize = { version = "1.3", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
-clap = { version = "4.4", features = ["env", "cargo"] }
+clap = { version = "4.5", features = ["env", "cargo"] }
 crossbeam-channel = "0.5"
 crossterm = { version = "0.26.1", features = ["serde"] }
 dirs = "5.0"
