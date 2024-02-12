@@ -21,6 +21,7 @@ build-release:
 release-mac: build-release
 	strip target/release/gitui
 	otool -L target/release/gitui
+	ls -lisah target/release/gitui
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-mac.tar.gz ./gitui
 	ls -lisah ./release/gitui-mac.tar.gz
