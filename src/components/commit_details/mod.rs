@@ -14,8 +14,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{commit_files::OldNew, CommitTags, RepoPathRef},
-	AsyncCommitFiles, AsyncGitNotification, CommitFilesParams,
+	sync::{commit_files::OldNew, CommitTags},
+	AsyncCommitFiles, CommitFilesParams,
 };
 use compare_details::CompareDetailsComponent;
 use crossterm::event::Event;
