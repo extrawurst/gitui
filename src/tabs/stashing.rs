@@ -1,5 +1,6 @@
 use crate::{
 	accessors,
+	app::Environment,
 	components::{
 		command_pump, event_pump, visibility_blocking,
 		CommandBlocking, CommandInfo, Component, DrawableComponent,
@@ -15,7 +16,7 @@ use asyncgit::{
 	sync::{self, status::StatusType, RepoPathRef},
 	AsyncGitNotification, AsyncStatus, StatusParams,
 };
-use crossbeam_channel::Sender;
+
 use crossterm::event::Event;
 use ratatui::{
 	layout::{Alignment, Constraint, Direction, Layout},
@@ -45,34 +46,26 @@ impl Stashing {
 	accessors!(self, [index]);
 
 	///
-	pub fn new(
-		repo: &RepoPathRef,
-		sender: &Sender<AsyncGitNotification>,
-		queue: &Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			repo: repo.clone(),
+			repo: env.repo.clone(),
 			index: StatusTreeComponent::new(
-				&strings::stashing_files_title(&key_config),
+				env,
+				&strings::stashing_files_title(&env.key_config),
 				true,
-				Some(queue.clone()),
-				theme.clone(),
-				key_config.clone(),
 			),
 			visible: false,
 			options: StashingOptions {
 				keep_index: false,
 				stash_untracked: true,
 			},
-			theme,
+			theme: env.theme.clone(),
 			git_status: AsyncStatus::new(
-				repo.borrow().clone(),
-				sender.clone(),
+				env.repo.borrow().clone(),
+				env.sender_git.clone(),
 			),
-			queue: queue.clone(),
-			key_config,
+			queue: env.queue.clone(),
+			key_config: env.key_config.clone(),
 		}
 	}
 

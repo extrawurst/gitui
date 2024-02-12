@@ -1,4 +1,5 @@
 use crate::{
+	app::Environment,
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo, Component,
 		DrawableComponent, EventState,
@@ -36,14 +37,11 @@ pub struct ExternalEditorComponent {
 
 impl ExternalEditorComponent {
 	///
-	pub fn new(
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			visible: false,
-			theme,
-			key_config,
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 		}
 	}
 

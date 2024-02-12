@@ -32,6 +32,17 @@ pub struct Options {
 	data: OptionsData,
 }
 
+#[cfg(test)]
+impl Options {
+	pub fn test_env() -> Self {
+		use asyncgit::sync::RepoPath;
+		Self {
+			repo: RefCell::new(RepoPath::Path(Default::default())),
+			data: Default::default(),
+		}
+	}
+}
+
 pub type SharedOptions = Rc<RefCell<Options>>;
 
 impl Options {
