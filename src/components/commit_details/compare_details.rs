@@ -13,7 +13,9 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::Result;
-use asyncgit::sync::{self, CommitDetails, CommitId, RepoPathRef};
+use asyncgit::sync::{
+	self, commit_files::OldNew, CommitDetails, CommitId, RepoPathRef,
+};
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
@@ -24,7 +26,7 @@ use ratatui::{
 
 pub struct CompareDetailsComponent {
 	repo: RepoPathRef,
-	data: Option<(CommitDetails, CommitDetails)>,
+	data: Option<OldNew<CommitDetails>>,
 	theme: SharedTheme,
 	focused: bool,
 }
@@ -40,24 +42,20 @@ impl CompareDetailsComponent {
 		}
 	}
 
-	pub fn set_commits(&mut self, ids: Option<(CommitId, CommitId)>) {
+	pub fn set_commits(&mut self, ids: Option<OldNew<CommitId>>) {
 		self.data = ids.and_then(|ids| {
-			let c1 =
-				sync::get_commit_details(&self.repo.borrow(), ids.0)
-					.ok();
-			let c2 =
-				sync::get_commit_details(&self.repo.borrow(), ids.1)
-					.ok();
+			let old = sync::get_commit_details(
+				&self.repo.borrow(),
+				ids.old,
+			)
+			.ok()?;
+			let new = sync::get_commit_details(
+				&self.repo.borrow(),
+				ids.new,
+			)
+			.ok()?;
 
-			c1.and_then(|c1| {
-				c2.map(|c2| {
-					if c1.author.time < c2.author.time {
-						(c1, c2)
-					} else {
-						(c2, c1)
-					}
-				})
-			})
+			Some(OldNew { old, new })
 		});
 	}
 
@@ -122,9 +120,9 @@ impl DrawableComponent for CompareDetailsComponent {
 				dialog_paragraph(
 					&strings::commit::compare_details_info_title(
 						true,
-						data.0.short_hash(),
+						data.old.short_hash(),
 					),
-					Text::from(self.get_commit_text(&data.0)),
+					Text::from(self.get_commit_text(&data.old)),
 					&self.theme,
 					false,
 				),
@@ -135,9 +133,9 @@ impl DrawableComponent for CompareDetailsComponent {
 				dialog_paragraph(
 					&strings::commit::compare_details_info_title(
 						false,
-						data.1.short_hash(),
+						data.new.short_hash(),
 					),
-					Text::from(self.get_commit_text(&data.1)),
+					Text::from(self.get_commit_text(&data.new)),
 					&self.theme,
 					false,
 				),

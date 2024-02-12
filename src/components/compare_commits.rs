@@ -13,7 +13,7 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{self, CommitId, RepoPathRef},
+	sync::{self, commit_files::OldNew, CommitId, RepoPathRef},
 	AsyncDiff, AsyncGitNotification, CommitFilesParams, DiffParams,
 	DiffType,
 };
@@ -222,16 +222,19 @@ impl CompareCommitsComponent {
 		Ok(())
 	}
 
-	fn get_ids(&self) -> Option<(CommitId, CommitId)> {
+	fn get_ids(&self) -> Option<OldNew<CommitId>> {
 		let other = self
 			.open_request
 			.as_ref()
 			.and_then(|open| open.compare_id);
 
-		self.open_request
-			.as_ref()
-			.map(|open| open.commit_id)
-			.zip(other)
+		let this =
+			self.open_request.as_ref().map(|open| open.commit_id);
+
+		Some(OldNew {
+			old: other?,
+			new: this?,
+		})
 	}
 
 	/// called when any tree component changed selection

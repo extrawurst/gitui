@@ -14,7 +14,8 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::CommitTags, AsyncCommitFiles, CommitFilesParams,
+	sync::{commit_files::OldNew, CommitTags},
+	AsyncCommitFiles, CommitFilesParams,
 };
 use compare_details::CompareDetailsComponent;
 use crossterm::event::Event;
@@ -81,8 +82,10 @@ impl CommitDetailsComponent {
 			self.file_tree.set_commit(Some(id.id));
 
 			if let Some(other) = id.other {
-				self.compare_details
-					.set_commits(Some((id.id, other)));
+				self.compare_details.set_commits(Some(OldNew {
+					new: id.id,
+					old: other,
+				}));
 			} else {
 				self.single_details
 					.set_commit(Some(id.id), tags.clone());
