@@ -17,26 +17,29 @@ keywords = ["git", "gui", "cli", "terminal", "ui"]
 anyhow = "1.0"
 asyncgit = { path = "./asyncgit", version = "0.24", default-features = false }
 backtrace = "0.3"
-bitflags = "1.3"
+bitflags = "2.4"
 bugreport = "0.5"
-bwrap = { version = "1.3.0", features = ["use_std"] }
+bwrap = { version = "1.3", features = ["use_std"] }
 bytesize = { version = "1.3", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 clap = { version = "4.5", features = ["env", "cargo"] }
 crossbeam-channel = "0.5"
-crossterm = { version = "0.26.1", features = ["serde"] }
+crossterm = { version = "0.27", features = ["serde"] }
 dirs = "5.0"
 easy-cast = "0.5"
 filetreelist = { path = "./filetreelist", version = "0.5" }
 fuzzy-matcher = "0.3"
 gh-emoji = { version = "1.0", optional = true }
-indexmap = "1.9"
+indexmap = "2"
 itertools = "0.12"
 log = "0.4"
-notify = "5.1"
-notify-debouncer-mini = "0.2"
+notify = "6.1"
+notify-debouncer-mini = "0.4"
 once_cell = "1"
-ratatui = { version = "0.21", default-features = false, features = ['crossterm', 'serde'] }
+ratatui = { version = "0.23", default-features = false, features = [
+    'crossterm',
+    'serde',
+] }
 rayon-core = "1.12"
 ron = "0.8"
 scopeguard = "1.2"
@@ -44,8 +47,13 @@ scopetime = { path = "./scopetime", version = "0.1" }
 serde = "1.0"
 shellexpand = "3.1"
 simplelog = { version = "0.12", default-features = false }
-struct-patch = "0.2"
-syntect = { version = "5.0", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "html"] }
+struct-patch = "0.4"
+syntect = { version = "5.2", default-features = false, features = [
+    "parsing",
+    "default-syntaxes",
+    "default-themes",
+    "html",
+] }
 unicode-segmentation = "1.11"
 unicode-truncate = "0.2"
 unicode-width = "0.1"
@@ -53,7 +61,7 @@ which = "4.4"
 
 [dev-dependencies]
 pretty_assertions = "1.4"
-tempfile = "3.4"
+tempfile = "3"
 
 [badges]
 maintenance = { status = "actively-developed" }
@@ -69,16 +77,22 @@ trace-libgit = ["asyncgit/trace-libgit"]
 vendor-openssl = ["asyncgit/vendor-openssl"]
 
 [workspace]
-members = ["asyncgit", "filetreelist", "git2-hooks", "git2-testing", "scopetime"]
+members = [
+    "asyncgit",
+    "filetreelist",
+    "git2-hooks",
+    "git2-testing",
+    "scopetime",
+]
 
 [profile.release]
 lto = true
-opt-level = 'z'   # Optimize for size.
+opt-level = 'z'     # Optimize for size.
 codegen-units = 1
 strip = "debuginfo"
 
-# make debug build as fast as release 
-# usage of utf8 encoding inside tui 
+# make debug build as fast as release
+# usage of utf8 encoding inside tui
 # makes their debug profile slow
 [profile.dev.package."ratatui"]
 opt-level = 3

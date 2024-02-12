@@ -163,11 +163,11 @@ mod tests {
 			NamedTempFile::new_in(&app_home).unwrap();
 		writeln!(
 			temporary_key_list,
-			r"
+			r#"
 (
-	move_down: Some(( code: Char('j'), modifiers: ( bits: 2,),)),
+	move_down: Some(( code: Char('j'), modifiers: "CONTROL")),
 )
-"
+"#
 		)
 		.unwrap();
 
@@ -175,11 +175,11 @@ mod tests {
 			NamedTempFile::new_in(&app_home).unwrap();
 		writeln!(
 			temporary_key_symbols,
-			"
+			r#"
 (
-	esc: Some(\"Esc\"),
+	esc: Some("Esc"),
 )
-"
+"#
 		)
 		.unwrap();
 
