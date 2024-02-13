@@ -73,19 +73,19 @@ impl CommitComponent {
 		let arg_ssh_key_path = var("GITUI_SSH_KEY_PATH")
 			.unwrap_or_else(|_| "~/.ssh/id_rsa".to_string());
 
-		let ssh_key_abs_path = if let Some(ssh_key_path) =
-			arg_ssh_key_path.strip_prefix("~")
-		{
-			dirs::home_dir().map(|home| {
-				home.join(
-					ssh_key_path
-						.strip_prefix("/")
-						.unwrap_or(ssh_key_path),
-				)
-			})
-		} else {
-			Some(PathBuf::from(arg_ssh_key_path))
-		};
+		let ssh_key_abs_path =
+			arg_ssh_key_path.strip_prefix('~').map_or_else(
+				|| Some(PathBuf::from(&arg_ssh_key_path)),
+				|ssh_key_path| {
+					dirs::home_dir().map(|home| {
+						home.join(
+							ssh_key_path
+								.strip_prefix('/')
+								.unwrap_or(ssh_key_path),
+						)
+					})
+				},
+			);
 
 		let mut ssh_secret_key = ssh_key_abs_path
 			.and_then(|p| read(p).ok())
@@ -93,8 +93,9 @@ impl CommitComponent {
 		if let std::result::Result::Ok(password) =
 			var("GITUI_SSH_KEY_PASSWORD")
 		{
-			ssh_secret_key = ssh_secret_key
-				.and_then(|key| key.decrypt(password.as_bytes()).ok())
+			ssh_secret_key = ssh_secret_key.and_then(|key| {
+				key.decrypt(password.as_bytes()).ok()
+			});
 		}
 
 		Self {
