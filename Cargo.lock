@@ -740,6 +740,7 @@ dependencies = [
  "struct-patch",
  "syntect",
  "tempfile",
+ "tui-textarea",
  "unicode-segmentation",
  "unicode-truncate",
  "unicode-width",
@@ -1702,6 +1703,17 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tui-textarea"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3e38ced1f941a9cfc923fbf2fe6858443c42cc5220bfd35bdd3648371e7bd8e"
+dependencies = [
+ "crossterm",
+ "ratatui",
+ "unicode-width",
+]
 
 [[package]]
 name = "unicode-bidi"
