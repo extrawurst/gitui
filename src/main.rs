@@ -47,11 +47,13 @@ mod ui;
 mod version;
 mod watcher;
 
-use crate::{app::App, args::process_cmdline};
+use crate::{
+	app::App,
+	args::{process_cmdline, CliArgs},
+};
 use anyhow::{bail, Result};
 use app::QuitState;
 use asyncgit::{
-	ssh_key::private::PrivateKey,
 	sync::{utils::repo_work_dir, RepoPath},
 	AsyncGitNotification,
 };
@@ -131,12 +133,6 @@ fn main() -> Result<()> {
 	if !valid_path(&cliargs.repo_path) {
 		bail!("invalid path\nplease run gitui inside of a non-bare git repository");
 	}
-
-	let key_config = KeyConfig::init()
-		.map_err(|e| eprintln!("KeyConfig loading error: {e}"))
-		.unwrap_or_default();
-	let theme = Theme::init(&cliargs.theme);
-
 	setup_terminal()?;
 	defer! {
 		shutdown_terminal();
@@ -145,25 +141,16 @@ fn main() -> Result<()> {
 	set_panic_handlers()?;
 
 	let mut terminal = start_terminal(io::stdout())?;
-	let mut repo_path = cliargs.repo_path;
+	let mut repo_path = cliargs.repo_path.clone();
 	let input = Input::new();
-
-	let updater = if cliargs.notify_watcher {
-		Updater::NotifyWatcher
-	} else {
-		Updater::Ticker
-	};
 
 	loop {
 		let quit_state = run_app(
 			app_start,
-			repo_path.clone(),
-			theme.clone(),
-			key_config.clone(),
+			repo_path,
 			&input,
-			updater,
 			&mut terminal,
-			cliargs.ssh_secret_key.clone(),
+			cliargs.clone(),
 		)?;
 
 		match quit_state {
@@ -180,13 +167,20 @@ fn main() -> Result<()> {
 fn run_app(
 	app_start: Instant,
 	repo: RepoPath,
-	theme: Theme,
-	key_config: KeyConfig,
 	input: &Input,
-	updater: Updater,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
-	ssh_secret_key: Option<PrivateKey>,
+	cliargs: CliArgs,
 ) -> Result<QuitState, anyhow::Error> {
+	let key_config = KeyConfig::init()
+		.map_err(|e| eprintln!("KeyConfig loading error: {e}"))
+		.unwrap_or_default();
+	let theme = Theme::init(&cliargs.theme);
+	let updater = if cliargs.notify_watcher {
+		Updater::NotifyWatcher
+	} else {
+		Updater::Ticker
+	};
+
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
 
@@ -211,7 +205,7 @@ fn run_app(
 		input.clone(),
 		theme,
 		key_config,
-		ssh_secret_key,
+		cliargs.ssh_secret_key,
 	)?;
 
 	let mut spinner = Spinner::default();
