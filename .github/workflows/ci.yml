@@ -200,13 +200,9 @@ jobs:
       run: |
         cargo install --locked cargo-deny
 
-    - name: cargo-deny licenses
+    - name: cargo-deny checks
       run: |
-        cargo deny check licenses
-
-    - name: cargo-deny bans
-      run: |
-        cargo deny check bans
+        cargo deny check
 
   udeps:
     name: udeps
