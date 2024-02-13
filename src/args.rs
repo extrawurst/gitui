@@ -1,5 +1,6 @@
 use crate::bug_report;
 use anyhow::{anyhow, Result};
+use asyncgit::ssh_key::private::PrivateKey;
 use asyncgit::sync::RepoPath;
 use clap::{
 	crate_authors, crate_description, crate_name, crate_version, Arg,
@@ -8,7 +9,7 @@ use clap::{
 use simplelog::{Config, LevelFilter, WriteLogger};
 use std::{
 	env,
-	fs::{self, File},
+	fs::{self, read, File},
 	path::PathBuf,
 };
 
@@ -16,6 +17,7 @@ pub struct CliArgs {
 	pub theme: PathBuf,
 	pub repo_path: RepoPath,
 	pub notify_watcher: bool,
+	pub ssh_secret_key: Option<PrivateKey>,
 }
 
 pub fn process_cmdline() -> Result<CliArgs> {
@@ -57,10 +59,34 @@ pub fn process_cmdline() -> Result<CliArgs> {
 	let notify_watcher: bool =
 		*arg_matches.get_one("watcher").unwrap_or(&false);
 
+	let ssh_secret_key = {
+		let default_ssh_path = "~/.ssh/id_rsa".to_string();
+		let arg_ssh_key_path = arg_matches
+			.get_one::<String>("ssh_key_path")
+			.unwrap_or(&default_ssh_path);
+		let ssh_key_abs_path =
+			arg_ssh_key_path.strip_prefix('~').map_or_else(
+				|| Some(PathBuf::from(&arg_ssh_key_path)),
+				|ssh_key_path| {
+					dirs::home_dir().map(|home| {
+						home.join(
+							ssh_key_path
+								.strip_prefix('/')
+								.unwrap_or(ssh_key_path),
+						)
+					})
+				},
+			);
+		ssh_key_abs_path
+			.and_then(|p| read(p).ok())
+			.and_then(|bytes| PrivateKey::from_openssh(bytes).ok())
+	};
+
 	Ok(CliArgs {
 		theme,
 		repo_path,
 		notify_watcher,
+		ssh_secret_key,
 	})
 }
 
@@ -121,6 +147,14 @@ fn app() -> ClapApp {
 				.short('w')
 				.long("workdir")
 				.env("GIT_WORK_TREE")
+				.num_args(1),
+		)
+		.arg(
+			Arg::new("ssh_key_path")
+				.help("Set ssh secret key for sign commit")
+				.short('s')
+				.long("ssh-key-path")
+				.env("SSH_KEY_PATH")
 				.num_args(1),
 		)
 }

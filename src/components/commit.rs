@@ -30,8 +30,7 @@ use ratatui::{
 	Frame,
 };
 use std::{
-	env::var,
-	fs::{read, read_to_string, File},
+	fs::{read_to_string, File},
 	io::{Read, Write},
 	path::PathBuf,
 	str::FromStr,
@@ -70,34 +69,6 @@ const FIRST_LINE_LIMIT: usize = 50;
 impl CommitComponent {
 	///
 	pub fn new(env: &Environment) -> Self {
-		let arg_ssh_key_path = var("GITUI_SSH_KEY_PATH")
-			.unwrap_or_else(|_| "~/.ssh/id_rsa".to_string());
-
-		let ssh_key_abs_path =
-			arg_ssh_key_path.strip_prefix('~').map_or_else(
-				|| Some(PathBuf::from(&arg_ssh_key_path)),
-				|ssh_key_path| {
-					dirs::home_dir().map(|home| {
-						home.join(
-							ssh_key_path
-								.strip_prefix('/')
-								.unwrap_or(ssh_key_path),
-						)
-					})
-				},
-			);
-
-		let mut ssh_secret_key = ssh_key_abs_path
-			.and_then(|p| read(p).ok())
-			.and_then(|bytes| PrivateKey::from_openssh(bytes).ok());
-		if let std::result::Result::Ok(password) =
-			var("GITUI_SSH_KEY_PASSWORD")
-		{
-			ssh_secret_key = ssh_secret_key.and_then(|key| {
-				key.decrypt(password.as_bytes()).ok()
-			});
-		}
-
 		Self {
 			queue: env.queue.clone(),
 			mode: Mode::Normal,
@@ -117,7 +88,7 @@ impl CommitComponent {
 			commit_msg_history_idx: 0,
 			options: env.options.clone(),
 			verify: true,
-			ssh_secret_key,
+			ssh_secret_key: env.ssh_secret_key.clone(),
 		}
 	}
 
