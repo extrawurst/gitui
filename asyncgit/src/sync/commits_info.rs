@@ -245,7 +245,8 @@ mod tests {
 		let foo_file = Path::new("foo");
 		File::create(root.join(foo_file))?.write_all(b"a")?;
 		stage_add_file(repo_path, foo_file).unwrap();
-		let c1 = commit(repo_path, "subject: foo\nbody", None).unwrap();
+		let c1 =
+			commit(repo_path, "subject: foo\nbody", None).unwrap();
 		let c1_rev = c1.get_short_string();
 
 		assert_eq!(

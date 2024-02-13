@@ -97,22 +97,19 @@ pub fn commit(
 			.sign("git", HashAlg::Sha256, &buffer)?
 			.to_pem(LineEnding::LF)?;
 		let commit_id = repo.commit_signed(&content, &sig, None)?;
-		match repo.head() {
-			Ok(mut head) => {
-				head.set_target(commit_id, msg)?;
-			}
-			Err(_) => {
-				let config = repo.config()?;
-				let default_branch_name = config
-					.get_str("init.defaultBranch")
-					.unwrap_or("master");
-				repo.reference(
-					&format!("refs/heads/{}", default_branch_name),
-					commit_id,
-					true,
-					msg,
-				)?;
-			}
+		if let Ok(mut head) = repo.head() {
+			head.set_target(commit_id, msg)?;
+		} else {
+			let config = repo.config()?;
+			let default_branch_name = config
+				.get_str("init.defaultBranch")
+				.unwrap_or("master");
+			repo.reference(
+				&format!("refs/heads/{default_branch_name}"),
+				commit_id,
+				true,
+				msg,
+			)?;
 		}
 		Ok(commit_id.into())
 	} else {
