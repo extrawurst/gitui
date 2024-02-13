@@ -84,6 +84,10 @@ pub enum Error {
 	///
 	#[error("git hook error: {0}")]
 	Hooks(#[from] git2_hooks::HooksError),
+
+	///
+	#[error("ssh key error: {0}")]
+	SshKeyError(#[from] ssh_key::Error),
 }
 
 ///

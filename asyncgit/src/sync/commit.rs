@@ -5,6 +5,7 @@ use crate::{
 };
 use git2::{ErrorCode, ObjectType, Repository, Signature};
 use scopetime::scope_time;
+use ssh_key::{HashAlg, LineEnding, PrivateKey};
 
 ///
 pub fn amend(
@@ -61,7 +62,12 @@ pub(crate) fn signature_allow_undefined_name(
 }
 
 /// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
-pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
+/// If ssh private key is provided, the commit will be signed.
+pub fn commit(
+	repo_path: &RepoPath,
+	msg: &str,
+	sk: Option<&PrivateKey>,
+) -> Result<CommitId> {
 	scope_time!("commit");
 
 	let repo = repo(repo_path)?;
@@ -78,17 +84,49 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 	};
 
 	let parents = parents.iter().collect::<Vec<_>>();
-
-	Ok(repo
-		.commit(
-			Some("HEAD"),
+	if let Some(sk) = sk {
+		let buffer = repo.commit_create_buffer(
 			&signature,
 			&signature,
 			msg,
 			&tree,
 			parents.as_slice(),
-		)?
-		.into())
+		)?;
+		let content = String::from_utf8(buffer.to_vec())?;
+		let sig = sk
+			.sign("git", HashAlg::Sha256, &buffer)?
+			.to_pem(LineEnding::LF)?;
+		let commit_id = repo.commit_signed(&content, &sig, None)?;
+		match repo.head() {
+			Ok(mut head) => {
+				head.set_target(commit_id, msg)?;
+			}
+			Err(_) => {
+				let config = repo.config()?;
+				let default_branch_name = config
+					.get_str("init.defaultBranch")
+					.unwrap_or("master");
+				repo.reference(
+					&format!("refs/heads/{}", default_branch_name),
+					commit_id,
+					true,
+					msg,
+				)?;
+			}
+		}
+		Ok(commit_id.into())
+	} else {
+		Ok(repo
+			.commit(
+				Some("HEAD"),
+				&signature,
+				&signature,
+				msg,
+				&tree,
+				parents.as_slice(),
+			)?
+			.into())
+	}
 }
 
 /// Tag a commit.

@@ -14,6 +14,7 @@ use crate::{
 use anyhow::{bail, Ok, Result};
 use asyncgit::{
 	cached, message_prettify,
+	ssh_key::private::PrivateKey,
 	sync::{
 		self, get_config_string, CommitId, HookResult,
 		PrepareCommitMsgSource, RepoPathRef, RepoState,
@@ -29,7 +30,8 @@ use ratatui::{
 	Frame,
 };
 use std::{
-	fs::{read_to_string, File},
+	env::var,
+	fs::{read, read_to_string, File},
 	io::{Read, Write},
 	path::PathBuf,
 	str::FromStr,
@@ -60,6 +62,7 @@ pub struct CommitComponent {
 	commit_msg_history_idx: usize,
 	options: SharedOptions,
 	verify: bool,
+	ssh_secret_key: Option<PrivateKey>,
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
@@ -67,6 +70,33 @@ const FIRST_LINE_LIMIT: usize = 50;
 impl CommitComponent {
 	///
 	pub fn new(env: &Environment) -> Self {
+		let arg_ssh_key_path = var("GITUI_SSH_KEY_PATH")
+			.unwrap_or_else(|_| "~/.ssh/id_rsa".to_string());
+
+		let ssh_key_abs_path = if let Some(ssh_key_path) =
+			arg_ssh_key_path.strip_prefix("~")
+		{
+			dirs::home_dir().map(|home| {
+				home.join(
+					ssh_key_path
+						.strip_prefix("/")
+						.unwrap_or(ssh_key_path),
+				)
+			})
+		} else {
+			Some(PathBuf::from(arg_ssh_key_path))
+		};
+
+		let mut ssh_secret_key = ssh_key_abs_path
+			.and_then(|p| read(p).ok())
+			.and_then(|bytes| PrivateKey::from_openssh(bytes).ok());
+		if let std::result::Result::Ok(password) =
+			var("GITUI_SSH_KEY_PASSWORD")
+		{
+			ssh_secret_key = ssh_secret_key
+				.and_then(|key| key.decrypt(password.as_bytes()).ok())
+		}
+
 		Self {
 			queue: env.queue.clone(),
 			mode: Mode::Normal,
@@ -86,6 +116,7 @@ impl CommitComponent {
 			commit_msg_history_idx: 0,
 			options: env.options.clone(),
 			verify: true,
+			ssh_secret_key,
 		}
 	}
 
@@ -284,16 +315,22 @@ impl CommitComponent {
 
 	fn do_commit(&self, msg: &str) -> Result<()> {
 		match &self.mode {
-			Mode::Normal => sync::commit(&self.repo.borrow(), msg)?,
+			Mode::Normal => sync::commit(
+				&self.repo.borrow(),
+				msg,
+				self.ssh_secret_key.as_ref(),
+			)?,
 			Mode::Amend(amend) => {
 				sync::amend(&self.repo.borrow(), *amend, msg)?
 			}
 			Mode::Merge(ids) => {
 				sync::merge_commit(&self.repo.borrow(), msg, ids)?
 			}
-			Mode::Revert => {
-				sync::commit_revert(&self.repo.borrow(), msg)?
-			}
+			Mode::Revert => sync::commit_revert(
+				&self.repo.borrow(),
+				msg,
+				self.ssh_secret_key.as_ref(),
+			)?,
 			Mode::Reword(id) => {
 				let commit =
 					sync::reword(&self.repo.borrow(), *id, msg)?;
