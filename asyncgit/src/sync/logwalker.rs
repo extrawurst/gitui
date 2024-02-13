@@ -135,10 +135,10 @@ mod tests {
 
 		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
-		commit(repo_path, "commit1").unwrap();
+		commit(repo_path, "commit1", None).unwrap();
 		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
-		let oid2 = commit(repo_path, "commit2").unwrap();
+		let oid2 = commit(repo_path, "commit2", None).unwrap();
 
 		let mut items = Vec::new();
 		let mut walk = LogWalker::new(&repo, 1)?;
@@ -160,10 +160,10 @@ mod tests {
 
 		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
-		commit(repo_path, "commit1").unwrap();
+		commit(repo_path, "commit1", None).unwrap();
 		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
-		let oid2 = commit(repo_path, "commit2").unwrap();
+		let oid2 = commit(repo_path, "commit2", None).unwrap();
 
 		let mut items = Vec::new();
 		let mut walk = LogWalker::new(&repo, 100)?;
@@ -195,17 +195,17 @@ mod tests {
 		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(&repo_path, file_path).unwrap();
 
-		let _first_commit_id = commit(&repo_path, "commit1").unwrap();
+		let _first_commit_id = commit(&repo_path, "commit1", None).unwrap();
 
 		File::create(root.join(second_file_path))?.write_all(b"a")?;
 		stage_add_file(&repo_path, second_file_path).unwrap();
 
-		let second_commit_id = commit(&repo_path, "commit2").unwrap();
+		let second_commit_id = commit(&repo_path, "commit2", None).unwrap();
 
 		File::create(root.join(file_path))?.write_all(b"b")?;
 		stage_add_file(&repo_path, file_path).unwrap();
 
-		let _third_commit_id = commit(&repo_path, "commit3").unwrap();
+		let _third_commit_id = commit(&repo_path, "commit3", None).unwrap();
 
 		let diff_contains_baz = diff_contains_file("baz".into());
 

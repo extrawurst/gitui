@@ -175,7 +175,7 @@ mod tests {
 		File::create(root.join(file_path))?.write_all(b"line 1\n")?;
 
 		stage_add_file(repo_path, file_path)?;
-		commit(repo_path, "first commit")?;
+		commit(repo_path, "first commit", None)?;
 
 		let blame = blame_file(repo_path, "foo", None)?;
 
@@ -199,7 +199,7 @@ mod tests {
 		file.write(b"line 2\n")?;
 
 		stage_add_file(repo_path, file_path)?;
-		commit(repo_path, "second commit")?;
+		commit(repo_path, "second commit", None)?;
 
 		let blame = blame_file(repo_path, "foo", None)?;
 
@@ -233,7 +233,7 @@ mod tests {
 		assert_eq!(blame.lines.len(), 2);
 
 		stage_add_file(repo_path, file_path)?;
-		commit(repo_path, "third commit")?;
+		commit(repo_path, "third commit", None)?;
 
 		let blame = blame_file(repo_path, "foo", None)?;
 
@@ -258,7 +258,7 @@ mod tests {
 			.unwrap();
 
 		stage_add_file(repo_path, file_path).unwrap();
-		commit(repo_path, "first commit").unwrap();
+		commit(repo_path, "first commit", None).unwrap();
 
 		assert!(blame_file(repo_path, "bar\\foo", None).is_ok());
 	}

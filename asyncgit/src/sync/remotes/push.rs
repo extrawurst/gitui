@@ -226,6 +226,7 @@ mod tests {
 		sync::commit(
 			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"repo_1_commit",
+			None
 		)
 		.unwrap();
 
@@ -249,6 +250,7 @@ mod tests {
 		sync::commit(
 			&tmp_other_repo_dir.path().to_str().unwrap().into(),
 			"repo_2_commit",
+			None
 		)
 		.unwrap();
 
@@ -323,6 +325,7 @@ mod tests {
 		let repo_1_commit = sync::commit(
 			&tmp_repo_dir.path().to_str().unwrap().into(),
 			"repo_1_commit",
+			None
 		)
 		.unwrap();
 
@@ -367,6 +370,7 @@ mod tests {
 		let repo_2_commit = sync::commit(
 			&tmp_other_repo_dir.path().to_str().unwrap().into(),
 			"repo_2_commit",
+			None
 		)
 		.unwrap();
 

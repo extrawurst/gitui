@@ -172,10 +172,10 @@ mod tests {
 
 		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
-		let c1 = commit(repo_path, "commit1").unwrap();
+		let c1 = commit(repo_path, "commit1", None).unwrap();
 		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
-		let c2 = commit(repo_path, "commit2").unwrap();
+		let c2 = commit(repo_path, "commit2", None).unwrap();
 
 		let res = get_commits_info(repo_path, &[c2, c1], 50).unwrap();
 
@@ -197,7 +197,7 @@ mod tests {
 
 		File::create(root.join(file_path))?.write_all(b"a")?;
 		stage_add_file(repo_path, file_path).unwrap();
-		let c1 = commit(repo_path, "subject\nbody").unwrap();
+		let c1 = commit(repo_path, "subject\nbody", None).unwrap();
 
 		let res = get_commits_info(repo_path, &[c1], 50).unwrap();
 
@@ -219,7 +219,7 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 
 		let msg = invalidstring::invalid_utf8("test msg");
-		commit(repo_path, msg.as_str()).unwrap();
+		commit(repo_path, msg.as_str(), None).unwrap();
 
 		let res = get_commits_info(
 			repo_path,
@@ -245,7 +245,7 @@ mod tests {
 		let foo_file = Path::new("foo");
 		File::create(root.join(foo_file))?.write_all(b"a")?;
 		stage_add_file(repo_path, foo_file).unwrap();
-		let c1 = commit(repo_path, "subject: foo\nbody").unwrap();
+		let c1 = commit(repo_path, "subject: foo\nbody", None).unwrap();
 		let c1_rev = c1.get_short_string();
 
 		assert_eq!(

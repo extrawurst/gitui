@@ -200,7 +200,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 1));
 
-		commit(repo_path, "commit msg").unwrap();
+		commit(repo_path, "commit msg", None).unwrap();
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 	}
@@ -226,7 +226,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 1));
 
-		commit(repo_path, "commit msg").unwrap();
+		commit(repo_path, "commit msg", None).unwrap();
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 	}
@@ -243,7 +243,7 @@ mod tests {
 		File::create(root.join(file_path1))?.write_all(b"test1")?;
 
 		stage_add_file(repo_path, file_path1)?;
-		let id = commit(repo_path, "commit msg")?;
+		let id = commit(repo_path, "commit msg", None)?;
 
 		assert_eq!(count_commits(&repo, 10), 1);
 
@@ -282,7 +282,7 @@ mod tests {
 
 		stage_add_file(repo_path, file_path)?;
 
-		let new_id = commit(repo_path, "commit msg")?;
+		let new_id = commit(repo_path, "commit msg", None)?;
 
 		tag_commit(repo_path, &new_id, "tag", None)?;
 
@@ -324,7 +324,7 @@ mod tests {
 
 		stage_add_file(repo_path, file_path)?;
 
-		let new_id = commit(repo_path, "commit msg")?;
+		let new_id = commit(repo_path, "commit msg", None)?;
 
 		tag_commit(repo_path, &new_id, "tag", Some("tag-message"))?;
 
@@ -360,13 +360,13 @@ mod tests {
 
 		repo.config()?.remove("user.email")?;
 
-		let error = commit(repo_path, "commit msg");
+		let error = commit(repo_path, "commit msg", None);
 
 		assert!(matches!(error, Err(_)));
 
 		repo.config()?.set_str("user.email", "email")?;
 
-		let success = commit(repo_path, "commit msg");
+		let success = commit(repo_path, "commit msg", None);
 
 		assert!(matches!(success, Ok(_)));
 		assert_eq!(count_commits(&repo, 10), 1);
@@ -396,7 +396,7 @@ mod tests {
 
 		repo.config()?.remove("user.name")?;
 
-		let mut success = commit(repo_path, "commit msg");
+		let mut success = commit(repo_path, "commit msg", None);
 
 		assert!(matches!(success, Ok(_)));
 		assert_eq!(count_commits(&repo, 10), 1);
@@ -409,7 +409,7 @@ mod tests {
 
 		repo.config()?.set_str("user.name", "name")?;
 
-		success = commit(repo_path, "commit msg");
+		success = commit(repo_path, "commit msg", None);
 
 		assert!(matches!(success, Ok(_)));
 		assert_eq!(count_commits(&repo, 10), 2);
