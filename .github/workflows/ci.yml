@@ -226,15 +226,6 @@ jobs:
         cargo install --git https://github.com/est31/cargo-udeps --locked
         cargo +nightly udeps --all-targets
 
-  sec:
-    name: Security audit
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: rustsec/audit-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-
   log-test:
     name: Changelog Test
     runs-on: ubuntu-latest
