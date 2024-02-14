@@ -1,4 +1,5 @@
 use crate::{
+	app::Environment,
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitList, Component, DrawableComponent, EventState,
@@ -7,7 +8,6 @@ use crate::{
 	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, Queue, StackablePopupOpen},
 	strings,
-	ui::style::SharedTheme,
 };
 use anyhow::Result;
 use asyncgit::sync::{self, CommitId, RepoPath, RepoPathRef};
@@ -23,24 +23,16 @@ pub struct StashList {
 
 impl StashList {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: &Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			visible: false,
 			list: CommitList::new(
-				repo.clone(),
-				&strings::stashlist_title(&key_config),
-				theme,
-				queue.clone(),
-				key_config.clone(),
+				env,
+				&strings::stashlist_title(&env.key_config),
 			),
-			queue: queue.clone(),
-			key_config,
-			repo,
+			queue: env.queue.clone(),
+			key_config: env.key_config.clone(),
+			repo: env.repo.clone(),
 		}
 	}
 

@@ -1,7 +1,10 @@
 use crate::{
 	error::Result,
 	hash,
-	sync::{self, diff::DiffOptions, CommitId, RepoPath},
+	sync::{
+		self, commit_files::OldNew, diff::DiffOptions, CommitId,
+		RepoPath,
+	},
 	AsyncGitNotification, FileDiff,
 };
 use crossbeam_channel::Sender;
@@ -17,7 +20,7 @@ use std::{
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub enum DiffType {
 	/// diff two commits
-	Commits((CommitId, CommitId)),
+	Commits(OldNew<CommitId>),
 	/// diff in a given commit
 	Commit(CommitId),
 	/// diff against staged file

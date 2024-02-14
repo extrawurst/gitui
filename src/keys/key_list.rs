@@ -34,8 +34,8 @@ impl From<&GituiKeyEvent> for KeyEvent {
 	}
 }
 
-#[derive(Clone, Patch)]
-#[patch_derive(Deserialize)]
+#[derive(Debug, Clone, Patch)]
+#[patch_derive(Deserialize, Debug)]
 pub struct KeysList {
 	pub tab_status: GituiKeyEvent,
 	pub tab_log: GituiKeyEvent,
@@ -217,8 +217,11 @@ impl KeysList {
 	pub fn init(file: PathBuf) -> Self {
 		let mut keys_list = Self::default();
 		if let Ok(f) = File::open(file) {
-			if let Ok(patch) = ron::de::from_reader(f) {
-				keys_list.apply(patch);
+			match ron::de::from_reader(f) {
+				Ok(patch) => keys_list.apply(patch),
+				Err(e) => {
+					log::error!("KeysList parse error: {e}");
+				}
 			}
 		}
 		keys_list
@@ -248,11 +251,12 @@ mod tests {
 
 		writeln!(
 			file,
-			r"
+			r#"
 (
-	move_down: Some(( code: Char('j'), modifiers: ( bits: 2,),)),
+	move_down: Some(( code: Char('j'), modifiers: "CONTROL")),
+	move_up: Some((code: Char('h'), modifiers: ""))
 )
-"
+"#
 		)
 		.unwrap();
 
@@ -264,6 +268,13 @@ mod tests {
 			GituiKeyEvent::new(
 				KeyCode::Char('j'),
 				KeyModifiers::CONTROL
+			)
+		);
+		assert_eq!(
+			keys.move_up,
+			GituiKeyEvent::new(
+				KeyCode::Char('h'),
+				KeyModifiers::NONE
 			)
 		);
 	}

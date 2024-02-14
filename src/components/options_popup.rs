@@ -3,6 +3,7 @@ use super::{
 	DrawableComponent, EventState,
 };
 use crate::{
+	app::Environment,
 	components::utils::string_width_align,
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
@@ -41,19 +42,14 @@ pub struct OptionsPopupComponent {
 
 impl OptionsPopupComponent {
 	///
-	pub fn new(
-		queue: &Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-		options: SharedOptions,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			selection: AppOption::StatusShowUntracked,
-			queue: queue.clone(),
+			queue: env.queue.clone(),
 			visible: false,
-			key_config,
-			options,
-			theme,
+			key_config: env.key_config.clone(),
+			options: env.options.clone(),
+			theme: env.theme.clone(),
 		}
 	}
 

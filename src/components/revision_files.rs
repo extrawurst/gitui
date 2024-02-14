@@ -4,12 +4,13 @@ use super::{
 	EventState, FileRevOpen, FuzzyFinderTarget, SyntaxTextComponent,
 };
 use crate::{
+	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order, symbol},
 	try_or_popup,
 	ui::{self, common_nav, style::SharedTheme},
-	AsyncAppNotification, AsyncNotification,
+	AsyncNotification,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -19,7 +20,6 @@ use asyncgit::{
 	},
 	AsyncGitNotification, AsyncTreeFilesJob,
 };
-use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
 use ratatui::{
@@ -57,31 +57,21 @@ pub struct RevisionFilesComponent {
 
 impl RevisionFilesComponent {
 	///
-	pub fn new(
-		repo: RepoPathRef,
-		queue: &Queue,
-		sender: &Sender<AsyncAppNotification>,
-		sender_git: Sender<AsyncGitNotification>,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
-			queue: queue.clone(),
+			queue: env.queue.clone(),
 			tree: FileTree::default(),
 			scroll: VerticalScroll::new(),
-			current_file: SyntaxTextComponent::new(
-				repo.clone(),
-				sender,
-				key_config.clone(),
-				theme.clone(),
-			),
-			async_treefiles: AsyncSingleJob::new(sender_git),
-			theme,
+			current_file: SyntaxTextComponent::new(env),
+			theme: env.theme.clone(),
 			files: None,
+			async_treefiles: AsyncSingleJob::new(
+				env.sender_git.clone(),
+			),
 			revision: None,
 			focus: Focus::Tree,
-			key_config,
-			repo,
+			key_config: env.key_config.clone(),
+			repo: env.repo.clone(),
 			visible: false,
 		}
 	}

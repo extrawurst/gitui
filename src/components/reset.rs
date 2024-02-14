@@ -1,4 +1,5 @@
 use crate::{
+	app::Environment,
 	components::{
 		popup_paragraph, visibility_blocking, CommandBlocking,
 		CommandInfo, Component, DrawableComponent, EventState,
@@ -103,17 +104,13 @@ impl Component for ConfirmComponent {
 
 impl ConfirmComponent {
 	///
-	pub fn new(
-		queue: Queue,
-		theme: SharedTheme,
-		key_config: SharedKeyConfig,
-	) -> Self {
+	pub fn new(env: &Environment) -> Self {
 		Self {
 			target: None,
 			visible: false,
-			queue,
-			theme,
-			key_config,
+			queue: env.queue.clone(),
+			theme: env.theme.clone(),
+			key_config: env.key_config.clone(),
 		}
 	}
 	///

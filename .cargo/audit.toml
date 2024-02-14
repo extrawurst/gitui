@@ -1,2 +1,0 @@
-[advisories]
-ignore = []
