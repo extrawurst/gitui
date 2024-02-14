@@ -57,6 +57,10 @@ use asyncgit::{
 use backtrace::Backtrace;
 use crossbeam_channel::{never, tick, unbounded, Receiver, Select};
 use crossterm::{
+	event::{
+		KeyboardEnhancementFlags, PopKeyboardEnhancementFlags,
+		PushKeyboardEnhancementFlags,
+	},
 	terminal::{
 		disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
 		LeaveAlternateScreen,
@@ -74,7 +78,7 @@ use scopetime::scope_time;
 use spinner::Spinner;
 use std::{
 	cell::RefCell,
-	io::{self, Write},
+	io::{self, stdout, Write},
 	panic, process,
 	time::{Duration, Instant},
 };
@@ -282,14 +286,40 @@ fn run_app(
 
 fn setup_terminal() -> Result<()> {
 	enable_raw_mode()?;
+	let supports_keyboard_enhancement = matches!(
+		crossterm::terminal::supports_keyboard_enhancement(),
+		Ok(true)
+	);
+
+	if supports_keyboard_enhancement {
+		crossterm::queue!(
+            stdout(),
+            PushKeyboardEnhancementFlags(
+                KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+                    | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
+                    | KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS
+                    | KeyboardEnhancementFlags::REPORT_EVENT_TYPES
+            )
+        )?;
+	}
 	io::stdout().execute(EnterAlternateScreen)?;
 	Ok(())
 }
 
 fn shutdown_terminal() {
 	let leave_screen =
-		io::stdout().execute(LeaveAlternateScreen).map(|_f| ());
-
+		stdout().execute(LeaveAlternateScreen).map(|_f| ());
+	let supports_keyboard_enhancement = matches!(
+		crossterm::terminal::supports_keyboard_enhancement(),
+		Ok(true)
+	);
+	if supports_keyboard_enhancement {
+		let _ = crossterm::queue!(
+			io::stdout(),
+			PopKeyboardEnhancementFlags
+		)
+		.unwrap();
+	}
 	if let Err(e) = leave_screen {
 		eprintln!("leave_screen failed:\n{e}");
 	}

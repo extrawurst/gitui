@@ -1,36 +1,27 @@
-#![allow(unused_imports)]
-
 use crate::app::Environment;
 use crate::keys::key_match;
-use crate::strings::symbol;
 use crate::ui::Size;
 use crate::{
 	components::{
-		popup_paragraph, visibility_blocking, CommandBlocking,
-		CommandInfo, Component, DrawableComponent, EventState,
+		visibility_blocking, CommandBlocking, CommandInfo, Component,
+		DrawableComponent, EventState,
 	},
 	keys::SharedKeyConfig,
 	strings,
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
-use crossterm::event::{Event, KeyCode, KeyModifiers};
-use itertools::Itertools;
-use ratatui::style::{Color, Style};
+use crossterm::event::Event;
 use ratatui::widgets::{Block, Borders};
 use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
-	style::Modifier,
-	text::Text,
 	widgets::{Clear, Paragraph},
 	Frame,
 };
-use std::cell::{OnceCell, RefCell};
+use std::cell::Cell;
+use std::cell::OnceCell;
 use std::convert::From;
-use std::env;
-use std::{cell::Cell, collections::HashMap, ops::Range};
-use std::{path::PathBuf, rc::Rc};
 use tui_textarea::{CursorMove, Input, Key, Scrolling, TextArea};
 #[derive(PartialEq, Eq)]
 pub enum InputType {
@@ -38,67 +29,12 @@ pub enum InputType {
 	Multiline,
 	Password,
 }
-/*
-	completely rewritten using tui-textarea as it provides a ton of useful features
-	- multiline edit
-	- scroll vertically and horizontally
-	- tab expansion
-	- configurable masking
-	- copy paste
-	- multi-char support
-
-
-
-
-=== key input ===
-
-All keys work as before.
-
-New line is shift-enter, ctrl-enter . These are all common new line editor commands (discord, emacs,...)
-
-There is no help for the editor window. The only thing a user really needs to know is the newline key stroke,
-but there are 10-15 ctrl key codes. I could add then to the general help popup, or make a special one for textinput
-
-here is complete list FYI
-
-the ones wrapped in () are the ones ignored as 'special'
-
-Ctrl+H, Backspace	Delete one character before cursor
-Ctrl+D, Delete	Delete one character next to cursor
-Ctrl+M, shif+Enter, ctrl+enter	Insert newline
-Ctrl+K	Delete from cursor until the end of line
-Ctrl+J	Delete from cursor until the head of line
-Ctrl+W, Alt+H, Alt+Backspace	Delete one word before cursor
-Alt+D, Alt+Delete	Delete one word next to cursor
-Ctrl+U	Undo
-Ctrl+R	Redo
-Ctrl+Y	Paste yanked text
-(Ctrl+F), →	Move cursor forward by one character
-Ctrl+B, ←	Move cursor backward by one character
-Ctrl+P, ↑	Move cursor up by one line
-(Ctrl+N), ↓	Move cursor down by one line
-Alt+F, Ctrl+→	Move cursor forward by word
-Atl+B, Ctrl+←	Move cursor backward by word
-Alt+], Alt+P, Ctrl+↑	Move cursor up by paragraph
-Alt+[, Alt+N, Ctrl+↓	Move cursor down by paragraph
-(Ctrl+E), End, Ctrl+Alt+F, Ctrl+Alt+→	Move cursor to the end of line
-(Ctrl+A), Home, Ctrl+Alt+B, Ctrl+Alt+←	Move cursor to the head of line
-Alt+<, Ctrl+Alt+P, Ctrl+Alt+↑	Move cursor to top of lines
-Alt+>, Ctrl+Alt+N, Ctrl+Alt+↓	Move cursor to bottom of lines
-Ctrl+V, PageDown	Scroll down by page
-Alt+V, PageUp	Scroll up by page
-
-== tests ==
-
-removed the tests for the multiline handling here because its now completely different
-and TTA has tests for its own multi line handling
-
-the word left and right test has been changed becuase the emoji handling in the
-gitui code did not match what any other editors did with emojis (or chinese characters)
-see explanation in the tests below
-
-*/
-
+#[derive(PartialEq, Eq)]
+enum SelectionState {
+	Selecting,
+	NotSelecting,
+	SelectionEndPending,
+}
 type TextAreaComponent = TextArea<'static>;
 #[allow(clippy::struct_excessive_bools)]
 pub struct TextInputComponent {
@@ -113,8 +49,7 @@ pub struct TextInputComponent {
 	current_area: Cell<Rect>,
 	embed: bool,
 	textarea: Option<TextAreaComponent>,
-	selecting: bool,
-	selection_end_pending: bool,
+	select_state: SelectionState,
 }
 
 impl TextInputComponent {
@@ -125,9 +60,6 @@ impl TextInputComponent {
 		default_msg: &str,
 		show_char_count: bool,
 	) -> Self {
-		// this is here purely to make clippy happy
-		let eat_white_space = strings::symbol::WHITESPACE;
-		let _ = eat_white_space;
 		Self {
 			msg: OnceCell::default(),
 			theme: env.theme.clone(),
@@ -140,8 +72,7 @@ impl TextInputComponent {
 			current_area: Cell::new(Rect::default()),
 			embed: false,
 			textarea: None,
-			selecting: false,
-			selection_end_pending: false,
+			select_state: SelectionState::NotSelecting,
 		}
 	}
 
@@ -155,7 +86,7 @@ impl TextInputComponent {
 
 	/// Clear the `msg`.
 	pub fn clear(&mut self) {
-		self.msg.take(); // = String::new();
+		self.msg.take();
 		if self.is_visible() {
 			self.create_and_show();
 		}
@@ -163,17 +94,17 @@ impl TextInputComponent {
 
 	/// Get the `msg`.
 
-	// the fancy footwork with the OnceCell is to allow
-	// the reading of msg as a &str.
-	// tui_textarea returns its lines to the caller as &[String]
-	// gitui wants &str of \n delimited text
-	// it would be simple if this was a mut method. You could
-	// just load up msg from the lines arre and return an &str pointing at it
-	// but its not a mut method. So we need to store the text in a OnceCell
-	// The methods that change msg call take() on the cell. That makes
-	// get_or_init run again
-
 	pub fn get_text(&self) -> &str {
+		// the fancy footwork with the OnceCell is to allow
+		// the reading of msg as a &str.
+		// tui_textarea returns its lines to the caller as &[String]
+		// gitui wants &str of \n delimited text
+		// it would be simple if this was a mut method. You could
+		// just load up msg from the lines area and return an &str pointing at it
+		// but its not a mut method. So we need to store the text in a OnceCell
+		// The methods that change msg call take() on the cell. That makes
+		// get_or_init run again
+
 		self.msg.get_or_init(|| {
 			self.textarea
 				.as_ref()
@@ -196,10 +127,9 @@ impl TextInputComponent {
 		self.selected = Some(enable);
 	}
 
-	//	create the textarea and then load it with the text
-	//	from self.msg
-
 	fn create_and_show(&mut self) {
+		//	create the textarea and then load it with the text
+		//	from self.msg
 		let lines: Vec<String> = self
 			.msg
 			.get()
@@ -238,9 +168,7 @@ impl TextInputComponent {
 
 	/// Set the `msg`.
 	pub fn set_text(&mut self, msg: String) {
-		self.msg.take();
-		// this is guranteed to work because of the take above
-		let _ = self.msg.set(msg);
+		self.msg = msg.into();
 		if self.is_visible() {
 			self.create_and_show();
 		}
@@ -286,27 +214,31 @@ impl TextInputComponent {
 		}
 		// Should we start selecting text, stop the current selection, or do nothing?
 		// the end is handled after the ending keystroke
-		self.selection_end_pending =
-			match (self.selecting, input.shift) {
-				(true, true) | (false, false) => {
-					// continue select
-					false
+
+		match (&self.select_state, input.shift) {
+			(SelectionState::Selecting, true)
+			| (SelectionState::NotSelecting, false) => {
+				// continue selecting or not selecting
+			}
+			(SelectionState::Selecting, false) => {
+				// end select
+				self.select_state =
+					SelectionState::SelectionEndPending;
+			}
+			(SelectionState::NotSelecting, true) => {
+				// start select
+				// this should always work since we are only called
+				// if we have a textarea to get input
+				if let Some(ta) = &mut self.textarea {
+					ta.start_selection();
+					self.select_state = SelectionState::Selecting;
 				}
-				(true, false) => {
-					// end select
-					true
-				}
-				(false, true) => {
-					// start select
-					// this should always work since we are only called
-					// if we have a textarea to get input
-					if let Some(ta) = &mut self.textarea {
-						ta.start_selection();
-						self.selecting = true;
-					}
-					false
-				}
-			};
+			}
+			(SelectionState::SelectionEndPending, _) => {
+				// this really should not happen because the nd pending state
+				// should have been picked up in the same pass as it was set
+			}
+		}
 	}
 }
 
@@ -401,8 +333,6 @@ impl Component for TextInputComponent {
 					return Ok(EventState::NotConsumed);
 				}
 
-				//let shift = e.modifiers.contains(KeyModifiers::SHIFT);
-
 				/*
 				here we do key handling rather than passing it to textareas input function
 				- so that we know which keys were handled and which were not
@@ -420,6 +350,11 @@ impl Component for TextInputComponent {
 					// plain enter is eaten higher up the food chain
 					Input {
 						key: Key::Enter, ..
+					}
+					| Input {
+						key: Key::Char('m'),
+						ctrl: true,
+						..
 					} => {
 						// prevent new lines in case of non multiline
 						// password is assumed single line too
@@ -762,10 +697,11 @@ impl Component for TextInputComponent {
 					self.msg.take();
 				}
 			}
-			if self.selection_end_pending {
+			if self.select_state
+				== SelectionState::SelectionEndPending
+			{
 				ta.cancel_selection();
-				self.selecting = false;
-				self.selection_end_pending = false;
+				self.select_state = SelectionState::NotSelecting;
 			}
 			return Ok(EventState::Consumed);
 		}
@@ -793,7 +729,6 @@ impl Component for TextInputComponent {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use ratatui::{style::Style, text::Span};
 
 	#[test]
 	fn test_smoke() {
