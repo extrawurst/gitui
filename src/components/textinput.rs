@@ -235,8 +235,10 @@ impl TextInputComponent {
 				}
 			}
 			(SelectionState::SelectionEndPending, _) => {
-				// this really should not happen because the nd pending state
+				// this really should not happen because the end pending state
 				// should have been picked up in the same pass as it was set
+				// so lets clear it
+				self.select_state = SelectionState::NotSelecting;
 			}
 		}
 	}

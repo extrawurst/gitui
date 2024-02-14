@@ -309,17 +309,7 @@ fn setup_terminal() -> Result<()> {
 fn shutdown_terminal() {
 	let leave_screen =
 		stdout().execute(LeaveAlternateScreen).map(|_f| ());
-	let supports_keyboard_enhancement = matches!(
-		crossterm::terminal::supports_keyboard_enhancement(),
-		Ok(true)
-	);
-	if supports_keyboard_enhancement {
-		let _ = crossterm::queue!(
-			io::stdout(),
-			PopKeyboardEnhancementFlags
-		)
-		.unwrap();
-	}
+
 	if let Err(e) = leave_screen {
 		eprintln!("leave_screen failed:\n{e}");
 	}
@@ -328,6 +318,15 @@ fn shutdown_terminal() {
 
 	if let Err(e) = leave_raw_mode {
 		eprintln!("leave_raw_mode failed:\n{e}");
+	}
+
+	let supports_keyboard_enhancement = matches!(
+		crossterm::terminal::supports_keyboard_enhancement(),
+		Ok(true)
+	);
+	if supports_keyboard_enhancement {
+		crossterm::queue!(io::stdout(), PopKeyboardEnhancementFlags)
+			.unwrap_or(eprint!("PopKeyboardEnhancementFlags failed"));
 	}
 }
 
