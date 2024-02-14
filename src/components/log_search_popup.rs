@@ -1,6 +1,6 @@
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, TextInputComponent,
+	DrawableComponent, EventState, InputType, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -58,7 +58,8 @@ impl LogSearchPopupComponent {
 	///
 	pub fn new(env: &Environment) -> Self {
 		let mut find_text =
-			TextInputComponent::new(env, "", "search text", false);
+			TextInputComponent::new(env, "", "search text", false)
+				.with_input_type(InputType::Singleline);
 		find_text.embed();
 		find_text.enabled(true);
 
