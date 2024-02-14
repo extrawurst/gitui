@@ -344,15 +344,26 @@ impl Component for TextInputComponent {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
-
+				log::trace!(
+					"textinevent: {:?} {:?}",
+					e,
+					self.key_config.keys.multiline_enter
+				);
 				// for a multi line box we want to allow the user to enter new lines
-				// so test for what might be a different enter to me 'ok do it'
-
-				if key_match(e, self.key_config.keys.multiline_enter)
-					&& self.input_type == InputType::Multiline
-				{
-					return Ok(EventState::NotConsumed);
+				// so test for what might be a different enter to mean 'ok do it'
+				if self.input_type == InputType::Multiline {
+					if key_match(
+						e,
+						self.key_config.keys.multiline_enter,
+					) {
+						// means pass it back up to the caller to handle
+						log::trace!("ss");
+						return Ok(EventState::NotConsumed);
+					}
 				} else if key_match(e, self.key_config.keys.enter) {
+					// ditto - we dont want it
+					log::trace!("tt");
+
 					return Ok(EventState::NotConsumed);
 				}
 
