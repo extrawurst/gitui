@@ -968,9 +968,20 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Commit [{}]",
-				key_config.get_hint(key_config.keys.enter),
+				key_config.get_hint(key_config.keys.commit),
 			),
 			"commit (available when commit message is non-empty)",
+			CMD_GROUP_COMMIT_POPUP,
+		)
+		.hide_help()
+	}
+	pub fn newline(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"New line [{}]",
+				key_config.get_hint(key_config.keys.newline),
+			),
+			"create line break",
 			CMD_GROUP_COMMIT_POPUP,
 		)
 		.hide_help()
