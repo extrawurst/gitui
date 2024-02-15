@@ -222,7 +222,7 @@ mod tests {
 
 		File::create(root.join(file_path1))?.write_all(b"test")?;
 		stage_add_file(repo_path, file_path1)?;
-		commit(repo_path, "c1", None)?;
+		commit(repo_path, "c1")?;
 
 		File::create(root.join(file_path1))?
 			.write_all(b"modified")?;

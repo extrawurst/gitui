@@ -388,7 +388,7 @@ mod tests {
 
 		stage_add_file(repo_path, file_path).unwrap();
 
-		commit(repo_path, "commit msg", None).unwrap();
+		commit(repo_path, "commit msg").unwrap();
 
 		// delete the file now
 		assert_eq!(remove_file(full_path).is_ok(), true);

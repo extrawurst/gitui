@@ -189,7 +189,7 @@ mod tests {
 		}
 
 		stage_add_all(repo_path, "*", None).unwrap();
-		commit(repo_path, "msg", None).unwrap();
+		commit(repo_path, "msg").unwrap();
 
 		{
 			File::create(root.join("foo/file1.txt"))?

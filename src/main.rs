@@ -47,10 +47,7 @@ mod ui;
 mod version;
 mod watcher;
 
-use crate::{
-	app::App,
-	args::{process_cmdline, CliArgs},
-};
+use crate::{app::App, args::process_cmdline};
 use anyhow::{bail, Result};
 use app::QuitState;
 use asyncgit::{
@@ -130,6 +127,11 @@ fn main() -> Result<()> {
 
 	asyncgit::register_tracing_logging();
 
+	let key_config = KeyConfig::init()
+		.map_err(|e| eprintln!("KeyConfig loading error: {e}"))
+		.unwrap_or_default();
+	let theme = Theme::init(&cliargs.theme);
+
 	if !valid_path(&cliargs.repo_path) {
 		bail!("invalid path\nplease run gitui inside of a non-bare git repository");
 	}
@@ -141,16 +143,24 @@ fn main() -> Result<()> {
 	set_panic_handlers()?;
 
 	let mut terminal = start_terminal(io::stdout())?;
-	let mut repo_path = cliargs.repo_path.clone();
+	let mut repo_path = cliargs.repo_path;
 	let input = Input::new();
+
+	let updater = if cliargs.notify_watcher {
+		Updater::NotifyWatcher
+	} else {
+		Updater::Ticker
+	};
 
 	loop {
 		let quit_state = run_app(
 			app_start,
-			repo_path,
+			repo_path.clone(),
+			theme.clone(),
+			key_config.clone(),
 			&input,
+			updater,
 			&mut terminal,
-			cliargs.clone(),
 		)?;
 
 		match quit_state {
@@ -167,20 +177,12 @@ fn main() -> Result<()> {
 fn run_app(
 	app_start: Instant,
 	repo: RepoPath,
+	theme: Theme,
+	key_config: KeyConfig,
 	input: &Input,
+	updater: Updater,
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
-	cliargs: CliArgs,
 ) -> Result<QuitState, anyhow::Error> {
-	let key_config = KeyConfig::init()
-		.map_err(|e| eprintln!("KeyConfig loading error: {e}"))
-		.unwrap_or_default();
-	let theme = Theme::init(&cliargs.theme);
-	let updater = if cliargs.notify_watcher {
-		Updater::NotifyWatcher
-	} else {
-		Updater::Ticker
-	};
-
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
 
@@ -205,7 +207,6 @@ fn run_app(
 		input.clone(),
 		theme,
 		key_config,
-		cliargs.ssh_secret_key,
 	)?;
 
 	let mut spinner = Spinner::default();

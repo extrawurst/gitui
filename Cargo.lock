@@ -136,6 +136,7 @@ version = "0.24.3"
 dependencies = [
  "bitflags 2.4.2",
  "crossbeam-channel",
+ "dirs",
  "easy-cast",
  "env_logger",
  "fuzzy-matcher",

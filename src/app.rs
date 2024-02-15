@@ -32,7 +32,6 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use asyncgit::{
-	ssh_key::private::PrivateKey,
 	sync::{
 		self,
 		utils::{repo_work_dir, undo_last_commit},
@@ -122,7 +121,6 @@ pub struct Environment {
 	pub options: SharedOptions,
 	pub sender_git: Sender<AsyncGitNotification>,
 	pub sender_app: Sender<AsyncAppNotification>,
-	pub ssh_secret_key: Option<PrivateKey>,
 }
 
 /// The need to construct a "whatever" environment only arises in testing right now
@@ -138,7 +136,6 @@ impl Environment {
 			options: Rc::new(RefCell::new(Options::test_env())),
 			sender_git: unbounded().0,
 			sender_app: unbounded().0,
-			ssh_secret_key: None,
 		}
 	}
 }
@@ -154,7 +151,6 @@ impl App {
 		input: Input,
 		theme: Theme,
 		key_config: KeyConfig,
-		ssh_secret_key: Option<PrivateKey>,
 	) -> Result<Self> {
 		log::trace!("open repo at: {:?}", &repo);
 
@@ -169,7 +165,6 @@ impl App {
 			repo,
 			sender_git,
 			sender_app,
-			ssh_secret_key,
 		};
 
 		let tab = env.options.borrow().current_tab();

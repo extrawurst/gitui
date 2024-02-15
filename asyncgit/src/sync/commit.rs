@@ -6,6 +6,7 @@ use crate::{
 use git2::{ErrorCode, ObjectType, Repository, Signature};
 use scopetime::scope_time;
 use ssh_key::{HashAlg, LineEnding, PrivateKey};
+use std::path::PathBuf;
 
 ///
 pub fn amend(
@@ -62,15 +63,42 @@ pub(crate) fn signature_allow_undefined_name(
 }
 
 /// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
-/// If ssh private key is provided, the commit will be signed.
-pub fn commit(
-	repo_path: &RepoPath,
-	msg: &str,
-	sk: Option<&PrivateKey>,
-) -> Result<CommitId> {
+pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 	scope_time!("commit");
 
 	let repo = repo(repo_path)?;
+	let ssh_secret_key = {
+		let config = repo.config()?;
+		config
+			.get_entry("user.signingKey")
+			.ok()
+			.and_then(|entry| {
+				entry.value().map(|key_path| {
+					key_path.strip_prefix('~').map_or_else(
+						|| Some(PathBuf::from(&key_path)),
+						|ssh_key_path| {
+							dirs::home_dir().map(|home| {
+								home.join(
+									ssh_key_path
+										.strip_prefix('/')
+										.unwrap_or(ssh_key_path),
+								)
+							})
+						},
+					)
+				})
+			})
+			.and_then(|key_file| {
+				key_file
+					.and_then(|mut p| {
+						p.set_extension("");
+						std::fs::read(p).ok()
+					})
+					.and_then(|bytes| {
+						PrivateKey::from_openssh(bytes).ok()
+					})
+			})
+	};
 
 	let signature = signature_allow_undefined_name(&repo)?;
 	let mut index = repo.index()?;
@@ -84,7 +112,7 @@ pub fn commit(
 	};
 
 	let parents = parents.iter().collect::<Vec<_>>();
-	if let Some(sk) = sk {
+	if let Some(sk) = ssh_secret_key {
 		let buffer = repo.commit_create_buffer(
 			&signature,
 			&signature,
@@ -197,7 +225,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 1));
 
-		commit(repo_path, "commit msg", None).unwrap();
+		commit(repo_path, "commit msg").unwrap();
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 	}
@@ -223,7 +251,7 @@ mod tests {
 
 		assert_eq!(get_statuses(repo_path), (0, 1));
 
-		commit(repo_path, "commit msg", None).unwrap();
+		commit(repo_path, "commit msg").unwrap();
 
 		assert_eq!(get_statuses(repo_path), (0, 0));
 	}
@@ -240,7 +268,7 @@ mod tests {
 		File::create(root.join(file_path1))?.write_all(b"test1")?;
 
 		stage_add_file(repo_path, file_path1)?;
-		let id = commit(repo_path, "commit msg", None)?;
+		let id = commit(repo_path, "commit msg")?;
 
 		assert_eq!(count_commits(&repo, 10), 1);
 
@@ -279,7 +307,7 @@ mod tests {
 
 		stage_add_file(repo_path, file_path)?;
 
-		let new_id = commit(repo_path, "commit msg", None)?;
+		let new_id = commit(repo_path, "commit msg")?;
 
 		tag_commit(repo_path, &new_id, "tag", None)?;
 
@@ -321,7 +349,7 @@ mod tests {
 
 		stage_add_file(repo_path, file_path)?;
 
-		let new_id = commit(repo_path, "commit msg", None)?;
+		let new_id = commit(repo_path, "commit msg")?;
 
 		tag_commit(repo_path, &new_id, "tag", Some("tag-message"))?;
 
@@ -357,13 +385,13 @@ mod tests {
 
 		repo.config()?.remove("user.email")?;
 
-		let error = commit(repo_path, "commit msg", None);
+		let error = commit(repo_path, "commit msg");
 
 		assert!(matches!(error, Err(_)));
 
 		repo.config()?.set_str("user.email", "email")?;
 
-		let success = commit(repo_path, "commit msg", None);
+		let success = commit(repo_path, "commit msg");
 
 		assert!(matches!(success, Ok(_)));
 		assert_eq!(count_commits(&repo, 10), 1);
@@ -393,7 +421,7 @@ mod tests {
 
 		repo.config()?.remove("user.name")?;
 
-		let mut success = commit(repo_path, "commit msg", None);
+		let mut success = commit(repo_path, "commit msg");
 
 		assert!(matches!(success, Ok(_)));
 		assert_eq!(count_commits(&repo, 10), 1);
@@ -406,7 +434,7 @@ mod tests {
 
 		repo.config()?.set_str("user.name", "name")?;
 
-		success = commit(repo_path, "commit msg", None);
+		success = commit(repo_path, "commit msg");
 
 		assert!(matches!(success, Ok(_)));
 		assert_eq!(count_commits(&repo, 10), 2);

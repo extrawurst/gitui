@@ -4,7 +4,6 @@ use crate::{
 	sync::{repository::repo, utils::read_file},
 };
 use scopetime::scope_time;
-use ssh_key::PrivateKey;
 
 const GIT_REVERT_HEAD_FILE: &str = "REVERT_HEAD";
 
@@ -41,11 +40,10 @@ pub fn revert_head(repo_path: &RepoPath) -> Result<CommitId> {
 pub fn commit_revert(
 	repo_path: &RepoPath,
 	msg: &str,
-	sk: Option<&PrivateKey>,
 ) -> Result<CommitId> {
 	scope_time!("commit_revert");
 
-	let id = crate::sync::commit(repo_path, msg, sk)?;
+	let id = crate::sync::commit(repo_path, msg)?;
 
 	repo(repo_path)?.cleanup_state()?;
 

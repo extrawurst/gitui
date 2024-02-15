@@ -14,7 +14,6 @@ use crate::{
 use anyhow::{bail, Ok, Result};
 use asyncgit::{
 	cached, message_prettify,
-	ssh_key::private::PrivateKey,
 	sync::{
 		self, get_config_string, CommitId, HookResult,
 		PrepareCommitMsgSource, RepoPathRef, RepoState,
@@ -61,7 +60,6 @@ pub struct CommitComponent {
 	commit_msg_history_idx: usize,
 	options: SharedOptions,
 	verify: bool,
-	ssh_secret_key: Option<PrivateKey>,
 }
 
 const FIRST_LINE_LIMIT: usize = 50;
@@ -88,7 +86,6 @@ impl CommitComponent {
 			commit_msg_history_idx: 0,
 			options: env.options.clone(),
 			verify: true,
-			ssh_secret_key: env.ssh_secret_key.clone(),
 		}
 	}
 
@@ -287,22 +284,16 @@ impl CommitComponent {
 
 	fn do_commit(&self, msg: &str) -> Result<()> {
 		match &self.mode {
-			Mode::Normal => sync::commit(
-				&self.repo.borrow(),
-				msg,
-				self.ssh_secret_key.as_ref(),
-			)?,
+			Mode::Normal => sync::commit(&self.repo.borrow(), msg)?,
 			Mode::Amend(amend) => {
 				sync::amend(&self.repo.borrow(), *amend, msg)?
 			}
 			Mode::Merge(ids) => {
 				sync::merge_commit(&self.repo.borrow(), msg, ids)?
 			}
-			Mode::Revert => sync::commit_revert(
-				&self.repo.borrow(),
-				msg,
-				self.ssh_secret_key.as_ref(),
-			)?,
+			Mode::Revert => {
+				sync::commit_revert(&self.repo.borrow(), msg)?
+			}
 			Mode::Reword(id) => {
 				let commit =
 					sync::reword(&self.repo.borrow(), *id, msg)?;

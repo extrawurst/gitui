@@ -162,7 +162,6 @@ mod tests {
 		commit(
 			&repo.workdir().unwrap().to_str().unwrap().into(),
 			commit_name,
-			None,
 		)
 		.unwrap()
 	}
