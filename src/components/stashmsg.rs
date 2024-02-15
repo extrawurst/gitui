@@ -135,7 +135,8 @@ impl StashMsgComponent {
 				&strings::stash_popup_title(&env.key_config),
 				&strings::stash_popup_msg(&env.key_config),
 				true,
-			),
+			)
+			.with_input_type(super::InputType::Singleline),
 			key_config: env.key_config.clone(),
 			repo: env.repo.clone(),
 		}

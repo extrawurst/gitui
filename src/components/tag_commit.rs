@@ -134,7 +134,8 @@ impl TagCommitComponent {
 				&strings::tag_popup_name_title(),
 				&strings::tag_popup_name_msg(),
 				true,
-			),
+			)
+			.with_input_type(super::InputType::Singleline),
 			commit_id: None,
 			key_config: env.key_config.clone(),
 			repo: env.repo.clone(),

@@ -58,7 +58,8 @@ impl LogSearchPopupComponent {
 	///
 	pub fn new(env: &Environment) -> Self {
 		let mut find_text =
-			TextInputComponent::new(env, "", "search text", false);
+			TextInputComponent::new(env, "", "search text", false)
+				.with_input_type(super::InputType::Singleline);
 		find_text.embed();
 		find_text.enabled(true);
 

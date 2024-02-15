@@ -42,7 +42,8 @@ impl FuzzyFindPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		let mut find_text =
-			TextInputComponent::new(env, "", "start typing..", false);
+			TextInputComponent::new(env, "", "start typing..", false)
+				.with_input_type(super::InputType::Singleline);
 		find_text.embed();
 
 		Self {
