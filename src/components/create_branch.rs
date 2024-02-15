@@ -1,7 +1,7 @@
 use super::{
 	textinput::TextInputComponent, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, InputType,
+	EventState, 
 };
 use crate::{
 	app::Environment,
@@ -105,7 +105,7 @@ impl CreateBranchComponent {
 				&strings::create_branch_popup_msg(&env.key_config),
 				true,
 			)
-			.with_input_type(InputType::Singleline),
+			.with_input_type(super::InputType::Singleline),
 			theme: env.theme.clone(),
 			key_config: env.key_config.clone(),
 			repo: env.repo.clone(),

@@ -1,7 +1,7 @@
 use super::{
 	textinput::TextInputComponent, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, InputType,
+	EventState, 
 };
 use crate::{
 	app::Environment,
@@ -99,7 +99,7 @@ impl RenameBranchComponent {
 				&strings::rename_branch_popup_msg(&env.key_config),
 				true,
 			)
-			.with_input_type(InputType::Singleline),
+			.with_input_type(super::InputType::Singleline),
 			branch_ref: None,
 			key_config: env.key_config.clone(),
 		}
