@@ -1,4 +1,0 @@
-[advisories]
-# No fix for RSA, and this is a dependency from ssh_key crate to handle rsa ssh key.
-# https://rustsec.org/advisories/RUSTSEC-2023-0071
-ignore = ["RUSTSEC-2023-0071"]
