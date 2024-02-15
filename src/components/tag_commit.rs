@@ -1,7 +1,7 @@
 use super::{
 	textinput::TextInputComponent, visibility_blocking,
 	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, 
+	EventState,
 };
 use crate::{
 	app::Environment,

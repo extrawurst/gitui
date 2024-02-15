@@ -1,6 +1,6 @@
 use super::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState,  TextInputComponent,
+	DrawableComponent, EventState, TextInputComponent,
 };
 use crate::{
 	app::Environment,
