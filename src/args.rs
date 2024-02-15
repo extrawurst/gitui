@@ -12,7 +12,6 @@ use std::{
 	path::PathBuf,
 };
 
-#[derive(Clone)]
 pub struct CliArgs {
 	pub theme: PathBuf,
 	pub repo_path: RepoPath,

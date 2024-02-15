@@ -127,14 +127,15 @@ fn main() -> Result<()> {
 
 	asyncgit::register_tracing_logging();
 
+	if !valid_path(&cliargs.repo_path) {
+		bail!("invalid path\nplease run gitui inside of a non-bare git repository");
+	}
+
 	let key_config = KeyConfig::init()
 		.map_err(|e| eprintln!("KeyConfig loading error: {e}"))
 		.unwrap_or_default();
 	let theme = Theme::init(&cliargs.theme);
 
-	if !valid_path(&cliargs.repo_path) {
-		bail!("invalid path\nplease run gitui inside of a non-bare git repository");
-	}
 	setup_terminal()?;
 	defer! {
 		shutdown_terminal();
