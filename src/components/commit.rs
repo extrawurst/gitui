@@ -512,7 +512,7 @@ impl Component for CommitComponent {
 
 		if self.is_visible() || force_all {
 			out.push(CommandInfo::new(
-				strings::commands::commit_enter(&self.key_config),
+				strings::commands::commit_submit(&self.key_config),
 				self.can_commit(),
 				true,
 			));
