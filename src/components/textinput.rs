@@ -144,8 +144,6 @@ impl TextInputComponent {
 			.collect();
 
 		self.textarea = Some({
-			let style =
-				self.theme.text(self.selected.unwrap_or(true), false);
 			let mut text_area = TextArea::new(lines);
 			if self.input_type == InputType::Password {
 				text_area.set_mask_char('*');
@@ -158,7 +156,9 @@ impl TextInputComponent {
 				self.theme
 					.text(self.selected.unwrap_or_default(), false),
 			);
-			text_area.set_style(style);
+			text_area.set_style(
+				self.theme.text(self.selected.unwrap_or(true), false),
+			);
 
 			if !self.embed {
 				text_area.set_block(
@@ -313,11 +313,7 @@ impl Component for TextInputComponent {
 		visibility_blocking(self)
 	}
 
-	// the fixes this clippy wants make the code much harder to follow
-	#[allow(clippy::unnested_or_patterns)]
-	// it just has to be this big
-	#[allow(clippy::too_many_lines)]
-
+	#[allow(clippy::too_many_lines, clippy::unnested_or_patterns)]
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		let input = Input::from(ev.clone());
 		self.should_select(&input);
@@ -335,7 +331,7 @@ impl Component for TextInputComponent {
 						// means pass it back up to the caller to handle
 						return Ok(EventState::NotConsumed);
 					}
-				} else if key_match(e, self.key_config.keys.enter) {
+				} else if key_match(e, self.key_config.keys.newline) {
 					// ditto - we dont want it
 					return Ok(EventState::NotConsumed);
 				}
