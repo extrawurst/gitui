@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * do not allow tag when `tag.gpgsign` enabled [[@TeFiLeDo](https://github.com/TeFiLeDo)] ([#1915](https://github.com/extrawurst/gitui/pull/1915))
+* update commit summary length hints [[@ochirerkhembayar](https://github.com/OchirErkhembayar)] ([#1635](https://github.com/extrawurst/gitui/issues/1635))
 
 ### Fixes
 * stash window empty after file history popup closes ([#1986](https://github.com/extrawurst/gitui/issues/1986))
