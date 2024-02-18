@@ -23,19 +23,25 @@ use std::cell::Cell;
 use std::cell::OnceCell;
 use std::convert::From;
 use tui_textarea::{CursorMove, Input, Key, Scrolling, TextArea};
+
+///
 #[derive(PartialEq, Eq)]
 pub enum InputType {
 	Singleline,
 	Multiline,
 	Password,
 }
+
 #[derive(PartialEq, Eq)]
 enum SelectionState {
 	Selecting,
 	NotSelecting,
 	SelectionEndPending,
 }
+
 type TextAreaComponent = TextArea<'static>;
+
+///
 pub struct TextInputComponent {
 	title: String,
 	default_msg: String,
@@ -75,6 +81,7 @@ impl TextInputComponent {
 		}
 	}
 
+	///
 	pub const fn with_input_type(
 		mut self,
 		input_type: InputType,
@@ -135,6 +142,7 @@ impl TextInputComponent {
 			.split('\n')
 			.map(ToString::to_string)
 			.collect();
+
 		self.textarea = Some({
 			let style =
 				self.theme.text(self.selected.unwrap_or(true), false);
@@ -142,11 +150,13 @@ impl TextInputComponent {
 			if self.input_type == InputType::Password {
 				text_area.set_mask_char('*');
 			}
+
 			text_area
 				.set_cursor_line_style(self.theme.text(true, false));
 			text_area.set_placeholder_text(self.default_msg.clone());
 			text_area.set_placeholder_style(style);
 			text_area.set_style(style);
+
 			if !self.embed {
 				text_area.set_block(
 					Block::default()
