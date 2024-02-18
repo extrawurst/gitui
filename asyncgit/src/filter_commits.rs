@@ -111,11 +111,16 @@ impl AsyncCommitFilterJob {
 				.enumerate()
 				.collect::<Vec<(usize, CommitId)>>()
 				.par_chunks(1000)
-				.filter_map(|c| {
+				.filter_map(|chunk| {
 					if self.cancellation_flag.load(Ordering::SeqCst) {
-						//cancel filter if cancellation_flag was set to true
-						return None;
+						// Return if the search should be cancelled
+						None
+					} else {
+						// Proceed with the chunk
+						Some(chunk.to_vec())
 					}
+				})
+				.filter_map(|c| {
 					//TODO: error log repo open errors
 					sync::repo(repo_path).ok().map(|repo| {
 						c.iter()
