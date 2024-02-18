@@ -665,6 +665,9 @@ impl Component for TextInputComponent {
 			)
 			.order(1),
 		);
+
+		//TODO: we might want to show the textarea specific commands here
+
 		visibility_blocking(self)
 	}
 
