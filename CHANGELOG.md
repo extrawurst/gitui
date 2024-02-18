@@ -21,6 +21,7 @@ These defaults require some adoption from existing users but feel more natural t
 * add confirmation for dialog for undo commit [[@TeFiLeDo](https://github.com/TeFiLeDo)] ([#1912](https://github.com/extrawurst/gitui/issues/1912))
 * support `prepare-commit-msg` hook ([#1873](https://github.com/extrawurst/gitui/issues/1873))
 * support for new-line in text-input (e.g. commit message editor) [[@pm100]](https://github/pm100) ([#1662](https://github.com/extrawurst/gitui/issues/1662)).
+* new style `block_title_focused` to allow customizing title text of focused frame/block ([#2052](https://github.com/extrawurst/gitui/issues/2052)).
 
 ### Changed
 * do not allow tagging when `tag.gpgsign` enabled until gpg-signing is [supported](https://github.com/extrawurst/gitui/issues/97) [[@TeFiLeDo](https://github.com/TeFiLeDo)] ([#1915](https://github.com/extrawurst/gitui/pull/1915))
