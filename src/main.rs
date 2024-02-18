@@ -386,16 +386,16 @@ fn set_panic_handlers() -> Result<()> {
 	// regular panic handler
 	panic::set_hook(Box::new(|e| {
 		let backtrace = Backtrace::new();
-		log_eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
 		shutdown_terminal();
+		log_eprintln!("\nGitUI was close due to an unexpected panic.\nPlease file an issue on https://github.com/extrawurst/gitui/issues with the following info:\n\n{:?}\ntrace:\n{:?}", e, backtrace);
 	}));
 
 	// global threadpool
 	rayon_core::ThreadPoolBuilder::new()
 		.panic_handler(|e| {
 			let backtrace = Backtrace::new();
-			log_eprintln!("panic: {:?}\ntrace:\n{:?}", e, backtrace);
 			shutdown_terminal();
+			log_eprintln!("\nGitUI was close due to an unexpected panic.\nPlease file an issue on https://github.com/extrawurst/gitui/issues with the following info:\n\n{:?}\ntrace:\n{:?}", e, backtrace);
 			process::abort();
 		})
 		.num_threads(4)
