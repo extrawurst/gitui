@@ -154,7 +154,10 @@ impl TextInputComponent {
 			text_area
 				.set_cursor_line_style(self.theme.text(true, false));
 			text_area.set_placeholder_text(self.default_msg.clone());
-			text_area.set_placeholder_style(style);
+			text_area.set_placeholder_style(
+				self.theme
+					.text(self.selected.unwrap_or_default(), false),
+			);
 			text_area.set_style(style);
 
 			if !self.embed {
