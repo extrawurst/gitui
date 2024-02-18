@@ -306,7 +306,7 @@ impl CommitComponent {
 	}
 
 	fn can_commit(&self) -> bool {
-		!self.is_empty() || self.is_template_default()
+		!self.is_empty()
 	}
 
 	fn can_amend(&self) -> bool {
@@ -322,10 +322,6 @@ impl CommitComponent {
 	fn is_changed(&self) -> bool {
 		Some(self.input.get_text().trim())
 			!= self.commit_template.as_ref().map(|s| s.trim())
-	}
-
-	fn is_template_default(&self) -> bool {
-		self.commit_template.is_some()
 	}
 
 	fn amend(&mut self) -> Result<()> {
