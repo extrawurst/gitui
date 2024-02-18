@@ -553,6 +553,12 @@ impl Component for CommitComponent {
 				self.options.borrow().has_commit_msg_history(),
 				true,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::newline(&self.key_config),
+				true,
+				true,
+			));
 		}
 
 		visibility_blocking(self)
@@ -565,7 +571,7 @@ impl Component for CommitComponent {
 			}
 
 			if let Event::Key(e) = ev {
-				if key_match(e, self.key_config.keys.enter)
+				if key_match(e, self.key_config.keys.commit)
 					&& self.can_commit()
 				{
 					try_or_popup!(

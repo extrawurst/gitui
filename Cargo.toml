@@ -54,6 +54,7 @@ syntect = { version = "5.2", default-features = false, features = [
     "default-themes",
     "html",
 ] }
+tui-textarea = "0.4.0"
 unicode-segmentation = "1.11"
 unicode-truncate = "0.2"
 unicode-width = "0.1"
