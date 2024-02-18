@@ -324,32 +324,6 @@ impl Component for TextInputComponent {
 					return Ok(EventState::Consumed);
 				}
 
-				// for a multi line box we want to allow the user to enter new lines
-				// so test for what might be a different enter to mean 'ok do it'
-				if self.input_type == InputType::Multiline {
-					if key_match(e, self.key_config.keys.commit) {
-						// means pass it back up to the caller to handle
-						return Ok(EventState::NotConsumed);
-					}
-				} else if key_match(e, self.key_config.keys.newline) {
-					// ditto - we dont want it
-					return Ok(EventState::NotConsumed);
-				}
-
-				// here all 'known' special keys for any textinput call are filtered out
-
-				if key_match(e, self.key_config.keys.toggle_verify)
-					|| key_match(e, self.key_config.keys.commit_amend)
-					|| key_match(
-						e,
-						self.key_config.keys.open_commit_editor,
-					) || key_match(
-					e,
-					self.key_config.keys.commit_history_next,
-				) {
-					return Ok(EventState::NotConsumed);
-				}
-
 				/*
 				here we do key handling rather than passing it to textareas input function
 				- so that we know which keys were handled and which were not
@@ -709,16 +683,20 @@ impl Component for TextInputComponent {
 					self.msg.take();
 				}
 			}
+
 			if self.select_state
 				== SelectionState::SelectionEndPending
 			{
 				ta.cancel_selection();
 				self.select_state = SelectionState::NotSelecting;
 			}
+
 			return Ok(EventState::Consumed);
 		}
+
 		Ok(EventState::NotConsumed)
 	}
+
 	/*
 	  visible maps to textarea Option
 	  None = > not visible
