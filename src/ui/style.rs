@@ -33,6 +33,7 @@ pub struct Theme {
 	tag_fg: Color,
 	branch_fg: Color,
 	line_break: String,
+	block_title_focused: Color,
 }
 
 impl Theme {
@@ -50,7 +51,9 @@ impl Theme {
 
 	pub fn title(&self, focused: bool) -> Style {
 		if focused {
-			Style::default().add_modifier(Modifier::BOLD)
+			Style::default()
+				.fg(self.block_title_focused)
+				.add_modifier(Modifier::BOLD)
 		} else {
 			Style::default().fg(self.disabled_fg)
 		}
@@ -342,6 +345,7 @@ impl Default for Theme {
 			tag_fg: Color::LightMagenta,
 			branch_fg: Color::LightYellow,
 			line_break: "¶".to_string(),
+			block_title_focused: Color::Reset,
 		}
 	}
 }
