@@ -23,19 +23,25 @@ use std::cell::Cell;
 use std::cell::OnceCell;
 use std::convert::From;
 use tui_textarea::{CursorMove, Input, Key, Scrolling, TextArea};
+
+///
 #[derive(PartialEq, Eq)]
 pub enum InputType {
 	Singleline,
 	Multiline,
 	Password,
 }
+
 #[derive(PartialEq, Eq)]
 enum SelectionState {
 	Selecting,
 	NotSelecting,
 	SelectionEndPending,
 }
+
 type TextAreaComponent = TextArea<'static>;
+
+///
 pub struct TextInputComponent {
 	title: String,
 	default_msg: String,
@@ -75,6 +81,7 @@ impl TextInputComponent {
 		}
 	}
 
+	///
 	pub const fn with_input_type(
 		mut self,
 		input_type: InputType,
@@ -135,18 +142,24 @@ impl TextInputComponent {
 			.split('\n')
 			.map(ToString::to_string)
 			.collect();
+
 		self.textarea = Some({
-			let style =
-				self.theme.text(self.selected.unwrap_or(true), false);
 			let mut text_area = TextArea::new(lines);
 			if self.input_type == InputType::Password {
 				text_area.set_mask_char('*');
 			}
+
 			text_area
 				.set_cursor_line_style(self.theme.text(true, false));
 			text_area.set_placeholder_text(self.default_msg.clone());
-			text_area.set_placeholder_style(style);
-			text_area.set_style(style);
+			text_area.set_placeholder_style(
+				self.theme
+					.text(self.selected.unwrap_or_default(), false),
+			);
+			text_area.set_style(
+				self.theme.text(self.selected.unwrap_or(true), false),
+			);
+
 			if !self.embed {
 				text_area.set_block(
 					Block::default()
@@ -241,6 +254,361 @@ impl TextInputComponent {
 			}
 		}
 	}
+
+	#[allow(clippy::too_many_lines, clippy::unnested_or_patterns)]
+	fn process_inputs(ta: &mut TextArea<'_>, input: &Input) -> bool {
+		match input {
+			Input {
+				key: Key::Char(c),
+				ctrl: false,
+				alt: false,
+				..
+			} => {
+				ta.insert_char(*c);
+				true
+			}
+			Input {
+				key: Key::Tab,
+				ctrl: false,
+				alt: false,
+				..
+			} => {
+				ta.insert_tab();
+				true
+			}
+			Input {
+				key: Key::Char('h'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input {
+				key: Key::Backspace,
+				ctrl: false,
+				alt: false,
+				..
+			} => {
+				ta.delete_char();
+				true
+			}
+			Input {
+				key: Key::Char('d'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input {
+				key: Key::Delete,
+				ctrl: false,
+				alt: false,
+				..
+			} => {
+				ta.delete_next_char();
+				true
+			}
+			Input {
+				key: Key::Char('k'),
+				ctrl: true,
+				alt: false,
+				..
+			} => {
+				ta.delete_line_by_end();
+				true
+			}
+			Input {
+				key: Key::Char('j'),
+				ctrl: true,
+				alt: false,
+				..
+			} => {
+				ta.delete_line_by_head();
+				true
+			}
+			Input {
+				key: Key::Char('w'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input {
+				key: Key::Char('h'),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Backspace,
+				ctrl: false,
+				alt: true,
+				..
+			} => {
+				ta.delete_word();
+				true
+			}
+			Input {
+				key: Key::Delete,
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Char('d'),
+				ctrl: false,
+				alt: true,
+				..
+			} => {
+				ta.delete_next_word();
+				true
+			}
+			Input {
+				key: Key::Char('n'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input {
+				key: Key::Down,
+				ctrl: false,
+				alt: false,
+				..
+			} => {
+				ta.move_cursor(CursorMove::Down);
+				true
+			}
+			Input {
+				key: Key::Char('p'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input {
+				key: Key::Up,
+				ctrl: false,
+				alt: false,
+				..
+			} => {
+				ta.move_cursor(CursorMove::Up);
+				true
+			}
+			Input {
+				key: Key::Char('f'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input {
+				key: Key::Right,
+				ctrl: false,
+				alt: false,
+				..
+			} => {
+				ta.move_cursor(CursorMove::Forward);
+				true
+			}
+			Input {
+				key: Key::Char('b'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input {
+				key: Key::Left,
+				ctrl: false,
+				alt: false,
+				..
+			} => {
+				ta.move_cursor(CursorMove::Back);
+				true
+			}
+			Input {
+				key: Key::Char('a'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input { key: Key::Home, .. }
+			| Input {
+				key: Key::Left | Key::Char('b'),
+				ctrl: true,
+				alt: true,
+				..
+			} => {
+				ta.move_cursor(CursorMove::Head);
+				true
+			}
+			Input {
+				key: Key::Char('e'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input { key: Key::End, .. }
+			| Input {
+				key: Key::Right | Key::Char('f'),
+				ctrl: true,
+				alt: true,
+				..
+			} => {
+				ta.move_cursor(CursorMove::End);
+				true
+			}
+			Input {
+				key: Key::Char('<'),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Up | Key::Char('p'),
+				ctrl: true,
+				alt: true,
+				..
+			} => {
+				ta.move_cursor(CursorMove::Top);
+				true
+			}
+			Input {
+				key: Key::Char('>'),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Down | Key::Char('n'),
+				ctrl: true,
+				alt: true,
+				..
+			} => {
+				ta.move_cursor(CursorMove::Bottom);
+				true
+			}
+			Input {
+				key: Key::Char('f'),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Right,
+				ctrl: true,
+				alt: false,
+				..
+			} => {
+				ta.move_cursor(CursorMove::WordForward);
+				true
+			}
+			Input {
+				key: Key::Char('b'),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Left,
+				ctrl: true,
+				alt: false,
+				..
+			} => {
+				ta.move_cursor(CursorMove::WordBack);
+				true
+			}
+
+			Input {
+				key: Key::Char(']'),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Char('n'),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Down,
+				ctrl: true,
+				alt: false,
+				..
+			} => {
+				ta.move_cursor(CursorMove::ParagraphForward);
+				true
+			}
+			Input {
+				key: Key::Char('['),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Char('p'),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::Up,
+				ctrl: true,
+				alt: false,
+				..
+			} => {
+				ta.move_cursor(CursorMove::ParagraphBack);
+				true
+			}
+			Input {
+				key: Key::Char('u'),
+				ctrl: true,
+				alt: false,
+				..
+			} => {
+				ta.undo();
+				true
+			}
+			Input {
+				key: Key::Char('r'),
+				ctrl: true,
+				alt: false,
+				..
+			} => {
+				ta.redo();
+				true
+			}
+			Input {
+				key: Key::Char('y'),
+				ctrl: true,
+				alt: false,
+				..
+			} => {
+				ta.paste();
+				true
+			}
+			Input {
+				key: Key::Char('v'),
+				ctrl: true,
+				alt: false,
+				..
+			}
+			| Input {
+				key: Key::PageDown, ..
+			} => {
+				ta.scroll(Scrolling::PageDown);
+				true
+			}
+			Input {
+				key: Key::Char('v'),
+				ctrl: false,
+				alt: true,
+				..
+			}
+			| Input {
+				key: Key::PageUp, ..
+			} => {
+				ta.scroll(Scrolling::PageUp);
+				true
+			}
+			_ => false,
+		}
+	}
 }
 
 impl DrawableComponent for TextInputComponent {
@@ -297,419 +665,50 @@ impl Component for TextInputComponent {
 			)
 			.order(1),
 		);
+
+		//TODO: we might want to show the textarea specific commands here
+
 		visibility_blocking(self)
 	}
-
-	// the fixes this clippy wants make the code much harder to follow
-	#[allow(clippy::unnested_or_patterns)]
-	// it just has to be this big
-	#[allow(clippy::too_many_lines)]
 
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		let input = Input::from(ev.clone());
 		self.should_select(&input);
 		if let Some(ta) = &mut self.textarea {
-			if let Event::Key(e) = ev {
+			let modified = if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
 
-				// for a multi line box we want to allow the user to enter new lines
-				// so test for what might be a different enter to mean 'ok do it'
-				if self.input_type == InputType::Multiline {
-					if key_match(e, self.key_config.keys.commit) {
-						// means pass it back up to the caller to handle
-						return Ok(EventState::NotConsumed);
-					}
-				} else if key_match(e, self.key_config.keys.enter) {
-					// ditto - we dont want it
-					return Ok(EventState::NotConsumed);
+				if key_match(e, self.key_config.keys.newline)
+					&& self.input_type == InputType::Multiline
+				{
+					ta.insert_newline();
+					true
+				} else {
+					Self::process_inputs(ta, &input)
 				}
+			} else {
+				false
+			};
 
-				// here all 'known' special keys for any textinput call are filtered out
-
-				if key_match(e, self.key_config.keys.toggle_verify)
-					|| key_match(e, self.key_config.keys.commit_amend)
-					|| key_match(
-						e,
-						self.key_config.keys.open_commit_editor,
-					) || key_match(
-					e,
-					self.key_config.keys.commit_history_next,
-				) {
-					return Ok(EventState::NotConsumed);
-				}
-
-				/*
-				here we do key handling rather than passing it to textareas input function
-				- so that we know which keys were handled and which were not
-				- to get fine control over what each key press does
-				- allow for key mapping based off key config....
-				  but in fact the original textinput ignored all key bindings, up,down,right,....
-				  so they are also ignored here
-
-				*/
-
-				// was the text buffer changed?
-
-				let modified =
-					if key_match(e, self.key_config.keys.newline)
-						&& self.input_type == InputType::Multiline
-					{
-						ta.insert_newline();
-						true
-					} else {
-						match input {
-							Input {
-								key: Key::Char(c),
-								ctrl: false,
-								alt: false,
-								..
-							} => {
-								ta.insert_char(c);
-								true
-							}
-
-							Input {
-								key: Key::Tab,
-								ctrl: false,
-								alt: false,
-								..
-							} => {
-								ta.insert_tab();
-								true
-							}
-							Input {
-								key: Key::Char('h'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input {
-								key: Key::Backspace,
-								ctrl: false,
-								alt: false,
-								..
-							} => ta.delete_char(),
-							Input {
-								key: Key::Char('d'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input {
-								key: Key::Delete,
-								ctrl: false,
-								alt: false,
-								..
-							} => ta.delete_next_char(),
-							Input {
-								key: Key::Char('k'),
-								ctrl: true,
-								alt: false,
-								..
-							} => ta.delete_line_by_end(),
-							Input {
-								key: Key::Char('j'),
-								ctrl: true,
-								alt: false,
-								..
-							} => ta.delete_line_by_head(),
-							Input {
-								key: Key::Char('w'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input {
-								key: Key::Char('h'),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Backspace,
-								ctrl: false,
-								alt: true,
-								..
-							} => ta.delete_word(),
-							Input {
-								key: Key::Delete,
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Char('d'),
-								ctrl: false,
-								alt: true,
-								..
-							} => ta.delete_next_word(),
-							Input {
-								key: Key::Char('n'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input {
-								key: Key::Down,
-								ctrl: false,
-								alt: false,
-								..
-							} => {
-								ta.move_cursor(CursorMove::Down);
-								false
-							}
-							Input {
-								key: Key::Char('p'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input {
-								key: Key::Up,
-								ctrl: false,
-								alt: false,
-								..
-							} => {
-								ta.move_cursor(CursorMove::Up);
-								false
-							}
-							Input {
-								key: Key::Char('f'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input {
-								key: Key::Right,
-								ctrl: false,
-								alt: false,
-								..
-							} => {
-								ta.move_cursor(CursorMove::Forward);
-								false
-							}
-							Input {
-								key: Key::Char('b'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input {
-								key: Key::Left,
-								ctrl: false,
-								alt: false,
-								..
-							} => {
-								ta.move_cursor(CursorMove::Back);
-								false
-							}
-							// normally picked up earlier as 'amend'
-							Input {
-								key: Key::Char('a'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input { key: Key::Home, .. }
-							| Input {
-								key: Key::Left | Key::Char('b'),
-								ctrl: true,
-								alt: true,
-								..
-							} => {
-								ta.move_cursor(CursorMove::Head);
-								false
-							}
-							// normally picked up earlier as 'invoke editor'
-							Input {
-								key: Key::Char('e'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input { key: Key::End, .. }
-							| Input {
-								key: Key::Right | Key::Char('f'),
-								ctrl: true,
-								alt: true,
-								..
-							} => {
-								ta.move_cursor(CursorMove::End);
-								false
-							}
-							Input {
-								key: Key::Char('<'),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Up | Key::Char('p'),
-								ctrl: true,
-								alt: true,
-								..
-							} => {
-								ta.move_cursor(CursorMove::Top);
-								false
-							}
-							Input {
-								key: Key::Char('>'),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Down | Key::Char('n'),
-								ctrl: true,
-								alt: true,
-								..
-							} => {
-								ta.move_cursor(CursorMove::Bottom);
-								false
-							}
-							Input {
-								key: Key::Char('f'),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Right,
-								ctrl: true,
-								alt: false,
-								..
-							} => {
-								ta.move_cursor(
-									CursorMove::WordForward,
-								);
-								false
-							}
-
-							Input {
-								key: Key::Char('b'),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Left,
-								ctrl: true,
-								alt: false,
-								..
-							} => {
-								ta.move_cursor(CursorMove::WordBack);
-								false
-							}
-
-							Input {
-								key: Key::Char(']'),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Char('n'),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Down,
-								ctrl: true,
-								alt: false,
-								..
-							} => {
-								ta.move_cursor(
-									CursorMove::ParagraphForward,
-								);
-								false
-							}
-							Input {
-								key: Key::Char('['),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Char('p'),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::Up,
-								ctrl: true,
-								alt: false,
-								..
-							} => {
-								ta.move_cursor(
-									CursorMove::ParagraphBack,
-								);
-								false
-							}
-							Input {
-								key: Key::Char('u'),
-								ctrl: true,
-								alt: false,
-								..
-							} => ta.undo(),
-							Input {
-								key: Key::Char('r'),
-								ctrl: true,
-								alt: false,
-								..
-							} => ta.redo(),
-							Input {
-								key: Key::Char('y'),
-								ctrl: true,
-								alt: false,
-								..
-							} => ta.paste(),
-							Input {
-								key: Key::Char('v'),
-								ctrl: true,
-								alt: false,
-								..
-							}
-							| Input {
-								key: Key::PageDown, ..
-							} => {
-								ta.scroll(Scrolling::PageDown);
-								false
-							}
-
-							Input {
-								key: Key::Char('v'),
-								ctrl: false,
-								alt: true,
-								..
-							}
-							| Input {
-								key: Key::PageUp, ..
-							} => {
-								ta.scroll(Scrolling::PageUp);
-								false
-							}
-							_ => return Ok(EventState::NotConsumed),
-						}
-					};
-				if modified {
-					self.msg.take();
-				}
-			}
 			if self.select_state
 				== SelectionState::SelectionEndPending
 			{
 				ta.cancel_selection();
 				self.select_state = SelectionState::NotSelecting;
 			}
-			return Ok(EventState::Consumed);
+
+			if modified {
+				self.msg.take();
+				return Ok(EventState::Consumed);
+			}
 		}
+
 		Ok(EventState::NotConsumed)
 	}
+
 	/*
 	  visible maps to textarea Option
 	  None = > not visible

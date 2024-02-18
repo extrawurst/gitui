@@ -512,7 +512,7 @@ impl Component for CommitComponent {
 
 		if self.is_visible() || force_all {
 			out.push(CommandInfo::new(
-				strings::commands::commit_enter(&self.key_config),
+				strings::commands::commit_submit(&self.key_config),
 				self.can_commit(),
 				true,
 			));
@@ -566,57 +566,67 @@ impl Component for CommitComponent {
 
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.is_visible() {
-			if self.input.event(ev)?.is_consumed() {
-				return Ok(EventState::Consumed);
-			}
-
 			if let Event::Key(e) = ev {
-				if key_match(e, self.key_config.keys.commit)
-					&& self.can_commit()
-				{
-					try_or_popup!(
-						self,
-						"commit error:",
-						self.commit()
-					);
-				} else if key_match(
-					e,
-					self.key_config.keys.toggle_verify,
-				) && self.can_commit()
-				{
-					self.toggle_verify();
-				} else if key_match(
-					e,
-					self.key_config.keys.commit_amend,
-				) && self.can_amend()
-				{
-					self.amend()?;
-				} else if key_match(
-					e,
-					self.key_config.keys.open_commit_editor,
-				) {
-					self.queue.push(
-						InternalEvent::OpenExternalEditor(None),
-					);
-					self.hide();
-				} else if key_match(
-					e,
-					self.key_config.keys.commit_history_next,
-				) {
-					if let Some(msg) = self
-						.options
-						.borrow()
-						.commit_msg(self.commit_msg_history_idx)
+				let input_consumed =
+					if key_match(e, self.key_config.keys.commit)
+						&& self.can_commit()
 					{
-						self.input.set_text(msg);
-						self.commit_msg_history_idx += 1;
-					}
-				} else if key_match(
-					e,
-					self.key_config.keys.toggle_signoff,
-				) {
-					self.signoff_commit();
+						try_or_popup!(
+							self,
+							"commit error:",
+							self.commit()
+						);
+						true
+					} else if key_match(
+						e,
+						self.key_config.keys.toggle_verify,
+					) && self.can_commit()
+					{
+						self.toggle_verify();
+						true
+					} else if key_match(
+						e,
+						self.key_config.keys.commit_amend,
+					) && self.can_amend()
+					{
+						self.amend()?;
+						true
+					} else if key_match(
+						e,
+						self.key_config.keys.open_commit_editor,
+					) {
+						self.queue.push(
+							InternalEvent::OpenExternalEditor(None),
+						);
+						self.hide();
+						true
+					} else if key_match(
+						e,
+						self.key_config.keys.commit_history_next,
+					) {
+						if let Some(msg) = self
+							.options
+							.borrow()
+							.commit_msg(self.commit_msg_history_idx)
+						{
+							self.input.set_text(msg);
+							self.commit_msg_history_idx += 1;
+						}
+						true
+					} else if key_match(
+						e,
+						self.key_config.keys.toggle_signoff,
+					) {
+						self.signoff_commit();
+						true
+					} else {
+						false
+					};
+
+				if !input_consumed {
+					self.input.event(ev)?;
 				}
+
 				// stop key event propagation
 				return Ok(EventState::Consumed);
 			}

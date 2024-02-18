@@ -964,10 +964,12 @@ pub mod commands {
 			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
-	pub fn commit_enter(key_config: &SharedKeyConfig) -> CommandText {
+	pub fn commit_submit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
 		CommandText::new(
 			format!(
-				"Commit [{}]",
+				"Do Commit [{}]",
 				key_config.get_hint(key_config.keys.commit),
 			),
 			"commit (available when commit message is non-empty)",
