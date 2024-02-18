@@ -675,26 +675,23 @@ impl Component for TextInputComponent {
 		let input = Input::from(ev.clone());
 		self.should_select(&input);
 		if let Some(ta) = &mut self.textarea {
-			if let Event::Key(e) = ev {
+			let modified = if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide();
 					return Ok(EventState::Consumed);
 				}
 
-				let modified =
-					if key_match(e, self.key_config.keys.newline)
-						&& self.input_type == InputType::Multiline
-					{
-						ta.insert_newline();
-						true
-					} else {
-						Self::process_inputs(ta, &input)
-					};
-
-				if modified {
-					self.msg.take();
+				if key_match(e, self.key_config.keys.newline)
+					&& self.input_type == InputType::Multiline
+				{
+					ta.insert_newline();
+					true
+				} else {
+					Self::process_inputs(ta, &input)
 				}
-			}
+			} else {
+				false
+			};
 
 			if self.select_state
 				== SelectionState::SelectionEndPending
@@ -703,7 +700,10 @@ impl Component for TextInputComponent {
 				self.select_state = SelectionState::NotSelecting;
 			}
 
-			return Ok(EventState::Consumed);
+			if modified {
+				self.msg.take();
+				return Ok(EventState::Consumed);
+			}
 		}
 
 		Ok(EventState::NotConsumed)
