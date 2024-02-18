@@ -25,6 +25,7 @@ These defaults require some adoption from existing users but feel more natural t
 
 ### Changed
 * do not allow tagging when `tag.gpgsign` enabled until gpg-signing is [supported](https://github.com/extrawurst/gitui/issues/97) [[@TeFiLeDo](https://github.com/TeFiLeDo)] ([#1915](https://github.com/extrawurst/gitui/pull/1915))
+* allow commiting changes with template commit message ([#1921](https://github.com/extrawurst/gitui/issues/1921)).
 
 ### Fixes
 * stash window empty after file history popup closes ([#1986](https://github.com/extrawurst/gitui/issues/1986))
