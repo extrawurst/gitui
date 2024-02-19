@@ -81,7 +81,6 @@ use ratatui::{
 	widgets::{Block, BorderType, Borders, Paragraph, Wrap},
 	Frame,
 };
-use std::convert::From;
 
 /// creates accessors for a list of components
 ///

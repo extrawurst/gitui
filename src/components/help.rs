@@ -20,7 +20,7 @@ use ratatui::{
 	widgets::{Block, BorderType, Borders, Clear, Paragraph},
 	Frame,
 };
-use std::{borrow::Cow, cmp, convert::TryFrom};
+use std::{borrow::Cow, cmp};
 use ui::style::SharedTheme;
 
 ///

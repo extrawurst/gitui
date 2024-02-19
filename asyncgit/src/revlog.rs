@@ -201,7 +201,9 @@ impl AsyncLog {
 	) -> Result<()> {
 		let start_time = Instant::now();
 
-		let mut entries = Vec::with_capacity(LIMIT_COUNT);
+		let mut entries = vec![CommitId::default(); LIMIT_COUNT];
+		entries.resize(0, CommitId::default());
+
 		let r = repo(repo_path)?;
 		let mut walker =
 			LogWalker::new(&r, LIMIT_COUNT)?.filter(filter);

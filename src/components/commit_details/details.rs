@@ -23,7 +23,6 @@ use ratatui::{
 	text::{Line, Span, Text},
 	Frame,
 };
-use std::clone::Clone;
 use std::{borrow::Cow, cell::Cell};
 use sync::CommitTags;
 

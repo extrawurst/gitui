@@ -119,7 +119,6 @@ impl KeyConfig {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crossterm::event::{KeyCode, KeyModifiers};
 	use std::fs;
 	use std::io::Write;
 	use tempfile::NamedTempFile;

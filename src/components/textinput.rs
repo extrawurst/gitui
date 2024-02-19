@@ -21,7 +21,6 @@ use ratatui::{
 };
 use std::cell::Cell;
 use std::cell::OnceCell;
-use std::convert::From;
 use tui_textarea::{CursorMove, Input, Key, Scrolling, TextArea};
 
 ///

@@ -9,9 +9,7 @@ use super::{
 };
 use crate::error::Result;
 use git2::{DiffLine, DiffLineType, Repository};
-use std::{
-	collections::HashSet, convert::TryFrom, fs::File, io::Read,
-};
+use std::{collections::HashSet, fs::File, io::Read};
 
 const NEWLINE: char = '\n';
 

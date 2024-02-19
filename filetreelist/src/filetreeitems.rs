@@ -346,8 +346,7 @@ impl FileTreeItems {
 
 						if items
 							.get(i + 1)
-							.map(|item| item.kind().is_path())
-							.unwrap_or_default()
+							.is_some_and(|item| item.kind().is_path())
 						{
 							let next_item = items.remove(i + 1);
 							let item_mut = &mut items[i];
