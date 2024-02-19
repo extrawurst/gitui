@@ -274,7 +274,13 @@ impl Theme {
 	fn load_patch(theme_path: &PathBuf) -> Result<ThemePatch> {
 		let file = File::open(theme_path)?;
 
-		Ok(ron::de::from_reader(file)?)
+		let load_result = ron::de::from_reader(file);
+
+		if let Err(e) = &load_result {
+			log::error!("theme loading error: {e}");
+		}
+
+		Ok(load_result?)
 	}
 
 	fn load_old_theme(theme_path: &PathBuf) -> Result<Self> {
