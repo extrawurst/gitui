@@ -7,7 +7,7 @@ use crate::{
 		DrawableComponent, ExternalEditorPopup, FileRevlogPopup,
 		FuzzyFindPopup, FuzzyFinderTarget, HelpPopup,
 		InspectCommitPopup, MsgPopup, OptionsPopup, PullPopup,
-		PushTagsPopup, ResetPopup, RevisionFilesPopup, StashMsgPopup,
+		PushTagsPopup, ResetPopup, StashMsgPopup,
 		SubmodulesListPopup, TagCommitPopup, TagListPopup,
 	},
 	input::{Input, InputEvent, InputState},
@@ -17,6 +17,7 @@ use crate::{
 	popups::{
 		BranchListPopup, CommitPopup, CreateBranchPopup, FetchPopup,
 		LogSearchPopupPopup, PushPopup, RenameBranchPopup,
+		RevisionFilesPopup,
 	},
 	queue::{
 		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,
