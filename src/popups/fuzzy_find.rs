@@ -1,7 +1,7 @@
-use super::{
+use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, FuzzyFinderTarget, ScrollType,
-	TextInputComponent,
+	DrawableComponent, EventState, FuzzyFinderTarget, InputType,
+	ScrollType, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -43,7 +43,7 @@ impl FuzzyFindPopup {
 	pub fn new(env: &Environment) -> Self {
 		let mut find_text =
 			TextInputComponent::new(env, "", "start typing..", false)
-				.with_input_type(super::InputType::Singleline);
+				.with_input_type(InputType::Singleline);
 		find_text.embed();
 
 		Self {

@@ -4,10 +4,9 @@ use crate::{
 	components::{
 		command_pump, event_pump, BlameFilePopup, CommandInfo,
 		CompareCommitsPopup, Component, ConfirmPopup,
-		DrawableComponent, ExternalEditorPopup, FileRevlogPopup,
-		FuzzyFindPopup, FuzzyFinderTarget, HelpPopup,
-		InspectCommitPopup, MsgPopup, PullPopup, PushTagsPopup,
-		ResetPopup, StashMsgPopup, SubmodulesListPopup,
+		DrawableComponent, ExternalEditorPopup, FuzzyFinderTarget,
+		HelpPopup, InspectCommitPopup, MsgPopup, PullPopup,
+		PushTagsPopup, StashMsgPopup, SubmodulesListPopup,
 		TagCommitPopup, TagListPopup,
 	},
 	input::{Input, InputEvent, InputState},
@@ -16,8 +15,9 @@ use crate::{
 	popup_stack::PopupStack,
 	popups::{
 		AppOption, BranchListPopup, CommitPopup, CreateBranchPopup,
-		FetchPopup, LogSearchPopupPopup, OptionsPopup, PushPopup,
-		RenameBranchPopup, RevisionFilesPopup,
+		FetchPopup, FileRevlogPopup, FuzzyFindPopup,
+		LogSearchPopupPopup, OptionsPopup, PushPopup,
+		RenameBranchPopup, ResetPopup, RevisionFilesPopup,
 	},
 	queue::{
 		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,

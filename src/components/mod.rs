@@ -7,15 +7,12 @@ mod compare_commits;
 mod cred;
 mod diff;
 mod externaleditor;
-mod file_revlog;
-mod fuzzy_find_popup;
 mod help;
 mod inspect_commit;
 mod msg;
 mod pull;
 mod push_tags;
 mod reset;
-mod reset_popup;
 mod revision_files;
 mod stashmsg;
 mod status_tree;
@@ -36,15 +33,12 @@ pub use compare_commits::CompareCommitsPopup;
 pub use cred::CredComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorPopup;
-pub use file_revlog::{FileRevOpen, FileRevlogPopup};
-pub use fuzzy_find_popup::FuzzyFindPopup;
 pub use help::HelpPopup;
 pub use inspect_commit::{InspectCommitOpen, InspectCommitPopup};
 pub use msg::MsgPopup;
 pub use pull::PullPopup;
 pub use push_tags::PushTagsPopup;
 pub use reset::ConfirmPopup;
-pub use reset_popup::ResetPopup;
 pub use revision_files::RevisionFilesComponent;
 pub use stashmsg::StashMsgPopup;
 pub use submodules::SubmodulesListPopup;
@@ -53,8 +47,8 @@ pub use tag_commit::TagCommitPopup;
 pub use taglist::TagListPopup;
 pub use textinput::{InputType, TextInputComponent};
 pub use utils::{
-	filetree::FileTreeItemKind, scroll_vertical::VerticalScroll,
-	string_width_align,
+	filetree::FileTreeItemKind, logitems::ItemBatch,
+	scroll_vertical::VerticalScroll, string_width_align,
 };
 
 use crate::ui::style::Theme;

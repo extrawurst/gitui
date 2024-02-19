@@ -1,16 +1,14 @@
-use super::utils::logitems::ItemBatch;
-use super::{visibility_blocking, BlameFileOpen, InspectCommitOpen};
-use crate::app::Environment;
-use crate::keys::key_match;
-use crate::options::SharedOptions;
-use crate::queue::StackablePopupOpen;
 use crate::{
+	app::Environment,
 	components::{
-		event_pump, CommandBlocking, CommandInfo, Component,
-		DiffComponent, DrawableComponent, EventState, ScrollType,
+		event_pump, visibility_blocking, BlameFileOpen,
+		CommandBlocking, CommandInfo, Component, DiffComponent,
+		DrawableComponent, EventState, InspectCommitOpen, ItemBatch,
+		ScrollType,
 	},
-	keys::SharedKeyConfig,
-	queue::{InternalEvent, NeedsUpdate, Queue},
+	keys::{key_match, SharedKeyConfig},
+	options::SharedOptions,
+	queue::{InternalEvent, NeedsUpdate, Queue, StackablePopupOpen},
 	strings,
 	ui::{draw_scrollbar, style::SharedTheme, Orientation},
 };

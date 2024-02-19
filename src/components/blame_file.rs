@@ -1,12 +1,12 @@
 use super::{
 	utils, visibility_blocking, CommandBlocking, CommandInfo,
-	Component, DrawableComponent, EventState, FileRevOpen,
-	InspectCommitOpen,
+	Component, DrawableComponent, EventState, InspectCommitOpen,
 };
 use crate::{
 	app::Environment,
 	components::{utils::string_width_align, ScrollType},
 	keys::{key_match, SharedKeyConfig},
+	popups::FileRevOpen,
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	string_utils::tabs_to_spaces,
 	strings,
