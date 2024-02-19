@@ -1,7 +1,6 @@
-use super::{
-	textinput::TextInputComponent, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+use crate::components::{
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, InputType, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -136,7 +135,7 @@ impl StashMsgPopup {
 				&strings::stash_popup_msg(&env.key_config),
 				true,
 			)
-			.with_input_type(super::InputType::Singleline),
+			.with_input_type(InputType::Singleline),
 			key_config: env.key_config.clone(),
 			repo: env.repo.clone(),
 		}

@@ -1,12 +1,12 @@
 use crate::{
 	app::Environment,
 	components::{
-		cred::CredComponent, visibility_blocking, CommandBlocking,
-		CommandInfo, Component, DrawableComponent, EventState,
+		visibility_blocking, CommandBlocking, CommandInfo, Component,
+		CredComponent, DrawableComponent, EventState,
 	},
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
-	strings::{self},
+	strings,
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
