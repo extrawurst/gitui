@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::RepoPath;
 use crate::{error::Result, sync::repository::repo};
 use git2::{Commit, Error, Oid};
@@ -46,9 +48,12 @@ impl CommitId {
 	}
 }
 
-impl ToString for CommitId {
-	fn to_string(&self) -> String {
-		self.0.to_string()
+impl Display for CommitId {
+	fn fmt(
+		&self,
+		f: &mut std::fmt::Formatter<'_>,
+	) -> std::fmt::Result {
+		write!(f, "{}", self.0)
 	}
 }
 

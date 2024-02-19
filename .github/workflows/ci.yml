@@ -220,11 +220,11 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
         
-    - name: cargo-udeps
-      run: |
-        # cargo install --locked cargo-udeps
-        cargo install --git https://github.com/est31/cargo-udeps --locked
-        cargo +nightly udeps --all-targets
+    - name: build cargo-udeps
+      run: cargo install --git https://github.com/est31/cargo-udeps --locked
+        
+    - name: run cargo-udeps
+      run: cargo +nightly udeps --all-targets
 
   log-test:
     name: Changelog Test

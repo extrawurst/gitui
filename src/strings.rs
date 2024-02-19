@@ -38,7 +38,6 @@ pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
 pub static POPUP_COMMIT_SHA_INVALID: &str = "Invalid commit sha";
 
 pub mod symbol {
-	pub const WHITESPACE: &str = "\u{00B7}"; //·
 	pub const CHECKMARK: &str = "\u{2713}"; //✓
 	pub const SPACE: &str = "\u{02FD}"; //˽
 	pub const EMPTY_SPACE: &str = " ";
@@ -965,13 +964,26 @@ pub mod commands {
 			CMD_GROUP_COMMIT_POPUP,
 		)
 	}
-	pub fn commit_enter(key_config: &SharedKeyConfig) -> CommandText {
+	pub fn commit_submit(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
 		CommandText::new(
 			format!(
-				"Commit [{}]",
-				key_config.get_hint(key_config.keys.enter),
+				"Do Commit [{}]",
+				key_config.get_hint(key_config.keys.commit),
 			),
 			"commit (available when commit message is non-empty)",
+			CMD_GROUP_COMMIT_POPUP,
+		)
+		.hide_help()
+	}
+	pub fn newline(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"New line [{}]",
+				key_config.get_hint(key_config.keys.newline),
+			),
+			"create line break",
 			CMD_GROUP_COMMIT_POPUP,
 		)
 		.hide_help()

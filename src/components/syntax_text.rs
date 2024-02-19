@@ -29,7 +29,7 @@ use ratatui::{
 	widgets::{Block, Borders, Wrap},
 	Frame,
 };
-use std::{cell::Cell, convert::From, path::Path};
+use std::{cell::Cell, path::Path};
 
 pub struct SyntaxTextComponent {
 	repo: RepoPathRef,
@@ -105,8 +105,7 @@ impl SyntaxTextComponent {
 		let already_loaded = self
 			.current_file
 			.as_ref()
-			.map(|(current_file, _)| current_file == &path)
-			.unwrap_or_default();
+			.is_some_and(|(current_file, _)| current_file == &path);
 
 		if !already_loaded {
 			//TODO: fetch file content async aswell

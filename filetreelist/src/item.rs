@@ -1,8 +1,5 @@
 use crate::error::Result;
-use std::{
-	convert::TryFrom,
-	path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 /// holds the information shared among all `FileTreeItem` in a `FileTree`
 #[derive(Debug, Clone)]

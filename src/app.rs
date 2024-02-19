@@ -1132,7 +1132,7 @@ impl App {
 					&self.repo_path_text,
 					text_area.width as usize,
 				),
-				self.theme.title(true),
+				self.theme.title(false),
 			)]))
 			.alignment(Alignment::Right),
 			text_area,

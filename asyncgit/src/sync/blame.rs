@@ -69,11 +69,8 @@ pub fn blame_file(
 		utils::get_head_repo(&repo)?
 	};
 
-	let spec = format!(
-		"{}:{}",
-		commit_id.to_string(),
-		fixup_windows_path(file_path)
-	);
+	let spec =
+		format!("{}:{}", commit_id, fixup_windows_path(file_path));
 
 	let object = repo.revparse_single(&spec)?;
 	let blob = repo.find_blob(object.id())?;

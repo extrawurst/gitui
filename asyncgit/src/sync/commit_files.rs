@@ -162,10 +162,7 @@ pub(crate) fn get_commit_diff<'a>(
 		Some(&mut opts),
 	)?;
 
-	if stashes
-		.map(|stashes| stashes.contains(&id))
-		.unwrap_or_default()
-	{
+	if stashes.is_some_and(|stashes| stashes.contains(&id)) {
 		if let Ok(untracked_commit) = commit.parent_id(2) {
 			let untracked_diff = get_commit_diff(
 				repo,

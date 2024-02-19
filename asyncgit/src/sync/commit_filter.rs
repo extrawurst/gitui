@@ -115,8 +115,7 @@ impl LogFilterSearch {
 				.new_file()
 				.path()
 				.and_then(|file| file.as_os_str().to_str())
-				.map(|file| self.match_text(file))
-				.unwrap_or_default()
+				.is_some_and(|file| self.match_text(file))
 			{
 				return true;
 			}
@@ -125,8 +124,7 @@ impl LogFilterSearch {
 				.old_file()
 				.path()
 				.and_then(|file| file.as_os_str().to_str())
-				.map(|file| self.match_text(file))
-				.unwrap_or_default()
+				.is_some_and(|file| self.match_text(file))
 		})
 	}
 
@@ -194,8 +192,7 @@ pub fn filter_commit_by_search(
 					.ok()
 				})
 				.flatten()
-				.map(|diff| filter.match_diff(&diff))
-				.unwrap_or_default();
+				.is_some_and(|diff| filter.match_diff(&diff));
 
 			let authors_match = filter
 				.options
@@ -205,13 +202,11 @@ pub fn filter_commit_by_search(
 					let name_match = commit
 						.author()
 						.name()
-						.map(|name| filter.match_text(name))
-						.unwrap_or_default();
+						.is_some_and(|name| filter.match_text(name));
 					let mail_match = commit
 						.author()
 						.email()
-						.map(|name| filter.match_text(name))
-						.unwrap_or_default();
+						.is_some_and(|name| filter.match_text(name));
 
 					name_match || mail_match
 				})

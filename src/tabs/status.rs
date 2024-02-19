@@ -32,7 +32,6 @@ use ratatui::{
 	style::{Color, Style},
 	widgets::{Block, BorderType, Borders, Paragraph},
 };
-use std::convert::Into;
 
 /// what part of the screen is focused
 #[derive(PartialEq)]

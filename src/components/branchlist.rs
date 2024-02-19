@@ -36,7 +36,7 @@ use ratatui::{
 	widgets::{Block, BorderType, Borders, Clear, Paragraph, Tabs},
 	Frame,
 };
-use std::{cell::Cell, convert::TryInto};
+use std::cell::Cell;
 use ui::style::SharedTheme;
 use unicode_truncate::UnicodeTruncateStr;
 
@@ -505,12 +505,10 @@ impl BranchListComponent {
 			.iter()
 			.enumerate()
 			.filter(|(index, b)| {
-				b.local_details()
-					.map(|details| {
-						details.is_head
-							&& *index == self.selection as usize
-					})
-					.unwrap_or_default()
+				b.local_details().is_some_and(|details| {
+					details.is_head
+						&& *index == self.selection as usize
+				})
 			})
 			.count() > 0
 	}
@@ -623,8 +621,7 @@ impl BranchListComponent {
 
 			let is_head = displaybranch
 				.local_details()
-				.map(|details| details.is_head)
-				.unwrap_or_default();
+				.is_some_and(|details| details.is_head);
 			let is_head_str =
 				if is_head { HEAD_SYMBOL } else { EMPTY_SYMBOL };
 			let upstream_tracking_str = match displaybranch.details {

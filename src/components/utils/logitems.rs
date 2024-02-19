@@ -128,11 +128,9 @@ impl ItemBatch {
 			self.items.extend(commits.into_iter().map(|c| {
 				let id = c.id;
 				let mut entry = LogEntry::from(c);
-				if highlighted
-					.as_ref()
-					.map(|highlighted| highlighted.contains(&id))
-					.unwrap_or_default()
-				{
+				if highlighted.as_ref().is_some_and(|highlighted| {
+					highlighted.contains(&id)
+				}) {
 					entry.highlighted = true;
 				}
 				entry

@@ -136,7 +136,7 @@ impl FileTree {
 			};
 
 			let changed_index =
-				new_index.map(|i| i != selection).unwrap_or_default();
+				new_index.is_some_and(|i| i != selection);
 
 			if changed_index {
 				self.selection = new_index;
@@ -335,8 +335,7 @@ impl FileTree {
 		self.items
 			.tree_items
 			.get(index)
-			.map(|item| item.info().is_visible())
-			.unwrap_or_default()
+			.is_some_and(|item| item.info().is_visible())
 	}
 }
 

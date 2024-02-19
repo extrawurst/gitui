@@ -146,10 +146,7 @@ impl DiffComponent {
 	}
 	///
 	fn can_scroll(&self) -> bool {
-		self.diff
-			.as_ref()
-			.map(|diff| diff.lines > 1)
-			.unwrap_or_default()
+		self.diff.as_ref().is_some_and(|diff| diff.lines > 1)
 	}
 	///
 	pub fn current(&self) -> (String, bool) {

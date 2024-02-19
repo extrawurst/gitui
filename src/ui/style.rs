@@ -33,6 +33,7 @@ pub struct Theme {
 	tag_fg: Color,
 	branch_fg: Color,
 	line_break: String,
+	block_title_focused: Color,
 }
 
 impl Theme {
@@ -50,7 +51,9 @@ impl Theme {
 
 	pub fn title(&self, focused: bool) -> Style {
 		if focused {
-			Style::default().add_modifier(Modifier::BOLD)
+			Style::default()
+				.fg(self.block_title_focused)
+				.add_modifier(Modifier::BOLD)
 		} else {
 			Style::default().fg(self.disabled_fg)
 		}
@@ -271,7 +274,13 @@ impl Theme {
 	fn load_patch(theme_path: &PathBuf) -> Result<ThemePatch> {
 		let file = File::open(theme_path)?;
 
-		Ok(ron::de::from_reader(file)?)
+		let load_result = ron::de::from_reader(file);
+
+		if let Err(e) = &load_result {
+			log::error!("theme loading error: {e}");
+		}
+
+		Ok(load_result?)
 	}
 
 	fn load_old_theme(theme_path: &PathBuf) -> Result<Self> {
@@ -342,6 +351,7 @@ impl Default for Theme {
 			tag_fg: Color::LightMagenta,
 			branch_fg: Color::LightYellow,
 			line_break: "¶".to_string(),
+			block_title_focused: Color::Reset,
 		}
 	}
 }
@@ -350,7 +360,6 @@ impl Default for Theme {
 mod tests {
 	use super::*;
 	use pretty_assertions::assert_eq;
-	use std::io::Write;
 	use tempfile::NamedTempFile;
 
 	#[test]
