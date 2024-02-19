@@ -1,7 +1,6 @@
 use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, ExternalEditorPopup,
-	TextInputComponent,
+	DrawableComponent, EventState, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -34,6 +33,8 @@ use std::{
 	path::PathBuf,
 	str::FromStr,
 };
+
+use super::ExternalEditorPopup;
 
 enum CommitResult {
 	ComitDone,
