@@ -1,7 +1,6 @@
 use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, FuzzyFinderTarget,
-	InspectCommitOpen, VerticalScroll,
+	DrawableComponent, EventState, FuzzyFinderTarget, VerticalScroll,
 };
 use crate::{
 	app::Environment,
@@ -39,6 +38,8 @@ use ratatui::{
 use std::cell::Cell;
 use ui::style::SharedTheme;
 use unicode_truncate::UnicodeTruncateStr;
+
+use super::InspectCommitOpen;
 
 ///
 pub struct BranchListPopup {

@@ -1,13 +1,14 @@
 use super::{
 	command_pump, event_pump, visibility_blocking, CommandBlocking,
 	CommandInfo, CommitDetailsComponent, Component, DiffComponent,
-	DrawableComponent, EventState, InspectCommitOpen,
+	DrawableComponent, EventState,
 };
 use crate::{
 	accessors,
 	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
+	popups::InspectCommitOpen,
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings,
 };

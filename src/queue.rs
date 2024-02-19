@@ -1,8 +1,8 @@
 use crate::{
-	components::{
-		BlameFileOpen, FuzzyFinderTarget, InspectCommitOpen,
+	components::{BlameFileOpen, FuzzyFinderTarget},
+	popups::{
+		AppOption, FileRevOpen, FileTreeOpen, InspectCommitOpen,
 	},
-	popups::{AppOption, FileRevOpen, FileTreeOpen},
 	tabs::StashingOptions,
 };
 use asyncgit::{

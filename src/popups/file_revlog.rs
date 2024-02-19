@@ -3,8 +3,7 @@ use crate::{
 	components::{
 		event_pump, visibility_blocking, BlameFileOpen,
 		CommandBlocking, CommandInfo, Component, DiffComponent,
-		DrawableComponent, EventState, InspectCommitOpen, ItemBatch,
-		ScrollType,
+		DrawableComponent, EventState, ItemBatch, ScrollType,
 	},
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
@@ -29,6 +28,8 @@ use ratatui::{
 	widgets::{Block, Borders, Cell, Clear, Row, Table, TableState},
 	Frame,
 };
+
+use super::InspectCommitOpen;
 
 const SLICE_SIZE: usize = 1200;
 
