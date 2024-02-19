@@ -29,7 +29,7 @@ use ratatui::{
 	widgets::{Block, Borders, Cell, Clear, Row, Table, TableState},
 	Frame,
 };
-use std::{convert::TryInto, path::Path};
+use std::{path::Path};
 
 static NO_COMMIT_ID: &str = "0000000";
 static NO_AUTHOR: &str = "<no author>";
