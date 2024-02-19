@@ -601,8 +601,6 @@ impl Status {
 			.as_ref()
 			.map_or(true, |state| state.ahead > 0);
 
-		log::info!("can_push: {is_ahead}/{}", self.has_remotes);
-
 		is_ahead && self.has_remotes
 	}
 
