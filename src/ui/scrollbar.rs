@@ -12,7 +12,6 @@ use ratatui::{
 	widgets::Widget,
 	Frame,
 };
-use std::convert::TryFrom;
 
 pub enum Orientation {
 	Vertical,

@@ -30,8 +30,8 @@ use ratatui::{
 	Frame,
 };
 use std::{
-	borrow::Cow, cell::Cell, cmp, collections::BTreeMap,
-	convert::TryFrom, rc::Rc, time::Instant,
+	borrow::Cow, cell::Cell, cmp, collections::BTreeMap, rc::Rc,
+	time::Instant,
 };
 
 const ELEMENTS_PER_LINE: usize = 9;
@@ -151,11 +151,7 @@ impl CommitList {
 					marked.windows(2).all(|w| w[0].0 + 1 == w[1].0);
 
 				let yank = if marked_consecutive {
-					format!(
-						"{}^..{}",
-						first.1.to_string(),
-						last.1.to_string()
-					)
+					format!("{}^..{}", first.1, last.1)
 				} else {
 					marked
 						.iter()
@@ -248,8 +244,7 @@ impl CommitList {
 		//note: set highlights to none if there is no highlight
 		self.highlights = if highlighting
 			.as_ref()
-			.map(|set| set.is_empty())
-			.unwrap_or_default()
+			.is_some_and(|set| set.is_empty())
 		{
 			None
 		} else {
@@ -718,8 +713,7 @@ impl CommitList {
 
 		self.highlights
 			.as_ref()
-			.map(|highlights| highlights.contains(&commit))
-			.unwrap_or_default()
+			.is_some_and(|highlights| highlights.contains(&commit))
 	}
 
 	fn needs_data(&self, idx: usize, idx_max: usize) -> bool {
@@ -749,8 +743,7 @@ impl CommitList {
 		let index_in_sync = self
 			.items
 			.index_offset_raw()
-			.map(|index| want_min == index)
-			.unwrap_or_default();
+			.is_some_and(|index| want_min == index);
 
 		if !index_in_sync || !self.is_list_in_sync() || force {
 			let commits = sync::get_commits_info(

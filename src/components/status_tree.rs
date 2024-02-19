@@ -18,7 +18,7 @@ use anyhow::Result;
 use asyncgit::{hash, sync::CommitId, StatusItem, StatusItemType};
 use crossterm::event::Event;
 use ratatui::{backend::Backend, layout::Rect, text::Span, Frame};
-use std::{borrow::Cow, cell::Cell, convert::From, path::Path};
+use std::{borrow::Cow, cell::Cell, path::Path};
 
 //TODO: use new `filetreelist` crate
 
@@ -554,7 +554,6 @@ impl Component for StatusTreeComponent {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use asyncgit::StatusItemType;
 
 	fn string_vec_to_status(items: &[&str]) -> Vec<StatusItem> {
 		items

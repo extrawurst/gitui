@@ -15,8 +15,8 @@ use ratatui::{
 	widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
 	Frame,
 };
-use std::convert::TryFrom;
 use ui::style::SharedTheme;
+
 pub struct MsgComponent {
 	title: String,
 	msg: String,

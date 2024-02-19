@@ -215,7 +215,7 @@ All contain a single binary file
 
 ### Requirements
 
-- Minimum supported `rust`/`cargo` version: `1.65`
+- Minimum supported `rust`/`cargo` version: `1.70`
   - See [Install Rust](https://www.rust-lang.org/tools/install)
 
 - To build openssl dependency (see https://docs.rs/openssl/latest/openssl/)

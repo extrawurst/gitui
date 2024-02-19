@@ -26,7 +26,7 @@ use ratatui::{
 	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
 };
-use std::{cell::Cell, convert::TryInto};
+use std::cell::Cell;
 use ui::style::SharedTheme;
 use unicode_truncate::UnicodeTruncateStr;
 
@@ -296,9 +296,7 @@ impl SubmodulesListComponent {
 	}
 
 	fn can_open_submodule(&self) -> bool {
-		self.selected_entry()
-			.map(|s| s.status.is_in_wd())
-			.unwrap_or_default()
+		self.selected_entry().is_some_and(|s| s.status.is_in_wd())
 	}
 
 	//TODO: dedup this almost identical with BranchListComponent

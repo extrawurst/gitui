@@ -135,7 +135,7 @@ impl CommitDetailsComponent {
 	}
 
 	fn is_compare(&self) -> bool {
-		self.commit.map(|p| p.other.is_some()).unwrap_or_default()
+		self.commit.is_some_and(|p| p.other.is_some())
 	}
 }
 

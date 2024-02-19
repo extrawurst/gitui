@@ -4,7 +4,6 @@ use anyhow::{bail, Result};
 use asyncgit::StatusItem;
 use std::{
 	collections::BTreeSet,
-	convert::TryFrom,
 	ffi::OsStr,
 	ops::{Index, IndexMut},
 	path::Path,

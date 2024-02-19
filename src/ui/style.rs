@@ -354,7 +354,6 @@ impl Default for Theme {
 mod tests {
 	use super::*;
 	use pretty_assertions::assert_eq;
-	use std::io::Write;
 	use tempfile::NamedTempFile;
 
 	#[test]

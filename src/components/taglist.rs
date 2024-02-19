@@ -36,7 +36,6 @@ use ratatui::{
 	},
 	Frame,
 };
-use std::convert::TryInto;
 use ui::style::SharedTheme;
 
 ///

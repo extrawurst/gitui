@@ -60,9 +60,9 @@ pub(crate) fn get_default_remote_in_repo(
 	let remotes = repo.remotes()?;
 
 	// if `origin` exists return that
-	let found_origin = remotes.iter().any(|r| {
-		r.map(|r| r == DEFAULT_REMOTE_NAME).unwrap_or_default()
-	});
+	let found_origin = remotes
+		.iter()
+		.any(|r| r.is_some_and(|r| r == DEFAULT_REMOTE_NAME));
 	if found_origin {
 		return Ok(DEFAULT_REMOTE_NAME.into());
 	}

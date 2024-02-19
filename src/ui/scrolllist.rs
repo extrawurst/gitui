@@ -8,7 +8,6 @@ use ratatui::{
 	widgets::{Block, Borders, List, ListItem, Widget},
 	Frame,
 };
-use std::iter::Iterator;
 
 ///
 struct ScrollableList<'b, L, S>

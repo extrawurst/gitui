@@ -30,7 +30,7 @@ use ratatui::{
 	Frame,
 };
 use std::{borrow::Cow, fmt::Write};
-use std::{collections::BTreeSet, convert::From, path::Path};
+use std::{collections::BTreeSet, path::Path};
 use unicode_truncate::UnicodeTruncateStr;
 use unicode_width::UnicodeWidthStr;
 
@@ -125,8 +125,7 @@ impl RevisionFilesComponent {
 				if self
 					.revision
 					.as_ref()
-					.map(|commit| commit.id == result.commit)
-					.unwrap_or_default()
+					.is_some_and(|commit| commit.id == result.commit)
 				{
 					if let Ok(last) = result.result {
 						let filenames: Vec<&Path> = last

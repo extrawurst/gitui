@@ -82,6 +82,11 @@ clippy-nightly:
 
 check: fmt clippy test deny
 
+check-nightly:
+	cargo +nightly c
+	cargo +nightly clippy --workspace --all-features
+	cargo +nightly t
+
 deny:
 	cargo deny check
 
