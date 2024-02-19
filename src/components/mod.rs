@@ -12,7 +12,6 @@ mod fuzzy_find_popup;
 mod help;
 mod inspect_commit;
 mod msg;
-mod options_popup;
 mod pull;
 mod push_tags;
 mod reset;
@@ -42,7 +41,6 @@ pub use fuzzy_find_popup::FuzzyFindPopup;
 pub use help::HelpPopup;
 pub use inspect_commit::{InspectCommitOpen, InspectCommitPopup};
 pub use msg::MsgPopup;
-pub use options_popup::{AppOption, OptionsPopup};
 pub use pull::PullPopup;
 pub use push_tags::PushTagsPopup;
 pub use reset::ConfirmPopup;
@@ -56,6 +54,7 @@ pub use taglist::TagListPopup;
 pub use textinput::{InputType, TextInputComponent};
 pub use utils::{
 	filetree::FileTreeItemKind, scroll_vertical::VerticalScroll,
+	string_width_align,
 };
 
 use crate::ui::style::Theme;
