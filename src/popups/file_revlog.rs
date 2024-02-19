@@ -1,9 +1,9 @@
 use crate::{
 	app::Environment,
 	components::{
-		event_pump, visibility_blocking, BlameFileOpen,
-		CommandBlocking, CommandInfo, Component, DiffComponent,
-		DrawableComponent, EventState, ItemBatch, ScrollType,
+		event_pump, visibility_blocking, CommandBlocking,
+		CommandInfo, Component, DiffComponent, DrawableComponent,
+		EventState, ItemBatch, ScrollType,
 	},
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
@@ -29,7 +29,7 @@ use ratatui::{
 	Frame,
 };
 
-use super::InspectCommitOpen;
+use super::{BlameFileOpen, InspectCommitOpen};
 
 const SLICE_SIZE: usize = 1200;
 

@@ -3,13 +3,13 @@ use super::{
 		filetree::{FileTreeItem, FileTreeItemKind},
 		statustree::{MoveSelection, StatusTree},
 	},
-	BlameFileOpen, CommandBlocking, DrawableComponent,
+	CommandBlocking, DrawableComponent,
 };
 use crate::{
 	app::Environment,
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
-	popups::FileRevOpen,
+	popups::{BlameFileOpen, FileRevOpen},
 	queue::{InternalEvent, NeedsUpdate, Queue, StackablePopupOpen},
 	strings::{self, order},
 	ui::{self, style::SharedTheme},

@@ -1,12 +1,12 @@
 use super::{
-	utils::scroll_vertical::VerticalScroll, BlameFileOpen,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, FuzzyFinderTarget, SyntaxTextComponent,
+	utils::scroll_vertical::VerticalScroll, CommandBlocking,
+	CommandInfo, Component, DrawableComponent, EventState,
+	FuzzyFinderTarget, SyntaxTextComponent,
 };
 use crate::{
 	app::Environment,
 	keys::{key_match, SharedKeyConfig},
-	popups::FileRevOpen,
+	popups::{BlameFileOpen, FileRevOpen},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order, symbol},
 	try_or_popup,

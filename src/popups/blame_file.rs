@@ -1,10 +1,10 @@
-use super::{
-	utils, visibility_blocking, CommandBlocking, CommandInfo,
-	Component, DrawableComponent, EventState,
-};
 use crate::{
 	app::Environment,
-	components::{utils::string_width_align, ScrollType},
+	components::{
+		string_width_align, time_to_string, visibility_blocking,
+		CommandBlocking, CommandInfo, Component, DrawableComponent,
+		EventState, ScrollType,
+	},
 	keys::{key_match, SharedKeyConfig},
 	popups::{FileRevOpen, InspectCommitOpen},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
@@ -648,7 +648,7 @@ impl BlameFilePopup {
 		);
 		let author = format!("{truncated_author:MAX_AUTHOR_WIDTH$}");
 		let time = blame_hunk.map_or_else(String::new, |hunk| {
-			utils::time_to_string(hunk.time, true)
+			time_to_string(hunk.time, true)
 		});
 
 		let file_blame = self.blame.result();

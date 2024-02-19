@@ -1,4 +1,3 @@
-mod blame_file;
 mod changes;
 mod command;
 mod commit_details;
@@ -22,7 +21,6 @@ mod textinput;
 mod utils;
 
 pub use self::status_tree::StatusTreeComponent;
-pub use blame_file::{BlameFileOpen, BlameFilePopup};
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit_details::CommitDetailsComponent;
@@ -45,6 +43,7 @@ pub use textinput::{InputType, TextInputComponent};
 pub use utils::{
 	filetree::FileTreeItemKind, logitems::ItemBatch,
 	scroll_vertical::VerticalScroll, string_width_align,
+	time_to_string,
 };
 
 use crate::ui::style::Theme;

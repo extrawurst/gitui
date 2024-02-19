@@ -1,3 +1,4 @@
+mod blame_file;
 mod branchlist;
 mod commit;
 mod create_branch;
@@ -13,6 +14,7 @@ mod reset;
 mod revision_files;
 mod submodules;
 
+pub use blame_file::{BlameFileOpen, BlameFilePopup};
 pub use branchlist::BranchListPopup;
 pub use commit::CommitPopup;
 pub use create_branch::CreateBranchPopup;
