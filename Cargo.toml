@@ -15,6 +15,7 @@ keywords = ["git", "gui", "cli", "terminal", "ui"]
 
 [dependencies]
 anyhow = "1.0"
+arboard = "3.3.1"
 asyncgit = { path = "./asyncgit", version = "0.24", default-features = false }
 backtrace = "0.3"
 bitflags = "2.4"
