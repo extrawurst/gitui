@@ -2,6 +2,7 @@ mod blame_file;
 mod branchlist;
 mod commit;
 mod compare_commits;
+mod confirm;
 mod create_branch;
 mod externaleditor;
 mod fetch;
@@ -21,6 +22,7 @@ pub use blame_file::{BlameFileOpen, BlameFilePopup};
 pub use branchlist::BranchListPopup;
 pub use commit::CommitPopup;
 pub use compare_commits::CompareCommitsPopup;
+pub use confirm::ConfirmPopup;
 pub use create_branch::CreateBranchPopup;
 pub use externaleditor::ExternalEditorPopup;
 pub use fetch::FetchPopup;
@@ -35,3 +37,37 @@ pub use rename_branch::RenameBranchPopup;
 pub use reset::ResetPopup;
 pub use revision_files::{FileTreeOpen, RevisionFilesPopup};
 pub use submodules::SubmodulesListPopup;
+
+use crate::ui::style::Theme;
+use ratatui::{
+	layout::Alignment,
+	text::{Span, Text},
+	widgets::{Block, BorderType, Borders, Paragraph, Wrap},
+};
+
+fn popup_paragraph<'a, T>(
+	title: &'a str,
+	content: T,
+	theme: &Theme,
+	focused: bool,
+	block: bool,
+) -> Paragraph<'a>
+where
+	T: Into<Text<'a>>,
+{
+	let paragraph = Paragraph::new(content.into())
+		.alignment(Alignment::Left)
+		.wrap(Wrap { trim: true });
+
+	if block {
+		paragraph.block(
+			Block::default()
+				.title(Span::styled(title, theme.title(focused)))
+				.borders(Borders::ALL)
+				.border_type(BorderType::Thick)
+				.border_style(theme.block(focused)),
+		)
+	} else {
+		paragraph
+	}
+}

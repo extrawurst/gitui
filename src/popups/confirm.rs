@@ -1,8 +1,8 @@
 use crate::{
 	app::Environment,
 	components::{
-		popup_paragraph, visibility_blocking, CommandBlocking,
-		CommandInfo, Component, DrawableComponent, EventState,
+		visibility_blocking, CommandBlocking, CommandInfo, Component,
+		DrawableComponent, EventState,
 	},
 	keys::{key_match, SharedKeyConfig},
 	queue::{Action, InternalEvent, Queue},
@@ -15,6 +15,8 @@ use ratatui::{
 };
 use std::borrow::Cow;
 use ui::style::SharedTheme;
+
+use super::popup_paragraph;
 
 ///
 pub struct ConfirmPopup {

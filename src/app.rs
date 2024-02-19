@@ -3,9 +3,8 @@ use crate::{
 	cmdbar::CommandBar,
 	components::{
 		command_pump, event_pump, CommandInfo, Component,
-		ConfirmPopup, DrawableComponent, FuzzyFinderTarget, MsgPopup,
-		PullPopup, PushTagsPopup, StashMsgPopup, TagCommitPopup,
-		TagListPopup,
+		DrawableComponent, FuzzyFinderTarget, MsgPopup, PullPopup,
+		PushTagsPopup, StashMsgPopup, TagCommitPopup, TagListPopup,
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{key_match, KeyConfig, SharedKeyConfig},
@@ -13,10 +12,11 @@ use crate::{
 	popup_stack::PopupStack,
 	popups::{
 		AppOption, BlameFilePopup, BranchListPopup, CommitPopup,
-		CompareCommitsPopup, CreateBranchPopup, ExternalEditorPopup,
-		FetchPopup, FileRevlogPopup, FuzzyFindPopup, HelpPopup,
-		InspectCommitPopup, LogSearchPopupPopup, OptionsPopup,
-		PushPopup, RenameBranchPopup, ResetPopup, RevisionFilesPopup,
+		CompareCommitsPopup, ConfirmPopup, CreateBranchPopup,
+		ExternalEditorPopup, FetchPopup, FileRevlogPopup,
+		FuzzyFindPopup, HelpPopup, InspectCommitPopup,
+		LogSearchPopupPopup, OptionsPopup, PushPopup,
+		RenameBranchPopup, ResetPopup, RevisionFilesPopup,
 		SubmodulesListPopup,
 	},
 	queue::{

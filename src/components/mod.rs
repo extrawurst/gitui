@@ -7,7 +7,6 @@ mod diff;
 mod msg;
 mod pull;
 mod push_tags;
-mod reset;
 mod revision_files;
 mod stashmsg;
 mod status_tree;
@@ -27,7 +26,6 @@ pub use diff::DiffComponent;
 pub use msg::MsgPopup;
 pub use pull::PullPopup;
 pub use push_tags::PushTagsPopup;
-pub use reset::ConfirmPopup;
 pub use revision_files::RevisionFilesComponent;
 pub use stashmsg::StashMsgPopup;
 pub use syntax_text::SyntaxTextComponent;
@@ -47,7 +45,7 @@ use ratatui::{
 	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Span, Text},
-	widgets::{Block, BorderType, Borders, Paragraph, Wrap},
+	widgets::{Block, Borders, Paragraph},
 	Frame,
 };
 
@@ -280,31 +278,4 @@ fn dialog_paragraph<'a>(
 				.border_style(theme.block(focused)),
 		)
 		.alignment(Alignment::Left)
-}
-
-fn popup_paragraph<'a, T>(
-	title: &'a str,
-	content: T,
-	theme: &Theme,
-	focused: bool,
-	block: bool,
-) -> Paragraph<'a>
-where
-	T: Into<Text<'a>>,
-{
-	let paragraph = Paragraph::new(content.into())
-		.alignment(Alignment::Left)
-		.wrap(Wrap { trim: true });
-
-	if block {
-		paragraph.block(
-			Block::default()
-				.title(Span::styled(title, theme.title(focused)))
-				.borders(Borders::ALL)
-				.border_type(BorderType::Thick)
-				.border_style(theme.block(focused)),
-		)
-	} else {
-		paragraph
-	}
 }
