@@ -3,10 +3,10 @@ use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitDetailsComponent, CommitList, Component,
-		DrawableComponent, EventState, FileTreeOpen,
-		InspectCommitOpen,
+		DrawableComponent, EventState,
 	},
 	keys::{key_match, SharedKeyConfig},
+	popups::{FileTreeOpen, InspectCommitOpen},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order},
 	try_or_popup,

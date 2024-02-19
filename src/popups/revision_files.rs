@@ -1,9 +1,6 @@
-use std::path::Path;
-
-use super::{
-	revision_files::RevisionFilesComponent, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+use crate::components::{
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, RevisionFilesComponent,
 };
 use crate::{
 	app::Environment,
@@ -18,6 +15,7 @@ use crossterm::event::Event;
 use ratatui::{
 	backend::Backend, layout::Rect, widgets::Clear, Frame,
 };
+use std::path::Path;
 
 #[derive(Clone, Debug)]
 pub struct FileTreeOpen {

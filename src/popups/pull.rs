@@ -1,26 +1,28 @@
 use crate::{
 	app::Environment,
 	components::{
-		cred::CredComponent, visibility_blocking, CommandBlocking,
-		CommandInfo, Component, DrawableComponent, EventState,
+		visibility_blocking, CommandBlocking, CommandInfo, Component,
+		CredComponent, DrawableComponent, EventState,
 	},
-	keys::{key_match, SharedKeyConfig},
-	queue::{InternalEvent, Queue},
-	strings::{self},
+	keys::SharedKeyConfig,
+	popups::PushPopup,
+	queue::{Action, InternalEvent, Queue},
+	strings, try_or_popup,
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::{
 	sync::{
+		self,
 		cred::{
 			extract_username_password, need_username_password,
 			BasicAuthCredential,
 		},
-		get_default_remote, AsyncProgress, PushTagsProgress,
-		RepoPathRef,
+		get_default_remote, RepoPathRef,
 	},
-	AsyncGitNotification, AsyncPushTags, PushTagsRequest,
+	AsyncGitNotification, AsyncPull, FetchRequest, RemoteProgress,
 };
+
 use crossterm::event::Event;
 use ratatui::{
 	backend::Backend,
@@ -31,19 +33,20 @@ use ratatui::{
 };
 
 ///
-pub struct PushTagsComponent {
+pub struct PullPopup {
 	repo: RepoPathRef,
 	visible: bool,
-	git_push: AsyncPushTags,
-	progress: Option<PushTagsProgress>,
+	git_fetch: AsyncPull,
+	progress: Option<RemoteProgress>,
 	pending: bool,
+	branch: String,
 	queue: Queue,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	input_cred: CredComponent,
 }
 
-impl PushTagsComponent {
+impl PullPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -51,7 +54,8 @@ impl PushTagsComponent {
 			queue: env.queue.clone(),
 			pending: false,
 			visible: false,
-			git_push: AsyncPushTags::new(
+			branch: String::new(),
+			git_fetch: AsyncPull::new(
 				env.repo.borrow().clone(),
 				&env.sender_git,
 			),
@@ -63,7 +67,8 @@ impl PushTagsComponent {
 	}
 
 	///
-	pub fn push_tags(&mut self) -> Result<()> {
+	pub fn fetch(&mut self, branch: String) -> Result<()> {
+		self.branch = branch;
 		self.show()?;
 		if need_username_password(&self.repo.borrow())? {
 			let cred = extract_username_password(&self.repo.borrow())
@@ -71,54 +76,27 @@ impl PushTagsComponent {
 					BasicAuthCredential::new(None, None)
 				});
 			if cred.is_complete() {
-				self.push_to_remote(Some(cred))
+				self.fetch_from_remote(Some(cred))
 			} else {
 				self.input_cred.set_cred(cred);
 				self.input_cred.show()
 			}
 		} else {
-			self.push_to_remote(None)
+			self.fetch_from_remote(None)
 		}
 	}
 
-	fn push_to_remote(
+	fn fetch_from_remote(
 		&mut self,
 		cred: Option<BasicAuthCredential>,
 	) -> Result<()> {
 		self.pending = true;
 		self.progress = None;
-		self.git_push.request(PushTagsRequest {
+		self.git_fetch.request(FetchRequest {
 			remote: get_default_remote(&self.repo.borrow())?,
+			branch: self.branch.clone(),
 			basic_credential: cred,
 		})?;
-		Ok(())
-	}
-
-	///
-	pub fn update_git(
-		&mut self,
-		ev: AsyncGitNotification,
-	) -> Result<()> {
-		if self.is_visible() && ev == AsyncGitNotification::PushTags {
-			self.update()?;
-		}
-
-		Ok(())
-	}
-
-	///
-	fn update(&mut self) -> Result<()> {
-		self.pending = self.git_push.is_pending()?;
-		self.progress = self.git_push.progress()?;
-
-		if !self.pending {
-			if let Some(err) = self.git_push.last_result()? {
-				self.queue.push(InternalEvent::ShowErrorMsg(
-					format!("push tags failed:\n{err}"),
-				));
-			}
-			self.hide();
-		}
 
 		Ok(())
 	}
@@ -129,35 +107,97 @@ impl PushTagsComponent {
 	}
 
 	///
-	pub fn get_progress(
-		progress: &Option<PushTagsProgress>,
-	) -> (String, u8) {
-		progress.as_ref().map_or(
-			(strings::PUSH_POPUP_PROGRESS_NONE.into(), 0),
-			|progress| {
-				(
-					Self::progress_state_name(progress),
-					progress.progress().progress,
-				)
-			},
-		)
+	pub fn update_git(&mut self, ev: AsyncGitNotification) {
+		if self.is_visible() && ev == AsyncGitNotification::Pull {
+			if let Err(error) = self.update() {
+				self.pending = false;
+				self.hide();
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("fetch failed:\n{error}"),
+				));
+			}
+		}
 	}
 
-	fn progress_state_name(progress: &PushTagsProgress) -> String {
-		match progress {
-			PushTagsProgress::CheckRemote => {
-				strings::PUSH_TAGS_STATES_FETCHING
+	///
+	fn update(&mut self) -> Result<()> {
+		self.pending = self.git_fetch.is_pending()?;
+		self.progress = self.git_fetch.progress()?;
+
+		if !self.pending {
+			if let Some((_bytes, err)) =
+				self.git_fetch.last_result()?
+			{
+				if err.is_empty() {
+					self.try_ff_merge()?;
+				} else {
+					anyhow::bail!(err);
+				}
 			}
-			PushTagsProgress::Push { .. } => {
-				strings::PUSH_TAGS_STATES_PUSHING
-			}
-			PushTagsProgress::Done => strings::PUSH_TAGS_STATES_DONE,
 		}
-		.to_string()
+
+		Ok(())
+	}
+
+	// check if something is incoming and try a ff merge then
+	fn try_ff_merge(&mut self) -> Result<()> {
+		let branch_compare = sync::branch_compare_upstream(
+			&self.repo.borrow(),
+			&self.branch,
+		)?;
+		if branch_compare.behind > 0 {
+			let ff_res = sync::branch_merge_upstream_fastforward(
+				&self.repo.borrow(),
+				&self.branch,
+			);
+			if let Err(err) = ff_res {
+				log::trace!("ff failed: {}", err);
+				self.confirm_merge(branch_compare.behind);
+			}
+		}
+
+		self.hide();
+
+		Ok(())
+	}
+
+	pub fn try_conflict_free_merge(&self, rebase: bool) {
+		if rebase {
+			try_or_popup!(
+				self,
+				"rebase failed:",
+				sync::merge_upstream_rebase(
+					&self.repo.borrow(),
+					&self.branch
+				)
+			);
+		} else {
+			try_or_popup!(
+				self,
+				"merge failed:",
+				sync::merge_upstream_commit(
+					&self.repo.borrow(),
+					&self.branch
+				)
+			);
+		}
+	}
+
+	fn confirm_merge(&mut self, incoming: usize) {
+		self.queue.push(InternalEvent::ConfirmAction(
+			Action::PullMerge {
+				incoming,
+				rebase: sync::config_is_pull_rebase(
+					&self.repo.borrow(),
+				)
+				.unwrap_or_default(),
+			},
+		));
+		self.hide();
 	}
 }
 
-impl DrawableComponent for PushTagsComponent {
+impl DrawableComponent for PullPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -165,7 +205,7 @@ impl DrawableComponent for PushTagsComponent {
 	) -> Result<()> {
 		if self.visible {
 			let (state, progress) =
-				Self::get_progress(&self.progress);
+				PushPopup::get_progress(&self.progress);
 
 			let area = ui::centered_rect_absolute(30, 3, f.size());
 
@@ -176,7 +216,7 @@ impl DrawableComponent for PushTagsComponent {
 					.block(
 						Block::default()
 							.title(Span::styled(
-								strings::PUSH_TAGS_POPUP_MSG,
+								strings::PULL_POPUP_MSG,
 								self.theme.title(true),
 							))
 							.borders(Borders::ALL)
@@ -194,7 +234,7 @@ impl DrawableComponent for PushTagsComponent {
 	}
 }
 
-impl Component for PushTagsComponent {
+impl Component for PullPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -208,36 +248,30 @@ impl Component for PushTagsComponent {
 			if self.input_cred.is_visible() {
 				return self.input_cred.commands(out, force_all);
 			}
-
 			out.push(CommandInfo::new(
 				strings::commands::close_msg(&self.key_config),
 				!self.pending,
 				self.visible,
 			));
 		}
+
 		visibility_blocking(self)
 	}
 
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.visible {
-			if let Event::Key(e) = ev {
+			if let Event::Key(_) = ev {
 				if self.input_cred.is_visible() {
 					self.input_cred.event(ev)?;
 
 					if self.input_cred.get_cred().is_complete()
 						|| !self.input_cred.is_visible()
 					{
-						self.push_to_remote(Some(
+						self.fetch_from_remote(Some(
 							self.input_cred.get_cred().clone(),
 						))?;
 						self.input_cred.hide();
 					}
-				} else if key_match(
-					e,
-					self.key_config.keys.exit_popup,
-				) && !self.pending
-				{
-					self.hide();
 				}
 			}
 			return Ok(EventState::Consumed);

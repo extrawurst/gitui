@@ -1,4 +1,4 @@
-use super::{
+use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState,
 };
@@ -24,7 +24,7 @@ use std::{borrow::Cow, cmp};
 use ui::style::SharedTheme;
 
 ///
-pub struct HelpComponent {
+pub struct HelpPopup {
 	cmds: Vec<CommandInfo>,
 	visible: bool,
 	selection: u16,
@@ -32,7 +32,7 @@ pub struct HelpComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for HelpComponent {
+impl DrawableComponent for HelpPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -87,7 +87,7 @@ impl DrawableComponent for HelpComponent {
 	}
 }
 
-impl Component for HelpComponent {
+impl Component for HelpPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -167,7 +167,7 @@ impl Component for HelpComponent {
 	}
 }
 
-impl HelpComponent {
+impl HelpPopup {
 	pub fn new(env: &Environment) -> Self {
 		Self {
 			cmds: vec![],

@@ -1,7 +1,6 @@
-use super::{
-	utils::scroll_vertical::VerticalScroll, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, FuzzyFinderTarget, InspectCommitOpen,
+use crate::components::{
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, FuzzyFinderTarget, VerticalScroll,
 };
 use crate::{
 	app::Environment,
@@ -40,8 +39,10 @@ use std::cell::Cell;
 use ui::style::SharedTheme;
 use unicode_truncate::UnicodeTruncateStr;
 
+use super::InspectCommitOpen;
+
 ///
-pub struct BranchListComponent {
+pub struct BranchListPopup {
 	repo: RepoPathRef,
 	branches: Vec<BranchInfo>,
 	local: bool,
@@ -55,7 +56,7 @@ pub struct BranchListComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for BranchListComponent {
+impl DrawableComponent for BranchListPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -105,7 +106,7 @@ impl DrawableComponent for BranchListComponent {
 	}
 }
 
-impl Component for BranchListComponent {
+impl Component for BranchListPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -329,7 +330,7 @@ impl Component for BranchListComponent {
 	}
 }
 
-impl BranchListComponent {
+impl BranchListPopup {
 	pub fn new(env: &Environment) -> Self {
 		Self {
 			branches: Vec::new(),

@@ -1,7 +1,6 @@
-use super::{
-	textinput::TextInputComponent, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+use crate::components::{
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, InputType, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -14,7 +13,7 @@ use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use ratatui::{backend::Backend, layout::Rect, Frame};
 
-pub struct RenameBranchComponent {
+pub struct RenameBranchPopup {
 	repo: RepoPathRef,
 	input: TextInputComponent,
 	branch_ref: Option<String>,
@@ -22,7 +21,7 @@ pub struct RenameBranchComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for RenameBranchComponent {
+impl DrawableComponent for RenameBranchPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -34,7 +33,7 @@ impl DrawableComponent for RenameBranchComponent {
 	}
 }
 
-impl Component for RenameBranchComponent {
+impl Component for RenameBranchPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -87,7 +86,7 @@ impl Component for RenameBranchComponent {
 	}
 }
 
-impl RenameBranchComponent {
+impl RenameBranchPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -99,7 +98,7 @@ impl RenameBranchComponent {
 				&strings::rename_branch_popup_msg(&env.key_config),
 				true,
 			)
-			.with_input_type(super::InputType::Singleline),
+			.with_input_type(InputType::Singleline),
 			branch_ref: None,
 			key_config: env.key_config.clone(),
 		}

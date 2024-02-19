@@ -1,12 +1,12 @@
-use super::{
-	utils, visibility_blocking, CommandBlocking, CommandInfo,
-	Component, DrawableComponent, EventState, FileRevOpen,
-	InspectCommitOpen,
-};
 use crate::{
 	app::Environment,
-	components::{utils::string_width_align, ScrollType},
+	components::{
+		string_width_align, time_to_string, visibility_blocking,
+		CommandBlocking, CommandInfo, Component, DrawableComponent,
+		EventState, ScrollType,
+	},
 	keys::{key_match, SharedKeyConfig},
+	popups::{FileRevOpen, InspectCommitOpen},
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	string_utils::tabs_to_spaces,
 	strings,
@@ -84,7 +84,7 @@ pub struct BlameFileOpen {
 	pub selection: Option<usize>,
 }
 
-pub struct BlameFileComponent {
+pub struct BlameFilePopup {
 	title: String,
 	theme: SharedTheme,
 	queue: Queue,
@@ -99,7 +99,7 @@ pub struct BlameFileComponent {
 	git_sender: Sender<AsyncGitNotification>,
 	repo: RepoPathRef,
 }
-impl DrawableComponent for BlameFileComponent {
+impl DrawableComponent for BlameFilePopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -192,7 +192,7 @@ impl DrawableComponent for BlameFileComponent {
 	}
 }
 
-impl Component for BlameFileComponent {
+impl Component for BlameFilePopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -329,7 +329,7 @@ impl Component for BlameFileComponent {
 	}
 }
 
-impl BlameFileComponent {
+impl BlameFilePopup {
 	///
 	pub fn new(env: &Environment, title: &str) -> Self {
 		Self {
@@ -648,7 +648,7 @@ impl BlameFileComponent {
 		);
 		let author = format!("{truncated_author:MAX_AUTHOR_WIDTH$}");
 		let time = blame_hunk.map_or_else(String::new, |hunk| {
-			utils::time_to_string(hunk.time, true)
+			time_to_string(hunk.time, true)
 		});
 
 		let file_blame = self.blame.result();

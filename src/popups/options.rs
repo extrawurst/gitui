@@ -1,14 +1,13 @@
-use super::{
-	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState,
-};
 use crate::{
 	app::Environment,
-	components::utils::string_width_align,
+	components::{
+		string_width_align, visibility_blocking, CommandBlocking,
+		CommandInfo, Component, DrawableComponent, EventState,
+	},
 	keys::{key_match, SharedKeyConfig},
 	options::SharedOptions,
 	queue::{InternalEvent, Queue},
-	strings::{self},
+	strings,
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
@@ -31,7 +30,7 @@ pub enum AppOption {
 	DiffInterhunkLines,
 }
 
-pub struct OptionsPopupComponent {
+pub struct OptionsPopup {
 	selection: AppOption,
 	queue: Queue,
 	visible: bool,
@@ -40,7 +39,7 @@ pub struct OptionsPopupComponent {
 	theme: SharedTheme,
 }
 
-impl OptionsPopupComponent {
+impl OptionsPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -256,7 +255,7 @@ impl OptionsPopupComponent {
 	}
 }
 
-impl DrawableComponent for OptionsPopupComponent {
+impl DrawableComponent for OptionsPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -290,7 +289,7 @@ impl DrawableComponent for OptionsPopupComponent {
 	}
 }
 
-impl Component for OptionsPopupComponent {
+impl Component for OptionsPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
