@@ -1,12 +1,10 @@
 mod blame_file;
-mod branchlist;
 mod changes;
 mod command;
 mod commit;
 mod commit_details;
 mod commitlist;
 mod compare_commits;
-mod create_branch;
 mod cred;
 mod diff;
 mod externaleditor;
@@ -21,7 +19,6 @@ mod options_popup;
 mod pull;
 mod push;
 mod push_tags;
-mod rename_branch;
 mod reset;
 mod reset_popup;
 mod revision_files;
@@ -37,14 +34,12 @@ mod utils;
 
 pub use self::status_tree::StatusTreeComponent;
 pub use blame_file::{BlameFileComponent, BlameFileOpen};
-pub use branchlist::BranchListComponent;
 pub use changes::ChangesComponent;
 pub use command::{CommandInfo, CommandText};
 pub use commit::CommitComponent;
 pub use commit_details::CommitDetailsComponent;
 pub use commitlist::CommitList;
 pub use compare_commits::CompareCommitsComponent;
-pub use create_branch::CreateBranchComponent;
 pub use diff::DiffComponent;
 pub use externaleditor::ExternalEditorComponent;
 pub use fetch::FetchComponent;
@@ -58,7 +53,6 @@ pub use options_popup::{AppOption, OptionsPopupComponent};
 pub use pull::PullComponent;
 pub use push::PushComponent;
 pub use push_tags::PushTagsComponent;
-pub use rename_branch::RenameBranchComponent;
 pub use reset::ConfirmComponent;
 pub use reset_popup::ResetPopupComponent;
 pub use revision_files::RevisionFilesComponent;
@@ -69,7 +63,9 @@ pub use syntax_text::SyntaxTextComponent;
 pub use tag_commit::TagCommitComponent;
 pub use taglist::TagListComponent;
 pub use textinput::{InputType, TextInputComponent};
-pub use utils::filetree::FileTreeItemKind;
+pub use utils::{
+	filetree::FileTreeItemKind, scroll_vertical::VerticalScroll,
+};
 
 use crate::ui::style::Theme;
 use anyhow::Result;
