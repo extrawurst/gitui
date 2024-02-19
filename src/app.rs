@@ -3,8 +3,7 @@ use crate::{
 	cmdbar::CommandBar,
 	components::{
 		command_pump, event_pump, CommandInfo, Component,
-		DrawableComponent, FuzzyFinderTarget, TagCommitPopup,
-		TagListPopup,
+		DrawableComponent, FuzzyFinderTarget,
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{key_match, KeyConfig, SharedKeyConfig},
@@ -18,6 +17,7 @@ use crate::{
 		LogSearchPopupPopup, MsgPopup, OptionsPopup, PullPopup,
 		PushPopup, PushTagsPopup, RenameBranchPopup, ResetPopup,
 		RevisionFilesPopup, StashMsgPopup, SubmodulesListPopup,
+		TagCommitPopup, TagListPopup,
 	},
 	queue::{
 		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,

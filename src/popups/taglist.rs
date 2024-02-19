@@ -1,6 +1,6 @@
-use super::{
-	utils, visibility_blocking, CommandBlocking, CommandInfo,
-	Component, DrawableComponent, EventState,
+use crate::components::{
+	time_to_string, visibility_blocking, CommandBlocking,
+	CommandInfo, Component, DrawableComponent, EventState,
 };
 use crate::{
 	app::Environment,
@@ -477,7 +477,7 @@ impl TagListPopup {
 				.style(self.theme.commit_author(false)),
 			Cell::from(tag.name.clone())
 				.style(self.theme.text(true, false)),
-			Cell::from(utils::time_to_string(tag.time, true))
+			Cell::from(time_to_string(tag.time, true))
 				.style(self.theme.commit_time(false)),
 			Cell::from(tag.author.clone())
 				.style(self.theme.commit_author(false)),

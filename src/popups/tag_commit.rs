@@ -1,7 +1,6 @@
-use super::{
-	textinput::TextInputComponent, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+use crate::components::{
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, InputType, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -135,7 +134,7 @@ impl TagCommitPopup {
 				&strings::tag_popup_name_msg(),
 				true,
 			)
-			.with_input_type(super::InputType::Singleline),
+			.with_input_type(InputType::Singleline),
 			commit_id: None,
 			key_config: env.key_config.clone(),
 			repo: env.repo.clone(),

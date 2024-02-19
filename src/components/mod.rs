@@ -7,8 +7,6 @@ mod diff;
 mod revision_files;
 mod status_tree;
 mod syntax_text;
-mod tag_commit;
-mod taglist;
 mod textinput;
 mod utils;
 
@@ -21,8 +19,6 @@ pub use cred::CredComponent;
 pub use diff::DiffComponent;
 pub use revision_files::RevisionFilesComponent;
 pub use syntax_text::SyntaxTextComponent;
-pub use tag_commit::TagCommitPopup;
-pub use taglist::TagListPopup;
 pub use textinput::{InputType, TextInputComponent};
 pub use utils::{
 	filetree::FileTreeItemKind, logitems::ItemBatch,

@@ -21,6 +21,8 @@ mod reset;
 mod revision_files;
 mod stashmsg;
 mod submodules;
+mod tag_commit;
+mod taglist;
 
 pub use blame_file::{BlameFileOpen, BlameFilePopup};
 pub use branchlist::BranchListPopup;
@@ -45,6 +47,8 @@ pub use reset::ResetPopup;
 pub use revision_files::{FileTreeOpen, RevisionFilesPopup};
 pub use stashmsg::StashMsgPopup;
 pub use submodules::SubmodulesListPopup;
+pub use tag_commit::TagCommitPopup;
+pub use taglist::TagListPopup;
 
 use crate::ui::style::Theme;
 use ratatui::{
