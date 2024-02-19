@@ -1,4 +1,4 @@
-use super::{
+use crate::components::{
 	command_pump, event_pump, visibility_blocking, CommandBlocking,
 	CommandInfo, CommitDetailsComponent, Component, DiffComponent,
 	DrawableComponent, EventState,
