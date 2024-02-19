@@ -1,4 +1,4 @@
-use crate::app::Environment;
+use crate::app::{self, Environment};
 use crate::keys::key_match;
 use crate::ui::Size;
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
 	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
+use arboard::Clipboard;
 use crossterm::event::Event;
 use ratatui::widgets::{Block, Borders};
 use ratatui::{
@@ -19,9 +20,11 @@ use ratatui::{
 	widgets::{Clear, Paragraph},
 	Frame,
 };
+
 use std::cell::Cell;
 use std::cell::OnceCell;
 use std::convert::From;
+
 use tui_textarea::{CursorMove, Input, Key, Scrolling, TextArea};
 
 ///
@@ -173,6 +176,9 @@ impl TextInputComponent {
 						.title(self.title.clone()),
 				);
 			};
+			app::ENABLE_HARD_EXIT
+				.store(false, std::sync::atomic::Ordering::Relaxed);
+
 			text_area
 		});
 	}
@@ -267,6 +273,7 @@ impl TextInputComponent {
 				ta.insert_char(*c);
 				true
 			}
+
 			Input {
 				key: Key::Tab,
 				ctrl: false,
@@ -686,6 +693,33 @@ impl Component for TextInputComponent {
 				{
 					ta.insert_newline();
 					true
+				} else if key_match(e, self.key_config.keys.edit_copy)
+				{
+					ta.copy();
+					let text = ta.yank_text();
+					if let Ok(mut clip) = Clipboard::new() {
+						let _ = clip.set_text(text);
+					}
+					false
+				} else if key_match(e, self.key_config.keys.edit_cut)
+				{
+					ta.cut();
+					let text = ta.yank_text();
+					if let Ok(mut clip) = Clipboard::new() {
+						let _ = clip.set_text(text);
+					}
+					true
+				} else if key_match(
+					e,
+					self.key_config.keys.edit_paste,
+				) {
+					if let Ok(mut clip) = Clipboard::new() {
+						if let Ok(text) = clip.get_text() {
+							ta.set_yank_text(text.clone());
+							ta.paste();
+						}
+					}
+					true
 				} else {
 					Self::process_inputs(ta, &input)
 				}
@@ -719,6 +753,8 @@ impl Component for TextInputComponent {
 	}
 
 	fn hide(&mut self) {
+		app::ENABLE_HARD_EXIT
+			.store(true, std::sync::atomic::Ordering::Relaxed);
 		self.textarea = None;
 	}
 

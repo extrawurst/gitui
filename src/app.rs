@@ -54,9 +54,10 @@ use std::{
 	cell::{Cell, RefCell},
 	path::{Path, PathBuf},
 	rc::Rc,
+	sync::atomic::AtomicBool,
 };
 use unicode_width::UnicodeWidthStr;
-
+pub static ENABLE_HARD_EXIT: AtomicBool = AtomicBool::new(true);
 #[derive(Clone)]
 pub enum QuitState {
 	None,
@@ -546,7 +547,10 @@ impl App {
 
 	fn check_hard_exit(&mut self, ev: &Event) -> bool {
 		if let Event::Key(e) = ev {
-			if key_match(e, self.key_config.keys.exit) {
+			if ENABLE_HARD_EXIT
+				.load(std::sync::atomic::Ordering::Relaxed)
+				&& key_match(e, self.key_config.keys.exit)
+			{
 				self.do_quit = QuitState::Close;
 				return true;
 			}
