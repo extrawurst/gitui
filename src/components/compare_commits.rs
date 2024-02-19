@@ -25,7 +25,7 @@ use ratatui::{
 	Frame,
 };
 
-pub struct CompareCommitsComponent {
+pub struct CompareCommitsPopup {
 	repo: RepoPathRef,
 	open_request: Option<InspectCommitOpen>,
 	diff: DiffComponent,
@@ -37,7 +37,7 @@ pub struct CompareCommitsComponent {
 	options: SharedOptions,
 }
 
-impl DrawableComponent for CompareCommitsComponent {
+impl DrawableComponent for CompareCommitsPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -71,7 +71,7 @@ impl DrawableComponent for CompareCommitsComponent {
 	}
 }
 
-impl Component for CompareCommitsComponent {
+impl Component for CompareCommitsPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -163,7 +163,7 @@ impl Component for CompareCommitsComponent {
 	}
 }
 
-impl CompareCommitsComponent {
+impl CompareCommitsPopup {
 	accessors!(self, [diff, details]);
 
 	///

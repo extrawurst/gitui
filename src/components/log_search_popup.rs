@@ -41,7 +41,7 @@ enum PopupMode {
 	JumpCommitSha,
 }
 
-pub struct LogSearchPopupComponent {
+pub struct LogSearchPopupPopup {
 	repo: RepoPathRef,
 	queue: Queue,
 	visible: bool,
@@ -54,7 +54,7 @@ pub struct LogSearchPopupComponent {
 	jump_commit_id: Option<CommitId>,
 }
 
-impl LogSearchPopupComponent {
+impl LogSearchPopupPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		let mut find_text =
@@ -524,7 +524,7 @@ impl LogSearchPopupComponent {
 	}
 }
 
-impl DrawableComponent for LogSearchPopupComponent {
+impl DrawableComponent for LogSearchPopupPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -545,7 +545,7 @@ impl DrawableComponent for LogSearchPopupComponent {
 	}
 }
 
-impl Component for LogSearchPopupComponent {
+impl Component for LogSearchPopupPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

@@ -1,8 +1,8 @@
 use crate::{
 	app::Environment,
 	components::{
-		cred::CredComponent, visibility_blocking, CommandBlocking,
-		CommandInfo, Component, DrawableComponent, EventState,
+		visibility_blocking, CommandBlocking, CommandInfo, Component,
+		CredComponent, DrawableComponent, EventState,
 	},
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, Queue},
@@ -49,7 +49,7 @@ impl PushComponentModifier {
 }
 
 ///
-pub struct PushComponent {
+pub struct PushPopup {
 	repo: RepoPathRef,
 	modifier: PushComponentModifier,
 	visible: bool,
@@ -64,7 +64,7 @@ pub struct PushComponent {
 	input_cred: CredComponent,
 }
 
-impl PushComponent {
+impl PushPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -226,7 +226,7 @@ impl PushComponent {
 	}
 }
 
-impl DrawableComponent for PushComponent {
+impl DrawableComponent for PushPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -267,7 +267,7 @@ impl DrawableComponent for PushComponent {
 	}
 }
 
-impl Component for PushComponent {
+impl Component for PushPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

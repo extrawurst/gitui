@@ -39,7 +39,7 @@ use ratatui::{
 use ui::style::SharedTheme;
 
 ///
-pub struct TagListComponent {
+pub struct TagListPopup {
 	repo: RepoPathRef,
 	theme: SharedTheme,
 	queue: Queue,
@@ -54,7 +54,7 @@ pub struct TagListComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for TagListComponent {
+impl DrawableComponent for TagListPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -139,7 +139,7 @@ impl DrawableComponent for TagListComponent {
 	}
 }
 
-impl Component for TagListComponent {
+impl Component for TagListPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -291,7 +291,7 @@ impl Component for TagListComponent {
 	}
 }
 
-impl TagListComponent {
+impl TagListPopup {
 	pub fn new(env: &Environment) -> Self {
 		Self {
 			theme: env.theme.clone(),

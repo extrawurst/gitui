@@ -84,7 +84,7 @@ pub struct BlameFileOpen {
 	pub selection: Option<usize>,
 }
 
-pub struct BlameFileComponent {
+pub struct BlameFilePopup {
 	title: String,
 	theme: SharedTheme,
 	queue: Queue,
@@ -99,7 +99,7 @@ pub struct BlameFileComponent {
 	git_sender: Sender<AsyncGitNotification>,
 	repo: RepoPathRef,
 }
-impl DrawableComponent for BlameFileComponent {
+impl DrawableComponent for BlameFilePopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -192,7 +192,7 @@ impl DrawableComponent for BlameFileComponent {
 	}
 }
 
-impl Component for BlameFileComponent {
+impl Component for BlameFilePopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -329,7 +329,7 @@ impl Component for BlameFileComponent {
 	}
 }
 
-impl BlameFileComponent {
+impl BlameFilePopup {
 	///
 	pub fn new(env: &Environment, title: &str) -> Self {
 		Self {

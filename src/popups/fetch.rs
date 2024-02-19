@@ -1,8 +1,8 @@
 use crate::{
 	app::Environment,
 	components::{
-		cred::CredComponent, visibility_blocking, CommandBlocking,
-		CommandInfo, Component, DrawableComponent, EventState,
+		visibility_blocking, CommandBlocking, CommandInfo, Component,
+		CredComponent, DrawableComponent, EventState,
 	},
 	keys::SharedKeyConfig,
 	queue::{InternalEvent, NeedsUpdate, Queue},
@@ -32,7 +32,7 @@ use ratatui::{
 };
 
 ///
-pub struct FetchComponent {
+pub struct FetchPopup {
 	repo: RepoPathRef,
 	visible: bool,
 	async_fetch: AsyncSingleJob<AsyncFetchJob>,
@@ -44,7 +44,7 @@ pub struct FetchComponent {
 	input_cred: CredComponent,
 }
 
-impl FetchComponent {
+impl FetchPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -116,7 +116,7 @@ impl FetchComponent {
 	}
 }
 
-impl DrawableComponent for FetchComponent {
+impl DrawableComponent for FetchPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -151,7 +151,7 @@ impl DrawableComponent for FetchComponent {
 	}
 }
 
-impl Component for FetchComponent {
+impl Component for FetchPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

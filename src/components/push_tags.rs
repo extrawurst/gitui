@@ -31,7 +31,7 @@ use ratatui::{
 };
 
 ///
-pub struct PushTagsComponent {
+pub struct PushTagsPopup {
 	repo: RepoPathRef,
 	visible: bool,
 	git_push: AsyncPushTags,
@@ -43,7 +43,7 @@ pub struct PushTagsComponent {
 	input_cred: CredComponent,
 }
 
-impl PushTagsComponent {
+impl PushTagsPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -157,7 +157,7 @@ impl PushTagsComponent {
 	}
 }
 
-impl DrawableComponent for PushTagsComponent {
+impl DrawableComponent for PushTagsPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -194,7 +194,7 @@ impl DrawableComponent for PushTagsComponent {
 	}
 }
 
-impl Component for PushTagsComponent {
+impl Component for PushTagsPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

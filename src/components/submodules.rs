@@ -31,7 +31,7 @@ use ui::style::SharedTheme;
 use unicode_truncate::UnicodeTruncateStr;
 
 ///
-pub struct SubmodulesListComponent {
+pub struct SubmodulesListPopup {
 	repo: RepoPathRef,
 	repo_path: String,
 	queue: Queue,
@@ -45,7 +45,7 @@ pub struct SubmodulesListComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for SubmodulesListComponent {
+impl DrawableComponent for SubmodulesListPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -103,7 +103,7 @@ impl DrawableComponent for SubmodulesListComponent {
 	}
 }
 
-impl Component for SubmodulesListComponent {
+impl Component for SubmodulesListPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -245,7 +245,7 @@ impl Component for SubmodulesListComponent {
 	}
 }
 
-impl SubmodulesListComponent {
+impl SubmodulesListPopup {
 	pub fn new(env: &Environment) -> Self {
 		Self {
 			submodules: Vec::new(),

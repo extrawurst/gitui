@@ -15,7 +15,7 @@ use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use ratatui::{backend::Backend, layout::Rect, Frame};
 
-pub struct StashMsgComponent {
+pub struct StashMsgPopup {
 	repo: RepoPathRef,
 	options: StashingOptions,
 	input: TextInputComponent,
@@ -23,7 +23,7 @@ pub struct StashMsgComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for StashMsgComponent {
+impl DrawableComponent for StashMsgPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -35,7 +35,7 @@ impl DrawableComponent for StashMsgComponent {
 	}
 }
 
-impl Component for StashMsgComponent {
+impl Component for StashMsgPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -124,7 +124,7 @@ impl Component for StashMsgComponent {
 	}
 }
 
-impl StashMsgComponent {
+impl StashMsgPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {

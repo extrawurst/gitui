@@ -1,4 +1,3 @@
-use super::PushComponent;
 use crate::{
 	app::Environment,
 	components::{
@@ -6,6 +5,7 @@ use crate::{
 		CommandInfo, Component, DrawableComponent, EventState,
 	},
 	keys::SharedKeyConfig,
+	popups::PushPopup,
 	queue::{Action, InternalEvent, Queue},
 	strings, try_or_popup,
 	ui::{self, style::SharedTheme},
@@ -33,7 +33,7 @@ use ratatui::{
 };
 
 ///
-pub struct PullComponent {
+pub struct PullPopup {
 	repo: RepoPathRef,
 	visible: bool,
 	git_fetch: AsyncPull,
@@ -46,7 +46,7 @@ pub struct PullComponent {
 	input_cred: CredComponent,
 }
 
-impl PullComponent {
+impl PullPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -197,7 +197,7 @@ impl PullComponent {
 	}
 }
 
-impl DrawableComponent for PullComponent {
+impl DrawableComponent for PullPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -205,7 +205,7 @@ impl DrawableComponent for PullComponent {
 	) -> Result<()> {
 		if self.visible {
 			let (state, progress) =
-				PushComponent::get_progress(&self.progress);
+				PushPopup::get_progress(&self.progress);
 
 			let area = ui::centered_rect_absolute(30, 3, f.size());
 
@@ -234,7 +234,7 @@ impl DrawableComponent for PullComponent {
 	}
 }
 
-impl Component for PullComponent {
+impl Component for PullPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

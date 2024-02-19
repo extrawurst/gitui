@@ -17,7 +17,7 @@ use std::borrow::Cow;
 use ui::style::SharedTheme;
 
 ///
-pub struct ConfirmComponent {
+pub struct ConfirmPopup {
 	target: Option<Action>,
 	visible: bool,
 	queue: Queue,
@@ -25,7 +25,7 @@ pub struct ConfirmComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for ConfirmComponent {
+impl DrawableComponent for ConfirmPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -51,7 +51,7 @@ impl DrawableComponent for ConfirmComponent {
 	}
 }
 
-impl Component for ConfirmComponent {
+impl Component for ConfirmPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -102,7 +102,7 @@ impl Component for ConfirmComponent {
 	}
 }
 
-impl ConfirmComponent {
+impl ConfirmPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {

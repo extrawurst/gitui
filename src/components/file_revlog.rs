@@ -50,7 +50,7 @@ impl FileRevOpen {
 }
 
 ///
-pub struct FileRevlogComponent {
+pub struct FileRevlogPopup {
 	git_log: Option<AsyncLog>,
 	git_diff: AsyncDiff,
 	theme: SharedTheme,
@@ -69,7 +69,7 @@ pub struct FileRevlogComponent {
 	current_height: std::cell::Cell<usize>,
 }
 
-impl FileRevlogComponent {
+impl FileRevlogPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -464,7 +464,7 @@ impl FileRevlogComponent {
 	}
 }
 
-impl DrawableComponent for FileRevlogComponent {
+impl DrawableComponent for FileRevlogPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -498,7 +498,7 @@ impl DrawableComponent for FileRevlogComponent {
 	}
 }
 
-impl Component for FileRevlogComponent {
+impl Component for FileRevlogPopup {
 	fn event(&mut self, event: &Event) -> Result<EventState> {
 		if self.is_visible() {
 			if event_pump(
