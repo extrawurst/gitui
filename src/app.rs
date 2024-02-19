@@ -6,7 +6,7 @@ use crate::{
 		CompareCommitsPopup, Component, ConfirmPopup,
 		DrawableComponent, ExternalEditorPopup, FuzzyFinderTarget,
 		HelpPopup, MsgPopup, PullPopup, PushTagsPopup, StashMsgPopup,
-		SubmodulesListPopup, TagCommitPopup, TagListPopup,
+		TagCommitPopup, TagListPopup,
 	},
 	input::{Input, InputEvent, InputState},
 	keys::{key_match, KeyConfig, SharedKeyConfig},
@@ -17,6 +17,7 @@ use crate::{
 		FetchPopup, FileRevlogPopup, FuzzyFindPopup,
 		InspectCommitPopup, LogSearchPopupPopup, OptionsPopup,
 		PushPopup, RenameBranchPopup, ResetPopup, RevisionFilesPopup,
+		SubmodulesListPopup,
 	},
 	queue::{
 		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,

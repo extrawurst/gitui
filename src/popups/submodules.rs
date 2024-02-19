@@ -1,10 +1,9 @@
-use super::{
-	utils::scroll_vertical::VerticalScroll, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, ScrollType,
-};
 use crate::{
 	app::Environment,
+	components::{
+		visibility_blocking, CommandBlocking, CommandInfo, Component,
+		DrawableComponent, EventState, ScrollType, VerticalScroll,
+	},
 	keys::{key_match, SharedKeyConfig},
 	queue::{InternalEvent, NeedsUpdate, Queue},
 	strings, try_or_popup,

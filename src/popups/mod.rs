@@ -11,6 +11,7 @@ mod push;
 mod rename_branch;
 mod reset;
 mod revision_files;
+mod submodules;
 
 pub use branchlist::BranchListPopup;
 pub use commit::CommitPopup;
@@ -25,3 +26,4 @@ pub use push::PushPopup;
 pub use rename_branch::RenameBranchPopup;
 pub use reset::ResetPopup;
 pub use revision_files::{FileTreeOpen, RevisionFilesPopup};
+pub use submodules::SubmodulesListPopup;
