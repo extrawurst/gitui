@@ -632,7 +632,15 @@ impl DrawableComponent for TextInputComponent {
 							area,
 						)
 					}
-					_ => ui::centered_rect_absolute(32, 3, f.size()),
+					_ => {
+						let area = ui::centered_rect(60, 1, f.size());
+
+						ui::rect_inside(
+							Size::new(10, 3),
+							Size::new(f.size().width, 3),
+							area,
+						)
+					}
 				}
 			};
 
