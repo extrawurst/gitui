@@ -208,7 +208,7 @@ impl Component for BranchListPopup {
 			out.push(CommandInfo::new(
 				strings::commands::fetch_remotes(&self.key_config),
 				self.has_remotes,
-				!self.local,
+				true,
 			));
 
 			out.push(CommandInfo::new(
@@ -290,7 +290,7 @@ impl Component for BranchListPopup {
 					));
 				}
 			} else if key_match(e, self.key_config.keys.fetch)
-				&& !self.local && self.has_remotes
+				&& self.has_remotes
 			{
 				self.queue.push(InternalEvent::FetchRemotes);
 			} else if key_match(
@@ -396,7 +396,7 @@ impl BranchListPopup {
 	}
 
 	fn check_remotes(&mut self) {
-		if !self.local && self.visible {
+		if self.visible {
 			self.has_remotes =
 				get_branches_info(&self.repo.borrow(), false)
 					.map(|branches| !branches.is_empty())
