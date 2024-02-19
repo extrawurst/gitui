@@ -1,6 +1,6 @@
-use super::{
+use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, TextInputComponent,
+	DrawableComponent, EventState, InputType, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -59,7 +59,7 @@ impl LogSearchPopupPopup {
 	pub fn new(env: &Environment) -> Self {
 		let mut find_text =
 			TextInputComponent::new(env, "", "search text", false)
-				.with_input_type(super::InputType::Singleline);
+				.with_input_type(InputType::Singleline);
 		find_text.embed();
 		find_text.enabled(true);
 

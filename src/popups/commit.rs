@@ -1,7 +1,7 @@
-use super::{
-	textinput::TextInputComponent, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, ExternalEditorPopup,
+use crate::components::{
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, ExternalEditorPopup,
+	TextInputComponent,
 };
 use crate::{
 	app::Environment,
