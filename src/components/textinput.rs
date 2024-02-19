@@ -715,7 +715,7 @@ impl Component for TextInputComponent {
 				) {
 					if let Ok(mut clip) = Clipboard::new() {
 						if let Ok(text) = clip.get_text() {
-							ta.set_yank_text(text.clone());
+							ta.set_yank_text(text);
 							ta.paste();
 						}
 					}
