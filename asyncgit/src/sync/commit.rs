@@ -113,35 +113,40 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 
 	let config = repo.config()?;
 	let parents = parents.iter().collect::<Vec<_>>();
-	if let Some(sk) = fetch_ssh_key(&config) {
-		let buffer = repo.commit_create_buffer(
-			&signature,
-			&signature,
-			msg,
-			&tree,
-			parents.as_slice(),
-		)?;
-		let content = String::from_utf8(buffer.to_vec())?;
-		let sig = sk
-			.sign("git", HashAlg::Sha256, &buffer)?
-			.to_pem(LineEnding::LF)?;
-		let commit_id = repo.commit_signed(&content, &sig, None)?;
-		if let Ok(mut head) = repo.head() {
-			head.set_target(commit_id, msg)?;
-		} else {
-			let default_branch_name = config
-				.get_str("init.defaultBranch")
-				.unwrap_or("master");
-			repo.reference(
-				&format!("refs/heads/{default_branch_name}"),
-				commit_id,
-				true,
+	let id = match (
+		config.get_entry("gpg.format").ok(),
+		fetch_ssh_key(&config),
+	) {
+		(Some(f), Some(sk)) if f.value() == Some("ssh") => {
+			let buffer = repo.commit_create_buffer(
+				&signature,
+				&signature,
 				msg,
+				&tree,
+				parents.as_slice(),
 			)?;
+			let content = String::from_utf8(buffer.to_vec())?;
+			let sig = sk
+				.sign("git", HashAlg::Sha256, &buffer)?
+				.to_pem(LineEnding::LF)?;
+			let commit_id =
+				repo.commit_signed(&content, &sig, None)?;
+			if let Ok(mut head) = repo.head() {
+				head.set_target(commit_id, msg)?;
+			} else {
+				let default_branch_name = config
+					.get_str("init.defaultBranch")
+					.unwrap_or("master");
+				repo.reference(
+					&format!("refs/heads/{default_branch_name}"),
+					commit_id,
+					true,
+					msg,
+				)?;
+			}
+			Ok(commit_id.into())
 		}
-		Ok(commit_id.into())
-	} else {
-		Ok(repo
+		_ => Ok(repo
 			.commit(
 				Some("HEAD"),
 				&signature,
@@ -150,8 +155,9 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 				&tree,
 				parents.as_slice(),
 			)?
-			.into())
-	}
+			.into()),
+	};
+	id
 }
 
 /// Tag a commit.
