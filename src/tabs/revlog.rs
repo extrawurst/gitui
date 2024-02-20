@@ -542,7 +542,7 @@ impl Component for Revlog {
 					return Ok(EventState::Consumed);
 				} else if key_match(
 					k,
-					self.key_config.keys.log_reset_comit,
+					self.key_config.keys.log_reset_commit,
 				) && !self.is_search_pending()
 				{
 					return self.selected_commit().map_or(
@@ -556,7 +556,7 @@ impl Component for Revlog {
 					);
 				} else if key_match(
 					k,
-					self.key_config.keys.log_reword_comit,
+					self.key_config.keys.log_reword_commit,
 				) && !self.is_search_pending()
 				{
 					return self.selected_commit().map_or(

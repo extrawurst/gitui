@@ -119,7 +119,7 @@ impl StatusTreeComponent {
 	}
 
 	///
-	pub fn is_file_seleted(&self) -> bool {
+	pub fn is_file_selected(&self) -> bool {
 		self.tree.selected_item().map_or(false, |item| {
 			match item.kind {
 				FileTreeItemKind::File(_) => true,

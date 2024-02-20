@@ -254,7 +254,7 @@ mod tests {
 			&format!("git remote add origin {remote_path}")[..],
 		);
 
-		//NOTE: aparently remotes are not chronolically sorted but alphabetically
+		//NOTE: apparently remotes are not chronolically sorted but alphabetically
 		let remotes = get_remotes(repo_path).unwrap();
 
 		assert_eq!(

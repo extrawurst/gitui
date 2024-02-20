@@ -83,7 +83,7 @@ impl DrawableComponent for TagListPopup {
 				Constraint::Length(10),
 				// author width
 				Constraint::Length(19),
-				// attachement
+				// attachment
 				Constraint::Length(1),
 				// commit id
 				Constraint::Percentage(100),
@@ -443,7 +443,7 @@ impl TagListPopup {
 	///
 	fn get_row(&self, tag: &TagWithMetadata) -> Row {
 		const UPSTREAM_SYMBOL: &str = "\u{2191}";
-		const ATTACHEMENT_SYMBOL: &str = "@";
+		const ATTACHMENT_SYMBOL: &str = "@";
 		const EMPTY_SYMBOL: &str = " ";
 
 		let is_tag_missing_on_remote = self
@@ -462,7 +462,7 @@ impl TagListPopup {
 		};
 
 		let has_attachement_str = if tag.annotation.is_some() {
-			ATTACHEMENT_SYMBOL
+			ATTACHMENT_SYMBOL
 		} else {
 			EMPTY_SYMBOL
 		};

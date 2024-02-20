@@ -49,7 +49,7 @@ fn get_current_branch(
 /// Changes the commit message of a commit with a specified oid
 ///
 /// While this function is most commonly associated with doing a
-/// reword opperation in an interactive rebase, that is not how it
+/// reword operation in an interactive rebase, that is not how it
 /// is implemented in git2rs
 ///
 /// This is dangerous if it errors, as the head will be detached so this should

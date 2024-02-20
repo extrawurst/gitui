@@ -212,7 +212,7 @@ Bugfix followup release - check `0.22.0` notes for more infos!
 ### Added
 * stack popups ([#846](https://github.com/extrawurst/gitui/issues/846))
 * file history log [[@cruessler](https://github.com/cruessler)] ([#381](https://github.com/extrawurst/gitui/issues/381))
-* termux support on andriod [[@PeroSar](https://github.com/PeroSar)] ([#1139](https://github.com/extrawurst/gitui/issues/1139))
+* termux support on android [[@PeroSar](https://github.com/PeroSar)] ([#1139](https://github.com/extrawurst/gitui/issues/1139))
 * use `GIT_DIR` and `GIT_WORK_DIR` from environment if set ([#1191](https://github.com/extrawurst/gitui/pull/1191))
 * new [FAQ](./FAQ.md)s page
 * mention macports in install section [[@fs111](https://github.com/fs111)]([#1237](https://github.com/extrawurst/gitui/pull/1237))
@@ -648,7 +648,7 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 - min size for relative popups on small terminals ([#179](https://github.com/extrawurst/gitui/issues/179))
 - fix crash on resizing terminal to very small width ([#198](https://github.com/extrawurst/gitui/issues/198))
 - fix broken tags when using a different internal representation ([#206](https://github.com/extrawurst/gitui/issues/206))
-- tags are not cleanly seperated in details view ([#212](https://github.com/extrawurst/gitui/issues/212))
+- tags are not cleanly separated in details view ([#212](https://github.com/extrawurst/gitui/issues/212))
 
 ## [0.8.1] - 2020-07-07
 
@@ -814,7 +814,7 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 ### Changed
 
 - show longer commit messages in log view
-- introduce propper error handling in `asyncgit` [[@MCord](https://github.com/MCord)]([#53](https://github.com/extrawurst/gitui/issues/53))
+- introduce proper error handling in `asyncgit` [[@MCord](https://github.com/MCord)]([#53](https://github.com/extrawurst/gitui/issues/53))
 - better error message when trying to run outside of a valid git repo ([#56](https://github.com/extrawurst/gitui/issues/56))
 - improve ctrl+c handling so it is checked first and no component needs to worry of blocking it
 

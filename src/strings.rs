@@ -1356,7 +1356,7 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Reset [{}]",
-				key_config.get_hint(key_config.keys.log_reset_comit),
+				key_config.get_hint(key_config.keys.log_reset_commit),
 			),
 			"reset to commit",
 			CMD_GROUP_LOG,
@@ -1368,7 +1368,8 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Reword [{}]",
-				key_config.get_hint(key_config.keys.log_reword_comit),
+				key_config
+					.get_hint(key_config.keys.log_reword_commit),
 			),
 			"reword commit message",
 			CMD_GROUP_LOG,

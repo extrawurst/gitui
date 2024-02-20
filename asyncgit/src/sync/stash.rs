@@ -213,7 +213,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_stash_without_2nd_parent() -> Result<()> {
+	fn test_stash_without_second_parent() -> Result<()> {
 		let file_path1 = Path::new("file1.txt");
 		let (_td, repo) = repo_init()?;
 		let root = repo.path().parent().unwrap();

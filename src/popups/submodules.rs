@@ -318,10 +318,10 @@ impl SubmodulesListPopup {
 
 	fn set_selection(&mut self, selection: u16) -> Result<()> {
 		let num_entriess: u16 = self.submodules.len().try_into()?;
-		let num_entriess = num_entriess.saturating_sub(1);
+		let num_entries = num_entriess.saturating_sub(1);
 
-		let selection = if selection > num_entriess {
-			num_entriess
+		let selection = if selection > num_entries {
+			num_entries
 		} else {
 			selection
 		};

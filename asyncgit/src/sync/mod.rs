@@ -318,7 +318,7 @@ mod tests {
 		eprintln!("\n----\n{cmd}");
 	}
 
-	/// helper to fetch commmit details using log walker
+	/// helper to fetch commit details using log walker
 	pub fn get_commit_ids(
 		r: &Repository,
 		max_count: usize,

@@ -5,7 +5,7 @@ use std::borrow::Cow;
 pub enum Detail {
 	Author,
 	Date,
-	Commiter,
+	Committer,
 	Sha,
 	Message,
 }
@@ -23,7 +23,7 @@ pub fn style_detail<'a>(
 			Cow::from(strings::commit::details_date()),
 			theme.text(false, false),
 		),
-		Detail::Commiter => Span::styled(
+		Detail::Committer => Span::styled(
 			Cow::from(strings::commit::details_committer()),
 			theme.text(false, false),
 		),
