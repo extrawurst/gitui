@@ -3,7 +3,7 @@ use crate::{
 	error::Result,
 	sync::{repository::repo, utils::get_head_repo},
 };
-use git2::{ErrorCode, ObjectType, Repository, Signature};
+use git2::{Config, ErrorCode, ObjectType, Repository, Signature};
 use scopetime::scope_time;
 use ssh_key::{HashAlg, LineEnding, PrivateKey};
 use std::path::PathBuf;
@@ -62,43 +62,43 @@ pub(crate) fn signature_allow_undefined_name(
 	signature
 }
 
+fn fetch_ssh_key(config: &Config) -> Option<PrivateKey> {
+	config
+		.get_entry("user.signingKey")
+		.ok()
+		.and_then(|entry| {
+			entry.value().map(|key_path| {
+				key_path.strip_prefix('~').map_or_else(
+					|| Some(PathBuf::from(&key_path)),
+					|ssh_key_path| {
+						dirs::home_dir().map(|home| {
+							home.join(
+								ssh_key_path
+									.strip_prefix('/')
+									.unwrap_or(ssh_key_path),
+							)
+						})
+					},
+				)
+			})
+		})
+		.and_then(|key_file| {
+			key_file
+				.and_then(|mut p| {
+					p.set_extension("");
+					std::fs::read(p).ok()
+				})
+				.and_then(|bytes| {
+					PrivateKey::from_openssh(bytes).ok()
+				})
+		})
+}
+
 /// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
 pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 	scope_time!("commit");
 
 	let repo = repo(repo_path)?;
-	let ssh_secret_key = {
-		let config = repo.config()?;
-		config
-			.get_entry("user.signingKey")
-			.ok()
-			.and_then(|entry| {
-				entry.value().map(|key_path| {
-					key_path.strip_prefix('~').map_or_else(
-						|| Some(PathBuf::from(&key_path)),
-						|ssh_key_path| {
-							dirs::home_dir().map(|home| {
-								home.join(
-									ssh_key_path
-										.strip_prefix('/')
-										.unwrap_or(ssh_key_path),
-								)
-							})
-						},
-					)
-				})
-			})
-			.and_then(|key_file| {
-				key_file
-					.and_then(|mut p| {
-						p.set_extension("");
-						std::fs::read(p).ok()
-					})
-					.and_then(|bytes| {
-						PrivateKey::from_openssh(bytes).ok()
-					})
-			})
-	};
 
 	let signature = signature_allow_undefined_name(&repo)?;
 	let mut index = repo.index()?;
@@ -111,8 +111,9 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 		Vec::new()
 	};
 
+	let config = repo.config()?;
 	let parents = parents.iter().collect::<Vec<_>>();
-	if let Some(sk) = ssh_secret_key {
+	if let Some(sk) = fetch_ssh_key(&config) {
 		let buffer = repo.commit_create_buffer(
 			&signature,
 			&signature,
@@ -128,7 +129,6 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 		if let Ok(mut head) = repo.head() {
 			head.set_target(commit_id, msg)?;
 		} else {
-			let config = repo.config()?;
 			let default_branch_name = config
 				.get_str("init.defaultBranch")
 				.unwrap_or("master");
