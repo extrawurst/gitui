@@ -401,7 +401,7 @@ impl Revlog {
 	}
 
 	fn can_start_search(&self) -> bool {
-		!self.git_log.is_pending()
+		!self.git_log.is_pending() && !self.is_search_pending()
 	}
 }
 
@@ -466,8 +466,11 @@ impl Component for Revlog {
 				) {
 					if self.is_search_pending() {
 						self.cancel_search();
-						return Ok(EventState::Consumed);
+					} else if self.can_close_search() {
+						self.list.set_highlighting(None);
+						self.search = LogSearch::Off;
 					}
+					return Ok(EventState::Consumed);
 				} else if key_match(k, self.key_config.keys.copy) {
 					try_or_popup!(
 						self,
@@ -500,13 +503,15 @@ impl Component for Revlog {
 				} else if key_match(
 					k,
 					self.key_config.keys.select_branch,
-				) {
+				) && !self.is_search_pending()
+				{
 					self.queue.push(InternalEvent::SelectBranch);
 					return Ok(EventState::Consumed);
 				} else if key_match(
 					k,
 					self.key_config.keys.status_reset_item,
-				) {
+				) && !self.is_search_pending()
+				{
 					try_or_popup!(
 						self,
 						"revert error:",
@@ -517,7 +522,8 @@ impl Component for Revlog {
 				} else if key_match(
 					k,
 					self.key_config.keys.open_file_tree,
-				) {
+				) && !self.is_search_pending()
+				{
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -537,7 +543,8 @@ impl Component for Revlog {
 				} else if key_match(
 					k,
 					self.key_config.keys.log_reset_comit,
-				) {
+				) && !self.is_search_pending()
+				{
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -550,7 +557,8 @@ impl Component for Revlog {
 				} else if key_match(
 					k,
 					self.key_config.keys.log_reword_comit,
-				) {
+				) && !self.is_search_pending()
+				{
 					return self.selected_commit().map_or(
 						Ok(EventState::NotConsumed),
 						|id| {
@@ -570,6 +578,7 @@ impl Component for Revlog {
 					k,
 					self.key_config.keys.compare_commits,
 				) && self.list.marked_count() > 0
+					&& !self.is_search_pending()
 				{
 					if self.list.marked_count() == 1 {
 						// compare against head
@@ -615,7 +624,9 @@ impl Component for Revlog {
 			CommandInfo::new(
 				strings::commands::log_close_search(&self.key_config),
 				true,
-				(self.visible && self.can_close_search())
+				(self.visible
+					&& (self.can_close_search()
+						|| self.is_search_pending()))
 					|| force_all,
 			)
 			.order(order::PRIORITY),
@@ -639,20 +650,24 @@ impl Component for Revlog {
 				&self.key_config,
 			),
 			true,
-			self.visible || force_all,
+			(self.visible && !self.is_search_pending()) || force_all,
 		));
 
 		out.push(CommandInfo::new(
 			strings::commands::compare_with_head(&self.key_config),
 			self.list.marked_count() == 1,
-			(self.visible && self.list.marked_count() <= 1)
+			(self.visible
+				&& !self.is_search_pending()
+				&& self.list.marked_count() <= 1)
 				|| force_all,
 		));
 
 		out.push(CommandInfo::new(
 			strings::commands::compare_commits(&self.key_config),
 			true,
-			(self.visible && self.list.marked_count() == 2)
+			(self.visible
+				&& !self.is_search_pending()
+				&& self.list.marked_count() == 2)
 				|| force_all,
 		));
 
@@ -689,24 +704,24 @@ impl Component for Revlog {
 		out.push(CommandInfo::new(
 			strings::commands::inspect_file_tree(&self.key_config),
 			self.selected_commit().is_some(),
-			self.visible || force_all,
+			(self.visible && !self.is_search_pending()) || force_all,
 		));
 
 		out.push(CommandInfo::new(
 			strings::commands::revert_commit(&self.key_config),
 			self.selected_commit().is_some(),
-			self.visible || force_all,
+			(self.visible && !self.is_search_pending()) || force_all,
 		));
 
 		out.push(CommandInfo::new(
 			strings::commands::log_reset_commit(&self.key_config),
 			self.selected_commit().is_some(),
-			self.visible || force_all,
+			(self.visible && !self.is_search_pending()) || force_all,
 		));
 		out.push(CommandInfo::new(
 			strings::commands::log_reword_commit(&self.key_config),
 			self.selected_commit().is_some(),
-			self.visible || force_all,
+			(self.visible && !self.is_search_pending()) || force_all,
 		));
 		out.push(CommandInfo::new(
 			strings::commands::log_find_commit(&self.key_config),
