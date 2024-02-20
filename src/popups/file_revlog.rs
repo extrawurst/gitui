@@ -22,7 +22,6 @@ use chrono::{DateTime, Local};
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	text::{Line, Span, Text},
 	widgets::{Block, Borders, Cell, Clear, Row, Table, TableState},
@@ -377,7 +376,7 @@ impl FileRevlogPopup {
 		selection
 	}
 
-	fn draw_revlog<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
+	fn draw_revlog(&self, f: &mut Frame, area: Rect) {
 		let constraints = [
 			// type of change: (A)dded, (M)odified, (D)eleted
 			Constraint::Length(1),
@@ -464,11 +463,7 @@ impl FileRevlogPopup {
 }
 
 impl DrawableComponent for FileRevlogPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.visible {
 			let percentages = if self.diff.focused() {
 				(0, 100)

@@ -27,7 +27,6 @@ use asyncgit::{
 };
 use crossterm::event::{Event, KeyEvent};
 use ratatui::{
-	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
@@ -57,11 +56,7 @@ pub struct BranchListPopup {
 }
 
 impl DrawableComponent for BranchListPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.is_visible() {
 			const PERCENT_SIZE: Size = Size::new(80, 50);
 			const MIN_SIZE: Size = Size::new(60, 20);
@@ -694,7 +689,7 @@ impl BranchListPopup {
 		Ok(())
 	}
 
-	fn draw_tabs<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+	fn draw_tabs(&self, f: &mut Frame, r: Rect) {
 		let tabs = [Span::raw("Local"), Span::raw("Remote")]
 			.iter()
 			.cloned()
@@ -716,11 +711,7 @@ impl BranchListPopup {
 		);
 	}
 
-	fn draw_list<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		r: Rect,
-	) -> Result<()> {
+	fn draw_list(&self, f: &mut Frame, r: Rect) -> Result<()> {
 		let height_in_lines = r.height as usize;
 		self.current_height.set(height_in_lines.try_into()?);
 

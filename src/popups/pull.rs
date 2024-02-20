@@ -25,7 +25,6 @@ use asyncgit::{
 
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::Rect,
 	text::Span,
 	widgets::{Block, BorderType, Borders, Clear, Gauge},
@@ -198,11 +197,7 @@ impl PullPopup {
 }
 
 impl DrawableComponent for PullPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.visible {
 			let (state, progress) =
 				PushPopup::get_progress(&self.progress);

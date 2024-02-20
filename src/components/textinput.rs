@@ -14,7 +14,6 @@ use anyhow::Result;
 use crossterm::event::Event;
 use ratatui::widgets::{Block, Borders};
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Rect},
 	widgets::{Clear, Paragraph},
 	Frame,
@@ -197,7 +196,7 @@ impl TextInputComponent {
 		}
 	}
 
-	fn draw_char_count<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+	fn draw_char_count(&self, f: &mut Frame, r: Rect) {
 		let count = self.get_text().len();
 		if count > 0 {
 			let w = Paragraph::new(format!("[{count} chars]"))
@@ -611,29 +610,27 @@ impl TextInputComponent {
 }
 
 impl DrawableComponent for TextInputComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		// this should always be true since draw should only be being called
 		// is control is visible
 		if let Some(ta) = &self.textarea {
 			let area = if self.embed {
 				rect
+			} else if self.input_type == InputType::Multiline {
+				let area = ui::centered_rect(60, 20, f.size());
+				ui::rect_inside(
+					Size::new(10, 3),
+					f.size().into(),
+					area,
+				)
 			} else {
-				match self.input_type {
-					InputType::Multiline => {
-						let area =
-							ui::centered_rect(60, 20, f.size());
-						ui::rect_inside(
-							Size::new(10, 3),
-							f.size().into(),
-							area,
-						)
-					}
-					_ => ui::centered_rect_absolute(32, 3, f.size()),
-				}
+				let area = ui::centered_rect(60, 1, f.size());
+
+				ui::rect_inside(
+					Size::new(10, 3),
+					Size::new(f.size().width, 3),
+					area,
+				)
 			};
 
 			f.render_widget(Clear, area);

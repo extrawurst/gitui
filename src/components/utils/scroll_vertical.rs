@@ -1,11 +1,9 @@
-use std::cell::Cell;
-
-use ratatui::{backend::Backend, layout::Rect, Frame};
-
 use crate::{
 	components::ScrollType,
 	ui::{draw_scrollbar, style::SharedTheme, Orientation},
 };
+use ratatui::{layout::Rect, Frame};
+use std::cell::Cell;
 
 pub struct VerticalScroll {
 	top: Cell<usize>,
@@ -109,12 +107,7 @@ impl VerticalScroll {
 		self.update(self.get_top(), line_count, visual_height)
 	}
 
-	pub fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		r: Rect,
-		theme: &SharedTheme,
-	) {
+	pub fn draw(&self, f: &mut Frame, r: Rect, theme: &SharedTheme) {
 		draw_scrollbar(
 			f,
 			r,

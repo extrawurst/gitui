@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
-use ratatui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{layout::Rect, Frame};
 
 pub struct StashMsgPopup {
 	repo: RepoPathRef,
@@ -23,11 +23,7 @@ pub struct StashMsgPopup {
 }
 
 impl DrawableComponent for StashMsgPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		self.input.draw(f, rect)?;
 
 		Ok(())

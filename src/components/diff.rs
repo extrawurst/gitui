@@ -23,7 +23,6 @@ use asyncgit::{
 use bytesize::ByteSize;
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::Rect,
 	symbols,
 	text::{Line, Span},
@@ -683,11 +682,7 @@ impl DiffComponent {
 }
 
 impl DrawableComponent for DiffComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		r: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, r: Rect) -> Result<()> {
 		self.current_size.set((
 			r.width.saturating_sub(2),
 			r.height.saturating_sub(2),

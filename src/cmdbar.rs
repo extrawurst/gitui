@@ -3,7 +3,6 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Line, Span},
 	widgets::Paragraph,
@@ -139,7 +138,7 @@ impl CommandBar {
 		}
 	}
 
-	pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+	pub fn draw(&self, f: &mut Frame, r: Rect) {
 		if r.width < MORE_WIDTH {
 			return;
 		}

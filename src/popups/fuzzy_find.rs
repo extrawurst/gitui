@@ -15,7 +15,6 @@ use anyhow::Result;
 use crossterm::event::Event;
 use fuzzy_matcher::FuzzyMatcher;
 use ratatui::{
-	backend::Backend,
 	layout::{Constraint, Direction, Layout, Margin, Rect},
 	text::{Line, Span},
 	widgets::{Block, Borders, Clear},
@@ -167,11 +166,7 @@ impl FuzzyFindPopup {
 	}
 
 	#[inline]
-	fn draw_matches_list<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		mut area: Rect,
-	) {
+	fn draw_matches_list(&self, f: &mut Frame, mut area: Rect) {
 		{
 			// Block has two lines up and down which need to be considered
 			const HEIGHT_BLOCK_MARGIN: usize = 2;
@@ -252,11 +247,7 @@ impl FuzzyFindPopup {
 }
 
 impl DrawableComponent for FuzzyFindPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible() {
 			const MAX_SIZE: (u16, u16) = (50, 20);
 

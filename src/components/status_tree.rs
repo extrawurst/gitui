@@ -17,7 +17,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::{hash, sync::CommitId, StatusItem, StatusItemType};
 use crossterm::event::Event;
-use ratatui::{backend::Backend, layout::Rect, text::Span, Frame};
+use ratatui::{layout::Rect, text::Span, Frame};
 use std::{borrow::Cow, cell::Cell, path::Path};
 
 //TODO: use new `filetreelist` crate
@@ -319,11 +319,7 @@ struct TextDrawInfo<'a> {
 }
 
 impl DrawableComponent for StatusTreeComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		r: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, r: Rect) -> Result<()> {
 		if !self.is_visible() {
 			return Ok(());
 		}

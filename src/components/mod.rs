@@ -30,7 +30,6 @@ use crate::ui::style::Theme;
 use anyhow::Result;
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Span, Text},
 	widgets::{Block, Borders, Paragraph},
@@ -72,7 +71,7 @@ macro_rules! any_popup_visible {
 #[macro_export]
 macro_rules! draw_popups {
     ($self:ident, [$($element:ident),+]) => {
-        fn draw_popups<B: Backend>(& $self, mut f: &mut Frame<B>) -> Result<()>{
+        fn draw_popups(& $self, mut f: &mut Frame) -> Result<()>{
             //TODO: move the layout part out and feed it into `draw_popups`
             let size = Layout::default()
             .direction(Direction::Vertical)
@@ -176,11 +175,7 @@ pub fn visibility_blocking<T: Component>(
 ///
 pub trait DrawableComponent {
 	///
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()>;
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()>;
 }
 
 ///
