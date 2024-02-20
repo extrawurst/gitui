@@ -421,37 +421,39 @@ impl BlameFilePopup {
 
 	fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			match self.blame {
-				Some(BlameProcess::GettingBlame(
-					ref mut async_blame,
-				)) => {
-					if let Some(params) = &self.params {
-						if let Some((
-							previous_blame_params,
-							last_file_blame,
-						)) = async_blame.last()?
-						{
-							if previous_blame_params == *params {
-								self.blame = Some(BlameProcess::SyntaxHighlighting {
-                                    unstyled_file_blame: SyntaxFileBlame {
-										file_blame: last_file_blame,
-										styled_text: None,
-									},
-                                    job: AsyncSingleJob::new(
-                                        self.app_sender.clone(),
-                                    )
-                                });
-								self.set_open_selection();
-								self.highlight_blame_lines();
+			if let Some(BlameProcess::GettingBlame(
+				ref mut async_blame,
+			)) = self.blame
+			{
+				if let Some(params) = &self.params {
+					if let Some((
+						previous_blame_params,
+						last_file_blame,
+					)) = async_blame.last()?
+					{
+						if previous_blame_params == *params {
+							self.blame = Some(
+								BlameProcess::SyntaxHighlighting {
+									unstyled_file_blame:
+										SyntaxFileBlame {
+											file_blame:
+												last_file_blame,
+											styled_text: None,
+										},
+									job: AsyncSingleJob::new(
+										self.app_sender.clone(),
+									),
+								},
+							);
+							self.set_open_selection();
+							self.highlight_blame_lines();
 
-								return Ok(());
-							}
+							return Ok(());
 						}
-
-						async_blame.request(params.clone())?;
 					}
+
+					async_blame.request(params.clone())?;
 				}
-				_ => {}
 			}
 		}
 
