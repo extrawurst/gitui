@@ -22,7 +22,6 @@ use crossterm::event::Event;
 use indexmap::IndexSet;
 use itertools::Itertools;
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Rect},
 	style::Style,
 	text::{Line, Span},
@@ -772,11 +771,7 @@ impl CommitList {
 }
 
 impl DrawableComponent for CommitList {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		let current_size = (
 			area.width.saturating_sub(2),
 			area.height.saturating_sub(2),

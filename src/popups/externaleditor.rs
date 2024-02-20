@@ -18,7 +18,6 @@ use crossterm::{
 	ExecutableCommand,
 };
 use ratatui::{
-	backend::Backend,
 	layout::Rect,
 	text::{Line, Span},
 	widgets::{Block, BorderType, Borders, Clear, Paragraph},
@@ -121,11 +120,7 @@ impl ExternalEditorPopup {
 }
 
 impl DrawableComponent for ExternalEditorPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		_rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, _rect: Rect) -> Result<()> {
 		if self.visible {
 			let txt = Line::from(
 				strings::msg_opening_editor(&self.key_config)

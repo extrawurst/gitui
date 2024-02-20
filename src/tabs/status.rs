@@ -23,7 +23,6 @@ use asyncgit::{
 	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
 	DiffType, PushType, StatusItem, StatusParams,
 };
-
 use crossterm::event::Event;
 use itertools::Itertools;
 use ratatui::{
@@ -80,9 +79,9 @@ pub struct Status {
 }
 
 impl DrawableComponent for Status {
-	fn draw<B: ratatui::backend::Backend>(
+	fn draw(
 		&self,
-		f: &mut ratatui::Frame<B>,
+		f: &mut ratatui::Frame,
 		rect: ratatui::layout::Rect,
 	) -> Result<()> {
 		let repo_unclean = self.repo_state_unclean();
@@ -196,9 +195,9 @@ impl Status {
 		}
 	}
 
-	fn draw_branch_state<B: ratatui::backend::Backend>(
+	fn draw_branch_state(
 		&self,
-		f: &mut ratatui::Frame<B>,
+		f: &mut ratatui::Frame,
 		chunks: &[ratatui::layout::Rect],
 	) {
 		if let Some(branch_name) = self.git_branch_name.last() {
@@ -277,9 +276,9 @@ impl Status {
 		}
 	}
 
-	fn draw_repo_state<B: ratatui::backend::Backend>(
+	fn draw_repo_state(
 		&self,
-		f: &mut ratatui::Frame<B>,
+		f: &mut ratatui::Frame,
 		r: ratatui::layout::Rect,
 	) {
 		if self.git_state != RepoState::Clean {

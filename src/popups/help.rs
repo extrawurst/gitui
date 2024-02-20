@@ -13,7 +13,6 @@ use asyncgit::hash;
 use crossterm::event::Event;
 use itertools::Itertools;
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Constraint, Direction, Layout, Rect},
 	style::{Modifier, Style},
 	text::{Line, Span},
@@ -33,11 +32,7 @@ pub struct HelpPopup {
 }
 
 impl DrawableComponent for HelpPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		_rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, _rect: Rect) -> Result<()> {
 		if self.visible {
 			const SIZE: (u16, u16) = (65, 24);
 			let scroll_threshold = SIZE.1 / 3;

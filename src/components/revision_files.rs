@@ -24,7 +24,6 @@ use asyncgit::{
 use crossterm::event::Event;
 use filetreelist::{FileTree, FileTreeItem};
 use ratatui::{
-	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	text::Span,
 	widgets::{Block, Borders},
@@ -277,11 +276,7 @@ impl RevisionFilesComponent {
 		}
 	}
 
-	fn draw_tree<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw_tree(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		let tree_height = usize::from(area.height.saturating_sub(2));
 		let tree_width = usize::from(area.width);
 
@@ -389,11 +384,7 @@ impl RevisionFilesComponent {
 }
 
 impl DrawableComponent for RevisionFilesComponent {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible() {
 			let chunks = Layout::default()
 				.direction(Direction::Horizontal)

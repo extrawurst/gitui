@@ -13,9 +13,7 @@ use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
 use easy_cast::Cast;
-use ratatui::{
-	backend::Backend, layout::Rect, widgets::Paragraph, Frame,
-};
+use ratatui::{layout::Rect, widgets::Paragraph, Frame};
 
 pub struct CreateBranchPopup {
 	repo: RepoPathRef,
@@ -26,11 +24,7 @@ pub struct CreateBranchPopup {
 }
 
 impl DrawableComponent for CreateBranchPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.is_visible() {
 			self.input.draw(f, rect)?;
 			self.draw_warnings(f);
@@ -143,7 +137,7 @@ impl CreateBranchPopup {
 		}
 	}
 
-	fn draw_warnings<B: Backend>(&self, f: &mut Frame<B>) {
+	fn draw_warnings(&self, f: &mut Frame) {
 		let current_text = self.input.get_text();
 
 		if !current_text.is_empty() {

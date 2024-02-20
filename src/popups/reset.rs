@@ -16,7 +16,6 @@ use asyncgit::{
 };
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Rect},
 	text::{Line, Span},
 	widgets::{Block, Borders, Clear, Paragraph},
@@ -156,11 +155,7 @@ impl ResetPopup {
 }
 
 impl DrawableComponent for ResetPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible() {
 			const SIZE: (u16, u16) = (55, 5);
 			let area =

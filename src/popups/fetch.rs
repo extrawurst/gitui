@@ -21,10 +21,8 @@ use asyncgit::{
 	},
 	AsyncFetchJob, AsyncGitNotification, ProgressPercent,
 };
-
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::Rect,
 	text::Span,
 	widgets::{Block, BorderType, Borders, Clear, Gauge},
@@ -117,11 +115,7 @@ impl FetchPopup {
 }
 
 impl DrawableComponent for FetchPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.visible {
 			let progress = self.progress.unwrap_or_default().progress;
 

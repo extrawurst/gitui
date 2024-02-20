@@ -9,7 +9,6 @@ use crate::{
 };
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Rect},
 	text::Span,
 	widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
@@ -28,11 +27,7 @@ pub struct MsgPopup {
 use anyhow::Result;
 
 impl DrawableComponent for MsgPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		_rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, _rect: Rect) -> Result<()> {
 		if !self.visible {
 			return Ok(());
 		}

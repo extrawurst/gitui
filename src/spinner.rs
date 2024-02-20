@@ -1,4 +1,7 @@
-use ratatui::{backend::Backend, Terminal};
+use ratatui::{
+	backend::{Backend, CrosstermBackend},
+	Terminal,
+};
 use std::{cell::Cell, char, io};
 
 // static SPINNER_CHARS: &[char] = &['◢', '◣', '◤', '◥'];
@@ -36,9 +39,9 @@ impl Spinner {
 	}
 
 	/// draws or removes spinner char depending on `pending` state
-	pub fn draw<B: Backend>(
+	pub fn draw(
 		&self,
-		terminal: &mut Terminal<B>,
+		terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 	) -> io::Result<()> {
 		let idx = self.idx;
 
@@ -56,7 +59,7 @@ impl Spinner {
 				.backend_mut()
 				.draw(vec![(0_u16, 0_u16, &c)].into_iter())?;
 
-			ratatui::backend::Backend::flush(terminal.backend_mut())?;
+			Backend::flush(terminal.backend_mut())?;
 		}
 
 		Ok(())

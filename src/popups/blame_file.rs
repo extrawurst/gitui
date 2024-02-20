@@ -22,7 +22,6 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{Constraint, Rect},
 	symbols::line::VERTICAL,
 	text::{Span, Text},
@@ -101,11 +100,7 @@ pub struct BlameFilePopup {
 }
 
 impl DrawableComponent for BlameFilePopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible() {
 			let title = self.get_title();
 

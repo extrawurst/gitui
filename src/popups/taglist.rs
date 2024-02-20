@@ -27,7 +27,6 @@ use asyncgit::{
 
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{Constraint, Margin, Rect},
 	text::Span,
 	widgets::{
@@ -55,11 +54,7 @@ pub struct TagListPopup {
 }
 
 impl DrawableComponent for TagListPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.visible {
 			const PERCENT_SIZE: Size = Size::new(80, 50);
 			const MIN_SIZE: Size = Size::new(60, 20);
