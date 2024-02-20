@@ -277,7 +277,7 @@ impl Theme {
 		let load_result = ron::de::from_reader(file);
 
 		if let Err(e) = &load_result {
-			log::error!("theme loading error: {e}");
+			log::error!("theme error [{:?}]: {e}", theme_path);
 		}
 
 		Ok(load_result?)

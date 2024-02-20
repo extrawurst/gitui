@@ -15,14 +15,13 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	asyncjob::AsyncSingleJob,
 	cached,
 	sync::{
 		self, status::StatusType, RepoPath, RepoPathRef, RepoState,
 	},
 	sync::{BranchCompare, CommitId},
-	AsyncBranchesJob, AsyncDiff, AsyncGitNotification, AsyncStatus,
-	DiffParams, DiffType, PushType, StatusItem, StatusParams,
+	AsyncDiff, AsyncGitNotification, AsyncStatus, DiffParams,
+	DiffType, PushType, StatusItem, StatusParams,
 };
 
 use crossterm::event::Event;
@@ -74,7 +73,6 @@ pub struct Status {
 	git_status_stage: AsyncStatus,
 	git_branch_state: Option<BranchCompare>,
 	git_branch_name: cached::BranchName,
-	git_branches: AsyncSingleJob<AsyncBranchesJob>,
 	queue: Queue,
 	git_action_executed: bool,
 	options: SharedOptions,
@@ -187,7 +185,6 @@ impl Status {
 				repo_clone,
 				env.sender_git.clone(),
 			),
-			git_branches: AsyncSingleJob::new(env.sender_git.clone()),
 			git_action_executed: false,
 			git_branch_state: None,
 			git_branch_name: cached::BranchName::new(
@@ -408,22 +405,12 @@ impl Status {
 		self.git_diff.is_pending()
 			|| self.git_status_stage.is_pending()
 			|| self.git_status_workdir.is_pending()
-			|| self.git_branches.is_pending()
 	}
 
 	fn check_remotes(&mut self) {
-		self.has_remotes = false;
-
-		if let Some(result) = self.git_branches.take_last() {
-			if let Some(Ok(branches)) = result.result() {
-				self.has_remotes = !branches.is_empty();
-			}
-		} else {
-			self.git_branches.spawn(AsyncBranchesJob::new(
-				self.repo.borrow().clone(),
-				false,
-			));
-		}
+		self.has_remotes =
+			sync::get_default_remote(&self.repo.borrow().clone())
+				.is_ok();
 	}
 
 	///
@@ -609,10 +596,12 @@ impl Status {
 	}
 
 	fn can_push(&self) -> bool {
-		self.git_branch_state
+		let is_ahead = self
+			.git_branch_state
 			.as_ref()
-			.map_or(true, |state| state.ahead > 0)
-			&& self.has_remotes
+			.map_or(true, |state| state.ahead > 0);
+
+		is_ahead && self.has_remotes
 	}
 
 	const fn can_pull(&self) -> bool {

@@ -1,7 +1,6 @@
-use super::{
-	textinput::TextInputComponent, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+use crate::components::{
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, InputType, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -21,7 +20,7 @@ enum Mode {
 	Annotation { tag_name: String },
 }
 
-pub struct TagCommitComponent {
+pub struct TagCommitPopup {
 	repo: RepoPathRef,
 	mode: Mode,
 	input: TextInputComponent,
@@ -30,7 +29,7 @@ pub struct TagCommitComponent {
 	key_config: SharedKeyConfig,
 }
 
-impl DrawableComponent for TagCommitComponent {
+impl DrawableComponent for TagCommitPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -42,7 +41,7 @@ impl DrawableComponent for TagCommitComponent {
 	}
 }
 
-impl Component for TagCommitComponent {
+impl Component for TagCommitPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -124,7 +123,7 @@ impl Component for TagCommitComponent {
 	}
 }
 
-impl TagCommitComponent {
+impl TagCommitPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -135,7 +134,7 @@ impl TagCommitComponent {
 				&strings::tag_popup_name_msg(),
 				true,
 			)
-			.with_input_type(super::InputType::Singleline),
+			.with_input_type(InputType::Singleline),
 			commit_id: None,
 			key_config: env.key_config.clone(),
 			repo: env.repo.clone(),

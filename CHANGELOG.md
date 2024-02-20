@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ![multiline editor](assets/multiline-texteditor.gif)
 
+** syntax highlighting in blame **
+
+![syntax-highlighting-blame](assets/syntax-highlighting-blame.png)
+
 ### Breaking Change
 The Commit message popup now supports multiline editing! Inserting a **newline** defaults to `enter`. This comes with a new default to confirm the commit message (`ctrl+d`).
 Both commands can be overwritten via `newline` and `commit` in the key bindings. see [KEY_CONFIG](./KEY_CONFIG.md) on how.
@@ -22,6 +26,8 @@ These defaults require some adoption from existing users but feel more natural t
 * support `prepare-commit-msg` hook ([#1873](https://github.com/extrawurst/gitui/issues/1873))
 * support for new-line in text-input (e.g. commit message editor) [[@pm100]](https://github/pm100) ([#1662](https://github.com/extrawurst/gitui/issues/1662)).
 * new style `block_title_focused` to allow customizing title text of focused frame/block ([#2052](https://github.com/extrawurst/gitui/issues/2052)).
+* add syntax highlighting for blame view [[@tdtrung17693](https://github.com/tdtrung17693)] ([#745](https://github.com/extrawurst/gitui/issues/745))
+* allow `fetch` command in both tabs of branchlist popup ([#2067](https://github.com/extrawurst/gitui/issues/2067))
 * support sign commit with ssh key in disk by `user.signingKey` of gitconfig (ssh-agent/`SSH_AUTH_SOCK` isn't yet supported)  ([#1149](https://github.com/extrawurst/gitui/issues/1149))
 
 ### Changed
@@ -29,6 +35,7 @@ These defaults require some adoption from existing users but feel more natural t
 
 ### Fixes
 * stash window empty after file history popup closes ([#1986](https://github.com/extrawurst/gitui/issues/1986))
+* allow push to empty remote ([#1919](https://github.com/extrawurst/gitui/issues/1919))
 
 ## [0.24.3] - 2023-09-09
 

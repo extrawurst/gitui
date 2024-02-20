@@ -1,4 +1,4 @@
-use super::{
+use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState,
 };
@@ -17,7 +17,7 @@ use ratatui::{
 };
 use ui::style::SharedTheme;
 
-pub struct MsgComponent {
+pub struct MsgPopup {
 	title: String,
 	msg: String,
 	visible: bool,
@@ -27,7 +27,7 @@ pub struct MsgComponent {
 
 use anyhow::Result;
 
-impl DrawableComponent for MsgComponent {
+impl DrawableComponent for MsgPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -78,7 +78,7 @@ impl DrawableComponent for MsgComponent {
 	}
 }
 
-impl Component for MsgComponent {
+impl Component for MsgPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -121,7 +121,7 @@ impl Component for MsgComponent {
 	}
 }
 
-impl MsgComponent {
+impl MsgPopup {
 	pub fn new(env: &Environment) -> Self {
 		Self {
 			title: String::new(),

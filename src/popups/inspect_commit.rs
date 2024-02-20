@@ -1,4 +1,4 @@
-use super::{
+use crate::components::{
 	command_pump, event_pump, visibility_blocking, CommandBlocking,
 	CommandInfo, CommitDetailsComponent, Component, DiffComponent,
 	DrawableComponent, EventState,
@@ -53,7 +53,7 @@ impl InspectCommitOpen {
 	}
 }
 
-pub struct InspectCommitComponent {
+pub struct InspectCommitPopup {
 	queue: Queue,
 	open_request: Option<InspectCommitOpen>,
 	diff: DiffComponent,
@@ -64,7 +64,7 @@ pub struct InspectCommitComponent {
 	options: SharedOptions,
 }
 
-impl DrawableComponent for InspectCommitComponent {
+impl DrawableComponent for InspectCommitPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -98,7 +98,7 @@ impl DrawableComponent for InspectCommitComponent {
 	}
 }
 
-impl Component for InspectCommitComponent {
+impl Component for InspectCommitPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -199,7 +199,7 @@ impl Component for InspectCommitComponent {
 	}
 }
 
-impl InspectCommitComponent {
+impl InspectCommitPopup {
 	accessors!(self, [diff, details]);
 
 	///

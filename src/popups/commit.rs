@@ -1,7 +1,6 @@
-use super::{
-	textinput::TextInputComponent, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState, ExternalEditorComponent,
+use crate::components::{
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -35,6 +34,8 @@ use std::{
 	str::FromStr,
 };
 
+use super::ExternalEditorPopup;
+
 enum CommitResult {
 	ComitDone,
 	Aborted,
@@ -48,7 +49,7 @@ enum Mode {
 	Reword(CommitId),
 }
 
-pub struct CommitComponent {
+pub struct CommitPopup {
 	repo: RepoPathRef,
 	input: TextInputComponent,
 	mode: Mode,
@@ -64,7 +65,7 @@ pub struct CommitComponent {
 
 const FIRST_LINE_LIMIT: usize = 50;
 
-impl CommitComponent {
+impl CommitPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -183,7 +184,7 @@ impl CommitComponent {
 			}
 		}
 
-		ExternalEditorComponent::open_file_in_editor(
+		ExternalEditorPopup::open_file_in_editor(
 			&self.repo.borrow(),
 			&file_path,
 		)?;
@@ -486,7 +487,7 @@ impl CommitComponent {
 	}
 }
 
-impl DrawableComponent for CommitComponent {
+impl DrawableComponent for CommitPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -502,7 +503,7 @@ impl DrawableComponent for CommitComponent {
 	}
 }
 
-impl Component for CommitComponent {
+impl Component for CommitPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

@@ -1,7 +1,6 @@
-use super::{
-	textinput::TextInputComponent, visibility_blocking,
-	CommandBlocking, CommandInfo, Component, DrawableComponent,
-	EventState,
+use crate::components::{
+	visibility_blocking, CommandBlocking, CommandInfo, Component,
+	DrawableComponent, EventState, InputType, TextInputComponent,
 };
 use crate::{
 	app::Environment,
@@ -18,7 +17,7 @@ use ratatui::{
 	backend::Backend, layout::Rect, widgets::Paragraph, Frame,
 };
 
-pub struct CreateBranchComponent {
+pub struct CreateBranchPopup {
 	repo: RepoPathRef,
 	input: TextInputComponent,
 	queue: Queue,
@@ -26,7 +25,7 @@ pub struct CreateBranchComponent {
 	theme: SharedTheme,
 }
 
-impl DrawableComponent for CreateBranchComponent {
+impl DrawableComponent for CreateBranchPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -41,7 +40,7 @@ impl DrawableComponent for CreateBranchComponent {
 	}
 }
 
-impl Component for CreateBranchComponent {
+impl Component for CreateBranchPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -94,7 +93,7 @@ impl Component for CreateBranchComponent {
 	}
 }
 
-impl CreateBranchComponent {
+impl CreateBranchPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -105,7 +104,7 @@ impl CreateBranchComponent {
 				&strings::create_branch_popup_msg(&env.key_config),
 				true,
 			)
-			.with_input_type(super::InputType::Singleline),
+			.with_input_type(InputType::Singleline),
 			theme: env.theme.clone(),
 			key_config: env.key_config.clone(),
 			repo: env.repo.clone(),

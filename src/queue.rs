@@ -1,7 +1,8 @@
 use crate::{
-	components::{
+	components::FuzzyFinderTarget,
+	popups::{
 		AppOption, BlameFileOpen, FileRevOpen, FileTreeOpen,
-		FuzzyFinderTarget, InspectCommitOpen,
+		InspectCommitOpen,
 	},
 	tabs::StashingOptions,
 };

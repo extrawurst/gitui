@@ -3,9 +3,9 @@ use crate::{
 	components::{
 		visibility_blocking, CommandBlocking, CommandInfo,
 		CommitList, Component, DrawableComponent, EventState,
-		InspectCommitOpen,
 	},
 	keys::{key_match, SharedKeyConfig},
+	popups::InspectCommitOpen,
 	queue::{Action, InternalEvent, Queue, StackablePopupOpen},
 	strings,
 };

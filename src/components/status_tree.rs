@@ -3,16 +3,16 @@ use super::{
 		filetree::{FileTreeItem, FileTreeItemKind},
 		statustree::{MoveSelection, StatusTree},
 	},
-	BlameFileOpen, CommandBlocking, DrawableComponent, FileRevOpen,
+	CommandBlocking, DrawableComponent,
 };
 use crate::{
 	app::Environment,
 	components::{CommandInfo, Component, EventState},
 	keys::{key_match, SharedKeyConfig},
+	popups::{BlameFileOpen, FileRevOpen},
 	queue::{InternalEvent, NeedsUpdate, Queue, StackablePopupOpen},
 	strings::{self, order},
-	ui,
-	ui::style::SharedTheme,
+	ui::{self, style::SharedTheme},
 };
 use anyhow::Result;
 use asyncgit::{hash, sync::CommitId, StatusItem, StatusItemType};

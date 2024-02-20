@@ -29,13 +29,13 @@ use std::ffi::OsStr;
 use std::{env, io, path::Path, process::Command};
 
 ///
-pub struct ExternalEditorComponent {
+pub struct ExternalEditorPopup {
 	visible: bool,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 }
 
-impl ExternalEditorComponent {
+impl ExternalEditorPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -120,7 +120,7 @@ impl ExternalEditorComponent {
 	}
 }
 
-impl DrawableComponent for ExternalEditorComponent {
+impl DrawableComponent for ExternalEditorPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -155,7 +155,7 @@ impl DrawableComponent for ExternalEditorComponent {
 	}
 }
 
-impl Component for ExternalEditorComponent {
+impl Component for ExternalEditorPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

@@ -1,4 +1,4 @@
-use super::{
+use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState,
 };
@@ -40,7 +40,7 @@ const fn type_to_string(
 	}
 }
 
-pub struct ResetPopupComponent {
+pub struct ResetPopup {
 	queue: Queue,
 	repo: RepoPath,
 	commit: Option<CommitId>,
@@ -51,7 +51,7 @@ pub struct ResetPopupComponent {
 	theme: SharedTheme,
 }
 
-impl ResetPopupComponent {
+impl ResetPopup {
 	///
 	pub fn new(env: &Environment) -> Self {
 		Self {
@@ -155,7 +155,7 @@ impl ResetPopupComponent {
 	}
 }
 
-impl DrawableComponent for ResetPopupComponent {
+impl DrawableComponent for ResetPopup {
 	fn draw<B: Backend>(
 		&self,
 		f: &mut Frame<B>,
@@ -189,7 +189,7 @@ impl DrawableComponent for ResetPopupComponent {
 	}
 }
 
-impl Component for ResetPopupComponent {
+impl Component for ResetPopup {
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,

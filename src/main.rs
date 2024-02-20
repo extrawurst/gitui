@@ -38,6 +38,7 @@ mod keys;
 mod notify_mutex;
 mod options;
 mod popup_stack;
+mod popups;
 mod queue;
 mod spinner;
 mod string_utils;
