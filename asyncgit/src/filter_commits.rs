@@ -10,7 +10,10 @@ use crate::{
 	AsyncGitNotification, ProgressPercent,
 };
 use std::{
-	sync::{atomic::AtomicUsize, Arc, Mutex},
+	sync::{
+		atomic::{AtomicBool, AtomicUsize, Ordering},
+		Arc, Mutex,
+	},
 	time::{Duration, Instant},
 };
 
@@ -35,6 +38,7 @@ enum JobState {
 pub struct AsyncCommitFilterJob {
 	state: Arc<Mutex<Option<JobState>>>,
 	filter: SharedCommitFilterFn,
+	cancellation_flag: Arc<AtomicBool>,
 }
 
 ///
@@ -44,6 +48,7 @@ impl AsyncCommitFilterJob {
 		repo_path: RepoPath,
 		commits: Vec<CommitId>,
 		filter: SharedCommitFilterFn,
+		cancellation_flag: Arc<AtomicBool>,
 	) -> Self {
 		Self {
 			state: Arc::new(Mutex::new(Some(JobState::Request {
@@ -51,6 +56,7 @@ impl AsyncCommitFilterJob {
 				commits,
 			}))),
 			filter,
+			cancellation_flag,
 		}
 	}
 
@@ -90,6 +96,8 @@ impl AsyncCommitFilterJob {
 		commits: Vec<CommitId>,
 		params: &RunParams<AsyncGitNotification, ProgressPercent>,
 	) -> Result<(Instant, Vec<CommitId>)> {
+		scopetime::scope_time!("filter_commits");
+
 		let total_amount = commits.len();
 		let start = Instant::now();
 
@@ -114,6 +122,13 @@ impl AsyncCommitFilterJob {
 								1,
 								std::sync::atomic::Ordering::Relaxed,
 							);
+
+								if self
+									.cancellation_flag
+									.load(Ordering::Relaxed)
+								{
+									return None;
+								}
 
 								Self::update_progress(
 									params,
