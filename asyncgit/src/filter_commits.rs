@@ -96,6 +96,8 @@ impl AsyncCommitFilterJob {
 		commits: Vec<CommitId>,
 		params: &RunParams<AsyncGitNotification, ProgressPercent>,
 	) -> Result<(Instant, Vec<CommitId>)> {
+		scopetime::scope_time!("filter_commits");
+
 		let total_amount = commits.len();
 		let start = Instant::now();
 
@@ -111,15 +113,6 @@ impl AsyncCommitFilterJob {
 				.enumerate()
 				.collect::<Vec<(usize, CommitId)>>()
 				.par_chunks(1000)
-				.filter_map(|chunk| {
-					if self.cancellation_flag.load(Ordering::SeqCst) {
-						// Return if the search should be cancelled
-						None
-					} else {
-						// Proceed with the chunk
-						Some(chunk.to_vec())
-					}
-				})
 				.filter_map(|c| {
 					//TODO: error log repo open errors
 					sync::repo(repo_path).ok().map(|repo| {
@@ -129,6 +122,13 @@ impl AsyncCommitFilterJob {
 								1,
 								std::sync::atomic::Ordering::Relaxed,
 							);
+
+								if self
+									.cancellation_flag
+									.load(Ordering::Relaxed)
+								{
+									return None;
+								}
 
 								Self::update_progress(
 									params,

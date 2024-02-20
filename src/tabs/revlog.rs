@@ -280,17 +280,23 @@ impl Revlog {
 		if let LogSearch::Searching(_, _, _, cancellation_flag) =
 			&self.search
 		{
-			cancellation_flag.store(true, Ordering::SeqCst);
-			log::info!("cancelling commit search");
+			cancellation_flag.store(true, Ordering::Relaxed);
+			self.list.set_highlighting(None);
 			return true;
 		}
+
 		false
 	}
 
 	fn update_search_state(&mut self) {
 		match &mut self.search {
 			LogSearch::Off | LogSearch::Results(_) => (),
-			LogSearch::Searching(search, options, progress, _) => {
+			LogSearch::Searching(
+				search,
+				options,
+				progress,
+				cancel,
+			) => {
 				if search.is_pending() {
 					//update progress
 					*progress = search.progress();
@@ -300,20 +306,26 @@ impl Revlog {
 				{
 					match search {
 						Ok(search) => {
-							self.list.set_highlighting(Some(
-								Rc::new(
-									search
-										.result
-										.into_iter()
-										.collect::<IndexSet<_>>(),
-								),
-							));
+							let was_aborted =
+								cancel.load(Ordering::Relaxed);
 
-							self.search =
+							self.search = if was_aborted {
+								LogSearch::Off
+							} else {
+								self.list.set_highlighting(Some(
+									Rc::new(
+										search
+											.result
+											.into_iter()
+											.collect::<IndexSet<_>>(),
+									),
+								));
+
 								LogSearch::Results(LogSearchResult {
 									options: options.clone(),
 									duration: search.duration,
-								});
+								})
+							};
 						}
 						Err(err) => {
 							self.queue.push(
@@ -384,7 +396,7 @@ impl Revlog {
 		);
 	}
 
-	fn can_leave_search(&self) -> bool {
+	fn can_close_search(&self) -> bool {
 		self.is_in_search_mode() && !self.is_search_pending()
 	}
 
@@ -452,12 +464,8 @@ impl Component for Revlog {
 					k,
 					self.key_config.keys.exit_popup,
 				) {
-					if self.is_search_pending()
-						&& self.cancel_search() || self
-						.can_leave_search()
-					{
-						self.search = LogSearch::Off;
-						self.list.set_highlighting(None);
+					if self.is_search_pending() {
+						self.cancel_search();
 						return Ok(EventState::Consumed);
 					}
 				} else if key_match(k, self.key_config.keys.copy) {
@@ -607,7 +615,7 @@ impl Component for Revlog {
 			CommandInfo::new(
 				strings::commands::log_close_search(&self.key_config),
 				true,
-				(self.visible && self.can_leave_search())
+				(self.visible && self.can_close_search())
 					|| force_all,
 			)
 			.order(order::PRIORITY),
