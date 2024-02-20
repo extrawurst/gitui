@@ -621,19 +621,21 @@ impl DrawableComponent for TextInputComponent {
 		if let Some(ta) = &self.textarea {
 			let area = if self.embed {
 				rect
+			} else if self.input_type == InputType::Multiline {
+				let area = ui::centered_rect(60, 20, f.size());
+				ui::rect_inside(
+					Size::new(10, 3),
+					f.size().into(),
+					area,
+				)
 			} else {
-				match self.input_type {
-					InputType::Multiline => {
-						let area =
-							ui::centered_rect(60, 20, f.size());
-						ui::rect_inside(
-							Size::new(10, 3),
-							f.size().into(),
-							area,
-						)
-					}
-					_ => ui::centered_rect_absolute(32, 3, f.size()),
-				}
+				let area = ui::centered_rect(60, 1, f.size());
+
+				ui::rect_inside(
+					Size::new(10, 3),
+					Size::new(f.size().width, 3),
+					area,
+				)
 			};
 
 			f.render_widget(Clear, area);
