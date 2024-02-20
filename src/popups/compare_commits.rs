@@ -20,7 +20,6 @@ use asyncgit::{
 };
 use crossterm::event::Event;
 use ratatui::{
-	backend::Backend,
 	layout::{Constraint, Direction, Layout, Rect},
 	widgets::Clear,
 	Frame,
@@ -39,11 +38,7 @@ pub struct CompareCommitsPopup {
 }
 
 impl DrawableComponent for CompareCommitsPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		if self.is_visible() {
 			let percentages = if self.diff.focused() {
 				(0, 100)

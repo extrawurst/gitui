@@ -11,7 +11,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
-use ratatui::{backend::Backend, layout::Rect, Frame};
+use ratatui::{layout::Rect, Frame};
 
 pub struct RenameBranchPopup {
 	repo: RepoPathRef,
@@ -22,11 +22,7 @@ pub struct RenameBranchPopup {
 }
 
 impl DrawableComponent for RenameBranchPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
 		self.input.draw(f, rect)?;
 
 		Ok(())

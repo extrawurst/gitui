@@ -12,9 +12,7 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::CommitId;
 use crossterm::event::Event;
-use ratatui::{
-	backend::Backend, layout::Rect, widgets::Clear, Frame,
-};
+use ratatui::{layout::Rect, widgets::Clear, Frame};
 use std::path::Path;
 
 #[derive(Clone, Debug)]
@@ -94,11 +92,7 @@ impl RevisionFilesPopup {
 }
 
 impl DrawableComponent for RevisionFilesPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible() {
 			f.render_widget(Clear, area);
 

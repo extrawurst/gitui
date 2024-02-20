@@ -135,9 +135,9 @@ impl StashList {
 }
 
 impl DrawableComponent for StashList {
-	fn draw<B: ratatui::backend::Backend>(
+	fn draw(
 		&self,
-		f: &mut ratatui::Frame<B>,
+		f: &mut ratatui::Frame,
 		rect: ratatui::layout::Rect,
 	) -> Result<()> {
 		self.list.draw(f, rect)?;

@@ -27,7 +27,6 @@ use crossbeam_channel::Sender;
 use crossterm::event::Event;
 use indexmap::IndexSet;
 use ratatui::{
-	backend::Backend,
 	layout::{Alignment, Constraint, Direction, Layout, Rect},
 	text::Span,
 	widgets::{Block, Borders, Paragraph},
@@ -308,7 +307,7 @@ impl Revlog {
 		!matches!(self.search, LogSearch::Off)
 	}
 
-	fn draw_search<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
+	fn draw_search(&self, f: &mut Frame, area: Rect) {
 		let (text, title) = match &self.search {
 			LogSearch::Searching(_, options, progress) => (
 				format!("'{}'", options.search_pattern.clone()),
@@ -368,11 +367,7 @@ impl Revlog {
 }
 
 impl DrawableComponent for Revlog {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		area: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		let area = if self.is_in_search_mode() {
 			Layout::default()
 				.direction(Direction::Vertical)

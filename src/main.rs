@@ -66,21 +66,20 @@ use crossterm::{
 };
 use input::{Input, InputEvent, InputState};
 use keys::KeyConfig;
-use ratatui::{
-	backend::{Backend, CrosstermBackend},
-	Terminal,
-};
+use ratatui::backend::CrosstermBackend;
 use scopeguard::defer;
 use scopetime::scope_time;
 use spinner::Spinner;
 use std::{
 	cell::RefCell,
-	io::{self, Write},
+	io::{self, Stdout},
 	panic, process,
 	time::{Duration, Instant},
 };
 use ui::style::Theme;
 use watcher::RepoWatcher;
+
+type Terminal = ratatui::Terminal<CrosstermBackend<io::Stdout>>;
 
 static TICK_INTERVAL: Duration = Duration::from_secs(5);
 static SPINNER_INTERVAL: Duration = Duration::from_millis(80);
@@ -183,7 +182,7 @@ fn run_app(
 	key_config: KeyConfig,
 	input: &Input,
 	updater: Updater,
-	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+	terminal: &mut Terminal,
 ) -> Result<QuitState, anyhow::Error> {
 	let (tx_git, rx_git) = unbounded();
 	let (tx_app, rx_app) = unbounded();
@@ -302,10 +301,7 @@ fn shutdown_terminal() {
 	}
 }
 
-fn draw<B: Backend>(
-	terminal: &mut Terminal<B>,
-	app: &App,
-) -> io::Result<()> {
+fn draw(terminal: &mut Terminal, app: &App) -> io::Result<()> {
 	if app.requires_redraw() {
 		terminal.resize(terminal.size()?)?;
 	}
@@ -364,9 +360,7 @@ fn select_event(
 	Ok(ev)
 }
 
-fn start_terminal<W: Write>(
-	buf: W,
-) -> io::Result<Terminal<CrosstermBackend<W>>> {
+fn start_terminal(buf: Stdout) -> io::Result<Terminal> {
 	let backend = CrosstermBackend::new(buf);
 	let mut terminal = Terminal::new(backend)?;
 	terminal.hide_cursor()?;

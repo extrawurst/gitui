@@ -16,7 +16,6 @@ use asyncgit::{
 	sync::{self, status::StatusType, RepoPathRef},
 	AsyncGitNotification, AsyncStatus, StatusParams,
 };
-
 use crossterm::event::Event;
 use ratatui::{
 	layout::{Alignment, Constraint, Direction, Layout},
@@ -134,9 +133,9 @@ impl Stashing {
 }
 
 impl DrawableComponent for Stashing {
-	fn draw<B: ratatui::backend::Backend>(
+	fn draw(
 		&self,
-		f: &mut ratatui::Frame<B>,
+		f: &mut ratatui::Frame,
 		rect: ratatui::layout::Rect,
 	) -> Result<()> {
 		let chunks = Layout::default()

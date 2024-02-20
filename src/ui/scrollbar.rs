@@ -1,7 +1,6 @@
 use super::style::SharedTheme;
 use easy_cast::CastFloat;
 use ratatui::{
-	backend::Backend,
 	buffer::Buffer,
 	layout::{Margin, Rect},
 	style::Style,
@@ -129,8 +128,8 @@ impl Widget for Scrollbar {
 	}
 }
 
-pub fn draw_scrollbar<B: Backend>(
-	f: &mut Frame<B>,
+pub fn draw_scrollbar(
+	f: &mut Frame,
 	r: Rect,
 	theme: &SharedTheme,
 	max: usize,

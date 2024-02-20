@@ -10,9 +10,7 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::Event;
-use ratatui::{
-	backend::Backend, layout::Rect, text::Text, widgets::Clear, Frame,
-};
+use ratatui::{layout::Rect, text::Text, widgets::Clear, Frame};
 use std::borrow::Cow;
 use ui::style::SharedTheme;
 
@@ -28,11 +26,7 @@ pub struct ConfirmPopup {
 }
 
 impl DrawableComponent for ConfirmPopup {
-	fn draw<B: Backend>(
-		&self,
-		f: &mut Frame<B>,
-		_rect: Rect,
-	) -> Result<()> {
+	fn draw(&self, f: &mut Frame, _rect: Rect) -> Result<()> {
 		if self.visible {
 			let (title, msg) = self.get_text();
 

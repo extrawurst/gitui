@@ -42,7 +42,6 @@ use asyncgit::{
 use crossbeam_channel::Sender;
 use crossterm::event::{Event, KeyEvent};
 use ratatui::{
-	backend::Backend,
 	layout::{
 		Alignment, Constraint, Direction, Layout, Margin, Rect,
 	},
@@ -227,7 +226,7 @@ impl App {
 	}
 
 	///
-	pub fn draw<B: Backend>(&self, f: &mut Frame<B>) -> Result<()> {
+	pub fn draw(&self, f: &mut Frame) -> Result<()> {
 		let fsize = f.size();
 
 		self.cmdbar.borrow_mut().refresh_width(fsize.width);
@@ -1070,7 +1069,7 @@ impl App {
 	}
 
 	//TODO: make this dynamic
-	fn draw_top_bar<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
+	fn draw_top_bar(&self, f: &mut Frame, r: Rect) {
 		const DIVIDER_PAD_SPACES: usize = 2;
 		const SIDE_PADS: usize = 2;
 		const MARGIN_LEFT_AND_RIGHT: usize = 2;
