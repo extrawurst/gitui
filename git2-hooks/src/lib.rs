@@ -439,7 +439,7 @@ exit 1
 
 		// mirror how python pre-commmit sets itself up
 		#[cfg(not(windows))]
-		let hook = b"#!/usr/bin/env python3
+		let hook = b"#!/usr/bin/env python
 import sys
 sys.exit(0)
         ";
