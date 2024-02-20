@@ -48,11 +48,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 		.get_one::<String>("theme")
 		.map_or_else(|| PathBuf::from("theme.ron"), PathBuf::from);
 
-	let theme = if get_app_config_path()?.join(&arg_theme).is_file() {
-		get_app_config_path()?.join(arg_theme)
-	} else {
-		get_app_config_path()?.join("theme.ron")
-	};
+	let theme = get_app_config_path()?.join(arg_theme);
 
 	let notify_watcher: bool =
 		*arg_matches.get_one("watcher").unwrap_or(&false);
@@ -82,10 +78,11 @@ fn app() -> ClapApp {
 		)
 		.arg(
 			Arg::new("theme")
-				.help("Set the color theme (defaults to theme.ron)")
+				.help("Set color theme filename loaded from config directory")
 				.short('t')
 				.long("theme")
-				.value_name("THEME")
+				.value_name("THEME_FILE")
+				.default_value("theme.ron")
 				.num_args(1),
 		)
 		.arg(

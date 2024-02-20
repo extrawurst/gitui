@@ -35,6 +35,7 @@ These defaults require some adoption from existing users but feel more natural t
 ### Fixes
 * stash window empty after file history popup closes ([#1986](https://github.com/extrawurst/gitui/issues/1986))
 * allow push to empty remote ([#1919](https://github.com/extrawurst/gitui/issues/1919))
+* better diagnostics for theme file loading ([#2007](https://github.com/extrawurst/gitui/issues/2007))
 
 ## [0.24.3] - 2023-09-09
 
