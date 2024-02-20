@@ -2,6 +2,7 @@ use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState, InputType, TextInputComponent,
 };
+use crate::ui::style::SharedTheme;
 use crate::{
 	app::Environment,
 	keys::{key_match, SharedKeyConfig},
@@ -11,7 +12,8 @@ use crate::{
 use anyhow::Result;
 use asyncgit::sync::{self, RepoPathRef};
 use crossterm::event::Event;
-use ratatui::{layout::Rect, Frame};
+use easy_cast::Cast;
+use ratatui::{layout::Rect, widgets::Paragraph, Frame};
 
 pub struct RenameBranchPopup {
 	repo: RepoPathRef,
@@ -19,12 +21,15 @@ pub struct RenameBranchPopup {
 	branch_ref: Option<String>,
 	queue: Queue,
 	key_config: SharedKeyConfig,
+	theme: SharedTheme,
 }
 
 impl DrawableComponent for RenameBranchPopup {
 	fn draw(&self, f: &mut Frame, rect: Rect) -> Result<()> {
-		self.input.draw(f, rect)?;
-
+		if self.is_visible() {
+			self.input.draw(f, rect)?;
+			self.draw_warnings(f);
+		}
 		Ok(())
 	}
 }
@@ -97,6 +102,7 @@ impl RenameBranchPopup {
 			.with_input_type(InputType::Singleline),
 			branch_ref: None,
 			key_config: env.key_config.clone(),
+			theme: env.theme.clone(),
 		}
 	}
 
@@ -147,5 +153,36 @@ impl RenameBranchPopup {
 		}
 
 		self.input.clear();
+	}
+
+	fn draw_warnings(&self, f: &mut Frame) {
+		let current_text = self.input.get_text();
+
+		if !current_text.is_empty() {
+			let valid = sync::validate_branch_name(current_text)
+				.unwrap_or_default();
+
+			if !valid {
+				let msg = strings::branch_name_invalid();
+				let msg_length: u16 = msg.len().cast();
+				let w = Paragraph::new(msg)
+					.style(self.theme.text_danger());
+
+				let rect = {
+					let mut rect = self.input.get_area();
+					rect.y += rect.height.saturating_sub(1);
+					rect.height = 1;
+					let offset =
+						rect.width.saturating_sub(msg_length + 1);
+					rect.width =
+						rect.width.saturating_sub(offset + 1);
+					rect.x += offset;
+
+					rect
+				};
+
+				f.render_widget(w, rect);
+			}
+		}
 	}
 }
