@@ -94,6 +94,7 @@ jobs:
       with:
         body: ${{ steps.release_notes.outputs.release_notes }}
         prerelease: true
+        tag_name: "nightly"
         files: |
           ./release/*.tar.gz
           ./release/*.zip
