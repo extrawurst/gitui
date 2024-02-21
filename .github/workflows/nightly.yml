@@ -1,10 +1,7 @@
 # .github/workflows/build.yml
 name: nightly
 
-on:
-  schedule:
-    - cron: '0 2 * * *'
-  workflow_call:
+on: workflow_call
 
 jobs:
   release:
