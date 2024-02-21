@@ -233,7 +233,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Extract release notes
       id: extract_release_notes
-      uses: ffurrer2/extract-release-notes@v1
+      uses: ffurrer2/extract-release-notes@v2
       with:
         release_notes_file: ./release-notes.txt
     - uses: actions/upload-artifact@v4
