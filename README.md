@@ -223,7 +223,7 @@ All contain a single binary file
   - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/) 
   - a c compiler (msvc, gcc or clang, cargo will find it)
 
-- To run the complete test suite python is required (and it must be invokable as `python`)
+- To run the complete test suite python is required (and it must be invocable as `python`)
 
 ### Cargo Install
 
@@ -233,7 +233,7 @@ The simplest way to start playing around with `gitui` is to have `cargo` build a
 #### trace-libgit
 enable `libgit2` tracing
 
-works if `libgit2` builded with `-DENABLE_TRACE=ON`
+works if `libgit2` built with `-DENABLE_TRACE=ON`
 
 this feature enabled by default, to disable: `cargo install --no-default-features`
 

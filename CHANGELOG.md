@@ -27,7 +27,7 @@ These defaults require some adoption from existing users but feel more natural t
 
 #### key binding bitflags
 
-Modfiers like `SHIFT` or `CONTROL` are no longer configured via magic bitflags but via strings thanks to changes in the [bitflags crate](https://github.com/bitflags/bitflags/blob/main/CHANGELOG.md#changes-to-serde-serialization) we depend on. Please see [KEY_CONFIG.md](./KEY_CONFIG.md) or [vim_style_key_config.ron](./vim_style_key_config.ron) for more info and examples.
+Modifiers like `SHIFT` or `CONTROL` are no longer configured via magic bitflags but via strings thanks to changes in the [bitflags crate](https://github.com/bitflags/bitflags/blob/main/CHANGELOG.md#changes-to-serde-serialization) we depend on. Please see [KEY_CONFIG.md](./KEY_CONFIG.md) or [vim_style_key_config.ron](./vim_style_key_config.ron) for more info and examples.
 
 ### Added
 * support for new-line in text-input (e.g. commit message editor) [[@pm100]](https://github/pm100) ([#1662](https://github.com/extrawurst/gitui/issues/1662)).

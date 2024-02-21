@@ -88,7 +88,7 @@ pub fn get_config_string_repo(
 
 	let cfg = repo.config()?;
 
-	// this code doesnt match what the doc says regarding what
+	// this code doesn't match what the doc says regarding what
 	// gets returned when but it actually works
 	let entry_res = cfg.get_entry(key);
 
