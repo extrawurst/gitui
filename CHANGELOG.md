@@ -47,6 +47,7 @@ Modifiers like `SHIFT` or `CONTROL` are no longer configured via magic bitflags 
 * stash window empty after file history popup closes ([#1986](https://github.com/extrawurst/gitui/issues/1986))
 * allow push to empty remote ([#1919](https://github.com/extrawurst/gitui/issues/1919))
 * better diagnostics for theme file loading ([#2007](https://github.com/extrawurst/gitui/issues/2007))
+* fix ordering of commits in diff view [[@Joshix-1](https://github.com/Joshix-1)]([#1747](https://github.com/extrawurst/gitui/issues/1747))
 
 ## [0.24.3] - 2023-09-09
 
@@ -107,7 +108,6 @@ Modifiers like `SHIFT` or `CONTROL` are no longer configured via magic bitflags 
 * fix expansion of `~` in `commit.template` ([#1745](https://github.com/extrawurst/gitui/pull/1745))
 * fix hunk (un)staging/reset for # of context lines != 3 ([#1746](https://github.com/extrawurst/gitui/issues/1746))
 * fix delay when opening external editor ([#1506](https://github.com/extrawurst/gitui/issues/1506))
-* fix ordering of commits in diff view [[@Joshix-1](https://github.com/Joshix-1)]([#1747](https://github.com/extrawurst/gitui/issues/1747))
 
 ### Changed
 * Copy full Commit Hash by default [[@AmmarAbouZor](https://github.com/AmmarAbouZor)] ([#1836](https://github.com/extrawurst/gitui/issues/1836))
