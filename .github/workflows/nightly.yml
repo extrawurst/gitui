@@ -92,7 +92,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        body: ${{ steps.release_notes.outputs.release_notes }}
         prerelease: true
         tag_name: "nightly"
         files: |
