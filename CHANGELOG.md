@@ -18,9 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![syntax-highlighting-blame](assets/syntax-highlighting-blame.png)
 
 ### Breaking Change
+
+#### commit key binding
+
 The Commit message popup now supports multiline editing! Inserting a **newline** defaults to `enter`. This comes with a new default to confirm the commit message (`ctrl+d`).
 Both commands can be overwritten via `newline` and `commit` in the key bindings. see [KEY_CONFIG](./KEY_CONFIG.md) on how.
 These defaults require some adoption from existing users but feel more natural to new users.
+
+#### key binding bitflags
+
+Modfiers like `SHIFT` or `CONTROL` are no longer configured via magic bitflags but via strings thanks to changes in the [bitflags crate](https://github.com/bitflags/bitflags/blob/main/CHANGELOG.md#changes-to-serde-serialization) we depend on. Please see [KEY_CONFIG.md](./KEY_CONFIG.md) or [vim_style_key_config.ron](./vim_style_key_config.ron) for more info and examples.
 
 ### Added
 * support for new-line in text-input (e.g. commit message editor) [[@pm100]](https://github/pm100) ([#1662](https://github.com/extrawurst/gitui/issues/1662)).
