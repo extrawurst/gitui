@@ -3,7 +3,8 @@ name: nightly
 
 on:
   schedule:
-    - cron: '35 14 * * *' # run at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_call:
 
 jobs:
   release:
