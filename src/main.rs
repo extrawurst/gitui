@@ -370,7 +370,7 @@ fn start_terminal(buf: Stdout) -> io::Result<Terminal> {
 	Ok(terminal)
 }
 
-// do log::error! and eprintln! in one line, pass sting, error and backtrace
+// do log::error! and eprintln! in one line, pass string, error and backtrace
 macro_rules! log_eprintln {
 	($string:expr, $e:expr, $bt:expr) => {
 		log::error!($string, $e, $bt);

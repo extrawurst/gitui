@@ -16,7 +16,7 @@ const CONFIG_HOOKS_PATH: &str = "core.hooksPath";
 const DEFAULT_HOOKS_PATH: &str = "hooks";
 
 impl HookPaths {
-	/// `core.hooksPath` always takes precendence.
+	/// `core.hooksPath` always takes precedence.
 	/// If its defined and there is no hook `hook` this is not considered
 	/// an error or a reason to search in other paths.
 	/// If the config is not set we go into search mode and

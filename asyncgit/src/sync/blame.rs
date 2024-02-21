@@ -40,7 +40,7 @@ pub struct FileBlame {
 	pub lines: Vec<(Option<BlameHunk>, String)>,
 }
 
-/// fixup `\` windows path seperators to git compatible `/`
+/// fixup `\` windows path separators to git compatible `/`
 fn fixup_windows_path(path: &str) -> String {
 	#[cfg(windows)]
 	{
