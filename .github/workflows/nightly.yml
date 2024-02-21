@@ -2,8 +2,8 @@
 name: nightly
 
 on:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '35 14 * * *' # run at 2 AM UTC
 
 jobs:
   release:
