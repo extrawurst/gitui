@@ -1,13 +1,8 @@
-// bit for modifiers
-// bits: 0  None 
-// bits: 1  SHIFT
-// bits: 2  CONTROL
-//
 // Note:
 // If the default key layout is lower case,
 // and you want to use `Shift + q` to trigger the exit event,
 // the setting should like this `exit: Some(( code: Char('Q'), modifiers: "SHIFT")),`
-// The Char should be upper case, and the shift modified bit should be set to 1.
+// The Char should be upper case, and the modifier should be set to "SHIFT".
 //
 // Note:
 // find `KeysList` type in src/keys/key_list.rs for all possible keys.
