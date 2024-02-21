@@ -95,82 +95,59 @@ impl SignBuilder {
 		repo: &git2::Repository,
 		config: &git2::Config,
 	) -> Result<impl Sign, SignBuilderError> {
-		let signing_methods = config
-			.get_string("gitui.signing_methods")
-			.unwrap_or_else(|_| "shellouts".to_string());
+		let format = config
+			.get_string("gpg.format")
+			.unwrap_or_else(|_| "openpgp".to_string());
 
-		match signing_methods.as_str() {
-			"shellouts" => {
-				let format = config
-					.get_string("gpg.format")
-					.unwrap_or_else(|_| "openpgp".to_string());
+		// Variants are described in the git config documentation
+		// https://git-scm.com/docs/git-config#Documentation/git-config.txt-gpgformat
+		match format.as_str() {
+			"openpgp" => {
+				// Try to retrieve the gpg program from the git configuration,
+				// moving from the least to the most specific config key,
+				// defaulting to "gpg" if nothing is explicitly defined (per git's implementation)
+				// https://git-scm.com/docs/git-config#Documentation/git-config.txt-gpgprogram
+				// https://git-scm.com/docs/git-config#Documentation/git-config.txt-gpgprogram
+				let program = config
+					.get_string("gpg.openpgp.program")
+					.or_else(|_| config.get_string("gpg.program"))
+					.unwrap_or_else(|_| "gpg".to_string());
 
-				// Variants are described in the git config documentation
-				// https://git-scm.com/docs/git-config#Documentation/git-config.txt-gpgformat
-				match format.as_str() {
-					"openpgp" => {
-						// Try to retrieve the gpg program from the git configuration,
-						// moving from the least to the most specific config key,
-						// defaulting to "gpg" if nothing is explicitly defined (per git's implementation)
-						// https://git-scm.com/docs/git-config#Documentation/git-config.txt-gpgprogram
-						// https://git-scm.com/docs/git-config#Documentation/git-config.txt-gpgprogram
-						let program = config
-							.get_string("gpg.openpgp.program")
-							.or_else(|_| {
-								config.get_string("gpg.program")
-							})
-							.unwrap_or_else(|_| "gpg".to_string());
+				// Optional signing key.
+				// If 'user.signingKey' is not set, we'll use 'user.name' and 'user.email'
+				// to build a default signature in the format 'name <email>'.
+				// https://git-scm.com/docs/git-config#Documentation/git-config.txt-usersigningKey
+				let signing_key = config
+					.get_string("user.signingKey")
+					.or_else(
+						|_| -> Result<String, SignBuilderError> {
+							Ok(crate::sync::commit::signature_allow_undefined_name(repo)
+                                .map_err(|err| {
+                                    SignBuilderError::Signature(
+                                        err.to_string(),
+                                    )
+                                })?
+                                .to_string())
+						},
+					)
+					.map_err(|err| {
+						SignBuilderError::GPGSigningKey(
+							err.to_string(),
+						)
+					})?;
 
-						// Optional signing key.
-						// If 'user.signingKey' is not set, we'll use 'user.name' and 'user.email'
-						// to build a default signature in the format 'name <email>'.
-						// https://git-scm.com/docs/git-config#Documentation/git-config.txt-usersigningKey
-						let signing_key = config
-							.get_string("user.signingKey")
-							.or_else(
-								|_| -> Result<
-									String,
-									SignBuilderError,
-								> {
-									Ok(crate::sync::commit::signature_allow_undefined_name(repo)
-										.map_err(|err| {
-											SignBuilderError::Signature(
-												err.to_string(),
-											)
-										})?
-										.to_string())
-								},
-							)
-							.map_err(|err| {
-								SignBuilderError::GPGSigningKey(
-									err.to_string(),
-								)
-							})?;
-
-						Ok(GPGSign {
-							program,
-							signing_key,
-						})
-					}
-					"x509" => {
-						Err(SignBuilderError::MethodNotImplemented(
-							String::from("x509"),
-						))
-					}
-					"ssh" => {
-						Err(SignBuilderError::MethodNotImplemented(
-							String::from("ssh"),
-						))
-					}
-					_ => Err(SignBuilderError::InvalidFormat(format)),
-				}
+				Ok(GPGSign {
+					program,
+					signing_key,
+				})
 			}
-			"rust" => Err(SignBuilderError::MethodNotImplemented(
-				String::from("<rust native>"),
+			"x509" => Err(SignBuilderError::MethodNotImplemented(
+				String::from("x509"),
 			)),
-			_ => {
-				Err(SignBuilderError::InvalidFormat(signing_methods))
-			}
+			"ssh" => Err(SignBuilderError::MethodNotImplemented(
+				String::from("ssh"),
+			)),
+			_ => Err(SignBuilderError::InvalidFormat(format)),
 		}
 	}
 }
