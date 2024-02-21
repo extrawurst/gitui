@@ -109,7 +109,7 @@ impl ItemBatch {
 		self.items.iter()
 	}
 
-	/// clear curent list of items
+	/// clear current list of items
 	pub fn clear(&mut self) {
 		self.items.clear();
 		self.index_offset = None;

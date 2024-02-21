@@ -263,7 +263,7 @@ mod test {
 		)
 		.unwrap();
 
-		//this should not have commited cause we left conflicts behind
+		//this should not have committed cause we left conflicts behind
 		assert_eq!(res, None);
 
 		let state = crate::sync::repo_state(

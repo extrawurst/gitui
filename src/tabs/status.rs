@@ -311,8 +311,8 @@ impl Status {
 
 	fn can_focus_diff(&self) -> bool {
 		match self.focus {
-			Focus::WorkDir => self.index_wd.is_file_seleted(),
-			Focus::Stage => self.index.is_file_seleted(),
+			Focus::WorkDir => self.index_wd.is_file_selected(),
+			Focus::Stage => self.index.is_file_selected(),
 			Focus::Diff => false,
 		}
 	}

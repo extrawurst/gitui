@@ -21,7 +21,7 @@ impl<T: Copy + Send, P: Clone + Send + Sync + PartialEq>
 	/// send an intermediate update notification.
 	/// do not confuse this with the return value of `run`.
 	/// `send` should only be used about progress notifications
-	/// and not for the final notifcation indicating the end of the async job.
+	/// and not for the final notification indicating the end of the async job.
 	/// see `run` for more info
 	pub fn send(&self, notification: T) -> Result<()> {
 		self.sender.send(notification)?;
@@ -191,10 +191,10 @@ mod test {
 		value_to_add: u32,
 	}
 
-	type TestNotificaton = ();
+	type TestNotification = ();
 
 	impl AsyncJob for TestJob {
-		type Notification = TestNotificaton;
+		type Notification = TestNotification;
 		type Progress = ();
 
 		fn run(

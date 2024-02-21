@@ -184,7 +184,7 @@ impl DetailsComponent {
 			if let Some(ref committer) = data.committer {
 				res.extend(vec![
 					Line::from(vec![
-						style_detail(&self.theme, &Detail::Commiter),
+						style_detail(&self.theme, &Detail::Committer),
 						Span::styled(
 							Cow::from(format!(
 								"{} <{}>",

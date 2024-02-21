@@ -245,7 +245,7 @@ impl LogSearchPopupPopup {
 				),
 			)]),
 			Line::from(vec![Span::styled(
-				format!("[{x_files}] commited files",),
+				format!("[{x_files}] committed files",),
 				self.theme.text(
 					matches!(
 						self.selection,

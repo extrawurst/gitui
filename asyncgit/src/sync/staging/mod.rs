@@ -100,13 +100,13 @@ pub(crate) fn apply_selection(
 		};
 
 		if !first_hunk_encountered {
-			let any_slection_in_hunk =
+			let any_selection_in_hunk =
 				hunk.lines.iter().any(|line| {
 					let line: DiffLinePosition = line.into();
 					lines.contains(&line)
 				});
 
-			first_hunk_encountered = any_slection_in_hunk;
+			first_hunk_encountered = any_selection_in_hunk;
 		}
 
 		if first_hunk_encountered {

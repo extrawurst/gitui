@@ -10,7 +10,7 @@ use crate::{
 use git2::BranchType;
 use scopetime::scope_time;
 
-/// trys merging current branch with its upstrema using rebase
+/// tries merging current branch with its upstream using rebase
 pub fn merge_upstream_rebase(
 	repo_path: &RepoPath,
 	branch_name: &str,

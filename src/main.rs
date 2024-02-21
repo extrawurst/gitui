@@ -128,7 +128,8 @@ fn main() -> Result<()> {
 	asyncgit::register_tracing_logging();
 
 	if !valid_path(&cliargs.repo_path) {
-		bail!("invalid path\nplease run gitui inside of a non-bare git repository");
+		eprintln!("invalid path\nplease run gitui inside of a non-bare git repository");
+		return Ok(());
 	}
 
 	let key_config = KeyConfig::init()
@@ -318,7 +319,7 @@ fn draw(terminal: &mut Terminal, app: &App) -> io::Result<()> {
 fn valid_path(repo_path: &RepoPath) -> bool {
 	let error = asyncgit::sync::repo_open_error(repo_path);
 	if let Some(error) = &error {
-		eprintln!("repo open error: {error}");
+		log::error!("repo open error: {error}");
 	}
 	error.is_none()
 }

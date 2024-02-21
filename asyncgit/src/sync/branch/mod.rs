@@ -384,7 +384,7 @@ pub fn checkout_remote_branch(
 	if let Err(e) = repo.checkout_head(Some(
 		git2::build::CheckoutBuilder::new().force(),
 	)) {
-		// This is safe beacuse cur_ref was just found
+		// This is safe because cur_ref was just found
 		repo.set_head(bytes2string(cur_ref.name_bytes())?.as_str())?;
 		return Err(Error::Git(e));
 	}

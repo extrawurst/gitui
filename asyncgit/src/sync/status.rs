@@ -126,7 +126,7 @@ pub fn is_workdir_clean(
 	Ok(statuses.is_empty())
 }
 
-/// gurantees sorting
+/// guarantees sorting
 pub fn get_status(
 	repo_path: &RepoPath,
 	status_type: StatusType,

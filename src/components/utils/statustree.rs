@@ -444,7 +444,7 @@ mod tests {
 			.collect::<Vec<_>>()
 	}
 
-	fn get_visibles(tree: &StatusTree) -> Vec<bool> {
+	fn get_visible(tree: &StatusTree) -> Vec<bool> {
 		tree.tree
 			.items()
 			.iter()
@@ -503,7 +503,7 @@ mod tests {
 
 		res.update(&string_vec_to_status(&["a/b"])).unwrap();
 		assert_eq!(
-			get_visibles(&res),
+			get_visible(&res),
 			vec![
 				true,  //
 				false, //
@@ -533,7 +533,7 @@ mod tests {
 		);
 
 		assert_eq!(
-			get_visibles(&res),
+			get_visible(&res),
 			vec![
 				true,  //
 				false, //
@@ -554,7 +554,7 @@ mod tests {
 		);
 
 		assert_eq!(
-			get_visibles(&res),
+			get_visible(&res),
 			vec![
 				true,  //
 				false, //
@@ -581,10 +581,10 @@ mod tests {
 
 		res.collapse(&String::from("a/b"), 1);
 
-		let visibles = get_visibles(&res);
+		let visible = get_visible(&res);
 
 		assert_eq!(
-			visibles,
+			visible,
 			vec![
 				true,  //
 				true,  //
@@ -595,10 +595,10 @@ mod tests {
 
 		res.expand(&String::from("a/b"), 1);
 
-		let visibles = get_visibles(&res);
+		let visible = get_visible(&res);
 
 		assert_eq!(
-			visibles,
+			visible,
 			vec![
 				true, //
 				true, //
@@ -628,7 +628,7 @@ mod tests {
 		res.collapse(&String::from("a"), 0);
 
 		assert_eq!(
-			get_visibles(&res),
+			get_visible(&res),
 			vec![
 				true,  //
 				false, //
@@ -641,7 +641,7 @@ mod tests {
 		res.expand(&String::from("a"), 0);
 
 		assert_eq!(
-			get_visibles(&res),
+			get_visible(&res),
 			vec![
 				true,  //
 				true,  //
@@ -669,10 +669,10 @@ mod tests {
 
 		res.collapse(&String::from("a"), 0);
 
-		let visibles = get_visibles(&res);
+		let visible = get_visible(&res);
 
 		assert_eq!(
-			visibles,
+			visible,
 			vec![
 				true,  //
 				false, //
@@ -699,10 +699,10 @@ mod tests {
 
 		res.collapse(&String::from("a/b"), 1);
 
-		let visibles = get_visibles(&res);
+		let visible = get_visible(&res);
 
 		assert_eq!(
-			visibles,
+			visible,
 			vec![
 				true,  //
 				true,  //
@@ -713,10 +713,10 @@ mod tests {
 
 		res.collapse(&String::from("a"), 0);
 
-		let visibles = get_visibles(&res);
+		let visible = get_visible(&res);
 
 		assert_eq!(
-			visibles,
+			visible,
 			vec![
 				true,  //
 				false, //
@@ -727,10 +727,10 @@ mod tests {
 
 		res.expand(&String::from("a"), 0);
 
-		let visibles = get_visibles(&res);
+		let visible = get_visible(&res);
 
 		assert_eq!(
-			visibles,
+			visible,
 			vec![
 				true,  //
 				true,  //

@@ -24,7 +24,7 @@ struct OptionsData {
 	pub commit_msgs: Vec<String>,
 }
 
-const COMMIT_MSG_HISTRY_LENGTH: usize = 20;
+const COMMIT_MSG_HISTORY_LENGTH: usize = 20;
 
 #[derive(Clone)]
 pub struct Options {
@@ -109,7 +109,8 @@ impl Options {
 
 	pub fn add_commit_msg(&mut self, msg: &str) {
 		self.data.commit_msgs.push(msg.to_owned());
-		while self.data.commit_msgs.len() > COMMIT_MSG_HISTRY_LENGTH {
+		while self.data.commit_msgs.len() > COMMIT_MSG_HISTORY_LENGTH
+		{
 			self.data.commit_msgs.remove(0);
 		}
 		self.save();

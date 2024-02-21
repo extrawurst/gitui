@@ -36,7 +36,7 @@ use std::{
 use super::ExternalEditorPopup;
 
 enum CommitResult {
-	ComitDone,
+	CommitDone,
 	Aborted,
 }
 
@@ -172,7 +172,7 @@ impl CommitPopup {
 					.as_bytes(),
 			)?;
 
-			file.write_all(b"\n#\n# Changes to be commited:")?;
+			file.write_all(b"\n#\n# Changes to be committed:")?;
 
 			for change in changes {
 				let status_char =
@@ -218,7 +218,7 @@ impl CommitPopup {
 
 		if matches!(
 			self.commit_with_msg(msg)?,
-			CommitResult::ComitDone
+			CommitResult::CommitDone
 		) {
 			self.options
 				.borrow_mut()
@@ -279,7 +279,7 @@ impl CommitPopup {
 			)));
 		}
 
-		Ok(CommitResult::ComitDone)
+		Ok(CommitResult::CommitDone)
 	}
 
 	fn do_commit(&self, msg: &str) -> Result<()> {

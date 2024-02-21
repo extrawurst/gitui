@@ -72,8 +72,8 @@ impl ChangesComponent {
 	}
 
 	///
-	pub fn is_file_seleted(&self) -> bool {
-		self.files.is_file_seleted()
+	pub fn is_file_selected(&self) -> bool {
+		self.files.is_file_selected()
 	}
 
 	fn index_add_remove(&mut self) -> Result<bool> {

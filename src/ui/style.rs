@@ -274,13 +274,7 @@ impl Theme {
 	fn load_patch(theme_path: &PathBuf) -> Result<ThemePatch> {
 		let file = File::open(theme_path)?;
 
-		let load_result = ron::de::from_reader(file);
-
-		if let Err(e) = &load_result {
-			log::error!("theme error [{:?}]: {e}", theme_path);
-		}
-
-		Ok(load_result?)
+		Ok(ron::de::from_reader(file)?)
 	}
 
 	fn load_old_theme(theme_path: &PathBuf) -> Result<Self> {
@@ -303,7 +297,10 @@ impl Theme {
 	pub fn init(theme_path: &PathBuf) -> Self {
 		let mut theme = Self::default();
 
-		if let Ok(patch) = Self::load_patch(theme_path) {
+		if let Ok(patch) = Self::load_patch(theme_path).map_err(|e| {
+			log::error!("theme error [{:?}]: {e}", theme_path);
+			e
+		}) {
 			theme.apply(patch);
 		} else if let Ok(old_theme) = Self::load_old_theme(theme_path)
 		{

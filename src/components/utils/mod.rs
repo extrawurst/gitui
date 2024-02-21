@@ -26,7 +26,7 @@ macro_rules! try_or_popup {
 	};
 }
 
-/// helper func to convert unix time since epoch to formated time string in local timezone
+/// helper func to convert unix time since epoch to formatted time string in local timezone
 pub fn time_to_string(secs: i64, short: bool) -> String {
 	let time = DateTime::<Local>::from(
 		DateTime::<Utc>::from_naive_utc_and_offset(

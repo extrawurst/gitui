@@ -190,7 +190,6 @@ pub fn tag_commit(
 
 #[cfg(test)]
 mod tests {
-
 	use crate::error::Result;
 	use crate::sync::tags::Tag;
 	use crate::sync::RepoPath;

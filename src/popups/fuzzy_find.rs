@@ -187,7 +187,7 @@ impl FuzzyFindPopup {
 				.iter()
 				.skip(scroll_skip)
 				.take(height)
-				.map(|(idx, indicies)| {
+				.map(|(idx, indices)| {
 					let selected = self
 						.selected_index
 						.map_or(false, |index| index == *idx);
@@ -205,7 +205,7 @@ impl FuzzyFindPopup {
 									Cow::from(c.to_string()),
 									self.theme.text(
 										selected,
-										indicies.contains(
+										indices.contains(
 											&(c_idx + trim_length),
 										),
 									),

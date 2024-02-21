@@ -21,13 +21,15 @@ Both commands can be overwritten via `newline` and `commit` in the key bindings.
 These defaults require some adoption from existing users but feel more natural to new users.
 
 ### Added
+* support for new-line in text-input (e.g. commit message editor) [[@pm100]](https://github/pm100) ([#1662](https://github.com/extrawurst/gitui/issues/1662)).
+* add syntax highlighting for blame view [[@tdtrung17693](https://github.com/tdtrung17693)] ([#745](https://github.com/extrawurst/gitui/issues/745))
+* allow aborting pending commit log search [[@StemCll](https://github.com/StemCll)] ([#1860](https://github.com/extrawurst/gitui/issues/1860))
 * `theme.ron` now supports customizing line break symbol ([#1894](https://github.com/extrawurst/gitui/issues/1894))
 * add confirmation for dialog for undo commit [[@TeFiLeDo](https://github.com/TeFiLeDo)] ([#1912](https://github.com/extrawurst/gitui/issues/1912))
 * support `prepare-commit-msg` hook ([#1873](https://github.com/extrawurst/gitui/issues/1873))
-* support for new-line in text-input (e.g. commit message editor) [[@pm100]](https://github/pm100) ([#1662](https://github.com/extrawurst/gitui/issues/1662)).
 * new style `block_title_focused` to allow customizing title text of focused frame/block ([#2052](https://github.com/extrawurst/gitui/issues/2052)).
-* add syntax highlighting for blame view [[@tdtrung17693](https://github.com/tdtrung17693)] ([#745](https://github.com/extrawurst/gitui/issues/745))
 * allow `fetch` command in both tabs of branchlist popup ([#2067](https://github.com/extrawurst/gitui/issues/2067))
+* check branch name validity while typing [[@sainad2222](https://github.com/sainad2222)] ([#2062](https://github.com/extrawurst/gitui/issues/2062))
 * support sign commit with ssh key in disk by `user.signingKey` and `gpg.format = ssh` of gitconfig (ssh-agent/`SSH_AUTH_SOCK` isn't yet supported)  ([#1149](https://github.com/extrawurst/gitui/issues/1149))
 
 ### Changed
@@ -36,6 +38,7 @@ These defaults require some adoption from existing users but feel more natural t
 ### Fixes
 * stash window empty after file history popup closes ([#1986](https://github.com/extrawurst/gitui/issues/1986))
 * allow push to empty remote ([#1919](https://github.com/extrawurst/gitui/issues/1919))
+* better diagnostics for theme file loading ([#2007](https://github.com/extrawurst/gitui/issues/2007))
 
 ## [0.24.3] - 2023-09-09
 
@@ -211,7 +214,7 @@ Bugfix followup release - check `0.22.0` notes for more infos!
 ### Added
 * stack popups ([#846](https://github.com/extrawurst/gitui/issues/846))
 * file history log [[@cruessler](https://github.com/cruessler)] ([#381](https://github.com/extrawurst/gitui/issues/381))
-* termux support on andriod [[@PeroSar](https://github.com/PeroSar)] ([#1139](https://github.com/extrawurst/gitui/issues/1139))
+* termux support on android [[@PeroSar](https://github.com/PeroSar)] ([#1139](https://github.com/extrawurst/gitui/issues/1139))
 * use `GIT_DIR` and `GIT_WORK_DIR` from environment if set ([#1191](https://github.com/extrawurst/gitui/pull/1191))
 * new [FAQ](./FAQ.md)s page
 * mention macports in install section [[@fs111](https://github.com/fs111)]([#1237](https://github.com/extrawurst/gitui/pull/1237))
@@ -647,7 +650,7 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 - min size for relative popups on small terminals ([#179](https://github.com/extrawurst/gitui/issues/179))
 - fix crash on resizing terminal to very small width ([#198](https://github.com/extrawurst/gitui/issues/198))
 - fix broken tags when using a different internal representation ([#206](https://github.com/extrawurst/gitui/issues/206))
-- tags are not cleanly seperated in details view ([#212](https://github.com/extrawurst/gitui/issues/212))
+- tags are not cleanly separated in details view ([#212](https://github.com/extrawurst/gitui/issues/212))
 
 ## [0.8.1] - 2020-07-07
 
@@ -813,7 +816,7 @@ Thanks for your interest and support over this year! Read more about the 1 year 
 ### Changed
 
 - show longer commit messages in log view
-- introduce propper error handling in `asyncgit` [[@MCord](https://github.com/MCord)]([#53](https://github.com/extrawurst/gitui/issues/53))
+- introduce proper error handling in `asyncgit` [[@MCord](https://github.com/MCord)]([#53](https://github.com/extrawurst/gitui/issues/53))
 - better error message when trying to run outside of a valid git repo ([#56](https://github.com/extrawurst/gitui/issues/56))
 - improve ctrl+c handling so it is checked first and no component needs to worry of blocking it
 
