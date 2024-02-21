@@ -1,8 +1,7 @@
 # .github/workflows/build.yml
 name: nightly
 
-on: workflow_call
-
+on: workflow_dispatch
 jobs:
   release:
     name: nightly release ${{ matrix.target }}
