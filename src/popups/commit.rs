@@ -210,8 +210,14 @@ impl CommitPopup {
 				.and_then(|path| path.parse::<bool>().ok())
 				.unwrap_or_default();
 
-		if gpgsign {
-			anyhow::bail!("config commit.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
+		let sshsign =
+			get_config_string(&self.repo.borrow(), "gpg.format")
+				.ok()
+				.flatten()
+				.unwrap_or_default();
+
+		if gpgsign && sshsign != "ssh" {
+			anyhow::bail!("config commit.gpgsign=true detected.\nonly gpg signing with ssh format supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
 		}
 
 		let msg = self.input.get_text().to_string();
