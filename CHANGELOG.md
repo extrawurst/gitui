@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.25.1] - 2024-02-23
+
 ### Fixes
 * bump yanked dependency `bumpalo` to fix build from source ([#2087](https://github.com/extrawurst/gitui/issues/2087))
-* pin `ratatui` version to fix building without `--locked` ([#2090](https://github.com/extrawurst/gitui/issues/2090))
+* pin `ratatui` version to fix building without locked `cargo install gitui` ([#2090](https://github.com/extrawurst/gitui/issues/2090))
 
 ## [0.25.0] - 2024-02-21
 
