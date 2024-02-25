@@ -86,15 +86,32 @@ jobs:
       id: shasum
       run: |
         echo sha="$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
-  
-    - name: Nightly-Release
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+    - name: Ubuntu 22.04 Upload Artifact
+      if: matrix.os != 'ubuntu-22.04'
+      uses: actions/upload-artifact@v4
       with:
-        prerelease: true
-        tag_name: "nightly"
-        files: |
-          ./release/*.tar.gz
-          ./release/*.zip
-          ./release/*.msi
+        name: 'ubuntu-22.04'
+        path: ./release/*.zip
+
+    - name: Ubuntu Latest Upload Artifact
+      if: matrix.os != 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: 'ubuntu-latest'
+        path: ./release/*.zip
+    
+    - name: MacOS Upload Artifact
+      if: matrix.os == 'macos-latest'  
+      uses: actions/upload-artifact@v4
+      with:
+        name: 'macos-latest'
+        path: ./release/*.tar.gz
+        
+    - name: Windows Upload Artifact
+      if: matrix.os == 'windows-latest' 
+      uses: actions/upload-artifact@v4
+      with:
+        name: 'windows-latest'
+        path: ./release/*.msi
