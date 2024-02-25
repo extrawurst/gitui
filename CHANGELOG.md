@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+* Update `ratatui` to `0.26.1` ([#2094](https://github.com/extrawurst/gitui/issues/2094), [#2098](https://github.com/extrawurst/gitui/issues/2098))
+
 ## [0.25.1] - 2024-02-23
 
 ### Fixes
