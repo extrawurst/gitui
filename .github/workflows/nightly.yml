@@ -87,13 +87,6 @@ jobs:
       run: |
         echo sha="$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
 
-
-    - name: List Folder
-      uses: kmanimaran/list-folder-action@v4
-      with:
-        path: ./release
-
-
     - name: Ubuntu 22.04 Upload Artifact
       if: matrix.os == 'ubuntu-22.04'
       uses: shallwefootball/s3-upload-action@master
@@ -101,7 +94,7 @@ jobs:
           aws_key_id: ${{ secrets.AWS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
           aws_bucket: ${{ secrets.AWS_BUCKET }}
-          source_dir: './release/*.zip'
+          source_dir: './release/*.tar.gz'
           
     - name: Ubuntu Latest Upload Artifact
       if: matrix.os == 'ubuntu-latest'
@@ -110,7 +103,7 @@ jobs:
          aws_key_id: ${{ secrets.AWS_KEY_ID }}
          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
          aws_bucket: ${{ secrets.AWS_BUCKET }}
-         source_dir: './release/*.zip'
+         source_dir: './release/*.tar.gz'
     
     - name: MacOS Upload Artifact
       if: matrix.os == 'macos-latest'  
