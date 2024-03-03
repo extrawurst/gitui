@@ -89,7 +89,7 @@ jobs:
 
 
     - name: List Folder
-      uses: philips-labs/list-folders-action@v1
+      uses: kmanimaran/list-folder-action@v4
       with:
         path: ./release
 
