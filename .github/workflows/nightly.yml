@@ -94,7 +94,7 @@ jobs:
           aws_key_id: ${{ secrets.AWS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
           aws_bucket: ${{ secrets.AWS_BUCKET }}
-          source_dir: './release/*.tar.gz'
+          source_dir: './release/gitui-linux-arm.tar.gz'
           
     - name: Ubuntu Latest Upload Artifact
       if: matrix.os == 'ubuntu-latest'
@@ -103,7 +103,7 @@ jobs:
          aws_key_id: ${{ secrets.AWS_KEY_ID }}
          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
          aws_bucket: ${{ secrets.AWS_BUCKET }}
-         source_dir: './release/*.tar.gz'
+         source_dir: './release/gitui-linux-musl.tar.gz'
     
     - name: MacOS Upload Artifact
       if: matrix.os == 'macos-latest'  
