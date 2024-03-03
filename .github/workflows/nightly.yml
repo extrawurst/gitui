@@ -88,30 +88,44 @@ jobs:
         echo sha="$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
 
 
+    - name: List Folder
+      uses: philips-labs/list-folders-action@v1
+      with:
+        path: ./release
+
+
     - name: Ubuntu 22.04 Upload Artifact
       if: matrix.os == 'ubuntu-22.04'
-      uses: actions/upload-artifact@v4
+      uses: shallwefootball/s3-upload-action@master
       with:
-        name: 'ubuntu-22.04'
-        path: ./release/*.zip
-
+          aws_key_id: ${{ secrets.AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+          aws_bucket: ${{ secrets.AWS_BUCKET }}
+          source_dir: './release/*.zip'
+          
     - name: Ubuntu Latest Upload Artifact
       if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
+      uses: shallwefootball/s3-upload-action@master
       with:
-        name: 'ubuntu-latest'
-        path: ./release/*.zip
+         aws_key_id: ${{ secrets.AWS_KEY_ID }}
+         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+         aws_bucket: ${{ secrets.AWS_BUCKET }}
+         source_dir: './release/*.zip'
     
     - name: MacOS Upload Artifact
       if: matrix.os == 'macos-latest'  
-      uses: actions/upload-artifact@v4
+      uses: shallwefootball/s3-upload-action@master
       with:
-        name: 'macos-latest'
-        path: ./release/*.tar.gz
-        
+        aws_key_id: ${{ secrets.AWS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+        aws_bucket: ${{ secrets.AWS_BUCKET }}
+        source_dir: './release/*.tar.gz'
+
     - name: Windows Upload Artifact
       if: matrix.os == 'windows-latest' 
-      uses: actions/upload-artifact@v4
+      uses: shallwefootball/s3-upload-action@master
       with:
-        name: 'windows-latest'
-        path: ./release/*.msi
+        aws_key_id: ${{ secrets.AWS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+        aws_bucket: ${{ secrets.AWS_BUCKET }}
+        source_dir: './release/*.msi'
