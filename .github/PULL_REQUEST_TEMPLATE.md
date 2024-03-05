@@ -1,6 +1,6 @@
 <!---
 Thank you for contributing to GitUI! Please fill out the template below, and remove or add any
-information as you feel neccesary.
+information as you feel necessary.
 --->
 
 This Pull Request fixes/closes #{issue_num}.

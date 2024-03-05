@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.25.0"
+version = "0.25.1"
 authors = ["extrawurst <mail@rusticorn.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2021"
@@ -36,7 +36,7 @@ log = "0.4"
 notify = "6.1"
 notify-debouncer-mini = "0.4"
 once_cell = "1"
-ratatui = { version = "0.24", default-features = false, features = [
+ratatui = { version = "=0.24.0", default-features = false, features = [
     'crossterm',
     'serde',
 ] }

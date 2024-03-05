@@ -568,7 +568,7 @@ impl DiffComponent {
 
 	fn stage_lines(&self) {
 		if let Some(diff) = &self.diff {
-			//TODO: support untracked files aswell
+			//TODO: support untracked files as well
 			if !diff.untracked {
 				let selected_lines = self.selected_lines();
 
