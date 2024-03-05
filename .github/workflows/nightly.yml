@@ -95,9 +95,9 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
       run: |
-        aws s3 cp ./release/gitui-linux-armv7.tar.gz s3://"$AWS_BUCKET_NAME"
-        aws s3 cp ./release/gitui-linux-arm.tar.gz s3://"$AWS_BUCKET_NAME"
-        aws s3 cp ./release/gitui-linux-aarch64.tar.gz s3://"$AWS_BUCKET_NAME"
+        aws s3 cp ./release/gitui-linux-armv7.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
+        aws s3 cp ./release/gitui-linux-arm.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
+        aws s3 cp ./release/gitui-linux-aarch64.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
           
     - name: Ubuntu Latest Upload Artifact
       if: matrix.os == 'ubuntu-latest'
@@ -107,7 +107,7 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
       run: |
-        aws s3 cp ./release/gitui-linux-musl.tar.gz s3://"$AWS_BUCKET_NAME"
+        aws s3 cp ./release/gitui-linux-musl.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
       
 
     - name: MacOS Upload Artifact
@@ -118,7 +118,7 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
       run: |
-        aws s3 cp ./release/gitui-mac.tar.gz s3://"$AWS_BUCKET_NAME"
+        aws s3 cp ./release/gitui-mac.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
 
     - name: Windows Upload Artifact
       if: matrix.os == 'windows-latest' 
@@ -128,5 +128,5 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
       run: |
-        aws s3 cp ./release/gitui.msi s3://"$env:AWS_BUCKET_NAME"
-        aws s3 cp ./release/gitui-win.tar.gz s3://"$env:AWS_BUCKET_NAME"
+        aws s3 cp ./release/gitui.msi s3://"$env:AWS_BUCKET_NAME"/nightly-builds/
+        aws s3 cp ./release/gitui-win.tar.gz s3://"$env:AWS_BUCKET_NAME"/nightly-builds/
