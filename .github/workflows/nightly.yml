@@ -128,5 +128,5 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
       run: |
-        aws s3 cp ./release/gitui.msi s3://"$AWS_BUCKET_NAME"
-        aws s3 cp ./release/gitui-win.tar.gz s3://"$AWS_BUCKET_NAME"
+        aws s3 cp ./release/gitui.msi s3://"$env:AWS_BUCKET_NAME"
+        aws s3 cp ./release/gitui-win.tar.gz s3://"$env:AWS_BUCKET_NAME"
