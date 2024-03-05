@@ -89,36 +89,44 @@ jobs:
 
     - name: Ubuntu 22.04 Upload Artifact
       if: matrix.os == 'ubuntu-22.04'
-      uses: shallwefootball/s3-upload-action@master
-      with:
-          aws_key_id: ${{ secrets.AWS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-          aws_bucket: ${{ secrets.AWS_BUCKET }}
-          source_dir: './release'
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+      run: |
+        aws s3 cp ./release/gitui-linux-armv7.tar.gz s3://"$AWS_BUCKET_NAME"
+        aws s3 cp ./release/gitui-linux-arm.tar.gz s3://"$AWS_BUCKET_NAME"
+        aws s3 cp ./release/gitui-linux-aarch64.tar.gz s3://"$AWS_BUCKET_NAME"
           
     - name: Ubuntu Latest Upload Artifact
       if: matrix.os == 'ubuntu-latest'
-      uses: shallwefootball/s3-upload-action@master
-      with:
-         aws_key_id: ${{ secrets.AWS_KEY_ID }}
-         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-         aws_bucket: ${{ secrets.AWS_BUCKET }}
-         source_dir: './release'
-    
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+      run: |
+        aws s3 cp ./release/gitui-linux-musl.tar.gz s3://"$AWS_BUCKET_NAME"
+      
+
     - name: MacOS Upload Artifact
       if: matrix.os == 'macos-latest'  
-      uses: shallwefootball/s3-upload-action@master
-      with:
-        aws_key_id: ${{ secrets.AWS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-        aws_bucket: ${{ secrets.AWS_BUCKET }}
-        source_dir: './release'
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+      run: |
+        aws s3 cp ./release/gitui-mac.tar.gz s3://"$AWS_BUCKET_NAME"
 
     - name: Windows Upload Artifact
       if: matrix.os == 'windows-latest' 
-      uses: shallwefootball/s3-upload-action@master
-      with:
-        aws_key_id: ${{ secrets.AWS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-        aws_bucket: ${{ secrets.AWS_BUCKET }}
-        source_dir: './release'
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+      run: |
+        aws s3 cp ./release/gitui.msi s3://"$AWS_BUCKET_NAME"
+        aws s3 cp ./release/gitui-win.tar.gz s3://"$AWS_BUCKET_NAME"
