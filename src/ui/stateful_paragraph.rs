@@ -89,7 +89,6 @@ impl<'a> StatefulParagraph<'a> {
 		}
 	}
 
-	#[allow(clippy::missing_const_for_fn)]
 	pub fn block(mut self, block: Block<'a>) -> Self {
 		self.block = Some(block);
 		self
