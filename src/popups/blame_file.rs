@@ -45,11 +45,11 @@ impl SyntaxFileBlame {
 		&self.file_blame.path
 	}
 
-	fn commit_id(&self) -> &CommitId {
+	const fn commit_id(&self) -> &CommitId {
 		&self.file_blame.commit_id
 	}
 
-	fn lines(&self) -> &Vec<(Option<BlameHunk>, String)> {
+	const fn lines(&self) -> &Vec<(Option<BlameHunk>, String)> {
 		&self.file_blame.lines
 	}
 }
@@ -64,7 +64,7 @@ enum BlameProcess {
 }
 
 impl BlameProcess {
-	fn result(&self) -> Option<&SyntaxFileBlame> {
+	const fn result(&self) -> Option<&SyntaxFileBlame> {
 		match self {
 			Self::GettingBlame(_) => None,
 			Self::SyntaxHighlighting {
@@ -386,7 +386,7 @@ impl BlameFilePopup {
 	}
 
 	///
-	pub fn any_work_pending(&self) -> bool {
+	pub const fn any_work_pending(&self) -> bool {
 		self.blame.is_some()
 			&& !matches!(self.blame, Some(BlameProcess::Result(_)))
 	}
