@@ -267,7 +267,7 @@ impl LogSearchPopupPopup {
 		]
 	}
 
-	fn option_selected(&self) -> bool {
+	const fn option_selected(&self) -> bool {
 		!matches!(self.selection, Selection::EnterText)
 	}
 
