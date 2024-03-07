@@ -215,9 +215,44 @@ impl CommitPopup {
 				.ok()
 				.flatten()
 				.unwrap_or_default();
+		let signing_key =
+			get_config_string(&self.repo.borrow(), "user.signingKey")
+				.ok()
+				.flatten();
 
-		if gpgsign && sshsign != "ssh" {
-			anyhow::bail!("config commit.gpgsign=true detected.\nonly gpg signing with ssh format supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
+		if gpgsign {
+			if sshsign == "ssh" {
+				if !signing_key
+					.map(|key_path| {
+						key_path
+							.strip_prefix('~')
+							.map_or_else(
+								|| Some(PathBuf::from(&key_path)),
+								|ssh_key_path| {
+									dirs::home_dir().map(|home| {
+										home.join(
+											ssh_key_path
+												.strip_prefix('/')
+												.unwrap_or(
+													ssh_key_path,
+												),
+										)
+									})
+								},
+							)
+							.map(|mut p| {
+								p.set_extension("");
+								p.is_file()
+							})
+							.unwrap_or_default()
+					})
+					.unwrap_or_default()
+				{
+					anyhow::bail!("Currently, we only support a pair of ssh key in disk.");
+				}
+			} else {
+				anyhow::bail!("config commit.gpgsign=true detected.\nonly gpg signing with ssh key in disk supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
+			}
 		}
 
 		let msg = self.input.get_text().to_string();
