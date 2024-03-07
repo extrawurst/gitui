@@ -528,7 +528,7 @@ impl CommitList {
 		let author = string_width_align(&e.author, author_width);
 
 		// commit author
-		txt.push(Span::styled::<String>(author, style_author));
+		txt.push(Span::styled::<String, Style>(author, style_author));
 
 		txt.push(splitter.clone());
 
