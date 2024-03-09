@@ -11,7 +11,7 @@
 Some users have trouble pushing/pulling from remotes and adding their ssh-key to their ssh-agent solved the issue. The error they get is:
 ![](./assets/bad-credentials.png)
 
-See gihtub's excellent documentation for [Adding your SSH Key to the ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent)
+See Github's excellent documentation for [Adding your SSH Key to the ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent)
 
 Note that in some cases adding the line `ssh-add -K ~/.ssh/id_ed25519`(or whatever your key is called) to your bash init script is necessary too to survive restarts.
 
