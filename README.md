@@ -39,6 +39,7 @@
 12. [Sponsoring](#sponsoring)
 13. [Inspiration](#inspiration)
 14. [Contributors](#contributors)
+15. [Contributing](#contributing)
 
 ## 1. <a name="features"></a> Features <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -285,3 +286,7 @@ Wanna become a co-maintainer? We are looking for [you](https://github.com/extraw
 <a href="https://github.com/extrawurst/gitui/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=extrawurst/gitui" />
 </a>
+
+## 15. <a name="contributing"></a> Contributing <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
