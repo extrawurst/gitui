@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use unicode_width::UnicodeWidthStr;
 
 #[cfg(feature = "ghemoji")]
@@ -30,8 +30,9 @@ macro_rules! try_or_popup {
 pub fn time_to_string(secs: i64, short: bool) -> String {
 	let time = DateTime::<Local>::from(
 		DateTime::<Utc>::from_naive_utc_and_offset(
-			NaiveDateTime::from_timestamp_opt(secs, 0)
-				.unwrap_or_default(),
+			DateTime::from_timestamp(secs, 0)
+				.unwrap_or_default()
+				.naive_utc(),
 			Utc,
 		),
 	);
