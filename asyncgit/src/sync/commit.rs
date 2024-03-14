@@ -1,6 +1,6 @@
 use super::{CommitId, RepoPath};
 use crate::{
-	error::Result,
+	error::{Error, Result},
 	sync::{repository::repo, utils::get_head_repo},
 };
 use git2::{Config, ErrorCode, ObjectType, Repository, Signature};
@@ -145,6 +145,9 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 				)?;
 			}
 			Ok(commit_id.into())
+		}
+		(Some(f), None) if f.value() == Some("ssh") => {
+			Err(Error::SshKeyMissing)
 		}
 		_ => Ok(repo
 			.commit(

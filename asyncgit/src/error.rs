@@ -88,6 +88,10 @@ pub enum Error {
 	///
 	#[error("ssh key error: {0}")]
 	SshKeyError(#[from] ssh_key::Error),
+
+	///
+	#[error("ssh key missing")]
+	SshKeyMissing,
 }
 
 ///
