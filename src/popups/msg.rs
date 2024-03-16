@@ -41,6 +41,8 @@ impl DrawableComponent for MsgPopup {
 			return Ok(());
 		}
 
+		let max_width = f.size().width.max(MINIMUM_WIDTH);
+
 		// determine the maximum width of text block
 		let width = self
 			.msg
@@ -49,10 +51,9 @@ impl DrawableComponent for MsgPopup {
 			.max()
 			.expect("Expected at least one line in the message")
 			.saturating_add(BORDER_WIDTH.into())
-			.clamp(BORDER_WIDTH.into(), std::u16::MAX as usize);
-		let width = u16::try_from(width)
-			.expect("can't fail due to clamp above")
-			.clamp(MINIMUM_WIDTH, f.size().width);
+			.clamp(MINIMUM_WIDTH.into(), max_width.into())
+			.try_into()
+			.expect("can't fail because we're clamping to u16 value");
 
 		self.current_width.set(width);
 
@@ -64,7 +65,10 @@ impl DrawableComponent for MsgPopup {
 		let msg_lines: Vec<String> =
 			wrapped_msg.lines().map(String::from).collect();
 		let line_num = msg_lines.len();
-		let height = POPUP_HEIGHT.saturating_sub(BORDER_WIDTH);
+
+		let height = POPUP_HEIGHT
+			.saturating_sub(BORDER_WIDTH)
+			.min(f.size().height.saturating_sub(BORDER_WIDTH));
 
 		let top =
 			self.scroll.update_no_selection(line_num, height.into());
