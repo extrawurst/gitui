@@ -38,8 +38,8 @@
 11. [Key Bindings](#bindings)
 12. [Sponsoring](#sponsoring)
 13. [Inspiration](#inspiration)
-14. [Contributors](#contributors)
-15. [Contributing](#contributing)
+14. [Contributing](#contributing)
+15. [Contributors](#contributors)
 
 ## 1. <a name="features"></a> Features <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -277,7 +277,11 @@ The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to se
   - It would be nice to come up with a way to have the map view available in a terminal tool
 - [git-brunch](https://github.com/andys8/git-brunch)
 
-## 14. <a name="contributors"></a> Contributors <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 14. <a name="contributing"></a> Contributing <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## 15. <a name="contributors"></a> Contributors <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 Thanks goes to all the contributors that help make GitUI amazing! ❤️
 
@@ -286,7 +290,3 @@ Wanna become a co-maintainer? We are looking for [you](https://github.com/extraw
 <a href="https://github.com/extrawurst/gitui/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=extrawurst/gitui" />
 </a>
-
-## 15. <a name="contributing"></a> Contributing <small><sup>[Top ▲](#table-of-contents)</sup></small>
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
