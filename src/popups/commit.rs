@@ -32,6 +32,7 @@ use std::{
 	path::PathBuf,
 	str::FromStr,
 };
+use asyncgit::sync::commit::commit_message_prettify;
 
 use super::ExternalEditorPopup;
 
@@ -195,7 +196,7 @@ impl CommitPopup {
 		drop(file);
 		std::fs::remove_file(&file_path)?;
 
-		message = message_prettify(message, Some(b'#'))?;
+		message = commit_message_prettify(&self.repo.borrow(), message)?;
 		self.input.set_text(message);
 		self.input.show()?;
 
@@ -254,8 +255,7 @@ impl CommitPopup {
 			}
 		}
 
-		//TODO: honor `core.commentChar`
-		let mut msg = message_prettify(msg, Some(b'#'))?;
+		let mut msg = commit_message_prettify(&self.repo.borrow(), msg)?;
 
 		if verify {
 			// run commit message check hook - can reject commit
