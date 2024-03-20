@@ -66,15 +66,12 @@ impl Component for TagCommitPopup {
 
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.is_visible() {
-			if self.input.event(ev)?.is_consumed() {
-				return Ok(EventState::Consumed);
-			}
-
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.enter)
 					&& self.is_valid_tag()
 				{
 					try_or_popup!(self, "tag error:", self.tag());
+					return Ok(EventState::Consumed);
 				} else if key_match(
 					e,
 					self.key_config.keys.tag_annotate,
@@ -93,10 +90,12 @@ impl Component for TagCommitPopup {
 						strings::tag_popup_annotation_msg(),
 					);
 					self.mode = Mode::Annotation { tag_name };
+					return Ok(EventState::Consumed);
 				}
-
-				return Ok(EventState::Consumed);
 			}
+
+			self.input.event(ev)?;
+			return Ok(EventState::Consumed);
 		}
 		Ok(EventState::NotConsumed)
 	}
