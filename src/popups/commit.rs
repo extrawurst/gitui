@@ -254,6 +254,7 @@ impl CommitPopup {
 			}
 		}
 
+		//TODO: honor `core.commentChar`
 		let mut msg = message_prettify(msg, Some(b'#'))?;
 
 		if verify {

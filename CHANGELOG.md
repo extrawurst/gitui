@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Changed
+### Fixes
+* blame sometimes crashed due to new syntax highlighting [[@tdtrung17693](https://github.com/tdtrung17693)] ([#2130](https://github.com/extrawurst/gitui/issues/2130))
 
+### Changed
 * re-enable clippy `missing_const_for_fn` linter warning and added const to functions where applicable ([#2116](https://github.com/extrawurst/gitui/issues/2116))
 
 ## [0.25.1] - 2024-02-23

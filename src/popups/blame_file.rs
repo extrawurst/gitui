@@ -572,7 +572,8 @@ impl BlameFilePopup {
 			.iter()
 			.map(|l| l.1.clone())
 			.collect::<Vec<_>>();
-		let text = tabs_to_spaces(raw_lines.join("\n"));
+		let mut text = tabs_to_spaces(raw_lines.join("\n"));
+		text.push('\n');
 
 		job.spawn(AsyncSyntaxJob::new(
 			text,

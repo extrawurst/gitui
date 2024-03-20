@@ -1,5 +1,5 @@
 use asyncgit::sync::{CommitId, CommitInfo};
-use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, Local, Utc};
 use indexmap::IndexSet;
 use std::{rc::Rc, slice::Iter};
 
@@ -27,7 +27,8 @@ impl From<CommitInfo> for LogEntry {
 		let hash_short = c.id.get_short_string().into();
 
 		let time = {
-			let date = NaiveDateTime::from_timestamp_opt(c.time, 0);
+			let date = DateTime::from_timestamp(c.time, 0)
+				.map(|d| d.naive_utc());
 			if date.is_none() {
 				log::error!("error reading commit date: {hash_short} - timestamp: {}",c.time);
 			}
@@ -61,8 +62,10 @@ impl From<CommitInfo> for LogEntry {
 impl LogEntry {
 	pub fn time_to_string(&self, now: DateTime<Local>) -> String {
 		let delta = now - self.time;
-		if delta < Duration::minutes(30) {
-			let delta_str = if delta < Duration::minutes(1) {
+		if delta < Duration::try_minutes(30).unwrap_or_default() {
+			let delta_str = if delta
+				< Duration::try_minutes(1).unwrap_or_default()
+			{
 				"<1m ago".to_string()
 			} else {
 				format!("{:0>2}m ago", delta.num_minutes())
