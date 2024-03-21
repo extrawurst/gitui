@@ -127,15 +127,13 @@ pub fn commit_message_prettify(
 	repo_path: &RepoPath,
 	message: String,
 ) -> Result<String> {
-	let char = repo(repo_path)?
+	let comment_char = repo(repo_path)?
 		.config()?
 		.get_string("core.commentChar")?
-		.as_bytes()
-		.first()
-		.unwrap_or(&b"#"[0])
-		.to_owned();
+		.chars()
+		.collect::<Vec<char>>()[0] as u8;
 
-	Ok(message_prettify(message, Some(char))?)
+	Ok(message_prettify(message, Some(comment_char))?)
 }
 
 #[cfg(test)]
