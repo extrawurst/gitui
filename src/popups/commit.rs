@@ -11,8 +11,9 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::{bail, Ok, Result};
+use asyncgit::sync::commit::commit_message_prettify;
 use asyncgit::{
-	cached, message_prettify,
+	cached,
 	sync::{
 		self, get_config_string, CommitId, HookResult,
 		PrepareCommitMsgSource, RepoPathRef, RepoState,
@@ -32,7 +33,6 @@ use std::{
 	path::PathBuf,
 	str::FromStr,
 };
-use asyncgit::sync::commit::commit_message_prettify;
 
 use super::ExternalEditorPopup;
 
@@ -196,7 +196,8 @@ impl CommitPopup {
 		drop(file);
 		std::fs::remove_file(&file_path)?;
 
-		message = commit_message_prettify(&self.repo.borrow(), message)?;
+		message =
+			commit_message_prettify(&self.repo.borrow(), message)?;
 		self.input.set_text(message);
 		self.input.show()?;
 
@@ -255,7 +256,8 @@ impl CommitPopup {
 			}
 		}
 
-		let mut msg = commit_message_prettify(&self.repo.borrow(), msg)?;
+		let mut msg =
+			commit_message_prettify(&self.repo.borrow(), msg)?;
 
 		if verify {
 			// run commit message check hook - can reject commit

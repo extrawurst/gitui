@@ -4,7 +4,9 @@ use crate::{
 	error::Result,
 	sync::{repository::repo, utils::get_head_repo},
 };
-use git2::{ErrorCode, message_prettify, ObjectType, Repository, Signature};
+use git2::{
+	message_prettify, ErrorCode, ObjectType, Repository, Signature,
+};
 use scopetime::scope_time;
 
 ///
@@ -130,7 +132,7 @@ pub fn commit_message_prettify(
 		.get_string("core.commentChar")?
 		.as_bytes()
 		.first()
-		.unwrap()
+		.unwrap_or(&b"#"[0])
 		.to_owned();
 
 	Ok(message_prettify(message, Some(char))?)
