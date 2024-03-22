@@ -115,7 +115,7 @@ checksum = "0952808a6c2afd1aa8947271f3a60f1a6763c7b912d210184c5149b5cf147247"
 
 [[package]]
 name = "asyncgit"
-version = "0.25.0"
+version = "0.25.1"
 dependencies = [
  "bitflags 2.5.0",
  "crossbeam-channel",
