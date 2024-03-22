@@ -127,18 +127,11 @@ pub fn commit_message_prettify(
 	repo_path: &RepoPath,
 	message: String,
 ) -> Result<String> {
-	let comment_char_string =
-		repo(repo_path)?.config()?.get_string("core.commentChar");
-
-	let comment_char =
-		comment_char_string.map_or(b'#', |char_string| {
-			char_string
-				.chars()
-				.collect::<Vec<char>>()
-				.first()
-				.unwrap_or(&'#')
-				.to_owned() as u8
-		});
+	let comment_char = repo(repo_path)?
+		.config()?
+		.get_string("core.commentChar")
+		.map(|char_string| char_string.chars().next())?
+		.unwrap_or('#') as u8;
 
 	Ok(message_prettify(message, Some(comment_char))?)
 }
