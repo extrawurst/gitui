@@ -197,8 +197,7 @@ impl Component for BlameFilePopup {
 		let has_result = self
 			.blame
 			.as_ref()
-			.map(|blame| blame.result().is_some())
-			.unwrap_or_default();
+			.is_some_and(|blame| blame.result().is_some());
 		if self.is_visible() || force_all {
 			out.push(
 				CommandInfo::new(
