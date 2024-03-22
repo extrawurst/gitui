@@ -365,56 +365,54 @@ pub fn rename_branch_popup_msg(
 }
 
 pub fn sort_branch_by_name_msg(
-	_key_config: &SharedKeyConfig,
+	key_config: &SharedKeyConfig,
 ) -> String {
 	let hint =
-		_key_config.get_hint(_key_config.keys.branch_sort_by_name);
+		key_config.get_hint(key_config.keys.branch_sort_by_name);
 	format!("{: <5}branch name (a -> z)", format!("[{}]", hint))
-		.to_string()
 }
 pub fn sort_branch_by_name_rev_msg(
-	_key_config: &SharedKeyConfig,
-) -> String {
-	let hint = _key_config
-		.get_hint(_key_config.keys.branch_sort_by_name_rev);
-	format!("{: <5}branch name (z -> a)", format!("[{}]", hint))
-		.to_string()
-}
-pub fn sort_branch_by_time_msg(
-	_key_config: &SharedKeyConfig,
+	key_config: &SharedKeyConfig,
 ) -> String {
 	let hint =
-		_key_config.get_hint(_key_config.keys.branch_sort_by_time);
+		key_config.get_hint(key_config.keys.branch_sort_by_name_rev);
+	format!("{: <5}branch name (z -> a)", format!("[{}]", hint))
+}
+pub fn sort_branch_by_time_msg(
+	key_config: &SharedKeyConfig,
+) -> String {
+	let hint =
+		key_config.get_hint(key_config.keys.branch_sort_by_time);
 	format!(
 		"{: <5}last commit time (new -> old)",
 		format!("[{}]", hint)
 	)
 }
 pub fn sort_branch_by_time_rev_msg(
-	_key_config: &SharedKeyConfig,
+	key_config: &SharedKeyConfig,
 ) -> String {
-	let hint = _key_config
-		.get_hint(_key_config.keys.branch_sort_by_time_rev);
+	let hint =
+		key_config.get_hint(key_config.keys.branch_sort_by_time_rev);
 	format!(
 		"{: <5}last commit time (old -> new)",
 		format!("[{}]", hint)
 	)
 }
 pub fn sort_branch_by_author_msg(
-	_key_config: &SharedKeyConfig,
+	key_config: &SharedKeyConfig,
 ) -> String {
 	let hint =
-		_key_config.get_hint(_key_config.keys.branch_sort_by_author);
+		key_config.get_hint(key_config.keys.branch_sort_by_author);
 	format!(
 		"{: <5}last commit author (a -> z)",
 		format!("[{}]", hint)
 	)
 }
 pub fn sort_branch_by_author_rev_msg(
-	_key_config: &SharedKeyConfig,
+	key_config: &SharedKeyConfig,
 ) -> String {
-	let hint = _key_config
-		.get_hint(_key_config.keys.branch_sort_by_author_rev);
+	let hint = key_config
+		.get_hint(key_config.keys.branch_sort_by_author_rev);
 	format!(
 		"{: <5}last commit author (z -> a)",
 		format!("[{}]", hint)
