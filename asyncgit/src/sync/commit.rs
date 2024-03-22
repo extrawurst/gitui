@@ -136,7 +136,7 @@ pub fn commit_message_prettify(
 				.chars()
 				.collect::<Vec<char>>()
 				.first()
-				.unwrap_or(&char::from('#'))
+				.unwrap_or(&'#')
 				.to_owned() as u8
 		});
 
