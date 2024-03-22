@@ -132,7 +132,12 @@ pub fn commit_message_prettify(
 
 	let comment_char =
 		comment_char_string.map_or(b'#', |char_string| {
-			char_string.chars().collect::<Vec<char>>()[0] as u8
+			char_string
+				.chars()
+				.collect::<Vec<char>>()
+				.first()
+				.unwrap_or(&char::from('#'))
+				.to_owned() as u8
 		});
 
 	Ok(message_prettify(message, Some(comment_char))?)
