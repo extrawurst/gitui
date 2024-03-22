@@ -1,5 +1,6 @@
 mod blame_file;
 mod branchlist;
+mod branch_sort;
 mod commit;
 mod compare_commits;
 mod confirm;
@@ -26,6 +27,7 @@ mod taglist;
 
 pub use blame_file::{BlameFileOpen, BlameFilePopup};
 pub use branchlist::BranchListPopup;
+pub use branch_sort::BranchSortPopup;
 pub use commit::CommitPopup;
 pub use compare_commits::CompareCommitsPopup;
 pub use confirm::ConfirmPopup;

@@ -191,6 +191,16 @@ pub enum FuzzyFinderTarget {
 	Files,
 }
 
+#[derive(Copy, Clone)]
+pub enum BranchListSortBy {
+	LastCommitTimeAsc,
+	LastCommitTimeDesc,
+	BranchNameAsc,
+	BranchNameDesc,
+	LastCommitAuthorAsc,
+	LastCommitAuthorDesc,
+}
+
 impl EventState {
 	pub fn is_consumed(&self) -> bool {
 		*self == Self::Consumed
