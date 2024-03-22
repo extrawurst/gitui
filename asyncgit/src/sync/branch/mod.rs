@@ -11,7 +11,10 @@ use super::{
 };
 use crate::{
 	error::{Error, Result},
-	sync::{repository::repo, utils::get_head_repo, CommitId},
+	sync::{
+		repository::repo, utils::get_head_repo, CommitId,
+		CommitSignature,
+	},
 };
 use git2::{Branch, BranchType, Repository};
 use scopetime::scope_time;
@@ -91,6 +94,10 @@ pub struct BranchInfo {
 	pub top_commit_message: String,
 	///
 	pub top_commit: CommitId,
+	///
+	pub top_commit_time: i64,
+	///
+	pub top_commit_author: String,
 	///
 	pub details: BranchDetails,
 }
@@ -181,6 +188,8 @@ pub fn get_branches_info(
 				})
 			};
 
+			let author = CommitSignature::from(&top_commit.author());
+
 			Ok(BranchInfo {
 				name: bytes2string(name_bytes)?,
 				reference,
@@ -188,6 +197,8 @@ pub fn get_branches_info(
 					top_commit.summary_bytes().unwrap_or_default(),
 				)?,
 				top_commit: top_commit.id().into(),
+				top_commit_time: top_commit.time().seconds(),
+				top_commit_author: author.name,
 				details,
 			})
 		})

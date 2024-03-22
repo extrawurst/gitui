@@ -32,6 +32,7 @@ pub static PUSH_TAGS_STATES_DONE: &str = "done";
 pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
 pub static POPUP_TITLE_FUZZY_FIND: &str = "Fuzzy Finder";
 pub static POPUP_TITLE_LOG_SEARCH: &str = "Search";
+pub static POPUP_TITLE_BRANCH_SORT: &str = "Sort by";
 
 pub static POPUP_FAIL_COPY: &str = "Failed to copy text";
 pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
@@ -363,6 +364,63 @@ pub fn rename_branch_popup_msg(
 	"new branch name".to_string()
 }
 
+pub fn sort_branch_by_name_msg(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	let hint =
+		_key_config.get_hint(_key_config.keys.branch_sort_by_name);
+	format!("{: <5}branch name (a -> z)", format!("[{}]", hint))
+		.to_string()
+}
+pub fn sort_branch_by_name_rev_msg(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	let hint = _key_config
+		.get_hint(_key_config.keys.branch_sort_by_name_rev);
+	format!("{: <5}branch name (z -> a)", format!("[{}]", hint))
+		.to_string()
+}
+pub fn sort_branch_by_time_msg(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	let hint =
+		_key_config.get_hint(_key_config.keys.branch_sort_by_time);
+	format!(
+		"{: <5}last commit time (new -> old)",
+		format!("[{}]", hint)
+	)
+}
+pub fn sort_branch_by_time_rev_msg(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	let hint = _key_config
+		.get_hint(_key_config.keys.branch_sort_by_time_rev);
+	format!(
+		"{: <5}last commit time (old -> new)",
+		format!("[{}]", hint)
+	)
+}
+pub fn sort_branch_by_author_msg(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	let hint =
+		_key_config.get_hint(_key_config.keys.branch_sort_by_author);
+	format!(
+		"{: <5}last commit author (a -> z)",
+		format!("[{}]", hint)
+	)
+}
+pub fn sort_branch_by_author_rev_msg(
+	_key_config: &SharedKeyConfig,
+) -> String {
+	let hint = _key_config
+		.get_hint(_key_config.keys.branch_sort_by_author_rev);
+	format!(
+		"{: <5}last commit author (z -> a)",
+		format!("[{}]", hint)
+	)
+}
+
 pub fn copy_success(s: &str) -> String {
 	format!("{POPUP_SUCCESS_COPY} \"{s}\"")
 }
@@ -466,6 +524,16 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.branch_find)
 			),
 			"find branch in list",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn sort_branch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Sort by [{}]",
+				key_config.get_hint(key_config.keys.branch_sort)
+			),
+			"sort branches",
 			CMD_GROUP_GENERAL,
 		)
 	}
