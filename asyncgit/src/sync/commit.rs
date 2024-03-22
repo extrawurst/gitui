@@ -1,10 +1,12 @@
 use super::{CommitId, RepoPath};
 use crate::{
-	error::Result,
+	error::{Error, Result},
 	sync::{repository::repo, utils::get_head_repo},
 };
-use git2::{ErrorCode, ObjectType, Repository, Signature};
+use git2::{Config, ErrorCode, ObjectType, Repository, Signature};
 use scopetime::scope_time;
+use ssh_key::{HashAlg, LineEnding, PrivateKey};
+use std::path::PathBuf;
 
 ///
 pub fn amend(
@@ -60,6 +62,38 @@ pub(crate) fn signature_allow_undefined_name(
 	signature
 }
 
+fn fetch_ssh_key(config: &Config) -> Option<PrivateKey> {
+	config
+		.get_entry("user.signingKey")
+		.ok()
+		.and_then(|entry| {
+			entry.value().map(|key_path| {
+				key_path.strip_prefix('~').map_or_else(
+					|| Some(PathBuf::from(&key_path)),
+					|ssh_key_path| {
+						dirs::home_dir().map(|home| {
+							home.join(
+								ssh_key_path
+									.strip_prefix('/')
+									.unwrap_or(ssh_key_path),
+							)
+						})
+					},
+				)
+			})
+		})
+		.and_then(|key_file| {
+			key_file
+				.and_then(|mut p| {
+					p.set_extension("");
+					std::fs::read(p).ok()
+				})
+				.and_then(|bytes| {
+					PrivateKey::from_openssh(bytes).ok()
+				})
+		})
+}
+
 /// this does not run any git hooks, git-hooks have to be executed manually, checkout `hooks_commit_msg` for example
 pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 	scope_time!("commit");
@@ -77,18 +111,56 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 		Vec::new()
 	};
 
+	let config = repo.config()?;
 	let parents = parents.iter().collect::<Vec<_>>();
-
-	Ok(repo
-		.commit(
-			Some("HEAD"),
-			&signature,
-			&signature,
-			msg,
-			&tree,
-			parents.as_slice(),
-		)?
-		.into())
+	let id = match (
+		config.get_entry("gpg.format").ok(),
+		fetch_ssh_key(&config),
+	) {
+		(Some(f), Some(sk)) if f.value() == Some("ssh") => {
+			let buffer = repo.commit_create_buffer(
+				&signature,
+				&signature,
+				msg,
+				&tree,
+				parents.as_slice(),
+			)?;
+			let content = String::from_utf8(buffer.to_vec())?;
+			let sig = sk
+				.sign("git", HashAlg::Sha256, &buffer)?
+				.to_pem(LineEnding::LF)?;
+			let commit_id =
+				repo.commit_signed(&content, &sig, None)?;
+			if let Ok(mut head) = repo.head() {
+				head.set_target(commit_id, msg)?;
+			} else {
+				let default_branch_name = config
+					.get_str("init.defaultBranch")
+					.unwrap_or("master");
+				repo.reference(
+					&format!("refs/heads/{default_branch_name}"),
+					commit_id,
+					true,
+					msg,
+				)?;
+			}
+			Ok(commit_id.into())
+		}
+		(Some(f), None) if f.value() == Some("ssh") => {
+			Err(Error::SshKeyMissing)
+		}
+		_ => Ok(repo
+			.commit(
+				Some("HEAD"),
+				&signature,
+				&signature,
+				msg,
+				&tree,
+				parents.as_slice(),
+			)?
+			.into()),
+	};
+	id
 }
 
 /// Tag a commit.

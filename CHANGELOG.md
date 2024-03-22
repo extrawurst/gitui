@@ -51,6 +51,7 @@ Modifiers like `SHIFT` or `CONTROL` are no longer configured via magic bitflags 
 * new style `block_title_focused` to allow customizing title text of focused frame/block ([#2052](https://github.com/extrawurst/gitui/issues/2052)).
 * allow `fetch` command in both tabs of branchlist popup ([#2067](https://github.com/extrawurst/gitui/issues/2067))
 * check branch name validity while typing [[@sainad2222](https://github.com/sainad2222)] ([#2062](https://github.com/extrawurst/gitui/issues/2062))
+* support sign commits with ssh key in the disk when `user.signingKey` and `gpg.format = ssh` of gitconfig are set(ssh-agent/`SSH_AUTH_SOCK` isn't yet supported)  ([#1149](https://github.com/extrawurst/gitui/issues/1149))
 
 ### Changed
 * do not allow tagging when `tag.gpgsign` enabled until gpg-signing is [supported](https://github.com/extrawurst/gitui/issues/97) [[@TeFiLeDo](https://github.com/TeFiLeDo)] ([#1915](https://github.com/extrawurst/gitui/pull/1915))
