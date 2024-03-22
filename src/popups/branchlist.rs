@@ -219,7 +219,7 @@ impl Component for BranchListPopup {
 				strings::commands::sort_branch(&self.key_config),
 				true,
 				true,
-			))
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -315,7 +315,7 @@ impl Component for BranchListPopup {
 				));
 			} else if key_match(e, self.key_config.keys.branch_sort) {
 				self.queue.push(InternalEvent::OpenBranchSortPopup(
-					self.sort_by.clone(),
+					self.sort_by,
 				));
 			}
 		}
@@ -480,10 +480,10 @@ impl BranchListPopup {
 					});
 				}
 				BranchListSortBy::BranchNameAsc => {
-					self.branches.sort_by(|a, b| a.name.cmp(&b.name))
+					self.branches.sort_by(|a, b| a.name.cmp(&b.name));
 				}
 				BranchListSortBy::BranchNameDesc => {
-					self.branches.sort_by(|a, b| b.name.cmp(&a.name))
+					self.branches.sort_by(|a, b| b.name.cmp(&a.name));
 				}
 			}
 			//remove remote branch called `HEAD`
@@ -635,6 +635,46 @@ impl BranchListPopup {
 		Ok(())
 	}
 
+	const fn calculate_shared_commit_message_length(
+		width_available: u16,
+		three_dots_length: usize,
+	) -> usize {
+		const COMMIT_HASH_LENGTH: usize = 8;
+		const COMMIT_DATE_LENGTH: usize = 11;
+		const IS_HEAD_STAR_LENGTH: usize = 3;
+		let branch_name_length: usize =
+			width_available as usize * 40 / 100;
+
+		(width_available as usize)
+			.saturating_sub(COMMIT_HASH_LENGTH)
+			.saturating_sub(COMMIT_DATE_LENGTH)
+			.saturating_sub(branch_name_length)
+			.saturating_sub(IS_HEAD_STAR_LENGTH)
+			.saturating_sub(three_dots_length)
+	}
+
+	fn get_branch_name_text(
+		branch_name_length: usize,
+		displaybranch: &BranchInfo,
+		three_dots_length: usize,
+		three_dots: &str,
+	) -> String {
+		let mut branch_name = displaybranch.name.clone();
+		if branch_name.len()
+			> branch_name_length.saturating_sub(three_dots_length)
+		{
+			branch_name = branch_name
+				.unicode_truncate(
+					branch_name_length
+						.saturating_sub(three_dots_length),
+				)
+				.0
+				.to_string();
+			branch_name += three_dots;
+		}
+		branch_name
+	}
+
 	/// Get branches to display
 	fn get_text(
 		&self,
@@ -648,20 +688,15 @@ impl BranchListPopup {
 		const EMPTY_SYMBOL: char = ' ';
 		const THREE_DOTS: &str = "...";
 		const THREE_DOTS_LENGTH: usize = THREE_DOTS.len(); // "..."
-		const COMMIT_HASH_LENGTH: usize = 8;
-		const COMMIT_DATE_LENGTH: usize = 11;
-		const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
 
 		let branch_name_length: usize =
 			width_available as usize * 40 / 100;
 		// commit message takes up the remaining width
-		let mut commit_message_length: usize = (width_available
-			as usize)
-			.saturating_sub(COMMIT_HASH_LENGTH)
-			.saturating_sub(COMMIT_DATE_LENGTH)
-			.saturating_sub(branch_name_length)
-			.saturating_sub(IS_HEAD_STAR_LENGTH)
-			.saturating_sub(THREE_DOTS_LENGTH);
+		let shared_commit_message_length: usize =
+			Self::calculate_shared_commit_message_length(
+				width_available,
+				THREE_DOTS_LENGTH,
+			);
 		let mut txt = Vec::new();
 
 		for (i, displaybranch) in self
@@ -678,8 +713,7 @@ impl BranchListPopup {
 			let author_text =
 				displaybranch.top_commit_author.clone() + " ";
 
-			// commit_message_length contains author_text length
-			commit_message_length = commit_message_length
+			let commit_message_length = shared_commit_message_length
 				.saturating_sub(author_text.len());
 			let mut commit_message =
 				displaybranch.top_commit_message.clone();
@@ -691,20 +725,12 @@ impl BranchListPopup {
 				commit_message += THREE_DOTS;
 			}
 
-			let mut branch_name = displaybranch.name.clone();
-			if branch_name.len()
-				> branch_name_length.saturating_sub(THREE_DOTS_LENGTH)
-			{
-				branch_name = branch_name
-					.unicode_truncate(
-						branch_name_length
-							.saturating_sub(THREE_DOTS_LENGTH),
-					)
-					.0
-					.to_string();
-				branch_name += THREE_DOTS;
-			}
-
+			let branch_name = Self::get_branch_name_text(
+				branch_name_length,
+				displaybranch,
+				THREE_DOTS_LENGTH,
+				THREE_DOTS,
+			);
 			let selected = (self.selection as usize
 				- self.scroll.get_top())
 				== i;
@@ -751,7 +777,6 @@ impl BranchListPopup {
 				format!("{branch_name:branch_name_length$} "),
 				theme.branch(selected, is_head),
 			);
-
 			txt.push(Line::from(vec![
 				span_prefix,
 				span_name,
@@ -761,7 +786,6 @@ impl BranchListPopup {
 				span_msg,
 			]));
 		}
-
 		Text::from(txt)
 	}
 

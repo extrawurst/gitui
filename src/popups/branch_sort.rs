@@ -40,20 +40,6 @@ impl BranchSortPopup {
 	pub fn open(&mut self, sort_by: BranchListSortBy) -> Result<()> {
 		self.show()?;
 		self.update_sort_key(sort_by);
-
-		Ok(())
-	}
-
-	fn is_visible(&self) -> bool {
-		self.visible
-	}
-
-	fn hide(&mut self) {
-		self.visible = false;
-	}
-
-	fn show(&mut self) -> Result<()> {
-		self.visible = true;
 		Ok(())
 	}
 
