@@ -85,7 +85,7 @@ impl BranchSortPopup {
 impl DrawableComponent for BranchSortPopup {
 	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible() {
-			const MAX_SIZE: (u16, u16) = (50, 20);
+			const MAX_SIZE: (u16, u16) = (50, 8);
 
 			let mut area = ui::centered_rect_absolute(
 				MAX_SIZE.0, MAX_SIZE.1, area,
