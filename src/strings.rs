@@ -1423,11 +1423,16 @@ pub mod commands {
 	}
 	pub fn tag_commit_confirm_msg(
 		key_config: &SharedKeyConfig,
+		is_annotation_mode: bool,
 	) -> CommandText {
 		CommandText::new(
 			format!(
 				"Tag [{}]",
-				key_config.get_hint(key_config.keys.enter),
+				key_config.get_hint(if is_annotation_mode {
+					key_config.keys.commit
+				} else {
+					key_config.keys.enter
+				}),
 			),
 			"tag commit",
 			CMD_GROUP_LOG,

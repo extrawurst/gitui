@@ -88,6 +88,12 @@ impl TextInputComponent {
 		self
 	}
 
+	///
+	pub fn set_input_type(&mut self, input_type: InputType) {
+		self.clear();
+		self.input_type = input_type;
+	}
+
 	/// Clear the `msg`.
 	pub fn clear(&mut self) {
 		self.msg.take();
