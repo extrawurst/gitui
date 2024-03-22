@@ -48,7 +48,7 @@ impl BranchSortPopup {
 	}
 
 	fn get_sort_key_lines(&self) -> Vec<Line> {
-		let texts = vec![
+		let texts = [
 			strings::sort_branch_by_name_msg(&self.key_config),
 			strings::sort_branch_by_name_rev_msg(&self.key_config),
 			strings::sort_branch_by_time_msg(&self.key_config),
