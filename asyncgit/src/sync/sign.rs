@@ -51,15 +51,13 @@ pub trait Sign {
 	///
 	/// Retrieve an implementation using [`SignBuilder::from_gitconfig`].
 	///
-	/// The `commit` string slice can be created using the following steps:
+	/// The `commit` buffer can be created using the following steps:
 	/// - create a buffer using [`git2::Repository::commit_create_buffer`]
-	/// - convert the buffer using [`std::str::from_utf8`]
-	/// - the resulting string slice can be passed to [`Sign::sign`] now
 	///
 	/// The returned `String` from this function can then be passed into [`git2::Repository::commit_signed`].
 	/// Finally, the repository head needs to be advanced to the resulting commit ID
 	/// using [`git2::Reference::set_target`].
-	fn sign(&self, commit: &str) -> Result<String, SignError>;
+	fn sign(&self, commit: &[u8]) -> Result<String, SignError>;
 
 	#[cfg(test)]
 	fn program(&self) -> &String;
@@ -169,7 +167,7 @@ impl GPGSign {
 }
 
 impl Sign for GPGSign {
-	fn sign(&self, commit: &str) -> Result<String, SignError> {
+	fn sign(&self, commit: &[u8]) -> Result<String, SignError> {
 		use std::io::Write;
 		use std::process::{Command, Stdio};
 
@@ -189,7 +187,7 @@ impl Sign for GPGSign {
 
 		let mut stdin = child.stdin.take().ok_or(SignError::Stdin)?;
 
-		write!(stdin, "{commit}")
+		stdin.write_all(commit)
 			.map_err(|e| SignError::WriteBuffer(e.to_string()))?;
 		drop(stdin); // close stdin to not block indefinitely
 

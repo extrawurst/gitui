@@ -117,7 +117,7 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 		})?;
 
 		let sign = SignBuilder::from_gitconfig(&repo, &config)?;
-		let signed_commit = sign.sign(commit)?;
+		let signed_commit = sign.sign(&buffer)?;
 		let commit_id =
 			repo.commit_signed(commit, &signed_commit, None)?;
 
