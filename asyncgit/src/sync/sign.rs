@@ -187,7 +187,8 @@ impl Sign for GPGSign {
 
 		let mut stdin = child.stdin.take().ok_or(SignError::Stdin)?;
 
-		stdin.write_all(commit)
+		stdin
+			.write_all(commit)
 			.map_err(|e| SignError::WriteBuffer(e.to_string()))?;
 		drop(stdin); // close stdin to not block indefinitely
 
