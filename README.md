@@ -38,6 +38,7 @@
 11. [Key Bindings](#bindings)
 12. [Sponsoring](#sponsoring)
 13. [Inspiration](#inspiration)
+14. [Contributors](#contributors)
 
 ## 1. <a name="features"></a> Features <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -222,16 +223,17 @@ All contain a single binary file
   - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/) 
   - a c compiler (msvc, gcc or clang, cargo will find it)
 
-- To run the complete test suite python is required (and it must be invokable as `python`)
+- To run the complete test suite python is required (and it must be invocable as `python`)
 
 ### Cargo Install
 
-The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui`. If you are not familiar with rust and cargo: [Getting Started with Rust](https://doc.rust-lang.org/book/ch01-00-getting-started.html)
+The simplest way to start playing around with `gitui` is to have `cargo` build and install it with `cargo install gitui --locked`. If you are not familiar with rust and cargo: [Getting Started with Rust](https://doc.rust-lang.org/book/ch01-00-getting-started.html)
+
 ### Cargo Features
 #### trace-libgit
 enable `libgit2` tracing
 
-works if `libgit2` builded with `-DENABLE_TRACE=ON`
+works if `libgit2` built with `-DENABLE_TRACE=ON`
 
 this feature enabled by default, to disable: `cargo install --no-default-features`
 
@@ -273,3 +275,13 @@ The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to se
 - [GitUp](https://github.com/git-up/GitUp)
   - It would be nice to come up with a way to have the map view available in a terminal tool
 - [git-brunch](https://github.com/andys8/git-brunch)
+
+## 14. <a name="contributors"></a> Contributors <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+Thanks goes to all the contributors that help make GitUI amazing! ❤️
+
+Wanna become a co-maintainer? We are looking for [you](https://github.com/extrawurst/gitui/issues/2084)!
+
+<a href="https://github.com/extrawurst/gitui/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=extrawurst/gitui" />
+</a>

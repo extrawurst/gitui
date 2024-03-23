@@ -342,7 +342,7 @@ impl Revlog {
 		}
 	}
 
-	fn is_in_search_mode(&self) -> bool {
+	const fn is_in_search_mode(&self) -> bool {
 		!matches!(self.search, LogSearch::Off)
 	}
 
@@ -396,7 +396,7 @@ impl Revlog {
 		);
 	}
 
-	fn can_close_search(&self) -> bool {
+	const fn can_close_search(&self) -> bool {
 		self.is_in_search_mode() && !self.is_search_pending()
 	}
 

@@ -5,7 +5,7 @@
 
 pub mod blame;
 pub mod branch;
-mod commit;
+pub mod commit;
 mod commit_details;
 pub mod commit_files;
 mod commit_filter;

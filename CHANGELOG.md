@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.25.2] - 2024-03-22
+
+### Fixes
+* blame sometimes crashed due to new syntax highlighting [[@tdtrung17693](https://github.com/tdtrung17693)] ([#2130](https://github.com/extrawurst/gitui/issues/2130))
+* going to file tree view at certin commit from the commit-details view broke [[@martihomssoler](https://github.com/martihomssoler)] ([#2114](https://github.com/extrawurst/gitui/issues/2114))
+* `0.25` broke creating annotated tags ([#2126](https://github.com/extrawurst/gitui/issues/2126))
+
+### Changed
+* re-enable clippy `missing_const_for_fn` linter warning and added const to functions where applicable ([#2116](https://github.com/extrawurst/gitui/issues/2116))
+
+## [0.25.1] - 2024-02-23
+
+### Fixes
+* bump yanked dependency `bumpalo` to fix build from source ([#2087](https://github.com/extrawurst/gitui/issues/2087))
+* pin `ratatui` version to fix building without locked `cargo install gitui` ([#2090](https://github.com/extrawurst/gitui/issues/2090))
+
+## [0.25.0] - 2024-02-21
+
 ** multiline text editor **
 
 ![multiline editor](assets/multiline-texteditor.gif)
@@ -16,9 +34,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ![syntax-highlighting-blame](assets/syntax-highlighting-blame.png)
 
 ### Breaking Change
+
+#### commit key binding
+
 The Commit message popup now supports multiline editing! Inserting a **newline** defaults to `enter`. This comes with a new default to confirm the commit message (`ctrl+d`).
 Both commands can be overwritten via `newline` and `commit` in the key bindings. see [KEY_CONFIG](./KEY_CONFIG.md) on how.
 These defaults require some adoption from existing users but feel more natural to new users.
+
+#### key binding bitflags
+
+Modifiers like `SHIFT` or `CONTROL` are no longer configured via magic bitflags but via strings thanks to changes in the [bitflags crate](https://github.com/bitflags/bitflags/blob/main/CHANGELOG.md#changes-to-serde-serialization) we depend on. Please see [KEY_CONFIG.md](./KEY_CONFIG.md) or [vim_style_key_config.ron](./vim_style_key_config.ron) for more info and examples.
 
 ### Added
 * support for new-line in text-input (e.g. commit message editor) [[@pm100]](https://github/pm100) ([#1662](https://github.com/extrawurst/gitui/issues/1662)).
@@ -38,6 +63,7 @@ These defaults require some adoption from existing users but feel more natural t
 * stash window empty after file history popup closes ([#1986](https://github.com/extrawurst/gitui/issues/1986))
 * allow push to empty remote ([#1919](https://github.com/extrawurst/gitui/issues/1919))
 * better diagnostics for theme file loading ([#2007](https://github.com/extrawurst/gitui/issues/2007))
+* fix ordering of commits in diff view [[@Joshix-1](https://github.com/Joshix-1)]([#1747](https://github.com/extrawurst/gitui/issues/1747))
 
 ## [0.24.3] - 2023-09-09
 
@@ -98,7 +124,6 @@ These defaults require some adoption from existing users but feel more natural t
 * fix expansion of `~` in `commit.template` ([#1745](https://github.com/extrawurst/gitui/pull/1745))
 * fix hunk (un)staging/reset for # of context lines != 3 ([#1746](https://github.com/extrawurst/gitui/issues/1746))
 * fix delay when opening external editor ([#1506](https://github.com/extrawurst/gitui/issues/1506))
-* fix ordering of commits in diff view [[@Joshix-1](https://github.com/Joshix-1)]([#1747](https://github.com/extrawurst/gitui/issues/1747))
 
 ### Changed
 * Copy full Commit Hash by default [[@AmmarAbouZor](https://github.com/AmmarAbouZor)] ([#1836](https://github.com/extrawurst/gitui/issues/1836))

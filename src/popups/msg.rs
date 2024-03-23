@@ -42,8 +42,8 @@ impl DrawableComponent for MsgPopup {
 		if max > std::u16::MAX as usize {
 			max = std::u16::MAX as usize;
 		}
-		let mut width =
-			u16::try_from(max).expect("cant fail due to check above");
+		let mut width = u16::try_from(max)
+			.expect("can't fail due to check above");
 		// dont overflow screen, and dont get too narrow
 		if width > f.size().width {
 			width = f.size().width;

@@ -21,8 +21,6 @@
 	clippy::bool_to_int_with_if,
 	clippy::module_name_repetitions
 )]
-// high number of false positives on nightly (as of Oct 2022 with 1.66.0-nightly)
-#![allow(clippy::missing_const_for_fn)]
 
 //TODO:
 // #![deny(clippy::expect_used)]
@@ -370,7 +368,7 @@ fn start_terminal(buf: Stdout) -> io::Result<Terminal> {
 	Ok(terminal)
 }
 
-// do log::error! and eprintln! in one line, pass sting, error and backtrace
+// do log::error! and eprintln! in one line, pass string, error and backtrace
 macro_rules! log_eprintln {
 	($string:expr, $e:expr, $bt:expr) => {
 		log::error!($string, $e, $bt);

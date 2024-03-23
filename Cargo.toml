@@ -1,6 +1,6 @@
 [package]
 name = "gitui"
-version = "0.24.3"
+version = "0.25.2"
 authors = ["extrawurst <mail@rusticorn.com>"]
 description = "blazing fast terminal-ui for git"
 edition = "2021"
@@ -15,9 +15,9 @@ keywords = ["git", "gui", "cli", "terminal", "ui"]
 
 [dependencies]
 anyhow = "1.0"
-asyncgit = { path = "./asyncgit", version = "0.24", default-features = false }
+asyncgit = { path = "./asyncgit", version = "0.25", default-features = false }
 backtrace = "0.3"
-bitflags = "2.4"
+bitflags = "2.5"
 bugreport = "0.5"
 bwrap = { version = "1.3", features = ["use_std"] }
 bytesize = { version = "1.3", default-features = false }
@@ -36,7 +36,7 @@ log = "0.4"
 notify = "6.1"
 notify-debouncer-mini = "0.4"
 once_cell = "1"
-ratatui = { version = "0.24", default-features = false, features = [
+ratatui = { version = "=0.24.0", default-features = false, features = [
     'crossterm',
     'serde',
 ] }

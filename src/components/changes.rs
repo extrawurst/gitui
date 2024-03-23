@@ -97,7 +97,7 @@ impl ChangesComponent {
 					let config =
 						self.options.borrow().status_show_untracked();
 
-					//TODO: check if we can handle the one file case with it aswell
+					//TODO: check if we can handle the one file case with it as well
 					sync::stage_add_all(
 						&self.repo.borrow(),
 						tree_item.info.full_path.as_str(),

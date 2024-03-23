@@ -16,7 +16,7 @@ debug:
 	RUST_BACKTRACE=true cargo run --features=timing -- ${ARGS}
 
 build-release:
-	cargo build --release
+	cargo build --release --locked
 
 release-mac: build-release
 	strip target/release/gitui

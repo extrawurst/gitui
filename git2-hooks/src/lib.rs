@@ -8,6 +8,22 @@
 //! most basic hook is: [`hooks_pre_commit`]. see also other `hooks_*` functions.
 //!
 //! [`create_hook`] is useful to create git hooks from code (unittest make heavy usage of it)
+
+#![forbid(unsafe_code)]
+#![deny(
+	unused_imports,
+	unused_must_use,
+	dead_code,
+	unstable_name_collisions,
+	unused_assignments
+)]
+#![deny(clippy::all, clippy::perf, clippy::pedantic, clippy::nursery)]
+#![allow(
+	clippy::missing_errors_doc,
+	clippy::must_use_candidate,
+	clippy::module_name_repetitions
+)]
+
 mod error;
 mod hookspath;
 
@@ -15,7 +31,6 @@ use std::{
 	fs::File,
 	io::{Read, Write},
 	path::{Path, PathBuf},
-	process::Command,
 };
 
 pub use error::HooksError;
@@ -56,17 +71,20 @@ pub enum HookResult {
 
 impl HookResult {
 	/// helper to check if result is ok
-	pub fn is_ok(&self) -> bool {
-		matches!(self, HookResult::Ok { .. })
+	pub const fn is_ok(&self) -> bool {
+		matches!(self, Self::Ok { .. })
 	}
 
 	/// helper to check if result was run and not rejected
-	pub fn is_not_successful(&self) -> bool {
-		matches!(self, HookResult::RunNotSuccessful { .. })
+	pub const fn is_not_successful(&self) -> bool {
+		matches!(self, Self::RunNotSuccessful { .. })
 	}
 }
 
 /// helper method to create git hooks programmatically (heavy used in unittests)
+///
+/// # Panics
+/// Panics if hook could not be created
 pub fn create_hook(
 	r: &Repository,
 	hook: &str,
@@ -86,7 +104,7 @@ fn create_hook_in_path(path: &Path, hook_script: &[u8]) {
 
 	#[cfg(unix)]
 	{
-		Command::new("chmod")
+		std::process::Command::new("chmod")
 			.arg("+x")
 			.arg(path)
 			// .current_dir(path)
@@ -163,6 +181,7 @@ pub enum PrepareCommitMsgSource {
 }
 
 /// this hook is documented here <https://git-scm.com/docs/githooks#_prepare_commit_msg>
+#[allow(clippy::needless_pass_by_value)]
 pub fn hooks_prepare_commit_msg(
 	repo: &Repository,
 	other_paths: Option<&[&str]>,

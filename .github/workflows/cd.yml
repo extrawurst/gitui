@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Get version
       id: get_version
@@ -88,9 +88,9 @@ jobs:
     - name: Extract release notes
       if: matrix.os == 'ubuntu-latest'
       id: release_notes
-      uses: ffurrer2/extract-release-notes@v1
+      uses: ffurrer2/extract-release-notes@v2
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:

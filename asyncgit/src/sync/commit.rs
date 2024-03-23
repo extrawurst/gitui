@@ -1,10 +1,13 @@
+//! Git Api for Commits
 use super::{CommitId, RepoPath};
 use crate::sync::sign::{SignBuilder, SignError};
 use crate::{
 	error::{Error, Result},
 	sync::{repository::repo, utils::get_head_repo},
 };
-use git2::{ErrorCode, ObjectType, Repository, Signature};
+use git2::{
+	message_prettify, ErrorCode, ObjectType, Repository, Signature,
+};
 use scopetime::scope_time;
 
 ///
@@ -163,6 +166,20 @@ pub fn tag_commit(
 	};
 
 	Ok(c)
+}
+
+/// Loads the comment prefix from config & uses it to prettify commit messages
+pub fn commit_message_prettify(
+	repo_path: &RepoPath,
+	message: String,
+) -> Result<String> {
+	let comment_char = repo(repo_path)?
+		.config()?
+		.get_string("core.commentChar")
+		.map(|char_string| char_string.chars().next())?
+		.unwrap_or('#') as u8;
+
+	Ok(message_prettify(message, Some(comment_char))?)
 }
 
 #[cfg(test)]

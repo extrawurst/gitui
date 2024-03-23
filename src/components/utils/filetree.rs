@@ -404,9 +404,9 @@ mod tests {
 		)
 		.unwrap();
 
-		assert_eq!(res.multiple_items_at_path(0), false);
-		assert_eq!(res.multiple_items_at_path(1), false);
-		assert_eq!(res.multiple_items_at_path(2), true);
+		assert!(!res.multiple_items_at_path(0));
+		assert!(!res.multiple_items_at_path(1));
+		assert!(res.multiple_items_at_path(2));
 	}
 
 	#[test]
