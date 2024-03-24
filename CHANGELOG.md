@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * sign commits using openpgp; implement `Sign` trait to implement more methods
 
+### Changed
+* Make info and error message popups scrollable [[@MichaelAug](https://github.com/MichaelAug)] ([#1138](https://github.com/extrawurst/gitui/issues/1138))
+
 ## [0.25.2] - 2024-03-22
 
 ### Fixes
@@ -19,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * re-enable clippy `missing_const_for_fn` linter warning and added const to functions where applicable ([#2116](https://github.com/extrawurst/gitui/issues/2116))
-* Make info and error message popups scrollable [[@MichaelAug](https://github.com/MichaelAug)] ([#1138](https://github.com/extrawurst/gitui/issues/1138))
 
 ## [0.25.1] - 2024-02-23
 
