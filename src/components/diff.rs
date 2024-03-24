@@ -617,7 +617,6 @@ impl DiffComponent {
 		self.queue.push(InternalEvent::ConfirmAction(Action::Reset(
 			ResetItem {
 				path: self.current.path.clone(),
-				is_folder: false,
 			},
 		)));
 	}
