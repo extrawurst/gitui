@@ -54,10 +54,14 @@ pub trait Sign {
 	/// The `commit` buffer can be created using the following steps:
 	/// - create a buffer using [`git2::Repository::commit_create_buffer`]
 	///
-	/// The returned `String` from this function can then be passed into [`git2::Repository::commit_signed`].
+	/// The function returns a tuple of `signature` and `signature_field`.
+	/// These values can then be passed into [`git2::Repository::commit_signed`].
 	/// Finally, the repository head needs to be advanced to the resulting commit ID
 	/// using [`git2::Reference::set_target`].
-	fn sign(&self, commit: &[u8]) -> Result<String, SignError>;
+	fn sign(
+		&self,
+		commit: &[u8],
+	) -> Result<(String, String), SignError>;
 
 	#[cfg(test)]
 	fn program(&self) -> &String;
@@ -167,7 +171,10 @@ impl GPGSign {
 }
 
 impl Sign for GPGSign {
-	fn sign(&self, commit: &[u8]) -> Result<String, SignError> {
+	fn sign(
+		&self,
+		commit: &[u8],
+	) -> Result<(String, String), SignError> {
 		use std::io::Write;
 		use std::process::{Command, Stdio};
 
@@ -217,7 +224,7 @@ impl Sign for GPGSign {
 		let signed_commit = std::str::from_utf8(&output.stdout)
 			.map_err(|e| SignError::Shellout(e.to_string()))?;
 
-		Ok(signed_commit.to_string())
+		Ok((signed_commit.to_string(), "gpgsig".to_string()))
 	}
 
 	#[cfg(test)]

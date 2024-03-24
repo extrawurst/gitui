@@ -117,9 +117,12 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 		})?;
 
 		let sign = SignBuilder::from_gitconfig(&repo, &config)?;
-		let signed_commit = sign.sign(&buffer)?;
-		let commit_id =
-			repo.commit_signed(commit, &signed_commit, None)?;
+		let (signature, signature_field) = sign.sign(&buffer)?;
+		let commit_id = repo.commit_signed(
+			commit,
+			&signature,
+			Some(&signature_field),
+		)?;
 
 		// manually advance to the new commit ID
 		// repo.commit does that on its own, repo.commit_signed does not
