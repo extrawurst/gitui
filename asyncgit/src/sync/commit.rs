@@ -126,7 +126,7 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 
 		// manually advance to the new commit ID
 		// repo.commit does that on its own, repo.commit_signed does not
-		// if there is no head, read default branch or defaul to "master"
+		// if there is no head, read default branch or default to "master"
 		if let Ok(mut head) = repo.head() {
 			head.set_target(commit_id, msg)?;
 		} else {
