@@ -84,6 +84,26 @@ pub enum Error {
 	///
 	#[error("git hook error: {0}")]
 	Hooks(#[from] git2_hooks::HooksError),
+
+	///
+	#[error("sign builder error: {0}")]
+	SignBuilder(#[from] crate::sync::sign::SignBuilderError),
+
+	///
+	#[error("sign error: {0}")]
+	Sign(#[from] crate::sync::sign::SignError),
+
+	///
+	#[error("amend error: config commit.gpgsign=true detected.\ngpg signing is not supported for amending non-last commits")]
+	SignAmendNonLastCommit,
+
+	///
+	#[error("reword error: config commit.gpgsign=true detected.\ngpg signing is not supported for rewording non-last commits")]
+	SignRewordNonLastCommit,
+
+	///
+	#[error("reword error: config commit.gpgsign=true detected.\ngpg signing is not supported for rewording commits with staged changes\ntry unstaging or stashing your changes")]
+	SignRewordLastCommitStaged,
 }
 
 ///

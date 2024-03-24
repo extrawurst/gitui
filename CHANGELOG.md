@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+* sign commits using openpgp; implement `Sign` trait to implement more methods
+
 ## [0.25.2] - 2024-03-22
 
 ### Fixes
