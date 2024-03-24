@@ -1,5 +1,3 @@
-use std::cell::Cell;
-
 use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
 	DrawableComponent, EventState, ScrollType, VerticalScroll,
@@ -28,7 +26,6 @@ pub struct MsgPopup {
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
 	scroll: VerticalScroll,
-	current_width: Cell<u16>,
 }
 
 const POPUP_HEIGHT: u16 = 25;
@@ -55,11 +52,8 @@ impl DrawableComponent for MsgPopup {
 			.try_into()
 			.expect("can't fail because we're clamping to u16 value");
 
-
 		let area =
 			ui::centered_rect_absolute(width, POPUP_HEIGHT, f.size());
-
-		self.current_width.set(area.width);
 
 		// Wrap lines and break words if there is not enough space
 		let wrapped_msg = bwrap::wrap_maybrk!(
@@ -183,7 +177,6 @@ impl MsgPopup {
 			theme: env.theme.clone(),
 			key_config: env.key_config.clone(),
 			scroll: VerticalScroll::new(),
-			current_width: Cell::new(0),
 		}
 	}
 
