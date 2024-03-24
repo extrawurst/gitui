@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Changed
+## [0.25.2] - 2024-03-22
 
+### Fixes
+* blame sometimes crashed due to new syntax highlighting [[@tdtrung17693](https://github.com/tdtrung17693)] ([#2130](https://github.com/extrawurst/gitui/issues/2130))
+* going to file tree view at certin commit from the commit-details view broke [[@martihomssoler](https://github.com/martihomssoler)] ([#2114](https://github.com/extrawurst/gitui/issues/2114))
+* `0.25` broke creating annotated tags ([#2126](https://github.com/extrawurst/gitui/issues/2126))
+
+### Changed
 * re-enable clippy `missing_const_for_fn` linter warning and added const to functions where applicable ([#2116](https://github.com/extrawurst/gitui/issues/2116))
 * Make info and error message popups scrollable [[@MichaelAug](https://github.com/MichaelAug)] ([#1138](https://github.com/extrawurst/gitui/issues/1138))
 
