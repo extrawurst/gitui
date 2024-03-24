@@ -1,13 +1,16 @@
 use crate::components::{
 	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState,
+	DrawableComponent, EventState, ScrollType, VerticalScroll,
 };
+use crate::strings::order;
 use crate::{
 	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	strings, ui,
 };
+use anyhow::Result;
 use crossterm::event::Event;
+use ratatui::text::Line;
 use ratatui::{
 	layout::{Alignment, Rect},
 	text::Span,
@@ -22,9 +25,12 @@ pub struct MsgPopup {
 	visible: bool,
 	theme: SharedTheme,
 	key_config: SharedKeyConfig,
+	scroll: VerticalScroll,
 }
 
-use anyhow::Result;
+const POPUP_HEIGHT: u16 = 25;
+const BORDER_WIDTH: u16 = 2;
+const MINIMUM_WIDTH: u16 = 60;
 
 impl DrawableComponent for MsgPopup {
 	fn draw(&self, f: &mut Frame, _rect: Rect) -> Result<()> {
@@ -32,29 +38,55 @@ impl DrawableComponent for MsgPopup {
 			return Ok(());
 		}
 
-		// determine the maximum width of text block
-		let lens = self
-			.msg
-			.split('\n')
-			.map(str::len)
-			.collect::<Vec<usize>>();
-		let mut max = lens.iter().max().expect("max") + 2;
-		if max > std::u16::MAX as usize {
-			max = std::u16::MAX as usize;
-		}
-		let mut width = u16::try_from(max)
-			.expect("can't fail due to check above");
-		// dont overflow screen, and dont get too narrow
-		if width > f.size().width {
-			width = f.size().width;
-		} else if width < 60 {
-			width = 60;
-		}
+		let max_width = f.size().width.max(MINIMUM_WIDTH);
 
-		let area = ui::centered_rect_absolute(width, 25, f.size());
+		// determine the maximum width of text block
+		let width = self
+			.msg
+			.lines()
+			.map(str::len)
+			.max()
+			.unwrap_or(0)
+			.saturating_add(BORDER_WIDTH.into())
+			.clamp(MINIMUM_WIDTH.into(), max_width.into())
+			.try_into()
+			.expect("can't fail because we're clamping to u16 value");
+
+		let area =
+			ui::centered_rect_absolute(width, POPUP_HEIGHT, f.size());
+
+		// Wrap lines and break words if there is not enough space
+		let wrapped_msg = bwrap::wrap_maybrk!(
+			&self.msg,
+			area.width.saturating_sub(BORDER_WIDTH).into()
+		);
+
+		let msg_lines: Vec<String> =
+			wrapped_msg.lines().map(String::from).collect();
+		let line_num = msg_lines.len();
+
+		let height = POPUP_HEIGHT
+			.saturating_sub(BORDER_WIDTH)
+			.min(f.size().height.saturating_sub(BORDER_WIDTH));
+
+		let top =
+			self.scroll.update_no_selection(line_num, height.into());
+
+		let scrolled_lines = msg_lines
+			.iter()
+			.skip(top)
+			.take(height.into())
+			.map(|line| {
+				Line::from(vec![Span::styled(
+					line.clone(),
+					self.theme.text(true, false),
+				)])
+			})
+			.collect::<Vec<Line>>();
+
 		f.render_widget(Clear, area);
 		f.render_widget(
-			Paragraph::new(self.msg.clone())
+			Paragraph::new(scrolled_lines)
 				.block(
 					Block::default()
 						.title(Span::styled(
@@ -68,6 +100,8 @@ impl DrawableComponent for MsgPopup {
 				.wrap(Wrap { trim: true }),
 			area,
 		);
+
+		self.scroll.draw(f, area, &self.theme);
 
 		Ok(())
 	}
@@ -84,6 +118,16 @@ impl Component for MsgPopup {
 			true,
 			self.visible,
 		));
+		out.push(
+			CommandInfo::new(
+				strings::commands::navigate_commit_message(
+					&self.key_config,
+				),
+				true,
+				self.visible,
+			)
+			.order(order::NAV),
+		);
 
 		visibility_blocking(self)
 	}
@@ -93,6 +137,14 @@ impl Component for MsgPopup {
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.enter) {
 					self.hide();
+				} else if key_match(
+					e,
+					self.key_config.keys.popup_down,
+				) {
+					self.scroll.move_top(ScrollType::Down);
+				} else if key_match(e, self.key_config.keys.popup_up)
+				{
+					self.scroll.move_top(ScrollType::Up);
 				}
 			}
 			Ok(EventState::Consumed)
@@ -124,24 +176,34 @@ impl MsgPopup {
 			visible: false,
 			theme: env.theme.clone(),
 			key_config: env.key_config.clone(),
+			scroll: VerticalScroll::new(),
 		}
+	}
+
+	fn set_new_msg(
+		&mut self,
+		msg: &str,
+		title: String,
+	) -> Result<()> {
+		self.title = title;
+		self.msg = msg.to_string();
+		self.scroll.reset();
+		self.show()
 	}
 
 	///
 	pub fn show_error(&mut self, msg: &str) -> Result<()> {
-		self.title = strings::msg_title_error(&self.key_config);
-		self.msg = msg.to_string();
-		self.show()?;
-
-		Ok(())
+		self.set_new_msg(
+			msg,
+			strings::msg_title_error(&self.key_config),
+		)
 	}
 
 	///
 	pub fn show_info(&mut self, msg: &str) -> Result<()> {
-		self.title = strings::msg_title_info(&self.key_config);
-		self.msg = msg.to_string();
-		self.show()?;
-
-		Ok(())
+		self.set_new_msg(
+			msg,
+			strings::msg_title_info(&self.key_config),
+		)
 	}
 }
