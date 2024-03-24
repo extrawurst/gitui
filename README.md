@@ -54,12 +54,13 @@
 - Responsive terminal UI
 - Async git API for fluid control
 - Submodule support
+- gpg commit signing with shortcomings (see [#97](https://github.com/extrawurst/gitui/issues/97)))
 
 ## 2. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 I do most of my git work in a terminal but I frequently found myself using git GUIs for some use-cases like: index, commit, diff, stash, blame and log.
 
-Unfortunately popular git GUIs all fail on giant repositories or become unresponsive and unusable. 
+Unfortunately popular git GUIs all fail on giant repositories or become unresponsive and unusable.
 
 GitUI provides you with the user experience and comfort of a git GUI but right in your terminal while being portable, fast, free and opensource.
 
@@ -83,7 +84,7 @@ These are the high level goals before calling out `1.0`:
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - no sparse repo support (see [#1226](https://github.com/extrawurst/gitui/issues/1226))
-- no support for GPG signing (see [#97](https://github.com/extrawurst/gitui/issues/97))
+- no support for SSH signing yet (see [#1149](https://github.com/extrawurst/gitui/issues/1149))
 - no git-lfs support (see [#1089](https://github.com/extrawurst/gitui/discussions/1089))
 - *credential.helper* for https needs to be **explicitly** configured (see [#800](https://github.com/extrawurst/gitui/issues/800))
 
@@ -182,7 +183,7 @@ pkg install gitui
 
 ##### [Anaconda](https://anaconda.org/conda-forge/gitui)
 ```
-conda install -c conda-forge gitui 
+conda install -c conda-forge gitui
 ```
 
 </details>
@@ -221,7 +222,7 @@ All contain a single binary file
   - See [Install Rust](https://www.rust-lang.org/tools/install)
 
 - To build openssl dependency (see https://docs.rs/openssl/latest/openssl/)
-  - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/) 
+  - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/)
   - a c compiler (msvc, gcc or clang, cargo will find it)
 
 - To run the complete test suite python is required (and it must be invocable as `python`)
