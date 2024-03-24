@@ -10,8 +10,9 @@ In order to build GitUI on your machine, follow the instructions in the
 
 ## Getting help
 
-There’s a Discord server you can join if you get stuck or don’t know where to
-start. People are happy to answer any questions you might have!
+There’s a [Discord server][discord-server] you can join if you get stuck or
+don’t know where to start. People are happy to answer any questions you might
+have!
 
 ## Getting started
 
@@ -21,4 +22,5 @@ good first issue, you can take a look at [issues labelled with
 too much context so that people not familiar with the codebase yet can still
 make a contribution.
 
+[discord-server]: https://discord.gg/rZv4uxSQx3
 [good-first-issues]: https://github.com/extrawurst/gitui/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
