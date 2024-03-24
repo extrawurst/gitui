@@ -130,7 +130,8 @@ pub fn commit_message_prettify(
 	let comment_char = repo(repo_path)?
 		.config()?
 		.get_string("core.commentChar")
-		.map(|char_string| char_string.chars().next())?
+		.ok()
+		.and_then(|char_string| char_string.chars().next())
 		.unwrap_or('#') as u8;
 
 	Ok(message_prettify(message, Some(comment_char))?)
