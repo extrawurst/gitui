@@ -49,17 +49,22 @@ impl DrawableComponent for MsgPopup {
 			.lines()
 			.map(str::len)
 			.max()
-			.expect("Expected at least one line in the message")
+			.unwrap_or(0)
 			.saturating_add(BORDER_WIDTH.into())
 			.clamp(MINIMUM_WIDTH.into(), max_width.into())
 			.try_into()
 			.expect("can't fail because we're clamping to u16 value");
 
-		self.current_width.set(width);
 
-		let wrapped_msg = bwrap::wrap!(
+		let area =
+			ui::centered_rect_absolute(width, POPUP_HEIGHT, f.size());
+
+		self.current_width.set(area.width);
+
+		// Wrap lines and break words if there is not enough space
+		let wrapped_msg = bwrap::wrap_maybrk!(
 			&self.msg,
-			width.saturating_sub(BORDER_WIDTH).into()
+			area.width.saturating_sub(BORDER_WIDTH).into()
 		);
 
 		let msg_lines: Vec<String> =
@@ -84,9 +89,6 @@ impl DrawableComponent for MsgPopup {
 				)])
 			})
 			.collect::<Vec<Line>>();
-
-		let area =
-			ui::centered_rect_absolute(width, POPUP_HEIGHT, f.size());
 
 		f.render_widget(Clear, area);
 		f.render_widget(
