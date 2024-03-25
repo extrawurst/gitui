@@ -756,6 +756,8 @@ dependencies = [
  "shellexpand",
  "simplelog",
  "struct-patch",
+ "strum",
+ "strum_macros",
  "syntect",
  "tempfile",
  "tui-textarea",

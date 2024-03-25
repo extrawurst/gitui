@@ -364,58 +364,40 @@ pub fn rename_branch_popup_msg(
 	"new branch name".to_string()
 }
 
-pub fn sort_branch_by_name_msg(
-	key_config: &SharedKeyConfig,
-) -> String {
-	let hint =
-		key_config.get_hint(key_config.keys.branch_sort_by_name);
-	format!("{: <5}branch name (a -> z)", format!("[{}]", hint))
-}
-pub fn sort_branch_by_name_rev_msg(
-	key_config: &SharedKeyConfig,
-) -> String {
-	let hint =
-		key_config.get_hint(key_config.keys.branch_sort_by_name_rev);
-	format!("{: <5}branch name (z -> a)", format!("[{}]", hint))
-}
-pub fn sort_branch_by_time_msg(
-	key_config: &SharedKeyConfig,
-) -> String {
-	let hint =
-		key_config.get_hint(key_config.keys.branch_sort_by_time);
+pub fn sort_branch_by_name_msg(selected: bool) -> String {
 	format!(
-		"{: <5}last commit time (new -> old)",
-		format!("[{}]", hint)
+		"[{}] branch name (a -> z)",
+		if selected { "x" } else { " " }
 	)
 }
-pub fn sort_branch_by_time_rev_msg(
-	key_config: &SharedKeyConfig,
-) -> String {
-	let hint =
-		key_config.get_hint(key_config.keys.branch_sort_by_time_rev);
+pub fn sort_branch_by_name_rev_msg(selected: bool) -> String {
 	format!(
-		"{: <5}last commit time (old -> new)",
-		format!("[{}]", hint)
+		"[{}] branch name (z -> a)",
+		if selected { "x" } else { " " }
 	)
 }
-pub fn sort_branch_by_author_msg(
-	key_config: &SharedKeyConfig,
-) -> String {
-	let hint =
-		key_config.get_hint(key_config.keys.branch_sort_by_author);
+pub fn sort_branch_by_time_msg(selected: bool) -> String {
 	format!(
-		"{: <5}last commit author (a -> z)",
-		format!("[{}]", hint)
+		"[{}] last commit time (new -> old)",
+		if selected { "x" } else { " " }
 	)
 }
-pub fn sort_branch_by_author_rev_msg(
-	key_config: &SharedKeyConfig,
-) -> String {
-	let hint = key_config
-		.get_hint(key_config.keys.branch_sort_by_author_rev);
+pub fn sort_branch_by_time_rev_msg(selected: bool) -> String {
 	format!(
-		"{: <5}last commit author (z -> a)",
-		format!("[{}]", hint)
+		"[{}] last commit time (old -> new)",
+		if selected { "x" } else { " " }
+	)
+}
+pub fn sort_branch_by_author_msg(selected: bool) -> String {
+	format!(
+		"[{}] last commit author (a -> z)",
+		if selected { "x" } else { " " }
+	)
+}
+pub fn sort_branch_by_author_rev_msg(selected: bool) -> String {
+	format!(
+		"[{}] last commit author (z -> a)",
+		if selected { "x" } else { " " }
 	)
 }
 
@@ -814,6 +796,19 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.enter),
 			),
 			"close fuzzy finder",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn close_branch_sort_popup(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Close [{}{}]",
+				key_config.get_hint(key_config.keys.exit_popup),
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"close branch sort popup",
 			CMD_GROUP_GENERAL,
 		)
 	}
