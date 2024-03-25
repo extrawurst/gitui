@@ -89,7 +89,7 @@ impl BranchSortPopup {
 			.map(|t| {
 				Line::from(vec![Span::styled(
 					t.clone(),
-					self.theme.text(true, t.starts_with("[x]")),
+					self.theme.text(true, t.starts_with("[X]")),
 				)])
 			})
 			.collect()
