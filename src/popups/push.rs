@@ -16,7 +16,9 @@ use asyncgit::{
 			extract_username_password, need_username_password,
 			BasicAuthCredential,
 		},
-		get_branch_remote, get_default_remote, RepoPathRef,
+		get_branch_remote,
+		remotes::get_default_remote_for_push,
+		RepoPathRef,
 	},
 	AsyncGitNotification, AsyncPush, PushRequest, PushType,
 	RemoteProgress, RemoteProgressState,
@@ -132,7 +134,8 @@ impl PushPopup {
 			remote
 		} else {
 			log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
-			let remote = get_default_remote(&self.repo.borrow())?;
+			let remote =
+				get_default_remote_for_push(&self.repo.borrow())?;
 			log::info!(
 				"push: branch '{}' to remote '{}'",
 				self.branch,
