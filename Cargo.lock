@@ -759,6 +759,7 @@ dependencies = [
  "syntect",
  "tempfile",
  "tui-textarea",
+ "two-face",
  "unicode-segmentation",
  "unicode-truncate",
  "unicode-width",
@@ -1745,6 +1746,17 @@ dependencies = [
  "crossterm",
  "ratatui",
  "unicode-width",
+]
+
+[[package]]
+name = "two-face"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37bed2135b2459c7eefba72c906d374697eb15949c205f2f124e3636a46b5eeb"
+dependencies = [
+ "once_cell",
+ "serde",
+ "syntect",
 ]
 
 [[package]]
