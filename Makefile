@@ -30,13 +30,13 @@ release-win: build-release
 	mkdir -p release
 	tar -C ./target/release/ -czvf ./release/gitui-win.tar.gz ./gitui.exe
 	cargo install cargo-wix --version 0.3.3
-	cargo wix -p gitui --no-build --nocapture --output ./release/gitui.msi
-	ls -l ./release/gitui.msi
+	cargo wix -p gitui --no-build --nocapture --output ./release/gitui-win.msi
+	ls -l ./release/gitui-win.msi
 
 release-linux-musl: build-linux-musl-release
 	strip target/x86_64-unknown-linux-musl/release/gitui
 	mkdir -p release
-	tar -C ./target/x86_64-unknown-linux-musl/release/ -czvf ./release/gitui-linux-musl.tar.gz ./gitui
+	tar -C ./target/x86_64-unknown-linux-musl/release/ -czvf ./release/gitui-linux-x86_64.tar.gz ./gitui
 
 build-linux-musl-debug:
 	cargo build --target=x86_64-unknown-linux-musl
