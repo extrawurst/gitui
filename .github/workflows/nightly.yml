@@ -1,10 +1,8 @@
 name: Build Nightly Releases
 
 on: 
-  push:
-    branches: [ '*' ]
   schedule:
-    - cron: '0 0 * * *' # run at 0 AM UTC
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 env:
@@ -37,17 +35,14 @@ jobs:
         components: clippy
 
     # ideally we trigger the nightly build/deploy only if the normal nightly CI finished successfully 
-    # - name: Build
-    #   if: matrix.os != 'ubuntu-22.04'
-    #   run: cargo build
-    # - name: Run tests
-    #   if: matrix.os != 'ubuntu-22.04'
-    #   run: make test
-    # - name: Run clippy
-    #   if: matrix.os != 'ubuntu-22.04'
-    #   run: |
-    #     cargo clean
-    #     make clippy
+    - name: Run tests
+      if: matrix.os != 'ubuntu-22.04'
+      run: make test
+    - name: Run clippy
+      if: matrix.os != 'ubuntu-22.04'
+      run: |
+        cargo clean
+        make clippy
 
     - name: Setup MUSL
       if: matrix.os == 'ubuntu-latest'
@@ -82,7 +77,7 @@ jobs:
       run: make release-win
     - name: Build Release Linux ARM
       if: matrix.os == 'ubuntu-22.04'
-      run: GITUI_RELEASE=1 make release-linux-arm
+      run: make release-linux-arm
 
     - name: Ubuntu 22.04 Upload Artifact
       if: matrix.os == 'ubuntu-22.04'
