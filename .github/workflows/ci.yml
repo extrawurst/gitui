@@ -78,8 +78,8 @@ jobs:
       run: |
         cargo install cargo-wix --version 0.3.3
         cargo wix --version
-        cargo wix -p gitui --no-build --nocapture --output ./target/wix/gitui.msi
-        ls -l ./target/wix/gitui.msi
+        cargo wix -p gitui --no-build --nocapture --output ./target/wix/gitui-win.msi
+        ls -l ./target/wix/gitui-win.msi
 
   build-linux-musl:
     runs-on: ubuntu-latest
@@ -103,7 +103,7 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
         targets: x86_64-unknown-linux-musl
-    
+
     # The build would fail without manually installing the target.
     # https://github.com/dtolnay/rust-toolchain/issues/83
     - name: Manually install target
@@ -219,10 +219,10 @@ jobs:
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
-        
+
     - name: build cargo-udeps
       run: cargo install --git https://github.com/est31/cargo-udeps --locked
-        
+
     - name: run cargo-udeps
       run: cargo +nightly udeps --all-targets
 
