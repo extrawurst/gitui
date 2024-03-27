@@ -115,5 +115,5 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
         AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       run: |
-        aws s3 cp ./release/gitui.msi $env:AWS_BUCKET_NAME
+        aws s3 cp ./release/gitui-win.msi $env:AWS_BUCKET_NAME
         aws s3 cp ./release/gitui-win.tar.gz $env:AWS_BUCKET_NAME
