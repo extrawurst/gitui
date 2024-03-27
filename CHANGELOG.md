@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * Make info and error message popups scrollable [[@MichaelAug](https://github.com/MichaelAug)] ([#1138](https://github.com/extrawurst/gitui/issues/1138))
 
+### Fixes
+* add syntax highlighting support for more file types, e.g. Typescript, TOML, etc. [[@martihomssoler](https://github.com/martihomssoler)] ([#2005](https://github.com/extrawurst/gitui/issues/2005))
+
 ## [0.25.2] - 2024-03-22
 
 ### Fixes
@@ -28,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixes
 * bump yanked dependency `bumpalo` to fix build from source ([#2087](https://github.com/extrawurst/gitui/issues/2087))
 * pin `ratatui` version to fix building without locked `cargo install gitui` ([#2090](https://github.com/extrawurst/gitui/issues/2090))
-* add syntax highlighting support for more file types, e.g. Typescript, TOML, etc. [[@martihomssoler](https://github.com/martihomssoler)] ([#2005](https://github.com/extrawurst/gitui/issues/2005))
 
 ## [0.25.0] - 2024-02-21
 
