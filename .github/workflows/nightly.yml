@@ -1,24 +1,26 @@
-name: CD
+name: Build Nightly Releases
 
-on:
-  push:
-   tags:
-     - '*'
+on: 
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  AWS_BUCKET_NAME: s3://gitui/nightly/
 
 jobs:
   release:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest, ubuntu-22.04]
+        os: [
+          ubuntu-latest, macos-latest, windows-latest, ubuntu-22.04
+          ]
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Get version
-      id: get_version
-      run: echo "version=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
 
     - name: Restore cargo cache
       uses: Swatinem/rust-cache@v2
@@ -32,9 +34,7 @@ jobs:
       with:
         components: clippy
 
-    - name: Build
-      if: matrix.os != 'ubuntu-22.04'
-      run: cargo build
+    # ideally we trigger the nightly build/deploy only if the normal nightly CI finished successfully 
     - name: Run tests
       if: matrix.os != 'ubuntu-22.04'
       run: make test
@@ -68,45 +68,52 @@ jobs:
 
     - name: Build Release Mac
       if: matrix.os == 'macos-latest'
-      run: GITUI_RELEASE=1 make release-mac
+      run: make release-mac
     - name: Build Release Linux
       if: matrix.os == 'ubuntu-latest'
-      run: GITUI_RELEASE=1 make release-linux-musl
+      run: make release-linux-musl
     - name: Build Release Win
       if: matrix.os == 'windows-latest'
-      run: GITUI_RELEASE=1 make release-win
+      run: make release-win
     - name: Build Release Linux ARM
       if: matrix.os == 'ubuntu-22.04'
-      run: GITUI_RELEASE=1 make release-linux-arm
+      run: make release-linux-arm
 
-    - name: Set SHA
-      if: matrix.os == 'macos-latest'
-      id: shasum
+    - name: Ubuntu 22.04 Upload Artifact
+      if: matrix.os == 'ubuntu-22.04'
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       run: |
-        echo sha="$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
-
-    - name: Extract release notes
+        aws s3 cp ./release/gitui-linux-armv7.tar.gz $AWS_BUCKET_NAME
+        aws s3 cp ./release/gitui-linux-arm.tar.gz $AWS_BUCKET_NAME
+        aws s3 cp ./release/gitui-linux-aarch64.tar.gz $AWS_BUCKET_NAME
+          
+    - name: Ubuntu Latest Upload Artifact
       if: matrix.os == 'ubuntu-latest'
-      id: release_notes
-      uses: ffurrer2/extract-release-notes@v2
-    - name: Release
-      uses: softprops/action-gh-release@v2
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        body: ${{ steps.release_notes.outputs.release_notes }}
-        prerelease: ${{ contains(github.ref, '-') }}
-        files: |
-          ./release/*.tar.gz
-          ./release/*.zip
-          ./release/*.msi
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        aws s3 cp ./release/gitui-linux-x86_64.tar.gz $AWS_BUCKET_NAME
 
-    - name: Bump homebrew-core formula
-      uses: mislav/bump-homebrew-formula-action@v2
-      if: "matrix.os == 'macos-latest' && !contains(github.ref, '-')" # skip prereleases
+    - name: MacOS Upload Artifact
+      if: matrix.os == 'macos-latest'  
       env:
-        COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
-      with:
-        formula-name: gitui
-        # https://github.com/mislav/bump-homebrew-formula-action/issues/58
-        formula-path: Formula/g/gitui.rb
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        aws s3 cp ./release/gitui-mac.tar.gz $AWS_BUCKET_NAME
+
+    - name: Windows Upload Artifact
+      if: matrix.os == 'windows-latest' 
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        aws s3 cp ./release/gitui.msi $env:AWS_BUCKET_NAME
+        aws s3 cp ./release/gitui-win.tar.gz $env:AWS_BUCKET_NAME
