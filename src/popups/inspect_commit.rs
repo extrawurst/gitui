@@ -23,6 +23,8 @@ use ratatui::{
 	Frame,
 };
 
+use super::FileTreeOpen;
+
 #[derive(Clone, Debug)]
 pub struct InspectCommitOpen {
 	pub commit_id: CommitId,
@@ -169,6 +171,24 @@ impl Component for InspectCommitPopup {
 				} else if key_match(e, self.key_config.keys.move_left)
 				{
 					self.hide_stacked(false);
+				} else if key_match(
+					e,
+					self.key_config.keys.open_file_tree,
+				) {
+					if let Some(commit_id) = self
+						.open_request
+						.as_ref()
+						.map(|open_commit| open_commit.commit_id)
+					{
+						self.hide_stacked(true);
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::FileTree(
+								FileTreeOpen::new(commit_id),
+							),
+						));
+						return Ok(EventState::Consumed);
+					}
+					return Ok(EventState::NotConsumed);
 				}
 
 				return Ok(EventState::Consumed);

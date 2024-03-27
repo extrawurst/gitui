@@ -46,9 +46,13 @@ impl Component for TagCommitPopup {
 		if self.is_visible() || force_all {
 			self.input.commands(out, force_all);
 
+			let is_annotation_mode =
+				matches!(self.mode, Mode::Annotation { .. });
+
 			out.push(CommandInfo::new(
 				strings::commands::tag_commit_confirm_msg(
 					&self.key_config,
+					is_annotation_mode,
 				),
 				self.is_valid_tag(),
 				true,
@@ -66,37 +70,34 @@ impl Component for TagCommitPopup {
 
 	fn event(&mut self, ev: &Event) -> Result<EventState> {
 		if self.is_visible() {
-			if self.input.event(ev)?.is_consumed() {
-				return Ok(EventState::Consumed);
-			}
-
 			if let Event::Key(e) = ev {
-				if key_match(e, self.key_config.keys.enter)
+				let is_annotation_mode =
+					matches!(self.mode, Mode::Annotation { .. });
+
+				if !is_annotation_mode
+					&& key_match(e, self.key_config.keys.enter)
 					&& self.is_valid_tag()
 				{
 					try_or_popup!(self, "tag error:", self.tag());
+					return Ok(EventState::Consumed);
+				}
+				if is_annotation_mode
+					&& key_match(e, self.key_config.keys.commit)
+				{
+					try_or_popup!(self, "tag error:", self.tag());
+					return Ok(EventState::Consumed);
 				} else if key_match(
 					e,
 					self.key_config.keys.tag_annotate,
 				) && self.is_valid_tag()
 				{
-					let tag_name: String =
-						self.input.get_text().into();
-
-					self.input.clear();
-					self.input.set_title(
-						strings::tag_popup_annotation_title(
-							&tag_name,
-						),
-					);
-					self.input.set_default_msg(
-						strings::tag_popup_annotation_msg(),
-					);
-					self.mode = Mode::Annotation { tag_name };
+					self.start_annotate_mode();
+					return Ok(EventState::Consumed);
 				}
-
-				return Ok(EventState::Consumed);
 			}
+
+			self.input.event(ev)?;
+			return Ok(EventState::Consumed);
 		}
 		Ok(EventState::NotConsumed)
 	}
@@ -111,6 +112,7 @@ impl Component for TagCommitPopup {
 
 	fn show(&mut self) -> Result<()> {
 		self.mode = Mode::Name;
+		self.input.set_input_type(InputType::Singleline);
 		self.input.set_title(strings::tag_popup_name_title());
 		self.input.set_default_msg(strings::tag_popup_name_msg());
 		self.input.show()?;
@@ -166,6 +168,7 @@ impl TagCommitPopup {
 				.flatten()
 				.and_then(|val| val.parse::<bool>().ok())
 				.unwrap_or_default();
+
 		anyhow::ensure!(!gpgsign, "config tag.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to tag without signing.");
 
 		let (tag_name, tag_annotation) = self.tag_info();
@@ -200,5 +203,18 @@ impl TagCommitPopup {
 		}
 
 		Ok(())
+	}
+
+	fn start_annotate_mode(&mut self) {
+		let tag_name: String = self.input.get_text().into();
+
+		self.input.clear();
+		self.input.set_input_type(InputType::Multiline);
+		self.input.set_title(strings::tag_popup_annotation_title(
+			&tag_name,
+		));
+		self.input
+			.set_default_msg(strings::tag_popup_annotation_msg());
+		self.mode = Mode::Annotation { tag_name };
 	}
 }

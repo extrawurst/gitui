@@ -5,7 +5,7 @@
 
 pub mod blame;
 pub mod branch;
-mod commit;
+pub mod commit;
 mod commit_details;
 pub mod commit_files;
 mod commit_filter;
@@ -25,6 +25,7 @@ pub mod remotes;
 mod repository;
 mod reset;
 mod reword;
+pub mod sign;
 mod staging;
 mod stash;
 mod state;

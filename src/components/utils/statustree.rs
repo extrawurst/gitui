@@ -509,10 +509,7 @@ mod tests {
 				false, //
 			]
 		);
-		assert_eq!(
-			res.is_visible_index(res.selection.unwrap()),
-			true
-		);
+		assert!(res.is_visible_index(res.selection.unwrap()));
 		assert_eq!(res.selection, Some(0));
 	}
 

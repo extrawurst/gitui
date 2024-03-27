@@ -101,11 +101,6 @@ impl RevisionFilesComponent {
 	}
 
 	///
-	pub const fn selection(&self) -> Option<usize> {
-		self.tree.selection()
-	}
-
-	///
 	pub fn update(&mut self, ev: AsyncNotification) -> Result<()> {
 		self.current_file.update(ev);
 
