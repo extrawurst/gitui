@@ -68,16 +68,16 @@ jobs:
 
     - name: Build Release Mac
       if: matrix.os == 'macos-latest'
-      run: make release-mac
+      run: GITUI_RELEASE=1 make release-mac
     - name: Build Release Linux
       if: matrix.os == 'ubuntu-latest'
-      run: make release-linux-musl
+      run: GITUI_RELEASE=1 make release-linux-musl
     - name: Build Release Win
       if: matrix.os == 'windows-latest'
-      run: make release-win
+      run: GITUI_RELEASE=1 make release-win
     - name: Build Release Linux ARM
       if: matrix.os == 'ubuntu-22.04'
-      run: make release-linux-arm
+      run: GITUI_RELEASE=1 make release-linux-arm
 
     - name: Set SHA
       if: matrix.os == 'macos-latest'

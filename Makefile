@@ -16,7 +16,7 @@ debug:
 	RUST_BACKTRACE=true cargo run --features=timing -- ${ARGS}
 
 build-release:
-	GITUI_RELEASE=1 cargo build --release --locked
+	cargo build --release --locked
 
 release-mac: build-release
 	strip target/release/gitui
@@ -42,7 +42,7 @@ build-linux-musl-debug:
 	cargo build --target=x86_64-unknown-linux-musl
 
 build-linux-musl-release:
-	GITUI_RELEASE=1 cargo build --release --target=x86_64-unknown-linux-musl
+	cargo build --release --target=x86_64-unknown-linux-musl
 
 test-linux-musl:
 	cargo test --workspace --target=x86_64-unknown-linux-musl
@@ -64,9 +64,9 @@ build-linux-arm-debug:
 	cargo build --target=arm-unknown-linux-gnueabihf
 
 build-linux-arm-release:
-	GITUI_RELEASE=1 cargo build --release --target=aarch64-unknown-linux-gnu
-	GITUI_RELEASE=1 cargo build --release --target=armv7-unknown-linux-gnueabihf
-	GITUI_RELEASE=1 cargo build --release --target=arm-unknown-linux-gnueabihf
+	cargo build --release --target=aarch64-unknown-linux-gnu
+	cargo build --release --target=armv7-unknown-linux-gnueabihf
+	cargo build --release --target=arm-unknown-linux-gnueabihf
 
 test:
 	cargo test --workspace
