@@ -43,6 +43,7 @@ mod string_utils;
 mod strings;
 mod tabs;
 mod ui;
+mod version;
 mod watcher;
 
 use crate::{app::App, args::process_cmdline};

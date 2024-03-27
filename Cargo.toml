@@ -12,7 +12,6 @@ readme = "README.md"
 license = "MIT"
 categories = ["command-line-utilities"]
 keywords = ["git", "gui", "cli", "terminal", "ui"]
-build = "build.rs"
 
 [dependencies]
 anyhow = "1.0"
@@ -64,9 +63,6 @@ which = "6.0"
 [dev-dependencies]
 pretty_assertions = "1.4"
 tempfile = "3"
-
-[build-dependencies]
-compile-time = "0.2"
 
 [badges]
 maintenance = { status = "actively-developed" }

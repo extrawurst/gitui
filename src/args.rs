@@ -2,7 +2,7 @@ use crate::bug_report;
 use anyhow::{anyhow, Result};
 use asyncgit::sync::RepoPath;
 use clap::{
-	crate_authors, crate_description, crate_name, Arg,
+	crate_authors, crate_description, crate_name, crate_version, Arg,
 	Command as ClapApp,
 };
 use simplelog::{Config, LevelFilter, WriteLogger};
@@ -63,7 +63,7 @@ pub fn process_cmdline() -> Result<CliArgs> {
 fn app() -> ClapApp {
 	ClapApp::new(crate_name!())
 		.author(crate_authors!())
-		.version(env!("GITUI_BUILD_NAME"))
+		.version(crate_version!())
 		.about(crate_description!())
 		.help_template(
 			"\
