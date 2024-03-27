@@ -6,21 +6,21 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  AWS_BUCKET_NAME: s3://gitui/nightly/
 
 jobs:
   release:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest, ubuntu-22.04]
+        os: [
+          ubuntu-latest, 
+          # macos-latest, windows-latest, ubuntu-22.04
+          ]
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Get version
-      id: get_version
-      run: echo "version=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
 
     - name: Restore cargo cache
       uses: Swatinem/rust-cache@v2
@@ -34,17 +34,18 @@ jobs:
       with:
         components: clippy
 
-    - name: Build
-      if: matrix.os != 'ubuntu-22.04'
-      run: cargo build
-    - name: Run tests
-      if: matrix.os != 'ubuntu-22.04'
-      run: make test
-    - name: Run clippy
-      if: matrix.os != 'ubuntu-22.04'
-      run: |
-        cargo clean
-        make clippy
+    # ideally we trigger the nightly build/deploy only if the normal nightly CI finished successfully 
+    # - name: Build
+    #   if: matrix.os != 'ubuntu-22.04'
+    #   run: cargo build
+    # - name: Run tests
+    #   if: matrix.os != 'ubuntu-22.04'
+    #   run: make test
+    # - name: Run clippy
+    #   if: matrix.os != 'ubuntu-22.04'
+    #   run: |
+    #     cargo clean
+    #     make clippy
 
     - name: Setup MUSL
       if: matrix.os == 'ubuntu-latest'
@@ -52,81 +53,78 @@ jobs:
         rustup target add x86_64-unknown-linux-musl
         sudo apt-get -qq install musl-tools
 
-    - name: Setup ARM toolchain
-      if: matrix.os == 'ubuntu-22.04'
-      run: |
-        rustup target add aarch64-unknown-linux-gnu
-        rustup target add armv7-unknown-linux-gnueabihf
-        rustup target add arm-unknown-linux-gnueabihf
+    # - name: Setup ARM toolchain
+    #   if: matrix.os == 'ubuntu-22.04'
+    #   run: |
+    #     rustup target add aarch64-unknown-linux-gnu
+    #     rustup target add armv7-unknown-linux-gnueabihf
+    #     rustup target add arm-unknown-linux-gnueabihf
 
-        curl -o $GITHUB_WORKSPACE/aarch64.tar.xz https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-a/8.2-2018.08/gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu.tar.xz
-        curl -o $GITHUB_WORKSPACE/arm.tar.xz https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-a/8.2-2018.08/gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf.tar.xz
+    #     curl -o $GITHUB_WORKSPACE/aarch64.tar.xz https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-a/8.2-2018.08/gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu.tar.xz
+    #     curl -o $GITHUB_WORKSPACE/arm.tar.xz https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-a/8.2-2018.08/gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf.tar.xz
 
-        tar xf $GITHUB_WORKSPACE/aarch64.tar.xz
-        tar xf $GITHUB_WORKSPACE/arm.tar.xz
+    #     tar xf $GITHUB_WORKSPACE/aarch64.tar.xz
+    #     tar xf $GITHUB_WORKSPACE/arm.tar.xz
 
-        echo "$GITHUB_WORKSPACE/gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu/bin" >> $GITHUB_PATH
-        echo "$GITHUB_WORKSPACE/gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf/bin" >> $GITHUB_PATH
+    #     echo "$GITHUB_WORKSPACE/gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu/bin" >> $GITHUB_PATH
+    #     echo "$GITHUB_WORKSPACE/gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf/bin" >> $GITHUB_PATH
 
-    - name: Build Release Mac
-      if: matrix.os == 'macos-latest'
-      run: make release-mac
+    # - name: Build Release Mac
+    #   if: matrix.os == 'macos-latest'
+    #   run: make release-mac
     - name: Build Release Linux
       if: matrix.os == 'ubuntu-latest'
       run: make release-linux-musl
-    - name: Build Release Win
-      if: matrix.os == 'windows-latest'
-      run: make release-win
-    - name: Build Release Linux ARM
-      if: matrix.os == 'ubuntu-22.04'
-      run: make release-linux-arm
+    # - name: Build Release Win
+    #   if: matrix.os == 'windows-latest'
+    #   run: make release-win
+    # - name: Build Release Linux ARM
+    #   if: matrix.os == 'ubuntu-22.04'
+    #   run: make release-linux-arm
 
-    - name: Set SHA
-      if: matrix.os == 'macos-latest'
-      id: shasum
-      run: |
-        echo sha="$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
+    # - name: Set SHA
+    #   if: matrix.os == 'macos-latest'
+    #   id: shasum
+    #   run: |
+    #     echo sha="$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
 
-    - name: Ubuntu 22.04 Upload Artifact
-      if: matrix.os == 'ubuntu-22.04'
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
-      run: |
-        aws s3 cp ./release/gitui-linux-armv7.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
-        aws s3 cp ./release/gitui-linux-arm.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
-        aws s3 cp ./release/gitui-linux-aarch64.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
+    # - name: Ubuntu 22.04 Upload Artifact
+    #   if: matrix.os == 'ubuntu-22.04'
+    #   env:
+    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+    #     AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+    #   run: |
+    #     aws s3 cp ./release/gitui-linux-armv7.tar.gz $AWS_BUCKET_NAME
+    #     aws s3 cp ./release/gitui-linux-arm.tar.gz $AWS_BUCKET_NAME
+    #     aws s3 cp ./release/gitui-linux-aarch64.tar.gz $AWS_BUCKET_NAME
           
     - name: Ubuntu Latest Upload Artifact
       if: matrix.os == 'ubuntu-latest'
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       run: |
-        aws s3 cp ./release/gitui-linux-musl.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
-      
+        aws s3 cp ./release/gitui-linux-x86_64.tar.gz $AWS_BUCKET_NAME
 
-    - name: MacOS Upload Artifact
-      if: matrix.os == 'macos-latest'  
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
-      run: |
-        aws s3 cp ./release/gitui-mac.tar.gz s3://"$AWS_BUCKET_NAME"/nightly-builds/
+    # - name: MacOS Upload Artifact
+    #   if: matrix.os == 'macos-latest'  
+    #   env:
+    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+    #     AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+    #     AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+    #   run: |
+    #     aws s3 cp ./release/gitui-mac.tar.gz $AWS_BUCKET_NAME
 
-    - name: Windows Upload Artifact
-      if: matrix.os == 'windows-latest' 
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
-      run: |
-        aws s3 cp ./release/gitui.msi s3://"$env:AWS_BUCKET_NAME"/nightly-builds/
-        aws s3 cp ./release/gitui-win.tar.gz s3://"$env:AWS_BUCKET_NAME"/nightly-builds/
+    # - name: Windows Upload Artifact
+    #   if: matrix.os == 'windows-latest' 
+    #   env:
+    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
+    #     AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+    #     AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+    #   run: |
+    #     aws s3 cp ./release/gitui.msi $AWS_BUCKET_NAME
+    #     aws s3 cp ./release/gitui-win.tar.gz $AWS_BUCKET_NAME
