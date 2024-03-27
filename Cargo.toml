@@ -55,6 +55,7 @@ syntect = { version = "5.2", default-features = false, features = [
     "html",
 ] }
 tui-textarea = "0.4.0"
+two-face = { version = "0.3.0", default-features = false }
 unicode-segmentation = "1.11"
 unicode-truncate = "0.2"
 unicode-width = "0.1"
@@ -71,8 +72,8 @@ maintenance = { status = "actively-developed" }
 default = ["ghemoji", "regex-fancy", "trace-libgit", "vendor-openssl"]
 ghemoji = ["gh-emoji"]
 # regex-* features are mutually exclusive.
-regex-fancy = ["syntect/regex-fancy"]
-regex-onig = ["syntect/regex-onig"]
+regex-fancy = ["syntect/regex-fancy", "two-face/syntect-fancy"]
+regex-onig = ["syntect/regex-onig", "two-face/syntect-onig"]
 timing = ["scopetime/enabled"]
 trace-libgit = ["asyncgit/trace-libgit"]
 vendor-openssl = ["asyncgit/vendor-openssl"]
