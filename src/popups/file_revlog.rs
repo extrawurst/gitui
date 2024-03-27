@@ -389,8 +389,7 @@ impl FileRevlogPopup {
 		let title = self.get_title();
 		let rows = self.get_rows(now);
 
-		let table = Table::new(rows)
-			.widths(&constraints)
+		let table = Table::new(rows, constraints)
 			.column_spacing(1)
 			.highlight_style(self.theme.text(true, true))
 			.block(

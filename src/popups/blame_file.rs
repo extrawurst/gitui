@@ -136,8 +136,7 @@ impl DrawableComponent for BlameFilePopup {
 			let title_with_highlight_progress =
 				format!("{title}{syntax_highlight_progress}");
 
-			let table = Table::new(rows)
-				.widths(&constraints)
+			let table = Table::new(rows, constraints)
 				.column_spacing(1)
 				.highlight_style(self.theme.text(true, true))
 				.block(

@@ -47,12 +47,10 @@ where
 {
 	fn render(self, area: Rect, buf: &mut Buffer) {
 		// Render items
-		List::new(
-			self.items.map(ListItem::new).collect::<Vec<ListItem>>(),
-		)
-		.block(self.block.unwrap_or_default())
-		.style(self.style)
-		.render(area, buf);
+		List::new(self.items.map(ListItem::new))
+			.block(self.block.unwrap_or_default())
+			.style(self.style)
+			.render(area, buf);
 	}
 }
 
