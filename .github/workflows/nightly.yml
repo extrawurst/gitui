@@ -1,8 +1,9 @@
 name: Build Nightly Releases
 on: 
-  workflow_dispatch:
+  branch: "*"
   schedule:
     - cron: '0 0 * * *' # run at 0 AM UTC
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
