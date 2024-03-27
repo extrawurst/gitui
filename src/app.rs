@@ -10,14 +10,15 @@ use crate::{
 	options::{Options, SharedOptions},
 	popup_stack::PopupStack,
 	popups::{
-		AppOption, BlameFilePopup, BranchListPopup, CommitPopup,
-		CompareCommitsPopup, ConfirmPopup, CreateBranchPopup,
-		ExternalEditorPopup, FetchPopup, FileRevlogPopup,
-		FuzzyFindPopup, HelpPopup, InspectCommitPopup,
-		LogSearchPopupPopup, MsgPopup, OptionsPopup, PullPopup,
-		PushPopup, PushTagsPopup, RenameBranchPopup, ResetPopup,
-		RevisionFilesPopup, StashMsgPopup, SubmodulesListPopup,
-		TagCommitPopup, TagListPopup,
+		AppOption, BlameFilePopup, BranchListPopup, BranchSortPopup,
+		CommitPopup, CompareCommitsPopup, ConfirmPopup,
+		CreateBranchPopup, ExternalEditorPopup, FetchPopup,
+		FileRevlogPopup, FuzzyFindPopup, HelpPopup,
+		InspectCommitPopup, LogSearchPopupPopup, MsgPopup,
+		OptionsPopup, PullPopup, PushPopup, PushTagsPopup,
+		RenameBranchPopup, ResetPopup, RevisionFilesPopup,
+		StashMsgPopup, SubmodulesListPopup, TagCommitPopup,
+		TagListPopup,
 	},
 	queue::{
 		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,
@@ -88,6 +89,7 @@ pub struct App {
 	create_branch_popup: CreateBranchPopup,
 	rename_branch_popup: RenameBranchPopup,
 	select_branch_popup: BranchListPopup,
+	sort_branch_popup: BranchSortPopup,
 	options_popup: OptionsPopup,
 	submodule_popup: SubmodulesListPopup,
 	tags_popup: TagListPopup,
@@ -196,6 +198,7 @@ impl App {
 			submodule_popup: SubmodulesListPopup::new(&env),
 			log_search_popup: LogSearchPopupPopup::new(&env),
 			fuzzy_find_popup: FuzzyFindPopup::new(&env),
+			sort_branch_popup: BranchSortPopup::new(&env),
 			do_quit: QuitState::None,
 			cmdbar: RefCell::new(CommandBar::new(
 				env.theme.clone(),
@@ -468,6 +471,7 @@ impl App {
 		[
 			log_search_popup,
 			fuzzy_find_popup,
+			sort_branch_popup,
 			msg_popup,
 			confirm_popup,
 			commit_popup,
@@ -517,6 +521,7 @@ impl App {
 			reset_popup,
 			create_branch_popup,
 			rename_branch_popup,
+			sort_branch_popup,
 			revision_files_popup,
 			fuzzy_find_popup,
 			log_search_popup,
@@ -800,6 +805,16 @@ impl App {
 			}
 			InternalEvent::OpenLogSearchPopup => {
 				self.log_search_popup.open()?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::OpenBranchSortPopup(sort_by) => {
+				self.sort_branch_popup.open(sort_by)?;
+				flags
+					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
+			}
+			InternalEvent::BranchListSort(sort_by) => {
+				self.select_branch_popup.sort(sort_by)?;
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}

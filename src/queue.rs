@@ -1,5 +1,5 @@
 use crate::{
-	components::FuzzyFinderTarget,
+	components::{BranchListSortBy, FuzzyFinderTarget},
 	popups::{
 		AppOption, BlameFileOpen, FileRevOpen, FileTreeOpen,
 		InspectCommitOpen,
@@ -112,6 +112,10 @@ pub enum InternalEvent {
 	RenameBranch(String, String),
 	///
 	SelectBranch,
+	///
+	OpenBranchSortPopup(BranchListSortBy),
+	///
+	BranchListSort(BranchListSortBy),
 	///
 	OpenExternalEditor(Option<String>),
 	///
