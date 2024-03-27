@@ -6,7 +6,6 @@ use crate::{
 	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	strings, ui,
-	version::Version,
 };
 use anyhow::Result;
 use asyncgit::hash;
@@ -70,7 +69,10 @@ impl DrawableComponent for HelpPopup {
 
 			f.render_widget(
 				Paragraph::new(Line::from(vec![Span::styled(
-					Cow::from(format!("gitui {}", Version::new(),)),
+					Cow::from(format!(
+						"gitui {}",
+						env!("GITUI_BUILD_NAME"),
+					)),
 					Style::default(),
 				)]))
 				.alignment(Alignment::Right),
