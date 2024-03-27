@@ -1,8 +1,8 @@
 name: Build Nightly Releases
 
 on: 
-  pull_request:
-    branches: [ "*" ]
+  push:
+    branches: [ '*' ]
   schedule:
     - cron: '0 0 * * *' # run at 0 AM UTC
   workflow_dispatch:
