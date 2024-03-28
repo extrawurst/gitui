@@ -70,10 +70,20 @@ fn get_current_branch(
 ///
 /// > remote.pushDefault
 /// >
-/// > The remote to push to by default. Overrides branch.<name>.remote for all branches, and is
-/// > overridden by branch.<name>.pushRemote for specific branches.
+/// > The remote to push to by default. Overrides `branch.<name>.remote` for all branches, and is
+/// > overridden by `branch.<name>.pushRemote` for specific branches.
+///
+/// > branch.<name>.remote
+/// >
+/// > When on branch `<name>`, it tells `git fetch` and `git push` which remote to fetch from or
+/// > push to. The remote to push to may be overridden with `remote.pushDefault` (for all
+/// > branches). The remote to push to, for the current branch, may be further overridden by
+/// > `branch.<name>.pushRemote`. If no remote is configured, or if you are not on any branch and
+/// > there is more than one remote defined in the repository, it defaults to `origin` for fetching
+/// > and `remote.pushDefault` for pushing.
 ///
 /// [git-config-remote-push-default]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-remotepushDefault
+/// [git-config-branch-name-remote]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-branchltnamegtremote
 ///
 /// Falls back to `get_default_remote_in_repo`.
 pub fn get_default_remote_for_push(
@@ -103,6 +113,12 @@ pub(crate) fn get_default_remote_for_push_in_repo(
 		}
 
 		if let Ok(entry) = config.get_entry("remote.pushDefault") {
+			return bytes2string(entry.value_bytes());
+		}
+
+		let entry_name = format!("branch.{}.remote", &remote_name);
+
+		if let Ok(entry) = config.get_entry(&entry_name) {
 			return bytes2string(entry.value_bytes());
 		}
 	}
@@ -328,7 +344,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_default_remote_inconclusive() {
+	fn test_default_remote_for_push() {
 		let (remote_dir, _remote) = repo_init().unwrap();
 		let remote_path = remote_dir.path().to_str().unwrap();
 		let (repo_dir, repo) = repo_clone(remote_path).unwrap();
@@ -358,8 +374,7 @@ mod tests {
 			]
 		);
 
-		let default_push_remote =
-			get_default_remote_for_push_in_repo(&repo);
+		let default_push_remote = get_default_remote_in_repo(&repo);
 
 		assert!(matches!(
 			default_push_remote,
@@ -369,28 +384,34 @@ mod tests {
 		let mut config = repo.config().unwrap();
 
 		config
-			.set_str("remote.pushDefault", "defaultreporemote")
+			.set_str("branch.master.remote", "branchremote")
 			.unwrap();
 
 		let default_push_remote =
 			get_default_remote_for_push_in_repo(&repo);
 
 		assert!(
-			matches!(default_push_remote, Ok(remote_name) if remote_name == "defaultreporemote")
+			matches!(default_push_remote, Ok(remote_name) if remote_name == "branchremote")
+		);
+
+		config.set_str("remote.pushDefault", "pushdefault").unwrap();
+
+		let default_push_remote =
+			get_default_remote_for_push_in_repo(&repo);
+
+		assert!(
+			matches!(default_push_remote, Ok(remote_name) if remote_name == "pushdefault")
 		);
 
 		config
-			.set_str(
-				"branch.master.pushRemote",
-				"defaultbranchremote",
-			)
+			.set_str("branch.master.pushRemote", "branchpushremote")
 			.unwrap();
 
 		let default_push_remote =
 			get_default_remote_for_push_in_repo(&repo);
 
 		assert!(
-			matches!(default_push_remote, Ok(remote_name) if remote_name == "defaultbranchremote")
+			matches!(default_push_remote, Ok(remote_name) if remote_name == "branchpushremote")
 		);
 	}
 }
