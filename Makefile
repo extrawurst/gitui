@@ -7,7 +7,7 @@ ARGS=-l
 # ARGS=-l -d ~/code/git-bare-test.git -w ~/code/git-bare-test
 
 profile:
-	sudo CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --features timing -- ${ARGS}
+	CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --features timing -- ${ARGS}
 
 run-timing:
 	cargo run --features=timing --release -- ${ARGS}
