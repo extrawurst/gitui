@@ -9,6 +9,6 @@ When you find problems please report them and always mention the version that yo
 * [gitui-linux-armv7.tar.gz](https://gitui.s3.eu-west-1.amazonaws.com/nightly/gitui-linux-armv7.tar.gz)
 * [gitui-linux-x86_64.tar.gz](https://gitui.s3.eu-west-1.amazonaws.com/nightly/gitui-linux-x86_64.tar.gz)
 * [gitui-mac.tar.gz](https://gitui.s3.eu-west-1.amazonaws.com/nightly/gitui-mac.tar.gz)
-* [gitui-win.tar.gz](https://gitui.s3.eu-west-1.amazonaws.com/nightly/gitui-mac.tar.gz)
-* [gitui-win.msi](https://gitui.s3.eu-west-1.amazonaws.com/nightly/gitui-mac.tar.gz)
+* [gitui-win.tar.gz](https://gitui.s3.eu-west-1.amazonaws.com/nightly/gitui-win.tar.gz)
+* [gitui-win.msi](https://gitui.s3.eu-west-1.amazonaws.com/nightly/gitui-win.msi)
 
