@@ -13,8 +13,8 @@ use anyhow::Result;
 use asyncgit::{
 	sync::{
 		cred::{
-			extract_username_password, need_username_password,
-			BasicAuthCredential,
+			extract_username_password_for_push,
+			need_username_password_for_push, BasicAuthCredential,
 		},
 		get_branch_remote,
 		remotes::get_default_remote_for_push,
@@ -106,11 +106,11 @@ impl PushPopup {
 
 		self.show()?;
 
-		if need_username_password(&self.repo.borrow())? {
-			let cred = extract_username_password(&self.repo.borrow())
-				.unwrap_or_else(|_| {
-					BasicAuthCredential::new(None, None)
-				});
+		if need_username_password_for_push(&self.repo.borrow())? {
+			let cred = extract_username_password_for_push(
+				&self.repo.borrow(),
+			)
+			.unwrap_or_else(|_| BasicAuthCredential::new(None, None));
 			if cred.is_complete() {
 				self.push_to_remote(Some(cred), force)
 			} else {
