@@ -8,10 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-* provide nightly builds (see [NIGHTLIES.md](./NIGHTLIES.md)) ([#2083](https://github.com/extrawurst/gitui/issues/2083))
 * sign commits using openpgp [[@hendrikmaus](https://github.com/hendrikmaus)] ([#97](https://github.com/extrawurst/gitui/issues/97))
-* support `core.commitChar` filtering [[@concelare](https://github.com/concelare)] ([#2136](https://github.com/extrawurst/gitui/issues/2136))
+* provide nightly builds (see [NIGHTLIES.md](./NIGHTLIES.md)) ([#2083](https://github.com/extrawurst/gitui/issues/2083))
 * more version info in `gitui -V` and `help popup` (including git hash)
+* support `core.commitChar` filtering [[@concelare](https://github.com/concelare)] ([#2136](https://github.com/extrawurst/gitui/issues/2136))
+* allow reset in branch popup ([#2170](https://github.com/extrawurst/gitui/issues/2170))
 
 ### Changed
 * Make info and error message popups scrollable [[@MichaelAug](https://github.com/MichaelAug)] ([#1138](https://github.com/extrawurst/gitui/issues/1138))
