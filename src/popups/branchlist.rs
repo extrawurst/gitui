@@ -283,7 +283,7 @@ impl Component for BranchListPopup {
 			) && self.valid_selection()
 			{
 				self.hide();
-				if let Some(commit_id) = self.get_selected() {
+				if let Some(commit_id) = self.get_selected_commit() {
 					self.queue.push(InternalEvent::OpenPopup(
 						StackablePopupOpen::CompareCommits(
 							InspectCommitOpen::new(commit_id),
@@ -296,9 +296,9 @@ impl Component for BranchListPopup {
 				self.queue.push(InternalEvent::FetchRemotes);
 			} else if key_match(e, self.key_config.keys.reset_branch)
 			{
-				if let Some(b) = self.get_selected_branch() {
+				if let Some(commit_id) = self.get_selected_commit() {
 					self.queue.push(InternalEvent::OpenResetPopup(
-						b.top_commit,
+						commit_id,
 					));
 				}
 			} else if key_match(
@@ -479,7 +479,7 @@ impl BranchListPopup {
 	}
 
 	fn inspect_head_of_branch(&mut self) {
-		if let Some(commit_id) = self.get_selected() {
+		if let Some(commit_id) = self.get_selected_commit() {
 			self.hide();
 			self.queue.push(InternalEvent::OpenPopup(
 				StackablePopupOpen::InspectCommit(
@@ -522,14 +522,11 @@ impl BranchListPopup {
 			.count() > 0
 	}
 
-	fn get_selected(&self) -> Option<CommitId> {
+	// top commit of selected branch
+	fn get_selected_commit(&self) -> Option<CommitId> {
 		self.branches
 			.get(usize::from(self.selection))
 			.map(|b| b.top_commit)
-	}
-
-	fn get_selected_branch(&self) -> Option<&BranchInfo> {
-		self.branches.get(usize::from(self.selection))
 	}
 
 	///
