@@ -1403,7 +1403,7 @@ pub mod commands {
 	pub fn reset_commit(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
-				"Confirm  [{}]",
+				"Confirm [{}]",
 				key_config.get_hint(key_config.keys.enter),
 			),
 			"confirm reset",
@@ -1414,7 +1414,7 @@ pub mod commands {
 	pub fn reset_branch(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
-				"Reset  [{}]",
+				"Reset [{}]",
 				key_config.get_hint(key_config.keys.reset_branch),
 			),
 			"confirm reset",
@@ -1425,7 +1425,7 @@ pub mod commands {
 	pub fn reset_type(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
-				"Change Type  [{}{}]",
+				"Change Type [{}{}]",
 				key_config.get_hint(key_config.keys.move_up),
 				key_config.get_hint(key_config.keys.move_down)
 			),
