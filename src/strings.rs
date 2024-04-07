@@ -1410,6 +1410,18 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+
+	pub fn reset_branch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Reset  [{}]",
+				key_config.get_hint(key_config.keys.reset_branch),
+			),
+			"confirm reset",
+			CMD_GROUP_BRANCHES,
+		)
+	}
+
 	pub fn reset_type(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(

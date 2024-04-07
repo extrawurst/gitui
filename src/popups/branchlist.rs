@@ -211,6 +211,12 @@ impl Component for BranchListPopup {
 				true,
 				true,
 			));
+
+			out.push(CommandInfo::new(
+				strings::commands::reset_branch(&self.key_config),
+				self.valid_selection(),
+				true,
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -288,6 +294,13 @@ impl Component for BranchListPopup {
 				&& self.has_remotes
 			{
 				self.queue.push(InternalEvent::FetchRemotes);
+			} else if key_match(e, self.key_config.keys.reset_branch)
+			{
+				if let Some(b) = self.get_selected_branch() {
+					self.queue.push(InternalEvent::OpenResetPopup(
+						b.top_commit,
+					));
+				}
 			} else if key_match(
 				e,
 				self.key_config.keys.cmd_bar_toggle,
@@ -513,6 +526,10 @@ impl BranchListPopup {
 		self.branches
 			.get(usize::from(self.selection))
 			.map(|b| b.top_commit)
+	}
+
+	fn get_selected_branch(&self) -> Option<&BranchInfo> {
+		self.branches.get(usize::from(self.selection))
 	}
 
 	///
