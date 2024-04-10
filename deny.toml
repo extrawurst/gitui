@@ -1,8 +1,13 @@
 [licenses]
 unlicensed = "deny"
-allow = ["MIT", "Apache-2.0", "BSD-2-Clause", "CC0-1.0", "ISC", "MPL-2.0"]
+allow = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "CC0-1.0", "ISC", "MPL-2.0"]
 copyleft = "warn"
 default = "deny"
+
+[advisories]
+# No fix for RSA, and this is a dependency from ssh_key crate to handle rsa ssh key.
+# https://rustsec.org/advisories/RUSTSEC-2023-0071
+ignore = ["RUSTSEC-2023-0071"]
 
 [[licenses.exceptions]]
 allow = ["Unicode-DFS-2016"]
