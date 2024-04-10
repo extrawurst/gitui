@@ -84,7 +84,6 @@ These are the high level goals before calling out `1.0`:
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - no sparse repo support (see [#1226](https://github.com/extrawurst/gitui/issues/1226))
-- no support for SSH signing yet (see [#1149](https://github.com/extrawurst/gitui/issues/1149))
 - no git-lfs support (see [#1089](https://github.com/extrawurst/gitui/discussions/1089))
 - *credential.helper* for https needs to be **explicitly** configured (see [#800](https://github.com/extrawurst/gitui/issues/800))
 

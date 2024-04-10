@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * more version info in `gitui -V` and `help popup` (including git hash)
 * support `core.commitChar` filtering [[@concelare](https://github.com/concelare)] ([#2136](https://github.com/extrawurst/gitui/issues/2136))
 * allow reset in branch popup ([#2170](https://github.com/extrawurst/gitui/issues/2170))
-* support sign commits with ssh key in the disk when `user.signingKey` and `gpg.format = ssh` of gitconfig are set(ssh-agent isn't yet supported)  ([#1149](https://github.com/extrawurst/gitui/issues/1149))
+* support ssh commit signing (when `user.signingKey` and `gpg.format = ssh` of gitconfig are set; ssh-agent isn't yet supported)  [[@yanganto](https://github.com/yanganto)] ([#1149](https://github.com/extrawurst/gitui/issues/1149))
 
 ### Changed
 * Make info and error message popups scrollable [[@MichaelAug](https://github.com/MichaelAug)] ([#1138](https://github.com/extrawurst/gitui/issues/1138))
