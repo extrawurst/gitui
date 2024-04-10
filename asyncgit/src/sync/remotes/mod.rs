@@ -344,10 +344,10 @@ mod tests {
 	}
 
 	#[test]
-	fn test_default_remote_for_push() {
+	fn test_default_remote_inconclusive() {
 		let (remote_dir, _remote) = repo_init().unwrap();
 		let remote_path = remote_dir.path().to_str().unwrap();
-		let (repo_dir, repo) = repo_clone(remote_path).unwrap();
+		let (repo_dir, _repo) = repo_clone(remote_path).unwrap();
 		let repo_path: &RepoPath = &repo_dir
 			.into_path()
 			.as_os_str()
@@ -374,12 +374,36 @@ mod tests {
 			]
 		);
 
-		let default_push_remote = get_default_remote_in_repo(&repo);
+		let default_remote =
+			get_default_remote_in_repo(&repo(repo_path).unwrap());
 
 		assert!(matches!(
-			default_push_remote,
+			default_remote,
 			Err(Error::NoDefaultRemoteFound)
 		));
+	}
+
+	#[test]
+	fn test_default_remote_for_push() {
+		let (remote_dir, _remote) = repo_init().unwrap();
+		let remote_path = remote_dir.path().to_str().unwrap();
+		let (repo_dir, repo) = repo_clone(remote_path).unwrap();
+		let repo_path: &RepoPath = &repo_dir
+			.into_path()
+			.as_os_str()
+			.to_str()
+			.unwrap()
+			.into();
+
+		debug_cmd_print(
+			repo_path,
+			"git remote rename origin alternate",
+		);
+
+		debug_cmd_print(
+			repo_path,
+			&format!("git remote add someremote {remote_path}")[..],
+		);
 
 		let mut config = repo.config().unwrap();
 
