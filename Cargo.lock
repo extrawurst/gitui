@@ -150,7 +150,7 @@ checksum = "f538837af36e6f6a9be0faa67f9a314f8119e4e4b5867c6ab40ed60360142519"
 
 [[package]]
 name = "asyncgit"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "bitflags 2.5.0",
  "crossbeam-channel",
@@ -1032,7 +1032,7 @@ dependencies = [
 
 [[package]]
 name = "gitui"
-version = "0.25.2"
+version = "0.26.0"
 dependencies = [
  "anyhow",
  "asyncgit",
