@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.26.0] - 2024-04-14
 
+** commit signing **
+
+![signing](assets/gitui-signing.png)
+
 ### Added
 * sign commits using openpgp [[@hendrikmaus](https://github.com/hendrikmaus)] ([#97](https://github.com/extrawurst/gitui/issues/97))
 * support ssh commit signing (when `user.signingKey` and `gpg.format = ssh` of gitconfig are set; ssh-agent isn't yet supported)  [[@yanganto](https://github.com/yanganto)] ([#1149](https://github.com/extrawurst/gitui/issues/1149))
