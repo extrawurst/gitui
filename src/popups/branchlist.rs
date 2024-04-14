@@ -26,6 +26,7 @@ use asyncgit::{
 	},
 	AsyncGitNotification,
 };
+use chrono::{Local, TimeZone};
 use crossterm::event::{Event, KeyEvent};
 use ratatui::{
 	layout::{

@@ -194,25 +194,27 @@ conda install -c conda-forge gitui
 
 Binaries available for:
 
-### Linux
+#### Linux
 
-- gitui-linux-musl.tar.gz (linux on x86_64)
+- gitui-linux-x86_64.tar.gz (linux musl statically linked)
 - gitui-linux-aarch64.tar.gz (linux on 64 bit arm)
 - gitui-linux-arm.tar.gz
 - gitui-linux-armv7.tar.gz
 
 All contain a single binary file
 
-### macOS
+#### macOS
 
 - gitui-mac.tar.gz (intel Mac, uses Rosetta on Apple silicon, single binary)
 
-
-### Windows
+#### Windows
 
 - gitui-win.tar.gz (single 64bit binary)
-- gitui.msi (64bit Installer package)
+- gitui-win.msi (64bit Installer package)
 
+### Nightly Builds
+
+see [NIGHTLIES.md](./NIGHTLIES.md)
 
 ## 7. <a name="build"></a> Build <small><sup>[Top ▲](#table-of-contents)</sup></small>
 

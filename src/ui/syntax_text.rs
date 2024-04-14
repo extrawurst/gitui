@@ -33,7 +33,7 @@ pub struct SyntaxText {
 }
 
 static SYNTAX_SET: Lazy<SyntaxSet> =
-	Lazy::new(SyntaxSet::load_defaults_nonewlines);
+	Lazy::new(two_face::syntax::extra_no_newlines);
 static THEME_SET: Lazy<ThemeSet> = Lazy::new(ThemeSet::load_defaults);
 
 pub struct AsyncProgressBuffer {

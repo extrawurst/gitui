@@ -211,7 +211,7 @@ mod tests {
 		utils::get_head,
 		LogWalker,
 	};
-	use commit::{amend, tag_commit};
+	use commit::{amend, commit_message_prettify, tag_commit};
 	use git2::Repository;
 	use std::{fs::File, io::Write, path::Path};
 
@@ -460,6 +460,43 @@ mod tests {
 
 		assert_eq!(details.author.name, "name");
 		assert_eq!(details.author.email, "email");
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_empty_comment_char() -> Result<()> {
+		let (_td, repo) = repo_init_empty().unwrap();
+
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		let message = commit_message_prettify(
+			repo_path,
+			"#This is a test message\nTest".to_owned(),
+		)?;
+
+		assert_eq!(message, "Test\n");
+		Ok(())
+	}
+
+	#[test]
+	fn test_with_comment_char() -> Result<()> {
+		let (_td, repo) = repo_init_empty().unwrap();
+
+		let root = repo.path().parent().unwrap();
+		let repo_path: &RepoPath =
+			&root.as_os_str().to_str().unwrap().into();
+
+		repo.config()?.set_str("core.commentChar", ";")?;
+
+		let message = commit_message_prettify(
+			repo_path,
+			";This is a test message\nTest".to_owned(),
+		)?;
+
+		assert_eq!(message, "Test\n");
 
 		Ok(())
 	}
