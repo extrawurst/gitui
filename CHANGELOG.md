@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.26.0] - 2024-04-14
+
 ### Added
 * sign commits using openpgp [[@hendrikmaus](https://github.com/hendrikmaus)] ([#97](https://github.com/extrawurst/gitui/issues/97))
 * provide nightly builds (see [NIGHTLIES.md](./NIGHTLIES.md)) ([#2083](https://github.com/extrawurst/gitui/issues/2083))
