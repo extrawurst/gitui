@@ -2,7 +2,7 @@ use crate::{
 	error::{Error, Result},
 	progress::ProgressPercent,
 	sync::{
-		branch::branch_set_upstream,
+		branch::branch_set_upstream_after_push,
 		cred::BasicAuthCredential,
 		remotes::{proxy_auto, Callbacks},
 		repository::repo,
@@ -176,7 +176,7 @@ pub fn push_raw(
 	}
 
 	if !delete {
-		branch_set_upstream(&repo, branch)?;
+		branch_set_upstream_after_push(&repo, branch)?;
 	}
 
 	Ok(())
