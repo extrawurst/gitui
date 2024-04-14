@@ -118,6 +118,7 @@ name = "asyncgit"
 version = "0.25.1"
 dependencies = [
  "bitflags 2.5.0",
+ "chrono",
  "crossbeam-channel",
  "easy-cast",
  "env_logger",

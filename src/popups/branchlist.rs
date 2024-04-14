@@ -26,7 +26,6 @@ use asyncgit::{
 	},
 	AsyncGitNotification,
 };
-use chrono::{Local, TimeZone};
 use crossterm::event::{Event, KeyEvent};
 use ratatui::{
 	layout::{
@@ -706,11 +705,10 @@ impl BranchListPopup {
 			.take(height)
 			.enumerate()
 		{
-			let date_text = Local
-				.timestamp_opt(displaybranch.top_commit_time, 0)
-				.earliest()
-				.map_or("????-??-?? ".to_string(), |date| {
-					date.date_naive().to_string() + " "
+			let date_text = displaybranch
+				.top_commit_time_local
+				.map_or("????-??-?? ".to_string(), |time| {
+					time.date_naive().to_string() + " "
 				});
 			let author_text =
 				displaybranch.top_commit_author.clone() + " ";

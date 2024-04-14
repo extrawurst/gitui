@@ -13,6 +13,7 @@ keywords = ["git"]
 
 [dependencies]
 bitflags = "2"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 crossbeam-channel = "0.5"
 easy-cast = "0.5"
 fuzzy-matcher = "0.3"

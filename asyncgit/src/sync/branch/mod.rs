@@ -16,6 +16,7 @@ use crate::{
 		CommitSignature,
 	},
 };
+use chrono::{DateTime, Local, TimeZone};
 use git2::{Branch, BranchType, Repository};
 use scopetime::scope_time;
 use std::collections::HashSet;
@@ -96,6 +97,8 @@ pub struct BranchInfo {
 	pub top_commit: CommitId,
 	///
 	pub top_commit_time: i64,
+	///
+	pub top_commit_time_local: Option<DateTime<Local>>,
 	///
 	pub top_commit_author: String,
 	///
@@ -198,6 +201,9 @@ pub fn get_branches_info(
 				)?,
 				top_commit: top_commit.id().into(),
 				top_commit_time: top_commit.time().seconds(),
+				top_commit_time_local: Local
+					.timestamp_opt(top_commit.time().seconds(), 0)
+					.earliest(),
 				top_commit_author: author.name,
 				details,
 			})
