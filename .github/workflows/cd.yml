@@ -102,7 +102,7 @@ jobs:
           ./release/*.msi
 
     - name: Bump homebrew-core formula
-      uses: mislav/bump-homebrew-formula-action@v2
+      uses: mislav/bump-homebrew-formula-action@v3
       if: "matrix.os == 'macos-latest' && !contains(github.ref, '-')" # skip prereleases
       env:
         COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
