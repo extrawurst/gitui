@@ -104,6 +104,8 @@ impl DrawableComponent for BranchListPopup {
 }
 
 impl Component for BranchListPopup {
+	// TODO: clean up
+	#[allow(clippy::too_many_lines)]
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -219,6 +221,7 @@ impl Component for BranchListPopup {
 				true,
 				true,
 			));
+
 			out.push(CommandInfo::new(
 				strings::commands::reset_branch(&self.key_config),
 				self.valid_selection(),
