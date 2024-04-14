@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.26.0+1] - 2024-04-14
 
+**0.26.1** is a windows release only as it was not building binaries for `0.26.0`
+
 **commit signing**
 
 ![signing](assets/gitui-signing.png)
