@@ -706,10 +706,12 @@ impl BranchListPopup {
 			.take(height)
 			.enumerate()
 		{
-			let date_local = Local
+			let date_text = Local
 				.timestamp_opt(displaybranch.top_commit_time, 0)
-				.unwrap();
-			let date_text = date_local.date_naive().to_string() + " ";
+				.earliest()
+				.map_or("????-??-?? ".to_string(), |date| {
+					date.date_naive().to_string() + " "
+				});
 			let author_text =
 				displaybranch.top_commit_author.clone() + " ";
 
