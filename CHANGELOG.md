@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.26.0+1] - 2024-04-14
 
-**0.26.1** is a windows release only as it was not building binaries for `0.26.0`
+**0.26.1** 
+this release has no changes to `0.26.0` but provides windows binaries that were missing before.
 
 **commit signing**
 
@@ -30,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixes
 * add syntax highlighting support for more file types, e.g. Typescript, TOML, etc. [[@martihomssoler](https://github.com/martihomssoler)] ([#2005](https://github.com/extrawurst/gitui/issues/2005))
-* windows release deployment was broken (released as `0.26.1` for windows only) [218d739](https://github.com/extrawurst/gitui/commit/218d739b035a034b7bf547629d24787909f467bf)
+* windows release deployment was broken (reason for release `0.26.1`) [218d739](https://github.com/extrawurst/gitui/commit/218d739b035a034b7bf547629d24787909f467bf)
 
 ## [0.25.2] - 2024-03-22
 
