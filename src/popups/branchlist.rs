@@ -26,7 +26,6 @@ use asyncgit::{
 	},
 	AsyncGitNotification,
 };
-use chrono::{Local, TimeZone};
 use crossterm::event::{Event, KeyEvent};
 use ratatui::{
 	layout::{
@@ -220,6 +219,11 @@ impl Component for BranchListPopup {
 				true,
 				true,
 			));
+			out.push(CommandInfo::new(
+				strings::commands::reset_branch(&self.key_config),
+				self.valid_selection(),
+				true,
+			));
 		}
 		visibility_blocking(self)
 	}
@@ -286,7 +290,7 @@ impl Component for BranchListPopup {
 			) && self.valid_selection()
 			{
 				self.hide();
-				if let Some(commit_id) = self.get_selected() {
+				if let Some(commit_id) = self.get_selected_commit() {
 					self.queue.push(InternalEvent::OpenPopup(
 						StackablePopupOpen::CompareCommits(
 							InspectCommitOpen::new(commit_id),
@@ -297,6 +301,13 @@ impl Component for BranchListPopup {
 				&& self.has_remotes
 			{
 				self.queue.push(InternalEvent::FetchRemotes);
+			} else if key_match(e, self.key_config.keys.reset_branch)
+			{
+				if let Some(commit_id) = self.get_selected_commit() {
+					self.queue.push(InternalEvent::OpenResetPopup(
+						commit_id,
+					));
+				}
 			} else if key_match(
 				e,
 				self.key_config.keys.cmd_bar_toggle,
@@ -547,7 +558,7 @@ impl BranchListPopup {
 	}
 
 	fn inspect_head_of_branch(&mut self) {
-		if let Some(commit_id) = self.get_selected() {
+		if let Some(commit_id) = self.get_selected_commit() {
 			self.hide();
 			self.queue.push(InternalEvent::OpenPopup(
 				StackablePopupOpen::InspectCommit(
@@ -590,7 +601,8 @@ impl BranchListPopup {
 			.count() > 0
 	}
 
-	fn get_selected(&self) -> Option<CommitId> {
+	// top commit of selected branch
+	fn get_selected_commit(&self) -> Option<CommitId> {
 		self.branches
 			.get(usize::from(self.selection))
 			.map(|b| b.top_commit)

@@ -1,5 +1,8 @@
 //! Sign commit data.
 
+use ssh_key::{HashAlg, LineEnding, PrivateKey};
+use std::path::PathBuf;
+
 /// Error type for [`SignBuilder`], used to create [`Sign`]'s
 #[derive(thiserror::Error, Debug)]
 pub enum SignBuilderError {
@@ -10,6 +13,10 @@ pub enum SignBuilderError {
 	/// The GPG signing key could
 	#[error("Failed to retrieve 'user.signingkey' from the git configuration: {0}")]
 	GPGSigningKey(String),
+
+	/// The SSH signing key could
+	#[error("Failed to retrieve 'user.signingkey' from the git configuration: {0}")]
+	SSHSigningKey(String),
 
 	/// No signing signature could be built from the configuration data present
 	#[error("Failed to build signing signature: {0}")]
@@ -61,7 +68,7 @@ pub trait Sign {
 	fn sign(
 		&self,
 		commit: &[u8],
-	) -> Result<(String, String), SignError>;
+	) -> Result<(String, Option<String>), SignError>;
 
 	#[cfg(test)]
 	fn program(&self) -> &String;
@@ -96,7 +103,7 @@ impl SignBuilder {
 	pub fn from_gitconfig(
 		repo: &git2::Repository,
 		config: &git2::Config,
-	) -> Result<impl Sign, SignBuilderError> {
+	) -> Result<Box<dyn Sign>, SignBuilderError> {
 		let format = config
 			.get_string("gpg.format")
 			.unwrap_or_else(|_| "openpgp".to_string());
@@ -138,17 +145,41 @@ impl SignBuilder {
 						)
 					})?;
 
-				Ok(GPGSign {
+				Ok(Box::new(GPGSign {
 					program,
 					signing_key,
-				})
+				}))
 			}
 			"x509" => Err(SignBuilderError::MethodNotImplemented(
 				String::from("x509"),
 			)),
-			"ssh" => Err(SignBuilderError::MethodNotImplemented(
-				String::from("ssh"),
-			)),
+			"ssh" => {
+				let ssh_signer = config
+					.get_string("user.signingKey")
+					.ok()
+					.and_then(|key_path| {
+						key_path.strip_prefix('~').map_or_else(
+							|| Some(PathBuf::from(&key_path)),
+							|ssh_key_path| {
+								dirs::home_dir().map(|home| {
+									home.join(
+										ssh_key_path
+											.strip_prefix('/')
+											.unwrap_or(ssh_key_path),
+									)
+								})
+							},
+						)
+					})
+					.ok_or_else(|| {
+						SignBuilderError::SSHSigningKey(String::from(
+							"ssh key setting absent",
+						))
+					})
+					.and_then(SSHSign::new)?;
+				let signer: Box<dyn Sign> = Box::new(ssh_signer);
+				Ok(signer)
+			}
 			_ => Err(SignBuilderError::InvalidFormat(format)),
 		}
 	}
@@ -174,7 +205,7 @@ impl Sign for GPGSign {
 	fn sign(
 		&self,
 		commit: &[u8],
-	) -> Result<(String, String), SignError> {
+	) -> Result<(String, Option<String>), SignError> {
 		use std::io::Write;
 		use std::process::{Command, Stdio};
 
@@ -224,7 +255,7 @@ impl Sign for GPGSign {
 		let signed_commit = std::str::from_utf8(&output.stdout)
 			.map_err(|e| SignError::Shellout(e.to_string()))?;
 
-		Ok((signed_commit.to_string(), "gpgsig".to_string()))
+		Ok((signed_commit.to_string(), Some("gpgsig".to_string())))
 	}
 
 	#[cfg(test)]
@@ -235,6 +266,72 @@ impl Sign for GPGSign {
 	#[cfg(test)]
 	fn signing_key(&self) -> &String {
 		&self.signing_key
+	}
+}
+
+/// Sign commit data using `SSHDiskKeySign`
+pub struct SSHSign {
+	#[cfg(test)]
+	program: String,
+	#[cfg(test)]
+	key_path: String,
+	secret_key: PrivateKey,
+}
+
+impl SSHSign {
+	/// Create new [`SSHDiskKeySign`] for sign.
+	pub fn new(mut key: PathBuf) -> Result<Self, SignBuilderError> {
+		key.set_extension("");
+		if key.is_file() {
+			#[cfg(test)]
+			let key_path = format!("{}", &key.display());
+			std::fs::read(key)
+				.ok()
+				.and_then(|bytes| {
+					PrivateKey::from_openssh(bytes).ok()
+				})
+				.map(|secret_key| Self {
+					#[cfg(test)]
+					program: "ssh".to_string(),
+					#[cfg(test)]
+					key_path,
+					secret_key,
+				})
+				.ok_or_else(|| {
+					SignBuilderError::SSHSigningKey(String::from(
+						"Fail to read the private key for sign.",
+					))
+				})
+		} else {
+			Err(SignBuilderError::SSHSigningKey(
+				String::from("Currently, we only support a pair of ssh key in disk."),
+			))
+		}
+	}
+}
+
+impl Sign for SSHSign {
+	fn sign(
+		&self,
+		commit: &[u8],
+	) -> Result<(String, Option<String>), SignError> {
+		let sig = self
+			.secret_key
+			.sign("git", HashAlg::Sha256, commit)
+			.map_err(|err| SignError::Spawn(err.to_string()))?
+			.to_pem(LineEnding::LF)
+			.map_err(|err| SignError::Spawn(err.to_string()))?;
+		Ok((sig, None))
+	}
+
+	#[cfg(test)]
+	fn program(&self) -> &String {
+		&self.program
+	}
+
+	#[cfg(test)]
+	fn signing_key(&self) -> &String {
+		&self.key_path
 	}
 }
 
@@ -319,6 +416,24 @@ mod tests {
 			SignBuilder::from_gitconfig(&repo, &repo.config()?)?;
 
 		assert_eq!("FFAA", sign.signing_key());
+		Ok(())
+	}
+
+	#[test]
+	fn test_ssh_program_configs() -> Result<()> {
+		let (_tmp_dir, repo) = repo_init_empty()?;
+
+		{
+			let mut config = repo.config()?;
+			config.set_str("gpg.program", "ssh")?;
+			config.set_str("user.signingKey", "/tmp/key.pub")?;
+		}
+
+		let sign =
+			SignBuilder::from_gitconfig(&repo, &repo.config()?)?;
+
+		assert_eq!("ssh", sign.program());
+		assert_eq!("/tmp/key.pub", sign.signing_key());
 
 		Ok(())
 	}

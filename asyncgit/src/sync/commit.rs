@@ -102,8 +102,6 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 		.get_bool("commit.gpgsign")
 		.unwrap_or(false)
 	{
-		use crate::sync::sign::Sign;
-
 		let buffer = repo.commit_create_buffer(
 			&signature,
 			&signature,
@@ -116,12 +114,12 @@ pub fn commit(repo_path: &RepoPath, msg: &str) -> Result<CommitId> {
 			SignError::Shellout("utf8 conversion error".to_string())
 		})?;
 
-		let sign = SignBuilder::from_gitconfig(&repo, &config)?;
-		let (signature, signature_field) = sign.sign(&buffer)?;
+		let signer = SignBuilder::from_gitconfig(&repo, &config)?;
+		let (signature, signature_field) = signer.sign(&buffer)?;
 		let commit_id = repo.commit_signed(
 			commit,
 			&signature,
-			Some(&signature_field),
+			signature_field.as_deref(),
 		)?;
 
 		// manually advance to the new commit ID
