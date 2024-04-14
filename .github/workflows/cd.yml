@@ -35,6 +35,8 @@ jobs:
 
     - name: Build
       if: matrix.os != 'ubuntu-22.04'
+      env:
+        GITUI_RELEASE: 1
       run: cargo build
     - name: Run tests
       if: matrix.os != 'ubuntu-22.04'
