@@ -206,7 +206,7 @@ impl Default for KeysList {
 			open_file_tree: GituiKeyEvent::new(KeyCode::Char('F'),  KeyModifiers::SHIFT),
 			file_find: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::empty()),
 			branch_find: GituiKeyEvent::new(KeyCode::Char('f'),  KeyModifiers::empty()),
-			branch_sort: GituiKeyEvent::new(KeyCode::Char('s'),  KeyModifiers::empty()),
+			branch_sort: GituiKeyEvent::new(KeyCode::Char('S'),  KeyModifiers::SHIFT),
 			diff_hunk_next: GituiKeyEvent::new(KeyCode::Char('n'),  KeyModifiers::empty()),
 			diff_hunk_prev: GituiKeyEvent::new(KeyCode::Char('p'),  KeyModifiers::empty()),
 			stage_unstage_item: GituiKeyEvent::new(KeyCode::Enter,  KeyModifiers::empty()),
