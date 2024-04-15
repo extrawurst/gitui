@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+* enable builds from `git archive` generated source tarballs [[@alerque](https://github.com/alerque)] ([#2187](https://github.com/extrawurst/gitui/pull/2187))
+
 ## [0.26.0+1] - 2024-04-14
 
 **0.26.1** 
