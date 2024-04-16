@@ -121,3 +121,12 @@ jobs:
         formula-name: gitui
         # https://github.com/mislav/bump-homebrew-formula-action/issues/58
         formula-path: Formula/g/gitui.rb
+
+    - name: Bump Winget
+      if: "matrix.os == 'windows-latest' && !contains(github.ref, '-')"
+      uses: vedantmgoyal2009/winget-releaser@v2
+      with:
+        identifier: StephanDilly.gitui
+        version: ${{ steps.get-version.outputs.version }}
+        token: ${{ secrets.WINGET_TOKEN }}
+        installers-regex: "./release/*.msi"
