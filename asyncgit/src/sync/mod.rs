@@ -5,7 +5,7 @@
 
 pub mod blame;
 pub mod branch;
-mod commit;
+pub mod commit;
 mod commit_details;
 pub mod commit_files;
 mod commit_filter;
@@ -25,6 +25,7 @@ pub mod remotes;
 mod repository;
 mod reset;
 mod reword;
+pub mod sign;
 mod staging;
 mod stash;
 mod state;
@@ -78,8 +79,8 @@ pub use merge::{
 };
 pub use rebase::rebase_branch;
 pub use remotes::{
-	get_default_remote, get_remotes, push::AsyncProgress,
-	tags::PushTagsProgress,
+	get_default_remote, get_default_remote_for_push, get_remotes,
+	push::AsyncProgress, tags::PushTagsProgress,
 };
 pub(crate) use repository::repo;
 pub use repository::{RepoPath, RepoPathRef};

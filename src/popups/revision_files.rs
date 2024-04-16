@@ -18,15 +18,11 @@ use std::path::Path;
 #[derive(Clone, Debug)]
 pub struct FileTreeOpen {
 	pub commit_id: CommitId,
-	pub selection: Option<usize>,
 }
 
 impl FileTreeOpen {
 	pub const fn new(commit_id: CommitId) -> Self {
-		Self {
-			commit_id,
-			selection: None,
-		}
+		Self { commit_id }
 	}
 }
 
@@ -81,7 +77,6 @@ impl RevisionFilesPopup {
 				self.queue.push(InternalEvent::PopupStackPush(
 					StackablePopupOpen::FileTree(FileTreeOpen {
 						commit_id: revision.id,
-						selection: self.files.selection(),
 					}),
 				));
 			}

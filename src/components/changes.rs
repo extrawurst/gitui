@@ -148,12 +148,9 @@ impl ChangesComponent {
 
 	fn dispatch_reset_workdir(&mut self) -> bool {
 		if let Some(tree_item) = self.selection() {
-			let is_folder =
-				matches!(tree_item.kind, FileTreeItemKind::Path(_));
 			self.queue.push(InternalEvent::ConfirmAction(
 				Action::Reset(ResetItem {
 					path: tree_item.info.full_path,
-					is_folder,
 				}),
 			));
 

@@ -45,11 +45,11 @@ impl SyntaxFileBlame {
 		&self.file_blame.path
 	}
 
-	fn commit_id(&self) -> &CommitId {
+	const fn commit_id(&self) -> &CommitId {
 		&self.file_blame.commit_id
 	}
 
-	fn lines(&self) -> &Vec<(Option<BlameHunk>, String)> {
+	const fn lines(&self) -> &Vec<(Option<BlameHunk>, String)> {
 		&self.file_blame.lines
 	}
 }
@@ -64,7 +64,7 @@ enum BlameProcess {
 }
 
 impl BlameProcess {
-	fn result(&self) -> Option<&SyntaxFileBlame> {
+	const fn result(&self) -> Option<&SyntaxFileBlame> {
 		match self {
 			Self::GettingBlame(_) => None,
 			Self::SyntaxHighlighting {
@@ -196,8 +196,7 @@ impl Component for BlameFilePopup {
 		let has_result = self
 			.blame
 			.as_ref()
-			.map(|blame| blame.result().is_some())
-			.unwrap_or_default();
+			.is_some_and(|blame| blame.result().is_some());
 		if self.is_visible() || force_all {
 			out.push(
 				CommandInfo::new(
@@ -385,7 +384,7 @@ impl BlameFilePopup {
 	}
 
 	///
-	pub fn any_work_pending(&self) -> bool {
+	pub const fn any_work_pending(&self) -> bool {
 		self.blame.is_some()
 			&& !matches!(self.blame, Some(BlameProcess::Result(_)))
 	}
@@ -571,7 +570,8 @@ impl BlameFilePopup {
 			.iter()
 			.map(|l| l.1.clone())
 			.collect::<Vec<_>>();
-		let text = tabs_to_spaces(raw_lines.join("\n"));
+		let mut text = tabs_to_spaces(raw_lines.join("\n"));
+		text.push('\n');
 
 		job.spawn(AsyncSyntaxJob::new(
 			text,

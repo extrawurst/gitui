@@ -13,10 +13,12 @@ use anyhow::Result;
 use asyncgit::{
 	sync::{
 		cred::{
-			extract_username_password, need_username_password,
-			BasicAuthCredential,
+			extract_username_password_for_push,
+			need_username_password_for_push, BasicAuthCredential,
 		},
-		get_branch_remote, get_default_remote, RepoPathRef,
+		get_branch_remote,
+		remotes::get_default_remote_for_push,
+		RepoPathRef,
 	},
 	AsyncGitNotification, AsyncPush, PushRequest, PushType,
 	RemoteProgress, RemoteProgressState,
@@ -104,11 +106,11 @@ impl PushPopup {
 
 		self.show()?;
 
-		if need_username_password(&self.repo.borrow())? {
-			let cred = extract_username_password(&self.repo.borrow())
-				.unwrap_or_else(|_| {
-					BasicAuthCredential::new(None, None)
-				});
+		if need_username_password_for_push(&self.repo.borrow())? {
+			let cred = extract_username_password_for_push(
+				&self.repo.borrow(),
+			)
+			.unwrap_or_else(|_| BasicAuthCredential::new(None, None));
 			if cred.is_complete() {
 				self.push_to_remote(Some(cred), force)
 			} else {
@@ -132,7 +134,8 @@ impl PushPopup {
 			remote
 		} else {
 			log::info!("push: branch '{}' has no upstream - looking up default remote",self.branch);
-			let remote = get_default_remote(&self.repo.borrow())?;
+			let remote =
+				get_default_remote_for_push(&self.repo.borrow())?;
 			log::info!(
 				"push: branch '{}' to remote '{}'",
 				self.branch,

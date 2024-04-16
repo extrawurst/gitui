@@ -1403,17 +1403,29 @@ pub mod commands {
 	pub fn reset_commit(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
-				"Confirm  [{}]",
+				"Confirm [{}]",
 				key_config.get_hint(key_config.keys.enter),
 			),
 			"confirm reset",
 			CMD_GROUP_LOG,
 		)
 	}
+
+	pub fn reset_branch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Reset [{}]",
+				key_config.get_hint(key_config.keys.reset_branch),
+			),
+			"confirm reset",
+			CMD_GROUP_BRANCHES,
+		)
+	}
+
 	pub fn reset_type(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(
-				"Change Type  [{}{}]",
+				"Change Type [{}{}]",
 				key_config.get_hint(key_config.keys.move_up),
 				key_config.get_hint(key_config.keys.move_down)
 			),
@@ -1423,11 +1435,16 @@ pub mod commands {
 	}
 	pub fn tag_commit_confirm_msg(
 		key_config: &SharedKeyConfig,
+		is_annotation_mode: bool,
 	) -> CommandText {
 		CommandText::new(
 			format!(
 				"Tag [{}]",
-				key_config.get_hint(key_config.keys.enter),
+				key_config.get_hint(if is_annotation_mode {
+					key_config.keys.commit
+				} else {
+					key_config.keys.enter
+				}),
 			),
 			"tag commit",
 			CMD_GROUP_LOG,

@@ -88,6 +88,12 @@ impl TextInputComponent {
 		self
 	}
 
+	///
+	pub fn set_input_type(&mut self, input_type: InputType) {
+		self.clear();
+		self.input_type = input_type;
+	}
+
 	/// Clear the `msg`.
 	pub fn clear(&mut self) {
 		self.msg.take();
@@ -756,7 +762,7 @@ mod tests {
 		if let Some(ta) = &mut comp.textarea {
 			let txt = ta.lines();
 			assert_eq!(txt[0].len(), 1);
-			assert_eq!(txt[0].as_bytes()[0], 'a' as u8);
+			assert_eq!(txt[0].as_bytes()[0], b'a');
 		}
 	}
 

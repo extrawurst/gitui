@@ -296,7 +296,6 @@ impl CommitList {
 		self.current_size.get()
 	}
 
-	#[allow(clippy::missing_const_for_fn)]
 	fn selection_max(&self) -> usize {
 		self.commits.len().saturating_sub(1)
 	}
@@ -664,7 +663,6 @@ impl CommitList {
 		})
 	}
 
-	#[allow(clippy::missing_const_for_fn)]
 	fn relative_selection(&self) -> usize {
 		self.selection.saturating_sub(self.items.index_offset())
 	}

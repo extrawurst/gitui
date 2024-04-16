@@ -82,8 +82,6 @@ pub struct CommitDetails {
 
 impl CommitDetails {
 	///
-	#[allow(clippy::missing_const_for_fn)]
-	// clippy doesn't realise indexing a String is not const
 	pub fn short_hash(&self) -> &str {
 		&self.hash[0..7]
 	}

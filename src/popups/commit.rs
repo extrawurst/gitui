@@ -11,8 +11,9 @@ use crate::{
 	ui::style::SharedTheme,
 };
 use anyhow::{bail, Ok, Result};
+use asyncgit::sync::commit::commit_message_prettify;
 use asyncgit::{
-	cached, message_prettify,
+	cached,
 	sync::{
 		self, get_config_string, CommitId, HookResult,
 		PrepareCommitMsgSource, RepoPathRef, RepoState,
@@ -195,7 +196,8 @@ impl CommitPopup {
 		drop(file);
 		std::fs::remove_file(&file_path)?;
 
-		message = message_prettify(message, Some(b'#'))?;
+		message =
+			commit_message_prettify(&self.repo.borrow(), message)?;
 		self.input.set_text(message);
 		self.input.show()?;
 
@@ -203,17 +205,6 @@ impl CommitPopup {
 	}
 
 	fn commit(&mut self) -> Result<()> {
-		let gpgsign =
-			get_config_string(&self.repo.borrow(), "commit.gpgsign")
-				.ok()
-				.flatten()
-				.and_then(|path| path.parse::<bool>().ok())
-				.unwrap_or_default();
-
-		if gpgsign {
-			anyhow::bail!("config commit.gpgsign=true detected.\ngpg signing not supported.\ndeactivate in your repo/gitconfig to be able to commit without signing.");
-		}
-
 		let msg = self.input.get_text().to_string();
 
 		if matches!(
@@ -254,7 +245,8 @@ impl CommitPopup {
 			}
 		}
 
-		let mut msg = message_prettify(msg, Some(b'#'))?;
+		let mut msg =
+			commit_message_prettify(&self.repo.borrow(), msg)?;
 
 		if verify {
 			// run commit message check hook - can reject commit

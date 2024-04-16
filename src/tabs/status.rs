@@ -57,6 +57,11 @@ enum DiffTarget {
 	WorkingDir,
 }
 
+struct RemoteStatus {
+	has_remotes: bool,
+	has_remote_for_push: bool,
+}
+
 pub struct Status {
 	repo: RepoPathRef,
 	visible: bool,
@@ -65,8 +70,8 @@ pub struct Status {
 	index: ChangesComponent,
 	index_wd: ChangesComponent,
 	diff: DiffComponent,
+	remotes: RemoteStatus,
 	git_diff: AsyncDiff,
-	has_remotes: bool,
 	git_state: RepoState,
 	git_status_workdir: AsyncStatus,
 	git_status_stage: AsyncStatus,
@@ -155,7 +160,10 @@ impl Status {
 		Self {
 			queue: env.queue.clone(),
 			visible: true,
-			has_remotes: false,
+			remotes: RemoteStatus {
+				has_remotes: false,
+				has_remote_for_push: false,
+			},
 			git_state: RepoState::Clean,
 			focus: Focus::WorkDir,
 			diff_target: DiffTarget::WorkingDir,
@@ -407,9 +415,14 @@ impl Status {
 	}
 
 	fn check_remotes(&mut self) {
-		self.has_remotes =
+		self.remotes.has_remotes =
 			sync::get_default_remote(&self.repo.borrow().clone())
 				.is_ok();
+		self.remotes.has_remote_for_push =
+			sync::get_default_remote_for_push(
+				&self.repo.borrow().clone(),
+			)
+			.is_ok();
 	}
 
 	///
@@ -600,11 +613,11 @@ impl Status {
 			.as_ref()
 			.map_or(true, |state| state.ahead > 0);
 
-		is_ahead && self.has_remotes
+		is_ahead && self.remotes.has_remote_for_push
 	}
 
 	const fn can_pull(&self) -> bool {
-		self.has_remotes && self.git_branch_state.is_some()
+		self.remotes.has_remotes && self.git_branch_state.is_some()
 	}
 
 	fn can_abort_merge(&self) -> bool {

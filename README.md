@@ -1,7 +1,7 @@
 <h1 align="center">
 <img width="300px" src="assets/logo.png" />
 
-[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![ITCH][s4]][l4] [![TWEET][s6]][l6] [![dep_status][s7]][l7]
+[![CI][s0]][l0] [![crates][s1]][l1] ![MIT][s2] [![UNSAFE][s3]][l3] [![TWEET][s6]][l6] [![dep_status][s7]][l7] [![discord][s8]][l8]
 
 </h1>
 
@@ -12,12 +12,12 @@
 [s2]: https://img.shields.io/badge/license-MIT-blue.svg
 [s3]: https://img.shields.io/badge/unsafe-forbidden-success.svg
 [l3]: https://github.com/rust-secure-code/safety-dance/
-[s4]: https://img.shields.io/badge/itch.io-ok-green
-[l4]: https://extrawurst.itch.io/gitui
 [s6]: https://img.shields.io/twitter/follow/extrawurst?label=follow&style=social
 [l6]: https://twitter.com/intent/follow?screen_name=extrawurst
 [s7]: https://deps.rs/repo/github/extrawurst/gitui/status.svg
 [l7]: https://deps.rs/repo/github/extrawurst/gitui
+[s8]: https://img.shields.io/discord/1176858176897953872
+[l8]: https://discord.gg/rQNeEnMhus
 
 <h5 align="center">GitUI provides you with the comfort of a git GUI but right in your terminal</h1>
 
@@ -38,7 +38,8 @@
 11. [Key Bindings](#bindings)
 12. [Sponsoring](#sponsoring)
 13. [Inspiration](#inspiration)
-14. [Contributors](#contributors)
+14. [Contributing](#contributing)
+15. [Contributors](#contributors)
 
 ## 1. <a name="features"></a> Features <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -53,12 +54,13 @@
 - Responsive terminal UI
 - Async git API for fluid control
 - Submodule support
+- gpg commit signing with shortcomings (see [#97](https://github.com/extrawurst/gitui/issues/97)))
 
 ## 2. <a name="motivation"></a> Motivation <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 I do most of my git work in a terminal but I frequently found myself using git GUIs for some use-cases like: index, commit, diff, stash, blame and log.
 
-Unfortunately popular git GUIs all fail on giant repositories or become unresponsive and unusable. 
+Unfortunately popular git GUIs all fail on giant repositories or become unresponsive and unusable.
 
 GitUI provides you with the user experience and comfort of a git GUI but right in your terminal while being portable, fast, free and opensource.
 
@@ -82,7 +84,6 @@ These are the high level goals before calling out `1.0`:
 ## 5. <a name="limitations"></a> Known Limitations <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 - no sparse repo support (see [#1226](https://github.com/extrawurst/gitui/issues/1226))
-- no support for GPG signing (see [#97](https://github.com/extrawurst/gitui/issues/97))
 - no git-lfs support (see [#1089](https://github.com/extrawurst/gitui/discussions/1089))
 - *credential.helper* for https needs to be **explicitly** configured (see [#800](https://github.com/extrawurst/gitui/issues/800))
 
@@ -181,7 +182,7 @@ pkg install gitui
 
 ##### [Anaconda](https://anaconda.org/conda-forge/gitui)
 ```
-conda install -c conda-forge gitui 
+conda install -c conda-forge gitui
 ```
 
 </details>
@@ -192,25 +193,27 @@ conda install -c conda-forge gitui
 
 Binaries available for:
 
-### Linux
+#### Linux
 
-- gitui-linux-musl.tar.gz (linux on x86_64)
+- gitui-linux-x86_64.tar.gz (linux musl statically linked)
 - gitui-linux-aarch64.tar.gz (linux on 64 bit arm)
 - gitui-linux-arm.tar.gz
 - gitui-linux-armv7.tar.gz
 
 All contain a single binary file
 
-### macOS
+#### macOS
 
 - gitui-mac.tar.gz (intel Mac, uses Rosetta on Apple silicon, single binary)
 
-
-### Windows
+#### Windows
 
 - gitui-win.tar.gz (single 64bit binary)
-- gitui.msi (64bit Installer package)
+- gitui-win.msi (64bit Installer package)
 
+### Nightly Builds
+
+see [NIGHTLIES.md](./NIGHTLIES.md)
 
 ## 7. <a name="build"></a> Build <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
@@ -220,7 +223,7 @@ All contain a single binary file
   - See [Install Rust](https://www.rust-lang.org/tools/install)
 
 - To build openssl dependency (see https://docs.rs/openssl/latest/openssl/)
-  - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/) 
+  - perl >= 5.12 (strawberry perl works for windows https://strawberryperl.com/)
   - a c compiler (msvc, gcc or clang, cargo will find it)
 
 - To run the complete test suite python is required (and it must be invocable as `python`)
@@ -276,7 +279,11 @@ The key bindings can be customized: See [Key Config](KEY_CONFIG.md) on how to se
   - It would be nice to come up with a way to have the map view available in a terminal tool
 - [git-brunch](https://github.com/andys8/git-brunch)
 
-## 14. <a name="contributors"></a> Contributors <small><sup>[Top ▲](#table-of-contents)</sup></small>
+## 14. <a name="contributing"></a> Contributing <small><sup>[Top ▲](#table-of-contents)</sup></small>
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## 15. <a name="contributors"></a> Contributors <small><sup>[Top ▲](#table-of-contents)</sup></small>
 
 Thanks goes to all the contributors that help make GitUI amazing! ❤️
 
