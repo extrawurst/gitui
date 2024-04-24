@@ -366,37 +366,37 @@ pub fn rename_branch_popup_msg(
 
 pub fn sort_branch_by_name_msg(selected: bool) -> String {
 	format!(
-		"[{}] branch name (a -> z)",
+		"[{}] branch name (a → z)",
 		if selected { "X" } else { " " }
 	)
 }
 pub fn sort_branch_by_name_rev_msg(selected: bool) -> String {
 	format!(
-		"[{}] branch name (z -> a)",
+		"[{}] branch name (z → a)",
 		if selected { "X" } else { " " }
 	)
 }
 pub fn sort_branch_by_time_msg(selected: bool) -> String {
 	format!(
-		"[{}] last commit time (new -> old)",
+		"[{}] last commit time (new → old)",
 		if selected { "X" } else { " " }
 	)
 }
 pub fn sort_branch_by_time_rev_msg(selected: bool) -> String {
 	format!(
-		"[{}] last commit time (old -> new)",
+		"[{}] last commit time (old → new)",
 		if selected { "X" } else { " " }
 	)
 }
 pub fn sort_branch_by_author_msg(selected: bool) -> String {
 	format!(
-		"[{}] last commit author (a -> z)",
+		"[{}] last commit author (a → z)",
 		if selected { "X" } else { " " }
 	)
 }
 pub fn sort_branch_by_author_rev_msg(selected: bool) -> String {
 	format!(
-		"[{}] last commit author (z -> a)",
+		"[{}] last commit author (z → a)",
 		if selected { "X" } else { " " }
 	)
 }
