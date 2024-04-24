@@ -11,7 +11,7 @@ use crate::{
 	sync::{
 		remotes::get_default_remote_for_push_in_repo,
 		repository::repo, utils::get_head_repo, CommitId,
-    CommitSignature,
+		CommitSignature,
 	},
 };
 use chrono::{DateTime, Local, TimeZone};
