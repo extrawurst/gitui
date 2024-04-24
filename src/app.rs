@@ -814,7 +814,8 @@ impl App {
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}
 			InternalEvent::BranchListSort(sort_by) => {
-				self.select_branch_popup.sort(sort_by)?;
+				self.select_branch_popup.change_sort_by(sort_by);
+				self.select_branch_popup.sort()?;
 				flags
 					.insert(NeedsUpdate::ALL | NeedsUpdate::COMMANDS);
 			}

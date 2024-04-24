@@ -401,6 +401,7 @@ impl BranchListPopup {
 			self.local = !self.local;
 			self.check_remotes();
 			self.update_branches()?;
+			self.set_selection(0)?;
 		}
 		Ok(EventState::NotConsumed)
 	}
@@ -427,9 +428,85 @@ impl BranchListPopup {
 		}
 	}
 
-	pub fn sort(&mut self, sort_by: BranchListSortBy) -> Result<()> {
+	pub fn change_sort_by(&mut self, sort_by: BranchListSortBy) {
 		self.sort_by = sort_by;
-		self.update_branches()?;
+	}
+
+	pub fn sort(&mut self) -> Result<()> {
+		let pre_selected = self
+			.branches
+			.get(self.selection as usize)
+			.map(|b| b.name.clone());
+		match &self.sort_by {
+			BranchListSortBy::LastCommitAuthorAsc => {
+				self.branches.sort_by(|a, b| {
+					match b
+						.top_commit_author
+						.cmp(&a.top_commit_author)
+					{
+						std::cmp::Ordering::Equal => {
+							a.name.cmp(&b.name)
+						}
+						other => other,
+					}
+				});
+			}
+			BranchListSortBy::LastCommitAuthorDesc => {
+				self.branches.sort_by(|a, b| {
+					match a
+						.top_commit_author
+						.cmp(&b.top_commit_author)
+					{
+						std::cmp::Ordering::Equal => {
+							a.name.cmp(&b.name)
+						}
+						other => other,
+					}
+				});
+			}
+			BranchListSortBy::LastCommitTimeAsc => {
+				self.branches.sort_by(|a, b| {
+					match a.top_commit_time.cmp(&b.top_commit_time) {
+						std::cmp::Ordering::Equal => {
+							a.name.cmp(&b.name)
+						}
+						other => other,
+					}
+				});
+			}
+			BranchListSortBy::LastCommitTimeDesc => {
+				self.branches.sort_by(|a, b| {
+					match b.top_commit_time.cmp(&a.top_commit_time) {
+						std::cmp::Ordering::Equal => {
+							a.name.cmp(&b.name)
+						}
+						other => other,
+					}
+				});
+			}
+			BranchListSortBy::BranchNameAsc => {
+				self.branches.sort_by(|a, b| a.name.cmp(&b.name));
+			}
+			BranchListSortBy::BranchNameDesc => {
+				self.branches.sort_by(|a, b| b.name.cmp(&a.name));
+			}
+		}
+
+		match pre_selected {
+			Some(pre_selected) => {
+				let next_selecttion = self
+					.branches
+					.iter()
+					.position(|b| b.name == pre_selected)
+					.unwrap_or(0);
+				self.set_selection(
+					next_selecttion.try_into().unwrap_or_default(),
+				)?;
+			}
+			None => {
+				self.set_selection(0)?;
+			}
+		}
 
 		Ok(())
 	}
@@ -440,66 +517,7 @@ impl BranchListPopup {
 			self.check_remotes();
 			self.branches =
 				get_branches_info(&self.repo.borrow(), self.local)?;
-			match &self.sort_by {
-				BranchListSortBy::LastCommitAuthorAsc => {
-					self.branches.sort_by(|a, b| {
-						match b
-							.top_commit_author
-							.cmp(&a.top_commit_author)
-						{
-							std::cmp::Ordering::Equal => {
-								a.name.cmp(&b.name)
-							}
-							other => other,
-						}
-					});
-				}
-				BranchListSortBy::LastCommitAuthorDesc => {
-					self.branches.sort_by(|a, b| {
-						match a
-							.top_commit_author
-							.cmp(&b.top_commit_author)
-						{
-							std::cmp::Ordering::Equal => {
-								a.name.cmp(&b.name)
-							}
-							other => other,
-						}
-					});
-				}
-				BranchListSortBy::LastCommitTimeAsc => {
-					self.branches.sort_by(|a, b| {
-						match a
-							.top_commit_time
-							.cmp(&b.top_commit_time)
-						{
-							std::cmp::Ordering::Equal => {
-								a.name.cmp(&b.name)
-							}
-							other => other,
-						}
-					});
-				}
-				BranchListSortBy::LastCommitTimeDesc => {
-					self.branches.sort_by(|a, b| {
-						match b
-							.top_commit_time
-							.cmp(&a.top_commit_time)
-						{
-							std::cmp::Ordering::Equal => {
-								a.name.cmp(&b.name)
-							}
-							other => other,
-						}
-					});
-				}
-				BranchListSortBy::BranchNameAsc => {
-					self.branches.sort_by(|a, b| a.name.cmp(&b.name));
-				}
-				BranchListSortBy::BranchNameDesc => {
-					self.branches.sort_by(|a, b| b.name.cmp(&a.name));
-				}
-			}
+			self.sort()?;
 			//remove remote branch called `HEAD`
 			if !self.local {
 				self.branches
