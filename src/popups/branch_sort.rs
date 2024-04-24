@@ -2,7 +2,6 @@ use anyhow::Result;
 use crossterm::event::Event;
 use ratatui::{
 	layout::{Alignment, Margin, Rect},
-	style::Stylize,
 	text::{Line, Span},
 	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
@@ -131,8 +130,7 @@ impl DrawableComponent for BranchSortPopup {
 							.borders(Borders::NONE)
 							.border_style(self.theme.block(true)),
 					)
-					.alignment(Alignment::Left)
-					.not_bold(),
+					.alignment(Alignment::Left),
 				area,
 			);
 		}
