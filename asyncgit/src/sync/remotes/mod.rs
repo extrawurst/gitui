@@ -66,6 +66,46 @@ fn get_current_branch(
 	Ok(None)
 }
 
+/// Tries to find the default repo to fetch from based on configuration.
+///
+/// > branch.<name>.remote
+/// >
+/// > When on branch `<name>`, it tells `git fetch` and `git push` which remote to fetch from or
+/// > push to. [...] If no remote is configured, or if you are not on any branch and there is more
+/// > than one remote defined in the repository, it defaults to `origin` for fetching [...].
+///
+/// [git-config-branch-name-remote]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-branchltnamegtremote
+///
+/// Falls back to `get_default_remote_in_repo`.
+pub fn get_default_remote_for_fetch(
+	repo_path: &RepoPath,
+) -> Result<String> {
+	let repo = repo(repo_path)?;
+	get_default_remote_for_fetch_in_repo(&repo)
+}
+
+pub(crate) fn get_default_remote_for_fetch_in_repo(
+	repo: &Repository,
+) -> Result<String> {
+	scope_time!("get_default_remote_for_fetch_in_repo");
+
+	let config = repo.config()?;
+
+	let branch = get_current_branch(repo)?;
+
+	if let Some(branch) = branch {
+		let remote_name = bytes2string(branch.name_bytes()?)?;
+
+		let entry_name = format!("branch.{}.remote", &remote_name);
+
+		if let Ok(entry) = config.get_entry(&entry_name) {
+			return bytes2string(entry.value_bytes());
+		}
+	}
+
+	get_default_remote_in_repo(repo)
+}
+
 /// Tries to find the default repo to push to based on configuration.
 ///
 /// > remote.pushDefault
