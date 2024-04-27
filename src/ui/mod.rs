@@ -153,6 +153,19 @@ pub fn common_nav(
 	}
 }
 
+pub fn key2seek(
+	key: &crossterm::event::KeyEvent,
+	key_config: &SharedKeyConfig,
+) -> Option<MoveSelection> {
+	if key_match(key, key_config.keys.seek_up) {
+		Some(MoveSelection::Up)
+	} else if key_match(key, key_config.keys.seek_down) {
+		Some(MoveSelection::Down)
+	} else {
+		None
+	}
+}
+
 #[cfg(test)]
 mod test {
 	use super::{rect_inside, Size};
