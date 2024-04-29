@@ -424,6 +424,42 @@ mod tests {
 	}
 
 	#[test]
+	fn test_default_remote_for_fetch() {
+		let (remote_dir, _remote) = repo_init().unwrap();
+		let remote_path = remote_dir.path().to_str().unwrap();
+		let (repo_dir, repo) = repo_clone(remote_path).unwrap();
+		let repo_path: &RepoPath = &repo_dir
+			.into_path()
+			.as_os_str()
+			.to_str()
+			.unwrap()
+			.into();
+
+		debug_cmd_print(
+			repo_path,
+			"git remote rename origin alternate",
+		);
+
+		debug_cmd_print(
+			repo_path,
+			&format!("git remote add someremote {remote_path}")[..],
+		);
+
+		let mut config = repo.config().unwrap();
+
+		config
+			.set_str("branch.master.remote", "branchremote")
+			.unwrap();
+
+		let default_fetch_remote =
+			get_default_remote_for_fetch_in_repo(&repo);
+
+		assert!(
+			matches!(default_fetch_remote, Ok(remote_name) if remote_name == "branchremote")
+		);
+	}
+
+	#[test]
 	fn test_default_remote_for_push() {
 		let (remote_dir, _remote) = repo_init().unwrap();
 		let remote_path = remote_dir.path().to_str().unwrap();
