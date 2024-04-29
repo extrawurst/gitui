@@ -30,7 +30,7 @@ scopetime = { path = "../scopetime", version = "0.1" }
 serde = { version = "1.0", features = ["derive"] }
 ssh-key = { version = "0.6.6", features = ["crypto", "encryption"] }
 thiserror = "1.0"
-unicode-truncate = "0.2"
+unicode-truncate = "1.0"
 url = "2.5"
 
 [dev-dependencies]
