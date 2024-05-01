@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+* respect configuration for remote when fetching [[@cruessler](https://github.com/cruessler)] ([#2204](https://github.com/extrawurst/gitui/pull/2204))
+
 ## [0.26.0+1] - 2024-04-14
 
 **0.26.1** 
