@@ -87,9 +87,11 @@ impl BranchSortPopup {
 		texts
 			.iter()
 			.map(|t| {
+				let selected = t.starts_with("[X]");
 				Line::from(vec![Span::styled(
 					t.clone(),
-					self.theme.text(t.starts_with("[X]"), false),
+					self.theme
+						.popup_selection(selected, selected, false),
 				)])
 			})
 			.collect()

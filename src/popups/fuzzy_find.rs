@@ -203,7 +203,8 @@ impl FuzzyFindPopup {
 							.map(|(c_idx, c)| {
 								Span::styled(
 									Cow::from(c.to_string()),
-									self.theme.text(
+									self.theme.popup_selection(
+										selected,
 										selected,
 										indices.contains(
 											&(c_idx + trim_length),
