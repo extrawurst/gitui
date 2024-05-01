@@ -1,6 +1,6 @@
 use anyhow::Result;
 use asyncgit::{DiffLineType, StatusItemType};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Modifier, Style, Stylize};
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::Write, path::PathBuf, rc::Rc};
@@ -103,6 +103,29 @@ impl Theme {
 			(true, true) => Style::default()
 				.fg(self.command_fg)
 				.bg(self.selection_bg),
+		}
+	}
+
+	pub fn popup_selection(
+		&self,
+		selected: bool,
+		focused: bool,
+		colored_bg: bool,
+	) -> Style {
+		let style = match (selected, focused) {
+			(false, false) => {
+				Style::default().fg(self.disabled_fg).not_bold()
+			}
+			(false, true) => Style::default().not_bold(),
+			(true, false) => {
+				Style::default().fg(self.disabled_fg).bold()
+			}
+			(true, true) => Style::default().bold(),
+		};
+		if colored_bg {
+			style.bg(self.selection_bg)
+		} else {
+			style
 		}
 	}
 

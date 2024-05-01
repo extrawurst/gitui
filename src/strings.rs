@@ -32,6 +32,7 @@ pub static PUSH_TAGS_STATES_DONE: &str = "done";
 pub static POPUP_TITLE_SUBMODULES: &str = "Submodules";
 pub static POPUP_TITLE_FUZZY_FIND: &str = "Fuzzy Finder";
 pub static POPUP_TITLE_LOG_SEARCH: &str = "Search";
+pub static POPUP_TITLE_BRANCH_SORT: &str = "Sort by";
 
 pub static POPUP_FAIL_COPY: &str = "Failed to copy text";
 pub static POPUP_SUCCESS_COPY: &str = "Copied Text";
@@ -363,6 +364,43 @@ pub fn rename_branch_popup_msg(
 	"new branch name".to_string()
 }
 
+pub fn sort_branch_by_name_msg(selected: bool) -> String {
+	format!(
+		"[{}] branch name (a → z)",
+		if selected { "X" } else { " " }
+	)
+}
+pub fn sort_branch_by_name_rev_msg(selected: bool) -> String {
+	format!(
+		"[{}] branch name (z → a)",
+		if selected { "X" } else { " " }
+	)
+}
+pub fn sort_branch_by_time_msg(selected: bool) -> String {
+	format!(
+		"[{}] last commit time (new → old)",
+		if selected { "X" } else { " " }
+	)
+}
+pub fn sort_branch_by_time_rev_msg(selected: bool) -> String {
+	format!(
+		"[{}] last commit time (old → new)",
+		if selected { "X" } else { " " }
+	)
+}
+pub fn sort_branch_by_author_msg(selected: bool) -> String {
+	format!(
+		"[{}] last commit author (a → z)",
+		if selected { "X" } else { " " }
+	)
+}
+pub fn sort_branch_by_author_rev_msg(selected: bool) -> String {
+	format!(
+		"[{}] last commit author (z → a)",
+		if selected { "X" } else { " " }
+	)
+}
+
 pub fn copy_success(s: &str) -> String {
 	format!("{POPUP_SUCCESS_COPY} \"{s}\"")
 }
@@ -466,6 +504,16 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.branch_find)
 			),
 			"find branch in list",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn sort_branch(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Sort by [{}]",
+				key_config.get_hint(key_config.keys.branch_sort)
+			),
+			"sort branches",
 			CMD_GROUP_GENERAL,
 		)
 	}
@@ -748,6 +796,19 @@ pub mod commands {
 				key_config.get_hint(key_config.keys.enter),
 			),
 			"close fuzzy finder",
+			CMD_GROUP_GENERAL,
+		)
+	}
+	pub fn close_branch_sort_popup(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Close [{}{}]",
+				key_config.get_hint(key_config.keys.exit_popup),
+				key_config.get_hint(key_config.keys.enter),
+			),
+			"close branch sort popup",
 			CMD_GROUP_GENERAL,
 		)
 	}

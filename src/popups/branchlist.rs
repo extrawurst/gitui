@@ -1,6 +1,7 @@
 use crate::components::{
-	visibility_blocking, CommandBlocking, CommandInfo, Component,
-	DrawableComponent, EventState, FuzzyFinderTarget, VerticalScroll,
+	visibility_blocking, BranchListSortBy, CommandBlocking,
+	CommandInfo, Component, DrawableComponent, EventState,
+	FuzzyFinderTarget, VerticalScroll,
 };
 use crate::{
 	app::Environment,
@@ -44,6 +45,7 @@ use super::InspectCommitOpen;
 pub struct BranchListPopup {
 	repo: RepoPathRef,
 	branches: Vec<BranchInfo>,
+	sort_by: BranchListSortBy,
 	local: bool,
 	has_remotes: bool,
 	visible: bool,
@@ -102,6 +104,8 @@ impl DrawableComponent for BranchListPopup {
 }
 
 impl Component for BranchListPopup {
+	// TODO: clean up
+	#[allow(clippy::too_many_lines)]
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -213,6 +217,12 @@ impl Component for BranchListPopup {
 			));
 
 			out.push(CommandInfo::new(
+				strings::commands::sort_branch(&self.key_config),
+				true,
+				true,
+			));
+
+			out.push(CommandInfo::new(
 				strings::commands::reset_branch(&self.key_config),
 				self.valid_selection(),
 				true,
@@ -317,6 +327,10 @@ impl Component for BranchListPopup {
 					branches,
 					FuzzyFinderTarget::Branches,
 				));
+			} else if key_match(e, self.key_config.keys.branch_sort) {
+				self.queue.push(InternalEvent::OpenBranchSortPopup(
+					self.sort_by,
+				));
 			}
 		}
 
@@ -342,6 +356,7 @@ impl BranchListPopup {
 	pub fn new(env: &Environment) -> Self {
 		Self {
 			branches: Vec::new(),
+			sort_by: BranchListSortBy::BranchNameAsc,
 			local: true,
 			has_remotes: false,
 			visible: false,
@@ -386,6 +401,7 @@ impl BranchListPopup {
 			self.local = !self.local;
 			self.check_remotes();
 			self.update_branches()?;
+			self.set_selection(0)?;
 		}
 		Ok(EventState::NotConsumed)
 	}
@@ -412,12 +428,96 @@ impl BranchListPopup {
 		}
 	}
 
+	pub fn change_sort_by(&mut self, sort_by: BranchListSortBy) {
+		self.sort_by = sort_by;
+	}
+
+	pub fn sort(&mut self) -> Result<()> {
+		let pre_selected = self
+			.branches
+			.get(self.selection as usize)
+			.map(|b| b.name.clone());
+		match &self.sort_by {
+			BranchListSortBy::LastCommitAuthorAsc => {
+				self.branches.sort_by(|a, b| {
+					match b
+						.top_commit_author
+						.cmp(&a.top_commit_author)
+					{
+						std::cmp::Ordering::Equal => {
+							a.name.cmp(&b.name)
+						}
+						other => other,
+					}
+				});
+			}
+			BranchListSortBy::LastCommitAuthorDesc => {
+				self.branches.sort_by(|a, b| {
+					match a
+						.top_commit_author
+						.cmp(&b.top_commit_author)
+					{
+						std::cmp::Ordering::Equal => {
+							a.name.cmp(&b.name)
+						}
+						other => other,
+					}
+				});
+			}
+			BranchListSortBy::LastCommitTimeAsc => {
+				self.branches.sort_by(|a, b| {
+					match a.top_commit_time.cmp(&b.top_commit_time) {
+						std::cmp::Ordering::Equal => {
+							a.name.cmp(&b.name)
+						}
+						other => other,
+					}
+				});
+			}
+			BranchListSortBy::LastCommitTimeDesc => {
+				self.branches.sort_by(|a, b| {
+					match b.top_commit_time.cmp(&a.top_commit_time) {
+						std::cmp::Ordering::Equal => {
+							a.name.cmp(&b.name)
+						}
+						other => other,
+					}
+				});
+			}
+			BranchListSortBy::BranchNameAsc => {
+				self.branches.sort_by(|a, b| a.name.cmp(&b.name));
+			}
+			BranchListSortBy::BranchNameDesc => {
+				self.branches.sort_by(|a, b| b.name.cmp(&a.name));
+			}
+		}
+
+		match pre_selected {
+			Some(pre_selected) => {
+				let next_selecttion = self
+					.branches
+					.iter()
+					.position(|b| b.name == pre_selected)
+					.unwrap_or(0);
+				self.set_selection(
+					next_selecttion.try_into().unwrap_or_default(),
+				)?;
+			}
+			None => {
+				self.set_selection(0)?;
+			}
+		}
+
+		Ok(())
+	}
+
 	/// fetch list of branches
 	pub fn update_branches(&mut self) -> Result<()> {
 		if self.is_visible() {
 			self.check_remotes();
 			self.branches =
 				get_branches_info(&self.repo.borrow(), self.local)?;
+			self.sort()?;
 			//remove remote branch called `HEAD`
 			if !self.local {
 				self.branches
@@ -568,6 +668,46 @@ impl BranchListPopup {
 		Ok(())
 	}
 
+	const fn calculate_shared_commit_message_length(
+		width_available: u16,
+		three_dots_length: usize,
+	) -> usize {
+		const COMMIT_HASH_LENGTH: usize = 8;
+		const COMMIT_DATE_LENGTH: usize = 11;
+		const IS_HEAD_STAR_LENGTH: usize = 3;
+		let branch_name_length: usize =
+			width_available as usize * 40 / 100;
+
+		(width_available as usize)
+			.saturating_sub(COMMIT_HASH_LENGTH)
+			.saturating_sub(COMMIT_DATE_LENGTH)
+			.saturating_sub(branch_name_length)
+			.saturating_sub(IS_HEAD_STAR_LENGTH)
+			.saturating_sub(three_dots_length)
+	}
+
+	fn get_branch_name_text(
+		branch_name_length: usize,
+		displaybranch: &BranchInfo,
+		three_dots_length: usize,
+		three_dots: &str,
+	) -> String {
+		let mut branch_name = displaybranch.name.clone();
+		if branch_name.len()
+			> branch_name_length.saturating_sub(three_dots_length)
+		{
+			branch_name = branch_name
+				.unicode_truncate(
+					branch_name_length
+						.saturating_sub(three_dots_length),
+				)
+				.0
+				.to_string();
+			branch_name += three_dots;
+		}
+		branch_name
+	}
+
 	/// Get branches to display
 	fn get_text(
 		&self,
@@ -581,17 +721,15 @@ impl BranchListPopup {
 		const EMPTY_SYMBOL: char = ' ';
 		const THREE_DOTS: &str = "...";
 		const THREE_DOTS_LENGTH: usize = THREE_DOTS.len(); // "..."
-		const COMMIT_HASH_LENGTH: usize = 8;
-		const IS_HEAD_STAR_LENGTH: usize = 3; // "*  "
 
 		let branch_name_length: usize =
 			width_available as usize * 40 / 100;
 		// commit message takes up the remaining width
-		let commit_message_length: usize = (width_available as usize)
-			.saturating_sub(COMMIT_HASH_LENGTH)
-			.saturating_sub(branch_name_length)
-			.saturating_sub(IS_HEAD_STAR_LENGTH)
-			.saturating_sub(THREE_DOTS_LENGTH);
+		let shared_commit_message_length: usize =
+			Self::calculate_shared_commit_message_length(
+				width_available,
+				THREE_DOTS_LENGTH,
+			);
 		let mut txt = Vec::new();
 
 		for (i, displaybranch) in self
@@ -601,6 +739,16 @@ impl BranchListPopup {
 			.take(height)
 			.enumerate()
 		{
+			let date_text = displaybranch
+				.top_commit_time_local
+				.map_or("????-??-?? ".to_string(), |time| {
+					time.date_naive().to_string() + " "
+				});
+			let author_text =
+				displaybranch.top_commit_author.clone() + " ";
+
+			let commit_message_length = shared_commit_message_length
+				.saturating_sub(author_text.len());
 			let mut commit_message =
 				displaybranch.top_commit_message.clone();
 			if commit_message.len() > commit_message_length {
@@ -611,20 +759,12 @@ impl BranchListPopup {
 				commit_message += THREE_DOTS;
 			}
 
-			let mut branch_name = displaybranch.name.clone();
-			if branch_name.len()
-				> branch_name_length.saturating_sub(THREE_DOTS_LENGTH)
-			{
-				branch_name = branch_name
-					.unicode_truncate(
-						branch_name_length
-							.saturating_sub(THREE_DOTS_LENGTH),
-					)
-					.0
-					.to_string();
-				branch_name += THREE_DOTS;
-			}
-
+			let branch_name = Self::get_branch_name_text(
+				branch_name_length,
+				displaybranch,
+				THREE_DOTS_LENGTH,
+				THREE_DOTS,
+			);
 			let selected = (self.selection as usize
 				- self.scroll.get_top())
 				== i;
@@ -657,6 +797,12 @@ impl BranchListPopup {
 				),
 				theme.commit_hash(selected),
 			);
+			let span_date =
+				Span::styled(date_text, theme.text(true, selected));
+			let span_author = Span::styled(
+				author_text,
+				theme.commit_author(selected),
+			);
 			let span_msg = Span::styled(
 				commit_message.to_string(),
 				theme.text(true, selected),
@@ -665,15 +811,15 @@ impl BranchListPopup {
 				format!("{branch_name:branch_name_length$} "),
 				theme.branch(selected, is_head),
 			);
-
 			txt.push(Line::from(vec![
 				span_prefix,
 				span_name,
 				span_hash,
+				span_date,
+				span_author,
 				span_msg,
 			]));
 		}
-
 		Text::from(txt)
 	}
 

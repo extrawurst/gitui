@@ -212,21 +212,24 @@ impl LogSearchPopupPopup {
 		vec![
 			Line::from(vec![Span::styled(
 				format!("[{x_opt_fuzzy}] fuzzy search"),
-				self.theme.text(
+				self.theme.popup_selection(
+					x_opt_fuzzy == "X",
 					matches!(self.selection, Selection::FuzzyOption),
 					false,
 				),
 			)]),
 			Line::from(vec![Span::styled(
 				format!("[{x_opt_casesensitive}] case sensitive"),
-				self.theme.text(
+				self.theme.popup_selection(
+					x_opt_casesensitive == "X",
 					matches!(self.selection, Selection::CaseOption),
 					false,
 				),
 			)]),
 			Line::from(vec![Span::styled(
 				format!("[{x_summary}] summary",),
-				self.theme.text(
+				self.theme.popup_selection(
+					x_summary == "X",
 					matches!(
 						self.selection,
 						Selection::SummarySearch
@@ -236,7 +239,8 @@ impl LogSearchPopupPopup {
 			)]),
 			Line::from(vec![Span::styled(
 				format!("[{x_body}] message body",),
-				self.theme.text(
+				self.theme.popup_selection(
+					x_body == "X",
 					matches!(
 						self.selection,
 						Selection::MessageBodySearch
@@ -246,7 +250,8 @@ impl LogSearchPopupPopup {
 			)]),
 			Line::from(vec![Span::styled(
 				format!("[{x_files}] committed files",),
-				self.theme.text(
+				self.theme.popup_selection(
+					x_files == "X",
 					matches!(
 						self.selection,
 						Selection::FilenameSearch
@@ -256,7 +261,8 @@ impl LogSearchPopupPopup {
 			)]),
 			Line::from(vec![Span::styled(
 				format!("[{x_authors}] authors",),
-				self.theme.text(
+				self.theme.popup_selection(
+					x_authors == "X",
 					matches!(
 						self.selection,
 						Selection::AuthorsSearch

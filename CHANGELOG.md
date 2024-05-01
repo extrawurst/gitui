@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+* add sort_by popup to branchlist [[@UUGTech](https://github.com/UUGTech)]([#2146](https://github.com/extrawurst/gitui/issues/2146))
+
 ## [0.26.0+1] - 2024-04-14
 
 **0.26.1** 
