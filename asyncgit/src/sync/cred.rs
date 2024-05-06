@@ -50,6 +50,8 @@ pub fn need_username_password(repo_path: &RepoPath) -> Result<bool> {
 }
 
 /// know if username and password are needed for this url
+/// TODO: Very similar to `need_username_password_for_fetch`. Can be refactored. See also
+/// `need_username_password`.
 pub fn need_username_password_for_fetch(
 	repo_path: &RepoPath,
 ) -> Result<bool> {
@@ -66,6 +68,8 @@ pub fn need_username_password_for_fetch(
 }
 
 /// know if username and password are needed for this url
+/// TODO: Very similar to `need_username_password_for_fetch`. Can be refactored. See also
+/// `need_username_password`.
 pub fn need_username_password_for_push(
 	repo_path: &RepoPath,
 ) -> Result<bool> {
@@ -110,6 +114,7 @@ pub fn extract_username_password(
 }
 
 /// extract username and password
+/// TODO: Very similar to `extract_username_password_for_fetch`. Can be refactored.
 pub fn extract_username_password_for_fetch(
 	repo_path: &RepoPath,
 ) -> Result<BasicAuthCredential> {
@@ -138,6 +143,7 @@ pub fn extract_username_password_for_fetch(
 }
 
 /// extract username and password
+/// TODO: Very similar to `extract_username_password_for_fetch`. Can be refactored.
 pub fn extract_username_password_for_push(
 	repo_path: &RepoPath,
 ) -> Result<BasicAuthCredential> {

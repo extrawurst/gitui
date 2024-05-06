@@ -84,6 +84,7 @@ pub fn get_default_remote_for_fetch(
 	get_default_remote_for_fetch_in_repo(&repo)
 }
 
+// TODO: Very similar to `get_default_remote_for_push_in_repo`. Can probably be refactored.
 pub(crate) fn get_default_remote_for_fetch_in_repo(
 	repo: &Repository,
 ) -> Result<String> {
@@ -133,6 +134,7 @@ pub fn get_default_remote_for_push(
 	get_default_remote_for_push_in_repo(&repo)
 }
 
+// TODO: Very similar to `get_default_remote_for_fetch_in_repo`. Can probably be refactored.
 pub(crate) fn get_default_remote_for_push_in_repo(
 	repo: &Repository,
 ) -> Result<String> {
