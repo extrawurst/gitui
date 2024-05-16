@@ -58,7 +58,7 @@ enum DiffTarget {
 }
 
 struct RemoteStatus {
-	has_remotes: bool,
+	has_remote_for_fetch: bool,
 	has_remote_for_push: bool,
 }
 
@@ -161,7 +161,7 @@ impl Status {
 			queue: env.queue.clone(),
 			visible: true,
 			remotes: RemoteStatus {
-				has_remotes: false,
+				has_remote_for_fetch: false,
 				has_remote_for_push: false,
 			},
 			git_state: RepoState::Clean,
@@ -415,9 +415,11 @@ impl Status {
 	}
 
 	fn check_remotes(&mut self) {
-		self.remotes.has_remotes =
-			sync::get_default_remote(&self.repo.borrow().clone())
-				.is_ok();
+		self.remotes.has_remote_for_fetch =
+			sync::get_default_remote_for_fetch(
+				&self.repo.borrow().clone(),
+			)
+			.is_ok();
 		self.remotes.has_remote_for_push =
 			sync::get_default_remote_for_push(
 				&self.repo.borrow().clone(),
@@ -580,7 +582,7 @@ impl Status {
 	}
 
 	fn fetch(&self) {
-		if self.can_pull() {
+		if self.can_fetch() {
 			self.queue.push(InternalEvent::FetchRemotes);
 		}
 	}
@@ -616,8 +618,9 @@ impl Status {
 		is_ahead && self.remotes.has_remote_for_push
 	}
 
-	const fn can_pull(&self) -> bool {
-		self.remotes.has_remotes && self.git_branch_state.is_some()
+	const fn can_fetch(&self) -> bool {
+		self.remotes.has_remote_for_fetch
+			&& self.git_branch_state.is_some()
 	}
 
 	fn can_abort_merge(&self) -> bool {
@@ -754,12 +757,12 @@ impl Component for Status {
 
 			out.push(CommandInfo::new(
 				strings::commands::status_fetch(&self.key_config),
-				self.can_pull(),
+				self.can_fetch(),
 				!focus_on_diff,
 			));
 			out.push(CommandInfo::new(
 				strings::commands::status_pull(&self.key_config),
-				self.can_pull(),
+				self.can_fetch(),
 				!focus_on_diff,
 			));
 
@@ -881,13 +884,13 @@ impl Component for Status {
 					Ok(EventState::Consumed)
 				} else if key_match(k, self.key_config.keys.fetch)
 					&& !self.is_focus_on_diff()
-					&& self.can_pull()
+					&& self.can_fetch()
 				{
 					self.fetch();
 					Ok(EventState::Consumed)
 				} else if key_match(k, self.key_config.keys.pull)
 					&& !self.is_focus_on_diff()
-					&& self.can_pull()
+					&& self.can_fetch()
 				{
 					self.pull();
 					Ok(EventState::Consumed)
