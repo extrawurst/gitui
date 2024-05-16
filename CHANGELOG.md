@@ -7,11 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
 * support overriding `build_date` for [reproducible builds](https://reproducible-builds.org/) [[@bmwiedemann](https://github.com/bmwiedemann)] ([#2202](https://github.com/extrawurst/gitui/pull/2202))
 
 ## [0.26.0+1] - 2024-04-14
 
-**0.26.1** 
+**0.26.1**
 this release has no changes to `0.26.0` but provides windows binaries that were missing before.
 
 **commit signing**
