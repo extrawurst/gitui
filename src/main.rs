@@ -19,7 +19,8 @@
 #![allow(
 	clippy::multiple_crate_versions,
 	clippy::bool_to_int_with_if,
-	clippy::module_name_repetitions
+	clippy::module_name_repetitions,
+	clippy::empty_docs
 )]
 
 //TODO:
