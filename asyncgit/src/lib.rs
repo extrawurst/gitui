@@ -22,7 +22,8 @@
 #![allow(
 	clippy::module_name_repetitions,
 	clippy::must_use_candidate,
-	clippy::missing_errors_doc
+	clippy::missing_errors_doc,
+	clippy::empty_docs
 )]
 //TODO:
 #![allow(
