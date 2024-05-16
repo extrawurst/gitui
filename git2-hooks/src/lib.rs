@@ -46,7 +46,6 @@ pub const HOOK_PREPARE_COMMIT_MSG: &str = "prepare-commit-msg";
 
 const HOOK_COMMIT_MSG_TEMP_FILE: &str = "COMMIT_EDITMSG";
 
-///
 #[derive(Debug, PartialEq, Eq)]
 pub enum HookResult {
 	/// No hook found
@@ -171,7 +170,6 @@ pub fn hooks_post_commit(
 	hook.run_hook(&[])
 }
 
-///
 pub enum PrepareCommitMsgSource {
 	Message,
 	Template,

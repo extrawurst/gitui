@@ -1,14 +1,12 @@
 //! simple macro to insert a scope based runtime measure that logs the result
 
 #![forbid(unsafe_code)]
-#![forbid(missing_docs)]
 #![deny(unused_imports)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::perf)]
 
 use std::time::Instant;
 
-///
 pub struct ScopeTimeLog<'a> {
 	title: &'a str,
 	mod_path: &'a str,
@@ -17,9 +15,7 @@ pub struct ScopeTimeLog<'a> {
 	time: Instant,
 }
 
-///
 impl<'a> ScopeTimeLog<'a> {
-	///
 	pub fn new(
 		mod_path: &'a str,
 		title: &'a str,
@@ -49,7 +45,7 @@ impl<'a> Drop for ScopeTimeLog<'a> {
 	}
 }
 
-///
+/// measures runtime of scope and prints it into log
 #[cfg(feature = "enabled")]
 #[macro_export]
 macro_rules! scope_time {

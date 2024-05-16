@@ -1,7 +1,7 @@
 use git2::Repository;
 use tempfile::TempDir;
 
-///
+/// initialize test repo in temp path
 pub fn repo_init_empty() -> (TempDir, Repository) {
 	init_log();
 
@@ -18,7 +18,7 @@ pub fn repo_init_empty() -> (TempDir, Repository) {
 	(td, repo)
 }
 
-///
+/// initialize test repo in temp path with an empty first commit
 pub fn repo_init() -> (TempDir, Repository) {
 	init_log();
 
