@@ -470,7 +470,7 @@ impl CommitPopup {
 		let mut msg = msg.to_owned();
 		if let (Some(user), Some(mail)) = (user, mail) {
 			msg.push_str(&format!(
-				"\n\nSigned-off-by {user} <{mail}>"
+				"\n\nSigned-off-by: {user} <{mail}>"
 			));
 		}
 

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixes
 * respect configuration for remote when fetching (also applies to pulling) [[@cruessler](https://github.com/cruessler)] ([#1093](https://github.com/extrawurst/gitui/issues/1093))
+* add `:` character to sign-off trailer to comply with Conventinoal Commits standard [@semioticrobotic](https://github.com/semioticrobotic) ([#2196](https://github.com/extrawurst/gitui/issues/2196))
 
 ## [0.26.0+1] - 2024-04-14
 
