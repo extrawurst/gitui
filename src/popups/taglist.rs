@@ -92,8 +92,7 @@ impl DrawableComponent for TagListPopup {
 			let rows = self.get_rows();
 			let number_of_rows = rows.len();
 
-			let table = Table::new(rows)
-				.widths(&constraints)
+			let table = Table::new(rows, constraints)
 				.column_spacing(1)
 				.highlight_style(self.theme.text(true, true))
 				.block(

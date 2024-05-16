@@ -365,15 +365,20 @@ mod tests {
 
 	#[test]
 	fn test_smoke() {
+		let _ = env_logger::builder()
+			.is_test(true)
+			.filter_level(log::LevelFilter::Trace)
+			.try_init();
+
 		let mut file = NamedTempFile::new().unwrap();
 
 		writeln!(
 			file,
-			r"
+			r#"
 (
-	selection_bg: Some(White),
+	selection_bg: Some("White"),
 )
-"
+"#
 		)
 		.unwrap();
 

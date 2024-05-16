@@ -1109,7 +1109,8 @@ impl App {
 		let table_area = r; // use entire area to allow drawing the horizontal separator line
 		let text_area = left_right[1];
 
-		let tabs = tab_labels.into_iter().map(Line::from).collect();
+		let tabs: Vec<Line> =
+			tab_labels.into_iter().map(Line::from).collect();
 
 		f.render_widget(
 			Tabs::new(tabs)

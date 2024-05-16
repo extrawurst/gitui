@@ -704,11 +704,12 @@ impl BranchListPopup {
 	}
 
 	fn draw_tabs(&self, f: &mut Frame, r: Rect) {
-		let tabs = [Span::raw("Local"), Span::raw("Remote")]
-			.iter()
-			.cloned()
-			.map(Line::from)
-			.collect();
+		let tabs: Vec<Line> =
+			[Span::raw("Local"), Span::raw("Remote")]
+				.iter()
+				.cloned()
+				.map(Line::from)
+				.collect();
 
 		f.render_widget(
 			Tabs::new(tabs)
