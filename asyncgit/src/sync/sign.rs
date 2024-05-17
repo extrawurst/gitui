@@ -365,11 +365,7 @@ impl ExternalBinSSHSign {
 	/// constructs a new instance of the external ssh signer
 	pub fn new(program_path: PathBuf, key_path: PathBuf) -> Self {
 		#[cfg(test)]
-		let program: String = program_path
-			.file_name()
-			.unwrap_or_default()
-			.to_string_lossy()
-			.into_owned();
+		let program: String = program_path.to_string_lossy().to_string();
 
 		let key_path = KeyPathOrLiteral::new(key_path);
 
@@ -618,6 +614,29 @@ mod tests {
 
 		assert_eq!("ssh", sign.program());
 		assert_eq!("/tmp/key.pub", sign.signing_key());
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_ssh_external_program_configs() -> Result<()> {
+		let (_tmp_dir, repo) = repo_init_empty()?;
+
+		{
+			let mut config = repo.config()?;
+			config.set_str("gpg.format", "ssh")?;
+			config.set_str(
+				"gpg.ssh.program",
+				"/Applications/program",
+			)?;
+			config.set_str("user.signingKey", "ssh-ed25519")?;
+		}
+
+		let sign =
+			SignBuilder::from_gitconfig(&repo, &repo.config()?)?;
+
+		assert_eq!("/Applications/program", sign.program());
+		assert_eq!("ssh-ed25519", sign.signing_key());
 
 		Ok(())
 	}
