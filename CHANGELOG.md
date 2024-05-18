@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.26.2] - 2024-04-17
+
 ### Fixes
 * fix `cargo install` without `--locked` ([#2098](https://github.com/extrawurst/gitui/issues/2098))
 * respect configuration for remote when fetching (also applies to pulling) [[@cruessler](https://github.com/cruessler)] ([#1093](https://github.com/extrawurst/gitui/issues/1093))
