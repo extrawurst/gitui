@@ -506,6 +506,8 @@ impl Sign for SSHSign {
 
 #[cfg(test)]
 mod tests {
+	use std::io::Write;
+
 	use super::*;
 	use crate::error::Result;
 	use crate::sync::tests::repo_init_empty;
@@ -591,18 +593,39 @@ mod tests {
 	#[test]
 	fn test_ssh_program_configs() -> Result<()> {
 		let (_tmp_dir, repo) = repo_init_empty()?;
+		let mut file = NamedTempFile::new()?;
+		file.write_all(
+			b"-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAlwAAAAdzc2gtcn
+NhAAAAAwEAAQAAAIEA2lYFinGHP1Q4o4gg7ItBY6Os2sJpJh2OPnRi+eTS0CjWcjmSGxCE
+zhbuvts+KmoDccReL3hkRXDLRlW9DBaJ/5MUk8Vbih7LlTkntWE4WH8W4mUfa77YTo+dvm
+K0WDMgQi+vUeDaKlGL0dyQN99YV9Ows4kqYzXM9XpRBYVEVi8AAAIA9RuuzvUbrs4AAAAH
+c3NoLXJzYQAAAIEA2lYFinGHP1Q4o4gg7ItBY6Os2sJpJh2OPnRi+eTS0CjWcjmSGxCEzh
+buvts+KmoDccReL3hkRXDLRlW9DBaJ/5MUk8Vbih7LlTkntWE4WH8W4mUfa77YTo+dvmK0
+WDMgQi+vUeDaKlGL0dyQN99YV9Ows4kqYzXM9XpRBYVEVi8AAAADAQABAAAAgHqgJayD5r
+oiy0zNf/BapfcYTlTvK69Emkdphs1jPyO6S/cLbovU00IMjzqSWG/p6tVSvLNcorR9jS2L
+qgnH/uiKLXB+gc546u4ZIy9phBdEsH0ywxH3u8NEOsxp1TaXknUYCC05IUpHDgGbSbiQHF
+HmUpomg3m26An5Sqjk/HvBAAAAQQCbd2DTPGlwgxhSjy0HN6VywIxGW1JS5SX8PVTn5UC0
+/1uyW/H3d2ExB76pD2h06H1IO3jiezdZH+WAkbXdqySAAAAAQQD1F8sbu0kqd2qmUmLPIl
+nVS3RzasE6PtEWsxVMNO9ic/iXhMNmjIhtZU7zq8rduibOBzWRcP4LfjNM0jtcwojtAAAA
+QQDkDWbR5LZHx3Waju8b8Ar0TGPZx1QIpjX5kej8cmL+ypQwwBSd7FmOhLSWWttT7mkWxJ
+XimPSWvOt0Ef+E/8QLAAAABm5vbmFtZQECAwQ=
+-----END OPENSSH PRIVATE KEY-----",
+		)?;
+
+		let path = format!("{}.pub", file.path().to_string_lossy());
 
 		{
 			let mut config = repo.config()?;
-			config.set_str("gpg.program", "ssh")?;
-			config.set_str("user.signingKey", "/tmp/key.pub")?;
+			config.set_str("gpg.format", "ssh")?;
+			config.set_str("user.signingKey", &path)?;
 		}
 
 		let sign =
 			SignBuilder::from_gitconfig(&repo, &repo.config()?)?;
 
 		assert_eq!("ssh", sign.program());
-		assert_eq!("/tmp/key.pub", sign.signing_key());
+		assert_eq!(&path, sign.signing_key());
 
 		Ok(())
 	}
