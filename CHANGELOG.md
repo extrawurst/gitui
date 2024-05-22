@@ -21,7 +21,7 @@ but this also allows us now to define colors in the common hex format:
 
 `selection_fg: Some(Rgb(0,255,0))` -> `selection_fg: Some("#00ff00")`
 
-Checkout [THEME.md](./THEME.md) for more info.
+Checkout [THEMES.md](./THEMES.md) for more info.
 
 ### Fixes
 * update yanked dependency to `libc` to fix building with `--locked`.
