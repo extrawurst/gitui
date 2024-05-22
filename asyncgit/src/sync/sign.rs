@@ -186,15 +186,11 @@ impl SSHProgram {
 		self,
 		config: &git2::Config,
 	) -> Result<Box<dyn Sign>, SignBuilderError> {
+		let key = ConfigAccess(config).signing_key()?;
+
 		match self {
-			Self::Default => {
-				let ssh_signer = ConfigAccess(config)
-					.signing_key()
-					.and_then(SSHSign::new)?;
-				Ok(Box::new(ssh_signer))
-			}
+			Self::Default => Ok(Box::new(SSHSign::new(key)?)),
 			Self::SystemBin(exec_path) => {
-				let key = ConfigAccess(config).signing_key()?;
 				Ok(Box::new(ExternalBinSSHSign::new(exec_path, key)))
 			}
 		}
@@ -320,7 +316,7 @@ pub struct SSHSign {
 	#[cfg(test)]
 	program: String,
 	#[cfg(test)]
-	key_path: String,
+	signing_key: String,
 	secret_key: PrivateKey,
 }
 
@@ -461,32 +457,25 @@ impl Sign for ExternalBinSSHSign {
 impl SSHSign {
 	/// Create new [`SSHDiskKeySign`] for sign.
 	pub fn new(mut key: PathBuf) -> Result<Self, SignBuilderError> {
+		#[cfg(test)]
+		let signing_key = format!("{}", &key.display());
+
 		key.set_extension("");
-		if key.is_file() {
-			#[cfg(test)]
-			let key_path = format!("{}", &key.display());
-			std::fs::read(key)
-				.ok()
-				.and_then(|bytes| {
-					PrivateKey::from_openssh(bytes).ok()
-				})
-				.map(|secret_key| Self {
-					#[cfg(test)]
-					program: "ssh".to_string(),
-					#[cfg(test)]
-					key_path,
-					secret_key,
-				})
-				.ok_or_else(|| {
-					SignBuilderError::SSHSigningKey(String::from(
-						"Fail to read the private key for sign.",
-					))
-				})
-		} else {
-			Err(SignBuilderError::SSHSigningKey(
-				format!("Currently, we only support a pair of ssh key in disk. Found {key:?}"),
-			))
-		}
+		std::fs::read(key)
+			.ok()
+			.and_then(|bytes| PrivateKey::from_openssh(bytes).ok())
+			.map(|secret_key| Self {
+				#[cfg(test)]
+				program: "ssh".to_string(),
+				#[cfg(test)]
+				signing_key,
+				secret_key,
+			})
+			.ok_or_else(|| {
+				SignBuilderError::SSHSigningKey(String::from(
+					"Fail to read the private key for sign.",
+				))
+			})
 	}
 }
 
@@ -511,7 +500,7 @@ impl Sign for SSHSign {
 
 	#[cfg(test)]
 	fn signing_key(&self) -> &String {
-		&self.key_path
+		&self.signing_key
 	}
 }
 
