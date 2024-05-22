@@ -374,18 +374,21 @@ mod tests {
 
 		writeln!(
 			file,
-			r#"
+			r##"
 (
-	selection_bg: Some("White"),
+	selection_bg: Some("Black"),
+	selection_fg: Some("#ffffff"),
 )
-"#
+"##
 		)
 		.unwrap();
 
 		let theme = Theme::init(&file.path().to_path_buf());
 
-		assert_eq!(theme.selection_fg, Theme::default().selection_fg);
-		assert_eq!(theme.selection_bg, Color::White);
+		assert_eq!(theme.selected_tab, Theme::default().selected_tab);
+
 		assert_ne!(theme.selection_bg, Theme::default().selection_bg);
+		assert_eq!(theme.selection_bg, Color::Black);
+		assert_eq!(theme.selection_fg, Color::Rgb(255, 255, 255));
 	}
 }
