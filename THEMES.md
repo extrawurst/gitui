@@ -14,7 +14,16 @@ The file uses the [Ron format](https://github.com/ron-rs/ron) and is located at 
 
 Alternatively, you can create a theme in the same directory mentioned above and use it with the `-t` flag followed by the name of the file in the directory. E.g. If you are on linux calling `gitui -t arc.ron`, this will load the theme in `$XDG_CONFIG_HOME/gitui/arc.ron` or `$HOME/.config/gitui/arc.ron`.
 
-Example theme override (>= 0.23, < 0.26.2):
+Example theme override, valid for versions < 0.23:
+
+```
+(
+    selection_bg: Blue,
+    selection_fg: White,
+)
+```
+
+Starting with 0.23, this needs to be changed to:
 
 ```
 (
@@ -23,9 +32,9 @@ Example theme override (>= 0.23, < 0.26.2):
 )
 ```
 
-Note that you need to wrap values in `Some` due to the way the overrides work (as of 0.23).
+Note that you need to wrap values in `Some` due to the way the overrides work.
 
-Example theme override (>= 0.26.2):
+Starting with 0.26.2, this needs to be changed to:
 
 ```
 (
@@ -34,7 +43,7 @@ Example theme override (>= 0.26.2):
 )
 ```
 
-Note that you need to specify colors using strings due to a change in `ratatui` as opposed to bare enum variants (as of 0.26.2).
+Note that you need to specify colors using strings as opposed to bare enum variants due to a change in `ratatui`.
 
 See <https://github.com/ratatui-org/ratatui/commit/0a164965ea2b163433871717cee4fd774a23ee5a> for context.
 
