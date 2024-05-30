@@ -23,6 +23,9 @@ but this also allows us now to define colors in the common hex format:
 
 Checkout [THEMES.md](./THEMES.md) for more info.
 
+### Added
+* support `TAR_COMMIT_ID` enabling builds from `git archive` generated source tarballs or other outside a git repo [[@alerque](https://github.com/alerque)] ([#2187](https://github.com/extrawurst/gitui/pull/2187))
+
 ### Fixes
 * update yanked dependency to `libc` to fix building with `--locked`.
 * document breaking change in theme file format.
