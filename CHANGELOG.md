@@ -7,12 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Breaking Changes
+
+#### Theme file format
+
+**note:** this actually applied to the previous release already: `0.26.2`
+
+Ratatui (upstream terminal rendering crate) changed its serialization format for Colors. So the theme files have to be adjusted.
+
+`selection_fg: Some(White)` -> `selection_fg: Some("White")`
+
+but this also allows us now to define colors in the common hex format:
+
+`selection_fg: Some(Rgb(0,255,0))` -> `selection_fg: Some("#00ff00")`
+
+Checkout [THEMES.md](./THEMES.md) for more info.
+
 ### Added
-* enable builds from `git archive` generated source tarballs [[@alerque](https://github.com/alerque)] ([#2187](https://github.com/extrawurst/gitui/pull/2187))
+* support `TAR_COMMIT_ID` enabling builds from `git archive` generated source tarballs or other outside a git repo [[@alerque](https://github.com/alerque)] ([#2187](https://github.com/extrawurst/gitui/pull/2187))
+
+### Fixes
+* update yanked dependency to `libc` to fix building with `--locked`.
+* document breaking change in theme file format.
+
+## [0.26.2] - 2024-04-17
+
+**note:** this release introduced a breaking change documented in the following release: `0.26.3`
+
+### Fixes
+* fix `cargo install` without `--locked` ([#2098](https://github.com/extrawurst/gitui/issues/2098))
+* respect configuration for remote when fetching (also applies to pulling) [[@cruessler](https://github.com/cruessler)] ([#1093](https://github.com/extrawurst/gitui/issues/1093))
+* add `:` character to sign-off trailer to comply with Conventinoal Commits standard [@semioticrobotic](https://github.com/semioticrobotic) ([#2196](https://github.com/extrawurst/gitui/issues/2196))
+
+### Added
+* support overriding `build_date` for [reproducible builds](https://reproducible-builds.org/) [[@bmwiedemann](https://github.com/bmwiedemann)] ([#2202](https://github.com/extrawurst/gitui/pull/2202))
 
 ## [0.26.0+1] - 2024-04-14
 
-**0.26.1** 
+**0.26.1**
 this release has no changes to `0.26.0` but provides windows binaries that were missing before.
 
 **commit signing**

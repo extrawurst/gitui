@@ -18,8 +18,8 @@ Example theme override:
 
 ```
 (
-    selection_bg: Some(Blue),
-    selection_fg: Some(White),
+    selection_bg: Some("Blue"),
+    selection_fg: Some("#ffffff"),
 )
 ```
 
@@ -27,9 +27,9 @@ Note that you need to wrap values in `Some` due to the way the overrides work (a
 
 Notes:
 
-* rgb colors might not be supported in every terminal. 
+* rgb colors might not be supported in every terminal.
 * using a color like `yellow` might appear in whatever your terminal/theme defines for `yellow`
-* valid colors can be found in tui-rs' [Color](https://docs.rs/tui/0.12.0/tui/style/enum.Color.html) struct. 
+* valid colors can be found in tui-rs' [Color](https://docs.rs/tui/0.12.0/tui/style/enum.Color.html) struct.
 * all customizable theme elements can be found in [`style.rs` in the `impl Default for Theme` block](https://github.com/extrawurst/gitui/blob/master/src/ui/style.rs#L305)
 
 ## Customizing line breaks

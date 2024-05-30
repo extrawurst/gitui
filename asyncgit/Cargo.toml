@@ -1,6 +1,6 @@
 [package]
 name = "asyncgit"
-version = "0.26.0"
+version = "0.26.2"
 authors = ["extrawurst <mail@rusticorn.com>"]
 edition = "2021"
 description = "allow using git2 in a asynchronous context"
@@ -30,14 +30,14 @@ scopetime = { path = "../scopetime", version = "0.1" }
 serde = { version = "1.0", features = ["derive"] }
 ssh-key = { version = "0.6.6", features = ["crypto", "encryption"] }
 thiserror = "1.0"
-unicode-truncate = "0.2"
+unicode-truncate = "1.0"
 url = "2.5"
 
 [dev-dependencies]
 env_logger = "0.11"
 invalidstring = { path = "../invalidstring", version = "0.1" }
 pretty_assertions = "1.4"
-serial_test = "3.0"
+serial_test = "3.1"
 tempfile = "3"
 
 [features]
