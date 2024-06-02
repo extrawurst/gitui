@@ -38,6 +38,12 @@ release-linux-musl: build-linux-musl-release
 	mkdir -p release
 	tar -C ./target/x86_64-unknown-linux-musl/release/ -czvf ./release/gitui-linux-x86_64.tar.gz ./gitui
 
+build-apple-x86-debug:
+	cargo build --target=x86_64-apple-darwin
+
+build-apple-x86-release:
+	cargo build --release --target=x86_64-apple-darwin
+
 build-linux-musl-debug:
 	cargo build --target=x86_64-unknown-linux-musl
 
