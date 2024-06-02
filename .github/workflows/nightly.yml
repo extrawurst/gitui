@@ -71,7 +71,9 @@ jobs:
       run: make release-mac
     - name: Build Release Mac x86
       if: matrix.os == 'macos-latest'
-      run: make release-mac-x68
+      run: |
+        rustup target add x86_64-apple-darwin
+        make release-mac-x86
     - name: Build Release Linux
       if: matrix.os == 'ubuntu-latest'
       run: make release-linux-musl
