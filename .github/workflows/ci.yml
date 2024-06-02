@@ -41,6 +41,9 @@ jobs:
         toolchain: ${{ matrix.rust }}
         components: clippy
 
+    - name: Rustup Show
+      run: rustup show
+
     - name: Build Debug
       run: |
         cargo build
@@ -170,6 +173,38 @@ jobs:
       run: |
         make build-linux-arm-release
         ls -l ./target/aarch64-unknown-linux-gnu/release/gitui || ls -l ./target/armv7-unknown-linux-gnueabihf/release/gitui || ls -l ./target/arm-unknown-linux-gnueabihf/release/gitui
+
+  build-apple-x86:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [nightly, stable, '1.70']
+    continue-on-error: ${{ matrix.rust == 'nightly' }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Restore cargo cache
+      uses: Swatinem/rust-cache@v2
+      env:
+        cache-name: ci
+      with:
+        key: apple-x86-${{ env.cache-name }}-${{ matrix.rust }}
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+    - name: Setup target
+      run: rustup target add x86_64-apple-darwin
+
+    - name: Build Debug
+      run: |
+        make build-apple-x86-debug
+    - name: Build Release
+      run: |
+        make build-apple-x86-release
+        ls -l ./target/x86_64-apple-darwin/release/gitui
 
   linting:
     name: Lints

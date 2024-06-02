@@ -1,6 +1,6 @@
 name: Build Nightly Releases
 
-on: 
+on:
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
@@ -34,7 +34,7 @@ jobs:
       with:
         components: clippy
 
-    # ideally we trigger the nightly build/deploy only if the normal nightly CI finished successfully 
+    # ideally we trigger the nightly build/deploy only if the normal nightly CI finished successfully
     - name: Run tests
       if: matrix.os != 'ubuntu-22.04'
       run: make test
@@ -69,6 +69,9 @@ jobs:
     - name: Build Release Mac
       if: matrix.os == 'macos-latest'
       run: make release-mac
+    - name: Build Release Mac x86
+      if: matrix.os == 'macos-latest'
+      run: make release-mac-x68
     - name: Build Release Linux
       if: matrix.os == 'ubuntu-latest'
       run: make release-linux-musl
@@ -89,7 +92,7 @@ jobs:
         aws s3 cp ./release/gitui-linux-armv7.tar.gz $AWS_BUCKET_NAME
         aws s3 cp ./release/gitui-linux-arm.tar.gz $AWS_BUCKET_NAME
         aws s3 cp ./release/gitui-linux-aarch64.tar.gz $AWS_BUCKET_NAME
-          
+
     - name: Ubuntu Latest Upload Artifact
       if: matrix.os == 'ubuntu-latest'
       env:
@@ -100,16 +103,17 @@ jobs:
         aws s3 cp ./release/gitui-linux-x86_64.tar.gz $AWS_BUCKET_NAME
 
     - name: MacOS Upload Artifact
-      if: matrix.os == 'macos-latest'  
+      if: matrix.os == 'macos-latest'
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
         AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       run: |
         aws s3 cp ./release/gitui-mac.tar.gz $AWS_BUCKET_NAME
+        aws s3 cp ./release/gitui-mac-x86.tar.gz $AWS_BUCKET_NAME
 
     - name: Windows Upload Artifact
-      if: matrix.os == 'windows-latest' 
+      if: matrix.os == 'windows-latest'
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_KEY_SECRET }}
