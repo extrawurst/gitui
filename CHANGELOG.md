@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.26.3] - 2024-06-02
+
 ### Breaking Changes
 
 #### Theme file format
