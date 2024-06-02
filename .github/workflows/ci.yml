@@ -189,7 +189,7 @@ jobs:
       env:
         cache-name: ci
       with:
-        key: ubuntu-latest-${{ env.cache-name }}-${{ matrix.rust }}
+        key: apple-x86-${{ env.cache-name }}-${{ matrix.rust }}
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
