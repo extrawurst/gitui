@@ -50,13 +50,13 @@ build-apple-x86-debug:
 	cargo build --target=x86_64-apple-darwin
 
 build-apple-x86-release:
-	cargo build --release --target=x86_64-apple-darwin
+	cargo build --release --target=x86_64-apple-darwin --locked
 
 build-linux-musl-debug:
 	cargo build --target=x86_64-unknown-linux-musl
 
 build-linux-musl-release:
-	cargo build --release --target=x86_64-unknown-linux-musl
+	cargo build --release --target=x86_64-unknown-linux-musl --locked
 
 test-linux-musl:
 	cargo test --workspace --target=x86_64-unknown-linux-musl
@@ -78,9 +78,9 @@ build-linux-arm-debug:
 	cargo build --target=arm-unknown-linux-gnueabihf
 
 build-linux-arm-release:
-	cargo build --release --target=aarch64-unknown-linux-gnu
-	cargo build --release --target=armv7-unknown-linux-gnueabihf
-	cargo build --release --target=arm-unknown-linux-gnueabihf
+	cargo build --release --target=aarch64-unknown-linux-gnu --locked
+	cargo build --release --target=armv7-unknown-linux-gnueabihf --locked
+	cargo build --release --target=arm-unknown-linux-gnueabihf --locked
 
 test:
 	cargo test --workspace
