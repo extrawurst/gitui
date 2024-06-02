@@ -204,7 +204,8 @@ All contain a single binary file
 
 #### macOS
 
-- gitui-mac.tar.gz (intel Mac, uses Rosetta on Apple silicon, single binary)
+- gitui-mac.tar.gz (arm64)
+- gitui-mac-x86.tar.gz (intel x86)
 
 #### Windows
 

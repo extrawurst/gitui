@@ -74,6 +74,13 @@ jobs:
       env:
         GITUI_RELEASE: 1
       run: make release-mac
+    - name: Build Release Mac x86
+      if: matrix.os == 'macos-latest'
+      env:
+        GITUI_RELEASE: 1
+      run: |
+        rustup target add x86_64-apple-darwin
+        make release-mac-x86
     - name: Build Release Linux
       if: matrix.os == 'ubuntu-latest'
       env:
