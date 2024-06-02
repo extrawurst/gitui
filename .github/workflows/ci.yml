@@ -41,6 +41,9 @@ jobs:
         toolchain: ${{ matrix.rust }}
         components: clippy
 
+    - name: Rustup Show
+      run: rustup show
+
     - name: Build Debug
       run: |
         cargo build
