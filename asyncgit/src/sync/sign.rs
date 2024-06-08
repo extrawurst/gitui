@@ -1,7 +1,9 @@
 //! Sign commit data.
 
+use git2::Config;
 use ssh_key::{HashAlg, LineEnding, PrivateKey};
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
+use tempfile::NamedTempFile;
 
 /// Error type for [`SignBuilder`], used to create [`Sign`]'s
 #[derive(thiserror::Error, Debug)]
@@ -154,34 +156,74 @@ impl SignBuilder {
 				String::from("x509"),
 			)),
 			"ssh" => {
-				let ssh_signer = config
-					.get_string("user.signingKey")
-					.ok()
-					.and_then(|key_path| {
-						key_path.strip_prefix('~').map_or_else(
-							|| Some(PathBuf::from(&key_path)),
-							|ssh_key_path| {
-								dirs::home_dir().map(|home| {
-									home.join(
-										ssh_key_path
-											.strip_prefix('/')
-											.unwrap_or(ssh_key_path),
-									)
-								})
-							},
-						)
-					})
-					.ok_or_else(|| {
-						SignBuilderError::SSHSigningKey(String::from(
-							"ssh key setting absent",
-						))
-					})
-					.and_then(SSHSign::new)?;
-				let signer: Box<dyn Sign> = Box::new(ssh_signer);
-				Ok(signer)
+				let program = SSHProgram::new(config);
+				program.into_signer(config)
 			}
 			_ => Err(SignBuilderError::InvalidFormat(format)),
 		}
+	}
+}
+
+enum SSHProgram {
+	Default,
+	SystemBin(PathBuf),
+}
+
+impl SSHProgram {
+	pub fn new(config: &git2::Config) -> Self {
+		match config.get_string("gpg.ssh.program") {
+			Err(_) => Self::Default,
+			Ok(ssh_program) => {
+				if ssh_program.is_empty() {
+					return Self::Default;
+				}
+				Self::SystemBin(PathBuf::from(ssh_program))
+			}
+		}
+	}
+
+	fn into_signer(
+		self,
+		config: &git2::Config,
+	) -> Result<Box<dyn Sign>, SignBuilderError> {
+		let key = ConfigAccess(config).signing_key()?;
+
+		match self {
+			Self::Default => Ok(Box::new(SSHSign::new(key)?)),
+			Self::SystemBin(exec_path) => {
+				Ok(Box::new(ExternalBinSSHSign::new(exec_path, key)))
+			}
+		}
+	}
+}
+
+/// wrapper struct for convenience methods over [Config]
+struct ConfigAccess<'a>(&'a Config);
+
+impl<'a> ConfigAccess<'a> {
+	pub fn signing_key(&self) -> Result<PathBuf, SignBuilderError> {
+		self.0
+			.get_string("user.signingKey")
+			.ok()
+			.and_then(|key_path| {
+				key_path.strip_prefix('~').map_or_else(
+					|| Some(PathBuf::from(&key_path)),
+					|ssh_key_path| {
+						dirs::home_dir().map(|home| {
+							home.join(
+								ssh_key_path
+									.strip_prefix('/')
+									.unwrap_or(ssh_key_path),
+							)
+						})
+					},
+				)
+			})
+			.ok_or_else(|| {
+				SignBuilderError::SSHSigningKey(String::from(
+					"ssh key setting absent",
+				))
+			})
 	}
 }
 
@@ -274,39 +316,166 @@ pub struct SSHSign {
 	#[cfg(test)]
 	program: String,
 	#[cfg(test)]
-	key_path: String,
+	signing_key: String,
 	secret_key: PrivateKey,
+}
+
+enum KeyPathOrLiteral {
+	Literal(PathBuf),
+	KeyPath(PathBuf),
+}
+
+impl KeyPathOrLiteral {
+	fn new(buf: PathBuf) -> Self {
+		if buf.is_file() {
+			Self::KeyPath(buf)
+		} else {
+			Self::Literal(buf)
+		}
+	}
+}
+
+impl Display for KeyPathOrLiteral {
+	fn fmt(
+		&self,
+		f: &mut std::fmt::Formatter<'_>,
+	) -> std::fmt::Result {
+		let buf = match self {
+			Self::KeyPath(x) | Self::Literal(x) => x,
+		};
+		f.write_fmt(format_args!("{}", buf.display()))
+	}
+}
+
+/// Struct which allows for signing via an external binary
+pub struct ExternalBinSSHSign {
+	program_path: PathBuf,
+	key_path: KeyPathOrLiteral,
+	#[cfg(test)]
+	program: String,
+	#[cfg(test)]
+	signing_key: String,
+}
+
+impl ExternalBinSSHSign {
+	/// constructs a new instance of the external ssh signer
+	pub fn new(program_path: PathBuf, key_path: PathBuf) -> Self {
+		#[cfg(test)]
+		let program: String = program_path.to_string_lossy().to_string();
+
+		let key_path = KeyPathOrLiteral::new(key_path);
+
+		#[cfg(test)]
+		let signing_key = key_path.to_string();
+
+		Self {
+			program_path,
+			key_path,
+			#[cfg(test)]
+			program,
+			#[cfg(test)]
+			signing_key,
+		}
+	}
+}
+
+impl Sign for ExternalBinSSHSign {
+	fn sign(
+		&self,
+		commit: &[u8],
+	) -> Result<(String, Option<String>), SignError> {
+		use std::io::Write;
+		use std::process::{Command, Stdio};
+
+		if cfg!(target_os = "windows") {
+			return Err(SignError::Spawn("External binary signing is only supported on Unix based systems".into()));
+		}
+
+		let mut file = NamedTempFile::new()
+			.map_err(|e| SignError::Spawn(e.to_string()))?;
+
+		let key = match &self.key_path {
+			KeyPathOrLiteral::Literal(x) => {
+				write!(file, "{}", x.display()).map_err(|e| {
+					SignError::WriteBuffer(e.to_string())
+				})?;
+				file.path()
+			}
+			KeyPathOrLiteral::KeyPath(x) => x.as_path(),
+		};
+
+		let mut c = Command::new(&self.program_path);
+		c.stdin(Stdio::piped())
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.arg("-Y")
+			.arg("sign")
+			.arg("-n")
+			.arg("git")
+			.arg("-f")
+			.arg(key);
+
+		let mut child =
+			c.spawn().map_err(|e| SignError::Spawn(e.to_string()))?;
+
+		let mut stdin = child.stdin.take().ok_or(SignError::Stdin)?;
+
+		stdin
+			.write_all(commit)
+			.map_err(|e| SignError::WriteBuffer(e.to_string()))?;
+		drop(stdin);
+
+		let output = child
+			.wait_with_output()
+			.map_err(|e| SignError::Output(e.to_string()))?;
+
+		if !output.status.success() {
+			return Err(SignError::Shellout(format!(
+				"failed to sign data, program '{}' exited non-zero: {}",
+				&self.program_path.display(),
+				std::str::from_utf8(&output.stderr).unwrap_or("[error could not be read from stderr]")
+			)));
+		}
+
+		let signed_commit = std::str::from_utf8(&output.stdout)
+			.map_err(|e| SignError::Shellout(e.to_string()))?;
+
+		Ok((signed_commit.to_string(), None))
+	}
+
+	#[cfg(test)]
+	fn program(&self) -> &String {
+		&self.program
+	}
+
+	#[cfg(test)]
+	fn signing_key(&self) -> &String {
+		&self.signing_key
+	}
 }
 
 impl SSHSign {
 	/// Create new [`SSHDiskKeySign`] for sign.
 	pub fn new(mut key: PathBuf) -> Result<Self, SignBuilderError> {
+		#[cfg(test)]
+		let signing_key = format!("{}", &key.display());
+
 		key.set_extension("");
-		if key.is_file() {
-			#[cfg(test)]
-			let key_path = format!("{}", &key.display());
-			std::fs::read(key)
-				.ok()
-				.and_then(|bytes| {
-					PrivateKey::from_openssh(bytes).ok()
-				})
-				.map(|secret_key| Self {
-					#[cfg(test)]
-					program: "ssh".to_string(),
-					#[cfg(test)]
-					key_path,
-					secret_key,
-				})
-				.ok_or_else(|| {
-					SignBuilderError::SSHSigningKey(String::from(
-						"Fail to read the private key for sign.",
-					))
-				})
-		} else {
-			Err(SignBuilderError::SSHSigningKey(
-				String::from("Currently, we only support a pair of ssh key in disk."),
-			))
-		}
+		std::fs::read(key)
+			.ok()
+			.and_then(|bytes| PrivateKey::from_openssh(bytes).ok())
+			.map(|secret_key| Self {
+				#[cfg(test)]
+				program: "ssh".to_string(),
+				#[cfg(test)]
+				signing_key,
+				secret_key,
+			})
+			.ok_or_else(|| {
+				SignBuilderError::SSHSigningKey(String::from(
+					"Fail to read the private key for sign.",
+				))
+			})
 	}
 }
 
@@ -331,12 +500,14 @@ impl Sign for SSHSign {
 
 	#[cfg(test)]
 	fn signing_key(&self) -> &String {
-		&self.key_path
+		&self.signing_key
 	}
 }
 
 #[cfg(test)]
 mod tests {
+	use std::io::Write;
+
 	use super::*;
 	use crate::error::Result;
 	use crate::sync::tests::repo_init_empty;
@@ -422,18 +593,62 @@ mod tests {
 	#[test]
 	fn test_ssh_program_configs() -> Result<()> {
 		let (_tmp_dir, repo) = repo_init_empty()?;
+		let mut file = NamedTempFile::new()?;
+		file.write_all(
+			b"-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAlwAAAAdzc2gtcn
+NhAAAAAwEAAQAAAIEA2lYFinGHP1Q4o4gg7ItBY6Os2sJpJh2OPnRi+eTS0CjWcjmSGxCE
+zhbuvts+KmoDccReL3hkRXDLRlW9DBaJ/5MUk8Vbih7LlTkntWE4WH8W4mUfa77YTo+dvm
+K0WDMgQi+vUeDaKlGL0dyQN99YV9Ows4kqYzXM9XpRBYVEVi8AAAIA9RuuzvUbrs4AAAAH
+c3NoLXJzYQAAAIEA2lYFinGHP1Q4o4gg7ItBY6Os2sJpJh2OPnRi+eTS0CjWcjmSGxCEzh
+buvts+KmoDccReL3hkRXDLRlW9DBaJ/5MUk8Vbih7LlTkntWE4WH8W4mUfa77YTo+dvmK0
+WDMgQi+vUeDaKlGL0dyQN99YV9Ows4kqYzXM9XpRBYVEVi8AAAADAQABAAAAgHqgJayD5r
+oiy0zNf/BapfcYTlTvK69Emkdphs1jPyO6S/cLbovU00IMjzqSWG/p6tVSvLNcorR9jS2L
+qgnH/uiKLXB+gc546u4ZIy9phBdEsH0ywxH3u8NEOsxp1TaXknUYCC05IUpHDgGbSbiQHF
+HmUpomg3m26An5Sqjk/HvBAAAAQQCbd2DTPGlwgxhSjy0HN6VywIxGW1JS5SX8PVTn5UC0
+/1uyW/H3d2ExB76pD2h06H1IO3jiezdZH+WAkbXdqySAAAAAQQD1F8sbu0kqd2qmUmLPIl
+nVS3RzasE6PtEWsxVMNO9ic/iXhMNmjIhtZU7zq8rduibOBzWRcP4LfjNM0jtcwojtAAAA
+QQDkDWbR5LZHx3Waju8b8Ar0TGPZx1QIpjX5kej8cmL+ypQwwBSd7FmOhLSWWttT7mkWxJ
+XimPSWvOt0Ef+E/8QLAAAABm5vbmFtZQECAwQ=
+-----END OPENSSH PRIVATE KEY-----",
+		)?;
+
+		let path = format!("{}.pub", file.path().to_string_lossy());
 
 		{
 			let mut config = repo.config()?;
-			config.set_str("gpg.program", "ssh")?;
-			config.set_str("user.signingKey", "/tmp/key.pub")?;
+			config.set_str("gpg.format", "ssh")?;
+			config.set_str("user.signingKey", &path)?;
 		}
 
 		let sign =
 			SignBuilder::from_gitconfig(&repo, &repo.config()?)?;
 
 		assert_eq!("ssh", sign.program());
-		assert_eq!("/tmp/key.pub", sign.signing_key());
+		assert_eq!(&path, sign.signing_key());
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_ssh_external_program_configs() -> Result<()> {
+		let (_tmp_dir, repo) = repo_init_empty()?;
+
+		{
+			let mut config = repo.config()?;
+			config.set_str("gpg.format", "ssh")?;
+			config.set_str(
+				"gpg.ssh.program",
+				"/Applications/program",
+			)?;
+			config.set_str("user.signingKey", "ssh-ed25519")?;
+		}
+
+		let sign =
+			SignBuilder::from_gitconfig(&repo, &repo.config()?)?;
+
+		assert_eq!("/Applications/program", sign.program());
+		assert_eq!("ssh-ed25519", sign.signing_key());
 
 		Ok(())
 	}
