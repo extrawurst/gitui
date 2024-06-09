@@ -474,6 +474,7 @@ impl App {
 			msg_popup,
 			confirm_popup,
 			commit_popup,
+			goto_line_popup,
 			blame_file_popup,
 			file_revlog_popup,
 			stashmsg_popup,
@@ -498,8 +499,7 @@ impl App {
 			status_tab,
 			files_tab,
 			stashing_tab,
-			stashlist_tab,
-			goto_line_popup
+			stashlist_tab
 		]
 	);
 
