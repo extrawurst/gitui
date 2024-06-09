@@ -10,14 +10,15 @@ use crate::{
 	options::{Options, SharedOptions},
 	popup_stack::PopupStack,
 	popups::{
-		AppOption, BlameFilePopup, BranchListPopup, CommitPopup,
-		CompareCommitsPopup, ConfirmPopup, CreateBranchPopup,
-		ExternalEditorPopup, FetchPopup, FileRevlogPopup,
-		FuzzyFindPopup, HelpPopup, InspectCommitPopup,
-		LogSearchPopupPopup, MsgPopup, OptionsPopup, PullPopup,
-		PushPopup, PushTagsPopup, RenameBranchPopup, ResetPopup,
-		RevisionFilesPopup, StashMsgPopup, SubmodulesListPopup,
-		TagCommitPopup, TagListPopup,
+		AppOption, BlameFileOpen, BlameFilePopup, BranchListPopup,
+		CommitPopup, CompareCommitsPopup, ConfirmPopup,
+		CreateBranchPopup, ExternalEditorPopup, FetchPopup,
+		FileRevlogPopup, FuzzyFindPopup, GotoLinePopup, HelpPopup,
+		InspectCommitPopup, LogSearchPopupPopup, MsgPopup,
+		OptionsPopup, PullPopup, PushPopup, PushTagsPopup,
+		RenameBranchPopup, ResetPopup, RevisionFilesPopup,
+		StashMsgPopup, SubmodulesListPopup, TagCommitPopup,
+		TagListPopup,
 	},
 	queue::{
 		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,
@@ -106,6 +107,7 @@ pub struct App {
 	popup_stack: PopupStack,
 	options: SharedOptions,
 	repo_path_text: String,
+	goto_line_popup: GotoLinePopup,
 
 	// "Flags"
 	requires_redraw: Cell<bool>,
@@ -208,6 +210,7 @@ impl App {
 			stashing_tab: Stashing::new(&env),
 			stashlist_tab: StashList::new(&env),
 			files_tab: FilesTab::new(&env),
+			goto_line_popup: GotoLinePopup::new(&env),
 			tab: 0,
 			queue: env.queue,
 			theme: env.theme,
@@ -495,7 +498,8 @@ impl App {
 			status_tab,
 			files_tab,
 			stashing_tab,
-			stashlist_tab
+			stashlist_tab,
+			goto_line_popup
 		]
 	);
 
@@ -526,7 +530,8 @@ impl App {
 			fetch_popup,
 			options_popup,
 			confirm_popup,
-			msg_popup
+			msg_popup,
+			goto_line_popup
 		]
 	);
 
@@ -669,6 +674,9 @@ impl App {
 			}
 			StackablePopupOpen::CompareCommits(param) => {
 				self.compare_commits_popup.open(param)?;
+			}
+			StackablePopupOpen::GotoLine => {
+				self.goto_line_popup.open()?;
 			}
 		}
 
@@ -871,6 +879,25 @@ impl App {
 			}
 			InternalEvent::CommitSearch(options) => {
 				self.revlog.search(options);
+			}
+			InternalEvent::GotoLine(line) => {
+				if let Some(popup) = self.popup_stack.pop() {
+					if let StackablePopupOpen::BlameFile(params) =
+						popup
+					{
+						self.popup_stack.push(
+							StackablePopupOpen::BlameFile(
+								BlameFileOpen {
+									selection: Some(line),
+									..params
+								},
+							),
+						)
+					}
+					flags.insert(
+						NeedsUpdate::ALL | NeedsUpdate::COMMANDS,
+					);
+				}
 			}
 		};
 

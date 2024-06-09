@@ -68,6 +68,8 @@ pub enum StackablePopupOpen {
 	InspectCommit(InspectCommitOpen),
 	///
 	CompareCommits(InspectCommitOpen),
+	///
+	GotoLine,
 }
 
 pub enum AppTabs {
@@ -146,6 +148,8 @@ pub enum InternalEvent {
 	RewordCommit(CommitId),
 	///
 	CommitSearch(LogFilterSearchOptions),
+	///
+	GotoLine(usize),
 }
 
 /// single threaded simple queue for components to communicate with each other
