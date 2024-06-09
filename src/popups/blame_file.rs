@@ -97,7 +97,6 @@ pub struct BlameFilePopup {
 	app_sender: Sender<AsyncAppNotification>,
 	git_sender: Sender<AsyncGitNotification>,
 	repo: RepoPathRef,
-	goto_line_popup_is_open: bool,
 }
 
 impl DrawableComponent for BlameFilePopup {
@@ -254,7 +253,7 @@ impl Component for BlameFilePopup {
 		&mut self,
 		event: &crossterm::event::Event,
 	) -> Result<EventState> {
-		if self.is_visible() && !self.goto_line_popup_is_open {
+		if self.is_visible() {
 			if let Event::Key(key) = event {
 				if key_match(key, self.key_config.keys.exit_popup) {
 					self.hide_stacked(false);
@@ -322,7 +321,6 @@ impl Component for BlameFilePopup {
 					key,
 					self.key_config.keys.goto_line,
 				) {
-					self.goto_line_popup_is_open = true;
 					self.hide_stacked(true);
 					self.visible = true;
 					self.queue.push(InternalEvent::OpenPopup(
@@ -365,7 +363,6 @@ impl BlameFilePopup {
 			git_sender: env.sender_git.clone(),
 			blame: None,
 			repo: env.repo.clone(),
-			goto_line_popup_is_open: false,
 		}
 	}
 
@@ -400,7 +397,6 @@ impl BlameFilePopup {
 			)));
 		self.table_state.get_mut().select(Some(0));
 		self.visible = true;
-		self.goto_line_popup_is_open = false;
 		self.update()?;
 
 		Ok(())
