@@ -38,9 +38,8 @@ impl GotoLinePopup {
 		}
 	}
 
-	pub fn open(&mut self) -> Result<()> {
+	pub fn open(&mut self) {
 		self.visible = true;
-		Ok(())
 	}
 }
 
@@ -65,22 +64,22 @@ impl Component for GotoLinePopup {
 				if key_match(key, self.key_config.keys.exit_popup) {
 					self.visible = false;
 					self.line.clear();
-					self.queue.push(InternalEvent::PopupStackPop)
+					self.queue.push(InternalEvent::PopupStackPop);
 				} else if let KeyCode::Char(c) = key.code {
-					if c.is_digit(10) {
+					if c.is_ascii_digit() {
 						// I'd assume it's unusual for people to blame
 						// files with milions of lines
 						if self.line.len() < 6 {
-							self.line.push(c)
+							self.line.push(c);
 						}
 					}
-				} else if let KeyCode::Backspace = key.code {
+				} else if key.code == KeyCode::Backspace {
 					self.line.pop();
 				} else if key_match(key, self.key_config.keys.enter) {
 					self.visible = false;
-					if self.line.len() > 0 {
+					if !self.line.is_empty() {
 						self.queue.push(InternalEvent::GotoLine(
-							self.line.parse::<usize>().unwrap(),
+							self.line.parse::<usize>().expect("This shouldn't happen since the input is constrained to ascii digits only"),
 						));
 					}
 					self.queue.push(InternalEvent::PopupStackPop);
