@@ -1300,6 +1300,18 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+	pub fn open_line_number_popup(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Go to Line [{}]",
+				key_config.get_hint(key_config.keys.goto_line),
+			),
+			"go to a given line number in the blame view",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn log_tag_commit(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
