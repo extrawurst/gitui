@@ -676,7 +676,7 @@ impl App {
 				self.compare_commits_popup.open(param)?;
 			}
 			StackablePopupOpen::GotoLine => {
-				self.goto_line_popup.open()?;
+				self.goto_line_popup.open();
 			}
 		}
 
@@ -892,7 +892,7 @@ impl App {
 									..params
 								},
 							),
-						)
+						);
 					}
 					flags.insert(
 						NeedsUpdate::ALL | NeedsUpdate::COMMANDS,
