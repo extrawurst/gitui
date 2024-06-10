@@ -14,7 +14,10 @@ pub use stateful_paragraph::{
 };
 pub use syntax_text::{AsyncSyntaxJob, SyntaxText};
 
-use crate::keys::{key_match, SharedKeyConfig};
+use crate::{
+	components::ScrollType,
+	keys::{key_match, SharedKeyConfig},
+};
 
 /// return the scroll position (line) necessary to have the `selection` in view if it is not already
 pub const fn calc_scroll_top(
@@ -153,7 +156,7 @@ pub fn common_nav(
 	}
 }
 
-pub fn key2seek(
+pub fn seek_move(
 	key: &crossterm::event::KeyEvent,
 	key_config: &SharedKeyConfig,
 ) -> Option<MoveSelection> {
@@ -161,6 +164,19 @@ pub fn key2seek(
 		Some(MoveSelection::Up)
 	} else if key_match(key, key_config.keys.seek_down) {
 		Some(MoveSelection::Down)
+	} else {
+		None
+	}
+}
+
+pub fn seek_scroll(
+	key: &crossterm::event::KeyEvent,
+	key_config: &SharedKeyConfig,
+) -> Option<ScrollType> {
+	if key_match(key, key_config.keys.seek_up) {
+		Some(ScrollType::Up)
+	} else if key_match(key, key_config.keys.seek_down) {
+		Some(ScrollType::Down)
 	} else {
 		None
 	}

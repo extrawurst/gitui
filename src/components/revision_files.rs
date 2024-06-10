@@ -10,7 +10,7 @@ use crate::{
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order, symbol},
 	try_or_popup,
-	ui::{self, common_nav, key2seek, style::SharedTheme},
+	ui::{self, common_nav, seek_move, style::SharedTheme},
 	AsyncNotification,
 };
 use anyhow::Result;
@@ -489,7 +489,8 @@ impl Component for RevisionFilesComponent {
 				|| key_match(key, self.key_config.keys.seek_down)
 			{
 				if is_tree_focused {
-					if let Some(nav) = key2seek(key, &self.key_config)
+					if let Some(nav) =
+						seek_move(key, &self.key_config)
 					{
 						return Ok(
 							if self.current_file.scroll(nav) {
