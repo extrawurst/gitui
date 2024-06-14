@@ -2,7 +2,7 @@ use crate::{
 	error::Result, filetreeitems::FileTreeItems,
 	tree_iter::TreeIterator, TreeItemInfo,
 };
-use std::{collections::BTreeSet, path::Path, usize};
+use std::{collections::BTreeSet, path::Path};
 
 ///
 #[derive(Copy, Clone, Debug)]

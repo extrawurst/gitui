@@ -27,8 +27,8 @@ impl<'a, 'b> WordWrapper<'a, 'b> {
 		symbols: &'b mut dyn Iterator<Item = StyledGrapheme<'a>>,
 		max_line_width: u16,
 		trim: bool,
-	) -> WordWrapper<'a, 'b> {
-		WordWrapper {
+	) -> Self {
+		Self {
 			symbols,
 			max_line_width,
 			current_line: vec![],
@@ -152,8 +152,8 @@ impl<'a, 'b> LineTruncator<'a, 'b> {
 	pub fn new(
 		symbols: &'b mut dyn Iterator<Item = StyledGrapheme<'a>>,
 		max_line_width: u16,
-	) -> LineTruncator<'a, 'b> {
-		LineTruncator {
+	) -> Self {
+		Self {
 			symbols,
 			max_line_width,
 			horizontal_offset: 0,
