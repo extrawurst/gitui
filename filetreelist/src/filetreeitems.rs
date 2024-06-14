@@ -7,7 +7,6 @@ use crate::{error::Result, treeitems_iter::TreeItemsIterator};
 use std::{
 	collections::{BTreeSet, HashMap},
 	path::{Path, PathBuf},
-	usize,
 };
 
 ///
