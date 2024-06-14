@@ -546,6 +546,17 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+	pub fn seek(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Seek [{}{}]",
+				key_config.get_hint(key_config.keys.seek_up),
+				key_config.get_hint(key_config.keys.seek_down)
+			),
+			"Seek up or down in selected file",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn commit_list_mark(
 		key_config: &SharedKeyConfig,
 		marked: bool,

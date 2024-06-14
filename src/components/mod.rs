@@ -132,7 +132,7 @@ pub fn command_pump(
 	}
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum ScrollType {
 	Up,
 	Down,

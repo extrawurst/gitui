@@ -10,7 +10,7 @@ use crate::{
 	queue::{InternalEvent, Queue, StackablePopupOpen},
 	strings::{self, order, symbol},
 	try_or_popup,
-	ui::{self, common_nav, style::SharedTheme},
+	ui::{self, common_nav, seek_move, style::SharedTheme},
 	AsyncNotification,
 };
 use anyhow::Result;
@@ -444,6 +444,11 @@ impl Component for RevisionFilesComponent {
 				)
 				.order(order::RARE_ACTION),
 			);
+			out.push(CommandInfo::new(
+				strings::commands::seek(&self.key_config),
+				self.tree.selected_file().is_some(),
+				true,
+			));
 			tree_nav_cmds(&self.tree, &self.key_config, out);
 		} else {
 			self.current_file.commands(out, force_all);
@@ -479,6 +484,22 @@ impl Component for RevisionFilesComponent {
 				if self.file_history() {
 					self.hide();
 					return Ok(EventState::Consumed);
+				}
+			} else if key_match(key, self.key_config.keys.seek_up)
+				|| key_match(key, self.key_config.keys.seek_down)
+			{
+				if is_tree_focused {
+					if let Some(nav) =
+						seek_move(key, &self.key_config)
+					{
+						return Ok(
+							if self.current_file.scroll(nav) {
+								EventState::Consumed
+							} else {
+								EventState::NotConsumed
+							},
+						);
+					}
 				}
 			} else if key_match(key, self.key_config.keys.move_right)
 			{
