@@ -1,63 +1,54 @@
 #![allow(dead_code)]
 use super::{CommitId, SharedCommitFilterFn};
 use crate::error::Result;
-use git2::{Commit, Oid, Repository};
-use std::{
-	cmp::Ordering,
-	collections::{BinaryHeap, HashSet},
+use gix::{
+	revision::Walk, traverse::commit::simple::Sorting, Repository,
 };
-
-struct TimeOrderedCommit<'a>(Commit<'a>);
-
-impl<'a> Eq for TimeOrderedCommit<'a> {}
-
-impl<'a> PartialEq for TimeOrderedCommit<'a> {
-	fn eq(&self, other: &Self) -> bool {
-		self.0.time().eq(&other.0.time())
-	}
-}
-
-impl<'a> PartialOrd for TimeOrderedCommit<'a> {
-	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-		Some(self.cmp(other))
-	}
-}
-
-impl<'a> Ord for TimeOrderedCommit<'a> {
-	fn cmp(&self, other: &Self) -> Ordering {
-		self.0.time().cmp(&other.0.time())
-	}
-}
 
 ///
 pub struct LogWalker<'a> {
-	commits: BinaryHeap<TimeOrderedCommit<'a>>,
-	visited: HashSet<Oid>,
+	walk: Walk<'a>,
 	limit: usize,
-	repo: &'a Repository,
+	visited: usize,
 	filter: Option<SharedCommitFilterFn>,
 }
 
 impl<'a> LogWalker<'a> {
 	///
-	pub fn new(repo: &'a Repository, limit: usize) -> Result<Self> {
-		let c = repo.head()?.peel_to_commit()?;
+	pub fn new(
+		repo: &'a mut Repository,
+		limit: usize,
+	) -> Result<Self> {
+		repo.object_cache_size_if_unset(2_usize.pow(14));
 
-		let mut commits = BinaryHeap::with_capacity(10);
-		commits.push(TimeOrderedCommit(c));
+		let commit = repo
+			.head()
+			.expect("repo.head() failed")
+			.peel_to_commit_in_place()
+			.expect("peel_to_commit_in_place failed");
+
+		let tips = [commit.id];
+
+		let platform = repo
+			.rev_walk(tips)
+			.sorting(Sorting::ByCommitTimeNewestFirst)
+			.use_commit_graph(false);
+
+		let walk = platform
+			.all()
+			.expect("platform.all() failed");
 
 		Ok(Self {
-			commits,
+			walk,
 			limit,
-			visited: HashSet::with_capacity(1000),
-			repo,
+			visited: 0,
 			filter: None,
 		})
 	}
 
 	///
 	pub fn visited(&self) -> usize {
-		self.visited.len()
+		self.visited
 	}
 
 	///
@@ -73,38 +64,21 @@ impl<'a> LogWalker<'a> {
 	pub fn read(&mut self, out: &mut Vec<CommitId>) -> Result<usize> {
 		let mut count = 0_usize;
 
-		while let Some(c) = self.commits.pop() {
-			for p in c.0.parents() {
-				self.visit(p);
-			}
+		while let Some(Ok(info)) = self.walk.next() {
+			let commit_id = Into::<CommitId>::into(info.id);
 
-			let id: CommitId = c.0.id().into();
-			let commit_should_be_included =
-				if let Some(ref filter) = self.filter {
-					filter(self.repo, &id)?
-				} else {
-					true
-				};
-
-			if commit_should_be_included {
-				out.push(id);
-			}
+			out.push(commit_id);
 
 			count += 1;
+
 			if count == self.limit {
 				break;
 			}
 		}
 
-		Ok(count)
-	}
+		self.visited += count;
 
-	//
-	fn visit(&mut self, c: Commit<'a>) {
-		if !self.visited.contains(&c.id()) {
-			self.visited.insert(c.id());
-			self.commits.push(TimeOrderedCommit(c));
-		}
+		Ok(count)
 	}
 }
 
@@ -141,7 +115,9 @@ mod tests {
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
 		let mut items = Vec::new();
-		let mut walk = LogWalker::new(&repo, 1)?;
+		let mut repo = gix::open(&repo_path.gitpath())
+			.expect("gix::open failed");
+		let mut walk = LogWalker::new(&mut repo, 1)?;
 		walk.read(&mut items).unwrap();
 
 		assert_eq!(items.len(), 1);
@@ -166,7 +142,9 @@ mod tests {
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
 		let mut items = Vec::new();
-		let mut walk = LogWalker::new(&repo, 100)?;
+		let mut repo = gix::open(&repo_path.gitpath())
+			.expect("gix::open failed");
+		let mut walk = LogWalker::new(&mut repo, 100)?;
 		walk.read(&mut items).unwrap();
 
 		let info = get_commits_info(repo_path, &items, 50).unwrap();
@@ -210,7 +188,9 @@ mod tests {
 		let diff_contains_baz = diff_contains_file("baz".into());
 
 		let mut items = Vec::new();
-		let mut walker = LogWalker::new(&repo, 100)?
+		let mut repo = gix::open(&repo_path.gitpath())
+			.expect("gix::open failed");
+		let mut walker = LogWalker::new(&mut repo, 100)?
 			.filter(Some(diff_contains_baz));
 		walker.read(&mut items).unwrap();
 
@@ -225,7 +205,9 @@ mod tests {
 		let diff_contains_bar = diff_contains_file("bar".into());
 
 		let mut items = Vec::new();
-		let mut walker = LogWalker::new(&repo, 100)?
+		let mut repo = gix::open(&repo_path.gitpath())
+			.expect("gix::open failed");
+		let mut walker = LogWalker::new(&mut repo, 100)?
 			.filter(Some(diff_contains_bar));
 		walker.read(&mut items).unwrap();
 
@@ -255,8 +237,12 @@ mod tests {
 			}),
 		);
 
+		let repo_path = repo.path();
+
 		let mut items = Vec::new();
-		let mut walker = LogWalker::new(&repo, 100)
+		let mut repo =
+			gix::open(repo_path).expect("gix::open failed");
+		let mut walker = LogWalker::new(&mut repo, 100)
 			.unwrap()
 			.filter(Some(log_filter));
 		walker.read(&mut items).unwrap();
@@ -273,7 +259,9 @@ mod tests {
 		);
 
 		let mut items = Vec::new();
-		let mut walker = LogWalker::new(&repo, 100)
+		let mut repo =
+			gix::open(repo_path).expect("gix::open failed");
+		let mut walker = LogWalker::new(&mut repo, 100)
 			.unwrap()
 			.filter(Some(log_filter));
 		walker.read(&mut items).unwrap();
