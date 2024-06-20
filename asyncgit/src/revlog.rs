@@ -200,21 +200,25 @@ impl AsyncLog {
 		sender: &Sender<AsyncGitNotification>,
 		filter: Option<SharedCommitFilterFn>,
 	) -> Result<()> {
-		match filter {
-			Some(filter) => Self::fetch_helper_with_filter(
-				repo_path,
-				arc_current,
-				arc_background,
-				sender,
-				filter,
-			),
-			None => Self::fetch_helper_without_filter(
-				repo_path,
-				arc_current,
-				arc_background,
-				sender,
-			),
-		}
+		filter.map_or_else(
+			|| {
+				Self::fetch_helper_without_filter(
+					repo_path,
+					arc_current,
+					arc_background,
+					sender,
+				)
+			},
+			|filter| {
+				Self::fetch_helper_with_filter(
+					repo_path,
+					arc_current,
+					arc_background,
+					sender,
+					filter,
+				)
+			},
+		)
 	}
 
 	fn fetch_helper_with_filter(
