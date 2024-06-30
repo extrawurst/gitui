@@ -536,6 +536,7 @@ impl Component for FileRevlogPopup {
 									file_path: open_request.file_path,
 									commit_id: self.selected_commit(),
 									selection: None,
+									blame: None,
 								},
 							),
 						));

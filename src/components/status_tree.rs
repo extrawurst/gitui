@@ -456,6 +456,7 @@ impl Component for StatusTreeComponent {
 									file_path: status_item.path,
 									commit_id: self.revision,
 									selection: None,
+									blame: None,
 								},
 							),
 						));
