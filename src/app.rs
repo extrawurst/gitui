@@ -21,7 +21,7 @@ use crate::{
 		TagListPopup,
 	},
 	queue::{
-		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,
+		Action, AppTabs, Context, InternalEvent, NeedsUpdate, Queue,
 		StackablePopupOpen,
 	},
 	setup_popups,
@@ -675,8 +675,8 @@ impl App {
 			StackablePopupOpen::CompareCommits(param) => {
 				self.compare_commits_popup.open(param)?;
 			}
-			StackablePopupOpen::GotoLine => {
-				self.goto_line_popup.open();
+			StackablePopupOpen::GotoLine(context) => {
+				self.goto_line_popup.open(Some(context));
 			}
 		}
 
@@ -880,7 +880,7 @@ impl App {
 			InternalEvent::CommitSearch(options) => {
 				self.revlog.search(options);
 			}
-			InternalEvent::GotoLine(line) => {
+			InternalEvent::GotoLine(line, context) => {
 				if let Some(popup) = self.popup_stack.pop() {
 					if let StackablePopupOpen::BlameFile(params) =
 						popup
@@ -889,6 +889,12 @@ impl App {
 							StackablePopupOpen::BlameFile(
 								BlameFileOpen {
 									selection: Some(line),
+									blame: context.and_then(|ctx| {
+										let Context::Blame(
+											blame_process,
+										) = ctx;
+										blame_process
+									}),
 									..params
 								},
 							),

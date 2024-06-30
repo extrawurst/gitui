@@ -1,8 +1,8 @@
 use crate::{
 	components::FuzzyFinderTarget,
 	popups::{
-		AppOption, BlameFileOpen, FileRevOpen, FileTreeOpen,
-		InspectCommitOpen,
+		AppOption, BlameFileOpen, BlameProcess, FileRevOpen,
+		FileTreeOpen, InspectCommitOpen,
 	},
 	tabs::StashingOptions,
 };
@@ -56,6 +56,13 @@ pub enum Action {
 	UndoCommit,
 }
 
+#[derive(Debug, Clone)]
+pub enum Context {
+	Blame(Option<BlameProcess>),
+	//FileView,
+	//PossibleRange(u32, u32),
+}
+
 #[derive(Debug)]
 pub enum StackablePopupOpen {
 	///
@@ -69,7 +76,7 @@ pub enum StackablePopupOpen {
 	///
 	CompareCommits(InspectCommitOpen),
 	///
-	GotoLine,
+	GotoLine(Context),
 }
 
 pub enum AppTabs {
@@ -149,7 +156,7 @@ pub enum InternalEvent {
 	///
 	CommitSearch(LogFilterSearchOptions),
 	///
-	GotoLine(usize),
+	GotoLine(usize, Option<Context>),
 }
 
 /// single threaded simple queue for components to communicate with each other

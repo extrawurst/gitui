@@ -5,7 +5,7 @@ use crate::{
 		DrawableComponent, EventState,
 	},
 	keys::{key_match, SharedKeyConfig},
-	queue::{InternalEvent, Queue},
+	queue::{Context, InternalEvent, Queue},
 	ui::{self, style::SharedTheme},
 };
 
@@ -25,6 +25,7 @@ pub struct GotoLinePopup {
 	key_config: SharedKeyConfig,
 	queue: Queue,
 	theme: SharedTheme,
+	context: Option<Context>,
 }
 
 impl GotoLinePopup {
@@ -35,11 +36,13 @@ impl GotoLinePopup {
 			key_config: env.key_config.clone(),
 			queue: env.queue.clone(),
 			theme: env.theme.clone(),
+			context: None,
 		}
 	}
 
-	pub fn open(&mut self) {
+	pub fn open(&mut self, context: Option<Context>) {
 		self.visible = true;
+		self.context = context;
 	}
 }
 
@@ -80,6 +83,7 @@ impl Component for GotoLinePopup {
 					if !self.line.is_empty() {
 						self.queue.push(InternalEvent::GotoLine(
 							self.line.parse::<usize>().expect("This shouldn't happen since the input is constrained to ascii digits only"),
+                            self.context.clone()
 						));
 					}
 					self.queue.push(InternalEvent::PopupStackPop);

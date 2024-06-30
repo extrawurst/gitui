@@ -193,6 +193,7 @@ impl RevisionFilesComponent {
 					file_path: path,
 					commit_id: self.revision.as_ref().map(|c| c.id),
 					selection: None,
+					blame: None,
 				}),
 			));
 
