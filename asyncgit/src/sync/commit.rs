@@ -215,7 +215,9 @@ mod tests {
 
 	fn count_commits(repo: &Repository, max: usize) -> usize {
 		let mut items = Vec::new();
-		let mut walk = LogWalker::new(repo, max).unwrap();
+		let mut repo =
+			gix::open(repo.path()).expect("gix::open failed");
+		let mut walk = LogWalker::new(&mut repo, max).unwrap();
 		walk.read(&mut items).unwrap();
 		items.len()
 	}

@@ -204,9 +204,10 @@ impl AsyncLog {
 		let mut entries = vec![CommitId::default(); LIMIT_COUNT];
 		entries.resize(0, CommitId::default());
 
-		let r = repo(repo_path)?;
+		let mut repo = gix::open(&repo_path.gitpath())
+			.expect("gix::open failed");
 		let mut walker =
-			LogWalker::new(&r, LIMIT_COUNT)?.filter(filter);
+			LogWalker::new(&mut repo, LIMIT_COUNT)?.filter(filter);
 
 		loop {
 			entries.clear();

@@ -326,7 +326,9 @@ mod tests {
 		max_count: usize,
 	) -> Vec<CommitId> {
 		let mut commit_ids = Vec::<CommitId>::new();
-		LogWalker::new(r, max_count)
+		let mut repo =
+			gix::open(&r.path()).expect("gix::open failed");
+		LogWalker::new(&mut repo, max_count)
 			.unwrap()
 			.read(&mut commit_ids)
 			.unwrap();
