@@ -151,6 +151,11 @@ impl DrawableComponent for BlameFilePopup {
 
 			let mut table_state = self.table_state.take();
 
+			if table_state.selected().is_some_and(|s| s > number_of_rows) {
+				table_state.select(Some(number_of_rows - 1));
+				table_state = table_state.with_offset(0);
+			}
+
 			f.render_widget(Clear, area);
 			f.render_stateful_widget(table, area, &mut table_state);
 
