@@ -1,7 +1,8 @@
 use crate::{
 	error::Result,
 	sync::{
-		repo, CommitId, LogWalker, RepoPath, SharedCommitFilterFn,
+		repo, CommitId, LogWalker, LogWalkerWithoutFilter, RepoPath,
+		SharedCommitFilterFn,
 	},
 	AsyncGitNotification, Error,
 };
@@ -199,6 +200,34 @@ impl AsyncLog {
 		sender: &Sender<AsyncGitNotification>,
 		filter: Option<SharedCommitFilterFn>,
 	) -> Result<()> {
+		filter.map_or_else(
+			|| {
+				Self::fetch_helper_without_filter(
+					repo_path,
+					arc_current,
+					arc_background,
+					sender,
+				)
+			},
+			|filter| {
+				Self::fetch_helper_with_filter(
+					repo_path,
+					arc_current,
+					arc_background,
+					sender,
+					filter,
+				)
+			},
+		)
+	}
+
+	fn fetch_helper_with_filter(
+		repo_path: &RepoPath,
+		arc_current: &Arc<Mutex<AsyncLogResult>>,
+		arc_background: &Arc<AtomicBool>,
+		sender: &Sender<AsyncGitNotification>,
+		filter: SharedCommitFilterFn,
+	) -> Result<()> {
 		let start_time = Instant::now();
 
 		let mut entries = vec![CommitId::default(); LIMIT_COUNT];
@@ -206,7 +235,50 @@ impl AsyncLog {
 
 		let r = repo(repo_path)?;
 		let mut walker =
-			LogWalker::new(&r, LIMIT_COUNT)?.filter(filter);
+			LogWalker::new(&r, LIMIT_COUNT)?.filter(Some(filter));
+
+		loop {
+			entries.clear();
+			let read = walker.read(&mut entries)?;
+
+			let mut current = arc_current.lock()?;
+			current.commits.extend(entries.iter());
+			current.duration = start_time.elapsed();
+
+			if read == 0 {
+				break;
+			}
+			Self::notify(sender);
+
+			let sleep_duration =
+				if arc_background.load(Ordering::Relaxed) {
+					SLEEP_BACKGROUND
+				} else {
+					SLEEP_FOREGROUND
+				};
+
+			thread::sleep(sleep_duration);
+		}
+
+		log::trace!("revlog visited: {}", walker.visited());
+
+		Ok(())
+	}
+
+	fn fetch_helper_without_filter(
+		repo_path: &RepoPath,
+		arc_current: &Arc<Mutex<AsyncLogResult>>,
+		arc_background: &Arc<AtomicBool>,
+		sender: &Sender<AsyncGitNotification>,
+	) -> Result<()> {
+		let start_time = Instant::now();
+
+		let mut entries = vec![CommitId::default(); LIMIT_COUNT];
+		entries.resize(0, CommitId::default());
+
+		let mut repo = gix::open(repo_path.gitpath())?;
+		let mut walker =
+			LogWalkerWithoutFilter::new(&mut repo, LIMIT_COUNT)?;
 
 		loop {
 			entries.clear();
