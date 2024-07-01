@@ -247,7 +247,7 @@ impl Component for BlameFilePopup {
 						&self.key_config,
 					),
 					true,
-					has_result,
+					true,
 				)
 				.order(1),
 			);
@@ -438,7 +438,7 @@ impl BlameFilePopup {
 
 	///
 	pub fn any_work_pending(&self) -> bool {
-		self.blame_stack.last().is_some_and(|last| last.result().is_some())
+		self.blame_stack.last().is_some_and(|last| !matches!(last, &BlameProcess::Result(_)))
 	}
 
 	pub fn update_async(
