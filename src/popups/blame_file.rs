@@ -231,6 +231,26 @@ impl Component for BlameFilePopup {
 				)
 				.order(1),
 			);
+			out.push(
+				CommandInfo::new(
+					strings::commands::blame_file(
+						&self.key_config,
+					),
+					true,
+					has_result,
+				)
+				.order(1),
+			);
+			out.push(
+				CommandInfo::new(
+					strings::commands::blame_file_back(
+						&self.key_config,
+					),
+					true,
+					has_result,
+				)
+				.order(1),
+			);
 		}
 
 		visibility_blocking(self)
@@ -313,11 +333,14 @@ impl Component for BlameFilePopup {
 						.as_ref()
 						.map(|p| p.file_path.clone())
 					{
-						let _ = self.open(BlameFileOpen {
-							file_path,
-							commit_id: self.selected_commit(),
-							selection: self.get_selection(),
-						});
+						// Avoid loading the same view.
+						if self.selected_commit().is_some_and(|c| { self.blame_stack.last().unwrap().result().is_some_and(|r| { r.file_blame.commit_id != c }) }) {
+							let _ = self.open(BlameFileOpen {
+								file_path,
+								commit_id: self.selected_commit(),
+								selection: self.get_selection(),
+							});
+						}
 					}
 				} else if key_match(
 					key,
