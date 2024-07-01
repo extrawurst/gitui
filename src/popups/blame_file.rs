@@ -7,7 +7,7 @@ use crate::{
 	},
 	keys::{key_match, SharedKeyConfig},
 	popups::{FileRevOpen, InspectCommitOpen},
-	queue::{InternalEvent, Queue, StackablePopupOpen},
+	queue::{Context, InternalEvent, Queue, StackablePopupOpen},
 	string_utils::tabs_to_spaces,
 	strings,
 	ui::{self, style::SharedTheme, AsyncSyntaxJob, SyntaxText},
@@ -35,7 +35,8 @@ static NO_AUTHOR: &str = "<no author>";
 static MIN_AUTHOR_WIDTH: usize = 3;
 static MAX_AUTHOR_WIDTH: usize = 20;
 
-struct SyntaxFileBlame {
+#[derive(Debug, Clone)]
+pub struct SyntaxFileBlame {
 	pub file_blame: FileBlame,
 	pub styled_text: Option<SyntaxText>,
 }
@@ -54,7 +55,8 @@ impl SyntaxFileBlame {
 	}
 }
 
-enum BlameProcess {
+#[derive(Clone, Debug)]
+pub enum BlameProcess {
 	GettingBlame(AsyncBlame),
 	SyntaxHighlighting {
 		unstyled_file_blame: SyntaxFileBlame,
@@ -81,6 +83,7 @@ pub struct BlameFileOpen {
 	pub file_path: String,
 	pub commit_id: Option<CommitId>,
 	pub selection: Option<usize>,
+	pub blame: Option<BlameProcess>,
 }
 
 pub struct BlameFilePopup {
@@ -234,6 +237,16 @@ impl Component for BlameFilePopup {
 				)
 				.order(1),
 			);
+			out.push(
+				CommandInfo::new(
+					strings::commands::open_line_number_popup(
+						&self.key_config,
+					),
+					true,
+					has_result,
+				)
+				.order(1),
+			);
 		}
 
 		visibility_blocking(self)
@@ -307,6 +320,17 @@ impl Component for BlameFilePopup {
 							),
 						));
 					}
+				} else if key_match(
+					key,
+					self.key_config.keys.goto_line,
+				) {
+					self.hide_stacked(true);
+					self.visible = true;
+					self.queue.push(InternalEvent::OpenPopup(
+						StackablePopupOpen::GotoLine(Context::Blame(
+							self.blame.clone(),
+						)),
+					));
 				}
 
 				return Ok(EventState::Consumed);
@@ -356,6 +380,7 @@ impl BlameFilePopup {
 						file_path: request.file_path,
 						commit_id: request.commit_id,
 						selection: self.get_selection(),
+						blame: self.blame.clone(),
 					}),
 				));
 			}
@@ -371,11 +396,15 @@ impl BlameFilePopup {
 			file_path: open.file_path,
 			commit_id: open.commit_id,
 		});
-		self.blame =
-			Some(BlameProcess::GettingBlame(AsyncBlame::new(
-				self.repo.borrow().clone(),
-				&self.git_sender,
-			)));
+		self.blame = match open.blame {
+			None => {
+				Some(BlameProcess::GettingBlame(AsyncBlame::new(
+					self.repo.borrow().clone(),
+					&self.git_sender,
+				)))
+			}
+			blame => blame,
+		};
 		self.table_state.get_mut().select(Some(0));
 		self.visible = true;
 		self.update()?;
@@ -438,7 +467,6 @@ impl BlameFilePopup {
 									),
 								},
 							);
-							self.set_open_selection();
 							self.highlight_blame_lines();
 
 							return Ok(());
@@ -449,6 +477,7 @@ impl BlameFilePopup {
 				}
 			}
 		}
+		self.set_open_selection();
 
 		Ok(())
 	}
@@ -721,7 +750,8 @@ impl BlameFilePopup {
 			self.open_request.as_ref().and_then(|req| req.selection)
 		{
 			let mut table_state = self.table_state.take();
-			table_state.select(Some(selection));
+			let max_line_number = self.get_max_line_number();
+			table_state.select(Some(selection.min(max_line_number)));
 			self.table_state.set(table_state);
 		}
 	}

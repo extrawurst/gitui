@@ -10,17 +10,18 @@ use crate::{
 	options::{Options, SharedOptions},
 	popup_stack::PopupStack,
 	popups::{
-		AppOption, BlameFilePopup, BranchListPopup, CommitPopup,
-		CompareCommitsPopup, ConfirmPopup, CreateBranchPopup,
-		ExternalEditorPopup, FetchPopup, FileRevlogPopup,
-		FuzzyFindPopup, HelpPopup, InspectCommitPopup,
-		LogSearchPopupPopup, MsgPopup, OptionsPopup, PullPopup,
-		PushPopup, PushTagsPopup, RenameBranchPopup, ResetPopup,
-		RevisionFilesPopup, StashMsgPopup, SubmodulesListPopup,
-		TagCommitPopup, TagListPopup,
+		AppOption, BlameFileOpen, BlameFilePopup, BranchListPopup,
+		CommitPopup, CompareCommitsPopup, ConfirmPopup,
+		CreateBranchPopup, ExternalEditorPopup, FetchPopup,
+		FileRevlogPopup, FuzzyFindPopup, GotoLinePopup, HelpPopup,
+		InspectCommitPopup, LogSearchPopupPopup, MsgPopup,
+		OptionsPopup, PullPopup, PushPopup, PushTagsPopup,
+		RenameBranchPopup, ResetPopup, RevisionFilesPopup,
+		StashMsgPopup, SubmodulesListPopup, TagCommitPopup,
+		TagListPopup,
 	},
 	queue::{
-		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,
+		Action, AppTabs, Context, InternalEvent, NeedsUpdate, Queue,
 		StackablePopupOpen,
 	},
 	setup_popups,
@@ -106,6 +107,7 @@ pub struct App {
 	popup_stack: PopupStack,
 	options: SharedOptions,
 	repo_path_text: String,
+	goto_line_popup: GotoLinePopup,
 
 	// "Flags"
 	requires_redraw: Cell<bool>,
@@ -208,6 +210,7 @@ impl App {
 			stashing_tab: Stashing::new(&env),
 			stashlist_tab: StashList::new(&env),
 			files_tab: FilesTab::new(&env),
+			goto_line_popup: GotoLinePopup::new(&env),
 			tab: 0,
 			queue: env.queue,
 			theme: env.theme,
@@ -471,6 +474,7 @@ impl App {
 			msg_popup,
 			confirm_popup,
 			commit_popup,
+			goto_line_popup,
 			blame_file_popup,
 			file_revlog_popup,
 			stashmsg_popup,
@@ -526,7 +530,8 @@ impl App {
 			fetch_popup,
 			options_popup,
 			confirm_popup,
-			msg_popup
+			msg_popup,
+			goto_line_popup
 		]
 	);
 
@@ -669,6 +674,9 @@ impl App {
 			}
 			StackablePopupOpen::CompareCommits(param) => {
 				self.compare_commits_popup.open(param)?;
+			}
+			StackablePopupOpen::GotoLine(context) => {
+				self.goto_line_popup.open(Some(context));
 			}
 		}
 
@@ -871,6 +879,31 @@ impl App {
 			}
 			InternalEvent::CommitSearch(options) => {
 				self.revlog.search(options);
+			}
+			InternalEvent::GotoLine(line, context) => {
+				if let Some(popup) = self.popup_stack.pop() {
+					if let StackablePopupOpen::BlameFile(params) =
+						popup
+					{
+						self.popup_stack.push(
+							StackablePopupOpen::BlameFile(
+								BlameFileOpen {
+									selection: Some(line),
+									blame: context.and_then(|ctx| {
+										let Context::Blame(
+											blame_process,
+										) = ctx;
+										blame_process
+									}),
+									..params
+								},
+							),
+						);
+					}
+					flags.insert(
+						NeedsUpdate::ALL | NeedsUpdate::COMMANDS,
+					);
+				}
 			}
 		};
 
