@@ -1288,7 +1288,9 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
-	pub fn blame_file_back(key_config: &SharedKeyConfig) -> CommandText {
+	pub fn blame_file_back(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
 		CommandText::new(
 			format!(
 				"Back [{}]",

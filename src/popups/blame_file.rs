@@ -123,16 +123,17 @@ impl DrawableComponent for BlameFilePopup {
 			];
 
 			let number_of_rows: usize = rows.len();
-			let syntax_highlight_progress = match self.blame_stack.last() {
-				Some(BlameProcess::SyntaxHighlighting {
-					ref job,
-					..
-				}) => job
-					.progress()
-					.map(|p| format!(" ({}%)", p.progress))
-					.unwrap_or_default(),
-				_ => String::new(),
-			};
+			let syntax_highlight_progress =
+				match self.blame_stack.last() {
+					Some(BlameProcess::SyntaxHighlighting {
+						ref job,
+						..
+					}) => job
+						.progress()
+						.map(|p| format!(" ({}%)", p.progress))
+						.unwrap_or_default(),
+					_ => String::new(),
+				};
 			let title_with_highlight_progress =
 				format!("{title}{syntax_highlight_progress}");
 
@@ -151,7 +152,10 @@ impl DrawableComponent for BlameFilePopup {
 
 			let mut table_state = self.table_state.take();
 
-			if table_state.selected().is_some_and(|s| s > number_of_rows) {
+			if table_state
+				.selected()
+				.is_some_and(|s| s > number_of_rows)
+			{
 				table_state.select(Some(number_of_rows - 1));
 				table_state = table_state.with_offset(0);
 			}
@@ -198,7 +202,10 @@ impl Component for BlameFilePopup {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
-		let has_result = self.blame_stack.last().is_some_and(|last| last.result().is_some());
+		let has_result = self
+			.blame_stack
+			.last()
+			.is_some_and(|last| last.result().is_some());
 		if self.is_visible() || force_all {
 			out.push(
 				CommandInfo::new(
@@ -238,9 +245,7 @@ impl Component for BlameFilePopup {
 			);
 			out.push(
 				CommandInfo::new(
-					strings::commands::blame_file(
-						&self.key_config,
-					),
+					strings::commands::blame_file(&self.key_config),
 					true,
 					has_result,
 				)
@@ -261,6 +266,7 @@ impl Component for BlameFilePopup {
 		visibility_blocking(self)
 	}
 
+	#[allow(too_many_lines)]
 	fn event(
 		&mut self,
 		event: &crossterm::event::Event,
@@ -329,17 +335,21 @@ impl Component for BlameFilePopup {
 							),
 						));
 					}
-				} else if key_match(
-					key,
-					self.key_config.keys.blame,
-				) {
+				} else if key_match(key, self.key_config.keys.blame) {
 					if let Some(file_path) = self
 						.params
 						.as_ref()
 						.map(|p| p.file_path.clone())
 					{
 						// Avoid loading the same view.
-						if self.selected_commit().is_some_and(|c| { self.blame_stack.last().unwrap().result().is_some_and(|r| { r.file_blame.commit_id != c }) }) {
+						if self.selected_commit().is_some_and(|c| {
+							self.blame_stack
+								.last()
+								.and_then(|last| last.result())
+								.map_or(false, |r| {
+									r.file_blame.commit_id != c
+								})
+						}) {
 							let _ = self.open(BlameFileOpen {
 								file_path,
 								commit_id: self.selected_commit(),
@@ -352,19 +362,16 @@ impl Component for BlameFilePopup {
 					self.key_config.keys.blame_back,
 				) {
 					match self.blame_stack.len() {
-						0 => {
-							self.hide_stacked(false)
-						},
+						0 => self.hide_stacked(false),
 						1 => {
 							self.blame_stack.pop();
-							self.hide_stacked(false)
-						},
+							self.hide_stacked(false);
+						}
 						_ => {
 							self.blame_stack.pop();
-						},
+						}
 					}
 				}
-
 
 				return Ok(EventState::Consumed);
 			}
@@ -428,12 +435,12 @@ impl BlameFilePopup {
 			file_path: open.file_path,
 			commit_id: open.commit_id,
 		});
-		self.blame_stack.push(
-			BlameProcess::GettingBlame(AsyncBlame::new(
+		self.blame_stack.push(BlameProcess::GettingBlame(
+			AsyncBlame::new(
 				self.repo.borrow().clone(),
 				&self.git_sender,
-			))
-		);
+			),
+		));
 		self.table_state.get_mut().select(Some(0));
 		self.visible = true;
 		self.update()?;
@@ -443,7 +450,9 @@ impl BlameFilePopup {
 
 	///
 	pub fn any_work_pending(&self) -> bool {
-		self.blame_stack.last().is_some_and(|last| !matches!(last, &BlameProcess::Result(_)))
+		self.blame_stack.last().is_some_and(|last| {
+			!matches!(last, &BlameProcess::Result(_))
+		})
 	}
 
 	pub fn update_async(
@@ -482,17 +491,18 @@ impl BlameFilePopup {
 					)) = async_blame.last()?
 					{
 						if previous_blame_params == *params {
-							*self.blame_stack.last_mut().unwrap() = BlameProcess::SyntaxHighlighting {
-								unstyled_file_blame:
-									SyntaxFileBlame {
-										file_blame:
-											last_file_blame,
-										styled_text: None,
-									},
-								job: AsyncSingleJob::new(
-									self.app_sender.clone(),
-								),
-							};
+							*self.blame_stack.last_mut().expect("Last will always exist here, as we just got it.") =
+								BlameProcess::SyntaxHighlighting {
+									unstyled_file_blame:
+										SyntaxFileBlame {
+											file_blame:
+												last_file_blame,
+											styled_text: None,
+										},
+									job: AsyncSingleJob::new(
+										self.app_sender.clone(),
+									),
+								};
 							self.set_open_selection();
 							self.highlight_blame_lines();
 
@@ -512,7 +522,7 @@ impl BlameFilePopup {
 		let Some(BlameProcess::SyntaxHighlighting {
 			ref unstyled_file_blame,
 			ref job,
-		}) = self.blame_stack.last()
+		}) = self.blame_stack.last_mut()
 		else {
 			return;
 		};
@@ -529,7 +539,10 @@ impl BlameFilePopup {
 								== Path::new(
 									unstyled_file_blame.path(),
 								) {
-								*self.blame_stack.last_mut().unwrap() = BlameProcess::Result(
+								*self
+									.blame_stack
+									.last_mut()
+									.expect("Last will always exist here, as we just got it.") = BlameProcess::Result(
 									SyntaxFileBlame {
 										file_blame:
 											unstyled_file_blame
@@ -580,7 +593,8 @@ impl BlameFilePopup {
 
 	///
 	fn get_rows(&self, width: usize) -> Vec<Row> {
-		self.blame_stack.last()
+		self.blame_stack
+			.last()
 			.and_then(|blame| blame.result())
 			.map(|file_blame| {
 				let styled_text: Option<Text<'_>> = file_blame
