@@ -75,14 +75,14 @@ impl Stashing {
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
 			let status_type = if self.options.keep_index {
-				StatusType::WorkingDir
-			} else {
 				StatusType::Both
+			} else {
+				StatusType::WorkingDir
 			};
 			let show_untracked = if self.options.stash_untracked {
-				Some(ShowUntrackedFilesConfig::No)
-			} else {
 				Some(ShowUntrackedFilesConfig::All)
+			} else {
+				Some(ShowUntrackedFilesConfig::No)
 			};
 			self.git_status.fetch(&StatusParams::new(
 				status_type,
