@@ -7,7 +7,7 @@ use crate::{
 	},
 	keys::{key_match, SharedKeyConfig},
 	popups::{FileRevOpen, InspectCommitOpen},
-	queue::{Context, InternalEvent, Queue, StackablePopupOpen},
+	queue::{InternalEvent, Queue, StackablePopupOpen},
 	string_utils::tabs_to_spaces,
 	strings,
 	ui::{self, style::SharedTheme, AsyncSyntaxJob, SyntaxText},
@@ -96,7 +96,7 @@ pub struct BlameFilePopup {
 	table_state: std::cell::Cell<TableState>,
 	key_config: SharedKeyConfig,
 	current_height: std::cell::Cell<usize>,
-	blame: Option<BlameProcess>,
+	pub blame: Option<BlameProcess>,
 	app_sender: Sender<AsyncAppNotification>,
 	git_sender: Sender<AsyncGitNotification>,
 	repo: RepoPathRef,
@@ -327,9 +327,7 @@ impl Component for BlameFilePopup {
 					self.hide_stacked(true);
 					self.visible = true;
 					self.queue.push(InternalEvent::OpenPopup(
-						StackablePopupOpen::GotoLine(Context::Blame(
-							self.blame.clone(),
-						)),
+						StackablePopupOpen::GotoLine,
 					));
 				}
 
@@ -751,7 +749,8 @@ impl BlameFilePopup {
 		{
 			let mut table_state = self.table_state.take();
 			let max_line_number = self.get_max_line_number();
-			table_state.select(Some(selection.min(max_line_number)));
+			table_state
+				.select(Some(selection.clamp(0, max_line_number)));
 			self.table_state.set(table_state);
 		}
 	}

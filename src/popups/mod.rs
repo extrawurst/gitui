@@ -25,7 +25,7 @@ mod submodules;
 mod tag_commit;
 mod taglist;
 
-pub use blame_file::{BlameFileOpen, BlameFilePopup, BlameProcess};
+pub use blame_file::{BlameFileOpen, BlameFilePopup};
 pub use branchlist::BranchListPopup;
 pub use commit::CommitPopup;
 pub use compare_commits::CompareCommitsPopup;
