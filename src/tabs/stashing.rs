@@ -13,7 +13,10 @@ use crate::{
 };
 use anyhow::Result;
 use asyncgit::{
-	sync::{self, status::StatusType, RepoPathRef},
+	sync::{
+		self, status::StatusType, RepoPathRef,
+		ShowUntrackedFilesConfig,
+	},
 	AsyncGitNotification, AsyncStatus, StatusParams,
 };
 use crossterm::event::Event;
@@ -71,9 +74,20 @@ impl Stashing {
 	///
 	pub fn update(&mut self) -> Result<()> {
 		if self.is_visible() {
-			self.git_status
-				//TODO: support options
-				.fetch(&StatusParams::new(StatusType::Both, None))?;
+			let status_type = if self.options.keep_index {
+				StatusType::WorkingDir
+			} else {
+				StatusType::Both
+			};
+			let show_untracked = if self.options.stash_untracked {
+				Some(ShowUntrackedFilesConfig::No)
+			} else {
+				Some(ShowUntrackedFilesConfig::All)
+			};
+			self.git_status.fetch(&StatusParams::new(
+				status_type,
+				show_untracked,
+			))?;
 		}
 
 		Ok(())
