@@ -3,6 +3,7 @@ use std::fmt::Display;
 use super::RepoPath;
 use crate::{error::Result, sync::repository::repo};
 use git2::{Commit, Error, Oid};
+use gix::ObjectId;
 use scopetime::scope_time;
 use unicode_truncate::UnicodeTruncateStr;
 
@@ -66,6 +67,16 @@ impl From<CommitId> for Oid {
 impl From<Oid> for CommitId {
 	fn from(id: Oid) -> Self {
 		Self::new(id)
+	}
+}
+
+impl From<ObjectId> for CommitId {
+	fn from(id: ObjectId) -> Self {
+		let bytes = id.as_bytes();
+		let oid =
+			Oid::from_bytes(bytes).expect("Oid::from_bytes failed");
+
+		Self::new(oid)
 	}
 }
 
