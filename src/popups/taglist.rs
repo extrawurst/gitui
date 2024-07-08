@@ -111,7 +111,7 @@ impl DrawableComponent for TagListPopup {
 			f.render_widget(Clear, area);
 			f.render_stateful_widget(table, area, &mut table_state);
 
-			let area = area.inner(&Margin {
+			let area = area.inner(Margin {
 				vertical: 1,
 				horizontal: 0,
 			});
