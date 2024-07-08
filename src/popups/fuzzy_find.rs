@@ -293,7 +293,7 @@ impl DrawableComponent for FuzzyFindPopup {
 					]
 					.as_ref(),
 				)
-				.split(area.inner(&Margin {
+				.split(area.inner(Margin {
 					horizontal: 1,
 					vertical: 1,
 				}));

@@ -1074,7 +1074,7 @@ impl App {
 		const SIDE_PADS: usize = 2;
 		const MARGIN_LEFT_AND_RIGHT: usize = 2;
 
-		let r = r.inner(&Margin {
+		let r = r.inner(Margin {
 			vertical: 0,
 			horizontal: 1,
 		});

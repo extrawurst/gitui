@@ -80,7 +80,7 @@ impl DrawableComponent for BranchListPopup {
 				area,
 			);
 
-			let area = area.inner(&Margin {
+			let area = area.inner(Margin {
 				vertical: 1,
 				horizontal: 1,
 			});
