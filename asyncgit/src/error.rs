@@ -94,6 +94,24 @@ pub enum Error {
 	Sign(#[from] crate::sync::sign::SignError),
 
 	///
+	#[error("gix::open error: {0}")]
+	GixOpen(#[from] Box<gix::open::Error>),
+
+	///
+	#[error("gix::reference::find::existing error: {0}")]
+	GixReferenceFindExisting(
+		#[from] gix::reference::find::existing::Error,
+	),
+
+	///
+	#[error("gix::head::peel::to_commit error: {0}")]
+	GixHeadPeelToCommit(#[from] gix::head::peel::to_commit::Error),
+
+	///
+	#[error("gix::revision::walk error: {0}")]
+	GixRevisionWalk(#[from] gix::revision::walk::Error),
+
+	///
 	#[error("amend error: config commit.gpgsign=true detected.\ngpg signing is not supported for amending non-last commits")]
 	SignAmendNonLastCommit,
 
@@ -118,5 +136,11 @@ impl<T> From<std::sync::PoisonError<T>> for Error {
 impl<T> From<crossbeam_channel::SendError<T>> for Error {
 	fn from(error: crossbeam_channel::SendError<T>) -> Self {
 		Self::Generic(format!("send error: {error}"))
+	}
+}
+
+impl From<gix::open::Error> for Error {
+	fn from(error: gix::open::Error) -> Self {
+		Self::GixOpen(Box::new(error))
 	}
 }
