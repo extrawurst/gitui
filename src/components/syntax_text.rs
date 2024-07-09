@@ -135,7 +135,10 @@ impl SyntaxTextComponent {
 		}
 	}
 
-	fn scroll(&self, nav: MoveSelection) -> bool {
+	pub(in crate::components) fn scroll(
+		&self,
+		nav: MoveSelection,
+	) -> bool {
 		let state = self.paragraph_state.get();
 
 		let new_scroll_pos = match nav {

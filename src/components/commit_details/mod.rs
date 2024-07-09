@@ -11,6 +11,7 @@ use crate::{
 	app::Environment,
 	keys::{key_match, SharedKeyConfig},
 	strings,
+	ui::seek_scroll,
 };
 use anyhow::Result;
 use asyncgit::{
@@ -221,6 +222,16 @@ impl Component for CommitDetailsComponent {
 					self.file_tree.focus(false);
 					self.set_details_focus(true);
 					Ok(EventState::Consumed)
+				} else if let Some(scroll) =
+					seek_scroll(e, &self.key_config)
+				{
+					let state = if self.file_tree.focused() {
+						self.single_details.move_scroll_top(scroll);
+						EventState::Consumed
+					} else {
+						EventState::NotConsumed
+					};
+					Ok(state)
 				} else {
 					Ok(EventState::NotConsumed)
 				};
