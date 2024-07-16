@@ -79,11 +79,17 @@ impl BlameProcess {
 }
 
 #[derive(Clone, Debug)]
+pub enum BlameRequest {
+	StartNew,
+	KeepExisting,
+}
+
+#[derive(Clone, Debug)]
 pub struct BlameFileOpen {
 	pub file_path: String,
 	pub commit_id: Option<CommitId>,
 	pub selection: Option<usize>,
-	pub blame: Option<BlameProcess>,
+	pub blame: BlameRequest,
 }
 
 pub struct BlameFilePopup {
@@ -96,7 +102,7 @@ pub struct BlameFilePopup {
 	table_state: std::cell::Cell<TableState>,
 	key_config: SharedKeyConfig,
 	current_height: std::cell::Cell<usize>,
-	pub blame: Option<BlameProcess>,
+	blame: Option<BlameProcess>,
 	app_sender: Sender<AsyncAppNotification>,
 	git_sender: Sender<AsyncGitNotification>,
 	repo: RepoPathRef,
@@ -378,7 +384,7 @@ impl BlameFilePopup {
 						file_path: request.file_path,
 						commit_id: request.commit_id,
 						selection: self.get_selection(),
-						blame: self.blame.clone(),
+						blame: BlameRequest::KeepExisting,
 					}),
 				));
 			}
@@ -394,15 +400,13 @@ impl BlameFilePopup {
 			file_path: open.file_path,
 			commit_id: open.commit_id,
 		});
-		self.blame = match open.blame {
-			None => {
+		if matches!(open.blame, BlameRequest::StartNew) {
+			self.blame =
 				Some(BlameProcess::GettingBlame(AsyncBlame::new(
 					self.repo.borrow().clone(),
 					&self.git_sender,
-				)))
-			}
-			blame => blame,
-		};
+				)));
+		}
 		self.table_state.get_mut().select(Some(0));
 		self.visible = true;
 		self.update()?;

@@ -10,11 +10,11 @@ use crate::{
 	options::{Options, SharedOptions},
 	popup_stack::PopupStack,
 	popups::{
-		AppOption, BlameFileOpen, BlameFilePopup, BranchListPopup,
-		CommitPopup, CompareCommitsPopup, ConfirmPopup,
-		CreateBranchPopup, ExternalEditorPopup, FetchPopup,
-		FileRevlogPopup, FuzzyFindPopup, GotoLinePopup, HelpPopup,
-		InspectCommitPopup, LogSearchPopupPopup, MsgPopup,
+		AppOption, BlameFileOpen, BlameFilePopup, BlameRequest,
+		BranchListPopup, CommitPopup, CompareCommitsPopup,
+		ConfirmPopup, CreateBranchPopup, ExternalEditorPopup,
+		FetchPopup, FileRevlogPopup, FuzzyFindPopup, GotoLinePopup,
+		HelpPopup, InspectCommitPopup, LogSearchPopupPopup, MsgPopup,
 		OptionsPopup, PullPopup, PushPopup, PushTagsPopup,
 		RenameBranchPopup, ResetPopup, RevisionFilesPopup,
 		StashMsgPopup, SubmodulesListPopup, TagCommitPopup,
@@ -885,13 +885,11 @@ impl App {
 					if let StackablePopupOpen::BlameFile(params) =
 						popup
 					{
-						let blame =
-							self.blame_file_popup.blame.clone();
 						self.popup_stack.push(
 							StackablePopupOpen::BlameFile(
 								BlameFileOpen {
 									selection: Some(line),
-									blame,
+									blame: BlameRequest::KeepExisting,
 									..params
 								},
 							),
