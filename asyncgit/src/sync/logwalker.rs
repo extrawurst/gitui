@@ -114,7 +114,7 @@ impl<'a> LogWalker<'a> {
 ///
 /// `SharedCommitFilterFn` requires access to a `git2::repo::Repository` because, under the hood,
 /// it calls into functions that work with a `git2::repo::Repository`. It seems unwise to open a
-/// repo both through `gix::open` and `Repository::open_ext` at the same time, so there is a
+/// repo both through `gix::discover` and `Repository::open_ext` at the same time, so there is a
 /// separate struct that works with `gix::Repository` only.
 ///
 /// A more long-term option is to refactor filtering to work with a `gix::Repository` and to remove
@@ -271,7 +271,7 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
-		let mut repo = gix::open(repo_path.gitpath()).unwrap();
+		let mut repo = gix::discover(repo_path.gitpath()).unwrap();
 		let mut walk = LogWalkerWithoutFilter::new(&mut repo, 100)?;
 		let mut items = Vec::new();
 		assert!(matches!(walk.read(&mut items), Ok(2)));

@@ -94,8 +94,8 @@ pub enum Error {
 	Sign(#[from] crate::sync::sign::SignError),
 
 	///
-	#[error("gix::open error: {0}")]
-	GixOpen(#[from] Box<gix::open::Error>),
+	#[error("gix::discover error: {0}")]
+	GixDiscover(#[from] Box<gix::discover::Error>),
 
 	///
 	#[error("gix::reference::find::existing error: {0}")]
@@ -139,8 +139,8 @@ impl<T> From<crossbeam_channel::SendError<T>> for Error {
 	}
 }
 
-impl From<gix::open::Error> for Error {
-	fn from(error: gix::open::Error) -> Self {
-		Self::GixOpen(Box::new(error))
+impl From<gix::discover::Error> for Error {
+	fn from(error: gix::discover::Error) -> Self {
+		Self::GixDiscover(Box::new(error))
 	}
 }
