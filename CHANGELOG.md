@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixes
+* respect env vars like `GIT_CONFIG_GLOBAL` ([#2298](https://github.com/extrawurst/gitui/issues/2298))
+
 ## [0.26.3] - 2024-06-02
 
 ### Breaking Changes

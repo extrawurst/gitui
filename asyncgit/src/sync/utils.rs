@@ -28,7 +28,7 @@ pub struct Head {
 pub fn repo_open_error(repo_path: &RepoPath) -> Option<String> {
 	Repository::open_ext(
 		repo_path.gitpath(),
-		RepositoryOpenFlags::empty(),
+		RepositoryOpenFlags::FROM_ENV,
 		Vec::<&Path>::new(),
 	)
 	.map_or_else(|e| Some(e.to_string()), |_| None)
