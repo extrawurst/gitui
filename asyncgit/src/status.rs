@@ -77,7 +77,7 @@ impl AsyncStatus {
 	}
 
 	///
-	pub fn last(&mut self) -> Result<Status> {
+	pub fn last(&self) -> Result<Status> {
 		let last = self.last.lock()?;
 		Ok(last.clone())
 	}
@@ -89,7 +89,7 @@ impl AsyncStatus {
 
 	///
 	pub fn fetch(
-		&mut self,
+		&self,
 		params: &StatusParams,
 	) -> Result<Option<Status>> {
 		if self.is_pending() {

@@ -168,7 +168,7 @@ impl OptionsPopup {
 		}
 	}
 
-	fn switch_option(&mut self, right: bool) {
+	fn switch_option(&self, right: bool) {
 		if right {
 			match self.selection {
 				AppOption::StatusShowUntracked => {

@@ -71,7 +71,7 @@ impl AsyncPull {
 	}
 
 	///
-	pub fn request(&mut self, params: FetchRequest) -> Result<()> {
+	pub fn request(&self, params: FetchRequest) -> Result<()> {
 		log::trace!("request");
 
 		if self.is_pending()? {

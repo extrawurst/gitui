@@ -73,14 +73,14 @@ impl AsyncDiff {
 	}
 
 	///
-	pub fn last(&mut self) -> Result<Option<(DiffParams, FileDiff)>> {
+	pub fn last(&self) -> Result<Option<(DiffParams, FileDiff)>> {
 		let last = self.last.lock()?;
 
 		Ok(last.clone().map(|res| (res.params, res.result)))
 	}
 
 	///
-	pub fn refresh(&mut self) -> Result<()> {
+	pub fn refresh(&self) -> Result<()> {
 		if let Ok(Some(param)) = self.get_last_param() {
 			self.clear_current()?;
 			self.request(param)?;
@@ -95,7 +95,7 @@ impl AsyncDiff {
 
 	///
 	pub fn request(
-		&mut self,
+		&self,
 		params: DiffParams,
 	) -> Result<Option<FileDiff>> {
 		log::trace!("request {:?}", params);
@@ -212,7 +212,7 @@ impl AsyncDiff {
 		Ok(self.last.lock()?.clone().map(|e| e.params))
 	}
 
-	fn clear_current(&mut self) -> Result<()> {
+	fn clear_current(&self) -> Result<()> {
 		let mut current = self.current.lock()?;
 		current.0 = 0;
 		current.1 = None;

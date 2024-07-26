@@ -167,7 +167,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		assert!(matches!(blame_file(repo_path, "foo", None), Err(_)));
+		assert!(blame_file(repo_path, "foo", None).is_err());
 
 		File::create(root.join(file_path))?.write_all(b"line 1\n")?;
 

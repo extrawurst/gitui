@@ -73,7 +73,7 @@ impl Input {
 	}
 
 	///
-	pub fn set_polling(&mut self, enabled: bool) {
+	pub fn set_polling(&self, enabled: bool) {
 		self.desired_state.set_and_notify(enabled);
 	}
 

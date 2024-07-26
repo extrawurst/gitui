@@ -46,7 +46,7 @@ impl StashList {
 		Ok(())
 	}
 
-	fn apply_stash(&mut self) {
+	fn apply_stash(&self) {
 		if let Some(e) = self.list.selected_entry() {
 			match sync::stash_apply(&self.repo.borrow(), e.id, false)
 			{
@@ -62,7 +62,7 @@ impl StashList {
 		}
 	}
 
-	fn drop_stash(&mut self) {
+	fn drop_stash(&self) {
 		if self.list.marked_count() > 0 {
 			self.queue.push(InternalEvent::ConfirmAction(
 				Action::StashDrop(self.list.marked_commits()),
@@ -74,7 +74,7 @@ impl StashList {
 		}
 	}
 
-	fn pop_stash(&mut self) {
+	fn pop_stash(&self) {
 		if let Some(e) = self.list.selected_entry() {
 			self.queue.push(InternalEvent::ConfirmAction(
 				Action::StashPop(e.id),
@@ -82,7 +82,7 @@ impl StashList {
 		}
 	}
 
-	fn inspect(&mut self) {
+	fn inspect(&self) {
 		if let Some(e) = self.list.selected_entry() {
 			self.queue.push(InternalEvent::OpenPopup(
 				StackablePopupOpen::InspectCommit(

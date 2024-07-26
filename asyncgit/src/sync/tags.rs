@@ -200,7 +200,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		assert_eq!(get_tags(repo_path).unwrap().is_empty(), true);
+		assert!(get_tags(repo_path).unwrap().is_empty());
 	}
 
 	#[test]

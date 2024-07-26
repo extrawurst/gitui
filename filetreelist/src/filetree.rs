@@ -275,10 +275,7 @@ impl FileTree {
 		}
 	}
 
-	fn select_parent(
-		&mut self,
-		current_index: usize,
-	) -> Option<usize> {
+	fn select_parent(&self, current_index: usize) -> Option<usize> {
 		let indent =
 			self.items.tree_items[current_index].info().indent();
 
