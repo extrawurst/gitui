@@ -496,7 +496,7 @@ impl DiffComponent {
 		false
 	}
 
-	fn unstage_hunk(&mut self) -> Result<()> {
+	fn unstage_hunk(&self) -> Result<()> {
 		if let Some(diff) = &self.diff {
 			if let Some(hunk) = self.selected_hunk {
 				let hash = diff.hunks[hunk].header_hash;
@@ -513,7 +513,7 @@ impl DiffComponent {
 		Ok(())
 	}
 
-	fn stage_hunk(&mut self) -> Result<()> {
+	fn stage_hunk(&self) -> Result<()> {
 		if let Some(diff) = &self.diff {
 			if let Some(hunk) = self.selected_hunk {
 				if diff.untracked {
@@ -621,7 +621,7 @@ impl DiffComponent {
 		)));
 	}
 
-	fn stage_unstage_hunk(&mut self) -> Result<()> {
+	fn stage_unstage_hunk(&self) -> Result<()> {
 		if self.current.is_stage {
 			self.unstage_hunk()?;
 		} else {

@@ -146,14 +146,12 @@ mod tests {
 
 		let res = get_commit_details(repo_path, id).unwrap();
 
-		assert_eq!(
-			res.message
-				.as_ref()
-				.unwrap()
-				.subject
-				.starts_with("test msg"),
-			true
-		);
+		assert!(res
+			.message
+			.as_ref()
+			.unwrap()
+			.subject
+			.starts_with("test msg"));
 
 		Ok(())
 	}

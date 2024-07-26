@@ -171,7 +171,7 @@ impl CommitList {
 	}
 
 	///
-	pub fn checkout(&mut self) {
+	pub fn checkout(&self) {
 		if let Some(commit_hash) =
 			self.selected_entry().map(|entry| entry.id)
 		{
@@ -705,7 +705,7 @@ impl CommitList {
 		}
 	}
 
-	fn selection_highlighted(&mut self) -> bool {
+	fn selection_highlighted(&self) -> bool {
 		let commit = self.commits[self.selection];
 
 		self.highlights

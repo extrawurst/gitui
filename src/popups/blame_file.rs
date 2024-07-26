@@ -685,7 +685,7 @@ impl BlameFilePopup {
 		number_of_digits(max_line_number)
 	}
 
-	fn move_selection(&mut self, scroll_type: ScrollType) -> bool {
+	fn move_selection(&self, scroll_type: ScrollType) -> bool {
 		let mut table_state = self.table_state.take();
 
 		let old_selection = table_state.selected().unwrap_or(0);
@@ -716,7 +716,7 @@ impl BlameFilePopup {
 		needs_update
 	}
 
-	fn set_open_selection(&mut self) {
+	fn set_open_selection(&self) {
 		if let Some(selection) =
 			self.open_request.as_ref().and_then(|req| req.selection)
 		{

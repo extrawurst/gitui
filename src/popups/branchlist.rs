@@ -756,7 +756,7 @@ impl BranchListPopup {
 		Ok(())
 	}
 
-	fn rename_branch(&mut self) {
+	fn rename_branch(&self) {
 		let cur_branch = &self.branches[self.selection as usize];
 		self.queue.push(InternalEvent::RenameBranch(
 			cur_branch.reference.clone(),
@@ -764,7 +764,7 @@ impl BranchListPopup {
 		));
 	}
 
-	fn delete_branch(&mut self) {
+	fn delete_branch(&self) {
 		let reference =
 			self.branches[self.selection as usize].reference.clone();
 

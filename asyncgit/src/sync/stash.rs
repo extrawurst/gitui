@@ -144,12 +144,9 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		assert_eq!(
-			stash_save(repo_path, None, true, false).is_ok(),
-			false
-		);
+		assert!(!stash_save(repo_path, None, true, false).is_ok());
 
-		assert_eq!(get_stashes(repo_path).unwrap().is_empty(), true);
+		assert!(get_stashes(repo_path).unwrap().is_empty());
 	}
 
 	#[test]

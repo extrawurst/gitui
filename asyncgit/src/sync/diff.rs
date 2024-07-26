@@ -557,7 +557,7 @@ mod tests {
 		let res =
 			get_diff(repo_path, "bar.txt", false, None).unwrap();
 
-		assert_eq!(res.hunks.len(), 2)
+		assert_eq!(res.hunks.len(), 2);
 	}
 
 	#[test]
