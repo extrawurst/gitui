@@ -110,7 +110,7 @@ pub use utils::{
 pub use git2::ResetType;
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
 	use super::{
 		commit,
 		repository::repo,
