@@ -276,7 +276,9 @@ impl AsyncLog {
 		let mut entries = vec![CommitId::default(); LIMIT_COUNT];
 		entries.resize(0, CommitId::default());
 
-		let mut repo = gix::discover(repo_path.gitpath())?;
+		let mut repo: gix::Repository =
+				gix::ThreadSafeRepository::discover_with_environment_overrides(repo_path.gitpath())
+						.map(Into::into)?;
 		let mut walker =
 			LogWalkerWithoutFilter::new(&mut repo, LIMIT_COUNT)?;
 

@@ -271,7 +271,10 @@ mod tests {
 		stage_add_file(repo_path, file_path).unwrap();
 		let oid2 = commit(repo_path, "commit2").unwrap();
 
-		let mut repo = gix::discover(repo_path.gitpath()).unwrap();
+		let mut repo: gix::Repository =
+				gix::ThreadSafeRepository::discover_with_environment_overrides(repo_path.gitpath())
+						.map(Into::into)
+						.unwrap();
 		let mut walk = LogWalkerWithoutFilter::new(&mut repo, 100)?;
 		let mut items = Vec::new();
 		assert!(matches!(walk.read(&mut items), Ok(2)));
