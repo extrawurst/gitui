@@ -254,35 +254,29 @@ mod tests {
 
 		// Attempt a normal push,
 		// should fail as branches diverged
-		assert_eq!(
-			push_branch(
-				&tmp_other_repo_dir.path().to_str().unwrap().into(),
-				"origin",
-				"master",
-				false,
-				false,
-				None,
-				None,
-			)
-			.is_err(),
-			true
-		);
+		assert!(push_branch(
+			&tmp_other_repo_dir.path().to_str().unwrap().into(),
+			"origin",
+			"master",
+			false,
+			false,
+			None,
+			None,
+		)
+		.is_err());
 
 		// Attempt force push,
 		// should work as it forces the push through
-		assert_eq!(
-			push_branch(
-				&tmp_other_repo_dir.path().to_str().unwrap().into(),
-				"origin",
-				"master",
-				true,
-				false,
-				None,
-				None,
-			)
-			.is_err(),
-			false
-		);
+		assert!(!push_branch(
+			&tmp_other_repo_dir.path().to_str().unwrap().into(),
+			"origin",
+			"master",
+			true,
+			false,
+			None,
+			None,
+		)
+		.is_err());
 	}
 
 	#[test]
@@ -383,19 +377,16 @@ mod tests {
 
 		// Attempt a normal push,
 		// should fail as branches diverged
-		assert_eq!(
-			push_branch(
-				&tmp_other_repo_dir.path().to_str().unwrap().into(),
-				"origin",
-				"master",
-				false,
-				false,
-				None,
-				None,
-			)
-			.is_err(),
-			true
-		);
+		assert!(push_branch(
+			&tmp_other_repo_dir.path().to_str().unwrap().into(),
+			"origin",
+			"master",
+			false,
+			false,
+			None,
+			None,
+		)
+		.is_err());
 
 		// Check that the other commit is not in upstream,
 		// a normal push would not rewrite history
@@ -483,40 +474,31 @@ mod tests {
 		.unwrap();
 
 		// Test if the branch exits on the remote
-		assert_eq!(
-			upstream_repo
-				.branches(None)
-				.unwrap()
-				.map(std::result::Result::unwrap)
-				.map(|(i, _)| i.name().unwrap().unwrap().to_string())
-				.any(|i| &i == "test_branch"),
-			true
-		);
+		assert!(upstream_repo
+			.branches(None)
+			.unwrap()
+			.map(std::result::Result::unwrap)
+			.map(|(i, _)| i.name().unwrap().unwrap().to_string())
+			.any(|i| &i == "test_branch"));
 
 		// Delete the remote branch
-		assert_eq!(
-			push_branch(
-				&tmp_repo_dir.path().to_str().unwrap().into(),
-				"origin",
-				"test_branch",
-				false,
-				true,
-				None,
-				None,
-			)
-			.is_ok(),
-			true
-		);
+		assert!(push_branch(
+			&tmp_repo_dir.path().to_str().unwrap().into(),
+			"origin",
+			"test_branch",
+			false,
+			true,
+			None,
+			None,
+		)
+		.is_ok());
 
 		// Test that the branch has be remove from the remote
-		assert_eq!(
-			upstream_repo
-				.branches(None)
-				.unwrap()
-				.map(std::result::Result::unwrap)
-				.map(|(i, _)| i.name().unwrap().unwrap().to_string())
-				.any(|i| &i == "test_branch"),
-			false
-		);
+		assert!(!upstream_repo
+			.branches(None)
+			.unwrap()
+			.map(std::result::Result::unwrap)
+			.map(|(i, _)| i.name().unwrap().unwrap().to_string())
+			.any(|i| &i == "test_branch"));
 	}
 }

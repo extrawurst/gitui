@@ -55,9 +55,7 @@ impl AsyncBlame {
 	}
 
 	///
-	pub fn last(
-		&mut self,
-	) -> Result<Option<(BlameParams, FileBlame)>> {
+	pub fn last(&self) -> Result<Option<(BlameParams, FileBlame)>> {
 		let last = self.last.lock()?;
 
 		Ok(last.clone().map(|last_result| {
@@ -66,7 +64,7 @@ impl AsyncBlame {
 	}
 
 	///
-	pub fn refresh(&mut self) -> Result<()> {
+	pub fn refresh(&self) -> Result<()> {
 		if let Ok(Some(param)) = self.get_last_param() {
 			self.clear_current()?;
 			self.request(param)?;
@@ -81,7 +79,7 @@ impl AsyncBlame {
 
 	///
 	pub fn request(
-		&mut self,
+		&self,
 		params: BlameParams,
 	) -> Result<Option<FileBlame>> {
 		log::trace!("request");
@@ -181,7 +179,7 @@ impl AsyncBlame {
 			.map(|last_result| last_result.params))
 	}
 
-	fn clear_current(&mut self) -> Result<()> {
+	fn clear_current(&self) -> Result<()> {
 		let mut current = self.current.lock()?;
 		current.0 = 0;
 		current.1 = None;

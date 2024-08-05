@@ -126,7 +126,7 @@ impl AsyncLog {
 	}
 
 	///
-	pub fn set_background(&mut self) {
+	pub fn set_background(&self) {
 		self.background.store(true, Ordering::Relaxed);
 	}
 
@@ -146,7 +146,7 @@ impl AsyncLog {
 	}
 
 	///
-	pub fn fetch(&mut self) -> Result<FetchStatus> {
+	pub fn fetch(&self) -> Result<FetchStatus> {
 		self.background.store(false, Ordering::Relaxed);
 
 		if self.is_pending() {
@@ -308,7 +308,7 @@ impl AsyncLog {
 		Ok(())
 	}
 
-	fn clear(&mut self) -> Result<()> {
+	fn clear(&self) -> Result<()> {
 		self.current.lock()?.commits.clear();
 		*self.current_head.lock()? = None;
 		self.partial_extract.store(false, Ordering::Relaxed);

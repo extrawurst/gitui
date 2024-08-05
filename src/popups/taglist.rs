@@ -374,7 +374,7 @@ impl TagListPopup {
 		Ok(())
 	}
 
-	pub fn update_missing_remote_tags(&mut self) {
+	pub fn update_missing_remote_tags(&self) {
 		if self.has_remotes {
 			self.async_remote_tags.spawn(AsyncRemoteTagsJob::new(
 				self.repo.borrow().clone(),
@@ -384,7 +384,7 @@ impl TagListPopup {
 	}
 
 	///
-	fn move_selection(&mut self, scroll_type: ScrollType) -> bool {
+	fn move_selection(&self, scroll_type: ScrollType) -> bool {
 		let mut table_state = self.table_state.take();
 
 		let old_selection = table_state.selected().unwrap_or(0);

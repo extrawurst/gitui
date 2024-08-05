@@ -177,8 +177,7 @@ mod tests {
 		assert_eq!(message, "commit2");
 
 		let reworded =
-			reword(repo_path, oid2.into(), "NewCommitMessage")
-				.unwrap();
+			reword(repo_path, oid2, "NewCommitMessage").unwrap();
 
 		// Need to get the branch again as top oid has changed
 		let branch =

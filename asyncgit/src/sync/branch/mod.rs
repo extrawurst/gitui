@@ -497,7 +497,7 @@ mod tests_branch_compare {
 
 		let res = branch_compare_upstream(repo_path, "test");
 
-		assert_eq!(res.is_err(), true);
+		assert!(res.is_err());
 	}
 }
 
@@ -730,7 +730,7 @@ mod tests_checkout {
 		let file = root.join(filename);
 		File::create(&file).unwrap();
 
-		stage_add_file(&repo_path, &Path::new(filename)).unwrap();
+		stage_add_file(repo_path, Path::new(filename)).unwrap();
 
 		assert!(checkout_branch(repo_path, "test").is_ok());
 	}

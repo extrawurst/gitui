@@ -235,7 +235,7 @@ mod tests {
 
 		assert_eq!(res.len(), 1);
 		dbg!(&res[0].message);
-		assert_eq!(res[0].message.starts_with("test msg"), true);
+		assert!(res[0].message.starts_with("test msg"));
 
 		Ok(())
 	}

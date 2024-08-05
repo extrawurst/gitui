@@ -78,7 +78,7 @@ impl AsyncPush {
 	}
 
 	///
-	pub fn request(&mut self, params: PushRequest) -> Result<()> {
+	pub fn request(&self, params: PushRequest) -> Result<()> {
 		log::trace!("request");
 
 		if self.is_pending()? {

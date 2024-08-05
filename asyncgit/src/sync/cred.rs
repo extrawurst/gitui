@@ -203,38 +203,26 @@ mod tests {
 
 	#[test]
 	fn test_credential_complete() {
-		assert_eq!(
-			BasicAuthCredential::new(
-				Some("username".to_owned()),
-				Some("password".to_owned())
-			)
-			.is_complete(),
-			true
-		);
+		assert!(BasicAuthCredential::new(
+			Some("username".to_owned()),
+			Some("password".to_owned())
+		)
+		.is_complete());
 	}
 
 	#[test]
 	fn test_credential_not_complete() {
-		assert_eq!(
-			BasicAuthCredential::new(
-				None,
-				Some("password".to_owned())
-			)
-			.is_complete(),
-			false
-		);
-		assert_eq!(
-			BasicAuthCredential::new(
-				Some("username".to_owned()),
-				None
-			)
-			.is_complete(),
-			false
-		);
-		assert_eq!(
-			BasicAuthCredential::new(None, None).is_complete(),
-			false
-		);
+		assert!(!BasicAuthCredential::new(
+			None,
+			Some("password".to_owned())
+		)
+		.is_complete());
+		assert!(!BasicAuthCredential::new(
+			Some("username".to_owned()),
+			None
+		)
+		.is_complete());
+		assert!(!BasicAuthCredential::new(None, None).is_complete());
 	}
 
 	#[test]
@@ -275,7 +263,7 @@ mod tests {
 		repo.remote(DEFAULT_REMOTE_NAME, "http://user@github.com")
 			.unwrap();
 
-		assert_eq!(need_username_password(repo_path).unwrap(), true);
+		assert!(need_username_password(repo_path).unwrap());
 	}
 
 	#[test]
@@ -289,7 +277,7 @@ mod tests {
 		repo.remote(DEFAULT_REMOTE_NAME, "git@github.com:user/repo")
 			.unwrap();
 
-		assert_eq!(need_username_password(repo_path).unwrap(), false);
+		assert!(!need_username_password(repo_path).unwrap());
 	}
 
 	#[test]
@@ -308,7 +296,7 @@ mod tests {
 		)
 		.unwrap();
 
-		assert_eq!(need_username_password(repo_path).unwrap(), false);
+		assert!(!need_username_password(repo_path).unwrap());
 	}
 
 	#[test]

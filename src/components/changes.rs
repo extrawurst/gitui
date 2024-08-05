@@ -76,7 +76,7 @@ impl ChangesComponent {
 		self.files.is_file_selected()
 	}
 
-	fn index_add_remove(&mut self) -> Result<bool> {
+	fn index_add_remove(&self) -> Result<bool> {
 		if let Some(tree_item) = self.selection() {
 			if self.is_working_dir {
 				if let FileTreeItemKind::File(i) = tree_item.kind {
@@ -128,7 +128,7 @@ impl ChangesComponent {
 		Ok(false)
 	}
 
-	fn index_add_all(&mut self) -> Result<()> {
+	fn index_add_all(&self) -> Result<()> {
 		let config = self.options.borrow().status_show_untracked();
 
 		sync::stage_add_all(&self.repo.borrow(), "*", config)?;
@@ -138,7 +138,7 @@ impl ChangesComponent {
 		Ok(())
 	}
 
-	fn stage_remove_all(&mut self) -> Result<()> {
+	fn stage_remove_all(&self) -> Result<()> {
 		sync::reset_stage(&self.repo.borrow(), "*")?;
 
 		self.queue.push(InternalEvent::Update(NeedsUpdate::ALL));
@@ -146,7 +146,7 @@ impl ChangesComponent {
 		Ok(())
 	}
 
-	fn dispatch_reset_workdir(&mut self) -> bool {
+	fn dispatch_reset_workdir(&self) -> bool {
 		if let Some(tree_item) = self.selection() {
 			self.queue.push(InternalEvent::ConfirmAction(
 				Action::Reset(ResetItem {
@@ -159,7 +159,7 @@ impl ChangesComponent {
 		false
 	}
 
-	fn add_to_ignore(&mut self) -> bool {
+	fn add_to_ignore(&self) -> bool {
 		if let Some(tree_item) = self.selection() {
 			if let Err(e) = sync::add_to_ignore(
 				&self.repo.borrow(),

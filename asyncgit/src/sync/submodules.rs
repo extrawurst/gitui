@@ -123,7 +123,7 @@ pub fn submodule_parent_info(
 
 		if let Ok(parent) = Repository::open_ext(
 			parent_path,
-			RepositoryOpenFlags::empty(),
+			RepositoryOpenFlags::FROM_ENV,
 			Vec::<&Path>::new(),
 		) {
 			let parent_wd = work_dir(&parent)?.to_path_buf();

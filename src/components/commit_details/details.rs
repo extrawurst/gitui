@@ -244,7 +244,7 @@ impl DetailsComponent {
 		})
 	}
 
-	fn move_scroll_top(&mut self, move_type: ScrollType) -> bool {
+	fn move_scroll_top(&self, move_type: ScrollType) -> bool {
 		if self.data.is_some() {
 			self.scroll.move_top(move_type)
 		} else {

@@ -28,7 +28,7 @@ pub struct Head {
 pub fn repo_open_error(repo_path: &RepoPath) -> Option<String> {
 	Repository::open_ext(
 		repo_path.gitpath(),
-		RepositoryOpenFlags::empty(),
+		RepositoryOpenFlags::FROM_ENV,
 		Vec::<&Path>::new(),
 	)
 	.map_or_else(|e| Some(e.to_string()), |_| None)
@@ -242,10 +242,7 @@ mod tests {
 		let root = repo.path().parent().unwrap();
 		let repo_path = root.as_os_str().to_str().unwrap();
 
-		assert_eq!(
-			stage_add_file(&repo_path.into(), file_path).is_ok(),
-			false
-		);
+		assert!(!stage_add_file(&repo_path.into(), file_path).is_ok());
 	}
 
 	#[test]
@@ -391,7 +388,7 @@ mod tests {
 		commit(repo_path, "commit msg").unwrap();
 
 		// delete the file now
-		assert_eq!(remove_file(full_path).is_ok(), true);
+		assert!(remove_file(full_path).is_ok());
 
 		// deleted file in diff now
 		assert_eq!(status_count(StatusType::WorkingDir), 1);
@@ -443,7 +440,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		assert_eq!(get_head(repo_path).is_ok(), false);
+		assert!(!get_head(repo_path).is_ok());
 
 		Ok(())
 	}
@@ -455,7 +452,7 @@ mod tests {
 		let repo_path: &RepoPath =
 			&root.as_os_str().to_str().unwrap().into();
 
-		assert_eq!(get_head(repo_path).is_ok(), true);
+		assert!(get_head(repo_path).is_ok());
 
 		Ok(())
 	}
