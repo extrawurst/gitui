@@ -70,8 +70,8 @@ For a [RustBerlin meetup presentation](https://youtu.be/rpilJV-eIVw?t=5334) ([sl
 
 |           | Time       | Memory (GB) | Binary (MB) | Freezes   | Crashes   |
 | --------- | ---------- | ----------- | ----------- | --------- | --------- |
-| `gitui`   | **24 s** ✅ | **0.17** ✅  | 1.4         | **No** ✅  | **No** ✅  |
-| `lazygit` | 57 s       | 2.6         | 16          | Yes       | Sometimes |
+| `gitui`   | **24 s** ✅ | **0.17** ✅  | 10         | **No** ✅  | **No** ✅  |
+| `lazygit` | 57 s       | 2.6         | 25          | Yes       | Sometimes |
 | `tig`     | 4 m 20 s   | 1.3         | **0.6** ✅   | Sometimes | **No** ✅  |
 
 ## 4. <a name="roadmap"></a> Road(map) to 1.0 <small><sup>[Top ▲](#table-of-contents)</sup></small>
