@@ -13,7 +13,9 @@ use crate::{
 	ProgressPercent,
 };
 use crossbeam_channel::Sender;
-use git2::{BranchType, FetchOptions, ProxyOptions, Repository};
+use git2::{
+	BranchType, FetchOptions, ProxyOptions, Remote, Repository,
+};
 use scopetime::scope_time;
 use utils::bytes2string;
 
@@ -33,6 +35,54 @@ pub fn proxy_auto<'a>() -> ProxyOptions<'a> {
 }
 
 ///
+pub fn add_remote(
+	repo_path: &RepoPath,
+	name: &str,
+	url: &str,
+) -> Result<()> {
+	let repo = repo(repo_path)?;
+	repo.remote(name, url)?;
+	Ok(())
+}
+
+///
+pub fn rename_remote(
+	repo_path: &RepoPath,
+	name: &str,
+	new_name: &str,
+) -> Result<()> {
+	let repo = repo(repo_path)?;
+	repo.remote_rename(name, new_name)?;
+	Ok(())
+}
+
+///
+pub fn update_remote_url(
+	repo_path: &RepoPath,
+	name: &str,
+	new_url: &str,
+) -> Result<()> {
+	let repo = repo(repo_path)?;
+	repo.remote_set_url(name, new_url)?;
+	Ok(())
+}
+
+///
+pub fn delete_remote(
+	repo_path: &RepoPath,
+	remote_name: &str,
+) -> Result<()> {
+	let repo = repo(repo_path)?;
+	repo.remote_delete(remote_name)?;
+	Ok(())
+}
+
+///
+pub fn validate_remote_name(name: &str) -> bool {
+	Remote::is_valid_name(name)
+}
+
+///
 pub fn get_remotes(repo_path: &RepoPath) -> Result<Vec<String>> {
 	scope_time!("get_remotes");
 
@@ -42,6 +92,20 @@ pub fn get_remotes(repo_path: &RepoPath) -> Result<Vec<String>> {
 		remotes.iter().flatten().map(String::from).collect();
 
 	Ok(remotes)
+}
+
+///
+pub fn get_remote_url(
+	repo_path: &RepoPath,
+	remote_name: &str,
+) -> Result<Option<String>> {
+	let repo = repo(repo_path)?;
+	let remote = repo.find_remote(remote_name)?.clone();
+	let url = remote.url();
+	if let Some(u) = url {
+		return Ok(Some(u.to_string()));
+	}
+	Ok(None)
 }
 
 /// tries to find origin or the only remote that is defined if any

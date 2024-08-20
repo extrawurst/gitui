@@ -37,7 +37,7 @@ log = "0.4"
 notify = "6.1"
 notify-debouncer-mini = "0.4"
 once_cell = "1"
-# pin until upgrading this does not introduce a duplicte dependency
+# pin until upgrading this does not introduce a duplicate dependency
 parking_lot_core = "=0.9.9"
 ratatui = { version = "0.28", default-features = false, features = [
     'crossterm',
