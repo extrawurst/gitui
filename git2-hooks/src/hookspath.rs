@@ -3,7 +3,7 @@ use git2::Repository;
 use crate::{error::Result, HookResult, HooksError};
 
 use std::{
-	path::Path, path::PathBuf, process::Command, str::FromStr,
+	env, path::Path, path::PathBuf, process::Command, str::FromStr,
 };
 
 pub struct HookPaths {
@@ -113,9 +113,10 @@ impl HookPaths {
 
 		log::trace!("run hook '{:?}' in '{:?}'", hook, self.pwd);
 
-		let git_bash = find_bash_executable()
-			.unwrap_or_else(|| PathBuf::from("bash"));
-		let output = Command::new(git_bash)
+		let git_shell = find_bash_executable()
+			.or_else(find_default_unix_shell)
+			.unwrap_or_else(|| "bash".into());
+		let output = Command::new(git_shell)
 			.args(bash_args)
 			.current_dir(&self.pwd)
 			// This call forces Command to handle the Path environment correctly on windows,
@@ -190,4 +191,9 @@ fn find_bash_executable() -> Option<PathBuf> {
 	} else {
 		None
 	}
+}
+
+// Find default shell on Unix-like OS.
+fn find_default_unix_shell() -> Option<PathBuf> {
+	env::var_os("SHELL").map(PathBuf::from)
 }
