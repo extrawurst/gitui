@@ -11,6 +11,7 @@ use crate::{
 
 use ratatui::{
 	layout::Rect,
+	style::{Color, Style},
 	widgets::{Block, Clear, Paragraph},
 	Frame,
 };
@@ -19,27 +20,44 @@ use anyhow::Result;
 
 use crossterm::event::{Event, KeyCode};
 
+#[derive(Debug)]
+pub struct GotoLineContext {
+	pub max_line: usize,
+}
+
+#[derive(Debug)]
+pub struct GotoLineOpen {
+	pub context: GotoLineContext,
+}
+
 pub struct GotoLinePopup {
 	visible: bool,
-	line: String,
+	input: String,
+	line_number: usize,
 	key_config: SharedKeyConfig,
 	queue: Queue,
 	theme: SharedTheme,
+	invalid_input: bool,
+	context: GotoLineContext,
 }
 
 impl GotoLinePopup {
 	pub fn new(env: &Environment) -> Self {
 		Self {
 			visible: false,
-			line: String::new(),
+			input: String::new(),
 			key_config: env.key_config.clone(),
 			queue: env.queue.clone(),
 			theme: env.theme.clone(),
+			invalid_input: false,
+			context: GotoLineContext { max_line: 0 },
+			line_number: 0,
 		}
 	}
 
-	pub fn open(&mut self) {
+	pub fn open(&mut self, open: GotoLineOpen) {
 		self.visible = true;
+		self.context = open.context;
 	}
 }
 
@@ -63,32 +81,53 @@ impl Component for GotoLinePopup {
 			if let Event::Key(key) = event {
 				if key_match(key, self.key_config.keys.exit_popup) {
 					self.visible = false;
-					self.line.clear();
+					self.input.clear();
 					self.queue.push(InternalEvent::PopupStackPop);
 				} else if let KeyCode::Char(c) = key.code {
-					if c.is_ascii_digit() {
-						// I'd assume it's unusual for people to blame
-						// files with milions of lines
-						if self.line.len() < 6 {
-							self.line.push(c);
-						}
+					if c.is_ascii_digit() || c == '-' {
+						self.input.push(c);
 					}
 				} else if key.code == KeyCode::Backspace {
-					self.line.pop();
+					self.input.pop();
 				} else if key_match(key, self.key_config.keys.enter) {
 					self.visible = false;
-					if !self.line.is_empty() {
+					if self.invalid_input {
+						self.queue.push(InternalEvent::ShowErrorMsg(
+                            format!("Invalid input: only numbers between -{0} and {0} (included) are allowed",self.context.max_line))
+                            ,
+                        );
+					} else if !self.input.is_empty() {
 						self.queue.push(InternalEvent::GotoLine(
-							self.line.parse::<usize>()?,
+							self.line_number,
 						));
 					}
 					self.queue.push(InternalEvent::PopupStackPop);
-					self.line.clear();
+					self.input.clear();
+					self.invalid_input = false;
 				}
-				return Ok(EventState::Consumed);
 			}
+			match self.input.parse::<isize>() {
+				Ok(input) => {
+					if input.unsigned_abs() > self.context.max_line {
+						self.invalid_input = true;
+					} else {
+						self.invalid_input = false;
+						self.line_number = if input > 0 {
+							input.unsigned_abs()
+						} else {
+							self.context.max_line
+								- input.unsigned_abs()
+						}
+					}
+				}
+				Err(_) => {
+					if !self.input.is_empty() {
+						self.invalid_input = true;
+					}
+				}
+			}
+			return Ok(EventState::Consumed);
 		}
-
 		Ok(EventState::NotConsumed)
 	}
 }
@@ -96,8 +135,13 @@ impl Component for GotoLinePopup {
 impl DrawableComponent for GotoLinePopup {
 	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible() {
-			let input = Paragraph::new(self.line.as_str())
-				.style(self.theme.text(true, false))
+			let style = if self.invalid_input {
+				Style::default().fg(Color::Red)
+			} else {
+				self.theme.text(true, false)
+			};
+			let input = Paragraph::new(self.input.as_str())
+				.style(style)
 				.block(Block::bordered().title("Go to Line"));
 
 			let input_area = ui::centered_rect_absolute(15, 3, area);

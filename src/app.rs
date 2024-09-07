@@ -675,8 +675,8 @@ impl App {
 			StackablePopupOpen::CompareCommits(param) => {
 				self.compare_commits_popup.open(param)?;
 			}
-			StackablePopupOpen::GotoLine => {
-				self.goto_line_popup.open();
+			StackablePopupOpen::GotoLine(param) => {
+				self.goto_line_popup.open(param);
 			}
 		}
 

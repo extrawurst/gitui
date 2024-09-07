@@ -30,6 +30,8 @@ use ratatui::{
 };
 use std::path::Path;
 
+use super::{goto_line::GotoLineContext, GotoLineOpen};
+
 static NO_COMMIT_ID: &str = "0000000";
 static NO_AUTHOR: &str = "<no author>";
 static MIN_AUTHOR_WIDTH: usize = 3;
@@ -333,7 +335,11 @@ impl Component for BlameFilePopup {
 					self.hide_stacked(true);
 					self.visible = true;
 					self.queue.push(InternalEvent::OpenPopup(
-						StackablePopupOpen::GotoLine,
+						StackablePopupOpen::GotoLine(GotoLineOpen {
+							context: GotoLineContext {
+								max_line: self.get_max_line_number(),
+							},
+						}),
 					));
 				}
 
