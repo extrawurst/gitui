@@ -293,6 +293,8 @@ impl RemoteListPopup {
 	}
 
 	fn draw_separator(&self, f: &mut Frame, r: Rect) {
+		// Discard self argument because it is not needed.
+		let _ = self;
 		f.render_widget(
 			Block::default()
 				.title(strings::POPUP_SUBTITLE_REMOTES)
