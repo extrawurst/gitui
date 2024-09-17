@@ -641,7 +641,7 @@ impl DrawableComponent for TextInputComponent {
 
 			f.render_widget(Clear, area);
 
-			f.render_widget(ta.widget(), area);
+			f.render_widget(ta, area);
 
 			if self.show_char_count {
 				self.draw_char_count(f, area);
