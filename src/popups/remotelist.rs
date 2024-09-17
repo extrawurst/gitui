@@ -9,6 +9,7 @@ use ratatui::{
 	widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
 	Frame,
 };
+use unicode_truncate::UnicodeTruncateStr;
 
 use crate::{
 	app::Environment,
@@ -232,10 +233,8 @@ impl RemoteListPopup {
 	) -> Text {
 		const THREE_DOTS: &str = "...";
 		const THREE_DOTS_LENGTH: usize = THREE_DOTS.len(); // "..."
-		const COMMIT_HASH_LENGTH: usize = 8;
 
 		let name_length: usize = (width_available as usize)
-			.saturating_sub(COMMIT_HASH_LENGTH)
 			.saturating_sub(THREE_DOTS_LENGTH);
 
 		Text::from(
@@ -248,8 +247,23 @@ impl RemoteListPopup {
 					let selected = (self.selection as usize
 						- self.scroll.get_top())
 						== i;
+					let mut remote_name = remote.clone();
+					if remote_name.len()
+						> name_length
+							.saturating_sub(THREE_DOTS_LENGTH)
+					{
+						remote_name = remote_name
+							.unicode_truncate(
+								name_length.saturating_sub(
+									THREE_DOTS_LENGTH,
+								),
+							)
+							.0
+							.to_string();
+						remote_name += THREE_DOTS;
+					}
 					let span_name = Span::styled(
-						format!("{remote:name_length$}"),
+						format!("{remote_name:name_length$}"),
 						theme.text(true, selected),
 					);
 					Line::from(vec![span_name])
@@ -305,19 +319,61 @@ impl RemoteListPopup {
 	}
 
 	fn draw_selected_remote_details(&self, f: &mut Frame, r: Rect) {
+		const THREE_DOTS: &str = "...";
+		const THREE_DOTS_LENGTH: usize = THREE_DOTS.len(); // "..."
+		const REMOTE_NAME_LABEL: &str = "name: ";
+		const REMOTE_NAME_LABEL_LENGTH: usize =
+			REMOTE_NAME_LABEL.len();
+		const REMOTE_URL_LABEL: &str = "url: ";
+		const REMOTE_URL_LABEL_LENGTH: usize = REMOTE_URL_LABEL.len();
+
+		let name_length: usize = (r.width.saturating_sub(1) as usize)
+			.saturating_sub(REMOTE_NAME_LABEL_LENGTH);
+		let url_length: usize = (r.width.saturating_sub(1) as usize)
+			.saturating_sub(REMOTE_URL_LABEL_LENGTH);
+
 		let remote =
 			self.remote_names.get(usize::from(self.selection));
 		if let Some(remote) = remote {
+			let mut remote_name = remote.clone();
+			if remote_name.len()
+				> name_length.saturating_sub(THREE_DOTS_LENGTH)
+			{
+				remote_name = remote_name
+					.unicode_truncate(
+						name_length.saturating_sub(THREE_DOTS_LENGTH),
+					)
+					.0
+					.to_string();
+				remote_name += THREE_DOTS;
+			}
 			let mut lines = Vec::<Line>::new();
 			lines.push(Line::from(Span::styled(
-				format!("name: {remote}"),
+				format!(
+					"{REMOTE_NAME_LABEL}{remote_name:name_length$}"
+				),
 				self.theme.text(true, false),
 			)));
 			let remote_url =
 				get_remote_url(&self.repo.borrow(), remote);
 			if let Ok(Some(remote_url)) = remote_url {
+				let mut display_url = remote_url.clone();
+				if display_url.len()
+					> url_length.saturating_sub(THREE_DOTS_LENGTH)
+				{
+					display_url = display_url
+						.unicode_truncate(
+							url_length
+								.saturating_sub(THREE_DOTS_LENGTH),
+						)
+						.0
+						.to_string();
+					display_url += THREE_DOTS;
+				}
 				lines.push(Line::from(Span::styled(
-					format!("url: {remote_url}"),
+					format!(
+						"{REMOTE_URL_LABEL}{display_url:url_length$}"
+					),
 					self.theme.text(true, false),
 				)));
 			}
