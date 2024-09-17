@@ -639,7 +639,9 @@ impl DrawableComponent for TextInputComponent {
 				)
 			};
 
-			f.render_widget(Clear, area);
+			if area.height > 5 && area.width > 5 {
+				f.render_widget(Clear, area);
+			}
 
 			f.render_widget(ta, area);
 
