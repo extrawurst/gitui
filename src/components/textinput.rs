@@ -623,18 +623,18 @@ impl DrawableComponent for TextInputComponent {
 			let area = if self.embed {
 				rect
 			} else if self.input_type == InputType::Multiline {
-				let area = ui::centered_rect(60, 20, f.size());
+				let area = ui::centered_rect(60, 20, f.area());
 				ui::rect_inside(
 					Size::new(10, 3),
-					f.size().into(),
+					f.area().into(),
 					area,
 				)
 			} else {
-				let area = ui::centered_rect(60, 1, f.size());
+				let area = ui::centered_rect(60, 1, f.area());
 
 				ui::rect_inside(
 					Size::new(10, 3),
-					Size::new(f.size().width, 3),
+					Size::new(f.area().width, 3),
 					area,
 				)
 			};

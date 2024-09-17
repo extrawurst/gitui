@@ -230,7 +230,7 @@ impl App {
 
 	///
 	pub fn draw(&self, f: &mut Frame) -> Result<()> {
-		let fsize = f.size();
+		let fsize = f.area();
 
 		self.cmdbar.borrow_mut().refresh_width(fsize.width);
 
