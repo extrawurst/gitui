@@ -620,12 +620,15 @@ impl DrawableComponent for TextInputComponent {
 		// this should always be true since draw should only be being called
 		// is control is visible
 		if let Some(ta) = &self.textarea {
+			let popup_height =
+				if f.area().height > 3 { 3 } else { 1 };
+
 			let area = if self.embed {
 				rect
 			} else if self.input_type == InputType::Multiline {
 				let area = ui::centered_rect(60, 20, f.area());
 				ui::rect_inside(
-					Size::new(10, 3),
+					Size::new(10, popup_height),
 					f.area().into(),
 					area,
 				)
@@ -633,15 +636,13 @@ impl DrawableComponent for TextInputComponent {
 				let area = ui::centered_rect(60, 1, f.area());
 
 				ui::rect_inside(
-					Size::new(10, 3),
-					Size::new(f.area().width, 3),
+					Size::new(10, popup_height),
+					Size::new(f.area().width, popup_height),
 					area,
 				)
 			};
 
-			if area.height > 5 && area.width > 5 {
-				f.render_widget(Clear, area);
-			}
+			f.render_widget(Clear, area);
 
 			f.render_widget(ta, area);
 
