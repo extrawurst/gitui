@@ -276,7 +276,9 @@ impl AsyncLog {
 		let mut entries = vec![CommitId::default(); LIMIT_COUNT];
 		entries.resize(0, CommitId::default());
 
-		let mut repo = gix::open(repo_path.gitpath())?;
+		let mut repo: gix::Repository =
+				gix::ThreadSafeRepository::discover_with_environment_overrides(repo_path.gitpath())
+						.map(Into::into)?;
 		let mut walker =
 			LogWalkerWithoutFilter::new(&mut repo, LIMIT_COUNT)?;
 
@@ -319,5 +321,51 @@ impl AsyncLog {
 		sender
 			.send(AsyncGitNotification::Log)
 			.expect("error sending");
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use std::sync::atomic::AtomicBool;
+	use std::sync::{Arc, Mutex};
+	use std::time::Duration;
+
+	use crossbeam_channel::unbounded;
+
+	use crate::sync::tests::{debug_cmd_print, repo_init};
+	use crate::sync::RepoPath;
+	use crate::AsyncLog;
+
+	use super::AsyncLogResult;
+
+	#[test]
+	fn test_smoke_in_subdir() {
+		let (_td, repo) = repo_init().unwrap();
+		let root = repo.path().parent().unwrap();
+		let repo_path: RepoPath =
+			root.as_os_str().to_str().unwrap().into();
+
+		let (tx_git, _rx_git) = unbounded();
+
+		debug_cmd_print(&repo_path, "mkdir subdir");
+
+		let subdir = repo.path().parent().unwrap().join("subdir");
+		let subdir_path: RepoPath =
+			subdir.as_os_str().to_str().unwrap().into();
+
+		let arc_current = Arc::new(Mutex::new(AsyncLogResult {
+			commits: Vec::new(),
+			duration: Duration::default(),
+		}));
+		let arc_background = Arc::new(AtomicBool::new(false));
+
+		let result = AsyncLog::fetch_helper_without_filter(
+			&subdir_path,
+			&arc_current,
+			&arc_background,
+			&tx_git,
+		);
+
+		assert!(result.is_ok());
 	}
 }
