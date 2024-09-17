@@ -302,7 +302,7 @@ fn shutdown_terminal() {
 
 fn draw(terminal: &mut Terminal, app: &App) -> io::Result<()> {
 	if app.requires_redraw() {
-		terminal.resize(terminal.size()?)?;
+		terminal.clear()?;
 	}
 
 	terminal.draw(|f| {

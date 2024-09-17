@@ -82,7 +82,7 @@ macro_rules! draw_popups {
                 ]
                 .as_ref(),
             )
-            .split(f.size())[0];
+            .split(f.area())[0];
 
             ($($self.$element.draw(&mut f, size)?) , +);
 

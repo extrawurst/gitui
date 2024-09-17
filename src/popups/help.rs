@@ -39,7 +39,7 @@ impl DrawableComponent for HelpPopup {
 				self.selection.saturating_sub(scroll_threshold);
 
 			let area =
-				ui::centered_rect_absolute(SIZE.0, SIZE.1, f.size());
+				ui::centered_rect_absolute(SIZE.0, SIZE.1, f.area());
 
 			f.render_widget(Clear, area);
 			f.render_widget(

@@ -119,7 +119,7 @@ impl DrawableComponent for FetchPopup {
 		if self.visible {
 			let progress = self.progress.unwrap_or_default().progress;
 
-			let area = ui::centered_rect_absolute(30, 3, f.size());
+			let area = ui::centered_rect_absolute(30, 3, f.area());
 
 			f.render_widget(Clear, area);
 			f.render_widget(
