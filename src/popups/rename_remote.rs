@@ -148,22 +148,24 @@ impl RenameRemotePopup {
 	///
 	pub fn rename_remote(&mut self) {
 		if let Some(init_name) = &self.initial_name {
-			let res = sync::rename_remote(
-				&self.repo.borrow(),
-				init_name,
-				self.input.get_text(),
-			);
-			match res {
-				Ok(()) => {
-					self.queue.push(InternalEvent::Update(
-						NeedsUpdate::ALL | NeedsUpdate::REMOTES,
-					));
-				}
-				Err(e) => {
-					log::error!("rename remote: {}", e,);
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						format!("rename remote error:\n{e}",),
-					));
+			if init_name != self.input.get_text() {
+				let res = sync::rename_remote(
+					&self.repo.borrow(),
+					init_name,
+					self.input.get_text(),
+				);
+				match res {
+					Ok(()) => {
+						self.queue.push(InternalEvent::Update(
+							NeedsUpdate::ALL | NeedsUpdate::REMOTES,
+						));
+					}
+					Err(e) => {
+						log::error!("rename remote: {}", e,);
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							format!("rename remote error:\n{e}",),
+						));
+					}
 				}
 			}
 		}
