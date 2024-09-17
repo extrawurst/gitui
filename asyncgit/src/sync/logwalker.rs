@@ -102,8 +102,7 @@ impl<'a> LogWalker<'a> {
 
 	//
 	fn visit(&mut self, c: Commit<'a>) {
-		if !self.visited.contains(&c.id()) {
-			self.visited.insert(c.id());
+		if self.visited.insert(c.id()) {
 			self.commits.push(TimeOrderedCommit(c));
 		}
 	}
