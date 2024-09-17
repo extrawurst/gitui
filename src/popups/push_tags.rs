@@ -162,7 +162,7 @@ impl DrawableComponent for PushTagsPopup {
 			let (state, progress) =
 				Self::get_progress(&self.progress);
 
-			let area = ui::centered_rect_absolute(30, 3, f.size());
+			let area = ui::centered_rect_absolute(30, 3, f.area());
 
 			f.render_widget(Clear, area);
 			f.render_widget(
