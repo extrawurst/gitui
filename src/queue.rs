@@ -28,6 +28,8 @@ bitflags! {
 		const COMMANDS = 0b100;
 		/// branches have changed
 		const BRANCHES = 0b1000;
+		/// Remotes have changed
+		const REMOTES = 0b1001;
 	}
 }
 
@@ -48,6 +50,7 @@ pub enum Action {
 	DeleteRemoteBranch(String),
 	DeleteTag(String),
 	DeleteRemoteTag(String, String),
+	DeleteRemote(String),
 	ForcePush(String, bool),
 	PullMerge { incoming: usize, rebase: bool },
 	AbortMerge,
@@ -111,6 +114,10 @@ pub enum InternalEvent {
 	///
 	CreateBranch,
 	///
+	RenameRemote(String),
+	///
+	UpdateRemoteUrl(String, String),
+	///
 	RenameBranch(String, String),
 	///
 	SelectBranch,
@@ -140,6 +147,10 @@ pub enum InternalEvent {
 	PopupStackPush(StackablePopupOpen),
 	///
 	ViewSubmodules,
+	///
+	ViewRemotes,
+	///
+	CreateRemote,
 	///
 	OpenRepo { path: PathBuf },
 	///

@@ -12,13 +12,14 @@ use crate::{
 	popups::{
 		AppOption, BlameFileOpen, BlameFilePopup, BlameRequest,
 		BranchListPopup, CommitPopup, CompareCommitsPopup,
-		ConfirmPopup, CreateBranchPopup, ExternalEditorPopup,
-		FetchPopup, FileRevlogPopup, FuzzyFindPopup, GotoLinePopup,
-		HelpPopup, InspectCommitPopup, LogSearchPopupPopup, MsgPopup,
-		OptionsPopup, PullPopup, PushPopup, PushTagsPopup,
-		RenameBranchPopup, ResetPopup, RevisionFilesPopup,
+		ConfirmPopup, CreateBranchPopup, CreateRemotePopup,
+		ExternalEditorPopup, FetchPopup, FileRevlogPopup,
+		FuzzyFindPopup, GotoLinePopup, HelpPopup, InspectCommitPopup,
+		LogSearchPopupPopup, MsgPopup, OptionsPopup, PullPopup,
+		PushPopup, PushTagsPopup, RemoteListPopup, RenameBranchPopup,
+		RenameRemotePopup, ResetPopup, RevisionFilesPopup,
 		StashMsgPopup, SubmodulesListPopup, TagCommitPopup,
-		TagListPopup,
+		TagListPopup, UpdateRemoteUrlPopup,
 	},
 	queue::{
 		Action, AppTabs, InternalEvent, NeedsUpdate, Queue,
@@ -87,6 +88,10 @@ pub struct App {
 	fetch_popup: FetchPopup,
 	tag_commit_popup: TagCommitPopup,
 	create_branch_popup: CreateBranchPopup,
+	create_remote_popup: CreateRemotePopup,
+	rename_remote_popup: RenameRemotePopup,
+	update_remote_url_popup: UpdateRemoteUrlPopup,
+	remotes_popup: RemoteListPopup,
 	rename_branch_popup: RenameBranchPopup,
 	select_branch_popup: BranchListPopup,
 	options_popup: OptionsPopup,
@@ -191,6 +196,10 @@ impl App {
 			fetch_popup: FetchPopup::new(&env),
 			tag_commit_popup: TagCommitPopup::new(&env),
 			create_branch_popup: CreateBranchPopup::new(&env),
+			create_remote_popup: CreateRemotePopup::new(&env),
+			rename_remote_popup: RenameRemotePopup::new(&env),
+			update_remote_url_popup: UpdateRemoteUrlPopup::new(&env),
+			remotes_popup: RemoteListPopup::new(&env),
 			rename_branch_popup: RenameBranchPopup::new(&env),
 			select_branch_popup: BranchListPopup::new(&env),
 			tags_popup: TagListPopup::new(&env),
@@ -488,6 +497,10 @@ impl App {
 			tag_commit_popup,
 			reset_popup,
 			create_branch_popup,
+			create_remote_popup,
+			rename_remote_popup,
+			update_remote_url_popup,
+			remotes_popup,
 			rename_branch_popup,
 			select_branch_popup,
 			revision_files_popup,
@@ -516,6 +529,10 @@ impl App {
 			external_editor_popup,
 			tag_commit_popup,
 			select_branch_popup,
+			remotes_popup,
+			create_remote_popup,
+			rename_remote_popup,
+			update_remote_url_popup,
 			submodule_popup,
 			tags_popup,
 			reset_popup,
@@ -651,6 +668,9 @@ impl App {
 		if flags.contains(NeedsUpdate::BRANCHES) {
 			self.select_branch_popup.update_branches()?;
 		}
+		if flags.contains(NeedsUpdate::REMOTES) {
+			self.remotes_popup.update_remotes()?;
+		}
 
 		Ok(())
 	}
@@ -735,7 +755,19 @@ impl App {
 			InternalEvent::TagCommit(id) => {
 				self.tag_commit_popup.open(id)?;
 			}
-
+			InternalEvent::CreateRemote => {
+				self.create_remote_popup.open()?;
+			}
+			InternalEvent::RenameRemote(cur_name) => {
+				self.rename_remote_popup.open(cur_name)?;
+			}
+			InternalEvent::UpdateRemoteUrl(remote_name, cur_url) => {
+				self.update_remote_url_popup
+					.open(remote_name, cur_url)?;
+			}
+			InternalEvent::ViewRemotes => {
+				self.remotes_popup.open()?;
+			}
 			InternalEvent::CreateBranch => {
 				self.create_branch_popup.open()?;
 			}
@@ -954,6 +986,9 @@ impl App {
 			Action::DeleteRemoteBranch(branch_ref) => {
 				self.delete_remote_branch(&branch_ref)?;
 			}
+			Action::DeleteRemote(remote_name) => {
+				self.delete_remote(&remote_name);
+			}
 			Action::DeleteTag(tag_name) => {
 				self.delete_tag(tag_name)?;
 			}
@@ -1041,6 +1076,24 @@ impl App {
 		self.select_branch_popup.update_branches()?;
 
 		Ok(())
+	}
+
+	fn delete_remote(&self, remote_name: &str) {
+		let res =
+			sync::delete_remote(&self.repo.borrow(), remote_name);
+		match res {
+			Ok(()) => {
+				self.queue.push(InternalEvent::Update(
+					NeedsUpdate::ALL | NeedsUpdate::REMOTES,
+				));
+			}
+			Err(e) => {
+				log::error!("delete remote: {}", e,);
+				self.queue.push(InternalEvent::ShowErrorMsg(
+					format!("delete remote error:\n{e}",),
+				));
+			}
+		}
 	}
 
 	fn commands(&self, force_all: bool) -> Vec<CommandInfo> {

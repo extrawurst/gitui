@@ -634,7 +634,7 @@ impl DrawableComponent for TextInputComponent {
 
 				ui::rect_inside(
 					Size::new(10, 3),
-					Size::new(f.area().width, 3),
+					f.area().into(),
 					area,
 				)
 			};

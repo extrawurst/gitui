@@ -8,8 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Breaking Changes
-
-#### Shell
 * use default shell instead of bash on Unix-like OS [[@yerke](https://github.com/yerke)] ([#2343](https://github.com/extrawurst/gitui/pull/2343))
 
 ### Fixes
@@ -18,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * Add "go to line" command for the blame view [[@andrea-berling](https://github.com/andrea-berling)] ([#2262](https://github.com/extrawurst/gitui/pull/2262))
+* add popups for viewing, adding, updating and removing remotes [[@robin-thoene](https://github.com/robin-thoene)] ([#2172](https://github.com/extrawurst/gitui/issues/2172))
 
 ## [0.26.3] - 2024-06-02
 
