@@ -18,8 +18,10 @@ use crate::{
 
 #[derive(Default)]
 enum State {
+	// first we ask for a name for a new remote
 	#[default]
 	Name,
+	// second we ask for a url and carry with us the name previously entered
 	Url {
 		name: String,
 	},
