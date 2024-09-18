@@ -362,13 +362,16 @@ impl RemoteListPopup {
 					> url_length.saturating_sub(THREE_DOTS_LENGTH)
 				{
 					display_url = display_url
-						.unicode_truncate(
-							url_length
-								.saturating_sub(THREE_DOTS_LENGTH),
+						.chars()
+						.skip(
+							display_url.len()
+								- url_length.saturating_sub(
+									THREE_DOTS_LENGTH,
+								),
 						)
-						.0
-						.to_string();
-					display_url += THREE_DOTS;
+						.collect::<String>();
+					display_url =
+						format!("{}{}", THREE_DOTS, display_url);
 				}
 				lines.push(Line::from(Span::styled(
 					format!(
