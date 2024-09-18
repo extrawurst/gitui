@@ -93,7 +93,7 @@ impl Component for GotoLinePopup {
 					self.visible = false;
 					if self.invalid_input {
 						self.queue.push(InternalEvent::ShowErrorMsg(
-                            format!("Invalid input: only numbers between -{0} and {0} (included) are allowed",self.context.max_line))
+                            format!("Invalid input: only numbers between -{} and {} (included) are allowed (-1 means denotes the last line, -2 denotes the second to last line, and so on)",self.context.max_line + 1, self.context.max_line))
                             ,
                         );
 					} else if !self.input.is_empty() {
@@ -108,15 +108,21 @@ impl Component for GotoLinePopup {
 			}
 			match self.input.parse::<isize>() {
 				Ok(input) => {
-					if input.unsigned_abs() > self.context.max_line {
+					let mut max_value_allowed_abs =
+						self.context.max_line;
+					// negative indices are 1 based
+					if input < 0 {
+						max_value_allowed_abs += 1;
+					}
+					let input_abs = input.unsigned_abs();
+					if input_abs > max_value_allowed_abs {
 						self.invalid_input = true;
 					} else {
 						self.invalid_input = false;
-						self.line_number = if input > 0 {
-							input.unsigned_abs()
+						self.line_number = if input >= 0 {
+							input_abs
 						} else {
-							self.context.max_line
-								- input.unsigned_abs()
+							max_value_allowed_abs - input_abs
 						}
 					}
 				}
