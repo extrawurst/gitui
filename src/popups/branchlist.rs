@@ -112,111 +112,7 @@ impl Component for BranchListPopup {
 				out.clear();
 			}
 
-			let selection_is_cur_branch =
-				self.selection_is_cur_branch();
-
-			out.push(CommandInfo::new(
-				strings::commands::scroll(&self.key_config),
-				true,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::close_popup(&self.key_config),
-				true,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::commit_details_open(
-					&self.key_config,
-				),
-				true,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::compare_with_head(
-					&self.key_config,
-				),
-				!selection_is_cur_branch,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::toggle_branch_popup(
-					&self.key_config,
-					self.local,
-				),
-				true,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::select_branch_popup(
-					&self.key_config,
-				),
-				!selection_is_cur_branch && self.valid_selection(),
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::open_branch_create_popup(
-					&self.key_config,
-				),
-				true,
-				self.local,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::delete_branch_popup(
-					&self.key_config,
-				),
-				!selection_is_cur_branch,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::merge_branch_popup(
-					&self.key_config,
-				),
-				!selection_is_cur_branch,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::branch_popup_rebase(
-					&self.key_config,
-				),
-				!selection_is_cur_branch,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::rename_branch_popup(
-					&self.key_config,
-				),
-				true,
-				self.local,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::fetch_remotes(&self.key_config),
-				self.has_remotes,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::find_branch(&self.key_config),
-				true,
-				true,
-			));
-
-			out.push(CommandInfo::new(
-				strings::commands::reset_branch(&self.key_config),
-				self.valid_selection(),
-				true,
-			));
+			self.add_commands_internal(out);
 		}
 		visibility_blocking(self)
 	}
@@ -294,6 +190,9 @@ impl Component for BranchListPopup {
 				&& self.has_remotes
 			{
 				self.queue.push(InternalEvent::FetchRemotes);
+			} else if key_match(e, self.key_config.keys.view_remotes)
+			{
+				self.queue.push(InternalEvent::ViewRemotes);
 			} else if key_match(e, self.key_config.keys.reset_branch)
 			{
 				if let Some(commit_id) = self.get_selected_commit() {
@@ -774,6 +673,105 @@ impl BranchListPopup {
 			} else {
 				Action::DeleteRemoteBranch(reference)
 			},
+		));
+	}
+
+	fn add_commands_internal(&self, out: &mut Vec<CommandInfo>) {
+		let selection_is_cur_branch = self.selection_is_cur_branch();
+
+		out.push(CommandInfo::new(
+			strings::commands::scroll(&self.key_config),
+			true,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::close_popup(&self.key_config),
+			true,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::commit_details_open(&self.key_config),
+			true,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::compare_with_head(&self.key_config),
+			!selection_is_cur_branch,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::toggle_branch_popup(
+				&self.key_config,
+				self.local,
+			),
+			true,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::select_branch_popup(&self.key_config),
+			!selection_is_cur_branch && self.valid_selection(),
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::open_branch_create_popup(
+				&self.key_config,
+			),
+			true,
+			self.local,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::delete_branch_popup(&self.key_config),
+			!selection_is_cur_branch,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::merge_branch_popup(&self.key_config),
+			!selection_is_cur_branch,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::branch_popup_rebase(&self.key_config),
+			!selection_is_cur_branch,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::rename_branch_popup(&self.key_config),
+			true,
+			self.local,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::fetch_remotes(&self.key_config),
+			self.has_remotes,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::find_branch(&self.key_config),
+			true,
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::reset_branch(&self.key_config),
+			self.valid_selection(),
+			true,
+		));
+
+		out.push(CommandInfo::new(
+			strings::commands::view_remotes(&self.key_config),
+			true,
+			self.has_remotes,
 		));
 	}
 }
