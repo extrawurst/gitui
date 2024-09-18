@@ -961,7 +961,6 @@ impl App {
 			}
 			Action::DeleteRemote(remote_name) => {
 				self.delete_remote(&remote_name);
-				self.remotes_popup.update_remotes()?;
 			}
 			Action::DeleteTag(tag_name) => {
 				self.delete_tag(tag_name)?;
