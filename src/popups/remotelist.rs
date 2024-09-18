@@ -356,26 +356,24 @@ impl RemoteListPopup {
 			)));
 			let remote_url =
 				get_remote_url(&self.repo.borrow(), remote);
-			if let Ok(Some(remote_url)) = remote_url {
-				let mut display_url = remote_url.clone();
-				if display_url.len()
+			if let Ok(Some(mut remote_url)) = remote_url {
+				if remote_url.len()
 					> url_length.saturating_sub(THREE_DOTS_LENGTH)
 				{
-					display_url = display_url
+					remote_url = remote_url
 						.chars()
 						.skip(
-							display_url.len()
+							remote_url.len()
 								- url_length.saturating_sub(
 									THREE_DOTS_LENGTH,
 								),
 						)
 						.collect::<String>();
-					display_url =
-						format!("{}{}", THREE_DOTS, display_url);
+					remote_url = format!("{THREE_DOTS}{remote_url}");
 				}
 				lines.push(Line::from(Span::styled(
 					format!(
-						"{REMOTE_URL_LABEL}{display_url:url_length$}"
+						"{REMOTE_URL_LABEL}{remote_url:url_length$}"
 					),
 					self.theme.text(true, false),
 				)));
