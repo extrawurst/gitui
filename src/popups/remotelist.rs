@@ -439,6 +439,7 @@ impl RemoteListPopup {
 	pub fn update_remotes(&mut self) -> Result<()> {
 		if self.is_visible() {
 			self.remote_names = get_remotes(&self.repo.borrow())?;
+			self.set_selection(self.selection)?;
 		}
 		Ok(())
 	}
