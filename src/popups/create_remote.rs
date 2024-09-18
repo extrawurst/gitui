@@ -1,7 +1,5 @@
-use std::borrow::Borrow;
-
 use anyhow::Result;
-use asyncgit::sync::{add_remote, validate_remote_name, RepoPathRef};
+use asyncgit::sync::{self, validate_remote_name, RepoPathRef};
 use crossterm::event::Event;
 use easy_cast::Cast;
 use ratatui::{widgets::Paragraph, Frame};
@@ -18,12 +16,21 @@ use crate::{
 	ui::style::SharedTheme,
 };
 
+#[derive(Default)]
+enum State {
+	#[default]
+	Name,
+	Url {
+		name: String,
+	},
+}
+
 pub struct CreateRemotePopup {
 	repo: RepoPathRef,
 	input: TextInputComponent,
 	queue: Queue,
 	key_config: SharedKeyConfig,
-	provided_name: Option<String>,
+	state: State,
 	theme: SharedTheme,
 }
 
@@ -72,7 +79,7 @@ impl Component for CreateRemotePopup {
 
 			if let Event::Key(e) = ev {
 				if key_match(e, self.key_config.keys.enter) {
-					self.handle_submit()?;
+					self.handle_submit();
 				}
 
 				return Ok(EventState::Consumed);
@@ -90,6 +97,14 @@ impl Component for CreateRemotePopup {
 	}
 
 	fn show(&mut self) -> Result<()> {
+		self.input.clear();
+		self.input.set_title(
+			strings::create_remote_popup_title_name(&self.key_config),
+		);
+		self.input.set_default_msg(
+			strings::create_remote_popup_msg_name(&self.key_config),
+		);
+
 		self.input.show()?;
 
 		Ok(())
@@ -101,38 +116,30 @@ impl CreateRemotePopup {
 		Self {
 			repo: env.repo.clone(),
 			queue: env.queue.clone(),
-			input: TextInputComponent::new(
-				env,
-				&strings::create_remote_popup_title_name(
-					&env.key_config,
-				),
-				&strings::create_remote_popup_msg_name(
-					&env.key_config,
-				),
-				true,
-			)
-			.with_input_type(InputType::Singleline),
+			input: TextInputComponent::new(env, "", "", true)
+				.with_input_type(InputType::Singleline),
 			key_config: env.key_config.clone(),
-			provided_name: None,
+			state: State::Name,
 			theme: env.theme.clone(),
 		}
 	}
 
 	pub fn open(&mut self) -> Result<()> {
+		self.state = State::Name;
+		self.input.clear();
 		self.show()?;
 
 		Ok(())
 	}
 
 	fn draw_warnings(&self, f: &mut Frame) {
-		let current_text = self.input.get_text();
+		let remote_name = match self.state {
+			State::Name => self.input.get_text(),
+			State::Url { .. } => return,
+		};
 
-		if !current_text.is_empty() {
-			let valid = if self.provided_name.is_none() {
-				validate_remote_name(current_text)
-			} else {
-				true
-			};
+		if !remote_name.is_empty() {
+			let valid = validate_remote_name(remote_name);
 
 			if !valid {
 				let msg = strings::remote_name_invalid();
@@ -158,56 +165,47 @@ impl CreateRemotePopup {
 		}
 	}
 
-	fn handle_submit(&mut self) -> Result<()> {
-		if let Some(name) = self.provided_name.borrow() {
-			let res = add_remote(
-				&self.repo.borrow(),
-				name,
-				self.input.get_text(),
-			);
-			match res {
-				Ok(()) => {
-					self.queue.push(InternalEvent::Update(
-						NeedsUpdate::ALL | NeedsUpdate::REMOTES,
-					));
-				}
-				Err(e) => {
-					log::error!("create remote: {}", e,);
-					self.queue.push(InternalEvent::ShowErrorMsg(
-						format!("create remote error:\n{e}",),
-					));
-				}
+	fn handle_submit(&mut self) {
+		match &self.state {
+			State::Name => {
+				self.input.clear();
+				self.input.set_title(
+					strings::create_remote_popup_title_url(
+						&self.key_config,
+					),
+				);
+				self.input.set_default_msg(
+					strings::create_remote_popup_msg_url(
+						&self.key_config,
+					),
+				);
+				self.state = State::Url {
+					name: self.input.get_text().to_string(),
+				};
 			}
-			self.provided_name = None;
-			self.input.clear();
-			self.input.set_title(
-				strings::create_remote_popup_title_name(
-					&self.key_config,
-				),
-			);
-			self.input.set_default_msg(
-				strings::create_remote_popup_msg_name(
-					&self.key_config,
-				),
-			);
-			self.hide();
-		} else {
-			self.provided_name =
-				Some(self.input.get_text().to_string());
-			self.hide();
-			self.input.clear();
-			self.input.set_title(
-				strings::create_remote_popup_title_url(
-					&self.key_config,
-				),
-			);
-			self.input.set_default_msg(
-				strings::create_remote_popup_msg_url(
-					&self.key_config,
-				),
-			);
-			self.show()?;
-		}
-		Ok(())
+			State::Url { name } => {
+				let res = sync::add_remote(
+					&self.repo.borrow(),
+					name,
+					self.input.get_text(),
+				);
+
+				match res {
+					Ok(()) => {
+						self.queue.push(InternalEvent::Update(
+							NeedsUpdate::ALL | NeedsUpdate::REMOTES,
+						));
+					}
+					Err(e) => {
+						log::error!("create remote: {}", e,);
+						self.queue.push(InternalEvent::ShowErrorMsg(
+							format!("create remote error:\n{e}",),
+						));
+					}
+				}
+
+				self.hide();
+			}
+		};
 	}
 }
