@@ -3,7 +3,10 @@ use git2::Repository;
 use crate::{error::Result, HookResult, HooksError};
 
 use std::{
-	env, path::Path, path::PathBuf, process::Command, str::FromStr,
+	env,
+	path::{Path, PathBuf},
+	process::Command,
+	str::FromStr,
 };
 
 pub struct HookPaths {
@@ -118,6 +121,7 @@ impl HookPaths {
 			.unwrap_or_else(|| "bash".into());
 		let output = Command::new(git_shell)
 			.args(bash_args)
+			.with_no_window()
 			.current_dir(&self.pwd)
 			// This call forces Command to handle the Path environment correctly on windows,
 			// the specific env set here does not matter
@@ -196,4 +200,21 @@ fn find_bash_executable() -> Option<PathBuf> {
 // Find default shell on Unix-like OS.
 fn find_default_unix_shell() -> Option<PathBuf> {
 	env::var_os("SHELL").map(PathBuf::from)
+}
+
+trait CommandExt {
+	fn with_no_window(&mut self) -> &mut Self;
+}
+
+impl CommandExt for Command {
+	/// On Windows, CLI applications that aren't the window's subsystem will
+	/// create and show a console window that pops up next to the main
+	/// application window when run. We disable this behavior by setting the
+	/// `CREATE_NO_WINDOW` flag.
+	#[inline]
+	fn with_no_window(&mut self) -> &mut Self {
+		use std::os::windows::process::CommandExt;
+		#[cfg(windows)]
+		self.creation_flags(0x0800_0000)
+	}
 }
