@@ -213,8 +213,12 @@ impl CommandExt for Command {
 	/// `CREATE_NO_WINDOW` flag.
 	#[inline]
 	fn with_no_window(&mut self) -> &mut Self {
-		use std::os::windows::process::CommandExt;
 		#[cfg(windows)]
-		self.creation_flags(0x0800_0000)
+		{
+			use std::os::windows::process::CommandExt;
+			self.creation_flags(0x0800_0000);
+		}
+
+		self
 	}
 }
