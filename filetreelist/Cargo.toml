@@ -10,6 +10,7 @@ readme = "README.md"
 license = "MIT"
 categories = ["command-line-utilities"]
 keywords = ["gui", "cli", "terminal", "ui", "tui"]
+exclude = ["/demo.gif"]
 
 [dependencies]
 thiserror = "1.0"
