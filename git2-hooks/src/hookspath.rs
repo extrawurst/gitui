@@ -210,7 +210,7 @@ trait CommandExt {
 	/// This flag is ignored if the application is not a console application,
 	/// or if it used with either `CREATE_NEW_CONSOLE` or `DETACHED_PROCESS`.
 	///
-	/// See: https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+	/// See: <https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags>
 	const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 	fn with_no_window(&mut self) -> &mut Self;
