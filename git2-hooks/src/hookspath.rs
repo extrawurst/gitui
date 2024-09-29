@@ -203,6 +203,16 @@ fn find_default_unix_shell() -> Option<PathBuf> {
 }
 
 trait CommandExt {
+	/// The process is a console application that is being run without a
+	/// console window. Therefore, the console handle for the application is
+	/// not set.
+	///
+	/// This flag is ignored if the application is not a console application,
+	/// or if it used with either `CREATE_NEW_CONSOLE` or `DETACHED_PROCESS`.
+	///
+	/// See: https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+	const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
 	fn with_no_window(&mut self) -> &mut Self;
 }
 
@@ -216,7 +226,7 @@ impl CommandExt for Command {
 		#[cfg(windows)]
 		{
 			use std::os::windows::process::CommandExt;
-			self.creation_flags(0x0800_0000);
+			self.creation_flags(Self::CREATE_NO_WINDOW);
 		}
 
 		self
