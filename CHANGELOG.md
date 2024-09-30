@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * add popups for viewing, adding, updating and removing remotes [[@robin-thoene](https://github.com/robin-thoene)] ([#2172](https://github.com/extrawurst/gitui/issues/2172))
+* When the terminal is insufficient to display all the commands, the cmdbar_bg configuration color does not fully take effect. ([#2347](https://github.com/extrawurst/gitui/issues/2347))
 
 ## [0.26.3] - 2024-06-02
 
