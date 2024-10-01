@@ -93,7 +93,7 @@ impl Component for GotoLinePopup {
 					self.visible = false;
 					if self.invalid_input {
 						self.queue.push(InternalEvent::ShowErrorMsg(
-                            format!("Invalid input: only numbers between -{} and {} (included) are allowed (-1 means denotes the last line, -2 denotes the second to last line, and so on)",self.context.max_line + 1, self.context.max_line))
+                            format!("Invalid input: only numbers between -{} and {} (included) are allowed (-1 denotes the last line, -2 denotes the second to last line, and so on)",self.context.max_line + 1, self.context.max_line))
                             ,
                         );
 					} else if !self.input.is_empty() {

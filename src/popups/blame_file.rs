@@ -332,15 +332,27 @@ impl Component for BlameFilePopup {
 					key,
 					self.key_config.keys.goto_line,
 				) {
-					self.hide_stacked(true);
-					self.visible = true;
-					self.queue.push(InternalEvent::OpenPopup(
-						StackablePopupOpen::GotoLine(GotoLineOpen {
-							context: GotoLineContext {
-								max_line: self.get_max_line_number(),
-							},
-						}),
-					));
+					let maybe_blame_result = &self
+						.blame
+						.as_ref()
+						.and_then(|blame| blame.result());
+					if maybe_blame_result.is_some() {
+						let max_line = maybe_blame_result
+							.expect("This can not be None")
+							.lines()
+							.len() - 1;
+						self.hide_stacked(true);
+						self.visible = true;
+						self.queue.push(InternalEvent::OpenPopup(
+							StackablePopupOpen::GotoLine(
+								GotoLineOpen {
+									context: GotoLineContext {
+										max_line,
+									},
+								},
+							),
+						));
+					}
 				}
 
 				return Ok(EventState::Consumed);
