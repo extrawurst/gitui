@@ -18,7 +18,7 @@ dirs = "5.0"
 easy-cast = "0.5"
 fuzzy-matcher = "0.3"
 git2 = "0.19"
-git2-hooks = { path = "../git2-hooks", version = "0.3" }
+git2-hooks = { path = "../git2-hooks", version = ">=0.4" }
 gix = { version = "0.66", default-features = false, features = [
     "max-performance",
     "revision",

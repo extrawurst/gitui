@@ -170,6 +170,10 @@ impl CreateRemotePopup {
 	fn handle_submit(&mut self) {
 		match &self.state {
 			State::Name => {
+				self.state = State::Url {
+					name: self.input.get_text().to_string(),
+				};
+
 				self.input.clear();
 				self.input.set_title(
 					strings::create_remote_popup_title_url(
@@ -181,9 +185,6 @@ impl CreateRemotePopup {
 						&self.key_config,
 					),
 				);
-				self.state = State::Url {
-					name: self.input.get_text().to_string(),
-				};
 			}
 			State::Url { name } => {
 				let res = sync::add_remote(
