@@ -252,22 +252,30 @@ impl RevisionFilesComponent {
 		})
 	}
 
-	fn selection_changed(&mut self) {
+	fn selected_tree_file(&self) -> Option<&TreeFile> {
 		//TODO: retrieve TreeFile from tree datastructure
-		if let Some(file) = self.selected_file_path_with_prefix() {
-			if let Some(files) = &self.files {
-				let path = Path::new(&file);
-				if let Some(item) =
-					files.iter().find(|f| f.path == path)
+		self.selected_file_path_with_prefix().and_then(|file| {
+			let path = Path::new(&file);
+			self.files.as_ref().and_then(|files| {
+				files.iter().find(|f| f.path == path)
+			})
+		})
+	}
+
+	fn selection_changed(&mut self) {
+		if let Some(tree_file) = self.selected_tree_file().cloned() {
+			if let Ok(path) = tree_file.path.strip_prefix("./") {
+				return self.current_file.load_file(
+					path.to_string_lossy().to_string(),
+					&tree_file,
+				);
+			}
+			self.current_file.clear();
+		}
+	}
+
 				{
-					if let Ok(path) = path.strip_prefix("./") {
-						return self.current_file.load_file(
-							path.to_string_lossy().to_string(),
-							item,
-						);
-					}
 				}
-				self.current_file.clear();
 			}
 		}
 	}
