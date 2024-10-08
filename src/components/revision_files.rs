@@ -17,7 +17,8 @@ use anyhow::Result;
 use asyncgit::{
 	asyncjob::AsyncSingleJob,
 	sync::{
-		get_commit_info, CommitId, CommitInfo, RepoPathRef, TreeFile,
+		get_commit_info, get_head, tree_file_content, CommitId,
+		CommitInfo, RepoPathRef, TreeFile,
 	},
 	AsyncGitNotification, AsyncTreeFilesJob,
 };
@@ -376,6 +377,12 @@ impl RevisionFilesComponent {
 			commit,
 		));
 	}
+
+	fn is_head(&self) -> bool {
+		let head = get_head(&self.repo.borrow()).ok();
+		let commit_id = self.revision().map(|rev| rev.id);
+		commit_id.is_some() && commit_id == head
+	}
 }
 
 impl DrawableComponent for RevisionFilesComponent {
@@ -413,6 +420,8 @@ impl Component for RevisionFilesComponent {
 		let is_tree_focused = matches!(self.focus, Focus::Tree);
 
 		if is_tree_focused || force_all {
+			let is_head = self.is_head();
+
 			out.push(
 				CommandInfo::new(
 					strings::commands::blame_file(&self.key_config),
@@ -423,7 +432,7 @@ impl Component for RevisionFilesComponent {
 			);
 			out.push(CommandInfo::new(
 				strings::commands::edit_item(&self.key_config),
-				self.tree.selected_file().is_some(),
+				self.tree.selected_file().is_some() && is_head,
 				true,
 			));
 			out.push(
@@ -462,6 +471,8 @@ impl Component for RevisionFilesComponent {
 
 		if let Event::Key(key) = event {
 			let is_tree_focused = matches!(self.focus, Focus::Tree);
+			let is_head = self.is_head();
+
 			if is_tree_focused
 				&& tree_nav(&mut self.tree, &self.key_config, key)
 			{
@@ -500,7 +511,8 @@ impl Component for RevisionFilesComponent {
 					self.open_finder();
 					return Ok(EventState::Consumed);
 				}
-			} else if key_match(key, self.key_config.keys.edit_file) {
+			} else if key_match(key, self.key_config.keys.edit_file)
+				&& is_head
 				if let Some(file) =
 					self.selected_file_path_with_prefix()
 				{
