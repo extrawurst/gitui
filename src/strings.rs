@@ -1185,6 +1185,16 @@ pub mod commands {
 			CMD_GROUP_CHANGES,
 		)
 	}
+	pub fn open_item(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Open [{}]",
+				key_config.get_hint(key_config.keys.open_file),
+			),
+			"open the currently selected file in an external editor",
+			CMD_GROUP_CHANGES,
+		)
+	}
 	pub fn stage_item(key_config: &SharedKeyConfig) -> CommandText {
 		CommandText::new(
 			format!(

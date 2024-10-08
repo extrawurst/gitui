@@ -57,6 +57,7 @@ syntect = { version = "5.2", default-features = false, features = [
     "default-themes",
     "html",
 ] }
+tempfile = "3"
 tui-textarea = "0.6"
 two-face = { version = "0.4.0", default-features = false }
 unicode-segmentation = "1.12"
@@ -67,7 +68,6 @@ which = "6.0"
 [dev-dependencies]
 env_logger = "0.11"
 pretty_assertions = "1.4"
-tempfile = "3"
 
 [build-dependencies]
 chrono = { version = "0.4", default-features = false, features = ["clock"] }

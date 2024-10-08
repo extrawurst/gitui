@@ -17,7 +17,8 @@ use anyhow::Result;
 use asyncgit::{
 	asyncjob::AsyncSingleJob,
 	sync::{
-		get_commit_info, CommitId, CommitInfo, RepoPathRef, TreeFile,
+		get_commit_info, get_head, tree_file_content, CommitId,
+		CommitInfo, RepoPathRef, TreeFile,
 	},
 	AsyncGitNotification, AsyncTreeFilesJob,
 };
@@ -251,24 +252,62 @@ impl RevisionFilesComponent {
 		})
 	}
 
-	fn selection_changed(&mut self) {
+	fn selected_tree_file(&self) -> Option<&TreeFile> {
 		//TODO: retrieve TreeFile from tree datastructure
-		if let Some(file) = self.selected_file_path_with_prefix() {
-			if let Some(files) = &self.files {
-				let path = Path::new(&file);
-				if let Some(item) =
-					files.iter().find(|f| f.path == path)
+		self.selected_file_path_with_prefix().and_then(|file| {
+			let path = Path::new(&file);
+			self.files.as_ref().and_then(|files| {
+				files.iter().find(|f| f.path == path)
+			})
+		})
+	}
+
+	fn selection_changed(&mut self) {
+		if let Some(tree_file) = self.selected_tree_file().cloned() {
+			if let Ok(path) = tree_file.path.strip_prefix("./") {
+				return self.current_file.load_file(
+					path.to_string_lossy().to_string(),
+					&tree_file,
+				);
+			}
+			self.current_file.clear();
+		}
+	}
+
+	fn dump_selected_file_content_to_tempfile(
+		&self,
+	) -> Option<String> {
+		if let Some(rev) = self.revision() {
+			if let Some(file) = self.selected_tree_file() {
+				if let Ok(content) =
+					tree_file_content(&self.repo.borrow(), file)
 				{
-					if let Ok(path) = path.strip_prefix("./") {
-						return self.current_file.load_file(
-							path.to_string_lossy().to_string(),
-							item,
-						);
-					}
+					let temp_dir = tempfile::Builder::new()
+						.prefix(&rev.id.to_string())
+						.keep(true)
+						.tempdir()
+						.ok()?;
+
+					let file_name = file.path.file_name()?;
+					let file_path = temp_dir.path().join(file_name);
+					std::fs::File::create(&file_path).ok()?;
+					std::fs::write(&file_path, content).ok()?;
+
+					let mut perms = std::fs::metadata(&file_path)
+						.ok()?
+						.permissions();
+					perms.set_readonly(true);
+					std::fs::set_permissions(&file_path, perms)
+						.ok()?;
+
+					return Some(
+						file_path.to_string_lossy().to_string(),
+					);
 				}
-				self.current_file.clear();
 			}
 		}
+
+		None
 	}
 
 	fn draw_tree(&self, f: &mut Frame, area: Rect) -> Result<()> {
@@ -376,6 +415,12 @@ impl RevisionFilesComponent {
 			commit,
 		));
 	}
+
+	fn is_head(&self) -> bool {
+		let head = get_head(&self.repo.borrow()).ok();
+		let commit_id = self.revision().map(|rev| rev.id);
+		commit_id.is_some() && commit_id == head
+	}
 }
 
 impl DrawableComponent for RevisionFilesComponent {
@@ -413,6 +458,8 @@ impl Component for RevisionFilesComponent {
 		let is_tree_focused = matches!(self.focus, Focus::Tree);
 
 		if is_tree_focused || force_all {
+			let is_head = self.is_head();
+
 			out.push(
 				CommandInfo::new(
 					strings::commands::blame_file(&self.key_config),
@@ -423,7 +470,12 @@ impl Component for RevisionFilesComponent {
 			);
 			out.push(CommandInfo::new(
 				strings::commands::edit_item(&self.key_config),
-				self.tree.selected_file().is_some(),
+				self.tree.selected_file().is_some() && is_head,
+				true,
+			));
+			out.push(CommandInfo::new(
+				strings::commands::open_item(&self.key_config),
+				self.tree.selected_file().is_some() && !is_head,
 				true,
 			));
 			out.push(
@@ -462,6 +514,8 @@ impl Component for RevisionFilesComponent {
 
 		if let Event::Key(key) = event {
 			let is_tree_focused = matches!(self.focus, Focus::Tree);
+			let is_head = self.is_head();
+
 			if is_tree_focused
 				&& tree_nav(&mut self.tree, &self.key_config, key)
 			{
@@ -500,9 +554,25 @@ impl Component for RevisionFilesComponent {
 					self.open_finder();
 					return Ok(EventState::Consumed);
 				}
-			} else if key_match(key, self.key_config.keys.edit_file) {
+			} else if key_match(key, self.key_config.keys.edit_file)
+				&& is_head
+			{
 				if let Some(file) =
 					self.selected_file_path_with_prefix()
+				{
+					//Note: switch to status tab so its clear we are
+					// not altering a file inside a revision here
+					self.queue.push(InternalEvent::TabSwitchStatus);
+					self.queue.push(
+						InternalEvent::OpenExternalEditor(Some(file)),
+					);
+					return Ok(EventState::Consumed);
+				}
+			} else if key_match(key, self.key_config.keys.open_file)
+				&& !is_head
+			{
+				if let Some(file) =
+					self.dump_selected_file_content_to_tempfile()
 				{
 					//Note: switch to status tab so its clear we are
 					// not altering a file inside a revision here
