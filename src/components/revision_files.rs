@@ -274,10 +274,40 @@ impl RevisionFilesComponent {
 		}
 	}
 
+	fn dump_selected_file_content_to_tempfile(
+		&self,
+	) -> Option<String> {
+		if let Some(rev) = self.revision() {
+			if let Some(file) = self.selected_tree_file() {
+				if let Ok(content) =
+					tree_file_content(&self.repo.borrow(), file)
 				{
+					let temp_dir = tempfile::Builder::new()
+						.prefix(&rev.id.to_string())
+						.keep(true)
+						.tempdir()
+						.ok()?;
+
+					let file_name = file.path.file_name()?;
+					let file_path = temp_dir.path().join(file_name);
+					std::fs::File::create(&file_path).ok()?;
+					std::fs::write(&file_path, content).ok()?;
+
+					let mut perms = std::fs::metadata(&file_path)
+						.ok()?
+						.permissions();
+					perms.set_readonly(true);
+					std::fs::set_permissions(&file_path, perms)
+						.ok()?;
+
+					return Some(
+						file_path.to_string_lossy().to_string(),
+					);
 				}
 			}
 		}
+
+		None
 	}
 
 	fn draw_tree(&self, f: &mut Frame, area: Rect) -> Result<()> {
@@ -443,6 +473,11 @@ impl Component for RevisionFilesComponent {
 				self.tree.selected_file().is_some() && is_head,
 				true,
 			));
+			out.push(CommandInfo::new(
+				strings::commands::open_item(&self.key_config),
+				self.tree.selected_file().is_some() && !is_head,
+				true,
+			));
 			out.push(
 				CommandInfo::new(
 					strings::commands::open_file_history(
@@ -521,8 +556,23 @@ impl Component for RevisionFilesComponent {
 				}
 			} else if key_match(key, self.key_config.keys.edit_file)
 				&& is_head
+			{
 				if let Some(file) =
 					self.selected_file_path_with_prefix()
+				{
+					//Note: switch to status tab so its clear we are
+					// not altering a file inside a revision here
+					self.queue.push(InternalEvent::TabSwitchStatus);
+					self.queue.push(
+						InternalEvent::OpenExternalEditor(Some(file)),
+					);
+					return Ok(EventState::Consumed);
+				}
+			} else if key_match(key, self.key_config.keys.open_file)
+				&& !is_head
+			{
+				if let Some(file) =
+					self.dump_selected_file_content_to_tempfile()
 				{
 					//Note: switch to status tab so its clear we are
 					// not altering a file inside a revision here
