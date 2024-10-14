@@ -331,6 +331,7 @@ mod tests {
 	use std::time::Duration;
 
 	use crossbeam_channel::unbounded;
+	use tempfile::TempDir;
 
 	use crate::sync::tests::{debug_cmd_print, repo_init};
 	use crate::sync::RepoPath;
@@ -365,6 +366,38 @@ mod tests {
 			&arc_background,
 			&tx_git,
 		);
+
+		assert!(result.is_ok());
+	}
+
+	#[test]
+	fn test_env_variables() {
+		let (_td, repo) = repo_init().unwrap();
+		let git_dir = repo.path();
+
+		let (tx_git, _rx_git) = unbounded();
+
+		let empty_dir = TempDir::new().unwrap();
+		let empty_path: RepoPath =
+			empty_dir.path().to_str().unwrap().into();
+
+		let arc_current = Arc::new(Mutex::new(AsyncLogResult {
+			commits: Vec::new(),
+			duration: Duration::default(),
+		}));
+		let arc_background = Arc::new(AtomicBool::new(false));
+
+		std::env::set_var("GIT_DIR", git_dir);
+
+		let result = AsyncLog::fetch_helper_without_filter(
+			// We pass an empty path, thus testing whether `GIT_DIR`, set above, is taken into account.
+			&empty_path,
+			&arc_current,
+			&arc_background,
+			&tx_git,
+		);
+
+		std::env::remove_var("GIT_DIR");
 
 		assert!(result.is_ok());
 	}
