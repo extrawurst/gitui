@@ -331,6 +331,7 @@ mod tests {
 	use std::time::Duration;
 
 	use crossbeam_channel::unbounded;
+	use serial_test::serial;
 	use tempfile::TempDir;
 
 	use crate::sync::tests::{debug_cmd_print, repo_init};
@@ -371,6 +372,7 @@ mod tests {
 	}
 
 	#[test]
+	#[serial]
 	fn test_env_variables() {
 		let (_td, repo) = repo_init().unwrap();
 		let git_dir = repo.path();
