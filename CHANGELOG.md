@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * add popups for viewing, adding, updating and removing remotes [[@robin-thoene](https://github.com/robin-thoene)] ([#2172](https://github.com/extrawurst/gitui/issues/2172))
++ help popup support vim-like key bindings for navigation[[@wugeer](https://github.com/wugeer)] 
 
 ## [0.26.3] - 2024-06-02
 

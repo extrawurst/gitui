@@ -129,9 +129,16 @@ impl Component for HelpPopup {
 				if key_match(e, self.key_config.keys.exit_popup) {
 					self.hide();
 				} else if key_match(e, self.key_config.keys.move_down)
-				{
+					|| key_match(
+						e,
+						self.key_config.keys.vim_like_move_down,
+					) {
 					self.move_selection(true);
-				} else if key_match(e, self.key_config.keys.move_up) {
+				} else if key_match(e, self.key_config.keys.move_up)
+					|| key_match(
+						e,
+						self.key_config.keys.vim_like_move_up,
+					) {
 					self.move_selection(false);
 				}
 			}
