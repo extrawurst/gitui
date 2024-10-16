@@ -67,6 +67,7 @@ which = "6.0"
 [dev-dependencies]
 env_logger = "0.11"
 pretty_assertions = "1.4"
+snapbox = { version = "0.6.16", features = ["cmd", "term-svg"] }
 tempfile = "3"
 
 [build-dependencies]
