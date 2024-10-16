@@ -245,7 +245,8 @@ impl RemoteListPopup {
 				.enumerate()
 				.map(|(i, remote)| {
 					let selected = (self.selection as usize
-						- self.scroll.get_top()) == i;
+						- self.scroll.get_top())
+						== i;
 					let mut remote_name = remote.clone();
 					if remote_name.len()
 						> name_length

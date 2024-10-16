@@ -214,7 +214,8 @@ pub fn filter_commit_by_search(
 
 			Ok(msg_summary_match
 				|| msg_body_match
-				|| file_match || authors_match)
+				|| file_match
+				|| authors_match)
 		},
 	))
 }
