@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * add popups for viewing, adding, updating and removing remotes [[@robin-thoene](https://github.com/robin-thoene)] ([#2172](https://github.com/extrawurst/gitui/issues/2172))
-+ help popup support vim-like key bindings for navigation[[@wugeer](https://github.com/wugeer)] 
 
 ## [0.26.3] - 2024-06-02
 
@@ -39,6 +38,7 @@ Checkout [THEMES.md](./THEMES.md) for more info.
 ### Added
 * due to github runner changes, the regular mac build is now arm64, so we added support for intel x86 apple build in nightlies and releases (via separat artifact)
 * support `BUILD_GIT_COMMIT_ID` enabling builds from `git archive` generated source tarballs or other outside a git repo [[@alerque](https://github.com/alerque)] ([#2187](https://github.com/extrawurst/gitui/pull/2187))
+* help popup support vim-like key bindings for navigation[[@wugeer](https://github.com/wugeer)] ([#2389](https://github.com/extrawurst/gitui/pull/2389))
 
 ### Fixes
 * update yanked dependency to `libc` to fix building with `--locked`.
