@@ -29,7 +29,7 @@ pub struct KeySymbols {
 impl Default for KeySymbols {
 	fn default() -> Self {
 		Self {
-			enter: "\u{23ce}".into(),     //⏎
+            enter: "\u{23ce}".into(),     //⏎
             left: "\u{2190}".into(),      //←
             right: "\u{2192}".into(),     //→
             up: "\u{2191}".into(),        //↑
