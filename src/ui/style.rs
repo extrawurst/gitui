@@ -9,7 +9,7 @@ use struct_patch::Patch;
 pub type SharedTheme = Rc<Theme>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Patch)]
-#[patch_derive(Serialize, Deserialize)]
+#[patch(attribute(derive(Serialize, Deserialize)))]
 pub struct Theme {
 	selected_tab: Color,
 	command_fg: Color,
