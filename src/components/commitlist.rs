@@ -171,6 +171,33 @@ impl CommitList {
 	}
 
 	///
+	pub fn selected_commit_message(&self) -> Option<String> {
+		let commit = self.selected_entry().map(|e| e.id);
+		let data = commit.and_then(|id| {
+			sync::get_commit_details(&self.repo.borrow(), id).ok()
+		});
+		data.as_ref().and_then(|data| data.message.as_ref()).map(
+			|message| {
+				message.body.as_ref().map_or_else(
+					|| message.subject.clone(),
+					|body| format!("{}\n{}", message.subject, body),
+				)
+			},
+		)
+	}
+
+	///
+	pub fn copy_commit_msg(&self) -> Result<()> {
+		if let Some(yank) = self.selected_commit_message() {
+			crate::clipboard::copy_string(&yank)?;
+			self.queue.push(InternalEvent::ShowInfoMsg(
+				strings::copy_success(&yank),
+			));
+		};
+		Ok(())
+	}
+
+	///
 	pub fn checkout(&self) {
 		if let Some(commit_hash) =
 			self.selected_entry().map(|entry| entry.id)
