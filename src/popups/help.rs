@@ -67,6 +67,15 @@ impl DrawableComponent for HelpPopup {
 				chunks[0],
 			);
 
+			ui::draw_scrollbar(
+				f,
+				area,
+				&self.theme,
+				self.cmds.len(),
+				self.selection as usize,
+				ui::Orientation::Vertical,
+			);
+
 			f.render_widget(
 				Paragraph::new(Line::from(vec![Span::styled(
 					Cow::from(format!(

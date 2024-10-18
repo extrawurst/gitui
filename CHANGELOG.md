@@ -38,6 +38,7 @@ Checkout [THEMES.md](./THEMES.md) for more info.
 ### Added
 * due to github runner changes, the regular mac build is now arm64, so we added support for intel x86 apple build in nightlies and releases (via separat artifact)
 * support `BUILD_GIT_COMMIT_ID` enabling builds from `git archive` generated source tarballs or other outside a git repo [[@alerque](https://github.com/alerque)] ([#2187](https://github.com/extrawurst/gitui/pull/2187))
+* support help popup display viewing progress[[@wugeer](https://github.com/wugeer)](https://github.com/extrawurst/gitui/pull/2388))
 
 ### Fixes
 * update yanked dependency to `libc` to fix building with `--locked`.
