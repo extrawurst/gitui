@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Set `CREATE_NO_WINDOW` flag when executing Git hooks on Windows ([#2371](https://github.com/extrawurst/gitui/pull/2371))
 
 ### Added
+* help popup scrollbar [[@wugeer](https://github.com/wugeer)](https://github.com/extrawurst/gitui/pull/2388))
 * add popups for viewing, adding, updating and removing remotes [[@robin-thoene](https://github.com/robin-thoene)] ([#2172](https://github.com/extrawurst/gitui/issues/2172))
 
 ## [0.26.3] - 2024-06-02
@@ -38,7 +39,6 @@ Checkout [THEMES.md](./THEMES.md) for more info.
 ### Added
 * due to github runner changes, the regular mac build is now arm64, so we added support for intel x86 apple build in nightlies and releases (via separat artifact)
 * support `BUILD_GIT_COMMIT_ID` enabling builds from `git archive` generated source tarballs or other outside a git repo [[@alerque](https://github.com/alerque)] ([#2187](https://github.com/extrawurst/gitui/pull/2187))
-* support help popup display viewing progress[[@wugeer](https://github.com/wugeer)](https://github.com/extrawurst/gitui/pull/2388))
 
 ### Fixes
 * update yanked dependency to `libc` to fix building with `--locked`.
