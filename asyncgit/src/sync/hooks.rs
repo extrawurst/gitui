@@ -26,10 +26,7 @@ impl From<git2_hooks::HookResult> for HookResult {
 	}
 }
 
-/// this hook is documented here <https://git-scm.com/docs/githooks#_commit_msg>
-/// we use the same convention as other git clients to create a temp file containing
-/// the commit message at `<.git|hooksPath>/COMMIT_EDITMSG` and pass it's relative path as the only
-/// parameter to the hook script.
+/// see `git2_hooks::hooks_commit_msg`
 pub fn hooks_commit_msg(
 	repo_path: &RepoPath,
 	msg: &mut String,
@@ -41,8 +38,7 @@ pub fn hooks_commit_msg(
 	Ok(git2_hooks::hooks_commit_msg(&repo, None, msg)?.into())
 }
 
-/// this hook is documented here <https://git-scm.com/docs/githooks#_pre_commit>
-///
+/// see `git2_hooks::hooks_pre_commit`
 pub fn hooks_pre_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	scope_time!("hooks_pre_commit");
 
@@ -51,7 +47,7 @@ pub fn hooks_pre_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	Ok(git2_hooks::hooks_pre_commit(&repo, None)?.into())
 }
 
-///
+/// see `git2_hooks::hooks_post_commit`
 pub fn hooks_post_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	scope_time!("hooks_post_commit");
 
@@ -60,7 +56,7 @@ pub fn hooks_post_commit(repo_path: &RepoPath) -> Result<HookResult> {
 	Ok(git2_hooks::hooks_post_commit(&repo, None)?.into())
 }
 
-///
+/// see `git2_hooks::hooks_prepare_commit_msg`
 pub fn hooks_prepare_commit_msg(
 	repo_path: &RepoPath,
 	source: PrepareCommitMsgSource,
