@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Set `CREATE_NO_WINDOW` flag when executing Git hooks on Windows ([#2371](https://github.com/extrawurst/gitui/pull/2371))
 
 ### Added
+* help popup scrollbar [[@wugeer](https://github.com/wugeer)](https://github.com/extrawurst/gitui/pull/2388))
 * add popups for viewing, adding, updating and removing remotes [[@robin-thoene](https://github.com/robin-thoene)] ([#2172](https://github.com/extrawurst/gitui/issues/2172))
 
 ## [0.26.3] - 2024-06-02
