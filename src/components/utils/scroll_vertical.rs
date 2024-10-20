@@ -1,6 +1,6 @@
-use crate::{
-	components::ScrollType,
-	ui::{draw_scrollbar, style::SharedTheme, Orientation},
+use crate::{components::ScrollType, ui::style::SharedTheme};
+use ratatui::widgets::{
+	Scrollbar, ScrollbarOrientation, ScrollbarState,
 };
 use ratatui::{layout::Rect, Frame};
 use std::cell::Cell;
@@ -107,15 +107,15 @@ impl VerticalScroll {
 		self.update(self.get_top(), line_count, visual_height)
 	}
 
-	pub fn draw(&self, f: &mut Frame, r: Rect, theme: &SharedTheme) {
-		draw_scrollbar(
-			f,
-			r,
-			theme,
-			self.max_top.get(),
-			self.top.get(),
-			Orientation::Vertical,
-		);
+	pub fn draw(&self, f: &mut Frame, r: Rect, _theme: &SharedTheme) {
+		let scrollbar =
+			Scrollbar::new(ScrollbarOrientation::VerticalRight);
+
+		let mut scrollbar_state =
+			ScrollbarState::new(self.max_top.get())
+				.position(self.top.get());
+
+		f.render_stateful_widget(scrollbar, r, &mut scrollbar_state);
 	}
 }
 
