@@ -391,7 +391,7 @@ impl FileRevlogPopup {
 
 		let table = Table::new(rows, constraints)
 			.column_spacing(1)
-			.highlight_style(self.theme.text(true, true))
+			.row_highlight_style(self.theme.text(true, true))
 			.block(
 				Block::default()
 					.borders(Borders::ALL)

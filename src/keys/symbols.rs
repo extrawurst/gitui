@@ -30,23 +30,23 @@ impl Default for KeySymbols {
 	fn default() -> Self {
 		Self {
 			enter: "\u{23ce}".into(),     //⏎
-            left: "\u{2190}".into(),      //←
-            right: "\u{2192}".into(),     //→
-            up: "\u{2191}".into(),        //↑
-            down: "\u{2193}".into(),      //↓
-            backspace: "\u{232b}".into(), //⌫
-            home: "\u{2912}".into(),      //⤒
-            end: "\u{2913}".into(),       //⤓
-            page_up: "\u{21de}".into(),   //⇞
-            page_down: "\u{21df}".into(), //⇟
-            tab: "\u{21e5}".into(),       //⇥
-            back_tab: "\u{21e4}".into(),  //⇤
-            delete: "\u{2326}".into(),    //⌦
-            insert: "\u{2380}".into(),    //⎀
-            esc: "\u{238b}".into(),       //⎋
-            control: "^".into(),
-            shift: "\u{21e7}".into(),     //⇧
-            alt: "\u{2325}".into(),       //⌥
+			left: "\u{2190}".into(),      //←
+			right: "\u{2192}".into(),     //→
+			up: "\u{2191}".into(),        //↑
+			down: "\u{2193}".into(),      //↓
+			backspace: "\u{232b}".into(), //⌫
+			home: "\u{2912}".into(),      //⤒
+			end: "\u{2913}".into(),       //⤓
+			page_up: "\u{21de}".into(),   //⇞
+			page_down: "\u{21df}".into(), //⇟
+			tab: "\u{21e5}".into(),       //⇥
+			back_tab: "\u{21e4}".into(),  //⇤
+			delete: "\u{2326}".into(),    //⌦
+			insert: "\u{2380}".into(),    //⎀
+			esc: "\u{238b}".into(),       //⎋
+			control: "^".into(),
+			shift: "\u{21e7}".into(),     //⇧
+			alt: "\u{2325}".into(),       //⌥
 		}
 	}
 }
