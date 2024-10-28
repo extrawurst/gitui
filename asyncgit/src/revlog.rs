@@ -341,6 +341,7 @@ mod tests {
 	use super::AsyncLogResult;
 
 	#[test]
+	#[serial]
 	fn test_smoke_in_subdir() {
 		let (_td, repo) = repo_init().unwrap();
 		let root = repo.path().parent().unwrap();
