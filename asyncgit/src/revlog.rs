@@ -369,7 +369,7 @@ mod tests {
 			&tx_git,
 		);
 
-		assert!(result.is_ok());
+		assert_eq!(result.unwrap(), ());
 	}
 
 	#[test]
@@ -402,6 +402,6 @@ mod tests {
 
 		std::env::remove_var("GIT_DIR");
 
-		assert!(result.is_ok());
+		assert_eq!(result.unwrap(), ());
 	}
 }
