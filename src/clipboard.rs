@@ -49,6 +49,20 @@ fn exec_copy_with_args(
 	}
 }
 
+// Implementation taken from https://crates.io/crates/wsl.
+// Using /proc/sys/kernel/osrelease as an authoratative source
+// based on this comment: https://github.com/microsoft/WSL/issues/423#issuecomment-221627364
+#[cfg(all(target_family = "unix", not(target_os = "macos")))]
+fn is_wsl() -> bool {
+    if let Ok(b) = std::fs::read("/proc/sys/kernel/osrelease") {
+        if let Ok(s) = std::str::from_utf8(&b) {
+            let a = s.to_ascii_lowercase();
+            return a.contains("microsoft") || a.contains("wsl");
+        }
+    }
+    false
+}
+
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
 pub fn copy_string(text: &str) -> Result<()> {
 	if std::env::var("WAYLAND_DISPLAY").is_ok() {
