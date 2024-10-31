@@ -69,6 +69,10 @@ pub fn copy_string(text: &str) -> Result<()> {
 		return exec_copy_with_args("wl-copy", &[], text, false);
 	}
 
+	if is_wsl() {
+		return exec_copy_with_args("clip.exe", &[], text, false);
+	}
+
 	if exec_copy_with_args(
 		"xclip",
 		&["-selection", "clipboard"],
