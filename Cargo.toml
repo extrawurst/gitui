@@ -60,7 +60,7 @@ syntect = { version = "5.2", default-features = false, features = [
 tui-textarea = "0.7"
 two-face = { version = "0.4.0", default-features = false }
 unicode-segmentation = "1.12"
-unicode-truncate = "1.0"
+unicode-truncate = "2.0"
 unicode-width = "0.2"
 which = "7.0"
 
