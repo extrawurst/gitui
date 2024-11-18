@@ -478,6 +478,16 @@ impl Component for Revlog {
 						self.list.copy_commit_hash()
 					);
 					return Ok(EventState::Consumed);
+				} else if key_match(
+					k,
+					self.key_config.keys.copy_commit_msg,
+				) {
+					try_or_popup!(
+						self,
+						strings::POPUP_FAIL_COPY,
+						self.list.copy_commit_msg()
+					);
+					return Ok(EventState::Consumed);
 				} else if key_match(k, self.key_config.keys.push) {
 					self.queue.push(InternalEvent::PushTags);
 					return Ok(EventState::Consumed);
@@ -611,6 +621,8 @@ impl Component for Revlog {
 		Ok(EventState::NotConsumed)
 	}
 
+	// TODO: cleanup
+	#[allow(clippy::too_many_lines)]
 	fn commands(
 		&self,
 		out: &mut Vec<CommandInfo>,
@@ -678,6 +690,12 @@ impl Component for Revlog {
 		));
 
 		out.push(CommandInfo::new(
+			strings::commands::copy_commit_msg(&self.key_config),
+			self.selected_commit().is_some(),
+			self.visible || force_all,
+		));
+
+		out.push(CommandInfo::new(
 			strings::commands::log_tag_commit(&self.key_config),
 			self.selected_commit().is_some(),
 			self.visible || force_all,
@@ -718,11 +736,13 @@ impl Component for Revlog {
 			self.selected_commit().is_some(),
 			(self.visible && !self.is_search_pending()) || force_all,
 		));
+
 		out.push(CommandInfo::new(
 			strings::commands::log_reword_commit(&self.key_config),
 			self.selected_commit().is_some(),
 			(self.visible && !self.is_search_pending()) || force_all,
 		));
+
 		out.push(CommandInfo::new(
 			strings::commands::log_find_commit(&self.key_config),
 			self.can_start_search(),
