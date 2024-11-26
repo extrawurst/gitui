@@ -22,10 +22,12 @@ use syntect::{
 
 use crate::{AsyncAppNotification, SyntaxHighlightProgress};
 
+#[derive(Debug, Clone)]
 struct SyntaxLine {
 	items: Vec<(Style, usize, Range<usize>)>,
 }
 
+#[derive(Debug, Clone)]
 pub struct SyntaxText {
 	text: String,
 	lines: Vec<SyntaxLine>,
@@ -211,12 +213,13 @@ fn syntact_style_to_tui(style: &Style) -> ratatui::style::Style {
 	res
 }
 
+#[derive(Debug)]
 enum JobState {
 	Request((String, String)),
 	Response(SyntaxText),
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct AsyncSyntaxJob {
 	state: Arc<Mutex<Option<JobState>>>,
 }
