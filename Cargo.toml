@@ -39,7 +39,7 @@ notify-debouncer-mini = "0.4"
 once_cell = "1"
 # pin until upgrading this does not introduce a duplicate dependency
 parking_lot_core = "=0.9.9"
-ratatui = { version = "0.28", default-features = false, features = [
+ratatui = { version = "0.29", default-features = false, features = [
     'crossterm',
     'serde',
 ] }
@@ -50,19 +50,19 @@ scopetime = { path = "./scopetime", version = "0.1" }
 serde = "1.0"
 shellexpand = "3.1"
 simplelog = { version = "0.12", default-features = false }
-struct-patch = "0.4"
+struct-patch = "0.8"
 syntect = { version = "5.2", default-features = false, features = [
     "parsing",
     "default-syntaxes",
     "default-themes",
     "html",
 ] }
-tui-textarea = "0.6"
+tui-textarea = "0.7"
 two-face = { version = "0.4.0", default-features = false }
 unicode-segmentation = "1.12"
 unicode-truncate = "1.0"
-unicode-width = "0.1"
-which = "6.0"
+unicode-width = "0.2"
+which = "7.0"
 
 [dev-dependencies]
 env_logger = "0.11"

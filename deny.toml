@@ -22,4 +22,12 @@ version = "1.0.3"
 
 [bans]
 multiple-versions = "deny"
-skip-tree = [{ name = "windows-sys" }, { name = "bitflags" }, { name = "mio" }]
+skip-tree = [
+    { name = "bitflags" },
+    # this is only needed for notify: https://github.com/notify-rs/notify/issues/648
+    { name = "mio" },
+    # this is needed for:
+    #  `bwrap v1.3.0` (https://github.com/micl2e2/bwrap/pull/4)
+    #  `unicode-truncate v1.1.0` (https://github.com/Aetf/unicode-truncate/pull/23)
+    { name = "unicode-width" },
+]

@@ -19,7 +19,7 @@ easy-cast = "0.5"
 fuzzy-matcher = "0.3"
 git2 = "0.19"
 git2-hooks = { path = "../git2-hooks", version = ">=0.4" }
-gix = { version = "0.66", default-features = false, features = [
+gix = { version = "0.67", default-features = false, features = [
     "max-performance",
     "revision",
 ] }
@@ -32,7 +32,7 @@ rayon = "1.10"
 rayon-core = "1.12"
 scopetime = { path = "../scopetime", version = "0.1" }
 serde = { version = "1.0", features = ["derive"] }
-ssh-key = { version = "0.6.6", features = ["crypto", "encryption"] }
+ssh-key = { version = "0.6.7", features = ["crypto", "encryption"] }
 thiserror = "1.0"
 unicode-truncate = "1.0"
 url = "2.5"
@@ -41,7 +41,7 @@ url = "2.5"
 env_logger = "0.11"
 invalidstring = { path = "../invalidstring", version = "0.1" }
 pretty_assertions = "1.4"
-serial_test = "3.1"
+serial_test = "3.2"
 tempfile = "3"
 
 [features]

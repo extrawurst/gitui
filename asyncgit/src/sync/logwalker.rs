@@ -2,7 +2,7 @@
 use super::{CommitId, SharedCommitFilterFn};
 use crate::error::Result;
 use git2::{Commit, Oid, Repository};
-use gix::{revision::Walk, traverse::commit::simple::Sorting};
+use gix::revision::Walk;
 use std::{
 	cmp::Ordering,
 	collections::{BinaryHeap, HashSet},
@@ -140,7 +140,7 @@ impl<'a> LogWalkerWithoutFilter<'a> {
 
 		let platform = repo
 			.rev_walk(tips)
-			.sorting(Sorting::ByCommitTimeNewestFirst)
+			.sorting(gix::revision::walk::Sorting::ByCommitTime(gix::traverse::commit::simple::CommitTimeOrder::NewestFirst))
 			.use_commit_graph(false);
 
 		let walk = platform.all()?;
