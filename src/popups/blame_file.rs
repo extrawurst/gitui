@@ -544,7 +544,7 @@ impl BlameFilePopup {
 							i,
 							(blame_hunk.as_ref(), line.as_ref()),
 							file_blame,
-							&styled_text,
+							styled_text.as_ref(),
 						)
 					})
 					.collect()
@@ -585,7 +585,7 @@ impl BlameFilePopup {
 		line_number: usize,
 		hunk_and_line: (Option<&BlameHunk>, &str),
 		file_blame: &'a SyntaxFileBlame,
-		styled_text: &Option<Text<'a>>,
+		styled_text: Option<&Text<'a>>,
 	) -> Row<'a> {
 		let (hunk_for_line, line) = hunk_and_line;
 

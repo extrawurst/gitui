@@ -213,7 +213,7 @@ impl FileRevlogPopup {
 			);
 
 			if let Ok(commits) = commits {
-				self.items.set_items(new_offset, commits, &None);
+				self.items.set_items(new_offset, commits, None);
 			}
 
 			self.count_total = git_log.count()?;
