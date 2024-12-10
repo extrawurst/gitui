@@ -71,7 +71,6 @@ pub fn untracked_files_config(
 }
 
 /// get string from config
-
 pub fn get_config_string(
 	repo_path: &RepoPath,
 	key: &str,

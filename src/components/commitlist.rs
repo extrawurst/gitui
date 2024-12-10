@@ -761,7 +761,7 @@ impl CommitList {
 				self.items.set_items(
 					want_min,
 					commits,
-					&self.highlights,
+					self.highlights.as_ref(),
 				);
 			}
 		}
