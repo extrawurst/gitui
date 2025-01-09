@@ -124,10 +124,7 @@ impl FileRevlogPopup {
 	///
 	pub fn any_work_pending(&self) -> bool {
 		self.git_diff.is_pending()
-			|| self
-				.git_log
-				.as_ref()
-				.map_or(false, AsyncLog::is_pending)
+			|| self.git_log.as_ref().is_some_and(AsyncLog::is_pending)
 	}
 
 	///
