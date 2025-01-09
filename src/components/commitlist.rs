@@ -634,8 +634,7 @@ impl CommitList {
 										) => details
 											.upstream
 											.as_ref()
-											.map_or(
-												false,
+											.is_some_and(
 												|upstream| {
 													upstream.reference == remote_branch.reference
 												},

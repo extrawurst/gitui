@@ -51,7 +51,7 @@ pub fn stage_lines(
 	let blob_id = repo.blob(new_content.as_bytes())?;
 
 	idx.id = blob_id;
-	idx.file_size = u32::try_conv(new_content.as_bytes().len())?;
+	idx.file_size = u32::try_conv(new_content.len())?;
 	index.add(&idx)?;
 
 	index.write()?;
