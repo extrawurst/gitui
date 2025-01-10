@@ -8,6 +8,7 @@ allow = [
     "ISC",
     "MPL-2.0",
     "Unicode-3.0",
+    "Zlib",
 ]
 
 [advisories]
@@ -19,11 +20,6 @@ ignore = [
     # https://github.com/notify-rs/notify/pull/652
     "RUSTSEC-2024-0384",
 ]
-
-[[licenses.exceptions]]
-allow = ["Unicode-DFS-2016"]
-name = "unicode-ident"
-version = "1.0.3"
 
 [bans]
 multiple-versions = "deny"
@@ -49,4 +45,7 @@ skip-tree = [
     # * `parking_lot_core v0.9.10`
     # * `filetime v0.2.23`
     { name = "redox_syscall" },
+    # currently needed due to:
+    # * `gix-hashtable v0.6.0`
+    { name = "hashbrown" },
 ]
