@@ -19,7 +19,7 @@ anyhow = "1.0"
 asyncgit = { path = "./asyncgit", version = "0.26", default-features = false }
 backtrace = "0.3"
 bitflags = "2.7"
-bugreport = "0.5"
+bugreport = "0.5.1"
 bwrap = { version = "1.3", features = ["use_std"] }
 bytesize = { version = "1.3", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
@@ -34,11 +34,11 @@ gh-emoji = { version = "1.0", optional = true }
 indexmap = "2"
 itertools = "0.13"
 log = "0.4"
-notify = "6.1"
-notify-debouncer-mini = "0.4"
+notify = "7"
+notify-debouncer-mini = "0.5"
 once_cell = "1"
 # pin until upgrading this does not introduce a duplicate dependency
-parking_lot_core = "=0.9.9"
+parking_lot_core = "=0.9.10"
 ratatui = { version = "0.29", default-features = false, features = [
     'crossterm',
     'serde',
@@ -60,7 +60,7 @@ syntect = { version = "5.2", default-features = false, features = [
 tui-textarea = "0.7"
 two-face = { version = "0.4.0", default-features = false }
 unicode-segmentation = "1.12"
-unicode-truncate = "1.0"
+unicode-truncate = "2.0"
 unicode-width = "0.2"
 which = "7.0"
 
