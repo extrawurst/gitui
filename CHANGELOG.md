@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Set `CREATE_NO_WINDOW` flag when executing Git hooks on Windows ([#2371](https://github.com/extrawurst/gitui/pull/2371))
 
 ### Added
+
+* Add "go to line" command for the blame view [[@andrea-berling](https://github.com/andrea-berling)] ([#2262](https://github.com/extrawurst/gitui/pull/2262))
 * support for "Copy Path" action in WSL [[@johnDeSilencio](https://github.com/johnDeSilencio)] ([#2413](https://github.com/extrawurst/gitui/pull/2413))
 * help popup scrollbar [[@wugeer](https://github.com/wugeer)](https://github.com/extrawurst/gitui/pull/2388))
 * add popups for viewing, adding, updating and removing remotes [[@robin-thoene](https://github.com/robin-thoene)] ([#2172](https://github.com/extrawurst/gitui/issues/2172))
