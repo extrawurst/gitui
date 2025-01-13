@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.27.0-rc.1] - 2024-01-14
+
 ### Breaking Changes
 * use default shell instead of bash on Unix-like OS [[@yerke](https://github.com/yerke)] ([#2343](https://github.com/extrawurst/gitui/pull/2343))
 
