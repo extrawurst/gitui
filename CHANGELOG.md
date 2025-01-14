@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [0.27.0-rc.1] - 2024-01-13
+## [0.27.0] - 2024-01-14
 
 **new: manage remotes**
 
