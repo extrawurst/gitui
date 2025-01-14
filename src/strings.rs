@@ -1087,6 +1087,18 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
+	pub fn commit_emoji_open(
+		key_config: &SharedKeyConfig,
+	) -> CommandText {
+		CommandText::new(
+			format!(
+				"Commit emoji [{}]",
+				key_config.get_hint(key_config.keys.open_commit),
+			),
+			"open commit emoji popups (available in non-empty stage)",
+			CMD_GROUP_GENERAL,
+		)
+	}
 	pub fn commit_open_editor(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {

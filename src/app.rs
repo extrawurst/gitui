@@ -11,9 +11,9 @@ use crate::{
 	popup_stack::PopupStack,
 	popups::{
 		AppOption, BlameFilePopup, BranchListPopup, CommitPopup,
-		CompareCommitsPopup, ConfirmPopup, CreateBranchPopup,
-		CreateRemotePopup, ExternalEditorPopup, FetchPopup,
-		FileRevlogPopup, FuzzyFindPopup, HelpPopup,
+		CompareCommitsPopup, ConfirmPopup, ConventionalCommitPopup,
+		CreateBranchPopup, CreateRemotePopup, ExternalEditorPopup,
+		FetchPopup, FileRevlogPopup, FuzzyFindPopup, HelpPopup,
 		InspectCommitPopup, LogSearchPopupPopup, MsgPopup,
 		OptionsPopup, PullPopup, PushPopup, PushTagsPopup,
 		RemoteListPopup, RenameBranchPopup, RenameRemotePopup,
@@ -93,6 +93,7 @@ pub struct App {
 	update_remote_url_popup: UpdateRemoteUrlPopup,
 	remotes_popup: RemoteListPopup,
 	rename_branch_popup: RenameBranchPopup,
+	conventional_commit_popup: ConventionalCommitPopup,
 	select_branch_popup: BranchListPopup,
 	options_popup: OptionsPopup,
 	submodule_popup: SubmodulesListPopup,
@@ -200,6 +201,9 @@ impl App {
 			update_remote_url_popup: UpdateRemoteUrlPopup::new(&env),
 			remotes_popup: RemoteListPopup::new(&env),
 			rename_branch_popup: RenameBranchPopup::new(&env),
+			conventional_commit_popup: ConventionalCommitPopup::new(
+				&env,
+			),
 			select_branch_popup: BranchListPopup::new(&env),
 			tags_popup: TagListPopup::new(&env),
 			options_popup: OptionsPopup::new(&env),
@@ -458,6 +462,7 @@ impl App {
 			|| self.fetch_popup.any_work_pending()
 			|| self.revision_files_popup.any_work_pending()
 			|| self.tags_popup.any_work_pending()
+			|| self.conventional_commit_popup.any_work_pending()
 	}
 
 	///
@@ -481,6 +486,7 @@ impl App {
 			msg_popup,
 			confirm_popup,
 			commit_popup,
+			conventional_commit_popup,
 			blame_file_popup,
 			file_revlog_popup,
 			stashmsg_popup,
@@ -520,6 +526,7 @@ impl App {
 			stashmsg_popup,
 			help_popup,
 			inspect_commit_popup,
+			conventional_commit_popup,
 			compare_commits_popup,
 			blame_file_popup,
 			file_revlog_popup,
@@ -738,6 +745,9 @@ impl App {
 			}
 			InternalEvent::Update(u) => flags.insert(u),
 			InternalEvent::OpenCommit => self.commit_popup.show()?,
+			InternalEvent::OpenConventionalCommit => {
+				self.conventional_commit_popup.show()?
+			}
 			InternalEvent::RewordCommit(id) => {
 				self.commit_popup.open(Some(id))?;
 			}
