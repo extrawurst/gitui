@@ -60,15 +60,15 @@ enum MoreInfoCommit {
 	Feature,
 	// 📝
 	Documentation,
-	// 💄:lipstick:
+	// 💄
 	UI,
 	// 🎉
 	Initial,
-	// ✅:white_check_mark:
+	// ✅
 	TestsPassing,
-	// ➕Add
+	// ➕
 	Add,
-	// ➖Remove
+	// ➖
 	Remove,
 	// 🔒️
 	Security,
@@ -100,7 +100,7 @@ enum MoreInfoCommit {
 	ExternalDependencyChange,
 	// 🚚
 	RenameResources,
-	// ♿️:wheelchair:
+	// ♿️
 	Accessibility,
 	// 📜
 	Readme,
@@ -142,6 +142,224 @@ enum MoreInfoCommit {
 	Infra,
 	// 🦺
 	Validation,
+}
+
+impl MoreInfoCommit {
+	fn strings(&self) -> (&'static str, &'static str, &'static str) {
+		match *self {
+			MoreInfoCommit::UI => ("💄", "UI", "UI related"),
+			MoreInfoCommit::CodeStyle => {
+				("🎨", "style", "Style of the code")
+			}
+			MoreInfoCommit::Performance => ("⚡️", "", "Performance"),
+			MoreInfoCommit::Bug => ("🐛", "bug", "Normal bug"),
+			MoreInfoCommit::CriticalBug => {
+				("🚑️", "critical bug", "Critical Bug")
+			}
+			MoreInfoCommit::Feature => ("✨", "", "Feature"),
+			MoreInfoCommit::Documentation => {
+				("📝", "", "Documentation")
+			}
+			MoreInfoCommit::Initial => ("🎉", "", "Initial commit!"),
+			MoreInfoCommit::TestsPassing => {
+				("✅", "passing", "Test are now passing!")
+			}
+			MoreInfoCommit::Add => ("➕", "add", "Added"),
+			MoreInfoCommit::Remove => ("➖", "remove", "Removed"),
+			MoreInfoCommit::Security => {
+				("🔒️", "security", "Secutiry related")
+			}
+			MoreInfoCommit::Release => {
+				("🔖", "release", "A new relase")
+			}
+			MoreInfoCommit::Warning => ("⚠️", "warning", "Warning"),
+			MoreInfoCommit::Wip => ("🚧", "", "WIP"),
+			MoreInfoCommit::Down => ("⬇️", "downgrade", "Down"),
+			MoreInfoCommit::Up => ("⬆️", "upgrade", "Up"),
+			MoreInfoCommit::CI => ("👷", "", "CI related"),
+			MoreInfoCommit::Refactor => ("♻️", "", "Refactor related"),
+			MoreInfoCommit::TrackCode => {
+				("📈", "track", "Tracking code")
+			}
+			MoreInfoCommit::Typo => ("✏️", "typo", "Typo"),
+			MoreInfoCommit::Internationalization => {
+				("🌐", "i18n", "Internationalization")
+			}
+			MoreInfoCommit::Revert => ("⏪️", "", "Revert"),
+			MoreInfoCommit::Package => ("📦️", "", "Package related"),
+			MoreInfoCommit::ExternalDependencyChange => (
+				"👽️",
+				"change due to external dep update",
+				"Code related to change of ext dep",
+			),
+			MoreInfoCommit::RenameResources => {
+				("🚚", "rename", "Rename some resources")
+			}
+			MoreInfoCommit::Accessibility => {
+				("♿️", "accessibility", "Improved accessibility")
+			}
+			MoreInfoCommit::Readme => ("📜", "README", "README"),
+			MoreInfoCommit::License => ("⚖️", "LICENSE", "LICENSE"),
+			MoreInfoCommit::TextLiteral => {
+				("💬", "raw value", "Modified literal value")
+			}
+			MoreInfoCommit::DatabaseRelated => {
+				("⛃", "db", "Database related")
+			}
+			MoreInfoCommit::AddLogs => ("🔊", "add logs", "Add logs"),
+			MoreInfoCommit::RemoveLogs => {
+				("🔇", "remove logs", "Remove logs")
+			}
+			MoreInfoCommit::ImproveExperience => {
+				("🚸", "experience", "Improve experience")
+			}
+			MoreInfoCommit::ArchitecturalChanges => {
+				("🏗️", "architecture", "Architectural Changes")
+			}
+			MoreInfoCommit::WrittingReallyBadCode => (
+				"🤡",
+				"really bad code",
+				"This is some REALLY bad code",
+			),
+			MoreInfoCommit::GitIgnore => {
+				("🙈", "gitignore", "GitIgnore")
+			}
+			MoreInfoCommit::Experimentations => {
+				("⚗️", "experimentations", "Experimentations")
+			}
+			MoreInfoCommit::Flag => ("🚩", "flag", "Flag"),
+			MoreInfoCommit::Trash => ("🗑️", "", "Trash"),
+			MoreInfoCommit::Authorization => {
+				("🛂", "authorization", "Authorization")
+			}
+			MoreInfoCommit::QuickFix => {
+				("🩹", "quick-fix", "QuickFix")
+			}
+			MoreInfoCommit::RemoveDeadCode => {
+				("⚰️", "remove dead code", "RemoveDeadCode")
+			}
+			MoreInfoCommit::Business => {
+				("👔", "business", "Business related")
+			}
+			MoreInfoCommit::HealthCheck => {
+				("🩺", "healthcheck", "HealthCheck")
+			}
+			MoreInfoCommit::Infra => ("🧱", "infra", "Infra"),
+			MoreInfoCommit::Validation => {
+				("🦺", "validation", "Validation")
+			}
+		}
+	}
+}
+
+impl CommitType {
+	fn more_info(&self) -> Vec<MoreInfoCommit> {
+		match *self {
+			CommitType::Fix => {
+				vec![
+					MoreInfoCommit::Bug,
+					MoreInfoCommit::CriticalBug,
+					MoreInfoCommit::Security,
+					MoreInfoCommit::Warning,
+					MoreInfoCommit::TrackCode,
+					MoreInfoCommit::Typo,
+					MoreInfoCommit::TextLiteral,
+					MoreInfoCommit::ExternalDependencyChange,
+					MoreInfoCommit::DatabaseRelated,
+					MoreInfoCommit::Authorization,
+					MoreInfoCommit::QuickFix,
+					MoreInfoCommit::HealthCheck,
+					MoreInfoCommit::Business,
+					MoreInfoCommit::Infra,
+				]
+			}
+			CommitType::Feature => vec![
+				MoreInfoCommit::Feature,
+				MoreInfoCommit::Security,
+				MoreInfoCommit::TrackCode,
+				MoreInfoCommit::Internationalization,
+				MoreInfoCommit::Package,
+				MoreInfoCommit::Accessibility,
+				MoreInfoCommit::Readme,
+				MoreInfoCommit::License,
+				MoreInfoCommit::DatabaseRelated,
+				MoreInfoCommit::Flag,
+				MoreInfoCommit::Authorization,
+				MoreInfoCommit::Business,
+				MoreInfoCommit::Validation,
+			],
+			CommitType::Chore | CommitType::Refactor => vec![
+				MoreInfoCommit::Security,
+				MoreInfoCommit::Refactor,
+				MoreInfoCommit::TrackCode,
+				MoreInfoCommit::Internationalization,
+				MoreInfoCommit::RenameResources,
+				MoreInfoCommit::Accessibility,
+				MoreInfoCommit::Readme,
+				MoreInfoCommit::License,
+				MoreInfoCommit::TextLiteral,
+				MoreInfoCommit::DatabaseRelated,
+				MoreInfoCommit::RemoveLogs,
+				MoreInfoCommit::ImproveExperience,
+				MoreInfoCommit::ArchitecturalChanges,
+				MoreInfoCommit::GitIgnore,
+				MoreInfoCommit::Flag,
+				MoreInfoCommit::Trash,
+				MoreInfoCommit::Authorization,
+				MoreInfoCommit::RemoveDeadCode,
+				MoreInfoCommit::Business,
+				MoreInfoCommit::Infra,
+				MoreInfoCommit::Validation,
+			],
+			CommitType::CI => vec![MoreInfoCommit::CI],
+			CommitType::Initial => vec![MoreInfoCommit::Initial],
+			CommitType::Performance => {
+				vec![
+					MoreInfoCommit::Performance,
+					MoreInfoCommit::DatabaseRelated,
+				]
+			}
+			CommitType::Wip => vec![
+				MoreInfoCommit::Wip,
+				MoreInfoCommit::WrittingReallyBadCode,
+				MoreInfoCommit::Experimentations,
+			],
+			CommitType::Docs => vec![MoreInfoCommit::Documentation],
+			CommitType::Test => vec![
+				MoreInfoCommit::TestsPassing,
+				MoreInfoCommit::Add,
+				MoreInfoCommit::Remove,
+				MoreInfoCommit::Experimentations,
+				MoreInfoCommit::HealthCheck,
+				MoreInfoCommit::Validation,
+			],
+			CommitType::Bump => {
+				vec![
+					MoreInfoCommit::Add,
+					MoreInfoCommit::Remove,
+					MoreInfoCommit::Down,
+					MoreInfoCommit::Up,
+					MoreInfoCommit::Release,
+					MoreInfoCommit::Package,
+				]
+			}
+			CommitType::Style => {
+				vec![
+					MoreInfoCommit::CodeStyle,
+					MoreInfoCommit::UI,
+					MoreInfoCommit::ImproveExperience,
+				]
+			}
+			CommitType::Build => vec![MoreInfoCommit::CI],
+			CommitType::Debug => vec![
+				MoreInfoCommit::TrackCode,
+				MoreInfoCommit::AddLogs,
+				MoreInfoCommit::HealthCheck,
+				MoreInfoCommit::RemoveLogs,
+			],
+			CommitType::Revert => vec![MoreInfoCommit::Revert],
+		}
+	}
 }
 
 pub struct ConventionalCommitPopup {
