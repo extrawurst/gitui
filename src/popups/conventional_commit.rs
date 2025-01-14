@@ -49,7 +49,7 @@ enum CommitType {
 
 enum MoreInfoCommit {
 	// 🎨
-	Structure,
+	CodeStyle,
 	// ⚡️
 	Performance,
 	// 🐛
