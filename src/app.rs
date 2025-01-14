@@ -289,6 +289,7 @@ impl App {
 
 	///
 	pub fn event(&mut self, ev: InputEvent) -> Result<()> {
+		//println!("event: {:?}", ev);
 		log::trace!("event: {:?}", ev);
 
 		if let InputEvent::Input(ev) = ev {

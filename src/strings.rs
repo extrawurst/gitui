@@ -1093,7 +1093,9 @@ pub mod commands {
 		CommandText::new(
 			format!(
 				"Commit emoji [{}]",
-				key_config.get_hint(key_config.keys.open_commit),
+				key_config.get_hint(
+					key_config.keys.open_conventional_commit
+				)
 			),
 			"open commit emoji popups (available in non-empty stage)",
 			CMD_GROUP_GENERAL,

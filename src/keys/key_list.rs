@@ -148,7 +148,7 @@ impl Default for KeysList {
 			quit: GituiKeyEvent::new(KeyCode::Char('q'),  KeyModifiers::empty()),
 			exit_popup: GituiKeyEvent::new(KeyCode::Esc,  KeyModifiers::empty()),
 			open_commit: GituiKeyEvent::new(KeyCode::Char('c'),  KeyModifiers::empty()),
-			open_conventional_commit: GituiKeyEvent::new(KeyCode::Char('C'),  KeyModifiers::empty()),
+			open_conventional_commit: GituiKeyEvent::new(KeyCode::Char('C'),  KeyModifiers::SHIFT),
 			open_commit_editor: GituiKeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL),
 			open_help: GituiKeyEvent::new(KeyCode::Char('h'),  KeyModifiers::empty()),
 			open_options: GituiKeyEvent::new(KeyCode::Char('o'),  KeyModifiers::empty()),

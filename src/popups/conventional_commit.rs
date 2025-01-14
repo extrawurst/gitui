@@ -27,7 +27,122 @@ use crate::{
 };
 
 #[derive(EnumIter, Display, Clone)]
-enum CommitType {}
+enum CommitType {
+	Refactor,
+	#[strum(to_string = "feat")]
+	Feature,
+	Fix,
+	Docs,
+	Style,
+	#[strum(to_string = "perf")]
+	Performance,
+	Test,
+	Build,
+	CI,
+	Chore,
+	Revert,
+	Initial,
+	Bump,
+	Wip,
+	Debug,
+}
+
+enum MoreInfoCommit {
+	// 🎨
+	Structure,
+	// ⚡️
+	Performance,
+	// 🐛
+	Bug,
+	// 🚑️
+	CriticalBug,
+	// ✨
+	Feature,
+	// 📝
+	Documentation,
+	// 💄:lipstick:
+	UI,
+	// 🎉
+	Initial,
+	// ✅:white_check_mark:
+	TestsPassing,
+	// ➕Add
+	Add,
+	// ➖Remove
+	Remove,
+	// 🔒️
+	Security,
+	// 🔖
+	Release,
+	// ⚠️
+	Warning,
+	// 🚧
+	Wip,
+	// ⬇️
+	Down,
+	// ⬆️
+	Up,
+	// 👷
+	CI,
+	// ♻️
+	Refactor,
+	// 📈
+	TrackCode,
+	// ✏️
+	Typo,
+	// 🌐
+	Internationalization,
+	// ⏪️
+	Revert,
+	// 📦️
+	Package,
+	// 👽️
+	ExternalDependencyChange,
+	// 🚚
+	RenameResources,
+	// ♿️:wheelchair:
+	Accessibility,
+	// 📜
+	Readme,
+	// ⚖️
+	License,
+	// 💬
+	TextLiteral,
+	// ⛃
+	DatabaseRelated,
+	// 🔊
+	AddLogs,
+	// 🔇
+	RemoveLogs,
+	// 🚸
+	ImproveExperience,
+	// 🏗️
+	ArchitecturalChanges,
+	// 🤡
+	WrittingReallyBadCode,
+	// 🙈
+	GitIgnore,
+	// ⚗️
+	Experimentations,
+	// 🚩
+	Flag,
+	// 🗑️
+	Trash,
+	// 🛂
+	Authorization,
+	// 🩹
+	QuickFix,
+	// ⚰️
+	RemoveDeadCode,
+	// 👔
+	Business,
+	// 🩺
+	HealthCheck,
+	// 🧱
+	Infra,
+	// 🦺
+	Validation,
+}
 
 pub struct ConventionalCommitPopup {
 	key_config: SharedKeyConfig,
@@ -288,8 +403,6 @@ impl Component for ConventionalCommitPopup {
 		}
 
 		visibility_blocking(self)
-
-		// todo!()
 	}
 
 	fn event(
