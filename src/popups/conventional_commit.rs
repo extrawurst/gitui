@@ -28,7 +28,7 @@ use crate::{
 	ui,
 };
 
-#[derive(EnumIter, Display, Clone)]
+#[derive(EnumIter, Display, Copy, Clone)]
 #[strum(serialize_all = "lowercase")]
 enum CommitType {
 	Refactor,
@@ -755,19 +755,15 @@ impl Component for ConventionalCommitPopup {
 					{
 						self.validate_escape(commit_type);
 					} else {
-						let commit = self
+						if let Some(&commit) = self
 							.query_results_type
 							.get(self.selected_index)
-							.cloned();
-
-						self.seleted_commit_type = commit.clone();
-						self.next_step();
-
-						if let Some(more_infos) =
-							commit.as_ref().map(|c| c.more_info())
 						{
-							if more_infos.len() == 1 {
-								self.validate_escape(commit.unwrap());
+							self.seleted_commit_type = Some(commit);
+							self.next_step();
+
+							if commit.more_info().len() == 1 {
+								self.validate_escape(commit);
 							}
 						}
 					}
