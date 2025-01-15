@@ -743,25 +743,23 @@ impl Component for ConventionalCommitPopup {
 						self.seleted_commit_type
 					{
 						self.validate_escape(commit_type);
-					} else {
-						if let Some(&commit) = self
-							.query_results_type
-							.get(self.selected_index)
-						{
-							self.seleted_commit_type = Some(commit);
+					} else if let Some(&commit) = self
+     							.query_results_type
+     							.get(self.selected_index)
+     						{
+     							self.seleted_commit_type = Some(commit);
 
-							#[cfg(feature = "gitmoji")]
-							{
-								self.next_step();
+     							#[cfg(feature = "gitmoji")]
+     							{
+     								self.next_step();
 
-								if commit.more_info().len() == 1 {
-									self.validate_escape(commit);
-								}
-							}
-							#[cfg(not(feature = "gitmoji"))]
-							self.validate_escape(commit);
-						}
-					}
+     								if commit.more_info().len() == 1 {
+     									self.validate_escape(commit);
+     								}
+     							}
+     							#[cfg(not(feature = "gitmoji"))]
+     							self.validate_escape(commit);
+     						}
 				} else if key_match(
 					key,
 					self.key_config.keys.breaking,
