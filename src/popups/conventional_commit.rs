@@ -505,9 +505,10 @@ impl ConventionalCommitPopup {
 
 	pub fn quick_shortcuts(&self) -> Vec<char> {
 		// Missing `i`, because `i` is mapped to insert sorry~
-		let default = "qwertyuopasdfghjklmzxcvbn";
+		let mut available_chars =
+			('a'..='z').into_iter().collect_vec();
 
-		let dont_map_keys = [
+		[
 			self.key_config.keys.move_down,
 			self.key_config.keys.move_up,
 			self.key_config.keys.exit_popup,
@@ -515,20 +516,30 @@ impl ConventionalCommitPopup {
 			self.key_config.keys.insert,
 		]
 		.into_iter()
-		.filter_map(|k| {
+		.for_each(|k| {
 			if let KeyCode::Char(c) = k.code {
-				Some(c)
-			} else {
-				None
+				if let Some(char_to_remove_index) =
+					available_chars.iter().position(|&ch| ch == c)
+				{
+					available_chars.remove(char_to_remove_index);
+				}
 			}
-		})
-		.collect_vec();
+		});
 
-		default
-			.chars()
-			.filter(|c| !dont_map_keys.contains(c))
-			.take(self.query_results.len())
-			.collect_vec()
+		self.query_results
+			.iter()
+			.map(|commit_type| commit_type.to_string())
+			.map(|s| {
+				if let Some(ch) = s.chars()
+					.into_iter()
+					.find(|c| available_chars.contains(&c)) {
+                    available_chars.retain(|&c| c != ch);
+                    ch
+                } else {
+                    *available_chars.first().expect("Should already have at least one letter available")
+                }
+			})
+        .collect_vec()
 	}
 
 	pub fn move_selection(&mut self, direction: ScrollType) {
@@ -682,6 +693,7 @@ impl Component for ConventionalCommitPopup {
 			if self.is_insert {
 				println!("lol");
 			}
+
 			if let Event::Key(key) = event {
 				if key_match(key, self.key_config.keys.exit_popup)
 					|| key_match(key, self.key_config.keys.enter)
