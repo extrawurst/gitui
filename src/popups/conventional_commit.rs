@@ -34,19 +34,19 @@ enum CommitType {
 	#[strum(to_string = "feat")]
 	Feature,
 	Fix,
+	Wip,
+	Debug,
+	Test,
 	Docs,
 	Style,
 	#[strum(to_string = "perf")]
 	Performance,
-	Test,
-	Build,
-	CI,
 	Chore,
 	Revert,
 	Initial,
 	Bump,
-	Wip,
-	Debug,
+	Build,
+	CI,
 }
 
 enum MoreInfoCommit {
@@ -568,7 +568,8 @@ impl ConventionalCommitPopup {
 		self.queue.push(crate::queue::InternalEvent::OpenCommit);
 		self.queue.push(
 			crate::queue::InternalEvent::AddCommitMessage(format!(
-				"{emoji} {commit_type}: {short_msg}"
+				"{emoji} {commit_type}{} {short_msg}",
+				if short_msg.is_empty() { "" } else { ":" },
 			)),
 		);
 		self.hide();
