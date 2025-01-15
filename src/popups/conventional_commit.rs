@@ -691,9 +691,11 @@ impl Component for ConventionalCommitPopup {
 	) -> Result<EventState> {
 		if self.is_visible() {
 			if let Event::Key(key) = event {
-				if key_match(key, self.key_config.keys.exit_popup)
-					|| key_match(key, self.key_config.keys.enter)
-				{
+				if key_match(key, self.key_config.keys.exit_popup) {
+					self.hide();
+					self.selected_index = 0;
+					self.seleted_commit_type = None;
+				} else if key_match(key, self.key_config.keys.enter) {
 					if let Some(commit_type) =
 						self.seleted_commit_type.clone()
 					{
