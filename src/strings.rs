@@ -1087,7 +1087,7 @@ pub mod commands {
 			CMD_GROUP_GENERAL,
 		)
 	}
-	pub fn commit_emoji_open(
+	pub fn conventional_commit_open(
 		key_config: &SharedKeyConfig,
 	) -> CommandText {
 		CommandText::new(

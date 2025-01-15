@@ -738,7 +738,7 @@ impl Component for Status {
 
 			out.push(
 				CommandInfo::new(
-					strings::commands::commit_emoji_open(
+					strings::commands::conventional_commit_open(
 						&self.key_config,
 					),
 					true,
