@@ -159,6 +159,7 @@ pub fn filter_commit_by_search(
 		move |repo: &Repository,
 		      commit_id: &CommitId|
 		      -> Result<bool> {
+			let mailmap = repo.mailmap()?;
 			let commit = repo.find_commit((*commit_id).into())?;
 
 			let msg_summary_match = filter
@@ -198,18 +199,19 @@ pub fn filter_commit_by_search(
 				.options
 				.fields
 				.contains(SearchFields::AUTHORS)
-				.then(|| {
+				.then(|| -> Result<bool> {
 					let name_match = commit
-						.author()
+						.author_with_mailmap(&mailmap)?
 						.name()
 						.is_some_and(|name| filter.match_text(name));
 					let mail_match = commit
-						.author()
+						.author_with_mailmap(&mailmap)?
 						.email()
 						.is_some_and(|name| filter.match_text(name));
 
-					name_match || mail_match
+					Ok(name_match || mail_match)
 				})
+				.transpose()?
 				.unwrap_or_default();
 
 			Ok(msg_summary_match

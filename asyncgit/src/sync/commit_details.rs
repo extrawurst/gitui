@@ -95,11 +95,15 @@ pub fn get_commit_details(
 	scope_time!("get_commit_details");
 
 	let repo = repo(repo_path)?;
+	let mailmap = repo.mailmap()?;
 
 	let commit = repo.find_commit(id.into())?;
 
-	let author = CommitSignature::from(&commit.author());
-	let committer = CommitSignature::from(&commit.committer());
+	let author =
+		CommitSignature::from(&commit.author_with_mailmap(&mailmap)?);
+	let committer = CommitSignature::from(
+		&commit.committer_with_mailmap(&mailmap)?,
+	);
 	let committer = if author == committer {
 		None
 	} else {
