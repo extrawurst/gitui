@@ -3,6 +3,7 @@ use git2::Repository;
 use crate::{error::Result, HookResult, HooksError};
 
 use std::{
+	ffi::{OsStr, OsString},
 	path::{Path, PathBuf},
 	process::Command,
 	str::FromStr,
@@ -107,12 +108,23 @@ impl HookPaths {
 	/// see <https://git-scm.com/docs/githooks>
 	pub fn run_hook(&self, args: &[&str]) -> Result<HookResult> {
 		let hook = self.hook.clone();
-
-		let arg_str = format!("{:?} {}", hook, args.join(" "));
-		// Use -l to avoid "command not found" on Windows.
-		let shell_args =
-			vec!["-l".to_string(), "-c".to_string(), arg_str];
-
+		let command = {
+			let mut os_str = OsString::new();
+			os_str.push("'");
+			os_str.push(hook.as_os_str()); // TODO: this doesn't work if `hook` contains single-quotes
+			os_str.push("'");
+			os_str.push(" \"$@\"");
+			os_str
+		};
+		let shell_args = {
+			let mut shell_args = vec![
+				OsStr::new("-c"),
+				command.as_os_str(),
+				hook.as_os_str(),
+			];
+			shell_args.extend(args.iter().map(OsStr::new));
+			shell_args
+		};
 		log::trace!("run hook '{:?}' in '{:?}'", hook, self.pwd);
 
 		let output = Command::new(shell())
