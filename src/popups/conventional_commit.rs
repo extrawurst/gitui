@@ -610,12 +610,20 @@ impl ConventionalCommitPopup {
 		);
 		self.hide();
 	}
+
+	fn next_step(&mut self) {
+		self.selected_index = 0;
+		self.is_insert = false;
+		self.query = None;
+		self.input.clear();
+		self.update_query();
+	}
 }
 
 impl DrawableComponent for ConventionalCommitPopup {
 	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
 		if self.is_visible {
-			const MAX_SIZE: (u16, u16) = (50, 20);
+			const MAX_SIZE: (u16, u16) = (50, 25);
 
 			let area = ui::centered_rect_absolute(
 				MAX_SIZE.0, MAX_SIZE.1, area,
@@ -737,12 +745,7 @@ impl Component for ConventionalCommitPopup {
 							.cloned();
 
 						self.seleted_commit_type = commit.clone();
-						self.selected_index = 0;
-						self.is_insert = false;
-						self.query = None;
-						self.input.clear();
-
-						self.update_query();
+						self.next_step();
 
 						if let Some(more_infos) =
 							commit.as_ref().map(|c| c.more_info())
@@ -783,6 +786,7 @@ impl Component for ConventionalCommitPopup {
 									self.query_results_type[idx]
 										.clone(),
 								);
+								self.next_step();
 							}
 						}
 					}
@@ -800,14 +804,11 @@ impl Component for ConventionalCommitPopup {
 	}
 
 	fn hide(&mut self) {
+		self.next_step();
 		self.is_visible = false;
-		self.is_insert = false;
-		self.selected_index = 0;
 		self.seleted_commit_type = None;
-		self.query = None;
 		self.query_results_type = CommitType::iter().collect_vec();
 		self.query_results_more_info = Vec::new();
-		self.input.clear();
 	}
 
 	fn show(&mut self) -> Result<()> {
