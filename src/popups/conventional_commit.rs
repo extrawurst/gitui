@@ -442,6 +442,12 @@ impl ConventionalCommitPopup {
 					})
 					.collect_vec()
 			} else {
+				let max_len = self
+					.query_results
+					.iter()
+					.map(|s| s.to_string().len())
+					.max();
+
 				self.query_results
 					.iter()
 					.enumerate()
@@ -453,14 +459,14 @@ impl ConventionalCommitPopup {
 							commit_type_string.as_str(),
 							width - 4, // ` [k]`
 						);
-						//FIXME: not working
+
 						(
 							self.selected_index == idx,
 							format!(
 								"{:w$} [{}]",
 								text,
 								quick_shortcuts[idx],
-								w = width,
+								w = max_len.unwrap_or_default(),
 							),
 						)
 					})
