@@ -598,9 +598,9 @@ impl ConventionalCommitPopup {
 			self.queue.push(
 				crate::queue::InternalEvent::AddCommitMessage(
 					format!(
-						"{emoji} {commit_type}{}{} {short_msg}",
+						"{emoji} {commit_type}{}{}{short_msg}",
 						if self.is_breaking { "!" } else { "" },
-						if short_msg.is_empty() { "" } else { ":" },
+						if short_msg.is_empty() { "" } else { ": " },
 					),
 				),
 			);
