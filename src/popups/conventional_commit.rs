@@ -730,6 +730,7 @@ impl Component for ConventionalCommitPopup {
 
 		visibility_blocking(self)
 	}
+
 	fn event(
 		&mut self,
 		event: &crossterm::event::Event,
@@ -757,7 +758,8 @@ impl Component for ConventionalCommitPopup {
 						{
 							self.next_step();
 
-							if commit.more_info().len() == 1 {
+							if self.query_results_more_info.len() == 1
+							{
 								self.validate_escape(commit);
 							}
 						}
@@ -794,7 +796,19 @@ impl Component for ConventionalCommitPopup {
 					{
 						self.seleted_commit_type =
 							Some(self.query_results_type[idx]);
-						self.next_step();
+						#[cfg(feature = "gitmoji")]
+						{
+							self.next_step();
+
+							if self.query_results_more_info.len() == 1
+							{
+								self.validate_escape(
+									self.query_results_type[idx],
+								);
+							}
+						}
+						#[cfg(not(feature = "gitmoji"))]
+						self.validate_escape(commit);
 					}
 				}
 			}
