@@ -504,7 +504,6 @@ impl ConventionalCommitPopup {
 	}
 
 	pub fn quick_shortcuts(&self) -> Vec<char> {
-		// Missing `i`, because `i` is mapped to insert sorry~
 		let mut available_chars =
 			('a'..='z').into_iter().collect_vec();
 
