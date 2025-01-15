@@ -54,6 +54,8 @@ enum CommitType {
 enum MoreInfoCommit {
 	// 🎨
 	CodeStyle,
+	// 💅
+	Formatted,
 	// ⚡️
 	Performance,
 	// 🐛
@@ -181,9 +183,7 @@ impl MoreInfoCommit {
 			MoreInfoCommit::Down => ("⬇️", "downgrade", "Down"),
 			MoreInfoCommit::Up => ("⬆️", "upgrade", "Up"),
 			MoreInfoCommit::CI => ("👷", "", "CI related"),
-			MoreInfoCommit::Refactor => {
-				("♻️", "", "Refactor related")
-			}
+			MoreInfoCommit::Refactor => ("♻️", "", "Refactor related"),
 			MoreInfoCommit::TrackCode => {
 				("📈", "track", "Tracking code")
 			}
@@ -254,6 +254,7 @@ impl MoreInfoCommit {
 			MoreInfoCommit::Validation => {
 				("🦺", "validation", "Validation")
 			}
+			MoreInfoCommit::Formatted => ("💅", "fmt", "Formatted"),
 		}
 	}
 }
@@ -265,15 +266,15 @@ impl CommitType {
 				vec![
 					MoreInfoCommit::Bug,
 					MoreInfoCommit::CriticalBug,
-					MoreInfoCommit::Security,
+					MoreInfoCommit::QuickFix,
 					MoreInfoCommit::Warning,
-					MoreInfoCommit::TrackCode,
 					MoreInfoCommit::Typo,
 					MoreInfoCommit::TextLiteral,
+					MoreInfoCommit::Security,
+					MoreInfoCommit::TrackCode,
 					MoreInfoCommit::ExternalDependencyChange,
 					MoreInfoCommit::DatabaseRelated,
 					MoreInfoCommit::Authorization,
-					MoreInfoCommit::QuickFix,
 					MoreInfoCommit::HealthCheck,
 					MoreInfoCommit::Business,
 					MoreInfoCommit::Infra,
@@ -295,24 +296,24 @@ impl CommitType {
 				MoreInfoCommit::Validation,
 			],
 			CommitType::Chore | CommitType::Refactor => vec![
-				MoreInfoCommit::Security,
 				MoreInfoCommit::Refactor,
-				MoreInfoCommit::TrackCode,
-				MoreInfoCommit::Internationalization,
+				MoreInfoCommit::ArchitecturalChanges,
 				MoreInfoCommit::RenameResources,
-				MoreInfoCommit::Accessibility,
+				MoreInfoCommit::RemoveLogs,
+				MoreInfoCommit::TextLiteral,
+				MoreInfoCommit::RemoveDeadCode,
+				MoreInfoCommit::DatabaseRelated,
+				MoreInfoCommit::Security,
 				MoreInfoCommit::Readme,
 				MoreInfoCommit::License,
-				MoreInfoCommit::TextLiteral,
-				MoreInfoCommit::DatabaseRelated,
-				MoreInfoCommit::RemoveLogs,
 				MoreInfoCommit::ImproveExperience,
-				MoreInfoCommit::ArchitecturalChanges,
+				MoreInfoCommit::TrackCode,
+				MoreInfoCommit::Internationalization,
+				MoreInfoCommit::Accessibility,
 				MoreInfoCommit::GitIgnore,
 				MoreInfoCommit::Flag,
 				MoreInfoCommit::Trash,
 				MoreInfoCommit::Authorization,
-				MoreInfoCommit::RemoveDeadCode,
 				MoreInfoCommit::Business,
 				MoreInfoCommit::Infra,
 				MoreInfoCommit::Validation,
@@ -351,6 +352,7 @@ impl CommitType {
 			}
 			CommitType::Style => {
 				vec![
+					MoreInfoCommit::Formatted,
 					MoreInfoCommit::CodeStyle,
 					MoreInfoCommit::UI,
 					MoreInfoCommit::ImproveExperience,
@@ -358,8 +360,8 @@ impl CommitType {
 			}
 			CommitType::Build => vec![MoreInfoCommit::CI],
 			CommitType::Debug => vec![
-				MoreInfoCommit::TrackCode,
 				MoreInfoCommit::AddLogs,
+				MoreInfoCommit::TrackCode,
 				MoreInfoCommit::HealthCheck,
 				MoreInfoCommit::RemoveLogs,
 			],
