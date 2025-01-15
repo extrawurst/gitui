@@ -686,7 +686,8 @@ impl Status {
 				strings::commands::select_staging(&self.key_config),
 				!focus_on_diff,
 				(self.visible
-					&& !focus_on_diff && self.focus == Focus::WorkDir)
+					&& !focus_on_diff
+					&& self.focus == Focus::WorkDir)
 					|| force_all,
 			)
 			.order(strings::order::NAV),
@@ -696,7 +697,8 @@ impl Status {
 				strings::commands::select_unstaged(&self.key_config),
 				!focus_on_diff,
 				(self.visible
-					&& !focus_on_diff && self.focus == Focus::Stage)
+					&& !focus_on_diff
+					&& self.focus == Focus::Stage)
 					|| force_all,
 			)
 			.order(strings::order::NAV),
