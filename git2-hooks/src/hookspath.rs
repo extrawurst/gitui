@@ -114,8 +114,6 @@ impl HookPaths {
 			command.current_dir(&self.pwd).with_no_window().output()
 		};
 		let output = if cfg!(windows) {
-			run_command(Command::new(&hook).args(args))
-		} else {
 			let command = {
 				let mut os_str = std::ffi::OsString::new();
 				os_str.push("'");
@@ -146,6 +144,8 @@ impl HookPaths {
 						"FixPathHandlingOnWindows",
 					),
 			)
+		} else {
+			run_command(Command::new(&hook).args(args))
 		}?;
 
 		if output.status.success() {
