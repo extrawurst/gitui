@@ -1902,7 +1902,7 @@ pub mod commands {
 				"Exit Insert [{}]",
 				key_config.get_hint(key_config.keys.exit_popup),
 			),
-			"exit in insert mode",
+			"exit of insert mode",
 			CMD_GROUP_LOG,
 		)
 	}
