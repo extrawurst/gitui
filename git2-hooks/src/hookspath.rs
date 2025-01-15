@@ -3,7 +3,7 @@ use git2::Repository;
 use crate::{error::Result, HookResult, HooksError};
 
 use std::{
-	ffi::{OsStr, OsString},
+	ffi::OsStr,
 	path::{Path, PathBuf},
 	process::Command,
 	str::FromStr,
@@ -108,37 +108,45 @@ impl HookPaths {
 	/// see <https://git-scm.com/docs/githooks>
 	pub fn run_hook(&self, args: &[&str]) -> Result<HookResult> {
 		let hook = self.hook.clone();
-		let command = {
-			let mut os_str = OsString::new();
-			os_str.push("'");
-			os_str.push(hook.as_os_str()); // TODO: this doesn't work if `hook` contains single-quotes
-			os_str.push("'");
-			os_str.push(" \"$@\"");
-			os_str
-		};
-		let shell_args = {
-			let mut shell_args = vec![
-				OsStr::new("-c"),
-				command.as_os_str(),
-				hook.as_os_str(),
-			];
-			shell_args.extend(args.iter().map(OsStr::new));
-			shell_args
-		};
 		log::trace!("run hook '{:?}' in '{:?}'", hook, self.pwd);
 
-		let output = Command::new(shell())
-			.args(shell_args)
-			.with_no_window()
-			.current_dir(&self.pwd)
-			// This call forces Command to handle the Path environment correctly on windows,
-			// the specific env set here does not matter
-			// see https://github.com/rust-lang/rust/issues/37519
-			.env(
-				"DUMMY_ENV_TO_FIX_WINDOWS_CMD_RUNS",
-				"FixPathHandlingOnWindows",
+		let run_command = |command: &mut Command| {
+			command.current_dir(&self.pwd).with_no_window().output()
+		};
+		let output = if cfg!(windows) {
+			run_command(Command::new(&hook).args(args))
+		} else {
+			let command = {
+				let mut os_str = std::ffi::OsString::new();
+				os_str.push("'");
+				os_str.push(hook.as_os_str()); // TODO: this doesn't work if `hook` contains single-quotes
+				os_str.push("'");
+				os_str.push(" \"$@\"");
+				os_str
+			};
+			let shell_args = {
+				let mut shell_args = vec![
+					OsStr::new("-l"), // Use -l to avoid "command not found"
+					OsStr::new("-c"),
+					command.as_os_str(),
+					hook.as_os_str(),
+				];
+				shell_args.extend(args.iter().map(OsStr::new));
+				shell_args
+			};
+
+			run_command(
+				Command::new(sh_on_windows())
+					.args(shell_args)
+					// This call forces Command to handle the Path environment correctly on windows,
+					// the specific env set here does not matter
+					// see https://github.com/rust-lang/rust/issues/37519
+					.env(
+						"DUMMY_ENV_TO_FIX_WINDOWS_CMD_RUNS",
+						"FixPathHandlingOnWindows",
+					),
 			)
-			.output()?;
+		}?;
 
 		if output.status.success() {
 			Ok(HookResult::Ok { hook })
@@ -155,6 +163,29 @@ impl HookPaths {
 				hook,
 			})
 		}
+	}
+}
+
+/// Get the path to the sh.exe bundled with Git for Windows
+fn sh_on_windows() -> PathBuf {
+	if cfg!(windows) {
+		Command::new("where.exe")
+			.arg("git")
+			.output()
+			.ok()
+			.map(|out| {
+				PathBuf::from(Into::<String>::into(
+					String::from_utf8_lossy(&out.stdout),
+				))
+			})
+			.as_deref()
+			.and_then(Path::parent)
+			.and_then(Path::parent)
+			.map(|p| p.join("usr/bin/sh.exe"))
+			.filter(|p| p.exists())
+			.unwrap_or_else(|| "sh".into())
+	} else {
+		"sh".into()
 	}
 }
 
@@ -180,35 +211,6 @@ fn is_executable(path: &Path) -> bool {
 /// to be executable (which is not far from the truth for windows platform.)
 const fn is_executable(_: &Path) -> bool {
 	true
-}
-
-/// Return the shell that Git would use, the shell to execute commands from.
-///
-/// On Windows, this is the full path to `sh.exe` bundled with it, and on
-/// Unix it's `/bin/sh` as posix compatible shell.
-/// If the bundled shell on Windows cannot be found, `sh` is returned as the name of a shell
-/// as it could possibly be found in `PATH`.
-/// Note that the returned path might not be a path on disk.
-pub fn shell() -> PathBuf {
-	if cfg!(windows) {
-		Command::new("where.exe")
-			.arg("git")
-			.output()
-			.ok()
-			.map(|out| {
-				PathBuf::from(Into::<String>::into(
-					String::from_utf8_lossy(&out.stdout),
-				))
-			})
-			.as_deref()
-			.and_then(Path::parent)
-			.and_then(Path::parent)
-			.map(|p| p.join("usr/bin/sh.exe"))
-			.filter(|p| p.exists())
-			.unwrap_or_else(|| "sh".into())
-	} else {
-		"/bin/sh".into()
-	}
 }
 
 trait CommandExt {
