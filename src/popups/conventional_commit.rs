@@ -181,7 +181,9 @@ impl MoreInfoCommit {
 			MoreInfoCommit::Down => ("⬇️", "downgrade", "Down"),
 			MoreInfoCommit::Up => ("⬆️", "upgrade", "Up"),
 			MoreInfoCommit::CI => ("👷", "", "CI related"),
-			MoreInfoCommit::Refactor => ("♻️", "", "Refactor related"),
+			MoreInfoCommit::Refactor => {
+				("♻️", "", "Refactor related")
+			}
 			MoreInfoCommit::TrackCode => {
 				("📈", "track", "Tracking code")
 			}
