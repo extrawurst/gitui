@@ -633,7 +633,16 @@ impl DrawableComponent for ConventionalCommitPopup {
 							"Type of commit"
 						},
 						self.theme.title(true),
-					)),
+					))
+					.title(if self.is_insert {
+						Span::styled(
+							"[INSERT]",
+							self.theme.title(true),
+						)
+						.into_right_aligned_line()
+					} else {
+						"".into()
+					}),
 				area,
 			);
 
