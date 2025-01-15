@@ -152,9 +152,9 @@ enum MoreInfoCommit {
 
 impl MoreInfoCommit {
 	const fn strings(
-		&self,
+		self,
 	) -> (&'static str, &'static str, &'static str) {
-		match *self {
+		match self {
 			Self::UI => ("💄", "UI", "UI related"),
 			Self::CodeStyle => ("🎨", "style", "Style of the code"),
 			Self::Performance => ("⚡️", "", "Performance"),
