@@ -52,101 +52,101 @@ enum CommitType {
 
 #[derive(Clone)]
 enum MoreInfoCommit {
-	// 🎨
+	/// 🎨
 	CodeStyle,
-	// 💅
+	/// 💅
 	Formatted,
-	// ⚡️
+	/// ⚡️
 	Performance,
-	// 🐛
+	/// 🐛
 	Bug,
-	// 🚑️
+	/// 🚑️
 	CriticalBug,
-	// ✨
+	/// ✨
 	Feature,
-	// 📝
+	/// 📝
 	Documentation,
-	// 💄
+	/// 💄
 	UI,
-	// 🎉
+	/// 🎉
 	Initial,
-	// ✅
+	/// ✅
 	TestsPassing,
-	// ➕
+	/// ➕
 	Add,
-	// ➖
+	/// ➖
 	Remove,
-	// 🔒️
+	/// 🔒️
 	Security,
-	// 🔖
+	/// 🔖
 	Release,
-	// ⚠️
+	/// ⚠️
 	Warning,
-	// 🚧
+	/// 🚧
 	Wip,
-	// ⬇️
+	/// ⬇️
 	Down,
-	// ⬆️
+	/// ⬆️
 	Up,
-	// 👷
+	/// 👷
 	CI,
-	// ♻️
+	/// ♻️
 	Refactor,
-	// 📈
+	/// 📈
 	TrackCode,
-	// ✏️
+	/// ✏️
 	Typo,
-	// 🌐
+	/// 🌐
 	Internationalization,
-	// ⏪️
+	/// ⏪️
 	Revert,
-	// 📦️
+	/// 📦️
 	Package,
-	// 👽️
+	/// 👽️
 	ExternalDependencyChange,
-	// 🚚
+	/// 🚚
 	RenameResources,
-	// ♿️
+	/// ♿️
 	Accessibility,
-	// 📜
+	/// 📜
 	Readme,
-	// ⚖️
+	/// ⚖️
 	License,
-	// 💬
+	/// 💬
 	TextLiteral,
-	// ⛃
+	/// ⛃
 	DatabaseRelated,
-	// 🔊
+	/// 🔊
 	AddLogs,
-	// 🔇
+	/// 🔇
 	RemoveLogs,
-	// 🚸
+	/// 🚸
 	ImproveExperience,
-	// 🏗️
+	/// 🏗️
 	ArchitecturalChanges,
-	// 🤡
+	/// 🤡
 	WrittingReallyBadCode,
-	// 🙈
+	/// 🙈
 	GitIgnore,
-	// ⚗️
+	/// ⚗️
 	Experimentations,
-	// 🚩
+	/// 🚩
 	Flag,
-	// 🗑️
+	/// 🗑️
 	Trash,
-	// 🛂
+	/// 🛂
 	Authorization,
-	// 🩹
+	/// 🩹
 	QuickFix,
-	// ⚰️
+	/// ⚰️
 	RemoveDeadCode,
-	// 👔
+	/// 👔
 	Business,
-	// 🩺
+	/// 🩺
 	HealthCheck,
-	// 🧱
+	/// 🧱
 	Infra,
-	// 🦺
+	/// 🦺
 	Validation,
 }
 
