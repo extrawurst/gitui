@@ -3,7 +3,6 @@ use git2::Repository;
 use crate::{error::Result, HookResult, HooksError};
 
 use std::{
-	env,
 	path::{Path, PathBuf},
 	process::Command,
 	str::FromStr,
@@ -111,16 +110,13 @@ impl HookPaths {
 
 		let arg_str = format!("{:?} {}", hook, args.join(" "));
 		// Use -l to avoid "command not found" on Windows.
-		let bash_args =
+		let shell_args =
 			vec!["-l".to_string(), "-c".to_string(), arg_str];
 
 		log::trace!("run hook '{:?}' in '{:?}'", hook, self.pwd);
 
-		let git_shell = find_bash_executable()
-			.or_else(find_default_unix_shell)
-			.unwrap_or_else(|| "bash".into());
-		let output = Command::new(git_shell)
-			.args(bash_args)
+		let output = Command::new(shell())
+			.args(shell_args)
 			.with_no_window()
 			.current_dir(&self.pwd)
 			// This call forces Command to handle the Path environment correctly on windows,
@@ -168,15 +164,20 @@ fn is_executable(path: &Path) -> bool {
 }
 
 #[cfg(windows)]
-/// windows does not consider bash scripts to be executable so we consider everything
+/// windows does not consider shell scripts to be executable so we consider everything
 /// to be executable (which is not far from the truth for windows platform.)
 const fn is_executable(_: &Path) -> bool {
 	true
 }
 
-// Find bash.exe, and avoid finding wsl's bash.exe on Windows.
-// None for non-Windows.
-fn find_bash_executable() -> Option<PathBuf> {
+/// Return the shell that Git would use, the shell to execute commands from.
+///
+/// On Windows, this is the full path to `sh.exe` bundled with it, and on
+/// Unix it's `/bin/sh` as posix compatible shell.
+/// If the bundled shell on Windows cannot be found, `sh` is returned as the name of a shell
+/// as it could possibly be found in `PATH`.
+/// Note that the returned path might not be a path on disk.
+pub fn shell() -> PathBuf {
 	if cfg!(windows) {
 		Command::new("where.exe")
 			.arg("git")
@@ -190,16 +191,12 @@ fn find_bash_executable() -> Option<PathBuf> {
 			.as_deref()
 			.and_then(Path::parent)
 			.and_then(Path::parent)
-			.map(|p| p.join("usr/bin/bash.exe"))
+			.map(|p| p.join("usr/bin/sh.exe"))
 			.filter(|p| p.exists())
+			.unwrap_or_else(|| "sh".into())
 	} else {
-		None
+		"/bin/sh".into()
 	}
-}
-
-// Find default shell on Unix-like OS.
-fn find_default_unix_shell() -> Option<PathBuf> {
-	env::var_os("SHELL").map(PathBuf::from)
 }
 
 trait CommandExt {
