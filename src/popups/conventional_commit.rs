@@ -16,6 +16,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use crate::components::visibility_blocking;
 use crate::queue::Queue;
 use crate::string_utils::trim_length_left;
+use crate::strings;
 use crate::ui::style::SharedTheme;
 use crate::{
 	app::Environment,
@@ -466,7 +467,7 @@ impl ConventionalCommitPopup {
 			Line::from(
 				text.graphemes(true)
 					.enumerate()
-					.map(|(c_idx, c)| {
+					.map(|(_, c)| {
 						Span::styled(
 							Cow::from(c.to_string()),
 							self.theme.text(selected, selected),
@@ -665,32 +666,40 @@ impl Component for ConventionalCommitPopup {
 		out: &mut Vec<CommandInfo>,
 		force_all: bool,
 	) -> CommandBlocking {
-		// if self.is_visible() || force_all {
-		// 	self.input.commands(out, force_all);
-		//
-		// 	out.push(CommandInfo::new(
-		// 		strings::commands::create_branch_confirm_msg(
-		// 			&self.key_config,
-		// 		),
-		// 		true,
-		// 		true,
-		// 	));
-		// }
-		//
 		if self.is_visible() || force_all {
-			// out.push(CommandInfo::new(
-			// 	strings::commands::scroll_popup(&self.key_config),
-			// 	true,
-			// 	true,
-			// ));
-			//
-			// out.push(CommandInfo::new(
-			// 	strings::commands::close_fuzzy_finder(
-			// 		&self.key_config,
-			// 	),
-			// 	true,
-			// 	true,
-			// ));
+			if self.is_insert {
+				out.push(CommandInfo::new(
+					strings::commands::exit_insert(&self.key_config),
+					true,
+					true,
+				));
+			} else {
+				out.push(CommandInfo::new(
+					strings::commands::insert(&self.key_config),
+					true,
+					true,
+				));
+
+				out.push(CommandInfo::new(
+					strings::commands::close_fuzzy_finder(
+						&self.key_config,
+					),
+					true,
+					true,
+				));
+			}
+
+			out.push(CommandInfo::new(
+				strings::commands::scroll(&self.key_config),
+				true,
+				true,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::open_submodule(&self.key_config),
+				true,
+				true,
+			));
 		}
 
 		visibility_blocking(self)

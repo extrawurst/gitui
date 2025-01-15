@@ -1884,4 +1884,26 @@ pub mod commands {
 			CMD_GROUP_LOG,
 		)
 	}
+
+	pub fn insert(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Insert [{}]",
+				key_config.get_hint(key_config.keys.insert),
+			),
+			"enter in insert mode",
+			CMD_GROUP_LOG,
+		)
+	}
+
+	pub fn exit_insert(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Exit Insert [{}]",
+				key_config.get_hint(key_config.keys.exit_popup),
+			),
+			"exit in insert mode",
+			CMD_GROUP_LOG,
+		)
+	}
 }
