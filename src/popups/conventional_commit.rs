@@ -719,9 +719,6 @@ impl Component for ConventionalCommitPopup {
 							}
 						}
 					}
-				} else if key_match(key, self.key_config.keys.insert)
-				{
-					self.is_insert = true;
 				} else if key_match(
 					key,
 					self.key_config.keys.popup_down,
@@ -733,8 +730,27 @@ impl Component for ConventionalCommitPopup {
 				) {
 					self.move_selection(ScrollType::Up);
 				} else {
-					if self.input.event(event)?.is_consumed() {
-						self.update_query();
+					if self.is_insert {
+						if self.input.event(event)?.is_consumed() {
+							self.update_query();
+						}
+					} else if key_match(
+						key,
+						self.key_config.keys.insert,
+					) {
+						self.is_insert = true;
+					} else {
+						if let KeyCode::Char(c) = key.code {
+							if let Some(idx) = self
+								.quick_shortcuts()
+								.into_iter()
+								.position(|ch| ch == c)
+							{
+								self.seleted_commit_type = Some(
+									self.query_results[idx].clone(),
+								);
+							}
+						}
 					}
 				}
 			}
