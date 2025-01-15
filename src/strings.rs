@@ -1092,7 +1092,7 @@ pub mod commands {
 	) -> CommandText {
 		CommandText::new(
 			format!(
-				"Commit emoji [{}]",
+				"Conventional commit [{}]",
 				key_config.get_hint(
 					key_config.keys.open_conventional_commit
 				)
