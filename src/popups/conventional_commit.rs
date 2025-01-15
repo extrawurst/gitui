@@ -404,17 +404,10 @@ impl ConventionalCommitPopup {
 	}
 
 	#[inline]
-	fn draw_matches_list(&self, f: &mut Frame, mut area: Rect) {
-		// Block has two lines up and down which need to be considered
-		const HEIGHT_BLOCK_MARGIN: usize = 2;
-
+	fn draw_matches_list(&self, f: &mut Frame, area: Rect) {
 		let height = usize::from(area.height);
 		let width = usize::from(area.width);
 
-		let list_height = height.saturating_sub(HEIGHT_BLOCK_MARGIN);
-
-		let scroll_skip =
-			self.selected_index.saturating_sub(list_height);
 		let quick_shortcuts = self.quick_shortcuts();
 
 		let title = format!(
@@ -426,9 +419,7 @@ impl ConventionalCommitPopup {
 			}
 		);
 
-		let iter_over = if let Some(commit_type) =
-			&self.seleted_commit_type
-		{
+		let iter_over = if self.seleted_commit_type.is_some() {
 			self.query_results_more_info
 				.iter()
 				.enumerate()
@@ -436,9 +427,11 @@ impl ConventionalCommitPopup {
 				.map(|(idx, more_info)| {
 					let (emoji, _, long_name) = more_info.strings();
 					let text_string = format!("{emoji} {long_name}");
-					let text =
-						trim_length_left(&text_string, width - 4);
-					(self.selected_index == idx, text.to_owned())
+					let text = trim_length_left(&text_string, width);
+					(
+						self.selected_index == idx,
+						format!("{text}{:width$}", " "),
+					)
 				})
 				.collect_vec()
 		} else {
@@ -453,20 +446,17 @@ impl ConventionalCommitPopup {
 				.enumerate()
 				.take(height)
 				.map(|(idx, commit_type)| {
-					let commit_type_string = commit_type.to_string();
-					let text = trim_length_left(
-						commit_type_string.as_str(),
-						width - 4, // ` [k]`
+					let text_string = format!(
+						"{:w$} [{}]",
+						commit_type,
+						quick_shortcuts[idx],
+						w = max_len.unwrap_or_default(),
 					);
+					let text = trim_length_left(&text_string, width);
 
 					(
 						self.selected_index == idx,
-						format!(
-							"{:w$} [{}]",
-							text,
-							quick_shortcuts[idx],
-							w = max_len.unwrap_or_default(),
-						),
+						format!("{text}{:width$}", " "),
 					)
 				})
 				.collect_vec()
@@ -580,6 +570,15 @@ impl ConventionalCommitPopup {
 				})
 				.cloned()
 				.collect_vec();
+
+			if self.selected_index
+				>= self.query_results_more_info.len()
+			{
+				self.selected_index = self
+					.query_results_more_info
+					.len()
+					.saturating_sub(1);
+			}
 		} else {
 			self.query_results_type = self
 				.options
@@ -589,6 +588,11 @@ impl ConventionalCommitPopup {
 				})
 				.cloned()
 				.collect_vec();
+
+			if self.selected_index >= self.query_results_type.len() {
+				self.selected_index =
+					self.query_results_type.len().saturating_sub(1);
+			}
 		}
 	}
 
