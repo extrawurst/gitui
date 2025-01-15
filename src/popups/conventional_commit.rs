@@ -561,6 +561,20 @@ impl ConventionalCommitPopup {
 			.cloned()
 			.collect_vec();
 	}
+
+	fn validate_escape(&mut self, commit_type: CommitType) {
+		let (emoji, short_msg, _) =
+			commit_type.more_info()[self.selected_index].strings();
+		self.queue.push(crate::queue::InternalEvent::OpenCommit);
+		self.queue.push(
+			crate::queue::InternalEvent::AddCommitMessage(format!(
+				"{emoji} {commit_type}: {short_msg}"
+			)),
+		);
+		self.hide();
+		self.selected_index = 0;
+		self.seleted_commit_type = None;
+	}
 }
 
 impl DrawableComponent for ConventionalCommitPopup {
@@ -649,7 +663,6 @@ impl Component for ConventionalCommitPopup {
 
 		visibility_blocking(self)
 	}
-
 	fn event(
 		&mut self,
 		event: &crossterm::event::Event,
@@ -663,27 +676,25 @@ impl Component for ConventionalCommitPopup {
 					|| key_match(key, self.key_config.keys.enter)
 				{
 					if let Some(commit_type) =
-						&self.seleted_commit_type
+						self.seleted_commit_type.clone()
 					{
-                        let (emoji, short_msg, _) = commit_type.more_info()[self.selected_index].strings();
-						self.queue.push(
-							crate::queue::InternalEvent::OpenCommit,
-						);
-						self.queue.push(
-                            crate::queue::InternalEvent::AddCommitMessage(
-                                
-                                format!("{emoji} {commit_type}: {short_msg}"),
-                            ),
-                        );
-						self.hide();
-                        self.selected_index = 0;
-                        self.seleted_commit_type = None;
+						self.validate_escape(commit_type);
 					} else {
-						self.seleted_commit_type = self
+						let commit = self
 							.query_results
 							.get(self.selected_index)
 							.cloned();
+
+						self.seleted_commit_type = commit.clone();
 						self.selected_index = 0;
+
+						if let Some(more_infos) =
+							commit.as_ref().map(|c| c.more_info())
+						{
+							if more_infos.len() == 1 {
+								self.validate_escape(commit.unwrap());
+							}
+						}
 					}
 				} else if key_match(key, self.key_config.keys.insert)
 				{
