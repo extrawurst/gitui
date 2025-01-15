@@ -690,10 +690,6 @@ impl Component for ConventionalCommitPopup {
 		event: &crossterm::event::Event,
 	) -> Result<EventState> {
 		if self.is_visible() {
-			if self.is_insert {
-				println!("lol");
-			}
-
 			if let Event::Key(key) = event {
 				if key_match(key, self.key_config.keys.exit_popup)
 					|| key_match(key, self.key_config.keys.enter)
