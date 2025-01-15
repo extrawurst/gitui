@@ -50,7 +50,7 @@ enum CommitType {
 	CI,
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 enum MoreInfoCommit {
 	/// 🎨
 	CodeStyle,
@@ -536,7 +536,9 @@ impl ConventionalCommitPopup {
 		let query = query.borrow().to_lowercase();
 		self.query = Some(query.clone());
 
-		if let Some(commit_type) = &self.seleted_commit_type {
+		let new_len = if let Some(commit_type) =
+			&self.seleted_commit_type
+		{
 			self.query_results_more_info = commit_type
 				.more_info()
 				.iter()
@@ -547,17 +549,10 @@ impl ConventionalCommitPopup {
 						.to_lowercase()
 						.contains(&query)
 				})
-				.cloned()
+				.copied()
 				.collect_vec();
 
-			if self.selected_index
-				>= self.query_results_more_info.len()
-			{
-				self.selected_index = self
-					.query_results_more_info
-					.len()
-					.saturating_sub(1);
-			}
+			self.query_results_more_info.len()
 		} else {
 			self.query_results_type = self
 				.options
@@ -568,10 +563,11 @@ impl ConventionalCommitPopup {
 				.copied()
 				.collect_vec();
 
-			if self.selected_index >= self.query_results_type.len() {
-				self.selected_index =
-					self.query_results_type.len().saturating_sub(1);
-			}
+			self.query_results_type.len()
+		};
+
+		if self.selected_index >= new_len {
+			self.selected_index = new_len.saturating_sub(1);
 		}
 	}
 
