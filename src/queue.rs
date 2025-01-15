@@ -97,6 +97,8 @@ pub enum InternalEvent {
 	StatusLastFileMoved,
 	/// open commit msg input
 	OpenCommit,
+	///
+	AddCommitMessage(String),
 	/// open conventional commit
 	OpenConventionalCommit,
 	///

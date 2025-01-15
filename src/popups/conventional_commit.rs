@@ -14,6 +14,7 @@ use strum::{Display, EnumIter, IntoEnumIterator};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::components::visibility_blocking;
+use crate::queue::Queue;
 use crate::string_utils::trim_length_left;
 use crate::ui::style::SharedTheme;
 use crate::{
@@ -27,6 +28,7 @@ use crate::{
 };
 
 #[derive(EnumIter, Display, Clone)]
+#[strum(serialize_all = "lowercase")]
 enum CommitType {
 	Refactor,
 	#[strum(to_string = "feat")]
@@ -372,6 +374,8 @@ pub struct ConventionalCommitPopup {
 	query_results: Vec<CommitType>,
 	input: TextInputComponent,
 	theme: SharedTheme,
+	seleted_commit_type: Option<CommitType>,
+	queue: Queue,
 }
 
 impl ConventionalCommitPopup {
@@ -392,7 +396,9 @@ impl ConventionalCommitPopup {
 			query: None,
 			is_visible: false,
 			key_config: env.key_config.clone(),
+			seleted_commit_type: None,
 			theme: env.theme.clone(),
+			queue: env.queue.clone(),
 		}
 	}
 
@@ -411,29 +417,61 @@ impl ConventionalCommitPopup {
 			let list_height =
 				height.saturating_sub(HEIGHT_BLOCK_MARGIN);
 
+			let a = self.query_results[0].more_info()[0].strings();
+			assert!(a.0 != "");
+
 			let scroll_skip =
 				self.selected_index.saturating_sub(list_height);
 			let quick_shortcuts = self.quick_shortcuts();
 
-			let items = self
-				.query_results
-				.iter()
-				.enumerate()
-				.take(height)
-				.map(|(idx, commit_type)| {
-					let selected = self.selected_index == idx;
-					let commit_type_string = commit_type.to_string();
-					let text = trim_length_left(
-						commit_type_string.as_str(),
-						width - 4, // ` [k]`
-					);
-					let text = format!(
-						"{:w$} [{}]",
-						text,
-						quick_shortcuts[idx],
-						w = width,
-					);
+			let iter_over = if let Some(commit_type) =
+				&self.seleted_commit_type
+			{
+				commit_type
+					.more_info()
+					.iter()
+					.enumerate()
+					.take(height)
+					.map(|(idx, more_info)| {
+						let (emoji, _, long_name) =
+							more_info.strings();
+						let text_string =
+							format!("{emoji} {long_name}");
+						let text = trim_length_left(
+							&text_string,
+							width - 4, // ` [k]`
+						);
+						(self.selected_index == idx, text.to_owned())
+					})
+					.collect_vec()
+			} else {
+				self.query_results
+					.iter()
+					.enumerate()
+					.take(height)
+					.map(|(idx, commit_type)| {
+						let commit_type_string =
+							commit_type.to_string();
+						let text = trim_length_left(
+							commit_type_string.as_str(),
+							width - 4, // ` [k]`
+						);
+						//FIXME: not working
+						(
+							self.selected_index == idx,
+							format!(
+								"{:w$} [{}]",
+								text,
+								quick_shortcuts[idx],
+								w = width,
+							),
+						)
+					})
+					.collect_vec()
+			};
 
+			let items =
+				iter_over.into_iter().map(|(selected, text)| {
 					Line::from(
 						text.graphemes(true)
 							.enumerate()
@@ -497,18 +535,10 @@ impl ConventionalCommitPopup {
 			_ => self.selected_index,
 		};
 
-		// println!("{} {}", self.query, self.input);
+		let new_selection = new_selection
+			.clamp(0, self.query_results.len().saturating_sub(1));
 
-		let new_selection = new_selection.clamp(0, todo!());
-		// .clamp(0, self.filtered.len().saturating_sub(1));
-		// .clamp(0, self.filtered.len().saturating_sub(1));
-
-		// if new_selection != self.selection {
 		self.selected_index = new_selection;
-		// 	return true;
-		// }
-		//
-		// false
 	}
 
 	pub fn any_work_pending(&self) -> bool {
@@ -635,7 +665,27 @@ impl Component for ConventionalCommitPopup {
 				if key_match(key, self.key_config.keys.exit_popup)
 					|| key_match(key, self.key_config.keys.enter)
 				{
-					self.hide();
+					if let Some(commit_type) =
+						&self.seleted_commit_type
+					{
+                        let (emoji, short_msg, _) = commit_type.more_info()[self.selected_index].strings();
+						self.queue.push(
+							crate::queue::InternalEvent::OpenCommit,
+						);
+						self.queue.push(
+                            crate::queue::InternalEvent::AddCommitMessage(
+                                
+                                format!("{emoji} {commit_type}: {short_msg}"),
+                            ),
+                        );
+						self.hide();
+					} else {
+						self.seleted_commit_type = self
+							.query_results
+							.get(self.selected_index)
+							.cloned();
+						self.selected_index = 0;
+					}
 				} else if key_match(key, self.key_config.keys.insert)
 				{
 					self.is_insert = true;
@@ -655,10 +705,6 @@ impl Component for ConventionalCommitPopup {
 					}
 				}
 			}
-
-			// if self.find_text.event(event)?.is_consumed() {
-			// 	self.update_query();
-			// }
 
 			return Ok(EventState::Consumed);
 		}

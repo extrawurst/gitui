@@ -746,6 +746,9 @@ impl App {
 			}
 			InternalEvent::Update(u) => flags.insert(u),
 			InternalEvent::OpenCommit => self.commit_popup.show()?,
+			InternalEvent::AddCommitMessage(s) => {
+				self.commit_popup.set_msg(s)
+			}
 			InternalEvent::OpenConventionalCommit => {
 				self.conventional_commit_popup.show()?
 			}
