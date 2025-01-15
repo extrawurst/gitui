@@ -576,18 +576,36 @@ impl ConventionalCommitPopup {
 	}
 
 	fn validate_escape(&mut self, commit_type: CommitType) {
-		let (emoji, short_msg, _) = self.query_results_more_info
-			[self.selected_index]
-			.strings();
-		self.queue.push(crate::queue::InternalEvent::OpenCommit);
-		self.queue.push(
-			crate::queue::InternalEvent::AddCommitMessage(format!(
-				"{emoji} {commit_type}{}{} {short_msg}",
-				if self.is_breaking { "!" } else { "" },
-				if short_msg.is_empty() { "" } else { ":" },
-			)),
-		);
-		self.hide();
+		#[cfg(not(feature = "gitmoji"))]
+		{
+			self.queue.push(crate::queue::InternalEvent::OpenCommit);
+			self.queue.push(
+				crate::queue::InternalEvent::AddCommitMessage(
+					format!(
+						"{commit_type}{}:",
+						if self.is_breaking { "!" } else { "" },
+					),
+				),
+			);
+			self.hide();
+		}
+		#[cfg(feature = "gitmoji")]
+		{
+			let (emoji, short_msg, _) = self.query_results_more_info
+				[self.selected_index]
+				.strings();
+			self.queue.push(crate::queue::InternalEvent::OpenCommit);
+			self.queue.push(
+				crate::queue::InternalEvent::AddCommitMessage(
+					format!(
+						"{emoji} {commit_type}{}{} {short_msg}",
+						if self.is_breaking { "!" } else { "" },
+						if short_msg.is_empty() { "" } else { ":" },
+					),
+				),
+			);
+			self.hide();
+		}
 	}
 
 	fn next_step(&mut self) {
@@ -725,14 +743,22 @@ impl Component for ConventionalCommitPopup {
 						self.seleted_commit_type
 					{
 						self.validate_escape(commit_type);
-					} else if let Some(&commit) = self
-						.query_results_type
-						.get(self.selected_index)
-					{
-						self.seleted_commit_type = Some(commit);
-						self.next_step();
+					} else {
+						if let Some(&commit) = self
+							.query_results_type
+							.get(self.selected_index)
+						{
+							self.seleted_commit_type = Some(commit);
 
-						if commit.more_info().len() == 1 {
+							#[cfg(feature = "gitmoji")]
+							{
+								self.next_step();
+
+								if commit.more_info().len() == 1 {
+									self.validate_escape(commit);
+								}
+							}
+							#[cfg(not(feature = "gitmoji"))]
 							self.validate_escape(commit);
 						}
 					}
