@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
@@ -528,12 +528,12 @@ impl ConventionalCommitPopup {
 			.map_or(true, |q| q != self.input.get_text())
 		{
 			let text = self.input.get_text();
-			self.set_query(text.to_owned().as_str());
+			self.set_query(text.to_owned());
 		}
 	}
 
-	fn set_query(&mut self, query: &str) {
-		let query = query.to_lowercase();
+	fn set_query<S: Borrow<str>>(&mut self, query: S) {
+		let query = query.borrow().to_lowercase();
 		self.query = Some(query.clone());
 
 		if let Some(commit_type) = &self.seleted_commit_type {
