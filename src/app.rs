@@ -463,7 +463,6 @@ impl App {
 			|| self.fetch_popup.any_work_pending()
 			|| self.revision_files_popup.any_work_pending()
 			|| self.tags_popup.any_work_pending()
-			|| self.conventional_commit_popup.any_work_pending()
 	}
 
 	///
@@ -747,10 +746,10 @@ impl App {
 			InternalEvent::Update(u) => flags.insert(u),
 			InternalEvent::OpenCommit => self.commit_popup.show()?,
 			InternalEvent::AddCommitMessage(s) => {
-				self.commit_popup.set_msg(s)
+				self.commit_popup.set_msg(s);
 			}
 			InternalEvent::OpenConventionalCommit => {
-				self.conventional_commit_popup.show()?
+				self.conventional_commit_popup.show()?;
 			}
 			InternalEvent::RewordCommit(id) => {
 				self.commit_popup.open(Some(id))?;

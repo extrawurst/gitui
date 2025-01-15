@@ -151,118 +151,97 @@ enum MoreInfoCommit {
 }
 
 impl MoreInfoCommit {
-	fn strings(&self) -> (&'static str, &'static str, &'static str) {
+	const fn strings(
+		&self,
+	) -> (&'static str, &'static str, &'static str) {
 		match *self {
-			MoreInfoCommit::UI => ("💄", "UI", "UI related"),
-			MoreInfoCommit::CodeStyle => {
-				("🎨", "style", "Style of the code")
-			}
-			MoreInfoCommit::Performance => ("⚡️", "", "Performance"),
-			MoreInfoCommit::Bug => ("🐛", "bug", "Normal bug"),
-			MoreInfoCommit::CriticalBug => {
+			Self::UI => ("💄", "UI", "UI related"),
+			Self::CodeStyle => ("🎨", "style", "Style of the code"),
+			Self::Performance => ("⚡️", "", "Performance"),
+			Self::Bug => ("🐛", "bug", "Normal bug"),
+			Self::CriticalBug => {
 				("🚑️", "critical bug", "Critical Bug")
 			}
-			MoreInfoCommit::Feature => ("✨", "", "Feature"),
-			MoreInfoCommit::Documentation => {
-				("📝", "", "Documentation")
-			}
-			MoreInfoCommit::Initial => ("🎉", "", "Initial commit!"),
-			MoreInfoCommit::TestsPassing => {
+			Self::Feature => ("✨", "", "Feature"),
+			Self::Documentation => ("📝", "", "Documentation"),
+			Self::Initial => ("🎉", "", "Initial commit!"),
+			Self::TestsPassing => {
 				("✅", "passing", "Test are now passing!")
 			}
-			MoreInfoCommit::Add => ("➕", "add", "Added"),
-			MoreInfoCommit::Remove => ("➖", "remove", "Removed"),
-			MoreInfoCommit::Security => {
-				("🔒️", "security", "Secutiry related")
-			}
-			MoreInfoCommit::Release => {
-				("🔖", "release", "A new relase")
-			}
-			MoreInfoCommit::Warning => ("⚠️", "warning", "Warning"),
-			MoreInfoCommit::Wip => ("🚧", "", "WIP"),
-			MoreInfoCommit::Down => ("⬇️", "downgrade", "Down"),
-			MoreInfoCommit::Up => ("⬆️", "upgrade", "Up"),
-			MoreInfoCommit::CI => ("👷", "", "CI related"),
-			MoreInfoCommit::Refactor => ("♻️", "", "Refactor related"),
-			MoreInfoCommit::TrackCode => {
-				("📈", "track", "Tracking code")
-			}
-			MoreInfoCommit::Typo => ("✏️", "typo", "Typo"),
-			MoreInfoCommit::Internationalization => {
+			Self::Add => ("➕", "add", "Added"),
+			Self::Remove => ("➖", "remove", "Removed"),
+			Self::Security => ("🔒️", "security", "Secutiry related"),
+			Self::Release => ("🔖", "release", "A new relase"),
+			Self::Warning => ("⚠️", "warning", "Warning"),
+			Self::Wip => ("🚧", "", "WIP"),
+			Self::Down => ("⬇️", "downgrade", "Down"),
+			Self::Up => ("⬆️", "upgrade", "Up"),
+			Self::CI => ("👷", "", "CI related"),
+			Self::Refactor => ("♻️", "", "Refactor related"),
+			Self::TrackCode => ("📈", "track", "Tracking code"),
+			Self::Typo => ("✏️", "typo", "Typo"),
+			Self::Internationalization => {
 				("🌐", "i18n", "Internationalization")
 			}
-			MoreInfoCommit::Revert => ("⏪️", "", "Revert"),
-			MoreInfoCommit::Package => ("📦️", "", "Package related"),
-			MoreInfoCommit::ExternalDependencyChange => (
+			Self::Revert => ("⏪️", "", "Revert"),
+			Self::Package => ("📦️", "", "Package related"),
+			Self::ExternalDependencyChange => (
 				"👽️",
 				"change due to external dep update",
 				"Code related to change of ext dep",
 			),
-			MoreInfoCommit::RenameResources => {
+			Self::RenameResources => {
 				("🚚", "rename", "Rename some resources")
 			}
-			MoreInfoCommit::Accessibility => {
+			Self::Accessibility => {
 				("♿️", "accessibility", "Improved accessibility")
 			}
-			MoreInfoCommit::Readme => ("📜", "README", "README"),
-			MoreInfoCommit::License => ("⚖️", "LICENSE", "LICENSE"),
-			MoreInfoCommit::TextLiteral => {
+			Self::Readme => ("📜", "README", "README"),
+			Self::License => ("⚖️", "LICENSE", "LICENSE"),
+			Self::TextLiteral => {
 				("💬", "raw value", "Modified literal value")
 			}
-			MoreInfoCommit::DatabaseRelated => {
-				("⛃", "db", "Database related")
-			}
-			MoreInfoCommit::AddLogs => ("🔊", "add logs", "Add logs"),
-			MoreInfoCommit::RemoveLogs => {
-				("🔇", "remove logs", "Remove logs")
-			}
-			MoreInfoCommit::ImproveExperience => {
+			Self::DatabaseRelated => ("⛃", "db", "Database related"),
+			Self::AddLogs => ("🔊", "add logs", "Add logs"),
+			Self::RemoveLogs => ("🔇", "remove logs", "Remove logs"),
+			Self::ImproveExperience => {
 				("🚸", "experience", "Improve experience")
 			}
-			MoreInfoCommit::ArchitecturalChanges => {
+			Self::ArchitecturalChanges => {
 				("🏗️", "architecture", "Architectural Changes")
 			}
-			MoreInfoCommit::WrittingReallyBadCode => (
+			Self::WrittingReallyBadCode => (
 				"🤡",
 				"really bad code",
 				"This is some REALLY bad code",
 			),
-			MoreInfoCommit::GitIgnore => {
-				("🙈", "gitignore", "GitIgnore")
-			}
-			MoreInfoCommit::Experimentations => {
+			Self::GitIgnore => ("🙈", "gitignore", "GitIgnore"),
+			Self::Experimentations => {
 				("⚗️", "experimentations", "Experimentations")
 			}
-			MoreInfoCommit::Flag => ("🚩", "flag", "Flag"),
-			MoreInfoCommit::Trash => ("🗑️", "", "Trash"),
-			MoreInfoCommit::Authorization => {
+			Self::Flag => ("🚩", "flag", "Flag"),
+			Self::Trash => ("🗑️", "", "Trash"),
+			Self::Authorization => {
 				("🛂", "authorization", "Authorization")
 			}
-			MoreInfoCommit::QuickFix => {
-				("🩹", "quick-fix", "QuickFix")
-			}
-			MoreInfoCommit::RemoveDeadCode => {
+			Self::QuickFix => ("🩹", "quick-fix", "QuickFix"),
+			Self::RemoveDeadCode => {
 				("⚰️", "remove dead code", "RemoveDeadCode")
 			}
-			MoreInfoCommit::Business => {
-				("👔", "business", "Business related")
-			}
-			MoreInfoCommit::HealthCheck => {
-				("🩺", "healthcheck", "HealthCheck")
-			}
-			MoreInfoCommit::Infra => ("🧱", "infra", "Infra"),
-			MoreInfoCommit::Validation => {
-				("🦺", "validation", "Validation")
-			}
-			MoreInfoCommit::Formatted => ("💅", "fmt", "Formatted"),
+			Self::Business => ("👔", "business", "Business related"),
+			Self::HealthCheck => ("🩺", "healthcheck", "HealthCheck"),
+			Self::Infra => ("🧱", "infra", "Infra"),
+			Self::Validation => ("🦺", "validation", "Validation"),
+			Self::Formatted => ("💅", "fmt", "Formatted"),
 		}
 	}
 }
 
 impl CommitType {
+	#[allow(clippy::pedantic)]
 	fn more_info(&self) -> Vec<MoreInfoCommit> {
 		match *self {
-			CommitType::Fix => {
+			Self::Fix => {
 				vec![
 					MoreInfoCommit::Bug,
 					MoreInfoCommit::CriticalBug,
@@ -280,7 +259,7 @@ impl CommitType {
 					MoreInfoCommit::Infra,
 				]
 			}
-			CommitType::Feature => vec![
+			Self::Feature => vec![
 				MoreInfoCommit::Feature,
 				MoreInfoCommit::Security,
 				MoreInfoCommit::TrackCode,
@@ -295,7 +274,7 @@ impl CommitType {
 				MoreInfoCommit::Business,
 				MoreInfoCommit::Validation,
 			],
-			CommitType::Chore | CommitType::Refactor => vec![
+			Self::Chore | Self::Refactor => vec![
 				MoreInfoCommit::Refactor,
 				MoreInfoCommit::ArchitecturalChanges,
 				MoreInfoCommit::RenameResources,
@@ -318,21 +297,21 @@ impl CommitType {
 				MoreInfoCommit::Infra,
 				MoreInfoCommit::Validation,
 			],
-			CommitType::CI => vec![MoreInfoCommit::CI],
-			CommitType::Initial => vec![MoreInfoCommit::Initial],
-			CommitType::Performance => {
+			Self::CI => vec![MoreInfoCommit::CI],
+			Self::Initial => vec![MoreInfoCommit::Initial],
+			Self::Performance => {
 				vec![
 					MoreInfoCommit::Performance,
 					MoreInfoCommit::DatabaseRelated,
 				]
 			}
-			CommitType::Wip => vec![
+			Self::Wip => vec![
 				MoreInfoCommit::Wip,
 				MoreInfoCommit::WrittingReallyBadCode,
 				MoreInfoCommit::Experimentations,
 			],
-			CommitType::Docs => vec![MoreInfoCommit::Documentation],
-			CommitType::Test => vec![
+			Self::Docs => vec![MoreInfoCommit::Documentation],
+			Self::Test => vec![
 				MoreInfoCommit::TestsPassing,
 				MoreInfoCommit::Add,
 				MoreInfoCommit::Remove,
@@ -340,7 +319,7 @@ impl CommitType {
 				MoreInfoCommit::HealthCheck,
 				MoreInfoCommit::Validation,
 			],
-			CommitType::Bump => {
+			Self::Bump => {
 				vec![
 					MoreInfoCommit::Add,
 					MoreInfoCommit::Remove,
@@ -350,7 +329,7 @@ impl CommitType {
 					MoreInfoCommit::Package,
 				]
 			}
-			CommitType::Style => {
+			Self::Style => {
 				vec![
 					MoreInfoCommit::Formatted,
 					MoreInfoCommit::CodeStyle,
@@ -358,14 +337,14 @@ impl CommitType {
 					MoreInfoCommit::ImproveExperience,
 				]
 			}
-			CommitType::Build => vec![MoreInfoCommit::CI],
-			CommitType::Debug => vec![
+			Self::Build => vec![MoreInfoCommit::CI],
+			Self::Debug => vec![
 				MoreInfoCommit::AddLogs,
 				MoreInfoCommit::TrackCode,
 				MoreInfoCommit::HealthCheck,
 				MoreInfoCommit::RemoveLogs,
 			],
-			CommitType::Revert => vec![MoreInfoCommit::Revert],
+			Self::Revert => vec![MoreInfoCommit::Revert],
 		}
 	}
 }
@@ -472,8 +451,7 @@ impl ConventionalCommitPopup {
 		let items = iter_over.into_iter().map(|(selected, text)| {
 			Line::from(
 				text.graphemes(true)
-					.enumerate()
-					.map(|(_, c)| {
+					.map(|c| {
 						Span::styled(
 							Cow::from(c.to_string()),
 							self.theme.text(selected, selected),
@@ -494,19 +472,16 @@ impl ConventionalCommitPopup {
 	}
 
 	pub fn quick_shortcuts(&self) -> Vec<char> {
-		let mut available_chars =
-			('a'..='z').into_iter().collect_vec();
+		let mut available_chars = ('a'..='z').collect_vec();
 
-		[
+		for k in [
 			self.key_config.keys.move_down,
 			self.key_config.keys.move_up,
 			self.key_config.keys.exit_popup,
 			self.key_config.keys.breaking,
 			self.key_config.keys.exit,
 			self.key_config.keys.insert,
-		]
-		.into_iter()
-		.for_each(|k| {
+		] {
 			if let KeyCode::Char(c) = k.code {
 				if let Some(char_to_remove_index) =
 					available_chars.iter().position(|&ch| ch == c)
@@ -514,15 +489,14 @@ impl ConventionalCommitPopup {
 					available_chars.remove(char_to_remove_index);
 				}
 			}
-		});
+		}
 
 		self.query_results_type
 			.iter()
-			.map(|commit_type| commit_type.to_string())
+			.map(std::string::ToString::to_string)
 			.map(|s| {
 				if let Some(ch) = s.chars()
-					.into_iter()
-					.find(|c| available_chars.contains(&c)) {
+					.find(|c| available_chars.contains(c)) {
                     available_chars.retain(|&c| c != ch);
                     ch
                 } else {
@@ -547,21 +521,18 @@ impl ConventionalCommitPopup {
 		self.selected_index = new_selection;
 	}
 
-	pub fn any_work_pending(&self) -> bool {
-		false
-	}
-
 	fn update_query(&mut self) {
 		if self
 			.query
 			.as_ref()
-			.is_none_or(|q| q != self.input.get_text())
+			.map_or(true, |q| q != self.input.get_text())
 		{
-			self.set_query(self.input.get_text().to_string());
+			let text = self.input.get_text();
+			self.set_query(text.to_owned().as_str());
 		}
 	}
 
-	fn set_query(&mut self, query: String) {
+	fn set_query(&mut self, query: &str) {
 		let query = query.to_lowercase();
 		self.query = Some(query.clone());
 
@@ -594,7 +565,7 @@ impl ConventionalCommitPopup {
 				.filter(|option| {
 					option.to_string().to_lowercase().contains(&query)
 				})
-				.cloned()
+				.copied()
 				.collect_vec();
 
 			if self.selected_index >= self.query_results_type.len() {
@@ -751,20 +722,18 @@ impl Component for ConventionalCommitPopup {
 					}
 				} else if key_match(key, self.key_config.keys.enter) {
 					if let Some(commit_type) =
-						self.seleted_commit_type.clone()
+						self.seleted_commit_type
 					{
 						self.validate_escape(commit_type);
-					} else {
-						if let Some(&commit) = self
-							.query_results_type
-							.get(self.selected_index)
-						{
-							self.seleted_commit_type = Some(commit);
-							self.next_step();
+					} else if let Some(&commit) = self
+						.query_results_type
+						.get(self.selected_index)
+					{
+						self.seleted_commit_type = Some(commit);
+						self.next_step();
 
-							if commit.more_info().len() == 1 {
-								self.validate_escape(commit);
-							}
+						if commit.more_info().len() == 1 {
+							self.validate_escape(commit);
 						}
 					}
 				} else if key_match(
@@ -782,30 +751,22 @@ impl Component for ConventionalCommitPopup {
 					self.key_config.keys.popup_up,
 				) {
 					self.move_selection(ScrollType::Up);
-				} else {
-					if self.is_insert {
-						if self.input.event(&event)?.is_consumed() {
-							self.update_query();
-						}
-					} else if key_match(
-						key,
-						self.key_config.keys.insert,
-					) {
-						self.is_insert = true;
-					} else {
-						if let KeyCode::Char(c) = key.code {
-							if let Some(idx) = self
-								.quick_shortcuts()
-								.into_iter()
-								.position(|ch| ch == c)
-							{
-								self.seleted_commit_type = Some(
-									self.query_results_type[idx]
-										.clone(),
-								);
-								self.next_step();
-							}
-						}
+				} else if self.is_insert {
+					if self.input.event(event)?.is_consumed() {
+						self.update_query();
+					}
+				} else if key_match(key, self.key_config.keys.insert)
+				{
+					self.is_insert = true;
+				} else if let KeyCode::Char(c) = key.code {
+					if let Some(idx) = self
+						.quick_shortcuts()
+						.into_iter()
+						.position(|ch| ch == c)
+					{
+						self.seleted_commit_type =
+							Some(self.query_results_type[idx]);
+						self.next_step();
 					}
 				}
 			}
