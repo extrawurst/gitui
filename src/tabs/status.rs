@@ -686,8 +686,7 @@ impl Status {
 				strings::commands::select_staging(&self.key_config),
 				!focus_on_diff,
 				(self.visible
-					&& !focus_on_diff
-					&& self.focus == Focus::WorkDir)
+					&& !focus_on_diff && self.focus == Focus::WorkDir)
 					|| force_all,
 			)
 			.order(strings::order::NAV),
@@ -697,8 +696,7 @@ impl Status {
 				strings::commands::select_unstaged(&self.key_config),
 				!focus_on_diff,
 				(self.visible
-					&& !focus_on_diff
-					&& self.focus == Focus::Stage)
+					&& !focus_on_diff && self.focus == Focus::Stage)
 					|| force_all,
 			)
 			.order(strings::order::NAV),
@@ -730,17 +728,6 @@ impl Component for Status {
 			out.push(
 				CommandInfo::new(
 					strings::commands::commit_open(&self.key_config),
-					true,
-					self.can_commit() || force_all,
-				)
-				.order(-1),
-			);
-
-			out.push(
-				CommandInfo::new(
-					strings::commands::conventional_commit_open(
-						&self.key_config,
-					),
 					true,
 					self.can_commit() || force_all,
 				)
@@ -814,6 +801,14 @@ impl Component for Status {
 				strings::commands::view_submodules(&self.key_config),
 				true,
 				true,
+			));
+
+			out.push(CommandInfo::new(
+				strings::commands::conventional_commit_open(
+					&self.key_config,
+				),
+				true,
+				self.can_commit() || force_all,
 			));
 		}
 
