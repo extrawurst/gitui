@@ -417,9 +417,6 @@ impl ConventionalCommitPopup {
 			let list_height =
 				height.saturating_sub(HEIGHT_BLOCK_MARGIN);
 
-			let a = self.query_results[0].more_info()[0].strings();
-			assert!(a.0 != "");
-
 			let scroll_skip =
 				self.selected_index.saturating_sub(list_height);
 			let quick_shortcuts = self.quick_shortcuts();
@@ -679,6 +676,8 @@ impl Component for ConventionalCommitPopup {
                             ),
                         );
 						self.hide();
+                        self.selected_index = 0;
+                        self.seleted_commit_type = None;
 					} else {
 						self.seleted_commit_type = self
 							.query_results
