@@ -374,6 +374,7 @@ pub struct ConventionalCommitPopup {
 	key_config: SharedKeyConfig,
 	is_visible: bool,
 	is_insert: bool,
+	is_breaking: bool,
 	query: Option<String>,
 	selected_index: usize,
 	options: Vec<CommitType>,
@@ -399,6 +400,7 @@ impl ConventionalCommitPopup {
 			query_results_type: CommitType::iter().collect_vec(),
 			query_results_more_info: Vec::new(),
 			is_insert: false,
+			is_breaking: false,
 			query: None,
 			is_visible: false,
 			key_config: env.key_config.clone(),
@@ -499,6 +501,7 @@ impl ConventionalCommitPopup {
 			self.key_config.keys.move_down,
 			self.key_config.keys.move_up,
 			self.key_config.keys.exit_popup,
+			self.key_config.keys.breaking,
 			self.key_config.keys.exit,
 			self.key_config.keys.insert,
 		]
@@ -608,7 +611,8 @@ impl ConventionalCommitPopup {
 		self.queue.push(crate::queue::InternalEvent::OpenCommit);
 		self.queue.push(
 			crate::queue::InternalEvent::AddCommitMessage(format!(
-				"{emoji} {commit_type}{} {short_msg}",
+				"{emoji} {commit_type}{}{} {short_msg}",
+				if self.is_breaking { "!" } else { "" },
 				if short_msg.is_empty() { "" } else { ":" },
 			)),
 		);
@@ -646,6 +650,14 @@ impl DrawableComponent for ConventionalCommitPopup {
 						},
 						self.theme.title(true),
 					))
+					.title(if self.is_breaking {
+						Span::styled(
+							"[BREAKING]",
+							self.theme.title(true),
+						)
+					} else {
+						"".into()
+					})
 					.title(if self.is_insert {
 						Span::styled(
 							"[INSERT]",
@@ -759,6 +771,11 @@ impl Component for ConventionalCommitPopup {
 							}
 						}
 					}
+				} else if key_match(
+					key,
+					self.key_config.keys.breaking,
+				) {
+					self.is_breaking = !self.is_breaking;
 				} else if key_match(
 					key,
 					self.key_config.keys.popup_down,
