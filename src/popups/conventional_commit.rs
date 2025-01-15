@@ -591,20 +591,28 @@ impl ConventionalCommitPopup {
 		}
 		#[cfg(feature = "gitmoji")]
 		{
-			let (emoji, short_msg, _) = self.query_results_more_info
-				[self.selected_index]
-				.strings();
-			self.queue.push(crate::queue::InternalEvent::OpenCommit);
-			self.queue.push(
-				crate::queue::InternalEvent::AddCommitMessage(
-					format!(
-						"{emoji} {commit_type}{}{}{short_msg}",
-						if self.is_breaking { "!" } else { "" },
-						if short_msg.is_empty() { "" } else { ": " },
+			if let Some((emoji, short_msg, _)) = self
+				.query_results_more_info
+				.get(self.selected_index)
+				.map(|more_info| more_info.strings())
+			{
+				self.queue
+					.push(crate::queue::InternalEvent::OpenCommit);
+				self.queue.push(
+					crate::queue::InternalEvent::AddCommitMessage(
+						format!(
+							"{emoji} {commit_type}{}{}{short_msg}",
+							if self.is_breaking { "!" } else { "" },
+							if short_msg.is_empty() {
+								""
+							} else {
+								": "
+							},
+						),
 					),
-				),
-			);
-			self.hide();
+				);
+				self.hide();
+			}
 		}
 	}
 
