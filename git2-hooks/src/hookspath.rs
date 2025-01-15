@@ -185,6 +185,7 @@ fn sh_on_windows() -> PathBuf {
 			.filter(|p| p.exists())
 			.unwrap_or_else(|| "sh".into())
 	} else {
+		debug_assert!(false, "should only be called on windows");
 		"sh".into()
 	}
 }
