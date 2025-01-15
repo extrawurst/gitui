@@ -599,7 +599,11 @@ impl DrawableComponent for ConventionalCommitPopup {
 					.borders(Borders::all())
 					.style(self.theme.title(true))
 					.title(Span::styled(
-						"owo",
+						if self.seleted_commit_type.is_some() {
+							"Emoji of commit"
+						} else {
+							"Type of commit"
+						},
 						self.theme.title(true),
 					)),
 				area,
