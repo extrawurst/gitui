@@ -1097,7 +1097,7 @@ pub mod commands {
 					key_config.keys.open_conventional_commit
 				)
 			),
-			"open commit emoji popups (available in non-empty stage)",
+			"open conventional commit popup (available in non-empty stage)",
 			CMD_GROUP_GENERAL,
 		)
 	}
