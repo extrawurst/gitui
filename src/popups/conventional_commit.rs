@@ -49,6 +49,7 @@ enum CommitType {
 	CI,
 }
 
+#[derive(Clone)]
 enum MoreInfoCommit {
 	// 🎨
 	CodeStyle,
@@ -371,7 +372,8 @@ pub struct ConventionalCommitPopup {
 	query: Option<String>,
 	selected_index: usize,
 	options: Vec<CommitType>,
-	query_results: Vec<CommitType>,
+	query_results_type: Vec<CommitType>,
+	query_results_more_info: Vec<MoreInfoCommit>,
 	input: TextInputComponent,
 	theme: SharedTheme,
 	seleted_commit_type: Option<CommitType>,
@@ -379,8 +381,6 @@ pub struct ConventionalCommitPopup {
 }
 
 impl ConventionalCommitPopup {
-	///
-	// pub fn new(env: &Environment) -> Self {
 	pub fn new(env: &Environment) -> Self {
 		let mut input =
 			TextInputComponent::new(env, "", "Filter ", false)
@@ -391,7 +391,8 @@ impl ConventionalCommitPopup {
 			selected_index: 0,
 			input,
 			options: CommitType::iter().collect_vec(),
-			query_results: CommitType::iter().collect_vec(),
+			query_results_type: CommitType::iter().collect_vec(),
+			query_results_more_info: Vec::new(),
 			is_insert: false,
 			query: None,
 			is_visible: false,
@@ -404,103 +405,95 @@ impl ConventionalCommitPopup {
 
 	#[inline]
 	fn draw_matches_list(&self, f: &mut Frame, mut area: Rect) {
-		{
-			// Block has two lines up and down which need to be considered
-			const HEIGHT_BLOCK_MARGIN: usize = 2;
+		// Block has two lines up and down which need to be considered
+		const HEIGHT_BLOCK_MARGIN: usize = 2;
 
-			let title =
-				format!("Results: {}", self.query_results.len());
+		let height = usize::from(area.height);
+		let width = usize::from(area.width);
 
-			let height = usize::from(area.height);
-			let width = usize::from(area.width);
+		let list_height = height.saturating_sub(HEIGHT_BLOCK_MARGIN);
 
-			let list_height =
-				height.saturating_sub(HEIGHT_BLOCK_MARGIN);
+		let scroll_skip =
+			self.selected_index.saturating_sub(list_height);
+		let quick_shortcuts = self.quick_shortcuts();
 
-			let scroll_skip =
-				self.selected_index.saturating_sub(list_height);
-			let quick_shortcuts = self.quick_shortcuts();
-
-			let iter_over = if let Some(commit_type) =
-				&self.seleted_commit_type
-			{
-				commit_type
-					.more_info()
-					.iter()
-					.enumerate()
-					.take(height)
-					.map(|(idx, more_info)| {
-						let (emoji, _, long_name) =
-							more_info.strings();
-						let text_string =
-							format!("{emoji} {long_name}");
-						let text = trim_length_left(
-							&text_string,
-							width - 4, // ` [k]`
-						);
-						(self.selected_index == idx, text.to_owned())
-					})
-					.collect_vec()
+		let title = format!(
+			"Results: {}",
+			if self.seleted_commit_type.is_some() {
+				self.query_results_more_info.len()
 			} else {
-				let max_len = self
-					.query_results
-					.iter()
-					.map(|s| s.to_string().len())
-					.max();
+				self.query_results_type.len()
+			}
+		);
 
-				self.query_results
-					.iter()
+		let iter_over = if let Some(commit_type) =
+			&self.seleted_commit_type
+		{
+			self.query_results_more_info
+				.iter()
+				.enumerate()
+				.take(height)
+				.map(|(idx, more_info)| {
+					let (emoji, _, long_name) = more_info.strings();
+					let text_string = format!("{emoji} {long_name}");
+					let text =
+						trim_length_left(&text_string, width - 4);
+					(self.selected_index == idx, text.to_owned())
+				})
+				.collect_vec()
+		} else {
+			let max_len = self
+				.query_results_type
+				.iter()
+				.map(|s| s.to_string().len())
+				.max();
+
+			self.query_results_type
+				.iter()
+				.enumerate()
+				.take(height)
+				.map(|(idx, commit_type)| {
+					let commit_type_string = commit_type.to_string();
+					let text = trim_length_left(
+						commit_type_string.as_str(),
+						width - 4, // ` [k]`
+					);
+
+					(
+						self.selected_index == idx,
+						format!(
+							"{:w$} [{}]",
+							text,
+							quick_shortcuts[idx],
+							w = max_len.unwrap_or_default(),
+						),
+					)
+				})
+				.collect_vec()
+		};
+
+		let items = iter_over.into_iter().map(|(selected, text)| {
+			Line::from(
+				text.graphemes(true)
 					.enumerate()
-					.take(height)
-					.map(|(idx, commit_type)| {
-						let commit_type_string =
-							commit_type.to_string();
-						let text = trim_length_left(
-							commit_type_string.as_str(),
-							width - 4, // ` [k]`
-						);
-
-						(
-							self.selected_index == idx,
-							format!(
-								"{:w$} [{}]",
-								text,
-								quick_shortcuts[idx],
-								w = max_len.unwrap_or_default(),
-							),
+					.map(|(c_idx, c)| {
+						Span::styled(
+							Cow::from(c.to_string()),
+							self.theme.text(selected, selected),
 						)
 					})
-					.collect_vec()
-			};
+					.collect::<Vec<_>>(),
+			)
+		});
 
-			let items =
-				iter_over.into_iter().map(|(selected, text)| {
-					Line::from(
-						text.graphemes(true)
-							.enumerate()
-							.map(|(c_idx, c)| {
-								Span::styled(
-									Cow::from(c.to_string()),
-									self.theme
-										.text(selected, selected),
-								)
-							})
-							.collect::<Vec<_>>(),
-					)
-				});
-
-			ui::draw_list_block(
-				f,
-				area,
-				Block::default()
-					.title(Span::styled(
-						title,
-						self.theme.title(true),
-					))
-					.borders(Borders::TOP),
-				items,
-			);
-		}
+		ui::draw_list_block(
+			f,
+			area,
+			Block::default()
+				.title(Span::styled(title, self.theme.title(true)))
+				.borders(Borders::TOP),
+			items,
+		);
 	}
 
 	pub fn quick_shortcuts(&self) -> Vec<char> {
@@ -525,7 +518,7 @@ impl ConventionalCommitPopup {
 			}
 		});
 
-		self.query_results
+		self.query_results_type
 			.iter()
 			.map(|commit_type| commit_type.to_string())
 			.map(|s| {
@@ -548,8 +541,10 @@ impl ConventionalCommitPopup {
 			_ => self.selected_index,
 		};
 
-		let new_selection = new_selection
-			.clamp(0, self.query_results.len().saturating_sub(1));
+		let new_selection = new_selection.clamp(
+			0,
+			self.query_results_type.len().saturating_sub(1),
+		);
 
 		self.selected_index = new_selection;
 	}
@@ -562,25 +557,45 @@ impl ConventionalCommitPopup {
 		if self
 			.query
 			.as_ref()
-			.map_or(true, |q| q != self.input.get_text())
+			.is_none_or(|q| q != self.input.get_text())
 		{
 			self.set_query(self.input.get_text().to_string());
 		}
 	}
 
 	fn set_query(&mut self, query: String) {
+		let query = query.to_lowercase();
 		self.query = Some(query.clone());
-		self.query_results = self
-			.options
-			.iter()
-			.filter(|option| option.to_string() == query)
-			.cloned()
-			.collect_vec();
+
+		if let Some(commit_type) = &self.seleted_commit_type {
+			self.query_results_more_info = commit_type
+				.more_info()
+				.iter()
+				.filter(|more_info_commit| {
+					more_info_commit
+						.strings()
+						.2
+						.to_lowercase()
+						.contains(&query)
+				})
+				.cloned()
+				.collect_vec();
+		} else {
+			self.query_results_type = self
+				.options
+				.iter()
+				.filter(|option| {
+					option.to_string().to_lowercase().contains(&query)
+				})
+				.cloned()
+				.collect_vec();
+		}
 	}
 
 	fn validate_escape(&mut self, commit_type: CommitType) {
-		let (emoji, short_msg, _) =
-			commit_type.more_info()[self.selected_index].strings();
+		let (emoji, short_msg, _) = self.query_results_more_info
+			[self.selected_index]
+			.strings();
 		self.queue.push(crate::queue::InternalEvent::OpenCommit);
 		self.queue.push(
 			crate::queue::InternalEvent::AddCommitMessage(format!(
@@ -589,19 +604,11 @@ impl ConventionalCommitPopup {
 			)),
 		);
 		self.hide();
-		self.selected_index = 0;
-		self.seleted_commit_type = None;
 	}
 }
 
 impl DrawableComponent for ConventionalCommitPopup {
 	fn draw(&self, f: &mut Frame, area: Rect) -> Result<()> {
-		// if self.is_visible() {
-		// 	self.input.draw(f, rect)?;
-		// 	self.draw_warnings(f);
-		// }
-		//
-		// Ok(())
 		if self.is_visible {
 			const MAX_SIZE: (u16, u16) = (50, 20);
 
@@ -691,9 +698,11 @@ impl Component for ConventionalCommitPopup {
 		if self.is_visible() {
 			if let Event::Key(key) = event {
 				if key_match(key, self.key_config.keys.exit_popup) {
-					self.hide();
-					self.selected_index = 0;
-					self.seleted_commit_type = None;
+					if self.is_insert {
+						self.is_insert = false;
+					} else {
+						self.hide();
+					}
 				} else if key_match(key, self.key_config.keys.enter) {
 					if let Some(commit_type) =
 						self.seleted_commit_type.clone()
@@ -701,12 +710,17 @@ impl Component for ConventionalCommitPopup {
 						self.validate_escape(commit_type);
 					} else {
 						let commit = self
-							.query_results
+							.query_results_type
 							.get(self.selected_index)
 							.cloned();
 
 						self.seleted_commit_type = commit.clone();
 						self.selected_index = 0;
+						self.is_insert = false;
+						self.query = None;
+						self.input.clear();
+
+						self.update_query();
 
 						if let Some(more_infos) =
 							commit.as_ref().map(|c| c.more_info())
@@ -728,7 +742,7 @@ impl Component for ConventionalCommitPopup {
 					self.move_selection(ScrollType::Up);
 				} else {
 					if self.is_insert {
-						if self.input.event(event)?.is_consumed() {
+						if self.input.event(&event)?.is_consumed() {
 							self.update_query();
 						}
 					} else if key_match(
@@ -744,7 +758,8 @@ impl Component for ConventionalCommitPopup {
 								.position(|ch| ch == c)
 							{
 								self.seleted_commit_type = Some(
-									self.query_results[idx].clone(),
+									self.query_results_type[idx]
+										.clone(),
 								);
 							}
 						}
@@ -764,10 +779,19 @@ impl Component for ConventionalCommitPopup {
 
 	fn hide(&mut self) {
 		self.is_visible = false;
+		self.is_insert = false;
+		self.selected_index = 0;
+		self.seleted_commit_type = None;
+		self.query = None;
+		self.query_results_type = CommitType::iter().collect_vec();
+		self.query_results_more_info = Vec::new();
+		self.input.clear();
 	}
 
 	fn show(&mut self) -> Result<()> {
 		self.is_visible = true;
+		self.input.show()?;
+		self.input.set_text(String::new());
 		Ok(())
 	}
 }
