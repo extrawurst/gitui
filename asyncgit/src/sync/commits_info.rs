@@ -1,7 +1,10 @@
 use std::fmt::Display;
 
 use super::RepoPath;
-use crate::{error::Result, sync::repository::repo};
+use crate::{
+	error::Result,
+	sync::{commit_details::get_author_of_commit, repository::repo},
+};
 use git2::{Commit, Error, Oid};
 use scopetime::scope_time;
 use unicode_truncate::UnicodeTruncateStr;
@@ -102,8 +105,9 @@ pub fn get_commits_info(
 	let res = commits
 		.map(|c: Commit| {
 			let message = get_message(&c, Some(message_length_limit));
-			let author =
-				c.author_with_mailmap(&mailmap)?.name().map_or_else(
+			let author = get_author_of_commit(&c, &mailmap)
+				.name()
+				.map_or_else(
 					|| String::from("<unknown>"),
 					String::from,
 				);
@@ -130,7 +134,7 @@ pub fn get_commit_info(
 	let mailmap = repo.mailmap()?;
 
 	let commit = repo.find_commit((*commit_id).into())?;
-	let author = commit.author_with_mailmap(&mailmap)?;
+	let author = get_author_of_commit(&commit, &mailmap);
 
 	Ok(CommitInfo {
 		message: commit.message().unwrap_or("").into(),

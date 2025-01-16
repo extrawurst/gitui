@@ -1,4 +1,7 @@
-use super::{commit_files::get_commit_diff, CommitId};
+use super::{
+	commit_details::get_author_of_commit,
+	commit_files::get_commit_diff, CommitId,
+};
 use crate::error::Result;
 use bitflags::bitflags;
 use fuzzy_matcher::FuzzyMatcher;
@@ -200,14 +203,18 @@ pub fn filter_commit_by_search(
 				.fields
 				.contains(SearchFields::AUTHORS)
 				.then(|| -> Result<bool> {
-					let name_match = commit
-						.author_with_mailmap(&mailmap)?
-						.name()
-						.is_some_and(|name| filter.match_text(name));
-					let mail_match = commit
-						.author_with_mailmap(&mailmap)?
-						.email()
-						.is_some_and(|name| filter.match_text(name));
+					let name_match =
+						get_author_of_commit(&commit, &mailmap)
+							.name()
+							.is_some_and(|name| {
+								filter.match_text(name)
+							});
+					let mail_match =
+						get_author_of_commit(&commit, &mailmap)
+							.email()
+							.is_some_and(|name| {
+								filter.match_text(name)
+							});
 
 					Ok(name_match || mail_match)
 				})
