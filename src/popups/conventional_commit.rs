@@ -637,9 +637,9 @@ impl DrawableComponent for ConventionalCommitPopup {
 					.style(self.theme.title(true))
 					.title(Span::styled(
 						if self.seleted_commit_type.is_some() {
-							strings::POPUP_TITLE_CONVENTIONAL_COMMIT
-						} else {
 							strings::POPUP_TITLE_GITMOJI
+						} else {
+							strings::POPUP_TITLE_CONVENTIONAL_COMMIT
 						},
 						self.theme.title(true),
 					))
