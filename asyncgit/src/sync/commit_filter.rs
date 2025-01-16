@@ -202,7 +202,7 @@ pub fn filter_commit_by_search(
 				.options
 				.fields
 				.contains(SearchFields::AUTHORS)
-				.then(|| -> Result<bool> {
+				.then(|| {
 					let name_match =
 						get_author_of_commit(&commit, &mailmap)
 							.name()
@@ -216,9 +216,8 @@ pub fn filter_commit_by_search(
 								filter.match_text(name)
 							});
 
-					Ok(name_match || mail_match)
+					name_match || mail_match
 				})
-				.transpose()?
 				.unwrap_or_default();
 
 			Ok(msg_summary_match
