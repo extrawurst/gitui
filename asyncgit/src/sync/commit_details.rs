@@ -120,9 +120,18 @@ pub fn get_commit_details(
 	let author = CommitSignature::from(&get_author_of_commit(
 		&commit, &mailmap,
 	));
-	let committer = CommitSignature::from(
-		&commit.committer_with_mailmap(&mailmap)?,
-	);
+	let committer = match commit.committer_with_mailmap(&mailmap) {
+		Ok(committer) => committer,
+		Err(err) => {
+			log::error!(
+				"Couldn't get committer with mailmap for {} {:?}: {err}",
+				commit.id(),
+				commit.message(),
+			);
+			commit.committer()
+		}
+	};
+	let committer = CommitSignature::from(&committer);
 	let committer = if author == committer {
 		None
 	} else {
