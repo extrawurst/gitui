@@ -515,7 +515,12 @@ impl ConventionalCommitPopup {
 
 		let new_selection = new_selection.clamp(
 			0,
-			self.query_results_type.len().saturating_sub(1),
+			if self.seleted_commit_type.is_some() {
+				self.query_results_more_info.len()
+			} else {
+				self.query_results_type.len()
+			}
+			.saturating_sub(1),
 		);
 
 		self.selected_index = new_selection;
