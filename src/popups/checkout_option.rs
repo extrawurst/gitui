@@ -14,10 +14,8 @@ use crate::{
 use anyhow::{Ok, Result};
 use asyncgit::sync::branch::checkout_remote_branch;
 use asyncgit::sync::status::discard_status;
-use asyncgit::sync::RepoPath;
-use asyncgit::sync::{
-	checkout_branch, stash_apply, stash_save, BranchInfo,
-};
+use asyncgit::sync::{checkout_branch, stash_save, BranchInfo};
+use asyncgit::sync::{stash_pop, RepoPath};
 use crossterm::event::Event;
 use ratatui::{
 	layout::{Alignment, Rect},
@@ -149,7 +147,7 @@ impl CheckoutOptionPopup {
 					false,
 				)?;
 				self.checkout()?;
-				stash_apply(&self.repo, stash_id, false)?;
+				stash_pop(&self.repo, stash_id)?;
 			}
 			CheckoutOptions::Unchange => {
 				self.checkout()?;
