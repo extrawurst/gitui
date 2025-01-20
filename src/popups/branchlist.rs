@@ -610,7 +610,7 @@ impl BranchListPopup {
 		} else {
 			self.queue.push(InternalEvent::CheckoutOption(
 				selected_branch.clone(),
-        self.local.clone()
+				self.local.clone(),
 			));
 		}
 

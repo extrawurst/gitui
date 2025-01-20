@@ -152,7 +152,7 @@ impl CheckoutOptionPopup {
 				stash_apply(&self.repo, stash_id, false)?;
 			}
 			CheckoutOptions::Unchange => {
-        self.checkout()?;
+				self.checkout()?;
 			}
 			CheckoutOptions::Discard => {
 				discard_status(&self.repo)?;
