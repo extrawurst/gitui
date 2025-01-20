@@ -27,6 +27,7 @@ mod submodules;
 mod tag_commit;
 mod taglist;
 mod update_remote_url;
+mod checkout_option;
 
 pub use blame_file::{BlameFileOpen, BlameFilePopup};
 pub use branchlist::BranchListPopup;
@@ -57,6 +58,7 @@ pub use submodules::SubmodulesListPopup;
 pub use tag_commit::TagCommitPopup;
 pub use taglist::TagListPopup;
 pub use update_remote_url::UpdateRemoteUrlPopup;
+pub use checkout_option::CheckoutOptionPopup;
 
 use crate::ui::style::Theme;
 use ratatui::{
