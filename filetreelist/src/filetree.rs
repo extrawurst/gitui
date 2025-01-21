@@ -2,7 +2,7 @@ use crate::{
 	error::Result, filetreeitems::FileTreeItems,
 	tree_iter::TreeIterator, TreeItemInfo,
 };
-use std::{collections::BTreeSet, path::Path};
+use std::{cell::RefCell, collections::BTreeSet, path::Path};
 
 ///
 #[derive(Copy, Clone, Debug)]
@@ -30,6 +30,7 @@ pub struct FileTree {
 	selection: Option<usize>,
 	// caches the absolute selection translated to visual index
 	visual_selection: Option<VisualSelection>,
+	pub show_height: RefCell<Option<usize>>,
 }
 
 impl FileTree {
@@ -42,6 +43,7 @@ impl FileTree {
 			items: FileTreeItems::new(list, collapsed)?,
 			selection: if list.is_empty() { None } else { Some(0) },
 			visual_selection: None,
+			show_height: None.into(),
 		};
 		new_self.visual_selection = new_self.calc_visual_selection();
 
@@ -112,6 +114,49 @@ impl FileTree {
 		}
 	}
 
+	fn selection_page_updown(
+		&self,
+		current_index: usize,
+		up: bool,
+	) -> Option<usize> {
+		let mut index = current_index;
+
+		let mut count = 0;
+		loop {
+			index = {
+				let new_index = if up {
+					index.saturating_sub(1)
+				} else {
+					index.saturating_add(1)
+				};
+
+				if new_index == index {
+					break;
+				}
+
+				if new_index >= self.items.len() {
+					break;
+				}
+
+				new_index
+			};
+
+			if self.is_visible_index(index) {
+				count += 1;
+			}
+
+			if count >= self.show_height.borrow().unwrap_or(0) {
+				break;
+			}
+		}
+
+		if index == current_index {
+			None
+		} else {
+			Some(index)
+		}
+	}
+
 	///
 	pub fn move_selection(&mut self, dir: MoveSelection) -> bool {
 		self.selection.is_some_and(|selection| {
@@ -130,8 +175,13 @@ impl FileTree {
 					Self::selection_start(selection)
 				}
 				MoveSelection::End => self.selection_end(selection),
-				MoveSelection::PageDown | MoveSelection::PageUp => {
-					None
+				MoveSelection::PageUp => {
+					Self::selection_page_updown(self, selection, true)
+				}
+				MoveSelection::PageDown => {
+					Self::selection_page_updown(
+						self, selection, false,
+					)
 				}
 			};
 
