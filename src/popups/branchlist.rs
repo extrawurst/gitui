@@ -13,7 +13,6 @@ use crate::{
 	ui::{self, Size},
 };
 use anyhow::Result;
-use asyncgit::sync::status::StatusType;
 use asyncgit::{
 	sync::{
 		self,
@@ -21,8 +20,9 @@ use asyncgit::{
 			checkout_remote_branch, BranchDetails, LocalBranch,
 			RemoteBranch,
 		},
-		checkout_branch, get_branches_info, BranchInfo, BranchType,
-		CommitId, RepoPathRef, RepoState,
+		checkout_branch, get_branches_info,
+		status::StatusType,
+		BranchInfo, BranchType, CommitId, RepoPathRef, RepoState,
 	},
 	AsyncGitNotification,
 };
