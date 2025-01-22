@@ -3,6 +3,7 @@ use crate::components::{
 	DrawableComponent, EventState,
 };
 use crate::queue::{InternalEvent, NeedsUpdate};
+use crate::strings::{checkout_option_to_string, CheckoutOptions};
 use crate::try_or_popup;
 use crate::{
 	app::Environment,
@@ -23,35 +24,6 @@ use ratatui::{
 	widgets::{Block, Borders, Clear, Paragraph},
 	Frame,
 };
-
-#[derive(PartialEq, Clone, Copy)]
-enum CheckoutOptions {
-	StashAndReapply,
-	Unchange,
-	Discard,
-}
-
-const fn type_to_string(
-	kind: CheckoutOptions,
-) -> (&'static str, &'static str) {
-	const CHECKOUT_OPTION_STASH_AND_REAPPLY: &str =
-		" 🟢 Stash and reapply changes";
-	const CHECKOUT_OPTION_UNCHANGE: &str = " 🟡 Keep local changes";
-	const CHECKOUT_OPTION_DISCARD: &str =
-		" 🔴 Discard all local changes";
-
-	match kind {
-		CheckoutOptions::StashAndReapply => {
-			("Stash and reapply", CHECKOUT_OPTION_STASH_AND_REAPPLY)
-		}
-		CheckoutOptions::Unchange => {
-			("Don't change", CHECKOUT_OPTION_UNCHANGE)
-		}
-		CheckoutOptions::Discard => {
-			("Discard", CHECKOUT_OPTION_DISCARD)
-		}
-	}
-}
 
 pub struct CheckoutOptionPopup {
 	queue: Queue,
@@ -93,7 +65,7 @@ impl CheckoutOptionPopup {
 			),
 		]));
 
-		let (kind_name, kind_desc) = type_to_string(self.option);
+		let (kind_name, kind_desc) = checkout_option_to_string(self.option);
 
 		txt.push(Line::from(vec![
 			Span::styled(
