@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * support choosing checkout branch method when status is not empty [[@fatpandac](https://github.com/fatpandac)] ([#2404](https://github.com/extrawurst/gitui/issues/2404))
+### Changed
+* After commit: jump back to unstaged area [[@tommady](https://github.com/tommady)] ([#2476](https://github.com/extrawurst/gitui/issues/2476))
 
 ## [0.27.0] - 2024-01-14
 
