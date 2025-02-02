@@ -199,19 +199,9 @@ pub fn get_status(
 /// discard all changes in the working directory
 pub fn discard_status(repo_path: &RepoPath) -> Result<bool> {
 	let repo = repo(repo_path)?;
-	let statuses = repo.statuses(None)?;
+	let commit = repo.head()?.peel_to_commit()?;
 
-	for status in statuses.iter() {
-		if status.status().is_wt_modified()
-			|| status.status().is_wt_new()
-		{
-			let oid = repo.head()?.target().unwrap();
-			let obj = repo.find_object(oid, None)?;
-
-			repo.checkout_tree(&obj, None)?;
-			repo.reset(&obj, git2::ResetType::Hard, None)?;
-		}
-	}
+	repo.reset(commit.as_object(), git2::ResetType::Hard, None)?;
 
 	Ok(true)
 }
@@ -235,14 +225,16 @@ mod tests {
 			.write_all(b"test\nfoo")
 			.unwrap();
 
-    let statuses = get_status(repo_path, StatusType::WorkingDir, None)
-      .unwrap();
-    assert_eq!(statuses.len(), 1);
+		let statuses =
+			get_status(repo_path, StatusType::WorkingDir, None)
+				.unwrap();
+		assert_eq!(statuses.len(), 1);
 
-    discard_status(repo_path).unwrap();
+		discard_status(repo_path).unwrap();
 
-    let statuses = get_status(repo_path, StatusType::WorkingDir, None)
-      .unwrap();
-    assert_eq!(statuses.len(), 0);
+		let statuses =
+			get_status(repo_path, StatusType::WorkingDir, None)
+				.unwrap();
+		assert_eq!(statuses.len(), 0);
 	}
 }
