@@ -15,8 +15,9 @@ use crate::{
 use anyhow::{Ok, Result};
 use asyncgit::sync::branch::checkout_remote_branch;
 use asyncgit::sync::status::discard_status;
-use asyncgit::sync::{checkout_branch, stash_save, BranchInfo};
-use asyncgit::sync::{stash_pop, RepoPath};
+use asyncgit::sync::{
+	checkout_branch, stash_pop, stash_save, BranchInfo, RepoPath,
+};
 use crossterm::event::Event;
 use ratatui::{
 	layout::{Alignment, Rect},
@@ -65,7 +66,8 @@ impl CheckoutOptionPopup {
 			),
 		]));
 
-		let (kind_name, kind_desc) = checkout_option_to_string(self.option);
+		let (kind_name, kind_desc) =
+			checkout_option_to_string(self.option);
 
 		txt.push(Line::from(vec![
 			Span::styled(
@@ -112,12 +114,8 @@ impl CheckoutOptionPopup {
 	fn handle_event(&mut self) -> Result<()> {
 		match self.option {
 			CheckoutOptions::StashAndReapply => {
-				let stash_id = stash_save(
-					&self.repo,
-					Some("Checkout auto stash"),
-					true,
-					false,
-				)?;
+				let stash_id =
+					stash_save(&self.repo, None, true, false)?;
 				self.checkout()?;
 				stash_pop(&self.repo, stash_id)?;
 			}
