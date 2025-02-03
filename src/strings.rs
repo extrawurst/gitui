@@ -112,7 +112,9 @@ pub fn commit_title() -> String {
 pub fn commit_reword_title() -> String {
 	"Reword Commit".to_string()
 }
-
+pub fn commit_fixup_title() -> String {
+	"Fixup Commit".to_string()
+}
 pub fn commit_title_merge() -> String {
 	"Commit (Merge)".to_string()
 }
@@ -624,6 +626,16 @@ pub mod commands {
 			),
 			"copy selected lines to clipboard",
 			CMD_GROUP_DIFF,
+		)
+	}
+	pub fn fixup_commit(key_config: &SharedKeyConfig) -> CommandText {
+		CommandText::new(
+			format!(
+				"Fixup [{}]",
+				key_config.get_hint(key_config.keys.log_fixup_commit),
+			),
+			"commit staged changes as fixup",
+			CMD_GROUP_LOG,
 		)
 	}
 	pub fn copy_hash(key_config: &SharedKeyConfig) -> CommandText {

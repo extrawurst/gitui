@@ -741,6 +741,9 @@ impl App {
 			InternalEvent::RewordCommit(id) => {
 				self.commit_popup.open(Some(id))?;
 			}
+			InternalEvent::FixupCommit(id) => {
+				self.commit_popup.fixup(Some(id))?;
+			}
 			InternalEvent::PopupStashing(opts) => {
 				self.stashmsg_popup.options(opts);
 				self.stashmsg_popup.show()?;
