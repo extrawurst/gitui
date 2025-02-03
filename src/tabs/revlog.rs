@@ -577,6 +577,19 @@ impl Component for Revlog {
 					return Ok(EventState::Consumed);
 				} else if key_match(
 					k,
+					self.key_config.keys.log_fixup_commit,
+				) && !self.is_search_pending()
+				{
+					return self.selected_commit().map_or(
+						Ok(EventState::NotConsumed),
+						|id| {
+							self.queue
+								.push(InternalEvent::FixupCommit(id));
+							Ok(EventState::Consumed)
+						},
+					);
+				} else if key_match(
+					k,
 					self.key_config.keys.compare_commits,
 				) && self.list.marked_count() > 0
 					&& !self.is_search_pending()
@@ -721,6 +734,11 @@ impl Component for Revlog {
 		));
 		out.push(CommandInfo::new(
 			strings::commands::log_reword_commit(&self.key_config),
+			self.selected_commit().is_some(),
+			(self.visible && !self.is_search_pending()) || force_all,
+		));
+		out.push(CommandInfo::new(
+			strings::commands::fixup_commit(&self.key_config),
 			self.selected_commit().is_some(),
 			(self.visible && !self.is_search_pending()) || force_all,
 		));

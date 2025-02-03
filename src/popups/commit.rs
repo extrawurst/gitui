@@ -47,6 +47,7 @@ enum Mode {
 	Merge(Vec<CommitId>),
 	Revert,
 	Reword(CommitId),
+	Fixup(CommitId),
 }
 
 pub struct CommitPopup {
@@ -287,6 +288,9 @@ impl CommitPopup {
 			Mode::Revert => {
 				sync::commit_revert(&self.repo.borrow(), msg)?
 			}
+			Mode::Fixup(id) => {
+				sync::commit(&self.repo.borrow(), msg)?
+			}
 			Mode::Reword(id) => {
 				let commit =
 					sync::reword(&self.repo.borrow(), *id, msg)?;
@@ -343,6 +347,19 @@ impl CommitPopup {
 	}
 	fn toggle_verify(&mut self) {
 		self.verify = !self.verify;
+	}
+	pub fn fixup(&mut self, fixup: Option<CommitId>) -> Result<()> {
+		// fixup needs to be clear to start with
+		self.input.clear();
+		let commit = fixup.expect("Called with ID");
+		self.mode = Mode::Fixup(commit);
+		self.input.set_title(strings::commit_fixup_title());
+		self.input.set_text(format!("fixup! {commit}\n\n"));
+
+		self.commit_msg_history_idx = 0;
+		self.input.show()?;
+
+		Ok(())
 	}
 
 	pub fn open(&mut self, reword: Option<CommitId>) -> Result<()> {
