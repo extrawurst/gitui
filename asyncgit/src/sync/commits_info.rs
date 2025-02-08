@@ -111,16 +111,16 @@ pub fn get_commits_info(
 					|| String::from("<unknown>"),
 					String::from,
 				);
-			Ok(CommitInfo {
+			CommitInfo {
 				message,
 				author,
 				time: c.time().seconds(),
 				id: CommitId(c.id()),
-			})
+			}
 		})
-		.collect::<Result<Vec<_>>>();
+		.collect::<Vec<_>>();
 
-	res
+	Ok(res)
 }
 
 ///
