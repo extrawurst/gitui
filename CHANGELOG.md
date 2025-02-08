@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-* Files tab support pageUp and pageDown
+### Added
+* Files and status tab support pageUp and pageDown
+
+### Changed
+* After commit: jump back to unstaged area [[@tommady](https://github.com/tommady)] ([#2476](https://github.com/extrawurst/gitui/issues/2476))
 
 ## [0.27.0] - 2024-01-14
 
