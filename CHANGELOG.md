@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-* Files and status tab support pageUp and pageDown
+* Files and status tab support pageUp and pageDown  [[@fatpandac](https://github.com/fatpandac)] ([#1951](https://github.com/extrawurst/gitui/issues/1951))
 
 ### Changed
 * After commit: jump back to unstaged area [[@tommady](https://github.com/tommady)] ([#2476](https://github.com/extrawurst/gitui/issues/2476))
