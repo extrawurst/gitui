@@ -3,7 +3,7 @@ use super::filetree::{
 };
 use anyhow::Result;
 use asyncgit::StatusItem;
-use std::{cell::RefCell, cmp, collections::BTreeSet};
+use std::{cell::Cell, cmp, collections::BTreeSet};
 
 //TODO: use new `filetreelist` crate
 
@@ -17,7 +17,7 @@ pub struct StatusTree {
 	// over folders which are folded into their parent
 	pub available_selections: Vec<usize>,
 
-	pub window_height: RefCell<Option<usize>>,
+	pub window_height: Cell<Option<usize>>,
 }
 
 ///
@@ -312,7 +312,7 @@ impl StatusTree {
 				count += 1;
 			}
 
-			if count == self.window_height.borrow().unwrap_or(0) {
+			if count == self.window_height.get().unwrap_or(0) {
 				break;
 			}
 

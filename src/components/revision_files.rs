@@ -277,8 +277,7 @@ impl RevisionFilesComponent {
 
 		self.tree
 			.show_height
-			.borrow_mut()
-			.replace(tree_height.saturating_sub(1));
+			.set(Some(tree_height.saturating_sub(1)));
 
 		self.tree.visual_selection().map_or_else(
 			|| {

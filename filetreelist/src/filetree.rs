@@ -2,7 +2,7 @@ use crate::{
 	error::Result, filetreeitems::FileTreeItems,
 	tree_iter::TreeIterator, TreeItemInfo,
 };
-use std::{cell::RefCell, collections::BTreeSet, path::Path};
+use std::{cell::Cell, collections::BTreeSet, path::Path};
 
 ///
 #[derive(Copy, Clone, Debug)]
@@ -30,7 +30,7 @@ pub struct FileTree {
 	selection: Option<usize>,
 	// caches the absolute selection translated to visual index
 	visual_selection: Option<VisualSelection>,
-	pub show_height: RefCell<Option<usize>>,
+	pub show_height: Cell<Option<usize>>,
 }
 
 impl FileTree {
@@ -145,7 +145,7 @@ impl FileTree {
 				count += 1;
 			}
 
-			if count >= self.show_height.borrow().unwrap_or(0) {
+			if count >= self.show_height.get().unwrap_or(0) {
 				break;
 			}
 		}

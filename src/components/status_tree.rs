@@ -351,7 +351,7 @@ impl DrawableComponent for StatusTreeComponent {
 				.map(|idx| idx.saturating_sub(selection_offset))
 				.unwrap_or_default();
 			let tree_height = r.height.saturating_sub(2) as usize;
-			self.tree.window_height.borrow_mut().replace(tree_height);
+			self.tree.window_height.set(Some(tree_height));
 
 			self.scroll_top.set(ui::calc_scroll_top(
 				self.scroll_top.get(),
