@@ -564,4 +564,36 @@ mod test {
 		assert_eq!(s.count, 3);
 		assert_eq!(s.index, 2);
 	}
+
+	#[test]
+	fn test_selection_page_updown() {
+		let items = vec![
+			Path::new("a/b/c"),	//
+			Path::new("a/b/c2"), //
+			Path::new("a/d"),	//
+			Path::new("a/e"),	//
+		];
+
+		//0 a/
+		//1   b/
+		//2     c
+		//3     c2
+		//4   d
+		//5   e
+		
+		let mut tree =
+			FileTree::new(&items, &BTreeSet::new()).unwrap();
+
+		tree.show_height.set(Some(2));
+
+		tree.selection = Some(0);
+		assert!(tree.move_selection(MoveSelection::PageDown));
+		assert_eq!(tree.selection, Some(2));
+		assert!(tree.move_selection(MoveSelection::PageDown));
+		assert_eq!(tree.selection, Some(4));
+		assert!(tree.move_selection(MoveSelection::PageUp));
+		assert_eq!(tree.selection, Some(2));
+		assert!(tree.move_selection(MoveSelection::PageUp));
+		assert_eq!(tree.selection, Some(0));
+	}
 }
