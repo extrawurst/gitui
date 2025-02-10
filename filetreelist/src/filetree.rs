@@ -568,10 +568,10 @@ mod test {
 	#[test]
 	fn test_selection_page_updown() {
 		let items = vec![
-			Path::new("a/b/c"),	//
+			Path::new("a/b/c"),  //
 			Path::new("a/b/c2"), //
-			Path::new("a/d"),	//
-			Path::new("a/e"),	//
+			Path::new("a/d"),    //
+			Path::new("a/e"),    //
 		];
 
 		//0 a/
@@ -580,7 +580,7 @@ mod test {
 		//3     c2
 		//4   d
 		//5   e
-		
+
 		let mut tree =
 			FileTree::new(&items, &BTreeSet::new()).unwrap();
 
