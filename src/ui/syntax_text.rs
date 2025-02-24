@@ -21,6 +21,8 @@ use syntect::{
 
 use crate::{AsyncAppNotification, SyntaxHighlightProgress};
 
+const DEFAULT_SYNTAX_THEME: &str = "base16-eighties.dark";
+
 struct SyntaxLine {
 	items: Vec<(Style, usize, Range<usize>)>,
 }
@@ -89,7 +91,8 @@ impl SyntaxText {
 
 		let theme =
 			THEME_SET.themes.get(syntax).unwrap_or_else(|| {
-				&THEME_SET.themes["base16-eighties.dark"]
+				log::info!("The syntax theme:\"{}\" cannot be found. Using default theme:\"{}\" instead.", syntax, DEFAULT_SYNTAX_THEME);
+				&THEME_SET.themes[DEFAULT_SYNTAX_THEME]
 			});
 		let highlighter = Highlighter::new(theme);
 
